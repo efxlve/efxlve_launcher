@@ -1,0 +1,25 @@
+# Rust derleme çıktıları
+src-tauri/target/
+src-tauri/gen/
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Log ve editör
+*.log
+npm-debug.log*
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tauri paketleri
+*.AppImage
+*.dmg
+*.msi
+*.exe
+!src-tauri/icons/*.ico

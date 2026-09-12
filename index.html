@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efxlve Launcher</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="titlebar">
+        <div class="logo"><i data-lucide="gamepad-2"></i><span>EFXLVE</span></div>
+        <nav id="nav">
+          <button data-act="open-store"><i data-lucide="store"></i><span>Mağaza</span></button>
+          <button data-view="library" class="active"><i data-lucide="layout-grid"></i><span>Kütüphane</span></button>
+          <button data-view="downloads"><i data-lucide="download"></i><span>İndirmeler</span><span id="dl-badge" class="badge hidden"></span></button>
+          <button id="account" class="profile" data-act="open-profile" title="Epic profili"><i data-lucide="circle-user-round"></i><span>Giriş yapılmadı</span></button>
+          <button data-view="settings" class="right" title="Ayarlar"><i data-lucide="settings"></i></button>
+        </nav>
+      </header>
+      <main id="content">
+        <section id="view"></section>
+      </main>
+      <footer id="statusbar">
+        <div id="recent">Son: —</div>
+        <div id="backend-status" title="Rust backend durumu">● bağlanıyor…</div>
+      </footer>
+    </div>
+    <div id="modal-root"></div>
+    <div id="toasts"></div>
+    <button id="totop" data-act="to-top" title="Başa dön">↑</button>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
