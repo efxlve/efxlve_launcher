@@ -213,3 +213,31 @@ export const epicImportEgl = () => invoke<string>("epic_import_egl");
 export const epicLogout = () => invoke<string>("epic_logout");
 export const epicListSkipped = () => invoke<string[]>("epic_list_skipped");
 export const epicCachedLibrary = () => invoke<CachedLibrary>("epic_cached_library");
+
+export interface DownloadFailedEvent {
+  id: string;
+  message: string;
+}
+
+export interface DownloadCancelledEvent {
+  id: string;
+}
+
+export interface EpicSettings {
+  alt_legendary_bin: string | null;
+  install_dir: string | null;
+}
+
+export const epicInstallGame = (appName: string, installDir?: string) =>
+  // Not: Tauri komut argümanları varsayılan camelCase'tir (Rust snake_case olsa bile)!
+  invoke<string>("epic_install_game", { appName, installDir: installDir ?? null });
+export const epicCancelDownload = (appName: string) =>
+  invoke<string>("epic_cancel_download", { appName });
+export const epicUninstallGame = (appName: string, keepFiles = false) =>
+  invoke<string>("epic_uninstall_game", { appName, keepFiles });
+export const epicLaunchGame = (appName: string) =>
+  invoke<string>("epic_launch_game", { appName });
+export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
+export const epicSetInstallDir = (path: string | null) =>
+  invoke<EpicSettings>("epic_set_install_dir", { path });
+export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");

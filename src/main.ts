@@ -1,7 +1,7 @@
 import "./styles.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { openPath, openUrl } from "@tauri-apps/plugin-opener";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   CircleUserRound,
   Download,
@@ -15,20 +15,30 @@ import {
   EPIC_LOGIN_URL,
   EPIC_STORE_URL,
   epicCachedLibrary,
+  epicCancelDownload,
+  epicDefaultInstallDir,
   epicEnsureBinary,
+  epicGetSettings,
   epicImportEgl,
+  epicInstallGame,
+  epicLaunchGame,
   epicListGames,
   epicListInstalled,
   epicListSkipped,
   epicLoginWithCode,
   epicLogout,
   epicPortrait,
+  epicSetInstallDir,
   epicSetupStatus,
   epicStoreSearch,
+  epicUninstallGame,
   isNotAuth,
   summarize,
   type CachedLibrary,
+  type DownloadCancelledEvent,
+  type DownloadFailedEvent,
   type EpicGame,
+  type EpicSettings,
   type EpicSummary,
   type LibraryEvent,
   type SetupEvent,
@@ -203,12 +213,6 @@ function toggleFav(appName: string): void {
   else epicFav.add(appName);
   localStorage.setItem(FAV_KEY, JSON.stringify([...epicFav]));
   render();
-  const mf = document.getElementById("m-fav");
-  if (mf) {
-    const f = epicFav.has(appName);
-    mf.classList.toggle("faved", f);
-    mf.textContent = f ? "♥" : "♡";
-  }
 }
 
 function pushRecent(appName: string): void {
@@ -336,8 +340,34 @@ function toast(msg: string, kind: "ok" | "err" | "" = ""): void {
   const el = document.createElement("div");
   el.className = `toast ${kind}`;
   el.textContent = msg;
+  if (kind === "err") {
+    // Hata bildirimleri kalıcıdır; tıklayınca metni kopyalayıp kapanır.
+    el.title = "Kopyalamak için tıkla";
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => {
+      const text = el.textContent ?? "";
+      const done = (): void => el.remove();
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done);
+      else done();
+    });
+    toastsEl.appendChild(el);
+    const errs = toastsEl.querySelectorAll(".toast.err");
+    while (errs.length > 3) errs[0]?.remove();
+    return;
+  }
   toastsEl.appendChild(el);
   setTimeout(() => el.remove(), 3500);
+}
+
+async function epicPlay(appName: string): Promise<void> {
+  pushRecent(appName);
+  toast("Oyun başlatılıyor…", "");
+  try {
+    const msg = await epicLaunchGame(appName);
+    toast(msg, "ok");
+  } catch (e) {
+    toast(String(e), "err");
+  }
 }
 
 function fmtPrice(p: number): string {
@@ -481,14 +511,21 @@ function renderLibrary(): string {
 }
 
 function renderDownloads(): string {
-  if (downloads.size === 0) return `<h2>İndirmeler</h2><p class="subtitle">Aktif indirme yok</p><div class="empty">Henüz indirme başlatmadın ⬇️</div>`;
+  if (downloads.size === 0) return `<h2>İndirmeler</h2><p class="subtitle">Aktif indirme yok</p><div class="empty">Henüz indirme başlatmadın.</div>`;
   const items = [...downloads.entries()]
-    .map(([id, d]) => `
+    .map(([id, d]) => {
+      const isEpic = epicSummaries.some((s) => s.appName === id);
+      const cancelBtn =
+        !d.done && isEpic
+          ? `<button class="btn danger small" data-act="epic-cancel" data-id="${id}">İptal</button>`
+          : "";
+      return `
       <div class="dl-item">
-        <div class="row"><strong>${esc(d.title)}</strong><span>${d.done ? "✅ Tamamlandı" : `%${d.progress}`}</span></div>
+        <div class="row"><strong>${esc(d.title)}</strong><span>${d.done ? `<span class="ok-text">✓ Tamamlandı</span>` : `%${d.progress}`}</span></div>
         <div class="bar"><div style="width:${d.done ? 100 : d.progress}%"></div></div>
-        ${d.done ? "" : `<div style="margin-top:8px"><button class="btn ghost small" data-act="goto-library" data-id="${id}">Kütüphanede gör</button></div>`}
-      </div>`)
+        ${d.done ? "" : `<div style="margin-top:8px;display:flex;gap:8px"><button class="btn ghost small" data-act="goto-library" data-id="${id}">Kütüphanede gör</button>${cancelBtn}</div>`}
+      </div>`;
+    })
     .join("");
   return `<h2>İndirmeler</h2><p class="subtitle">${[...downloads.values()].filter((d) => !d.done).length} aktif</p>${items}`;
 }
@@ -501,6 +538,14 @@ function renderSettings(): string {
       <p>${epicAccount ? `Bağlı hesap: <strong>${esc(epicAccount)}</strong>` : "Giriş yapılmadı."}</p>
       ${epicAccount ? `<p><button class="btn danger" data-act="epic-logout">Epic'ten çıkış yap</button></p>` : ""}
       <p class="muted">Atlanan öğeler: ${epicSkippedCount}</p>
+    </div>
+    <div class="settings-box">
+      <h3>Oyun kurulum klasörü</h3>
+      <p><input id="epic-install-dir" class="text-input" value="${esc(epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(epicDefaultDir || "varsayılan")}" autocomplete="off" spellcheck="false" /></p>
+      <p style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost small" data-act="epic-save-install-dir">Kaydet</button>
+        <span class="muted">Boş bırakırsan varsayılan kullanılır: <code>${esc(epicDefaultDir || "—")}</code></span>
+      </p>
     </div>
     <div class="settings-box">
       <h3>Sistem</h3>
@@ -720,14 +765,12 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
       ${stat ? `<span class="pstat ${stat}"></span>` : ""}
       <div class="poverlay">
         <div class="top">
-          <button class="iconbtn plain ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${faved ? "♥" : "♡"}</button>
-          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">⋯</button>
+          <button class="iconbtn plain ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 17)}</button>
+          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">${icon("dots", 16)}</button>
         </div>
         <div class="bottom">
           <div class="ptitle">${esc(s.title)}</div>
-          ${s.installed
-            ? `<button class="btn full light" data-act="epic-play" data-id="${s.appName}">▶ Oyna</button>`
-            : `<button class="btn full dark" data-act="epic-install" data-id="${s.appName}">⬇ Yükle</button>`}
+          ${epicActionButtons(s, "full")}
         </div>
       </div>
     </div>`;
@@ -740,12 +783,10 @@ function epicRowHtml(s: EpicSummary): string {
       ${epicArt(s)}
       <div class="grow">
         <h4>${esc(s.title)}</h4>
-        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${s.updateAvailable ? " • 🆕" : ""}</div>
+        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${s.updateAvailable ? ` • <span class="upd">Güncelleme</span>` : ""}</div>
       </div>
-      <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${faved ? "♥" : "♡"}</button>
-      ${s.installed
-        ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">▶ Oyna</button>`
-        : `<button class="btn small" data-act="epic-install" data-id="${s.appName}">Yükle</button>`}
+      <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
+      ${epicActionButtons(s, "small")}
     </div>`;
 }
 
@@ -753,31 +794,40 @@ function openEpicModal(appName: string): void {
   const s = epicSummaries.find((x) => x.appName === appName);
   if (!s) return;
   pushRecent(appName);
+  pushRecent(appName);
   const g = rawOf(appName);
-  const art = g ? epicPortrait(g) : s.cover;
+  const art = s.cover ?? (g ? epicPortrait(g) : null);
   const faved = epicFav.has(appName);
+  const devRaw = g ? g.metadata.developer : undefined;
+  const dev = typeof devRaw === "string" ? devRaw : "";
+  const p = epicDlProgress(appName);
+  const primary =
+    p !== null
+      ? `<button class="btn full" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      : s.installed
+        ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Oyna</button>`
+        : `<button class="btn full dark" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal mini">
+        <button class="mclose" data-act="close" title="Kapat">${icon("x", 15)}</button>
         <div class="cover">${art ? `<img src="${art}" alt="" />` : "🎮"}</div>
         <div class="modal-body">
           <h2>${esc(s.title)}</h2>
-          <p class="desc">${esc(s.description)}</p>
-          <dl class="kv">
-            <dt>Durum</dt><dd>${s.installed ? "✅ Kurulu" : "⬜ Kurulu değil"}</dd>
-            <dt>Sürüm</dt><dd>v${esc(s.version)}${s.installedVersion ? ` (kurulu: v${esc(s.installedVersion)})` : ""}</dd>
-            ${s.installSize ? `<dt>Boyut</dt><dd>${fmtBytes(s.installSize)}</dd>` : ""}
-            ${s.dlcCount > 0 ? `<dt>DLC</dt><dd>${s.dlcCount} adet</dd>` : ""}
-            ${s.installPath ? `<dt>Klasör</dt><dd><code>${esc(s.installPath)}</code></dd>` : ""}
-          </dl>
-          <div class="modal-actions">
-            ${s.installed
-              ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">▶ Oyna</button>
-                 <button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">Klasörü Aç</button>`
-              : `<button class="btn" data-act="epic-install" data-id="${s.appName}">Yükle</button>`}
-            <button id="m-fav" class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${faved ? "♥" : "♡"}</button>
-            <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">Mağazada Gör</button>
-            <button class="btn ghost" data-act="close">Kapat</button>
+          ${dev ? `<div class="m-sub">${esc(dev)}</div>` : ""}
+          <div class="mrow-top">
+            <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "Kurulu" : "Kurulu değil"}</span>
+            ${s.updateAvailable ? `<span class="pill update">Güncelleme</span>` : ""}
+            ${s.dlcCount > 0 ? `<span class="pill">+${s.dlcCount} DLC</span>` : ""}
+            ${s.installSize ? `<span class="muted">${fmtBytes(s.installSize)}</span>` : ""}
+          </div>
+          ${primary}
+          <div class="mrow">
+            <button id="m-fav" class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 16)}</button>
+            ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal</button>` : ""}
+            ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
+            <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
+            ${s.installed ? `<button class="btn danger" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 14)} Kaldır</button>` : ""}
           </div>
         </div>
       </div>
@@ -791,8 +841,10 @@ async function epicOpenFolder(appName: string): Promise<void> {
     return;
   }
   try {
-    if (isTauri) await openPath(s.installPath);
-    else toast(`(demo) ${s.installPath}`, "");
+    if (isTauri) {
+      const msg = await invoke<string>("open_folder", { path: s.installPath });
+      toast(msg, "ok");
+    } else toast(`(demo) ${s.installPath}`, "");
   } catch (e) {
     toast(String(e), "err");
   }
@@ -887,7 +939,7 @@ function openModal(id: string): void {
   const m = metaOf(g.id);
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal">
         <div class="cover" style="background:${m.gradient}">${m.emoji}</div>
         <div class="modal-body">
           <h2>${esc(g.title)}</h2>
@@ -916,6 +968,93 @@ function closeModal(): void {
   modalRoot.innerHTML = "";
 }
 
+/* ---------- Epic indirme (Faz 2) ---------- */
+
+function epicDlProgress(appName: string): number | null {
+  const dl = downloads.get(appName);
+  return dl && !dl.done ? dl.progress : null;
+}
+
+function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string {
+  const btn = size ? ` ${size}` : "";
+  const p = epicDlProgress(s.appName);
+  if (p !== null) {
+    return `<button class="btn${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
+      <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">İptal</button>`;
+  }
+  if (s.installed) {
+    const kind = size === "full" ? "light" : "play";
+    return `<button class="btn${btn} ${kind}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
+  }
+  const kind = size === "full" ? "dark" : "";
+  return `<button class="btn${btn} ${kind}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} Yükle</button>`;
+}
+
+async function epicInstall(appName: string): Promise<void> {
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (!s || epicDlProgress(appName) !== null) return;
+  downloads.set(appName, { progress: 0, done: false, title: s.title });
+  updateBadge();
+  if (view === "library" || view === "downloads") render();
+  try {
+    const msg = await epicInstallGame(appName);
+    toast(msg, "ok");
+  } catch (e) {
+    downloads.delete(appName);
+    updateBadge();
+    toast(String(e), "err");
+    if (view === "library" || view === "downloads") render();
+  }
+}
+
+async function epicCancel(appName: string): Promise<void> {
+  try {
+    const msg = await epicCancelDownload(appName);
+    toast(msg, "ok");
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
+async function epicUninstall(appName: string): Promise<void> {
+  try {
+    const msg = await epicUninstallGame(appName);
+    toast(msg, "ok");
+  } catch (e) {
+    toast(String(e), "err");
+  }
+  closeModal();
+  await refreshEpicInstalled();
+}
+
+async function refreshEpicInstalled(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    const [einstalled, eskipped] = await Promise.all([epicListInstalled(), epicListSkipped()]);
+    epicSummaries = summarize(epicGamesRaw, einstalled, eskipped);
+    epicSkippedCount = eskipped.length;
+    if (view === "library") render();
+  } catch (e) {
+    toast(`Kurulu listesi tazelenemedi: ${String(e)}`, "err");
+  }
+}
+
+let epicSettingsCache: EpicSettings | null = null;
+let epicDefaultDir = "";
+
+async function loadSettingsView(): Promise<void> {
+  if (isTauri) {
+    try {
+      const [st, dir] = await Promise.all([epicGetSettings(), epicDefaultInstallDir()]);
+      epicSettingsCache = st;
+      epicDefaultDir = dir;
+    } catch {
+      // sessiz geç, varsayılanlarla çiz
+    }
+  }
+  render();
+}
+
 /* ---------- Olaylar (delegation) ---------- */
 
 document.addEventListener("click", (e) => {
@@ -926,6 +1065,10 @@ document.addEventListener("click", (e) => {
     closeStore();
     view = t.dataset.view as typeof view;
     if (view === "library") void bootEpic();
+    if (view === "settings") {
+      void loadSettingsView();
+      return;
+    }
     render();
     return;
   }
@@ -934,8 +1077,12 @@ document.addEventListener("click", (e) => {
   if (act === "install" && id) void installGame(id);
   else if (act === "play" && id) void launchGame(id);
   else if (act === "uninstall" && id) void uninstallGame(id);
-  else if (act === "close") closeModal();
-  else if (act === "goto-library") {
+  else if (act === "close") {
+    // .modal kutusu içindeki tıklamalar document'e ulaşır; sadece
+    // overlay boşluğuna veya X düğmesine basılınca kapat.
+    const el = e.target as HTMLElement;
+    if (el === t || el.closest(".mclose")) closeModal();
+  } else if (act === "goto-library") {
     view = "library";
     render();
   } else if (act === "reset-demo") {
@@ -982,10 +1129,23 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
   } else if (act === "epic-play" && id) {
-    pushRecent(id);
-    toast("Oyna Faz 1'de geliyor 🎮", "");
+    void epicPlay(id);
   } else if (act === "epic-install" && id) {
-    toast("Yükleme Faz 2'de geliyor ⬇️", "");
+    void epicInstall(id);
+  } else if (act === "epic-cancel" && id) {
+    void epicCancel(id);
+  } else if (act === "epic-uninstall" && id) {
+    void epicUninstall(id);
+  } else if (act === "epic-save-install-dir") {
+    const input = document.getElementById("epic-install-dir") as HTMLInputElement | null;
+    const v = input?.value?.trim() ?? "";
+    epicSetInstallDir(v ? v : null)
+      .then((st) => {
+        epicSettingsCache = st;
+        toast("Kurulum klasörü kaydedildi", "ok");
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "epic-open-folder" && id) {
     void epicOpenFolder(id);
   } else if (act === "epic-store-page" && id) {
@@ -1053,14 +1213,44 @@ async function init(): Promise<void> {
       epicBusyMsg = event.payload.message;
       if (view === "library") render();
     });
-    // Rust'tan gelen indirme ilerleme event'leri
+    // Rust'tan gelen indirme ilerleme event'leri (demo + Epic).
+    // Not: aktif indirmelerde tüm görünümü yeniden çizmek yerine yalnızca
+    // yüzde düğmeleri güncellenir (odak kaybı/kırpışma olmasın).
     await listen<ProgressEvent>("download-progress", (event) => {
       const { id, progress, done } = event.payload;
-      const title = gameById(id)?.title ?? id;
+      if (!done) {
+        const cur = downloads.get(id);
+        if (cur) cur.progress = progress;
+        else {
+          const title =
+            gameById(id)?.title ?? epicSummaries.find((s) => s.appName === id)?.title ?? id;
+          downloads.set(id, { progress, done: false, title });
+        }
+        updateBadge();
+        document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
+          b.textContent = `%${progress}`;
+        });
+        return;
+      }
+      const title =
+        gameById(id)?.title ?? epicSummaries.find((s) => s.appName === id)?.title ?? id;
       downloads.set(id, { progress, done, title });
       updateBadge();
       if (view === "downloads" || view === "library") render();
-      if (done) void refreshGames();
+      if (epicSummaries.some((s) => s.appName === id)) void refreshEpicInstalled();
+      else void refreshGames();
+    });
+    await listen<DownloadFailedEvent>("download-failed", (event) => {
+      downloads.delete(event.payload.id);
+      updateBadge();
+      toast(`İndirme başarısız: ${event.payload.message}`, "err");
+      if (view === "downloads" || view === "library") render();
+    });
+    await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
+      downloads.delete(event.payload.id);
+      updateBadge();
+      toast("İndirme iptal edildi", "");
+      if (view === "downloads" || view === "library") render();
     });
   }
   await refreshGames();
@@ -1068,3 +1258,26 @@ async function init(): Promise<void> {
 }
 
 void init();
+
+/* ---------- İkonlar (Lucide, inline SVG — emoji yok) ---------- */
+
+function icon(
+  name: "heart" | "dots" | "play" | "download" | "folder" | "external" | "trash" | "x",
+  size = 15,
+): string {
+  const paths: Record<string, string> = {
+    heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+    dots: '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/>',
+    play: '<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>',
+    download:
+      '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    folder:
+      '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+    external:
+      '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    trash:
+      '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name] ?? ""}</svg>`;
+}

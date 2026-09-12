@@ -10,6 +10,7 @@ pub mod downloader;
 pub mod models;
 pub mod paths;
 pub mod skip;
+pub mod transfers;
 
 use thiserror::Error;
 

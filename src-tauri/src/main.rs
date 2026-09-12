@@ -31,8 +31,9 @@ struct InstallProgress {
     done: bool,
 }
 
-struct AppState {
+pub struct AppState {
     games: Mutex<Vec<Game>>,
+    pub epic_dl: Mutex<legendary::transfers::EpicDlState>,
 }
 
 /// Mağaza kataloğu (demo verisi). Gerçek projede burası bir API'den beslenir.
@@ -77,6 +78,8 @@ fn save_library(app: &AppHandle, lib: &HashMap<String, String>) {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EpicSettings {
     pub alt_legendary_bin: Option<String>,
+    #[serde(default)]
+    pub install_dir: Option<String>,
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -208,6 +211,25 @@ fn hide_store_view(app: AppHandle) -> Result<String, String> {
     Ok("gizlendi".into())
 }
 
+/// Klasörü dosya yöneticisinde açar.
+/// Not: opener eklentisi yerine doğrudan Rust kullanılır; böylece
+/// capability kapsam (scope) sorunları yaşanmaz, her sürücü desteklenir.
+#[tauri::command]
+fn open_folder(path: String) -> Result<String, String> {
+    let p = std::path::PathBuf::from(path.trim());
+    if !p.is_dir() {
+        return Err("klasör bulunamadı".to_string());
+    }
+    #[cfg(windows)]
+    let res = std::process::Command::new("explorer").arg(&p).spawn();
+    #[cfg(target_os = "macos")]
+    let res = std::process::Command::new("open").arg(&p).spawn();
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    let res = std::process::Command::new("xdg-open").arg(&p).spawn();
+    res.map(|_| "Klasör açıldı".to_string())
+        .map_err(|e| format!("klasör açılamadı: {e}"))
+}
+
 /// Demo kurulum: ilerlemeyi "download-progress" event'i ile yayınlar.
 #[tauri::command]
 fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
@@ -297,7 +319,10 @@ fn uninstall_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Res
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState { games: Mutex::new(default_catalog()) })
+        .manage(AppState {
+            games: Mutex::new(default_catalog()),
+            epic_dl: Mutex::new(legendary::transfers::EpicDlState::default()),
+        })
         .setup(|app| {
             // Önceki kurulumları geri yükle
             let lib = load_library(app.handle());
@@ -333,8 +358,15 @@ fn main() {
             legendary::commands::epic_logout,
             legendary::commands::epic_get_settings,
             legendary::commands::epic_set_alt_bin,
+            legendary::transfers::epic_install_game,
+            legendary::transfers::epic_cancel_download,
+            legendary::transfers::epic_uninstall_game,
+            legendary::transfers::epic_default_install_dir,
+            legendary::transfers::epic_set_install_dir,
+            legendary::transfers::epic_launch_game,
             show_store_view,
-            hide_store_view
+            hide_store_view,
+            open_folder
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");
