@@ -129,6 +129,7 @@ button { font-family: inherit; }
   background: var(--accent); color: var(--on-accent, #fff); border: none;
   border-radius: 8px; padding: 8px 16px; font-size: 14px;
   cursor: pointer; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
 .btn:hover { filter: brightness(1.15); }
 .btn:disabled { opacity: 0.6; cursor: default; }
@@ -303,3 +304,27 @@ ol.steps { line-height: 2.1; padding-left: 20px; margin: 0 0 8px; }
 }
 #totop.show { display: flex; }
 #totop:hover { border-color: var(--accent); }
+
+/* --- Modern detay penceresi --- */
+.emodal { position: relative; }
+.mclose {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25); color: #fff;
+  border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.mclose:hover { background: rgba(0,0,0,0.85); border-color: #fff; }
+.modal .cover { height: 190px; }
+.m-sub { color: var(--muted); font-size: 13px; margin: -6px 0 2px; }
+.modal-actions.col { flex-direction: column; }
+.mrow { display: flex; gap: 8px; }
+.mrow .btn { flex: 1; }
+.mrow-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 2px 0 4px; }
+.modal.mini { width: 430px; }
+.modal.mini .cover { height: 150px; }
+.modal.mini .modal-body { padding: 20px 22px 22px; }
+.modal.mini h2 { font-size: 20px; }
+.btn svg { vertical-align: -2px; }
+#m-fav.faved svg, .iconbtn.faved svg { fill: #ff5b6e; color: #ff5b6e; }
+.upd { color: #fdcb6e; font-weight: 600; }
+.ok-text { color: var(--green); font-weight: 600; }
