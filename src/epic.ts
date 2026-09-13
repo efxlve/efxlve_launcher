@@ -481,3 +481,44 @@ export const epicGetAchievements = (appName: string, forceRefresh = false) =>
 export const epicGetAchievementsSummary = () =>
   invoke<Record<string, EpicAchievementSummary>>("epic_get_achievements_summary");
 
+/* ---------- Sistem Gereksinimleri (System Requirements) ---------- */
+
+export interface SystemDetailItem {
+  title: string;
+  minimum?: string;
+  recommended?: string;
+}
+
+export interface SystemRequirement {
+  systemType: string;
+  details: SystemDetailItem[];
+}
+
+export interface GameRequirementsResponse {
+  supported: boolean;
+  systems: SystemRequirement[];
+  languages: string[];
+  appName: string;
+}
+
+export const epicGetSystemRequirements = (title: string, appName: string, forceRefresh = false) =>
+  invoke<GameRequirementsResponse>("epic_get_system_requirements", { title, appName, forceRefresh });
+
+/* ---------- Epic Games Launcher Entegrasyonu ---------- */
+
+export interface EglDetectedGame {
+  appName: string;
+  title: string;
+  installPath: string;
+  executable: string;
+  version: string;
+  installSize: number;
+}
+
+export const epicDetectEglGames = () =>
+  invoke<EglDetectedGame[]>("epic_detect_egl_games");
+
+export const epicSyncEglInstalled = () =>
+  invoke<number>("epic_sync_egl_installed");
+
+

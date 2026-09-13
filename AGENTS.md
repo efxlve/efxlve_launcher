@@ -63,7 +63,8 @@ Kurulum/kimlik: `epic_setup_status`, `epic_ensure_binary`, `epic_status`,
 `epic_login_with_code` (ham kod VEYA `{"authorizationCode":...}` JSON'u kabul eder),
 `epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`
 Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
-`epic_list_skipped`, `epic_get_achievements_summary`, `epic_get_achievements`
+`epic_list_skipped`, `epic_get_achievements_summary`, `epic_get_achievements`,
+`epic_detect_egl_games`, `epic_sync_egl_installed`
 Transfer: `epic_install_game`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`
 Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
@@ -175,6 +176,26 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
       - **Çekmece İçi Pürüzsüz Geçiş ve Oto-Yenilenme Disiplini:**
         - Detay çekmecesi ilk açıldığında ("Genel Bakış" sekmesi) arka planda otomatik `fetchAndRenderAchievements` ÇAĞRILMAZ. Ağ sorgusu yalnızca kullanıcı açıkça "🏆 Başarımlar" sekmesine tıkladığında veya yenileme istediğinde çalışır; böylece kullanıcının gözü önünde sayfanın kendi kendine yenilenmesi (spontaneous refresh) engellenir.
         - Sekmeler ve başarım filtreleri arasında geçiş yapılırken (`isInitialOpen = false`) tüm `overlay` ve `drawer` DOM'u asla yıkılıp baştan kurulmaz (`modalRoot.innerHTML` sıfırlanmaz). Yalnızca `#drawer-tab-content` ve buton durumları yerinde (in-place) güncellenir; liste kaydırma pozisyonu (`existingDrawer.scrollTop` ve `.ach-list.scrollTop`) korunur. Böylece anlık kapanıp açılma, kararma ve animasyon kırpışması tamamen engellenmiştir.
+25. **Sistem Gereksinimleri (Hardware Specs) & Akamai CDN Entegrasyonu:**
+    - Epic Games Store web sayfaları ve GraphQL sorguları bot/Cloudflare engeline takılabilir; buna karşın Akamai CDN üzerindeki ürün içerik API'si (`https://store-content-ipv4.ak.epicgames.com/api/tr-TR/content/products/<slug>` ve fallback `en-US`) engelsiz ve hızlıdır.
+    - `generate_slug_candidates` motoru:
+      - Unicode tırnak ve özel karakterleri (`’`, `‘`, `“`, `”`, `™`, `®`, `\u{00A0}` vb.) boşluğa çevirerek URL bozulmasını engeller.
+      - `metadata/<app>.json` içindeki `FolderName` alanını tarar ve camelCase/harf-rakam geçişlerini (`RainbowSixSiege` -> `rainbow-six-siege`, `BusSimulator21` -> `bus-simulator-21`) ayırarak doğrudan doğru mağaza slug'ını türetir.
+      - Yayıncı/seri ön eklerini ("Tom Clancy's", "Sid Meier's", "Marvel's", "Disney's", "EA SPORTS", "Star Wars", "Warhammer" vb.) temizler.
+      - İki nokta (`:`) ve tire (` - `) sonrası alt başlıkları ("The Amulet of Chaos" vb.) ve edisyon takılarını ("Standard Edition", "Definitive Edition", "Next Stop" vb.) temizleyerek alternatif adaylar üretir.
+    - Sistem gereksinimleri `epic_get_system_requirements` Tauri komutu ile çekilir; dönen sistemler (`Windows`, `Mac OS`), Minimum ve Önerilen donanım spesifikasyonları (OS, CPU, RAM, GPU, Depolama, DirectX, Ses, Ağ, Giriş/Hesap) ve desteklenen diller `%USERPROFILE%\.config\legendary\specs\<app_name>.json` içine yerel olarak önbelleklenir. Başarısız sorgularda kalıcı `supported: false` diske kilitlenmez ve `force_refresh` parametresi ile yeniden sorgulama desteklenir.
+    - Detay çekmecesinde platform eşleme katı string eşitliği (`=== "windows"`) yerine esnek alt dize (`.includes("win")`, `.includes("mac")`) kontrolüyle yapılır; böylece "PC", "Mac OS", "macOS" gibi farklı platform adlandırmaları sorunsuz yakalanır. Donanım etiketleri "Windows OS", "Windows Processor" gibi prefix'leri de temizleyerek Türkçe başlıklarla sunulur. "Genel Bakış" meta ızgarasında doğrudan Sistem sekmesine zıplayan interaktif bir kısayol kutucuğu yer alır.
+26. **Modernize Edilmiş Başarım UI Tasarımı:**
+    - Kaba dikdörtgen kutular yerine yuvarlatılmış modern squircle başarım ikonları (`border-radius: 12px`, 44x44px), neon/altın vurgulu ışıltılı ilerleme çubuğu ve fırçalanmış cam arka planlı kompakt başlık kartı (`.ach-hero-compact`) uygulanmıştır.
+    - Tier seviyeleri Türkçe adlandırılmıştır (`Bronz`, `Gümüş`, `Altın`, `Platin`) ve renkli minimal hap rozetler ile sunulur.
+    - Tamamlanan başarılarda zarif yeşil halka onay ikonu (`.ach-check-circle`), kilitli gizli başarılarda ise spoiler korumalı gizlilik etiketi yer alır.
+    - Filtre butonları (`.ach-scope-pill`, `.ach-status-pill`) segment hap kontrolü şeklinde modernleştirilmiştir.
+27. **Epic Games Launcher (EGL) & 3. Parti Kurulu Oyunları Otomatik Algılama ve Eşitleme:**
+    - Orijinal Epic Games Launcher tarafından kurulmuş oyunlar Windows'ta `%ProgramData%\Epic\EpicGamesLauncher\Data\Manifests\*.item` JSON manifestleri altında tutulur.
+    - 3. parti başlatıcılara devredilen oyunlar (Ubisoft Connect: *Watch Dogs*, EA App vb.) ise oyun kataloğundaki `metadata/<app>.json` içinde yer alan `RegistryPath` ve `RegistryKey` customAttribute'ları taranarak Windows Registry üzerinden otomatik algılanır (`read_third_party_installed_games`).
+    - `cache.rs::read_installed` kütüphane taranırken diskteki bu `.item` manifestlerini ve 3. parti Registry kurulumlarını otomatik birleştirir; yeni bulunan oyunları anında `%USERPROFILE%\.config\legendary\installed.json` kütüğüne kalıcı işler.
+    - Bu sayede herhangi bir kullanıcı launcher'ı açtığında veya arkaplan senkronu (`epic_list_installed`) çalıştığında ek işlem yapmasına gerek kalmadan tüm oyunları (Cyberpunk 2077, RDR2, Spider-Man, GTA V, Dead by Daylight, Watch Dogs vb.) anında "Kurulu" olarak hazır listelenir.
+    - Ayarlar (Settings) sayfasında yer alan EGL Entegrasyon paneli (`epic_detect_egl_games`, `epic_sync_egl_installed`) kullanıcının EGL kütüphanesini detaylı (oyun adı, boyut, dizin) görmesini sağlar.
 
 ## 7. Test stratejisi
 
@@ -207,8 +228,11 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - Ana Oyun (Base Game) vs Ek Paketler (DLC) ayrımı, Platin Kupa kuralı (ana oyun tamamlanması) ve Kapsam filtreleri (`Tüm Paketler`, `🎮 Ana Oyun - 🏆 Platin`, `📦 Ek Paketler`)
 - 1080p ve dizüstü monitörleri için optimize edilmiş ultra-kompakt Başarım Paneli (`.ach-hero-compact`, tek satır çift istatistik, dinamik `calc(100vh - 275px)` duyarlı liste), çift katmanlı gizli başarım onarımı (Rust + Frontend) ve test butonunun kaldırılması
 - Detay çekmecesinde pürüzsüz yerinde (in-place) geçiş mimarisi, kaydırma pozisyonu koruması, "Ana Oyun" kupa emojisi temizliği ve Genel Bakış sekmesinde kendiliğinden oluşan refresh döngüsünün engellenmesi
+- **Modernize Edilmiş Başarım UI:** Yuvarlatılmış squircle ikonlar, Türkçe tier hapları (Bronz, Gümüş, Altın, Platin), neon/altın degrade ilerleme çubuğu, yeşil onay rozetleri, yenilenmiş segment filtre butonları
+- **Entegre Sistem Gereksinimleri:** Akamai CDN üzerinden engelsiz donanım spesifikasyonu çekme, yerel önbellekleme (`specs/`), Minimum & Önerilen karşılaştırma paneli, donanım ikonları (CPU, GPU, RAM, Depolama, OS), platform seçici ve dil desteği kartı
+- **Epic Games Launcher (EGL) Kurulu Oyunları Otomatik Algılama & Eşitleme:** `%ProgramData%\Epic\EpicGamesLauncher\Data\Manifests` taranarak Cyberpunk 2077, RDR2 vb. resmi launcher oyunlarının anında kütüphanede 'Kurulu' olarak tanınması; Ayarlar sayfasında tek tıkla kalıcı eşitleme ve liste önizleme paneli
 Sıradaki adaylar: indirme hızı/ETA göstergesi, oyun güncelleme akışı (`update`),
-bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, EGL içe aktarma UI'ı, paketleme (`tauri build`).
+bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, paketleme (`tauri build`).
 
 ## 9. Çalışma disiplini
 

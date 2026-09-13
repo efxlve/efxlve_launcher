@@ -289,6 +289,38 @@ pub struct GameAchievementSummary {
     pub base_unlocked: u32,
 }
 
+/// Epic Games Store sistem gereksinimi öğesi (OS, Processor, Memory, Storage vb.)
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemDetailItem {
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub minimum: Option<String>,
+    #[serde(default)]
+    pub recommended: Option<String>,
+}
+
+/// Epic Games Store platform sistem gereksinimi (Windows, Mac)
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemRequirement {
+    #[serde(default, rename = "systemType")]
+    pub system_type: String,
+    #[serde(default)]
+    pub details: Vec<SystemDetailItem>,
+}
+
+/// Frontend'e dönülen oyun sistem gereksinimleri yanıtı
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GameRequirementsResponse {
+    pub supported: bool,
+    pub systems: Vec<SystemRequirement>,
+    pub languages: Vec<String>,
+    pub app_name: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
