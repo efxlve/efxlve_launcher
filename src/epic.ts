@@ -521,4 +521,150 @@ export const epicDetectEglGames = () =>
 export const epicSyncEglInstalled = () =>
   invoke<number>("epic_sync_egl_installed");
 
+/* ---------- Oyun Yönetimi & Doğrulama (Game Management) ---------- */
+
+export interface GameLocalSettings {
+  appName: string;
+  title: string;
+  launchParameters: string;
+  autoUpdate: boolean;
+  highPriority: boolean;
+  cloudSavesEnabled: boolean;
+  lastCloudSync?: string | null;
+  installSize: number;
+  installPath: string;
+  version: string;
+}
+
+export interface VerifyProgressEvent {
+  id: string;
+  current: number;
+  total: number;
+  percent: number;
+  speed: string;
+  detail?: string;
+}
+
+export interface VerifyCompleteEvent {
+  id: string;
+  success: boolean;
+  message: string;
+}
+
+export const epicGetGameSettings = (appName: string) =>
+  invoke<GameLocalSettings>("epic_get_game_settings", { appName });
+
+export const epicSaveGameSettings = (settings: GameLocalSettings) =>
+  invoke<void>("epic_save_game_settings", { settings });
+
+export const epicVerifyGame = (appName: string) =>
+  invoke<string>("epic_verify_game", { appName });
+
+export const epicSyncSaves = (appName: string) =>
+  invoke<string>("epic_sync_saves", { appName });
+
+export const epicCreateDesktopShortcut = (appName: string) =>
+  invoke<string>("epic_create_desktop_shortcut", { appName });
+
+/* ---------- Gelişmiş İndirme & Kuyruk (Download Hub) ---------- */
+
+export interface DlProgressEvent {
+  id: string;
+  progress: number;
+  done: boolean;
+  speed?: string | null;
+  speedBytes?: number | null;
+  diskSpeed?: string | null;
+  diskBytes?: number | null;
+  eta?: string | null;
+  etaSeconds?: number | null;
+  downloadedBytes?: number | null;
+  totalBytes?: number | null;
+}
+
+export interface DlQueueStatus {
+  active?: string | null;
+  isPaused: boolean;
+  queue: string[];
+}
+
+export const epicPauseDownload = (appName: string) =>
+  invoke<string>("epic_pause_download", { appName });
+
+export const epicResumeDownload = (appName: string) =>
+  invoke<string>("epic_resume_download", { appName });
+
+export const epicReorderQueue = (
+  appName: string,
+  action: "up" | "down" | "top" | "now" | "remove",
+) => invoke<DlQueueStatus>("epic_reorder_queue", { appName, action });
+
+export const epicGetQueue = () => invoke<DlQueueStatus>("epic_get_queue");
+
+/* ---------- Eklenti & DLC Yönetimi (DLC Manager) ---------- */
+
+export interface GameDlcItem {
+  appId: string;
+  title: string;
+  installed: boolean;
+  size: number;
+  image?: string | null;
+}
+
+export interface GameDlcResponse {
+  appName: string;
+  gameTitle: string;
+  dlcs: GameDlcItem[];
+}
+
+export const epicGetGameDlcs = (appName: string) =>
+  invoke<GameDlcResponse>("epic_get_game_dlcs", { appName });
+
+/* ---------- Seçici Kurulum (Selective Install Options) ---------- */
+
+export interface InstallOptionTag {
+  tag: string;
+  label: string;
+  size: number;
+  downloadSize: number;
+  category: string;
+}
+
+export interface GameInstallOptions {
+  appName: string;
+  title: string;
+  baseSize: number;
+  baseDownloadSize: number;
+  tags: InstallOptionTag[];
+  dlcs: GameDlcItem[];
+  hasOptions: boolean;
+}
+
+export const epicGetInstallOptions = (appName: string) =>
+  invoke<GameInstallOptions>("epic_get_install_options", { appName });
+
+export const epicInstallWithOptions = (
+  appName: string,
+  installTags: string[],
+  dlcAppIds: string[],
+  installDir?: string | null,
+) =>
+  invoke<string>("epic_install_with_options", {
+    appName,
+    installTags,
+    dlcAppIds,
+    installDir: installDir || null,
+  });
+
+/* ---------- Güncelleme Motoru (Update Engine) ---------- */
+
+export interface GameUpdateInfo {
+  appName: string;
+  title: string;
+  installedVersion: string;
+  latestVersion: string;
+}
+
+export const epicCheckUpdates = () =>
+  invoke<GameUpdateInfo[]>("epic_check_updates");
 

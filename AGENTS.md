@@ -61,16 +61,17 @@ Asla tüm kütüphaneyi tek `list` çağrısına bağlama.
 
 Kurulum/kimlik: `epic_setup_status`, `epic_ensure_binary`, `epic_status`,
 `epic_login_with_code` (ham kod VEYA `{"authorizationCode":...}` JSON'u kabul eder),
-`epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`
+`epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_verify_game`, `epic_sync_saves`, `epic_create_desktop_shortcut`
 Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 `epic_list_skipped`, `epic_get_achievements_summary`, `epic_get_achievements`,
-`epic_detect_egl_games`, `epic_sync_egl_installed`
-Transfer: `epic_install_game`, `epic_cancel_download`, `epic_uninstall_game`,
-`epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`
+`epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`
+Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
+`epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
-**Event'ler (frontend dinler):** `download-progress {id, progress, done}`,
-`download-failed {id, message}`, `download-cancelled {id}`,
+**Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
+`download-failed {id, message}`, `download-cancelled {id}`, `download-paused {id}`,
+`verify-progress {id, current, total, percent, speed}`, `verify-complete {id, success, message}`,
 `legendary-setup {state, progress, message}`, `legendary-library {state, attempt, message}`
 
 ## 6. Kanla öğrenilmiş kurallar (OKUMADAN KOD YAZMA)
@@ -196,6 +197,35 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
     - `cache.rs::read_installed` kütüphane taranırken diskteki bu `.item` manifestlerini ve 3. parti Registry kurulumlarını otomatik birleştirir; yeni bulunan oyunları anında `%USERPROFILE%\.config\legendary\installed.json` kütüğüne kalıcı işler.
     - Bu sayede herhangi bir kullanıcı launcher'ı açtığında veya arkaplan senkronu (`epic_list_installed`) çalıştığında ek işlem yapmasına gerek kalmadan tüm oyunları (Cyberpunk 2077, RDR2, Spider-Man, GTA V, Dead by Daylight, Watch Dogs vb.) anında "Kurulu" olarak hazır listelenir.
     - Ayarlar (Settings) sayfasında yer alan EGL Entegrasyon paneli (`epic_detect_egl_games`, `epic_sync_egl_installed`) kullanıcının EGL kütüphanesini detaylı (oyun adı, boyut, dizin) görmesini sağlar.
+28. **Oyun Yönetim Paneli, Steam Tarzı İndirme Merkezi, Eklenti/DLC & Seçici Kurulum Mimarisi:**
+    - **Oyun Yönetim Paneli (`epic_get_game_settings`, `epic_save_game_settings`):**
+      - Her oyunun ayarları `%USERPROFILE%\.config\legendary\game_settings\<app>.json` içinde saklanır (`launchParameters`, `autoUpdate`, `highPriority`, `cloudSavesEnabled`, `lastCloudSync`).
+      - Başlatma parametreleri (`-dx11`, `-novid` vb.) `epicPlay` sırasında doğrudan legendary launch argüman listesine enjekte edilir.
+      - Dosya Doğrulama: `legendary verify <app>` subprocess'i `verify-progress` olayları yayar, yüzdesi ve hızı panelde canlı işlenir. Yüksek frekanslı doğrulama olaylarında dialog DOM'u yeniden yıkılmaz (`renderManageModal()` çağrılmaz); `#manage-verify-fill`, `#manage-verify-count` ve `#manage-verify-speed` öğeleri yerinde (in-place) güncellenerek kırpışma ve `popIn` animasyonunun tetiklenmesi önlenir.
+      - 0ms Anında Açılış: `openManageModal`, disk veya registry okumasını beklemeden mevcut kütüphane özetiyle modalı 0ms içinde anında açar; arka planda tamamlanan ayarlar dialogu bozmadan yerinde işlenir.
+      - Bulut Senkronu (`legendary sync-saves <app>`) ve Masaüstü Kısayolu (Windows VBScript tabanlı `.lnk` oluşturma) panelden tek tıkla yürütülür.
+    - **Steam Tarzı İndirme Merkezi (Download Hub):**
+      - İndirme hızı ve disk yazma hızı regex ile parse edilerek `download-progress` event'i ile anlık aktarılır (`speedBytes`, `diskBytes`, `eta`, `downloadedBytes`, `totalBytes`).
+      - HTML5 Canvas üzerinde Steam benzeri çift katmanlı neon bezier hız grafiği çizilir (cyan ağ hızı, green disk hızı, 60 saniyelik dinamik arabellek).
+      - Kuyruk yönetimi (`epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`) ile indirmeler duraklatılabilir, sırası değiştirilebilir veya iptal edilebilir.
+    - **Eklenti & DLC Yönetimi (Add-ons Manager):**
+      - `metadata/<app>.json` içindeki `dlcItemList` taranır; `AUDIENCE` token'ları filtrelenerek yalnızca indirilebilir gerçek DLC'ler (`REDmod`, `Phantom Liberty` vb.) listelenir.
+      - Boyutlar, geniş kapak görselleri ve kurulu durumları sunulur; tek tıkla eklenti kurulup kaldırılabilir (`epic_install_game`, `epic_uninstall_game`).
+      - "Bitmedi, dahası da var" mağaza kartı doğrudan Epic Store eklenti sayfasına yönlendirir.
+    - **Seçici Kurulum Modalı (Selective Install Dialog):**
+      - `legendary info <app> --offline --json` çıktısındaki manifest `tag_disk_size` ve `tag_download_size` verileri ayrıştırılır.
+      - Ek diller (Türkçe, İngilizce, Almanca, Fransızca vb.) ve isteğe bağlı DLC paketleri akordeon checkbox listesi olarak sunulur.
+      - Seçilen bileşenlere göre toplam indirilecek boyut ve gerekli disk alanı anlık güncellenir.
+      - Kurulum `--install-tag` bayraklarıyla tetiklenir (`epic_install_with_options`).
+    - **Güncelleme Motoru (Update Engine):**
+      - `epic_check_updates`, `installed.json`'daki kurulu sürümü katalogdaki `build_version` ile kıyaslar.
+      - Kütüphane kartlarında "⚡ Güncelleme" rozeti, `⚡ Güncellemeler (N)` filtre çipi ve detay panelinde "Güncellemeyi İndir" birincil butonu dinamik sunulur.
+29. **Dosya Doğrulama (File Verification), EGL Manifest Entegrasyonu & Çok Katmanlı İlerleme:**
+    - Orijinal Epic Games Launcher (EGL) tarafından kurulan oyunlar manifest dosyalarını `<install_path>\.egstore\*.manifest` dizininde saklar. `legendary verify` ise manifest dosyasını `%USERPROFILE%\.config\legendary\manifests\<app>_<platform>_<version>.manifest` konumunda arar. Manifest bulunamadığında CLI `CRITICAL: Manifest appears to be missing!` hatası verip kod 0 ile anında çıkar.
+    - `cache.rs::ensure_egl_manifest` ve `commands.rs::epic_verify_game`, oyun doğrulandığında veya algılandığında `.egstore` içerisindeki `.manifest` dosyasını otomatik olarak legendary'nin beklediği adlandırma şablonuyla manifests klasörüne kopyalayarak EGL oyunlarının (Spider-Man, GTA V vb.) sorunsuz doğrulanmasını sağlar.
+    - `legendary verify` iki farklı ilerleme formatı üretir: küçük dosyalarda `Verification progress: cur/total (pct%) [speed]`, dev arşiv dosyalarında (Cyberpunk, GTA V, Spider-Man vb.) ise `=> Verifying large file "<name>": pct% (cur/total MiB) [speed]`. Backend'deki `parse_verify_progress` her iki formatı ve 4096-bayt akış tamponu bölünmelerini destekler; ayrıştırılan detay (`detail`), hız (`speed`), dosya adı ve yüzdeyi `verify-progress` event'i ile UI'a anlık basar.
+    - 3. parti başlatıcılara ait oyunlar (Watch Dogs vb.) Epic manifestine sahip olmadığından `installed.json` kütüğüne ASLA yazılmaz (yalnızca UI için runtime vektörüne eklenir); aksi takdirde Python `legendary.core.load_manifest` fonksiyonu `TypeError: 'NoneType' object is not subscriptable` ile çöker ve `list_installed` fonksiyonunu kilitler.
+    - **Çift Backdrop Filter Stutter Önleme:** Detay çekmecesinden (Drawer) Yönet modalı açılırken (`act === "manage-game"`), alttaki çekmece `closeModal()` ile kapatılır. İki adet eş zamanlı `backdrop-filter: blur(8px)` katmanı WebView2'de GPU donmasına yol açtığından bu işlem performansı maksimize eder ve modalın 0ms'de anında açılmasını sağlar.
 
 ## 7. Test stratejisi
 
@@ -231,8 +261,13 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Modernize Edilmiş Başarım UI:** Yuvarlatılmış squircle ikonlar, Türkçe tier hapları (Bronz, Gümüş, Altın, Platin), neon/altın degrade ilerleme çubuğu, yeşil onay rozetleri, yenilenmiş segment filtre butonları
 - **Entegre Sistem Gereksinimleri:** Akamai CDN üzerinden engelsiz donanım spesifikasyonu çekme, yerel önbellekleme (`specs/`), Minimum & Önerilen karşılaştırma paneli, donanım ikonları (CPU, GPU, RAM, Depolama, OS), platform seçici ve dil desteği kartı
 - **Epic Games Launcher (EGL) Kurulu Oyunları Otomatik Algılama & Eşitleme:** `%ProgramData%\Epic\EpicGamesLauncher\Data\Manifests` taranarak Cyberpunk 2077, RDR2 vb. resmi launcher oyunlarının anında kütüphanede 'Kurulu' olarak tanınması; Ayarlar sayfasında tek tıkla kalıcı eşitleme ve liste önizleme paneli
-Sıradaki adaylar: indirme hızı/ETA göstergesi, oyun güncelleme akışı (`update`),
-bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, paketleme (`tauri build`).
+- **Oyun Yönetim Paneli (Game Properties / Manage Modal):** Dosya doğrulama (`verify`), otomatik güncelleme, öncelikli indirme, EOS bulut senkronizasyonu, masaüstü kısayolu, kurulum boyutu & kaldırma, gelişmiş başlatma parametreleri (`launchParameters`)
+- **Steam Tarzı Gelişmiş İndirme Merkezi (Downloads Hub):** Canlı ağ ve disk hızı (MB/s), kalan süre (ETA), indirilen/toplam bayt, HTML5 Canvas 60 saniyelik çift bezier hız grafiği (cyan ağ, green disk), duraklat/devam et, kuyruk sıralaması (yukarı/aşağı/şimdi/kaldır) ve tamamlananlar geçmişi
+- **Eklenti & DLC Yönetim Sayfası (Add-ons Manager):** Katalogdaki gerçek DLC'lerin filtrelenmesi, kapak resimleri, dosya boyutları, anlık kurulu durumları, tek tıkla eklenti kur/kaldır switch'leri, anahtar kelime araması ve Epic Store tanıtım banner'ı
+- **Seçici Kurulum Modalı (Selective Install Dialog):** `legendary info --offline --json` manifestinden diller ve ek paketler ayrıştırma, akordeon seçim listesi, dinamik indirme ve disk boyutu hesaplayıcısı, `--install-tag` bayraklarıyla kurulum
+- **Güncelleme Motoru (Update Engine):** `build_version` kıyasıyla güncelleme tespiti, `⚡ Güncellemeler (N)` kütüphane filtresi, kartlarda "⚡ Güncelleme" rozeti, kurulu oyunlarda dinamik "Güncelle" butonu ve tek tıkla güncelleme akışı
+- **Dosya Doğrulama & Bütünlük Kontrolü (File Verification Engine):** `ensure_egl_manifest()` ile `.egstore` manifestlerinin otomatik bağlanması, büyük arşiv dosyaları (`=> Verifying large file`) için çok katmanlı canlı ilerleme ve MB/s hızı akışı, 3. parti manifest çökme koruması ve kırpışmasız yerinde (in-place) DOM güncellemesi
+- **Ultra-Hızlı Yönetim Paneli:** Çift katmanlı GPU `backdrop-filter` kilitlenmesinin giderilmesi, 0ms anında modal açılışı, `will-change` donanım hızlandırması ve yerinde ayar senkronizasyonu
 
 ## 9. Çalışma disiplini
 

@@ -49,6 +49,29 @@ import {
   type EpicGame,
   epicDetectEglGames,
   epicSyncEglInstalled,
+  epicGetGameSettings,
+  epicSaveGameSettings,
+  epicVerifyGame,
+  epicSyncSaves,
+  epicCreateDesktopShortcut,
+  epicPauseDownload,
+  epicResumeDownload,
+  epicReorderQueue,
+  epicGetQueue,
+  epicGetGameDlcs,
+  epicGetInstallOptions,
+  epicInstallWithOptions,
+  epicCheckUpdates,
+  type GameDlcItem,
+  type GameDlcResponse,
+  type GameInstallOptions,
+  type InstallOptionTag,
+  type GameUpdateInfo,
+  type DlProgressEvent,
+  type DlQueueStatus,
+  type GameLocalSettings,
+  type VerifyProgressEvent,
+  type VerifyCompleteEvent,
   type EglDetectedGame,
   type EpicSettings,
   type EpicSummary,
@@ -178,7 +201,7 @@ async function fetchGames(): Promise<Game[]> {
 /* ---------- Durum ---------- */
 
 let games: Game[] = [];
-let view: "library" | "downloads" | "settings" = "library";
+let view: "library" | "downloads" | "settings" | "dlc-manager" = "library";
 
 /* ---------- Epic (Legendary) durumu ---------- */
 
@@ -397,8 +420,178 @@ let libraryPath = "—";
 const viewEl = document.getElementById("view") as HTMLElement;
 const statusEl = document.getElementById("backend-status") as HTMLElement;
 const modalRoot = document.getElementById("modal-root") as HTMLElement;
+const manageRoot = document.getElementById("manage-root") as HTMLElement;
+const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
 const toastsEl = document.getElementById("toasts") as HTMLElement;
 const dlBadge = document.getElementById("dl-badge") as HTMLElement;
+
+let activeDlcAppName: string | null = null;
+const dlcCache = new Map<string, GameDlcResponse>();
+let dlcSearchQuery = "";
+let dlcLoading = false;
+
+let selectiveInstallOptions: GameInstallOptions | null = null;
+const selectedInstallTags = new Set<string>();
+const selectedDlcAppIds = new Set<string>();
+
+const availableUpdates = new Map<string, GameUpdateInfo>();
+
+const verifyingMap = new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>();
+let activeManageSettings: GameLocalSettings | null = null;
+let manageShowArgs = false;
+let manageSyncingSaves = false;
+
+/* ---------- Gelişmiş İndirme & Hız Durumu ---------- */
+
+interface DlMetrics {
+  id: string;
+  title: string;
+  progress: number;
+  done: boolean;
+  speed: string;
+  speedBytes: number;
+  diskSpeed: string;
+  diskBytes: number;
+  eta: string;
+  downloadedBytes: number;
+  totalBytes: number;
+}
+
+let activeDlMetrics: DlMetrics | null = null;
+let peakNetSpeedBytes = 0;
+const speedHistory: number[] = new Array(60).fill(0);
+const diskHistory: number[] = new Array(60).fill(0);
+let dlQueueStatus: DlQueueStatus = { isPaused: false, queue: [] };
+let speedChartTimer: number | null = null;
+
+function pushSpeedData(netBytes: number, diskBytes: number): void {
+  speedHistory.shift();
+  speedHistory.push(netBytes);
+  diskHistory.shift();
+  diskHistory.push(diskBytes);
+  if (netBytes > peakNetSpeedBytes) {
+    peakNetSpeedBytes = netBytes;
+  }
+}
+
+function drawSpeedCanvas(): void {
+  const canvas = document.getElementById("dl-speed-canvas") as HTMLCanvasElement | null;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width || canvas.clientWidth || 600;
+  const height = rect.height || canvas.clientHeight || 140;
+
+  if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+  }
+  ctx.resetTransform?.();
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, width, height);
+
+  // Background subtle gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+  bgGrad.addColorStop(0, "#0e1014");
+  bgGrad.addColorStop(1, "#090a0d");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Determine scale (max speed in bytes)
+  const maxData = Math.max(...speedHistory, ...diskHistory, 1024 * 1024);
+  const scaleMax = Math.max(maxData * 1.15, 1024 * 1024);
+
+  // Draw horizontal grid lines (4 lines: 25%, 50%, 75%, 100%)
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  for (let i = 1; i <= 3; i++) {
+    const y = height - height * (i * 0.25);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+
+    const speedVal = scaleMax * (i * 0.25);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.font = "10px system-ui, sans-serif";
+    ctx.setLineDash([]);
+    ctx.fillText(`${fmtBytes(speedVal)}/s`, 8, y - 4);
+    ctx.setLineDash([4, 4]);
+  }
+  ctx.setLineDash([]);
+
+  const len = speedHistory.length;
+  const step = width / (len - 1);
+
+  const drawSeries = (
+    data: number[],
+    strokeColor: string,
+    glowColor: string,
+    gradStart: string,
+  ) => {
+    if (data.length < 2) return;
+
+    const points: { x: number; y: number }[] = [];
+    for (let i = 0; i < len; i++) {
+      const val = data[i] ?? 0;
+      const x = i * step;
+      const y = height - (val / scaleMax) * (height - 12) - 6;
+      points.push({ x, y: Math.max(6, Math.min(height - 6, y)) });
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const mx = (p0.x + p1.x) / 2;
+      ctx.quadraticCurveTo(p0.x, p0.y, mx, (p0.y + p1.y) / 2);
+    }
+    const lastP = points[points.length - 1];
+    ctx.lineTo(lastP.x, lastP.y);
+
+    ctx.save();
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    const areaGrad = ctx.createLinearGradient(0, 0, 0, height);
+    areaGrad.addColorStop(0, gradStart);
+    areaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = areaGrad;
+    ctx.fill();
+  };
+
+  // Disk speed (green)
+  drawSeries(diskHistory, "#00d26a", "rgba(0, 210, 106, 0.4)", "rgba(0, 210, 106, 0.12)");
+
+  // Network speed (cyan)
+  drawSeries(speedHistory, "#00e5ff", "rgba(0, 229, 255, 0.5)", "rgba(0, 229, 255, 0.18)");
+}
+
+function startSpeedChartTimer(): void {
+  if (speedChartTimer !== null) return;
+  speedChartTimer = window.setInterval(() => {
+    if (activeDlMetrics && !activeDlMetrics.done && !dlQueueStatus.isPaused) {
+      pushSpeedData(activeDlMetrics.speedBytes || 0, activeDlMetrics.diskBytes || 0);
+      if (view === "downloads") drawSpeedCanvas();
+    } else if (speedHistory.some((v) => v > 0) || diskHistory.some((v) => v > 0)) {
+      pushSpeedData(0, 0);
+      if (view === "downloads") drawSpeedCanvas();
+    }
+  }, 1000);
+}
 
 /* ---------- Yardımcılar ---------- */
 
@@ -536,23 +729,599 @@ async function uninstallGame(id: string): Promise<void> {
 /* ---------- Render ---------- */
 
 function renderDownloads(): string {
-  if (downloads.size === 0) return `<h2>İndirmeler</h2><p class="subtitle">Aktif indirme yok</p><div class="empty">Henüz indirme başlatmadın.</div>`;
-  const items = [...downloads.entries()]
-    .map(([id, d]) => {
-      const isEpic = epicSummaries.some((s) => s.appName === id);
-      const cancelBtn =
-        !d.done && isEpic
-          ? `<button class="btn danger small" data-act="epic-cancel" data-id="${id}">İptal</button>`
-          : "";
+  let activeDl = activeDlMetrics && !activeDlMetrics.done ? activeDlMetrics : null;
+  if (!activeDl) {
+    const activeFromMap = [...downloads.entries()].find(([_, d]) => !d.done);
+    if (activeFromMap) {
+      activeDl = {
+        id: activeFromMap[0],
+        title: activeFromMap[1].title,
+        progress: activeFromMap[1].progress,
+        done: false,
+        speed: "—",
+        speedBytes: 0,
+        diskSpeed: "—",
+        diskBytes: 0,
+        eta: "Hesaplanıyor…",
+        downloadedBytes: 0,
+        totalBytes: 0,
+      };
+    }
+  }
+
+  const activeSummary = activeDl ? epicSummaries.find((s) => s.appName === activeDl?.id) : null;
+  const activeCover = activeSummary?.cover || "";
+  const activeWide = activeSummary ? (epicWideArt(activeSummary) || activeCover) : "";
+  const activeTitle = activeSummary?.title || activeDl?.title || activeDl?.id || "";
+
+  const completedEntries = [...downloads.entries()].filter(([_, d]) => d.done);
+  const queueApps = dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
+
+  // Active Hero markup
+  let heroMarkup = "";
+  if (activeDl) {
+    const isPaused = dlQueueStatus.isPaused;
+    const pct = Math.round(activeDl.progress);
+    heroMarkup = `
+      <div class="dl-active-hero">
+        ${activeWide ? `<img class="dl-hero-bg" src="${esc(activeWide)}" alt="" />` : ""}
+        <div class="dl-hero-content">
+          <div class="dl-hero-top">
+            <div class="dl-hero-game-info">
+              ${activeCover ? `<img class="dl-hero-thumb" src="${esc(activeCover)}" alt="${esc(activeTitle)}" />` : `<div class="dl-hero-thumb"></div>`}
+              <div class="dl-hero-details">
+                <div class="dl-hero-title">${esc(activeTitle)}</div>
+                <div class="dl-hero-badges">
+                  ${
+                    isPaused
+                      ? `<span class="dl-status-tag paused">⏸️ Duraklatıldı</span>`
+                      : `<span class="dl-status-tag active">⚡ İndiriliyor</span>`
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="dl-hero-actions">
+              ${
+                isPaused
+                  ? `<button class="btn primary small" data-act="dl-resume" data-id="${activeDl.id}">
+                      ${icon("play", 13)} Devam Et
+                    </button>`
+                  : `<button class="btn ghost small" data-act="dl-pause" data-id="${activeDl.id}">
+                      ${icon("pause", 13)} Duraklat
+                    </button>`
+              }
+              <button class="btn ghost small" data-act="manage-game" data-id="${activeDl.id}">
+                ${icon("settings", 13)} Yönet
+              </button>
+              <button class="btn danger small" data-act="epic-cancel" data-id="${activeDl.id}">
+                İptal Et
+              </button>
+            </div>
+          </div>
+
+          <!-- İlerleme Çubuğu -->
+          <div class="dl-hero-progress-section">
+            <div class="dl-progress-meta-row">
+              <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
+              <span id="dl-stat-bytes">${fmtBytes(activeDl.downloadedBytes)} / ${fmtBytes(activeDl.totalBytes)}</span>
+            </div>
+            <div class="dl-hero-track">
+              <div class="dl-hero-fill" id="dl-hero-fill" style="width: ${activeDl.progress}%"></div>
+            </div>
+          </div>
+
+          <!-- İstatistik Izgarası -->
+          <div class="dl-stats-grid">
+            <div class="dl-stat-tile">
+              <div class="dl-stat-icon-box network">${icon("download", 18)}</div>
+              <div class="dl-stat-info">
+                <div class="dl-stat-label">Ağ Hızı</div>
+                <div class="dl-stat-value" id="dl-stat-net">${esc(activeDl.speed || "—")}</div>
+                <div class="dl-stat-sub">Zirve: ${fmtBytes(peakNetSpeedBytes)}/s</div>
+              </div>
+            </div>
+            <div class="dl-stat-tile">
+              <div class="dl-stat-icon-box disk">${icon("hard-drive", 18)}</div>
+              <div class="dl-stat-info">
+                <div class="dl-stat-label">Disk Hızı</div>
+                <div class="dl-stat-value" id="dl-stat-disk">${esc(activeDl.diskSpeed || "—")}</div>
+                <div class="dl-stat-sub">Doğrulama & Yazma</div>
+              </div>
+            </div>
+            <div class="dl-stat-tile">
+              <div class="dl-stat-icon-box eta">${icon("calendar", 18)}</div>
+              <div class="dl-stat-info">
+                <div class="dl-stat-label">Kalan Süre</div>
+                <div class="dl-stat-value" id="dl-stat-eta">${esc(activeDl.eta || "Hesaplanıyor…")}</div>
+                <div class="dl-stat-sub">Tahmini süre</div>
+              </div>
+            </div>
+            <div class="dl-stat-tile">
+              <div class="dl-stat-icon-box size">${icon("layers", 18)}</div>
+              <div class="dl-stat-info">
+                <div class="dl-stat-label">Toplam Boyut</div>
+                <div class="dl-stat-value">${fmtBytes(activeDl.totalBytes)}</div>
+                <div class="dl-stat-sub">Paket boyutu</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (queueApps.length === 0 && completedEntries.length === 0) {
+    heroMarkup = `
+      <div class="dl-active-hero" style="text-align:center;padding:48px 24px;align-items:center;">
+        <div style="font-size:38px;margin-bottom:10px;">🎮</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">Aktif İndirme Bulunmuyor</div>
+        <div class="muted" style="margin-bottom:20px;max-width:420px;font-size:13px;line-height:1.5;">
+          Kütüphanenden dilediğin oyunu seçerek indirmeyi başlatabilir, indirme hızını ve disk durumunu buradan canlı takip edebilirsin.
+        </div>
+        <div>
+          <button class="btn primary" data-act="goto-library">Kütüphaneye Git</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Steam-style Speed Chart
+  const netLegendVal = activeDl?.speed || (speedHistory[speedHistory.length - 1] > 0 ? `${fmtBytes(speedHistory[speedHistory.length - 1])}/s` : "0 B/s");
+  const diskLegendVal = activeDl?.diskSpeed || (diskHistory[diskHistory.length - 1] > 0 ? `${fmtBytes(diskHistory[diskHistory.length - 1])}/s` : "0 B/s");
+
+  const chartMarkup = `
+    <div class="dl-chart-card">
+      <div class="dl-chart-head">
+        <div class="dl-chart-title">
+          ${icon("zap", 16)} Canlı Ağ ve Disk Aktivitesi
+        </div>
+        <div class="dl-chart-legend">
+          <div class="dl-legend-item">
+            <span class="dl-legend-dot net"></span>
+            <span>Ağ Hızı: <strong id="dl-legend-net-val" style="color:#00e5ff">${esc(netLegendVal)}</strong></span>
+          </div>
+          <div class="dl-legend-item">
+            <span class="dl-legend-dot disk"></span>
+            <span>Disk Hızı: <strong id="dl-legend-disk-val" style="color:#00d26a">${esc(diskLegendVal)}</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="dl-canvas-container">
+        <canvas id="dl-speed-canvas"></canvas>
+      </div>
+    </div>
+  `;
+
+  // Queue Markup
+  let queueItemsMarkup = "";
+  if (queueApps.length > 0) {
+    queueItemsMarkup = queueApps.map((appId, idx) => {
+      const s = epicSummaries.find((x) => x.appName === appId);
+      const title = s?.title || appId;
+      const cover = s?.cover || "";
+      const sizeStr = s?.installSize ? `Boyut: ${fmtBytes(s.installSize)}` : "Sıraya alındı";
+      const isFirst = idx === 0;
+      const isLast = idx === queueApps.length - 1;
       return `
-      <div class="dl-item">
-        <div class="row"><strong>${esc(d.title)}</strong><span>${d.done ? `<span class="ok-text">✓ Tamamlandı</span>` : `%${d.progress}`}</span></div>
-        <div class="bar"><div style="width:${d.done ? 100 : d.progress}%"></div></div>
-        ${d.done ? "" : `<div style="margin-top:8px;display:flex;gap:8px"><button class="btn ghost small" data-act="goto-library" data-id="${id}">Kütüphanede gör</button>${cancelBtn}</div>`}
-      </div>`;
+        <div class="dl-queue-row">
+          <div class="dl-queue-left">
+            <div class="dl-queue-order-badge">#${idx + 1}</div>
+            ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(title)}" />` : `<div class="dl-queue-thumb"></div>`}
+            <div class="dl-queue-info">
+              <div class="dl-queue-name">${esc(title)}</div>
+              <div class="dl-queue-meta">${esc(sizeStr)}</div>
+            </div>
+          </div>
+          <div class="dl-queue-right">
+            <button class="dl-reorder-btn" data-act="dl-reorder-up" data-id="${appId}" title="Yukarı Taşı" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+              ${icon("chevron-up", 14)}
+            </button>
+            <button class="dl-reorder-btn" data-act="dl-reorder-down" data-id="${appId}" title="Aşağı Taşı" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+              ${icon("chevron-down", 14)}
+            </button>
+            <button class="btn primary small" data-act="dl-reorder-now" data-id="${appId}" title="Hemen İndir">
+              ${icon("play", 11)} Şimdi İndir
+            </button>
+            <button class="dl-reorder-btn" data-act="dl-reorder-remove" data-id="${appId}" title="Kuyruktan Çıkar">
+              ${icon("x", 14)}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } else {
+    queueItemsMarkup = `<div class="muted" style="padding: 16px; background: #14161a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; font-size: 13px;">Kuyrukta bekleyen oyun yok.</div>`;
+  }
+
+  const queueSection = `
+    <div class="dl-section-title">
+      <span>Kuyruktaki Oyunlar (${queueApps.length})</span>
+    </div>
+    <div class="dl-queue-container">
+      ${queueItemsMarkup}
+    </div>
+  `;
+
+  // Completed items
+  let completedSection = "";
+  if (completedEntries.length > 0) {
+    const items = completedEntries.map(([appId, d]) => {
+      const s = epicSummaries.find((x) => x.appName === appId);
+      const cover = s?.cover || "";
+      return `
+        <div class="dl-queue-row" style="border-left: 3px solid #00d26a;">
+          <div class="dl-queue-left">
+            <div class="dl-queue-order-badge" style="color:#00d26a">✓</div>
+            ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(d.title)}" />` : `<div class="dl-queue-thumb"></div>`}
+            <div class="dl-queue-info">
+              <div class="dl-queue-name">${esc(d.title)}</div>
+              <div class="dl-queue-meta" style="color:#00d26a">Tamamlandı • Oynamaya hazır</div>
+            </div>
+          </div>
+          <div class="dl-queue-right">
+            <button class="btn primary small" data-act="play" data-id="${appId}">
+              ${icon("play", 12)} Oyna
+            </button>
+            <button class="btn ghost small" data-act="manage-game" data-id="${appId}">
+              ${icon("settings", 12)} Yönet
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    completedSection = `
+      <div class="dl-section-title" style="margin-top: 24px;">
+        <span>Son Tamamlananlar (${completedEntries.length})</span>
+      </div>
+      <div class="dl-queue-container">
+        ${items}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="dl-hub">
+      <div class="dl-header-group">
+        <h2>İndirme Yöneticisi</h2>
+        <span class="muted" style="font-size:13px">${activeDl ? "1 aktif indirme yürütülüyor" : "Boşta"}</span>
+      </div>
+      ${heroMarkup}
+      ${chartMarkup}
+      ${queueSection}
+      ${completedSection}
+    </div>
+  `;
+}
+
+/* ---------- Eklenti & DLC Yönetim Sayfası (DLC Manager - Screenshot 2) ---------- */
+
+function renderDlcRows(dlcs: GameDlcItem[]): string {
+  if (dlcs.length === 0) {
+    return `<div style="padding: 32px 20px; text-align: center; color: var(--muted); font-size: 13px;">
+      Kayıtlı eklenti bulunmuyor.
+    </div>`;
+  }
+  return dlcs
+    .map((dlc) => {
+      const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : "—";
+      const thumbHtml = dlc.image
+        ? `<img class="dlc-row-thumb" src="${esc(dlc.image)}" alt="${esc(dlc.title)}" />`
+        : `<div class="dlc-row-thumb"></div>`;
+
+      return `
+      <div class="dlc-table-row">
+        <div class="dlc-row-item">
+          ${thumbHtml}
+          <div class="dlc-row-title" title="${esc(dlc.title)}">${esc(dlc.title)}</div>
+        </div>
+        <div class="dlc-row-size">${esc(sizeStr)}</div>
+        <div class="dlc-row-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" data-act="dlc-toggle-install" data-app="${esc(activeDlcAppName!)}" data-dlc="${esc(dlc.appId)}" ${dlc.installed ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    `;
     })
     .join("");
-  return `<h2>İndirmeler</h2><p class="subtitle">${[...downloads.values()].filter((d) => !d.done).length} aktif</p>${items}`;
+}
+
+function renderDlcManager(): string {
+  if (!activeDlcAppName) {
+    return `<div class="empty">Eklenti seçilmedi.</div>`;
+  }
+  const summary = epicSummaries.find((s) => s.appName === activeDlcAppName);
+  const title = summary?.title || activeDlcAppName;
+  const dlcRes = dlcCache.get(activeDlcAppName);
+
+  if (dlcLoading && !dlcRes) {
+    return `
+      <div class="dlc-manager-container">
+        <div class="dlc-manager-back" data-act="dlc-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Kütüphaneye Geri Dön
+        </div>
+        <div style="text-align:center;padding:60px 0;">
+          <div class="spinner" style="margin:0 auto 16px"></div>
+          <div class="muted">Eklentiler taranıyor…</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const allDlcs = dlcRes?.dlcs || [];
+  const query = dlcSearchQuery.trim().toLowerCase();
+  const filteredDlcs = query
+    ? allDlcs.filter((d) => d.title.toLowerCase().includes(query))
+    : allDlcs;
+
+  return `
+    <div class="dlc-manager-container">
+      <div class="dlc-manager-back" data-act="dlc-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Kütüphaneye Geri Dön
+      </div>
+
+      <div class="dlc-manager-head-row">
+        <h1>${esc(title)} Eklenti</h1>
+        <div class="dlc-search-wrapper">
+          <svg class="dlc-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="dlc-search" class="dlc-search-input" placeholder="Anahtar Kelimeler" value="${esc(dlcSearchQuery)}" spellcheck="false" autocomplete="off" />
+        </div>
+      </div>
+
+      <!-- Tanıtım Kartı (Screenshot 2) -->
+      <div class="dlc-promo-banner">
+        <div class="dlc-promo-left">
+          <div class="dlc-promo-icon-box">
+            ${icon("layers", 20)}
+          </div>
+          <div class="dlc-promo-info">
+            <div class="dlc-promo-title">Bitmedi, dahası da var</div>
+            <div class="dlc-promo-desc">Epic Store'dan daha fazla ${esc(title)} Eklentisi al</div>
+          </div>
+        </div>
+        <button class="btn ghost small" data-act="dlc-discover-store" data-id="${esc(activeDlcAppName!)}">
+          Eklentileri Keşfet
+        </button>
+      </div>
+
+      <!-- Eklenti Listesi Tablosu (Screenshot 2) -->
+      <div class="dlc-table-container">
+        <div class="dlc-table-header">
+          <div></div>
+          <div class="right">Boyut</div>
+          <div class="right">Yüklü</div>
+        </div>
+        <div id="dlc-table-body">
+          ${renderDlcRows(filteredDlcs)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Seçici Kurulum (Selective Install - Screenshot 3) ---------- */
+
+async function openSelectiveModal(appName: string): Promise<void> {
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (s?.installed) {
+    // Kurulu oyun için doğrudan güncelleme/onarım çalıştır
+    void epicInstall(appName);
+    return;
+  }
+  toast("Kurulum seçenekleri denetleniyor…", "");
+  try {
+    const opts = await epicGetInstallOptions(appName);
+    if (!opts.hasOptions) {
+      void epicInstall(appName);
+      return;
+    }
+    selectiveInstallOptions = opts;
+    selectedInstallTags.clear();
+    selectedDlcAppIds.clear();
+    renderSelectiveModal();
+  } catch (_err) {
+    void epicInstall(appName);
+  }
+}
+
+async function applySelectiveInstall(appName: string, tags: string[], dlcs: string[]): Promise<void> {
+  const s = epicSummaries.find((x) => x.appName === appName);
+  const title = s ? s.title : appName;
+  closeSelectiveModal();
+  downloads.set(appName, { progress: 0, done: false, title });
+  if (!activeDlMetrics || activeDlMetrics.done) {
+    activeDlMetrics = {
+      id: appName,
+      title,
+      progress: 0,
+      done: false,
+      speed: "Başlatılıyor…",
+      speedBytes: 0,
+      diskSpeed: "—",
+      diskBytes: 0,
+      eta: "Hesaplanıyor…",
+      downloadedBytes: 0,
+      totalBytes: 0,
+    };
+  }
+  updateBadge();
+  render();
+  toast("Seçici kurulum başlatılıyor…", "");
+  try {
+    const msg = await epicInstallWithOptions(appName, tags, dlcs, null);
+    toast(msg, "ok");
+    void refreshEpicInstalled();
+  } catch (e) {
+    downloads.delete(appName);
+    if (activeDlMetrics?.id === appName) activeDlMetrics = null;
+    updateBadge();
+    render();
+    toast(`Kurulum başlatılamadı: ${String(e)}`, "err");
+  }
+}
+
+function closeSelectiveModal(): void {
+  selectiveInstallOptions = null;
+  selectedInstallTags.clear();
+  selectedDlcAppIds.clear();
+  if (selectiveRoot) selectiveRoot.innerHTML = "";
+}
+
+function renderSelectiveModal(): void {
+  if (!selectiveRoot || !selectiveInstallOptions) return;
+  const opts = selectiveInstallOptions;
+
+  const existingBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
+  const scrollPos = existingBody ? existingBody.scrollTop : 0;
+
+  const langTags = opts.tags.filter((t) => t.category === "languages");
+  const extraTags = opts.tags.filter((t) => t.category === "extras");
+  const uninstalledDlcs = opts.dlcs.filter((d) => !d.installed);
+
+  let totalDl = opts.baseDownloadSize || opts.baseSize;
+  let totalDisk = opts.baseSize;
+
+  for (const tag of opts.tags) {
+    if (selectedInstallTags.has(tag.tag)) {
+      totalDl += tag.downloadSize || tag.size;
+      totalDisk += tag.size;
+    }
+  }
+
+  for (const dlc of opts.dlcs) {
+    if (selectedDlcAppIds.has(dlc.appId)) {
+      totalDl += dlc.size;
+      totalDisk += dlc.size;
+    }
+  }
+
+  let langsHtml = "";
+  if (langTags.length > 0) {
+    langsHtml = `
+      <div class="selective-accordion">
+        <div class="selective-accordion-head">
+          <span style="font-size:11px">▾</span> Ek Diller (${langTags.length})
+        </div>
+        <div class="selective-accordion-list">
+          ${langTags
+            .map((t) => {
+              const isChecked = selectedInstallTags.has(t.tag);
+              return `
+                <div class="selective-row">
+                  <div class="selective-row-info">
+                    <span class="selective-row-label">${esc(t.label)}</span>
+                  </div>
+                  <div class="selective-row-right">
+                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
+                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let extrasHtml = "";
+  if (extraTags.length > 0) {
+    extrasHtml = `
+      <div class="selective-accordion">
+        <div class="selective-accordion-head">
+          <span style="font-size:11px">▾</span> Ek Paketler &amp; Dokular (${extraTags.length})
+        </div>
+        <div class="selective-accordion-list">
+          ${extraTags
+            .map((t) => {
+              const isChecked = selectedInstallTags.has(t.tag);
+              return `
+                <div class="selective-row">
+                  <div class="selective-row-info">
+                    <span class="selective-row-label">${esc(t.label)}</span>
+                  </div>
+                  <div class="selective-row-right">
+                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
+                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let dlcsHtml = "";
+  if (uninstalledDlcs.length > 0) {
+    dlcsHtml = `
+      <div class="selective-accordion">
+        <div class="selective-accordion-head">
+          <span style="font-size:11px">▾</span> Eklentiler &amp; DLC (${uninstalledDlcs.length})
+        </div>
+        <div class="selective-accordion-list">
+          ${uninstalledDlcs
+            .map((d) => {
+              const isChecked = selectedDlcAppIds.has(d.appId);
+              return `
+                <div class="selective-row">
+                  <div class="selective-row-info">
+                    <span class="selective-row-label">${esc(d.title)}</span>
+                  </div>
+                  <div class="selective-row-right">
+                    <span class="selective-row-size">${fmtBytes(d.size)}</span>
+                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-dlc" data-dlc="${esc(d.appId)}" ${isChecked ? "checked" : ""} />
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  selectiveRoot.innerHTML = `
+    <div class="selective-overlay" data-act="selective-overlay-close">
+      <div class="selective-dialog">
+        <div class="selective-header">
+          <h2>${esc(opts.title)} Yükleme Seçenekleri</h2>
+          <button class="manage-head-close" data-act="selective-close" title="Kapat">${icon("x", 16)}</button>
+        </div>
+        <div class="selective-body">
+          <div class="selective-row base">
+            <div class="selective-row-info">
+              <span class="selective-row-label">${esc(opts.title)} <span class="muted-sub">(Gerekli)</span></span>
+            </div>
+            <div class="selective-row-right">
+              <span class="selective-row-size">${fmtBytes(opts.baseSize)}</span>
+              <input type="checkbox" class="selective-checkbox" checked disabled />
+            </div>
+          </div>
+
+          ${langsHtml}
+          ${extrasHtml}
+          ${dlcsHtml}
+        </div>
+
+        <div class="selective-footer">
+          <div class="selective-footer-stats">
+            <span>İndirilecek Dosya Boyutu: <strong>${fmtBytes(totalDl)}</strong></span>
+            <span>Gerekli Depolama Alanı: <strong>${fmtBytes(totalDisk)}</strong></span>
+          </div>
+          <button class="selective-apply-btn" data-act="selective-apply" data-id="${esc(opts.appName)}">
+            Uygula
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const newBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
+  if (newBody && scrollPos > 0) newBody.scrollTop = scrollPos;
 }
 
 function renderSettings(): string {
@@ -632,7 +1401,11 @@ function render(): void {
   viewEl.innerHTML =
     view === "library" ? renderEpic()
     : view === "downloads" ? renderDownloads()
+    : view === "dlc-manager" ? renderDlcManager()
     : renderSettings();
+  if (view === "downloads") {
+    drawSpeedCanvas();
+  }
   updateChrome();
 }
 
@@ -676,6 +1449,7 @@ async function refreshEpic(): Promise<void> {
     epicPhase = "library";
     render();
     void loadEpicAchSummaries();
+    void refreshUpdates();
     void syncEpicLibrary(false);
   } catch (e) {
     epicPhase = "error";
@@ -691,6 +1465,22 @@ async function loadEpicAchSummaries(): Promise<void> {
     if (view === "library") render();
   } catch (e) {
     console.warn("Başarım özetleri alınamadı:", e);
+  }
+}
+
+async function refreshUpdates(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    const updates = await epicCheckUpdates();
+    availableUpdates.clear();
+    for (const u of updates) {
+      availableUpdates.set(u.appName, u);
+    }
+    if (availableUpdates.size > 0 && view === "library") {
+      render();
+    }
+  } catch (e) {
+    console.warn("Güncelleme denetimi yapılamadı:", e);
   }
 }
 
@@ -725,6 +1515,7 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
     epicSyncNote = "";
     epicBusyMsg = "";
     void loadEpicAchSummaries();
+    void refreshUpdates();
     if (manual) toast("Kütüphane güncellendi", "ok");
   } catch (e) {
     if (isNotAuth(e)) {
@@ -809,7 +1600,7 @@ function epicVisibleSummaries(): EpicSummary[] {
   const list = epicSummaries.filter((s) => {
     if (epicFilter === "installed" && !s.installed) return false;
     if (epicFilter === "fav" && !epicFav.has(s.appName)) return false;
-    if (epicFilter === "updates" && !s.updateAvailable) return false;
+    if (epicFilter === "updates" && !s.updateAvailable && !availableUpdates.has(s.appName)) return false;
     if (epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
     return s.title.toLocaleLowerCase("tr").includes(q);
   });
@@ -827,7 +1618,10 @@ function epicVisibleSummaries(): EpicSummary[] {
       return [...list].sort((a, b) => Number(b.installed) - Number(a.installed) || byTitle(a, b));
     case "updates":
       return [...list].sort(
-        (a, b) => Number(b.updateAvailable) - Number(a.updateAvailable) || byTitle(a, b),
+        (a, b) =>
+          Number(b.updateAvailable || availableUpdates.has(b.appName)) -
+            Number(a.updateAvailable || availableUpdates.has(a.appName)) ||
+          byTitle(a, b),
       );
     case "platinum":
       return [...list].sort(
@@ -968,7 +1762,8 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
   const faved = epicFav.has(s.appName);
   const p = epicDlProgress(s.appName);
   const isPlat = isAppPlatinum(s.appName);
-  const badge = s.updateAvailable
+  const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
+  const badge = hasUpdate
     ? `<span class="pbadge update"><span class="dot"></span>Güncelleme</span>`
     : s.installed
       ? `<span class="pbadge ready"><span class="dot"></span>Hazır</span>`
@@ -1005,6 +1800,7 @@ function epicRowHtml(s: EpicSummary): string {
   const faved = epicFav.has(s.appName);
   const isPlat = isAppPlatinum(s.appName);
   const achSum = epicAchSummaries[s.appName];
+  const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
   const achMeta = isPlat
     ? ` • <span style="color:#ffd700;font-weight:700;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} Platin</span>`
     : achSum && achSum.total_achievements > 0
@@ -1016,7 +1812,7 @@ function epicRowHtml(s: EpicSummary): string {
       ${epicArt(s)}
       <div class="grow">
         <h4>${esc(s.title)}</h4>
-        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${s.updateAvailable ? ` • <span class="upd">Güncelleme</span>` : ""}${achMeta}</div>
+        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${hasUpdate ? ` • <span class="upd">Güncelleme</span>` : ""}${achMeta}</div>
       </div>
       <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
       ${epicActionButtons(s, "small")}
@@ -1175,6 +1971,8 @@ function renderDrawerOverview(
       ${primary}
       <div class="drawer-actions-row">
         <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}</button>
+        ${s.installed ? `<button class="btn ghost" data-act="manage-game" data-id="${s.appName}" title="Yönet & Özellikler">${icon("settings", 14)} Yönet</button>` : ""}
+        <button class="btn ghost" data-act="open-dlc-manager" data-id="${s.appName}" title="Eklentiler & DLC">${icon("layers", 14)} Eklentiler</button>
         ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
         ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
         <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
@@ -1764,7 +2562,7 @@ function renderEpic(): string {
 
   const installedCount = epicSummaries.filter((s) => s.installed).length;
   const favCount = epicSummaries.filter((s) => epicFav.has(s.appName)).length;
-  const updateCount = epicSummaries.filter((s) => s.updateAvailable).length;
+  const updateCount = epicSummaries.filter((s) => s.updateAvailable || availableUpdates.has(s.appName)).length;
   const platCount = epicSummaries.filter((s) => isAppPlatinum(s.appName)).length;
 
   return `
@@ -1835,6 +2633,338 @@ function closeModal(): void {
   currentModalAppName = null;
 }
 
+function closeManageModal(): void {
+  if (manageRoot) manageRoot.innerHTML = "";
+  activeManageSettings = null;
+}
+
+async function openManageModal(appName: string): Promise<void> {
+  if (!isTauri) {
+    toast("Oyun yönetimi yalnızca masaüstü uygulamasında kullanılabilir.", "err");
+    return;
+  }
+  const sum = epicSummaries.find((x) => x.appName === appName);
+  const dl = downloads.get(appName);
+  const title = sum?.title || dl?.title || appName;
+  const version = sum?.installedVersion || sum?.version || "1.0";
+  const installPath = sum?.installPath || "";
+  const installSize = sum?.installSize || 0;
+
+  // 0ms anında açılış için hızlı yerel verilerle hemen render et
+  activeManageSettings = {
+    appName,
+    title,
+    launchParameters: "",
+    autoUpdate: true,
+    highPriority: false,
+    cloudSavesEnabled: true,
+    lastCloudSync: null,
+    installSize,
+    installPath,
+    version,
+  };
+  manageShowArgs = false;
+  renderManageModal();
+
+  // Arka planda tam ayarları çek ve dialogu bozmadan yerinde güncelle
+  try {
+    const st = await epicGetGameSettings(appName);
+    if (activeManageSettings && activeManageSettings.appName === appName) {
+      activeManageSettings = st;
+      updateManageModalInputsInPlace(st);
+    }
+  } catch (e) {
+    toast(`Oyun ayarları alınamadı: ${String(e)}`, "err");
+  }
+}
+
+function updateManageModalInputsInPlace(st: GameLocalSettings): void {
+  const autoUpdate = document.querySelector<HTMLInputElement>('[data-act="manage-toggle-autoupdate"]');
+  if (autoUpdate) autoUpdate.checked = st.autoUpdate;
+
+  const priority = document.querySelector<HTMLInputElement>('[data-act="manage-toggle-priority"]');
+  if (priority) priority.checked = st.highPriority;
+
+  const cloud = document.querySelector<HTMLInputElement>('[data-act="manage-toggle-cloud"]');
+  if (cloud) cloud.checked = st.cloudSavesEnabled;
+
+  const cloudSub = document.getElementById("manage-cloud-subtitle");
+  if (cloudSub) {
+    cloudSub.textContent = st.lastCloudSync
+      ? `En son eşitleme: ${st.lastCloudSync}`
+      : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet";
+  }
+
+  const hasArgs = Boolean(st.launchParameters && st.launchParameters.trim().length > 0);
+  manageShowArgs = hasArgs;
+  const argsToggle = document.getElementById("manage-toggle-args-input") as HTMLInputElement | null;
+  if (argsToggle) argsToggle.checked = hasArgs;
+
+  const argsContainer = document.getElementById("manage-args-container");
+  if (argsContainer) argsContainer.style.display = hasArgs ? "" : "none";
+
+  const argsInput = document.getElementById("manage-args-input") as HTMLInputElement | null;
+  if (argsInput) argsInput.value = st.launchParameters || "";
+
+  const installTitle = document.getElementById("manage-install-title");
+  if (installTitle) installTitle.textContent = `Yükleme • ${fmtBytes(st.installSize)}`;
+
+  const installPath = document.getElementById("manage-install-path");
+  if (installPath) installPath.textContent = st.installPath;
+
+  const headSub = document.getElementById("manage-head-sub");
+  if (headSub) headSub.textContent = `Yönet & Özellikler • v${st.version}`;
+}
+
+function updateVerifyProgressInPlace(
+  id: string,
+  current: number,
+  total: number,
+  percent: number,
+  speed: string,
+  detail?: string,
+): void {
+  const displayDetail = detail || (total > 0 ? `${current}/${total} (%${Math.round(percent)}%)` : `%${Math.round(percent)}%`);
+  verifyingMap.set(id, { current, total, percent, speed, detail: displayDetail });
+  if (!activeManageSettings || activeManageSettings.appName !== id) return;
+
+  const container = document.getElementById("manage-verify-box-container");
+  const fill = document.getElementById("manage-verify-fill");
+  const count = document.getElementById("manage-verify-count");
+  const spd = document.getElementById("manage-verify-speed");
+  const btn = document.getElementById("manage-verify-btn") as HTMLButtonElement | null;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Doğrulanıyor…";
+  }
+
+  if (fill && count && spd) {
+    fill.style.width = `${percent}%`;
+    count.textContent = displayDetail;
+    spd.textContent = speed;
+  } else if (container) {
+    container.innerHTML = `
+      <div class="verify-box">
+        <div class="verify-bar">
+          <div id="manage-verify-fill" class="verify-fill" style="width:${percent}%"></div>
+        </div>
+        <div class="verify-meta">
+          <span id="manage-verify-count">${displayDetail}</span>
+          <span id="manage-verify-speed">${esc(speed)}</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function resetVerifyInPlace(id: string): void {
+  verifyingMap.delete(id);
+  if (!activeManageSettings || activeManageSettings.appName !== id) return;
+
+  const container = document.getElementById("manage-verify-box-container");
+  if (container) container.innerHTML = "";
+
+  const btn = document.getElementById("manage-verify-btn") as HTMLButtonElement | null;
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Doğrula";
+  }
+}
+
+function renderManageModal(): void {
+  if (!manageRoot || !activeManageSettings) return;
+  const st = activeManageSettings;
+  const v = verifyingMap.get(st.appName);
+  const isVerifying = Boolean(v);
+
+  manageRoot.innerHTML = `
+    <div class="manage-overlay" data-act="manage-overlay-close">
+      <div class="manage-dialog">
+        <div class="manage-head">
+          <div class="manage-head-title-group">
+            <div id="manage-head-title" class="manage-head-title">${esc(st.title)}</div>
+            <div id="manage-head-sub" class="manage-head-sub">Yönet &amp; Özellikler • v${esc(st.version)}</div>
+          </div>
+          <button class="manage-head-close" data-act="manage-close" title="Kapat">${icon("x", 16)}</button>
+        </div>
+        <div class="manage-body">
+          <!-- 1. Dosyaları Doğrula -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#60a5fa">${icon("shield", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Dosyaları Doğrula</div>
+                <div class="manage-subtitle">Oyun dosyalarının bütünlüğünü kontrol et ve eksik/hasarlı parçaları onar</div>
+                <div id="manage-verify-box-container">
+                  ${
+                    isVerifying && v
+                      ? `
+                    <div class="verify-box">
+                      <div class="verify-bar">
+                        <div id="manage-verify-fill" class="verify-fill" style="width:${v.percent}%"></div>
+                      </div>
+                      <div class="verify-meta">
+                        <span id="manage-verify-count">${esc(v.detail || `${v.current}/${v.total} (%${v.percent})`)}</span>
+                        <span id="manage-verify-speed">${esc(v.speed)}</span>
+                      </div>
+                    </div>`
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${st.appName}" ${isVerifying ? "disabled" : ""}>
+                ${isVerifying ? "Doğrulanıyor…" : "Doğrula"}
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Otomatik Güncelleme -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#34d399">${icon("refresh", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Otomatik Güncelleme</div>
+                <div class="manage-subtitle">Oyun için yeni bir güncelleme yayınlandığında otomatik indir</div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-autoupdate" ${st.autoUpdate ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 3. Öncelikli İndirmeler -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#f59e0b">${icon("zap", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Öncelikli İndirmeler</div>
+                <div class="manage-subtitle">Bu oyunun güncellemelerini ve indirmelerini kuyrukta en öne al</div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-priority" ${st.highPriority ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 4. Bulut Kayıtları -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#38bdf8">${icon("cloud", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Bulut Kayıtları (Cloud Saves)</div>
+                <div id="manage-cloud-subtitle" class="manage-subtitle">
+                  ${
+                    manageSyncingSaves
+                      ? "Bulut ile eşitleniyor…"
+                      : st.lastCloudSync
+                        ? `En son eşitleme: ${esc(st.lastCloudSync)}`
+                        : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet"
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="Şimdi Eşitle" ${manageSyncingSaves ? "disabled" : ""}>
+                ${icon("refresh", 13)} Eşitle
+              </button>
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-cloud" ${st.cloudSavesEnabled ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 5. Masaüstü Kısayolu Oluştur -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#a78bfa">${icon("monitor", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Masaüstü Kısayolu Oluştur</div>
+                <div class="manage-subtitle">Oyunu masaüstünden tek tıkla doğrudan başlatmak için kısayol simgesi ekle</div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <button class="btn ghost small" data-act="manage-create-shortcut" data-id="${st.appName}">
+                Oluştur
+              </button>
+            </div>
+          </div>
+
+          <!-- 6. Yükleme (Boyut & Klasör & Kaldır) -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#e2e8f0">${icon("hard-drive", 20)}</div>
+              <div class="manage-info">
+                <div id="manage-install-title" class="manage-title">Yükleme • ${fmtBytes(st.installSize)}</div>
+                <div id="manage-install-path" class="manage-subtitle" style="word-break:break-all;opacity:0.8">${esc(st.installPath)}</div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}" title="Kurulum Klasörünü Aç">
+                ${icon("folder", 13)} Klasör
+              </button>
+              <button class="btn danger small" data-act="epic-uninstall" data-id="${st.appName}" title="Oyunu Kaldır">
+                ${icon("trash", 13)} Kaldır
+              </button>
+            </div>
+          </div>
+
+          <!-- 7. Eklentiler & DLC -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#00e5ff">${icon("layers", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Eklentiler &amp; DLC</div>
+                <div class="manage-subtitle">Oyun eklentilerini ve ek içerik paketlerini yönet</div>
+              </div>
+            </div>
+            <div class="manage-right">
+              <button class="btn ghost small" data-act="open-dlc-manager" data-id="${st.appName}">
+                Eklentileri Yönet
+              </button>
+            </div>
+          </div>
+
+          <!-- 8. Gelişmiş Başlatma Seçenekleri -->
+          <div class="manage-row" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div class="manage-left">
+                <div class="manage-icon" style="color:#fb7185">${icon("terminal", 20)}</div>
+                <div class="manage-info">
+                  <div class="manage-title">Gelişmiş Başlatma Seçenekleri</div>
+                  <div class="manage-subtitle">Oyuna özel başlatma parametreleri ekleyin (-dx11, -novid, -high vb.)</div>
+                </div>
+              </div>
+              <div class="manage-right">
+                <label class="toggle-switch">
+                  <input id="manage-toggle-args-input" type="checkbox" data-act="manage-toggle-args-panel" ${manageShowArgs ? "checked" : ""} />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div id="manage-args-container" style="${manageShowArgs ? "" : "display:none;"}">
+              <div class="args-panel">
+                <input id="manage-args-input" class="args-input" value="${esc(st.launchParameters || "")}" placeholder="-dx11 -windowed -novid" spellcheck="false" autocomplete="off" />
+                <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">
+                  Kaydet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 /* ---------- Epic indirme ---------- */
 
 function epicDlProgress(appName: string): number | null {
@@ -1850,6 +2980,10 @@ function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string 
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">İptal</button>`;
   }
   if (s.installed) {
+    const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
+    if (hasUpdate) {
+      return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}" title="Güncellemeyi İndir">${icon("download", 14)} Güncelle</button>`;
+    }
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
   }
   const g = rawOf(s.appName);
@@ -1870,13 +3004,34 @@ async function epicInstall(appName: string): Promise<void> {
     return;
   }
   downloads.set(appName, { progress: 0, done: false, title: s.title });
+  if (!activeDlMetrics || activeDlMetrics.done) {
+    activeDlMetrics = {
+      id: appName,
+      title: s.title,
+      progress: 0,
+      done: false,
+      speed: "Başlatılıyor…",
+      speedBytes: 0,
+      diskSpeed: "—",
+      diskBytes: 0,
+      eta: "Hesaplanıyor…",
+      downloadedBytes: 0,
+      totalBytes: s.installSize || 0,
+    };
+  }
   updateBadge();
-  if (view === "library" || view === "downloads") render();
+  void epicGetQueue().then((q) => {
+    dlQueueStatus = q;
+    if (view === "library" || view === "downloads") render();
+  }).catch(() => {
+    if (view === "library" || view === "downloads") render();
+  });
   try {
     const msg = await epicInstallGame(appName);
     toast(msg, "ok");
   } catch (e) {
     downloads.delete(appName);
+    if (activeDlMetrics?.id === appName) activeDlMetrics = null;
     updateBadge();
     toast(String(e), "err");
     if (view === "library" || view === "downloads") render();
@@ -1911,6 +3066,7 @@ async function refreshEpicInstalled(): Promise<void> {
     pruneRecent();
     epicSkippedCount = eskipped.length;
     if (view === "library") render();
+    void refreshUpdates();
   } catch (e) {
     toast(`Kurulu listesi tazelenemedi: ${String(e)}`, "err");
   }
@@ -1949,6 +3105,13 @@ document.addEventListener("click", (e) => {
     closeStore();
     view = t.dataset.view as typeof view;
     if (view === "library") void bootEpic();
+    if (view === "downloads") {
+      void epicGetQueue().then((q) => {
+        dlQueueStatus = q;
+        render();
+      }).catch(() => render());
+      return;
+    }
     if (view === "settings") {
       void loadSettingsView();
       return;
@@ -2014,11 +3177,48 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-play" && id) {
     void epicPlay(id);
   } else if (act === "epic-install" && id) {
-    void epicInstall(id);
+    void openSelectiveModal(id);
   } else if (act === "epic-cancel" && id) {
     void epicCancel(id);
   } else if (act === "epic-uninstall" && id) {
     void epicUninstall(id);
+  } else if (act === "open-dlc-manager" && id) {
+    closeManageModal();
+    closeModal();
+    activeDlcAppName = id;
+    dlcSearchQuery = "";
+    view = "dlc-manager";
+    dlcLoading = true;
+    render();
+    epicGetGameDlcs(id)
+      .then((res) => {
+        dlcCache.set(id, res);
+      })
+      .catch((err) => {
+        toast(`Eklentiler alınamadı: ${String(err)}`, "err");
+      })
+      .finally(() => {
+        dlcLoading = false;
+        if (view === "dlc-manager" && activeDlcAppName === id) {
+          render();
+        }
+      });
+  } else if (act === "dlc-back") {
+    view = "library";
+    render();
+  } else if (act === "dlc-discover-store" && id) {
+    const s = epicSummaries.find((x) => x.appName === id);
+    const title = s ? s.title : id;
+    void openStoreUrl(epicStorePageUrl(title), "store");
+  } else if (act === "selective-close") {
+    closeSelectiveModal();
+  } else if (act === "selective-overlay-close") {
+    const el = e.target as HTMLElement;
+    if (el === t) closeSelectiveModal();
+  } else if (act === "selective-apply" && id) {
+    const tags = Array.from(selectedInstallTags);
+    const dlcs = Array.from(selectedDlcAppIds);
+    void applySelectiveInstall(id, tags, dlcs);
   } else if (act === "epic-save-install-dir") {
     const input = document.getElementById("epic-install-dir") as HTMLInputElement | null;
     const v = input?.value?.trim() ?? "";
@@ -2046,6 +3246,103 @@ document.addEventListener("click", (e) => {
       });
   } else if (act === "epic-refresh-egl") {
     void loadSettingsView();
+  } else if (act === "manage-game" && id) {
+    closeModal();
+    void openManageModal(id);
+  } else if (act === "manage-close") {
+    closeManageModal();
+  } else if (act === "manage-overlay-close") {
+    const el = e.target as HTMLElement;
+    if (el === t) closeManageModal();
+  } else if (act === "manage-verify" && id) {
+    updateVerifyProgressInPlace(id, 0, 100, 0, "Başlatılıyor…", "Başlatılıyor…");
+    epicVerifyGame(id).catch((err) => {
+      resetVerifyInPlace(id);
+      toast(`Doğrulama başlatılamadı: ${String(err)}`, "err");
+    });
+  } else if (act === "manage-sync-saves" && id && !manageSyncingSaves) {
+    manageSyncingSaves = true;
+    const syncBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-sync-saves"]');
+    const cloudSub = document.getElementById("manage-cloud-subtitle");
+    if (syncBtn) syncBtn.disabled = true;
+    if (cloudSub) cloudSub.textContent = "Bulut ile eşitleniyor…";
+    epicSyncSaves(id)
+      .then((msg) => {
+        toast(msg, "ok");
+        const now = new Date().toLocaleString("tr-TR");
+        if (activeManageSettings && activeManageSettings.appName === id) {
+          activeManageSettings.lastCloudSync = now;
+        }
+        if (cloudSub) cloudSub.textContent = `En son eşitleme: ${now}`;
+      })
+      .catch((err) => {
+        toast(`Bulut eşitleme hatası: ${String(err)}`, "err");
+        if (cloudSub && activeManageSettings) {
+          cloudSub.textContent = activeManageSettings.lastCloudSync
+            ? `En son eşitleme: ${esc(activeManageSettings.lastCloudSync)}`
+            : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet";
+        }
+      })
+      .finally(() => {
+        manageSyncingSaves = false;
+        if (syncBtn) syncBtn.disabled = false;
+      });
+  } else if (act === "manage-create-shortcut" && id) {
+    epicCreateDesktopShortcut(id)
+      .then((msg) => toast(msg, "ok"))
+      .catch((err) => toast(`Kısayol oluşturulamadı: ${String(err)}`, "err"));
+  } else if (act === "manage-save-args" && id && activeManageSettings) {
+    const input = document.getElementById("manage-args-input") as HTMLInputElement | null;
+    const val = input?.value?.trim() ?? "";
+    activeManageSettings.launchParameters = val;
+    epicSaveGameSettings(activeManageSettings)
+      .then(() => toast("Başlatma parametreleri kaydedildi", "ok"))
+      .catch((err) => toast(`Kayıt hatası: ${String(err)}`, "err"));
+  } else if (act === "dl-pause" && id) {
+    epicPauseDownload(id)
+      .then((msg) => {
+        dlQueueStatus.isPaused = true;
+        toast(msg, "");
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "dl-resume" && id) {
+    epicResumeDownload(id)
+      .then((msg) => {
+        dlQueueStatus.isPaused = false;
+        toast(msg, "");
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "dl-reorder-up" && id) {
+    epicReorderQueue(id, "up")
+      .then((q) => {
+        dlQueueStatus = q;
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "dl-reorder-down" && id) {
+    epicReorderQueue(id, "down")
+      .then((q) => {
+        dlQueueStatus = q;
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "dl-reorder-now" && id) {
+    epicReorderQueue(id, "now")
+      .then((q) => {
+        dlQueueStatus = q;
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "dl-reorder-remove" && id) {
+    epicReorderQueue(id, "remove")
+      .then((q) => {
+        dlQueueStatus = q;
+        toast("Kuyruktan kaldırıldı", "");
+        if (view === "downloads") render();
+      })
+      .catch((err) => toast(String(err), "err"));
   } else if (act === "epic-open-folder" && id) {
     void epicOpenFolder(id);
   } else if (act === "epic-store-page" && id) {
@@ -2124,7 +3421,17 @@ document.addEventListener("click", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeModal();
+  if (e.key === "Escape") {
+    if (selectiveInstallOptions) {
+      closeSelectiveModal();
+      return;
+    }
+    if (activeManageSettings) {
+      closeManageModal();
+      return;
+    }
+    closeModal();
+  }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
     const s = document.getElementById("search");
     if (s) {
@@ -2136,10 +3443,26 @@ document.addEventListener("keydown", (e) => {
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
-  if (t.id !== "search") return;
-  query = (t as HTMLInputElement).value;
-  const box = document.getElementById("lib-results");
-  if (box) box.innerHTML = renderEpicItems();
+  if (t.id === "search") {
+    query = (t as HTMLInputElement).value;
+    const box = document.getElementById("lib-results");
+    if (box) box.innerHTML = renderEpicItems();
+    return;
+  }
+  if (t.id === "dlc-search") {
+    dlcSearchQuery = (t as HTMLInputElement).value;
+    const bodyEl = document.getElementById("dlc-table-body");
+    if (bodyEl && activeDlcAppName) {
+      const dlcRes = dlcCache.get(activeDlcAppName);
+      const allDlcs = dlcRes?.dlcs || [];
+      const q = dlcSearchQuery.trim().toLowerCase();
+      const filtered = q
+        ? allDlcs.filter((d) => d.title.toLowerCase().includes(q))
+        : allDlcs;
+      bodyEl.innerHTML = renderDlcRows(filtered);
+    }
+    return;
+  }
 });
 
 document.addEventListener("change", (e) => {
@@ -2147,6 +3470,91 @@ document.addEventListener("change", (e) => {
   if (t.id === "epic-sort") {
     epicSort = (t as HTMLSelectElement).value as typeof epicSort;
     render();
+    return;
+  }
+  const act = t.dataset.act;
+  if (act === "manage-toggle-autoupdate" && activeManageSettings) {
+    activeManageSettings.autoUpdate = (t as HTMLInputElement).checked;
+    epicSaveGameSettings(activeManageSettings)
+      .then(() => toast(activeManageSettings?.autoUpdate ? "Otomatik güncelleme açıldı" : "Otomatik güncelleme kapatıldı", ""))
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "manage-toggle-priority" && activeManageSettings) {
+    activeManageSettings.highPriority = (t as HTMLInputElement).checked;
+    epicSaveGameSettings(activeManageSettings)
+      .then(() => toast(activeManageSettings?.highPriority ? "Öncelikli indirme açıldı" : "Öncelikli indirme kapatıldı", ""))
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "manage-toggle-cloud" && activeManageSettings) {
+    activeManageSettings.cloudSavesEnabled = (t as HTMLInputElement).checked;
+    epicSaveGameSettings(activeManageSettings)
+      .then(() => toast(activeManageSettings?.cloudSavesEnabled ? "Bulut kayıtları açıldı" : "Bulut kayıtları kapatıldı", ""))
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "manage-toggle-args-panel") {
+    manageShowArgs = (t as HTMLInputElement).checked;
+    const container = document.getElementById("manage-args-container");
+    if (container) {
+      container.style.display = manageShowArgs ? "" : "none";
+      if (manageShowArgs) {
+        const inp = document.getElementById("manage-args-input") as HTMLInputElement | null;
+        inp?.focus();
+      }
+    }
+  } else if (act === "selective-toggle-tag") {
+    const tag = t.dataset.tag;
+    if (tag) {
+      if ((t as HTMLInputElement).checked) {
+        selectedInstallTags.add(tag);
+      } else {
+        selectedInstallTags.delete(tag);
+      }
+      renderSelectiveModal();
+    }
+  } else if (act === "selective-toggle-dlc") {
+    const dlc = t.dataset.dlc;
+    if (dlc) {
+      if ((t as HTMLInputElement).checked) {
+        selectedDlcAppIds.add(dlc);
+      } else {
+        selectedDlcAppIds.delete(dlc);
+      }
+      renderSelectiveModal();
+    }
+  } else if (act === "dlc-toggle-install") {
+    const app = t.dataset.app;
+    const dlcId = t.dataset.dlc;
+    const isChecked = (t as HTMLInputElement).checked;
+    if (app && dlcId) {
+      if (isChecked) {
+        toast("Eklenti kuruluyor…", "");
+        epicInstallGame(dlcId)
+          .then(() => {
+            toast("Eklenti indirme kuyruğuna eklendi", "ok");
+            const cached = dlcCache.get(app);
+            if (cached) {
+              const item = cached.dlcs.find((d) => d.appId === dlcId);
+              if (item) item.installed = true;
+            }
+          })
+          .catch((err) => {
+            (t as HTMLInputElement).checked = false;
+            toast(`Eklenti kurulum hatası: ${String(err)}`, "err");
+          });
+      } else {
+        toast("Eklenti kaldırılıyor…", "");
+        epicUninstallGame(dlcId)
+          .then(() => {
+            toast("Eklenti kaldırıldı", "ok");
+            const cached = dlcCache.get(app);
+            if (cached) {
+              const item = cached.dlcs.find((d) => d.appId === dlcId);
+              if (item) item.installed = false;
+            }
+          })
+          .catch((err) => {
+            (t as HTMLInputElement).checked = true;
+            toast(`Eklenti kaldırılamadı: ${String(err)}`, "err");
+          });
+      }
+    }
   }
 });
 
@@ -2212,44 +3620,131 @@ async function init(): Promise<void> {
       epicBusyMsg = event.payload.message;
       if (view === "library") render();
     });
-    await listen<ProgressEvent>("download-progress", (event) => {
-      const { id, progress, done } = event.payload;
+    await listen<DlProgressEvent>("download-progress", (event) => {
+      const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
+      const title =
+        gameById(id)?.title ?? epicSummaries.find((s) => s.appName === id)?.title ?? id;
+
       if (!done) {
         const cur = downloads.get(id);
         if (cur) cur.progress = progress;
-        else {
-          const title =
-            gameById(id)?.title ?? epicSummaries.find((s) => s.appName === id)?.title ?? id;
-          downloads.set(id, { progress, done: false, title });
+        else downloads.set(id, { progress, done: false, title });
+
+        if (!activeDlMetrics || activeDlMetrics.id !== id) {
+          activeDlMetrics = {
+            id,
+            title,
+            progress,
+            done: false,
+            speed: speed ?? "—",
+            speedBytes: speedBytes ?? 0,
+            diskSpeed: diskSpeed ?? "—",
+            diskBytes: diskBytes ?? 0,
+            eta: eta ?? "Hesaplanıyor…",
+            downloadedBytes: downloadedBytes ?? 0,
+            totalBytes: totalBytes ?? 0,
+          };
+        } else {
+          activeDlMetrics.progress = progress;
+          if (speed) activeDlMetrics.speed = speed;
+          if (speedBytes !== undefined && speedBytes !== null) activeDlMetrics.speedBytes = speedBytes;
+          if (diskSpeed) activeDlMetrics.diskSpeed = diskSpeed;
+          if (diskBytes !== undefined && diskBytes !== null) activeDlMetrics.diskBytes = diskBytes;
+          if (eta) activeDlMetrics.eta = eta;
+          if (downloadedBytes) activeDlMetrics.downloadedBytes = downloadedBytes;
+          if (totalBytes) activeDlMetrics.totalBytes = totalBytes;
         }
+        pushSpeedData(speedBytes ?? 0, diskBytes ?? 0);
+
         updateBadge();
+
+        // In-place library button/bar updates (Rule 15)
         document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
           b.textContent = `%${progress}`;
         });
         document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
           (b as HTMLElement).style.width = `${progress}%`;
         });
+
+        // In-place download hub updates (Rule 15)
+        if (view === "downloads") {
+          const pctEl = document.getElementById("dl-hero-pct");
+          if (pctEl) pctEl.textContent = `%${Math.round(progress)}`;
+          const fillEl = document.getElementById("dl-hero-fill");
+          if (fillEl) fillEl.style.width = `${progress}%`;
+          const netEl = document.getElementById("dl-stat-net");
+          if (netEl && speed) netEl.textContent = speed;
+          const diskEl = document.getElementById("dl-stat-disk");
+          if (diskEl && diskSpeed) diskEl.textContent = diskSpeed;
+          const etaEl = document.getElementById("dl-stat-eta");
+          if (etaEl && eta) etaEl.textContent = eta;
+          const bytesEl = document.getElementById("dl-stat-bytes");
+          if (bytesEl && downloadedBytes) {
+            bytesEl.textContent = `${fmtBytes(downloadedBytes)} / ${fmtBytes(totalBytes || 0)}`;
+          }
+          const curNetLegend = document.getElementById("dl-legend-net-val");
+          if (curNetLegend && speed) curNetLegend.textContent = speed;
+          const curDiskLegend = document.getElementById("dl-legend-disk-val");
+          if (curDiskLegend && diskSpeed) curDiskLegend.textContent = diskSpeed;
+          drawSpeedCanvas();
+        }
         return;
       }
-      const title =
-        gameById(id)?.title ?? epicSummaries.find((s) => s.appName === id)?.title ?? id;
-      downloads.set(id, { progress, done, title });
+
+      // Download completed
+      downloads.set(id, { progress: 100, done: true, title });
+      if (activeDlMetrics?.id === id) {
+        activeDlMetrics = null;
+      }
+      pushSpeedData(0, 0);
       updateBadge();
-      if (view === "downloads" || view === "library") render();
+      void epicGetQueue().then((q) => {
+        dlQueueStatus = q;
+        render();
+      }).catch(() => render());
       if (epicSummaries.some((s) => s.appName === id)) void refreshEpicInstalled();
       else void refreshGames();
     });
+    await listen<{ id: string }>("download-paused", (_event) => {
+      dlQueueStatus.isPaused = true;
+      if (view === "downloads") render();
+    });
     await listen<DownloadFailedEvent>("download-failed", (event) => {
       downloads.delete(event.payload.id);
+      if (activeDlMetrics?.id === event.payload.id) activeDlMetrics = null;
       updateBadge();
       toast(`İndirme başarısız: ${event.payload.message}`, "err");
-      if (view === "downloads" || view === "library") render();
+      void epicGetQueue().then((q) => {
+        dlQueueStatus = q;
+        if (view === "downloads" || view === "library") render();
+      });
     });
     await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
       downloads.delete(event.payload.id);
+      if (activeDlMetrics?.id === event.payload.id) activeDlMetrics = null;
       updateBadge();
       toast("İndirme iptal edildi", "");
-      if (view === "downloads" || view === "library") render();
+      void epicGetQueue().then((q) => {
+        dlQueueStatus = q;
+        if (view === "downloads" || view === "library") render();
+      });
+    });
+    startSpeedChartTimer();
+    window.addEventListener("resize", () => {
+      if (view === "downloads") drawSpeedCanvas();
+    });
+    await listen<VerifyProgressEvent>("verify-progress", (event) => {
+      const { id, current, total, percent, speed, detail } = event.payload;
+      updateVerifyProgressInPlace(id, current, total, percent, speed, detail);
+    });
+    await listen<VerifyCompleteEvent>("verify-complete", (event) => {
+      const { id, success, message } = event.payload;
+      resetVerifyInPlace(id);
+      if (success) {
+        toast("Dosyalar başarıyla doğrulandı.", "ok");
+      } else {
+        toast(`Doğrulama hatası: ${message}`, "err");
+      }
     });
   }
   await refreshGames();
@@ -2285,6 +3780,13 @@ function icon(
     | "monitor"
     | "globe"
     | "calendar"
+    | "settings"
+    | "zap"
+    | "cloud"
+    | "terminal"
+    | "pause"
+    | "chevron-up"
+    | "chevron-down"
     | "volume-2",
   size = 15,
 ): string {
@@ -2292,6 +3794,9 @@ function icon(
     heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
     dots: '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/>',
     play: '<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>',
+    pause: '<rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/>',
+    "chevron-up": '<polyline points="18 15 12 9 6 15"/>',
+    "chevron-down": '<polyline points="6 9 12 15 18 9"/>',
     download:
       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
     folder:
@@ -2329,6 +3834,14 @@ function icon(
       '<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
     globe:
       '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    settings:
+      '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    zap:
+      '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    cloud:
+      '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+    terminal:
+      '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
     calendar:
       '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
     "volume-2":
