@@ -63,10 +63,10 @@ Kurulum/kimlik: `epic_setup_status`, `epic_ensure_binary`, `epic_status`,
 `epic_login_with_code` (ham kod VEYA `{"authorizationCode":...}` JSON'u kabul eder),
 `epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`
 Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
-`epic_list_skipped`
+`epic_list_skipped`, `epic_get_achievements_summary`, `epic_get_achievements`
 Transfer: `epic_install_game`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`
-Pencere: `show_store_view`, `hide_store_view`, `open_folder`
+Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done}`,
 `download-failed {id, message}`, `download-cancelled {id}`,
@@ -124,6 +124,54 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`
    - S/M/L kart boyutu dinamiktir (`size-compact`, `size-normal`, `size-large`) ve `localStorage`
      (`efxlve-card-size`) üzerinden hatırlanır.
    - Detay görünümü sağdan kayan sinematik Drawer panelidir; teknik veriler `drawer-meta-grid` ile sunulur.
+   - Windows varsayılan kalın beyaz scrollbar'ları engellenmiştir; tüm uygulamada ince (6px) yarı saydam koyu scrollbar, başarım listesinde ise altın vurgulu özel ince scrollbar kullanılır.
+18. **Özel Çerçevesiz Başlık Çubuğu & Pencere Kontrolleri:**
+   - Windows yerel başlık çubuğu `tauri.conf.json` içinde `"decorations": false` ile kaldırılmıştır.
+   - Üst bar (`header#titlebar`) `-webkit-app-region: drag` ve `data-tauri-drag-region` ile taşınabilir;
+     tüm interaktif düğmeler (`#nav button`, `.win-btn`) `-webkit-app-region: no-drag` ile korunur.
+   - Pencere küçült, ekranı kapla/geri yükle ve kapat işlemleri Rust komutları (`app_minimize`,
+     `app_toggle_maximize`, `app_close`) üzerinden güvenle yürütülür. Çift tıklama pencereyi büyütüp küçültür.
+   - Gömülü çocuk webview (`storeRect`) konumu `y: titlebar.offsetHeight` formülüyle başlık çubuğuna tam oturur.
+19. **"Son Oynanan" ve Hero Spotlight Disiplini:**
+   - `pushRecent(appName)` SADECE oyun gerçekten başlatıldığında (`epicPlay`) çağrılır; detay çekmecesi
+     açıldığında (`openEpicModal`) ASLA çağrılmaz.
+   - Yalnızca gerçekten kurulu olan oyunlar (`s.installed`) "Son Oynanan" rozeti alabilir veya sıralamada öne geçebilir.
+     Kütüphane her yüklendiğinde ve kaldırıldığında kurulu olmayan oyunlar `efxlve-recent` listesinden ayıklanır (`pruneRecent`).
+   - Hero Spotlight afişi öncelik sırası: 1) Son oynanmış ve kurulu oyun (`Son Oynanan`), 2) Kurulu favori,
+      3) **Günün Oyunu (`✨ Günün Oyunu`)** — tarih bazlı deterministik tohum ile kütüphaneden geniş afişli sürpriz oyun,
+      4) Favori, 5) İlk oyun. Rozeti duruma göre `Son Oynanan`, `Günün Oyunu`, `Kurulu Oyun`, `Favori` veya `Öne Çıkan` olur.
+20. **Başarımlar (Achievements) & Platin Kupa Mimarisi:**
+    - 488+ oyunluk kütüphanede her oyun için tek tek ağ isteği atmak Epic hız sınırına takılır (429) ve açılışı kilitler.
+    - `legendary`, sorgulanan başarımları `%USERPROFILE%\.config\legendary\achievements.json` içine namespace (sandboxId) bazlı kaydeder (`totalUnlocked`, `totalXP`, `playerAwards: [awardType: "PLATINUM"]`).
+    - `epic_get_achievements_summary` (`scan_achievements_summary`), `metadata/*.json` dosyalarından oyun tanımlarını (`total_achievements`, `total_product_xp`) ve `achievements.json` dosyasından kullanıcının gerçek kilit açma verilerini diskten 0ms içinde haritalar.
+    - `legendary achievements --json <app>` çıktısında doğrudan `achievements` adında bir anahtar YOKTUR; öğeler durumlarına göre `completed`, `in_progress`, `uninitiated` ve `hidden` dizileri altında döner. `GameAchievementsResponse.consolidate()` metodu bu dizileri birleştirerek `achievements` alanını doldurur ve toplamları garantiler.
+    - `epic_get_achievements`, diskteki eski boş önbellekleri (`achievements: []` kalmış olanlar) geçersiz sayıp otomatik olarak taze veri çeker. Başarımı olmayan oyunlarda legendary'nin boş çıktısı (`No achievements found`) `supported: Some(false)` olarak zarifçe yakalanıp önbelleklenir ve UI'ın kilitlenmesi engellenir.
+    - Platin Kupa (`is_platinum = (total_achievements > 0 && user_unlocked >= total_achievements) || has_platinum_award` veya demo önizleme):
+      - Kütüphane araç çubuğunda `🏆 Platin` filtre çipi (sayı rozetli) ve sıralamada `Platin kupalılar` seçeneği.
+      - Platin filtresi seçildiğinde altın ışıltılı özel kategori tebrik afişi (`.plat-category-banner`).
+      - Portre kart çevresinde asil ve sabit sıcak altın hale (`box-shadow` aurası), periyodik zarif holografik ışık geçişi (`plat-shimmer-pass`, kartlar arası doğal sırayla parıldayan) ve hover anlık ışıma efekti.
+      - Sağ üstte parlak altın kurdele rozet (`.platinum-ribbon` + minik ışıltı `✨` — hover sırasında aksiyon butonlarını engellememesi için `opacity: 0` ile kaybolur).
+      - Detay çekmecesinde "Genel Bakış" ve "🏆 Başarımlar" sekmeleri, altın ilerleme çubuğu, kategori filtreleri (Tümü/Kazanılanlar/Kilitliler), nadirlik yüzdesi, XP hapları, doğrudan gömülü mağazada açan "Mağaza Başarımları" (`epicAchievementsUrl`) butonu ve test için anlık Platin Efekti Aç/Kapat toggle'ı yer alır.
+21. **3. Parti Başlatıcılar (EA App, Ubisoft Connect vb.) ve Hile Koruması (Anti-Cheat):**
+    - `legendary list` varsayılan olarak Origin/EA gibi 3. parti harici başlatıcılara devredilen oyunları listelemez. Bu oyunların katalogdan çekilmesi ve yerel önbelleğe (`metadata/*.json`) kaydedilmesi için `list -T --json` (`--third-party`) bayrağı zorunludur.
+    - 3. parti oyunların başlatılması: `installed.json` içinde yer almasalar bile `legendary launch <app> --origin` (EA App protocol URI: `link2ea://...`) veya `--ubisoft` (`uplay://...`) bayraklarıyla doğrudan tetiklenir.
+    - Detay çekmecesinde `customAttributes` ve bilinen oyun tanımları taranarak 3. parti başlatıcı (`EA App`, `Ubisoft Connect`, `Rockstar Games Launcher`) ve Hile Koruması (`BattlEye`, `Easy Anti-Cheat`, `Denuvo`, `Riot Vanguard`) rozet ve meta ızgarası kutucuğu olarak net bir şekilde sunulur.
+22. **EA App / 3. Parti Oyunların Başarım (Achievements) Durumu:**
+    - Epic Games Store'da 2021 öncesi çıkan veya harici başlatıcıya devredilen bazı EA oyunlarının (*Star Wars: Jedi Fallen Order*, *Star Wars Squadrons*, *Battlefront II* vb.) katalog metadata'sında (`metadata/<app>.json`) `"achievements": null` döner. Bu oyunların başarımları Epic Online Services (EOS) üzerinde kayıtlı DEĞİLDİR; doğrudan EA App / Origin hesabı üzerinden takip edilir.
+    - `legendary achievements` komutu metadata içinde `achievements` nesnesi olmayan oyunlarda Python `AttributeError: 'NoneType' object has no attribute 'achievements'` hatası verir. `commands.rs` içindeki `epic_get_achievements` bu hatayı yakalar (`AttributeError` / `NoneType`) ve `supported: Some(false)` olarak ele alır.
+    - Detay çekmecesinde 3. parti oyunda Epic başarımı bulunmadığında "Başarım Desteği Bulunmuyor" yerine `${partner.name} Başarımları` kartı gösterilir; başarımların EA App üzerinden takip edildiği belirtilerek doğrudan `${partner.name}'i Aç` eylemi verilir.
+    - Epic başarımı tanımlanmış diğer EA oyunları (*Need for Speed™ Heat*, *Payback*, *Deluxe*, *Apex Legends* vb.) ise hem toplam XP hem de başarımlarıyla standart başarım arayüzünde sorunsuz çalışır.
+23. **Gizli Başarımlar (Secret Achievements) ve Spoiler Koruması:**
+    - `legendary achievements` CLI çıktısı uninitiated durumdaki bazı gizli başarımları yanlışlıkla `hidden: false` olarak sınıflandırabilir veya kilitli olanlarda başlık/açıklamayı boş string (`""`) döndürebilir.
+    - `enrich_achievements_from_metadata` (Rust) ve `enrichAchievementsData` (Frontend JS) diskteki `%USERPROFILE%\.config\legendary\metadata\<app>.json` dosyasındaki `meta.achievements.achievements` kataloğunu tarayarak `hidden: true`, `is_base` bayraklarını düzeltir; boş olan `display_name`, `description`, `icon_link` alanlarını orijinal katalog verisiyle doldurur. İkili (dual) fallback mimarisi canlı çalışma ve dev ortamında anında düzeltmeyi garantiler.
+    - Frontend'de kilitli gizli başarımlar varsayılan olarak `🔒 Gizli Başarım` şeklinde gizlenir ve spoiler korumasına alınır. Kullanıcı karta veya `[👁️ Göster]` butonuna tıkladığında gerçek başlık, açıklama ve ikon anında açılır; tekrar tıklanırsa geri gizlenebilir. Zaten kazanılmış gizli başarımlar ise açık gösterilir ve yanında `[Gizli]` etiketi taşır.
+24. **Ana Oyun (Base Game) vs Ek Paketler (DLC), Platin Kupa & Kompakt Başarım UI:**
+    - Epic Games Store kuralına göre Platin Kupa, oyunun sadece **Ana Oyun (Base Game)** başarımları (%100, genellikle 1000 XP) tamamlandığında hak edilir. DLC / Ek paket başarımlarının tamamlanmamış olması Platin Kupayı engellemez.
+    - `models.rs` içindeki `consolidate()` metodu ve `commands.rs` içindeki `scan_achievements_summary` hem genel toplamı hem de `base_achievements` ve `base_unlocked` sayılarını tarar; `base_achievements > 0 && base_unlocked >= base_achievements` durumunda oyunu Platin Kupa olarak tesciller.
+    - **Ultra-Kompakt & Duyarlı UI Tasarımı:**
+      - Detay çekmecesindeki hantal çoklu kutular yerine ~55px'lik tek satır kompakt başlık kartı (`.ach-hero-compact`) kullanılır. Genel XP, mağaza linki, yenileme butonu ve tek satırda çift istatistik (`Genel: X/Y • 🎮 Ana Oyun: A/B`) yer alır.
+      - Kapsam (`Tümü`, `🎮 Ana Oyun`, `📦 Ek Paketler`) ve Durum filtreleri (`Tümü`, `Kazanılanlar`, `Kilitliler`, `Gizli`) ince hap şeritleri (`.ach-scope-strip`, `.ach-status-strip`) olarak dizilir.
+      - Başarım listesi (`.ach-list`) sabit piksel yerine dinamik `max-height: calc(100vh - 275px)` ile 1080p ve dizüstü ekranlarına kusursuz uyum sağlar; dikey taşma engellenir. Test butonu arayüzden tamamen temizlenmiştir.
 
 ## 7. Test stratejisi
 
@@ -140,12 +188,21 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`
 
 Biten: Faz 0 (kurulum/auth/kütüphane) • Faz 1 (başlatma: online→offline fallback) •
 Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi:
+- Özel modern çerçevesiz pencere çubuğu (frameless titlebar + Windows stilinde simge, büyüt, kapat butonları)
+- Gelişmiş "Son Oynanan" & akıllı Hero Spotlight önceliklendirmesi (yalnızca kurulu & gerçekten oynanmış oyunlar)
 - Sinematik Hero Spotlight (son oynanan/öne çıkan dev afiş, hızlı başlat, canlı istatistikler)
 - Hızlı filtre çipleri (Tüm Oyunlar, Kurulu, Favoriler, Güncellemeler) + Ctrl+F kısayolu
 - S/M/L dinamik kart boyutu seçici (büyük poster desteği)
 - Çakışmasız ambient glow'lu portre kartlar ve canlı taban indirme progress barı
 - Sağdan kayan sinematik detay çekmecesi (Drawer) ve modern metadata ızgarası
-- Gömülü webview mağaza entegrasyonu (doğrudan oyunun `/p/<slug>` mağaza sayfasını launcher içinde açma)
+- Dinamik katalog özeti & doğrudan yerleşik mağazada oyun sayfasını açma entegrasyonu
+- Epic Games Başarım Sistemi & Platin Kupa (100% Tamamlama) Altın Parıltı / Shimmer Efekti
+- Detay çekmecesinde sekmeli Başarımlar görünümü, rozetler, XP, nadirlik ve kilit filtreleri
+- 3. parti başlatıcı entegrasyonu (`legendary list -T` ile EA App, Ubisoft Connect oyunları, `--origin`/`--ubisoft` ile doğrudan çalıştırma)
+- Detay çekmecesinde ve meta ızgarasında 3. Parti Başlatıcı & Hile Önleme (Anti-Cheat) rozet ve bilgi alanları
+- Gizli başarımların katalog metadatasından taranması ve tıklanabilir spoiler koruması (`[👁️ Göster]` / `[👁️ Gizle]`)
+- Ana Oyun (Base Game) vs Ek Paketler (DLC) ayrımı, Platin Kupa kuralı (ana oyun tamamlanması) ve Kapsam filtreleri (`Tüm Paketler`, `🎮 Ana Oyun - 🏆 Platin`, `📦 Ek Paketler`)
+- 1080p ve dizüstü monitörleri için optimize edilmiş ultra-kompakt Başarım Paneli (`.ach-hero-compact`, tek satır çift istatistik, dinamik `calc(100vh - 275px)` duyarlı liste), çift katmanlı gizli başarım onarımı (Rust + Frontend) ve test butonunun kaldırılması
 Sıradaki adaylar: indirme hızı/ETA göstergesi, oyun güncelleme akışı (`update`),
 bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, EGL içe aktarma UI'ı, paketleme (`tauri build`).
 

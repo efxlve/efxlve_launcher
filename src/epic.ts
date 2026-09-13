@@ -140,6 +140,14 @@ export function epicStoreSearch(title: string): string {
   return `https://store.epicgames.com/browse?q=${encodeURIComponent(title)}`;
 }
 
+export function epicAchievementsUrl(title: string, appName?: string): string {
+  if (appName?.toLowerCase() === "carnation") {
+    return "https://store.epicgames.com/achievements/rainbow-six-siege-x";
+  }
+  const slug = toEpicSlug(title);
+  return slug ? `https://store.epicgames.com/achievements/${slug}` : EPIC_STORE_URL;
+}
+
 export function epicVersion(g: EpicGame): string {
   return g.asset_infos?.["Windows"]?.build_version || "—";
 }
@@ -169,6 +177,163 @@ export function isNonGameContent(g: EpicGame): boolean {
     const p = (c as { path?: unknown } | null)?.path;
     return p === "mods" || (typeof p === "string" && UE_CATEGORY_PATHS.includes(p));
   });
+}
+
+export interface ThirdPartyLauncherInfo {
+  name: string;
+  type: "ea" | "ubisoft" | "rockstar" | "gog" | "other";
+  shortName: string;
+}
+
+/** 3. parti başlatıcı tespiti (EA App, Ubisoft Connect, Rockstar Games vb.) */
+export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPartyLauncherInfo | null {
+  if (!g?.metadata) return null;
+  const attrs = (g.metadata.customAttributes as Record<string, { value?: string }>) || {};
+  const tpApp = attrs.ThirdPartyManagedApp?.value?.toLowerCase() || "";
+  const tpProv = attrs.ThirdPartyManagedProvider?.value?.toLowerCase() || "";
+  const pType = attrs.partnerLinkType?.value?.toLowerCase() || "";
+  const reg = attrs.RegistryPath?.value?.toLowerCase() || "";
+  const dev = String(g.metadata.developer || "").toLowerCase();
+  const folder = attrs.FolderName?.value?.toLowerCase() || "";
+
+  if (
+    tpApp.includes("origin") ||
+    tpApp.includes("ea app") ||
+    pType === "ea" ||
+    pType === "origin" ||
+    reg.includes("ea games") ||
+    reg.includes("respawn")
+  ) {
+    return { name: "EA App", type: "ea", shortName: "EA App" };
+  }
+  if (
+    tpProv.includes("ubisoft") ||
+    pType.includes("ubisoft") ||
+    reg.includes("ubisoft") ||
+    tpApp.includes("ubisoft") ||
+    (dev === "ubisoft" && (attrs.partnerLinkId || pType))
+  ) {
+    return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
+  }
+  if (reg.includes("rockstar games") || tpApp.includes("rockstar") || (dev.includes("rockstar") && attrs.RegistryLocation)) {
+    return { name: "Rockstar Games Launcher", type: "rockstar", shortName: "Rockstar" };
+  }
+  if (folder.includes("goggalaxy") || tpApp.includes("gog")) {
+    return { name: "GOG GALAXY", type: "gog", shortName: "GOG" };
+  }
+  if (attrs.ThirdPartyManagedApp?.value) {
+    const val = attrs.ThirdPartyManagedApp.value;
+    return { name: val, type: "other", shortName: val };
+  }
+  return null;
+}
+
+/** Hile koruma sistemi (Anti-Cheat) tespiti */
+export function getAntiCheat(g: EpicGame | undefined | null): string | null {
+  if (!g) return null;
+  const appName = g.app_name?.toLowerCase() || "";
+  const title = (g.app_title || "").toLowerCase();
+  const attrs = (g.metadata?.customAttributes as Record<string, { value?: string }>) || {};
+  const procNames = attrs.ProcessNames?.value || "";
+  const extraArgs = Object.entries(attrs)
+    .filter(([k]) => k.startsWith("extraLaunchOption") || k.startsWith("LaunchOption"))
+    .map(([, v]) => v?.value || "")
+    .join(" ");
+
+  // 1. Process adları ve argümanlar
+  const combined = (procNames + " " + extraArgs + " " + (attrs.RequirementsJson?.value || "")).toLowerCase();
+  if (combined.includes("battleye") || combined.includes("beservice")) {
+    return "BattlEye";
+  }
+  if (combined.includes("easyanticheat") || combined.includes("easy anti-cheat") || combined.includes("eac.exe")) {
+    return "Easy Anti-Cheat";
+  }
+  if (combined.includes("denuvo")) {
+    return "Denuvo Anti-Tamper";
+  }
+  if (combined.includes("vanguard")) {
+    return "Riot Vanguard";
+  }
+
+  // 2. Popüler rekabetçi ve bilinen oyunlar
+  if (appName === "carnation" || title.includes("rainbow six siege")) {
+    return "BattlEye";
+  }
+  if (appName === "babyblue" || title.includes("battlefield 2042")) {
+    return "Easy Anti-Cheat";
+  }
+  if (appName === "makalu" || title.includes("apex legends")) {
+    return "Easy Anti-Cheat";
+  }
+  if (appName.toLowerCase() === "fortnite" || title === "fortnite") {
+    return "Easy Anti-Cheat / BattlEye";
+  }
+  if (title.includes("destiny 2")) {
+    return "BattlEye";
+  }
+  if (title.includes("ark: survival evolved") || title.includes("ark: survival ascended")) {
+    return "BattlEye";
+  }
+  if (title.includes("fall guys")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("dead by daylight")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("hell let loose")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("the finals")) {
+    return "Easy Anti-Cheat";
+  }
+  if (appName === "saffron" || title.includes("ghost recon breakpoint")) {
+    return "BattlEye";
+  }
+  if (title.includes("ghost recon wildlands")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("for honor")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("the division 2")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("paladins") || title.includes("smite") || title.includes("rogue company")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("war thunder")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("elden ring")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title === "squad" || title.startsWith("squad ")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("hunt: showdown") || title.includes("hunt showdown")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("chivalry 2")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("conan exiles") || title.includes("dayz")) {
+    return "BattlEye";
+  }
+  if (appName === "bobcat" || title.includes("star wars squadrons") || title.includes("star wars: squadrons")) {
+    return "Easy Anti-Cheat";
+  }
+
+  // 3. customAttributes genel kontrolü
+  for (const [k, v] of Object.entries(attrs)) {
+    const val = (v?.value || "").toLowerCase();
+    const key = k.toLowerCase();
+    if (key.includes("battleye") || val.includes("battleye")) return "BattlEye";
+    if (key.includes("easyanticheat") || val.includes("easyanticheat")) return "Easy Anti-Cheat";
+    if (key.includes("denuvo") || val.includes("denuvo")) return "Denuvo Anti-Tamper";
+    if (key.includes("vanguard") || val.includes("vanguard")) return "Riot Vanguard";
+  }
+
+  return null;
 }
 
 export interface EpicSummary {
@@ -253,6 +418,66 @@ export const epicUninstallGame = (appName: string, keepFiles = false) =>
 export const epicLaunchGame = (appName: string) =>
   invoke<string>("epic_launch_game", { appName });
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
-export const epicSetInstallDir = (path: string | null) =>
-  invoke<EpicSettings>("epic_set_install_dir", { path });
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");
+export const epicSetInstallDir = (dir: string | null) =>
+  invoke<EpicSettings>("epic_set_install_dir", { dir });
+
+/* ---------- Başarımlar (Achievements) ---------- */
+
+export interface EpicAchievementTier {
+  name: string;
+  hexColor: string;
+}
+
+export interface EpicAchievementRarity {
+  percent?: number;
+}
+
+export interface EpicAchievementItem {
+  name: string;
+  display_name: string;
+  description: string;
+  xp: number;
+  unlocked: boolean;
+  progress: number;
+  unlock_date: string | null;
+  icon_id: string;
+  icon_link: string;
+  tier?: EpicAchievementTier;
+  rarity?: EpicAchievementRarity;
+  hidden: boolean;
+  is_base: boolean;
+}
+
+export interface EpicAchievementsData {
+  achievements: EpicAchievementItem[];
+  hidden: EpicAchievementItem[];
+  user_unlocked: number;
+  user_xp: number;
+  total_achievements: number;
+  total_xp: number;
+  is_platinum: boolean;
+  base_achievements?: number;
+  base_unlocked?: number;
+  base_xp?: number;
+  base_user_xp?: number;
+}
+
+export interface EpicAchievementSummary {
+  app_name: string;
+  user_unlocked: number;
+  total_achievements: number;
+  user_xp: number;
+  total_xp: number;
+  is_platinum: boolean;
+  supported: boolean;
+  base_achievements?: number;
+  base_unlocked?: number;
+}
+
+export const epicGetAchievements = (appName: string, forceRefresh = false) =>
+  invoke<EpicAchievementsData>("epic_get_achievements", { appName, forceRefresh });
+
+export const epicGetAchievementsSummary = () =>
+  invoke<Record<string, EpicAchievementSummary>>("epic_get_achievements_summary");
+

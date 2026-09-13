@@ -158,8 +158,12 @@ async fn show_store_view(
     let window = app
         .get_window("main")
         .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    let pos = Position::Logical(LogicalPosition::new(x, y));
+    let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
     if !recreate {
         if let Some(v) = store_views(&window).into_iter().next() {
+            let _ = v.set_position(pos);
+            let _ = v.set_size(size);
             v.navigate(parsed).map_err(|e| e.to_string())?;
             v.show().map_err(|e| e.to_string())?;
             return Ok("odaklandı".into());
@@ -174,8 +178,6 @@ async fn show_store_view(
         format!("epic-store-view-{seq}"),
         WebviewUrl::External(parsed),
     );
-    let pos = Position::Logical(LogicalPosition::new(x, y));
-    let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
     // add_child ana thread'e iş postalar ve bitmesini bekler; olası takılmada
     // arayüzün kilitlenmemesi için ayrı thread + zaman aşımı ile koşturulur.
     let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
@@ -228,6 +230,53 @@ fn open_folder(path: String) -> Result<String, String> {
     let res = std::process::Command::new("xdg-open").arg(&p).spawn();
     res.map(|_| "Klasör açıldı".to_string())
         .map_err(|e| format!("klasör açılamadı: {e}"))
+}
+
+#[tauri::command]
+fn app_minimize(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    window.minimize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn app_toggle_maximize(app: AppHandle) -> Result<bool, String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    let is_max = window.is_maximized().unwrap_or(false);
+    if is_max {
+        window.unmaximize().map_err(|e| e.to_string())?;
+        Ok(false)
+    } else {
+        window.maximize().map_err(|e| e.to_string())?;
+        Ok(true)
+    }
+}
+
+#[tauri::command]
+fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    window.is_maximized().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn app_close(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    window.close().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+    window.set_decorations(decorations).map_err(|e| e.to_string())
 }
 
 /// Demo kurulum: ilerlemeyi "download-progress" event'i ile yayınlar.
@@ -338,6 +387,9 @@ fn main() {
                     }
                 }
             }
+            if let Some(win) = app.get_window("main") {
+                let _ = win.set_decorations(false);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -346,6 +398,11 @@ fn main() {
             install_game,
             launch_game,
             uninstall_game,
+            app_minimize,
+            app_toggle_maximize,
+            app_is_maximized,
+            app_close,
+            app_set_decorations,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
             legendary::commands::epic_status,
@@ -353,6 +410,8 @@ fn main() {
             legendary::commands::epic_list_installed,
             legendary::commands::epic_list_skipped,
             legendary::commands::epic_cached_library,
+            legendary::commands::epic_get_achievements,
+            legendary::commands::epic_get_achievements_summary,
             legendary::commands::epic_login_with_code,
             legendary::commands::epic_import_egl,
             legendary::commands::epic_logout,
