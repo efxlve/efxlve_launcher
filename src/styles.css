@@ -22,7 +22,32 @@
   --glow-ambient: 0 14px 34px -4px rgba(0, 0, 0, 0.85), 0 0 26px -2px rgba(99, 102, 241, 0.32);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* --- Global Modern Özel Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -35,19 +60,24 @@ body {
 
 #app { display: flex; flex-direction: column; height: 100vh; }
 
-/* --- Titlebar (Epic tarzı üst bar) --- */
+/* --- Titlebar (Özel modern pencere çubuğu) --- */
 #titlebar {
-  display: flex; align-items: center; gap: 18px;
+  display: flex; align-items: center; gap: 14px;
   background: var(--bg2); border-bottom: 1px solid var(--border);
-  padding: 8px 18px; flex-shrink: 0; z-index: 10;
+  padding: 0 0 0 16px; height: 42px; flex-shrink: 0; z-index: 10;
+  -webkit-app-region: drag;
 }
-.logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: 3px; white-space: nowrap; }
+.logo {
+  display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800;
+  letter-spacing: 2.5px; white-space: nowrap; -webkit-app-region: drag; cursor: default;
+}
 .logo span { color: #fff; }
-.logo svg { width: 20px; height: 20px; color: var(--primary); }
-#nav { display: flex; align-items: center; gap: 4px; flex: 1; }
+.logo svg { width: 19px; height: 19px; color: var(--primary); }
+#nav { display: flex; align-items: center; gap: 4px; flex: 1; -webkit-app-region: drag; }
 #nav button {
+  -webkit-app-region: no-drag;
   background: none; border: none; color: var(--muted);
-  font-size: 13px; padding: 7px 12px; cursor: pointer;
+  font-size: 13px; padding: 6px 12px; cursor: pointer;
   border-bottom: 2px solid transparent; letter-spacing: 0.2px;
   font-family: inherit; white-space: nowrap;
   display: flex; align-items: center; gap: 7px; border-radius: 6px;
@@ -61,6 +91,20 @@ body {
 #nav button.profile:hover { color: #fff; }
 #nav button svg { width: 16px; height: 16px; transition: transform 0.18s ease, color 0.18s ease; }
 #nav button.active svg { color: var(--primary); transform: scale(1.05); }
+
+/* Pencere Kontrol Butonları (Windows Başlık Çubuğu) */
+.win-controls {
+  display: flex; align-items: stretch; height: 100%; margin-left: 8px; -webkit-app-region: no-drag;
+}
+.win-btn {
+  background: none; border: none; color: #a1a1aa; width: 44px; height: 100%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  padding: 0; transition: background 0.15s ease, color 0.15s ease;
+}
+.win-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.win-btn:active { background: rgba(255, 255, 255, 0.14); }
+.win-btn.win-close:hover { background: #e81123; color: #ffffff; }
+.win-btn.win-close:active { background: #bf0f1d; }
 
 /* Üst bar mikro animasyonlar */
 #nav button[data-act="open-store"]:hover svg { animation: nav-wiggle 0.4s ease; color: var(--text); }
@@ -376,11 +420,17 @@ button { font-family: inherit; }
 .drawer {
   background: var(--bg2); border-left: 1px solid var(--border);
   width: 480px; max-width: 92vw; height: 100vh;
-  display: flex; flex-direction: column; overflow-y: auto;
+  display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;
   box-shadow: -12px 0 40px rgba(0,0,0,0.85);
   animation: drawer-slide 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
+.drawer::-webkit-scrollbar { width: 5px; }
+.drawer::-webkit-scrollbar-track { background: transparent; }
+.drawer::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 10px; }
+.drawer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
 @keyframes drawer-slide { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 .drawer-cover {
@@ -413,6 +463,8 @@ button { font-family: inherit; }
 }
 .status-pill.ok { color: var(--green); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.1); }
 .status-pill.warn { color: var(--yellow); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.1); }
+.status-pill.partner { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.1); }
+.status-pill.anticheat { color: #34d399; border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.1); }
 
 .drawer-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
 .drawer-actions-row { display: flex; gap: 8px; }
@@ -421,8 +473,20 @@ button { font-family: inherit; }
 .drawer-desc {
   color: #c0c1cf; font-size: 13px; line-height: 1.6;
   background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; max-height: 120px; overflow-y: auto;
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; max-height: 130px; overflow-y: auto;
 }
+.drawer-desc p { margin: 0 0 6px; }
+.drawer-desc p:last-child { margin-bottom: 0; }
+.drawer-desc.overview strong { color: #fff; font-weight: 700; }
+.drawer-store-hint {
+  font-size: 12px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 8px; margin-top: 8px;
+}
+.drawer-store-hint a {
+  color: #a5b4fc; font-weight: 600; text-decoration: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.drawer-store-hint a:hover { text-decoration: underline; color: #fff; }
 
 /* Modern Metadata Kutucukları */
 .drawer-meta-grid {
@@ -490,3 +554,563 @@ button { font-family: inherit; }
 /* Utility */
 .ok-text { color: var(--green); font-weight: 600; }
 .upd { color: var(--yellow); font-weight: 600; }
+
+/* --- Platin Kupa (%100 Tamamlama) Altın Rozet & Holografik Parıltı Efekti --- */
+.pcard.platinum {
+  border-color: rgba(251, 191, 36, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6),
+              0 0 16px rgba(245, 158, 11, 0.35),
+              0 0 32px rgba(217, 119, 6, 0.15);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s ease,
+              box-shadow 0.24s ease;
+}
+.pcard.platinum:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: #ffd700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7),
+              0 0 24px rgba(250, 204, 21, 0.5),
+              0 0 45px rgba(245, 158, 11, 0.25);
+}
+
+/* Koleksiyon kartı holografik ışık geçişi (ağırbaşlı, zarif ve sakin altın parıltı) */
+.pcard.platinum::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.04) 44%,
+    rgba(255, 235, 150, 0.38) 50%,
+    rgba(255, 255, 255, 0.08) 56%,
+    transparent 65%
+  );
+  transform: translateX(-140%) rotate(12deg);
+  pointer-events: none;
+  z-index: 2;
+  animation: plat-shimmer-pass 10s ease-in-out infinite;
+}
+
+/* Kartlar aynı anda değil, sırayla parıldasın */
+.pcard.platinum:nth-child(even)::after {
+  animation-delay: 5s;
+}
+.pcard.platinum:nth-child(3n)::after {
+  animation-delay: 2.5s;
+}
+
+@keyframes plat-shimmer-pass {
+  0%, 60% {
+    transform: translateX(-140%) rotate(12deg);
+  }
+  90%, 100% {
+    transform: translateX(140%) rotate(12deg);
+  }
+}
+
+.pcard.platinum:hover::after {
+  animation: plat-hover-glint 1.2s ease-out forwards;
+}
+
+@keyframes plat-hover-glint {
+  from { transform: translateX(-140%) rotate(12deg); }
+  to { transform: translateX(140%) rotate(12deg); }
+}
+
+.platinum-ribbon {
+  position: absolute; top: 10px; right: 10px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: linear-gradient(135deg, #ffe066 0%, #f59e0b 60%, #b45309 100%);
+  color: #1a0f00; font-size: 10px; font-weight: 850;
+  padding: 3px 9px; border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 12px rgba(251, 191, 36, 0.45);
+  pointer-events: none; text-transform: uppercase; letter-spacing: 0.5px;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.platinum-ribbon svg {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+.pcard:hover .platinum-ribbon {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.ribbon-sparkle {
+  font-size: 11px;
+  display: inline-block;
+  animation: plat-sparkle-twinkle 3.5s ease-in-out infinite;
+}
+@keyframes plat-sparkle-twinkle {
+  0%, 70%, 100% { transform: scale(1); opacity: 0.85; }
+  85% { transform: scale(1.3) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 5px #fff); }
+}
+
+.spinner {
+  width: 26px; height: 26px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Detay Çekmecesi Sekmeleri --- */
+.drawer-tabs {
+  display: flex; gap: 6px; border-bottom: 1px solid var(--border);
+  margin-bottom: 18px; padding-bottom: 4px;
+}
+.drawer-tab {
+  background: none; border: none; color: var(--muted);
+  font-size: 13px; font-weight: 700; padding: 8px 14px;
+  border-radius: 8px; cursor: pointer; transition: all 0.16s ease;
+  display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+}
+.drawer-tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.drawer-tab.active {
+  background: rgba(99, 102, 241, 0.12); color: #fff;
+  border-bottom: 2px solid var(--primary);
+}
+
+/* --- Başarımlar Görünümü (Ultra-Kompakt & Duyarlı) --- */
+.ach-hero-compact {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.ach-hero-compact.platinum {
+  border-color: rgba(250, 204, 21, 0.45);
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(0, 0, 0, 0.45));
+  box-shadow: 0 2px 14px rgba(251, 191, 36, 0.18);
+}
+.ach-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ach-hero-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ach-pct-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.ach-hero-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ach-xp-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.ach-tool-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+.ach-tool-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.ach-progress-bar.slim {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.ach-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+.ach-progress-fill.gold {
+  background: linear-gradient(90deg, #ffd700, #f59e0b);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+.ach-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #a1a1aa;
+  flex-wrap: wrap;
+}
+.ach-stat-genel strong {
+  color: #fff;
+}
+.ach-stat-dot {
+  color: #52525b;
+}
+.ach-stat-base {
+  color: #d4d4d8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ach-stat-base strong {
+  color: #fbbf24;
+}
+.ach-stat-base.done {
+  color: #34d399;
+  font-weight: 600;
+}
+.ach-stat-base.done strong {
+  color: #34d399;
+}
+
+/* --- Filtre Çubukları (Kapsam & Durum) --- */
+.ach-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.ach-scope-strip {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ach-scope-pill {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.ach-scope-pill:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.ach-scope-pill.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+}
+.scope-plat-dot {
+  font-size: 11px;
+}
+.ach-status-strip {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.ach-status-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ach-status-pill:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.ach-status-pill.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+  font-weight: 700;
+}
+
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100vh - 275px);
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251, 191, 36, 0.35) rgba(0, 0, 0, 0.25);
+}
+.ach-list::-webkit-scrollbar {
+  width: 5px;
+}
+.ach-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+}
+.ach-list::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.35);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+.ach-list::-webkit-scrollbar-thumb:hover {
+  background: #ffd700;
+}
+.ach-item {
+  display: flex; gap: 12px; align-items: center;
+  background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; transition: border-color 0.15s;
+}
+.ach-item.unlocked {
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+}
+.ach-item.locked {
+  opacity: 0.65;
+}
+.ach-icon-box {
+  position: relative; width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
+  overflow: hidden; background: #12131a; border: 2px solid rgba(255,255,255,0.1);
+}
+.ach-icon-box.gold { border-color: #ffd700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.35); }
+.ach-icon-box.silver { border-color: #afb4bd; }
+.ach-icon-box.bronze { border-color: #ca512b; }
+.ach-icon-box.platinum { border-color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.ach-icon-box img { width: 100%; height: 100%; object-fit: cover; }
+.ach-icon-box .ach-lock-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+
+.ach-details { flex: 1; min-width: 0; }
+.ach-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.ach-item.locked .ach-title { color: #d4d4d8; }
+.ach-desc { font-size: 11.5px; color: var(--muted); line-height: 1.4; margin-bottom: 4px; }
+.ach-meta-row { display: flex; gap: 8px; align-items: center; font-size: 10.5px; }
+.ach-date { color: #a1a1aa; }
+.ach-rarity { color: #a5b4fc; background: rgba(99, 102, 241, 0.1); padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+.ach-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.ach-xp-pill {
+  font-size: 11px; font-weight: 700; color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12); padding: 2px 7px; border-radius: 6px;
+}
+.ach-check { color: var(--green); font-size: 16px; font-weight: bold; }
+
+/* --- Gizli Başarımlar (Secret Achievements) --- */
+.ach-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+}
+.ach-item.hidden-secret {
+  cursor: pointer;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.015);
+  transition: all 0.2s ease;
+}
+.ach-item.hidden-secret:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+.ach-item.revealed-secret {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(0, 0, 0, 0.3));
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+}
+.ach-mystery-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  background: radial-gradient(circle, #27272a 0%, #18181b 100%);
+}
+.ach-reveal-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.ach-reveal-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.ach-reveal-btn.revealed {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
+.ach-reveal-btn.revealed:hover {
+  background: rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+.ach-badge-secret {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.ach-badge-dlc {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+
+
+/* --- Platin Kupa Filtresi & Kategori Başlığı --- */
+.chip[data-val="platinum"] {
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+}
+.chip[data-val="platinum"]:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+}
+.chip[data-val="platinum"].active {
+  background: linear-gradient(135deg, #ffd700, #f59e0b);
+  color: #1a0f00;
+  border-color: #ffd700;
+  box-shadow: 0 2px 14px rgba(251, 191, 36, 0.45);
+}
+.chip[data-val="platinum"] .chip-cnt {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+.chip[data-val="platinum"].active .chip-cnt {
+  background: rgba(0, 0, 0, 0.25);
+  color: #1a0f00;
+  font-weight: 800;
+}
+
+.plat-category-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(180, 83, 9, 0.05) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(251, 191, 36, 0.1);
+}
+.plat-banner-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.plat-banner-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 8px rgba(255, 215, 0, 0.5));
+}
+.plat-banner-info {
+  flex: 1;
+}
+.plat-banner-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffd700;
+  margin-bottom: 3px;
+  letter-spacing: -0.2px;
+}
+.plat-banner-desc {
+  font-size: 13px;
+  color: #d1d5db;
+  line-height: 1.4;
+}
+.plat-banner-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 10px;
+  padding: 8px 18px;
+  min-width: 90px;
+}
+.plat-banner-stat .val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffd700;
+}
+.plat-banner-stat .lbl {
+  font-size: 10px;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+

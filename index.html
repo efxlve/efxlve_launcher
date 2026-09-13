@@ -7,8 +7,8 @@
   </head>
   <body>
     <div id="app">
-      <header id="titlebar">
-        <div class="logo"><i data-lucide="gamepad-2"></i><span>EFXLVE</span></div>
+      <header id="titlebar" data-tauri-drag-region>
+        <div class="logo" data-tauri-drag-region><i data-lucide="gamepad-2"></i><span>EFXLVE</span></div>
         <nav id="nav">
           <button data-act="open-store"><i data-lucide="store"></i><span>Mağaza</span></button>
           <button data-view="library" class="active"><i data-lucide="layout-grid"></i><span>Kütüphane</span></button>
@@ -16,6 +16,17 @@
           <button id="account" class="profile" data-act="open-profile" title="Epic profili"><i data-lucide="circle-user-round"></i><span>Giriş yapılmadı</span></button>
           <button data-view="settings" class="right" title="Ayarlar"><i data-lucide="settings"></i></button>
         </nav>
+        <div class="win-controls">
+          <button class="win-btn" data-act="win-minimize" title="Simge Durumuna Küçült">
+            <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+          </button>
+          <button class="win-btn" data-act="win-maximize" title="Ekranı Kapla">
+            <svg id="win-max-icon" width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          </button>
+          <button class="win-btn win-close" data-act="win-close" title="Kapat">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M1 1l8 8M9 1L1 9"/></svg>
+          </button>
+        </div>
       </header>
       <main id="content">
         <section id="view"></section>

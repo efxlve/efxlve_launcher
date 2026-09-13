@@ -18,6 +18,9 @@ import {
   epicCancelDownload,
   epicDefaultInstallDir,
   epicEnsureBinary,
+  epicAchievementsUrl,
+  epicGetAchievements,
+  epicGetAchievementsSummary,
   epicGetSettings,
   epicImportEgl,
   epicInstallGame,
@@ -33,17 +36,22 @@ import {
   epicStorePageUrl,
   epicStoreSearch,
   epicUninstallGame,
+  getAntiCheat,
+  getThirdPartyLauncher,
   isNotAuth,
   summarize,
   type CachedLibrary,
   type DownloadCancelledEvent,
   type DownloadFailedEvent,
+  type EpicAchievementSummary,
+  type EpicAchievementsData,
   type EpicGame,
   type EpicSettings,
   type EpicSummary,
   type LibraryEvent,
   type SetupEvent,
   type SetupStatus,
+  type ThirdPartyLauncherInfo,
 } from "./epic";
 
 /* ---------- Tipler ---------- */
@@ -186,8 +194,8 @@ let epicSyncNote = "";
 
 /* ---------- Epic kütüphane görünümü (filtre/sıralama/boyut) ---------- */
 
-type EpicFilter = "all" | "installed" | "fav" | "updates";
-type EpicSort = "recent" | "alpha" | "installed" | "updates";
+type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum";
+type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
 type EpicViewMode = "grid" | "list";
 type CardSize = "compact" | "normal" | "large";
 
@@ -197,9 +205,6 @@ let epicViewMode: EpicViewMode = "grid";
 let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
 
-const FAV_KEY = "efxlve-favorites";
-const RECENT_KEY = "efxlve-recent";
-
 function loadStrSet(key: string): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as string[]);
@@ -207,6 +212,25 @@ function loadStrSet(key: string): Set<string> {
     return new Set();
   }
 }
+
+/* ---------- Başarımlar Durumu ---------- */
+let epicAchSummaries: Record<string, EpicAchievementSummary> = {};
+const DEMO_PLAT_KEY = "efxlve-demo-platinum";
+let demoPlatinumApps: Set<string> = loadStrSet(DEMO_PLAT_KEY);
+let loadedAchievements: Map<string, EpicAchievementsData> = new Map();
+let loadingAchFor: string | null = null;
+let activeDrawerTab: "overview" | "achievements" = "overview";
+let activeAchScope: "all" | "base" | "dlc" = "all";
+let activeAchFilter: "all" | "unlocked" | "locked" | "hidden" = "all";
+const revealedAchievements: Set<string> = new Set();
+let currentModalAppName: string | null = null;
+
+function isAppPlatinum(appName: string): boolean {
+  return Boolean(demoPlatinumApps.has(appName) || (epicAchSummaries[appName]?.is_platinum));
+}
+
+const FAV_KEY = "efxlve-favorites";
+const RECENT_KEY = "efxlve-recent";
 
 const epicFav: Set<string> = loadStrSet(FAV_KEY);
 let epicRecent: string[] = [...loadStrSet(RECENT_KEY)].slice(0, 8);
@@ -218,14 +242,19 @@ function toggleFav(appName: string): void {
   render();
 }
 
+function pruneRecent(): void {
+  epicRecent = epicRecent.filter((id) =>
+    epicSummaries.some((s) => s.appName === id && s.installed),
+  );
+  localStorage.setItem(RECENT_KEY, JSON.stringify(epicRecent));
+}
+
 function pushRecent(appName: string): void {
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (!s || !s.installed) return;
   epicRecent = [appName, ...epicRecent.filter((x) => x !== appName)].slice(0, 8);
   localStorage.setItem(RECENT_KEY, JSON.stringify(epicRecent));
-  const recentEl = document.getElementById("recent");
-  if (recentEl) {
-    const s = epicSummaries.find((x) => x.appName === appName);
-    recentEl.textContent = `Son: ${s ? s.title : appName}`;
-  }
+  updateChrome();
 }
 
 function rawOf(appName: string): EpicGame | undefined {
@@ -270,9 +299,16 @@ function updateChrome(): void {
     acc.classList.toggle("logged", !!epicAccount);
   }
   const recentEl = document.getElementById("recent");
-  if (recentEl && epicRecent.length > 0) {
-    const s = epicSummaries.find((x) => x.appName === epicRecent[0]);
-    recentEl.textContent = `Son: ${s ? s.title : epicRecent[0]}`;
+  if (recentEl) {
+    const lastPlayedInstalled = epicRecent.find((id) =>
+      epicSummaries.some((x) => x.appName === id && x.installed),
+    );
+    if (lastPlayedInstalled) {
+      const s = epicSummaries.find((x) => x.appName === lastPlayedInstalled);
+      recentEl.textContent = `Son: ${s ? s.title : lastPlayedInstalled}`;
+    } else {
+      recentEl.textContent = "Son: —";
+    }
   }
 }
 
@@ -337,11 +373,11 @@ window.addEventListener("resize", () => {
   window.clearTimeout(storeResizeTimer);
   storeResizeTimer = window.setTimeout(() => {
     if (storeVisible) {
-      invoke<string>("show_store_view", { ...storeRect(), url: lastStoreUrl, recreate: true }).catch(
+      invoke<string>("show_store_view", { ...storeRect(), url: lastStoreUrl, recreate: false }).catch(
         () => undefined,
       );
     }
-  }, 300);
+  }, 50);
 });
 
 let query = "";
@@ -589,14 +625,36 @@ async function refreshEpic(): Promise<void> {
     epicAccount = cached.account;
     epicAccountId = cached.accountId;
     epicSummaries = summarize(cached.games, cached.installed, cached.skipped);
+    pruneRecent();
     epicGamesRaw = cached.games;
     epicPhase = "library";
     render();
+    void loadEpicAchSummaries();
     void syncEpicLibrary(false);
   } catch (e) {
     epicPhase = "error";
     epicError = String(e);
     render();
+  }
+}
+
+async function loadEpicAchSummaries(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    epicAchSummaries = await epicGetAchievementsSummary();
+    if (view === "library") render();
+  } catch (e) {
+    console.warn("Başarım özetleri alınamadı:", e);
+  }
+}
+
+function fmtAchDate(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return iso;
   }
 }
 
@@ -615,10 +673,12 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
       epicListSkipped(),
     ]);
     epicSummaries = summarize(egames, einstalled, eskipped);
+    pruneRecent();
     epicGamesRaw = egames;
     epicSkippedCount = eskipped.length;
     epicSyncNote = "";
     epicBusyMsg = "";
+    void loadEpicAchSummaries();
     if (manual) toast("Kütüphane güncellendi", "ok");
   } catch (e) {
     if (isNotAuth(e)) {
@@ -704,9 +764,12 @@ function epicVisibleSummaries(): EpicSummary[] {
     if (epicFilter === "installed" && !s.installed) return false;
     if (epicFilter === "fav" && !epicFav.has(s.appName)) return false;
     if (epicFilter === "updates" && !s.updateAvailable) return false;
+    if (epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
     return s.title.toLocaleLowerCase("tr").includes(q);
   });
   const recentIdx = (id: string): number => {
+    const isInst = epicSummaries.some((s) => s.appName === id && s.installed);
+    if (!isInst) return Number.MAX_SAFE_INTEGER;
     const i = epicRecent.indexOf(id);
     return i === -1 ? Number.MAX_SAFE_INTEGER : i;
   };
@@ -720,6 +783,10 @@ function epicVisibleSummaries(): EpicSummary[] {
       return [...list].sort(
         (a, b) => Number(b.updateAvailable) - Number(a.updateAvailable) || byTitle(a, b),
       );
+    case "platinum":
+      return [...list].sort(
+        (a, b) => Number(isAppPlatinum(b.appName)) - Number(isAppPlatinum(a.appName)) || byTitle(a, b),
+      );
     default:
       return [...list].sort((a, b) => recentIdx(a.appName) - recentIdx(b.appName));
   }
@@ -732,17 +799,57 @@ function epicArt(s: EpicSummary): string {
   return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52)">🎮</div>`;
 }
 
+function getDailyGame(list: EpicSummary[]): EpicSummary | undefined {
+  if (list.length === 0) return undefined;
+  // Geniş kapak görseli olan oyunları önceliklendir (vitrin afişi sinematik olsun)
+  const candidateList = list.filter((s) => !!(epicWideArt(s) || s.cover));
+  const pool = candidateList.length > 0 ? candidateList : list;
+
+  const now = new Date();
+  const seedStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0;
+  }
+  const index = hash % pool.length;
+  return pool[index];
+}
+
 function renderHeroSpotlight(): string {
   if (epicSummaries.length === 0) return "";
-  const targetName =
-    epicRecent.find((id) => epicSummaries.some((s) => s.appName === id)) ||
-    epicSummaries.find((s) => s.installed)?.appName ||
-    epicSummaries.find((s) => epicFav.has(s.appName))?.appName ||
-    epicSummaries[0]?.appName;
+
+  // 1. Öncelik: Son oynanmış ve şu an kurulu olan oyun
+  const recentPlayed = epicRecent.find((id) =>
+    epicSummaries.some((s) => s.appName === id && s.installed),
+  );
+
+  let targetName = "";
+  let isRecent = false;
+  let isDaily = false;
+
+  if (recentPlayed) {
+    targetName = recentPlayed;
+    isRecent = true;
+  } else {
+    // 2. Öncelik: Kurulu favori oyun
+    const installedFav = epicSummaries.find((s) => s.installed && epicFav.has(s.appName))?.appName;
+    if (installedFav) {
+      targetName = installedFav;
+    } else {
+      // 3. Öncelik: Günün Oyunu (Her gün kütüphaneden özel olarak seçilen oyun)
+      const daily = getDailyGame(epicSummaries);
+      if (daily) {
+        targetName = daily.appName;
+        isDaily = true;
+      } else {
+        targetName = epicSummaries[0]?.appName;
+      }
+    }
+  }
+
   const s = epicSummaries.find((x) => x.appName === targetName);
   if (!s) return "";
 
-  const isRecent = epicRecent.includes(s.appName);
   const wideImg = epicWideArt(s) || s.cover;
   const g = rawOf(s.appName);
   const devRaw = g?.metadata?.developer;
@@ -752,12 +859,25 @@ function renderHeroSpotlight(): string {
   const totalSize = epicSummaries.reduce((acc, x) => acc + (x.installSize || 0), 0);
 
   const p = epicDlProgress(s.appName);
+  const partner = getThirdPartyLauncher(g);
   const primaryBtn =
     p !== null
       ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
       : s.installed
         ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Hemen Oyna</button>`
-        : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
+        : partner
+          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${esc(partner.name)} ile Başlat</button>`
+          : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
+
+  const heroBadge = isRecent
+    ? `${icon("play", 11)} Son Oynanan`
+    : isDaily
+      ? `✨ Günün Oyunu`
+      : s.installed
+        ? `🎮 Kurulu Oyun`
+        : epicFav.has(s.appName)
+          ? `❤️ Favori`
+          : `⭐ Öne Çıkan`;
 
   return `
     <div class="hero-spotlight">
@@ -766,7 +886,7 @@ function renderHeroSpotlight(): string {
       <div class="hero-content">
         <div class="hero-main">
           <div class="hero-badge">
-            ${isRecent ? `${icon("play", 11)} Son Oynanan` : `⭐ Öne Çıkan`}
+            ${heroBadge}
           </div>
           <h1 class="hero-title">${esc(s.title)}</h1>
           <div class="hero-meta">
@@ -801,20 +921,25 @@ function renderHeroSpotlight(): string {
 function epicCardPortrait(s: EpicSummary, i: number): string {
   const faved = epicFav.has(s.appName);
   const p = epicDlProgress(s.appName);
+  const isPlat = isAppPlatinum(s.appName);
   const badge = s.updateAvailable
     ? `<span class="pbadge update"><span class="dot"></span>Güncelleme</span>`
     : s.installed
       ? `<span class="pbadge ready"><span class="dot"></span>Hazır</span>`
       : "";
+  const ribbon = isPlat
+    ? `<div class="platinum-ribbon">${icon("trophy", 11)} 100% Platin <span class="ribbon-sparkle">✨</span></div>`
+    : "";
   const dlBar =
     p !== null
       ? `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${s.appName}" style="width:${p}%"></div></div>`
       : "";
 
   return `
-    <div class="pcard enter" style="animation-delay:${Math.min(i * 12, 350)}ms" data-act="epic-detail" data-id="${s.appName}">
+    <div class="pcard enter ${isPlat ? "platinum" : ""}" style="animation-delay:${Math.min(i * 12, 350)}ms" data-act="epic-detail" data-id="${s.appName}">
       ${epicArt(s)}
       ${badge}
+      ${ribbon}
       <div class="shade"></div>
       <div class="poverlay">
         <div class="top">
@@ -832,45 +957,85 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
 
 function epicRowHtml(s: EpicSummary): string {
   const faved = epicFav.has(s.appName);
+  const isPlat = isAppPlatinum(s.appName);
+  const achSum = epicAchSummaries[s.appName];
+  const achMeta = isPlat
+    ? ` • <span style="color:#ffd700;font-weight:700;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} Platin</span>`
+    : achSum && achSum.total_achievements > 0
+      ? ` • <span style="color:#a1a1aa;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements}</span>`
+      : "";
+
   return `
     <div class="prow" data-act="epic-detail" data-id="${s.appName}">
       ${epicArt(s)}
       <div class="grow">
         <h4>${esc(s.title)}</h4>
-        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${s.updateAvailable ? ` • <span class="upd">Güncelleme</span>` : ""}</div>
+        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${s.updateAvailable ? ` • <span class="upd">Güncelleme</span>` : ""}${achMeta}</div>
       </div>
       <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
       ${epicActionButtons(s, "small")}
     </div>`;
 }
 
-function openEpicModal(appName: string): void {
+function openEpicModal(appName: string, isInitialOpen = true): void {
   const s = epicSummaries.find((x) => x.appName === appName);
   if (!s) return;
-  pushRecent(appName);
+  currentModalAppName = appName;
+  if (isInitialOpen) {
+    activeDrawerTab = "overview";
+    activeAchScope = "all";
+    activeAchFilter = "all";
+  }
+  const prevBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
+  const prevScroll = !isInitialOpen && prevBody ? prevBody.scrollTop : 0;
   const g = rawOf(appName);
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const faved = epicFav.has(appName);
   const devRaw = g ? g.metadata.developer : undefined;
   const dev = typeof devRaw === "string" ? devRaw : "";
   const p = epicDlProgress(appName);
+  const isPlat = isAppPlatinum(appName);
+  const achSum = epicAchSummaries[appName];
+  const partner = getThirdPartyLauncher(g);
+  const antiCheat = getAntiCheat(g);
 
   const primary =
     p !== null
       ? `<button class="btn full primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
       : s.installed
         ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
-        : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
+        : partner
+          ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
+          : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
 
   const rawDesc = s.description?.trim();
-  const hasRealDesc = rawDesc && rawDesc !== s.title && rawDesc.length > 20;
+  const hasRealDesc =
+    rawDesc &&
+    rawDesc !== "Açıklama yok." &&
+    rawDesc !== s.title &&
+    rawDesc.length > 25;
   const descHtml = hasRealDesc
     ? `<div class="drawer-desc">${esc(rawDesc)}</div>`
-    : `<div class="drawer-desc" style="color:var(--muted);font-style:italic">Epic Games Store kataloğunda ek açıklama bulunmuyor.</div>`;
+    : `<div class="drawer-desc overview">
+        <p><strong>${esc(s.title)}</strong>${dev ? `, ${esc(dev)} tarafından sunulan ` : " "}Epic Games Store kütüphanendeki resmi sürümdür.</p>
+        <div class="drawer-store-hint">Hikaye, fragmanlar ve detaylar için <a data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Mağaza Sayfası'na göz at</a></div>
+      </div>`;
+
+  const achPill = isPlat
+    ? `<span class="status-pill plat" style="background:linear-gradient(135deg,#ffd700,#b45309);color:#1a0f00;font-weight:800;border:none">${icon("trophy", 12)} 100% Platin</span>`
+    : achSum && achSum.total_achievements > 0
+      ? `<span class="status-pill ach" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(245,158,11,0.08)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
+      : "";
+
+  const achTabBadge = isPlat
+    ? `<span style="color:#ffd700;font-size:11px;font-weight:800;margin-left:4px">100% ✨</span>`
+    : achSum && achSum.total_achievements > 0
+      ? `<span style="font-size:11px;color:var(--muted);margin-left:4px">(${achSum.user_unlocked}/${achSum.total_achievements})</span>`
+      : "";
 
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
-      <div class="drawer">
+      <div class="drawer" style="${isInitialOpen ? "" : "animation:none"}">
         <button class="drawer-close" data-act="close" title="Kapat">${icon("x", 16)}</button>
         <div class="drawer-cover">
           ${art ? `<img src="${art}" alt="" />` : `<div class="pcover">🎮</div>`}
@@ -881,47 +1046,373 @@ function openEpicModal(appName: string): void {
           ${dev ? `<div class="drawer-dev">${esc(dev)}</div>` : ""}
           <div class="drawer-pills">
             <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "● Kurulu" : "○ Kurulu Değil"}</span>
+            ${partner ? `<span class="status-pill partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)} Gereklidir</span>` : ""}
+            ${antiCheat ? `<span class="status-pill anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
             ${s.updateAvailable ? `<span class="status-pill warn">⚡ Güncelleme Mevcut</span>` : ""}
             ${s.dlcCount > 0 ? `<span class="status-pill">+${s.dlcCount} DLC</span>` : ""}
             ${s.installSize ? `<span class="status-pill">${fmtBytes(s.installSize)}</span>` : ""}
+            ${achPill}
           </div>
-          <div class="drawer-actions">
-            ${primary}
-            <div class="drawer-actions-row">
-              <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}</button>
-              ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
-              ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
-              <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
-            </div>
-            ${s.installed ? `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}" style="margin-top:4px">${icon("trash", 14)} Oyunu Bilgisayardan Kaldır</button>` : ""}
+
+          <div class="drawer-tabs">
+            <button class="drawer-tab ${activeDrawerTab === "overview" ? "active" : ""}" data-act="drawer-tab" data-tab="overview">
+              Genel Bakış
+            </button>
+            <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
+              ${icon("trophy", 14)} Başarımlar ${achTabBadge}
+            </button>
           </div>
-          ${descHtml}
-          <div class="drawer-meta-grid">
-            <div class="meta-tile">
-              <div class="tile-label">Sürüm</div>
-              <div class="tile-val">v${esc(s.version)}</div>
-            </div>
-            <div class="meta-tile">
-              <div class="tile-label">Kurulu Sürüm</div>
-              <div class="tile-val">${s.installedVersion ? `v${esc(s.installedVersion)}` : "—"}</div>
-            </div>
-            <div class="meta-tile">
-              <div class="tile-label">İndirme / Boyut</div>
-              <div class="tile-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
-            </div>
-            <div class="meta-tile">
-              <div class="tile-label">DLC Sayısı</div>
-              <div class="tile-val">${s.dlcCount > 0 ? `${s.dlcCount} DLC` : "Yok"}</div>
-            </div>
-            ${s.installPath ? `
-            <div class="meta-tile full">
-              <div class="tile-label">Kurulum Konumu</div>
-              <div class="tile-val" title="${esc(s.installPath)}">${esc(s.installPath)}</div>
-            </div>` : ""}
+
+          <div id="drawer-tab-content">
+            ${
+              activeDrawerTab === "overview"
+                ? renderDrawerOverview(s, primary, faved, p, descHtml, partner, antiCheat)
+                : renderDrawerAchievements(s)
+            }
           </div>
         </div>
       </div>
     </div>`;
+
+  if (prevScroll > 0) {
+    const nextBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
+    if (nextBody) nextBody.scrollTop = prevScroll;
+  }
+
+  const cachedData = loadedAchievements.get(appName);
+  const needsFetch = !cachedData || (cachedData.achievements.length === 0 && (achSum?.total_achievements || 0) > 0);
+  if (needsFetch && loadingAchFor !== appName && (achSum?.supported ?? true)) {
+    void fetchAndRenderAchievements(appName, true);
+  }
+}
+
+function renderDrawerOverview(
+  s: EpicSummary,
+  primary: string,
+  faved: boolean,
+  p: number | null,
+  descHtml: string,
+  partner: ThirdPartyLauncherInfo | null = null,
+  antiCheat: string | null = null,
+): string {
+  return `
+    <div class="drawer-actions">
+      ${primary}
+      <div class="drawer-actions-row">
+        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}</button>
+        ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
+        ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
+        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
+      </div>
+      ${s.installed ? `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}" style="margin-top:4px">${icon("trash", 14)} Oyunu Bilgisayardan Kaldır</button>` : ""}
+    </div>
+    ${descHtml}
+    <div class="drawer-meta-grid">
+      <div class="meta-tile">
+        <div class="tile-label">Sürüm</div>
+        <div class="tile-val">v${esc(s.version)}</div>
+      </div>
+      <div class="meta-tile">
+        <div class="tile-label">Kurulu Sürüm</div>
+        <div class="tile-val">${s.installedVersion ? `v${esc(s.installedVersion)}` : "—"}</div>
+      </div>
+      <div class="meta-tile">
+        <div class="tile-label">İndirme / Boyut</div>
+        <div class="tile-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
+      </div>
+      <div class="meta-tile">
+        <div class="tile-label">DLC Sayısı</div>
+        <div class="tile-val">${s.dlcCount > 0 ? `${s.dlcCount} DLC` : "Yok"}</div>
+      </div>
+      ${partner ? `
+      <div class="meta-tile">
+        <div class="tile-label">3. Parti Başlatıcı</div>
+        <div class="tile-val" style="color:#60a5fa">${esc(partner.name)} Gereklidir</div>
+      </div>` : ""}
+      ${antiCheat ? `
+      <div class="meta-tile">
+        <div class="tile-label">Hile Koruması (Anti-Cheat)</div>
+        <div class="tile-val" style="color:#34d399">${esc(antiCheat)}</div>
+      </div>` : ""}
+      ${s.installPath ? `
+      <div class="meta-tile full">
+        <div class="tile-label">Kurulum Konumu</div>
+        <div class="tile-val" title="${esc(s.installPath)}">${esc(s.installPath)}</div>
+      </div>` : ""}
+    </div>`;
+}
+
+function enrichAchievementsData(appName: string, data: EpicAchievementsData): void {
+  const g = rawOf(appName);
+  const raw = (g?.achievements || (g?.metadata as any)?.achievements) as any;
+  const list = raw?.achievements || (Array.isArray(raw) ? raw : undefined);
+
+  if (Array.isArray(list)) {
+    for (const item of list) {
+      const meta = (item as any)?.achievement || item;
+      if (!meta?.name) continue;
+      const target = data.achievements.find((a) => a.name === meta.name);
+      if (target) {
+        if (meta.hidden) target.hidden = true;
+        if (typeof meta.isBase === "boolean") target.is_base = meta.isBase;
+        else if (typeof meta.is_base === "boolean") target.is_base = meta.is_base;
+        if ((!target.display_name || target.display_name.trim() === "") && (meta.unlockedDisplayName || meta.unlocked_display_name)) {
+          target.display_name = meta.unlockedDisplayName || meta.unlocked_display_name || "";
+        }
+        if ((!target.description || target.description.trim() === "") && (meta.unlockedDescription || meta.unlocked_description)) {
+          target.description = meta.unlockedDescription || meta.unlocked_description || "";
+        }
+        if ((!target.icon_link || target.icon_link.trim() === "") && (meta.unlockedIconLink || meta.unlocked_icon_link)) {
+          target.icon_link = meta.unlockedIconLink || meta.unlocked_icon_link || "";
+        }
+      }
+    }
+  }
+}
+
+function renderDrawerAchievements(s: EpicSummary): string {
+  const isPlat = isAppPlatinum(s.appName);
+  const isDemo = demoPlatinumApps.has(s.appName);
+  const g = rawOf(s.appName);
+  const partner = getThirdPartyLauncher(g);
+
+  if (loadingAchFor === s.appName) {
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:12px;color:var(--muted)">
+        <div class="spinner"></div>
+        <div style="font-size:13px;font-weight:600">Epic Games Store başarımları yükleniyor…</div>
+      </div>`;
+  }
+
+  const data = loadedAchievements.get(s.appName);
+  if (!data) {
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:12px;color:var(--muted)">
+        <div class="spinner"></div>
+        <div style="font-size:13px;font-weight:600">Başarımlar kontrol ediliyor…</div>
+      </div>`;
+  }
+
+  if (data.achievements.length === 0) {
+    if (partner) {
+      return `
+        <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
+          <div style="font-size:32px;margin-bottom:6px">🎮</div>
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">${esc(partner.name)} Başarımları</div>
+          <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 14px">Bu oyunun başarımları doğrudan <strong>${esc(partner.name)}</strong> üzerinden takip edilmektedir.</div>
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+            <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">↻ Tekrar Dene</button>
+            <button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${esc(partner.name)}'i Aç</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
+        <div style="font-size:32px;margin-bottom:6px">🏆</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Başarım Desteği Bulunmuyor</div>
+        <div style="font-size:12px;color:var(--muted);max-width:300px;margin:0 auto 14px">Bu oyun için Epic Games Store üzerinde tanımlı başarım bulunmuyor.</div>
+        <div style="display:flex;justify-content:center;gap:8px">
+          <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">↻ Tekrar Dene</button>
+        </div>
+      </div>`;
+  }
+
+  // Katalog metadatasıyla anında zenginleştir (gizli başarımlar ve ana oyun bayrakları)
+  enrichAchievementsData(s.appName, data);
+
+  const baseItems = data.achievements.filter((a) => a.is_base);
+  const dlcItems = data.achievements.filter((a) => !a.is_base);
+  const hasDlc = dlcItems.length > 0;
+
+  const effectiveUnlocked = isDemo ? data.total_achievements : data.user_unlocked;
+  const effectiveXp = isDemo ? data.total_xp : data.user_xp;
+  const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
+
+  const baseTotal = baseItems.length;
+  const baseUnlocked = isDemo ? baseTotal : baseItems.filter((a) => a.unlocked).length;
+
+  const dlcTotal = dlcItems.length;
+  const dlcUnlocked = isDemo ? dlcTotal : dlcItems.filter((a) => a.unlocked).length;
+
+  const scopedItems = data.achievements.filter((a) => {
+    if (activeAchScope === "base") return a.is_base;
+    if (activeAchScope === "dlc") return !a.is_base;
+    return true;
+  });
+
+  const scopedUnlocked = isDemo ? scopedItems.length : scopedItems.filter((a) => a.unlocked).length;
+  const scopedLocked = scopedItems.length - scopedUnlocked;
+  const scopedHidden = scopedItems.filter((a) => a.hidden).length;
+
+  const items = scopedItems.filter((a) => {
+    const isUnlocked = a.unlocked || isDemo;
+    if (activeAchFilter === "unlocked") return isUnlocked;
+    if (activeAchFilter === "locked") return !isUnlocked;
+    if (activeAchFilter === "hidden") return a.hidden;
+    return true;
+  });
+
+  const listHtml = items.length === 0
+    ? `<div class="empty" style="padding:20px;font-size:12px">Bu filtreye uygun başarım bulunamadı.</div>`
+    : items.map((a) => {
+        const isUnlocked = a.unlocked || isDemo;
+        const isHidden = a.hidden;
+        const isSecretMasked = isHidden && !isUnlocked;
+        const isRevealed = revealedAchievements.has(`${s.appName}:${a.name}`);
+
+        const title = isSecretMasked && !isRevealed ? "Gizli Başarım" : (a.display_name || a.name);
+        const desc = isSecretMasked && !isRevealed
+          ? "Bu başarım gizlidir. Spoilerı görmek için tıklayın."
+          : (a.description || "Açıklama yok.");
+        const tierClass = a.tier?.name ? a.tier.name.toLowerCase() : "";
+
+        return `
+          <div class="ach-item ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
+               ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? "Tekrar gizle" : "Ayrıntıları gör"}"` : ""}>
+            <div class="ach-icon-box ${tierClass}">
+              ${
+                isSecretMasked && !isRevealed
+                  ? `<div class="ach-mystery-icon">${icon("lock", 16)}</div>`
+                  : a.icon_link
+                    ? `<img src="${esc(a.icon_link)}" alt="" loading="lazy" />`
+                    : `<div style="display:flex;align-items:center;justify-content:center;height:100%">${icon("trophy", 18)}</div>`
+              }
+              ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-lock-overlay">${icon("lock", 14)}</div>` : ""}
+            </div>
+            <div class="ach-details">
+              <div class="ach-title-row">
+                <span class="ach-title">${isSecretMasked && !isRevealed ? icon("lock", 12) + " " : ""}${esc(title)}</span>
+                ${isSecretMasked
+                  ? (isRevealed
+                      ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Tekrar gizle">${icon("eye-off", 11)} Gizle</button>`
+                      : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 11)} Göster</button>`)
+                  : isHidden && isUnlocked
+                    ? `<span class="ach-badge-secret">${icon("lock", 9)} Gizli</span>`
+                    : ""}
+                ${!a.is_base ? `<span class="ach-badge-dlc">DLC</span>` : ""}
+              </div>
+              <div class="ach-desc">${esc(desc)}</div>
+              <div class="ach-meta-row">
+                ${a.unlock_date && isUnlocked ? `<span class="ach-date">${fmtAchDate(a.unlock_date)}</span>` : ""}
+                ${a.rarity?.percent != null ? `<span class="ach-rarity">%${a.rarity.percent.toFixed(0)}</span>` : ""}
+                ${a.tier?.name ? `<span class="ach-tier" style="color:${a.tier.hexColor || "#ffd700"}">${esc(a.tier.name)}</span>` : ""}
+              </div>
+            </div>
+            <div class="ach-right">
+              <div class="ach-xp-pill">+${a.xp} XP</div>
+              ${isUnlocked ? `<div class="ach-check" title="Kazanıldı">${icon("check", 14)}</div>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+
+  return `
+    <div class="ach-hero-compact ${isPlat ? "platinum" : ""}">
+      <div class="ach-hero-row top">
+        <div class="ach-hero-title">
+          ${icon("trophy", 16)}
+          ${isPlat ? '<span style="color:#ffd700">100% Platin Kupa! ✨</span>' : `<span>Başarımlar</span> <span class="ach-pct-badge">%${pct}</span>`}
+        </div>
+        <div class="ach-hero-right">
+          <span class="ach-xp-tag">${effectiveXp} / ${data.total_xp} XP</span>
+          <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Yeniden Sorgula">${icon("refresh", 13)}</button>
+          <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Mağazasında Gör">${icon("external", 13)}</button>
+        </div>
+      </div>
+
+      <div class="ach-progress-bar slim">
+        <div class="ach-progress-fill ${isPlat ? "gold" : ""}" style="width:${isPlat ? 100 : pct}%"></div>
+      </div>
+
+      <div class="ach-hero-stats">
+        <span class="ach-stat-genel">Genel: <strong>${effectiveUnlocked}/${data.total_achievements}</strong></span>
+        ${hasDlc ? `
+        <span class="ach-stat-dot">•</span>
+        <span class="ach-stat-base ${baseUnlocked >= baseTotal ? "done" : ""}">
+          🎮 Ana Oyun (🏆 Platin): <strong>${baseUnlocked}/${baseTotal}</strong> ${baseUnlocked >= baseTotal ? "✨" : `(${baseTotal - baseUnlocked} kaldı)`}
+        </span>` : ""}
+      </div>
+    </div>
+
+    <div class="ach-filter-bar">
+      ${hasDlc ? `
+      <div class="ach-scope-strip">
+        <button class="ach-scope-pill ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
+          Tümü (${data.achievements.length})
+        </button>
+        <button class="ach-scope-pill ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
+          🎮 Ana Oyun (${baseUnlocked}/${baseTotal}) <span class="scope-plat-dot">🏆</span>
+        </button>
+        <button class="ach-scope-pill ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
+          📦 Ek Paketler (${dlcUnlocked}/${dlcTotal})
+        </button>
+      </div>` : ""}
+
+      <div class="ach-status-strip">
+        <button class="ach-status-pill ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
+          Tümü (${scopedItems.length})
+        </button>
+        <button class="ach-status-pill ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
+          ${icon("check", 11)} Kazanılanlar (${scopedUnlocked})
+        </button>
+        <button class="ach-status-pill ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
+          ${icon("lock", 11)} Kilitliler (${scopedLocked})
+        </button>
+        ${scopedHidden > 0 ? `
+        <button class="ach-status-pill ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
+          ${icon("eye", 11)} Gizli (${scopedHidden})
+        </button>` : ""}
+      </div>
+    </div>
+
+    <div class="ach-list">
+      ${listHtml}
+    </div>`;
+}
+
+async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
+  if (!isTauri) return;
+  loadingAchFor = appName;
+  if (currentModalAppName === appName && activeDrawerTab === "achievements") {
+    openEpicModal(appName, false);
+  }
+  try {
+    const data = await epicGetAchievements(appName, forceRefresh);
+    loadedAchievements.set(appName, data);
+    if (!epicAchSummaries[appName]) {
+      epicAchSummaries[appName] = {
+        app_name: appName,
+        user_unlocked: data.user_unlocked,
+        total_achievements: data.total_achievements,
+        user_xp: data.user_xp,
+        total_xp: data.total_xp,
+        is_platinum: data.is_platinum,
+        supported: data.total_achievements > 0,
+      };
+    } else {
+      epicAchSummaries[appName].user_unlocked = data.user_unlocked;
+      epicAchSummaries[appName].total_achievements = data.total_achievements;
+      epicAchSummaries[appName].user_xp = data.user_xp;
+      epicAchSummaries[appName].total_xp = data.total_xp;
+      epicAchSummaries[appName].is_platinum = data.is_platinum;
+    }
+  } catch (e) {
+    console.warn("Başarımlar alınamadı veya bu oyun için başarım desteği yok:", e);
+    loadedAchievements.set(appName, {
+      achievements: [],
+      hidden: [],
+      user_unlocked: 0,
+      user_xp: 0,
+      total_achievements: 0,
+      total_xp: 0,
+      is_platinum: false,
+    });
+  } finally {
+    loadingAchFor = null;
+    if (currentModalAppName === appName) {
+      openEpicModal(appName, false);
+    }
+    if (view === "library") render();
+  }
 }
 
 async function epicOpenFolder(appName: string): Promise<void> {
@@ -1001,6 +1492,7 @@ function renderEpic(): string {
   const installedCount = epicSummaries.filter((s) => s.installed).length;
   const favCount = epicSummaries.filter((s) => epicFav.has(s.appName)).length;
   const updateCount = epicSummaries.filter((s) => s.updateAvailable).length;
+  const platCount = epicSummaries.filter((s) => isAppPlatinum(s.appName)).length;
 
   return `
     ${renderHeroSpotlight()}
@@ -1014,6 +1506,9 @@ function renderEpic(): string {
         </button>
         <button class="chip ${epicFilter === "fav" ? "active" : ""}" data-act="epic-filter" data-val="fav">
           ${icon("heart", 13)} Favoriler <span class="chip-cnt">${favCount}</span>
+        </button>
+        <button class="chip ${epicFilter === "platinum" ? "active" : ""}" data-act="epic-filter" data-val="platinum">
+          ${icon("trophy", 13)} Platin <span class="chip-cnt">${platCount}</span>
         </button>
         ${updateCount > 0 ? `
         <button class="chip ${epicFilter === "updates" ? "active" : ""}" data-act="epic-filter" data-val="updates">
@@ -1030,6 +1525,7 @@ function renderEpic(): string {
           <option value="recent" ${epicSort === "recent" ? "selected" : ""}>Son oynanan</option>
           <option value="alpha" ${epicSort === "alpha" ? "selected" : ""}>Alfabetik</option>
           <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Kurulu önce</option>
+          <option value="platinum" ${epicSort === "platinum" ? "selected" : ""}>Platin kupalılar</option>
           <option value="updates" ${epicSort === "updates" ? "selected" : ""}>Güncelleme olanlar</option>
         </select>
         <div class="card-size-toggle" title="Kart boyutu">
@@ -1045,11 +1541,25 @@ function renderEpic(): string {
       </div>
     </div>
     ${epicSyncNote ? `<p class="subtitle">${esc(epicSyncNote)}</p>` : ""}
+    ${epicFilter === "platinum" ? `
+    <div class="plat-category-banner">
+      <div class="plat-banner-glow"></div>
+      <div class="plat-banner-icon">🏆</div>
+      <div class="plat-banner-info">
+        <div class="plat-banner-title">Platin Kupa Koleksiyonu</div>
+        <div class="plat-banner-desc">Tüm başarımlarını %100 tamamlayarak vitrine eklediğin oyunlar. Harika iş!</div>
+      </div>
+      <div class="plat-banner-stat">
+        <div class="val">${platCount}</div>
+        <div class="lbl">Tamamlandı</div>
+      </div>
+    </div>` : ""}
     <div id="lib-results" class="${epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : ""}">${renderEpicItems()}</div>`;
 }
 
 function closeModal(): void {
   modalRoot.innerHTML = "";
+  currentModalAppName = null;
 }
 
 /* ---------- Epic indirme ---------- */
@@ -1069,12 +1579,23 @@ function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string 
   if (s.installed) {
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
   }
+  const g = rawOf(s.appName);
+  const partner = getThirdPartyLauncher(g);
+  if (partner) {
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${esc(partner.name)} ile Başlat">${icon("external", 14)} ${esc(partner.shortName)}</button>`;
+  }
   return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} Yükle</button>`;
 }
 
 async function epicInstall(appName: string): Promise<void> {
   const s = epicSummaries.find((x) => x.appName === appName);
   if (!s || epicDlProgress(appName) !== null) return;
+  const g = rawOf(appName);
+  const partner = getThirdPartyLauncher(g);
+  if (partner) {
+    void epicPlay(appName);
+    return;
+  }
   downloads.set(appName, { progress: 0, done: false, title: s.title });
   updateBadge();
   if (view === "library" || view === "downloads") render();
@@ -1114,6 +1635,7 @@ async function refreshEpicInstalled(): Promise<void> {
   try {
     const [einstalled, eskipped] = await Promise.all([epicListInstalled(), epicListSkipped()]);
     epicSummaries = summarize(epicGamesRaw, einstalled, eskipped);
+    pruneRecent();
     epicSkippedCount = eskipped.length;
     if (view === "library") render();
   } catch (e) {
@@ -1221,7 +1743,7 @@ document.addEventListener("click", (e) => {
     const input = document.getElementById("epic-install-dir") as HTMLInputElement | null;
     const v = input?.value?.trim() ?? "";
     epicSetInstallDir(v ? v : null)
-      .then((st) => {
+      .then((st: EpicSettings) => {
         epicSettingsCache = st;
         toast("Kurulum klasörü kaydedildi", "ok");
         render();
@@ -1233,6 +1755,63 @@ document.addEventListener("click", (e) => {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = s ? s.title : id;
     void openStoreUrl(epicStorePageUrl(title), "store");
+  } else if (act === "drawer-tab") {
+    const tab = t.dataset.tab as "overview" | "achievements";
+    if (tab && currentModalAppName) {
+      activeDrawerTab = tab;
+      const cached = loadedAchievements.get(currentModalAppName);
+      if (tab === "achievements" && (!cached || cached.achievements.length === 0)) {
+        void fetchAndRenderAchievements(currentModalAppName, true);
+      }
+      openEpicModal(currentModalAppName, false);
+    }
+  } else if (act === "open-store-achievements" && id) {
+    const s = epicSummaries.find((x) => x.appName === id);
+    const title = s ? s.title : id;
+    const url = epicAchievementsUrl(title, id);
+    void openStoreUrl(url, "store");
+  } else if (act === "ach-filter") {
+    const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
+    if (val && currentModalAppName) {
+      activeAchFilter = val;
+      openEpicModal(currentModalAppName, false);
+    }
+  } else if (act === "ach-scope") {
+    const val = t.dataset.val as "all" | "base" | "dlc";
+    if (val && currentModalAppName) {
+      activeAchScope = val;
+      openEpicModal(currentModalAppName, false);
+    }
+  } else if (act === "ach-reveal") {
+    const achName = t.dataset.ach;
+    if (achName && currentModalAppName) {
+      const key = `${currentModalAppName}:${achName}`;
+      if (revealedAchievements.has(key)) {
+        revealedAchievements.delete(key);
+      } else {
+        revealedAchievements.add(key);
+      }
+      openEpicModal(currentModalAppName, false);
+    }
+  } else if (act === "toggle-demo-platinum" && id) {
+    if (demoPlatinumApps.has(id)) {
+      demoPlatinumApps.delete(id);
+      toast("Platin efekti kaldırıldı", "");
+    } else {
+      demoPlatinumApps.add(id);
+      toast("✨ Platin Kupa parıltısı açıldı!", "ok");
+    }
+    localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...demoPlatinumApps]));
+    if (view === "library") render();
+    if (currentModalAppName === id) openEpicModal(id, false);
+  } else if (act === "ach-refresh" && id) {
+    void fetchAndRenderAchievements(id, true);
+  } else if (act === "win-minimize") {
+    if (isTauri) void invoke("app_minimize");
+  } else if (act === "win-maximize") {
+    if (isTauri) void invoke<boolean>("app_toggle_maximize").then(updateMaxIcon);
+  } else if (act === "win-close") {
+    if (isTauri) void invoke("app_close");
   }
 });
 
@@ -1267,9 +1846,40 @@ viewEl.addEventListener("scroll", () => {
   document.getElementById("totop")?.classList.toggle("show", viewEl.scrollTop > 600);
 });
 
+function updateMaxIcon(isMax?: boolean): void {
+  const iconEl = document.getElementById("win-max-icon");
+  if (!iconEl) return;
+  const setIcon = (max: boolean) => {
+    if (max) {
+      iconEl.innerHTML = `<rect width="7" height="7" x="2.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/><path d="M0.5 2.5v7h7v-7h-7z" fill="none" stroke="currentColor" stroke-width="1"/>`;
+    } else {
+      iconEl.innerHTML = `<rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/>`;
+    }
+  };
+  if (typeof isMax === "boolean") {
+    setIcon(isMax);
+  } else if (isTauri) {
+    invoke<boolean>("app_is_maximized").then(setIcon).catch(() => {});
+  }
+}
+
+document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
+  const target = e.target as HTMLElement;
+  if (target.closest("#nav button, .win-btn, input, a")) return;
+  if (isTauri) void invoke<boolean>("app_toggle_maximize").then(updateMaxIcon);
+});
+
+window.addEventListener("resize", () => {
+  updateMaxIcon();
+});
+
 /* ---------- Başlat ---------- */
 
 async function init(): Promise<void> {
+  updateMaxIcon();
+  if (isTauri) {
+    void invoke("app_set_decorations", { decorations: false }).catch(() => {});
+  }
   createIcons({
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2 },
   });
@@ -1343,7 +1953,24 @@ void init();
 /* ---------- İkonlar (Lucide, inline SVG) ---------- */
 
 function icon(
-  name: "heart" | "dots" | "play" | "download" | "folder" | "external" | "trash" | "x",
+  name:
+    | "heart"
+    | "dots"
+    | "play"
+    | "download"
+    | "folder"
+    | "external"
+    | "trash"
+    | "x"
+    | "trophy"
+    | "sparkles"
+    | "lock"
+    | "check"
+    | "shield"
+    | "layers"
+    | "eye"
+    | "eye-off"
+    | "refresh",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
@@ -1359,6 +1986,24 @@ function icon(
     trash:
       '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    trophy:
+      '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    sparkles:
+      '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>',
+    lock:
+      '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    check:
+      '<polyline points="20 6 9 17 4 12"/>',
+    shield:
+      '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    layers:
+      '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+    eye:
+      '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    "eye-off":
+      '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+    refresh:
+      '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name] ?? ""}</svg>`;
 }

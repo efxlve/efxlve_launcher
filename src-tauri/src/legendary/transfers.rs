@@ -507,35 +507,61 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
         super::client::run_json(&bin, &["list-installed", "--json"])
             .await
             .map_err(cmd_error)?;
-    let entry = installed
-        .iter()
-        .find(|g| g.app_name == app_name)
-        .ok_or_else(|| "Oyun kurulu değil".to_string())?;
-    let title = if entry.title.is_empty() {
-        app_name.clone()
-    } else {
-        entry.title.clone()
-    };
-    match spawn_launched(&bin, &app_name, false).await {
-        Ok(()) => Ok(format!("{title} başlatıldı")),
-        Err(first) => {
-            if entry.can_run_offline {
-                spawn_launched(&bin, &app_name, true)
-                    .await
-                    .map(|_| format!("{title} başlatıldı (çevrimdışı)"))
-                    .map_err(|e| format!("{first}\n{e}"))
-            } else {
-                Err(first)
+    if let Some(entry) = installed.iter().find(|g| g.app_name == app_name) {
+        let title = if entry.title.is_empty() {
+            app_name.clone()
+        } else {
+            entry.title.clone()
+        };
+        match spawn_launched(&bin, &app_name, &[]).await {
+            Ok(()) => Ok(format!("{title} başlatıldı")),
+            Err(first) => {
+                if entry.can_run_offline {
+                    spawn_launched(&bin, &app_name, &["--offline"])
+                        .await
+                        .map(|_| format!("{title} başlatıldı (çevrimdışı)"))
+                        .map_err(|e| format!("{first}\n{e}"))
+                } else {
+                    Err(first)
+                }
             }
         }
+    } else {
+        // Kurulu değil: 3. parti başlatıcı (EA App / Origin veya Ubisoft) kontrolü
+        let config = super::skip::default_config_dir();
+        let meta_path = config.join("metadata").join(format!("{app_name}.json"));
+        if let Ok(text) = std::fs::read_to_string(&meta_path) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+                let title = json
+                    .get("app_title")
+                    .and_then(|t| t.as_str())
+                    .unwrap_or(&app_name)
+                    .to_string();
+                let lower = text.to_lowercase();
+                if lower.contains("origin")
+                    || lower.contains("the ea app")
+                    || lower.contains("ea games")
+                    || lower.contains("respawn")
+                {
+                    return spawn_launched(&bin, &app_name, &["--origin"])
+                        .await
+                        .map(|_| format!("{title} EA App üzerinden başlatıldı"));
+                } else if lower.contains("ubisoftconnect") || lower.contains("ubisoft") {
+                    return spawn_launched(&bin, &app_name, &["--ubisoft"])
+                        .await
+                        .map(|_| format!("{title} Ubisoft Connect üzerinden başlatıldı"));
+                }
+            }
+        }
+        Err("Oyun kurulu değil".to_string())
     }
 }
 
-async fn spawn_launched(bin: &PathBuf, app_name: &str, offline: bool) -> Result<(), String> {
+async fn spawn_launched(bin: &PathBuf, app_name: &str, extra_args: &[&str]) -> Result<(), String> {
     let mut cmd = tokio::process::Command::new(bin);
     cmd.arg("launch").arg(app_name);
-    if offline {
-        cmd.arg("--offline");
+    for arg in extra_args {
+        cmd.arg(arg);
     }
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
