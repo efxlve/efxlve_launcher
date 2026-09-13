@@ -121,8 +121,23 @@ export function epicPortrait(g: EpicGame): string | null {
 
 export const EPIC_STORE_URL = "https://store.epicgames.com/";
 
+export function toEpicSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/['’:]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function epicStorePageUrl(title: string): string {
+  const slug = toEpicSlug(title);
+  return slug ? `https://store.epicgames.com/p/${slug}` : EPIC_STORE_URL;
+}
+
 export function epicStoreSearch(title: string): string {
-  return `https://store.epicgames.com/en-US/search?q=${encodeURIComponent(title)}`;
+  return `https://store.epicgames.com/browse?q=${encodeURIComponent(title)}`;
 }
 
 export function epicVersion(g: EpicGame): string {

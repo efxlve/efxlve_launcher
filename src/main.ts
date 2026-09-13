@@ -30,6 +30,7 @@ import {
   epicPortrait,
   epicSetInstallDir,
   epicSetupStatus,
+  epicStorePageUrl,
   epicStoreSearch,
   epicUninstallGame,
   isNotAuth,
@@ -155,7 +156,7 @@ function mockCatalog(): Game[] {
 
 async function fetchGames(): Promise<Game[]> {
   if (isTauri) return await invoke<Game[]>("list_games");
-  await new Promise((r) => setTimeout(r, 200)); // sahte gecikme
+  await new Promise((r) => setTimeout(r, 200));
   return mockCatalog();
 }
 
@@ -183,15 +184,17 @@ let epicBusyMsg = "";
 let epicSyncing = false;
 let epicSyncNote = "";
 
-/* ---------- Epic kütüphane görünümü (favori/sıralama/filtre) ---------- */
+/* ---------- Epic kütüphane görünümü (filtre/sıralama/boyut) ---------- */
 
-type EpicSub = "all" | "fav";
+type EpicFilter = "all" | "installed" | "fav" | "updates";
 type EpicSort = "recent" | "alpha" | "installed" | "updates";
 type EpicViewMode = "grid" | "list";
-let epicSub: EpicSub = "all";
+type CardSize = "compact" | "normal" | "large";
+
+let epicFilter: EpicFilter = "all";
 let epicSort: EpicSort = "recent";
-let epicInstalledOnly = false;
 let epicViewMode: EpicViewMode = "grid";
+let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
 
 const FAV_KEY = "efxlve-favorites";
@@ -236,12 +239,30 @@ function fmtBytes(bytes: number): string {
   return `${Math.round(bytes / 1024 ** 2)} MB`;
 }
 
+/** Geniş yatay kapak (Hero banner ve Drawer için) */
+function epicWideArt(s: EpicSummary): string | null {
+  const g = rawOf(s.appName);
+  const imgs = g?.metadata?.keyImages;
+  if (Array.isArray(imgs)) {
+    for (const t of [
+      "OfferImageWide",
+      "DieselStoreFrontWide",
+      "DieselGameBox",
+      "DieselGameBoxTall",
+      "OfferImageTall",
+    ]) {
+      const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
+      if (found) return found.url;
+    }
+  }
+  return s.cover;
+}
+
 /** Üst bar hesap + alt bar son-oynanan göstergesini tazeler. */
 function updateChrome(): void {
   const acc = document.getElementById("account");
   if (acc) {
     const name = epicAccount || "Giriş yapılmadı";
-    // textContent ikonu silerdi; innerHTML + ikon korunur (değişmediyse dokunma)
     if (acc.textContent !== name || !acc.querySelector("svg")) {
       acc.innerHTML = `<i data-lucide="circle-user-round"></i><span>${esc(name)}</span>`;
       createIcons({ icons: { CircleUserRound } });
@@ -280,7 +301,6 @@ async function openStore(): Promise<void> {
 
 async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeModal();
-  // Aynı sayfa zaten açıksa yeniden yükleme (gereksiz refresh yok)
   if (storeVisible && lastStoreUrl === url && storeMode === mode) return;
   lastStoreUrl = url;
   try {
@@ -295,7 +315,6 @@ async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<voi
 
 async function openProfile(): Promise<void> {
   if (!epicAccountId) {
-    // ID yoksa önbelleği bir kez tazele (kendi kendine iyileşme)
     await refreshEpic();
     if (!epicAccountId) {
       if (!epicAccount) toast("Önce giriş yap", "");
@@ -324,6 +343,7 @@ window.addEventListener("resize", () => {
     }
   }, 300);
 });
+
 let query = "";
 const downloads = new Map<string, { progress: number; done: boolean; title: string }>();
 let libraryPath = "—";
@@ -341,7 +361,6 @@ function toast(msg: string, kind: "ok" | "err" | "" = ""): void {
   el.className = `toast ${kind}`;
   el.textContent = msg;
   if (kind === "err") {
-    // Hata bildirimleri kalıcıdır; tıklayınca metni kopyalayıp kapanır.
     el.title = "Kopyalamak için tıkla";
     el.style.cursor = "pointer";
     el.addEventListener("click", () => {
@@ -418,7 +437,6 @@ async function installGame(id: string): Promise<void> {
       const msg = await invoke<string>("install_game", { id });
       toast(msg, "ok");
     } else {
-      // Tarayıcı mock kurulumu
       for (let p = 5; p <= 100; p += 5) {
         await new Promise((r) => setTimeout(r, 90));
         downloads.set(id, { progress: p, done: false, title: game.title });
@@ -470,45 +488,6 @@ async function uninstallGame(id: string): Promise<void> {
 }
 
 /* ---------- Render ---------- */
-
-function actionButton(g: Game): string {
-  const dl = downloads.get(g.id);
-  if (g.installed) return `<button class="btn play small" data-act="play" data-id="${g.id}">▶ Oyna</button>`;
-  if (dl && !dl.done) return `<button class="btn small" disabled>%${dl.progress}</button>`;
-  const label = g.price === 0 ? "Yükle" : `${fmtPrice(g.price)} • Yükle`;
-  return `<button class="btn small" data-act="install" data-id="${g.id}">${label}</button>`;
-}
-
-function cardHtml(g: Game): string {
-  const m = metaOf(g.id);
-  return `
-    <div class="card" data-card="${g.id}">
-      <div class="cover" style="background:${m.gradient}">${m.emoji}</div>
-      <div class="card-body">
-        <h3>${esc(g.title)}</h3>
-        <div class="meta">${esc(g.genre)} • ⭐ ${m.rating} • ${fmtSize(g.sizeMb)}</div>
-        <div class="row">
-          <span class="price ${g.price === 0 ? "free" : ""}">${fmtPrice(g.price)}</span>
-          ${actionButton(g)}
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderStore(): string {
-  const q = query.toLocaleLowerCase("tr");
-  const list = games.filter(
-    (g) => g.title.toLocaleLowerCase("tr").includes(q) || g.genre.toLocaleLowerCase("tr").includes(q),
-  );
-  const cards = list.map(cardHtml).join("") || `<div class="empty">Sonuç bulunamadı 🔍</div>`;
-  return `<h2>Mağaza</h2><p class="subtitle">${games.length} oyun • ${games.filter((g) => g.price === 0).length} ücretsiz</p><div class="grid">${cards}</div>`;
-}
-
-function renderLibrary(): string {
-  const owned = games.filter((g) => g.installed);
-  if (owned.length === 0) return `<h2>Kütüphane</h2><p class="subtitle">Henüz oyun yüklemedin</p><div class="empty">Mağazadan bir oyun yükle, burada görünsün 📚</div>`;
-  return `<h2>Kütüphane</h2><p class="subtitle">${owned.length} kurulu oyun</p><div class="grid">${owned.map(cardHtml).join("")}</div>`;
-}
 
 function renderDownloads(): string {
   if (downloads.size === 0) return `<h2>İndirmeler</h2><p class="subtitle">Aktif indirme yok</p><div class="empty">Henüz indirme başlatmadın.</div>`;
@@ -600,7 +579,6 @@ async function refreshEpic(): Promise<void> {
       render();
       return;
     }
-    // Heroic deseni: önce yereldeki önbellek gösterilir, ağ senkronu arka planda.
     const cached: CachedLibrary = await epicCachedLibrary();
     epicSkippedCount = cached.skipped.length;
     if (!cached.account) {
@@ -622,7 +600,7 @@ async function refreshEpic(): Promise<void> {
   }
 }
 
-/** Arka plan senkronu: önbelleği tazeler; başarısız olursa ekran kalır, not düşer. */
+/** Arka plan senkronu */
 async function syncEpicLibrary(manual: boolean): Promise<void> {
   if (!isTauri || epicSyncing) return;
   epicSyncing = true;
@@ -646,7 +624,6 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
     if (isNotAuth(e)) {
       epicPhase = "login";
     } else {
-      // Önbellek ekranda kalır; sadece not düşülür.
       epicSyncNote = "Çevrimdışı önbellek gösteriliyor — senkron başarısız oldu.";
     }
   } finally {
@@ -723,12 +700,12 @@ async function epicDoLogout(): Promise<void> {
 
 function epicVisibleSummaries(): EpicSummary[] {
   const q = query.toLocaleLowerCase("tr");
-  const list = epicSummaries.filter(
-    (s) =>
-      (epicSub === "all" || epicFav.has(s.appName)) &&
-      (!epicInstalledOnly || s.installed) &&
-      s.title.toLocaleLowerCase("tr").includes(q),
-  );
+  const list = epicSummaries.filter((s) => {
+    if (epicFilter === "installed" && !s.installed) return false;
+    if (epicFilter === "fav" && !epicFav.has(s.appName)) return false;
+    if (epicFilter === "updates" && !s.updateAvailable) return false;
+    return s.title.toLocaleLowerCase("tr").includes(q);
+  });
   const recentIdx = (id: string): number => {
     const i = epicRecent.indexOf(id);
     return i === -1 ? Number.MAX_SAFE_INTEGER : i;
@@ -752,27 +729,104 @@ function epicArt(s: EpicSummary): string {
   const g = rawOf(s.appName);
   const url = g ? epicPortrait(g) : s.cover;
   if (url) return `<img src="${url}" alt="" loading="lazy" />`;
-  return `<div class="pcover" style="background:linear-gradient(135deg,#2d3436,#6c5ce7)">🎮</div>`;
+  return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52)">🎮</div>`;
+}
+
+function renderHeroSpotlight(): string {
+  if (epicSummaries.length === 0) return "";
+  const targetName =
+    epicRecent.find((id) => epicSummaries.some((s) => s.appName === id)) ||
+    epicSummaries.find((s) => s.installed)?.appName ||
+    epicSummaries.find((s) => epicFav.has(s.appName))?.appName ||
+    epicSummaries[0]?.appName;
+  const s = epicSummaries.find((x) => x.appName === targetName);
+  if (!s) return "";
+
+  const isRecent = epicRecent.includes(s.appName);
+  const wideImg = epicWideArt(s) || s.cover;
+  const g = rawOf(s.appName);
+  const devRaw = g?.metadata?.developer;
+  const dev = typeof devRaw === "string" ? devRaw : "Epic Games";
+
+  const totalInstalled = epicSummaries.filter((x) => x.installed).length;
+  const totalSize = epicSummaries.reduce((acc, x) => acc + (x.installSize || 0), 0);
+
+  const p = epicDlProgress(s.appName);
+  const primaryBtn =
+    p !== null
+      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      : s.installed
+        ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Hemen Oyna</button>`
+        : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
+
+  return `
+    <div class="hero-spotlight">
+      ${wideImg ? `<img class="hero-bg" src="${wideImg}" alt="" />` : ""}
+      <div class="hero-gradient"></div>
+      <div class="hero-content">
+        <div class="hero-main">
+          <div class="hero-badge">
+            ${isRecent ? `${icon("play", 11)} Son Oynanan` : `⭐ Öne Çıkan`}
+          </div>
+          <h1 class="hero-title">${esc(s.title)}</h1>
+          <div class="hero-meta">
+            <span>${esc(dev)}</span>
+            <span>•</span>
+            <span>v${esc(s.version)}</span>
+            ${s.installed && s.installSize ? `<span>•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
+          </div>
+          <div class="hero-actions">
+            ${primaryBtn}
+            <button class="btn ghost" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 14)} Detaylar</button>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-chip">
+            <div class="val">${epicSummaries.length}</div>
+            <div class="lbl">Toplam Oyun</div>
+          </div>
+          <div class="stat-chip">
+            <div class="val">${totalInstalled}</div>
+            <div class="lbl">Kurulu</div>
+          </div>
+          <div class="stat-chip">
+            <div class="val">${fmtBytes(totalSize)}</div>
+            <div class="lbl">Depolama</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function epicCardPortrait(s: EpicSummary, i: number): string {
   const faved = epicFav.has(s.appName);
-  const stat = s.updateAvailable ? "update" : s.installed ? "installed" : "";
+  const p = epicDlProgress(s.appName);
+  const badge = s.updateAvailable
+    ? `<span class="pbadge update"><span class="dot"></span>Güncelleme</span>`
+    : s.installed
+      ? `<span class="pbadge ready"><span class="dot"></span>Hazır</span>`
+      : "";
+  const dlBar =
+    p !== null
+      ? `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${s.appName}" style="width:${p}%"></div></div>`
+      : "";
+
   return `
-    <div class="pcard enter" style="animation-delay:${Math.min(i * 10, 300)}ms" data-act="epic-detail" data-id="${s.appName}">
+    <div class="pcard enter" style="animation-delay:${Math.min(i * 12, 350)}ms" data-act="epic-detail" data-id="${s.appName}">
       ${epicArt(s)}
+      ${badge}
       <div class="shade"></div>
-      ${stat ? `<span class="pstat ${stat}"></span>` : ""}
       <div class="poverlay">
         <div class="top">
-          <button class="iconbtn plain ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 17)}</button>
-          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">${icon("dots", 16)}</button>
+          <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
+          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">${icon("dots", 15)}</button>
         </div>
         <div class="bottom">
           <div class="ptitle">${esc(s.title)}</div>
           ${epicActionButtons(s, "full")}
         </div>
       </div>
+      ${dlBar}
     </div>`;
 }
 
@@ -794,40 +848,76 @@ function openEpicModal(appName: string): void {
   const s = epicSummaries.find((x) => x.appName === appName);
   if (!s) return;
   pushRecent(appName);
-  pushRecent(appName);
   const g = rawOf(appName);
-  const art = s.cover ?? (g ? epicPortrait(g) : null);
+  const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const faved = epicFav.has(appName);
   const devRaw = g ? g.metadata.developer : undefined;
   const dev = typeof devRaw === "string" ? devRaw : "";
   const p = epicDlProgress(appName);
+
   const primary =
     p !== null
-      ? `<button class="btn full" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      ? `<button class="btn full primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
       : s.installed
-        ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Oyna</button>`
-        : `<button class="btn full dark" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
+        ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
+        : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
+
+  const rawDesc = s.description?.trim();
+  const hasRealDesc = rawDesc && rawDesc !== s.title && rawDesc.length > 20;
+  const descHtml = hasRealDesc
+    ? `<div class="drawer-desc">${esc(rawDesc)}</div>`
+    : `<div class="drawer-desc" style="color:var(--muted);font-style:italic">Epic Games Store kataloğunda ek açıklama bulunmuyor.</div>`;
+
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
-      <div class="modal mini">
-        <button class="mclose" data-act="close" title="Kapat">${icon("x", 15)}</button>
-        <div class="cover">${art ? `<img src="${art}" alt="" />` : "🎮"}</div>
-        <div class="modal-body">
-          <h2>${esc(s.title)}</h2>
-          ${dev ? `<div class="m-sub">${esc(dev)}</div>` : ""}
-          <div class="mrow-top">
-            <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "Kurulu" : "Kurulu değil"}</span>
-            ${s.updateAvailable ? `<span class="pill update">Güncelleme</span>` : ""}
-            ${s.dlcCount > 0 ? `<span class="pill">+${s.dlcCount} DLC</span>` : ""}
-            ${s.installSize ? `<span class="muted">${fmtBytes(s.installSize)}</span>` : ""}
+      <div class="drawer">
+        <button class="drawer-close" data-act="close" title="Kapat">${icon("x", 16)}</button>
+        <div class="drawer-cover">
+          ${art ? `<img src="${art}" alt="" />` : `<div class="pcover">🎮</div>`}
+          <div class="drawer-gradient"></div>
+        </div>
+        <div class="drawer-body">
+          <h2 class="drawer-title">${esc(s.title)}</h2>
+          ${dev ? `<div class="drawer-dev">${esc(dev)}</div>` : ""}
+          <div class="drawer-pills">
+            <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "● Kurulu" : "○ Kurulu Değil"}</span>
+            ${s.updateAvailable ? `<span class="status-pill warn">⚡ Güncelleme Mevcut</span>` : ""}
+            ${s.dlcCount > 0 ? `<span class="status-pill">+${s.dlcCount} DLC</span>` : ""}
+            ${s.installSize ? `<span class="status-pill">${fmtBytes(s.installSize)}</span>` : ""}
           </div>
-          ${primary}
-          <div class="mrow">
-            <button id="m-fav" class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 16)}</button>
-            ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal</button>` : ""}
-            ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
-            <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
-            ${s.installed ? `<button class="btn danger" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 14)} Kaldır</button>` : ""}
+          <div class="drawer-actions">
+            ${primary}
+            <div class="drawer-actions-row">
+              <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}</button>
+              ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
+              ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
+              <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
+            </div>
+            ${s.installed ? `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}" style="margin-top:4px">${icon("trash", 14)} Oyunu Bilgisayardan Kaldır</button>` : ""}
+          </div>
+          ${descHtml}
+          <div class="drawer-meta-grid">
+            <div class="meta-tile">
+              <div class="tile-label">Sürüm</div>
+              <div class="tile-val">v${esc(s.version)}</div>
+            </div>
+            <div class="meta-tile">
+              <div class="tile-label">Kurulu Sürüm</div>
+              <div class="tile-val">${s.installedVersion ? `v${esc(s.installedVersion)}` : "—"}</div>
+            </div>
+            <div class="meta-tile">
+              <div class="tile-label">İndirme / Boyut</div>
+              <div class="tile-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
+            </div>
+            <div class="meta-tile">
+              <div class="tile-label">DLC Sayısı</div>
+              <div class="tile-val">${s.dlcCount > 0 ? `${s.dlcCount} DLC` : "Yok"}</div>
+            </div>
+            ${s.installPath ? `
+            <div class="meta-tile full">
+              <div class="tile-label">Kurulum Konumu</div>
+              <div class="tile-val" title="${esc(s.installPath)}">${esc(s.installPath)}</div>
+            </div>` : ""}
           </div>
         </div>
       </div>
@@ -876,7 +966,7 @@ function renderEpic(): string {
       <div class="settings-box">
         <p>Epic oyunların için açık kaynak <strong>legendary</strong> aracı kullanılır. Tek seferlik indirilir (~45 MB).</p>
         ${epicBusy === "download" ? `<div class="bar" style="margin:12px 0"><div style="width:${pct}%"></div></div><p class="muted">${esc(setupMessage || "indiriliyor…")}</p>` : ""}
-        <p><button class="btn" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? "İndiriliyor…" : "legendary'yi indir"}</button></p>
+        <p><button class="btn primary" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? "İndiriliyor…" : "legendary'yi indir"}</button></p>
         <p class="muted">Kaynak: github.com/legendary-gl/legendary (GPL-3.0)</p>
       </div>`;
   }
@@ -890,7 +980,7 @@ function renderEpic(): string {
         </ol>
         <p><input id="epic-code" class="text-input" placeholder='{"authorizationCode": "..."}' autocomplete="off" spellcheck="false" /></p>
         <p style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? "Giriş yapılıyor…" : "Giriş yap"}</button>
+          <button class="btn primary" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? "Giriş yapılıyor…" : "Giriş yap"}</button>
           <button class="btn ghost" data-act="epic-import" ${epicBusy ? "disabled" : ""}>${epicBusy === "import" ? "Aktarılıyor…" : "Epic Launcher'dan aktar"}</button>
         </p>
       </div>`;
@@ -907,68 +997,62 @@ function renderEpic(): string {
         <p class="muted">Oturum sorunlarında çıkış yapıp kod ile tekrar giriş yapmak çözer.</p>
       </div>`;
   }
+
+  const installedCount = epicSummaries.filter((s) => s.installed).length;
   const favCount = epicSummaries.filter((s) => epicFav.has(s.appName)).length;
+  const updateCount = epicSummaries.filter((s) => s.updateAvailable).length;
+
   return `
-    <h2>Kütüphane</h2>
-    ${epicSyncNote ? `<p class="subtitle">${esc(epicSyncNote)}</p>` : ""}
-    <div class="subtabs">
-      <button data-act="epic-sub-all" class="${epicSub === "all" ? "active" : ""}">Oyunlar (${epicSummaries.length})</button>
-      <button data-act="epic-sub-fav" class="${epicSub === "fav" ? "active" : ""}">Favoriler (${favCount})</button>
-    </div>
-    <div class="toolbar">
-      <label class="lib-search"><span>🔍</span><input id="search" type="search" placeholder="Ara..." value="${esc(query)}" autocomplete="off" /></label>
-      <label class="switch-label" title="Yalnızca kurulu oyunlar"><span class="switch"><input type="checkbox" id="epic-installed-only" ${epicInstalledOnly ? "checked" : ""} /><span></span></span>Yalnızca kurulu</label>
-      <button class="btn ghost small" data-act="epic-view-grid" title="Izgara görünümü" ${epicViewMode === "grid" ? "disabled" : ""}>▦</button>
-      <button class="btn ghost small" data-act="epic-view-list" title="Liste görünümü" ${epicViewMode === "list" ? "disabled" : ""}>☰</button>
-      <select id="epic-sort" class="select">
-        <option value="recent" ${epicSort === "recent" ? "selected" : ""}>Son oynanan</option>
-        <option value="alpha" ${epicSort === "alpha" ? "selected" : ""}>Alfabetik</option>
-        <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Kurulu önce</option>
-        <option value="updates" ${epicSort === "updates" ? "selected" : ""}>Güncelleme olanlar</option>
-      </select>
-      <button class="btn ghost small" data-act="epic-refresh">↻ Yenile</button>
-    </div>
-    <div id="lib-results" class="${epicViewMode === "grid" ? "pgrid" : ""}">${renderEpicItems()}</div>`;
-}
-
-/* ---------- Modal ---------- */
-
-function openModal(id: string): void {
-  const g = gameById(id);
-  if (!g) return;
-  const m = metaOf(g.id);
-  modalRoot.innerHTML = `
-    <div class="overlay" data-act="close">
-      <div class="modal">
-        <div class="cover" style="background:${m.gradient}">${m.emoji}</div>
-        <div class="modal-body">
-          <h2>${esc(g.title)}</h2>
-          <p class="desc">${esc(m.description)}</p>
-          <dl class="kv">
-            <dt>Tür</dt><dd>${esc(g.genre)}</dd>
-            <dt>Puan</dt><dd>⭐ ${m.rating}</dd>
-            <dt>Boyut</dt><dd>${fmtSize(g.sizeMb)}</dd>
-            <dt>Sürüm</dt><dd>${esc(g.version)}</dd>
-            <dt>Fiyat</dt><dd>${fmtPrice(g.price)}</dd>
-            <dt>Durum</dt><dd>${g.installed ? "✅ Kurulu" : "⬜ Kurulu değil"}</dd>
-          </dl>
-          <div class="modal-actions">
-            ${g.installed
-              ? `<button class="btn play" data-act="play" data-id="${g.id}">▶ Oyna</button>
-                 <button class="btn danger" data-act="uninstall" data-id="${g.id}">Kaldır</button>`
-              : `<button class="btn" data-act="install" data-id="${g.id}">${g.price === 0 ? "Yükle" : fmtPrice(g.price) + " • Yükle"}</button>`}
-            <button class="btn ghost" data-act="close">Kapat</button>
-          </div>
-        </div>
+    ${renderHeroSpotlight()}
+    <div class="lib-header">
+      <div class="filter-chips">
+        <button class="chip ${epicFilter === "all" ? "active" : ""}" data-act="epic-filter" data-val="all">
+          Tüm Oyunlar <span class="chip-cnt">${epicSummaries.length}</span>
+        </button>
+        <button class="chip ${epicFilter === "installed" ? "active" : ""}" data-act="epic-filter" data-val="installed">
+          ${icon("play", 13)} Kurulu <span class="chip-cnt">${installedCount}</span>
+        </button>
+        <button class="chip ${epicFilter === "fav" ? "active" : ""}" data-act="epic-filter" data-val="fav">
+          ${icon("heart", 13)} Favoriler <span class="chip-cnt">${favCount}</span>
+        </button>
+        ${updateCount > 0 ? `
+        <button class="chip ${epicFilter === "updates" ? "active" : ""}" data-act="epic-filter" data-val="updates">
+          ⚡ Güncellemeler <span class="chip-cnt">${updateCount}</span>
+        </button>` : ""}
       </div>
-    </div>`;
+      <div class="lib-tools">
+        <label class="search-box">
+          <span>🔍</span>
+          <input id="search" type="search" placeholder="Kütüphanede ara..." value="${esc(query)}" autocomplete="off" />
+          <span class="search-shortcut">Ctrl+F</span>
+        </label>
+        <select id="epic-sort" class="select" title="Sıralama">
+          <option value="recent" ${epicSort === "recent" ? "selected" : ""}>Son oynanan</option>
+          <option value="alpha" ${epicSort === "alpha" ? "selected" : ""}>Alfabetik</option>
+          <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Kurulu önce</option>
+          <option value="updates" ${epicSort === "updates" ? "selected" : ""}>Güncelleme olanlar</option>
+        </select>
+        <div class="card-size-toggle" title="Kart boyutu">
+          <button class="${epicCardSize === "compact" ? "active" : ""}" data-act="epic-size" data-val="compact" title="Küçük">S</button>
+          <button class="${epicCardSize === "normal" ? "active" : ""}" data-act="epic-size" data-val="normal" title="Normal">M</button>
+          <button class="${epicCardSize === "large" ? "active" : ""}" data-act="epic-size" data-val="large" title="Büyük">L</button>
+        </div>
+        <div class="view-mode-toggle">
+          <button class="${epicViewMode === "grid" ? "active" : ""}" data-act="epic-view-grid" title="Izgara">▦</button>
+          <button class="${epicViewMode === "list" ? "active" : ""}" data-act="epic-view-list" title="Liste">☰</button>
+        </div>
+        <button class="btn ghost small" data-act="epic-refresh" title="Kütüphaneyi yenile">↻</button>
+      </div>
+    </div>
+    ${epicSyncNote ? `<p class="subtitle">${esc(epicSyncNote)}</p>` : ""}
+    <div id="lib-results" class="${epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : ""}">${renderEpicItems()}</div>`;
 }
 
 function closeModal(): void {
   modalRoot.innerHTML = "";
 }
 
-/* ---------- Epic indirme (Faz 2) ---------- */
+/* ---------- Epic indirme ---------- */
 
 function epicDlProgress(appName: string): number | null {
   const dl = downloads.get(appName);
@@ -979,15 +1063,13 @@ function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string 
   const btn = size ? ` ${size}` : "";
   const p = epicDlProgress(s.appName);
   if (p !== null) {
-    return `<button class="btn${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
+    return `<button class="btn primary${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">İptal</button>`;
   }
   if (s.installed) {
-    const kind = size === "full" ? "light" : "play";
-    return `<button class="btn${btn} ${kind}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
   }
-  const kind = size === "full" ? "dark" : "";
-  return `<button class="btn${btn} ${kind}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} Yükle</button>`;
+  return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} Yükle</button>`;
 }
 
 async function epicInstall(appName: string): Promise<void> {
@@ -1049,7 +1131,7 @@ async function loadSettingsView(): Promise<void> {
       epicSettingsCache = st;
       epicDefaultDir = dir;
     } catch {
-      // sessiz geç, varsayılanlarla çiz
+      // sessiz geç
     }
   }
   render();
@@ -1058,7 +1140,7 @@ async function loadSettingsView(): Promise<void> {
 /* ---------- Olaylar (delegation) ---------- */
 
 document.addEventListener("click", (e) => {
-  const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-card], [data-view]");
+  const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-view]");
   if (!t) return;
 
   if (t.dataset.view) {
@@ -1078,10 +1160,8 @@ document.addEventListener("click", (e) => {
   else if (act === "play" && id) void launchGame(id);
   else if (act === "uninstall" && id) void uninstallGame(id);
   else if (act === "close") {
-    // .modal kutusu içindeki tıklamalar document'e ulaşır; sadece
-    // overlay boşluğuna veya X düğmesine basılınca kapat.
     const el = e.target as HTMLElement;
-    if (el === t || el.closest(".mclose")) closeModal();
+    if (el === t || el.closest(".drawer-close") || el.closest(".mclose")) closeModal();
   } else if (act === "goto-library") {
     view = "library";
     render();
@@ -1112,11 +1192,12 @@ document.addEventListener("click", (e) => {
     void openStore();
   } else if (act === "open-profile") {
     openProfile();
-  } else if (act === "epic-sub-all") {
-    epicSub = "all";
+  } else if (act === "epic-filter" && t.dataset.val) {
+    epicFilter = t.dataset.val as typeof epicFilter;
     render();
-  } else if (act === "epic-sub-fav") {
-    epicSub = "fav";
+  } else if (act === "epic-size" && t.dataset.val) {
+    epicCardSize = t.dataset.val as CardSize;
+    localStorage.setItem("efxlve-card-size", epicCardSize);
     render();
   } else if (act === "epic-view-grid") {
     epicViewMode = "grid";
@@ -1150,21 +1231,26 @@ document.addEventListener("click", (e) => {
     void epicOpenFolder(id);
   } else if (act === "epic-store-page" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
-    openUrl(epicStoreSearch(s ? s.title : id)).catch((e: unknown) => toast(String(e), "err"));
-  } else if (!act && t.dataset.card) {
-    openModal(t.dataset.card);
+    const title = s ? s.title : id;
+    void openStoreUrl(epicStorePageUrl(title), "store");
   }
 });
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+    const s = document.getElementById("search");
+    if (s) {
+      e.preventDefault();
+      s.focus();
+    }
+  }
 });
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
   if (t.id !== "search") return;
   query = (t as HTMLInputElement).value;
-  // Kütüphane araması: odağı kaybetmemek için sadece sonuçlar tazelenir.
   const box = document.getElementById("lib-results");
   if (box) box.innerHTML = renderEpicItems();
 });
@@ -1173,9 +1259,6 @@ document.addEventListener("change", (e) => {
   const t = e.target as HTMLElement;
   if (t.id === "epic-sort") {
     epicSort = (t as HTMLSelectElement).value as typeof epicSort;
-    render();
-  } else if (t.id === "epic-installed-only") {
-    epicInstalledOnly = (t as HTMLInputElement).checked;
     render();
   }
 });
@@ -1201,21 +1284,16 @@ async function init(): Promise<void> {
     } catch {
       epicSkippedCount = 0;
     }
-    // legendary kurulum ilerlemesi
     await listen<SetupEvent>("legendary-setup", (event) => {
       setupProgress = event.payload.progress ?? null;
       setupMessage = event.payload.message;
       if (event.payload.state === "error") toast(setupMessage, "err");
       if (view === "library") render();
     });
-    // kütüphane senkronu durumu (429 tekrar denemeleri vb.)
     await listen<LibraryEvent>("legendary-library", (event) => {
       epicBusyMsg = event.payload.message;
       if (view === "library") render();
     });
-    // Rust'tan gelen indirme ilerleme event'leri (demo + Epic).
-    // Not: aktif indirmelerde tüm görünümü yeniden çizmek yerine yalnızca
-    // yüzde düğmeleri güncellenir (odak kaybı/kırpışma olmasın).
     await listen<ProgressEvent>("download-progress", (event) => {
       const { id, progress, done } = event.payload;
       if (!done) {
@@ -1229,6 +1307,9 @@ async function init(): Promise<void> {
         updateBadge();
         document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
           b.textContent = `%${progress}`;
+        });
+        document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
+          (b as HTMLElement).style.width = `${progress}%`;
         });
         return;
       }
@@ -1259,7 +1340,7 @@ async function init(): Promise<void> {
 
 void init();
 
-/* ---------- İkonlar (Lucide, inline SVG — emoji yok) ---------- */
+/* ---------- İkonlar (Lucide, inline SVG) ---------- */
 
 function icon(
   name: "heart" | "dots" | "play" | "download" | "folder" | "external" | "trash" | "x",
