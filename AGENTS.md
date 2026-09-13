@@ -110,8 +110,20 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`
 14. **Tek aktif indirme + kuyruk** (`EpicDlState`); iptal PID üzerinden (`taskkill`/`kill`),
     yarım dosyalar legendary resume ile devam eder.
 15. **Frontend render disiplini:** ilerleme event'inde tüm görünümü YENİDEN ÇİZME —
-    sadece `[data-dlbtn]` düğme yazılarını güncelle (odak kaybı/kırpışma olur).
-    Arama kutusu dinamik view içindeyse full render YAPMA (odak ölür).
+   sadece `[data-dlbtn]` ve `[data-dlbar]` düğme/çubuklarını güncelle (odak kaybı/kırpışma olur).
+   Arama kutusu dinamik view içindeyse full render YAPMA (odak ölür).
+16. **Epic Store URL yapısı & Yerleşik Mağaza:**
+   Eski `/en-US/search?q=` adresi Epic tarafından genel kurumsal site aramasına yönlendirilir
+   (`epicgames.com/site/search`). Doğrudan ürün sayfası linki `https://store.epicgames.com/p/<slug>`
+   şeklindedir; slug başlığın alfanümerik normalize edilmesiyle (`toEpicSlug`) üretilir. Mağaza araması
+   için ise `/browse?q=` kullanılır. Detay çekmecesindeki "Mağaza" butonu 3. parti harici tarayıcı yerine
+   uygulamanın yerleşik child webview mağazasını açar (`openStoreUrl(url, "store")`).
+17. **Kütüphane UI Mimarisi & Rozet Güvenliği:**
+   - Kart hover katmanında aksiyon butonları (`.top`) daima **sağ üstte** toplanır; sol üstteki `.pbadge`
+     durum rozetiyle ASLA çakışmaz.
+   - S/M/L kart boyutu dinamiktir (`size-compact`, `size-normal`, `size-large`) ve `localStorage`
+     (`efxlve-card-size`) üzerinden hatırlanır.
+   - Detay görünümü sağdan kayan sinematik Drawer panelidir; teknik veriler `drawer-meta-grid` ile sunulur.
 
 ## 7. Test stratejisi
 
@@ -127,8 +139,13 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`
 ## 8. Durum ve yol haritası
 
 Biten: Faz 0 (kurulum/auth/kütüphane) • Faz 1 (başlatma: online→offline fallback) •
-Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Epic-temalı UI (üst bar, portre ızgara,
-detay penceresi, gömülü mağaza + profil, favoriler, sıralama).
+Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi:
+- Sinematik Hero Spotlight (son oynanan/öne çıkan dev afiş, hızlı başlat, canlı istatistikler)
+- Hızlı filtre çipleri (Tüm Oyunlar, Kurulu, Favoriler, Güncellemeler) + Ctrl+F kısayolu
+- S/M/L dinamik kart boyutu seçici (büyük poster desteği)
+- Çakışmasız ambient glow'lu portre kartlar ve canlı taban indirme progress barı
+- Sağdan kayan sinematik detay çekmecesi (Drawer) ve modern metadata ızgarası
+- Gömülü webview mağaza entegrasyonu (doğrudan oyunun `/p/<slug>` mağaza sayfasını launcher içinde açma)
 Sıradaki adaylar: indirme hızı/ETA göstergesi, oyun güncelleme akışı (`update`),
 bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, EGL içe aktarma UI'ı, paketleme (`tauri build`).
 
