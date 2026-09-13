@@ -170,8 +170,11 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
     - `models.rs` içindeki `consolidate()` metodu ve `commands.rs` içindeki `scan_achievements_summary` hem genel toplamı hem de `base_achievements` ve `base_unlocked` sayılarını tarar; `base_achievements > 0 && base_unlocked >= base_achievements` durumunda oyunu Platin Kupa olarak tesciller.
     - **Ultra-Kompakt & Duyarlı UI Tasarımı:**
       - Detay çekmecesindeki hantal çoklu kutular yerine ~55px'lik tek satır kompakt başlık kartı (`.ach-hero-compact`) kullanılır. Genel XP, mağaza linki, yenileme butonu ve tek satırda çift istatistik (`Genel: X/Y • 🎮 Ana Oyun: A/B`) yer alır.
-      - Kapsam (`Tümü`, `🎮 Ana Oyun`, `📦 Ek Paketler`) ve Durum filtreleri (`Tümü`, `Kazanılanlar`, `Kilitliler`, `Gizli`) ince hap şeritleri (`.ach-scope-strip`, `.ach-status-strip`) olarak dizilir.
+      - Kapsam (`Tümü`, `🎮 Ana Oyun`, `📦 Ek Paketler`) ve Durum filtreleri (`Tümü`, `Kazanılanlar`, `Kilitliler`, `Gizli`) ince hap şeritleri (`.ach-scope-strip`, `.ach-status-strip`) olarak dizilir. `Ana Oyun` çipinde gereksiz kupa emojisi yer almaz.
       - Başarım listesi (`.ach-list`) sabit piksel yerine dinamik `max-height: calc(100vh - 275px)` ile 1080p ve dizüstü ekranlarına kusursuz uyum sağlar; dikey taşma engellenir. Test butonu arayüzden tamamen temizlenmiştir.
+      - **Çekmece İçi Pürüzsüz Geçiş ve Oto-Yenilenme Disiplini:**
+        - Detay çekmecesi ilk açıldığında ("Genel Bakış" sekmesi) arka planda otomatik `fetchAndRenderAchievements` ÇAĞRILMAZ. Ağ sorgusu yalnızca kullanıcı açıkça "🏆 Başarımlar" sekmesine tıkladığında veya yenileme istediğinde çalışır; böylece kullanıcının gözü önünde sayfanın kendi kendine yenilenmesi (spontaneous refresh) engellenir.
+        - Sekmeler ve başarım filtreleri arasında geçiş yapılırken (`isInitialOpen = false`) tüm `overlay` ve `drawer` DOM'u asla yıkılıp baştan kurulmaz (`modalRoot.innerHTML` sıfırlanmaz). Yalnızca `#drawer-tab-content` ve buton durumları yerinde (in-place) güncellenir; liste kaydırma pozisyonu (`existingDrawer.scrollTop` ve `.ach-list.scrollTop`) korunur. Böylece anlık kapanıp açılma, kararma ve animasyon kırpışması tamamen engellenmiştir.
 
 ## 7. Test stratejisi
 
@@ -203,6 +206,7 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - Gizli başarımların katalog metadatasından taranması ve tıklanabilir spoiler koruması (`[👁️ Göster]` / `[👁️ Gizle]`)
 - Ana Oyun (Base Game) vs Ek Paketler (DLC) ayrımı, Platin Kupa kuralı (ana oyun tamamlanması) ve Kapsam filtreleri (`Tüm Paketler`, `🎮 Ana Oyun - 🏆 Platin`, `📦 Ek Paketler`)
 - 1080p ve dizüstü monitörleri için optimize edilmiş ultra-kompakt Başarım Paneli (`.ach-hero-compact`, tek satır çift istatistik, dinamik `calc(100vh - 275px)` duyarlı liste), çift katmanlı gizli başarım onarımı (Rust + Frontend) ve test butonunun kaldırılması
+- Detay çekmecesinde pürüzsüz yerinde (in-place) geçiş mimarisi, kaydırma pozisyonu koruması, "Ana Oyun" kupa emojisi temizliği ve Genel Bakış sekmesinde kendiliğinden oluşan refresh döngüsünün engellenmesi
 Sıradaki adaylar: indirme hızı/ETA göstergesi, oyun güncelleme akışı (`update`),
 bulut kayıt arayüzü (`sync-saves`), DLC kurulumu, EGL içe aktarma UI'ı, paketleme (`tauri build`).
 
