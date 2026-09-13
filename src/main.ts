@@ -1033,6 +1033,39 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
       ? `<span style="font-size:11px;color:var(--muted);margin-left:4px">(${achSum.user_unlocked}/${achSum.total_achievements})</span>`
       : "";
 
+  if (!isInitialOpen) {
+    const existingDrawer = modalRoot.querySelector(".drawer") as HTMLElement | null;
+    const contentEl = document.getElementById("drawer-tab-content");
+    if (existingDrawer && contentEl && currentModalAppName === appName) {
+      modalRoot.querySelectorAll(".drawer-tab").forEach((btn) => {
+        const el = btn as HTMLElement;
+        el.classList.toggle("active", el.dataset.tab === activeDrawerTab);
+      });
+
+      const drawerScroll = existingDrawer.scrollTop;
+      const achList = contentEl.querySelector(".ach-list") as HTMLElement | null;
+      const achScroll = achList ? achList.scrollTop : 0;
+
+      contentEl.innerHTML =
+        activeDrawerTab === "overview"
+          ? renderDrawerOverview(s, primary, faved, p, descHtml, partner, antiCheat)
+          : renderDrawerAchievements(s);
+
+      existingDrawer.scrollTop = drawerScroll;
+      if (achScroll > 0) {
+        const nextAchList = contentEl.querySelector(".ach-list") as HTMLElement | null;
+        if (nextAchList) nextAchList.scrollTop = achScroll;
+      }
+
+      const achTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="achievements"]');
+      if (achTabBtn) {
+        achTabBtn.innerHTML = `${icon("trophy", 14)} Başarımlar ${achTabBadge}`;
+      }
+
+      return;
+    }
+  }
+
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
       <div class="drawer" style="${isInitialOpen ? "" : "animation:none"}">
@@ -1077,12 +1110,6 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
   if (prevScroll > 0) {
     const nextBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
     if (nextBody) nextBody.scrollTop = prevScroll;
-  }
-
-  const cachedData = loadedAchievements.get(appName);
-  const needsFetch = !cachedData || (cachedData.achievements.length === 0 && (achSum?.total_achievements || 0) > 0);
-  if (needsFetch && loadingAchFor !== appName && (achSum?.supported ?? true)) {
-    void fetchAndRenderAchievements(appName, true);
   }
 }
 
@@ -1340,7 +1367,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
           Tümü (${data.achievements.length})
         </button>
         <button class="ach-scope-pill ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
-          🎮 Ana Oyun (${baseUnlocked}/${baseTotal}) <span class="scope-plat-dot">🏆</span>
+          🎮 Ana Oyun (${baseUnlocked}/${baseTotal})
         </button>
         <button class="ach-scope-pill ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
           📦 Ek Paketler (${dlcUnlocked}/${dlcTotal})
@@ -1371,6 +1398,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
 
 async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
   if (!isTauri) return;
+  if (loadingAchFor === appName) return;
   loadingAchFor = appName;
   if (currentModalAppName === appName && activeDrawerTab === "achievements") {
     openEpicModal(appName, false);
@@ -1408,10 +1436,9 @@ async function fetchAndRenderAchievements(appName: string, forceRefresh = false)
     });
   } finally {
     loadingAchFor = null;
-    if (currentModalAppName === appName) {
+    if (currentModalAppName === appName && activeDrawerTab === "achievements") {
       openEpicModal(appName, false);
     }
-    if (view === "library") render();
   }
 }
 
