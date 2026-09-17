@@ -80,6 +80,10 @@ pub struct EpicSettings {
     pub alt_legendary_bin: Option<String>,
     #[serde(default)]
     pub install_dir: Option<String>,
+    #[serde(default)]
+    pub network_profile: Option<String>,
+    #[serde(default)]
+    pub offline_mode: Option<bool>,
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -413,6 +417,7 @@ fn main() {
             legendary::commands::epic_get_achievements,
             legendary::commands::epic_get_achievements_summary,
             legendary::commands::epic_get_system_requirements,
+            legendary::commands::epic_get_hltb,
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
             legendary::commands::epic_verify_game,
@@ -423,6 +428,22 @@ fn main() {
             legendary::commands::epic_get_game_dlcs,
             legendary::commands::epic_get_install_options,
             legendary::commands::epic_check_updates,
+            legendary::commands::epic_get_playtimes,
+            legendary::commands::epic_set_playtime,
+            legendary::commands::epic_get_network_profile,
+            legendary::commands::epic_set_network_profile,
+            legendary::commands::epic_get_offline_mode,
+            legendary::commands::epic_set_offline_mode,
+            legendary::commands::epic_backup_save,
+            legendary::commands::epic_list_backups,
+            legendary::commands::epic_restore_backup,
+            legendary::commands::epic_delete_backup,
+            legendary::commands::epic_open_backup_folder,
+            legendary::commands::epic_get_collections,
+            legendary::commands::epic_save_collection,
+            legendary::commands::epic_delete_collection,
+            legendary::commands::epic_set_game_collections,
+            legendary::commands::epic_import_egl_collections,
             legendary::commands::epic_login_with_code,
             legendary::commands::epic_import_egl,
             legendary::commands::epic_logout,

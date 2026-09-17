@@ -9,8 +9,12 @@ pub mod commands;
 pub mod downloader;
 pub mod models;
 pub mod paths;
+pub mod playtime;
+pub mod backup;
+pub mod collections;
 pub mod skip;
 pub mod transfers;
+pub mod hltb;
 
 use thiserror::Error;
 

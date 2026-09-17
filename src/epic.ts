@@ -609,6 +609,7 @@ export interface GameDlcItem {
   installed: boolean;
   size: number;
   image?: string | null;
+  downloadable?: boolean;
 }
 
 export interface GameDlcResponse {
@@ -668,3 +669,135 @@ export interface GameUpdateInfo {
 export const epicCheckUpdates = () =>
   invoke<GameUpdateInfo[]>("epic_check_updates");
 
+/* ---------- Oynama Süresi & Canlı Durum (Playtime & Game Status) ---------- */
+
+export interface PlaytimeRecord {
+  total_seconds: number;
+  session_count: number;
+  last_played_timestamp?: number;
+  last_played?: string;
+}
+
+export interface GameStatusEvent {
+  id: string;
+  running: boolean;
+  sessionSeconds?: number;
+  totalSeconds?: number;
+  sessionCount?: number;
+  lastPlayed?: string;
+  lastPlayedTimestamp?: number;
+}
+
+export const epicGetPlaytimes = () =>
+  invoke<Record<string, PlaytimeRecord>>("epic_get_playtimes");
+
+export const epicSetPlaytime = (
+  appName: string,
+  totalSeconds: number,
+  lastPlayed?: string | null,
+) =>
+  invoke<PlaytimeRecord>("epic_set_playtime", {
+    appName,
+    totalSeconds,
+    lastPlayed: lastPlayed ?? null,
+  });
+
+/* ---------- İndirme Ağ Profili (Network Profile) ---------- */
+
+export type NetworkProfileType = "max" | "balanced" | "low";
+
+export const epicGetNetworkProfile = () =>
+  invoke<string>("epic_get_network_profile");
+
+export const epicSetNetworkProfile = (profile: string) =>
+  invoke<void>("epic_set_network_profile", { profile });
+
+/* ---------- Çevrimdışı Mod (Offline Mode) ---------- */
+
+export const epicGetOfflineMode = () =>
+  invoke<boolean>("epic_get_offline_mode");
+
+export const epicSetOfflineMode = (enabled: boolean) =>
+  invoke<void>("epic_set_offline_mode", { enabled });
+
+/* ---------- Oyun Kayıtları Yedekleme (Save Backup Manager) ---------- */
+
+export interface SaveBackupInfo {
+  id: string;
+  app_name: string;
+  timestamp: number;
+  formatted_date: string;
+  size_bytes: number;
+  file_count: number;
+  save_path: string;
+}
+
+export const epicBackupSave = (appName: string) =>
+  invoke<SaveBackupInfo>("epic_backup_save", { appName });
+
+export const epicListBackups = (appName: string) =>
+  invoke<SaveBackupInfo[]>("epic_list_backups", { appName });
+
+export const epicRestoreBackup = (appName: string, backupId: string) =>
+  invoke<string>("epic_restore_backup", { appName, backupId });
+
+export const epicDeleteBackup = (appName: string, backupId: string) =>
+  invoke<void>("epic_delete_backup", { appName, backupId });
+
+export const epicOpenBackupFolder = (appName: string) =>
+  invoke<string>("epic_open_backup_folder", { appName });
+
+/* ---------- Koleksiyonlar (Collections / Categories) ---------- */
+
+export interface GameCollection {
+  id: string;
+  name: string;
+  app_names: string[];
+  created_at?: string | null;
+  emoji?: string | null;
+}
+
+export const epicGetCollections = () =>
+  invoke<GameCollection[]>("epic_get_collections");
+
+export const epicSaveCollection = (
+  name: string,
+  appNames: string[],
+  id?: string | null,
+  emoji?: string | null,
+) =>
+  invoke<GameCollection>("epic_save_collection", {
+    id: id ?? null,
+    name,
+    appNames,
+    emoji: emoji ?? null,
+  });
+
+export const epicDeleteCollection = (id: string) =>
+  invoke<void>("epic_delete_collection", { id });
+
+export const epicSetGameCollections = (
+  appName: string,
+  collectionIds: string[],
+) =>
+  invoke<void>("epic_set_game_collections", {
+    appName,
+    collectionIds,
+  });
+
+export const epicImportEglCollections = () =>
+  invoke<GameCollection[]>("epic_import_egl_collections");
+
+/* ---------- HowLongToBeat (HLTB) ---------- */
+
+export interface HltbData {
+  app_name: string;
+  title: string;
+  supported: boolean;
+  main_story?: number | null;
+  main_extra?: number | null;
+  completionist?: number | null;
+}
+
+export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
+  invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
