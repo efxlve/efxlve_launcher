@@ -62,6 +62,28 @@ import {
   epicGetInstallOptions,
   epicInstallWithOptions,
   epicCheckUpdates,
+  epicGetPlaytimes,
+  epicSetPlaytime,
+  epicGetNetworkProfile,
+  epicSetNetworkProfile,
+  epicGetOfflineMode,
+  epicSetOfflineMode,
+  epicBackupSave,
+  epicListBackups,
+  epicRestoreBackup,
+  epicDeleteBackup,
+  epicOpenBackupFolder,
+  epicGetCollections,
+  epicSaveCollection,
+  epicDeleteCollection,
+  epicSetGameCollections,
+  epicImportEglCollections,
+  epicGetHltb,
+  type HltbData,
+  type GameCollection,
+  type PlaytimeRecord,
+  type GameStatusEvent,
+  type SaveBackupInfo,
   type GameDlcItem,
   type GameDlcResponse,
   type GameInstallOptions,
@@ -100,7 +122,6 @@ interface Game {
 interface CatalogMeta {
   description: string;
   gradient: string;
-  emoji: string;
   rating: number;
 }
 
@@ -116,37 +137,31 @@ const META: Record<string, CatalogMeta> = {
   "anadolu-efsaneleri": {
     description: "Anadolu mitolojisinden ilhamla açık dünya aksiyon RPG. Efsanevi yaratıklarla savaş, antik şehirleri keşfet.",
     gradient: "linear-gradient(135deg,#b33951,#5b2a86)",
-    emoji: "🏛️",
     rating: 4.8,
   },
   "neon-surucu": {
     description: "Neon ışıklı sokaklarda yüksek hızlı arcade yarış. 40+ araç, çevrimiçi çok oyunculu mod.",
     gradient: "linear-gradient(135deg,#0abde3,#6c5ce7)",
-    emoji: "🏎️",
     rating: 4.5,
   },
   "uzay-madencisi": {
     description: "Uzak gezegenlerde maden kaz, üssünü büyüt, galaksiler arası ticaret yap. Sakin bir uzay simülasyonu.",
     gradient: "linear-gradient(135deg,#1e3799,#0c2461)",
-    emoji: "🚀",
     rating: 4.2,
   },
   "kale-kusatmasi": {
     description: "Orta çağ kuşatma savaşlarında ordunu yönet. Sefer modu ve 4 kişiye kadar co-op.",
     gradient: "linear-gradient(135deg,#e17055,#6d2c1e)",
-    emoji: "🏰",
     rating: 4.7,
   },
   "piksel-ciftligi": {
     description: "Kendi piksel çiftliğini kur, hasat yap, kasabalılarla dost ol. Rahatlatıcı bağımsız yapım.",
     gradient: "linear-gradient(135deg,#00b894,#006266)",
-    emoji: "🌾",
     rating: 4.9,
   },
   "derin-dehlizler": {
     description: "Her seferinde değişen zindanlarda hayatta kal. Zorlu boss'lar, yüzlerce eşya kombinasyonu.",
     gradient: "linear-gradient(135deg,#2d3436,#6c5ce7)",
-    emoji: "🗡️",
     rating: 4.4,
   },
 };
@@ -154,7 +169,6 @@ const META: Record<string, CatalogMeta> = {
 const FALLBACK_META: CatalogMeta = {
   description: "Açıklama yakında eklenecek.",
   gradient: "linear-gradient(135deg,#2d3436,#636e72)",
-  emoji: "🎮",
   rating: 0,
 };
 
@@ -226,14 +240,51 @@ let epicSyncNote = "";
 
 type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum";
 type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
-type EpicViewMode = "grid" | "list";
+type EpicViewMode = "grid" | "shelves" | "list";
 type CardSize = "compact" | "normal" | "large";
 
 let epicFilter: EpicFilter = "all";
 let epicSort: EpicSort = "recent";
-let epicViewMode: EpicViewMode = "grid";
+let epicViewMode: EpicViewMode = (localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid";
 let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
+
+/* ---------- Özel Kapak (Custom Cover Art) ---------- */
+const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
+let customCovers: Record<string, string> = {};
+try {
+  customCovers = JSON.parse(localStorage.getItem(CUSTOM_COVERS_KEY) ?? "{}");
+} catch {
+  customCovers = {};
+}
+
+function saveCustomCover(appName: string, url: string): void {
+  customCovers[appName] = url.trim();
+  localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(customCovers));
+  render();
+  if (currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+function resetCustomCover(appName: string): void {
+  delete customCovers[appName];
+  localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(customCovers));
+  render();
+  if (currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+/* ---------- HowLongToBeat Durumu ---------- */
+let loadedHltb: Map<string, HltbData> = new Map();
+let loadingHltbFor: string | null = null;
+
+/* ---------- Koleksiyonlar (Kategoriler) ---------- */
+let epicCollections: GameCollection[] = [];
+let activeCollectionId: string | null = null; // null = Tümü, "fav" = Favoriler, veya collection.id
+let isHeroCollapsed = localStorage.getItem("efxlve-hero-collapsed") === "1";
+let isColDropdownOpen = false;
 
 function loadStrSet(key: string): Set<string> {
   try {
@@ -249,7 +300,8 @@ const DEMO_PLAT_KEY = "efxlve-demo-platinum";
 let demoPlatinumApps: Set<string> = loadStrSet(DEMO_PLAT_KEY);
 let loadedAchievements: Map<string, EpicAchievementsData> = new Map();
 let loadingAchFor: string | null = null;
-let activeDrawerTab: "overview" | "achievements" = "overview";
+type DrawerTab = "overview" | "achievements" | "dlcs" | "manage" | "specs";
+let activeDrawerTab: DrawerTab = "overview";
 let activeAchScope: "all" | "base" | "dlc" = "all";
 let activeAchFilter: "all" | "unlocked" | "locked" | "hidden" = "all";
 const revealedAchievements: Set<string> = new Set();
@@ -257,6 +309,38 @@ let currentModalAppName: string | null = null;
 let loadedRequirements: Map<string, GameRequirementsResponse> = new Map();
 let loadingReqFor: string | null = null;
 let activeSystemPlatform: string = "Windows";
+
+/* ---------- Oynama Süresi (Playtime Tracker) & Canlı Oyun Durumu ---------- */
+let playtimeMap: Map<string, PlaytimeRecord> = new Map();
+const runningGames: Set<string> = new Set();
+
+function fmtPlaytime(seconds: number): string {
+  if (!seconds || seconds <= 0) return "Oynanmadı";
+  if (seconds < 60) return "< 1 dk";
+  if (seconds < 3600) return `${Math.round(seconds / 60)} dk`;
+  const hours = seconds / 3600;
+  return hours >= 10 ? `${Math.round(hours)} sa` : `${hours.toFixed(1)} sa`;
+}
+
+/* ---------- Çevrimdışı Mod, Ağ Profili & Yedekleme ---------- */
+let offlineMode = false;
+let networkProfile: string = "balanced";
+const gameBackupsMap: Map<string, SaveBackupInfo[]> = new Map();
+let isBackingUp = false;
+
+function updateOfflineModeUi(): void {
+  const btn = document.getElementById("btn-offline-mode");
+  if (!btn) return;
+  if (offlineMode) {
+    btn.classList.add("active");
+    btn.innerHTML = `${icon("wifi-off", 13)} <span>Çevrimdışı</span>`;
+    btn.title = "Çevrimdışı Mod Aktif (Çevrimiçi olmak için tıklayın)";
+  } else {
+    btn.classList.remove("active");
+    btn.innerHTML = `${icon("wifi", 13)} <span>Çevrimiçi</span>`;
+    btn.title = "Çevrimiçi Mod Aktif (Çevrimdışı moda geçmek için tıklayın)";
+  }
+}
 
 function isAppPlatinum(appName: string): boolean {
   return Boolean(demoPlatinumApps.has(appName) || (epicAchSummaries[appName]?.is_platinum));
@@ -268,11 +352,30 @@ const RECENT_KEY = "efxlve-recent";
 const epicFav: Set<string> = loadStrSet(FAV_KEY);
 let epicRecent: string[] = [...loadStrSet(RECENT_KEY)].slice(0, 8);
 
-function toggleFav(appName: string): void {
-  if (epicFav.has(appName)) epicFav.delete(appName);
-  else epicFav.add(appName);
+function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
+  const isNowFaved = !epicFav.has(appName);
+  if (isNowFaved) epicFav.add(appName);
+  else epicFav.delete(appName);
   localStorage.setItem(FAV_KEY, JSON.stringify([...epicFav]));
   render();
+
+  if (triggerBtn) {
+    triggerBtn.classList.toggle("faved", isNowFaved);
+    triggerBtn.classList.add("heart-burst");
+    setTimeout(() => triggerBtn.classList.remove("heart-burst"), 600);
+  }
+
+  if (currentModalAppName === appName) {
+    const favBtn = modalRoot.querySelector(`button[data-act="epic-fav"][data-id="${appName}"]`) as HTMLElement | null;
+    if (favBtn) {
+      favBtn.classList.toggle("faved", isNowFaved);
+      favBtn.classList.add("heart-burst");
+      setTimeout(() => favBtn.classList.remove("heart-burst"), 600);
+      if (favBtn.classList.contains("btn")) {
+        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? "Favorilerde" : "Favoriye Ekle"}`;
+      }
+    }
+  }
 }
 
 function pruneRecent(): void {
@@ -422,6 +525,7 @@ const statusEl = document.getElementById("backend-status") as HTMLElement;
 const modalRoot = document.getElementById("modal-root") as HTMLElement;
 const manageRoot = document.getElementById("manage-root") as HTMLElement;
 const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
+const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
 const toastsEl = document.getElementById("toasts") as HTMLElement;
 const dlBadge = document.getElementById("dl-badge") as HTMLElement;
 
@@ -774,8 +878,8 @@ function renderDownloads(): string {
                 <div class="dl-hero-badges">
                   ${
                     isPaused
-                      ? `<span class="dl-status-tag paused">⏸️ Duraklatıldı</span>`
-                      : `<span class="dl-status-tag active">⚡ İndiriliyor</span>`
+                      ? `<span class="dl-status-tag paused">${icon("pause", 11)} Duraklatıldı</span>`
+                      : `<span class="dl-status-tag active">${icon("zap", 11)} İndiriliyor</span>`
                   }
                 </div>
               </div>
@@ -806,34 +910,34 @@ function renderDownloads(): string {
               <span id="dl-stat-bytes">${fmtBytes(activeDl.downloadedBytes)} / ${fmtBytes(activeDl.totalBytes)}</span>
             </div>
             <div class="dl-hero-track">
-              <div class="dl-hero-fill" id="dl-hero-fill" style="width: ${activeDl.progress}%"></div>
+              <div class="dl-hero-fill" id="dl-hero-fill" style="width:${pct}%"></div>
             </div>
           </div>
 
-          <!-- İstatistik Izgarası -->
-          <div class="dl-stats-grid">
+          <!-- Canlı Metrik Kutuları -->
+          <div class="dl-stat-tiles-grid">
             <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box network">${icon("download", 18)}</div>
+              <div class="dl-stat-icon-box speed">${icon("download", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Ağ Hızı</div>
-                <div class="dl-stat-value" id="dl-stat-net">${esc(activeDl.speed || "—")}</div>
-                <div class="dl-stat-sub">Zirve: ${fmtBytes(peakNetSpeedBytes)}/s</div>
+                <div class="dl-stat-label">İndirme Hızı</div>
+                <div class="dl-stat-value highlight-cyan" id="dl-stat-speed">${activeDl.speed || "0 B/s"}</div>
+                <div class="dl-stat-sub">Anlık ağ akışı</div>
               </div>
             </div>
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box disk">${icon("hard-drive", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Disk Hızı</div>
-                <div class="dl-stat-value" id="dl-stat-disk">${esc(activeDl.diskSpeed || "—")}</div>
-                <div class="dl-stat-sub">Doğrulama & Yazma</div>
+                <div class="dl-stat-label">Disk Yazma</div>
+                <div class="dl-stat-value highlight-green" id="dl-stat-disk">${activeDl.diskSpeed || "0 B/s"}</div>
+                <div class="dl-stat-sub">Diske işlenen</div>
               </div>
             </div>
             <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box eta">${icon("calendar", 18)}</div>
+              <div class="dl-stat-icon-box eta">${icon("clock", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Kalan Süre</div>
-                <div class="dl-stat-value" id="dl-stat-eta">${esc(activeDl.eta || "Hesaplanıyor…")}</div>
-                <div class="dl-stat-sub">Tahmini süre</div>
+                <div class="dl-stat-label">Kalan Süre (ETA)</div>
+                <div class="dl-stat-value" id="dl-stat-eta">${activeDl.eta || "Hesaplanıyor…"}</div>
+                <div class="dl-stat-sub">Tahmini bitiş</div>
               </div>
             </div>
             <div class="dl-stat-tile">
@@ -851,7 +955,7 @@ function renderDownloads(): string {
   } else if (queueApps.length === 0 && completedEntries.length === 0) {
     heroMarkup = `
       <div class="dl-active-hero" style="text-align:center;padding:48px 24px;align-items:center;">
-        <div style="font-size:38px;margin-bottom:10px;">🎮</div>
+        <div style="color:var(--muted);margin-bottom:12px;">${icon("download", 38)}</div>
         <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">Aktif İndirme Bulunmuyor</div>
         <div class="muted" style="margin-bottom:20px;max-width:420px;font-size:13px;line-height:1.5;">
           Kütüphanenden dilediğin oyunu seçerek indirmeyi başlatabilir, indirme hızını ve disk durumunu buradan canlı takip edebilirsin.
@@ -949,7 +1053,7 @@ function renderDownloads(): string {
       return `
         <div class="dl-queue-row" style="border-left: 3px solid #00d26a;">
           <div class="dl-queue-left">
-            <div class="dl-queue-order-badge" style="color:#00d26a">✓</div>
+            <div class="dl-queue-order-badge" style="color:#00d26a">${icon("check", 12)}</div>
             ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(d.title)}" />` : `<div class="dl-queue-thumb"></div>`}
             <div class="dl-queue-info">
               <div class="dl-queue-name">${esc(d.title)}</div>
@@ -1002,10 +1106,22 @@ function renderDlcRows(dlcs: GameDlcItem[]): string {
   }
   return dlcs
     .map((dlc) => {
-      const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : "—";
+      const isDownloadable = dlc.downloadable !== false;
+      const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : (isDownloadable ? "—" : "Oyuna Dahil");
       const thumbHtml = dlc.image
         ? `<img class="dlc-row-thumb" src="${esc(dlc.image)}" alt="${esc(dlc.title)}" />`
         : `<div class="dlc-row-thumb"></div>`;
+
+      const actionHtml = isDownloadable
+        ? `
+          <label class="toggle-switch" title="${dlc.installed ? "Kaldır" : "Yükle"}">
+            <input type="checkbox" data-act="dlc-toggle-install" data-app="${esc(activeDlcAppName!)}" data-dlc="${esc(dlc.appId)}" ${dlc.installed ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
+        `
+        : `
+          <span class="dlc-badge-active" title="Hesapta Etkin">${icon("check", 12)} Hesapta Aktif</span>
+        `;
 
       return `
       <div class="dlc-table-row">
@@ -1015,10 +1131,7 @@ function renderDlcRows(dlcs: GameDlcItem[]): string {
         </div>
         <div class="dlc-row-size">${esc(sizeStr)}</div>
         <div class="dlc-row-toggle">
-          <label class="toggle-switch">
-            <input type="checkbox" data-act="dlc-toggle-install" data-app="${esc(activeDlcAppName!)}" data-dlc="${esc(dlc.appId)}" ${dlc.installed ? "checked" : ""} />
-            <span class="toggle-slider"></span>
-          </label>
+          ${actionHtml}
         </div>
       </div>
     `;
@@ -1342,7 +1455,7 @@ function renderSettings(): string {
       </p>
     </div>
     <div class="settings-box">
-      <h3>🎮 Epic Games Launcher Entegrasyonu</h3>
+      <h3>${icon("gamepad-2", 16)} Epic Games Launcher Entegrasyonu</h3>
       <p>Bilgisayarınızda Epic Games Launcher tarafından yüklenmiş oyunları otomatik algılar ve efxlve launcher ile eşitler.</p>
       ${
         eglDetectedList.length > 0
@@ -1373,9 +1486,50 @@ function renderSettings(): string {
           </div>`
           : `
           <p class="muted" style="margin:10px 0">Epic Games Launcher üzerinde kurulu ek oyun bulunamadı veya EGL klasörü tespit edilemedi.</p>
-          <p><button class="btn ghost small" data-act="epic-refresh-egl">↻ Yeniden Tara</button></p>
+          <p><button class="btn ghost small" data-act="epic-refresh-egl">${icon("refresh", 12)} Yeniden Tara</button></p>
           `
       }
+    </div>
+    <div class="settings-box">
+      <h3>${icon("folder", 16)} Epic Games Koleksiyonları (Kategoriler)</h3>
+      <p>Epic Games Launcher üzerindeki özel kategorilerinizi ("Online", "Hikaye", vb.) içe aktarın veya senkronize edin.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:10px">
+        <span class="muted">${epicCollections.length} koleksiyon kayıtlı</span>
+        <button class="btn ghost small" data-act="import-egl-collections">
+          ${icon("download", 12)} EGL Koleksiyonlarını İçe Aktar
+        </button>
+      </div>
+    </div>
+    <div class="settings-box">
+      <h3>${icon("zap", 16)} İndirme Ağ Profili (Bant Genişliği)</h3>
+      <p>İndirme sırasında bilgisayarınızın ağ ve işlemci kullanım seviyesini belirleyin.</p>
+      <div class="net-profile-pills" style="margin-top:10px">
+        <button class="net-profile-btn ${networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
+          ${icon("rocket", 13)} Maksimum Hız (16 Worker)
+        </button>
+        <button class="net-profile-btn ${networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">
+          ${icon("shield-check", 13)} Dengeli (4 Worker - Önerilen)
+        </button>
+        <button class="net-profile-btn ${networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">
+          ${icon("clock", 13)} Eko / Düşük (1 Worker)
+        </button>
+      </div>
+      <p class="muted" style="margin-top:8px">
+        ${networkProfile === "max" ? "Tüm internet bant genişliğini ve CPU çekirdeklerini kullanarak en yüksek indirme hızını hedefler." : networkProfile === "low" ? "Arka planda düşük kaynak tüketir, oyun oynarken veya internette gezinirken takılmayı önler." : "Oyun ve günlük kullanımda internetinizi kilitlemeden ideal indirme hızı sunar."}
+      </p>
+    </div>
+    <div class="settings-box">
+      <h3>${icon("wifi-off", 16)} Çevrimdışı Mod (Offline Mode)</h3>
+      <p>İnternet bağlantınız olmadığında veya çevrimdışı kalmak istediğinizde kütüphaneyi yerel önbellekten çalıştırır ve oyunları doğrudan çevrimdışı başlatır.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+        <label class="toggle-switch">
+          <input type="checkbox" data-act="toggle-offline-mode" ${offlineMode ? "checked" : ""} />
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-weight:600;color:${offlineMode ? "#fbbf24" : "var(--muted)"}">
+          ${offlineMode ? "Çevrimdışı Mod Aktif" : "Çevrimiçi Mod (Standart)"}
+        </span>
+      </div>
     </div>
     <div class="settings-box">
       <h3>Sistem</h3>
@@ -1449,12 +1603,23 @@ async function refreshEpic(): Promise<void> {
     epicPhase = "library";
     render();
     void loadEpicAchSummaries();
+    void loadEpicCollections();
     void refreshUpdates();
     void syncEpicLibrary(false);
   } catch (e) {
     epicPhase = "error";
     epicError = String(e);
     render();
+  }
+}
+
+async function loadEpicCollections(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    epicCollections = await epicGetCollections();
+    if (view === "library") render();
+  } catch (e) {
+    console.warn("Koleksiyonlar alınamadı:", e);
   }
 }
 
@@ -1516,7 +1681,16 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
     epicBusyMsg = "";
     void loadEpicAchSummaries();
     void refreshUpdates();
-    if (manual) toast("Kütüphane güncellendi", "ok");
+    if (manual) {
+      try {
+        epicCollections = await epicImportEglCollections();
+      } catch {
+        void loadEpicCollections();
+      }
+      toast("Kütüphane ve koleksiyonlar güncellendi", "ok");
+    } else {
+      void loadEpicCollections();
+    }
   } catch (e) {
     if (isNotAuth(e)) {
       epicPhase = "login";
@@ -1597,7 +1771,21 @@ async function epicDoLogout(): Promise<void> {
 
 function epicVisibleSummaries(): EpicSummary[] {
   const q = query.toLocaleLowerCase("tr");
+  const activeCol =
+    activeCollectionId && activeCollectionId !== "all" && activeCollectionId !== "fav"
+      ? epicCollections.find((c) => c.id === activeCollectionId)
+      : null;
+
   const list = epicSummaries.filter((s) => {
+    if (activeCollectionId === "fav") {
+      if (!epicFav.has(s.appName)) return false;
+    } else if (activeCol) {
+      const inCollection = activeCol.app_names.some(
+        (name) => name.toLowerCase() === s.appName.toLowerCase(),
+      );
+      if (!inCollection) return false;
+    }
+
     if (epicFilter === "installed" && !s.installed) return false;
     if (epicFilter === "fav" && !epicFav.has(s.appName)) return false;
     if (epicFilter === "updates" && !s.updateAvailable && !availableUpdates.has(s.appName)) return false;
@@ -1633,10 +1821,12 @@ function epicVisibleSummaries(): EpicSummary[] {
 }
 
 function epicArt(s: EpicSummary): string {
+  const custom = customCovers[s.appName];
+  if (custom) return `<img src="${esc(custom)}" alt="" loading="lazy" decoding="async" />`;
   const g = rawOf(s.appName);
   const url = g ? epicPortrait(g) : s.cover;
-  if (url) return `<img src="${url}" alt="" loading="lazy" />`;
-  return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52)">🎮</div>`;
+  if (url) return `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`;
+  return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52);color:#94a3b8">${icon("gamepad-2", 40)}</div>`;
 }
 
 function getDailyGame(list: EpicSummary[]): EpicSummary | undefined {
@@ -1656,7 +1846,7 @@ function getDailyGame(list: EpicSummary[]): EpicSummary | undefined {
 }
 
 function renderHeroSpotlight(): string {
-  if (epicSummaries.length === 0) return "";
+  if (epicSummaries.length === 0 || isHeroCollapsed || epicViewMode === "shelves") return "";
 
   // 1. Öncelik: Son oynanmış ve şu an kurulu olan oyun
   const recentPlayed = epicRecent.find((id) =>
@@ -1695,32 +1885,34 @@ function renderHeroSpotlight(): string {
   const devRaw = g?.metadata?.developer;
   const dev = typeof devRaw === "string" ? devRaw : "Epic Games";
 
-  const totalInstalled = epicSummaries.filter((x) => x.installed).length;
-  const totalSize = epicSummaries.reduce((acc, x) => acc + (x.installSize || 0), 0);
-
   const p = epicDlProgress(s.appName);
   const partner = getThirdPartyLauncher(g);
+  const isRunning = runningGames.has(s.appName);
+  const pt = playtimeMap.get(s.appName);
   const primaryBtn =
     p !== null
       ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
-      : s.installed
-        ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Hemen Oyna</button>`
-        : partner
-          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${esc(partner.name)} ile Başlat</button>`
-          : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
+      : isRunning
+        ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
+        : s.installed
+          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} Hemen Oyna</button>`
+          : partner
+            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${esc(partner.name)} ile Başlat</button>`
+            : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} Yükle</button>`;
 
   const heroBadge = isRecent
     ? `${icon("play", 11)} Son Oynanan`
     : isDaily
-      ? `✨ Günün Oyunu`
+      ? `${icon("sparkles", 11)} Günün Oyunu`
       : s.installed
-        ? `🎮 Kurulu Oyun`
+        ? `${icon("gamepad-2", 11)} Kurulu Oyun`
         : epicFav.has(s.appName)
-          ? `❤️ Favori`
-          : `⭐ Öne Çıkan`;
+          ? `${icon("heart", 11)} Favori`
+          : `${icon("star", 11)} Öne Çıkan`;
 
   return `
     <div class="hero-spotlight">
+      <button class="hero-collapse-btn" data-act="toggle-hero-spotlight" title="Vitrini Gizle">${icon("x", 12)}</button>
       ${wideImg ? `<img class="hero-bg" src="${wideImg}" alt="" />` : ""}
       <div class="hero-gradient"></div>
       <div class="hero-content">
@@ -1734,24 +1926,11 @@ function renderHeroSpotlight(): string {
             <span>•</span>
             <span>v${esc(s.version)}</span>
             ${s.installed && s.installSize ? `<span>•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
+            ${pt && pt.total_seconds > 0 ? `<span>•</span><span style="color:#38bdf8;display:inline-flex;align-items:center;gap:3px">${icon("clock", 12)} ${fmtPlaytime(pt.total_seconds)}</span>` : ""}
           </div>
           <div class="hero-actions">
             ${primaryBtn}
             <button class="btn ghost" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 14)} Detaylar</button>
-          </div>
-        </div>
-        <div class="hero-stats">
-          <div class="stat-chip">
-            <div class="val">${epicSummaries.length}</div>
-            <div class="lbl">Toplam Oyun</div>
-          </div>
-          <div class="stat-chip">
-            <div class="val">${totalInstalled}</div>
-            <div class="lbl">Kurulu</div>
-          </div>
-          <div class="stat-chip">
-            <div class="val">${fmtBytes(totalSize)}</div>
-            <div class="lbl">Depolama</div>
           </div>
         </div>
       </div>
@@ -1763,32 +1942,50 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
   const p = epicDlProgress(s.appName);
   const isPlat = isAppPlatinum(s.appName);
   const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
-  const badge = hasUpdate
-    ? `<span class="pbadge update"><span class="dot"></span>Güncelleme</span>`
-    : s.installed
-      ? `<span class="pbadge ready"><span class="dot"></span>Hazır</span>`
-      : "";
+  const isRunning = runningGames.has(s.appName);
+  const pt = playtimeMap.get(s.appName);
+  const badge = isRunning
+    ? `<span class="pbadge ready" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:rgba(16,185,129,0.5)"><span class="running-dot"></span>Çalışıyor</span>`
+    : hasUpdate
+      ? `<span class="pbadge update"><span class="dot"></span>Güncelleme</span>`
+      : s.installed
+        ? `<span class="pbadge ready"><span class="dot"></span>Yüklü</span>`
+        : "";
   const ribbon = isPlat
-    ? `<div class="platinum-ribbon">${icon("trophy", 11)} 100% Platin <span class="ribbon-sparkle">✨</span></div>`
+    ? `<div class="platinum-ribbon">${icon("trophy", 11)} 100% Platin</div>`
     : "";
   const dlBar =
     p !== null
       ? `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${s.appName}" style="width:${p}%"></div></div>`
       : "";
 
+  const microChips: string[] = [];
+  if (pt && pt.total_seconds > 0) {
+    microChips.push(`<span class="micro-chip playtime">${icon("clock", 10)} ${fmtPlaytime(pt.total_seconds)}</span>`);
+  }
+  const achSum = epicAchSummaries[s.appName];
+  if (isPlat) {
+    microChips.push(`<span class="micro-chip plat">${icon("trophy", 10)} Platin</span>`);
+  } else if (achSum && achSum.total_achievements > 0) {
+    const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
+    microChips.push(`<span class="micro-chip ach">${icon("trophy", 10)} %${pct}</span>`);
+  }
+
   return `
-    <div class="pcard enter ${isPlat ? "platinum" : ""}" style="animation-delay:${Math.min(i * 12, 350)}ms" data-act="epic-detail" data-id="${s.appName}">
+    <div class="pcard ${i < 24 ? "enter" : ""} ${isPlat ? "platinum" : ""}" style="${i < 24 ? `animation-delay:${i * 12}ms;` : "animation:none;"}" data-act="epic-detail" data-id="${s.appName}">
       ${epicArt(s)}
       ${badge}
       ${ribbon}
       <div class="shade"></div>
       <div class="poverlay">
         <div class="top">
-          <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
-          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">${icon("dots", 15)}</button>
+          <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)}</button>
+          <button class="iconbtn" data-act="open-custom-cover" data-id="${s.appName}" title="Kapağı Özelleştir">${icon("image", 14)}</button>
+          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="Detay">${icon("dots", 14)}</button>
         </div>
         <div class="bottom">
           <div class="ptitle">${esc(s.title)}</div>
+          ${microChips.length > 0 ? `<div class="pcard-micro-hud">${microChips.join("")}</div>` : ""}
           ${epicActionButtons(s, "full")}
         </div>
       </div>
@@ -1801,6 +1998,14 @@ function epicRowHtml(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const achSum = epicAchSummaries[s.appName];
   const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
+  const isRunning = runningGames.has(s.appName);
+  const pt = playtimeMap.get(s.appName);
+  const runTag = isRunning
+    ? ` • <span style="color:#34d399;font-weight:700;display:inline-flex;align-items:center;gap:3px"><span class="running-dot"></span> Çalışıyor</span>`
+    : "";
+  const ptMeta = pt && pt.total_seconds > 0
+    ? ` • <span style="color:#38bdf8;display:inline-flex;align-items:center;gap:3px">${icon("clock", 12)} ${fmtPlaytime(pt.total_seconds)}</span>`
+    : "";
   const achMeta = isPlat
     ? ` • <span style="color:#ffd700;font-weight:700;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} Platin</span>`
     : achSum && achSum.total_achievements > 0
@@ -1812,14 +2017,52 @@ function epicRowHtml(s: EpicSummary): string {
       ${epicArt(s)}
       <div class="grow">
         <h4>${esc(s.title)}</h4>
-        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${hasUpdate ? ` • <span class="upd">Güncelleme</span>` : ""}${achMeta}</div>
+        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${hasUpdate ? ` • <span class="upd">Güncelleme</span>` : ""}${runTag}${ptMeta}${achMeta}</div>
       </div>
       <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
       ${epicActionButtons(s, "small")}
     </div>`;
 }
 
-function openEpicModal(appName: string, isInitialOpen = true): void {
+function updateDrawerTabArrows(): void {
+  const wrapper = modalRoot.querySelector(".drawer-tabs-wrapper") as HTMLElement | null;
+  const container = document.getElementById("drawer-tabs-scrollable");
+  if (!wrapper || !container) return;
+
+  const leftFade = wrapper.querySelector(".drawer-tabs-fade.left") as HTMLElement | null;
+  const rightFade = wrapper.querySelector(".drawer-tabs-fade.right") as HTMLElement | null;
+
+  const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+  const hasOverflow = maxScroll > 4;
+
+  const canScrollLeft = hasOverflow && container.scrollLeft > 4;
+  const canScrollRight = hasOverflow && container.scrollLeft < maxScroll - 4;
+
+  if (leftFade) leftFade.classList.toggle("visible", canScrollLeft);
+  if (rightFade) rightFade.classList.toggle("visible", canScrollRight);
+}
+
+function ensureTabVisible(el: HTMLElement, container: HTMLElement): void {
+  const containerRect = container.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+
+  // If already comfortably visible inside container bounds, do not scroll!
+  if (elRect.left >= containerRect.left + 8 && elRect.right <= containerRect.right - 8) {
+    return;
+  }
+
+  // Only if clipped on the right, scroll just enough to reveal it
+  if (elRect.right > containerRect.right - 8) {
+    const diff = elRect.right - containerRect.right + 16;
+    container.scrollBy({ left: diff, behavior: "smooth" });
+  } else if (elRect.left < containerRect.left + 8) {
+    // Only if clipped on the left, scroll just enough to reveal it
+    const diff = containerRect.left - elRect.left + 16;
+    container.scrollBy({ left: -diff, behavior: "smooth" });
+  }
+}
+
+function openEpicModal(appName: string, isInitialOpen = true, animateTabContent = true): void {
   const s = epicSummaries.find((x) => x.appName === appName);
   if (!s) return;
   currentModalAppName = appName;
@@ -1841,14 +2084,17 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
   const partner = getThirdPartyLauncher(g);
   const antiCheat = getAntiCheat(g);
 
+  const isRunning = runningGames.has(appName);
   const primary =
     p !== null
       ? `<button class="btn full primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
-      : s.installed
-        ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
-        : partner
-          ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
-          : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
+      : isRunning
+        ? `<button class="btn full primary running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
+        : s.installed
+          ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
+          : partner
+            ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
+            : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
 
   const rawDesc = s.description?.trim();
   const hasRealDesc =
@@ -1870,10 +2116,32 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
       : "";
 
   const achTabBadge = isPlat
-    ? `<span style="color:#ffd700;font-size:11px;font-weight:800;margin-left:4px">100% ✨</span>`
+    ? `<span class="drawer-tab-badge plat">${icon("trophy", 11)}</span>`
     : achSum && achSum.total_achievements > 0
-      ? `<span style="font-size:11px;color:var(--muted);margin-left:4px">(${achSum.user_unlocked}/${achSum.total_achievements})</span>`
+      ? `<span class="drawer-tab-badge">(${achSum.user_unlocked})</span>`
       : "";
+
+  const dlcRes = dlcCache.get(s.appName);
+  const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
+  const dlcTabBadge = currentDlcCount > 0
+    ? `<span class="drawer-tab-badge">(${currentDlcCount})</span>`
+    : "";
+
+  if (activeDrawerTab === "overview" && !loadedHltb.has(appName) && loadingHltbFor !== appName) {
+    loadingHltbFor = appName;
+    epicGetHltb(s.title, s.appName)
+      .then((data) => {
+        loadedHltb.set(appName, data);
+        loadingHltbFor = null;
+        const el = document.getElementById("drawer-hltb-container");
+        if (el && currentModalAppName === appName) {
+          el.innerHTML = renderHltbCard(data);
+        }
+      })
+      .catch(() => {
+        loadingHltbFor = null;
+      });
+  }
 
   if (!isInitialOpen) {
     const existingDrawer = modalRoot.querySelector(".drawer") as HTMLElement | null;
@@ -1881,7 +2149,12 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
     if (existingDrawer && contentEl && currentModalAppName === appName) {
       modalRoot.querySelectorAll(".drawer-tab").forEach((btn) => {
         const el = btn as HTMLElement;
-        el.classList.toggle("active", el.dataset.tab === activeDrawerTab);
+        const isActive = el.dataset.tab === activeDrawerTab;
+        el.classList.toggle("active", isActive);
+        if (isActive) {
+          const container = document.getElementById("drawer-tabs-scrollable");
+          if (container) ensureTabVisible(el, container);
+        }
       });
 
       const drawerScroll = existingDrawer.scrollTop;
@@ -1893,7 +2166,19 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
           ? renderDrawerOverview(s, primary, faved, p, descHtml, partner, antiCheat)
           : activeDrawerTab === "achievements"
             ? renderDrawerAchievements(s)
-            : renderDrawerSystemRequirements(s);
+            : activeDrawerTab === "dlcs"
+              ? renderDrawerDlcs(s)
+              : activeDrawerTab === "manage"
+                ? renderDrawerManage(s)
+                : renderDrawerSystemRequirements(s);
+
+      if (animateTabContent) {
+        contentEl.classList.remove("tab-content-enter");
+        void contentEl.offsetWidth;
+        contentEl.classList.add("tab-content-enter");
+      } else {
+        contentEl.classList.remove("tab-content-enter");
+      }
 
       existingDrawer.scrollTop = drawerScroll;
       if (achScroll > 0) {
@@ -1903,8 +2188,16 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
 
       const achTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="achievements"]');
       if (achTabBtn) {
-        achTabBtn.innerHTML = `${icon("trophy", 14)} Başarımlar ${achTabBadge}`;
+        achTabBtn.innerHTML = `${icon("trophy", 13)} Başarımlar ${achTabBadge}`;
       }
+      const dlcTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
+      if (dlcTabBtn) {
+        dlcTabBtn.innerHTML = `${icon("layers", 13)} Eklentiler ${dlcTabBadge}`;
+      }
+
+      requestAnimationFrame(() => {
+        updateDrawerTabArrows();
+      });
 
       return;
     }
@@ -1915,7 +2208,7 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
       <div class="drawer" style="${isInitialOpen ? "" : "animation:none"}">
         <button class="drawer-close" data-act="close" title="Kapat">${icon("x", 16)}</button>
         <div class="drawer-cover">
-          ${art ? `<img src="${art}" alt="" />` : `<div class="pcover">🎮</div>`}
+          ${art ? `<img src="${art}" alt="" />` : `<div class="pcover" style="color:#94a3b8">${icon("gamepad-2", 48)}</div>`}
           <div class="drawer-gradient"></div>
         </div>
         <div class="drawer-body">
@@ -1923,28 +2216,55 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
           ${dev ? `<div class="drawer-dev">${esc(dev)}</div>` : ""}
           <div class="drawer-pills">
             <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "● Kurulu" : "○ Kurulu Değil"}</span>
-            ${partner ? `<span class="status-pill partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)} Gereklidir</span>` : ""}
+            ${partner ? `<span class="status-pill partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
             ${antiCheat ? `<span class="status-pill anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-            ${s.updateAvailable ? `<span class="status-pill warn">⚡ Güncelleme Mevcut</span>` : ""}
-            ${s.dlcCount > 0 ? `<span class="status-pill">+${s.dlcCount} DLC</span>` : ""}
+            ${s.updateAvailable ? `<span class="status-pill warn">${icon("zap", 11)} Güncelleme Mevcut</span>` : ""}
+            ${currentDlcCount > 0 ? `<span class="status-pill">+${currentDlcCount} DLC</span>` : ""}
             ${s.installSize ? `<span class="status-pill">${fmtBytes(s.installSize)}</span>` : ""}
-            ${achPill}
           </div>
 
-          <div class="drawer-tabs">
-            <button class="drawer-tab ${activeDrawerTab === "overview" ? "active" : ""}" data-act="drawer-tab" data-tab="overview">
-              Genel Bakış
-            </button>
-            <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
-              ${icon("trophy", 14)} Başarımlar ${achTabBadge}
-            </button>
+          <div class="drawer-tabs-wrapper">
+            <div class="drawer-tabs-fade left">
+              <button class="drawer-tabs-arrow left" data-act="drawer-tabs-scroll" data-dir="left" title="Sola kaydır">
+                ${icon("chevron-left", 13)}
+              </button>
+            </div>
+            <div class="drawer-tabs" id="drawer-tabs-scrollable">
+              <button class="drawer-tab ${activeDrawerTab === "overview" ? "active" : ""}" data-act="drawer-tab" data-tab="overview">
+                ${icon("gamepad-2", 13)} Genel Bakış
+              </button>
+              <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
+                ${icon("trophy", 13)} Başarımlar ${achTabBadge}
+              </button>
+              <button class="drawer-tab ${activeDrawerTab === "dlcs" ? "active" : ""}" data-act="drawer-tab" data-tab="dlcs" data-id="${appName}">
+                ${icon("layers", 13)} Eklentiler ${dlcTabBadge}
+              </button>
+              ${s.installed ? `
+              <button class="drawer-tab ${activeDrawerTab === "manage" ? "active" : ""}" data-act="drawer-tab" data-tab="manage" data-id="${appName}">
+                ${icon("settings", 13)} Yönet
+              </button>` : ""}
+              <button class="drawer-tab ${activeDrawerTab === "specs" ? "active" : ""}" data-act="drawer-tab" data-tab="specs" data-id="${appName}">
+                ${icon("monitor", 13)} Sistem
+              </button>
+            </div>
+            <div class="drawer-tabs-fade right">
+              <button class="drawer-tabs-arrow right" data-act="drawer-tabs-scroll" data-dir="right" title="Sağa kaydır">
+                ${icon("chevron-right", 13)}
+              </button>
+            </div>
           </div>
 
-          <div id="drawer-tab-content">
+          <div id="drawer-tab-content" class="${animateTabContent ? "tab-content-enter" : ""}">
             ${
               activeDrawerTab === "overview"
                 ? renderDrawerOverview(s, primary, faved, p, descHtml, partner, antiCheat)
-                : renderDrawerAchievements(s)
+                : activeDrawerTab === "achievements"
+                  ? renderDrawerAchievements(s)
+                  : activeDrawerTab === "dlcs"
+                    ? renderDrawerDlcs(s)
+                    : activeDrawerTab === "manage"
+                      ? renderDrawerManage(s)
+                      : renderDrawerSystemRequirements(s)
             }
           </div>
         </div>
@@ -1955,6 +2275,68 @@ function openEpicModal(appName: string, isInitialOpen = true): void {
     const nextBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
     if (nextBody) nextBody.scrollTop = prevScroll;
   }
+
+  requestAnimationFrame(() => {
+    updateDrawerTabArrows();
+    const container = document.getElementById("drawer-tabs-scrollable");
+    if (container && !(container as any)._hasScrollListener) {
+      (container as any)._hasScrollListener = true;
+      container.addEventListener("scroll", updateDrawerTabArrows, { passive: true });
+    }
+  });
+
+  if (!dlcCache.has(appName)) {
+    epicGetGameDlcs(appName)
+      .then((res) => {
+        dlcCache.set(appName, res);
+        const cur = epicSummaries.find((x) => x.appName === appName);
+        if (cur) cur.dlcCount = res.dlcs.length;
+        if (currentModalAppName === appName) {
+          const dlcTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
+          if (dlcTabBtn) {
+            const badgeEl = dlcTabBtn.querySelector(".drawer-tab-badge");
+            if (res.dlcs.length > 0) {
+              if (badgeEl) {
+                badgeEl.textContent = `(${res.dlcs.length})`;
+              } else {
+                dlcTabBtn.insertAdjacentHTML("beforeend", ` <span class="drawer-tab-badge">(${res.dlcs.length})</span>`);
+              }
+            } else if (badgeEl) {
+              badgeEl.remove();
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }
+}
+
+function renderHltbCard(hltb?: HltbData): string {
+  if (!hltb || !hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
+    return "";
+  }
+  return `
+    <div class="drawer-hltb-card">
+      <div class="hltb-head">
+        <div class="hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></div>
+        <div class="hltb-source">Tahmini Bitiş Süreleri</div>
+      </div>
+      <div class="hltb-grid">
+        <div class="hltb-item">
+          <div class="hltb-val">${hltb.main_story ? `${hltb.main_story} sa` : "—"}</div>
+          <div class="hltb-label">Ana Hikaye</div>
+        </div>
+        <div class="hltb-item">
+          <div class="hltb-val">${hltb.main_extra ? `${hltb.main_extra} sa` : "—"}</div>
+          <div class="hltb-label">Ana + Ekstra</div>
+        </div>
+        <div class="hltb-item">
+          <div class="hltb-val">${hltb.completionist ? `${hltb.completionist} sa` : "—"}</div>
+          <div class="hltb-label">%100 Bitirme</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderDrawerOverview(
@@ -1966,36 +2348,140 @@ function renderDrawerOverview(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
+  const pt = playtimeMap.get(s.appName);
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "Oynanmadı";
+  const lastPlayedStr = pt?.last_played || "Henüz oynanmadı";
+
+  const achSum = epicAchSummaries[s.appName];
+  const isPlat = isAppPlatinum(s.appName);
+  const hasAchs = Boolean(achSum && achSum.total_achievements > 0);
+  const achProgressStr = isPlat
+    ? `${icon("trophy", 12)} %100 Platin`
+    : hasAchs
+      ? `${achSum.user_unlocked}/${achSum.total_achievements} (%${Math.round((achSum.user_unlocked / achSum.total_achievements) * 100)})`
+      : "Desteklenmiyor";
+
+  let achShowcaseHtml = "";
+  if (hasAchs) {
+    const pct = Math.min(100, Math.round((achSum.user_unlocked / achSum.total_achievements) * 100));
+    const cachedAch = loadedAchievements.get(s.appName);
+    const unlockedList = cachedAch?.achievements?.filter((a) => a.unlocked) || [];
+    const recentIcons = unlockedList.slice(0, 4).map((a) => {
+      const src = a.icon_link || "";
+      return src
+        ? `<img class="ach-showcase-icon" src="${esc(src)}" title="${esc(a.display_name || a.name)}" alt="" />`
+        : `<div class="ach-showcase-icon" style="display:flex;align-items:center;justify-content:center;color:#fbbf24">${icon("trophy", 16)}</div>`;
+    }).join("");
+
+    achShowcaseHtml = `
+      <div class="drawer-ach-showcase">
+        <div class="ach-showcase-head">
+          <div class="ach-showcase-title">
+            ${icon("trophy", 15)}
+            <span>Başarımlar (${achSum.user_unlocked}/${achSum.total_achievements} • %${pct})</span>
+          </div>
+          <a class="ach-showcase-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
+            Tümünü Gör (${achSum.total_achievements}) →
+          </a>
+        </div>
+        <div class="ach-showcase-bar">
+          <div class="ach-showcase-fill" style="width:${pct}%"></div>
+        </div>
+        ${
+          recentIcons
+            ? `<div class="ach-showcase-icons">${recentIcons}</div>`
+            : `<div class="ach-showcase-empty">Henüz başarım kilidi açılmadı. Oynamaya başlayarak kupaları toplayın!</div>`
+        }
+      </div>
+    `;
+  }
+
+  const devRaw = rawOf(s.appName)?.metadata?.developer;
+  const devName = typeof devRaw === "string" ? devRaw : "";
+
   return `
     <div class="drawer-actions">
       ${primary}
       <div class="drawer-actions-row">
-        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}</button>
-        ${s.installed ? `<button class="btn ghost" data-act="manage-game" data-id="${s.appName}" title="Yönet & Özellikler">${icon("settings", 14)} Yönet</button>` : ""}
-        <button class="btn ghost" data-act="open-dlc-manager" data-id="${s.appName}" title="Eklentiler & DLC">${icon("layers", 14)} Eklentiler</button>
+        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">
+          ${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}
+        </button>
+        <button class="btn ghost" data-act="open-custom-cover" data-id="${s.appName}" title="Kapağı Özelleştir">
+          ${icon("image", 14)} Kapağı Değiştir
+        </button>
+        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfası">
+          ${icon("external", 14)} Mağaza
+        </button>
         ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
-        ${s.installed ? `<button class="btn ghost" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 14)} Klasör</button>` : ""}
-        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 14)} Mağaza</button>
       </div>
-      ${s.installed ? `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}" style="margin-top:4px">${icon("trash", 14)} Oyunu Bilgisayardan Kaldır</button>` : ""}
     </div>
+
+    <div class="drawer-stats-strip">
+      <div class="stat-card stat-card-interactive">
+        <div class="stat-icon" style="color:#38bdf8">${icon("clock", 16)}</div>
+        <div class="stat-meta">
+          <div class="stat-label">Oynama Süresi</div>
+          <div class="stat-val" id="drawer-stat-playtime" style="color:#38bdf8">${esc(playtimeStr)}</div>
+        </div>
+        <button class="stat-edit-btn" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama Süresini Düzenle">
+          ${icon("edit", 11)} Düzenle
+        </button>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:#a78bfa">${icon("calendar", 16)}</div>
+        <div class="stat-meta">
+          <div class="stat-label">Son Aktivite</div>
+          <div class="stat-val" id="drawer-stat-last-activity">${esc(lastPlayedStr)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-col-box">
+      <div class="drawer-col-head">
+        <div class="drawer-col-title">
+          <span>${icon("folder", 14)}</span>
+          <span>Koleksiyonlar</span>
+        </div>
+        <button class="drawer-col-manage-btn" data-act="manage-game-collections" data-id="${s.appName}">
+          ${icon("edit", 12)} Düzenle
+        </button>
+      </div>
+      <div class="drawer-col-chips" id="drawer-col-chips-container">
+        ${(() => {
+          const gameCols = epicCollections.filter((c) =>
+            c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+          );
+          return gameCols.length > 0
+            ? gameCols
+                .map(
+                  (c) => `
+              <button class="drawer-col-chip" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu görüntüle">
+                ${c.emoji ? `<span class="col-chip-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
+              </button>
+            `,
+                )
+                .join("")
+            : `<span class="drawer-col-empty">Henüz herhangi bir koleksiyona eklenmedi</span>`;
+        })()}
+      </div>
+    </div>
+
+    <div id="drawer-hltb-container">
+      ${renderHltbCard(loadedHltb.get(s.appName))}
+    </div>
+
+    ${achShowcaseHtml}
+
     ${descHtml}
+
     <div class="drawer-meta-grid">
       <div class="meta-tile">
-        <div class="tile-label">Sürüm</div>
-        <div class="tile-val">v${esc(s.version)}</div>
-      </div>
-      <div class="meta-tile">
-        <div class="tile-label">Kurulu Sürüm</div>
-        <div class="tile-val">${s.installedVersion ? `v${esc(s.installedVersion)}` : "—"}</div>
+        <div class="tile-label">Geliştirici</div>
+        <div class="tile-val">${esc(devName || "Bilinmiyor")}</div>
       </div>
       <div class="meta-tile">
         <div class="tile-label">İndirme / Boyut</div>
         <div class="tile-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
-      </div>
-      <div class="meta-tile">
-        <div class="tile-label">DLC Sayısı</div>
-        <div class="tile-val">${s.dlcCount > 0 ? `${s.dlcCount} DLC` : "Yok"}</div>
       </div>
       ${partner ? `
       <div class="meta-tile">
@@ -2004,15 +2490,358 @@ function renderDrawerOverview(
       </div>` : ""}
       ${antiCheat ? `
       <div class="meta-tile">
-        <div class="tile-label">Hile Koruması (Anti-Cheat)</div>
+        <div class="tile-label">Hile Koruması</div>
         <div class="tile-val" style="color:#34d399">${esc(antiCheat)}</div>
       </div>` : ""}
-      ${s.installPath ? `
-      <div class="meta-tile full">
-        <div class="tile-label">Kurulum Konumu</div>
-        <div class="tile-val" title="${esc(s.installPath)}">${esc(s.installPath)}</div>
-      </div>` : ""}
+      <div class="meta-tile ${!partner && !antiCheat ? "full" : ""}" data-act="drawer-tab" data-tab="specs" data-id="${s.appName}" style="cursor:pointer" title="Sistem Gereksinimlerini Gör">
+        <div class="tile-label">Sistem Gereksinimleri</div>
+        <div class="tile-val" style="color:#a5b4fc;display:flex;align-items:center;gap:4px">
+          Donanım Uyumluluğunu İncele →
+        </div>
+      </div>
     </div>`;
+}
+
+function renderDrawerDlcs(s: EpicSummary): string {
+  const dlcRes = dlcCache.get(s.appName);
+  if (dlcLoading && !dlcRes) {
+    return `
+      <div style="text-align:center;padding:50px 0;">
+        <div class="spinner" style="margin:0 auto 16px"></div>
+        <div class="muted">Eklentiler taranıyor…</div>
+      </div>
+    `;
+  }
+  const allDlcs = dlcRes?.dlcs || [];
+  const query = dlcSearchQuery.trim().toLowerCase();
+  const filteredDlcs = query
+    ? allDlcs.filter((d) => d.title.toLowerCase().includes(query))
+    : allDlcs;
+
+  if (allDlcs.length === 0) {
+    return `
+      <div class="dlc-drawer-tab">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:36px 20px;text-align:center;">
+          <div style="color:var(--muted);margin-bottom:10px">${icon("package", 32)}</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">Kayıtlı Eklenti Bulunmuyor</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Bu oyun için kütüphanenizde eklenti veya ek içerik kaydı yok.</div>
+          <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">
+            ${icon("external", 13)} Mağazada Eklentileri Keşfet
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="dlc-drawer-tab">
+      <div class="dlc-drawer-search-bar">
+        ${icon("search", 15)}
+        <input id="dlc-drawer-search" placeholder="Eklentiler arasında ara…" value="${esc(dlcSearchQuery)}" spellcheck="false" autocomplete="off" />
+      </div>
+
+      <div class="dlc-drawer-list">
+        ${filteredDlcs.map((dlc) => {
+          const isDownloadable = dlc.downloadable !== false;
+          const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : (isDownloadable ? "—" : "Oyuna Dahil");
+          const thumbHtml = dlc.image
+            ? `<img class="dlc-drawer-thumb" src="${esc(dlc.image)}" alt="" />`
+            : `<div class="dlc-drawer-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">${icon("layers", 14)}</div>`;
+
+          const actionHtml = isDownloadable
+            ? `
+              <label class="toggle-switch" style="flex-shrink:0" title="${dlc.installed ? "Kaldır" : "Yükle"}">
+                <input type="checkbox" data-act="dlc-toggle-install" data-app="${esc(s.appName)}" data-dlc="${esc(dlc.appId)}" ${dlc.installed ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            `
+            : `
+              <span class="dlc-badge-active" title="Bu içerik ana oyuna entegredir ve Epic hesabınızda etkindir.">
+                ${icon("check", 12)} Hesapta Aktif
+              </span>
+            `;
+
+          return `
+            <div class="dlc-drawer-item">
+              <div class="dlc-drawer-left">
+                ${thumbHtml}
+                <div style="min-width:0">
+                  <div class="dlc-drawer-title" title="${esc(dlc.title)}">${esc(dlc.title)}</div>
+                  <div class="dlc-drawer-size">${esc(sizeStr)}</div>
+                </div>
+              </div>
+              ${actionHtml}
+            </div>
+          `;
+        }).join("")}
+      </div>
+
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+        <div style="font-size:12px;color:var(--muted)">Daha fazla eklenti ve genişletme keşfet</div>
+        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">
+          ${icon("external", 12)} Mağaza
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderDrawerManage(s: EpicSummary): string {
+  if (!activeManageSettings || activeManageSettings.appName !== s.appName) {
+    activeManageSettings = {
+      appName: s.appName,
+      title: s.title,
+      launchParameters: "",
+      autoUpdate: true,
+      highPriority: false,
+      cloudSavesEnabled: true,
+      lastCloudSync: null,
+      installSize: s.installSize || 0,
+      installPath: s.installPath || "",
+      version: s.installedVersion || s.version || "1.0",
+    };
+    epicGetGameSettings(s.appName).then((st) => {
+      if (activeManageSettings?.appName === s.appName) {
+        activeManageSettings = st;
+        updateManageModalInputsInPlace(st);
+      }
+    }).catch(() => {});
+  }
+  const st = activeManageSettings;
+  const v = verifyingMap.get(st.appName);
+  const isVerifying = Boolean(v);
+  const pt = playtimeMap.get(st.appName);
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "Oynanmadı";
+  const lastPlayedStr = pt?.last_played || "Henüz oynanmadı";
+
+  return `
+    <div class="manage-tab-content">
+      <!-- 1. Dosyalar & Kurulum -->
+      <div class="manage-card-group">
+        <div class="manage-group-title">${icon("folder", 14)} Dosyalar & Kurulum</div>
+        <div class="manage-group-card">
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#60a5fa">${icon("shield", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Dosyaları Doğrula</div>
+                <div class="manage-item-desc">Oyun dosyalarının bütünlüğünü kontrol et ve hasarlı parçaları onar</div>
+                <div id="manage-verify-box-container">
+                  ${
+                    isVerifying && v
+                      ? `
+                    <div class="verify-box" style="margin-top:8px">
+                      <div class="verify-bar">
+                        <div id="manage-verify-fill" class="verify-fill" style="width:${v.percent}%"></div>
+                      </div>
+                      <div class="verify-meta">
+                        <span id="manage-verify-count">${esc(v.detail || `${v.current}/${v.total} (%${v.percent})`)}</span>
+                        <span id="manage-verify-speed">${esc(v.speed)}</span>
+                      </div>
+                    </div>`
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${st.appName}" ${isVerifying ? "disabled" : ""}>
+                ${isVerifying ? "Doğrulanıyor…" : "Doğrula"}
+              </button>
+            </div>
+          </div>
+
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#38bdf8">${icon("folder", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Kurulum Konumu</div>
+                <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(st.installPath || s.installPath || "Belirtilmemiş")}</div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}">
+                ${icon("folder", 13)} Klasörü Aç
+              </button>
+            </div>
+          </div>
+
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#a78bfa">${icon("monitor", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Masaüstü Kısayolu</div>
+                <div class="manage-item-desc">Oyunu masaüstünden tek tıkla doğrudan başlatmak için kısayol ekle</div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <button class="btn ghost small" data-act="manage-create-shortcut" data-id="${st.appName}">
+                Kısayol Oluştur
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Kayıt Dosyaları & Bulut -->
+      <div class="manage-card-group">
+        <div class="manage-group-title">${icon("cloud", 14)} Kayıt Dosyaları & Bulut</div>
+        <div class="manage-group-card">
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#38bdf8">${icon("cloud", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">EOS Bulut Kayıtları</div>
+                <div id="manage-cloud-subtitle" class="manage-item-desc">
+                  ${
+                    manageSyncingSaves
+                      ? "Bulut ile eşitleniyor…"
+                      : st.lastCloudSync
+                        ? `En son eşitleme: ${esc(st.lastCloudSync)}`
+                        : "İlerlemeleri Epic Online Services (EOS) bulutuna kaydet"
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="Şimdi Eşitle" ${manageSyncingSaves ? "disabled" : ""}>
+                ${icon("refresh", 13)} Eşitle
+              </button>
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-cloud" ${st.cloudSavesEnabled ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="manage-item-row" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div class="manage-item-left">
+                <div class="manage-item-icon" style="color:#c084fc">${icon("hard-drive", 18)}</div>
+                <div class="manage-item-info">
+                  <div class="manage-item-title">Yerel Kayıt Yedekleme (Save Backup)</div>
+                  <div class="manage-item-desc">İlerlemenizi korumak için yerel arşiv oluşturun veya geri yükleyin</div>
+                </div>
+              </div>
+              <div class="manage-item-right">
+                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="Yedek Klasörünü Aç">
+                  ${icon("folder", 13)} Klasör
+                </button>
+                <button class="btn primary small" data-act="manage-create-backup" data-id="${st.appName}" ${isBackingUp ? "disabled" : ""}>
+                  ${isBackingUp ? "Yedekleniyor…" : "Yedek Al"}
+                </button>
+              </div>
+            </div>
+            <div id="manage-backup-list" class="backup-list" style="margin-top:10px">
+              ${renderBackupListHtml(st.appName)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Başlatma ve Güncellemeler -->
+      <div class="manage-card-group">
+        <div class="manage-group-title">${icon("zap", 14)} Başlatma ve Güncellemeler</div>
+        <div class="manage-group-card">
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#34d399">${icon("refresh", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Otomatik Güncelleme</div>
+                <div class="manage-item-desc">Yeni bir güncelleme yayınlandığında otomatik indir</div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-autoupdate" ${st.autoUpdate ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#f59e0b">${icon("zap", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Öncelikli İndirmeler</div>
+                <div class="manage-item-desc">Bu oyunun güncellemelerini indirme kuyruğunda en öne al</div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <label class="toggle-switch">
+                <input type="checkbox" data-act="manage-toggle-priority" ${st.highPriority ? "checked" : ""} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="manage-item-row" style="flex-direction:column;align-items:stretch">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#fb7185">${icon("terminal", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Başlatma Parametreleri (Launch Arguments)</div>
+                <div class="manage-item-desc">Gelişmiş komut satırı parametreleri ekleyin (örn: -dx11, -novid)</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;width:100%">
+              <input id="manage-args-input" class="text-input" style="flex:1" placeholder="-dx11 -novid" value="${esc(st.launchParameters || "")}" />
+              <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">Kaydet</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Oynama Süresi & İstatistikler -->
+      <div class="manage-card-group">
+        <div class="manage-group-title">${icon("clock", 14)} Oynama Süresi & İstatistikler</div>
+        <div class="manage-group-card">
+          <div class="manage-item-row">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#38bdf8">${icon("clock", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">Toplam Oynama Süresi: <span id="manage-playtime-val" style="color:#38bdf8;font-weight:700">${esc(playtimeStr)}</span></div>
+                <div id="manage-playtime-meta" class="manage-item-desc">${pt?.session_count ? `${pt.session_count} oturum kaydedildi • Son: ${esc(lastPlayedStr)}` : "Bu launcher üzerinden henüz oturum kaydedilmedi"}</div>
+              </div>
+            </div>
+            <div class="manage-item-right">
+              <button class="btn ghost small" data-act="open-edit-playtime" data-id="${st.appName}">
+                ${icon("edit", 13)} Süreyi Düzenle
+              </button>
+            </div>
+          </div>
+
+          <div class="manage-info-callout">
+            <div class="manage-callout-icon">${icon("info", 16)}</div>
+            <div class="manage-callout-text">
+              <strong>Epic Games Verileri Neden Otomatik Alınamıyor?</strong>
+              <p>
+                Epic Games Store, oynama sürelerini sadece kendi sunucularındaki özel telemetri sisteminde depolar ve üçüncü parti istemcilerin (Heroic, GOG Galaxy vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
+              </p>
+              <p>
+                Launcher üzerinden oyunu başlattığınızda oturum süreleri yerel olarak kaydedilir. Daha önce Epic Games'te geçirdiğiniz süreyi yukarıdaki "Süreyi Düzenle" butonundan bir kez ekleyerek kaldığınız yerden biriktirmeye devam edebilirsiniz.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Tehlikeli Bölge -->
+      <div class="manage-danger-card">
+        <div class="manage-item-left">
+          <div class="manage-item-icon" style="color:#ef4444;background:rgba(239,68,68,0.1)">${icon("trash", 18)}</div>
+          <div class="manage-item-info">
+            <div class="manage-item-title" style="color:#f87171">Oyunu Bilgisayardan Kaldır</div>
+            <div class="manage-item-desc">Kurulum dosyaları diskten silinecektir. Kayıt dosyalarınız korunur.</div>
+          </div>
+        </div>
+        <div class="manage-item-right">
+          <button class="btn danger small" data-act="epic-uninstall" data-id="${st.appName}">
+            ${icon("trash", 13)} Oyunu Kaldır
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function enrichAchievementsData(appName: string, data: EpicAchievementsData): void {
@@ -2070,22 +2899,22 @@ function renderDrawerAchievements(s: EpicSummary): string {
     if (partner) {
       return `
         <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
-          <div style="font-size:32px;margin-bottom:6px">🎮</div>
+          <div style="color:var(--muted);margin-bottom:8px">${icon("gamepad-2", 32)}</div>
           <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">${esc(partner.name)} Başarımları</div>
           <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 14px">Bu oyunun başarımları doğrudan <strong>${esc(partner.name)}</strong> üzerinden takip edilmektedir.</div>
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-            <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">↻ Tekrar Dene</button>
+            <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
             <button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${esc(partner.name)}'i Aç</button>
           </div>
         </div>`;
     }
     return `
       <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
-        <div style="font-size:32px;margin-bottom:6px">🏆</div>
+        <div style="color:var(--muted);margin-bottom:8px">${icon("trophy", 32)}</div>
         <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Başarım Desteği Bulunmuyor</div>
         <div style="font-size:12px;color:var(--muted);max-width:300px;margin:0 auto 14px">Bu oyun için Epic Games Store üzerinde tanımlı başarım bulunmuyor.</div>
         <div style="display:flex;justify-content:center;gap:8px">
-          <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">↻ Tekrar Dene</button>
+          <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
         </div>
       </div>`;
   }
@@ -2126,7 +2955,11 @@ function renderDrawerAchievements(s: EpicSummary): string {
   });
 
   const listHtml = items.length === 0
-    ? `<div class="empty" style="padding:24px;font-size:12px;color:var(--muted)">Bu filtreye uygun başarım bulunamadı.</div>`
+    ? `<div class="ach-empty-state">
+        <div style="color:var(--muted);margin-bottom:8px">${icon("search", 32)}</div>
+        <div style="font-weight:700;color:#fff;font-size:14px;margin-bottom:4px">Kriterlere Uygun Başarım Bulunamadı</div>
+        <div style="font-size:12px;color:var(--muted)">Filtre seçeneklerinizi değiştirerek tekrar deneyebilirsiniz.</div>
+      </div>`
     : items.map((a) => {
         const isUnlocked = a.unlocked || isDemo;
         const isHidden = a.hidden;
@@ -2138,42 +2971,55 @@ function renderDrawerAchievements(s: EpicSummary): string {
           ? "Bu başarım gizlidir. Spoilerı görmek için tıklayın."
           : (a.description || "Açıklama yok.");
         const tierClass = a.tier?.name ? a.tier.name.toLowerCase() : "";
+        const tierIcon = icon("trophy", 11);
+        const tierName = fmtTierName(a.tier?.name || "bronze");
 
         return `
-          <div class="ach-item ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
+          <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
                ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? "Tekrar gizle" : "Ayrıntıları gör"}"` : ""}>
-            <div class="ach-icon-box ${tierClass}">
+            <div class="ach-icon-wrapper">
               ${
                 isSecretMasked && !isRevealed
-                  ? `<div class="ach-mystery-icon">${icon("lock", 16)}</div>`
+                  ? `<div class="ach-mystery-box">${icon("lock", 18)}</div>`
                   : a.icon_link
-                    ? `<img src="${esc(a.icon_link)}" alt="" loading="lazy" />`
-                    : `<div style="display:flex;align-items:center;justify-content:center;height:100%">${icon("trophy", 16)}</div>`
+                    ? `<img class="ach-art" src="${esc(a.icon_link)}" alt="" loading="lazy" />`
+                    : `<div class="ach-fallback-icon">${icon("trophy", 18)}</div>`
               }
-              ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-lock-overlay">${icon("lock", 13)}</div>` : ""}
+              ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
             </div>
-            <div class="ach-details">
-              <div class="ach-title-row">
-                <span class="ach-title">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
+
+            <div class="ach-content">
+              <div class="ach-top-line">
+                <span class="ach-name">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
                 ${isSecretMasked
                   ? (isRevealed
-                      ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Tekrar gizle">${icon("eye-off", 10)} Gizle</button>`
-                      : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 10)} Göster</button>`)
+                      ? `<button class="ach-reveal-action revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Tekrar gizle">${icon("eye-off", 10)} Gizle</button>`
+                      : `<button class="ach-reveal-action" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 10)} Göster</button>`)
                   : isHidden && isUnlocked
-                    ? `<span class="ach-badge-secret">${icon("lock", 9)} Gizli</span>`
+                    ? `<span class="ach-meta-tag secret">${icon("lock", 9)} Gizli</span>`
                     : ""}
-                ${!a.is_base ? `<span class="ach-badge-dlc">DLC</span>` : ""}
+                ${!a.is_base ? `<span class="ach-meta-tag dlc">DLC</span>` : ""}
               </div>
-              <div class="ach-desc">${esc(desc)}</div>
-              <div class="ach-meta-row">
-                ${a.unlock_date && isUnlocked ? `<span class="ach-date">${fmtAchDate(a.unlock_date)}</span>` : ""}
-                ${a.rarity?.percent != null ? `<span class="ach-rarity-chip">%${a.rarity.percent.toFixed(0)}</span>` : ""}
-                ${a.tier?.name ? `<span class="ach-tier-chip ${tierClass}">${esc(fmtTierName(a.tier.name))}</span>` : ""}
+
+              <div class="ach-description">${esc(desc)}</div>
+
+              <div class="ach-bottom-line">
+                <span class="ach-tier-tag ${tierClass}">${tierIcon} ${esc(tierName)}</span>
+                ${a.unlock_date && isUnlocked ? `<span class="ach-sep">•</span><span class="ach-unlocked-date">${fmtAchDate(a.unlock_date)}</span>` : ""}
+                ${a.rarity?.percent != null ? `
+                  <span class="ach-sep">•</span>
+                  <span class="ach-rarity-tag ${a.rarity.percent < 10 ? "ultra-rare" : ""}">
+                    ${a.rarity.percent < 10 ? icon("sparkles", 10) + " " : ""}%${a.rarity.percent.toFixed(0)} ${a.rarity.percent < 10 ? "(Nadir)" : ""}
+                  </span>` : ""}
               </div>
             </div>
-            <div class="ach-right">
-              <div class="ach-xp-pill">+${a.xp} XP</div>
-              ${isUnlocked ? `<div class="ach-check-circle" title="Kazanıldı">${icon("check", 12)}</div>` : ""}
+
+            <div class="ach-aside">
+              <div class="ach-xp-tag ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
+              ${isUnlocked
+                ? `<div class="ach-status-badge earned" title="Kazanıldı">${icon("check", 12)}</div>`
+                : `<div class="ach-status-badge locked" title="Kilitli">${icon("lock", 11)}</div>`
+              }
             </div>
           </div>`;
       }).join("");
@@ -2182,16 +3028,24 @@ function renderDrawerAchievements(s: EpicSummary): string {
     <div class="ach-hero-compact ${isPlat ? "platinum" : ""}">
       <div class="ach-hero-row top">
         <div class="ach-hero-title">
-          <div class="ach-hero-icon-squircle ${isPlat ? "platinum" : ""}">
-            ${icon("trophy", 15)}
+          <div class="ach-hero-trophy-badge ${isPlat ? "platinum" : ""}">
+            ${icon("trophy", 18)}
           </div>
           <div class="ach-hero-heading-group">
-            <span class="ach-hero-heading">${isPlat ? "100% Platin Kupa! ✨" : "Başarımlar"}</span>
-            <span class="ach-pct-badge ${isPlat ? "platinum" : ""}">%${isPlat ? 100 : pct}</span>
+            <div class="ach-hero-headline">
+              <span class="ach-hero-heading">${isPlat ? "100% Platin Kupa!" : "Başarımlar"}</span>
+              <span class="ach-pct-badge ${isPlat ? "platinum" : ""}">${isPlat ? "%100" : `%${pct}`}</span>
+            </div>
+            <div class="ach-hero-subline">
+              <span class="ach-hero-unlocked-count">${effectiveUnlocked}</span> / ${data.total_achievements} Kupa Kazanıldı
+            </div>
           </div>
         </div>
         <div class="ach-hero-right">
-          <span class="ach-xp-tag">${effectiveXp} / ${data.total_xp} XP</span>
+          <div class="ach-xp-chip">
+            <span class="ach-xp-curr">${effectiveXp.toLocaleString()}</span>
+            <span class="ach-xp-total">/ ${data.total_xp.toLocaleString()} XP</span>
+          </div>
           <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Yeniden Sorgula">${icon("refresh", 13)}</button>
           <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Mağazasında Gör">${icon("external", 13)}</button>
         </div>
@@ -2202,42 +3056,44 @@ function renderDrawerAchievements(s: EpicSummary): string {
       </div>
 
       <div class="ach-hero-stats">
-        <span class="ach-stat-genel">Genel: <strong>${effectiveUnlocked}/${data.total_achievements}</strong></span>
+        <span class="ach-stat-item">
+          ${icon("gamepad-2", 12)} Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> ${baseUnlocked >= baseTotal ? `• Tamamlandı ${icon("check", 11)}` : `<span class="muted">(${baseTotal - baseUnlocked} kaldı)</span>`}
+        </span>
         ${hasDlc ? `
         <span class="ach-stat-dot">•</span>
-        <span class="ach-stat-base ${baseUnlocked >= baseTotal ? "done" : ""}">
-          🎮 Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> ${baseUnlocked >= baseTotal ? "✨" : `(${baseTotal - baseUnlocked} kaldı)`}
+        <span class="ach-stat-item">
+          ${icon("package", 12)} Ek Paketler: <strong>${dlcUnlocked}/${dlcTotal}</strong>
         </span>` : ""}
       </div>
     </div>
 
-    <div class="ach-filter-bar">
+    <div class="ach-filter-container">
       ${hasDlc ? `
-      <div class="ach-scope-strip">
-        <button class="ach-scope-pill ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
-          Tümü (${data.achievements.length})
+      <div class="ach-scope-segment">
+        <button class="ach-scope-btn ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
+          Tüm İçerik <span class="ach-btn-badge">${data.achievements.length}</span>
         </button>
-        <button class="ach-scope-pill ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
-          🎮 Ana Oyun (${baseUnlocked}/${baseTotal})
+        <button class="ach-scope-btn ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
+          ${icon("gamepad-2", 11)} Ana Oyun <span class="ach-btn-badge">${baseUnlocked}/${baseTotal}</span>
         </button>
-        <button class="ach-scope-pill ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
-          📦 Ek Paketler (${dlcUnlocked}/${dlcTotal})
+        <button class="ach-scope-btn ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
+          ${icon("package", 11)} Ek Paketler <span class="ach-btn-badge">${dlcUnlocked}/${dlcTotal}</span>
         </button>
       </div>` : ""}
 
-      <div class="ach-status-strip">
-        <button class="ach-status-pill ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
-          Tümü (${scopedItems.length})
+      <div class="ach-status-chips">
+        <button class="ach-chip ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
+          Tümü <span class="ach-chip-cnt">${scopedItems.length}</span>
         </button>
-        <button class="ach-status-pill ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
-          ${icon("check", 11)} Kazanılanlar (${scopedUnlocked})
+        <button class="ach-chip ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
+          ${icon("check", 11)} Kazanılanlar <span class="ach-chip-cnt">${scopedUnlocked}</span>
         </button>
-        <button class="ach-status-pill ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
-          ${icon("lock", 11)} Kilitliler (${scopedLocked})
+        <button class="ach-chip ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
+          ${icon("lock", 11)} Kilitliler <span class="ach-chip-cnt">${scopedLocked}</span>
         </button>
         ${scopedHidden > 0 ? `
-        <button class="ach-status-pill ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
-          ${icon("eye", 11)} Gizli (${scopedHidden})
+        <button class="ach-chip ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
+          ${icon("eye", 11)} Gizli <span class="ach-chip-cnt">${scopedHidden}</span>
         </button>` : ""}
       </div>
     </div>
@@ -2261,7 +3117,7 @@ async function fetchAndRenderAchievements(appName: string, forceRefresh = false)
   if (loadingAchFor === appName) return;
   loadingAchFor = appName;
   if (currentModalAppName === appName && activeDrawerTab === "achievements") {
-    openEpicModal(appName, false);
+    openEpicModal(appName, false, false);
   }
   try {
     const data = await epicGetAchievements(appName, forceRefresh);
@@ -2297,7 +3153,7 @@ async function fetchAndRenderAchievements(appName: string, forceRefresh = false)
   } finally {
     loadingAchFor = null;
     if (currentModalAppName === appName && activeDrawerTab === "achievements") {
-      openEpicModal(appName, false);
+      openEpicModal(appName, false, false);
     }
   }
 }
@@ -2351,21 +3207,24 @@ function renderDrawerSystemRequirements(s: EpicSummary): string {
 
   const data = loadedRequirements.get(s.appName);
   if (!data) {
+    if (loadingReqFor !== s.appName) {
+      void fetchAndRenderRequirements(s.appName, s.title);
+    }
     return `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px;color:var(--muted)">
         <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600">Sistem gereksinimleri kontrol ediliyor…</div>
+        <div style="font-size:13px;font-weight:600">Sistem gereksinimleri alınıyor…</div>
       </div>`;
   }
 
   if (!data.supported || data.systems.length === 0) {
     return `
       <div style="text-align:center;padding:36px 18px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
-        <div style="font-size:36px;margin-bottom:10px">💻</div>
+        <div style="color:var(--muted);margin-bottom:10px">${icon("cpu", 36)}</div>
         <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">Gereksinim Tablosu Bulunamadı</div>
         <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 16px;line-height:1.5">Bu oyun için Epic Games Store üzerinde doğrudan donanım tablosu tanımlanmamış olabilir.</div>
         <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-          <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">↻ Tekrar Dene</button>
+          <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
           <button class="btn play small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Mağaza Sayfası'na Git</button>
         </div>
       </div>`;
@@ -2432,7 +3291,7 @@ function renderDrawerSystemRequirements(s: EpicSummary): string {
       <div class="sys-req-cards-grid">
         <div class="sys-req-card min">
           <div class="sys-req-card-head">
-            <div class="sys-req-badge min">⚙️ Minimum Gereksinimler</div>
+            <div class="sys-req-badge min">${icon("cpu", 12)} Minimum Gereksinimler</div>
             <div class="sys-req-hint">Oyunu açıp oynamak için gereken temel donanım</div>
           </div>
           <div class="sys-req-body">
@@ -2445,7 +3304,7 @@ function renderDrawerSystemRequirements(s: EpicSummary): string {
             ? `
           <div class="sys-req-card rec">
             <div class="sys-req-card-head">
-              <div class="sys-req-badge rec">🚀 Önerilen Gereksinimler</div>
+              <div class="sys-req-badge rec">${icon("rocket", 12)} Önerilen Gereksinimler</div>
               <div class="sys-req-hint">Yüksek kare hızı ve akıcı grafik deneyimi için</div>
             </div>
             <div class="sys-req-body">
@@ -2459,7 +3318,7 @@ function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${languagesHtml}
 
       <div class="sys-req-footer">
-        <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">↻ Yeniden Sorgula</button>
+        <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} Yeniden Sorgula</button>
         <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Epic Mağazası'nda Aç</button>
       </div>
     </div>`;
@@ -2482,6 +3341,9 @@ async function fetchAndRenderRequirements(appName: string, title: string, forceR
     });
   } finally {
     loadingReqFor = null;
+    if (currentModalAppName === appName && activeDrawerTab === "specs") {
+      openEpicModal(appName, false);
+    }
   }
 }
 
@@ -2502,7 +3364,168 @@ async function epicOpenFolder(appName: string): Promise<void> {
   }
 }
 
+function renderShelfHeroCard(s: EpicSummary): string {
+  const wideImg = epicWideArt(s) || s.cover;
+  const g = rawOf(s.appName);
+  const devRaw = g?.metadata?.developer;
+  const dev = typeof devRaw === "string" ? devRaw : "Epic Games";
+  const p = epicDlProgress(s.appName);
+  const partner = getThirdPartyLauncher(g);
+  const isRunning = runningGames.has(s.appName);
+  const pt = playtimeMap.get(s.appName);
+
+  const primaryBtn =
+    p !== null
+      ? `<button class="btn primary small" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      : isRunning
+        ? `<button class="btn primary small running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
+        : s.installed
+          ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 13)} Oyna</button>`
+          : partner
+            ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} Başlat</button>`
+            : `<button class="btn primary small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} Yükle</button>`;
+
+  return `
+    <div class="shelf-hero-card" data-act="epic-detail" data-id="${s.appName}">
+      ${wideImg ? `<img class="shelf-hero-bg" src="${esc(wideImg)}" alt="" />` : ""}
+      <div class="shelf-hero-gradient"></div>
+      <div class="shelf-hero-body">
+        <div class="shelf-hero-tag">${icon("play", 10)} Son Oynanan</div>
+        <div class="shelf-hero-title">${esc(s.title)}</div>
+        <div class="shelf-hero-meta">
+          <span>${esc(dev)}</span>
+          ${pt && pt.total_seconds > 0 ? `<span>•</span><span style="color:#38bdf8">${icon("clock", 10)} ${fmtPlaytime(pt.total_seconds)}</span>` : ""}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+          ${primaryBtn}
+          <button class="btn ghost small" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 13)} Detaylar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderShelfSection(
+  iconOrEmoji: any,
+  title: string,
+  items: EpicSummary[],
+  featuredFirst = false,
+  isEmoji = false,
+): string {
+  if (items.length === 0) return "";
+  const firstItem = featuredFirst ? items[0] : null;
+  const restItems = featuredFirst ? items.slice(1) : items;
+
+  return `
+    <div class="shelf-section">
+      <div class="shelf-header">
+        <div class="shelf-title-group">
+          <span class="shelf-icon">${isEmoji ? `<span class="shelf-emoji">${esc(iconOrEmoji)}</span>` : icon(iconOrEmoji, 15)}</span>
+          <h3 class="shelf-title">${esc(title)}</h3>
+          <span class="shelf-badge">${items.length}</span>
+        </div>
+        <div class="shelf-nav">
+          <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="left" title="Sola Kaydır">${icon("chevron-left", 14)}</button>
+          <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="right" title="Sağa Kaydır">${icon("chevron-right", 14)}</button>
+        </div>
+      </div>
+      <div class="shelf-featured-wrap">
+        ${firstItem ? renderShelfHeroCard(firstItem) : ""}
+        <div class="shelf-row-track">
+          ${restItems.map((s, idx) => epicCardPortrait(s, idx)).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEpicShelves(): string {
+  const visible = epicVisibleSummaries();
+  // If search query is active or a single collection/filter is chosen, show focused shelf
+  if (query.trim() || epicFilter !== "all" || (activeCollectionId && activeCollectionId !== "all")) {
+    const activeCol = activeCollectionId ? epicCollections.find((c) => c.id === activeCollectionId) : null;
+    const title = query.trim()
+      ? `Arama Sonuçları: "${query.trim()}"`
+      : epicFilter === "installed"
+        ? "Yüklü Oyunlar"
+        : epicFilter === "fav"
+          ? "Favoriler"
+          : epicFilter === "platinum"
+            ? "Platin Kupalar"
+            : epicFilter === "updates"
+              ? "Güncellemeler"
+              : activeCol
+                ? activeCol.name
+                : "Oyunlar";
+
+    return `
+      <div class="shelf-section">
+        <div class="shelf-header">
+          <div class="shelf-title-group">
+            <span class="shelf-icon">${activeCol?.emoji ? `<span class="shelf-emoji">${esc(activeCol.emoji)}</span>` : icon("rows", 15)}</span>
+            <h3 class="shelf-title">${esc(title)}</h3>
+            <span class="shelf-badge">${visible.length}</span>
+          </div>
+        </div>
+        <div class="pgrid size-${epicCardSize}">
+          ${visible.map((s, idx) => epicCardPortrait(s, idx)).join("") || `<div class="empty">Oyun bulunamadı.</div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  // Steam-Style Standard Shelves
+  const sections: string[] = [];
+
+  // 1. Son Oynananlar (Recent Shelf)
+  const recentGames = epicRecent
+    .map((id) => epicSummaries.find((s) => s.appName === id && s.installed))
+    .filter((s): s is EpicSummary => !!s);
+
+  if (recentGames.length > 0) {
+    sections.push(renderShelfSection("clock", "Son Oynananlar", recentGames, true));
+  }
+
+  // 2. Yüklü Oyunlar (Installed Shelf)
+  const installedGames = epicSummaries.filter((s) => s.installed);
+  if (installedGames.length > 0) {
+    sections.push(renderShelfSection("gamepad-2", "Yüklü Oyunlar", installedGames));
+  }
+
+  // 3. Favoriler (Favorites Shelf)
+  const favGames = epicSummaries.filter((s) => epicFav.has(s.appName));
+  if (favGames.length > 0) {
+    sections.push(renderShelfSection("heart", "Favoriler", favGames));
+  }
+
+  // 4. Platin Kupalar (Platinum Shelf)
+  const platGames = epicSummaries.filter((s) => isAppPlatinum(s.appName));
+  if (platGames.length > 0) {
+    sections.push(renderShelfSection("trophy", "Platin Kupalı Oyunlar", platGames));
+  }
+
+  // 5. Kullanıcı Koleksiyonları
+  for (const col of epicCollections) {
+    const colGames = epicSummaries.filter((s) =>
+      col.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+    );
+    if (colGames.length > 0) {
+      sections.push(renderShelfSection(col.emoji || "folder", col.name, colGames, false, Boolean(col.emoji)));
+    }
+  }
+
+  // Fallback if no shelves have content
+  if (sections.length === 0) {
+    sections.push(renderShelfSection("layout-grid", "Tüm Oyunlar", epicSummaries.slice(0, 30)));
+  }
+
+  return `<div class="shelves-container">${sections.join("")}</div>`;
+}
+
 function renderEpicItems(): string {
+  if (epicViewMode === "shelves") {
+    return renderEpicShelves();
+  }
   const visible = epicVisibleSummaries();
   return (
     visible.map(epicViewMode === "grid" ? epicCardPortrait : epicRowHtml).join("") ||
@@ -2510,16 +3533,64 @@ function renderEpicItems(): string {
   );
 }
 
+function renderSkeletonLibrary(): string {
+  const skelCards = Array.from({ length: 12 })
+    .map(
+      () => `
+      <div class="pcard skeleton-card">
+        <div class="skeleton-cover"></div>
+        <div class="skeleton-badge"></div>
+        <div class="skeleton-overlay">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-sub"></div>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  return `
+    <div class="lib-top-bar">
+      <div class="lib-title-group">
+        <h1 class="lib-heading">Kütüphane</h1>
+        <div class="skeleton-pill" style="width:120px;height:24px;border-radius:20px;"></div>
+      </div>
+      <div class="lib-top-actions">
+        <div class="skeleton-pill" style="width:75px;height:36px;border-radius:10px;"></div>
+        <div class="skeleton-circle" style="width:36px;height:36px;border-radius:10px;"></div>
+      </div>
+    </div>
+    ${!isHeroCollapsed ? `
+    <div class="skeleton-hero" style="height:150px;margin-bottom:16px;">
+      <div class="skeleton-hero-badge"></div>
+      <div class="skeleton-hero-title"></div>
+      <div class="skeleton-hero-meta"></div>
+      <div class="skeleton-hero-actions">
+        <div class="skeleton-pill" style="width:110px;height:32px;border-radius:8px;"></div>
+        <div class="skeleton-pill" style="width:85px;height:32px;border-radius:8px;"></div>
+      </div>
+    </div>` : ""}
+    <div class="lib-unified-toolbar" style="margin-bottom:18px;">
+      <div class="unified-toolbar-left">
+        <div class="skeleton-pill" style="width:75px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:85px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:95px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:80px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:110px;height:32px;border-radius:9px;"></div>
+      </div>
+      <div class="unified-toolbar-right">
+        <div class="skeleton-pill" style="width:180px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:105px;height:32px;border-radius:9px;"></div>
+      </div>
+    </div>
+    <div class="pgrid size-${epicCardSize}">${skelCards}</div>`;
+}
+
 function renderEpic(): string {
   if (!isTauri) {
-    return `<h2>⚡ Epic</h2><p class="subtitle">Epic entegrasyonu</p><div class="empty">Bu bölüm yalnızca masaüstü uygulamasında çalışır.</div>`;
+    return `<h2>${icon("zap", 18)} Epic</h2><p class="subtitle">Epic entegrasyonu</p><div class="empty">Bu bölüm yalnızca masaüstü uygulamasında çalışır.</div>`;
   }
-  if (epicPhase === "checking") {
-    const skel = Array.from(
-      { length: 12 },
-      () => `<div class="pcard skel"><div class="shimmer"></div></div>`,
-    ).join("");
-    return `<h2>Kütüphane</h2><p class="subtitle">${epicBusyMsg ? esc(epicBusyMsg) : "Hazırlanıyor…"}</p><div class="pgrid">${skel}</div>`;
+  if (epicPhase === "checking" || (epicPhase === "library" && epicSummaries.length === 0)) {
+    return renderSkeletonLibrary();
   }
   if (epicPhase === "setup") {
     const pct = setupProgress ?? 0;
@@ -2560,42 +3631,145 @@ function renderEpic(): string {
       </div>`;
   }
 
-  const installedCount = epicSummaries.filter((s) => s.installed).length;
-  const favCount = epicSummaries.filter((s) => epicFav.has(s.appName)).length;
-  const updateCount = epicSummaries.filter((s) => s.updateAvailable || availableUpdates.has(s.appName)).length;
-  const platCount = epicSummaries.filter((s) => isAppPlatinum(s.appName)).length;
+  const favTotalCount = epicSummaries.filter((s) => epicFav.has(s.appName)).length;
+  const allInstalledCount = epicSummaries.filter((s) => s.installed).length;
+  const totalInstalledSize = epicSummaries.reduce((acc, x) => acc + (x.installSize || 0), 0);
+
+  const selectedCol =
+    activeCollectionId && activeCollectionId !== "all" && activeCollectionId !== "fav"
+      ? epicCollections.find((c) => c.id === activeCollectionId)
+      : null;
+
+  const visibleColSummaries =
+    selectedCol
+      ? epicSummaries.filter((s) =>
+          selectedCol.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+        )
+      : activeCollectionId === "fav"
+        ? epicSummaries.filter((s) => epicFav.has(s.appName))
+        : epicSummaries;
+
+  const totalColCount = visibleColSummaries.length;
+  const installedCount = visibleColSummaries.filter((s) => s.installed).length;
+  const updateCount = visibleColSummaries.filter((s) => s.updateAvailable || availableUpdates.has(s.appName)).length;
+  const platCount = visibleColSummaries.filter((s) => isAppPlatinum(s.appName)).length;
 
   return `
+    <div class="lib-top-bar">
+      <div class="lib-title-group">
+        <h1 class="lib-heading">Kütüphane</h1>
+        <div class="lib-heading-stats">
+          <span class="stat-dot"></span>
+          <span>${epicSummaries.length} Oyun</span>
+          <span class="stat-sep">•</span>
+          <span style="color:#10b981;font-weight:700">${allInstalledCount} Yüklü</span>
+          <span class="stat-sep">•</span>
+          <span>${fmtBytes(totalInstalledSize)}</span>
+        </div>
+      </div>
+      <div class="lib-top-actions">
+        <button class="lib-toggle-hero-btn ${isHeroCollapsed ? "active" : ""}" data-act="toggle-hero-spotlight" title="${isHeroCollapsed ? "Öne çıkan vitrini göster" : "Öne çıkan vitrini gizle"}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span>${isHeroCollapsed ? "Vitrini Aç" : "Vitrin"}</span>
+        </button>
+        <button class="lib-refresh-btn ${epicSyncing ? "spinning" : ""}" data-act="epic-refresh" title="Kütüphaneyi Yenile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 21h5v-5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     ${renderHeroSpotlight()}
-    <div class="lib-header">
-      <div class="filter-chips">
-        <button class="chip ${epicFilter === "all" ? "active" : ""}" data-act="epic-filter" data-val="all">
-          Tüm Oyunlar <span class="chip-cnt">${epicSummaries.length}</span>
+
+    <div class="lib-unified-toolbar">
+      <div class="unified-toolbar-left">
+        <button class="unified-pill ${activeCollectionId === null && epicFilter === "all" ? "active" : ""}" data-act="quick-tab" data-tab="all">
+          <span>Tümü</span>
+          <span class="pill-cnt">${epicSummaries.length}</span>
         </button>
-        <button class="chip ${epicFilter === "installed" ? "active" : ""}" data-act="epic-filter" data-val="installed">
-          ${icon("play", 13)} Kurulu <span class="chip-cnt">${installedCount}</span>
+        <button class="unified-pill ${epicFilter === "installed" ? "active" : ""}" data-act="quick-tab" data-tab="installed">
+          <span class="pill-dot installed"></span>
+          <span>Yüklü</span>
+          <span class="pill-cnt">${allInstalledCount}</span>
         </button>
-        <button class="chip ${epicFilter === "fav" ? "active" : ""}" data-act="epic-filter" data-val="fav">
-          ${icon("heart", 13)} Favoriler <span class="chip-cnt">${favCount}</span>
+        <button class="unified-pill ${activeCollectionId === "fav" || epicFilter === "fav" ? "active" : ""}" data-act="quick-tab" data-tab="fav">
+          <span class="pill-icon">${icon("heart", 13)}</span>
+          <span>Favoriler</span>
+          <span class="pill-cnt">${favTotalCount}</span>
         </button>
-        <button class="chip ${epicFilter === "platinum" ? "active" : ""}" data-act="epic-filter" data-val="platinum">
-          ${icon("trophy", 13)} Platin <span class="chip-cnt">${platCount}</span>
+        <button class="unified-pill ${epicFilter === "platinum" ? "active" : ""}" data-act="quick-tab" data-tab="platinum">
+          <span class="pill-icon">${icon("trophy", 13)}</span>
+          <span>Platin</span>
+          <span class="pill-cnt">${platCount}</span>
         </button>
         ${updateCount > 0 ? `
-        <button class="chip ${epicFilter === "updates" ? "active" : ""}" data-act="epic-filter" data-val="updates">
-          ⚡ Güncellemeler <span class="chip-cnt">${updateCount}</span>
+        <button class="unified-pill ${epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
+          <span class="pill-icon">${icon("zap", 13)}</span>
+          <span>Güncelleme</span>
+          <span class="pill-cnt">${updateCount}</span>
         </button>` : ""}
+
+        <div class="col-dropdown-container">
+          ${selectedCol ? `
+          <button class="unified-pill col-btn active" data-act="toggle-col-dropdown" title="${esc(selectedCol.name)} koleksiyonu seçili">
+            ${selectedCol.emoji ? `<span class="col-pill-emoji">${esc(selectedCol.emoji)}</span>` : icon("folder", 13)}
+            <span class="col-btn-name">${esc(selectedCol.name)}</span>
+            <span class="pill-cnt">${totalColCount}</span>
+            <span class="col-clear-btn" data-act="clear-collection" title="Koleksiyon filtresini kaldır">${icon("x", 11)}</span>
+          </button>` : `
+          <button class="unified-pill col-btn" data-act="toggle-col-dropdown" title="Koleksiyonlar">
+            ${icon("folder", 13)}
+            <span>Koleksiyonlar</span>
+            ${epicCollections.length > 0 ? `<span class="pill-cnt">${epicCollections.length}</span>` : ""}
+            <span class="dropdown-chevron">▾</span>
+          </button>`}
+
+          <div id="col-dropdown-menu" class="col-dropdown-menu ${isColDropdownOpen ? "show" : ""}">
+            <div class="col-menu-header">Koleksiyonlar</div>
+            <div class="col-menu-list">
+              ${epicCollections.length === 0 ? `<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">Henüz koleksiyon oluşturulmadı</div>` : ""}
+              ${epicCollections.map((col) => {
+                const count = epicSummaries.filter((s) => col.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase())).length;
+                const isAct = activeCollectionId === col.id;
+                return `
+                <div class="col-menu-item-row ${isAct ? "selected" : ""}">
+                  <button class="col-menu-item-btn" data-act="select-collection" data-col-id="${esc(col.id)}">
+                    ${col.emoji ? `<span class="col-menu-emoji">${esc(col.emoji)}</span>` : `<span class="col-menu-dot"></span>`}
+                    <span class="col-menu-name">${esc(col.name)}</span>
+                    <span class="col-menu-count">${count}</span>
+                  </button>
+                  <button class="col-menu-edit-btn" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(col.name)} koleksiyonunu düzenle">
+                    ${icon("edit", 12)}
+                  </button>
+                </div>`;
+              }).join("")}
+            </div>
+            <div class="col-menu-footer">
+              <button class="col-menu-action-btn" data-act="open-new-collection-modal">
+                ${icon("folder", 13)}
+                <span>+ Yeni Koleksiyon</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="lib-tools">
-        <label class="search-box">
-          <span>🔍</span>
-          <input id="search" type="search" placeholder="Kütüphanede ara..." value="${esc(query)}" autocomplete="off" />
+
+      <div class="unified-toolbar-right">
+        <label class="unified-search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search" type="search" placeholder="Kütüphanede ara..." value="${esc(query)}" autocomplete="off" spellcheck="false" />
           <span class="search-shortcut">Ctrl+F</span>
         </label>
-        <select id="epic-sort" class="select" title="Sıralama">
+        <select id="epic-sort" class="unified-select" title="Sıralama">
           <option value="recent" ${epicSort === "recent" ? "selected" : ""}>Son oynanan</option>
           <option value="alpha" ${epicSort === "alpha" ? "selected" : ""}>Alfabetik</option>
-          <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Kurulu önce</option>
+          <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Yüklü önce</option>
           <option value="platinum" ${epicSort === "platinum" ? "selected" : ""}>Platin kupalılar</option>
           <option value="updates" ${epicSort === "updates" ? "selected" : ""}>Güncelleme olanlar</option>
         </select>
@@ -2605,17 +3779,17 @@ function renderEpic(): string {
           <button class="${epicCardSize === "large" ? "active" : ""}" data-act="epic-size" data-val="large" title="Büyük">L</button>
         </div>
         <div class="view-mode-toggle">
-          <button class="${epicViewMode === "grid" ? "active" : ""}" data-act="epic-view-grid" title="Izgara">▦</button>
-          <button class="${epicViewMode === "list" ? "active" : ""}" data-act="epic-view-list" title="Liste">☰</button>
+          <button class="${epicViewMode === "grid" ? "active" : ""}" data-act="epic-view-grid" title="Izgara Görünümü">${icon("layout-grid", 13)}</button>
+          <button class="${epicViewMode === "shelves" ? "active" : ""}" data-act="epic-view-shelves" title="Raflar Görünümü">${icon("rows", 13)}</button>
+          <button class="${epicViewMode === "list" ? "active" : ""}" data-act="epic-view-list" title="Liste Görünümü">${icon("list", 13)}</button>
         </div>
-        <button class="btn ghost small" data-act="epic-refresh" title="Kütüphaneyi yenile">↻</button>
       </div>
     </div>
     ${epicSyncNote ? `<p class="subtitle">${esc(epicSyncNote)}</p>` : ""}
     ${epicFilter === "platinum" ? `
     <div class="plat-category-banner">
       <div class="plat-banner-glow"></div>
-      <div class="plat-banner-icon">🏆</div>
+      <div class="plat-banner-icon">${icon("trophy", 28)}</div>
       <div class="plat-banner-info">
         <div class="plat-banner-title">Platin Kupa Koleksiyonu</div>
         <div class="plat-banner-desc">Tüm başarımlarını %100 tamamlayarak vitrine eklediğin oyunlar. Harika iş!</div>
@@ -2625,12 +3799,258 @@ function renderEpic(): string {
         <div class="lbl">Tamamlandı</div>
       </div>
     </div>` : ""}
-    <div id="lib-results" class="${epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : ""}">${renderEpicItems()}</div>`;
+    <div id="lib-results" class="${epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : epicViewMode === "shelves" ? "shelves-container" : ""}">${renderEpicItems()}</div>`;
 }
 
 function closeModal(): void {
   modalRoot.innerHTML = "";
   currentModalAppName = null;
+}
+
+function closeCustomCoverModal(): void {
+  const root = document.getElementById("cover-modal-root");
+  if (root) root.innerHTML = "";
+}
+
+function openCustomCoverModal(appName: string): void {
+  let coverRoot = document.getElementById("cover-modal-root");
+  if (!coverRoot) {
+    coverRoot = document.createElement("div");
+    coverRoot.id = "cover-modal-root";
+    document.body.appendChild(coverRoot);
+  }
+  const s = epicSummaries.find((x) => x.appName === appName);
+  const currentCover = customCovers[appName] || s?.cover || "";
+  const title = s?.title || appName;
+
+  coverRoot.innerHTML = `
+    <div class="cover-overlay" data-act="close-custom-cover">
+      <div class="cover-dialog">
+        <div class="cover-dialog-header">
+          <div class="cover-dialog-title-group">
+            <div class="cover-dialog-icon">${icon("image", 18)}</div>
+            <div>
+              <h2>Kapağı Özelleştir</h2>
+              <div class="cover-dialog-sub">${esc(title)}</div>
+            </div>
+          </div>
+          <button class="manage-head-close" data-act="close-custom-cover" title="Kapat">${icon("x", 16)}</button>
+        </div>
+
+        <div class="cover-dialog-body">
+          <div class="cover-preview-wrapper">
+            <div class="cover-preview-card">
+              ${currentCover ? `<img id="cover-preview-img" src="${esc(currentCover)}" alt="Önizleme" />` : `<div id="cover-preview-img" class="cover-preview-empty">${icon("image", 40)}</div>`}
+              <div class="cover-preview-badge">${customCovers[appName] ? "Özel Kapak" : "Orijinal"}</div>
+            </div>
+            <div class="cover-preview-hint">
+              <strong>İpucu:</strong> SteamGridDB, IGDB veya doğrudan resim URL'si (JPG, PNG, WebP) kullanabilirsiniz. Önerilen oran <strong>2:3</strong> (örneğin 600×900 px).
+            </div>
+          </div>
+
+          <div class="cover-inputs-section">
+            <label class="cover-input-label">Görsel Web URL'si</label>
+            <div class="cover-url-row">
+              <input id="custom-cover-url-input" class="text-input" placeholder="https://... (Görsel direkt bağlantısı)" value="${esc(customCovers[appName] || "")}" spellcheck="false" autocomplete="off" />
+              <button class="btn ghost small" data-act="preview-custom-cover-url" title="Önizle">Önizle</button>
+            </div>
+
+            <div class="cover-divider"><span>VEYA</span></div>
+
+            <label class="cover-input-label">Bilgisayardan Dosya Seç</label>
+            <label class="cover-file-upload-btn">
+              ${icon("folder", 14)} <span>Yerel Görsel Dosyası Seç (.png, .jpg, .webp)</span>
+              <input id="custom-cover-file-input" type="file" accept="image/*" style="display:none;" />
+            </label>
+          </div>
+        </div>
+
+        <div class="cover-dialog-footer">
+          ${customCovers[appName] ? `<button class="btn danger" data-act="reset-custom-cover" data-id="${appName}">Varsayılana Sıfırla</button>` : ""}
+          <div style="flex:1"></div>
+          <button class="btn ghost" data-act="close-custom-cover">Vazgeç</button>
+          <button class="btn primary" data-act="save-custom-cover" data-id="${appName}">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeEditPlaytimeModal(): void {
+  if (playtimeRoot) playtimeRoot.innerHTML = "";
+}
+
+function openEditPlaytimeModal(appName: string): void {
+  if (!playtimeRoot) return;
+  const s = epicSummaries.find((x) => x.appName === appName);
+  const dl = downloads.get(appName);
+  const title = s?.title || dl?.title || appName;
+
+  const pt = playtimeMap.get(appName);
+  const sec = pt?.total_seconds || 0;
+  const hours = Math.floor(sec / 3600);
+  const minutes = Math.floor((sec % 3600) / 60);
+  let lastPlayed = pt?.last_played || "";
+  if (!lastPlayed && (hours > 0 || minutes > 0)) {
+    lastPlayed = "Daha önce oynandı (Epic Games)";
+  }
+
+  const standardOptions = [
+    "",
+    "Daha önce oynandı (Epic Games)",
+    "Bugün",
+    "Dün",
+    "Bu hafta",
+    "Bu ay",
+    "Geçen ay",
+    "6 ay önce",
+    "1 yıl önce veya daha eski",
+  ];
+  const hasCustomLastPlayed = Boolean(lastPlayed && !standardOptions.includes(lastPlayed));
+
+  playtimeRoot.innerHTML = `
+    <div class="playtime-overlay" data-act="playtime-overlay-close">
+      <div class="playtime-dialog">
+        <div class="playtime-header">
+          <div class="playtime-header-title">
+            <div class="playtime-header-icon">${icon("clock", 18)}</div>
+            <div>
+              <h2>Oynama Süresini Düzenle</h2>
+              <div class="playtime-header-sub">${esc(title)}</div>
+            </div>
+          </div>
+          <button class="manage-head-close" data-act="close-edit-playtime" title="Kapat">${icon("x", 16)}</button>
+        </div>
+
+        <div class="playtime-body">
+          <div class="playtime-modal-notice">
+            <div class="playtime-modal-notice-icon">${icon("info", 16)}</div>
+            <div class="playtime-modal-notice-text">
+              <strong>Epic Games Verileri Neden Otomatik Alınamıyor?</strong><br />
+              Epic Games Store, oynama sürelerini yalnızca kendi sunucularındaki kapalı telemetride depolar ve 3. parti istemcilerin (Heroic, GOG vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
+              Önceki Epic sürenizi buradan bir defaya mahsus girdiğinizde, gelecekteki oyun oturumlarınız bu sürenin üzerine eklenerek sayılmaya devam eder.
+            </div>
+          </div>
+
+          <div class="playtime-form-group">
+            <label class="playtime-form-label">Toplam Oynama Süresi</label>
+            <div class="playtime-inputs-row">
+              <div class="playtime-input-wrap">
+                <input id="pt-hours-input" type="number" min="0" step="1" class="text-input" value="${hours}" placeholder="0" />
+                <span class="playtime-unit">Saat</span>
+              </div>
+              <div class="playtime-input-wrap">
+                <input id="pt-minutes-input" type="number" min="0" max="59" step="1" class="text-input" value="${minutes}" placeholder="0" />
+                <span class="playtime-unit">Dakika</span>
+              </div>
+            </div>
+            <div class="playtime-quick-chips">
+              <span class="playtime-quick-label">Hızlı Ekle:</span>
+              <button type="button" class="quick-chip" data-act="pt-quick-add" data-hours="1">+1 sa</button>
+              <button type="button" class="quick-chip" data-act="pt-quick-add" data-hours="5">+5 sa</button>
+              <button type="button" class="quick-chip" data-act="pt-quick-add" data-hours="10">+10 sa</button>
+              <button type="button" class="quick-chip" data-act="pt-quick-add" data-hours="50">+50 sa</button>
+              <button type="button" class="quick-chip reset" data-act="pt-reset">Sıfırla</button>
+            </div>
+          </div>
+
+          <div class="playtime-form-group">
+            <label class="playtime-form-label">Son Aktivite (Seçiniz)</label>
+            <select id="pt-last-played-select" class="playtime-select">
+              <option value="" ${!lastPlayed ? "selected" : ""}>Belirtilmemiş (Henüz Oynanmadı)</option>
+              <option value="Daha önce oynandı (Epic Games)" ${lastPlayed === "Daha önce oynandı (Epic Games)" ? "selected" : ""}>Daha önce oynandı (Epic Games)</option>
+              <option value="Bugün" ${lastPlayed === "Bugün" ? "selected" : ""}>Bugün</option>
+              <option value="Dün" ${lastPlayed === "Dün" ? "selected" : ""}>Dün</option>
+              <option value="Bu hafta" ${lastPlayed === "Bu hafta" ? "selected" : ""}>Bu hafta</option>
+              <option value="Bu ay" ${lastPlayed === "Bu ay" ? "selected" : ""}>Bu ay</option>
+              <option value="Geçen ay" ${lastPlayed === "Geçen ay" ? "selected" : ""}>Geçen ay</option>
+              <option value="6 ay önce" ${lastPlayed === "6 ay önce" ? "selected" : ""}>6 ay önce</option>
+              <option value="1 yıl önce veya daha eski" ${lastPlayed === "1 yıl önce veya daha eski" ? "selected" : ""}>1 yıl önce veya daha eski</option>
+              ${hasCustomLastPlayed ? `<option value="${esc(lastPlayed)}" selected>Kayıtlı: ${esc(lastPlayed)}</option>` : ""}
+            </select>
+            <div class="playtime-input-hint">Kütüphane detay kartındaki "Son Aktivite" alanında görüntülenir.</div>
+          </div>
+        </div>
+
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="close-edit-playtime">Vazgeç</button>
+          <button class="btn primary" data-act="save-playtime" data-id="${esc(appName)}">
+            ${icon("check", 14)} Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveEditedPlaytime(appName: string): Promise<void> {
+  const hInput = document.getElementById("pt-hours-input") as HTMLInputElement | null;
+  const mInput = document.getElementById("pt-minutes-input") as HTMLInputElement | null;
+  const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
+
+  const hours = Math.max(0, parseInt(hInput?.value || "0", 10) || 0);
+  const minutes = Math.max(0, Math.min(59, parseInt(mInput?.value || "0", 10) || 0));
+  const totalSeconds = hours * 3600 + minutes * 60;
+  const selectedLp = lpSelect?.value?.trim() || "";
+  const lastPlayed = selectedLp.length > 0 ? selectedLp : null;
+
+  const saveBtn = document.querySelector<HTMLButtonElement>('[data-act="save-playtime"]');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Kaydediliyor…";
+  }
+
+  try {
+    const updated = await epicSetPlaytime(appName, totalSeconds, lastPlayed);
+    playtimeMap.set(appName, updated);
+
+    // Update Overview drawer if open
+    const overviewPtVal = document.getElementById("drawer-stat-playtime");
+    if (overviewPtVal) {
+      overviewPtVal.textContent = updated.total_seconds > 0 ? fmtPlaytime(updated.total_seconds) : "Oynanmadı";
+    }
+    const overviewLpVal = document.getElementById("drawer-stat-last-activity");
+    if (overviewLpVal) {
+      overviewLpVal.textContent = updated.last_played || "Henüz oynanmadı";
+    }
+
+    // Update Manage drawer if open
+    const managePtVal = document.getElementById("manage-playtime-val");
+    if (managePtVal) {
+      managePtVal.textContent = updated.total_seconds > 0 ? fmtPlaytime(updated.total_seconds) : "Oynanmadı";
+    }
+    const managePtMeta = document.getElementById("manage-playtime-meta");
+    if (managePtMeta) {
+      managePtMeta.textContent = updated.session_count
+        ? `${updated.session_count} oturum kaydedildi • Son: ${updated.last_played || "Henüz oynanmadı"}`
+        : "Bu launcher üzerinden henüz oturum kaydedilmedi";
+    }
+
+    // Update card/grid if visible
+    const cardBadge = document.querySelector(`.pcard[data-id="${appName}"] .playtime-badge`) as HTMLElement | null;
+    if (cardBadge) {
+      if (updated.total_seconds > 0) {
+        cardBadge.innerHTML = `${icon("clock", 11)} ${fmtPlaytime(updated.total_seconds)}`;
+        cardBadge.style.display = "";
+      } else {
+        cardBadge.style.display = "none";
+      }
+    }
+
+    toast(
+      updated.total_seconds > 0
+        ? `Oynama süresi güncellendi: ${fmtPlaytime(updated.total_seconds)}`
+        : "Oynama süresi sıfırlandı",
+      "ok"
+    );
+    closeEditPlaytimeModal();
+  } catch (err) {
+    toast(`Süre kaydedilemedi: ${String(err)}`, "err");
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Kaydet";
+    }
+  }
 }
 
 function closeManageModal(): void {
@@ -2676,6 +4096,17 @@ async function openManageModal(appName: string): Promise<void> {
   } catch (e) {
     toast(`Oyun ayarları alınamadı: ${String(e)}`, "err");
   }
+
+  // Arka planda yedekleri çek ve listeyi güncelle
+  epicListBackups(appName)
+    .then((b) => {
+      gameBackupsMap.set(appName, b);
+      const listEl = document.getElementById("manage-backup-list");
+      if (listEl && activeManageSettings?.appName === appName) {
+        listEl.innerHTML = renderBackupListHtml(appName);
+      }
+    })
+    .catch(() => {});
 }
 
 function updateManageModalInputsInPlace(st: GameLocalSettings): void {
@@ -2772,11 +4203,39 @@ function resetVerifyInPlace(id: string): void {
   }
 }
 
+function renderBackupListHtml(appName: string): string {
+  const list = gameBackupsMap.get(appName) || [];
+  if (list.length === 0) {
+    return `<div style="color:#64748b;font-size:12px;padding:6px 0">Henüz yerel kayıt yedeği alınmamış.</div>`;
+  }
+  return list
+    .map(
+      (b) => `
+    <div class="backup-item">
+      <div class="backup-item-meta">
+        <span class="backup-item-title">${esc(b.formatted_date)}</span>
+        <span class="backup-item-sub">${b.file_count} dosya • ${fmtBytes(b.size_bytes)}</span>
+      </div>
+      <div class="backup-item-actions">
+        <button class="btn ghost small" data-act="manage-restore-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="Bu Yedeği Geri Yükle">
+          Geri Yükle
+        </button>
+        <button class="btn ghost small" data-act="manage-delete-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="Yedeği Sil" style="color:#ef4444">
+          ${icon("trash", 12)}
+        </button>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+}
+
 function renderManageModal(): void {
   if (!manageRoot || !activeManageSettings) return;
   const st = activeManageSettings;
   const v = verifyingMap.get(st.appName);
   const isVerifying = Boolean(v);
+  const pt = playtimeMap.get(st.appName);
 
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
@@ -2789,6 +4248,19 @@ function renderManageModal(): void {
           <button class="manage-head-close" data-act="manage-close" title="Kapat">${icon("x", 16)}</button>
         </div>
         <div class="manage-body">
+          <!-- 0. Oynama İstatistikleri -->
+          <div class="manage-row">
+            <div class="manage-left">
+              <div class="manage-icon" style="color:#38bdf8">${icon("clock", 20)}</div>
+              <div class="manage-info">
+                <div class="manage-title">Oynama İstatistikleri</div>
+                <div class="manage-subtitle">
+                  Toplam Süre: <strong style="color:#fff">${fmtPlaytime(pt?.total_seconds || 0)}</strong> • Oturum Sayısı: <strong style="color:#fff">${pt?.session_count || 0}</strong> • Son: <strong style="color:#fff">${pt?.last_played || "Henüz oynanmadı"}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 1. Dosyaları Doğrula -->
           <div class="manage-row">
             <div class="manage-left">
@@ -2880,6 +4352,30 @@ function renderManageModal(): void {
                 <input type="checkbox" data-act="manage-toggle-cloud" ${st.cloudSavesEnabled ? "checked" : ""} />
                 <span class="toggle-slider"></span>
               </label>
+            </div>
+          </div>
+
+          <!-- 4.1. Yerel Kayıt Yedekleme (Save Backup Manager) -->
+          <div class="manage-row" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div class="manage-left">
+                <div class="manage-icon" style="color:#a855f7">${icon("hard-drive", 20)}</div>
+                <div class="manage-info">
+                  <div class="manage-title">Kayıt Dosyaları &amp; Yerel Yedekleme</div>
+                  <div class="manage-subtitle">İlerlemenizi korumak için oyun kayıtlarını (save) yerel olarak arşivleyin ve geri yükleyin</div>
+                </div>
+              </div>
+              <div class="manage-right" style="display:flex;gap:6px;align-items:center">
+                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="Yedek Klasörünü Aç">
+                  ${icon("folder", 13)} Klasör
+                </button>
+                <button class="btn primary small" data-act="manage-create-backup" data-id="${st.appName}" ${isBackingUp ? "disabled" : ""}>
+                  ${isBackingUp ? "Yedekleniyor…" : "Yedek Al"}
+                </button>
+              </div>
+            </div>
+            <div id="manage-backup-list" class="backup-list">
+              ${renderBackupListHtml(st.appName)}
             </div>
           </div>
 
@@ -2978,6 +4474,10 @@ function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string 
   if (p !== null) {
     return `<button class="btn primary${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">İptal</button>`;
+  }
+  const isRunning = runningGames.has(s.appName);
+  if (isRunning) {
+    return `<button class="btn primary${btn} running" data-act="epic-play" data-id="${s.appName}" title="Oyun Çalışıyor"><span class="running-dot"></span> Oynanıyor…</button>`;
   }
   if (s.installed) {
     const hasUpdate = s.updateAvailable || availableUpdates.has(s.appName);
@@ -3095,9 +4595,515 @@ async function loadSettingsView(): Promise<void> {
   render();
 }
 
+/* ---------- Koleksiyon Yönetimi (UI & Modallar) ---------- */
+
+const collectionRoot = document.getElementById("collection-root");
+let activeEditingColId: string | null = null;
+const POPULAR_COL_EMOJIS = [
+  "🎮", "📖", "🌐", "🏆", "⚔️", "🚗", "👻", "⚡",
+  "🧩", "🚀", "🔫", "🕹️", "🔥", "👑", "🌟", "💎",
+  "🛡️", "💀", "🏹", "🧙", "👾", "🤖", "🏎️", "⚽",
+  "🏀", "🌍", "📦", "💾", "⭐", "❤️", "🎯", "🎲",
+];
+
+let colModalSelectedApps: Set<string> = new Set();
+let colModalSearchQuery: string = "";
+let colModalSelectedEmoji: string = "";
+let colModalTabFilter: "all" | "selected" | "installed" = "all";
+let isEmojiPaletteOpen: boolean = false;
+
+function openCollectionModal(colId?: string | null): void {
+  activeEditingColId = colId ?? null;
+  colModalSearchQuery = "";
+  colModalTabFilter = "all";
+  isEmojiPaletteOpen = false;
+  if (colId) {
+    const col = epicCollections.find((c) => c.id === colId);
+    colModalSelectedApps = new Set(col?.app_names || []);
+    colModalSelectedEmoji = col?.emoji || "";
+  } else {
+    colModalSelectedApps = new Set();
+    colModalSelectedEmoji = "";
+  }
+  renderCollectionModal();
+}
+
+function closeCollectionModal(): void {
+  if (collectionRoot) collectionRoot.innerHTML = "";
+  activeEditingColId = null;
+  gameColModalAppName = null;
+  isEmojiPaletteOpen = false;
+}
+
+function updateEmojiUi(): void {
+  const display = document.getElementById("col-emoji-display");
+  const avatarBtn = document.querySelector(".col-emoji-avatar-btn");
+  const headerAvatar = document.getElementById("col-header-avatar");
+  if (display) {
+    display.innerHTML = colModalSelectedEmoji ? esc(colModalSelectedEmoji) : icon("folder", 20);
+  }
+  if (avatarBtn) {
+    avatarBtn.classList.toggle("has-emoji", Boolean(colModalSelectedEmoji));
+  }
+  if (headerAvatar) {
+    headerAvatar.innerHTML = colModalSelectedEmoji
+      ? `<span class="col-header-emoji">${esc(colModalSelectedEmoji)}</span>`
+      : icon("folder", 18);
+  }
+  const pal = document.getElementById("col-emoji-palette");
+  if (pal) {
+    pal.classList.toggle("open", isEmojiPaletteOpen);
+    pal.querySelectorAll(".col-emoji-item").forEach((btn) => {
+      btn.classList.toggle("active", (btn as HTMLElement).dataset.emoji === colModalSelectedEmoji);
+    });
+  }
+}
+
+function updateColPresetArrows(): void {
+  const container = document.getElementById("col-presets-scrollable");
+  const wrapper = container?.closest(".col-presets-track-wrapper");
+  if (!container || !wrapper) return;
+
+  const leftFade = wrapper.querySelector(".col-presets-fade.left") as HTMLElement | null;
+  const rightFade = wrapper.querySelector(".col-presets-fade.right") as HTMLElement | null;
+
+  const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+  const hasOverflow = maxScroll > 4;
+
+  const canScrollLeft = hasOverflow && container.scrollLeft > 4;
+  const canScrollRight = hasOverflow && container.scrollLeft < maxScroll - 4;
+
+  if (leftFade) leftFade.classList.toggle("visible", canScrollLeft);
+  if (rightFade) rightFade.classList.toggle("visible", canScrollRight);
+}
+
+function renderCollectionModal(): void {
+  if (!collectionRoot) return;
+  const col = activeEditingColId ? epicCollections.find((c) => c.id === activeEditingColId) : null;
+  const colName = col ? col.name : "";
+  const isEditing = Boolean(activeEditingColId);
+
+  const q = colModalSearchQuery.toLocaleLowerCase("tr");
+  let filtered = epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+  if (colModalTabFilter === "selected") {
+    filtered = filtered.filter((s) => colModalSelectedApps.has(s.appName));
+  } else if (colModalTabFilter === "installed") {
+    filtered = filtered.filter((s) => s.installed);
+  }
+
+  const installedCount = epicSummaries.filter((s) => s.installed).length;
+  const selectedCount = colModalSelectedApps.size;
+
+  collectionRoot.innerHTML = `
+    <div class="col-modal-backdrop" data-act="col-modal-backdrop">
+      <div class="col-modal-card" role="dialog" aria-modal="true">
+        <div class="col-modal-header">
+          <div class="col-modal-title">
+            <div class="col-modal-header-avatar" id="col-header-avatar">
+              ${colModalSelectedEmoji ? `<span class="col-header-emoji">${esc(colModalSelectedEmoji)}</span>` : icon("folder", 20)}
+            </div>
+            <div>
+              <h2>
+                <span>${isEditing ? "Koleksiyonu Düzenle" : "Yeni Koleksiyon Oluştur"}</span>
+                <span class="col-header-count" id="col-header-selected-badge">${selectedCount} Seçildi</span>
+              </h2>
+              <div class="col-modal-subtitle">${isEditing ? `"${esc(colName)}" kategorisini özelleştirin` : "Oyunlarınızı kategorilere ayırarak düzenleyin"}</div>
+            </div>
+          </div>
+          <button class="col-modal-close" data-act="close-col-modal" title="Kapat">
+            ${icon("x", 16)}
+          </button>
+        </div>
+
+        <div class="col-modal-body">
+          <div class="col-input-group">
+            <label for="col-name-input" class="col-label">Koleksiyon Simgesi & Adı</label>
+            <div class="col-name-row">
+              <div class="col-emoji-picker-container">
+                <button type="button" class="col-emoji-avatar-btn ${colModalSelectedEmoji ? "has-emoji" : ""}" data-act="toggle-col-emoji-palette" title="Emoji / Simge Seç">
+                  <span id="col-emoji-display">${colModalSelectedEmoji ? esc(colModalSelectedEmoji) : icon("folder", 22)}</span>
+                  <span class="col-emoji-edit-badge">${icon("edit", 10)}</span>
+                </button>
+                <div id="col-emoji-palette" class="col-emoji-palette ${isEmojiPaletteOpen ? "open" : ""}">
+                  <div class="col-emoji-palette-header">
+                    <span>Bir Simge Seçin</span>
+                    ${colModalSelectedEmoji ? `<button type="button" class="col-emoji-clear-btn" data-act="clear-col-emoji">${icon("trash", 11)} Kaldır</button>` : ""}
+                  </div>
+                  <div class="col-emoji-grid">
+                    ${POPULAR_COL_EMOJIS.map((e) => `
+                      <button type="button" class="col-emoji-item ${colModalSelectedEmoji === e ? "active" : ""}" data-act="pick-col-emoji" data-emoji="${e}">${e}</button>
+                    `).join("")}
+                  </div>
+                  <div class="col-custom-emoji-row">
+                    <input id="col-custom-emoji-input" class="text-input small" placeholder="Farklı bir emoji..." maxlength="4" value="${esc(colModalSelectedEmoji)}" />
+                    <button type="button" class="btn ghost small" data-act="apply-custom-emoji">Uygula</button>
+                  </div>
+                </div>
+              </div>
+              <input id="col-name-input" class="text-input col-name-input" placeholder="Örn: Hikaye, Online, Co-op, Bitirdiklerim..." value="${esc(colName)}" autocomplete="off" spellcheck="false" />
+            </div>
+
+            <!-- Detay Sayfası Tarzı Kaydırılabilir Hızlı Şablonlar -->
+            <div class="col-presets-wrapper">
+              <span class="col-quick-label">Hızlı Şablonlar:</span>
+              <div class="col-presets-track-wrapper">
+                <div class="col-presets-fade left">
+                  <button type="button" class="col-presets-arrow left" data-act="col-presets-scroll" data-dir="left" title="Sola kaydır">
+                    ${icon("chevron-left", 12)}
+                  </button>
+                </div>
+                <div class="col-quick-presets" id="col-presets-scrollable">
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="📖" data-name="Hikaye">📖 Hikaye</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🌐" data-name="Online">🌐 Online</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🏆" data-name="Platin Hedef">🏆 Platin Hedef</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="⚔️" data-name="RPG">⚔️ RPG</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🚗" data-name="Yarış">🚗 Yarış</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="👻" data-name="Korku">👻 Korku</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🔥" data-name="Favoriler">🔥 Favoriler</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="⚡" data-name="Aksiyon">⚡ Aksiyon</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🧩" data-name="Bulmaca">🧩 Bulmaca</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🚀" data-name="Bilim Kurgu">🚀 Bilim Kurgu</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🕹️" data-name="Retro / Klasik">🕹️ Klasik</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🎯" data-name="Strateji">🎯 Strateji</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="👑" data-name="VIP / Özel">👑 Özel</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="📦" data-name="Bitirdiklerim">📦 Bitirdiklerim</button>
+                </div>
+                <div class="col-presets-fade right">
+                  <button type="button" class="col-presets-arrow right" data-act="col-presets-scroll" data-dir="right" title="Sağa kaydır">
+                    ${icon("chevron-right", 12)}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-picker-box">
+            <div class="col-picker-head">
+              <div class="col-filter-tabs">
+                <button type="button" class="col-filter-tab ${colModalTabFilter === "all" ? "active" : ""}" data-act="col-tab-filter" data-filter="all">
+                  Tümü <span class="col-tab-cnt">${epicSummaries.length}</span>
+                </button>
+                <button type="button" class="col-filter-tab ${colModalTabFilter === "selected" ? "active" : ""}" data-act="col-tab-filter" data-filter="selected">
+                  Seçilenler <span class="col-tab-cnt" id="col-tab-selected-cnt">${selectedCount}</span>
+                </button>
+                <button type="button" class="col-filter-tab ${colModalTabFilter === "installed" ? "active" : ""}" data-act="col-tab-filter" data-filter="installed">
+                  Yüklü <span class="col-tab-cnt">${installedCount}</span>
+                </button>
+              </div>
+
+              <div class="col-quick-btns">
+                <button type="button" class="col-quick-btn" data-act="col-select-all">Tümünü Seç</button>
+                <button type="button" class="col-quick-btn" data-act="col-deselect-all">Temizle</button>
+              </div>
+            </div>
+
+            <div class="col-search-wrap">
+              <span>${icon("search", 13)}</span>
+              <input id="col-search-input" class="text-input" placeholder="Kütüphanedeki ${epicSummaries.length} oyun arasında ara..." value="${esc(colModalSearchQuery)}" autocomplete="off" />
+              ${colModalSearchQuery ? `<button type="button" class="col-search-clear" data-act="col-search-clear" title="Temizle">${icon("x", 12)}</button>` : ""}
+            </div>
+
+            <div class="col-games-list">
+              ${filtered.length > 0 ? filtered.map((s) => {
+                const checked = colModalSelectedApps.has(s.appName);
+                return `
+                  <div class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${s.appName}">
+                    <div class="col-custom-cb ${checked ? "checked" : ""}">
+                      ${icon("check", 12)}
+                    </div>
+                    ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
+                    <div class="col-game-info">
+                      <div class="col-game-title">${esc(s.title)}</div>
+                      <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} Yüklü</span>` : "Yüklü Değil"}</div>
+                    </div>
+                  </div>
+                `;
+              }).join("") : `<div class="col-empty-msg">Eşleşen oyun bulunamadı.</div>`}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-modal-footer">
+          <div>
+            ${isEditing ? `<button class="btn danger small" data-act="col-delete-btn" data-col-id="${col!.id}">${icon("trash", 13)} Koleksiyonu Sil</button>` : `<div class="col-footer-summary"><span id="col-footer-count">${selectedCount}</span> / ${epicSummaries.length} oyun seçildi</div>`}
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn ghost small" data-act="close-col-modal">İptal</button>
+            <button class="btn primary small" data-act="col-save-btn">${isEditing ? "Değişiklikleri Kaydet" : "Koleksiyon Oluştur"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
+  if (nameInput && !isEditing) nameInput.focus();
+
+  const searchInput = document.getElementById("col-search-input") as HTMLInputElement | null;
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      colModalSearchQuery = (e.target as HTMLInputElement).value;
+      updateColGamesListInPlace();
+    });
+  }
+
+  const presetsScrollable = document.getElementById("col-presets-scrollable");
+  if (presetsScrollable) {
+    presetsScrollable.addEventListener("scroll", updateColPresetArrows, { passive: true });
+    requestAnimationFrame(() => updateColPresetArrows());
+  }
+}
+
+function updateColGamesListInPlace(): void {
+  const container = document.querySelector(".col-games-list");
+  if (!container) return;
+  const q = colModalSearchQuery.toLocaleLowerCase("tr");
+  let filtered = epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+  if (colModalTabFilter === "selected") {
+    filtered = filtered.filter((s) => colModalSelectedApps.has(s.appName));
+  } else if (colModalTabFilter === "installed") {
+    filtered = filtered.filter((s) => s.installed);
+  }
+
+  container.innerHTML = filtered.length > 0 ? filtered.map((s) => {
+    const checked = colModalSelectedApps.has(s.appName);
+    return `
+      <div class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${s.appName}">
+        <div class="col-custom-cb ${checked ? "checked" : ""}">
+          ${icon("check", 12)}
+        </div>
+        ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
+        <div class="col-game-info">
+          <div class="col-game-title">${esc(s.title)}</div>
+          <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} Yüklü</span>` : "Yüklü Değil"}</div>
+        </div>
+      </div>
+    `;
+  }).join("") : `<div class="col-empty-msg">Eşleşen oyun bulunamadı.</div>`;
+
+  const selCountEl = document.getElementById("col-tab-selected-cnt");
+  if (selCountEl) selCountEl.textContent = String(colModalSelectedApps.size);
+
+  const headerBadge = document.getElementById("col-header-selected-badge");
+  if (headerBadge) headerBadge.textContent = `${colModalSelectedApps.size} Seçildi`;
+
+  const footerCnt = document.getElementById("col-footer-count");
+  if (footerCnt) footerCnt.textContent = String(colModalSelectedApps.size);
+}
+
+async function saveCollectionFromModal(): Promise<void> {
+  const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
+  const name = nameInput?.value.trim() || "";
+  if (!name) {
+    toast("Lütfen koleksiyon adı girin.", "err");
+    return;
+  }
+  try {
+    const saved = await epicSaveCollection(
+      name,
+      Array.from(colModalSelectedApps),
+      activeEditingColId,
+      colModalSelectedEmoji || null,
+    );
+    toast(`"${saved.name}" koleksiyonu kaydedildi`, "ok");
+    closeCollectionModal();
+    await loadEpicCollections();
+    render();
+  } catch (e) {
+    toast(`Koleksiyon kaydedilemedi: ${String(e)}`, "err");
+  }
+}
+
+async function deleteCollectionFromModal(colId: string): Promise<void> {
+  const col = epicCollections.find((c) => c.id === colId);
+  const name = col ? col.name : "Koleksiyon";
+  if (!confirm(`"${name}" koleksiyonunu silmek istediğinize emin misiniz?\n(Oyunlar silinmez, yalnızca kategori kaldırılır)`)) {
+    return;
+  }
+  try {
+    await epicDeleteCollection(colId);
+    if (activeCollectionId === colId) activeCollectionId = null;
+    toast(`"${name}" koleksiyonu silindi`, "ok");
+    closeCollectionModal();
+    await loadEpicCollections();
+    render();
+  } catch (e) {
+    toast(`Koleksiyon silinemedi: ${String(e)}`, "err");
+  }
+}
+
+/* ---------- Oyun Koleksiyonları Seçim Modalı (Detay Çekmecesinden) ---------- */
+
+let gameColModalAppName: string | null = null;
+let gameColModalSelectedCols: Set<string> = new Set();
+
+function openGameCollectionsModal(appName: string): void {
+  if (!collectionRoot) return;
+  gameColModalAppName = appName;
+  gameColModalSelectedCols = new Set(
+    epicCollections
+      .filter((c) => c.app_names.some((a) => a.toLowerCase() === appName.toLowerCase()))
+      .map((c) => c.id),
+  );
+
+  const sum = epicSummaries.find((s) => s.appName === appName);
+  const title = sum?.title || appName;
+
+  collectionRoot.innerHTML = `
+    <div class="col-modal-backdrop" data-act="col-modal-backdrop">
+      <div class="col-modal-card" style="max-width:540px; height:auto; max-height:75vh;" role="dialog" aria-modal="true">
+        <div class="col-modal-header">
+          <div class="col-modal-title">
+            <div class="col-modal-header-avatar">
+              ${icon("folder", 20)}
+            </div>
+            <div>
+              <h2>Koleksiyonlar</h2>
+              <div class="col-modal-subtitle">${esc(title)} oyununun dahil olacağı kategoriler</div>
+            </div>
+          </div>
+          <button class="col-modal-close" data-act="close-col-modal" title="Kapat">
+            ${icon("x", 16)}
+          </button>
+        </div>
+        <div class="col-modal-body">
+          <div class="col-game-checkboxes">
+            ${epicCollections.length > 0 ? epicCollections.map((c) => {
+              const checked = gameColModalSelectedCols.has(c.id);
+              return `
+                <div class="col-game-item ${checked ? "selected" : ""}" data-col-id="${esc(c.id)}">
+                  <div class="col-custom-cb ${checked ? "checked" : ""}">
+                    ${icon("check", 12)}
+                  </div>
+                  <div class="col-game-info">
+                    <div class="col-game-title">
+                      ${c.emoji ? `<span class="col-item-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
+                    </div>
+                    <div class="col-game-sub">${c.app_names.length} oyun</div>
+                  </div>
+                </div>
+              `;
+            }).join("") : `
+              <div class="col-empty-msg">
+                Henüz hiç koleksiyon oluşturulmamış.<br/>
+                <button class="btn ghost small" data-act="open-new-collection-modal" style="margin-top:8px">+ Yeni Koleksiyon Oluştur</button>
+              </div>
+            `}
+          </div>
+        </div>
+        <div class="col-modal-footer">
+          <button class="btn ghost small" data-act="open-new-collection-modal">+ Yeni Koleksiyon</button>
+          <div style="display:flex;gap:10px">
+            <button class="btn ghost small" data-act="close-col-modal">İptal</button>
+            <button class="btn primary small" data-act="save-game-col-btn">Kaydet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveGameCollectionsFromModal(): Promise<void> {
+  if (!gameColModalAppName) return;
+  const appName = gameColModalAppName;
+  const colIds = Array.from(gameColModalSelectedCols);
+  try {
+    await epicSetGameCollections(appName, colIds);
+    toast("Oyun koleksiyonları güncellendi", "ok");
+    closeCollectionModal();
+    await loadEpicCollections();
+    if (currentModalAppName === appName) {
+      updateDrawerCollectionsBoxInPlace(appName);
+    }
+    render();
+  } catch (e) {
+    toast(`Koleksiyonlar güncellenemedi: ${String(e)}`, "err");
+  }
+}
+
+function updateDrawerCollectionsBoxInPlace(appName: string): void {
+  const container = document.getElementById("drawer-col-chips-container");
+  if (!container) return;
+  const gameCols = epicCollections.filter((c) =>
+    c.app_names.some((name) => name.toLowerCase() === appName.toLowerCase()),
+  );
+  container.innerHTML =
+    gameCols.length > 0
+      ? gameCols
+          .map(
+            (c) => `
+          <button class="drawer-col-chip" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu görüntüle">
+            ${c.emoji ? `<span class="col-chip-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
+          </button>
+        `,
+          )
+          .join("")
+      : `<span class="drawer-col-empty">Henüz herhangi bir koleksiyona eklenmedi</span>`;
+}
+
 /* ---------- Olaylar (delegation) ---------- */
 
 document.addEventListener("click", (e) => {
+  // Koleksiyon açılır menüsü dışına tıklanırsa kapat
+  if (isColDropdownOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest(".col-dropdown-container")) {
+      isColDropdownOpen = false;
+      const menu = document.getElementById("col-dropdown-menu");
+      if (menu) menu.classList.remove("show");
+    }
+  }
+
+  // Emoji paleti dışına tıklanırsa kapat
+  if (isEmojiPaletteOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest(".col-emoji-picker-container")) {
+      isEmojiPaletteOpen = false;
+      const pal = document.getElementById("col-emoji-palette");
+      if (pal) pal.classList.remove("open");
+    }
+  }
+
+  // Modal içi oyun/koleksiyon seçimi
+  const gameItem = (e.target as HTMLElement).closest<HTMLElement>(".col-game-item");
+  if (gameItem) {
+    const appName = gameItem.dataset.app;
+    const colId = gameItem.dataset.colId;
+
+    if (appName) {
+      const nowChecked = !colModalSelectedApps.has(appName);
+      if (nowChecked) colModalSelectedApps.add(appName);
+      else colModalSelectedApps.delete(appName);
+
+      gameItem.classList.toggle("selected", nowChecked);
+      const customCb = gameItem.querySelector(".col-custom-cb");
+      if (customCb) customCb.classList.toggle("checked", nowChecked);
+
+      const cntEl = document.getElementById("col-tab-selected-cnt") || document.getElementById("col-selected-count");
+      if (cntEl) cntEl.textContent = String(colModalSelectedApps.size);
+
+      const headerBadge = document.getElementById("col-header-selected-badge");
+      if (headerBadge) headerBadge.textContent = `${colModalSelectedApps.size} Seçildi`;
+
+      const footerCnt = document.getElementById("col-footer-count");
+      if (footerCnt) footerCnt.textContent = String(colModalSelectedApps.size);
+
+      if (colModalTabFilter === "selected") {
+        updateColGamesListInPlace();
+      }
+      return;
+    } else if (colId) {
+      const nowChecked = !gameColModalSelectedCols.has(colId);
+      if (nowChecked) gameColModalSelectedCols.add(colId);
+      else gameColModalSelectedCols.delete(colId);
+
+      gameItem.classList.toggle("selected", nowChecked);
+      const customCb = gameItem.querySelector(".col-custom-cb");
+      if (customCb) customCb.classList.toggle("checked", nowChecked);
+      return;
+    }
+  }
+
   const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-view]");
   if (!t) return;
 
@@ -3160,20 +5166,245 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-filter" && t.dataset.val) {
     epicFilter = t.dataset.val as typeof epicFilter;
     render();
+  } else if (act === "quick-tab" && t.dataset.tab) {
+    const tab = t.dataset.tab;
+    if (tab === "all") {
+      activeCollectionId = null;
+      epicFilter = "all";
+    } else if (tab === "installed") {
+      activeCollectionId = null;
+      epicFilter = epicFilter === "installed" ? "all" : "installed";
+    } else if (tab === "fav") {
+      activeCollectionId = "fav";
+      epicFilter = "all";
+    } else if (tab === "platinum") {
+      activeCollectionId = null;
+      epicFilter = epicFilter === "platinum" ? "all" : "platinum";
+    } else if (tab === "updates") {
+      activeCollectionId = null;
+      epicFilter = epicFilter === "updates" ? "all" : "updates";
+    }
+    isColDropdownOpen = false;
+    render();
+  } else if (act === "toggle-col-dropdown") {
+    isColDropdownOpen = !isColDropdownOpen;
+    const menu = document.getElementById("col-dropdown-menu");
+    if (menu) {
+      menu.classList.toggle("show", isColDropdownOpen);
+    } else {
+      render();
+    }
+  } else if (act === "clear-collection") {
+    activeCollectionId = null;
+    isColDropdownOpen = false;
+    render();
+  } else if (act === "toggle-hero-spotlight") {
+    isHeroCollapsed = !isHeroCollapsed;
+    localStorage.setItem("efxlve-hero-collapsed", isHeroCollapsed ? "1" : "0");
+    render();
   } else if (act === "epic-size" && t.dataset.val) {
     epicCardSize = t.dataset.val as CardSize;
     localStorage.setItem("efxlve-card-size", epicCardSize);
     render();
   } else if (act === "epic-view-grid") {
     epicViewMode = "grid";
+    localStorage.setItem("efxlve-view-mode", "grid");
+    render();
+  } else if (act === "epic-view-shelves") {
+    epicViewMode = "shelves";
+    localStorage.setItem("efxlve-view-mode", "shelves");
     render();
   } else if (act === "epic-view-list") {
     epicViewMode = "list";
+    localStorage.setItem("efxlve-view-mode", "list");
     render();
+  } else if (act === "shelf-scroll") {
+    const dir = t.dataset.dir;
+    const shelf = t.closest(".shelf-section");
+    const track = shelf?.querySelector(".shelf-row-track");
+    if (track) {
+      track.scrollBy({ left: dir === "left" ? -420 : 420, behavior: "smooth" });
+    }
+  } else if (act === "open-custom-cover" && id) {
+    openCustomCoverModal(id);
+  } else if (act === "close-custom-cover") {
+    closeCustomCoverModal();
+  } else if (act === "preview-custom-cover-url") {
+    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+    const val = input?.value.trim();
+    if (val) {
+      const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+      if (previewWrapper) {
+        previewWrapper.innerHTML = `
+          <img id="cover-preview-img" src="${esc(val)}" alt="Önizleme" />
+          <div class="cover-preview-badge">Önizleme</div>
+        `;
+      }
+    }
+  } else if (act === "save-custom-cover" && id) {
+    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+    const val = input?.value.trim() || "";
+    if (val) {
+      saveCustomCover(id, val);
+      closeCustomCoverModal();
+      toast("Özel kapak görseli kaydedildi", "ok");
+    } else {
+      toast("Lütfen geçerli bir görsel URL'si girin veya dosya seçin", "err");
+    }
+  } else if (act === "reset-custom-cover" && id) {
+    resetCustomCover(id);
+    closeCustomCoverModal();
+    toast("Orijinal kapak görseline dönüldü", "ok");
   } else if (act === "epic-fav" && id) {
-    toggleFav(id);
+    toggleFav(id, t);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
+  } else if (act === "select-collection") {
+    const colId = t.dataset.colId;
+    if (colId === "all") {
+      activeCollectionId = null;
+      if (epicFilter === "fav") epicFilter = "all";
+    } else if (colId === "fav") {
+      activeCollectionId = "fav";
+      epicFilter = "all";
+    } else if (colId) {
+      activeCollectionId = colId;
+      if (epicFilter === "fav") epicFilter = "all";
+    }
+    isColDropdownOpen = false;
+    if (currentModalAppName) closeModal();
+    render();
+  } else if (act === "open-new-collection-modal") {
+    isColDropdownOpen = false;
+    openCollectionModal();
+  } else if (act === "edit-collection") {
+    isColDropdownOpen = false;
+    const colId = t.dataset.colId;
+    if (colId) openCollectionModal(colId);
+  } else if (act === "close-col-modal") {
+    closeCollectionModal();
+  } else if (act === "col-modal-backdrop") {
+    if (e.target === t) closeCollectionModal();
+  } else if (act === "toggle-col-emoji-palette") {
+    isEmojiPaletteOpen = !isEmojiPaletteOpen;
+    const pal = document.getElementById("col-emoji-palette");
+    if (pal) pal.classList.toggle("open", isEmojiPaletteOpen);
+  } else if (act === "pick-col-emoji") {
+    const emoji = t.dataset.emoji;
+    if (emoji) {
+      colModalSelectedEmoji = emoji;
+      isEmojiPaletteOpen = false;
+      updateEmojiUi();
+    }
+  } else if (act === "clear-col-emoji") {
+    colModalSelectedEmoji = "";
+    isEmojiPaletteOpen = false;
+    updateEmojiUi();
+  } else if (act === "apply-custom-emoji") {
+    const customInput = document.getElementById("col-custom-emoji-input") as HTMLInputElement | null;
+    const val = customInput?.value.trim() || "";
+    if (val) {
+      colModalSelectedEmoji = val;
+      isEmojiPaletteOpen = false;
+      updateEmojiUi();
+    }
+  } else if (act === "quick-col-preset") {
+    const presetEmoji = t.dataset.emoji;
+    const presetName = t.dataset.name;
+    if (presetEmoji) {
+      colModalSelectedEmoji = presetEmoji;
+      updateEmojiUi();
+    }
+    const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
+    if (nameInput && presetName) {
+      nameInput.value = presetName;
+      nameInput.focus();
+    }
+  } else if (act === "col-presets-scroll") {
+    const dir = t.dataset.dir;
+    const container = document.getElementById("col-presets-scrollable");
+    if (container) {
+      container.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" });
+      setTimeout(updateColPresetArrows, 250);
+    }
+  } else if (act === "col-tab-filter") {
+    const filter = t.dataset.filter as "all" | "selected" | "installed";
+    if (filter) {
+      colModalTabFilter = filter;
+      document.querySelectorAll(".col-filter-tab").forEach((tab) => {
+        tab.classList.toggle("active", (tab as HTMLElement).dataset.filter === filter);
+      });
+      updateColGamesListInPlace();
+    }
+  } else if (act === "col-search-clear") {
+    colModalSearchQuery = "";
+    const sInput = document.getElementById("col-search-input") as HTMLInputElement | null;
+    if (sInput) {
+      sInput.value = "";
+      sInput.focus();
+    }
+    updateColGamesListInPlace();
+  } else if (act === "col-toggle-game") {
+    const app = t.dataset.app || (t.closest(".col-game-item") as HTMLElement)?.dataset.app;
+    if (app) {
+      if (colModalSelectedApps.has(app)) {
+        colModalSelectedApps.delete(app);
+      } else {
+        colModalSelectedApps.add(app);
+      }
+      const itemEl = (t.classList.contains("col-game-item") ? t : t.closest(".col-game-item")) as HTMLElement | null;
+      const isChecked = colModalSelectedApps.has(app);
+      const cb = itemEl?.querySelector(".col-game-cb") as HTMLInputElement | null;
+      if (cb) cb.checked = isChecked;
+      if (itemEl) itemEl.classList.toggle("selected", isChecked);
+
+      const selCountEl = document.getElementById("col-tab-selected-cnt");
+      if (selCountEl) selCountEl.textContent = String(colModalSelectedApps.size);
+
+      if (colModalTabFilter === "selected") {
+        updateColGamesListInPlace();
+      }
+    }
+  } else if (act === "col-select-all") {
+    const q = colModalSearchQuery.toLocaleLowerCase("tr");
+    let matches = epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+    if (colModalTabFilter === "installed") {
+      matches = matches.filter((s) => s.installed);
+    }
+    matches.forEach((s) => colModalSelectedApps.add(s.appName));
+    updateColGamesListInPlace();
+  } else if (act === "col-deselect-all") {
+    if (colModalTabFilter === "all" && !colModalSearchQuery.trim()) {
+      colModalSelectedApps.clear();
+    } else {
+      const q = colModalSearchQuery.toLocaleLowerCase("tr");
+      let matches = epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+      if (colModalTabFilter === "installed") {
+        matches = matches.filter((s) => s.installed);
+      }
+      matches.forEach((s) => colModalSelectedApps.delete(s.appName));
+    }
+    updateColGamesListInPlace();
+  } else if (act === "col-save-btn") {
+    void saveCollectionFromModal();
+  } else if (act === "col-delete-btn") {
+    const colId = t.dataset.colId;
+    if (colId) void deleteCollectionFromModal(colId);
+  } else if (act === "manage-game-collections" && id) {
+    openGameCollectionsModal(id);
+  } else if (act === "save-game-col-btn") {
+    void saveGameCollectionsFromModal();
+  } else if (act === "import-egl-collections") {
+    toast("Epic Games Launcher kütüphanesi taranıyor...", "");
+    void epicImportEglCollections()
+      .then((cols) => {
+        toast(`${cols.length} koleksiyon başarıyla içe aktarıldı`, "ok");
+        void loadEpicCollections();
+        if (view === "settings") void loadSettingsView();
+      })
+      .catch((err) => {
+        toast(`İçe aktarma hatası: ${String(err)}`, "err");
+      });
   } else if (act === "epic-play" && id) {
     void epicPlay(id);
   } else if (act === "epic-install" && id) {
@@ -3183,26 +5414,25 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-uninstall" && id) {
     void epicUninstall(id);
   } else if (act === "open-dlc-manager" && id) {
-    closeManageModal();
-    closeModal();
-    activeDlcAppName = id;
-    dlcSearchQuery = "";
-    view = "dlc-manager";
-    dlcLoading = true;
-    render();
-    epicGetGameDlcs(id)
-      .then((res) => {
-        dlcCache.set(id, res);
-      })
-      .catch((err) => {
-        toast(`Eklentiler alınamadı: ${String(err)}`, "err");
-      })
-      .finally(() => {
-        dlcLoading = false;
-        if (view === "dlc-manager" && activeDlcAppName === id) {
-          render();
-        }
-      });
+    activeDrawerTab = "dlcs";
+    if (!dlcCache.has(id) && !dlcLoading) {
+      dlcLoading = true;
+      epicGetGameDlcs(id)
+        .then((res) => {
+          dlcCache.set(id, res);
+          if (activeDrawerTab === "dlcs" && currentModalAppName === id) {
+            openEpicModal(id, false);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          dlcLoading = false;
+          if (activeDrawerTab === "dlcs" && currentModalAppName === id) {
+            openEpicModal(id, false);
+          }
+        });
+    }
+    openEpicModal(id, false);
   } else if (act === "dlc-back") {
     view = "library";
     render();
@@ -3215,6 +5445,33 @@ document.addEventListener("click", (e) => {
   } else if (act === "selective-overlay-close") {
     const el = e.target as HTMLElement;
     if (el === t) closeSelectiveModal();
+  } else if (act === "open-edit-playtime" && id) {
+    openEditPlaytimeModal(id);
+  } else if (act === "close-edit-playtime") {
+    closeEditPlaytimeModal();
+  } else if (act === "playtime-overlay-close") {
+    const el = e.target as HTMLElement;
+    if (el === t) closeEditPlaytimeModal();
+  } else if (act === "pt-quick-add") {
+    const addHours = parseInt(t.dataset.hours || "0", 10);
+    const input = document.getElementById("pt-hours-input") as HTMLInputElement | null;
+    if (input) {
+      const cur = parseInt(input.value || "0", 10) || 0;
+      input.value = String(Math.max(0, cur + addHours));
+    }
+    const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
+    if (lpSelect && !lpSelect.value) {
+      lpSelect.value = "Daha önce oynandı (Epic Games)";
+    }
+  } else if (act === "pt-reset") {
+    const hInput = document.getElementById("pt-hours-input") as HTMLInputElement | null;
+    const mInput = document.getElementById("pt-minutes-input") as HTMLInputElement | null;
+    const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
+    if (hInput) hInput.value = "0";
+    if (mInput) mInput.value = "0";
+    if (lpSelect) lpSelect.value = "";
+  } else if (act === "save-playtime" && id) {
+    void saveEditedPlaytime(id);
   } else if (act === "selective-apply" && id) {
     const tags = Array.from(selectedInstallTags);
     const dlcs = Array.from(selectedDlcAppIds);
@@ -3247,8 +5504,8 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-refresh-egl") {
     void loadSettingsView();
   } else if (act === "manage-game" && id) {
-    closeModal();
-    void openManageModal(id);
+    activeDrawerTab = "manage";
+    openEpicModal(id, false);
   } else if (act === "manage-close") {
     closeManageModal();
   } else if (act === "manage-overlay-close") {
@@ -3291,6 +5548,65 @@ document.addEventListener("click", (e) => {
     epicCreateDesktopShortcut(id)
       .then((msg) => toast(msg, "ok"))
       .catch((err) => toast(`Kısayol oluşturulamadı: ${String(err)}`, "err"));
+  } else if (act === "manage-create-backup" && id && !isBackingUp) {
+    isBackingUp = true;
+    const createBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
+    if (createBtn) { createBtn.disabled = true; createBtn.textContent = "Yedekleniyor…"; }
+    toast("Kayıtlar yerel olarak yedekleniyor…", "");
+    epicBackupSave(id)
+      .then((b) => {
+        toast(`Yedek alındı: ${fmtBytes(b.size_bytes)} (${b.file_count} dosya)`, "ok");
+        const cur = gameBackupsMap.get(id) || [];
+        gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
+        const listEl = document.getElementById("manage-backup-list");
+        if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+      })
+      .catch((err) => toast(`Yedekleme hatası: ${String(err)}`, "err"))
+      .finally(() => {
+        isBackingUp = false;
+        const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
+        if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = "Yedek Al"; }
+      });
+  } else if (act === "manage-restore-backup" && id) {
+    const bid = t.dataset.bid;
+    if (bid) {
+      toast("Yedek geri yükleniyor…", "");
+      epicRestoreBackup(id, bid)
+        .then((msg) => toast(msg, "ok"))
+        .catch((err) => toast(`Geri yükleme hatası: ${String(err)}`, "err"));
+    }
+  } else if (act === "manage-delete-backup" && id) {
+    const bid = t.dataset.bid;
+    if (bid) {
+      epicDeleteBackup(id, bid)
+        .then(() => {
+          toast("Yedek silindi", "");
+          const cur = gameBackupsMap.get(id) || [];
+          gameBackupsMap.set(id, cur.filter((x) => x.id !== bid));
+          const listEl = document.getElementById("manage-backup-list");
+          if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+        })
+        .catch((err) => toast(`Silme hatası: ${String(err)}`, "err"));
+    }
+  } else if (act === "manage-open-backup-folder" && id) {
+    epicOpenBackupFolder(id)
+      .then((msg) => toast(msg, "ok"))
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "toggle-offline-mode") {
+    offlineMode = !offlineMode;
+    updateOfflineModeUi();
+    void epicSetOfflineMode(offlineMode);
+    toast(offlineMode ? "Çevrimdışı moda geçildi" : "Çevrimiçi moda geçildi", "ok");
+    render();
+  } else if (act === "set-net-profile") {
+    const prof = t.dataset.profile;
+    if (prof) {
+      networkProfile = prof;
+      void epicSetNetworkProfile(prof);
+      const label = prof === "max" ? "Maksimum Hız (16 Worker)" : prof === "low" ? "Düşük Tüketim (1 Worker)" : "Dengeli (4 Worker)";
+      toast(`İndirme profili: ${label}`, "ok");
+      render();
+    }
   } else if (act === "manage-save-args" && id && activeManageSettings) {
     const input = document.getElementById("manage-args-input") as HTMLInputElement | null;
     const val = input?.value?.trim() ?? "";
@@ -3350,22 +5666,67 @@ document.addEventListener("click", (e) => {
     const title = s ? s.title : id;
     void openStoreUrl(epicStorePageUrl(title), "store");
   } else if (act === "drawer-tab") {
-    const tab = t.dataset.tab as "overview" | "achievements";
+    const tab = t.dataset.tab as DrawerTab;
     if (tab && currentModalAppName) {
+      if (tab === activeDrawerTab) return;
       activeDrawerTab = tab;
       if (tab === "achievements") {
         const cached = loadedAchievements.get(currentModalAppName);
         if (!cached || cached.achievements.length === 0) {
           void fetchAndRenderAchievements(currentModalAppName, true);
         }
+      } else if (tab === "dlcs") {
+        if (!dlcCache.has(currentModalAppName) && !dlcLoading) {
+          dlcLoading = true;
+          epicGetGameDlcs(currentModalAppName)
+            .then((res) => {
+              dlcCache.set(currentModalAppName!, res);
+              if (activeDrawerTab === "dlcs" && currentModalAppName) {
+                openEpicModal(currentModalAppName, false, true);
+              }
+            })
+            .catch(() => {})
+            .finally(() => {
+              dlcLoading = false;
+              if (activeDrawerTab === "dlcs" && currentModalAppName) {
+                openEpicModal(currentModalAppName, false, true);
+              }
+            });
+        }
+      } else if (tab === "manage") {
+        if (!gameBackupsMap.has(currentModalAppName)) {
+          epicListBackups(currentModalAppName)
+            .then((b) => {
+              gameBackupsMap.set(currentModalAppName!, b);
+              const listEl = document.getElementById("manage-backup-list");
+              if (listEl && currentModalAppName) {
+                listEl.innerHTML = renderBackupListHtml(currentModalAppName);
+              }
+            })
+            .catch(() => {});
+        }
+      } else if (tab === "specs") {
+        if (!loadedRequirements.has(currentModalAppName)) {
+          const s = epicSummaries.find((x) => x.appName === currentModalAppName);
+          if (s) void fetchAndRenderRequirements(currentModalAppName, s.title);
+        }
       }
-      openEpicModal(currentModalAppName, false);
+      openEpicModal(currentModalAppName, false, true);
+    }
+  } else if (act === "drawer-tabs-scroll") {
+    const dir = t.dataset.dir;
+    const container = document.getElementById("drawer-tabs-scrollable");
+    if (container) {
+      container.scrollBy({ left: dir === "left" ? -140 : 140, behavior: "smooth" });
+      setTimeout(updateDrawerTabArrows, 180);
+      setTimeout(updateDrawerTabArrows, 360);
     }
   } else if (act === "sys-plat") {
     const val = t.dataset.val;
     if (val && currentModalAppName) {
+      if (activeSystemPlatform === val) return;
       activeSystemPlatform = val;
-      openEpicModal(currentModalAppName, false);
+      openEpicModal(currentModalAppName, false, false);
     }
   } else if (act === "req-refresh" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
@@ -3378,14 +5739,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "ach-filter") {
     const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
     if (val && currentModalAppName) {
+      if (activeAchFilter === val) return;
       activeAchFilter = val;
-      openEpicModal(currentModalAppName, false);
+      openEpicModal(currentModalAppName, false, false);
     }
   } else if (act === "ach-scope") {
     const val = t.dataset.val as "all" | "base" | "dlc";
     if (val && currentModalAppName) {
+      if (activeAchScope === val) return;
       activeAchScope = val;
-      openEpicModal(currentModalAppName, false);
+      openEpicModal(currentModalAppName, false, false);
     }
   } else if (act === "ach-reveal") {
     const achName = t.dataset.ach;
@@ -3396,7 +5759,7 @@ document.addEventListener("click", (e) => {
       } else {
         revealedAchievements.add(key);
       }
-      openEpicModal(currentModalAppName, false);
+      openEpicModal(currentModalAppName, false, false);
     }
   } else if (act === "toggle-demo-platinum" && id) {
     if (demoPlatinumApps.has(id)) {
@@ -3404,11 +5767,11 @@ document.addEventListener("click", (e) => {
       toast("Platin efekti kaldırıldı", "");
     } else {
       demoPlatinumApps.add(id);
-      toast("✨ Platin Kupa parıltısı açıldı!", "ok");
+      toast("Platin Kupa parıltısı açıldı!", "ok");
     }
     localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...demoPlatinumApps]));
     if (view === "library") render();
-    if (currentModalAppName === id) openEpicModal(id, false);
+    if (currentModalAppName === id) openEpicModal(id, false, false);
   } else if (act === "ach-refresh" && id) {
     void fetchAndRenderAchievements(id, true);
   } else if (act === "win-minimize") {
@@ -3420,8 +5783,45 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// Yatay kaydırılabilir sekmeler için fare tekerleği desteği
+document.addEventListener("wheel", (e) => {
+  const scrollableBar = (e.target as HTMLElement)?.closest(".drawer-tabs, .drawer-tabs-wrapper, .ach-scope-segment, .col-quick-presets, .col-presets-track-wrapper") as HTMLElement | null;
+  const targetBar = scrollableBar?.classList.contains("drawer-tabs-wrapper")
+    ? (scrollableBar.querySelector(".drawer-tabs") as HTMLElement | null)
+    : scrollableBar?.classList.contains("col-presets-track-wrapper")
+      ? (scrollableBar.querySelector(".col-quick-presets") as HTMLElement | null)
+      : scrollableBar;
+  if (targetBar && e.deltaY !== 0 && targetBar.scrollWidth > targetBar.clientWidth) {
+    e.preventDefault();
+    targetBar.scrollLeft += e.deltaY;
+    if (targetBar.id === "col-presets-scrollable") {
+      updateColPresetArrows();
+    } else {
+      updateDrawerTabArrows();
+    }
+  }
+}, { passive: false });
+
+window.addEventListener("resize", () => {
+  updateDrawerTabArrows();
+  updateColPresetArrows();
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    const coverRoot = document.getElementById("cover-modal-root");
+    if (coverRoot && coverRoot.innerHTML.trim()) {
+      closeCustomCoverModal();
+      return;
+    }
+    if (collectionRoot && collectionRoot.innerHTML.trim()) {
+      closeCollectionModal();
+      return;
+    }
+    if (playtimeRoot && playtimeRoot.innerHTML.trim()) {
+      closeEditPlaytimeModal();
+      return;
+    }
     if (selectiveInstallOptions) {
       closeSelectiveModal();
       return;
@@ -3441,8 +5841,46 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+document.addEventListener("change", (e) => {
+  const target = e.target as HTMLInputElement;
+  if (target && target.id === "custom-cover-file-input" && target.files && target.files[0]) {
+    const file = target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+      const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+      if (urlInput) urlInput.value = result;
+      if (previewWrapper) {
+        previewWrapper.innerHTML = `
+          <img id="cover-preview-img" src="${result}" alt="Önizleme" />
+          <div class="cover-preview-badge">Yerel Dosya</div>
+        `;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "pt-hours-input" || t.id === "pt-minutes-input") {
+    const h = parseInt((document.getElementById("pt-hours-input") as HTMLInputElement)?.value || "0", 10) || 0;
+    const m = parseInt((document.getElementById("pt-minutes-input") as HTMLInputElement)?.value || "0", 10) || 0;
+    const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
+    if (lpSelect) {
+      if (h > 0 || m > 0) {
+        if (!lpSelect.value) {
+          lpSelect.value = "Daha önce oynandı (Epic Games)";
+        }
+      } else {
+        if (lpSelect.value === "Daha önce oynandı (Epic Games)") {
+          lpSelect.value = "";
+        }
+      }
+    }
+    return;
+  }
   if (t.id === "search") {
     query = (t as HTMLInputElement).value;
     const box = document.getElementById("lib-results");
@@ -3460,6 +5898,20 @@ document.addEventListener("input", (e) => {
         ? allDlcs.filter((d) => d.title.toLowerCase().includes(q))
         : allDlcs;
       bodyEl.innerHTML = renderDlcRows(filtered);
+    }
+    return;
+  }
+  if (t.id === "dlc-drawer-search" && currentModalAppName) {
+    dlcSearchQuery = (t as HTMLInputElement).value;
+    const s = epicSummaries.find((x) => x.appName === currentModalAppName);
+    const contentEl = document.getElementById("drawer-tab-content");
+    if (s && contentEl && activeDrawerTab === "dlcs") {
+      contentEl.innerHTML = renderDrawerDlcs(s);
+      const searchInput = document.getElementById("dlc-drawer-search") as HTMLInputElement | null;
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+      }
     }
     return;
   }
@@ -3746,6 +6198,76 @@ async function init(): Promise<void> {
         toast(`Doğrulama hatası: ${message}`, "err");
       }
     });
+
+    await listen<GameStatusEvent>("game-status", (event) => {
+      const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
+      const sum = epicSummaries.find((x) => x.appName === id);
+      const title = sum?.title || id;
+
+      if (running) {
+        runningGames.add(id);
+        toast(`${title} çalışıyor…`, "ok");
+      } else {
+        runningGames.delete(id);
+        if (totalSeconds !== undefined) {
+          playtimeMap.set(id, {
+            total_seconds: totalSeconds,
+            session_count: sessionCount || 1,
+            last_played: lastPlayed,
+            last_played_timestamp: lastPlayedTimestamp,
+          });
+        }
+        toast(`${title} kapandı ${sessionSeconds ? `(Oturum: ${fmtPlaytime(sessionSeconds)})` : ""}`, "");
+      }
+
+      // Butonları ve rozetleri güncelle
+      document.querySelectorAll<HTMLElement>(`[data-id="${id}"]`).forEach((el) => {
+        if (el.dataset.act === "epic-play") {
+          if (running) {
+            el.classList.add("running");
+            el.innerHTML = `<span class="running-dot"></span> Oynanıyor…`;
+          } else {
+            el.classList.remove("running");
+            el.innerHTML = `${icon("play", 14)} Oyna`;
+          }
+        }
+      });
+
+      if (view === "library") {
+        render();
+      }
+
+      if (activeManageSettings?.appName === id) {
+        renderManageModal();
+      }
+      if (currentModalAppName === id && activeDrawerTab === "overview") {
+        openEpicModal(id, false);
+      }
+    });
+
+    await listen<{ id: string; success: boolean }>("cloud-sync-complete", () => {
+      toast("Bulut kayıtları eşitlendi (EOS)", "ok");
+      const cloudSub = document.getElementById("manage-cloud-subtitle");
+      if (cloudSub) cloudSub.textContent = "Bulut kayıtları güncel";
+    });
+
+    try {
+      const pt = await epicGetPlaytimes();
+      playtimeMap = new Map(Object.entries(pt));
+    } catch {
+      // ignore
+    }
+    try {
+      offlineMode = await epicGetOfflineMode();
+      updateOfflineModeUi();
+    } catch {
+      // ignore
+    }
+    try {
+      networkProfile = await epicGetNetworkProfile();
+    } catch {
+      // ignore
+    }
   }
   await refreshGames();
   void bootEpic();
@@ -3787,16 +6309,56 @@ function icon(
     | "pause"
     | "chevron-up"
     | "chevron-down"
-    | "volume-2",
+    | "chevron-left"
+    | "chevron-right"
+    | "volume-2"
+    | "search"
+    | "gamepad-2"
+    | "info"
+    | "edit"
+    | "clock"
+    | "image"
+    | "rows"
+    | "layout-grid"
+    | "list"
+    | "package"
+    | "shield-check"
+    | "timer"
+    | "rocket"
+    | "wifi"
+    | "wifi-off"
+    | "star"
+    | "check-circle",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
+    image:
+      '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    rows: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
+    "layout-grid":
+      '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+    list: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+    package:
+      '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    "shield-check":
+      '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/>',
+    timer:
+      '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',
+    rocket:
+      '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+    info: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>',
+    edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/>',
+    "gamepad-2": '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
     dots: '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/>',
     play: '<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>',
     pause: '<rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/>',
     "chevron-up": '<polyline points="18 15 12 9 6 15"/>',
     "chevron-down": '<polyline points="6 9 12 15 18 9"/>',
+    "chevron-left": '<polyline points="15 18 9 12 15 6"/>',
+    "chevron-right": '<polyline points="9 18 15 12 9 6"/>',
     download:
       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
     folder:
@@ -3814,6 +6376,8 @@ function icon(
       '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
     check:
       '<polyline points="20 6 9 17 4 12"/>',
+    "check-circle":
+      '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
     shield:
       '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     layers:
@@ -3846,6 +6410,12 @@ function icon(
       '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
     "volume-2":
       '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+    wifi:
+      '<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>',
+    "wifi-off":
+      '<path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><line x1="2" x2="22" y1="2" y2="22"/>',
+    star:
+      '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name] ?? ""}</svg>`;
 }

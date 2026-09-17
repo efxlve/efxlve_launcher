@@ -257,16 +257,28 @@ fn parse_mib_after(line: &str, key: &str) -> Option<f64> {
     })
 }
 
+fn get_worker_count_arg(app: &AppHandle) -> Option<&'static str> {
+    let s = load_settings(app);
+    match s.network_profile.as_deref() {
+        Some("max") => Some("16"),
+        Some("low") => Some("1"),
+        Some("balanced") => Some("4"),
+        _ => None,
+    }
+}
+
 fn spawn_install(
+    app: &AppHandle,
     bin: &PathBuf,
     app_name: &str,
     base: &PathBuf,
     high_mem: bool,
 ) -> std::io::Result<tokio::process::Child> {
-    spawn_install_with_tags(bin, app_name, base, high_mem, &[])
+    spawn_install_with_tags(app, bin, app_name, base, high_mem, &[])
 }
 
 fn spawn_install_with_tags(
+    app: &AppHandle,
     bin: &PathBuf,
     app_name: &str,
     base: &PathBuf,
@@ -281,6 +293,10 @@ fn spawn_install_with_tags(
         .arg("--base-path")
         .arg(base)
         .arg("--skip-dlcs");
+
+    if let Some(w) = get_worker_count_arg(app) {
+        cmd.arg("--max-workers").arg(w);
+    }
 
     if install_tags.is_empty() {
         cmd.arg("--skip-sdl");
@@ -361,7 +377,7 @@ fn start_download_with_tags(
     let bin = resolve_bin(app)?;
     let base = resolve_base(app, override_dir);
     let mut child =
-        spawn_install_with_tags(&bin, &app_name, &base, false, &install_tags)
+        spawn_install_with_tags(app, &bin, &app_name, &base, false, &install_tags)
             .map_err(|e| format!("başlatılamadı: {e}"))?;
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
@@ -500,7 +516,7 @@ async fn monitor_download(
             total_mib = 0.0;
             downloaded_mib = 0.0;
             last_pct = -1;
-            match spawn_install(&bin, &app_name, &base, true) {
+            match spawn_install(&app, &bin, &app_name, &base, true) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -942,13 +958,24 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
             }
         }
         let custom_refs: Vec<&str> = custom_args.iter().map(|s| s.as_str()).collect();
-        match spawn_launched(&bin, &app_name, &custom_refs).await {
+        let settings = load_settings(&app);
+        let is_offline = settings.offline_mode.unwrap_or(false);
+
+        if is_offline && entry.can_run_offline {
+            let mut offline_args = vec!["--offline"];
+            offline_args.extend(custom_refs.iter().copied());
+            return spawn_launched(&app, &bin, &app_name, &offline_args)
+                .await
+                .map(|_| format!("{title} başlatıldı (çevrimdışı)"));
+        }
+
+        match spawn_launched(&app, &bin, &app_name, &custom_refs).await {
             Ok(()) => Ok(format!("{title} başlatıldı")),
             Err(first) => {
                 if entry.can_run_offline {
                     let mut offline_args = vec!["--offline"];
                     offline_args.extend(custom_refs.iter().copied());
-                    spawn_launched(&bin, &app_name, &offline_args)
+                    spawn_launched(&app, &bin, &app_name, &offline_args)
                         .await
                         .map(|_| format!("{title} başlatıldı (çevrimdışı)"))
                         .map_err(|e| format!("{first}\n{e}"))
@@ -974,11 +1001,11 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
                     || lower.contains("ea games")
                     || lower.contains("respawn")
                 {
-                    return spawn_launched(&bin, &app_name, &["--origin"])
+                    return spawn_launched(&app, &bin, &app_name, &["--origin"])
                         .await
                         .map(|_| format!("{title} EA App üzerinden başlatıldı"));
                 } else if lower.contains("ubisoftconnect") || lower.contains("ubisoft") {
-                    return spawn_launched(&bin, &app_name, &["--ubisoft"])
+                    return spawn_launched(&app, &bin, &app_name, &["--ubisoft"])
                         .await
                         .map(|_| format!("{title} Ubisoft Connect üzerinden başlatıldı"));
                 }
@@ -988,7 +1015,12 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
     }
 }
 
-async fn spawn_launched(bin: &PathBuf, app_name: &str, extra_args: &[&str]) -> Result<(), String> {
+async fn spawn_launched(
+    app: &AppHandle,
+    bin: &PathBuf,
+    app_name: &str,
+    extra_args: &[&str],
+) -> Result<(), String> {
     let mut cmd = tokio::process::Command::new(bin);
     cmd.arg("launch").arg(app_name);
     for arg in extra_args {
@@ -998,12 +1030,73 @@ async fn spawn_launched(bin: &PathBuf, app_name: &str, extra_args: &[&str]) -> R
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
-    // Anında çökme kontrolü: birkaç saniye yaşayan oyun "başladı" sayılır.
+
+    // Anında çökme kontrolü: ilk 5 saniyeyi bekle
     match tokio::time::timeout(std::time::Duration::from_secs(5), child.wait()).await {
-        Ok(Ok(st)) if st.success() => Ok(()),
+        Ok(Ok(st)) if st.success() => {
+            // Oyun 5 saniye içinde başarıyla kapandı
+            let _ = app.emit("game-status", serde_json::json!({
+                "id": app_name,
+                "running": false,
+                "sessionSeconds": 5,
+            }));
+            let _ = super::playtime::record_session(app_name, 5);
+            Ok(())
+        }
         Ok(Ok(_)) => Err("oyun hemen kapandı".into()),
         Ok(Err(e)) => Err(e.to_string()),
-        Err(_) => Ok(()),
+        Err(_) => {
+            // 5 saniye sonra hala çalışıyor: oyun aktif oynanıyor!
+            let _ = app.emit("game-status", serde_json::json!({
+                "id": app_name,
+                "running": true,
+            }));
+
+            let app_bg = app.clone();
+            let app_name_bg = app_name.to_string();
+            let bin_bg = bin.clone();
+            let start_time = std::time::Instant::now();
+
+            tokio::spawn(async move {
+                let _ = child.wait().await;
+                // Oyun kapandı!
+                let elapsed = start_time.elapsed().as_secs() + 5;
+                let rec = super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default();
+
+                let _ = app_bg.emit("game-status", serde_json::json!({
+                    "id": app_name_bg,
+                    "running": false,
+                    "sessionSeconds": elapsed,
+                    "totalSeconds": rec.total_seconds,
+                    "sessionCount": rec.session_count,
+                    "lastPlayed": rec.last_played,
+                    "lastPlayedTimestamp": rec.last_played_timestamp,
+                }));
+
+                // Eğer bulut eşitlemesi açıksa, otomatik sync-saves çalıştır
+                let settings_path = super::skip::default_config_dir()
+                    .join("game_settings")
+                    .join(format!("{app_name_bg}.json"));
+                let should_sync = std::fs::read_to_string(&settings_path)
+                    .ok()
+                    .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+                    .and_then(|v| v.get("cloudSavesEnabled").and_then(|c| c.as_bool()))
+                    .unwrap_or(false);
+
+                if should_sync {
+                    let mut sync_cmd = tokio::process::Command::new(&bin_bg);
+                    sync_cmd.arg("sync-saves").arg(&app_name_bg);
+                    sync_cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+                    let _ = sync_cmd.status().await;
+                    let _ = app_bg.emit("cloud-sync-complete", serde_json::json!({
+                        "id": app_name_bg,
+                        "success": true
+                    }));
+                }
+            });
+
+            Ok(())
+        }
     }
 }
 

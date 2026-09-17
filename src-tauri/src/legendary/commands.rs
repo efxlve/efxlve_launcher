@@ -850,6 +850,17 @@ pub fn generate_slug_candidates(
     list
 }
 
+/// HowLongToBeat verilerini çeker ve döndürür.
+#[tauri::command]
+pub async fn epic_get_hltb(
+    title: String,
+    app_name: String,
+    force_refresh: Option<bool>,
+) -> Result<crate::legendary::hltb::HltbData, String> {
+    let force = force_refresh.unwrap_or(false);
+    Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force).await)
+}
+
 /// Epic Games Store genel içerik API'sinden sistem gereksinimlerini çeker ve diske önbelleğe alır.
 #[tauri::command]
 pub async fn epic_get_system_requirements(
@@ -1570,6 +1581,10 @@ pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> 
     }
 }
 
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDlcItem {
@@ -1578,6 +1593,8 @@ pub struct GameDlcItem {
     pub installed: bool,
     pub size: u64,
     pub image: Option<String>,
+    #[serde(default = "default_true")]
+    pub downloadable: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1610,7 +1627,14 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         .unwrap_or(&app_name)
         .to_string();
 
-    // Read installed.json
+    let main_catalog_id = val
+        .pointer("/metadata/id")
+        .and_then(|v| v.as_str())
+        .or_else(|| val.get("id").and_then(|v| v.as_str()))
+        .unwrap_or("")
+        .to_string();
+
+    // 1. Read installed.json
     let installed_path = config.join("installed.json");
     let installed_map: serde_json::Value = if installed_path.is_file() {
         std::fs::read_to_string(&installed_path)
@@ -1621,7 +1645,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         serde_json::Value::Null
     };
 
-    // Read EGL manifests
+    // 2. Read EGL manifests
     #[derive(Deserialize)]
     #[serde(rename_all = "PascalCase")]
     struct EglItemCheck {
@@ -1647,35 +1671,160 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         }
     }
 
+    // 3. Read entitlements.json (Kullanıcının satın aldığı/sahip olduğu lisanslar)
+    let entitlements_path = config.join("entitlements.json");
+    let mut owned_catalog_item_ids = std::collections::HashSet::new();
+    let mut owned_entitlement_names = std::collections::HashSet::new();
+
+    if entitlements_path.is_file() {
+        if let Ok(ent_str) = std::fs::read_to_string(&entitlements_path) {
+            if let Ok(ent_arr) = serde_json::from_str::<Vec<serde_json::Value>>(&ent_str) {
+                for e in ent_arr {
+                    let status = e.get("status").and_then(|v| v.as_str()).unwrap_or("ACTIVE");
+                    if status == "ACTIVE" || status.is_empty() {
+                        if let Some(id) = e.get("catalogItemId").and_then(|v| v.as_str()) {
+                            if !id.trim().is_empty() {
+                                owned_catalog_item_ids.insert(id.trim().to_string());
+                            }
+                        }
+                        if let Some(id) = e.get("entitlementName").and_then(|v| v.as_str()) {
+                            if !id.trim().is_empty() {
+                                owned_entitlement_names.insert(id.trim().to_string());
+                            }
+                        }
+                        if let Some(id) = e.get("id").and_then(|v| v.as_str()) {
+                            if !id.trim().is_empty() {
+                                owned_catalog_item_ids.insert(id.trim().to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Read assets.json (İndirilebilir paketler ve CDN assetleri)
+    let assets_path = config.join("assets.json");
+    let mut asset_app_names = std::collections::HashSet::new();
+    let mut asset_catalog_item_ids = std::collections::HashSet::new();
+    let mut asset_ids = std::collections::HashSet::new();
+
+    if assets_path.is_file() {
+        if let Ok(assets_str) = std::fs::read_to_string(&assets_path) {
+            if let Ok(assets_map) = serde_json::from_str::<std::collections::HashMap<String, Vec<serde_json::Value>>>(&assets_str) {
+                for (_plat, list) in assets_map {
+                    for a in list {
+                        if let Some(app) = a.get("app_name").and_then(|v| v.as_str()) {
+                            if !app.trim().is_empty() {
+                                asset_app_names.insert(app.trim().to_string());
+                            }
+                        }
+                        if let Some(cat) = a.get("catalog_item_id").and_then(|v| v.as_str()) {
+                            if !cat.trim().is_empty() {
+                                asset_catalog_item_ids.insert(cat.trim().to_string());
+                            }
+                        }
+                        if let Some(aid) = a.get("asset_id").and_then(|v| v.as_str()) {
+                            if !aid.trim().is_empty() {
+                                asset_ids.insert(aid.trim().to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let has_ownership_records = !owned_catalog_item_ids.is_empty() || !asset_app_names.is_empty();
+
     let mut dlcs = Vec::new();
+    let mut seen_keys = std::collections::HashSet::new();
+
     if let Some(items) = val.pointer("/metadata/dlcItemList").and_then(|v| v.as_array()) {
         for item in items {
-            let ent_type = item.get("entitlementType").and_then(|v| v.as_str()).unwrap_or("");
             let title = item.get("title").and_then(|v| v.as_str()).unwrap_or("").trim();
-            if ent_type == "AUDIENCE" || title.to_lowercase().ends_with("audience") || title.is_empty() {
+            if title.is_empty() {
+                continue;
+            }
+            let title_lower = title.to_lowercase();
+            // Dahili test / placeholder audience kayıtlarını atla (anlamlı paket isimleri hariç)
+            if (title_lower.ends_with("audience") || title_lower.starts_with("audience "))
+                && !title_lower.contains("chapter")
+                && !title_lower.contains("pack")
+            {
                 continue;
             }
 
-            let app_id = item
+            let item_id = item.get("id").and_then(|v| v.as_str()).unwrap_or("").trim();
+            let ent_name = item.get("entitlementName").and_then(|v| v.as_str()).unwrap_or("").trim();
+            let rel_app_id = item
                 .pointer("/releaseInfo/0/appId")
                 .and_then(|v| v.as_str())
-                .or_else(|| item.get("id").and_then(|v| v.as_str()))
                 .unwrap_or("")
                 .trim();
+
+            // Ana oyunun kendisi DLC olarak listelenmemeli
+            if (!main_catalog_id.is_empty() && (item_id == main_catalog_id || ent_name == main_catalog_id))
+                || (!rel_app_id.is_empty() && rel_app_id == app_name)
+            {
+                continue;
+            }
+
+            let app_id = if !rel_app_id.is_empty() {
+                rel_app_id
+            } else if !item_id.is_empty() {
+                item_id
+            } else {
+                ent_name
+            };
+
             if app_id.is_empty() {
                 continue;
             }
 
-            // Check installed status
-            let is_in_legendary = installed_map.get(app_id).is_some();
+            // Mükerrer kayıtları engelle
+            let dedup_key = format!("{}:{}", title.to_lowercase(), app_id.to_lowercase());
+            if !seen_keys.insert(dedup_key) {
+                continue;
+            }
+
+            // Kurulu olma durumu
+            let is_in_legendary = installed_map.get(app_id).is_some()
+                || (!item_id.is_empty() && installed_map.get(item_id).is_some());
             let matching_egl = egl_items.iter().find(|e| {
                 e.app_name.as_deref() == Some(app_id)
+                    || (!item_id.is_empty() && e.app_name.as_deref() == Some(item_id))
                     || (e.main_game_app_name.as_deref() == Some(&app_name)
                         && e.display_name.as_deref() == Some(title))
             });
             let is_installed = is_in_legendary || matching_egl.is_some();
 
-            // Check size
+            // Sahiplik kontrolü: SADECE KULLANICIDA OLANLAR!
+            let is_entitled = (!item_id.is_empty() && (owned_catalog_item_ids.contains(item_id) || owned_entitlement_names.contains(item_id)))
+                || (!ent_name.is_empty() && (owned_catalog_item_ids.contains(ent_name) || owned_entitlement_names.contains(ent_name)))
+                || (!rel_app_id.is_empty() && (owned_catalog_item_ids.contains(rel_app_id) || owned_entitlement_names.contains(rel_app_id)));
+
+            let is_asset = (!rel_app_id.is_empty() && (asset_app_names.contains(rel_app_id) || asset_ids.contains(rel_app_id)))
+                || (!item_id.is_empty() && asset_catalog_item_ids.contains(item_id));
+
+            let has_manifest = config.join("metadata").join(format!("{app_id}.json")).is_file();
+
+            let is_owned = if has_ownership_records {
+                is_entitled || is_asset || is_installed
+            } else {
+                is_installed || has_manifest
+            };
+
+            if !is_owned {
+                continue;
+            }
+
+            // İndirilebilirlik durumu: Legendary CLI'nin bağımsız indirebileceği paket mi?
+            // Assets listesinde kaydı olan, diske manifesti inmiş veya halihazırda kurulu olanlar indirilebilir;
+            // Hesaba tanımlı in-game paketler (örn. DBD bölümleri) "Hesapta Aktif" olarak gösterilir.
+            let is_downloadable = is_asset || has_manifest || is_installed;
+
+            // Boyut hesaplama
             let mut size = matching_egl.and_then(|e| e.install_size).unwrap_or(0);
             if size == 0 {
                 if let Some(g) = installed_map.get(app_id) {
@@ -1697,7 +1846,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 }
             }
 
-            // Key image
+            // Kapak görseli
             let mut image = None;
             if let Some(imgs) = item.get("keyImages").and_then(|v| v.as_array()) {
                 for preferred in &["DieselGameBox", "OfferImageWide", "DieselGameBoxTall", "Thumbnail"] {
@@ -1719,7 +1868,29 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 installed: is_installed,
                 size,
                 image,
+                downloadable: is_downloadable,
             });
+        }
+    }
+
+    // dlcItemList içinde yer almayıp EGL ile veya manuel kurulmuş DLC'leri de ekle
+    for e in &egl_items {
+        if e.main_game_app_name.as_deref() == Some(&app_name) {
+            let e_app = e.app_name.as_deref().unwrap_or("");
+            let e_title = e.display_name.as_deref().unwrap_or(e_app);
+            if !e_app.is_empty() && !e_title.is_empty() {
+                let dedup_key = format!("{}:{}", e_title.to_lowercase(), e_app.to_lowercase());
+                if seen_keys.insert(dedup_key) {
+                    dlcs.push(GameDlcItem {
+                        app_id: e_app.to_string(),
+                        title: e_title.to_string(),
+                        installed: true,
+                        size: e.install_size.unwrap_or(0),
+                        image: None,
+                        downloadable: true,
+                    });
+                }
+            }
         }
     }
 
@@ -1824,7 +1995,7 @@ pub async fn epic_get_install_options(
         }
     }
 
-    let dlcs = dlc_res.dlcs;
+    let dlcs: Vec<GameDlcItem> = dlc_res.dlcs.into_iter().filter(|d| d.downloadable).collect();
     let has_options = !tags.is_empty() || !dlcs.is_empty();
 
     Ok(GameInstallOptions {
@@ -1892,6 +2063,134 @@ pub async fn epic_check_updates() -> Result<Vec<GameUpdateInfo>, String> {
     }
 
     Ok(updates)
+}
+
+/// Tüm oyunların oynama sürelerini döner.
+#[tauri::command]
+pub fn epic_get_playtimes() -> std::collections::HashMap<String, super::playtime::PlaytimeRecord> {
+    super::playtime::get_playtimes()
+}
+
+/// Bir oyunun oynama süresini ve son aktivitesini günceller/düzenler.
+#[tauri::command]
+pub fn epic_set_playtime(
+    app_name: String,
+    total_seconds: u64,
+    last_played: Option<String>,
+) -> Result<super::playtime::PlaytimeRecord, String> {
+    super::playtime::set_game_playtime(&app_name, total_seconds, last_played)
+}
+
+/// İndirme ağ profilini döner ("max", "balanced", "low").
+#[tauri::command]
+pub fn epic_get_network_profile(app: AppHandle) -> String {
+    let s = crate::load_settings(&app);
+    s.network_profile.unwrap_or_else(|| "balanced".to_string())
+}
+
+/// İndirme ağ profilini kaydeder ("max", "balanced", "low").
+#[tauri::command]
+pub fn epic_set_network_profile(app: AppHandle, profile: String) -> Result<(), String> {
+    let mut s = crate::load_settings(&app);
+    s.network_profile = Some(profile);
+    crate::save_settings(&app, &s);
+    Ok(())
+}
+
+/// Çevrimdışı mod durumunu döner.
+#[tauri::command]
+pub fn epic_get_offline_mode(app: AppHandle) -> bool {
+    let s = crate::load_settings(&app);
+    s.offline_mode.unwrap_or(false)
+}
+
+/// Çevrimdışı mod durumunu kaydeder.
+#[tauri::command]
+pub fn epic_set_offline_mode(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut s = crate::load_settings(&app);
+    s.offline_mode = Some(enabled);
+    crate::save_settings(&app, &s);
+    Ok(())
+}
+
+/// Bir oyunun kayıtlarını (saves) yedekler.
+#[tauri::command]
+pub fn epic_backup_save(app_name: String) -> Result<super::backup::SaveBackupInfo, String> {
+    super::backup::create_backup(&app_name, None)
+}
+
+/// Bir oyunun mevcut yedeklerini listeler.
+#[tauri::command]
+pub fn epic_list_backups(app_name: String) -> Vec<super::backup::SaveBackupInfo> {
+    super::backup::list_backups(&app_name)
+}
+
+/// Bir yedeği oyuna geri yükler.
+#[tauri::command]
+pub fn epic_restore_backup(app_name: String, backup_id: String) -> Result<String, String> {
+    super::backup::restore_backup(&app_name, &backup_id)
+}
+
+/// Bir yedeği siler.
+#[tauri::command]
+pub fn epic_delete_backup(app_name: String, backup_id: String) -> Result<(), String> {
+    super::backup::delete_backup(&app_name, &backup_id)
+}
+
+/// Yedek klasörünü Windows Gezgini'nde açar.
+#[tauri::command]
+pub fn epic_open_backup_folder(app_name: String) -> Result<String, String> {
+    let dir = super::backup::app_backup_dir(&app_name);
+    if !dir.exists() {
+        let _ = std::fs::create_dir_all(&dir);
+    }
+    std::process::Command::new("explorer")
+        .arg(&dir)
+        .spawn()
+        .map_err(|e| format!("Klasör açılamadı: {e}"))?;
+    Ok("Yedek klasörü açıldı".to_string())
+}
+
+// -------------------------------------------------------------
+// KOLEKSİYON (KATEGORİ) YÖNETİMİ
+// -------------------------------------------------------------
+
+/// Tüm koleksiyonları listeler
+#[tauri::command]
+pub fn epic_get_collections() -> Result<Vec<super::collections::GameCollection>, String> {
+    super::collections::read_collections()
+}
+
+/// Yeni koleksiyon oluşturur veya mevcut koleksiyonu günceller
+#[tauri::command]
+pub fn epic_save_collection(
+    id: Option<String>,
+    name: String,
+    app_names: Vec<String>,
+    emoji: Option<String>,
+) -> Result<super::collections::GameCollection, String> {
+    super::collections::save_collection(id, name, app_names, emoji)
+}
+
+/// Koleksiyonu siler
+#[tauri::command]
+pub fn epic_delete_collection(id: String) -> Result<(), String> {
+    super::collections::delete_collection(&id)
+}
+
+/// Belirli bir oyunun dahil olduğu koleksiyonları günceller
+#[tauri::command]
+pub fn epic_set_game_collections(
+    app_name: String,
+    collection_ids: Vec<String>,
+) -> Result<(), String> {
+    super::collections::set_game_collections(&app_name, &collection_ids)
+}
+
+/// Epic Games Launcher LevelDB kütüğünden koleksiyonları içe aktarır
+#[tauri::command]
+pub fn epic_import_egl_collections() -> Result<Vec<super::collections::GameCollection>, String> {
+    super::collections::import_egl_collections()
 }
 
 #[cfg(test)]
@@ -2044,6 +2343,32 @@ mod tests {
             assert!(phantom.is_some(), "Phantom Liberty DLC bulunmalı");
             assert!(phantom.unwrap().installed, "Phantom Liberty kurulu olmalı");
             assert!(phantom.unwrap().size > 0, "Phantom Liberty boyutu 0'dan büyük olmalı");
+            assert!(phantom.unwrap().downloadable, "Phantom Liberty indirilebilir olmalı");
+        });
+    }
+
+    #[test]
+    fn test_epic_get_game_dlcs_brill_only_owned() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let res = epic_get_game_dlcs("Brill".to_string()).await.unwrap();
+            assert_eq!(res.game_title, "Dead by Daylight");
+            // Sadece kullanıcının sahip olduğu 4 DLC gelmeli (74 katalog DLC'si değil!)
+            assert!(res.dlcs.len() <= 6, "Yalnızca sahip olunan DLC'ler dönmeli, bulunan: {}", res.dlcs.len());
+            // Sahip olunmayan DLC'ler (örn. Castlevania veya Doomed Course veya unreleased) ASLA dönmemeli!
+            let unowned = res.dlcs.iter().find(|d| {
+                d.title.contains("Castlevania")
+                    || d.title.contains("Doomed Course")
+                    || d.app_id == "a2a562015e724c0ea4ba052c62c9cdee"
+            });
+            assert!(unowned.is_none(), "Sahip olunmayan mağaza DLC'leri kesinlikle filtrelenmeli!");
+            // Sahip olunan DLC'lerden biri (örn. Halloween Chapter veya Silent Hill) bulunmalı
+            let halloween = res.dlcs.iter().find(|d| d.title.contains("Halloween") || d.title.contains("Silent Hill"));
+            assert!(halloween.is_some(), "Kullanıcının sahip olduğu DLC listelenmeli");
+            // Dead by Daylight DLC'leri hesap lisansı olduğu için downloadable false olmalı
+            if let Some(h) = halloween {
+                assert!(!h.downloadable, "DBD hesap lisansı olan DLC'ler downloadable: false olmalı");
+            }
         });
     }
 }

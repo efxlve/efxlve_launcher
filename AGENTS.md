@@ -61,10 +61,11 @@ Asla tüm kütüphaneyi tek `list` çağrısına bağlama.
 
 Kurulum/kimlik: `epic_setup_status`, `epic_ensure_binary`, `epic_status`,
 `epic_login_with_code` (ham kod VEYA `{"authorizationCode":...}` JSON'u kabul eder),
-`epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_verify_game`, `epic_sync_saves`, `epic_create_desktop_shortcut`
+`epic_import_egl`, `epic_logout`, `epic_get_settings`, `epic_set_alt_bin`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_verify_game`, `epic_sync_saves`, `epic_create_desktop_shortcut`, `epic_get_playtimes`, `epic_set_playtime`
 Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 `epic_list_skipped`, `epic_get_achievements_summary`, `epic_get_achievements`,
-`epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`
+`epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`,
+`epic_get_collections`, `epic_save_collection`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`
 Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
@@ -209,8 +210,9 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
       - HTML5 Canvas üzerinde Steam benzeri çift katmanlı neon bezier hız grafiği çizilir (cyan ağ hızı, green disk hızı, 60 saniyelik dinamik arabellek).
       - Kuyruk yönetimi (`epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`) ile indirmeler duraklatılabilir, sırası değiştirilebilir veya iptal edilebilir.
     - **Eklenti & DLC Yönetimi (Add-ons Manager):**
-      - `metadata/<app>.json` içindeki `dlcItemList` taranır; `AUDIENCE` token'ları filtrelenerek yalnızca indirilebilir gerçek DLC'ler (`REDmod`, `Phantom Liberty` vb.) listelenir.
-      - Boyutlar, geniş kapak görselleri ve kurulu durumları sunulur; tek tıkla eklenti kurulup kaldırılabilir (`epic_install_game`, `epic_uninstall_game`).
+      - Katalogdaki tüm `dlcItemList` doğrudan gösterilmez! Yalnızca kullanıcının hesabına ait (`entitlements.json`), indirilebilir asset'i olan (`assets.json`) veya kurulu (`installed.json` / EGL manifests) eklentiler listelenir (`is_owned`). Sahip olunmayan mağaza öğeleri kesinlikle elenir.
+      - İndirilebilir paketler (`downloadable: true`, `Phantom Liberty`, `REDmod` vb.) için yükleme/kaldırma toggle switch'i sunulur (`epic_install_game`, `epic_uninstall_game`).
+      - Hesaba tanımlı dahili paketler (`downloadable: false`, Dead by Daylight bölümleri, kozmetikler, in-game içerikler) için CLI indirme hatasını (`Could not find ... in list of available games`) engellemek amacıyla toggle yerine `✓ Hesapta Aktif` rozeti gösterilir.
       - "Bitmedi, dahası da var" mağaza kartı doğrudan Epic Store eklenti sayfasına yönlendirir.
     - **Seçici Kurulum Modalı (Selective Install Dialog):**
       - `legendary info <app> --offline --json` çıktısındaki manifest `tag_disk_size` ve `tag_download_size` verileri ayrıştırılır.
@@ -226,6 +228,48 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
     - `legendary verify` iki farklı ilerleme formatı üretir: küçük dosyalarda `Verification progress: cur/total (pct%) [speed]`, dev arşiv dosyalarında (Cyberpunk, GTA V, Spider-Man vb.) ise `=> Verifying large file "<name>": pct% (cur/total MiB) [speed]`. Backend'deki `parse_verify_progress` her iki formatı ve 4096-bayt akış tamponu bölünmelerini destekler; ayrıştırılan detay (`detail`), hız (`speed`), dosya adı ve yüzdeyi `verify-progress` event'i ile UI'a anlık basar.
     - 3. parti başlatıcılara ait oyunlar (Watch Dogs vb.) Epic manifestine sahip olmadığından `installed.json` kütüğüne ASLA yazılmaz (yalnızca UI için runtime vektörüne eklenir); aksi takdirde Python `legendary.core.load_manifest` fonksiyonu `TypeError: 'NoneType' object is not subscriptable` ile çöker ve `list_installed` fonksiyonunu kilitler.
     - **Çift Backdrop Filter Stutter Önleme:** Detay çekmecesinden (Drawer) Yönet modalı açılırken (`act === "manage-game"`), alttaki çekmece `closeModal()` ile kapatılır. İki adet eş zamanlı `backdrop-filter: blur(8px)` katmanı WebView2'de GPU donmasına yol açtığından bu işlem performansı maksimize eder ve modalın 0ms'de anında açılmasını sağlar.
+30. **Oynama Süresi Takibi (Playtime Tracker), Otomatik Çıkış Senkronizasyonu, Çevrimdışı Mod ve Kayıt Yedekleme:**
+    - **Oynama Süresi & Canlı Durum (`playtime.rs`):** Süre kayıtları `%USERPROFILE%\.config\legendary\playtime.json` dosyasında tutulur (`total_seconds`, `session_count`, `last_played_timestamp`, `last_played`).
+    - **Süreç İzleme (`transfers.rs::spawn_launched`):** `tokio::process::Command` ile başlatılan oyun süreci hemen terk edilmez (`child.wait()` dinlenir). Oyun açıldığında arayüze `game-status { id, running: true }` yayılır; butonlar parlak yeşil pulsing neon animasyonuna (`.btn.running`) bürünür. Oyun kapandığında süre hesaplanıp diskteki kütüğe eklenir, `game-status { id, running: false, sessionSeconds, totalSeconds }` yayılır ve kart/detay rozetleri anlık güncellenir.
+    - **Otomatik Bulut Senkronu:** Oyunda `cloudSavesEnabled: true` ise oyun kapanışı algılandığı anda arka planda `legendary sync-saves <app>` çalıştırılır ve `cloud-sync-complete` bildirimi verilir.
+    - **İndirme Ağ Profili / Worker Sınırı:** Legendary CLI bant genişliği ayarını `--max-workers` ile sağlar (`max`: 16, `balanced`: 4, `low`: 1). Ayarlardan veya indirmelerden değiştirilen profil `settings.json`'a kalıcı işlenir ve tüm `spawn_install` çağrılarına bayrak olarak aktarılır.
+    - **Çevrimdışı Mod (Offline Mode):** Üst bardaki toggle butonu veya ayarlardan açılır; aktifken kütüphane ağ senkronuna gitmez, çevrimdışı oynanabilen oyunlar doğrudan `--offline` ile beklemesiz başlatılır.
+    - **Kayıt Dosyaları & Yerel Yedekleme (`backup.rs`):** Oyunun `save_path` dizinindeki save dosyalarını `%USERPROFILE%\.config\legendary\backups\<app_name>\<backup_id>\` altına zaman damgalı arşivler; Yönet modalından tek tıkla yedek alma, listeleme, geri yükleme ve klasörü açma imkanı sunar.
+31. **Tek ve Bütünleşik Detay Çekmecesi (All-in-One Drawer & Sade Arayüz Disiplini):**
+    - Oyun detayında ayrı açılır pencereler (modal-in-modal popup karmaşası) kesinlikle yasaklanmıştır.
+    - Oyun Yönetimi (`manage`), Eklentiler & DLC (`dlcs`), Başarımlar (`achievements`), Genel Bakış (`overview`) ve Sistem Gereksinimleri (`specs`) sekmeli tek bir genişletilmiş çekmece (`.drawer`, `width: 560px`, `activeDrawerTab`) içinde birleştirilmiştir.
+    - **Kaydırılabilir & Animasyonlu Sekme Çubuğu (`.drawer-tabs`):**
+      - Buton boyutları oyun bazında asla değişmez (`flex: 1` kaldırıldı; yerine `flex-shrink: 0`, doğal `padding: 8px 18px; border-radius: 999px;` hap butonlar getirildi).
+      - Yatay kaydırılabilir şerit (`overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth`), aktif sekmede mikro-ışık indikatörü (`.drawer-tab.active::after`) ve fare tekerleğiyle yatay kaydırma desteği eklendi.
+    - **Akıcı İçerik Animasyonu (`.tab-content-enter`):**
+      - Her sekme geçişinde `#drawer-tab-content` yumuşak bir yükselme ve opaklık geçişiyle (`translateY(12px) scale(0.995)`) ekrana akar; anlık kesintili görüntü (abrupt jump) tamamen engellendi.
+    - **Sıfır Kayma & Kararlı Scroll Alanı (`scrollbar-gutter: stable`):**
+      - `.drawer` ve `.ach-list` konteynerlarına `scrollbar-gutter: stable;` eklendi; içeriğe göre dikey kaydırma çubuğu çıktığında içeriğin sola "tak diye" zıplaması / kayması (layout shift) %100 önlendi.
+    - **World-Class Başarımlar (Achievements) Arayüzü:**
+      - **Hero Özet Kartı (`.ach-hero-compact`):** Tek satırda büyük ilerleme yüzdesi (`%82`), kupa sayısı (`47/57 Kupa Kazanıldı`), sağda zarif fırçalanmış XP kutusu (`1,225 / 1,500 XP`) ve kehribar/altın gradyan ilerleme çizgisi.
+      - **Filtre Karmaşasına Son:** Mükerrer dizilen ve aynı `Tümü (57)` etiketini taşıyan çift satırlı filtreler kaldırılmış; üstte şık koyu segmented kapsam seçici (`.ach-scope-segment`: `Tüm İçerik | Ana Oyun | Ek Paketler`), altında ise kompakt durum çipleri (`.ach-status-chips`: `Tümü | Kazanılanlar | Kilitliler | Gizli`) ile temiz iki katmanlı hiyerarşi kurulmuştur.
+      - **Asil Başarım Kartları (`.ach-card`):** Rozet ve neon hap karmaşası sonlandırılmış; 48x48px modern squircle ikon, beyaz kalın başlık, zarif satır içi metrikler (`🥉 Bronz • 16 Eyl 2026 • 💎 %6 (Nadir)`), sağda altın XP etiketi ve yeşil/gri durum rozetiyle PlayStation 5 ve Steam Deck kalitesinde karanlık tema estetiği sağlanmıştır.
+    - Tüm doğrulama, bulut senkronizasyonu ve yedekleme eylemleri çekmece içindeki ilgili sekmeden canlı ilerler.
+32. **Oynama Süresi Düzenleyici Geliştirmeleri, DLC Mülkiyet Filtresi & Üst Bar Akıcılığı:**
+    - **Oynama Süresi Seçici ve Otomatik Eşleme:** Serbest metin girişi yerine kontrollü `<select id="pt-last-played-select">` açılır menüsü ("Belirtilmemiş", "Daha önce oynandı (Epic Games)", "Bugün", "Dün", "Bu hafta", "Bu ay", "Geçen ay", "6 ay önce", "1 yıl önce veya daha eski"). Kullanıcı saat/dakika girdiğinde veya hızlı sürelere (`+1 sa` vb.) bastığında son aktivite otomatik olarak "Daha önce oynandı (Epic Games)" seçilir. Süre sıfırlandığında veya "Belirtilmemiş" seçildiğinde diskteki `last_played` alanı `null` yapılarak temizlenir.
+    - **Beyaz Tarayıcı Scrollbar & Sayı Çevirici (Spin-Button) Engellemesi:** `:root { color-scheme: dark; }` ve `input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none !important; }` kurallarıyla işletim sisteminin beyaz kontrolleri engellendi.
+    - **Katalog Eklenti (DLC) Filtreleme:** Kullanıcının kütüphanesinde bulunmayan veya mağazadan kaldırılmış DLC'ler `epic_get_game_dlcs` içinde kullanıcının varlıkları (`entitlements.json`, `assets.json`) ile filtrelenerek indirmede oluşabilecek `ERROR: Could not find ... in list of available games` hatası önlendi.
+    - **Üst Bar Kaydırma & Ok Animasyonları:** Navigasyon oklarının belirmesi/kaybolması `opacity` ve `transform` geçişleriyle yumuşatıldı; butonların kenarındaki kesilmeyi önlemek için gradyan maskeleme uygulandı ve sekme tıklamalarında zıplama yaşanmaması için scroll konteynerı stabilize edildi.
+33. **Epic Games Kütüphane Koleksiyonları (Kategoriler) & EGL LevelDB İçe Aktarma Mimarisi:**
+    - **Legendary Durumu & LevelDB Tersine Mühendislik:** `legendary` CLI'ı koleksiyon/kategori desteğine sahip değildir. Orijinal Epic Games Launcher (EGL) ise kullanıcının oluşturduğu özel kategorileri ("Online", "Hikaye", "Hikaye/Başarım Tamamlanan" vb.) `%LOCALAPPDATA%\EpicGamesLauncher\Saved\webcache_*\IndexedDB\https_launcher.store.epicgames.com_0.indexeddb.leveldb\*.log` Chromium LevelDB kütüğünde binary-serileştirilmiş olarak saklar.
+    - **LevelDB Ayrıştırıcı (`collections.rs`):** Harici C++ LevelDB bağımlılığına gerek kalmaksızın saf Rust ile LevelDB binary log kayıtları taranır (`parse_leveldb_buffer`). Kütüklerdeki `collectionId"` UUID'leri, `name` UTF-8 / ASCII aralıkları ve `catalogId` / `sandbox` oyun referansları `%USERPROFILE%\.config\legendary\metadata\*.json` sözlüğü ile eşleştirilir. Slicing ve UTF-8 sınır paniklerine karşı tek baytlık ASCII izdüşümü (`if b.is_ascii() { b as char } else { ' ' }`) ile bellek güvenliği garanti edilir.
+    - **Yerel Depolama & Otomatik Değişiklik Algılama (Auto-Sync):** Koleksiyonlar `%USERPROFILE%\.config\legendary\collections.json` dosyasında tutulur (`epic_get_collections`, `epic_save_collection`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`). `read_collections`, EGL LevelDB kütüğünün (`*.log`, `*.ldb`) son değiştirilme zamanı (`get_egl_leveldb_mtime`) ile yerel `collections.json` dosyasının zaman damgasını kıyaslar (<0.1ms). EGL'de yeni oyun eklendiğinde veya silindiğinde launcher açılışında veya kütüphane yenilenmesinde (`epic-refresh`) otomatik olarak EGL'den güncel veriyi çeker ve yerel koleksiyonlarla birleştirir.
+    - **UI Entegrasyonu (Epic Games Launcher Tasarımı):**
+      - Kütüphane başlığında modern EGL sekme çubuğu (`.collection-nav-bar`): "Tümü", "Favoriler", kullanıcının özel koleksiyonları ve `(+)` dairesel yeni kategori butonu.
+      - Aktif sekmede EGL mavisi (`#0078f2`) taban çizgisi göstergesi (`::after`), inaktiflerde zarif açık gri, hover anında parlak beyaz geçiş. Özel koleksiyonların üzerine gelindiğinde düzenleme butonu (`⋮`).
+      - Seçilen kategoriye göre kütüphane ızgarası, arama kutusu ve sayaç çipleri (Tüm Oyunlar, Kurulu, Favoriler, Platin, Güncellemeler) dinamik olarak filtrelenir.
+      - Detay çekmecesinde ("Genel Bakış" sekmesi) oyunun dahil olduğu kategorileri gösteren tıklanabilir etiketler (`.drawer-col-chip`) ve tek tıkla açılan "Koleksiyonları Yönet" modalı.
+      - Ayarlar sayfasında tek tıkla "EGL Koleksiyonlarını İçe Aktar" düğmesi.
+34. **Koleksiyon Modalı Yeniden Tasarımı & Özel Emoji / Simge Seçici Mimarisi:**
+    - **UI Revizyonu:** Kırmızı pencere kapatma butonu artefaktı yerine yuvarlatılmış minimal kapat butonu (`.col-modal-close`), 640px havadar obsidian/cam gövde (`.col-modal-card`), akıcı dikey kaydırma ve ince scrollbar.
+    - **Özel Emoji / Simge Seçici:** Koleksiyonlara özel `emoji` desteği (Rust `GameCollection.emoji: Option<String>`, `collections.json`). 44x44px interaktif emoji avatar butonu, 32 popüler oyun emojisi (🎮, 📖, 🌐, 🏆, ⚔️, 🚗, 👻 vb.), hızlı şablon çipleri ("📖 Hikaye", "🌐 Online", "🏆 Platin Hedef" vb.), harici özel emoji yazma/yapıştırma ve simge temizleme.
+    - **Gelişmiş Oyun Seçim Segmentleri & Canlı Sayaçlar:** `[ Tümü (514) ]`, `[ Seçilenler (80) ]`, `[ Yüklü ]` filtre sekmeleri ile koleksiyona dahil olan oyunları anında listeleme ve satırın tamamına tıklayarak seçebilme.
+    - **Sistem Genelinde Kusursuz Yansıma:** Araç çubuğu açılır menüsünde (`.col-menu-emoji`), aktif filtre butonunda (`.col-pill-emoji`), Raflar (Shelves) başlığında (`.shelf-emoji`) ve detay çekmecesi etiketlerinde (`.col-chip-emoji`) kullanıcının seçtiği emojilerin yerinde ve şık gösterimi.
 
 ## 7. Test stratejisi
 
@@ -268,6 +312,38 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Güncelleme Motoru (Update Engine):** `build_version` kıyasıyla güncelleme tespiti, `⚡ Güncellemeler (N)` kütüphane filtresi, kartlarda "⚡ Güncelleme" rozeti, kurulu oyunlarda dinamik "Güncelle" butonu ve tek tıkla güncelleme akışı
 - **Dosya Doğrulama & Bütünlük Kontrolü (File Verification Engine):** `ensure_egl_manifest()` ile `.egstore` manifestlerinin otomatik bağlanması, büyük arşiv dosyaları (`=> Verifying large file`) için çok katmanlı canlı ilerleme ve MB/s hızı akışı, 3. parti manifest çökme koruması ve kırpışmasız yerinde (in-place) DOM güncellemesi
 - **Ultra-Hızlı Yönetim Paneli:** Çift katmanlı GPU `backdrop-filter` kilitlenmesinin giderilmesi, 0ms anında modal açılışı, `will-change` donanım hızlandırması ve yerinde ayar senkronizasyonu
+- **Oynama Süresi Takibi (Playtime Tracker) & Manuel Süre Düzenleme:** Canlı süreç izleme, yeşil neon pulsing buton (`Oynanıyor...`), oyun çıkışında otomatik bulut senkronizasyonu, kart ve detay çekmecesinde oynama süresi ve son oynanma tarihleri; Epic Games'in sunucu taraflı kapalı telemetri kısıtlaması bilgilendirme notları (`.playtime-sync-notice`), "Genel Bakış" ve "Yönet" sekmelerinden tek tıkla açılan "Oynama Süresini Düzenle" dialogu (`epic_set_playtime`, saat/dakika/hızlı çipler ve isteğe bağlı not) ve kesintisiz kümülatif süre biriktirme desteği
+- **Çevrimdışı Mod (Offline Mode):** Üst bar anahtarı, ağ senkronu atlama ve beklemesiz `--offline` başlatma
+- **İndirme Ağ Profili (Bandwidth / Worker Limiter):** Maksimum (16), Dengeli (4), Eko (1) worker seviyeleri ve ayarlar entegrasyonu
+- **Kayıt Dosyaları & Yerel Yedekleme (Save Backup Manager):** Yönet menüsünde tek tıkla yerel kayıt yedeği alma, yedek geçmişi, geri yükleme ve yedek klasörünü açma desteği
+- **Kütüphane Koleksiyonları & EGL Kategori Eşitleme (Collections / Categories):** EGL CEF LevelDB kütüğünden otomatik kategori çekme ("Online", "Hikaye" vb.), kütüphane üstünde modern fırçalanmış cam kapsül sekme şeridi (`.collection-nav-bar`), dinamik oyun sayaçları, yeni koleksiyon oluşturma / düzenleme / silme modalı ve oyun detay çekmecesinde interaktif kategori etiketleri (`.drawer-col-chip`)
+- **Kütüphane UI Revizyonu, 8 GB RAM Optimizasyonu & İskelet (Skeleton Shimmer) Yükleme:**
+  - 8 GB RAM ve düşük sistemlerde 500+ oyunu 60-120 FPS akıcılıkla çalıştırmak için `.pcard` ve `.prow` üzerine `content-visibility: auto; contain-intrinsic-size: 240px 320px; contain: layout paint style; transform: translateZ(0);` uygulanması, görsellere `loading="lazy" decoding="async"` ve CSS stagger delay'inin sadece ilk 24 kartla sınırlandırılması.
+  - Kütüphane açılırken ve taranırken tam sayfa AAA standartlarında İskelet (Skeleton Shimmer) animasyonu (`renderSkeletonLibrary()`, `@keyframes skeletonShimmer`, `.skeleton-card`, `.skeleton-hero`, `.skeleton-toolbar`).
+- **Aero Cinematic Kütüphane UI & Tek Satırlık Bütünleşik Araç Çubuğu:**
+  - Sayfanın yarısını kaplayan hantal 400px'lik gri kutular ve çift katmanlı butonlar tamamen terk edilmiştir.
+  - Hero Vitrini 150px'e indirilmiş ve tek tıkla gizlenebilir/açılabilir (`isHeroCollapsed`, `.lib-toggle-hero-btn`, `.hero-collapse-btn`) esnek yapıya kavuşturulmuştur.
+  - Ağır `.lib-command-center` yerine doğrudan koyu tuval üzerinde süzülen tek satırlık **`.lib-unified-toolbar`** entegre edilmiştir (`[ Tümü ] [ Yüklü ] [ Favoriler ] [ Platin ] [ Koleksiyonlar ▾ ]` ve sağda Arama, Sıralama, Boyut, Görünüm).
+  - Koleksiyonlar şık bir cam açılır menüye (`.col-dropdown-menu`) taşınarak uzun isimlerin (`Hikaye/Başarım Tamamlanan` vb.) düzeni bozması engellenmiş, seçildiğinde aktif sepet hapı (`[ 📁 Hikaye (80) ✕ ]`) olarak sunulmuştur.
+  - Kart üzerindeki "Yüklü" rozeti (`.pbadge.ready`) 20px yüksekliğinde, gece siyahı zeminli, 1px zümrüt çerçeveli ve minik LED noktalı cerrahi bir konsol HUD etiketine dönüştürülerek karakter yüzlerini ve posterleri kapatması tamamen çözülmüştür.
+- **Sıfır Emoji Disiplini (Zero Emoji Discipline) & Vektör İkon Mimarisi:**
+  - Tüm arayüzdeki kaba sistem emojileri kaldırılmış, standart ve asil Lucide inline SVG ikonları (`icon(...)`) ile değiştirilmiştir.
+  - Aktif filtre butonlarındaki göz alıcı beyaz parlamalar koyu cam ışıltısı (`rgba(255, 255, 255, 0.14)`) ile modernize edilmiştir.
+  - Hero vitrini 175px'e optimize edilmiş, içindeki gereksiz istatistik kutucukları kaldırılarak poster sanatı ve oyun aksiyonları öne çıkarılmıştır.
+- **Steam Tarzı "Raflar" (Shelves) Görünüm Modu:**
+  - Kütüphane araç çubuğuna 3'lü görünüm seçici eklenmiştir (`[ ▦ Izgara ] [ ☷ Raflar ] [ ☰ Liste ]`).
+  - Raflar modunda oyunlar akıllı yatay kategorilere ayrılır: "Son Oynananlar", "Favori Oyunlar", "Platin Kupalılar", "Yüklü Oyunlar", "Öne Çıkanlar" ve kullanıcı koleksiyonları.
+  - Her raf akıcı yatay kaydırma parçasına (`.shelf-row-track`), pürüzsüz gezinme oklarına (`shelf-scroll`) ve raf başı kahraman kartına (`.shelf-hero-card`) sahiptir.
+- **Kapak Hover Kartı & Canlı Mikro-HUD:**
+  - Kartların üzerine gelindiğinde (hover) başlığın hemen altında cerrahi incelikte mikro bilgi hapları (`.pcard-micro-hud`) belirir: Oynama süresi (`⏱ 14 sa`), Başarım tamamlama oranı (`🏆 %75`) ve Platin kupa durumu.
+  - Poster görselini engellemeden kullanıcının kütüphane ilerlemesini doğrudan kart üzerinden görmesini sağlar.
+- **HowLongToBeat (HLTB) Entegrasyonu:**
+  - `src-tauri/src/legendary/hltb.rs` modülü ile HowLongToBeat arama motoru taranır ve sonuçlar diskte `%USERPROFILE%\.config\legendary\hltb` altında yerel önbelleklenir.
+  - Detay çekmecesinin "Genel Bakış" sekmesinde şık bir HLTB kartı (`.drawer-hltb-card`) belirir; "Ana Hikaye", "Ana + Ekstra" ve "%100 Bitirme" tahmini sürelerini saat bazında sunar.
+- **Özel Kapak Değiştirme (Custom Cover Art):**
+  - Kullanıcılar herhangi bir oyunun kartındaki veya detay çekmecesindeki "Kapağı Özelleştir" düğmesiyle özel kapak modalını (`openCustomCoverModal`) açabilir.
+  - Doğrudan SteamGridDB / web görsel URL'si yapıştırabilir veya bilgisayardan yerel resim dosyası (`.png`, `.jpg`, `.webp`) seçebilir (`FileReader` ile yerel saklama).
+  - Anında 2:3 oranlı önizleme, varsayılana sıfırlama ve `localStorage` üzerinde kalıcı saklama desteği mevcuttur.
 
 ## 9. Çalışma disiplini
 
