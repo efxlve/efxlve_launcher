@@ -406,6 +406,9 @@ export interface DownloadCancelledEvent {
 export interface EpicSettings {
   alt_legendary_bin: string | null;
   install_dir: string | null;
+  network_profile?: string | null;
+  offline_mode?: boolean | null;
+  steamgrid_api_key?: string | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
@@ -801,3 +804,88 @@ export interface HltbData {
 
 export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
   invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
+
+/* ---------- SteamGridDB API v2 ---------- */
+
+export interface SteamGridAuthor {
+  name?: string | null;
+  steam64?: string | null;
+  avatar?: string | null;
+}
+
+export interface SteamGridImage {
+  id: number;
+  score: number;
+  style?: string | null;
+  width?: number | null;
+  height?: number | null;
+  nsfw?: boolean | null;
+  humor?: boolean | null;
+  epilepsy?: boolean | null;
+  url: string;
+  thumb?: string | null;
+  author?: SteamGridAuthor | null;
+}
+
+export interface SteamGridGame {
+  id: number;
+  name: string;
+  types: string[];
+  verified?: boolean | null;
+}
+
+export const epicGetSteamGridKey = () =>
+  invoke<string | null>("epic_get_steamgrid_key");
+
+export const epicSetSteamGridKey = (apiKey: string) =>
+  invoke<void>("epic_set_steamgrid_key", { apiKey });
+
+export const epicTestSteamGridKey = (apiKey: string) =>
+  invoke<boolean>("epic_test_steamgrid_key", { apiKey });
+
+export const epicSearchSteamGrid = (term: string) =>
+  invoke<SteamGridGame[]>("epic_search_steamgrid", { term });
+
+export const epicGetSteamGridCovers = (
+  gameId: number,
+  assetType?: "grids" | "heroes",
+  styles?: string,
+  dimensions?: string,
+) =>
+  invoke<SteamGridImage[]>("epic_get_steamgrid_covers", {
+    gameId,
+    assetType: assetType ?? null,
+    styles: styles ?? null,
+    dimensions: dimensions ?? null,
+  });
+
+/* ---------- Oyuncu Profili ve Başarımlar ---------- */
+
+export interface ProfileGameRecord {
+  sandbox_id: string;
+  app_name: string;
+  app_title: string;
+  cover: string | null;
+  total_unlocked: number;
+  total_achievements: number;
+  total_xp: number;
+  total_product_xp: number;
+  is_platinum: boolean;
+  unlocked_percent: number;
+  last_unlocked_date: string | null;
+}
+
+export interface EpicPlayerProfile {
+  account_id: string;
+  display_name: string;
+  total_xp: number;
+  total_unlocked: number;
+  platinum_count: number;
+  games_count: number;
+  games: ProfileGameRecord[];
+  last_updated: number;
+}
+
+export const epicGetPlayerProfile = (forceRefresh = false) =>
+  invoke<EpicPlayerProfile>("epic_get_player_profile", { forceRefresh });
+

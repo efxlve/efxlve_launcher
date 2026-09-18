@@ -2193,6 +2193,19 @@ pub fn epic_import_egl_collections() -> Result<Vec<super::collections::GameColle
     super::collections::import_egl_collections()
 }
 
+// -------------------------------------------------------------
+// OYUNCU PROFİLİ (NATIVE PROFILE VIEW)
+// -------------------------------------------------------------
+
+/// Epic Games resmi GraphQL API'sinden kullanıcı profilini ve başarımlarını çeker
+#[tauri::command]
+pub async fn epic_get_player_profile(
+    force_refresh: Option<bool>,
+) -> Result<super::profile::EpicPlayerProfile, String> {
+    let config = super::skip::default_config_dir();
+    super::profile::fetch_player_profile(&config, force_refresh.unwrap_or(false)).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

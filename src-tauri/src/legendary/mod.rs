@@ -15,6 +15,8 @@ pub mod collections;
 pub mod skip;
 pub mod transfers;
 pub mod hltb;
+pub mod steamgrid;
+pub mod profile;
 
 use thiserror::Error;
 

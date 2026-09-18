@@ -104,6 +104,16 @@ import {
   type SystemDetailItem,
   type SystemRequirement,
   type ThirdPartyLauncherInfo,
+  epicGetSteamGridKey,
+  epicSetSteamGridKey,
+  epicTestSteamGridKey,
+  epicSearchSteamGrid,
+  epicGetSteamGridCovers,
+  type SteamGridGame,
+  type SteamGridImage,
+  epicGetPlayerProfile,
+  type EpicPlayerProfile,
+  type ProfileGameRecord,
 } from "./epic";
 
 /* ---------- Tipler ---------- */
@@ -215,7 +225,7 @@ async function fetchGames(): Promise<Game[]> {
 /* ---------- Durum ---------- */
 
 let games: Game[] = [];
-let view: "library" | "downloads" | "settings" | "dlc-manager" = "library";
+let view: "library" | "downloads" | "settings" | "dlc-manager" | "profile" = "library";
 
 /* ---------- Epic (Legendary) durumu ---------- */
 
@@ -244,18 +254,35 @@ type EpicViewMode = "grid" | "shelves" | "list";
 type CardSize = "compact" | "normal" | "large";
 
 let epicFilter: EpicFilter = "all";
-let epicSort: EpicSort = "recent";
+let epicSort: EpicSort = (localStorage.getItem("efxlve-sort") as EpicSort) || "recent";
 let epicViewMode: EpicViewMode = (localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid";
 let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
 
-/* ---------- Özel Kapak (Custom Cover Art) ---------- */
+const sortOptions: { id: EpicSort; label: string; icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh" }[] = [
+  { id: "recent", label: "Son oynanan", icon: "clock" },
+  { id: "alpha", label: "Alfabetik", icon: "arrow-down-a-z" },
+  { id: "installed", label: "Yüklü önce", icon: "check-circle" },
+  { id: "platinum", label: "Platin kupalılar", icon: "trophy" },
+  { id: "updates", label: "Güncelleme olanlar", icon: "refresh" },
+];
+
+/* ---------- Özel Kapak ve Afiş (Custom Cover & Hero Art) ---------- */
 const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
+const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
+
 let customCovers: Record<string, string> = {};
 try {
   customCovers = JSON.parse(localStorage.getItem(CUSTOM_COVERS_KEY) ?? "{}");
 } catch {
   customCovers = {};
+}
+
+let customHeroes: Record<string, string> = {};
+try {
+  customHeroes = JSON.parse(localStorage.getItem(CUSTOM_HEROES_KEY) ?? "{}");
+} catch {
+  customHeroes = {};
 }
 
 function saveCustomCover(appName: string, url: string): void {
@@ -274,6 +301,89 @@ function resetCustomCover(appName: string): void {
   if (currentModalAppName === appName) {
     openEpicModal(appName, false);
   }
+}
+
+function saveCustomHero(appName: string, url: string): void {
+  customHeroes[appName] = url.trim();
+  localStorage.setItem(CUSTOM_HEROES_KEY, JSON.stringify(customHeroes));
+  render();
+  if (currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+function resetCustomHero(appName: string): void {
+  delete customHeroes[appName];
+  localStorage.setItem(CUSTOM_HEROES_KEY, JSON.stringify(customHeroes));
+  render();
+  if (currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+/* ---------- SteamGridDB Durum Değişkenleri ---------- */
+let steamGridApiKey: string | null = null;
+let customCoverActiveTab: "steamgrid" | "url" | "file" = "steamgrid";
+let activeCoverTarget: "cover" | "hero" = "cover";
+let sgdbSearchQuery = "";
+let sgdbAssetType: "grids" | "heroes" = "grids";
+let sgdbActiveStyle = "";
+let sgdbIsSearching = false;
+let sgdbErrorMsg = "";
+let sgdbGamesList: SteamGridGame[] = [];
+let sgdbSelectedGameId: number | null = null;
+let sgdbCoversList: SteamGridImage[] = [];
+let sgdbSelectedCoverUrl = "";
+let activeCustomCoverAppName = "";
+let showSettingsSgdbKey = false;
+let showModalSgdbKey = false;
+let showModalSgdbInfo = false;
+
+function cleanSteamGridSearchTerm(title: string): string {
+  let s = title.trim();
+  const prefixes = [
+    "Tom Clancy's ",
+    "Marvel's ",
+    "Sid Meier's ",
+    "Disney's ",
+    "EA SPORTS™ ",
+    "EA SPORTS ",
+    "Star Wars™ ",
+    "STAR WARS™ ",
+    "STAR WARS ",
+    "Warhammer 40,000: ",
+    "Warhammer: ",
+  ];
+  for (const p of prefixes) {
+    if (s.startsWith(p)) s = s.substring(p.length);
+  }
+  const dashPos = s.indexOf(" - ");
+  if (dashPos !== -1) {
+    const sub = s.substring(dashPos + 3).toLowerCase();
+    if (sub.includes("edition") || sub.includes("cut") || sub.includes("version")) {
+      s = s.substring(0, dashPos);
+    }
+  }
+  const suffixes = [
+    " Standard Edition",
+    " Enhanced Edition",
+    " Definitive Edition",
+    " Gold Edition",
+    " Deluxe Edition",
+    " Complete Edition",
+    " Game of the Year Edition",
+    " GOTY Edition",
+    " Special Edition",
+    " Remastered",
+    " Director's Cut",
+  ];
+  for (const suffix of suffixes) {
+    const idx = s.toLowerCase().indexOf(suffix.toLowerCase());
+    if (idx !== -1) {
+      s = s.substring(0, idx);
+    }
+  }
+  return s.trim();
 }
 
 /* ---------- HowLongToBeat Durumu ---------- */
@@ -321,6 +431,14 @@ function fmtPlaytime(seconds: number): string {
   const hours = seconds / 3600;
   return hours >= 10 ? `${Math.round(hours)} sa` : `${hours.toFixed(1)} sa`;
 }
+
+/* ---------- Oyuncu Profili Durumu ---------- */
+let playerProfileData: EpicPlayerProfile | null = null;
+let profileLoading = false;
+let profileError = "";
+let profileFilter: "all" | "platinum" | "in_progress" | "not_started" = "all";
+let profileSort: "progress" | "xp" | "playtime" | "alpha" = "progress";
+let profileSearchQuery = "";
 
 /* ---------- Çevrimdışı Mod, Ağ Profili & Yedekleme ---------- */
 let offlineMode = false;
@@ -406,6 +524,8 @@ function fmtBytes(bytes: number): string {
 
 /** Geniş yatay kapak (Hero banner ve Drawer için) */
 function epicWideArt(s: EpicSummary): string | null {
+  const customHero = customHeroes[s.appName];
+  if (customHero) return customHero;
   const g = rawOf(s.appName);
   const imgs = g?.metadata?.keyImages;
   if (Array.isArray(imgs)) {
@@ -485,17 +605,28 @@ async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<voi
   }
 }
 
-async function openProfile(): Promise<void> {
-  if (!epicAccountId) {
-    await refreshEpic();
-    if (!epicAccountId) {
-      if (!epicAccount) toast("Önce giriş yap", "");
-      else toast("Hesap ID okunamadı", "err");
-      return;
-    }
+async function loadPlayerProfile(forceRefresh = false): Promise<void> {
+  if (!isTauri) return;
+  profileLoading = true;
+  profileError = "";
+  render();
+  try {
+    playerProfileData = await epicGetPlayerProfile(forceRefresh);
+  } catch (e) {
+    profileError = String(e);
+  } finally {
+    profileLoading = false;
+    render();
   }
-  toast("Profil açılıyor…", "");
-  await openStoreUrl(`https://store.epicgames.com/u/${epicAccountId}`, "profile");
+}
+
+async function openProfile(): Promise<void> {
+  closeStore();
+  view = "profile";
+  if (!playerProfileData && !profileLoading) {
+    void loadPlayerProfile();
+  }
+  render();
 }
 
 function closeStore(): void {
@@ -539,6 +670,16 @@ const selectedInstallTags = new Set<string>();
 const selectedDlcAppIds = new Set<string>();
 
 const availableUpdates = new Map<string, GameUpdateInfo>();
+let prevRenderedUpdatesCount: number = -1;
+let prevRenderedColId: string | null | undefined = undefined;
+let isSortDropdownOpen = false;
+const sortLabelMap: Record<string, string> = {
+  recent: "Son oynanan",
+  alpha: "Alfabetik",
+  installed: "Yüklü önce",
+  platinum: "Platin kupalılar",
+  updates: "Güncelleme olanlar",
+};
 
 const verifyingMap = new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>();
 let activeManageSettings: GameLocalSettings | null = null;
@@ -1501,6 +1642,24 @@ function renderSettings(): string {
       </div>
     </div>
     <div class="settings-box">
+      <h3>${icon("image", 16)} SteamGridDB Entegrasyonu (Topluluk Kapakları)</h3>
+      <p>SteamGridDB topluluk platformu üzerinden oyunlarınıza yüksek kaliteli dikey kapaklar (2:3) ve vitrin afişleri (hero) ekleyin.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin:12px 0;flex-wrap:wrap">
+        <span class="sgdb-status-badge ${steamGridApiKey ? "connected" : "disconnected"}">
+          ${steamGridApiKey ? `${icon("check", 12)} Bağlı` : "Anahtar Tanımlanmadı"}
+        </span>
+        <button class="btn ghost small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api" style="font-size:11px;padding:3px 8px">
+          ${icon("external", 11)} Ücretsiz API Anahtarı Al
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;max-width:560px;align-items:center;flex-wrap:wrap">
+        <input id="settings-sgdb-key-input" type="${showSettingsSgdbKey ? "text" : "password"}" class="text-input" style="flex:1;min-width:240px" placeholder="SteamGridDB API Anahtarını yapıştırın..." value="${esc(steamGridApiKey || "")}" spellcheck="false" autocomplete="off" />
+        <button class="btn ghost small" data-act="toggle-sgdb-key-visibility" title="Göster/Gizle">${icon(showSettingsSgdbKey ? "eye-off" : "eye", 13)}</button>
+        <button class="btn primary small" data-act="save-sgdb-key">Kaydet</button>
+        <button class="btn ghost small" data-act="test-sgdb-key">Test Et</button>
+      </div>
+    </div>
+    <div class="settings-box">
       <h3>${icon("zap", 16)} İndirme Ağ Profili (Bant Genişliği)</h3>
       <p>İndirme sırasında bilgisayarınızın ağ ve işlemci kullanım seviyesini belirleyin.</p>
       <div class="net-profile-pills" style="margin-top:10px">
@@ -1542,13 +1701,317 @@ function renderSettings(): string {
     </div>`;
 }
 
+function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
+  if (cardGames.length === 0) {
+    return `
+      <div class="profile-empty-games">
+        <div class="profile-empty-icon">${icon("gamepad-2", 36)}</div>
+        <h4>Oyun Bulunamadı</h4>
+        <p>Seçtiğiniz filtreye veya arama kriterine uygun başarım kaydı bulunmuyor.</p>
+      </div>
+    `;
+  }
+
+  return cardGames
+    .map((g, idx) => {
+      const isPlat = g.is_platinum || g.unlocked_percent >= 100;
+      const pt = playtimeMap.get(g.app_name);
+      const playtimeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : null;
+      const s = epicSummaries.find((x) => x.appName === g.app_name);
+      const isInstalled = s?.installed ?? false;
+
+      const coverUrl = customCovers[g.app_name] || g.cover || s?.cover || "";
+      const fillPercent = Math.min(100, Math.max(0, g.unlocked_percent));
+
+      return `
+        <div class="profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" style="--pci:${Math.min(idx, 20)}">
+          <div class="profile-game-cover-wrap">
+            ${
+              coverUrl
+                ? `<img class="profile-game-cover" src="${esc(coverUrl)}" alt="${esc(g.app_title)}" loading="lazy" />`
+                : `<div class="profile-game-cover-empty">${icon("gamepad-2", 32)}</div>`
+            }
+            ${
+              isPlat
+                ? `<div class="profile-game-plat-ribbon" title="Platin Kupa Tamamlandı!">${icon("crown", 12)} Platin</div>`
+                : ""
+            }
+          </div>
+
+          <div class="profile-game-info">
+            <div class="profile-game-title-row">
+              <h3 class="profile-game-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
+              <div class="profile-game-pills">
+                ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
+                ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 11)} ${playtimeStr}</span>` : ""}
+              </div>
+            </div>
+
+            <div class="profile-game-progress-wrap">
+              <div class="profile-game-progress-labels">
+                <span class="profile-game-progress-left">
+                  <strong>%${g.unlocked_percent}</strong> • ${g.total_unlocked}/${g.total_achievements} Başarım
+                </span>
+                <span class="profile-game-progress-right">
+                  <strong>${g.total_xp.toLocaleString()}</strong> / ${g.total_product_xp.toLocaleString()} XP
+                </span>
+              </div>
+              <div class="profile-game-progress-track">
+                <div
+                  class="profile-game-progress-fill ${isPlat ? "plat" : ""}"
+                  style="width: ${fillPercent}%"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-game-action">
+            <button class="btn ghost small profile-card-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}">
+              <span>İncele</span> ${icon("chevron-right", 12)}
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderProfile(): string {
+  if (profileLoading && !playerProfileData) {
+    return `
+      <div class="profile-container">
+        <div class="profile-loading-box">
+          <div class="profile-spinner"></div>
+          <h3>Epic Games Profil Verileri Alınıyor…</h3>
+          <p>Başarımlarınız, kazanılan XP'leriniz ve kupa kayıtlarınız yükleniyor.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  if (profileError && !playerProfileData) {
+    return `
+      <div class="profile-container">
+        <div class="profile-error-box">
+          <div class="profile-error-icon">${icon("info", 32)}</div>
+          <h3>Profil Yüklenemedi</h3>
+          <p>${esc(profileError)}</p>
+          <button class="btn primary" data-act="refresh-profile">${icon("refresh", 14)} Tekrar Dene</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const prof = playerProfileData;
+  const displayName = prof?.display_name || epicAccount || "Oyuncu";
+  const accountId = prof?.account_id || epicAccountId || "";
+  const totalXp = prof?.total_xp || 0;
+  const totalUnlocked = prof?.total_unlocked || 0;
+  const platCount = prof?.platinum_count || 0;
+
+  let totalPlaytimeSec = 0;
+  for (const r of playtimeMap.values()) {
+    totalPlaytimeSec += r.total_seconds || 0;
+  }
+  const totalPlaytimeStr = fmtPlaytime(totalPlaytimeSec);
+  const totalOwnedGames = epicSummaries.length || games.length;
+  const totalInstalledGames = epicSummaries.filter((s) => s.installed).length;
+
+  const allGames = prof?.games || [];
+
+  let filteredGames = allGames.filter((g) => {
+    if (profileFilter === "platinum") {
+      return g.is_platinum || g.unlocked_percent >= 100;
+    }
+    if (profileFilter === "in_progress") {
+      return g.unlocked_percent > 0 && g.unlocked_percent < 100 && !g.is_platinum;
+    }
+    if (profileFilter === "not_started") {
+      return g.unlocked_percent === 0;
+    }
+    return true;
+  });
+
+  if (profileSearchQuery.trim()) {
+    const q = profileSearchQuery.trim().toLowerCase();
+    filteredGames = filteredGames.filter(
+      (g) => g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q),
+    );
+  }
+
+  filteredGames.sort((a, b) => {
+    if (profileSort === "progress") {
+      return b.is_platinum !== a.is_platinum
+        ? (b.is_platinum ? 1 : -1)
+        : b.unlocked_percent !== a.unlocked_percent
+          ? b.unlocked_percent - a.unlocked_percent
+          : b.total_xp - a.total_xp;
+    }
+    if (profileSort === "xp") {
+      return b.total_xp - a.total_xp;
+    }
+    if (profileSort === "playtime") {
+      const ptA = playtimeMap.get(a.app_name)?.total_seconds || 0;
+      const ptB = playtimeMap.get(b.app_name)?.total_seconds || 0;
+      return ptB - ptA;
+    }
+    if (profileSort === "alpha") {
+      return a.app_title.localeCompare(b.app_title, "tr");
+    }
+    return 0;
+  });
+
+  const countAll = allGames.length;
+  const countPlat = allGames.filter((g) => g.is_platinum || g.unlocked_percent >= 100).length;
+  const countInProgress = allGames.filter(
+    (g) => g.unlocked_percent > 0 && g.unlocked_percent < 100 && !g.is_platinum,
+  ).length;
+  const countNotStarted = allGames.filter((g) => g.unlocked_percent === 0).length;
+
+  const initialLetter = displayName.trim().charAt(0).toUpperCase() || "E";
+
+  return `
+    <div class="profile-container">
+      <!-- 1. Hero Profil Kartı -->
+      <div class="profile-hero-card">
+        <div class="profile-hero-left">
+          <div class="profile-avatar">
+            <span class="profile-avatar-letter">${esc(initialLetter)}</span>
+            <div class="profile-avatar-glow"></div>
+          </div>
+          <div class="profile-hero-meta">
+            <div class="profile-name-row">
+              <h1 class="profile-display-name">${esc(displayName)}</h1>
+              <span class="profile-status-badge ${offlineMode ? "offline" : "online"}">
+                <span class="status-dot"></span> ${offlineMode ? "Çevrimdışı Mod" : "Epic Games Bağlı"}
+              </span>
+            </div>
+            <div class="profile-id-row">
+              <span class="profile-id-label">Hesap ID:</span>
+              <code class="profile-id-code" title="${esc(accountId)}">${esc(accountId)}</code>
+              <button class="profile-copy-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID'sini Kopyala">
+                ${icon("copy", 13)}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="profile-hero-actions">
+          <button class="btn ghost small profile-refresh-btn ${profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve başarımları Epic sunucularından tazele">
+            ${icon("refresh", 14)} <span>${profileLoading ? "Tazeleniyor…" : "Profili Yenile"}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. İstatistik & Kupa Vitrini (5 Kart) -->
+      <div class="profile-stats-grid">
+        <div class="profile-stat-box xp">
+          <div class="profile-stat-icon-wrap">${icon("sparkles", 22)}</div>
+          <div class="profile-stat-content">
+            <div class="profile-stat-value">${totalXp.toLocaleString()} <span class="profile-stat-unit">XP</span></div>
+            <div class="profile-stat-label">Kazanılan Toplam XP</div>
+            <div class="profile-stat-sub">Epic Seviyesi & Kupa Puanı</div>
+          </div>
+        </div>
+
+        <div class="profile-stat-box ach">
+          <div class="profile-stat-icon-wrap">${icon("trophy", 22)}</div>
+          <div class="profile-stat-content">
+            <div class="profile-stat-value">${totalUnlocked.toLocaleString()} <span class="profile-stat-unit">Başarım</span></div>
+            <div class="profile-stat-label">Açılan Başarımlar</div>
+            <div class="profile-stat-sub">${allGames.filter((g) => g.total_unlocked > 0).length} Farklı Oyunda</div>
+          </div>
+        </div>
+
+        <div class="profile-stat-box plat">
+          <div class="profile-stat-icon-wrap">${icon("crown", 22)}</div>
+          <div class="profile-stat-content">
+            <div class="profile-stat-value">${platCount} <span class="profile-stat-unit">Platin</span></div>
+            <div class="profile-stat-label">Platin Kupalar</div>
+            <div class="profile-stat-sub">%100 Tamamlanan Oyunlar</div>
+          </div>
+        </div>
+
+        <div class="profile-stat-box playtime">
+          <div class="profile-stat-icon-wrap">${icon("clock", 22)}</div>
+          <div class="profile-stat-content">
+            <div class="profile-stat-value">${totalPlaytimeStr}</div>
+            <div class="profile-stat-label">Toplam Oynama Süresi</div>
+            <div class="profile-stat-sub">Launcher Takip Kaydı</div>
+          </div>
+        </div>
+
+        <div class="profile-stat-box library">
+          <div class="profile-stat-icon-wrap">${icon("gamepad-2", 22)}</div>
+          <div class="profile-stat-content">
+            <div class="profile-stat-value">${totalOwnedGames} <span class="profile-stat-unit">Oyun</span></div>
+            <div class="profile-stat-label">Kütüphane Koleksiyonu</div>
+            <div class="profile-stat-sub">${totalInstalledGames} Yüklü Oyun</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Oyun Başarımları ve İlerleme Bölümü -->
+      <div class="profile-games-section">
+        <div class="profile-games-header">
+          <div class="profile-games-title-group">
+            <h2 class="profile-section-title">Oyun Başarımları & İlerleme</h2>
+            <span class="profile-section-badge">${filteredGames.length} Oyun</span>
+          </div>
+
+          <div class="profile-toolbar">
+            <div class="profile-filter-pills">
+              <button class="profile-pill ${profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
+                Tümü (${countAll})
+              </button>
+              <button class="profile-pill ${profileFilter === "platinum" ? "active" : ""}" data-act="profile-filter" data-val="platinum">
+                ${icon("crown", 12)} Platin (${countPlat})
+              </button>
+              <button class="profile-pill ${profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
+                ⏳ Devam Edenler (${countInProgress})
+              </button>
+              <button class="profile-pill ${profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
+                Başlanmayanlar (${countNotStarted})
+              </button>
+            </div>
+
+            <div class="profile-toolbar-right">
+              <div class="profile-search-wrap">
+                <span class="profile-search-icon">${icon("search", 13)}</span>
+                <input
+                  type="text"
+                  id="profile-search"
+                  class="profile-search-input"
+                  placeholder="Başarım veya oyun ara…"
+                  value="${esc(profileSearchQuery)}"
+                />
+                ${profileSearchQuery ? `<button class="profile-search-clear" data-act="profile-search-clear">×</button>` : ""}
+              </div>
+
+              <div class="profile-sort-select-wrap">
+                <select id="profile-sort-select" class="profile-sort-select" data-act="profile-sort-change">
+                  <option value="progress" ${profileSort === "progress" ? "selected" : ""}>İlerleme Yüzdesi</option>
+                  <option value="xp" ${profileSort === "xp" ? "selected" : ""}>Kazanılan XP</option>
+                  <option value="playtime" ${profileSort === "playtime" ? "selected" : ""}>Oynama Süresi</option>
+                  <option value="alpha" ${profileSort === "alpha" ? "selected" : ""}>Alfabetik (A-Z)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="profile-games-grid" class="profile-games-grid">
+          ${renderProfileGameCards(filteredGames)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function render(): void {
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;
     const active = storeVisible
-      ? storeMode === "profile"
-        ? el.dataset.act === "open-profile"
-        : el.dataset.act === "open-store"
+      ? el.dataset.act === "open-store"
       : el.dataset.view === view;
     el.classList.toggle("active", active);
   });
@@ -1556,6 +2019,7 @@ function render(): void {
     view === "library" ? renderEpic()
     : view === "downloads" ? renderDownloads()
     : view === "dlc-manager" ? renderDlcManager()
+    : view === "profile" ? renderProfile()
     : renderSettings();
   if (view === "downloads") {
     drawSpeedCanvas();
@@ -1568,6 +2032,7 @@ function render(): void {
 async function bootEpic(): Promise<void> {
   if (!isTauri || epicBooted) return;
   epicBooted = true;
+  void epicGetSteamGridKey().then((k) => { steamGridApiKey = k; }).catch(() => {});
   await refreshEpic();
 }
 
@@ -1912,7 +2377,6 @@ function renderHeroSpotlight(): string {
 
   return `
     <div class="hero-spotlight">
-      <button class="hero-collapse-btn" data-act="toggle-hero-spotlight" title="Vitrini Gizle">${icon("x", 12)}</button>
       ${wideImg ? `<img class="hero-bg" src="${wideImg}" alt="" />` : ""}
       <div class="hero-gradient"></div>
       <div class="hero-content">
@@ -1922,17 +2386,24 @@ function renderHeroSpotlight(): string {
           </div>
           <h1 class="hero-title">${esc(s.title)}</h1>
           <div class="hero-meta">
-            <span>${esc(dev)}</span>
-            <span>•</span>
-            <span>v${esc(s.version)}</span>
-            ${s.installed && s.installSize ? `<span>•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
-            ${pt && pt.total_seconds > 0 ? `<span>•</span><span style="color:#38bdf8;display:inline-flex;align-items:center;gap:3px">${icon("clock", 12)} ${fmtPlaytime(pt.total_seconds)}</span>` : ""}
+            <span class="hero-dev">${esc(dev)}</span>
+            <span class="hero-meta-sep">•</span>
+            <span class="hero-ver">v${esc(s.version)}</span>
+            ${s.installed && s.installSize ? `<span class="hero-meta-sep">•</span><span class="hero-size">${fmtBytes(s.installSize)}</span>` : ""}
+            ${pt && pt.total_seconds > 0 ? `<span class="hero-meta-sep">•</span><span class="hero-playtime">${icon("clock", 12)} ${fmtPlaytime(pt.total_seconds)}</span>` : ""}
           </div>
           <div class="hero-actions">
             ${primaryBtn}
-            <button class="btn ghost" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 14)} Detaylar</button>
+            <button class="btn ghost hero-detail-btn" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 14)} Detaylar</button>
           </div>
         </div>
+        ${s.cover ? `
+        <div class="hero-showcase-card" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)} Detayları">
+          <img class="hero-showcase-poster" src="${esc(s.cover)}" alt="${esc(s.title)}" />
+          <div class="hero-showcase-overlay">
+            <span class="hero-showcase-btn">${icon("dots", 12)} İncele</span>
+          </div>
+        </div>` : ""}
       </div>
     </div>`;
 }
@@ -1972,7 +2443,7 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
   }
 
   return `
-    <div class="pcard ${i < 24 ? "enter" : ""} ${isPlat ? "platinum" : ""}" style="${i < 24 ? `animation-delay:${i * 12}ms;` : "animation:none;"}" data-act="epic-detail" data-id="${s.appName}">
+    <div class="pcard ${i < 24 ? "enter" : ""} ${isPlat ? "platinum" : ""}" style="${i < 24 ? `--ci:${i};animation-delay:${i * 16}ms;` : "animation:none;"}" data-act="epic-detail" data-id="${s.appName}">
       ${epicArt(s)}
       ${badge}
       ${ribbon}
@@ -2210,6 +2681,9 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         <div class="drawer-cover">
           ${art ? `<img src="${art}" alt="" />` : `<div class="pcover" style="color:#94a3b8">${icon("gamepad-2", 48)}</div>`}
           <div class="drawer-gradient"></div>
+          <button class="drawer-cover-edit-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Yatay Afişi Özelleştir">
+            ${icon("image", 12)} Afişi Değiştir
+          </button>
         </div>
         <div class="drawer-body">
           <h2 class="drawer-title">${esc(s.title)}</h2>
@@ -2406,8 +2880,8 @@ function renderDrawerOverview(
         <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">
           ${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}
         </button>
-        <button class="btn ghost" data-act="open-custom-cover" data-id="${s.appName}" title="Kapağı Özelleştir">
-          ${icon("image", 14)} Kapağı Değiştir
+        <button class="btn ghost" data-act="open-custom-cover" data-id="${s.appName}" title="Kapak ve Vitrin Afişini Özelleştir">
+          ${icon("image", 14)} Görselleri Değiştir
         </button>
         <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfası">
           ${icon("external", 14)} Mağaza
@@ -2436,35 +2910,43 @@ function renderDrawerOverview(
       </div>
     </div>
 
-    <div class="drawer-col-box">
-      <div class="drawer-col-head">
-        <div class="drawer-col-title">
-          <span>${icon("folder", 14)}</span>
-          <span>Koleksiyonlar</span>
+    ${(() => {
+      const gameCols = epicCollections.filter((c) =>
+        c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+      );
+      return `
+    <div class="drawer-col-card">
+      <div class="drawer-col-header">
+        <div class="drawer-col-header-left">
+          <div class="drawer-col-icon-badge">
+            ${icon("folder", 15)}
+          </div>
+          <div>
+            <div class="drawer-col-label">Koleksiyonlar</div>
+            <div class="drawer-col-sub" id="drawer-col-subtitle">${gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı"}</div>
+          </div>
         </div>
-        <button class="drawer-col-manage-btn" data-act="manage-game-collections" data-id="${s.appName}">
-          ${icon("edit", 12)} Düzenle
+        <button class="drawer-col-edit-btn" data-act="manage-game-collections" data-id="${s.appName}" title="Koleksiyonları Yönet">
+          ${icon("edit", 12)}
+          <span>${gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle"}</span>
         </button>
       </div>
-      <div class="drawer-col-chips" id="drawer-col-chips-container">
-        ${(() => {
-          const gameCols = epicCollections.filter((c) =>
-            c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-          );
-          return gameCols.length > 0
-            ? gameCols
-                .map(
-                  (c) => `
-              <button class="drawer-col-chip" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu görüntüle">
-                ${c.emoji ? `<span class="col-chip-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
-              </button>
-            `,
-                )
-                .join("")
-            : `<span class="drawer-col-empty">Henüz herhangi bir koleksiyona eklenmedi</span>`;
-        })()}
+      <div class="drawer-col-chips-wrap" id="drawer-col-chips-container">
+        ${gameCols.length > 0 ? gameCols.map((c) => `
+          <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
+            ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
+            <span class="col-pill-text">${esc(c.name)}</span>
+            <span class="col-pill-arrow">→</span>
+          </button>
+        `).join("") : `
+          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${s.appName}">
+            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
+            <span class="drawer-col-plus">+</span>
+          </button>
+        `}
       </div>
-    </div>
+    </div>`;
+    })()}
 
     <div id="drawer-hltb-container">
       ${renderHltbCard(loadedHltb.get(s.appName))}
@@ -3560,7 +4042,7 @@ function renderSkeletonLibrary(): string {
       </div>
     </div>
     ${!isHeroCollapsed ? `
-    <div class="skeleton-hero" style="height:150px;margin-bottom:16px;">
+    <div class="skeleton-hero" style="height:240px;margin-bottom:20px;">
       <div class="skeleton-hero-badge"></div>
       <div class="skeleton-hero-title"></div>
       <div class="skeleton-hero-meta"></div>
@@ -3652,7 +4134,13 @@ function renderEpic(): string {
   const totalColCount = visibleColSummaries.length;
   const installedCount = visibleColSummaries.filter((s) => s.installed).length;
   const updateCount = visibleColSummaries.filter((s) => s.updateAvailable || availableUpdates.has(s.appName)).length;
+  const allUpdatesCount = epicSummaries.filter((s) => s.updateAvailable || availableUpdates.has(s.appName)).length;
   const platCount = visibleColSummaries.filter((s) => isAppPlatinum(s.appName)).length;
+
+  const isUpdateNewlyAdded = prevRenderedUpdatesCount === 0 && allUpdatesCount > 0;
+  const isColNewlyChanged = prevRenderedColId !== undefined && prevRenderedColId !== activeCollectionId;
+  prevRenderedUpdatesCount = allUpdatesCount;
+  prevRenderedColId = activeCollectionId;
 
   return `
     <div class="lib-top-bar">
@@ -3708,22 +4196,22 @@ function renderEpic(): string {
           <span>Platin</span>
           <span class="pill-cnt">${platCount}</span>
         </button>
-        ${updateCount > 0 ? `
-        <button class="unified-pill ${epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
+        ${allUpdatesCount > 0 ? `
+        <button class="unified-pill ${isUpdateNewlyAdded ? "pill-dynamic" : ""} ${epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
           <span class="pill-icon">${icon("zap", 13)}</span>
           <span>Güncelleme</span>
-          <span class="pill-cnt">${updateCount}</span>
+          <span class="pill-cnt">${allUpdatesCount}</span>
         </button>` : ""}
 
         <div class="col-dropdown-container">
           ${selectedCol ? `
-          <button class="unified-pill col-btn active" data-act="toggle-col-dropdown" title="${esc(selectedCol.name)} koleksiyonu seçili">
+          <button class="unified-pill col-btn active ${isColNewlyChanged ? "pill-dynamic" : ""}" data-act="toggle-col-dropdown" title="${esc(selectedCol.name)} koleksiyonu seçili">
             ${selectedCol.emoji ? `<span class="col-pill-emoji">${esc(selectedCol.emoji)}</span>` : icon("folder", 13)}
             <span class="col-btn-name">${esc(selectedCol.name)}</span>
             <span class="pill-cnt">${totalColCount}</span>
             <span class="col-clear-btn" data-act="clear-collection" title="Koleksiyon filtresini kaldır">${icon("x", 11)}</span>
           </button>` : `
-          <button class="unified-pill col-btn" data-act="toggle-col-dropdown" title="Koleksiyonlar">
+          <button class="unified-pill col-btn ${isColNewlyChanged ? "pill-dynamic" : ""}" data-act="toggle-col-dropdown" title="Koleksiyonlar">
             ${icon("folder", 13)}
             <span>Koleksiyonlar</span>
             ${epicCollections.length > 0 ? `<span class="pill-cnt">${epicCollections.length}</span>` : ""}
@@ -3766,13 +4254,32 @@ function renderEpic(): string {
           <input id="search" type="search" placeholder="Kütüphanede ara..." value="${esc(query)}" autocomplete="off" spellcheck="false" />
           <span class="search-shortcut">Ctrl+F</span>
         </label>
-        <select id="epic-sort" class="unified-select" title="Sıralama">
-          <option value="recent" ${epicSort === "recent" ? "selected" : ""}>Son oynanan</option>
-          <option value="alpha" ${epicSort === "alpha" ? "selected" : ""}>Alfabetik</option>
-          <option value="installed" ${epicSort === "installed" ? "selected" : ""}>Yüklü önce</option>
-          <option value="platinum" ${epicSort === "platinum" ? "selected" : ""}>Platin kupalılar</option>
-          <option value="updates" ${epicSort === "updates" ? "selected" : ""}>Güncelleme olanlar</option>
-        </select>
+        ${(() => {
+          const currentSortOpt = sortOptions.find((o) => o.id === epicSort) || sortOptions[0];
+          return `
+        <div class="sort-dropdown-container">
+          <button class="unified-pill sort-btn" data-act="toggle-sort-dropdown" title="Sıralama: ${esc(currentSortOpt.label)}">
+            ${icon(currentSortOpt.icon, 13)}
+            <span class="sort-btn-label">${esc(currentSortOpt.label)}</span>
+            <span class="dropdown-chevron">▾</span>
+          </button>
+          <div id="sort-dropdown-menu" class="sort-dropdown-menu ${isSortDropdownOpen ? "show" : ""}">
+            <div class="sort-menu-header">Sırala</div>
+            <div class="sort-menu-list">
+              ${sortOptions.map((opt) => {
+                const isSelected = epicSort === opt.id;
+                return `
+                  <button class="sort-menu-item-btn ${isSelected ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">
+                    <span class="sort-menu-item-icon">${icon(opt.icon, 13)}</span>
+                    <span class="sort-menu-item-name" style="flex:1">${esc(opt.label)}</span>
+                    ${isSelected ? icon("check", 12) : ""}
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        </div>`;
+        })()}
         <div class="card-size-toggle" title="Kart boyutu">
           <button class="${epicCardSize === "compact" ? "active" : ""}" data-act="epic-size" data-val="compact" title="Küçük">S</button>
           <button class="${epicCardSize === "normal" ? "active" : ""}" data-act="epic-size" data-val="normal" title="Normal">M</button>
@@ -3802,6 +4309,61 @@ function renderEpic(): string {
     <div id="lib-results" class="${epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : epicViewMode === "shelves" ? "shelves-container" : ""}">${renderEpicItems()}</div>`;
 }
 
+function updateLibraryFilterInPlace(): boolean {
+  if (view !== "library") return false;
+  const toolbar = document.querySelector(".lib-unified-toolbar");
+  const resultsEl = document.getElementById("lib-results");
+  if (!toolbar || !resultsEl) return false;
+
+  toolbar.querySelectorAll<HTMLElement>(".unified-pill[data-act='quick-tab']").forEach((pill) => {
+    const tab = pill.dataset.tab;
+    const isAct =
+      tab === "all"
+        ? activeCollectionId === null && epicFilter === "all"
+        : tab === "fav"
+          ? activeCollectionId === "fav" || epicFilter === "fav"
+          : tab === "installed"
+            ? epicFilter === "installed"
+            : tab === "platinum"
+              ? epicFilter === "platinum"
+              : tab === "updates"
+                ? epicFilter === "updates"
+                : false;
+    pill.classList.toggle("active", isAct);
+  });
+
+  const platBanner = document.querySelector(".plat-category-banner") as HTMLElement | null;
+  if (epicFilter === "platinum") {
+    if (!platBanner) {
+      const platCount = epicSummaries.filter((s) => isAppPlatinum(s.appName)).length;
+      const bannerHtml = `
+        <div class="plat-category-banner">
+          <div class="plat-banner-glow"></div>
+          <div class="plat-banner-icon">${icon("trophy", 28)}</div>
+          <div class="plat-banner-info">
+            <div class="plat-banner-title">Platin Kupa Koleksiyonu</div>
+            <div class="plat-banner-desc">Tüm başarımlarını %100 tamamlayarak vitrine eklediğin oyunlar. Harika iş!</div>
+          </div>
+          <div class="plat-banner-stat">
+            <div class="val">${platCount}</div>
+            <div class="lbl">Tamamlandı</div>
+          </div>
+        </div>`;
+      resultsEl.insertAdjacentHTML("beforebegin", bannerHtml);
+    }
+  } else if (platBanner) {
+    platBanner.remove();
+  }
+
+  resultsEl.className = epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : epicViewMode === "shelves" ? "shelves-container" : "";
+  resultsEl.style.animation = "none";
+  void resultsEl.offsetHeight;
+  resultsEl.style.animation = "";
+  resultsEl.innerHTML = renderEpicItems();
+
+  return true;
+}
+
 function closeModal(): void {
   modalRoot.innerHTML = "";
   currentModalAppName = null;
@@ -3812,68 +4374,398 @@ function closeCustomCoverModal(): void {
   if (root) root.innerHTML = "";
 }
 
-function openCustomCoverModal(appName: string): void {
+function openCustomCoverModal(appName: string, initialTarget: "cover" | "hero" = "cover"): void {
   let coverRoot = document.getElementById("cover-modal-root");
   if (!coverRoot) {
     coverRoot = document.createElement("div");
     coverRoot.id = "cover-modal-root";
     document.body.appendChild(coverRoot);
   }
+  activeCustomCoverAppName = appName;
+  activeCoverTarget = initialTarget;
   const s = epicSummaries.find((x) => x.appName === appName);
-  const currentCover = customCovers[appName] || s?.cover || "";
   const title = s?.title || appName;
 
+  sgdbSearchQuery = cleanSteamGridSearchTerm(title);
+  sgdbAssetType = activeCoverTarget === "hero" ? "heroes" : "grids";
+  sgdbActiveStyle = "";
+  sgdbSelectedCoverUrl = "";
+  customCoverActiveTab = steamGridApiKey ? "steamgrid" : "url";
+  sgdbErrorMsg = "";
+  sgdbCoversList = [];
+  sgdbGamesList = [];
+  sgdbSelectedGameId = null;
+  showModalSgdbInfo = false;
+
+  renderCustomCoverModalFrame(appName);
+  renderCustomCoverModalContent(appName);
+
+  if (steamGridApiKey && sgdbSearchQuery) {
+    void searchAndLoadSteamGrid(appName, sgdbSearchQuery);
+  }
+}
+
+function renderCustomCoverModalFrame(appName: string): void {
+  const coverRoot = document.getElementById("cover-modal-root");
+  if (!coverRoot) return;
+  const s = epicSummaries.find((x) => x.appName === appName);
+  const title = s?.title || appName;
+  const g = rawOf(appName);
+  const devRaw = g ? g.metadata?.developer : undefined;
+  const dev = typeof devRaw === "string" ? devRaw : "";
+
+  const hasCustomCover = Boolean(customCovers[appName]);
+  const hasCustomHero = Boolean(customHeroes[appName]);
+  const isCustomForTarget = activeCoverTarget === "hero" ? hasCustomHero : hasCustomCover;
+
+  const currentCoverArt = customCovers[appName] || s?.cover || "";
+  const currentHeroArt = customHeroes[appName] || (s ? epicWideArt(s) : null) || s?.cover || "";
+  const activeCurrentImg = sgdbSelectedCoverUrl || (activeCoverTarget === "hero" ? currentHeroArt : currentCoverArt);
+  const hasAnyCustom = hasCustomCover || hasCustomHero;
+
   coverRoot.innerHTML = `
-    <div class="cover-overlay" data-act="close-custom-cover">
-      <div class="cover-dialog">
+    <div class="cover-overlay" data-act="cover-modal-backdrop">
+      <div class="cover-dialog wide" data-act="prevent-modal-close">
         <div class="cover-dialog-header">
           <div class="cover-dialog-title-group">
             <div class="cover-dialog-icon">${icon("image", 18)}</div>
             <div>
-              <h2>Kapağı Özelleştir</h2>
-              <div class="cover-dialog-sub">${esc(title)}</div>
+              <h2>Görselleri Özelleştir</h2>
+              <div class="cover-dialog-sub">${esc(title)}${dev ? ` • ${esc(dev)}` : ""}</div>
             </div>
           </div>
           <button class="manage-head-close" data-act="close-custom-cover" title="Kapat">${icon("x", 16)}</button>
         </div>
 
         <div class="cover-dialog-body">
-          <div class="cover-preview-wrapper">
-            <div class="cover-preview-card">
-              ${currentCover ? `<img id="cover-preview-img" src="${esc(currentCover)}" alt="Önizleme" />` : `<div id="cover-preview-img" class="cover-preview-empty">${icon("image", 40)}</div>`}
-              <div class="cover-preview-badge">${customCovers[appName] ? "Özel Kapak" : "Orijinal"}</div>
+          <!-- Düzenleme Hedefi Segment Kontrolü -->
+          <div class="cover-target-segment">
+            <button class="target-segment-pill ${activeCoverTarget === "cover" ? "active" : ""}" data-act="set-cover-target" data-target="cover" data-id="${appName}">
+              ${icon("image", 14)}
+              <span>Dikey Kapak (2:3 Kütüphane)</span>
+              ${hasCustomCover ? `<span class="target-indicator-dot" title="Özel dikey kapak aktif"></span>` : ""}
+            </button>
+            <button class="target-segment-pill ${activeCoverTarget === "hero" ? "active" : ""}" data-act="set-cover-target" data-target="hero" data-id="${appName}">
+              ${icon("rows", 14)}
+              <span>Yatay Afiş (Hero / Vitrin)</span>
+              ${hasCustomHero ? `<span class="target-indicator-dot" title="Özel yatay afiş aktif"></span>` : ""}
+            </button>
+          </div>
+
+          <!-- Canlı Önizleme ve Hedef Bilgisi -->
+          <div class="cover-preview-section">
+            <div class="cover-preview-card ${activeCoverTarget === "hero" ? "wide" : "portrait"}">
+              ${activeCurrentImg ? `<img id="cover-preview-img" src="${esc(activeCurrentImg)}" alt="Önizleme" />` : `<div id="cover-preview-img" class="cover-preview-empty">${icon("image", 36)}</div>`}
+              <div class="cover-preview-badge">${sgdbSelectedCoverUrl ? "Seçilen Önizleme" : isCustomForTarget ? "Özel Görsel" : "Orijinal"}</div>
             </div>
-            <div class="cover-preview-hint">
-              <strong>İpucu:</strong> SteamGridDB, IGDB veya doğrudan resim URL'si (JPG, PNG, WebP) kullanabilirsiniz. Önerilen oran <strong>2:3</strong> (örneğin 600×900 px).
+            <div class="cover-preview-meta">
+              <div class="cover-meta-header">
+                <span class="cover-meta-badge ${activeCoverTarget}">
+                  ${activeCoverTarget === "cover" ? `${icon("image", 12)} 2:3 Kütüphane Kartı` : `${icon("rows", 12)} 16:7 Vitrin & Detay Afişi`}
+                </span>
+                ${isCustomForTarget ? `<span class="cover-status-tag custom">${icon("sparkles", 11)} Özel Görsel Kullanılıyor</span>` : `<span class="cover-status-tag">${icon("check", 11)} Orijinal Epic Görseli</span>`}
+              </div>
+              <div class="cover-meta-desc">
+                ${activeCoverTarget === "cover"
+                  ? "Kütüphane ızgarasında ve listelerde görünen dikey afiş. SteamGridDB'den beğendiğiniz bir kapak seçebilir veya web bağlantısı yapıştırabilirsiniz."
+                  : "Ana sayfadaki öne çıkan vitrinde (Spotlight), detay çekmecesinde ve raflarda arka plan olarak kullanılan sinematik yatay afiş."}
+              </div>
+              <div class="cover-meta-actions">
+                ${isCustomForTarget ? `
+                  <button class="btn ghost small danger" data-act="reset-active-target" data-id="${appName}">
+                    ${icon("refresh", 12)} ${activeCoverTarget === "cover" ? "Dikey Kapağı Sıfırla" : "Yatay Afişi Sıfırla"}
+                  </button>
+                ` : ""}
+              </div>
             </div>
           </div>
 
-          <div class="cover-inputs-section">
-            <label class="cover-input-label">Görsel Web URL'si</label>
-            <div class="cover-url-row">
-              <input id="custom-cover-url-input" class="text-input" placeholder="https://... (Görsel direkt bağlantısı)" value="${esc(customCovers[appName] || "")}" spellcheck="false" autocomplete="off" />
-              <button class="btn ghost small" data-act="preview-custom-cover-url" title="Önizle">Önizle</button>
-            </div>
-
-            <div class="cover-divider"><span>VEYA</span></div>
-
-            <label class="cover-input-label">Bilgisayardan Dosya Seç</label>
-            <label class="cover-file-upload-btn">
-              ${icon("folder", 14)} <span>Yerel Görsel Dosyası Seç (.png, .jpg, .webp)</span>
-              <input id="custom-cover-file-input" type="file" accept="image/*" style="display:none;" />
-            </label>
+          <!-- Kaynak Sekmeleri -->
+          <div class="cover-modal-tabs">
+            <button class="cover-tab-btn ${customCoverActiveTab === "steamgrid" ? "active" : ""}" data-act="switch-cover-tab" data-tab="steamgrid" data-id="${appName}">
+              ${icon("globe", 13)} <span>SteamGridDB Topluluğu</span>
+            </button>
+            <button class="cover-tab-btn ${customCoverActiveTab === "url" ? "active" : ""}" data-act="switch-cover-tab" data-tab="url" data-id="${appName}">
+              ${icon("external", 13)} <span>Doğrudan Web URL</span>
+            </button>
+            <button class="cover-tab-btn ${(customCoverActiveTab as string) === "file" ? "active" : ""}" data-act="switch-cover-tab" data-tab="file" data-id="${appName}">
+              ${icon("folder", 13)} <span>Bilgisayardan Dosya</span>
+            </button>
           </div>
+
+          <div id="cover-tab-content-area"></div>
         </div>
 
         <div class="cover-dialog-footer">
-          ${customCovers[appName] ? `<button class="btn danger" data-act="reset-custom-cover" data-id="${appName}">Varsayılana Sıfırla</button>` : ""}
+          ${hasAnyCustom ? `
+            <button class="btn ghost danger" data-act="reset-all-art" data-id="${appName}" title="Hem dikey kapağı hem yatay afişi orijinal Epic görsellerine döndür">
+              ${icon("refresh", 13)} Tümünü Sıfırla
+            </button>
+          ` : ""}
           <div style="flex:1"></div>
           <button class="btn ghost" data-act="close-custom-cover">Vazgeç</button>
-          <button class="btn primary" data-act="save-custom-cover" data-id="${appName}">Kaydet</button>
+          <button class="btn primary" data-act="save-custom-cover" data-id="${appName}">
+            ${icon("check", 14)} ${activeCoverTarget === "cover" ? "Dikey Kapağı Kaydet" : "Yatay Afişi Kaydet"}
+          </button>
         </div>
       </div>
     </div>
   `;
+}
+
+function renderCustomCoverModalContent(appName: string): void {
+  const container = document.getElementById("cover-tab-content-area");
+  if (!container) return;
+
+  if (customCoverActiveTab === "url") {
+    const currentVal = sgdbSelectedCoverUrl || (activeCoverTarget === "hero" ? customHeroes[appName] : customCovers[appName]) || "";
+    container.innerHTML = `
+      <div class="cover-tab-pane">
+        <div class="cover-inputs-section">
+          <label class="cover-input-label">Görsel Web Bağlantısı (URL)</label>
+          <div class="cover-url-row">
+            <input id="custom-cover-url-input" class="text-input" placeholder="https://... (Doğrudan görsel linki: .jpg, .png, .webp)" value="${esc(currentVal)}" spellcheck="false" autocomplete="off" />
+            <button class="btn ghost small" data-act="preview-custom-cover-url" title="Önizle">Önizle</button>
+          </div>
+          <div class="cover-preview-hint" style="margin-top:4px">
+            Doğrudan görsel bağlantısı yapıştırıp <strong>Önizle</strong> butonuna tıklayarak yukarıdaki önizleme kutusunda test edebilirsiniz.
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (customCoverActiveTab === "file") {
+    container.innerHTML = `
+      <div class="cover-tab-pane">
+        <div class="cover-inputs-section">
+          <label class="cover-input-label">Bilgisayardan Yerel Dosya Seç</label>
+          <label class="cover-file-upload-btn">
+            ${icon("folder", 14)} <span>Görsel Dosyası Seç (.png, .jpg, .webp)</span>
+            <input id="custom-cover-file-input" type="file" accept="image/*" style="display:none;" />
+          </label>
+          <div class="cover-preview-hint" style="margin-top:4px">
+            Dosya seçtiğinizde görsel yerel olarak işlenerek yukarıdaki önizlemeye anında yansıtılacaktır.
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // SteamGridDB Sekmesi
+  if (!steamGridApiKey) {
+    container.innerHTML = `
+      <div class="cover-tab-pane">
+        <div class="sgdb-setup-box">
+          <div class="sgdb-setup-header">
+            <div class="sgdb-setup-icon">${icon("globe", 20)}</div>
+            <div>
+              <div class="sgdb-setup-title">SteamGridDB Topluluk Entegrasyonu</div>
+              <div class="sgdb-setup-desc">
+                Video oyunları için topluluk tarafından hazırlanan binlerce dikey kapak (2:3) ve vitrin afişi.
+              </div>
+            </div>
+          </div>
+
+          <div class="sgdb-info-card">
+            <div class="sgdb-info-header">
+              <div class="sgdb-info-title">
+                ${icon("info", 13)}
+                <span>SteamGridDB Nedir ve Neden API Anahtarı Gerekir?</span>
+              </div>
+            </div>
+            <div class="sgdb-info-content">
+              <p style="margin:0;line-height:1.45">
+                SteamGridDB, oyunlar için yüksek kaliteli açık görsel arşividir. Kötüye kullanımı önlemek ve doğrudan kütüphanenizden arama yapabilmek için ücretsiz bir kişisel erişim anahtarı (Token) gereklidir.
+              </p>
+              <div class="sgdb-info-steps">
+                <div class="sgdb-step">
+                  <span class="sgdb-step-num">1</span>
+                  <span>Resmi SteamGridDB sayfasına gidip giriş yapın (Steam veya Discord ile).</span>
+                </div>
+                <div class="sgdb-step">
+                  <span class="sgdb-step-num">2</span>
+                  <span>Açılan sayfada <strong>"Create API Key"</strong> butonuna tıklayarak anahtarınızı kopyalayın.</span>
+                </div>
+                <div class="sgdb-step">
+                  <span class="sgdb-step-num">3</span>
+                  <span>Anahtarı aşağıdaki alana yapıştırıp <strong>"Kaydet ve Ara"</strong> butonuna basın.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:center;width:100%">
+            <button class="btn ghost small sgdb-key-guide-btn" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api">
+              ${icon("external", 12)} <span>Ücretsiz API Anahtarınızı Buradan Alın</span>
+            </button>
+          </div>
+
+          <div class="sgdb-setup-input-row">
+            <input id="modal-sgdb-key-input" type="${showModalSgdbKey ? "text" : "password"}" class="text-input" placeholder="API Anahtarınızı (Token) buraya yapıştırın..." spellcheck="false" autocomplete="off" />
+            <button class="btn ghost small" data-act="toggle-modal-sgdb-key-visibility" title="Göster/Gizle">${icon(showModalSgdbKey ? "eye-off" : "eye", 13)}</button>
+            <button class="btn primary small" data-act="save-inline-sgdb-key" data-id="${appName}">Kaydet ve Ara</button>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="cover-tab-pane">
+      <div class="sgdb-container">
+        <div class="sgdb-search-bar">
+          <input id="sgdb-search-input" class="text-input" placeholder="Oyun adı ara..." value="${esc(sgdbSearchQuery)}" spellcheck="false" autocomplete="off" />
+          <button class="btn primary small" data-act="sgdb-search" data-id="${appName}" ${sgdbIsSearching ? "disabled" : ""}>
+            ${sgdbIsSearching ? icon("refresh", 12) : icon("search", 12)}
+            <span>${sgdbIsSearching ? "Aranıyor…" : "Ara"}</span>
+          </button>
+          <button class="btn ghost small ${showModalSgdbInfo ? "active" : ""}" data-act="toggle-sgdb-modal-info" title="SteamGridDB Bilgi">
+            ${icon("info", 13)}
+          </button>
+        </div>
+
+        ${showModalSgdbInfo ? `
+        <div class="sgdb-info-card compact">
+          <div class="sgdb-info-header">
+            <div class="sgdb-info-title">${icon("info", 13)} <span>SteamGridDB Topluluk Kütüphanesi</span></div>
+            <button data-act="toggle-sgdb-modal-info" title="Kapat">${icon("x", 12)}</button>
+          </div>
+          <div class="sgdb-info-content">
+            <p style="margin:0">SteamGridDB; video oyunları için resmi ve topluluk yapımı dikey kapak (2:3) ve vitrin afişi (Hero) barındıran açık platformdur. Seçtiğiniz görseller kütüphaneniz için anında uygulanır.</p>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:2px;font-size:11px;color:#94a3b8">
+              <span>Kayıtlı Anahtar: <code>${esc(steamGridApiKey.slice(0, 5))}••••••</code></span>
+              <button class="btn ghost small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api" style="font-size:10.5px;padding:2px 8px">
+                ${icon("external", 11)} Anahtarı Yönet
+              </button>
+            </div>
+          </div>
+        </div>
+        ` : ""}
+
+        ${sgdbGamesList.length > 1 ? `
+        <div class="sgdb-matching-games-bar">
+          <span class="sgdb-matching-label">${icon("gamepad-2", 12)} Oyunlar:</span>
+          <div class="sgdb-matching-chips-track">
+            ${sgdbGamesList.map(g => `
+              <button class="sgdb-game-chip ${sgdbSelectedGameId === g.id ? "active" : ""}" data-act="sgdb-select-game" data-game-id="${g.id}" data-id="${appName}" title="${esc(g.name)} (ID: ${g.id})">
+                ${esc(g.name)}
+              </button>
+            `).join("")}
+          </div>
+        </div>` : ""}
+
+        <div class="sgdb-filter-bar">
+          <div class="sgdb-chip-group">
+            <button class="sgdb-chip ${sgdbAssetType === "grids" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="grids" data-id="${appName}">
+              ${icon("image", 11)} Dikey (2:3)
+            </button>
+            <button class="sgdb-chip ${sgdbAssetType === "heroes" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="heroes" data-id="${appName}">
+              ${icon("rows", 11)} Yatay Afiş (Hero)
+            </button>
+          </div>
+          <div class="sgdb-chip-group">
+            <button class="sgdb-chip ${sgdbActiveStyle === "" ? "active" : ""}" data-act="sgdb-set-style" data-style="" data-id="${appName}">Tümü</button>
+            <button class="sgdb-chip ${sgdbActiveStyle === "official" ? "active" : ""}" data-act="sgdb-set-style" data-style="official" data-id="${appName}">Resmi</button>
+            <button class="sgdb-chip ${sgdbActiveStyle === "no_logo" ? "active" : ""}" data-act="sgdb-set-style" data-style="no_logo" data-id="${appName}">Logosuz</button>
+            <button class="sgdb-chip ${sgdbActiveStyle === "alternate" ? "active" : ""}" data-act="sgdb-set-style" data-style="alternate" data-id="${appName}">Alternatif</button>
+          </div>
+        </div>
+
+        <div class="sgdb-gallery">
+          ${sgdbIsSearching ? `
+            <div style="padding:40px;text-align:center;color:var(--muted);font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:8px">
+              ${icon("refresh", 16)} SteamGridDB üzerinden taranıyor…
+            </div>
+          ` : sgdbErrorMsg ? `
+            <div style="padding:24px;text-align:center;color:#f87171;font-size:12px">
+              ${esc(sgdbErrorMsg)}
+            </div>
+          ` : sgdbCoversList.length === 0 ? `
+            <div style="padding:40px;text-align:center;color:var(--muted);font-size:12.5px">
+              Uygun görsel bulunamadı. Farklı bir arama terimi deneyin.
+            </div>
+          ` : `
+            <div class="${sgdbAssetType === "heroes" ? "sgdb-grid-horizontal" : "sgdb-grid-vertical"}">
+              ${sgdbCoversList.map(item => {
+                const isSel = sgdbSelectedCoverUrl === item.url;
+                const thumbUrl = item.thumb || item.url;
+                const authorName = item.author?.name || "Topluluk";
+                const styleLabel = item.style === "no_logo" ? "Logosuz" : item.style === "alternate" ? "Alternatif" : item.style === "official" ? "Resmi" : "";
+                return `
+                <div class="sgdb-card ${isSel ? "selected" : ""}" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${esc(authorName)} • Skor: ${item.score}">
+                  <img src="${esc(thumbUrl)}" loading="lazy" alt="Cover" />
+                  <div class="sgdb-card-badges">
+                    ${styleLabel ? `<span class="sgdb-style-tag">${esc(styleLabel)}</span>` : "<span></span>"}
+                    <span class="sgdb-score-tag">▲ ${item.score}</span>
+                  </div>
+                  <div class="sgdb-card-footer">${esc(authorName)}</div>
+                  ${isSel ? `<div class="sgdb-selected-check">${icon("check", 14)}</div>` : ""}
+                </div>`;
+              }).join("")}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function searchAndLoadSteamGrid(appName: string, query?: string): Promise<void> {
+  if (!steamGridApiKey) {
+    renderCustomCoverModalContent(appName);
+    return;
+  }
+  sgdbIsSearching = true;
+  sgdbErrorMsg = "";
+  renderCustomCoverModalContent(appName);
+
+  const term = query !== undefined ? query.trim() : sgdbSearchQuery.trim();
+  if (!term) {
+    sgdbIsSearching = false;
+    sgdbGamesList = [];
+    sgdbCoversList = [];
+    renderCustomCoverModalContent(appName);
+    return;
+  }
+
+  try {
+    const games = await epicSearchSteamGrid(term);
+    sgdbGamesList = games;
+    if (games.length > 0) {
+      sgdbSelectedGameId = games[0].id;
+      await loadSteamGridCovers(appName, games[0].id);
+    } else {
+      sgdbSelectedGameId = null;
+      sgdbCoversList = [];
+      sgdbIsSearching = false;
+      renderCustomCoverModalContent(appName);
+    }
+  } catch (err) {
+    sgdbErrorMsg = String(err);
+    sgdbCoversList = [];
+    sgdbIsSearching = false;
+    renderCustomCoverModalContent(appName);
+  }
+}
+
+async function loadSteamGridCovers(appName: string, gameId: number): Promise<void> {
+  sgdbIsSearching = true;
+  sgdbErrorMsg = "";
+  renderCustomCoverModalContent(appName);
+  try {
+    const covers = await epicGetSteamGridCovers(gameId, sgdbAssetType, sgdbActiveStyle || undefined);
+    sgdbCoversList = covers;
+  } catch (err) {
+    sgdbErrorMsg = String(err);
+    sgdbCoversList = [];
+  } finally {
+    sgdbIsSearching = false;
+    renderCustomCoverModalContent(appName);
+  }
 }
 
 function closeEditPlaytimeModal(): void {
@@ -4580,14 +5472,16 @@ let eglSyncing = false;
 async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, eglList] = await Promise.all([
+      const [st, dir, eglList, sgdbKey] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
+        epicGetSteamGridKey().catch(() => null),
       ]);
       epicSettingsCache = st;
       epicDefaultDir = dir;
       eglDetectedList = eglList;
+      steamGridApiKey = sgdbKey;
     } catch {
       // sessiz geç
     }
@@ -5023,27 +5917,52 @@ async function saveGameCollectionsFromModal(): Promise<void> {
 
 function updateDrawerCollectionsBoxInPlace(appName: string): void {
   const container = document.getElementById("drawer-col-chips-container");
+  const subEl = document.getElementById("drawer-col-subtitle");
+  const editBtn = document.querySelector<HTMLElement>(".drawer-col-edit-btn span");
   if (!container) return;
   const gameCols = epicCollections.filter((c) =>
     c.app_names.some((name) => name.toLowerCase() === appName.toLowerCase()),
   );
+  if (subEl) {
+    subEl.textContent = gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı";
+  }
+  if (editBtn) {
+    editBtn.textContent = gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle";
+  }
   container.innerHTML =
     gameCols.length > 0
       ? gameCols
           .map(
             (c) => `
-          <button class="drawer-col-chip" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu görüntüle">
-            ${c.emoji ? `<span class="col-chip-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
+          <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
+            ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
+            <span class="col-pill-text">${esc(c.name)}</span>
+            <span class="col-pill-arrow">→</span>
           </button>
         `,
           )
           .join("")
-      : `<span class="drawer-col-empty">Henüz herhangi bir koleksiyona eklenmedi</span>`;
+      : `
+          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${appName}">
+            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
+            <span class="drawer-col-plus">+</span>
+          </button>
+        `;
 }
 
 /* ---------- Olaylar (delegation) ---------- */
 
 document.addEventListener("click", (e) => {
+  // Sıralama açılır menüsü dışına tıklanırsa kapat
+  if (isSortDropdownOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest(".sort-dropdown-container")) {
+      isSortDropdownOpen = false;
+      const menu = document.getElementById("sort-dropdown-menu");
+      if (menu) menu.classList.remove("show");
+    }
+  }
+
   // Koleksiyon açılır menüsü dışına tıklanırsa kapat
   if (isColDropdownOpen) {
     const targetEl = e.target as HTMLElement;
@@ -5111,6 +6030,11 @@ document.addEventListener("click", (e) => {
     closeStore();
     view = t.dataset.view as typeof view;
     if (view === "library") void bootEpic();
+    if (view === "profile") {
+      if (!playerProfileData && !profileLoading) void loadPlayerProfile();
+      render();
+      return;
+    }
     if (view === "downloads") {
       void epicGetQueue().then((q) => {
         dlQueueStatus = q;
@@ -5163,11 +6087,34 @@ document.addEventListener("click", (e) => {
     void openStore();
   } else if (act === "open-profile") {
     openProfile();
+  } else if (act === "refresh-profile") {
+    void loadPlayerProfile(true);
+  } else if (act === "copy-account-id") {
+    const val = t.dataset.val;
+    if (val) {
+      navigator.clipboard.writeText(val).then(() => {
+        toast("Hesap ID panoya kopyalandı", "ok");
+      }).catch(() => {
+        toast(val, "");
+      });
+    }
+  } else if (act === "profile-filter" && t.dataset.val) {
+    profileFilter = t.dataset.val as typeof profileFilter;
+    render();
+  } else if (act === "profile-search-clear") {
+    profileSearchQuery = "";
+    render();
+  } else if (act === "open-game-from-profile") {
+    const appId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;
+    if (appId) {
+      openEpicModal(appId, true);
+    }
   } else if (act === "epic-filter" && t.dataset.val) {
     epicFilter = t.dataset.val as typeof epicFilter;
-    render();
+    if (!updateLibraryFilterInPlace()) render();
   } else if (act === "quick-tab" && t.dataset.tab) {
     const tab = t.dataset.tab;
+    const hadCustomCol = activeCollectionId !== null && activeCollectionId !== "all" && activeCollectionId !== "fav";
     if (tab === "all") {
       activeCollectionId = null;
       epicFilter = "all";
@@ -5185,8 +6132,17 @@ document.addEventListener("click", (e) => {
       epicFilter = epicFilter === "updates" ? "all" : "updates";
     }
     isColDropdownOpen = false;
-    render();
+    isSortDropdownOpen = false;
+    const hasCustomCol = activeCollectionId !== null && activeCollectionId !== "all" && activeCollectionId !== "fav";
+    if (hadCustomCol !== hasCustomCol || !updateLibraryFilterInPlace()) {
+      render();
+    }
   } else if (act === "toggle-col-dropdown") {
+    if (isSortDropdownOpen) {
+      isSortDropdownOpen = false;
+      const smenu = document.getElementById("sort-dropdown-menu");
+      if (smenu) smenu.classList.remove("show");
+    }
     isColDropdownOpen = !isColDropdownOpen;
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) {
@@ -5194,9 +6150,33 @@ document.addEventListener("click", (e) => {
     } else {
       render();
     }
+  } else if (act === "toggle-sort-dropdown") {
+    if (isColDropdownOpen) {
+      isColDropdownOpen = false;
+      const cmenu = document.getElementById("col-dropdown-menu");
+      if (cmenu) cmenu.classList.remove("show");
+    }
+    isSortDropdownOpen = !isSortDropdownOpen;
+    const menu = document.getElementById("sort-dropdown-menu");
+    if (menu) {
+      menu.classList.toggle("show", isSortDropdownOpen);
+    } else {
+      render();
+    }
+  } else if (act === "select-sort") {
+    const sortVal = t.dataset.sort as EpicSort;
+    isSortDropdownOpen = false;
+    const menu = document.getElementById("sort-dropdown-menu");
+    if (menu) menu.classList.remove("show");
+    if (sortVal && sortVal !== epicSort) {
+      epicSort = sortVal;
+      localStorage.setItem("efxlve-sort", epicSort);
+      render();
+    }
   } else if (act === "clear-collection") {
     activeCollectionId = null;
     isColDropdownOpen = false;
+    isSortDropdownOpen = false;
     render();
   } else if (act === "toggle-hero-spotlight") {
     isHeroCollapsed = !isHeroCollapsed;
@@ -5226,31 +6206,196 @@ document.addEventListener("click", (e) => {
       track.scrollBy({ left: dir === "left" ? -420 : 420, behavior: "smooth" });
     }
   } else if (act === "open-custom-cover" && id) {
-    openCustomCoverModal(id);
+    const target = (t.dataset.target as "cover" | "hero") || "cover";
+    openCustomCoverModal(id, target);
+  } else if (act === "set-cover-target" && id) {
+    const target = (t.dataset.target as "cover" | "hero") || "cover";
+    if (target !== activeCoverTarget) {
+      activeCoverTarget = target;
+      sgdbAssetType = target === "hero" ? "heroes" : "grids";
+      sgdbSelectedCoverUrl = "";
+      renderCustomCoverModalFrame(id);
+      renderCustomCoverModalContent(id);
+      if (customCoverActiveTab === "steamgrid" && sgdbSelectedGameId) {
+        void loadSteamGridCovers(id, sgdbSelectedGameId);
+      }
+    }
+  } else if (act === "cover-modal-backdrop") {
+    if (e.target === t) closeCustomCoverModal();
+  } else if (act === "prevent-modal-close") {
+    // İçeriğe tıklandığında modal kapanmasın
   } else if (act === "close-custom-cover") {
+    if (t.classList.contains("cover-overlay") && e.target !== t) return;
     closeCustomCoverModal();
+  } else if (act === "toggle-sgdb-modal-info") {
+    showModalSgdbInfo = !showModalSgdbInfo;
+    if (activeCustomCoverAppName) {
+      renderCustomCoverModalContent(activeCustomCoverAppName);
+    }
+  } else if (act === "open-external-url" && t.dataset.url) {
+    void openUrl(t.dataset.url);
+  } else if (act === "switch-cover-tab" && t.dataset.tab) {
+    customCoverActiveTab = t.dataset.tab as typeof customCoverActiveTab;
+    document.querySelectorAll(".cover-tab-btn").forEach((btn) => {
+      btn.classList.toggle("active", (btn as HTMLElement).dataset.tab === customCoverActiveTab);
+    });
+    if (activeCustomCoverAppName) {
+      renderCustomCoverModalContent(activeCustomCoverAppName);
+    }
+  } else if (act === "sgdb-search" && id) {
+    const input = document.getElementById("sgdb-search-input") as HTMLInputElement | null;
+    if (input) sgdbSearchQuery = input.value;
+    void searchAndLoadSteamGrid(id, sgdbSearchQuery);
+  } else if (act === "sgdb-select-game" && id && t.dataset.gameId) {
+    const gId = parseInt(t.dataset.gameId, 10);
+    if (!isNaN(gId)) {
+      sgdbSelectedGameId = gId;
+      void loadSteamGridCovers(id, gId);
+    }
+  } else if (act === "sgdb-set-asset-type" && id && t.dataset.type) {
+    const type = t.dataset.type as "grids" | "heroes";
+    sgdbAssetType = type;
+    const target = type === "heroes" ? "hero" : "cover";
+    if (target !== activeCoverTarget) {
+      activeCoverTarget = target;
+      sgdbSelectedCoverUrl = "";
+      renderCustomCoverModalFrame(id);
+    }
+    if (sgdbSelectedGameId) {
+      void loadSteamGridCovers(id, sgdbSelectedGameId);
+    }
+  } else if (act === "sgdb-set-style" && id) {
+    sgdbActiveStyle = t.dataset.style || "";
+    if (sgdbSelectedGameId) {
+      void loadSteamGridCovers(id, sgdbSelectedGameId);
+    }
+  } else if (act === "sgdb-select-card" && t.dataset.url) {
+    sgdbSelectedCoverUrl = t.dataset.url;
+    document.querySelectorAll(".sgdb-card").forEach((card) => {
+      const isSel = (card as HTMLElement).dataset.url === sgdbSelectedCoverUrl;
+      card.classList.toggle("selected", isSel);
+      const check = card.querySelector(".sgdb-selected-check");
+      if (isSel && !check) {
+        card.insertAdjacentHTML("beforeend", `<div class="sgdb-selected-check">${icon("check", 14)}</div>`);
+      } else if (!isSel && check) {
+        check.remove();
+      }
+    });
+    const previewImg = document.getElementById("cover-preview-img") as HTMLImageElement | null;
+    const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+    if (previewImg && previewImg.tagName === "IMG") {
+      previewImg.src = sgdbSelectedCoverUrl;
+    } else if (previewWrapper) {
+      previewWrapper.innerHTML = `
+        <img id="cover-preview-img" src="${esc(sgdbSelectedCoverUrl)}" alt="Önizleme" />
+        <div class="cover-preview-badge">Seçilen Önizleme</div>
+      `;
+    }
+    const badge = previewWrapper?.querySelector(".cover-preview-badge");
+    if (badge) badge.textContent = "Seçilen Önizleme";
+    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+    if (input) input.value = sgdbSelectedCoverUrl;
+  } else if (act === "save-inline-sgdb-key" && id) {
+    const input = document.getElementById("modal-sgdb-key-input") as HTMLInputElement | null;
+    const key = input?.value.trim() || "";
+    if (!key) {
+      toast("Lütfen geçerli bir SteamGridDB API anahtarı girin", "err");
+      return;
+    }
+    epicSetSteamGridKey(key)
+      .then(() => {
+        steamGridApiKey = key;
+        toast("SteamGridDB API anahtarı kaydedildi", "ok");
+        renderCustomCoverModalContent(id);
+        void searchAndLoadSteamGrid(id, sgdbSearchQuery);
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "save-sgdb-key") {
+    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
+    const key = input?.value.trim() || "";
+    epicSetSteamGridKey(key)
+      .then(() => {
+        steamGridApiKey = key || null;
+        toast(key ? "SteamGridDB API anahtarı kaydedildi" : "SteamGridDB API anahtarı kaldırıldı", "ok");
+        render();
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "test-sgdb-key") {
+    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
+    const key = input?.value.trim() || steamGridApiKey || "";
+    if (!key) {
+      toast("Lütfen test edilecek API anahtarını girin", "err");
+      return;
+    }
+    toast("SteamGridDB bağlantısı test ediliyor…", "");
+    epicTestSteamGridKey(key)
+      .then(() => toast("SteamGridDB bağlantısı başarılı! ✓", "ok"))
+      .catch((err) => toast(`Bağlantı hatası: ${String(err)}`, "err"));
+  } else if (act === "toggle-sgdb-key-visibility") {
+    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
+    if (input) {
+      showSettingsSgdbKey = !showSettingsSgdbKey;
+      input.type = showSettingsSgdbKey ? "text" : "password";
+      t.innerHTML = icon(showSettingsSgdbKey ? "eye-off" : "eye", 13);
+    }
+  } else if (act === "toggle-modal-sgdb-key-visibility") {
+    const input = document.getElementById("modal-sgdb-key-input") as HTMLInputElement | null;
+    if (input) {
+      showModalSgdbKey = !showModalSgdbKey;
+      input.type = showModalSgdbKey ? "text" : "password";
+      t.innerHTML = icon(showModalSgdbKey ? "eye-off" : "eye", 13);
+    }
   } else if (act === "preview-custom-cover-url") {
     const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
     const val = input?.value.trim();
     if (val) {
+      sgdbSelectedCoverUrl = val;
+      const previewImg = document.getElementById("cover-preview-img") as HTMLImageElement | null;
       const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
-      if (previewWrapper) {
+      if (previewImg && previewImg.tagName === "IMG") {
+        previewImg.src = val;
+      } else if (previewWrapper) {
         previewWrapper.innerHTML = `
           <img id="cover-preview-img" src="${esc(val)}" alt="Önizleme" />
-          <div class="cover-preview-badge">Önizleme</div>
+          <div class="cover-preview-badge">Web Bağlantısı</div>
         `;
       }
+      const badge = previewWrapper?.querySelector(".cover-preview-badge");
+      if (badge) badge.textContent = "Web Bağlantısı";
     }
   } else if (act === "save-custom-cover" && id) {
     const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-    const val = input?.value.trim() || "";
+    const val = sgdbSelectedCoverUrl || input?.value.trim() || "";
     if (val) {
-      saveCustomCover(id, val);
+      if (activeCoverTarget === "hero") {
+        saveCustomHero(id, val);
+        toast("Özel yatay afiş (Hero) kaydedildi", "ok");
+      } else {
+        saveCustomCover(id, val);
+        toast("Özel dikey kapak (2:3) kaydedildi", "ok");
+      }
       closeCustomCoverModal();
-      toast("Özel kapak görseli kaydedildi", "ok");
     } else {
-      toast("Lütfen geçerli bir görsel URL'si girin veya dosya seçin", "err");
+      toast("Lütfen SteamGridDB'den bir görsel seçin, URL girin veya dosya yükleyin", "err");
     }
+  } else if (act === "reset-active-target" && id) {
+    if (activeCoverTarget === "hero") {
+      resetCustomHero(id);
+      toast("Yatay afiş orijinal haline döndürüldü", "ok");
+    } else {
+      resetCustomCover(id);
+      toast("Dikey kapak orijinal haline döndürüldü", "ok");
+    }
+    sgdbSelectedCoverUrl = "";
+    renderCustomCoverModalFrame(id);
+    renderCustomCoverModalContent(id);
+  } else if (act === "reset-all-art" && id) {
+    resetCustomCover(id);
+    resetCustomHero(id);
+    sgdbSelectedCoverUrl = "";
+    toast("Tüm özel görseller orijinal haline döndürüldü", "ok");
+    renderCustomCoverModalFrame(id);
+    renderCustomCoverModalContent(id);
   } else if (act === "reset-custom-cover" && id) {
     resetCustomCover(id);
     closeCustomCoverModal();
@@ -5832,6 +6977,46 @@ document.addEventListener("keydown", (e) => {
     }
     closeModal();
   }
+  if (e.key === "Enter") {
+    const activeEl = document.activeElement as HTMLElement | null;
+    if (activeEl && activeEl.id === "sgdb-search-input" && activeCustomCoverAppName) {
+      e.preventDefault();
+      searchAndLoadSteamGrid(activeCustomCoverAppName);
+      return;
+    }
+    if (activeEl && activeEl.id === "modal-sgdb-key-input" && activeCustomCoverAppName) {
+      e.preventDefault();
+      const key = (activeEl as HTMLInputElement).value.trim();
+      if (!key) {
+        toast("Lütfen geçerli bir SteamGridDB API anahtarı girin", "err");
+        return;
+      }
+      epicSetSteamGridKey(key)
+        .then(() => {
+          steamGridApiKey = key;
+          toast("SteamGridDB API anahtarı kaydedildi", "ok");
+          renderCustomCoverModalContent(activeCustomCoverAppName);
+          void searchAndLoadSteamGrid(activeCustomCoverAppName, sgdbSearchQuery);
+        })
+        .catch((err) => toast(String(err), "err"));
+      return;
+    }
+    if (activeEl && activeEl.id === "custom-cover-url-input") {
+      e.preventDefault();
+      const val = (activeEl as HTMLInputElement).value.trim();
+      if (val) {
+        sgdbSelectedCoverUrl = val;
+        const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+        if (previewWrapper) {
+          previewWrapper.innerHTML = `
+            <img id="cover-preview-img" src="${esc(val)}" alt="Önizleme" />
+            <div class="cover-preview-badge">Önizleme</div>
+          `;
+        }
+      }
+      return;
+    }
+  }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
     const s = document.getElementById("search");
     if (s) {
@@ -5848,6 +7033,7 @@ document.addEventListener("change", (e) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
+      sgdbSelectedCoverUrl = result;
       const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
       const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
       if (urlInput) urlInput.value = result;
@@ -5879,6 +7065,10 @@ document.addEventListener("input", (e) => {
         }
       }
     }
+    return;
+  }
+  if (t.id === "sgdb-search-input") {
+    sgdbSearchQuery = (t as HTMLInputElement).value;
     return;
   }
   if (t.id === "search") {
@@ -5915,10 +7105,36 @@ document.addEventListener("input", (e) => {
     }
     return;
   }
+  if (t.id === "profile-search") {
+    profileSearchQuery = (t as HTMLInputElement).value;
+    const grid = document.getElementById("profile-games-grid");
+    if (grid && playerProfileData) {
+      const all = playerProfileData.games || [];
+      let filtered = all.filter((g) => {
+        if (profileFilter === "platinum") return g.is_platinum || g.unlocked_percent >= 100;
+        if (profileFilter === "in_progress") return g.unlocked_percent > 0 && g.unlocked_percent < 100 && !g.is_platinum;
+        if (profileFilter === "not_started") return g.unlocked_percent === 0;
+        return true;
+      });
+      if (profileSearchQuery.trim()) {
+        const q = profileSearchQuery.trim().toLowerCase();
+        filtered = filtered.filter(
+          (g) => g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q),
+        );
+      }
+      grid.innerHTML = renderProfileGameCards(filtered);
+    }
+    return;
+  }
 });
 
 document.addEventListener("change", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "profile-sort-select") {
+    profileSort = (t as HTMLSelectElement).value as typeof profileSort;
+    render();
+    return;
+  }
   if (t.id === "epic-sort") {
     epicSort = (t as HTMLSelectElement).value as typeof epicSort;
     render();
@@ -6328,10 +7544,15 @@ function icon(
     | "wifi"
     | "wifi-off"
     | "star"
-    | "check-circle",
+    | "check-circle"
+    | "arrow-down-a-z"
+    | "crown"
+    | "copy",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
+    "arrow-down-a-z":
+      '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/>',
     image:
       '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
     rows: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
@@ -6370,6 +7591,10 @@ function icon(
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     trophy:
       '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    crown:
+      '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>',
+    copy:
+      '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
     sparkles:
       '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>',
     lock:

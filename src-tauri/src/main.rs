@@ -84,6 +84,8 @@ pub struct EpicSettings {
     pub network_profile: Option<String>,
     #[serde(default)]
     pub offline_mode: Option<bool>,
+    #[serde(default)]
+    pub steamgrid_api_key: Option<String>,
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -462,7 +464,13 @@ fn main() {
             legendary::transfers::epic_launch_game,
             show_store_view,
             hide_store_view,
-            open_folder
+            open_folder,
+            legendary::steamgrid::epic_get_steamgrid_key,
+            legendary::steamgrid::epic_set_steamgrid_key,
+            legendary::steamgrid::epic_test_steamgrid_key,
+            legendary::steamgrid::epic_search_steamgrid,
+            legendary::steamgrid::epic_get_steamgrid_covers,
+            legendary::commands::epic_get_player_profile
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");
