@@ -68,6 +68,7 @@ Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 `epic_get_collections`, `epic_save_collection`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`
 Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
+SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
 Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -135,7 +136,7 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
    - Pencere küçült, ekranı kapla/geri yükle ve kapat işlemleri Rust komutları (`app_minimize`,
      `app_toggle_maximize`, `app_close`) üzerinden güvenle yürütülür. Çift tıklama pencereyi büyütüp küçültür.
    - Gömülü çocuk webview (`storeRect`) konumu `y: titlebar.offsetHeight` formülüyle başlık çubuğuna tam oturur.
-19. **"Son Oynanan" ve Hero Spotlight Disiplini:**
+19. **"Son Oynanan", Hero Spotlight & Filtre Animasyon Disiplini:**
    - `pushRecent(appName)` SADECE oyun gerçekten başlatıldığında (`epicPlay`) çağrılır; detay çekmecesi
      açıldığında (`openEpicModal`) ASLA çağrılmaz.
    - Yalnızca gerçekten kurulu olan oyunlar (`s.installed`) "Son Oynanan" rozeti alabilir veya sıralamada öne geçebilir.
@@ -143,6 +144,14 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
    - Hero Spotlight afişi öncelik sırası: 1) Son oynanmış ve kurulu oyun (`Son Oynanan`), 2) Kurulu favori,
       3) **Günün Oyunu (`✨ Günün Oyunu`)** — tarih bazlı deterministik tohum ile kütüphaneden geniş afişli sürpriz oyun,
       4) Favori, 5) İlk oyun. Rozeti duruma göre `Son Oynanan`, `Günün Oyunu`, `Kurulu Oyun`, `Favori` veya `Öne Çıkan` olur.
+   - **240px Sinematik Vitrin & Yüzen 3D Kapak Kartı:**
+     - Vitrin yüksekliği basık 175px yerine **240px**'tir; arka plan görseli `object-position: center 20%` ile karakter kafalarının kesilmesini engeller.
+     - Sağ tarafta 135x190px (2:3 dikey oranlı) yüzen 3D poster kartı (`.hero-showcase-card`) yer alır; Raflar (Shelves) vitrininin zarafetini ızgara görünümüne taşır. Hover'da 3D kalkış (`translateY(-5px) scale(1.03)`) ve `İncele` rozeti sunar.
+     - Vitrin içi gereksiz/çakışan "x" kapat butonu kaldırılmıştır; vitrin kontrolü üst bar "Vitrin" butonu (`.lib-toggle-hero-btn`) üzerinden yapılır.
+   - **Kütüphane Filtre & Buton Animasyonları (Yalnızca Değişimde Animasyon):**
+     - "Tümü", "Yüklü", "Favoriler", "Platin", "Güncelleme" sekmeleri arasında geçiş yapılırken `updateLibraryFilterInPlace()` kullanılır. Toolbar butonları DOM'dan silinip baştan kurulmaz; böylece butonlar gereksiz yere her tıklamada animasyona girmez, yalnızca aktiflik stili geçiş yapar.
+     - Kartlar `--ci` değişkeniyle ilk 24 kart için 16ms'lik gecikmelerle akıcı dalga (staggered ripple) efektiyle ekrana akar (`cardFilterEnter`).
+     - Yalnızca gerçek bir değişim olduğunda (yeni bir koleksiyon seçildiğinde veya silindiğinde, ya da güncellemeler 0'dan 1'e çıktığında) butonlara `.pill-dynamic` (`@keyframes pillSlideIn`) eklenerek akıcı giriş sağlanır.
 20. **Başarımlar (Achievements) & Platin Kupa Mimarisi:**
     - 488+ oyunluk kütüphanede her oyun için tek tek ağ isteği atmak Epic hız sınırına takılır (429) ve açılışı kilitler.
     - `legendary`, sorgulanan başarımları `%USERPROFILE%\.config\legendary\achievements.json` içine namespace (sandboxId) bazlı kaydeder (`totalUnlocked`, `totalXP`, `playerAwards: [awardType: "PLATINUM"]`).
@@ -270,6 +279,19 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
     - **Özel Emoji / Simge Seçici:** Koleksiyonlara özel `emoji` desteği (Rust `GameCollection.emoji: Option<String>`, `collections.json`). 44x44px interaktif emoji avatar butonu, 32 popüler oyun emojisi (🎮, 📖, 🌐, 🏆, ⚔️, 🚗, 👻 vb.), hızlı şablon çipleri ("📖 Hikaye", "🌐 Online", "🏆 Platin Hedef" vb.), harici özel emoji yazma/yapıştırma ve simge temizleme.
     - **Gelişmiş Oyun Seçim Segmentleri & Canlı Sayaçlar:** `[ Tümü (514) ]`, `[ Seçilenler (80) ]`, `[ Yüklü ]` filtre sekmeleri ile koleksiyona dahil olan oyunları anında listeleme ve satırın tamamına tıklayarak seçebilme.
     - **Sistem Genelinde Kusursuz Yansıma:** Araç çubuğu açılır menüsünde (`.col-menu-emoji`), aktif filtre butonunda (`.col-pill-emoji`), Raflar (Shelves) başlığında (`.shelf-emoji`) ve detay çekmecesi etiketlerinde (`.col-chip-emoji`) kullanıcının seçtiği emojilerin yerinde ve şık gösterimi.
+35. **Yerel Profil & Başarım Merkezi (Native Epic Profile & Achievements Hub):**
+    - Harici tarayıcı veya gömülü webview (`store.epicgames.com/u/<account_id>`) yönlendirmesi tamamen terk edilmiştir; üst bardaki kullanıcı adına tıklandığında doğrudan yerel `view = "profile"` açılır.
+    - **Epic Games Launcher GraphQL Entegrasyonu (`profile.rs`):**
+      - Endpoint: `https://launcher.store.epicgames.com/graphql`
+      - Headers: `Authorization: Bearer <access_token>`, `User-Agent: EpicGamesLauncher/14.0.8-22004686+++Portal+Release-Live`
+      - Query: `PlayerGameAchievementProgress` (kullanıcının tüm oyunlardaki gerçek kilit açma sayıları, sandboxId, totalXP ve playerAwards).
+      - XP Hesabı: Epic Games Store kuralına göre kazanılan her Platin Kupa ek **+250 XP** bonus kazandırır (`total_xp = progress_xp + (plat_count * 250)`).
+    - **Disk Önbelleklemesi:** `%USERPROFILE%\.config\legendary\profile_cache.json` içerisine yerel önbelleklenir; çevrimdışıyken veya hızlı geçişlerde 0ms açılış sunar.
+    - **UI Mimarisi:**
+      - Glassmorphic Hero Kartı: Renkli degradeli avatar, kullanıcı adı, çevrimiçi/çevrimdışı durumu, hesap ID'si kopyalama butonu ve profili yenile butonu.
+      - 5'li İstatistik & Kupa Vitrini: Toplam XP (`✨ XP`), Açılan Başarımlar (`🏆`), Platin Kupalar (`👑`), Toplam Oynama Süresi (`⏱`) ve Kütüphane Oyun Sayısı (`🎮`).
+      - Oyun Başarımları & İlerleme Şeridi: Kapsam filtreleri (`Tümü`, `Platin`, `Devam Edenler`, `Başlanmayanlar`), arama kutusu ve 4 farklı sıralama (İlerleme Yüzdesi, Kazanılan XP, Oynama Süresi, Alfabetik).
+      - Zengin İlerleme Kartları: Kapak görseli, Platin rozeti, başarım ve XP çubukları, doğrudan oyun detayına zıplayan "İncele" butonu.
 
 ## 7. Test stratejisi
 
@@ -340,10 +362,23 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **HowLongToBeat (HLTB) Entegrasyonu:**
   - `src-tauri/src/legendary/hltb.rs` modülü ile HowLongToBeat arama motoru taranır ve sonuçlar diskte `%USERPROFILE%\.config\legendary\hltb` altında yerel önbelleklenir.
   - Detay çekmecesinin "Genel Bakış" sekmesinde şık bir HLTB kartı (`.drawer-hltb-card`) belirir; "Ana Hikaye", "Ana + Ekstra" ve "%100 Bitirme" tahmini sürelerini saat bazında sunar.
-- **Özel Kapak Değiştirme (Custom Cover Art):**
-  - Kullanıcılar herhangi bir oyunun kartındaki veya detay çekmecesindeki "Kapağı Özelleştir" düğmesiyle özel kapak modalını (`openCustomCoverModal`) açabilir.
-  - Doğrudan SteamGridDB / web görsel URL'si yapıştırabilir veya bilgisayardan yerel resim dosyası (`.png`, `.jpg`, `.webp`) seçebilir (`FileReader` ile yerel saklama).
-  - Anında 2:3 oranlı önizleme, varsayılana sıfırlama ve `localStorage` üzerinde kalıcı saklama desteği mevcuttur.
+- **Özel Sıralama Açılır Menüsü (Custom Dark Sort Dropdown):**
+  - Windows yerel `<select>` elementinin WebView2 üzerinde beyaz açılır menü çizmesi engellenmiş, yerine koyu cam tasarımlı `.sort-dropdown-container` getirilmiştir.
+  - Seçenekler özel inline SVG ikonları (Saat, A-Z, Onay, Kupa, Yenileme) ve seçili öğede onay (`check`) işaretiyle gösterilir; kullanıcı tercihi `localStorage` (`efxlve-sort`) içinde hatırlanır.
+- **Oyun Detay Koleksiyonlar Kartı Tasarımı:**
+  - Düz mavi kutu yerine `.drawer-col-card` cam kart tasarımı, mor/indigo klasör ikon rozeti, "X kategoride ekli" dinamik alt bilgisi, modern cam haplar (`.drawer-col-pill`) ve boş durum için kesikli çerçeveli eylem butonu (`.drawer-col-empty-cta`) entegre edilmiştir.
+- **SteamGridDB API v2 Entegrasyonu & Özel Kapak Yöneticisi:**
+  - `src-tauri/src/legendary/steamgrid.rs` modülü ile SteamGridDB API v2 (`https://www.steamgriddb.com/api/v2`) doğrudan launcher'a bağlanmıştır.
+  - Disk önbelleklemesi (`%USERPROFILE%\.config\legendary\steamgrid\`) ile arama ve kapak sorguları yerel diskte saklanır, ağ trafiği ve kota korunur.
+  - API Anahtarı Ayarlar panelinde özel kart ve "Kapağı Özelleştir" modalında doğrudan girilebilir; canlı bağlantı test butonu (`epic_test_steamgrid_key`) ve göster/gizle göz ikonu sunulur.
+  - Gelişmiş 3 sekmeli Kapak Modalı (`.cover-modal-tabs`): `[ 🌐 SteamGridDB Topluluğu ]`, `[ 🔗 Doğrudan Web URL ]`, `[ 📁 Bilgisayardan Dosya ]`.
+  - Canlı oyun adı arama ve Enter tuşu desteği, alternatif oyun eşleşme hapları (`.sgdb-chip`), Oran seçimi (Dikey Kapak 2:3 / Yatay Afiş Hero), Stil filtreleri (Tümü, Logosuz, Alternatif, Resmi), topluluk oylama skoru / sanatçı rozetleri ve tek tıkla önizleme kartına seçip kütüphaneye uygulama desteği.
+- **İkili Görsel Özelleştirme & Rafine SteamGridDB Modalı (Dikey Kapak vs Yatay Afiş):**
+  - **Bağımsız Depolama:** Kütüphane dikey kartları için `customCovers` (`efxlve-custom-covers`), Vitrin Spotlight ve Detay Çekmecesi afişi için `customHeroes` (`efxlve-custom-heroes`) bağımsız olarak `localStorage` üzerinde saklanır.
+  - **Geniş Afiş Entegrasyonu:** `epicWideArt(s)` fonksiyonu önce `customHeroes[s.appName]` değerine bakar; böylece kullanıcının seçtiği yatay afiş Hero Vitrini, Detay Çekmecesi ve Raflar modunda anında canlı olarak gösterilir.
+  - **Segmented Hedef Kontrolü & Adaptif Önizleme:** Modalın tepesinde `[ 🎮 Dikey Kapak (2:3) ]` ve `[ 🎬 Yatay Afiş (Hero / Vitrin) ]` segment kontrolü yer alır. Seçilen hedefe göre önizleme çerçevesi 2:3 dikey kart ile 16:7 sinematik geniş afiş arasında dinamik olarak geçiş yapar; SteamGridDB sekmesinde ilgili format otomatik etkinleştirilir.
+  - **Tek Satır Eşleşen Oyunlar Şeridi & Temiz Galeri:** Çok satıra taşan dağınık butonlar yerine tek satır pürüzsüz yatay kaydırılabilir `.sgdb-matching-games-bar` track'i uygulanmıştır. Galeri kartlarındaki kaba siyah metin kutuları kaldırılmış, yerine kart üzerine gelindiğinde (hover) beliren zarif yarı saydam rozetler ve seçili kartta ışıltılı halka + mini onay rozeti getirilmiştir.
+  - **Çekmece Başlığı Afiş Değiştirme Butonu:** Oyun detay çekmecesinin başlık afişinde doğrudan `.drawer-cover-edit-btn` yer alır; tek tıkla afiş düzenleyiciyi açar.
 
 ## 9. Çalışma disiplini
 
