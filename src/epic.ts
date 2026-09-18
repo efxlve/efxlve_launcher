@@ -889,3 +889,135 @@ export interface EpicPlayerProfile {
 export const epicGetPlayerProfile = (forceRefresh = false) =>
   invoke<EpicPlayerProfile>("epic_get_player_profile", { forceRefresh });
 
+/* ---------- Yerleşik Mağaza (Native Epic Store Hub) ---------- */
+
+export interface StoreFreeGameItem {
+  id: string;
+  namespace: string;
+  title: string;
+  description: string;
+  cover: string;
+  wide_art: string;
+  original_price: string | null;
+  discount_price: string | null;
+  is_free_now: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  product_slug: string | null;
+  url_slug: string | null;
+  page_slug: string | null;
+}
+
+export interface StoreOfferItem {
+  id: string;
+  namespace: string;
+  title: string;
+  description: string | null;
+  cover: string;
+  wide_art: string;
+  seller: string | null;
+  original_price: string | null;
+  discount_price: string | null;
+  discount_percentage: number | null;
+  currency: string | null;
+  product_slug: string | null;
+  url_slug: string | null;
+  page_slug: string | null;
+  tags: string[];
+}
+
+export interface StoreHubResponse {
+  country?: string;
+  free_games_active: StoreFreeGameItem[];
+  free_games_upcoming: StoreFreeGameItem[];
+  top_sellers: StoreOfferItem[];
+  featured_discounts: StoreOfferItem[];
+  upcoming_offers: StoreOfferItem[];
+  wishlist_offer_ids: string[];
+  cart_offer_ids: string[];
+  updated_at: number;
+}
+
+/** Ürün sayfası medya öğesi (ekran görüntüsü veya fragman) */
+export interface StoreMediaItem {
+  kind: "image" | "trailer";
+  thumb: string;
+  full: string;
+  caption: string | null;
+}
+
+/** Ürün sayfası harici bağlantısı */
+export interface StoreLink {
+  label: string;
+  url: string;
+}
+
+/** Sistem gereksinimi satırı (Minimum / Önerilen) */
+export interface StoreSpecItem {
+  title: string;
+  minimum: string | null;
+  recommended: string | null;
+}
+
+/** Sistem gereksinimi grubu (Windows / Mac) */
+export interface StoreSpecGroup {
+  systemType: string;
+  details: StoreSpecItem[];
+}
+
+export interface StoreOfferDetail {
+  id: string;
+  namespace: string;
+  title: string;
+  description: string | null;
+  long_description: string | null;
+  cover: string;
+  wide_art: string;
+  screenshots: string[];
+  developer: string | null;
+  publisher: string | null;
+  release_date: string | null;
+  original_price: string | null;
+  discount_price: string | null;
+  discount_percentage: number | null;
+  currency: string | null;
+  product_slug: string | null;
+  url_slug: string | null;
+  page_slug: string | null;
+  tags: string[];
+  is_in_wishlist: boolean;
+  is_in_cart: boolean;
+  /* --- Zengin ürün sayfası alanları (v2) --- */
+  genres: string[];
+  features: string[];
+  platforms: string[];
+  age_rating: string | null;
+  about_image: string | null;
+  hero_logo: string | null;
+  media: StoreMediaItem[];
+  requirements: StoreSpecGroup[];
+  languages: string[];
+  links: StoreLink[];
+  has_page_content: boolean;
+  resolved_slug: string | null;
+}
+
+export const epicGetStoreHub = (forceRefresh = false) =>
+  invoke<StoreHubResponse>("epic_get_store_hub", { forceRefresh });
+
+export const epicSearchStore = (query: string) =>
+  invoke<StoreOfferItem[]>("epic_search_store", { query });
+
+export const epicGetStoreOfferDetail = (offerId: string) =>
+  invoke<StoreOfferDetail>("epic_get_store_offer_detail", { offerId });
+
+export const epicGetUserWishlist = () =>
+  invoke<StoreOfferItem[]>("epic_get_user_wishlist");
+
+export const epicToggleWishlist = (offerId: string) =>
+  invoke<boolean>("epic_toggle_wishlist", { offerId });
+
+export const epicToggleCart = (offerId: string) =>
+  invoke<boolean>("epic_toggle_cart", { offerId });
+
+
