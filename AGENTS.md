@@ -30,6 +30,8 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - `npm` yerine **`npm.cmd`** kullan (PowerShell execution policy `npm.ps1`'i engeller).
 - Yeni Rust bağımlılığı eklediğinde `cargo check` + `cargo test` yeşil olmadan bitirme.
 - Frontend değişikliği `tsc` hatasız geçmeli (`npm run build` bunu kapsar).
+- **Mağaza UI'ına dokunduysan** `node tools/store-check/run.mjs` ile gerçek kodu çalıştıran
+  doğrulamayı da geçir (bkz. §7.1) — `tsc` yalnızca tip hatasını yakalar, mantık hatasını yakalamaz.
 
 ## 4. Mimari
 
@@ -69,6 +71,7 @@ Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
+Mağaza (Store): `epic_get_store_hub`, `epic_search_store`, `epic_get_user_wishlist`, `epic_toggle_wishlist`, `epic_toggle_cart`, `epic_get_store_offer_detail`
 Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -292,6 +295,116 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
       - 5'li İstatistik & Kupa Vitrini: Toplam XP (`✨ XP`), Açılan Başarımlar (`🏆`), Platin Kupalar (`👑`), Toplam Oynama Süresi (`⏱`) ve Kütüphane Oyun Sayısı (`🎮`).
       - Oyun Başarımları & İlerleme Şeridi: Kapsam filtreleri (`Tümü`, `Platin`, `Devam Edenler`, `Başlanmayanlar`), arama kutusu ve 4 farklı sıralama (İlerleme Yüzdesi, Kazanılan XP, Oynama Süresi, Alfabetik).
       - Zengin İlerleme Kartları: Kapak görseli, Platin rozeti, başarım ve XP çubukları, doğrudan oyun detayına zıplayan "İncele" butonu.
+36. **Yerleşik Mağaza Ürün Sayfası (Store Product Page) & Harici Tarayıcı Yasağı:**
+    - Mağaza veya kütüphane içerisindeki oyunlara tıklandığında kullanıcının varsayılan işletim sistemi tarayıcısının (Chrome, Edge vb.) dışarıdan açılması KESİNLİKLE YASAKTIR.
+    - Mağazadaki herhangi bir oyuna tıklandığında doğrudan launcher içerisinde tam sayfa yerleşik ürün sayfası görünümü (`view = "store-product"`, `openStoreGamePage(offerId)`) açılır.
+    - **Backend Entegrasyonu (`epic_get_store_offer_detail`, `store.rs`):**
+      - Epic Store Akamai CDN (`https://store-content-ipv4.ak.epicgames.com/api/tr-TR/content/products/<slug>?country=TR` ve fallback `en-US`) ile egdata offer API'leri taranır.
+      - Sayfa verileri: Sinematik kahraman afişi, ekran görüntüleri galerisi (interaktif küçük resimler şeridi ve tam boy önizleme), oyun künyesi (geliştirici, yayıncı, çıkış tarihi, türler), zengin açıklama, donanım gereksinimleri tablosu (minimum ve önerilen CPU, GPU, RAM vb.) ve dinamik satın alma kartı.
+    - **Çocuk Webview ile Satın Alma / Kütüphaneye Ekleme:**
+      - Ürün sayfasındaki "Epic Store'da Aç / Satın Al" butonu tıklandığında harici tarayıcı yerine Tauri'nin yerleşik çocuk webview'i (`openStoreUrl(url, "store-product")`) devreye girer; pencere başlık çubuğunun altına tam oturur ve kullanıcı uygulamadan çıkmadan oturumuyla oyunu alabilir.
+37. **Dinamik Para Birimi, TRY (₺) Yerelleştirme & Bölgesel Fiyatlandırma Motoru:**
+    - Uygulama içinde sabit Amerikan Doları ($) fiyat gösterimi KESİNLİKLE YASAKTIR; kullanıcının yerel para birimi dinamik olarak algılanmalı ve standart biçimde gösterilmelidir.
+    - **Ülke Algılama (`get_user_country`):** Kullanıcının Epic Games hesabı `%USERPROFILE%\.config\legendary\user.json` dosyasındaki `country` anahtarından (örn. `"TR"`) okunur. Bulunamazsa Windows yerel ayarlarından çekilir veya `"TR"` varsayılır.
+    - **API Parametre Standardı:** Tüm egdata (`https://egdata.app/api/v1/...`) ve Epic Akamai CDN sorgularına `country={country}` zorunlu olarak eklenir.
+    - **Para Formatlayıcı (`format_currency(cents, currency)`):**
+      - Türk Lirası için: Kuruş cinsinden gelen değerler Türk standartlarına tam uygun olarak biçimlendirilir (binlik ayracı nokta `.`, kuruş ayracı virgül `,`, örn. 39130 sent -> `₺391,30`, 125000 sent -> `₺1.250,00`).
+      - Amerikan Doları için `$19.99`, Euro için `19,99 €` formatları desteklenir.
+      - Fiyatı 0 olan veya ücretsiz promosyondaki oyunlarda açıkça `Ücretsiz` yazılır.
+38. **Mağaza UI / UX Revizyonu & Daima Görünür Kart Bilgisi:**
+    - Eski hantal hover katmanı zorunluluğu kaldırılmıştır; oyun kartlarında başlık, geliştirici/yayıncı, indirim yüzdesi rozeti (`-%XX`), üstü çizili orijinal liste fiyatı ve kalın indirimli güncel fiyat her zaman kartın altında sabit olarak okunabilir.
+    - Kart hover katmanında sadece hızlı mikro-eylemler (İstek Listesine Ekle/Çıkar kalp butonu, Sepete Ekle butonu, Doğrudan Satın Al / İncele) yer alır.
+    - Haftalık Ücretsiz Oyunlar vitrini (`.store-freegames-showcase`) altın parıltılı aura, kalan süre geri sayım sayaçları ("X gün X sa kaldı" veya "X tarihinde başlayacak") ve doğrudan mağaza ürün sayfasını açan butonlarla donatılmıştır.
+    - Mağaza üst barındaki gereksiz/kalabalık açıklama panoları temizlenmiş; arama, filtreler ve vitrinler arası geçiş akıcı hale getirilmiştir.
+39. **Open Agent Skills Ekosistemi (`anthropics/skills`), Dizin Köprüsü (Junction) & Yetenek Mimarisi:**
+    - Antigravity ve açık ajan ekosistemi `SKILL.md` (YAML frontmatter: `name`, `description` + Markdown talimatları) standart protokolünü kullanır.
+    - `npx skills add <repo>` aracı yetenekleri doğrudan kullanıcı ev dizinine (`C:\Users\Efe\.agents\skills\`) indirir.
+    - Antigravity'nin global yetenek tarama yolu ise `C:\Users\Efe\.gemini\config\skills\` (veya workspace için `<project_root>\.agents\skills\`) konumudur.
+    - Bu iki yol Windows Dizin Köprüsü (Directory Junction) ile kalıcı olarak birbirine bağlanmıştır:
+      `C:\Users\Efe\.gemini\config\skills ➔ C:\Users\Efe\.agents\skills`
+    - Bu köprü sayesinde kullanıcının kurduğu `frontend-design` (Anthropic'in resmi UI/UX tasarım yönergesi: AI klişelerinden kaçınma, projeye özgü oyuncu/launcher estetiği, tipografi ve hiyerarşi disiplini) ve `find-skills` (Vercel Labs) yetenekleri Antigravity ve bu ortamda çalışacak tüm AI modelleri tarafından anında tanınır, okunur ve uygulanır.
+    - İleride `npx skills add ... -g` ile eklenecek tüm yeni yetenekler de ek bir ayar gerekmeksizin otomatik olarak tüm AI oturumlarında aktif olur.
+40. **Mağaza Vitrini & Ürün Sayfası Mimarisi (GOG Galaxy 2.0 & Steam Standartları, Launcher Teması):**
+    - **Tasarım disiplini:** Mağaza düzeni GOG Galaxy 2.0 ve Steam'in en başarılı ergonomi ilkelerinden ödünç alınır (bölüm sekmeleri, dengeli dikey poster kartları, 16:9 interaktif medya sahnesi, sağ yapışkan sütun satın alma kutusu), ancak PALET LAUNCHER'IN KENDİSİDİR. İthal `#38bdf8` / `#0078f2` "Epic mavisi" mağazadan TAMAMEN çıkarılmıştır. Mağazaya özel belirteçler `.store-shell` içinde `--s-*` ön ekli yerel değişkenlerdir; global `:root`'a dokunulmaz.
+    - **Kart biçimi kararı (GOG Galaxy 2.0 / Steam standardı):**
+      - Eski 292px'lik devasa kartlar kaldırılmıştır. 1080p ve dizüstü ekranlarda tek bakışta **5 ila 6 kartın dikey kesilmeden** rahatça görünmesini sağlayan **184px dikey poster kartı (2:3 oran)** ve `repeat(auto-fill, minmax(180px, 1fr))` ızgara yapısı (`contain-intrinsic-size: 184px 340px;`) benimsenmiştir.
+      - Kart hover katmanında mikro-eylemler (İstek listesi kalbi, sepet) sağ üstte konumlandırılır. Kartın altındaki metin alanında 1 satır oyun adı, geliştirici/yayıncı, yeşil indirim rozeti (`-%XX`), üstü çizili liste fiyatı ve kalın indirimli fiyat daima okunabilir durumdadır.
+    - **Vitrin Hero Carousel:**
+      - Basıklaşmayan 320px ferah sinematik afiş, sol/sağ oklar, alt nokta (dot) navigasyonu ve sağ alt köşede yarı saydam buzlu cam (frosted glass) thumbnail dock şeridi (`.store-hero-thumb`). Aktif slayt değiştiğinde hem dot hem de thumb `.active` senkronize edilir. Otomatik geçiş (`STORE_HERO_INTERVAL`) hover'da durur, `view !== "store"` olunca `render()` içinde temizlenir.
+    - **İndirim rengi YEŞİLDİR** (`--s-deal #22c55e`, koyu metin). Amber/sarı indirim rozeti GOG ve Steam'in ortak konvansiyonuna aykırıydı. Ücretsiz durumu `--s-free #34d399` yeşil metinle ayrışır. Kartlarda fiyat satırı **sağa yaslıdır** (GOG gibi).
+    - **İndirim Yüzdesi Hesaplama Tutarlılığı (`storeItemDiscountPct`):**
+      - egdata'nın `appliedRules` / `discount_percentage` alanı süresi geçmiş kampanya kuralı döndürebilir (örn. gerçek indirim %30 iken eski kuraldan kalan 70 değeri dönebilir). Bu sebeple kartlarda, fiyat satırında ve ürün sayfasında rozet yüzdesi doğrudan gösterilen liste ve indirimli fiyattan (`Math.round(((orig - disc) / orig) * 100)`) hesaplanır (`parseStorePrice`, `storeItemDiscountPct`).
+    - **Bölüm sekmeleri** (`.store-tabbar`): Vitrin / Ücretsiz / İndirimler / Çok Satanlar / Yakında / İstek Listem / Sepetim. Aktif sekme menekşe alt çizgi taşır. Sekmeler yapışkandır (`top: 62px`).
+    - **Vitrin modülleri:** Haftalık ücretsiz oyunlar vitrini (geri sayım sayaçlı), çok satanlar, öne çıkan indirimler, yakında çıkacaklar, kütüphane rafı ("Kütüphanenizde, kurulu değil" — launcher'a özgü), yerel katalogdan türetilen kategori kutucukları (`buildStoreCategories`).
+    - **GOG Galaxy 2.0 / Steam Ürün Sayfası Mimarisi (~%68 Sol / ~%32 Sağ Sütun):**
+      - Karakter kafalarını kesen 100% ham afiş ve üzerine rastgele iliştirilmiş floating pricebox tamamen kaldırılmıştır.
+      - **Tavan Atmosfer Afişi (`.store-pdp-hero`):** Arka planda 240px'lik hafif degrade maskeli atmosferik afiş; sol altta oyun logosu veya tipografik başlık, tür hapları, geliştirici, çıkış tarihi ve yaş sınırı künyesi.
+      - **Fiyat ve Satın Alma Kutusu (`.store-pdp-pricebox`):** Sağ yapışkan sütunun (`.store-pdp-side`) en tepesine yerleştirilmiştir. Büyük "Satın Al / Ücretsiz Al / Kütüphanede Aç" ana CTA butonu, İstek Listesi ve Sepet butonları yan yana şık bir kart olarak sunulur.
+      - **16:9 İnteraktif Medya Vitrini (`#store-pdp-media-viewer`):** Seçili ekran görüntüsü veya fragmanı 16:9 geniş ekranda gösteren ana vitrin kutusu. Altındaki `.store-mediastrip` küçük resimlerine tıklandığında yerinde (in-place) medya değişir; ana görsele tıklandığında tam ekran Lightbox (`storeLightboxIdx`) açılır.
+      - **Sol Sütun (Medya & İçerik - %68):** Medya vitrini, zengin tipografili "Hakkında" metni, ekran görüntüleri ızgarası (`.store-shot`), Windows/Mac sekmeli Min/Önerilen Sistem Gereksinimleri tablosu (`.store-spec-table`), mağaza bağlantıları.
+      - **Sağ Sütun (Satın Alma & Künye - %32, Yapışkan):** Satın alma kartı, varsa kütüphane durumu, öne çıkan özellikler, desteklenen diller (seslendirme/altyazı ayrı), oyun künyesi ve Epic Store dış bağlantısı.
+    - **Medya görüntüleyici (lightbox):** `storeLightboxIdx` + `#store-lightbox`. Escape ve ok tuşları desteklenir; `render()` mağazadan çıkışta kapatır.
+    - **Performans ve Yerinde Güncelleme Disiplini:**
+      - Mağaza gövdesi ASLA `render()` ile baştan çizilmez; `updateStoreBody()` ile yerinde güncellenir (arama kutusu odağı ölmez, görseller tekrar yüklenmez).
+      - İstek listesi/sepet toggle'ı `patchStoreToggle(offerId)` ile SADECE ilgili düğmeleri günceller.
+      - Vitrin rafları yatay kaydırmadır (`scroll-snap`). Kartlarda `content-visibility: auto` + `contain: layout paint style` + `contain-intrinsic-size: 184px 340px` zorunludur.
+    - **Mağaza Doğrulama Koşucusu (`tools/store-check/run.mjs`) Event Loop Kuralı:**
+      - Node tek iş parçacıklıdır. `run.mjs` kendi bünyesinde yerel HTTP sunucusu açarken Chrome'u `execFileSync` ile çağırmak event loop'u kilitler; Chrome'un HTTP GET istekleri Node yanıt veremediği için `ETIMEDOUT` olur. Bu yüzden `execFile`'ın Promise ile sarılarak asenkron `await runMode()` yapılması şarttır.
+    - **Doğrulama:** `npm.cmd run build`, `cargo test --manifest-path src-tauri/Cargo.toml` ve `node tools/store-check/run.mjs --no-build --check` (4 mod, 90 test) testleri tam yeşil olmalıdır.
+
+41. **Mağaza Hata Sınıfları (bunlara tekrar düşme):**
+    - **Ücretsiz promosyonlar ASLA birleştirilmez.** Epic `promotionalOffers` = şu an aktif,
+      `upcomingPromotionalOffers` = gelecek hafta. Bunlar tek rafta toplanırsa kullanıcı henüz
+      ücretsiz olmayan oyunu ücretsiz sanır (Efe'nin bildirdiği hata). "Şu An Ücretsiz" yalnızca
+      `free_games_active`, "Gelecek Hafta Ücretsiz" yalnızca `free_games_upcoming` kullanır.
+      Ayrıca gelecek promosyon kartlarında **ücretsiz rozeti gösterilmez** ve fiyat yerine
+      `.store-price-soon` (saat ikonu + "Yakında Ücretsiz") basılır — fiyat stiliyle gösterilirse
+      yine "şu an ücretsiz" sanılır.
+    - **Kart `id` alanı her zaman Epic offer kimliği DEĞİLDİR.** Kütüphane rafındaki öğeler
+      legendary `appName` taşır; bunlarda mağaza detayı açılmaya çalışılırsa egdata 404 döner ve
+      "oyun sayfası açılmıyor" hatası olur. Bu tür raflar `openAct: "store-open-owned"` ve
+      `hideQuick: true` kullanmalı. Kimlik çözümü `findOwnedSummary()` ile bulanık yapılır.
+    - **`#view` kaydırma konumu `innerHTML` değişiminde KORUNUR.** Görünüm geçişlerinde
+      (ürün sayfası aç/kapat, sekme/kategori değişimi) `scrollStoreToTop()` çağrılmazsa kullanıcı
+      yeni sayfanın ortasına düşer ve sayfa "açılmamış" gibi görünür. `#view` üzerinde
+      `scroll-behavior: smooth` olduğu için geçiş anında yapılmalıdır.
+    - **Ürün detayı CDN yoklaması SINIRLIDIR:** `MAX_CDN_SLUG_TRIES = 2` (+ en olası aday için bir
+      en-US denemesi). Her aday bir HTTP isteğidir; eski sınırsız döngü (4 aday × 2 dil = 8 istek)
+      sayfa açılışını gereksiz geciktiriyordu. Bulunamayan slug'lar `{"_miss":true}` işaretiyle
+      6 saat negatif önbelleklenir (`is_cache_miss()`); ağ hatasında işaret YAZILMAZ (geçici olabilir).
+      `store_pages/` altındaki `_miss` dosyalarını geçerli içerik sanma.
+    - **Ön uçta detay isteği için üst sınır vardır** (`STORE_DETAIL_TIMEOUT_MS`). Arka uç egdata +
+      CDN'e gittiği için ağ yavaşken istek uzayabilir; sınır olmadan kullanıcı sonsuz iskelet görür.
+    - **Sahiplik araması indekslidir.** `epicSummaries` 500+ oyun olabilir ve bir mağaza çizimi ~70
+      kart üretir; her kartta her başlığı yeniden normalize etmek ~35.000 regex işlemiydi.
+      `storeOwnedIndex()` başlıkları bir kez normalize eder ve `epicSummaries` referansı
+      değiştiğinde tazelenir. Yeni bir sahiplik kontrolü eklerken bu dizini kullan.
+    - **Ürün sayfasındaki tür hapından kategori görünümüne geçiş** `render()` gerektirir; sadece
+      `updateStoreBody()` çağırmak işe yaramaz (ürün sayfasında `#store-content` yoktur).
+    - **Hub isteği başarısız olursa TAM `render()` şarttır.** `loadStoreHub` yalnızca
+      `updateStoreBody()` çağırırsa `renderStoreContent()` içeriği iskelette bırakır ve hata
+      bloğu + "yeniden dene" hiç görünmez — kullanıcı sonsuz "yükleniyor" görür. Hata bloğu
+      yalnızca kabukta (`renderStore`) yaşar.
+    - **Vitrin verisi boş dönerse kullanıcıya söyle.** Yalnızca kütüphane rafı çizilip hiçbir
+      açıklama yapılmazsa mağaza bozuk sanılır. `storeCatalogItems().length === 0` iken
+      "Vitrin içeriği alınamadı" uyarısı basılır.
+    - **Kütüphane verisi mağaza açıldıktan SONRA gelirse raf kaybolur.** `epicSummaries`
+      atandıktan sonra `refreshStoreIfOpen()` çağrılmalı (`refreshEpic` ve `syncEpicLibrary`
+      içinde). Bu çağrı olmadan "Kütüphanenizde, kurulu değil" rafı hiç belirmez.
+    - **Eskimiş yanıt koruması ZORUNLU.** `openStoreGamePage` içinde `await` sonrası
+      `storeSelectedOfferId !== offerId` ise dönülür; `finally` da yalnızca hâlâ güncel
+      isteksek yükleme durumunu kapatır. Bu koruma olmadan: yavaş bir oyunu açıp geri dönüp
+      başka oyuna geçildiğinde, geciken ilk yanıt ekrana yazılır ve kullanıcı B sayfasında
+      A'nın künyesini görür. `tools/store-check` bu senaryoyu gecikmeli detay isteğiyle sınar.
+    - **Detay `null` dönerse boş sayfa bırakma.** `!storeDetailData` dalı yalnızca geri
+      düğmesi gösterirse kullanıcı boş bir ekranla kalır; açıklayıcı bir `.store-empty`
+      mesajı basılmalı.
+    - **Sepet/istek listesi KİMLİK saklar; öğeyi çözebilmek zorundasın.** Yerel dosyalar
+      yalnızca offer kimliği tutar. `findStoreItemByIdOrTitle` sadece hub + o anki arama
+      sonuçlarına bakarsa, **arama sonucundan sepete eklenen öğe arama temizlendikten sonra
+      kaybolur** (kullanıcı "ekledim ama sepette yok" der). `storeItemCache` bu yüzden var:
+      hub, arama sonuçları ve istek listesi yüklendiğinde `rememberStoreItems()` çağrılır,
+      çözümleme önbelleğe düşer. Yeni bir öğe kaynağı eklerken `rememberStoreItems()` çağır.
 
 ## 7. Test stratejisi
 
@@ -303,6 +416,63 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
 - Hata ayıklama: `fail()` her komut hatasının TAM stderr'ini
   `<app_data>/logs/legendary-error.log` dosyasına yazar — tahmin yürütme, dosyayı oku.
   legendary config: `%USERPROFILE%\.config\legendary` (assets.json, metadata/, user.json).
+
+### 7.1 Mağaza arayüzü doğrulaması (`tools/store-check`)
+
+**NEDEN VAR:** Mağaza UI'ında yapılan doğrulamalar uzun süre "elle yazılmış statik HTML
+önizlemesi" ile yapıldı. Bu yöntem yalnızca CSS'i sınar — **markup'ı elle taklit ettiği için
+TypeScript mantığını hiç çalıştırmaz.** Kullanıcının bildirdiği iki hata (gelecek haftanın
+ücretsiz oyunlarının "şu an ücretsiz" rafına karışması ve kütüphane kartlarının yanlış
+kimlikle mağaza detayı açması) tam olarak bu sınıftandı ve önizlemelerle yakalanamadı.
+
+Bu araç üretim paketini (`dist/`) **sahte bir Tauri arka ucuyla** tarayıcıda koşturur, yani
+gerçek kodu çalıştırır. Kullanım:
+
+```bash
+node tools/store-check/run.mjs --check   # ÖNERİLEN: derle + 4 modda koş + PASS/FAIL özetle
+                                         # başarısızlıkta çıkış kodu 1 (CI'a uygun)
+
+node tools/store-check/run.mjs           # yalnızca hazırla (elle incelemek için)
+cd tools/store-check && python -m http.server 8790
+# tarayıcıda: http://127.0.0.1:8790/index.html
+```
+
+**Asset eşleme:** Vite hash'i her derlemede değişir. `run.mjs` paket dosyalarını **sabit
+adlarla** (`assets/app.js`, `assets/app.css`) kopyalar ve `index.html`'i buna göre günceller.
+Böylece **hiçbir zaman silme gerekmez** — toplu silme korumalarına takılmaz ve eski hash'li
+dosyalar birikmez. (Klasörü komple silen yaklaşım denendi ve korumaya takıldı; bu yüzden
+sabit adlara geçildi.)
+
+Dört mod koşulur (toplam 85 iddia):
+
+| Mod | Senaryo | İddia |
+|---|---|---|
+| `default` | tam veri, tüm etkileşimler | 62 |
+| `?mode=empty` | hub boş → boş durum uyarısı | 6 |
+| `?mode=fail` | hub hata verir → hata bloğu + yeniden dene | 6 |
+| `?mode=edge` | bozuk veri: görselsiz/fiyatsız/satıcısız/çok uzun başlıklı oyun | 11 |
+
+**Yeni bir mağaza hatası düzelttiğinde**, önce hatayı yakalayan iddiayı yaz, düzeltmeyi
+geçici olarak geri al ve testin **başarısız olduğunu doğrula** (boş test yazma riski gerçek).
+Sonra düzeltmeyi geri koy. Zamanlamaya bağlı testlerde (yarış durumları) bu adım zorunludur.
+
+- Sonuçlar sayfanın sağ altındaki panelde listelenir; kırmızı `FAIL` satırı hata demektir.
+- Otomatik/CI kullanımı için `run.mjs` çıktısındaki Chrome `--headless=new --screenshot`
+  komutu kullanılabilir.
+- Fixture'lar GERÇEK Epic/egdata verisinden üretilir (`gen_fixtures.py`, Python 3 gerekir)
+  ve Rust serileştirme şemasını birebir taklit eder (snake_case alanlar,
+  `SystemRequirement` → `systemType`).
+- **Kritik kural:** fixture'lar `fixtures.js` ile modül script'inden ÖNCE senkron yüklenir.
+  Aksi halde uygulama açılışı (`bootEpic` → `epic_cached_library`) boş veriyle çalışır ve
+  mağaza/kütüphane boş çizilir — bu harness hatasıdır, uygulama hatası değildir.
+- Mock şemaları `epic.ts` ile eşleşmelidir: `epic_cached_library` bir **nesne**
+  (`{account, accountId, games, installed, skipped}`) döndürür, dizi DEĞİL;
+  `epic_setup_status` camelCase'dir (`binaryPath`, `needsDownload`).
+- Kapsanan senaryolar: bölüm sekmeleri, ücretsiz/gelecek promosyon ayrımı ve rozet yokluğu,
+  kütüphane rafı tıklama davranışı, ürün sayfası + yüzen fiyat kutusu, medya görüntüleyici,
+  görünüm geçişlerinde kaydırma sıfırlama, sekme/kategori geçişi, kart görsellerinin
+  gerçekten yüklenmesi, JS hatası olmaması.
+- **Yeni bir mağaza özelliği eklediğinde buraya bir iddia (assertion) ekle.**
 
 ## 8. Durum ve yol haritası
 
@@ -379,6 +549,36 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - **Segmented Hedef Kontrolü & Adaptif Önizleme:** Modalın tepesinde `[ 🎮 Dikey Kapak (2:3) ]` ve `[ 🎬 Yatay Afiş (Hero / Vitrin) ]` segment kontrolü yer alır. Seçilen hedefe göre önizleme çerçevesi 2:3 dikey kart ile 16:7 sinematik geniş afiş arasında dinamik olarak geçiş yapar; SteamGridDB sekmesinde ilgili format otomatik etkinleştirilir.
   - **Tek Satır Eşleşen Oyunlar Şeridi & Temiz Galeri:** Çok satıra taşan dağınık butonlar yerine tek satır pürüzsüz yatay kaydırılabilir `.sgdb-matching-games-bar` track'i uygulanmıştır. Galeri kartlarındaki kaba siyah metin kutuları kaldırılmış, yerine kart üzerine gelindiğinde (hover) beliren zarif yarı saydam rozetler ve seçili kartta ışıltılı halka + mini onay rozeti getirilmiştir.
   - **Çekmece Başlığı Afiş Değiştirme Butonu:** Oyun detay çekmecesinin başlık afişinde doğrudan `.drawer-cover-edit-btn` yer alır; tek tıkla afiş düzenleyiciyi açar.
+- **Yerleşik Mağaza Merkezi (Native Store Hub), Ücretsiz Promosyonlar & Canlı Rozet Mimarisi:**
+  - Harici tarayıcı veya yavaş çocuk webview yerine doğrudan launcher içine entegre edilmiş yerleşik mağaza görünümü (`view = "store"`).
+  - **Haftalık Ücretsiz Oyunlar Vitrini:** Resmi Epic static CDN (`https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr-TR&country=TR&allowCountries=TR`) üzerinden aktif ve gelecek haftanın ücretsiz oyunları, geri sayım sayaçları, Türkçe TRY etiketleri ve doğrudan alma eylemleri.
+  - **egdata.app Entegrasyonu:** En Çok Satanlar (`top_sellers`), Öne Çıkan İndirimler (`featured_discounts`), Yakında Çıkacaklar (`upcoming_offers`) ve dinamik arama (`search_store_offers`) ile geniş katalog desteği.
+  - **Gerçek Zamanlı Durum Rozetleri (Detay Sayfasına Girmeden Erişim):**
+    - `✓ Kütüphanede`: Kullanıcının sahip olduğu yerel oyunlarla (488+ oyun) eşleşenler zümrüt yeşili rozet alır ve tıklanınca doğrudan kütüphane çekmecesini açar.
+    - `❤️ İstek Listesinde`: Resmi Launcher GraphQL (`https://launcher.store.epicgames.com/graphql`) üzerinden çekilen kullanıcının gerçek Epic istek listesi (179+ oyun) ve yerel istek listesi eşleştirmesi ile pembe/kırmızı rozet.
+    - `🛒 Sepette`: Kullanıcının yerel sepetindeki öğeler için camgöbeği (cyan) rozet.
+    - `-%XX`: Aktif indirim oranını gösteren amber sarısı rozet.
+  - **Hover Katmanı & Hızlı Eylemler:** Kart hover'ında anlık kalp (istek listesi aç/kapa), sepet butonu, doğrudan mağaza bağlantısı veya kütüphanede açma butonu ve sağdan kayan detay çekmecesi (`Store Drawer`).
+- **Yerleşik Mağaza Ürün Sayfası & Çocuk Webview Satın Alma Entegrasyonu:**
+  - Harici tarayıcı yönlendirmesi tamamen sonlandırılmış; herhangi bir mağaza kartına tıklandığında doğrudan tam sayfa yerleşik ürün görünümü (`view = "store-product"`, `openStoreGamePage(offerId)`) açılır.
+  - Rust backend (`epic_get_store_offer_detail`, `store.rs`): Akamai CDN ve egdata offer API'leri taranarak geniş afiş, ekran görüntüleri galerisi (interaktif küçük resimler şeridi ve tam boy önizleme), oyun künyesi, zengin açıklama, donanım gereksinimleri tablosu ve dinamik satın alma kartı sunulur.
+  - Satın alma veya kütüphaneye ekleme işlemi için launcher'ın yerleşik çocuk webview'i (`openStoreUrl(...)`) pencere başlık çubuğunun altına tam oturacak şekilde gömülür.
+- **Dinamik Para Birimi & TRY (₺) Yerelleştirme Motoru:**
+  - Sabit Amerikan Doları ($) gösterimi engellenmiş, kullanıcının `user.json` kütüğündeki `country` alanından dinamik tespit edilen ülke (TR) üzerinden Türk Lirası (`₺`) ve standart formatlama (`format_currency`: `₺391,30`, `₺1.250,00`) uygulanmıştır.
+  - Tüm egdata ve CDN sorgularına `country={country}` parametresi eklenmiştir.
+- **Mağaza UI / UX & Daima Görünür Kart Tasarımı Revizyonu:**
+  - Kart hover katmanı zorunluluğu kaldırılarak başlık, geliştirici, indirim yüzdesi (`-%XX`), eski fiyat ve indirimli fiyat kartın altında her zaman görünür kılınmıştır.
+  - Haftalık Ücretsiz Oyunlar vitrini (`.store-freegames-showcase`) altın parıltılı aura, kalan süre geri sayım sayaçları ve doğrudan ürün sayfasını açan butonlarla donatılmıştır.
+- **Anthropic Skills & Global Ajan Yetenekleri Entegrasyonu (`anthropics/skills`):**
+  - `C:\Users\Efe\.agents\skills` dizini ile Antigravity'nin global arama yolu `C:\Users\Efe\.gemini\config\skills` arasında Windows Junction kurulmuştur.
+  - Anthropic'in resmi `frontend-design` (AI klişelerinden kaçınma, projeye özgü oyuncu/launcher estetiği, tipografi ve hiyerarşi disiplini) ve Vercel Labs `find-skills` yetenekleri tüm AI modelleri için kalıcı olarak entegre edilmiştir.
+- **Mağaza Vitrini & Ürün Sayfası Yeniden Tasarımı (GOG tarzı düzen, launcher teması):**
+  - Hantal ızgara + hover zorunlu kart yapısı terk edildi; yerine sinematik hero carousel (otomatik geçiş, nokta göstergeleri, hover'da duraklama) ve yatay kaydırılabilir raflar (Ücretsiz / İndirimler / Çok Satanlar / Yakında / İstek Listenizde İndirim) getirildi.
+  - Kartlarda indirim rozeti (`-%XX`), üstü çizili liste fiyatı ve kalın güncel fiyat her zaman görünür; ücretsiz oyunlar yeşil "Ücretsiz" etiketiyle ayrışır. Kütüphanede / İstek / Sepet durum rozetleri sol üstte, hızlı eylemler sağ üstte — çakışma yok.
+  - Ürün sayfası: hero + oyun logosu, galeri (ekran görüntüleri + fragman kapakları), Hakkında, öne çıkan özellikler, sekmeli sistem gereksinimleri tablosu, desteklenen diller, türler, resmi bağlantılar ve yapışkan satın alma kutusu.
+  - Kütüphane durumu kartı: oyun sahibiyseniz kurulum boyutu, başarım ilerlemesi ve güncelleme durumu doğrudan mağaza sayfasında gösterilir.
+  - Palet launcher'ın kendi temasına çekildi (ithal "Epic mavisi" kaldırıldı); mağaza özel belirteçler `.store-shell` içinde yerel tutulur.
+  - Performans: yerinde (in-place) bölüm güncelleme, `content-visibility`, lazy görseller, iskelet shimmer, `backdrop-filter` kaldırıldı, arama için gecikmiş yanıt koruması (`storeSearchSeq`).
 
 ## 9. Çalışma disiplini
 

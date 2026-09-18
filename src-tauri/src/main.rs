@@ -470,7 +470,13 @@ fn main() {
             legendary::steamgrid::epic_test_steamgrid_key,
             legendary::steamgrid::epic_search_steamgrid,
             legendary::steamgrid::epic_get_steamgrid_covers,
-            legendary::commands::epic_get_player_profile
+            legendary::commands::epic_get_player_profile,
+            legendary::commands::epic_get_store_hub,
+            legendary::commands::epic_search_store,
+            legendary::commands::epic_get_store_offer_detail,
+            legendary::commands::epic_get_user_wishlist,
+            legendary::commands::epic_toggle_wishlist,
+            legendary::commands::epic_toggle_cart
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");

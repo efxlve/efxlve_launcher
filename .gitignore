@@ -23,3 +23,9 @@ Thumbs.db
 *.msi
 *.exe
 !src-tauri/icons/*.ico
+
+# Mağaza doğrulama aracı (tools/store-check) — üretilen dosyalar
+tools/store-check/assets/
+tools/store-check/fixtures.json
+tools/store-check/fixtures.js
+tools/store-check/report*.png
