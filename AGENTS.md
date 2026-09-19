@@ -919,3 +919,21 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
      - Ekran görüntüsü alma ve deklanşör hissi 2.500 ms'den **0 ms anlık tepki** ve **~110 ms yerel kayıt** hızına ulaştırılmıştır.
      - Tüm 47 Rust birim testi yeşil, frontend derlemesi hatasızdır.
 
+## 58. Yerel Saat Dilimi (Local Timezone), Win32 Dosya Zamanı & İnsan Okunabilir Ekran Görüntüsü Adlandırması
+
+- **Problem & Kök Neden:**
+  - `chrono_fallback` fonksiyonunun Unix epoch saniyesini doğrudan UTC saat diliminde işlemesi nedeniyle, Türkiye gibi UTC+3 saat dilimindeki kullanıcılarda gece yarısından sonra (örn. 20.09.2026 02:10) alınan ekran görüntüleri UTC saatiyle `19.09.2026 23:10` olarak hesaplanıyor; hem tarih bir gün geride kalıyor hem de saat 3 saat sapıyordu.
+  - Ayrıca dosya adlarında 13 basamaklı ham Unix zaman damgası (`_Screenshot_1789859304796.png`) kullanılması, Windows Explorer'da ve fotoğraf görüntüleyicilerinde kullanıcı dostu değildi.
+- **Uygulanan Çözümler:**
+  1. **Win32 `GetLocalTime` ile İnsan Okunabilir Dosya Adlandırması:**
+     - Yeni yakalanan ekran görüntüleri için Win32 `GetLocalTime(&mut st)` API'si kullanılarak kullanıcının gerçek yerel sistem zamanı (`SYSTEMTIME`) doğrudan okunur.
+     - Dosya adı Steam/PlayStation standartlarında temiz ve okunabilir formatta üretilir: `{clean_t}_YYYY-MM-DD_HH-mm-ss_fff.png` (örnek: `Dead_by_Daylight_2026-09-20_02-23-45_120.png`).
+  2. **Win32 `FileTimeToLocalFileTime` ile Disk Dosyalarının Yerel Saate Dönüştürülmesi:**
+     - Diskteki tüm ekran görüntüleri taranırken (`parse_file_to_item`), dosyanın UTC formatındaki `last_write_time()` verisi Win32 `FileTimeToLocalFileTime` ve `FileTimeToSystemTime` API'leri ile kullanıcının Windows'ta tanımlı saat dilimine ve yaz/kış saati farkına göre tam yerel zamana çevrilir (`DD.MM.YYYY HH:MM:SS`).
+  3. **Frontend `formatScreenshotDate` Güvenlik Katmanı:**
+     - `src/main.ts` içinde `formatScreenshotDate(item.timestamp, item.date_str)` fonksiyonu eklenerek hem galeri kartlarında (`.ss-chip.date`, `.ss-date`) hem de Lightbox detay üst barında (`.lightbox-meta`) tarayıcının yerel `Date` motoru üzerinden milisaniyesine kadar doğru yerel saat (`20.09.2026 02:22:36`) gösterilir.
+  4. **Sonuçlar:**
+     - Ekran görüntülerinin tarihi de saati de kullanıcının bilgisayarındaki saatle birebir ve saniyesine kadar kusursuz eşitlenmiştir.
+     - Tüm 49 Rust birim testi ve frontend derlemesi hatasızdır.
+
+

@@ -94,6 +94,70 @@ fn file_to_data_url(path: &Path) -> Option<String> {
     Some(format!("data:{mime};base64,{encoded}"))
 }
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SYSTEMTIME {
+    pub w_year: u16,
+    pub w_month: u16,
+    pub w_day_of_week: u16,
+    pub w_day: u16,
+    pub w_hour: u16,
+    pub w_minute: u16,
+    pub w_second: u16,
+    pub w_milliseconds: u16,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct FILETIME {
+    pub dw_low_date_time: u32,
+    pub dw_high_date_time: u32,
+}
+
+#[cfg(target_os = "windows")]
+#[link(name = "kernel32")]
+extern "system" {
+    fn GetLocalTime(lpSystemTime: *mut SYSTEMTIME);
+    fn FileTimeToLocalFileTime(lpFileTime: *const FILETIME, lpLocalFileTime: *mut FILETIME) -> i32;
+    fn FileTimeToSystemTime(lpFileTime: *const FILETIME, lpSystemTime: *mut SYSTEMTIME) -> i32;
+}
+
+pub fn get_local_now_systemtime() -> SYSTEMTIME {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        let mut st = SYSTEMTIME::default();
+        GetLocalTime(&mut st);
+        st
+    }
+    #[cfg(not(target_os = "windows"))]
+    SYSTEMTIME::default()
+}
+
+pub fn get_file_local_datetime_str(_path: &Path, metadata: &std::fs::Metadata, epoch_sec: u64) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::fs::MetadataExt;
+        let ft_u64 = metadata.last_write_time();
+        let ft_utc = FILETIME {
+            dw_low_date_time: (ft_u64 & 0xFFFFFFFF) as u32,
+            dw_high_date_time: (ft_u64 >> 32) as u32,
+        };
+        let mut ft_local = FILETIME::default();
+        let mut st = SYSTEMTIME::default();
+        unsafe {
+            if FileTimeToLocalFileTime(&ft_utc, &mut ft_local) != 0
+                && FileTimeToSystemTime(&ft_local, &mut st) != 0
+            {
+                return format!(
+                    "{:02}.{:02}.{:04} {:02}:{:02}:{:02}",
+                    st.w_day, st.w_month, st.w_year, st.w_hour, st.w_minute, st.w_second
+                );
+            }
+        }
+    }
+    chrono_fallback(epoch_sec)
+}
+
 fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     let metadata = std::fs::metadata(path).ok()?;
     if !metadata.is_file() {
@@ -116,8 +180,8 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     let duration = modified.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
     let timestamp = duration.as_secs();
 
-    // Basit ve temiz tarih formatı
-    let datetime = chrono_fallback(timestamp);
+    // Windows'un gerçek yerel dosya saatini ve tarihini al (UTC yerine yerel saat dilimi)
+    let datetime = get_file_local_datetime_str(path, &metadata, timestamp);
     let data_url = file_to_data_url(path)?;
 
     Some(GameScreenshotItem {
@@ -133,15 +197,12 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
 }
 
 fn chrono_fallback(epoch_sec: u64) -> String {
-    // Harici chrono bağımlılığı yerine hafif yerel zaman formatı
-    // Windows dosya zamanı veya standart tarih
     let days_since_epoch = epoch_sec / 86400;
     let day_sec = epoch_sec % 86400;
     let hours = (day_sec / 3600) % 24;
     let minutes = (day_sec / 60) % 60;
     let seconds = day_sec % 60;
 
-    // Yaklaşık takvim tarihi
     let mut year = 1970;
     let mut days_left = days_since_epoch;
     loop {
@@ -177,7 +238,7 @@ fn chrono_fallback(epoch_sec: u64) -> String {
         month += 1;
     }
     let day = days_left + 1;
-    format!("{:02}.{:02}.{} {:02}:{:02}:{:02}", day, month, year, hours, minutes, seconds)
+    format!("{:02}.{:02}.{:04} {:02}:{:02}:{:02}", day, month, year, hours, minutes, seconds)
 }
 
 /// Oyunun tüm ekran görüntülerini diskten tarar ve döndürür.
@@ -545,11 +606,26 @@ pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameS
     let target_dir = game_screenshots_dir(&clean_t);
     let _ = std::fs::create_dir_all(&target_dir);
 
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    let file_name = format!("{}_Screenshot_{}.png", clean_t.replace(' ', "_"), timestamp);
+    let st = get_local_now_systemtime();
+    let file_name = if st.w_year >= 2020 {
+        format!(
+            "{}_{:04}-{:02}-{:02}_{:02}-{:02}-{:02}_{:03}.png",
+            clean_t.replace(' ', "_"),
+            st.w_year,
+            st.w_month,
+            st.w_day,
+            st.w_hour,
+            st.w_minute,
+            st.w_second,
+            st.w_milliseconds
+        )
+    } else {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        format!("{}_Screenshot_{}.png", clean_t.replace(' ', "_"), timestamp)
+    };
     let target_file = target_dir.join(&file_name);
 
     // 1. Önce native Win32 GDI + GDI+ dene (< 20 ms, tam fiziksel çözünürlük)
@@ -823,5 +899,31 @@ mod tests {
                 let _ = std::fs::remove_file(&temp_file);
             }
         }
+    }
+
+    #[test]
+    fn test_local_systemtime_and_file_time() {
+        let st = get_local_now_systemtime();
+        println!("Local system time: {:04}-{:02}-{:02} {:02}:{:02}:{:02}", st.w_year, st.w_month, st.w_day, st.w_hour, st.w_minute, st.w_second);
+        #[cfg(target_os = "windows")]
+        {
+            assert!(st.w_year >= 2026);
+            assert!(st.w_month >= 1 && st.w_month <= 12);
+            assert!(st.w_day >= 1 && st.w_day <= 31);
+        }
+    }
+
+    #[test]
+    fn test_file_local_datetime_str() {
+        let temp_file = std::env::temp_dir().join("efxlve_test_time.png");
+        std::fs::write(&temp_file, b"fake png data").unwrap();
+        let meta = temp_file.metadata().unwrap();
+        let dt_str = get_file_local_datetime_str(&temp_file, &meta, 1789859000);
+        println!("File local datetime str: {}", dt_str);
+        #[cfg(target_os = "windows")]
+        {
+            assert!(dt_str.contains("2026"));
+        }
+        let _ = std::fs::remove_file(&temp_file);
     }
 }

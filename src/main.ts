@@ -3617,6 +3617,26 @@ function playScreenshotShutterSound(): void {
   }
 }
 
+function formatScreenshotDate(ts: number, fallbackStr?: string): string {
+  if (ts && ts > 0) {
+    try {
+      const d = new Date(ts * 1000);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, "0");
+        const mins = String(d.getMinutes()).padStart(2, "0");
+        const secs = String(d.getSeconds()).padStart(2, "0");
+        return `${day}.${month}.${year} ${hours}:${mins}:${secs}`;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return fallbackStr || "";
+}
+
 function renderDrawerScreenshots(s: EpicSummary): string {
   const screenshots = loadedScreenshots.get(s.appName) || [];
   const isLoading = loadingScreenshotsFor === s.appName;
@@ -3680,7 +3700,7 @@ function renderDrawerScreenshots(s: EpicSummary): string {
         <img src="${item.data_url}" alt="${esc(item.file_name)}" loading="lazy" />
         <div class="screenshot-overlay">
           <div class="screenshot-overlay-top">
-            <span class="ss-chip date">${esc(item.date_str)}</span>
+            <span class="ss-chip date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</span>
             <span class="ss-chip size">${esc(item.size_str)}</span>
           </div>
           <div class="screenshot-overlay-bottom">
@@ -3693,7 +3713,7 @@ function renderDrawerScreenshots(s: EpicSummary): string {
       </div>
       <div class="screenshot-info-strip">
         <span class="ss-name" title="${esc(item.file_name)}">${esc(item.file_name)}</span>
-        <span class="ss-date">${esc(item.date_str)}</span>
+        <span class="ss-date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</span>
       </div>
     </div>
   `
@@ -3721,7 +3741,7 @@ function renderScreenshotLightbox(appName: string, index: number): string {
         <div class="lightbox-topbar">
           <div class="lightbox-info">
             <span class="lightbox-filename">${esc(item.file_name)}</span>
-            <span class="lightbox-meta">${esc(item.date_str)} • ${esc(item.size_str)}</span>
+            <span class="lightbox-meta">${esc(formatScreenshotDate(item.timestamp, item.date_str))} • ${esc(item.size_str)}</span>
           </div>
           <div class="lightbox-tools">
             <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="Klasörde Göster">
