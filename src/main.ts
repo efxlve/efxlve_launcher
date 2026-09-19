@@ -2667,6 +2667,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       });
   }
 
+  if (!loadedRequirements.has(appName) && loadingReqFor !== appName) {
+    void fetchAndRenderRequirements(appName, s.title);
+  }
+
   if (!isInitialOpen) {
     const existingHub = modalRoot.querySelector(".game-hub, .drawer") as HTMLElement | null;
     const overlayEl = modalRoot.querySelector(".overlay") as HTMLElement | null;
@@ -2932,6 +2936,173 @@ function renderHltbCard(hltb?: HltbData, isLoading = false): string {
   `;
 }
 
+function cleanStoreDescription(raw: string): string {
+  if (!raw) return "";
+  let t = raw;
+  t = t.replace(/^#+\s*.*$/gm, "").trim();
+  t = t.replace(/!\[.*?\]\(.*?\)/g, "").trim();
+  t = t.replace(/<[^>]*>/g, "").trim();
+  t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+  t = t.replace(/\n{3,}/g, "\n\n").trim();
+  return t;
+}
+
+function renderGameFeatures(
+  s: EpicSummary,
+  g?: EpicGame,
+  partner: ThirdPartyLauncherInfo | null = null,
+  antiCheat: string | null = null,
+  reqData?: GameRequirementsResponse,
+): string {
+  const achSum = epicAchSummaries[s.appName];
+  const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
+  const cloudFolder = customAttrs?.CloudSaveFolder?.value || customAttrs?.CloudIncludeList?.value;
+  const hasCloud = Boolean(cloudFolder || (activeManageSettings?.appName === s.appName && activeManageSettings.cloudSavesEnabled));
+  const canRunOffline = customAttrs?.CanRunOffline?.value === "true";
+
+  // Akamai etiketlerinden oyun modu
+  const tags = reqData?.tags || [];
+  const hasCoop = tags.some((t) => t.toUpperCase().includes("COOP") || t.toUpperCase().includes("CO-OP"));
+  const hasMultiplayer = tags.some((t) => t.toUpperCase().includes("MULTIPLAYER") || t.toUpperCase().includes("ONLINE"));
+  const hasSinglePlayer = tags.some((t) => t.toUpperCase().includes("SINGLE_PLAYER") || t.toUpperCase().includes("SINGLEPLAYER"));
+
+  let modeVal = "Tek Oyunculu";
+  let modeClass = "supported";
+  if (hasCoop) {
+    modeVal = "Eşli Oyun (Co-op)";
+    modeClass = "accent";
+  } else if (hasMultiplayer) {
+    modeVal = "Çok Oyunculu";
+    modeClass = "accent";
+  } else if (hasSinglePlayer) {
+    modeVal = "Tek Oyunculu";
+    modeClass = "supported";
+  }
+
+  // Bulut kayıt durumu
+  let cloudVal = "Yerel Kayıt";
+  let cloudClass = "";
+  if (hasCloud) {
+    cloudVal = "✓ Epic Cloud";
+    cloudClass = "supported";
+  } else if (partner) {
+    cloudVal = `✓ ${partner.name} Bulut`;
+    cloudClass = "accent";
+  }
+
+  // Başarım durumu
+  let achVal = "Bulunmuyor";
+  let achClass = "";
+  if (achSum && achSum.total_achievements > 0) {
+    const totalXp = achSum.total_xp || 0;
+    achVal = `✓ ${achSum.total_achievements} Kupa${totalXp > 0 ? ` • ${totalXp} XP` : ""}`;
+    achClass = "gold";
+  } else if (partner) {
+    achVal = `✓ ${partner.name} Başarımları`;
+    achClass = "accent";
+  }
+
+  // Çevrimdışı oynanış
+  let offlineVal = "✓ Destekleniyor";
+  let offlineClass = "supported";
+  if (partner) {
+    offlineVal = `${partner.name} Bağlantısı Gerekebilir`;
+    offlineClass = "";
+  } else if (canRunOffline) {
+    offlineVal = "✓ Destekleniyor (Çevrimdışı)";
+    offlineClass = "supported";
+  }
+
+  return `
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("gamepad-2", 12)}</div>
+        <span>Kontrolcü Desteği</span>
+      </div>
+      <div class="hub-feature-val supported">${icon("check", 11)} DualSense / Xbox / Gamepad</div>
+    </div>
+
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("cloud", 12)}</div>
+        <span>Bulut Kayıtları</span>
+      </div>
+      <div class="hub-feature-val ${cloudClass}">${cloudVal}</div>
+    </div>
+
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("trophy", 12)}</div>
+        <span>Başarımlar</span>
+      </div>
+      <div class="hub-feature-val ${achClass}">${achVal}</div>
+    </div>
+
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("globe", 12)}</div>
+        <span>Çevrimdışı Oynanış</span>
+      </div>
+      <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
+    </div>
+
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("users", 12)}</div>
+        <span>Oyun Modu</span>
+      </div>
+      <div class="hub-feature-val ${modeClass}">${modeVal}</div>
+    </div>
+
+    ${
+      partner
+        ? `
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("layers", 12)}</div>
+        <span>Harici Başlatıcı</span>
+      </div>
+      <div class="hub-feature-val accent">${esc(partner.name)}</div>
+    </div>`
+        : ""
+    }
+
+    ${
+      antiCheat
+        ? `
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("shield", 12)}</div>
+        <span>Hile Koruması</span>
+      </div>
+      <div class="hub-feature-val accent">${esc(antiCheat)}</div>
+    </div>`
+        : ""
+    }
+
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("monitor", 12)}</div>
+        <span>Platform</span>
+      </div>
+      <div class="hub-feature-val supported">Windows (PC x64)</div>
+    </div>
+
+    ${
+      s.installed && s.installSize
+        ? `
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
+        <span>Yüklü Boyut</span>
+      </div>
+      <div class="hub-feature-val">${fmtBytes(s.installSize)}${s.installedVersion ? ` (v${esc(s.installedVersion)})` : ""}</div>
+    </div>`
+        : ""
+    }
+  `;
+}
+
 function renderDrawerOverview(
   s: EpicSummary,
   _primary: string,
@@ -2947,21 +3118,19 @@ function renderDrawerOverview(
 
   const hltb = loadedHltb.get(s.appName);
   const hltbLoading = loadingHltbFor === s.appName;
+  const g = rawOf(s.appName);
+  const reqData = loadedRequirements.get(s.appName);
 
-  const dlcRes = dlcCache.get(s.appName);
-  const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
-
-  // Koleksiyon etiketleri
+  // Koleksiyon etiketleri (Eklentiler sekmesi yukarıda olduğu için burada yalnızca koleksiyonlar listelenir)
   let tagsHtml = "";
-  if (gameCols.length > 0 || currentDlcCount > 0) {
+  if (gameCols.length > 0) {
     const pills = gameCols.map((c) => `
       <button class="drawer-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu göster">
         ${c.emoji ? `<span>${esc(c.emoji)}</span>` : ""}<span>${esc(c.name)}</span>
       </button>
     `).join("");
-    const dlcPill = currentDlcCount > 0 ? `<button class="drawer-tag" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}">${icon("package", 11)} ${currentDlcCount} Eklenti</button>` : "";
     const addBtn = `<button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon</button>`;
-    tagsHtml = `<div class="drawer-tags-row">${pills}${dlcPill}${addBtn}</div>`;
+    tagsHtml = `<div class="drawer-tags-row">${pills}${addBtn}</div>`;
   } else {
     tagsHtml = `<div class="drawer-tags-row"><button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon Ekle</button></div>`;
   }
@@ -2972,7 +3141,9 @@ function renderDrawerOverview(
     rawDesc !== "Açıklama yok." &&
     rawDesc !== s.title &&
     rawDesc.length > 25;
-  const descText = hasRealDesc ? esc(rawDesc) : "Bu oyun için katalog açıklaması henüz eklenmemiş.";
+  const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : null);
+  const effectiveDesc = hasRealDesc ? rawDesc : (storeDesc || null);
+  const descText = effectiveDesc ? esc(effectiveDesc) : "Bu oyun için katalog açıklaması henüz eklenmemiş.";
 
   return `
     <div class="hub-overview-layout">
@@ -2982,7 +3153,7 @@ function renderDrawerOverview(
           <div class="hub-card-header">
             <h3 class="hub-card-title">${icon("info", 14)} <span>Oyun Hakkında</span></h3>
           </div>
-          <div class="hub-desc-text">${descText}</div>
+          <div class="hub-desc-text" id="hub-desc-text">${descText}</div>
         </div>
 
         <div class="hub-card hub-tags-card">
@@ -3001,14 +3172,10 @@ function renderDrawerOverview(
 
         <div class="hub-card hub-features-card">
           <div class="hub-card-header">
-            <h3 class="hub-card-title">${icon("layers", 14)} <span>Platform & Özellikler</span></h3>
+            <h3 class="hub-card-title">${icon("layers", 14)} <span>Oyun Özellikleri & Destek</span></h3>
           </div>
-          <div class="drawer-feature-strip" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
-            <div class="drawer-feature-pill">${icon("layers", 12)} <span>Başlatıcı: ${partner ? esc(partner.name) : "Epic Games"}</span></div>
-            ${antiCheat ? `<div class="drawer-feature-pill">${icon("shield", 12)} <span>Hile Koruması: ${esc(antiCheat)}</span></div>` : ""}
-            <div class="drawer-feature-pill">${icon("monitor", 12)} <span>Platform: Windows (PC)</span></div>
-            ${s.installedVersion ? `<div class="drawer-feature-pill">${icon("check", 12)} <span>Sürüm: v${esc(s.installedVersion)}</span></div>` : ""}
-            ${s.installSize ? `<div class="drawer-feature-pill">${icon("hard-drive", 12)} <span>Yüklü Boyut: ${fmtBytes(s.installSize)}</span></div>` : ""}
+          <div class="hub-features-list" id="hub-features-list">
+            ${renderGameFeatures(s, g, partner, antiCheat, reqData)}
           </div>
         </div>
       </div>
@@ -3992,6 +4159,34 @@ async function fetchAndRenderRequirements(appName: string, title: string, forceR
   try {
     const data = await epicGetSystemRequirements(title, appName, forceRefresh);
     loadedRequirements.set(appName, data);
+
+    // Açıklaması olmayan oyunlarda mağaza açıklamasını güncelle
+    if (data.shortDescription || data.description) {
+      const curSummary = epicSummaries.find((x) => x.appName === appName);
+      const sDesc = curSummary?.description?.trim();
+      const needsDesc = !sDesc || sDesc === "Açıklama yok." || sDesc === curSummary?.title || sDesc.length <= 25;
+      if (needsDesc && curSummary) {
+        curSummary.description = data.shortDescription || cleanStoreDescription(data.description || "");
+      }
+    }
+
+    // Modal açıksa ve Genel Bakış (overview) sekmesindeyse, arayüzü DOM üzerinde yerinde güncelle
+    if (currentModalAppName === appName && activeDrawerTab === "overview") {
+      const descEl = document.getElementById("hub-desc-text");
+      if (descEl && (data.shortDescription || data.description)) {
+        descEl.textContent = data.shortDescription || cleanStoreDescription(data.description || "");
+      }
+      const featuresListEl = document.getElementById("hub-features-list");
+      if (featuresListEl) {
+        const curSummary = epicSummaries.find((x) => x.appName === appName);
+        if (curSummary) {
+          const g = rawOf(appName);
+          const partner = getThirdPartyLauncher(g);
+          const antiCheat = getAntiCheat(g);
+          featuresListEl.innerHTML = renderGameFeatures(curSummary, g, partner, antiCheat, data);
+        }
+      }
+    }
   } catch (e) {
     console.warn("Sistem gereksinimleri alınamadı:", e);
     loadedRequirements.set(appName, {
@@ -7847,10 +8042,13 @@ function icon(
     | "arrow-down-a-z"
     | "crown"
     | "plus"
-    | "copy",
+    | "copy"
+    | "users",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
+    users:
+      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     "arrow-down-a-z":
       '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/>',

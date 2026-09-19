@@ -745,3 +745,26 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Sekmeler arası geçişlerde ve filtrelemelerde sayfa tepesine sıçrama veya DOM kırpışması engellenmiş, kaydırma pozisyonu yerinde korunur.
 - **Sade "Başarımlar" Sekme Başlığı:**
   - Sekme butonunda yer alan gereksiz sağ kupa rozeti (`achTabBadge` / platin kupası) ve `(5)` gibi parantez sayaçları tamamen kaldırıldı; konsol zarafetine uygun olarak sade `${icon("trophy", 13)} Başarımlar` başlığı sağlandı.
+
+## 49. Detay Sayfası Konsol İnce Ayarları, Yetenek Rozetleri & Akamai Açıklama Fallback'i
+
+- **"Koleksiyonlar & Etiketler" Alanından DLC Temizliği:**
+  - Ana sekme şeridinde zaten müstakil bir "Eklentiler" sekmesi yer aldığından, "Koleksiyonlar & Etiketler" kartı içindeki "2 Eklenti" hapı kaldırıldı. Bu kart artık yalnızca kullanıcı koleksiyonlarını ve koleksiyon ekleme butonunu listeler.
+- **Yenilenen "Favorilerde" Buton Tasarımı:**
+  - Mat/çamurlu mor kutu kaldırıldı. Yerine koyu kırmızı cam arka plan (`rgba(239, 68, 68, 0.1)`), parlak kırmızı kenarlık (`rgba(239, 68, 68, 0.4)`), dolgulu canlı ışıltılı yakut kalp (`fill: #ef4444`, `filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))`) ve net beyaz metin (`#f8fafc`) uygulandı; PS5 mavi "Oyna" butonuyla dengeli, birinci sınıf konsol görünümü kazandırıldı.
+- **Akamai CDN Mağaza Açıklaması (Store Description Fallback):**
+  - Cyberpunk 2077 vb. oyunlarda yerel katalog metadata'sında (`metadata/<app>.json`) açıklama alanının oyun başlığı ile aynı olması (`rawDesc === s.title`) nedeniyle ortaya çıkan "Açıklama henüz eklenmemiş" durumu çözüldü.
+  - Rust backend'deki `epic_get_system_requirements` komutu Akamai CDN'den (`store-content-ipv4.ak.epicgames.com`) `about.shortDescription`, `about.description` ve `meta.tags` alanlarını parse edip `GameRequirementsResponse` içine dahil etti ve `specs/<app>.json` disk önbelleğine kaydetti.
+  - Eski disk önbelleklerini tazelemek için şema geçerlilik kontrolü (`content.contains("\"short_description\"")`) eklendi.
+  - Frontend'de `cleanStoreDescription` sanitizasyonu ve `#hub-desc-text` DOM alanı ile sayfa yenilenmeden yerinde (in-place) açıklama doldurma sağlandı.
+- **PlayStation Tarzı Oyun Yetenekleri & Destek Kartı (`.hub-features-card`, `.hub-features-list`):**
+  - "Platform & Özellikler" kartı zenginleştirilerek konsol oyuncularının en çok baktığı yetenek satırları (`.hub-feature-row`) eklendi:
+    1. 🎮 **Kontrolcü Desteği:** `✓ Destekleniyor (DualSense / Xbox / Gamepad)` (yeşil supported)
+    2. ☁️ **Bulut Kayıtları:** `✓ Epic Cloud` veya partner bulut kaydı (`CloudSaveFolder` / `CloudIncludeList` algılama)
+    3. 🏆 **Başarımlar:** `✓ X Kupa • Y XP` (altın gold rozet) veya partner / desteklenmiyor
+    4. 👥 **Oyun Modu:** `Tek Oyunculu`, `Çok Oyunculu`, `Eşli Oyun (Co-op)` (Akamai etiketlerinden otomatik)
+    5. 🌐 **Çevrimdışı Oynanış:** `✓ Destekleniyor (Çevrimdışı)` (`CanRunOffline` kontrolü)
+    6. 🛡️ **Hile Koruması:** `Easy Anti-Cheat`, `BattlEye`, `Denuvo` vb. (varsa)
+    7. 🖥️ **Platform:** `Windows (PC x64)`
+    8. 💾 **Yüklü Boyut & Sürüm:** Kurulu oyunlarda disk boyutu ve sürüm dökümü
+

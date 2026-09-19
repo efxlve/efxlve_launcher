@@ -319,6 +319,12 @@ pub struct GameRequirementsResponse {
     pub systems: Vec<SystemRequirement>,
     pub languages: Vec<String>,
     pub app_name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub short_description: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 #[cfg(test)]

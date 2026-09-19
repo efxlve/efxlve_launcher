@@ -874,11 +874,11 @@ pub async fn epic_get_system_requirements(
     let cache_file = specs_dir.join(format!("{}.json", app_name));
     let force = force_refresh.unwrap_or(false);
 
-    // 1. Önce disk önbelleğine bak (sadece desteklenen ve taze olanlar veya zorlama yoksa)
+    // 1. Önce disk önbelleğine bak (sadece desteklenen, taze ve yeni şemaya sahip olanlar)
     if !force && cache_file.is_file() {
         if let Ok(content) = std::fs::read_to_string(&cache_file) {
             if let Ok(cached) = serde_json::from_str::<GameRequirementsResponse>(&content) {
-                if cached.supported {
+                if cached.supported && content.contains("\"short_description\"") {
                     return Ok(cached);
                 }
             }
@@ -947,77 +947,102 @@ pub async fn epic_get_system_requirements(
             if let Ok(body) = serde_json::from_str::<serde_json::Value>(&text) {
                 if let Some(pages) = body.get("pages").and_then(|p| p.as_array()) {
                     for page in pages {
-                        if let Some(reqs) = page.get("data").and_then(|d| d.get("requirements")) {
-                            let languages = reqs
-                                .get("languages")
-                                .and_then(|l| l.as_array())
-                                .map(|arr| {
-                                    arr.iter()
-                                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                                        .collect()
-                                })
-                                .unwrap_or_default();
+                        let page_data = page.get("data");
+                        let reqs = page_data.and_then(|d| d.get("requirements"));
 
-                            let mut systems = Vec::new();
-                            if let Some(sys_arr) = reqs.get("systems").and_then(|s| s.as_array()) {
-                                for sys_val in sys_arr {
-                                    let sys_type = sys_val
-                                        .get("systemType")
-                                        .and_then(|t| t.as_str())
-                                        .unwrap_or("Windows")
-                                        .to_string();
+                        let mut store_desc: Option<String> = None;
+                        let mut store_short_desc: Option<String> = None;
+                        let mut store_tags: Vec<String> = Vec::new();
 
-                                    let mut details = Vec::new();
-                                    if let Some(det_arr) = sys_val.get("details").and_then(|d| d.as_array()) {
-                                        for det in det_arr {
-                                            let det_title = det
-                                                .get("title")
-                                                .and_then(|t| t.as_str())
-                                                .unwrap_or("")
-                                                .to_string();
-                                            if det_title.is_empty() {
-                                                continue;
-                                            }
-                                            let minimum = det
-                                                .get("minimum")
-                                                .and_then(|m| m.as_str())
-                                                .map(|s| s.to_string());
-                                            let recommended = det
-                                                .get("recommended")
-                                                .and_then(|r| r.as_str())
-                                                .map(|s| s.to_string());
-                                            details.push(SystemDetailItem {
-                                                title: det_title,
-                                                minimum,
-                                                recommended,
-                                            });
+                        if let Some(about) = page_data.and_then(|d| d.get("about")) {
+                            if let Some(sd) = about.get("shortDescription").and_then(|s| s.as_str()) {
+                                if !sd.trim().is_empty() {
+                                    store_short_desc = Some(sd.trim().to_string());
+                                }
+                            }
+                            if let Some(desc) = about.get("description").and_then(|s| s.as_str()) {
+                                if !desc.trim().is_empty() {
+                                    store_desc = Some(desc.trim().to_string());
+                                }
+                            }
+                        }
+
+                        if let Some(tags_arr) = page_data.and_then(|d| d.get("meta")).and_then(|m| m.get("tags")).and_then(|t| t.as_array()) {
+                            store_tags = tags_arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect();
+                        }
+
+                        let languages = reqs
+                            .and_then(|r| r.get("languages"))
+                            .and_then(|l| l.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+
+                        let mut systems = Vec::new();
+                        if let Some(sys_arr) = reqs.and_then(|r| r.get("systems")).and_then(|s| s.as_array()) {
+                            for sys_val in sys_arr {
+                                let sys_type = sys_val
+                                    .get("systemType")
+                                    .and_then(|t| t.as_str())
+                                    .unwrap_or("Windows")
+                                    .to_string();
+
+                                let mut details = Vec::new();
+                                if let Some(det_arr) = sys_val.get("details").and_then(|d| d.as_array()) {
+                                    for det in det_arr {
+                                        let det_title = det
+                                            .get("title")
+                                            .and_then(|t| t.as_str())
+                                            .unwrap_or("")
+                                            .to_string();
+                                        if det_title.is_empty() {
+                                            continue;
                                         }
-                                    }
-
-                                    if !details.is_empty() {
-                                        systems.push(SystemRequirement {
-                                            system_type: sys_type,
-                                            details,
+                                        let minimum = det
+                                            .get("minimum")
+                                            .and_then(|m| m.as_str())
+                                            .map(|s| s.to_string());
+                                        let recommended = det
+                                            .get("recommended")
+                                            .and_then(|r| r.as_str())
+                                            .map(|s| s.to_string());
+                                        details.push(SystemDetailItem {
+                                            title: det_title,
+                                            minimum,
+                                            recommended,
                                         });
                                     }
                                 }
-                            }
 
-                            if !systems.is_empty() {
-                                let result = GameRequirementsResponse {
-                                    supported: true,
-                                    systems,
-                                    languages,
-                                    app_name: app_name.clone(),
-                                };
-
-                                let _ = std::fs::create_dir_all(&specs_dir);
-                                if let Ok(json_str) = serde_json::to_string(&result) {
-                                    let _ = std::fs::write(&cache_file, json_str);
+                                if !details.is_empty() {
+                                    systems.push(SystemRequirement {
+                                        system_type: sys_type,
+                                        details,
+                                    });
                                 }
-
-                                return Ok(result);
                             }
+                        }
+
+                        if !systems.is_empty() || store_short_desc.is_some() || store_desc.is_some() {
+                            let result = GameRequirementsResponse {
+                                supported: true,
+                                systems,
+                                languages,
+                                app_name: app_name.clone(),
+                                description: store_desc,
+                                short_description: store_short_desc,
+                                tags: store_tags,
+                            };
+
+                            let _ = std::fs::create_dir_all(&specs_dir);
+                            if let Ok(json_str) = serde_json::to_string(&result) {
+                                let _ = std::fs::write(&cache_file, json_str);
+                            }
+
+                            return Ok(result);
                         }
                     }
                 }
@@ -1031,6 +1056,9 @@ pub async fn epic_get_system_requirements(
         systems: vec![],
         languages: vec![],
         app_name: app_name.clone(),
+        description: None,
+        short_description: None,
+        tags: vec![],
     };
 
     Ok(fallback)

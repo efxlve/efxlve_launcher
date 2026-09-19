@@ -502,6 +502,9 @@ export interface GameRequirementsResponse {
   systems: SystemRequirement[];
   languages: string[];
   appName: string;
+  description?: string;
+  shortDescription?: string;
+  tags?: string[];
 }
 
 export const epicGetSystemRequirements = (title: string, appName: string, forceRefresh = false) =>
