@@ -18,6 +18,7 @@ pub mod hltb;
 pub mod steamgrid;
 pub mod profile;
 pub mod critic;
+pub mod screenshots;
 
 use thiserror::Error;
 

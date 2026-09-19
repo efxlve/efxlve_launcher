@@ -82,9 +82,14 @@ import {
   epicImportEglCollections,
   epicGetHltb,
   epicGetCritic,
+  epicGetGameScreenshots,
+  epicCaptureGameScreenshot,
+  epicDeleteGameScreenshot,
+  epicOpenGameScreenshotsFolder,
   type HltbData,
   type CriticData,
   type GoygoyReview,
+  type GameScreenshotItem,
   type GameCollection,
   type PlaytimeRecord,
   type GameStatusEvent,
@@ -431,8 +436,13 @@ const DEMO_PLAT_KEY = "efxlve-demo-platinum";
 let demoPlatinumApps: Set<string> = loadStrSet(DEMO_PLAT_KEY);
 let loadedAchievements: Map<string, EpicAchievementsData> = new Map();
 let loadingAchFor: string | null = null;
-type DrawerTab = "overview" | "achievements" | "dlcs" | "manage" | "specs";
+type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
 let activeDrawerTab: DrawerTab = "overview";
+
+/* ---------- Ekran Görüntüleri Durumu ---------- */
+let loadedScreenshots: Map<string, GameScreenshotItem[]> = new Map();
+let loadingScreenshotsFor: string | null = null;
+let activeLightboxScreenshot: { appName: string; index: number } | null = null;
 let activeAchScope: "all" | "base" | "dlc" = "all";
 let activeAchFilter: "all" | "unlocked" | "locked" | "hidden" = "all";
 let achSearchQuery = "";
@@ -2711,6 +2721,11 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     ? `<span class="drawer-tab-badge">(${currentDlcCount})</span>`
     : "";
 
+  const currentSsCount = loadedScreenshots.get(appName)?.length ?? 0;
+  const ssTabBadge = currentSsCount > 0
+    ? `<span class="drawer-tab-badge">(${currentSsCount})</span>`
+    : "";
+
   if (activeDrawerTab === "overview" && !loadedHltb.has(appName) && loadingHltbFor !== appName) {
     loadingHltbFor = appName;
     epicGetHltb(s.title, s.appName)
@@ -2750,6 +2765,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     void fetchAndRenderRequirements(appName, s.title);
   }
 
+  if (!loadedScreenshots.has(appName) && loadingScreenshotsFor !== appName) {
+    void fetchAndRenderScreenshots(appName, s.title);
+  }
+
   if (!isInitialOpen) {
     const existingHub = modalRoot.querySelector(".game-hub, .drawer") as HTMLElement | null;
     const overlayEl = modalRoot.querySelector(".overlay") as HTMLElement | null;
@@ -2776,9 +2795,11 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
             ? renderDrawerAchievements(s)
             : activeDrawerTab === "dlcs"
               ? renderDrawerDlcs(s)
-              : activeDrawerTab === "manage"
-                ? renderDrawerManage(s)
-                : renderDrawerSystemRequirements(s);
+              : activeDrawerTab === "screenshots"
+                ? renderDrawerScreenshots(s)
+                : activeDrawerTab === "manage"
+                  ? renderDrawerManage(s)
+                  : renderDrawerSystemRequirements(s);
 
       if (animateTabContent) {
         contentEl.classList.remove("tab-content-enter");
@@ -2860,10 +2881,6 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
                 <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfasını Aç">
                   ${icon("external", 15)} <span>Mağaza</span>
                 </button>
-                ${s.installed ? `
-                <button class="btn ghost" data-act="drawer-tab" data-tab="manage" data-id="${s.appName}" title="Dosyaları ve Ayarları Yönet">
-                  ${icon("settings", 15)} <span>Yönet</span>
-                </button>` : ""}
                 ${p !== null ? `<button class="btn ghost danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 15)} <span>İptal</span></button>` : ""}
               </div>
             </div>
@@ -2909,6 +2926,9 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
               <button class="drawer-tab ${activeDrawerTab === "dlcs" ? "active" : ""}" data-act="drawer-tab" data-tab="dlcs" data-id="${appName}">
                 ${icon("layers", 13)} Eklentiler ${dlcTabBadge}
               </button>
+              <button class="drawer-tab ${activeDrawerTab === "screenshots" ? "active" : ""}" data-act="drawer-tab" data-tab="screenshots" data-id="${appName}">
+                ${icon("image", 13)} Ekran Görüntüleri ${ssTabBadge}
+              </button>
               ${s.installed ? `
               <button class="drawer-tab ${activeDrawerTab === "manage" ? "active" : ""}" data-act="drawer-tab" data-tab="manage" data-id="${appName}">
                 ${icon("settings", 13)} Yönet
@@ -2933,9 +2953,11 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
                   ? renderDrawerAchievements(s)
                   : activeDrawerTab === "dlcs"
                     ? renderDrawerDlcs(s)
-                    : activeDrawerTab === "manage"
-                      ? renderDrawerManage(s)
-                      : renderDrawerSystemRequirements(s)
+                    : activeDrawerTab === "screenshots"
+                      ? renderDrawerScreenshots(s)
+                      : activeDrawerTab === "manage"
+                        ? renderDrawerManage(s)
+                        : renderDrawerSystemRequirements(s)
             }
           </div>
         </div>
@@ -3522,6 +3544,222 @@ function renderDrawerDlcs(s: EpicSummary): string {
       </div>
     </div>
   `;
+}
+
+function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
+  if (!force && loadedScreenshots.has(appName)) return;
+  loadingScreenshotsFor = appName;
+  epicGetGameScreenshots(appName, title)
+    .then((items) => {
+      loadedScreenshots.set(appName, items);
+      loadingScreenshotsFor = null;
+      if (currentModalAppName === appName) {
+        const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
+        const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
+        if (items.length > 0) {
+          if (badgeEl) {
+            badgeEl.textContent = `(${items.length})`;
+          } else if (tabBtn) {
+            tabBtn.insertAdjacentHTML("beforeend", ` <span class="drawer-tab-badge">(${items.length})</span>`);
+          }
+        } else if (badgeEl) {
+          badgeEl.remove();
+        }
+
+        if (activeDrawerTab === "screenshots") {
+          const contentEl = document.getElementById("drawer-tab-content");
+          if (contentEl) {
+            const curSummary = epicSummaries.find((x) => x.appName === appName);
+            if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
+          }
+        }
+      }
+    })
+    .catch(() => {
+      loadingScreenshotsFor = null;
+    });
+}
+
+function renderDrawerScreenshots(s: EpicSummary): string {
+  const screenshots = loadedScreenshots.get(s.appName) || [];
+  const isLoading = loadingScreenshotsFor === s.appName;
+
+  if (isLoading && screenshots.length === 0) {
+    return `
+      <div class="screenshots-tab-container">
+        <div class="screenshots-loading-box">
+          <span class="hltb-spinner" style="width:28px;height:28px;border-width:3px"></span>
+          <span>Ekran görüntüleri taranıyor…</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const headerHtml = `
+    <div class="screenshots-gallery-head">
+      <div class="screenshots-head-info">
+        <h3 class="screenshots-title">${icon("image", 15)} <span>Oyun Ekran Görüntüleri</span></h3>
+        <span class="screenshots-count-chip">${screenshots.length} Fotoğraf</span>
+      </div>
+      <div class="screenshots-head-actions">
+        <button class="btn primary small" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}" title="Hemen ekran görüntüsü al">
+          ${icon("image", 13)} Ekran Görüntüsü Al
+        </button>
+        <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="Klasörü Explorer'da Aç">
+          ${icon("folder", 13)} Klasörü Aç
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (screenshots.length === 0) {
+    return `
+      <div class="screenshots-tab-container">
+        ${headerHtml}
+        <div class="screenshots-empty-card">
+          <div class="screenshots-empty-icon">${icon("image", 44)}</div>
+          <h4 class="screenshots-empty-title">Henüz Ekran Görüntüsü Yok</h4>
+          <p class="screenshots-empty-desc">
+            Oyun oynarken <strong>F12</strong> veya <strong>Win + Alt + PrtScn</strong> tuşlarına basarak ekran görüntüsü yakalayabilirsiniz. Alınan görüntüler otomatik olarak burada toplanır.
+          </p>
+          <div class="screenshots-empty-actions">
+            <button class="btn primary" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}">
+              ${icon("image", 14)} Hemen Ekran Görüntüsü Al
+            </button>
+            <button class="btn ghost" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}">
+              ${icon("folder", 14)} Ekran Görüntüleri Klasörünü Aç
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const cardsHtml = screenshots
+    .map(
+      (item, idx) => `
+    <div class="screenshot-card" data-act="open-screenshot-lightbox" data-id="${s.appName}" data-idx="${idx}" tabindex="0" title="${esc(item.file_name)}">
+      <div class="screenshot-thumb-wrap">
+        <img src="${item.data_url}" alt="${esc(item.file_name)}" loading="lazy" />
+        <div class="screenshot-overlay">
+          <div class="screenshot-overlay-top">
+            <span class="ss-chip date">${esc(item.date_str)}</span>
+            <span class="ss-chip size">${esc(item.size_str)}</span>
+          </div>
+          <div class="screenshot-overlay-bottom">
+            <span class="ss-view-btn">${icon("eye", 12)} Büyüt</span>
+            <button class="ss-delete-btn" data-act="delete-screenshot" data-id="${s.appName}" data-path="${esc(item.file_path)}" title="Sil">
+              ${icon("trash", 12)}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="screenshot-info-strip">
+        <span class="ss-name" title="${esc(item.file_name)}">${esc(item.file_name)}</span>
+        <span class="ss-date">${esc(item.date_str)}</span>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+
+  return `
+    <div class="screenshots-tab-container">
+      ${headerHtml}
+      <div class="screenshots-grid">
+        ${cardsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderScreenshotLightbox(appName: string, index: number): string {
+  const list = loadedScreenshots.get(appName) || [];
+  const item = list[index];
+  if (!item) return "";
+
+  return `
+    <div class="screenshot-lightbox-overlay" data-act="close-screenshot-lightbox-backdrop">
+      <div class="screenshot-lightbox-box">
+        <div class="lightbox-topbar">
+          <div class="lightbox-info">
+            <span class="lightbox-filename">${esc(item.file_name)}</span>
+            <span class="lightbox-meta">${esc(item.date_str)} • ${esc(item.size_str)}</span>
+          </div>
+          <div class="lightbox-tools">
+            <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="Klasörde Göster">
+              ${icon("folder", 12)} Klasörde Aç
+            </button>
+            <button class="btn ghost danger small" data-act="delete-screenshot" data-id="${appName}" data-path="${esc(item.file_path)}" data-lightbox="true" title="Ekran görüntüsünü sil">
+              ${icon("trash", 12)} Sil
+            </button>
+            <button class="btn ghost small" data-act="close-screenshot-lightbox" title="Kapat (ESC)">
+              ${icon("x", 14)}
+            </button>
+          </div>
+        </div>
+
+        <div class="lightbox-stage">
+          ${
+            list.length > 1
+              ? `
+            <button class="lightbox-arrow prev" data-act="lightbox-nav" data-dir="prev" title="Önceki (Sol Ok)">
+              ${icon("chevron-left", 22)}
+            </button>
+          `
+              : ""
+          }
+
+          <div class="lightbox-img-container">
+            <img src="${item.data_url}" alt="${esc(item.file_name)}" />
+          </div>
+
+          ${
+            list.length > 1
+              ? `
+            <button class="lightbox-arrow next" data-act="lightbox-nav" data-dir="next" title="Sonraki (Sağ Ok)">
+              ${icon("chevron-right", 22)}
+            </button>
+          `
+              : ""
+          }
+        </div>
+
+        <div class="lightbox-counter-bar">
+          <span>${index + 1} / ${list.length}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openScreenshotLightbox(appName: string, index: number): void {
+  activeLightboxScreenshot = { appName, index };
+  let lbRoot = document.getElementById("lightbox-root");
+  if (!lbRoot) {
+    lbRoot = document.createElement("div");
+    lbRoot.id = "lightbox-root";
+    document.body.appendChild(lbRoot);
+  }
+  lbRoot.innerHTML = renderScreenshotLightbox(appName, index);
+}
+
+function closeScreenshotLightbox(): void {
+  activeLightboxScreenshot = null;
+  const lbRoot = document.getElementById("lightbox-root");
+  if (lbRoot) {
+    lbRoot.innerHTML = "";
+  }
+}
+
+function navigateScreenshotLightbox(dir: "prev" | "next"): void {
+  if (!activeLightboxScreenshot) return;
+  const list = loadedScreenshots.get(activeLightboxScreenshot.appName) || [];
+  if (list.length <= 1) return;
+  let nextIdx = activeLightboxScreenshot.index + (dir === "prev" ? -1 : 1);
+  if (nextIdx < 0) nextIdx = list.length - 1;
+  if (nextIdx >= list.length) nextIdx = 0;
+  openScreenshotLightbox(activeLightboxScreenshot.appName, nextIdx);
 }
 
 function renderDrawerManage(s: EpicSummary): string {
@@ -7496,6 +7734,11 @@ document.addEventListener("click", (e) => {
             })
             .catch(() => {});
         }
+      } else if (tab === "screenshots") {
+        if (!loadedScreenshots.has(currentModalAppName)) {
+          const s = epicSummaries.find((x) => x.appName === currentModalAppName);
+          if (s) void fetchAndRenderScreenshots(currentModalAppName, s.title);
+        }
       } else if (tab === "specs") {
         if (!loadedRequirements.has(currentModalAppName)) {
           const s = epicSummaries.find((x) => x.appName === currentModalAppName);
@@ -7570,6 +7813,52 @@ document.addEventListener("click", (e) => {
     if (currentModalAppName === id) openEpicModal(id, false, false);
   } else if (act === "ach-refresh" && id) {
     void fetchAndRenderAchievements(id, true);
+  } else if (act === "capture-screenshot" && id) {
+    const s = epicSummaries.find((x) => x.appName === id);
+    const title = t.dataset.title || (s ? s.title : id);
+    toast("Ekran görüntüsü alınıyor…", "");
+    epicCaptureGameScreenshot(id, title)
+      .then((item) => {
+        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        void fetchAndRenderScreenshots(id, title, true);
+      })
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "open-screenshots-folder" && id) {
+    const s = epicSummaries.find((x) => x.appName === id);
+    const title = t.dataset.title || (s ? s.title : id);
+    void epicOpenGameScreenshotsFolder(id, title);
+  } else if (act === "delete-screenshot" && id) {
+    const filePath = t.dataset.path;
+    const isLightbox = t.dataset.lightbox === "true";
+    if (filePath) {
+      if (confirm("Bu ekran görüntüsünü silmek istediğinize emin misiniz?")) {
+        epicDeleteGameScreenshot(filePath)
+          .then((success) => {
+            if (success) {
+              toast("Ekran görüntüsü silindi", "ok");
+              const s = epicSummaries.find((x) => x.appName === id);
+              const title = s ? s.title : id;
+              if (isLightbox) closeScreenshotLightbox();
+              void fetchAndRenderScreenshots(id, title, true);
+            } else {
+              toast("Ekran görüntüsü silinemedi", "err");
+            }
+          })
+          .catch((err) => toast(String(err), "err"));
+      }
+    }
+  } else if (act === "open-screenshot-lightbox" && id) {
+    const idx = parseInt(t.dataset.idx || "0", 10);
+    openScreenshotLightbox(id, idx);
+  } else if (act === "close-screenshot-lightbox") {
+    closeScreenshotLightbox();
+  } else if (act === "close-screenshot-lightbox-backdrop") {
+    if (e.target === t) {
+      closeScreenshotLightbox();
+    }
+  } else if (act === "lightbox-nav") {
+    const dir = (t.dataset.dir as "prev" | "next") || "next";
+    navigateScreenshotLightbox(dir);
   } else if (act === "win-minimize") {
     if (isTauri) void invoke("app_minimize");
   } else if (act === "win-maximize") {
@@ -7612,9 +7901,27 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("keydown", (e) => {
+  if (activeLightboxScreenshot) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeScreenshotLightbox();
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      navigateScreenshotLightbox("prev");
+      return;
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      navigateScreenshotLightbox("next");
+      return;
+    }
+  }
+
   if (e.key === "Enter" || e.key === " ") {
     const active = document.activeElement as HTMLElement | null;
-    if (active && active.classList.contains("pcard") && !active.closest("input, select, textarea")) {
+    if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card")) && !active.closest("input, select, textarea")) {
       e.preventDefault();
       active.click();
       return;
@@ -8236,6 +8543,16 @@ async function init(): Promise<void> {
       }
     });
 
+    await listen<{ id: string; count: number }>("screenshots-updated", (event) => {
+      const { id, count } = event.payload;
+      if (count > 0) {
+        toast(`${count} yeni ekran görüntüsü kaydedildi`, "ok");
+        const s = epicSummaries.find((x) => x.appName === id);
+        const title = s ? s.title : id;
+        void fetchAndRenderScreenshots(id, title, true);
+      }
+    });
+
     await listen<{ id: string; success: boolean }>("cloud-sync-complete", () => {
       toast("Bulut kayıtları eşitlendi (EOS)", "ok");
       const cloudSub = document.getElementById("manage-cloud-subtitle");
@@ -8383,7 +8700,9 @@ function gamepadLoop(): void {
     if (btnB) {
       // B / Daire (○): Geri / Kapat
       lastGamepadActionTime = now;
-      if (currentModalAppName) {
+      if (activeLightboxScreenshot) {
+        closeScreenshotLightbox();
+      } else if (currentModalAppName) {
         closeModal();
       }
     } else if (btnA) {
@@ -8410,7 +8729,11 @@ function gamepadLoop(): void {
       }
     } else if (up || down || left || right) {
       lastGamepadActionTime = now;
-      handleGamepadDirectionalMove(up ? "up" : down ? "down" : left ? "left" : "right");
+      if (activeLightboxScreenshot && (left || right)) {
+        navigateScreenshotLightbox(left ? "prev" : "next");
+      } else {
+        handleGamepadDirectionalMove(up ? "up" : down ? "down" : left ? "left" : "right");
+      }
     }
   }
 
@@ -8482,7 +8805,7 @@ function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): vo
 
 function handleGamepadTabSwitch(step: number): void {
   if (currentModalAppName) {
-    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs"];
+    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs", "screenshots"];
     const curSummary = epicSummaries.find((x) => x.appName === currentModalAppName);
     if (curSummary?.installed) tabs.push("manage");
     tabs.push("specs");
