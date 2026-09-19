@@ -1,7 +1,30 @@
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use tauri::AppHandle;
+use std::sync::RwLock;
+use tauri::{AppHandle, Emitter};
+
+static RUNNING_GAME: RwLock<Option<(String, String)>> = RwLock::new(None);
+
+pub fn set_active_running_game(app_name: &str, title: &str) {
+    if let Ok(mut g) = RUNNING_GAME.write() {
+        *g = Some((app_name.to_string(), title.to_string()));
+    }
+}
+
+pub fn clear_active_running_game(app_name: &str) {
+    if let Ok(mut g) = RUNNING_GAME.write() {
+        if let Some((ref cur, _)) = *g {
+            if cur == app_name {
+                *g = None;
+            }
+        }
+    }
+}
+
+pub fn get_active_running_game() -> Option<(String, String)> {
+    RUNNING_GAME.read().ok().and_then(|g| g.clone())
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameScreenshotItem {
@@ -222,6 +245,60 @@ pub async fn epic_get_game_screenshots(
     .map_err(|e| e.to_string())?
 }
 
+/// Senkron olarak birincil ekranın görüntüsünü alır ve ilgili oyun klasörüne kaydeder.
+pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
+    let clean_t = if !title.trim().is_empty() {
+        clean_folder_name(title)
+    } else {
+        clean_folder_name(app_name)
+    };
+    let target_dir = game_screenshots_dir(&clean_t);
+    let _ = std::fs::create_dir_all(&target_dir);
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let file_name = format!("{}_Screenshot_{}.png", clean_t.replace(' ', "_"), timestamp);
+    let target_file = target_dir.join(&file_name);
+
+    let target_str = target_file.to_string_lossy().to_string();
+
+    // PowerShell -EncodedCommand ile ekran görüntüsü yakalama
+    let ps_code = format!(
+        r#"
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$bmp = New-Object System.Drawing.Bitmap($b.Width, $b.Height)
+$g = [System.Drawing.Graphics]::FromImage($bmp)
+$g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+$bmp.Save('{}', [System.Drawing.Imaging.ImageFormat]::Png)
+$g.Dispose()
+$bmp.Dispose()
+"#,
+        target_str.replace('\'', "''")
+    );
+
+    let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
+    let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
+
+    let status = std::process::Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-EncodedCommand")
+        .arg(&encoded_cmd)
+        .status();
+
+    match status {
+        Ok(s) if s.success() && target_file.exists() => {
+            parse_file_to_item(&target_file).ok_or_else(|| "Ekran görüntüsü dosyası okunamadı".to_string())
+        }
+        Ok(s) => Err(format!("Ekran görüntüsü alınamadı (kod: {:?})", s.code())),
+        Err(e) => Err(format!("PowerShell çalıştırılamadı: {}", e)),
+    }
+}
+
 /// Ekran görüntüsü alır ve oyunun klasörüne kaydeder.
 #[tauri::command]
 pub async fn epic_capture_game_screenshot(
@@ -230,60 +307,69 @@ pub async fn epic_capture_game_screenshot(
     title: String,
 ) -> Result<GameScreenshotItem, String> {
     tokio::task::spawn_blocking(move || {
-        let clean_t = if !title.trim().is_empty() {
-            clean_folder_name(&title)
-        } else {
-            clean_folder_name(&app_name)
-        };
-        let target_dir = game_screenshots_dir(&clean_t);
-        let _ = std::fs::create_dir_all(&target_dir);
-
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        let file_name = format!("{}_Screenshot_{}.png", clean_t.replace(' ', "_"), timestamp);
-        let target_file = target_dir.join(&file_name);
-
-        let target_str = target_file.to_string_lossy().to_string();
-
-        // PowerShell -EncodedCommand ile ekran görüntüsü yakalama
-        let ps_code = format!(
-            r#"
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-$bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
-$graphics = [System.Drawing.Graphics]::FromImage($bmp)
-$graphics.CopyFromScreen(0, 0, 0, 0, $bounds.Size)
-$bmp.Save('{}', [System.Drawing.Imaging.ImageFormat]::Png)
-$graphics.Dispose()
-$bmp.Dispose()
-"#,
-            target_str.replace('\'', "''")
-        );
-
-        let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
-        let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
-
-        let status = std::process::Command::new("powershell.exe")
-            .arg("-NoProfile")
-            .arg("-NonInteractive")
-            .arg("-EncodedCommand")
-            .arg(&encoded_cmd)
-            .status();
-
-        match status {
-            Ok(s) if s.success() && target_file.exists() => {
-                parse_file_to_item(&target_file).ok_or_else(|| "Ekran görüntüsü dosyası okunamadı".to_string())
-            }
-            Ok(s) => Err(format!("Ekran görüntüsü alınamadı (kod: {:?})", s.code())),
-            Err(e) => Err(format!("PowerShell çalıştırılamadı: {}", e)),
-        }
+        capture_game_screenshot_sync(&app_name, &title)
     })
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Oyun açıkken F12 tuşuna basıldığında ekran görüntüsü yakalayan arka plan dinleyicisi.
+#[cfg(target_os = "windows")]
+pub fn start_f12_listener(app: AppHandle) {
+    std::thread::spawn(move || {
+        #[link(name = "user32")]
+        extern "system" {
+            fn GetAsyncKeyState(vKey: i32) -> i16;
+        }
+
+        const VK_F12: i32 = 0x7B;
+        let mut was_down = false;
+        let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
+
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(35));
+
+            // Sadece bir oyun aktif oynanıyorken F12'yi kontrol et
+            let running = get_active_running_game();
+            if running.is_none() {
+                was_down = false;
+                continue;
+            }
+
+            let state = unsafe { GetAsyncKeyState(VK_F12) };
+            let is_down = (state as u16 & 0x8000) != 0;
+
+            if is_down && !was_down {
+                // F12 tuşuna basıldı! (Key Down Edge)
+                if last_capture_time.elapsed() >= std::time::Duration::from_millis(600) {
+                    last_capture_time = std::time::Instant::now();
+                    if let Some((app_name, title)) = running {
+                        let app_clone = app.clone();
+                        let app_name_clone = app_name.clone();
+                        let title_clone = title.clone();
+                        std::thread::spawn(move || {
+                            if let Ok(item) = capture_game_screenshot_sync(&app_name_clone, &title_clone) {
+                                let _ = app_clone.emit(
+                                    "screenshot-captured",
+                                    serde_json::json!({
+                                        "id": app_name_clone,
+                                        "title": title_clone,
+                                        "item": item,
+                                    }),
+                                );
+                            }
+                        });
+                    }
+                }
+            }
+
+            was_down = is_down;
+        }
+    });
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn start_f12_listener(_app: AppHandle) {}
 
 /// Ekran görüntüsü dosyasını siler.
 #[tauri::command]
@@ -402,5 +488,13 @@ mod tests {
         // 1700000000 = 14.11.2023 22:13:20
         let date_str = chrono_fallback(1700000000);
         assert!(date_str.contains("2023"));
+    }
+
+    #[test]
+    fn test_running_game_lifecycle() {
+        set_active_running_game("Sugar", "Alan Wake 2");
+        assert_eq!(get_active_running_game(), Some(("Sugar".to_string(), "Alan Wake 2".to_string())));
+        clear_active_running_game("Sugar");
+        assert_eq!(get_active_running_game(), None);
     }
 }

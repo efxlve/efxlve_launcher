@@ -3580,6 +3580,43 @@ function fetchAndRenderScreenshots(appName: string, title: string, force = false
     });
 }
 
+function playScreenshotShutterSound(): void {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    // 1. Deklanşör Tıklaması (Mekanik Shutter Başlangıcı)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(900, now);
+    osc1.frequency.exponentialRampToValueAtTime(100, now + 0.04);
+    gain1.gain.setValueAtTime(0.25, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.045);
+
+    // 2. Deklanşör Kapanışı (Mechanical Snap)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "triangle";
+    osc2.frequency.setValueAtTime(1500, now + 0.035);
+    osc2.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+    gain2.gain.setValueAtTime(0.2, now + 0.035);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.035);
+    osc2.stop(now + 0.085);
+  } catch {
+    // Ses engellendiyse sessizce geç
+  }
+}
+
 function renderDrawerScreenshots(s: EpicSummary): string {
   const screenshots = loadedScreenshots.get(s.appName) || [];
   const isLoading = loadingScreenshotsFor === s.appName;
@@ -7919,6 +7956,23 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
+  if (e.key === "F12") {
+    if (currentModalAppName) {
+      e.preventDefault();
+      const s = epicSummaries.find((x) => x.appName === currentModalAppName);
+      const title = s ? s.title : currentModalAppName;
+      toast("Ekran görüntüsü alınıyor…", "");
+      epicCaptureGameScreenshot(currentModalAppName, title)
+        .then((item) => {
+          toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+          playScreenshotShutterSound();
+          void fetchAndRenderScreenshots(currentModalAppName!, title, true);
+        })
+        .catch((err) => toast(String(err), "err"));
+      return;
+    }
+  }
+
   if (e.key === "Enter" || e.key === " ") {
     const active = document.activeElement as HTMLElement | null;
     if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card")) && !active.closest("input, select, textarea")) {
@@ -8552,6 +8606,37 @@ async function init(): Promise<void> {
         void fetchAndRenderScreenshots(id, title, true);
       }
     });
+
+    await listen<{ id: string; title: string; item: GameScreenshotItem }>(
+      "screenshot-captured",
+      (event) => {
+        const { id, item } = event.payload;
+        toast(`📸 Ekran görüntüsü alındı: ${item.file_name}`, "ok");
+        playScreenshotShutterSound();
+
+        const existing = loadedScreenshots.get(id) || [];
+        loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
+
+        if (currentModalAppName === id) {
+          const list = loadedScreenshots.get(id) || [];
+          const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
+          const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
+          if (badgeEl) {
+            badgeEl.textContent = `(${list.length})`;
+          } else if (tabBtn) {
+            tabBtn.insertAdjacentHTML("beforeend", ` <span class="drawer-tab-badge">(${list.length})</span>`);
+          }
+
+          if (activeDrawerTab === "screenshots") {
+            const contentEl = document.getElementById("drawer-tab-content");
+            const curSummary = epicSummaries.find((x) => x.appName === id);
+            if (contentEl && curSummary) {
+              contentEl.innerHTML = renderDrawerScreenshots(curSummary);
+            }
+          }
+        }
+      }
+    );
 
     await listen<{ id: string; success: boolean }>("cloud-sync-complete", () => {
       toast("Bulut kayıtları eşitlendi (EOS)", "ok");
