@@ -668,10 +668,20 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
       - Kupa ikonu, başarım adedi ve tamamlama yüzdesi (`12/48 (%25)`).
       - Altın/amber gradyanlı ince ilerleme çubuğu.
       - Toplam kazanılan XP (`450/1000 XP`) ve tıklandığında doğrudan `🏆 Başarımlar` sekmesine pürüzsüz geçiş sağlayan interaktif ok butonu.
-      - Platin kupalı oyunlarda ışıltılı altın kupa ve `🏆 Platin Kupa Tamamlandı!` rozeti.
-  - **Oyun Künyesi & Meta Etiketleri (`.drawer-meta-chips`):**
-    - Epic kataloğunda uzun açıklaması bulunmayan oyunlarda (örn. Rainbow Six Siege) ekranın boş kalmaması için Geliştirici, Eklentiler/DLC adedi (tıklandığında `Eklentiler` sekmesine geçer), 3. Parti Başlatıcı, Hile Koruması ve Platform etiketleri temiz ve modern hap kutucuklar halinde sunulur.
 
+## 45. SteamHunters İlhamlı Başarımlar & Detay Çekmecesi Dönüşümü
 
-
-
+- **HowLongToBeat Uç Nokta Düzeltmesi (Rust `hltb.rs`):**
+  - Dinamik uç nokta çözümlemesinde chunk betiklerinden dönen `/init?t=...` takısının ayıklanması sağlandı. Böylece arama istekleri POST 405 Method Not Allowed yerine doğru `/api/search/site` adresine yönlendirildi ve Rainbow Six Siege gibi tüm oyunlarda süre verileri (Ana Hikaye, Ekstra, %100) 200 OK ile sorunsuz elde edildi.
+- **Genel Bakış (Overview) Görsel Sadeleştirmesi:**
+  - Kullanıcıyı boğan ve zaten başlık altında yer alan mükerrer 4 gri kutu (`GELİŞTİRİCİ`, `BAŞLATICI`, `HİLE KORUMASI`, `PLATFORM`) kaldırıldı.
+  - Açıklaması olmayan oyunlarda ekranın boş kalmaması için zarif, tek satırlık `.drawer-feature-strip` eklendi; eklenti hapına tıklandığında doğrudan Eklentiler sekmesine geçiş sağlandı.
+  - Başarım hızlı ilerleme şeridine kullanıcının kazandığı ilk 4 başarımı gösteren mini kupa görselleri (`.quick-ach-thumbs-row`) entegre edildi.
+- **SteamHunters Başarım Mimarisi & Havadar Cam Tasarım:**
+  - **Kategori & DLC Gruplaması (`.ach-group-section`):** SteamHunters yapısına uygun olarak başarımlar `Ana Oyun (Base Game)` ve `Ek Paketler & DLC` olarak iki bağımsız bölüme ayrıldı. Her bölüm kendi kupa adedini (`X/Y`), tamamlanma yüzdesini (`%pct`), toplam XP'sini ve renkli ilerleme çubuğunu (Ana oyun: altın kehribar, DLC: mor/lavanta) taşır.
+  - **Canlı Arama & Akıllı Sıralama Çubuğu (`.ach-toolbar`):**
+    - `#ach-search-input`: Başarım adı ve açıklamasında anında filtreleme yapar; çekmeceyi yeniden açmadan veya input odağını kaybetmeden listeyi yerinde (in-place) günceller.
+    - `#ach-sort-select`: `Varsayılan Sıra`, `Nadirliğe Göre`, `XP'ye Göre` ve `Kazanılma Tarihine Göre` sıralama seçenekleri sunar.
+  - **Havadar & Şeffaf Cam Kart Tasarımı (`.ach-card`):**
+    - Eski boğucu, kalın ve mat gri kutular yerine 52px yüksek çözünürlüklü ikonlar, 11px padding, yarı saydam cam arka plan (`rgba(255, 255, 255, 0.035)` / backdrop blur) ve kazanılan başarılarda asil altın sol kenarlık (`border-left: 3px solid rgba(245, 158, 11, 0.6)`) kullanıldı.
+    - Kilitli başarımlar soluk gri ve şık asma kilit rozeti ile gösterilir; gizli başarımlar ise tıklandığında açılıp kapanabilen spoiler koruması sunar.

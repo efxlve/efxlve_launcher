@@ -1837,113 +1837,204 @@ button { font-family: inherit; }
   color: #6ee7b7;
 }
 
-/* --- Başarımlar Görünümü (World-Class Dark UI) --- */
-.ach-hero-compact {
+/* --- Çekmece Özellik Şeridi & Hızlı Başarım Önizleme --- */
+.drawer-feature-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.drawer-feature-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.drawer-feature-pill.clickable {
+  cursor: pointer;
+  font-family: inherit;
+}
+.drawer-feature-pill.clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.quick-ach-thumbs-row {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+.quick-ach-mini-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1.5px solid #141720;
+  margin-left: -6px;
+  background: #0d0f15;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.quick-ach-thumbs-row .quick-ach-mini-thumb:first-child {
+  margin-left: 0;
+}
+
+/* --- SteamHunters İlhamlı Başarımlar Görünümü (Atmospheric & Categorized Dark UI) --- */
+.ach-sh-hero {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.015) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 14px 18px;
+  padding: 16px 18px;
   margin-bottom: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
 }
-.ach-hero-compact.platinum {
+.ach-sh-hero.platinum {
   border-color: rgba(251, 191, 36, 0.35);
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(20, 21, 28, 0.4) 100%);
   box-shadow: 0 4px 24px rgba(251, 191, 36, 0.18);
 }
-.ach-hero-row.top {
+.ach-sh-hero.platinum::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 140px;
+  height: 100%;
+  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.15), transparent 70%);
+  pointer-events: none;
+}
+.ach-sh-hero-body {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
-.ach-hero-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.ach-sh-trophy-col {
+  flex-shrink: 0;
 }
-.ach-hero-trophy-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+.ach-sh-trophy-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
-.ach-hero-trophy-badge.platinum {
+.ach-sh-trophy-badge.platinum {
   background: linear-gradient(135deg, #ffd700, #f59e0b);
   color: #1e1b18;
   border: none;
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.45);
 }
-.ach-hero-heading-group {
+.ach-sh-info-col {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
-.ach-hero-headline {
+.ach-sh-headline-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.ach-hero-heading {
+.ach-sh-title {
   font-size: 15px;
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.2px;
+  margin: 0;
 }
-.ach-pct-badge {
-  font-size: 11.5px;
+.ach-sh-pct-pill {
+  font-size: 11px;
   font-weight: 700;
   color: #fbbf24;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  padding: 2px 8px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 1px 7px;
   border-radius: 6px;
 }
-.ach-pct-badge.platinum {
+.ach-sh-pct-pill.platinum {
   color: #ffd700;
-  background: rgba(251, 191, 36, 0.2);
-  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.22);
+  border-color: rgba(251, 191, 36, 0.45);
 }
-.ach-hero-subline {
-  font-size: 12px;
-  color: #94a3b8;
-}
-.ach-hero-unlocked-count {
-  font-weight: 700;
-  color: #f1f5f9;
-}
-.ach-hero-right {
+.ach-sh-stats-row {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.ach-xp-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 5px 12px;
-  border-radius: 8px;
+  color: #94a3b8;
 }
-.ach-xp-curr {
-  font-weight: 700;
-  color: #fbbf24;
+.ach-sh-stat-main strong,
+.ach-sh-stat-xp strong {
+  color: #f1f5f9;
 }
-.ach-xp-total {
+.ach-sh-stat-dot {
+  color: #475569;
+}
+.ach-sh-bar-wrap {
+  width: 100%;
+  margin: 4px 0 2px;
+}
+.ach-sh-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.ach-sh-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d97706 0%, #f59e0b 60%, #fbbf24 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  transition: width 0.35s ease;
+}
+.ach-sh-bar-fill.gold {
+  background: linear-gradient(90deg, #f59e0b 0%, #ffd700 50%, #ffffff 100%);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.65);
+}
+.ach-sh-dual-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 3px;
 }
-.ach-tool-btn {
+.dual-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dual-stat strong {
+  color: #f1f5f9;
+}
+.dual-stat-sep {
+  color: #475569;
+}
+.ach-sh-tools-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ach-sh-tool-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
@@ -1957,54 +2048,103 @@ button { font-family: inherit; }
   transition: all 0.15s ease;
   padding: 0;
 }
-.ach-tool-btn:hover {
+.ach-sh-tool-btn:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
-.ach-progress-bar.slim {
-  height: 6px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 10px 0 8px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-.ach-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #d97706 0%, #f59e0b 60%, #fbbf24 100%);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
-  transition: width 0.35s ease;
-}
-.ach-progress-fill.gold {
-  background: linear-gradient(90deg, #f59e0b 0%, #ffd700 50%, #ffffff 100%);
-  box-shadow: 0 0 14px rgba(251, 191, 36, 0.65);
-}
-.ach-hero-stats {
+
+/* --- SteamHunters Arama & Sıralama Barı --- */
+.ach-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  color: #94a3b8;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
 }
-.ach-stat-item strong {
+.ach-search-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ach-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #64748b;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.ach-search-field {
+  width: 100%;
+  height: 34px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 0 30px 0 32px;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.16s ease;
+}
+.ach-search-field:focus {
+  outline: none;
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+}
+.ach-search-field::placeholder {
+  color: #64748b;
+}
+.ach-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+.ach-search-clear:hover {
   color: #f1f5f9;
 }
-.ach-stat-dot {
-  color: #475569;
+.ach-sort-wrap {
+  flex-shrink: 0;
+}
+.ach-sort-select {
+  height: 34px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 0 10px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  outline: none;
+}
+.ach-sort-select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.ach-sort-select:focus {
+  border-color: rgba(251, 191, 36, 0.45);
 }
 
 /* --- Filtre Çubukları (Kapsam & Durum) --- */
-.ach-filter-container {
+.ach-filter-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 14px;
 }
-.ach-scope-segment {
+.ach-scope-strip {
   display: flex;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -2012,15 +2152,15 @@ button { font-family: inherit; }
   padding: 3px;
   gap: 4px;
 }
-.ach-scope-btn {
+.ach-scope-pill {
   flex: 1;
   min-width: 0;
   background: transparent;
   border: none;
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 7px 12px;
+  padding: 6px 12px;
   border-radius: 7px;
   cursor: pointer;
   transition: all 0.16s ease;
@@ -2031,140 +2171,231 @@ button { font-family: inherit; }
   gap: 6px;
   white-space: nowrap;
 }
-.ach-scope-btn:hover {
+.ach-scope-pill:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
 }
-.ach-scope-btn.active {
+.ach-scope-pill.active {
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.18);
 }
-.ach-btn-badge {
-  font-size: 10.5px;
+.ach-pill-num {
+  font-size: 10px;
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 6px;
   border-radius: 8px;
   font-weight: 600;
   color: #cbd5e1;
 }
-.ach-scope-btn.active .ach-btn-badge {
+.ach-scope-pill.active .ach-pill-num {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
-.ach-status-chips {
+.ach-status-strip {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
-.ach-chip {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.ach-status-chip {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: #94a3b8;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.16s ease;
   font-family: inherit;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
-.ach-chip:hover {
+.ach-status-chip:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
 }
-.ach-chip:active {
+.ach-status-chip:active {
   transform: scale(0.96);
 }
-.ach-chip.active {
+.ach-status-chip.active {
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.28);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   font-weight: 700;
 }
-.ach-chip-cnt {
-  font-size: 10.5px;
+.ach-chip-num {
+  font-size: 10px;
   opacity: 0.8;
   background: rgba(255, 255, 255, 0.08);
   padding: 0 5px;
   border-radius: 6px;
 }
-.ach-chip.active .ach-chip-cnt {
+.ach-status-chip.active .ach-chip-num {
   background: rgba(255, 255, 255, 0.2);
   opacity: 1;
 }
 
-/* --- Başarım Listesi ve Kartları --- */
-.ach-list {
+/* --- SteamHunters Gruplandırılmış Başarım Listesi --- */
+.ach-list-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: calc(100vh - 280px);
+  gap: 14px;
+  max-height: calc(100vh - 290px);
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   scrollbar-gutter: stable;
 }
-.ach-list::-webkit-scrollbar {
+.ach-list-container::-webkit-scrollbar {
   width: 5px;
 }
-.ach-list::-webkit-scrollbar-track {
+.ach-list-container::-webkit-scrollbar-track {
   background: transparent;
 }
-.ach-list::-webkit-scrollbar-thumb {
+.ach-list-container::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
 }
-.ach-list::-webkit-scrollbar-thumb:hover {
+.ach-list-container::-webkit-scrollbar-thumb:hover {
   background: rgba(251, 191, 36, 0.5);
 }
 
+.ach-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 12px;
+}
+.ach-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.ach-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ach-group-icon {
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+}
+.ach-group-section.dlc .ach-group-icon {
+  color: #c084fc;
+}
+.ach-group-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.1px;
+}
+.ach-group-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ach-group-badge.complete {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.ach-group-xp {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+.ach-group-section.dlc .ach-group-xp {
+  color: #c084fc;
+}
+.ach-group-bar {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+.ach-group-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.ach-group-bar-fill.gold {
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+}
+.ach-group-bar-fill.purple {
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
+}
+.ach-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* --- Havadar, Şeffaf ve İnce Başarım Kartları (Airy Glass Cards) --- */
 .ach-card {
   display: flex;
-  gap: 14px;
   align-items: center;
-  padding: 12px 14px;
+  gap: 14px;
+  padding: 11px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  backdrop-filter: blur(8px);
 }
 .ach-card.unlocked {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border-left: 3px solid rgba(245, 158, 11, 0.6);
 }
 .ach-card.unlocked:hover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.14);
+  border-left-color: #fbbf24;
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 .ach-card.locked {
-  background: rgba(14, 15, 20, 0.4);
+  background: rgba(14, 15, 20, 0.35);
   border-color: rgba(255, 255, 255, 0.03);
-  opacity: 0.75;
+  opacity: 0.72;
+  border-left: 3px solid transparent;
 }
 .ach-card.locked:hover {
   opacity: 0.95;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(18, 20, 28, 0.5);
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(18, 20, 28, 0.45);
+}
+.ach-card.hidden-secret {
+  cursor: pointer;
 }
 
 .ach-icon-wrapper {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 11px;
   overflow: hidden;
   flex-shrink: 0;
-  background: #101117;
+  background: #0c0d12;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
@@ -2175,12 +2406,12 @@ button { font-family: inherit; }
   display: block;
 }
 .ach-card.locked .ach-art {
-  filter: grayscale(85%) opacity(0.4);
+  filter: grayscale(85%) opacity(0.35);
 }
 .ach-locked-badge {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2193,17 +2424,19 @@ button { font-family: inherit; }
   width: 100%;
   height: 100%;
   color: #64748b;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .ach-content {
   flex: 1;
   min-width: 0;
 }
-.ach-top-line {
+.ach-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 2px;
 }
 .ach-name {
   font-size: 13.5px;
@@ -2213,65 +2446,83 @@ button { font-family: inherit; }
 }
 .ach-card.locked .ach-name {
   color: #cbd5e1;
+  font-weight: 600;
 }
 .ach-description {
-  font-size: 12px;
+  font-size: 11.5px;
   color: #94a3b8;
-  line-height: 1.45;
-  margin: 3px 0 6px 0;
+  line-height: 1.4;
+  margin: 2px 0 6px 0;
+  word-break: break-word;
 }
-.ach-bottom-line {
+.ach-card.locked .ach-description {
+  color: #64748b;
+}
+.ach-meta-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #64748b;
   flex-wrap: wrap;
 }
-.ach-sep {
-  color: rgba(255, 255, 255, 0.15);
-  font-size: 9px;
-}
-.ach-tier-tag {
-  font-weight: 600;
-  font-size: 11px;
+.ach-pill {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-}
-.ach-tier-tag.bronze { color: #f97316; }
-.ach-tier-tag.silver { color: #cbd5e1; }
-.ach-tier-tag.gold { color: #fbbf24; }
-.ach-tier-tag.platinum { color: #38bdf8; }
-.ach-unlocked-date {
+  gap: 4px;
+  padding: 1.5px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: #94a3b8;
 }
-.ach-rarity-tag {
+.ach-pill.tier.bronze {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.25);
+  background: rgba(249, 115, 22, 0.08);
+}
+.ach-pill.tier.silver {
+  color: #cbd5e1;
+  border-color: rgba(203, 213, 225, 0.25);
+  background: rgba(203, 213, 225, 0.08);
+}
+.ach-pill.tier.gold {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.08);
+}
+.ach-pill.tier.platinum {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.08);
+}
+.ach-pill.date {
   color: #94a3b8;
 }
-.ach-rarity-tag.ultra-rare {
+.ach-pill.rarity {
+  color: #94a3b8;
+}
+.ach-pill.rarity.ultra-rare {
   color: #c084fc;
   font-weight: 700;
+  border-color: rgba(192, 132, 252, 0.3);
+  background: rgba(192, 132, 252, 0.1);
 }
-.ach-meta-tag {
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-.ach-meta-tag.dlc {
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.ach-meta-tag.secret {
+.ach-pill.secret {
   color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.25);
   background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  font-size: 10px;
 }
-.ach-reveal-action {
+.ach-pill.dlc {
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.25);
+  background: rgba(167, 139, 250, 0.08);
+  font-size: 10px;
+}
+.ach-reveal-btn {
   background: rgba(168, 85, 247, 0.12);
   border: 1px solid rgba(168, 85, 247, 0.28);
   color: #c084fc;
@@ -2286,8 +2537,14 @@ button { font-family: inherit; }
   transition: all 0.15s ease;
   font-family: inherit;
 }
-.ach-reveal-action:hover {
+.ach-reveal-btn:hover {
   background: rgba(168, 85, 247, 0.22);
+  color: #e9d5ff;
+}
+.ach-reveal-btn.revealed {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
 }
 
 .ach-aside {
@@ -2297,36 +2554,36 @@ button { font-family: inherit; }
   gap: 6px;
   flex-shrink: 0;
 }
-.ach-xp-tag {
+.ach-xp-chip {
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 6px;
 }
-.ach-xp-tag.unlocked {
+.ach-xp-chip.unlocked {
   color: #fbbf24;
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
-.ach-xp-tag.locked {
+.ach-xp-chip.locked {
   color: #64748b;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
-.ach-status-badge {
-  width: 20px;
-  height: 20px;
+.ach-status-icon {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.ach-status-badge.earned {
+.ach-status-icon.earned {
   background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
-.ach-status-badge.locked {
+.ach-status-icon.locked {
   background: rgba(255, 255, 255, 0.03);
   color: #475569;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -2338,6 +2595,22 @@ button { font-family: inherit; }
   background: rgba(255, 255, 255, 0.02);
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 14px;
+}
+.ach-empty-state-icon {
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+}
+.ach-empty-state-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.ach-empty-state-sub {
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 /* --- Sistem Gereksinimleri Tasarımı --- */

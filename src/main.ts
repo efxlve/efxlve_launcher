@@ -47,6 +47,7 @@ import {
   type DownloadFailedEvent,
   type EpicAchievementSummary,
   type EpicAchievementsData,
+  type EpicAchievementItem,
   type EpicGame,
   epicDetectEglGames,
   epicSyncEglInstalled,
@@ -415,6 +416,8 @@ type DrawerTab = "overview" | "achievements" | "dlcs" | "manage" | "specs";
 let activeDrawerTab: DrawerTab = "overview";
 let activeAchScope: "all" | "base" | "dlc" = "all";
 let activeAchFilter: "all" | "unlocked" | "locked" | "hidden" = "all";
+let achSearchQuery = "";
+let achSortOrder: "default" | "rarity" | "xp" | "date" = "default";
 const revealedAchievements: Set<string> = new Set();
 let currentModalAppName: string | null = null;
 let loadedRequirements: Map<string, GameRequirementsResponse> = new Map();
@@ -2580,6 +2583,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     activeDrawerTab = "overview";
     activeAchScope = "all";
     activeAchFilter = "all";
+    achSearchQuery = "";
+    achSortOrder = "default";
   }
   const prevBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
   const prevScroll = !isInitialOpen && prevBody ? prevBody.scrollTop : 0;
@@ -2877,16 +2882,31 @@ function renderDrawerOverview(
 
   const achSum = epicAchSummaries[s.appName];
   const isPlat = isAppPlatinum(s.appName);
+  const achData = loadedAchievements.get(s.appName);
   let quickAchHtml = "";
   if (achSum && achSum.total_achievements > 0) {
     const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
+    let miniThumbsHtml = "";
+    if (achData) {
+      const unlockedList = achData.achievements.filter((a) => a.unlocked || demoPlatinumApps.has(s.appName));
+      if (unlockedList.length > 0) {
+        miniThumbsHtml = `
+          <div class="quick-ach-thumbs-row">
+            ${unlockedList.slice(0, 4).map((a) => `
+              <img class="quick-ach-mini-thumb" src="${esc(a.icon_link || "")}" alt="${esc(a.display_name)}" title="${esc(a.display_name)}" />
+            `).join("")}
+          </div>
+        `;
+      }
+    }
+
     quickAchHtml = `
       <div class="drawer-quick-ach-strip ${isPlat ? "plat" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="Tüm başarımları detaylı görüntüle">
         <div class="quick-ach-left">
-          <div class="quick-ach-trophy ${isPlat ? "plat" : ""}">${icon("trophy", 15)}</div>
+          <div class="quick-ach-trophy ${isPlat ? "plat" : ""}">${icon("trophy", 16)}</div>
           <div class="quick-ach-info">
             <div class="quick-ach-title-row">
-              <span class="quick-ach-label">${isPlat ? "🏆 Platin Kupa Tamamlandı!" : "Başarım İlerlemesi"}</span>
+              <span class="quick-ach-label">${isPlat ? "🏆 100% Platin Kupa Tamamlandı!" : "Başarım İlerlemesi"}</span>
               <span class="quick-ach-counts">${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})</span>
             </div>
             <div class="quick-ach-bar">
@@ -2894,29 +2914,26 @@ function renderDrawerOverview(
             </div>
           </div>
         </div>
-        <div class="quick-ach-xp-col">
+        <div class="quick-ach-right">
+          ${miniThumbsHtml}
           <span class="quick-ach-xp">${achSum.user_xp}/${achSum.total_xp} XP</span>
-          <span class="quick-ach-arrow">${icon("chevron-right", 13)}</span>
+          <span class="quick-ach-arrow">${icon("chevron-right", 14)}</span>
         </div>
       </div>
     `;
   }
 
-  const g = rawOf(s.appName);
-  const devRaw = g ? g.metadata.developer : undefined;
-  const dev = typeof devRaw === "string" ? devRaw : "";
   const dlcRes = dlcCache.get(s.appName);
   const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
 
-  let fallbackInfoHtml = "";
+  let featureStripHtml = "";
   if (!descHtml) {
-    fallbackInfoHtml = `
-      <div class="drawer-meta-chips">
-        ${dev ? `<div class="drawer-meta-chip"><span class="chip-lbl">Geliştirici</span><span class="chip-val">${esc(dev)}</span></div>` : ""}
-        ${currentDlcCount > 0 ? `<div class="drawer-meta-chip clickable" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}"><span class="chip-lbl">Eklentiler</span><span class="chip-val">${currentDlcCount} DLC Mevcut →</span></div>` : ""}
-        ${partner ? `<div class="drawer-meta-chip"><span class="chip-lbl">Başlatıcı</span><span class="chip-val">${esc(partner.name)}</span></div>` : ""}
-        ${antiCheat ? `<div class="drawer-meta-chip"><span class="chip-lbl">Hile Koruması</span><span class="chip-val">${esc(antiCheat)}</span></div>` : ""}
-        <div class="drawer-meta-chip"><span class="chip-lbl">Platform</span><span class="chip-val">Windows (PC)</span></div>
+    featureStripHtml = `
+      <div class="drawer-feature-strip">
+        <div class="drawer-feature-pill">${icon("layers", 12)} <span>${partner ? esc(partner.name) : "Epic Games"}</span></div>
+        ${antiCheat ? `<div class="drawer-feature-pill">${icon("shield", 12)} <span>${esc(antiCheat)}</span></div>` : ""}
+        ${currentDlcCount > 0 ? `<button class="drawer-feature-pill clickable" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}">${icon("package", 12)} <span>${currentDlcCount} Eklenti / DLC</span></button>` : ""}
+        <div class="drawer-feature-pill">${icon("monitor", 12)} <span>Windows (PC)</span></div>
       </div>
     `;
   }
@@ -2981,16 +2998,16 @@ function renderDrawerOverview(
       </div>
     </div>
 
-    <!-- Başarım Hızlı İlerleme Çubuğu -->
-    ${quickAchHtml}
-
     <!-- HowLongToBeat Süreleri -->
     <div id="drawer-hltb-container">
       ${renderHltbCard(loadedHltb.get(s.appName), loadingHltbFor === s.appName)}
     </div>
 
+    <!-- Başarım Hızlı İlerleme Şeridi -->
+    ${quickAchHtml}
+
     ${descHtml}
-    ${fallbackInfoHtml}
+    ${featureStripHtml}
   `;
 }
 
@@ -3428,171 +3445,308 @@ function renderDrawerAchievements(s: EpicSummary): string {
   const dlcTotal = dlcItems.length;
   const dlcUnlocked = isDemo ? dlcTotal : dlcItems.filter((a) => a.unlocked).length;
 
-  const scopedItems = data.achievements.filter((a) => {
+  // Filtreleme (Arama sorgusu, Kapsam, Durum)
+  const query = achSearchQuery.trim().toLowerCase();
+
+  const filteredItems = data.achievements.filter((a) => {
+    // 1. Kapsam (Scope)
+    if (activeAchScope === "base" && !a.is_base) return false;
+    if (activeAchScope === "dlc" && a.is_base) return false;
+
+    // 2. Durum (Status)
+    const isUnlocked = a.unlocked || isDemo;
+    if (activeAchFilter === "unlocked" && !isUnlocked) return false;
+    if (activeAchFilter === "locked" && isUnlocked) return false;
+    if (activeAchFilter === "hidden" && !a.hidden) return false;
+
+    // 3. Arama Sorgusu
+    if (query) {
+      const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);
+      const matchDesc = (a.description || "").toLowerCase().includes(query);
+      if (!matchTitle && !matchDesc) return false;
+    }
+
+    return true;
+  });
+
+  // Sıralama (Sort)
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (achSortOrder === "rarity") {
+      const ra = a.rarity?.percent ?? 100;
+      const rb = b.rarity?.percent ?? 100;
+      return ra - rb;
+    }
+    if (achSortOrder === "xp") {
+      return b.xp - a.xp;
+    }
+    if (achSortOrder === "date") {
+      const da = a.unlock_date ? new Date(a.unlock_date).getTime() : 0;
+      const db = b.unlock_date ? new Date(b.unlock_date).getTime() : 0;
+      return db - da;
+    }
+    return 0; // varsayılan katalog sırası
+  });
+
+  // Sayaçlar (Status Chips için)
+  const scopedAll = data.achievements.filter((a) => {
     if (activeAchScope === "base") return a.is_base;
     if (activeAchScope === "dlc") return !a.is_base;
     return true;
   });
-
-  const scopedUnlocked = isDemo ? scopedItems.length : scopedItems.filter((a) => a.unlocked).length;
-  const scopedLocked = scopedItems.length - scopedUnlocked;
-  const scopedHidden = scopedItems.filter((a) => a.hidden).length;
-
-  const items = scopedItems.filter((a) => {
-    const isUnlocked = a.unlocked || isDemo;
-    if (activeAchFilter === "unlocked") return isUnlocked;
-    if (activeAchFilter === "locked") return !isUnlocked;
-    if (activeAchFilter === "hidden") return a.hidden;
-    return true;
-  });
-
-  const listHtml = items.length === 0
-    ? `<div class="ach-empty-state">
-        <div style="color:var(--muted);margin-bottom:8px">${icon("search", 32)}</div>
-        <div style="font-weight:700;color:#fff;font-size:14px;margin-bottom:4px">Kriterlere Uygun Başarım Bulunamadı</div>
-        <div style="font-size:12px;color:var(--muted)">Filtre seçeneklerinizi değiştirerek tekrar deneyebilirsiniz.</div>
-      </div>`
-    : items.map((a) => {
-        const isUnlocked = a.unlocked || isDemo;
-        const isHidden = a.hidden;
-        const isSecretMasked = isHidden && !isUnlocked;
-        const isRevealed = revealedAchievements.has(`${s.appName}:${a.name}`);
-
-        const title = isSecretMasked && !isRevealed ? "Gizli Başarım" : (a.display_name || a.name);
-        const desc = isSecretMasked && !isRevealed
-          ? "Bu başarım gizlidir. Spoilerı görmek için tıklayın."
-          : (a.description || "Açıklama yok.");
-        const tierClass = a.tier?.name ? a.tier.name.toLowerCase() : "";
-        const tierIcon = icon("trophy", 11);
-        const tierName = fmtTierName(a.tier?.name || "bronze");
-
-        return `
-          <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
-               ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? "Tekrar gizle" : "Ayrıntıları gör"}"` : ""}>
-            <div class="ach-icon-wrapper">
-              ${
-                isSecretMasked && !isRevealed
-                  ? `<div class="ach-mystery-box">${icon("lock", 18)}</div>`
-                  : a.icon_link
-                    ? `<img class="ach-art" src="${esc(a.icon_link)}" alt="" loading="lazy" />`
-                    : `<div class="ach-fallback-icon">${icon("trophy", 18)}</div>`
-              }
-              ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
-            </div>
-
-            <div class="ach-content">
-              <div class="ach-top-line">
-                <span class="ach-name">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
-                ${isSecretMasked
-                  ? (isRevealed
-                      ? `<button class="ach-reveal-action revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Tekrar gizle">${icon("eye-off", 10)} Gizle</button>`
-                      : `<button class="ach-reveal-action" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 10)} Göster</button>`)
-                  : isHidden && isUnlocked
-                    ? `<span class="ach-meta-tag secret">${icon("lock", 9)} Gizli</span>`
-                    : ""}
-                ${!a.is_base ? `<span class="ach-meta-tag dlc">DLC</span>` : ""}
-              </div>
-
-              <div class="ach-description">${esc(desc)}</div>
-
-              <div class="ach-bottom-line">
-                <span class="ach-tier-tag ${tierClass}">${tierIcon} ${esc(tierName)}</span>
-                ${a.unlock_date && isUnlocked ? `<span class="ach-sep">•</span><span class="ach-unlocked-date">${fmtAchDate(a.unlock_date)}</span>` : ""}
-                ${a.rarity?.percent != null ? `
-                  <span class="ach-sep">•</span>
-                  <span class="ach-rarity-tag ${a.rarity.percent < 10 ? "ultra-rare" : ""}">
-                    ${a.rarity.percent < 10 ? icon("sparkles", 10) + " " : ""}%${a.rarity.percent.toFixed(0)} ${a.rarity.percent < 10 ? "(Nadir)" : ""}
-                  </span>` : ""}
-              </div>
-            </div>
-
-            <div class="ach-aside">
-              <div class="ach-xp-tag ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
-              ${isUnlocked
-                ? `<div class="ach-status-badge earned" title="Kazanıldı">${icon("check", 12)}</div>`
-                : `<div class="ach-status-badge locked" title="Kilitli">${icon("lock", 11)}</div>`
-              }
-            </div>
-          </div>`;
-      }).join("");
+  const scopedUnlocked = isDemo ? scopedAll.length : scopedAll.filter((a) => a.unlocked).length;
+  const scopedLocked = scopedAll.length - scopedUnlocked;
+  const scopedHidden = scopedAll.filter((a) => a.hidden).length;
 
   return `
-    <div class="ach-hero-compact ${isPlat ? "platinum" : ""}">
-      <div class="ach-hero-row top">
-        <div class="ach-hero-title">
-          <div class="ach-hero-trophy-badge ${isPlat ? "platinum" : ""}">
-            ${icon("trophy", 18)}
-          </div>
-          <div class="ach-hero-heading-group">
-            <div class="ach-hero-headline">
-              <span class="ach-hero-heading">${isPlat ? "100% Platin Kupa!" : "Başarımlar"}</span>
-              <span class="ach-pct-badge ${isPlat ? "platinum" : ""}">${isPlat ? "%100" : `%${pct}`}</span>
-            </div>
-            <div class="ach-hero-subline">
-              <span class="ach-hero-unlocked-count">${effectiveUnlocked}</span> / ${data.total_achievements} Kupa Kazanıldı
-            </div>
+    <!-- 1. SteamHunters Tarzı Sinematik Hero Başlık -->
+    <div class="ach-sh-hero ${isPlat ? "platinum" : ""}">
+      <div class="ach-sh-hero-body">
+        <div class="ach-sh-trophy-col">
+          <div class="ach-sh-trophy-badge ${isPlat ? "platinum" : ""}">
+            ${icon("trophy", 24)}
           </div>
         </div>
-        <div class="ach-hero-right">
-          <div class="ach-xp-chip">
-            <span class="ach-xp-curr">${effectiveXp.toLocaleString()}</span>
-            <span class="ach-xp-total">/ ${data.total_xp.toLocaleString()} XP</span>
+        <div class="ach-sh-info-col">
+          <div class="ach-sh-headline-row">
+            <h3 class="ach-sh-title">${isPlat ? "100% Platin Kupa!" : "Başarım İlerlemesi"}</h3>
+            <span class="ach-sh-pct-pill ${isPlat ? "platinum" : ""}">${isPlat ? "%100" : `%${pct}`}</span>
           </div>
-          <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Yeniden Sorgula">${icon("refresh", 13)}</button>
-          <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Mağazasında Gör">${icon("external", 13)}</button>
+          <div class="ach-sh-stats-row">
+            <span class="ach-sh-stat-main"><strong>${effectiveUnlocked}</strong> / ${data.total_achievements} Kupa Kazanıldı</span>
+            <span class="ach-sh-stat-dot">•</span>
+            <span class="ach-sh-stat-xp"><strong>${effectiveXp.toLocaleString()}</strong> / ${data.total_xp.toLocaleString()} XP</span>
+          </div>
+          <!-- İlerleme Çubuğu -->
+          <div class="ach-sh-bar-wrap">
+            <div class="ach-sh-bar">
+              <div class="ach-sh-bar-fill ${isPlat ? "gold" : ""}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+          ${hasDlc ? `
+          <div class="ach-sh-dual-stats">
+            <span class="dual-stat">${icon("gamepad-2", 11)} Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> (%${Math.round(baseUnlocked/baseTotal*100)})</span>
+            <span class="dual-stat-sep">•</span>
+            <span class="dual-stat">${icon("package", 11)} Ek Paketler: <strong>${dlcUnlocked}/${dlcTotal}</strong> (%${Math.round(dlcUnlocked/dlcTotal*100)})</span>
+          </div>
+          ` : ""}
         </div>
-      </div>
-
-      <div class="ach-progress-bar slim">
-        <div class="ach-progress-fill ${isPlat ? "gold" : ""}" style="width:${isPlat ? 100 : pct}%"></div>
-      </div>
-
-      <div class="ach-hero-stats">
-        <span class="ach-stat-item">
-          ${icon("gamepad-2", 12)} Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> ${baseUnlocked >= baseTotal ? `• Tamamlandı ${icon("check", 11)}` : `<span class="muted">(${baseTotal - baseUnlocked} kaldı)</span>`}
-        </span>
-        ${hasDlc ? `
-        <span class="ach-stat-dot">•</span>
-        <span class="ach-stat-item">
-          ${icon("package", 12)} Ek Paketler: <strong>${dlcUnlocked}/${dlcTotal}</strong>
-        </span>` : ""}
+        <div class="ach-sh-tools-col">
+          <button class="ach-sh-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Verileri Yeniden Sorgula">${icon("refresh", 13)}</button>
+          <button class="ach-sh-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Games Store'da Gör">${icon("external", 13)}</button>
+        </div>
       </div>
     </div>
 
-    <div class="ach-filter-container">
+    <!-- 2. Arama & Filtre & Sıralama Barı -->
+    <div class="ach-toolbar">
+      <!-- Canlı Arama Kutusu -->
+      <div class="ach-search-wrap">
+        <span class="ach-search-icon">${icon("search", 13)}</span>
+        <input type="text" id="ach-search-input" class="ach-search-field" placeholder="Başarım ara..." value="${esc(achSearchQuery)}" autocomplete="off" />
+        ${achSearchQuery ? `<button class="ach-search-clear" data-act="clear-ach-search" title="Aramayı Temizle">${icon("x", 12)}</button>` : ""}
+      </div>
+
+      <!-- Sıralama Seçimi -->
+      <div class="ach-sort-wrap">
+        <select id="ach-sort-select" class="ach-sort-select" title="Sıralama Düzeni">
+          <option value="default" ${achSortOrder === "default" ? "selected" : ""}>Varsayılan Sıra</option>
+          <option value="rarity" ${achSortOrder === "rarity" ? "selected" : ""}>Nadirliğe Göre</option>
+          <option value="xp" ${achSortOrder === "xp" ? "selected" : ""}>XP'ye Göre</option>
+          <option value="date" ${achSortOrder === "date" ? "selected" : ""}>Kazanılma Tarihine Göre</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 3. Kapsam (DLC / Ana Oyun) & Durum Sekmeleri -->
+    <div class="ach-filter-row">
       ${hasDlc ? `
-      <div class="ach-scope-segment">
-        <button class="ach-scope-btn ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
-          Tüm İçerik <span class="ach-btn-badge">${data.achievements.length}</span>
+      <div class="ach-scope-strip">
+        <button class="ach-scope-pill ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
+          Tüm İçerik <span class="ach-pill-num">${data.achievements.length}</span>
         </button>
-        <button class="ach-scope-btn ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
-          ${icon("gamepad-2", 11)} Ana Oyun <span class="ach-btn-badge">${baseUnlocked}/${baseTotal}</span>
+        <button class="ach-scope-pill ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
+          ${icon("gamepad-2", 11)} Ana Oyun <span class="ach-pill-num">${baseUnlocked}/${baseTotal}</span>
         </button>
-        <button class="ach-scope-btn ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
-          ${icon("package", 11)} Ek Paketler <span class="ach-btn-badge">${dlcUnlocked}/${dlcTotal}</span>
+        <button class="ach-scope-pill ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
+          ${icon("package", 11)} Ek Paketler <span class="ach-pill-num">${dlcUnlocked}/${dlcTotal}</span>
         </button>
       </div>` : ""}
 
-      <div class="ach-status-chips">
-        <button class="ach-chip ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
-          Tümü <span class="ach-chip-cnt">${scopedItems.length}</span>
+      <div class="ach-status-strip">
+        <button class="ach-status-chip ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
+          Tümü <span class="ach-chip-num">${scopedAll.length}</span>
         </button>
-        <button class="ach-chip ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
-          ${icon("check", 11)} Kazanılanlar <span class="ach-chip-cnt">${scopedUnlocked}</span>
+        <button class="ach-status-chip ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
+          ${icon("check", 11)} Kazanılanlar <span class="ach-chip-num">${scopedUnlocked}</span>
         </button>
-        <button class="ach-chip ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
-          ${icon("lock", 11)} Kilitliler <span class="ach-chip-cnt">${scopedLocked}</span>
+        <button class="ach-status-chip ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
+          ${icon("lock", 11)} Kilitliler <span class="ach-chip-num">${scopedLocked}</span>
         </button>
         ${scopedHidden > 0 ? `
-        <button class="ach-chip ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
-          ${icon("eye", 11)} Gizli <span class="ach-chip-cnt">${scopedHidden}</span>
+        <button class="ach-status-chip ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
+          ${icon("eye", 11)} Gizli <span class="ach-chip-num">${scopedHidden}</span>
         </button>` : ""}
       </div>
     </div>
 
-    <div class="ach-list">
-      ${listHtml}
-    </div>`;
+    <!-- 4. SteamHunters Gruplandırılmış Başarım Listesi -->
+    <div class="ach-list-container" id="ach-list-container">
+      ${renderAchievementSections(sortedItems, s, hasDlc && activeAchScope === "all")}
+    </div>
+  `;
+}
+
+function renderAchievementSections(
+  items: EpicAchievementItem[],
+  s: EpicSummary,
+  shouldGroup: boolean,
+): string {
+  if (items.length === 0) {
+    return `
+      <div class="ach-empty-state">
+        <div class="ach-empty-state-icon">${icon("search", 28)}</div>
+        <div class="ach-empty-state-title">Aramanıza Uygun Başarım Bulunamadı</div>
+        <div class="ach-empty-state-sub">Filtreleri veya arama terimini değiştirerek tekrar deneyin.</div>
+      </div>
+    `;
+  }
+
+  const isDemo = demoPlatinumApps.has(s.appName);
+
+  if (!shouldGroup) {
+    return `<div class="ach-cards-grid">${items.map((a) => renderAchievementCard(a, s)).join("")}</div>`;
+  }
+
+  // SteamHunters Kategori Grupları: Ana Oyun ve Ek Paketler
+  const baseItems = items.filter((a) => a.is_base);
+  const dlcItems = items.filter((a) => !a.is_base);
+
+  const baseTotal = baseItems.length;
+  const baseUnlocked = baseItems.filter((a) => a.unlocked || isDemo).length;
+  const basePct = baseTotal > 0 ? Math.round((baseUnlocked / baseTotal) * 100) : 0;
+  const baseXp = baseItems.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+
+  const dlcTotal = dlcItems.length;
+  const dlcUnlocked = dlcItems.filter((a) => a.unlocked || isDemo).length;
+  const dlcPct = dlcTotal > 0 ? Math.round((dlcUnlocked / dlcTotal) * 100) : 0;
+  const dlcXp = dlcItems.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+
+  let html = "";
+
+  if (baseItems.length > 0) {
+    html += `
+      <div class="ach-group-section">
+        <div class="ach-group-header">
+          <div class="ach-group-title">
+            <span class="ach-group-icon">${icon("gamepad-2", 14)}</span>
+            <span class="ach-group-heading">Ana Oyun</span>
+            <span class="ach-group-badge ${baseUnlocked === baseTotal ? "complete" : ""}">${baseUnlocked}/${baseTotal} (%${basePct})</span>
+          </div>
+          <div class="ach-group-xp">${baseXp} XP</div>
+        </div>
+        <div class="ach-group-bar">
+          <div class="ach-group-bar-fill gold" style="width: ${basePct}%"></div>
+        </div>
+        <div class="ach-cards-grid">
+          ${baseItems.map((a) => renderAchievementCard(a, s)).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  if (dlcItems.length > 0) {
+    html += `
+      <div class="ach-group-section dlc">
+        <div class="ach-group-header">
+          <div class="ach-group-title">
+            <span class="ach-group-icon">${icon("package", 14)}</span>
+            <span class="ach-group-heading">Ek Paketler & DLC</span>
+            <span class="ach-group-badge ${dlcUnlocked === dlcTotal ? "complete" : ""}">${dlcUnlocked}/${dlcTotal} (%${dlcPct})</span>
+          </div>
+          <div class="ach-group-xp">${dlcXp} XP</div>
+        </div>
+        <div class="ach-group-bar">
+          <div class="ach-group-bar-fill purple" style="width: ${dlcPct}%"></div>
+        </div>
+        <div class="ach-cards-grid">
+          ${dlcItems.map((a) => renderAchievementCard(a, s)).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  return html;
+}
+
+function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): string {
+  const isDemo = demoPlatinumApps.has(s.appName);
+  const isUnlocked = a.unlocked || isDemo;
+  const isHidden = a.hidden;
+  const isSecretMasked = isHidden && !isUnlocked;
+  const isRevealed = revealedAchievements.has(`${s.appName}:${a.name}`);
+
+  const title = isSecretMasked && !isRevealed ? "Gizli Başarım" : (a.display_name || a.name);
+  const desc = isSecretMasked && !isRevealed
+    ? "Bu başarım gizlidir. Spoiler'ı görmek için tıklayın."
+    : (a.description || "Açıklama yok.");
+  const tierClass = a.tier?.name ? a.tier.name.toLowerCase() : "";
+  const tierIcon = icon("trophy", 11);
+  const tierName = fmtTierName(a.tier?.name || "bronze");
+
+  return `
+    <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
+         ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? "Tekrar gizle" : "Ayrıntıları gör"}"` : ""}>
+      
+      <!-- Sol: 52px İkon -->
+      <div class="ach-icon-wrapper">
+        ${
+          isSecretMasked && !isRevealed
+            ? `<div class="ach-mystery-box">${icon("lock", 20)}</div>`
+            : a.icon_link
+              ? `<img class="ach-art" src="${esc(a.icon_link)}" alt="" loading="lazy" />`
+              : `<div class="ach-fallback-icon">${icon("trophy", 20)}</div>`
+        }
+        ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
+      </div>
+
+      <!-- Orta: Başlık & Açıklama & Meta -->
+      <div class="ach-content">
+        <div class="ach-title-row">
+          <span class="ach-name">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
+          ${
+            isSecretMasked
+              ? (isRevealed
+                  ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı tekrar gizle">${icon("eye-off", 10)} Gizle</button>`
+                  : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 10)} Göster</button>`)
+              : isHidden && isUnlocked
+                ? `<span class="ach-pill secret">${icon("lock", 9)} Gizli</span>`
+                : ""
+          }
+          ${!a.is_base ? `<span class="ach-pill dlc">${icon("package", 9)} DLC</span>` : ""}
+        </div>
+
+        <p class="ach-description">${esc(desc)}</p>
+
+        <div class="ach-meta-row">
+          <span class="ach-pill tier ${tierClass}">${tierIcon} ${esc(tierName)}</span>
+          ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${icon("clock", 10)} ${fmtAchDate(a.unlock_date)}</span>` : ""}
+          ${a.rarity?.percent != null ? `
+            <span class="ach-pill rarity ${a.rarity.percent < 10 ? "ultra-rare" : ""}">
+              ${a.rarity.percent < 10 ? icon("sparkles", 10) + " " : ""}%${a.rarity.percent.toFixed(1)} ${a.rarity.percent < 10 ? "Nadir" : ""}
+            </span>` : ""}
+        </div>
+      </div>
+
+      <!-- Sağ: XP & Durum -->
+      <div class="ach-aside">
+        <div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
+        ${isUnlocked
+          ? `<div class="ach-status-icon earned" title="Kazanıldı">${icon("check", 13)}</div>`
+          : `<div class="ach-status-icon locked" title="Kilitli">${icon("lock", 12)}</div>`
+        }
+      </div>
+    </div>
+  `;
 }
 
 function fmtTierName(name: string): string {
@@ -6889,6 +7043,11 @@ document.addEventListener("click", (e) => {
     const title = s ? s.title : id;
     const url = epicAchievementsUrl(title, id);
     void openStoreUrl(url, "store");
+  } else if (act === "clear-ach-search") {
+    achSearchQuery = "";
+    if (currentModalAppName) {
+      openEpicModal(currentModalAppName, false, false);
+    }
   } else if (act === "ach-filter") {
     const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
     if (val && currentModalAppName) {
@@ -7062,10 +7221,61 @@ document.addEventListener("change", (e) => {
     };
     reader.readAsDataURL(file);
   }
+  if (target && (target as HTMLElement).id === "ach-sort-select") {
+    achSortOrder = (target as unknown as HTMLSelectElement).value as any;
+    if (currentModalAppName) {
+      openEpicModal(currentModalAppName, false, false);
+    }
+    return;
+  }
 });
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "ach-search-input" && currentModalAppName) {
+    achSearchQuery = (t as HTMLInputElement).value;
+    const container = document.getElementById("ach-list-container");
+    if (container) {
+      const data = loadedAchievements.get(currentModalAppName);
+      const s = epicSummaries.find((x) => x.appName === currentModalAppName);
+      if (data && s) {
+        enrichAchievementsData(s.appName, data);
+        const query = achSearchQuery.trim().toLowerCase();
+        const isDemo = demoPlatinumApps.has(s.appName);
+        const filteredItems = data.achievements.filter((a) => {
+          if (activeAchScope === "base" && !a.is_base) return false;
+          if (activeAchScope === "dlc" && a.is_base) return false;
+          const isUnlocked = a.unlocked || isDemo;
+          if (activeAchFilter === "unlocked" && !isUnlocked) return false;
+          if (activeAchFilter === "locked" && isUnlocked) return false;
+          if (activeAchFilter === "hidden" && !a.hidden) return false;
+          if (query) {
+            const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);
+            const matchDesc = (a.description || "").toLowerCase().includes(query);
+            if (!matchTitle && !matchDesc) return false;
+          }
+          return true;
+        });
+        const sortedItems = [...filteredItems].sort((a, b) => {
+          if (achSortOrder === "rarity") {
+            const ra = a.rarity?.percent ?? 100;
+            const rb = b.rarity?.percent ?? 100;
+            return ra - rb;
+          }
+          if (achSortOrder === "xp") return b.xp - a.xp;
+          if (achSortOrder === "date") {
+            const da = a.unlock_date ? new Date(a.unlock_date).getTime() : 0;
+            const db = b.unlock_date ? new Date(b.unlock_date).getTime() : 0;
+            return db - da;
+          }
+          return 0;
+        });
+        const hasDlc = data.achievements.some((a) => !a.is_base);
+        container.innerHTML = renderAchievementSections(sortedItems, s, hasDlc && activeAchScope === "all");
+      }
+    }
+    return;
+  }
   if (t.id === "pt-hours-input" || t.id === "pt-minutes-input") {
     const h = parseInt((document.getElementById("pt-hours-input") as HTMLInputElement)?.value || "0", 10) || 0;
     const m = parseInt((document.getElementById("pt-minutes-input") as HTMLInputElement)?.value || "0", 10) || 0;

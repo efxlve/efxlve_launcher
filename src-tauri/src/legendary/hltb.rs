@@ -145,10 +145,16 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
                             if let Ok(js_content) = s_resp.text().await {
                                 if let Some(idx) = js_content.find("/api/search/") {
                                     let sub = &js_content[idx..];
-                                    if let Some(end_quote) = sub.find(['\"', '\'']) {
-                                        let ep = &sub[..end_quote];
-                                        search_endpoint = ep.trim_end_matches('/').to_string();
-                                        break;
+                                    if let Some(end_quote) = sub.find(['\"', '\'', '`', '?', ' ', '$']) {
+                                        let mut ep = sub[..end_quote].trim_end_matches('/').to_string();
+                                        if let Some(pos) = ep.find("/init") {
+                                            ep = ep[..pos].to_string();
+                                        }
+                                        let ep = ep.trim_end_matches('/').to_string();
+                                        if !ep.is_empty() {
+                                            search_endpoint = ep;
+                                            break;
+                                        }
                                     }
                                 }
                             }
