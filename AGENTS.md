@@ -32,6 +32,7 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - Frontend değişikliği `tsc` hatasız geçmeli (`npm run build` bunu kapsar).
 - **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına güncellenmeli ve ardından `git commit` atılmalıdır.
 - **ZORUNLU TASARIM KURALI (Kullanıcı Talimatı):** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır. Arayüz PlayStation konsol UI'ına yakın, havadar, derin cam efektli (obsidian & midnight blue `#07080d`/`#0b0d14`), şık kupa hiyerarşili (Platin, Altın, Gümüş, Bronz sayaçları) ve sade konsol zarafetinde olmalıdır. Telif ihlali oluşturmamak için Sony'nin tescilli logo ve ticari markaları birebir kopyalanmaz; launcher'ın kendi mor-altın-obsidyen kimliğiyle özgün bir konsol deneyimi sunulur.
+- **ZORUNLU KONTROLCÜ & KONSOL KULLANILABİLİRLİK KURALI (Kullanıcı Talimatı):** Launcher arayüzü daima **Game Controller (Gamepad / DualSense / Xbox / Kol)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu bir konsol UI'ı olarak tasarlanmalı ve korunmalıdır. Kullanıcının *"MÜKEMMELLLL"* olarak nitelendirdiği mevcut PlayStation 5 Game Hub, Trophy Hub konsol sahnesi, geniş ve ferah kartlar, 2 sütunlu kupa ızgarası, büyük aksiyon butonları ve sade gezinme dili titizlikle korunmalı; karmaşık, sıkışık veya fare odaklı minik bento kutu kalabalığından kesinlikle kaçınılmalıdır. Tüm etkileşimli öğeler elektrik mavisi odak halkasına (`:focus-visible`), D-pad / analog uzamsal navigasyona ve kontrolcü kısayollarına (A: Seç, B: Geri, LB/RB: Sekme, Y: Ara, X: Favori) sahip olmalıdır.
 
 ## 4. Mimari
 
@@ -767,4 +768,24 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     6. 🛡️ **Hile Koruması:** `Easy Anti-Cheat`, `BattlEye`, `Denuvo` vb. (varsa)
     7. 🖥️ **Platform:** `Windows (PC x64)`
     8. 💾 **Yüklü Boyut & Sürüm:** Kurulu oyunlarda disk boyutu ve sürüm dökümü
+
+## 50. Dead by Daylight "Ana Oyun" Kategori İlerleme Düzeltmesi & Controller/Gamepad UI Mimarisi
+
+- **Kategori İlerleme ve Rozet Hesaplama Düzeltmesi:**
+  - `renderAchievementSections` fonksiyonunda `baseTotal`, `baseUnlocked`, `dlcTotal`, `dlcUnlocked` ve XP istatistikleri önceden filtrelenmiş `items` listesinden çekiliyordu. Bu durum, kullanıcı "Kazanılanlar" filtresine tıkladığında kilitli olan 2 başarım filtrelendiği için `baseTotal`'ın 56'ya düşmesine, dolayısıyla `%100 Tamamlandı` yeşil rozeti ve yanıltıcı `56/56` sonucuna yol açıyordu.
+  - Hesaplama, oyunun eksiksiz tüm başarımlarını içeren `allAchievements` (`data.achievements`) üzerinden sabitlendi. Artık filtre "Kazanılanlar" veya "Kilitliler" olsa dahi Ana Oyun ilerlemesi daima gerçek değerini (`56/58 (%97)`) gösterir; yalnızca gerçekten tüm başarımlar bittiğinde `%100` yeşil rozetini alır.
+- **Native Game Controller (Gamepad / DualSense / Xbox) Konsol Mimarisi:**
+  - Kullanıcının *"MÜKEMMELLLL"* olarak nitelendirdiği PS5 konsol arayüzünü koltuktan/TV'den tam kontrol edilebilir kılmak için HTML5 Gamepad API (`window.addEventListener("gamepadconnected")`, `navigator.getGamepads()`) entegrasyonu inşa edildi.
+  - **Uzamsal Yön Navigasyonu (Spatial Navigation):** D-pad (yön tuşları) ve sol analog çubuk ile ekrandaki öğelerin geometrik merkez mesafesi hesaplanarak en mantıklı komşu öğeye (kartlar, butonlar, sekmeler) kesintisiz odak aktarılır.
+  - **Konsol Tuş Haritası:**
+    - `A / Cross (✕)`: Odaktaki öğeyi aktive et / tıkla / oyunu aç.
+    - `B / Circle (○)`: Geri dön / modalı kapat / kütüphaneye dön (ESC).
+    - `LB/L1 & RB/R1`: Detay sayfasında sekmeler (Genel Bakış ↔ Başarımlar ↔ Eklentiler ↔ Yönet ↔ Sistem), kütüphanede filtre çipleri arasında hızlı geçiş.
+    - `Y / Triangle (△)`: Arama kutusuna hızlı odaklan.
+    - `X / Square (□)`: Favorilere ekle / çıkar.
+  - **PlayStation Odak Halkası (`:focus-visible` & `tabindex="0"`):**
+    - Tüm buton, sekme ve oyun kartlarında PlayStation elektrik mavisi neon odak halkası (`box-shadow: 0 0 0 2.5px #60a5fa, 0 0 24px rgba(96, 165, 250, 0.6)`).
+    - Oyun kartı odaklandığında hover gibi yukarı kalkar (`translateY(-4px) scale(1.02)`) ve başlık/buton katmanı otomatik görünür olur (`.pcard:focus-visible .poverlay { opacity: 1; }`).
+  - **Tasarım Bütünlüğü İlkesi:** Gelecekte eklenecek tüm özellikler bu koltuk/konsol ergonomisine uygun, büyük ve okunabilir kartlarla, karmaşık fare menülerinden uzak tutularak tasarlanacaktır.
+
 
