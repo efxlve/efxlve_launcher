@@ -635,54 +635,257 @@ button { font-family: inherit; }
 }
 .drawer-close:hover { background: rgba(255,255,255,0.25); transform: scale(1.08); }
 
-.drawer-body { padding: 0 24px 30px; flex: 1; display: flex; flex-direction: column; }
-.drawer-title { font-size: 24px; font-weight: 800; margin: 0 0 4px; line-height: 1.25; color: #fff; }
-.drawer-dev { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
-.drawer-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-.status-pill {
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
-  background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--muted);
-  display: inline-flex; align-items: center; gap: 5px;
+.drawer-body { padding: 0 24px 28px; flex: 1; display: flex; flex-direction: column; }
+.drawer-title { font-size: 24px; font-weight: 800; margin: 0 0 6px; line-height: 1.25; color: #fff; letter-spacing: -0.3px; }
+.drawer-meta-subline {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12.5px; color: var(--muted); margin-bottom: 16px;
 }
-.status-pill.ok { color: var(--green); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.1); }
-.status-pill.warn { color: var(--yellow); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.1); }
-.status-pill.partner { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.1); }
-.status-pill.anticheat { color: #34d399; border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.1); }
+.meta-subline-dot { opacity: 0.35; font-size: 10px; }
+.meta-subline-item.dev { color: #cbd5e1; font-weight: 600; }
+.meta-subline-item.status { font-weight: 600; color: #94a3b8; }
+.meta-subline-item.status.installed { color: #c084fc; }
+.meta-subline-item.partner {
+  color: #60a5fa; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.25);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.meta-subline-item.anticheat {
+  color: #34d399; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.meta-subline-item.warn {
+  color: #fbbf24; display: inline-flex; align-items: center; gap: 4px;
+}
 
-.drawer-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+/* Aksiyon Butonları */
+.drawer-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.drawer-actions .btn.full.play,
+.drawer-actions .btn.full.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-actions .btn.full.play:hover,
+.drawer-actions .btn.full.primary:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #6d28d9 100%);
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5);
+  transform: translateY(-1px);
+}
 .drawer-actions-row { display: flex; gap: 8px; }
-.drawer-actions-row .btn { flex: 1; }
+.drawer-actions-row .btn {
+  flex: 1;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.drawer-actions-row .btn.faved {
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.4);
+  background: rgba(192, 132, 252, 0.12);
+}
 
+/* Birleşik Bento Bilgi Şeridi */
+.drawer-bento-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.bento-tile {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bento-tile:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.bento-playtime { cursor: pointer; }
+.bento-playtime:hover {
+  border-color: rgba(192, 132, 252, 0.35);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.15);
+  transform: translateY(-1px);
+}
+.bento-icon-col {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(192, 132, 252, 0.12);
+  border: 1px solid rgba(192, 132, 252, 0.25);
+  color: #c084fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bento-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bento-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.bento-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.bento-edit-hint { opacity: 0.5; transition: opacity 0.15s; }
+.bento-playtime:hover .bento-edit-hint { opacity: 1; color: #c084fc; }
+.bento-val {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bento-sub {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bento-add-btn {
+  background: none;
+  border: none;
+  color: #c084fc;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.15s;
+}
+.bento-add-btn:hover { color: #e9d5ff; text-decoration: underline; }
+.bento-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 3px;
+}
+.bento-col-pill {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(192, 132, 252, 0.28);
+  color: #e9d5ff;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.bento-col-pill:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(192, 132, 252, 0.5);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.bento-empty-col {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+}
+.bento-empty-col:hover { color: #c084fc; text-decoration: underline; }
+
+/* Oyun Açıklaması */
 .drawer-desc {
-  color: #c0c1cf; font-size: 13px; line-height: 1.6;
-  background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; max-height: 130px; overflow-y: auto;
+  color: #c0c1cf;
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  max-height: 140px;
+  overflow-y: auto;
 }
-.drawer-desc p { margin: 0 0 6px; }
-.drawer-desc p:last-child { margin-bottom: 0; }
-.drawer-desc.overview strong { color: #fff; font-weight: 700; }
-.drawer-store-hint {
-  font-size: 12px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.06);
-  padding-top: 8px; margin-top: 8px;
-}
-.drawer-store-hint a {
-  color: #a5b4fc; font-weight: 600; text-decoration: none; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 4px;
-}
-.drawer-store-hint a:hover { text-decoration: underline; color: #fff; }
 
-/* Modern Metadata Kutucukları */
-.drawer-meta-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);
+/* Sade Teknik Bilgi Grid'i */
+.drawer-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
-.meta-tile {
-  background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 12px;
+.drawer-info-cell {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all 0.18s ease;
 }
-.meta-tile.full { grid-column: span 2; }
-.meta-tile .tile-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.meta-tile .tile-val { font-size: 13px; color: #fff; font-weight: 600; word-break: break-all; }
+.drawer-info-cell.clickable { cursor: pointer; }
+.drawer-info-cell.clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(192, 132, 252, 0.3);
+  transform: translateY(-1px);
+}
+.info-cell-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.info-cell-val {
+  font-size: 12.5px;
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.info-cell-val.link-val { color: #c084fc; }
 
 /* --- İndirmeler & Ayarlar --- */
 .dl-item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px; }
@@ -5586,14 +5789,14 @@ select option {
 
 /* --- HOWLONGTOBEAT (HLTB) KARTI --- */
 .drawer-hltb-card {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(20, 21, 28, 0.5) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 14px;
-  padding: 13px 16px;
-  margin-bottom: 18px;
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, rgba(20, 21, 28, 0.4) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hltb-head {
@@ -5603,17 +5806,17 @@ select option {
 }
 
 .hltb-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #818cf8;
+  color: #c084fc;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .hltb-source {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 10.5px;
+  color: var(--muted);
 }
 
 .hltb-grid {
@@ -5623,21 +5826,21 @@ select option {
 }
 
 .hltb-item {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 6px 8px;
   text-align: center;
   transition: all 0.15s ease;
 }
 
 .hltb-item:hover {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .hltb-val {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: #fff;
   margin-bottom: 2px;
@@ -6297,30 +6500,31 @@ select option {
 /* Çekmece Afişini Değiştir Butonu */
 .drawer-cover-edit-btn {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  top: 16px;
+  left: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(18, 19, 26, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #e2e8f0;
-  font-size: 11.5px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .drawer-cover-edit-btn:hover {
-  background: rgba(99, 102, 241, 0.8);
-  border-color: #818cf8;
+  background: rgba(124, 58, 237, 0.85);
+  border-color: rgba(192, 132, 252, 0.6);
   color: #fff;
-  transform: scale(1.04);
+  transform: scale(1.08);
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.5);
 }
 
 /* SGDB Setup Box */
