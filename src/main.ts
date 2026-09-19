@@ -13,6 +13,7 @@ import {
 } from "lucide";
 import {
   EPIC_LOGIN_URL,
+  EPIC_STORE_URL,
   epicCachedLibrary,
   epicCancelDownload,
   epicDefaultInstallDir,
@@ -40,6 +41,7 @@ import {
   getThirdPartyLauncher,
   isNotAuth,
   summarize,
+  toEpicSlug,
   type CachedLibrary,
   type DownloadCancelledEvent,
   type DownloadFailedEvent,
@@ -113,22 +115,6 @@ import {
   epicGetPlayerProfile,
   type EpicPlayerProfile,
   type ProfileGameRecord,
-  type StoreElement,
-  type StoreHome,
-  type StoreSearchResult,
-  type StoreWishlistEntry,
-  epicStoreHomeData,
-  epicStoreSearchQuery,
-  epicStoreAddWishlist,
-  epicStoreRemoveWishlist,
-  epicStoreWishlistData,
-  storeWideImage,
-  storeTallImage,
-  storeDiscountPercent,
-  storeIsFree,
-  storeFormattedPrice,
-  storeOriginalPrice,
-  storeFreeCountdown,
 } from "./epic";
 
 /* ---------- Tipler ---------- */
@@ -240,7 +226,7 @@ async function fetchGames(): Promise<Game[]> {
 /* ---------- Durum ---------- */
 
 let games: Game[] = [];
-let view: "library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store" = "library";
+let view: "library" | "downloads" | "settings" | "dlc-manager" | "profile" = "library";
 
 /* ---------- Epic (Legendary) durumu ---------- */
 
@@ -249,6 +235,7 @@ let epicPhase: EpicPhase = "checking";
 let epicBooted = false;
 let epicAccount = "";
 let epicAccountId: string | null = null;
+let lastStoreUrl = EPIC_STORE_URL;
 let epicSummaries: EpicSummary[] = [];
 let epicSkippedCount = 0;
 let epicError = "";
@@ -272,24 +259,6 @@ let epicSort: EpicSort = (localStorage.getItem("efxlve-sort") as EpicSort) || "r
 let epicViewMode: EpicViewMode = (localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid";
 let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
-
-/* ---------- Mağaza durumu ---------- */
-
-type StoreSubView = "home" | "browse" | "wishlist";
-let storeSubView: StoreSubView = "home";
-let storeHome: StoreHome | null = null;
-let storeSearchResults: StoreSearchResult | null = null;
-let storeSearchQuery = "";
-let storeSearchCategory = "games/edition/base";
-let storeSortBy = "relevancy";
-let storeCurrentPage = 0;
-let storeDetailEl: StoreElement | null = null;
-let storeWishlist: StoreWishlistEntry[] = [];
-let storeWishlistIds: Set<string> = new Set();
-let storeLoading = false;
-let storeError = "";
-let heroSlide = 0;
-let heroTimer: ReturnType<typeof setInterval> | null = null;
 
 const sortOptions: { id: EpicSort; label: string; icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh" }[] = [
   { id: "recent", label: "Son oynanan", icon: "clock" },
@@ -600,6 +569,88 @@ function updateChrome(): void {
   }
 }
 
+/* ---------- Gömülü mağaza (ana pencere içi webview) ---------- */
+
+let storeVisible = false;
+let storeMode: "store" | "profile" = "store";
+let storeResizeTimer = 0;
+
+function storeRect(): { x: number; y: number; width: number; height: number } {
+  const titlebar = document.getElementById("titlebar");
+  const statusbar = document.getElementById("statusbar");
+  const top = titlebar ? titlebar.offsetHeight : 0;
+  const bottom = statusbar ? statusbar.offsetHeight : 0;
+  return {
+    x: 0,
+    y: top,
+    width: window.innerWidth,
+    height: Math.max(100, window.innerHeight - top - bottom),
+  };
+}
+
+function syncStoreViewSize(): void {
+  if (!storeVisible || !isTauri) return;
+  invoke<void>("resize_store_view", storeRect()).catch(() => undefined);
+}
+
+function renderStoreLoadingScreen(): string {
+  return `
+    <div class="store-loading-screen">
+      <div class="store-loading-canvas">
+        <div class="store-loading-brand">
+          <div class="store-loading-mark">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+              <path d="M2 7h20"/>
+            </svg>
+          </div>
+          <div class="store-loading-logotype">
+            <span class="store-loading-brand-main">EPIC GAMES STORE</span>
+            <span class="store-loading-brand-sub">GÖMÜLÜ MAĞAZA</span>
+          </div>
+        </div>
+
+        <div class="store-loading-track-wrap">
+          <div class="store-loading-track">
+            <div class="store-loading-laser"></div>
+          </div>
+        </div>
+
+        <div class="store-loading-status-wrap">
+          <span class="store-loading-status-text">Mağaza ve oturum başlatılıyor</span>
+          <span class="store-loading-status-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function openStore(): Promise<void> {
+  await openStoreUrl(EPIC_STORE_URL, "store");
+}
+
+async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
+  closeModal();
+  if (storeVisible && lastStoreUrl === url && storeMode === mode) return;
+  lastStoreUrl = url;
+  storeVisible = true;
+  storeMode = mode;
+  // Mağaza açılırken modern ve şık yükleme animasyonunu göster
+  viewEl.innerHTML = renderStoreLoadingScreen();
+  render();
+  try {
+    await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false });
+    window.setTimeout(syncStoreViewSize, 50);
+    window.setTimeout(syncStoreViewSize, 200);
+  } catch (e) {
+    storeVisible = false;
+    render();
+    toast(String(e), "err");
+  }
+}
+
 async function loadPlayerProfile(forceRefresh = false): Promise<void> {
   if (!isTauri) return;
   profileLoading = true;
@@ -616,11 +667,18 @@ async function loadPlayerProfile(forceRefresh = false): Promise<void> {
 }
 
 async function openProfile(): Promise<void> {
+  closeStore();
   view = "profile";
   if (!playerProfileData && !profileLoading) {
     void loadPlayerProfile();
   }
   render();
+}
+
+function closeStore(): void {
+  if (!storeVisible) return;
+  storeVisible = false;
+  invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
 }
 
 let query = "";
@@ -1681,8 +1739,8 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     return `
       <div class="profile-empty-games">
-        <div class="profile-empty-icon">${icon("gamepad-2", 40)}</div>
-        <h4>Aradığınız Kriterde Oyun Bulunamadı</h4>
+        <div class="profile-empty-icon">${icon("gamepad-2", 36)}</div>
+        <h4>Oyun Bulunamadı</h4>
         <p>Seçtiğiniz filtreye veya arama kriterine uygun başarım kaydı bulunmuyor.</p>
       </div>
     `;
@@ -1697,67 +1755,54 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       const isInstalled = s?.installed ?? false;
 
       const coverUrl = customCovers[g.app_name] || g.cover || s?.cover || "";
-      const backdropUrl = customHeroes[g.app_name] || (s ? epicWideArt(s) : null) || coverUrl;
       const fillPercent = Math.min(100, Math.max(0, g.unlocked_percent));
 
       return `
-        <div class="profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" style="--pci:${Math.min(idx, 24)}">
-          ${backdropUrl ? `<div class="profile-game-backdrop" style="background-image: url('${esc(backdropUrl)}')"></div>` : ""}
-          <div class="profile-game-card-overlay"></div>
+        <div class="profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" style="--pci:${Math.min(idx, 20)}">
+          <div class="profile-game-cover-wrap">
+            ${
+              coverUrl
+                ? `<img class="profile-game-cover" src="${esc(coverUrl)}" alt="${esc(g.app_title)}" loading="lazy" />`
+                : `<div class="profile-game-cover-empty">${icon("gamepad-2", 32)}</div>`
+            }
+            ${
+              isPlat
+                ? `<div class="profile-game-plat-ribbon" title="Platin Kupa Tamamlandı!">${icon("crown", 12)} Platin</div>`
+                : ""
+            }
+          </div>
 
-          <div class="profile-game-card-inner">
-            <div class="profile-game-cover-wrap">
-              ${
-                coverUrl
-                  ? `<img class="profile-game-cover" src="${esc(coverUrl)}" alt="${esc(g.app_title)}" loading="lazy" />`
-                  : `<div class="profile-game-cover-empty">${icon("gamepad-2", 32)}</div>`
-              }
-              ${
-                isPlat
-                  ? `<div class="profile-game-plat-seal" title="100% Platin Kupa Tamamlandı!">${icon("crown", 12)}</div>`
-                  : ""
-              }
-            </div>
-
-            <div class="profile-game-info">
-              <div class="profile-game-title-row">
-                <div class="profile-title-left">
-                  <h3 class="profile-game-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
-                  <div class="profile-game-pills">
-                    ${isPlat ? `<span class="profile-game-tag plat">${icon("crown", 10)} 100% Platin</span>` : ""}
-                    ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
-                    ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
-                  </div>
-                </div>
-
-                <div class="profile-game-xp-pill ${isPlat ? "plat" : ""}">
-                  ${icon("sparkles", 11)} <strong>${g.total_xp.toLocaleString()}</strong> <span class="muted-xp">/ ${g.total_product_xp.toLocaleString()} XP</span>
-                </div>
-              </div>
-
-              <div class="profile-game-progress-wrap">
-                <div class="profile-game-progress-labels">
-                  <span class="profile-game-progress-left">
-                    <strong>%${g.unlocked_percent}</strong> Tamamlandı • ${g.total_unlocked}/${g.total_achievements} Başarım
-                  </span>
-                  <span class="profile-game-progress-right">
-                    ${isPlat ? "Tamamlandı ✨" : `${g.total_achievements - g.total_unlocked} kilitli`}
-                  </span>
-                </div>
-                <div class="profile-game-progress-track">
-                  <div
-                    class="profile-game-progress-fill ${isPlat ? "plat" : ""}"
-                    style="width: ${fillPercent}%"
-                  ></div>
-                </div>
+          <div class="profile-game-info">
+            <div class="profile-game-title-row">
+              <h3 class="profile-game-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
+              <div class="profile-game-pills">
+                ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
+                ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 11)} ${playtimeStr}</span>` : ""}
               </div>
             </div>
 
-            <div class="profile-game-action">
-              <button class="profile-card-inspect-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="Oyun Detaylarını ve Başarımlarını Aç">
-                <span>İncele</span> ${icon("chevron-right", 12)}
-              </button>
+            <div class="profile-game-progress-wrap">
+              <div class="profile-game-progress-labels">
+                <span class="profile-game-progress-left">
+                  <strong>%${g.unlocked_percent}</strong> • ${g.total_unlocked}/${g.total_achievements} Başarım
+                </span>
+                <span class="profile-game-progress-right">
+                  <strong>${g.total_xp.toLocaleString()}</strong> / ${g.total_product_xp.toLocaleString()} XP
+                </span>
+              </div>
+              <div class="profile-game-progress-track">
+                <div
+                  class="profile-game-progress-fill ${isPlat ? "plat" : ""}"
+                  style="width: ${fillPercent}%"
+                ></div>
+              </div>
             </div>
+          </div>
+
+          <div class="profile-game-action">
+            <button class="btn ghost small profile-card-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}">
+              <span>İncele</span> ${icon("chevron-right", 12)}
+            </button>
           </div>
         </div>
       `;
@@ -1798,22 +1843,6 @@ function renderProfile(): string {
   const totalUnlocked = prof?.total_unlocked || 0;
   const platCount = prof?.platinum_count || 0;
 
-  // Seviye ve Rütbe Hesabı (Level & Rank Engine)
-  const level = Math.max(1, Math.floor(totalXp / 500) + 1);
-  const nextLevelXp = level * 500;
-  const currentLevelBase = (level - 1) * 500;
-  const xpInCurrentLevel = totalXp - currentLevelBase;
-  const levelProgressPct = Math.min(100, Math.max(0, Math.round((xpInCurrentLevel / 500) * 100)));
-  const remainingXp = nextLevelXp - totalXp;
-
-  let rankTitle = "Acemi Koleksiyoncu";
-  if (level >= 30) rankTitle = "Platin Şampiyonu";
-  else if (level >= 25) rankTitle = "Elit Koleksiyoncu";
-  else if (level >= 20) rankTitle = "Efsanevi Avcı";
-  else if (level >= 15) rankTitle = "Usta Koleksiyoncu";
-  else if (level >= 10) rankTitle = "Kıdemli Avcı";
-  else if (level >= 5) rankTitle = "Maceracı Oyuncu";
-
   let totalPlaytimeSec = 0;
   for (const r of playtimeMap.values()) {
     totalPlaytimeSec += r.total_seconds || 0;
@@ -1823,18 +1852,6 @@ function renderProfile(): string {
   const totalInstalledGames = epicSummaries.filter((s) => s.installed).length;
 
   const allGames = prof?.games || [];
-  const platGamesList = allGames.filter((g) => g.is_platinum || g.unlocked_percent >= 100);
-
-  // Ortalama Başarım Tamamlama Oranı
-  const playedGames = allGames.filter((g) => g.total_unlocked > 0);
-  const avgPercent = playedGames.length > 0
-    ? Math.round(playedGames.reduce((acc, g) => acc + g.unlocked_percent, 0) / playedGames.length)
-    : 0;
-
-  // Hero Vitrini için Arka Plan Görseli
-  const heroTopGame = platGamesList[0] || allGames[0];
-  const topGameSummary = heroTopGame ? epicSummaries.find((x) => x.appName === heroTopGame.app_name) : null;
-  const heroBackdrop = customHeroes[heroTopGame?.app_name || ""] || (topGameSummary ? epicWideArt(topGameSummary) : null) || topGameSummary?.cover || "";
 
   let filteredGames = allGames.filter((g) => {
     if (profileFilter === "platinum") {
@@ -1879,7 +1896,7 @@ function renderProfile(): string {
   });
 
   const countAll = allGames.length;
-  const countPlat = platGamesList.length;
+  const countPlat = allGames.filter((g) => g.is_platinum || g.unlocked_percent >= 100).length;
   const countInProgress = allGames.filter(
     (g) => g.unlocked_percent > 0 && g.unlocked_percent < 100 && !g.is_platinum,
   ).length;
@@ -1887,155 +1904,47 @@ function renderProfile(): string {
 
   const initialLetter = displayName.trim().charAt(0).toUpperCase() || "E";
 
-  // 🏆 Platin Kupa Şeref Kürsüsü (Hall of Fame)
-  const hallOfFameHtml =
-    platGamesList.length > 0
-      ? `
-        <div class="profile-hof-section">
-          <div class="profile-hof-header">
-            <div class="profile-hof-title-group">
-              <div class="profile-hof-badge">${icon("crown", 13)} 100% Şeref Kürsüsü</div>
-              <h2 class="profile-hof-title">Platin Kupalar Vitrini</h2>
-            </div>
-            <span class="profile-hof-count">${platGamesList.length} Oyun Tamamlandı</span>
-          </div>
-          <div class="profile-hof-grid">
-            ${platGamesList
-              .map((pg) => {
-                const pSummary = epicSummaries.find((x) => x.appName === pg.app_name);
-                const pCover = customCovers[pg.app_name] || pg.cover || pSummary?.cover || "";
-                const pWide = customHeroes[pg.app_name] || (pSummary ? epicWideArt(pSummary) : null) || pCover;
-                return `
-                  <div class="profile-hof-card" data-act="open-game-from-profile" data-id="${esc(pg.app_name)}" title="${esc(pg.app_title)} - Detayları Aç">
-                    ${pWide ? `<div class="profile-hof-backdrop" style="background-image: url('${esc(pWide)}')"></div>` : ""}
-                    <div class="profile-hof-overlay"></div>
-                    <div class="profile-hof-content">
-                      <div class="profile-hof-poster-wrap">
-                        ${
-                          pCover
-                            ? `<img class="profile-hof-poster" src="${esc(pCover)}" alt="${esc(pg.app_title)}" loading="lazy" />`
-                            : `<div class="profile-hof-poster-empty">${icon("crown", 24)}</div>`
-                        }
-                        <div class="profile-hof-crown">${icon("crown", 12)}</div>
-                      </div>
-                      <div class="profile-hof-info">
-                        <span class="profile-hof-tag">${icon("crown", 10)} 100% PLATİN</span>
-                        <h3 class="profile-hof-name" title="${esc(pg.app_title)}">${esc(pg.app_title)}</h3>
-                        <div class="profile-hof-stats">
-                          <span class="hof-stat-pill">${icon("trophy", 11)} ${pg.total_achievements} Başarım</span>
-                          <span class="hof-stat-pill xp">${icon("sparkles", 11)} ${pg.total_xp.toLocaleString()} XP</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="profile-hof-shine"></div>
-                  </div>
-                `;
-              })
-              .join("")}
-          </div>
-        </div>
-      `
-      : "";
-
   return `
     <div class="profile-container">
-      <!-- 1. Sinematik Hero Oyuncu Kartı -->
+      <!-- 1. Hero Profil Kartı -->
       <div class="profile-hero-card">
-        ${heroBackdrop ? `<div class="profile-hero-backdrop" style="background-image: url('${esc(heroBackdrop)}')"></div>` : ""}
-        <div class="profile-hero-overlay"></div>
-
-        <div class="profile-hero-main">
-          <div class="profile-hero-user-section">
-            <div class="profile-avatar-container">
-              <div class="profile-avatar-ring"></div>
-              <div class="profile-avatar">
-                <span class="profile-avatar-letter">${esc(initialLetter)}</span>
-              </div>
-              <div class="profile-level-badge" title="Epic Oyuncu Seviyesi: ${level}">
-                <span class="level-num">${level}</span>
-              </div>
+        <div class="profile-hero-left">
+          <div class="profile-avatar">
+            <span class="profile-avatar-letter">${esc(initialLetter)}</span>
+            <div class="profile-avatar-glow"></div>
+          </div>
+          <div class="profile-hero-meta">
+            <div class="profile-name-row">
+              <h1 class="profile-display-name">${esc(displayName)}</h1>
+              <span class="profile-status-badge ${offlineMode ? "offline" : "online"}">
+                <span class="status-dot"></span> ${offlineMode ? "Çevrimdışı Mod" : "Epic Games Bağlı"}
+              </span>
             </div>
-
-            <div class="profile-hero-meta">
-              <div class="profile-name-row">
-                <h1 class="profile-display-name">${esc(displayName)}</h1>
-                <span class="profile-rank-chip">${icon("star", 11)} ${rankTitle}</span>
-                <span class="profile-status-badge ${offlineMode ? "offline" : "online"}">
-                  <span class="status-dot"></span> ${offlineMode ? "Çevrimdışı" : "Çevrimiçi"}
-                </span>
-              </div>
-
-              <!-- Seviye İlerleme Çubuğu -->
-              <div class="profile-level-progress-wrap">
-                <div class="profile-level-progress-labels">
-                  <span>Seviye ${level} • <strong>${totalXp.toLocaleString()} XP</strong></span>
-                  <span class="profile-next-level-hint">Seviye ${level + 1} için <strong>${remainingXp} XP</strong></span>
-                </div>
-                <div class="profile-level-track">
-                  <div class="profile-level-fill" style="width: ${levelProgressPct}%"></div>
-                </div>
-              </div>
-
-              <div class="profile-id-row">
-                <span class="profile-id-label">Hesap ID:</span>
-                <code class="profile-id-code" title="${esc(accountId)}">${esc(accountId)}</code>
-                <button class="profile-copy-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID'sini Kopyala">
-                  ${icon("copy", 12)} <span class="copy-text">Kopyala</span>
-                </button>
-              </div>
+            <div class="profile-id-row">
+              <span class="profile-id-label">Hesap ID:</span>
+              <code class="profile-id-code" title="${esc(accountId)}">${esc(accountId)}</code>
+              <button class="profile-copy-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID'sini Kopyala">
+                ${icon("copy", 13)}
+              </button>
             </div>
           </div>
-
-          <!-- Hero İçi Hızlı Kupa & İstatistik Rozetleri -->
-          <div class="profile-hero-trophy-showcase">
-            <div class="hero-trophy-item plat">
-              <div class="hero-trophy-icon">${icon("crown", 20)}</div>
-              <div class="hero-trophy-text">
-                <strong>${platCount}</strong>
-                <span>Platin Kupa</span>
-              </div>
-            </div>
-            <div class="hero-trophy-item xp">
-              <div class="hero-trophy-icon">${icon("sparkles", 20)}</div>
-              <div class="hero-trophy-text">
-                <strong>${totalXp.toLocaleString()}</strong>
-                <span>Toplam XP</span>
-              </div>
-            </div>
-            <div class="hero-trophy-item ach">
-              <div class="hero-trophy-icon">${icon("trophy", 20)}</div>
-              <div class="hero-trophy-text">
-                <strong>${totalUnlocked}</strong>
-                <span>Başarım</span>
-              </div>
-            </div>
-            <div class="hero-trophy-item rate">
-              <div class="hero-trophy-icon">${icon("check-circle", 20)}</div>
-              <div class="hero-trophy-text">
-                <strong>%${avgPercent}</strong>
-                <span>Ort. Başarı</span>
-              </div>
-            </div>
-            <button class="btn ghost small profile-refresh-btn ${profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve başarımları Epic sunucularından tazele">
-              ${icon("refresh", 13)} <span>${profileLoading ? "Tazeleniyor…" : "Yenile"}</span>
-            </button>
-          </div>
+        </div>
+        <div class="profile-hero-actions">
+          <button class="btn ghost small profile-refresh-btn ${profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve başarımları Epic sunucularından tazele">
+            ${icon("refresh", 14)} <span>${profileLoading ? "Tazeleniyor…" : "Profili Yenile"}</span>
+          </button>
         </div>
       </div>
 
-      <!-- 2. 🏆 Platin Kupa Şeref Kürsüsü (Hall of Fame) -->
-      ${hallOfFameHtml}
-
-      <!-- 3. İstatistik & Kupa Vitrini (5 Parlayan 3D Cam Kart) -->
+      <!-- 2. İstatistik & Kupa Vitrini (5 Kart) -->
       <div class="profile-stats-grid">
         <div class="profile-stat-box xp">
           <div class="profile-stat-icon-wrap">${icon("sparkles", 22)}</div>
           <div class="profile-stat-content">
             <div class="profile-stat-value">${totalXp.toLocaleString()} <span class="profile-stat-unit">XP</span></div>
             <div class="profile-stat-label">Kazanılan Toplam XP</div>
-            <div class="profile-stat-sub">Seviye ${level} • ${rankTitle}</div>
+            <div class="profile-stat-sub">Epic Seviyesi & Kupa Puanı</div>
           </div>
-          <div class="stat-corner-glow"></div>
         </div>
 
         <div class="profile-stat-box ach">
@@ -2045,7 +1954,6 @@ function renderProfile(): string {
             <div class="profile-stat-label">Açılan Başarımlar</div>
             <div class="profile-stat-sub">${allGames.filter((g) => g.total_unlocked > 0).length} Farklı Oyunda</div>
           </div>
-          <div class="stat-corner-glow"></div>
         </div>
 
         <div class="profile-stat-box plat">
@@ -2055,7 +1963,6 @@ function renderProfile(): string {
             <div class="profile-stat-label">Platin Kupalar</div>
             <div class="profile-stat-sub">%100 Tamamlanan Oyunlar</div>
           </div>
-          <div class="stat-corner-glow"></div>
         </div>
 
         <div class="profile-stat-box playtime">
@@ -2065,7 +1972,6 @@ function renderProfile(): string {
             <div class="profile-stat-label">Toplam Oynama Süresi</div>
             <div class="profile-stat-sub">Launcher Takip Kaydı</div>
           </div>
-          <div class="stat-corner-glow"></div>
         </div>
 
         <div class="profile-stat-box library">
@@ -2075,15 +1981,13 @@ function renderProfile(): string {
             <div class="profile-stat-label">Kütüphane Koleksiyonu</div>
             <div class="profile-stat-sub">${totalInstalledGames} Yüklü Oyun</div>
           </div>
-          <div class="stat-corner-glow"></div>
         </div>
       </div>
 
-      <!-- 4. Oyun Başarımları ve İlerleme Bölümü (2 Sütunlu Zengin Kartlar) -->
+      <!-- 3. Oyun Başarımları ve İlerleme Bölümü -->
       <div class="profile-games-section">
         <div class="profile-games-header">
           <div class="profile-games-title-group">
-            <div class="profile-title-glow-dot"></div>
             <h2 class="profile-section-title">Oyun Başarımları & İlerleme</h2>
             <span class="profile-section-badge">${filteredGames.length} Oyun</span>
           </div>
@@ -2093,13 +1997,13 @@ function renderProfile(): string {
               <button class="profile-pill ${profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
                 Tümü (${countAll})
               </button>
-              <button class="profile-pill plat ${profileFilter === "platinum" ? "active" : ""}" data-act="profile-filter" data-val="platinum">
+              <button class="profile-pill ${profileFilter === "platinum" ? "active" : ""}" data-act="profile-filter" data-val="platinum">
                 ${icon("crown", 12)} Platin (${countPlat})
               </button>
-              <button class="profile-pill in-prog ${profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                ${icon("timer", 12)} Devam Edenler (${countInProgress})
+              <button class="profile-pill ${profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
+                ⏳ Devam Edenler (${countInProgress})
               </button>
-              <button class="profile-pill not-started ${profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
+              <button class="profile-pill ${profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
                 Başlanmayanlar (${countNotStarted})
               </button>
             </div>
@@ -2137,429 +2041,24 @@ function renderProfile(): string {
   `;
 }
 
-function renderStore(): string {
-  if (storeLoading && !storeHome) {
-    return `<div class="store-loading"><div class="store-spinner"></div><span>Mağaza yükleniyor…</span></div>`;
-  }
-  if (storeError && !storeHome) {
-    return `<div class="store-error"><span>⚠️ ${storeError}</span><button class="store-retry-btn" data-act="store-retry">Tekrar Dene</button></div>`;
-  }
-
-  const toolbar = renderStoreToolbar();
-
-  if (storeSubView === "browse") return toolbar + renderStoreBrowse();
-  if (storeSubView === "wishlist") return toolbar + renderStoreWishlist();
-  return toolbar + renderStoreHome();
-}
-
-function renderStoreToolbar(): string {
-  const tabs: { id: StoreSubView; label: string; ico: string }[] = [
-    { id: "home", label: "Keşfet", ico: "🏠" },
-    { id: "browse", label: "Göz At", ico: "🔍" },
-    { id: "wishlist", label: "İstek Listesi", ico: "♡" },
-  ];
-  return `
-    <div class="store-toolbar">
-      <div class="store-tabs">
-        ${tabs.map(t => `<button class="store-tab${storeSubView === t.id ? " active" : ""}" data-act="store-nav" data-nav="${t.id}">${t.ico} ${t.label}</button>`).join("")}
-      </div>
-      <div class="store-search-box">
-        <input type="text" class="store-search-input" placeholder="Oyun ara…" value="${storeSearchQuery.replace(/"/g, "&quot;")}" data-act="store-search-input" />
-        <button class="store-search-btn" data-act="store-search">${icon("search", 16)}</button>
-      </div>
-    </div>
-  `;
-}
-
-/* ─── Mağaza Ana Sayfa ─── */
-
-function renderStoreHome(): string {
-  if (!storeHome) return `<div class="store-loading"><div class="store-spinner"></div><span>Mağaza yükleniyor…</span></div>`;
-
-  let html = "";
-
-  // Hero Carousel
-  if (storeHome.featured.length > 0) {
-    html += renderHeroCarousel(storeHome.featured);
-  }
-
-  // Ücretsiz Oyunlar
-  if (storeHome.freeCurrent.length > 0 || storeHome.freeUpcoming.length > 0) {
-    html += `<div class="store-section store-free-section">
-      <h3 class="store-section-title">🎁 Ücretsiz Oyunlar</h3>
-      <div class="store-free-grid">
-        ${storeHome.freeCurrent.map(el => renderFreeCard(el, "current")).join("")}
-        ${storeHome.freeUpcoming.map(el => renderFreeCard(el, "upcoming")).join("")}
-      </div>
-    </div>`;
-  }
-
-  // Çok Satanlar
-  if (storeHome.topSellers.length > 0) {
-    html += renderShelf("🔥 Popüler Oyunlar", storeHome.topSellers, "top");
-  }
-
-  // İndirimler
-  if (storeHome.onSale.length > 0) {
-    html += renderShelf("💰 İndirimler", storeHome.onSale, "sale");
-  }
-
-  // Yeni Çıkanlar
-  if (storeHome.newReleases.length > 0) {
-    html += renderShelf("🆕 Yeni Çıkanlar", storeHome.newReleases, "new");
-  }
-
-  return html;
-}
-
-function renderHeroCarousel(items: StoreElement[]): string {
-  const slides = items.slice(0, 6);
-  const slide = slides[heroSlide % slides.length];
-  if (!slide) return "";
-  const bg = storeWideImage(slide);
-  const disc = storeDiscountPercent(slide);
-  const price = storeFormattedPrice(slide);
-  const owned = isOwnedInLibrary(slide);
-
-  return `
-    <div class="store-hero" data-act="store-detail" data-sid="${slide.id}" data-sns="${slide.namespace}">
-      <div class="store-hero-bg" style="background-image:url('${bg}')"></div>
-      <div class="store-hero-overlay">
-        <div class="store-hero-content">
-          ${owned ? `<span class="store-badge store-badge-owned">✓ Kütüphanede</span>` : ""}
-          ${disc > 0 ? `<span class="store-badge store-badge-discount">-${disc}%</span>` : ""}
-          <h2 class="store-hero-title">${slide.title}</h2>
-          <p class="store-hero-desc">${slide.description?.slice(0, 160) || ""}${(slide.description?.length || 0) > 160 ? "…" : ""}</p>
-          <div class="store-hero-price">
-            ${disc > 0 ? `<span class="store-price-old">${storeOriginalPrice(slide)}</span>` : ""}
-            <span class="store-price-current">${price || "Ücretsiz"}</span>
-          </div>
-        </div>
-      </div>
-      ${slides.length > 1 ? `
-        <button class="store-hero-arrow store-hero-prev" data-act="store-hero-prev">${icon("chevron-left", 24)}</button>
-        <button class="store-hero-arrow store-hero-next" data-act="store-hero-next">${icon("chevron-right", 24)}</button>
-        <div class="store-hero-dots">
-          ${slides.map((_, i) => `<span class="store-dot${i === heroSlide % slides.length ? " active" : ""}" data-act="store-hero-dot" data-dot="${i}"></span>`).join("")}
-        </div>
-      ` : ""}
-    </div>
-  `;
-}
-
-function renderFreeCard(el: StoreElement, mode: "current" | "upcoming"): string {
-  const bg = storeWideImage(el);
-  const owned = isOwnedInLibrary(el);
-  const countdown = mode === "current" ? storeFreeCountdown(el) : "";
-  const label = mode === "current" ? "Şimdi Ücretsiz" : "Yakında Ücretsiz";
-  return `
-    <div class="store-free-card" data-act="store-detail" data-sid="${el.id}" data-sns="${el.namespace}">
-      <div class="store-free-img" style="background-image:url('${bg}')"></div>
-      <div class="store-free-info">
-        <span class="store-free-label ${mode}">${label}</span>
-        <h4 class="store-free-title">${el.title}</h4>
-        ${owned ? `<span class="store-badge store-badge-owned" style="font-size:11px">✓ Kütüphanede</span>` : ""}
-        ${countdown ? `<span class="store-free-timer">⏳ ${countdown}</span>` : ""}
-      </div>
-    </div>
-  `;
-}
-
-function renderShelf(title: string, items: StoreElement[], _id: string): string {
-  return `
-    <div class="store-section">
-      <h3 class="store-section-title">${title}</h3>
-      <div class="store-shelf">
-        ${items.map(el => renderStoreCard(el)).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function renderStoreCard(el: StoreElement): string {
-  const bg = storeTallImage(el);
-  const disc = storeDiscountPercent(el);
-  const free = storeIsFree(el);
-  const price = storeFormattedPrice(el);
-  const origPrice = storeOriginalPrice(el);
-  const owned = isOwnedInLibrary(el);
-  const wishlisted = storeWishlistIds.has(el.id);
-
-  return `
-    <div class="store-card" data-act="store-detail" data-sid="${el.id}" data-sns="${el.namespace}">
-      <div class="store-card-img" style="background-image:url('${bg}')">
-        ${disc > 0 ? `<span class="store-card-discount">-${disc}%</span>` : ""}
-        ${free ? `<span class="store-card-discount store-card-free">Ücretsiz</span>` : ""}
-        ${owned ? `<span class="store-card-owned">✓</span>` : ""}
-        ${wishlisted ? `<span class="store-card-wish">♥</span>` : ""}
-      </div>
-      <div class="store-card-info">
-        <span class="store-card-title">${el.title}</span>
-        <div class="store-card-price-row">
-          ${disc > 0 ? `<span class="store-price-old">${origPrice}</span>` : ""}
-          <span class="store-price-current${free ? " free" : ""}">${price || ""}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/* ─── Göz At (Browse) ─── */
-
-function renderStoreBrowse(): string {
-  const categories = [
-    { id: "games/edition/base", label: "Tüm Oyunlar" },
-    { id: "games", label: "Oyunlar + DLC" },
-    { id: "addons", label: "Ek İçerikler" },
-    { id: "software", label: "Yazılımlar" },
-  ];
-
-  const sortOpts = [
-    { id: "relevancy", label: "İlgililik" },
-    { id: "releaseDate", label: "Çıkış Tarihi" },
-    { id: "title", label: "İsim (A-Z)" },
-    { id: "currentPrice", label: "Fiyat" },
-  ];
-
-  let html = `
-    <div class="store-browse">
-      <div class="store-browse-filters">
-        <div class="store-filter-group">
-          <span class="store-filter-label">Kategori</span>
-          ${categories.map(c => `<button class="store-filter-pill${storeSearchCategory === c.id ? " active" : ""}" data-act="store-category" data-cat="${c.id}">${c.label}</button>`).join("")}
-        </div>
-        <div class="store-filter-group">
-          <span class="store-filter-label">Sıralama</span>
-          ${sortOpts.map(s => `<button class="store-filter-pill${storeSortBy === s.id ? " active" : ""}" data-act="store-sort" data-sort="${s.id}">${s.label}</button>`).join("")}
-        </div>
-      </div>
-      <div class="store-browse-content">
-  `;
-
-  if (storeLoading) {
-    html += `<div class="store-loading"><div class="store-spinner"></div><span>Aranıyor…</span></div>`;
-  } else if (storeSearchResults && storeSearchResults.elements.length > 0) {
-    html += `<div class="store-browse-grid">`;
-    html += storeSearchResults.elements.map(el => renderStoreCard(el)).join("");
-    html += `</div>`;
-    // Sayfalama
-    const total = storeSearchResults.paging.total;
-    const pages = Math.ceil(total / 20);
-    if (pages > 1) {
-      html += `<div class="store-pagination">
-        ${storeCurrentPage > 0 ? `<button class="store-page-btn" data-act="store-page" data-page="${storeCurrentPage - 1}">← Önceki</button>` : ""}
-        <span class="store-page-info">Sayfa ${storeCurrentPage + 1} / ${pages} (${total} sonuç)</span>
-        ${storeCurrentPage < pages - 1 ? `<button class="store-page-btn" data-act="store-page" data-page="${storeCurrentPage + 1}">Sonraki →</button>` : ""}
-      </div>`;
-    }
-  } else if (storeSearchResults) {
-    html += `<div class="store-empty">Sonuç bulunamadı.</div>`;
-  } else {
-    html += `<div class="store-empty">Arama yapın veya kategori seçin.</div>`;
-  }
-
-  html += `</div></div>`;
-  return html;
-}
-
-/* ─── İstek Listesi ─── */
-
-function renderStoreWishlist(): string {
-  if (storeLoading) {
-    return `<div class="store-loading"><div class="store-spinner"></div><span>İstek listesi yükleniyor…</span></div>`;
-  }
-  if (storeWishlist.length === 0) {
-    return `<div class="store-empty" style="padding:60px 0">
-      <span style="font-size:40px">♡</span>
-      <h3 style="margin:12px 0 4px;color:var(--text)">İstek Listeniz Boş</h3>
-      <p style="color:var(--muted);font-size:13px">Beğendiğiniz oyunları istek listesine ekleyin.</p>
-    </div>`;
-  }
-
-  return `
-    <div class="store-wishlist-header">
-      <span>${storeWishlist.length} oyun istek listesinde</span>
-    </div>
-    <div class="store-browse-grid">
-      ${storeWishlist
-        .filter(w => w.offer)
-        .map(w => renderStoreCard(w.offer!))
-        .join("")}
-    </div>
-  `;
-}
-
-/* ─── Ürün Detay Overlay ─── */
-
-function renderStoreDetail(el: StoreElement): string {
-  const bg = storeWideImage(el);
-  const disc = storeDiscountPercent(el);
-  const free = storeIsFree(el);
-  const price = storeFormattedPrice(el);
-  const origPrice = storeOriginalPrice(el);
-  const owned = isOwnedInLibrary(el);
-  const wishlisted = storeWishlistIds.has(el.id);
-  const slug = el.productSlug || el.urlSlug || "";
-  const seller = el.seller?.name || "";
-  const releaseDate = el.effectiveDate ? new Date(el.effectiveDate).toLocaleDateString("tr-TR", { year: "numeric", month: "long", day: "numeric" }) : "";
-
-  return `
-    <div class="store-detail-overlay" data-act="store-detail-close">
-      <div class="store-detail-drawer" onclick="event.stopPropagation()">
-        <button class="store-detail-close" data-act="store-detail-close">${icon("x", 20)}</button>
-
-        <div class="store-detail-hero" style="background-image:url('${bg}')">
-          <div class="store-detail-hero-overlay">
-            <h2 class="store-detail-title">${el.title}</h2>
-            <div class="store-detail-badges">
-              ${owned ? `<span class="store-badge store-badge-owned">✓ Kütüphanede</span>` : ""}
-              ${wishlisted ? `<span class="store-badge store-badge-wish">♥ İstek Listesinde</span>` : ""}
-              ${disc > 0 ? `<span class="store-badge store-badge-discount">-${disc}%</span>` : ""}
-              ${free ? `<span class="store-badge store-badge-free">🎁 Ücretsiz</span>` : ""}
-            </div>
-          </div>
-        </div>
-
-        <div class="store-detail-body">
-          <div class="store-detail-main">
-            <div class="store-detail-desc">
-              <h4>Hakkında</h4>
-              <p>${el.description || "Açıklama bulunamadı."}</p>
-            </div>
-          </div>
-
-          <div class="store-detail-sidebar">
-            <div class="store-detail-price-box">
-              ${disc > 0 ? `<span class="store-price-old" style="font-size:14px">${origPrice}</span>` : ""}
-              <span class="store-price-big${free ? " free" : ""}">${price || "Ücretsiz"}</span>
-            </div>
-
-            <div class="store-detail-actions">
-              ${slug ? `<button class="store-action-btn store-action-primary" data-act="store-open-epic" data-slug="${slug}">Mağazada Aç</button>` : ""}
-              <button class="store-action-btn ${wishlisted ? "store-action-wish-active" : ""}" data-act="store-wishlist-toggle" data-sid="${el.id}" data-sns="${el.namespace}">
-                ${wishlisted ? "♥ İstek Listesinde" : "♡ İstek Listesine Ekle"}
-              </button>
-            </div>
-
-            <div class="store-detail-meta">
-              ${seller ? `<div class="store-meta-row"><span class="store-meta-label">Yayıncı</span><span>${seller}</span></div>` : ""}
-              ${releaseDate ? `<div class="store-meta-row"><span class="store-meta-label">Çıkış Tarihi</span><span>${releaseDate}</span></div>` : ""}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/* ─── Mağaza Yardımcıları ─── */
-
-function isOwnedInLibrary(el: StoreElement): boolean {
-  return epicGamesRaw.some(
-    g => g.metadata?.namespace === el.namespace || g.app_title.toLowerCase() === el.title.toLowerCase()
-  );
-}
-
-async function loadStoreHome(): Promise<void> {
-  if (storeLoading) return;
-  storeLoading = true;
-  storeError = "";
-  render();
-  try {
-    storeHome = await epicStoreHomeData();
-    // İstek listesini arka planda yükle
-    void loadStoreWishlist();
-  } catch (e: any) {
-    storeError = typeof e === "string" ? e : e?.message || "Mağaza yüklenemedi";
-  } finally {
-    storeLoading = false;
-    render();
-    startHeroTimer();
-  }
-}
-
-async function loadStoreWishlist(): Promise<void> {
-  try {
-    storeWishlist = await epicStoreWishlistData();
-    storeWishlistIds = new Set(storeWishlist.map(w => w.offerId));
-    // Sessizce güncelle — tam render yapmadan rozetleri güncelle
-    if (view === "store") render();
-  } catch {
-    // Token yoksa veya süresi dolmuşsa sessizce devam et
-  }
-}
-
-async function doStoreSearch(): Promise<void> {
-  storeLoading = true;
-  storeSearchResults = null;
-  render();
-  try {
-    storeSearchResults = await epicStoreSearchQuery(
-      storeSearchQuery || undefined,
-      storeSearchCategory,
-      storeSortBy,
-      "DESC",
-      storeCurrentPage,
-      20,
-    );
-  } catch (e: any) {
-    storeError = typeof e === "string" ? e : e?.message || "Arama başarısız";
-  } finally {
-    storeLoading = false;
-    render();
-  }
-}
-
-function startHeroTimer(): void {
-  if (heroTimer) clearInterval(heroTimer);
-  if (!storeHome || storeHome.featured.length <= 1) return;
-  heroTimer = setInterval(() => {
-    heroSlide = (heroSlide + 1) % storeHome!.featured.length;
-    if (view === "store" && storeSubView === "home") {
-      const hero = document.querySelector(".store-hero") as HTMLElement;
-      if (hero) {
-        // Yerinde güncelle — tüm sayfayı yeniden çizme (Kural 15)
-        hero.outerHTML = renderHeroCarousel(storeHome!.featured);
-      }
-    }
-  }, 6000);
-}
-
-function openStoreDetail(el: StoreElement): void {
-  storeDetailEl = el;
-  const root = document.getElementById("modal-root")!;
-  root.innerHTML = renderStoreDetail(el);
-}
-
-function closeStoreDetail(): void {
-  storeDetailEl = null;
-  const root = document.getElementById("modal-root")!;
-  root.innerHTML = "";
-}
-
-function findStoreElement(id: string, namespace: string): StoreElement | null {
-  const all: StoreElement[] = [];
-  if (storeHome) {
-    all.push(...storeHome.featured, ...storeHome.freeCurrent, ...storeHome.freeUpcoming,
-             ...storeHome.topSellers, ...storeHome.newReleases, ...storeHome.onSale);
-  }
-  if (storeSearchResults) all.push(...storeSearchResults.elements);
-  for (const w of storeWishlist) { if (w.offer) all.push(w.offer); }
-  return all.find(e => e.id === id) || all.find(e => e.namespace === namespace) || null;
-}
-
 function render(): void {
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;
-    const active = el.dataset.view === view;
+    const active = storeVisible
+      ? el.dataset.act === "open-store"
+      : el.dataset.view === view;
     el.classList.toggle("active", active);
   });
+  if (storeVisible) {
+    viewEl.innerHTML = renderStoreLoadingScreen();
+    updateChrome();
+    return;
+  }
   viewEl.innerHTML =
     view === "library" ? renderEpic()
     : view === "downloads" ? renderDownloads()
     : view === "dlc-manager" ? renderDlcManager()
     : view === "profile" ? renderProfile()
-    : view === "store" ? renderStore()
     : renderSettings();
   if (view === "downloads") {
     drawSpeedCanvas();
@@ -3454,25 +2953,37 @@ function renderDrawerOverview(
       const gameCols = epicCollections.filter((c) =>
         c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
       );
-      const visibleCols = gameCols.slice(0, 2);
-      const extraCount = gameCols.length - visibleCols.length;
       return `
-    <div class="drawer-col-card drawer-col-compact" title="Koleksiyonlar${gameCols.length > 0 ? ` (${gameCols.length})` : ""}">
-      <span class="drawer-col-folder">${icon("folder", 14)}</span>
-      <div class="drawer-col-chips-wrap drawer-col-single" id="drawer-col-chips-container">
-        ${gameCols.length > 0 ? visibleCols.map((c) => `
+    <div class="drawer-col-card">
+      <div class="drawer-col-header">
+        <div class="drawer-col-header-left">
+          <div class="drawer-col-icon-badge">
+            ${icon("folder", 15)}
+          </div>
+          <div>
+            <div class="drawer-col-label">Koleksiyonlar</div>
+            <div class="drawer-col-sub" id="drawer-col-subtitle">${gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı"}</div>
+          </div>
+        </div>
+        <button class="drawer-col-edit-btn" data-act="manage-game-collections" data-id="${s.appName}" title="Koleksiyonları Yönet">
+          ${icon("edit", 12)}
+          <span>${gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle"}</span>
+        </button>
+      </div>
+      <div class="drawer-col-chips-wrap" id="drawer-col-chips-container">
+        ${gameCols.length > 0 ? gameCols.map((c) => `
           <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
             ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
             <span class="col-pill-text">${esc(c.name)}</span>
+            <span class="col-pill-arrow">→</span>
           </button>
-        `).join("") + (extraCount > 0 ? `<span class="drawer-col-more">+${extraCount}</span>` : ``) : `
-          <span class="drawer-col-empty-text">Koleksiyona eklenmedi</span>
+        `).join("") : `
+          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${s.appName}">
+            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
+            <span class="drawer-col-plus">+</span>
+          </button>
         `}
       </div>
-      <span class="drawer-col-count" id="drawer-col-subtitle">${gameCols.length > 0 ? `${gameCols.length}` : ""}</span>
-      <button class="drawer-col-edit-btn drawer-col-icon-btn" data-act="manage-game-collections" data-id="${s.appName}" title="${gameCols.length > 0 ? "Koleksiyonları Yönet" : "Koleksiyona Ekle"}">
-        ${icon(gameCols.length > 0 ? "edit" : "plus", 13)}
-      </button>
     </div>`;
     })()}
 
@@ -3825,7 +3336,7 @@ function renderDrawerManage(s: EpicSummary): string {
             <div class="manage-callout-text">
               <strong>Epic Games Verileri Neden Otomatik Alınamıyor?</strong>
               <p>
-                Epic Games oynama sürelerini sadece kendi sunucularındaki özel telemetri sisteminde depolar ve üçüncü parti istemcilerin (Heroic, GOG Galaxy vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
+                Epic Games Store, oynama sürelerini sadece kendi sunucularındaki özel telemetri sisteminde depolar ve üçüncü parti istemcilerin (Heroic, GOG Galaxy vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
               </p>
               <p>
                 Launcher üzerinden oyunu başlattığınızda oturum süreleri yerel olarak kaydedilir. Daha önce Epic Games'te geçirdiğiniz süreyi yukarıdaki "Süreyi Düzenle" butonundan bir kez ekleyerek kaldığınız yerden biriktirmeye devam edebilirsiniz.
@@ -5347,7 +4858,7 @@ function openEditPlaytimeModal(appName: string): void {
             <div class="playtime-modal-notice-icon">${icon("info", 16)}</div>
             <div class="playtime-modal-notice-text">
               <strong>Epic Games Verileri Neden Otomatik Alınamıyor?</strong><br />
-              Epic Games oynama sürelerini yalnızca kendi sunucularındaki kapalı telemetride depolar ve 3. parti istemcilerin (Heroic, GOG vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
+              Epic Games Store, oynama sürelerini yalnızca kendi sunucularındaki kapalı telemetride depolar ve 3. parti istemcilerin (Heroic, GOG vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
               Önceki Epic sürenizi buradan bir defaya mahsus girdiğinizde, gelecekteki oyun oturumlarınız bu sürenin üzerine eklenerek sayılmaya devam eder.
             </div>
           </div>
@@ -6446,33 +5957,36 @@ async function saveGameCollectionsFromModal(): Promise<void> {
 function updateDrawerCollectionsBoxInPlace(appName: string): void {
   const container = document.getElementById("drawer-col-chips-container");
   const subEl = document.getElementById("drawer-col-subtitle");
-  const editBtn = document.querySelector<HTMLButtonElement>(".drawer-col-icon-btn");
+  const editBtn = document.querySelector<HTMLElement>(".drawer-col-edit-btn span");
   if (!container) return;
   const gameCols = epicCollections.filter((c) =>
     c.app_names.some((name) => name.toLowerCase() === appName.toLowerCase()),
   );
-  const visibleCols = gameCols.slice(0, 2);
-  const extraCount = gameCols.length - visibleCols.length;
   if (subEl) {
-    subEl.textContent = gameCols.length > 0 ? `${gameCols.length}` : "";
+    subEl.textContent = gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı";
   }
   if (editBtn) {
-    editBtn.title = gameCols.length > 0 ? "Koleksiyonları Yönet" : "Koleksiyona Ekle";
-    editBtn.innerHTML = icon(gameCols.length > 0 ? "edit" : "plus", 13);
+    editBtn.textContent = gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle";
   }
   container.innerHTML =
     gameCols.length > 0
-      ? visibleCols
+      ? gameCols
           .map(
             (c) => `
           <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
             ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
             <span class="col-pill-text">${esc(c.name)}</span>
+            <span class="col-pill-arrow">→</span>
           </button>
         `,
           )
-          .join("") + (extraCount > 0 ? `<span class="drawer-col-more">+${extraCount}</span>` : ``)
-      : `<span class="drawer-col-empty-text">Koleksiyona eklenmedi</span>`;
+          .join("")
+      : `
+          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${appName}">
+            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
+            <span class="drawer-col-plus">+</span>
+          </button>
+        `;
 }
 
 /* ---------- Olaylar (delegation) ---------- */
@@ -6552,6 +6066,7 @@ document.addEventListener("click", (e) => {
   if (!t) return;
 
   if (t.dataset.view) {
+    closeStore();
     view = t.dataset.view as typeof view;
     if (view === "library") void bootEpic();
     if (view === "profile") {
@@ -6568,11 +6083,6 @@ document.addEventListener("click", (e) => {
     }
     if (view === "settings") {
       void loadSettingsView();
-      return;
-    }
-    if (view === "store") {
-      if (!storeHome && !storeLoading) void loadStoreHome();
-      render();
       return;
     }
     render();
@@ -6610,95 +6120,10 @@ document.addEventListener("click", (e) => {
     void syncEpicLibrary(true);
   } else if (act === "epic-retry") {
     void refreshEpic();
-
-  /* ── Mağaza aksiyonları ── */
-
-  } else if (act === "store-nav") {
-    const nav = t.dataset.nav as StoreSubView;
-    if (nav) {
-      storeSubView = nav;
-      if (nav === "browse" && !storeSearchResults) void doStoreSearch();
-      if (nav === "wishlist") void loadStoreWishlist();
-      render();
-    }
-  } else if (act === "store-search") {
-    const input = document.querySelector(".store-search-input") as HTMLInputElement;
-    if (input) storeSearchQuery = input.value.trim();
-    storeSubView = "browse";
-    storeCurrentPage = 0;
-    void doStoreSearch();
-  } else if (act === "store-search-input") {
-    // Enter tuşu keydown handler'da yakalanacak
-  } else if (act === "store-retry") {
-    void loadStoreHome();
-  } else if (act === "store-hero-prev") {
-    e.stopPropagation();
-    if (storeHome && storeHome.featured.length > 0) {
-      heroSlide = (heroSlide - 1 + storeHome.featured.length) % storeHome.featured.length;
-      const hero = document.querySelector(".store-hero") as HTMLElement;
-      if (hero) hero.outerHTML = renderHeroCarousel(storeHome.featured);
-    }
-  } else if (act === "store-hero-next") {
-    e.stopPropagation();
-    if (storeHome && storeHome.featured.length > 0) {
-      heroSlide = (heroSlide + 1) % storeHome.featured.length;
-      const hero = document.querySelector(".store-hero") as HTMLElement;
-      if (hero) hero.outerHTML = renderHeroCarousel(storeHome.featured);
-    }
-  } else if (act === "store-hero-dot") {
-    e.stopPropagation();
-    const dot = parseInt(t.dataset.dot || "0", 10);
-    heroSlide = dot;
-    if (storeHome) {
-      const hero = document.querySelector(".store-hero") as HTMLElement;
-      if (hero) hero.outerHTML = renderHeroCarousel(storeHome.featured);
-    }
-  } else if (act === "store-detail") {
-    const sid = t.dataset.sid;
-    const sns = t.dataset.sns;
-    if (sid) {
-      // storeHome veya storeSearchResults'dan öğeyi bul
-      const el = findStoreElement(sid, sns || "");
-      if (el) openStoreDetail(el);
-    }
-  } else if (act === "store-detail-close") {
-    closeStoreDetail();
-  } else if (act === "store-wishlist-toggle") {
-    const sid = t.dataset.sid || "";
-    const sns = t.dataset.sns || "";
-    if (storeWishlistIds.has(sid)) {
-      storeWishlistIds.delete(sid);
-      void epicStoreRemoveWishlist(sns, sid).then(() => {
-        toast("İstek listesinden çıkarıldı", "ok");
-        void loadStoreWishlist();
-      }).catch((err) => toast(String(err), "err"));
-    } else {
-      storeWishlistIds.add(sid);
-      void epicStoreAddWishlist(sns, sid).then(() => {
-        toast("İstek listesine eklendi", "ok");
-        void loadStoreWishlist();
-      }).catch((err) => toast(String(err), "err"));
-    }
-    // Detay overlay'ı güncelle
-    if (storeDetailEl) openStoreDetail(storeDetailEl);
-  } else if (act === "store-open-epic") {
-    const slug = t.dataset.slug || "";
-    if (slug) void openUrl(`https://store.epicgames.com/p/${slug}`).catch(() => {});
-  } else if (act === "store-category") {
-    storeSearchCategory = t.dataset.cat || "games/edition/base";
-    storeCurrentPage = 0;
-    void doStoreSearch();
-  } else if (act === "store-sort") {
-    storeSortBy = t.dataset.sort || "relevancy";
-    storeCurrentPage = 0;
-    void doStoreSearch();
-  } else if (act === "store-page") {
-    storeCurrentPage = parseInt(t.dataset.page || "0", 10);
-    void doStoreSearch();
-    viewEl.scrollTo({ top: 0, behavior: "smooth" });
-
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
+  } else if (act === "open-store") {
+    void openStore();
   } else if (act === "open-profile") {
     openProfile();
   } else if (act === "refresh-profile") {
@@ -6943,7 +6368,7 @@ document.addEventListener("click", (e) => {
     }
     toast("SteamGridDB bağlantısı test ediliyor…", "");
     epicTestSteamGridKey(key)
-      .then(() => toast("SteamGridDB bağlantısı başarılı! ✓", "ok"))
+      .then(() => toast("SteamGridDB bağlantısı başarılı!", "ok"))
       .catch((err) => toast(`Bağlantı hatası: ${String(err)}`, "err"));
   } else if (act === "toggle-sgdb-key-visibility") {
     const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
@@ -7198,7 +6623,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "dlc-discover-store" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = s ? s.title : id;
-    void openUrl(epicStorePageUrl(title));
+    void openStoreUrl(epicStorePageUrl(title), "store");
   } else if (act === "selective-close") {
     closeSelectiveModal();
   } else if (act === "selective-overlay-close") {
@@ -7423,7 +6848,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-store-page" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = s ? s.title : id;
-    void openUrl(epicStorePageUrl(title));
+    void openStoreUrl(epicStorePageUrl(title), "store");
   } else if (act === "drawer-tab") {
     const tab = t.dataset.tab as DrawerTab;
     if (tab && currentModalAppName) {
@@ -7494,7 +6919,7 @@ document.addEventListener("click", (e) => {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = s ? s.title : id;
     const url = epicAchievementsUrl(title, id);
-    void openUrl(url);
+    void openStoreUrl(url, "store");
   } else if (act === "ach-filter") {
     const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
     if (val && currentModalAppName) {
@@ -7536,7 +6961,15 @@ document.addEventListener("click", (e) => {
   } else if (act === "win-minimize") {
     if (isTauri) void invoke("app_minimize");
   } else if (act === "win-maximize") {
-    if (isTauri) void invoke<boolean>("app_toggle_maximize").then(updateMaxIcon);
+    if (isTauri) {
+      void invoke<boolean>("app_toggle_maximize").then((isMax) => {
+        updateMaxIcon(isMax);
+        handleWindowResize();
+        window.setTimeout(handleWindowResize, 100);
+        window.setTimeout(handleWindowResize, 250);
+        window.setTimeout(handleWindowResize, 500);
+      });
+    }
   } else if (act === "win-close") {
     if (isTauri) void invoke("app_close");
   }
@@ -7560,7 +6993,6 @@ document.addEventListener("wheel", (e) => {
     }
   }
 }, { passive: false });
-
 
 window.addEventListener("resize", () => {
   updateDrawerTabArrows();
@@ -7590,25 +7022,10 @@ document.addEventListener("keydown", (e) => {
       closeManageModal();
       return;
     }
-    // Mağaza detay overlay'ı kapat
-    if (storeDetailEl) {
-      closeStoreDetail();
-      return;
-    }
     closeModal();
   }
-
   if (e.key === "Enter") {
     const activeEl = document.activeElement as HTMLElement | null;
-    // Mağaza arama Enter tuşu
-    if (activeEl && activeEl.classList.contains("store-search-input")) {
-      e.preventDefault();
-      storeSearchQuery = (activeEl as HTMLInputElement).value.trim();
-      storeSubView = "browse";
-      storeCurrentPage = 0;
-      void doStoreSearch();
-      return;
-    }
     if (activeEl && activeEl.id === "sgdb-search-input" && activeCustomCoverAppName) {
       e.preventDefault();
       searchAndLoadSteamGrid(activeCustomCoverAppName);
@@ -7877,15 +7294,44 @@ function updateMaxIcon(isMax?: boolean): void {
   }
 }
 
+function handleWindowResize(): void {
+  updateMaxIcon();
+  if (typeof updateDrawerTabArrows === "function") {
+    updateDrawerTabArrows();
+  }
+  if (typeof updateColPresetArrows === "function") {
+    updateColPresetArrows();
+  }
+  if (view === "downloads" && typeof drawSpeedCanvas === "function") {
+    drawSpeedCanvas();
+  }
+  if (storeVisible) {
+    syncStoreViewSize();
+    window.clearTimeout(storeResizeTimer);
+    storeResizeTimer = window.setTimeout(() => {
+      syncStoreViewSize();
+      window.setTimeout(syncStoreViewSize, 80);
+      window.setTimeout(syncStoreViewSize, 200);
+      window.setTimeout(syncStoreViewSize, 450);
+    }, 40);
+  }
+}
+
 document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
   const target = e.target as HTMLElement;
   if (target.closest("#nav button, .win-btn, input, a")) return;
-  if (isTauri) void invoke<boolean>("app_toggle_maximize").then(updateMaxIcon);
+  if (isTauri) {
+    void invoke<boolean>("app_toggle_maximize").then((isMax) => {
+      updateMaxIcon(isMax);
+      handleWindowResize();
+      window.setTimeout(handleWindowResize, 100);
+      window.setTimeout(handleWindowResize, 250);
+      window.setTimeout(handleWindowResize, 500);
+    });
+  }
 });
 
-window.addEventListener("resize", () => {
-  updateMaxIcon();
-});
+window.addEventListener("resize", handleWindowResize);
 
 /* ---------- Başlat ---------- */
 
@@ -8045,6 +7491,36 @@ async function init(): Promise<void> {
       }
     });
 
+    await listen<{ appName?: string; title?: string; slug?: string }>(
+      "efxlve-open-game-from-store",
+      (event) => {
+        const { appName, title, slug } = event.payload;
+        closeStore();
+        view = "library";
+        render();
+
+        let targetApp = appName;
+        if (!targetApp && (slug || title)) {
+          const normTitle = (title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const match = epicSummaries.find((s) => {
+            if (slug && toEpicSlug(s.title) === slug.toLowerCase()) return true;
+            if (title && s.title.toLowerCase() === title.toLowerCase()) return true;
+            if (normTitle && s.title.toLowerCase().replace(/[^a-z0-9]/g, "") === normTitle) return true;
+            return false;
+          });
+          if (match) targetApp = match.appName;
+        }
+
+        if (targetApp) {
+          openEpicModal(targetApp);
+        } else if (title || slug) {
+          const q = title || slug || "";
+          query = q;
+          render();
+        }
+      },
+    );
+
     await listen<GameStatusEvent>("game-status", (event) => {
       const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = epicSummaries.find((x) => x.appName === id);
@@ -8177,29 +7653,10 @@ function icon(
     | "check-circle"
     | "arrow-down-a-z"
     | "crown"
-    | "copy"
-    | "gift"
-    | "shopping-cart"
-    | "shopping-bag"
-    | "tag"
-    | "maximize-2"
-    | "plus"
-    | "alert-triangle",
+    | "copy",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
-    gift:
-      '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
-    "shopping-cart":
-      '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
-    "shopping-bag":
-      '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
-    tag:
-      '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
-    "maximize-2":
-      '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
-    "alert-triangle":
-      '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
     "arrow-down-a-z":
       '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/>',
     image:
@@ -8290,7 +7747,6 @@ function icon(
       '<path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><line x1="2" x2="22" y1="2" y2="22"/>',
     star:
       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name] ?? ""}</svg>`;
 }

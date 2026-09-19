@@ -30,6 +30,7 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - `npm` yerine **`npm.cmd`** kullan (PowerShell execution policy `npm.ps1`'i engeller).
 - Yeni Rust bağımlılığı eklediğinde `cargo check` + `cargo test` yeşil olmadan bitirme.
 - Frontend değişikliği `tsc` hatasız geçmeli (`npm run build` bunu kapsar).
+- **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına güncellenmeli ve ardından `git commit` atılmalıdır.
 
 ## 4. Mimari
 
@@ -69,6 +70,7 @@ Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
+Mağaza: `show_store_view`, `resize_store_view`, `hide_store_view`
 Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -116,12 +118,19 @@ Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized
 15. **Frontend render disiplini:** ilerleme event'inde tüm görünümü YENİDEN ÇİZME —
    sadece `[data-dlbtn]` ve `[data-dlbar]` düğme/çubuklarını güncelle (odak kaybı/kırpışma olur).
    Arama kutusu dinamik view içindeyse full render YAPMA (odak ölür).
-16. **Epic Store URL yapısı & Yerleşik Mağaza:**
-   Eski `/en-US/search?q=` adresi Epic tarafından genel kurumsal site aramasına yönlendirilir
-   (`epicgames.com/site/search`). Doğrudan ürün sayfası linki `https://store.epicgames.com/p/<slug>`
-   şeklindedir; slug başlığın alfanümerik normalize edilmesiyle (`toEpicSlug`) üretilir. Mağaza araması
-   için ise `/browse?q=` kullanılır. Detay çekmecesindeki "Mağaza" butonu 3. parti harici tarayıcı yerine
-   uygulamanın yerleşik child webview mağazasını açar (`openStoreUrl(url, "store")`).
+16. **Epic Store URL yapısı, Yerleşik Mağaza & Detay Sayfası:**
+   - Eski `/en-US/search?q=` adresi Epic tarafından genel kurumsal site aramasına yönlendirilir
+     (`epicgames.com/site/search`). Doğrudan ürün sayfası linki `https://store.epicgames.com/p/<slug>`
+     şeklindedir; slug başlığın alfanümerik normalize edilmesiyle (`toEpicSlug`) üretilir. Mağaza araması
+     için ise `/browse?q=` kullanılır. Detay çekmecesindeki "Mağaza" butonu 3. parti harici tarayıcı yerine
+     uygulamanın yerleşik child webview mağazasını açar (`openStoreUrl(url, "store")`).
+   - **Pencere Boyutlandırma & Tam Ekran Senkronu:** Windows büyütme animasyonunda (`win-maximize`, başlık çift tıklama, snap)
+     webview'in eski boyutta kalıp siyah boşluk bırakmaması için `handleWindowResize()` çok aşamalı zamanlayıcı
+     (0ms, 80ms, 200ms, 450ms) ve Rust tarafında `tauri::WindowEvent::Resized` OS olay kancası ile senkronize tutulur.
+   - **Detay Sayfası (PDP) Kütüphane Yönlendirmesi & Doğal Mavi Buton:**
+     Detay sayfasında kullanıcı deneyimini sade tutmak için fazladan özel kart kutusu eklenmez; Epic'in kendi oluşturduğu
+     `[ ⊞ Kütüphanede ]` butonunun `disabled` niteliği kaldırılarak (`removeAttribute('disabled')`, `disabled = false`, pointer cursor)
+     doğal mavi buton haline getirilir ve doğrudan ele geçirilir. Tıklandığında oyunu Efxlve Launcher kütüphanesinde açar (`efxlve-open-game-from-store`).
 17. **Kütüphane UI Mimarisi & Rozet Güvenliği:**
    - Kart hover katmanında aksiyon butonları (`.top`) daima **sağ üstte** toplanır; sol üstteki `.pbadge`
      durum rozetiyle ASLA çakışmaz.
@@ -579,4 +588,47 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - Kısa ve öz iletişim; gereksiz dosya oluşturma (yeni dosya = sadece açıkça gerekirse).
 - `dist/`, `target/`, `node_modules/` commitlenmez (gitignore'lu).
 - Commit/PR yalnızca açıkça istenirse.
+
+## 41. Gömülü Mağaza (Child Webview) & Legendary Otomatik Oturum
+
+- **Gömülü Mağaza Mimarisi:**
+  - Epic Games Store, `X-Frame-Options: SAMEORIGIN` kullandığından iframe içinde açılamaz. Tauri v2 `unstable` özelliği ile child webview (`add_child`) olarak ana pencerenin içerik alanına gömülür.
+  - Üst bar (`header#titlebar`) HTML olarak üstte kalır ve sekmeler arası geçiş aktiftir.
+  - Mağaza sekmesinden başka bir sekmeye geçildiğinde (`library`, `downloads`, `profile`, `settings`) `hide_store_view` çağrılarak mağaza görünümü gizlenir; geri dönüldüğünde `show_store_view` ile tekrar gösterilir (durum ve gezinme geçmişi korunur).
+  - Pencere yeniden boyutlandırıldığında sayfayı yeniden yüklememek için `resize_store_view` komutu ile mevcut webview'in konumu ve boyutu güncellenir.
+- **Doğrudan Mağaza Yükleme & Kalıcı Oturum:**
+  - Epic Games Store'a doğrudan `https://store.epicgames.com/` olarak gidilir. `id/exchange` gibi harici yönlendirmeler Cloudflare 403 korumasına takıldığı için kullanılmaz.
+  - WebView2, kullanıcının mağaza oturumunu kendi yerel kullanıcı veri dizininde kalıcı olarak saklar; böylece mağazada bir defa oturum açıldığında launcher'ın sonraki tüm açılışlarında oturum açık kalır.
+
+## 42. Gömülü Mağaza Performansı, Efxlve Rozet Eklentisi & Yükleme Deneyimi
+
+- **0 ms Hızlı Sekme Geçişi & Hedef Yönlendirme:**
+  - `show_store_view`, webview önceden oluşturulmuşsa hiçbir ağ isteği beklemeden `v.show()` ile 0 ms gecikmeyle anında odaklanır.
+  - Belirli bir oyun veya detay sayfası açılmak istendiğinde (`openStoreUrl`) `v.url()` ve `v.navigate(target)` ile mevcut webview hedefe yönlendirilir.
+- **Kütüphane Asılı Kalma & Beyaz Parlama Önleme (Anti-Flash):**
+  - "Mağaza" sekmesine geçildiğinde `render()` fonksiyonu `storeVisible` kontrolü yaparak `renderStoreLoadingScreen()` ile AAA launcher standartlarında minimalist yükleme ekranı gösterir; kütüphanenin arka planda görünmeye devam etmesi tamamen engellenmiştir.
+  - `STORE_EXTENSION_SCRIPT` içindeki `injectStyle()` fonksiyonu `html, body { background-color: #121212 !important }` stilini anında enjekte ederek beyaz parlamayı (flashbang) ortadan kaldırır.
+- **Efxlve Mağaza Eklentisi (`STORE_EXTENSION_SCRIPT`):**
+  - Kullanıcının diskteki tüm kütüphane ve kurulu oyun verileri (`get_owned_games_json()`) `window.__EFXLVE_GAMES` olarak webview ilk çalıştırma betiğine (initialization script) verilir.
+  - **Duyarlı ve Yaratıcı Rozet Mimarisi:**
+    - Mağaza kartlarındaki afiş genişliği taranır; dar listeler ve kenar çubuğu kartları için (< 105px) metin kırpılmasını ve sağ üstteki yer imi düğmesiyle çakışmayı önleyen **22x22px vektör SVG mikro rozetler** (`.efxlve-badge-micro`, gamepad/play/yıldız ikonlu cam madalyon) kullanılır.
+    - Geniş kartlarda (>= 105px) ise yüksek kaliteli cam stüdyo hapları (`.efxlve-badge-full`, zümrüt kütüphane, indigo kurulu, kehribar istek listesi) gösterilir.
+    - Tab'lar (`[role="tab"]`), üst menüler, breadcrumb bağlantıları ve oyunun kendi detay sayfasındaki iç linkler kesinlikle filtrelenir ve rozet basılmaz.
+  - **İnteraktif Ürün Detay (PDP) Kartı & 1-Tıkla Kütüphaneye Atlama:**
+    - Oyun detay sayfasında (`/p/<slug>`) satın alma sütununa interaktif **Efxlve Eylem Kartı** (`.efxlve-pdp-card`) eklenir; "Kütüphanede Aç" veya "Kütüphaneden Başlat" butonu sunar.
+    - Tıklandığında veya Epic'in kendi devre dışı "Kütüphanede" butonuna tıklandığında `https://efxlve.local/open-game` tetiklenir; Rust `on_navigation` yakalayarak `efxlve-open-game-from-store` olayını yayar, mağazayı anında kapatıp kütüphaneye döner ve oyunun detay çekmecesini (`openEpicModal`) açar.
+  - **Launcher Mor Teması & Kusursuz İkon Hizalama Disiplini:**
+    - Tüm yeşil (`#34d399`, `#10b981`) renkler Efxlve Launcher'ın kendi asil mor paletiyle değiştirilmiştir:
+      - Kütüphanede etiketleri ve PDP kartı: `#c084fc` lavanta moru, `rgba(168, 85, 247, 0.14)` yarı saydam cam zemin, `1px solid rgba(168, 85, 247, 0.35)` çerçeve ve `linear-gradient(135deg, #7c3aed, #a855f7)` CTA butonu.
+      - Kurulu oyunlar: Launcher ana rengi `#6366f1` / `#818cf8` indigo/mor gradyan.
+    - SVG ikonlarındaki (`vertical-align: -2px`, `margin-right: 5px`) gibi gömülü kaydırıcı stiller tamamen kaldırılmış, flexbox kapsayıcıları (`align-items: center; gap: 6px;`) ile ikonların hem fiyatta hem de PDP ikon kalkanında (`.efxlve-pdp-icon-shield`) milimetrik olarak tam merkezde (dead-center) oturması sağlanmıştır.
+    - Fiyat alanı etiketleri (`.efxlve-price-tag`) ham metin yerine `backdrop-filter: blur(8px)`, 6px yuvarlak köşe ve hafif mor parıltılı cam hap madalyona dönüştürülmüştür.
+  - **Güvenli Oyun Eşleme Disiplini (Ön Ek & Alt Dize Yasağı):**
+    - `norm.indexOf(gNorm) === 0` veya `slug.indexOf(og.s) === 0` gibi kör ön ek / alt dize kontrolleri KESİNLİKLE YASAKTIR. Aksi halde *"Control"* oyununa sahip bir kullanıcıda *"CONTROL Resonant"* gibi devam oyunları veya *"Hitman 3"*, *"Alan Wake 2"* gibi farklı yapımlar yanlışlıkla kütüphanede gösterilir.
+    - Eşleme; tam eşleşme, edisyon takılarının temizlenmesi (`stripEdition`: *Premium Edition*, *Standard Edition*, *Director's Cut*, *GOTY* vb.) ve slug edisyon temizliği (`stripSlugEdition`: `-standard-edition`, `-directors-cut` vb.) üzerinden deterministik olarak yapılır.
+    - Eşleşmeyen kartlarda veya PDP sayfalarında eski hatalı etiketler (`data-efxlve-owned`, `.efxlve-price-tag`, `.efxlve-pdp-card`) otomatik olarak temizlenir.
+  - **Kesin "İndir" Butonu Temizliği (Shadow DOM + Türkçe 'İ' Normalizasyonu):**
+    - JavaScript'in `"İndir".toLowerCase()` işleminde ürettiği birleşik nokta karakteri (`i\u0307`) `normalize('NFD')` ile giderilir.
+    - Epic Universal Header'ın Shadow DOM ağaçları özyinelemeli taranır ve hem CSS kuralı hem de geometrik/metinsel scrubber ile indirme butonu tüm dillerde tamamen ortadan kaldırılır.
+
 
