@@ -788,4 +788,21 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Oyun kartı odaklandığında hover gibi yukarı kalkar (`translateY(-4px) scale(1.02)`) ve başlık/buton katmanı otomatik görünür olur (`.pcard:focus-visible .poverlay { opacity: 1; }`).
   - **Tasarım Bütünlüğü İlkesi:** Gelecekte eklenecek tüm özellikler bu koltuk/konsol ergonomisine uygun, büyük ve okunabilir kartlarla, karmaşık fare menülerinden uzak tutularak tasarlanacaktır.
 
+## 51. Eleştirmen İnceleme Skorları (OpenCritic, Metacritic, IGDB) & Konsol Glif HUD Bar Mimarisi
+
+- **Arka Plan & Sıfır-Kimlik Doğrulama Çözümü:**
+  - OpenCritic resmi web API'si RapidAPI anahtarı ve kota zorunluluğuna geçtiğinden, PCGamingWiki MediaWiki API (`action=opensearch` ve `action=query`) entegre edildi.
+  - MediaWiki wikitext içerisindeki `{{Infobox game/row/reception|...}}` şablonları taranarak OpenCritic ID/skoru, Metacritic ID/skoru ve IGDB skoru sıfır kimlik doğrulama, sıfır bot engeli ve yüksek hızla elde edilir.
+- **Rust Backend (`critic.rs` & `epic_get_critic`):**
+  - `clean_critic_search_term` fonksiyonu edisyon, sürüm, platform ve yayıncı ön eklerini temizler.
+  - `calculate_tier` OpenCritic resmi standartlarını uygular: `>= 84`: Mighty, `75..=83`: Strong, `66..=74`: Fair, `< 66`: Weak.
+  - `%USERPROFILE%\.config\legendary\critic\<app>.json` ile kalıcı yerel disk önbellekleme (0 ms açılış).
+- **PS5 Game Hub Vitrini Entegrasyonu:**
+  - Hızlı Stat Kapsülü (`.hub-stat-capsule`) içine 4. sütun eklendi: `★ İNCELEME` (`89 • Mighty` veya `91 Metacritic`). Kademe renkleri (altın parıltılı Mighty, mor Strong, mavi Fair) ve tıklanınca ilgili inceleme sayfasına (`openUrl`) yönlendirme.
+  - Genel Bakış sekmesinde sağ kenar çubuğuna `.hub-critic-card`: OpenCritic, Metacritic ve IGDB rozetleri, doğrudan inceleme sayfalarına giden eylem butonları.
+- **PlayStation / Xbox Konsol Glif HUD Barı (`.gamepad-hud-bar` & `.gp-glyph`):**
+  - Kol / Gamepad bağlandığında veya aktif girdi alındığında ekranın alt orta kısmında beliren zarif cam konsol efsane çubuğu (`HUD`).
+  - Dairesel DualSense / Xbox tarzı düğme simgeleri: `(A)` yeşil/camgöbeği (Seç / Oyna), `(B)` kırmızı (Geri), `(X)` mavi (Favori), `(Y)` sarı (Ara), `(LB/RB)` sekme/filtre tamponu, `(D-Pad)` gezinme.
+  - Fare hareket ettiğinde otomatik soluklaşır (`dimmed`), kumandaya dokunulduğunda anında canlanır.
+
 

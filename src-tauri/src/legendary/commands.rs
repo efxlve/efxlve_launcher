@@ -861,6 +861,17 @@ pub async fn epic_get_hltb(
     Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force).await)
 }
 
+/// Eleştirmen ve inceleme verilerini (OpenCritic, Metacritic, IGDB) çeker ve döndürür.
+#[tauri::command]
+pub async fn epic_get_critic(
+    title: String,
+    app_name: String,
+    force_refresh: Option<bool>,
+) -> Result<crate::legendary::critic::CriticData, String> {
+    let force = force_refresh.unwrap_or(false);
+    Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force).await)
+}
+
 /// Epic Games Store genel içerik API'sinden sistem gereksinimlerini çeker ve diske önbelleğe alır.
 #[tauri::command]
 pub async fn epic_get_system_requirements(

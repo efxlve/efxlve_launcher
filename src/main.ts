@@ -81,7 +81,9 @@ import {
   epicSetGameCollections,
   epicImportEglCollections,
   epicGetHltb,
+  epicGetCritic,
   type HltbData,
+  type CriticData,
   type GameCollection,
   type PlaytimeRecord,
   type GameStatusEvent,
@@ -391,6 +393,10 @@ function cleanSteamGridSearchTerm(title: string): string {
 /* ---------- HowLongToBeat Durumu ---------- */
 let loadedHltb: Map<string, HltbData> = new Map();
 let loadingHltbFor: string | null = null;
+
+/* ---------- Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic) ---------- */
+let loadedCritic: Map<string, CriticData> = new Map();
+let loadingCriticFor: string | null = null;
 
 /* ---------- Koleksiyonlar (Kategoriler) ---------- */
 let epicCollections: GameCollection[] = [];
@@ -2612,6 +2618,21 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   const hltbVal = hltb?.main_story ? `~${hltb.main_story} sa` : (hltb?.main_extra ? `~${hltb.main_extra} sa` : "—");
   const hltbLoading = loadingHltbFor === appName;
 
+  const critic = loadedCritic.get(appName);
+  const criticLoading = loadingCriticFor === appName;
+  let criticVal = "—";
+  let criticTierClass = "";
+  const criticUrl = critic?.opencritic_url || critic?.metacritic_url || "";
+  if (critic && critic.supported) {
+    const sc = critic.opencritic_score || critic.metacritic_score;
+    if (sc) {
+      criticVal = critic.tier ? `${sc} • ${critic.tier}` : `${sc}`;
+      if (critic.tier) {
+        criticTierClass = `tier-${critic.tier.toLowerCase()}`;
+      }
+    }
+  }
+
   const isRunning = runningGames.has(appName);
   const primary =
     p !== null
@@ -2664,6 +2685,21 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       })
       .catch(() => {
         loadingHltbFor = null;
+      });
+  }
+
+  if (activeDrawerTab === "overview" && !loadedCritic.has(appName) && loadingCriticFor !== appName) {
+    loadingCriticFor = appName;
+    epicGetCritic(s.title, s.appName)
+      .then((data) => {
+        loadedCritic.set(appName, data);
+        loadingCriticFor = null;
+        if (currentModalAppName === appName) {
+          updateCriticUI(appName, data);
+        }
+      })
+      .catch(() => {
+        loadingCriticFor = null;
       });
   }
 
@@ -2805,6 +2841,11 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
                 <span class="hub-stat-label">${icon("timer", 11)} HİKAYE</span>
                 <span class="hub-stat-val" id="hub-stat-hltb-val">${hltbLoading ? `<span class="hltb-spinner"></span>` : hltbVal}</span>
               </div>
+              <div class="hub-stat-divider"></div>
+              <div class="hub-stat-col ${criticUrl ? "clickable" : ""}" id="hub-stat-critic-col" ${criticUrl ? `data-act="open-critic-url" data-url="${esc(criticUrl)}"` : ""} title="Eleştirmen İnceleme Skoru">
+                <span class="hub-stat-label">${icon("star", 11)} İNCELEME</span>
+                <span class="hub-stat-val ${criticTierClass}" id="hub-stat-critic-val">${criticLoading ? `<span class="hltb-spinner"></span>` : criticVal}</span>
+              </div>
             </div>
           </div>
 
@@ -2896,6 +2937,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       })
       .catch(() => {});
   }
+  updateGamepadHud(gamepadPolling);
 }
 
 function renderHltbCard(hltb?: HltbData, isLoading = false): string {
@@ -2934,6 +2976,104 @@ function renderHltbCard(hltb?: HltbData, isLoading = false): string {
       </div>
     </div>
   `;
+}
+
+function renderCriticCard(critic?: CriticData, isLoading = false): string {
+  if (isLoading) {
+    return `
+      <div class="hub-card hub-critic-card loading">
+        <div class="hub-card-header">
+          <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
+        </div>
+        <div class="critic-loading-text"><span class="hltb-spinner"></span> Skorlar taranıyor…</div>
+      </div>
+    `;
+  }
+  if (!critic || !critic.supported || (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score)) {
+    return "";
+  }
+
+  const tierPill = critic.tier
+    ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
+    : "";
+
+  return `
+    <div class="hub-card hub-critic-card">
+      <div class="hub-card-header">
+        <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
+        ${tierPill}
+      </div>
+      <div class="hub-critic-grid">
+        ${
+          critic.opencritic_score
+            ? `
+          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="OpenCritic İnceleme Sayfasını Aç">
+            <div class="critic-badge-score ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
+            <div class="critic-badge-info">
+              <div class="critic-badge-name">OpenCritic</div>
+              <div class="critic-badge-sub">Top Critic Skoru</div>
+            </div>
+            ${critic.opencritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
+          </div>`
+            : ""
+        }
+        ${
+          critic.metacritic_score
+            ? `
+          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="Metacritic İnceleme Sayfasını Aç">
+            <div class="critic-badge-score mc">${critic.metacritic_score}</div>
+            <div class="critic-badge-info">
+              <div class="critic-badge-name">Metacritic</div>
+              <div class="critic-badge-sub">Metascore</div>
+            </div>
+            ${critic.metacritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
+          </div>`
+            : ""
+        }
+        ${
+          critic.igdb_score
+            ? `
+          <div class="hub-critic-badge igdb" title="IGDB Kullanıcı Puanı">
+            <div class="critic-badge-score igdb">${Math.round(critic.igdb_score <= 10 ? critic.igdb_score * 10 : critic.igdb_score)}</div>
+            <div class="critic-badge-info">
+              <div class="critic-badge-name">IGDB</div>
+              <div class="critic-badge-sub">Topluluk Skoru</div>
+            </div>
+          </div>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+}
+
+function updateCriticUI(appName: string, data: CriticData): void {
+  const container = document.getElementById("drawer-critic-container");
+  if (container && currentModalAppName === appName) {
+    container.innerHTML = renderCriticCard(data, false);
+  }
+  const capValEl = document.getElementById("hub-stat-critic-val");
+  const capColEl = document.getElementById("hub-stat-critic-col");
+  if (capValEl && currentModalAppName === appName) {
+    const sc = data.opencritic_score || data.metacritic_score;
+    if (sc) {
+      capValEl.textContent = data.tier ? `${sc} • ${data.tier}` : `${sc}`;
+      if (data.tier) {
+        capValEl.className = `hub-stat-val tier-${data.tier.toLowerCase()}`;
+      } else {
+        capValEl.className = "hub-stat-val";
+      }
+      const url = data.opencritic_url || data.metacritic_url;
+      if (url && capColEl) {
+        capColEl.classList.add("clickable");
+        capColEl.setAttribute("data-act", "open-critic-url");
+        capColEl.setAttribute("data-url", url);
+      }
+    } else {
+      capValEl.textContent = "—";
+      capValEl.className = "hub-stat-val";
+    }
+  }
 }
 
 function cleanStoreDescription(raw: string): string {
@@ -3118,6 +3258,8 @@ function renderDrawerOverview(
 
   const hltb = loadedHltb.get(s.appName);
   const hltbLoading = loadingHltbFor === s.appName;
+  const critic = loadedCritic.get(s.appName);
+  const criticLoading = loadingCriticFor === s.appName;
   const g = rawOf(s.appName);
   const reqData = loadedRequirements.get(s.appName);
 
@@ -3164,8 +3306,12 @@ function renderDrawerOverview(
         </div>
       </div>
 
-      <!-- Sağ / Kenar Çubuğu: HowLongToBeat & Özellikler -->
+      <!-- Sağ / Kenar Çubuğu: İncelemeler, HowLongToBeat & Özellikler -->
       <div class="hub-overview-sidebar">
+        <div id="drawer-critic-container">
+          ${renderCriticCard(critic, criticLoading)}
+        </div>
+
         <div id="drawer-hltb-container">
           ${renderHltbCard(hltb, hltbLoading)}
         </div>
@@ -4749,6 +4895,7 @@ function updateLibraryFilterInPlace(): boolean {
 function closeModal(): void {
   modalRoot.innerHTML = "";
   currentModalAppName = null;
+  updateGamepadHud(gamepadPolling);
 }
 
 function closeCustomCoverModal(): void {
@@ -6612,7 +6759,7 @@ document.addEventListener("click", (e) => {
     if (activeCustomCoverAppName) {
       renderCustomCoverModalContent(activeCustomCoverAppName);
     }
-  } else if (act === "open-external-url" && t.dataset.url) {
+  } else if ((act === "open-external-url" || act === "open-critic-url") && t.dataset.url) {
     void openUrl(t.dataset.url);
   } else if (act === "switch-cover-tab" && t.dataset.tab) {
     customCoverActiveTab = t.dataset.tab as typeof customCoverActiveTab;
@@ -8002,6 +8149,51 @@ async function init(): Promise<void> {
 /* ---------- Game Controller (Gamepad / Kol) Desteği ---------- */
 let gamepadPolling = false;
 let lastGamepadActionTime = 0;
+let gamepadHudEl: HTMLElement | null = null;
+
+function ensureGamepadHud(): HTMLElement {
+  if (!gamepadHudEl) {
+    gamepadHudEl = document.getElementById("gamepad-hud-bar");
+    if (!gamepadHudEl) {
+      gamepadHudEl = document.createElement("div");
+      gamepadHudEl.id = "gamepad-hud-bar";
+      gamepadHudEl.className = "gamepad-hud-bar hidden";
+      document.body.appendChild(gamepadHudEl);
+    }
+  }
+  return gamepadHudEl;
+}
+
+function updateGamepadHud(active = true): void {
+  const hud = ensureGamepadHud();
+  if (!active || !gamepadPolling) {
+    hud.classList.add("hidden");
+    return;
+  }
+
+  hud.classList.remove("hidden");
+  hud.classList.remove("dimmed");
+
+  const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(currentModalAppName);
+
+  if (modalOpen) {
+    hud.innerHTML = `
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Seç / Oyna</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>Geri</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+    `;
+  } else {
+    hud.innerHTML = `
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Detay</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Filtreler</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+    `;
+  }
+}
 
 function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
@@ -8009,6 +8201,7 @@ function initGamepadSupport(): void {
     toast(`Oyun Kolu Bağlandı: ${e.gamepad.id.split("(")[0].trim()}`, "ok");
     if (!gamepadPolling) {
       gamepadPolling = true;
+      updateGamepadHud(true);
       requestAnimationFrame(gamepadLoop);
     }
   });
@@ -8019,8 +8212,15 @@ function initGamepadSupport(): void {
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {
       gamepadPolling = false;
+      updateGamepadHud(false);
     }
   });
+
+  window.addEventListener("mousemove", () => {
+    if (gamepadHudEl && !gamepadHudEl.classList.contains("hidden")) {
+      gamepadHudEl.classList.add("dimmed");
+    }
+  }, { passive: true });
 
   // Başlangıçta halihazırda bağlı oyun kolu var mı?
   setTimeout(() => {
@@ -8028,6 +8228,7 @@ function initGamepadSupport(): void {
     if (Array.from(gamepads).some((g) => g !== null && g.connected)) {
       if (!gamepadPolling) {
         gamepadPolling = true;
+        updateGamepadHud(true);
         requestAnimationFrame(gamepadLoop);
       }
     }
@@ -8042,6 +8243,7 @@ function gamepadLoop(): void {
   const gp = Array.from(gamepads).find((g) => g !== null && g.connected);
 
   if (gp && now - lastGamepadActionTime > 170) {
+    if (gamepadHudEl) gamepadHudEl.classList.remove("dimmed");
     const btns = gp.buttons;
     const axes = gp.axes;
 
@@ -8179,6 +8381,7 @@ function handleGamepadTabSwitch(step: number): void {
       pills[nextIdx].focus();
     }
   }
+  updateGamepadHud(gamepadPolling);
 }
 
 void init();

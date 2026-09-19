@@ -8098,6 +8098,301 @@ select option {
   transform: translateY(-2px);
 }
 
+/* ==========================================================================
+   PlayStation 5 Game Hub: Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic)
+   ========================================================================== */
+
+.hub-stat-val.tier-mighty {
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+}
+
+.hub-stat-val.tier-strong {
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.45);
+}
+
+.hub-stat-val.tier-fair {
+  color: #38bdf8;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+.hub-stat-val.tier-weak {
+  color: #94a3b8;
+}
+
+.hub-critic-card {
+  margin-bottom: 16px;
+}
+
+.critic-tier-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.critic-tier-pill.tier-mighty {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+}
+
+.critic-tier-pill.tier-strong {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.2);
+}
+
+.critic-tier-pill.tier-fair {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.critic-tier-pill.tier-weak {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+.hub-critic-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hub-critic-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-critic-badge.clickable {
+  cursor: pointer;
+}
+
+.hub-critic-badge.clickable:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateX(3px);
+}
+
+.critic-badge-score {
+  font-size: 18px;
+  font-weight: 800;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.critic-badge-score.tier-mighty {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.critic-badge-score.tier-strong {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
+}
+
+.critic-badge-score.tier-fair {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.critic-badge-score.mc {
+  background: rgba(51, 204, 51, 0.15);
+  border-color: rgba(51, 204, 51, 0.4);
+  color: #4ade80;
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.2);
+}
+
+.critic-badge-score.igdb {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+}
+
+.critic-badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.critic-badge-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.critic-badge-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.critic-badge-ext {
+  color: var(--muted);
+  opacity: 0.7;
+  transition: opacity 0.18s ease;
+}
+
+.hub-critic-badge.clickable:hover .critic-badge-ext {
+  color: #fff;
+  opacity: 1;
+}
+
+.critic-loading-text {
+  padding: 16px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   PlayStation Console Gamepad HUD Bar & Glyphs (10-ft Couch Controller Mode)
+   ========================================================================== */
+
+.gamepad-hud-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 20px;
+  background: rgba(11, 13, 20, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75), 0 0 24px rgba(59, 130, 246, 0.18);
+  z-index: 10000;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: hudSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hudSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.gamepad-hud-bar.hidden {
+  display: none !important;
+}
+
+.gamepad-hud-bar.dimmed {
+  opacity: 0.3;
+}
+
+.gp-hud-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #cbd5e1;
+}
+
+.gp-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  background: #131722;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.gp-glyph.btn-a {
+  border-color: #34d399;
+  color: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.gp-glyph.btn-b {
+  border-color: #f87171;
+  color: #f87171;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
+}
+
+.gp-glyph.btn-x {
+  border-color: #60a5fa;
+  color: #60a5fa;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+}
+
+.gp-glyph.btn-y {
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.gp-glyph.btn-bumper {
+  width: auto;
+  min-width: 26px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border-color: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: #e2e8f0;
+}
+
+.gp-glyph.btn-dpad {
+  width: auto;
+  padding: 0 6px;
+  border-radius: 5px;
+  border-color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+
 
 
 

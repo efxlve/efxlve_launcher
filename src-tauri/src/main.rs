@@ -1399,6 +1399,7 @@ fn main() {
             legendary::commands::epic_get_achievements_summary,
             legendary::commands::epic_get_system_requirements,
             legendary::commands::epic_get_hltb,
+            legendary::commands::epic_get_critic,
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
             legendary::commands::epic_verify_game,

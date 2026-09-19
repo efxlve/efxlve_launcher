@@ -17,6 +17,7 @@ pub mod transfers;
 pub mod hltb;
 pub mod steamgrid;
 pub mod profile;
+pub mod critic;
 
 use thiserror::Error;
 
