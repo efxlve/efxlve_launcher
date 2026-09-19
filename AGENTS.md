@@ -31,6 +31,7 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - Yeni Rust bağımlılığı eklediğinde `cargo check` + `cargo test` yeşil olmadan bitirme.
 - Frontend değişikliği `tsc` hatasız geçmeli (`npm run build` bunu kapsar).
 - **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına güncellenmeli ve ardından `git commit` atılmalıdır.
+- **ZORUNLU TASARIM KURALI (Kullanıcı Talimatı):** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır. Arayüz PlayStation konsol UI'ına yakın, havadar, derin cam efektli (obsidian & midnight blue `#07080d`/`#0b0d14`), şık kupa hiyerarşili (Platin, Altın, Gümüş, Bronz sayaçları) ve sade konsol zarafetinde olmalıdır. Telif ihlali oluşturmamak için Sony'nin tescilli logo ve ticari markaları birebir kopyalanmaz; launcher'ın kendi mor-altın-obsidyen kimliğiyle özgün bir konsol deneyimi sunulur.
 
 ## 4. Mimari
 
@@ -685,3 +686,22 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - **Havadar & Şeffaf Cam Kart Tasarımı (`.ach-card`):**
     - Eski boğucu, kalın ve mat gri kutular yerine 52px yüksek çözünürlüklü ikonlar, 11px padding, yarı saydam cam arka plan (`rgba(255, 255, 255, 0.035)` / backdrop blur) ve kazanılan başarılarda asil altın sol kenarlık (`border-left: 3px solid rgba(245, 158, 11, 0.6)`) kullanıldı.
     - Kilitli başarımlar soluk gri ve şık asma kilit rozeti ile gösterilir; gizli başarımlar ise tıklandığında açılıp kapanabilen spoiler koruması sunar.
+
+## 46. PlayStation (PS5) Konsol Estetiği Kuralı & Detay Sayfası / Başarımlar Dönüşümü
+
+- **PlayStation-Inspired (PS5 Console) Dark Aesthetic Direktifi:**
+  - Launcher'ın görsel dili daima konsol dünyasının zarafetinden ilham alır: derin obsidyen ve kozmik gece mavisi tonları (`#07080d`, `#0b0d14`, `#121624`), radyal derinlik ışımaları (`radial-gradient`), 16px yuvarlatılmış cam kartlar ve sade konsol tipografisi.
+  - **Telif Güvenliği:** Sony markası/logoları doğrudan kullanılmaz; konsol UI hissi launcher'ın kendi mor/altın/indigo renk paletiyle özgün bir kimlik olarak harmanlanır.
+- **Gereksiz Kapsam Çubuğunun ("Tüm İçerik", "Ana Oyun", "Ek Paketler") Kaldırılması:**
+  - Arayüzü daraltan ve üst üste 3 katmanlı araç çubuğu yaratan `ach-scope-strip` kaldırıldı.
+  - Başarım listesi SteamHunters ilkesine uygun olarak `🎮 Ana Oyun` ve `📦 Ek Paketler & DLC` başlıkları altında doğal hiyerarşisiyle listelenmeye devam eder; böylece ekran ferahlar.
+- **PlayStation 4-Seviyeli Kupa Hiyerarşisi (`.ps-trophy-tier-row`):**
+  - Hero kartına PlayStation Trophy kartlarındaki gibi metalik kupa sayaçları entegre edildi:
+    - 🏆 **Platin:** `effPlatUnlocked / effPlatTotal` (Kozmik mavi/elmas parlaklığı)
+    - 🥇 **Altın:** `goldUnlocked / goldTotal` (Altın sarısı ışıma)
+    - 🥈 **Gümüş:** `silverUnlocked / silverTotal` (Metalik gümüş parlaklığı)
+    - 🥉 **Bronz:** `bronzeUnlocked / bronzeTotal` (Bakır bronz tonları)
+  - Tamamlanan kupa seviyelerinde `.complete` rozeti ile canlı ışıma verilir.
+- **Konsol Tipi Sadeleştirilmiş Toolbar & Durum Çipleri:**
+  - Canlı arama kutusu ve sıralama menüsü üstte tek sırada hizalandı.
+  - Altında konsol hap butonları (`[ Tümü ]`, `[ ✓ Kazanılanlar ]`, `[ 🔒 Kilitliler ]`, `[ 👁 Gizli ]`) yer alır.
