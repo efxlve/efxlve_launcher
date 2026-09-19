@@ -2640,11 +2640,6 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       ? `<span class="status-pill ach" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(245,158,11,0.08)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
       : "";
 
-  const achTabBadge = isPlat
-    ? `<span class="drawer-tab-badge plat">${icon("trophy", 11)}</span>`
-    : achSum && achSum.total_achievements > 0
-      ? `<span class="drawer-tab-badge">(${achSum.user_unlocked})</span>`
-      : "";
 
   const dlcRes = dlcCache.get(s.appName);
   const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
@@ -2719,7 +2714,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
 
       const achTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="achievements"]');
       if (achTabBtn) {
-        achTabBtn.innerHTML = `${icon("trophy", 13)} Başarımlar ${achTabBadge}`;
+        achTabBtn.innerHTML = `${icon("trophy", 13)} Başarımlar`;
       }
       const dlcTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
       if (dlcTabBtn) {
@@ -2821,7 +2816,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
                 ${icon("gamepad-2", 13)} Genel Bakış
               </button>
               <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
-                ${icon("trophy", 13)} Başarımlar ${achTabBadge}
+                ${icon("trophy", 13)} Başarımlar
               </button>
               <button class="drawer-tab ${activeDrawerTab === "dlcs" ? "active" : ""}" data-act="drawer-tab" data-tab="dlcs" data-id="${appName}">
                 ${icon("layers", 13)} Eklentiler ${dlcTabBadge}

@@ -743,3 +743,5 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Ergonomi ve Pürüzsüz Geçiş:**
   - ESC tuşuna veya `← Kütüphane` butonuna basıldığında anında kütüphane ızgarasına dönülür.
   - Sekmeler arası geçişlerde ve filtrelemelerde sayfa tepesine sıçrama veya DOM kırpışması engellenmiş, kaydırma pozisyonu yerinde korunur.
+- **Sade "Başarımlar" Sekme Başlığı:**
+  - Sekme butonunda yer alan gereksiz sağ kupa rozeti (`achTabBadge` / platin kupası) ve `(5)` gibi parantez sayaçları tamamen kaldırıldı; konsol zarafetine uygun olarak sade `${icon("trophy", 13)} Başarımlar` başlığı sağlandı.
