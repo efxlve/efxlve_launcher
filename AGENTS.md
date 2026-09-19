@@ -822,5 +822,19 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Kart bileşenleri: Yanıp sönen canlı yeşil nabız noktası (`goygoyPulse`), `Goygoy Engine Özel İnceleme` başlığı, `/100` puan hapı (`.goygoy-score-pill`), italik editör özeti, yazar adı (`EdgeTypE` vb.) ve doğrudan inceleme makalesine götüren `İncelemeyi Oku ↗` aksiyon butonu.
   - Hızlı Stat Kapsülü (`.hub-stat-capsule`): Genel eleştirmen skoru bulunmayan oyunlarda Goygoy skoru doğrudan `85 • Goygoy` (`tier-goygoy`) olarak yeşil ışıltıyla vitrine taşınır ve tıklandığında makaleyi açar.
 
+## 53. Dil / Yerelleştirme Ayarları (Language Settings) & Yerel İçerik Filtresi
+
+- **Ayarlar Bölümü (`renderSettings`):**
+  - Ayarlar paneline `🌐 Dil Seçimi (Language)` kutusu eklendi.
+  - Seçenekler: `🇹🇷 Türkçe (Varsayılan / Etkin)` ve `🌐 English (Yakında / Önizleme)`.
+  - Seçilen dil `localStorage` (`efxlve-lang`) anahtarında saklanır; varsayılan olarak `"tr"` döner.
+- **Yerel İnceleme (Goygoy Engine) Dil Koruması:**
+  - `isTurkishUser()` yardımcı fonksiyonu hem `appLanguage` ayarını hem de tarayıcı/sistem dilini (`navigator.language`) doğrular.
+  - Goygoy Engine incelemesi yalnızca dil Türkçe (`appLanguage === "tr"` veya Türkçe sistem) olduğunda gösterilir.
+  - Kullanıcı yabancı dil (English) seçtiğinde veya yabancı kullanıcılarda:
+    - `.hub-goygoy-box` inceleme kartı DOM'dan tamamen gizlenir.
+    - Oyun detay vitrinindeki Hızlı Stat Kapsülü (`.hub-stat-capsule`) yabancı kullanıcılara Goygoy skorunu ve bağlantısını sunmaz; yalnızca global OpenCritic/Metacritic skorları gösterilir.
+
+
 
 

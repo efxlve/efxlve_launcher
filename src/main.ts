@@ -399,6 +399,18 @@ let loadingHltbFor: string | null = null;
 let loadedCritic: Map<string, CriticData> = new Map();
 let loadingCriticFor: string | null = null;
 
+/* ---------- Dil & Yerelleştirme Ayarları ---------- */
+const LANG_KEY = "efxlve-lang";
+let appLanguage: string = localStorage.getItem(LANG_KEY) || "tr";
+
+function isTurkishUser(): boolean {
+  if (appLanguage) {
+    return appLanguage === "tr";
+  }
+  const navLang = navigator.language?.toLowerCase() || "";
+  return navLang.startsWith("tr");
+}
+
 /* ---------- Koleksiyonlar (Kategoriler) ---------- */
 let epicCollections: GameCollection[] = [];
 let activeCollectionId: string | null = null; // null = Tümü, "fav" = Favoriler, veya collection.id
@@ -1735,6 +1747,29 @@ function renderSettings(): string {
       </div>
     </div>
     <div class="settings-box">
+      <h3>${icon("globe", 16)} Dil Seçimi (Language)</h3>
+      <p>Launcher arayüzü ve yerel içeriklerin görüntüleneceği dili belirleyin.</p>
+      <div class="lang-selection-group">
+        <button class="lang-option-btn ${appLanguage === "tr" ? "active" : ""}" data-act="set-app-language" data-lang="tr">
+          <span class="lang-flag">🇹🇷</span>
+          <span class="lang-name">Türkçe</span>
+          <span class="lang-tag">Varsayılan</span>
+        </button>
+        <button class="lang-option-btn ${appLanguage === "en" ? "active" : ""}" data-act="set-app-language" data-lang="en">
+          <span class="lang-flag">🌐</span>
+          <span class="lang-name">English</span>
+          <span class="lang-tag ${appLanguage === "en" ? "" : "coming-soon"}">${appLanguage === "en" ? "Active" : "Yakında"}</span>
+        </button>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5">
+        ${
+          appLanguage === "tr"
+            ? "Türkçe dili etkin. Goygoy Engine gibi yerel Türkçe eleştirmen incelemeleri ve yerelleştirilmiş içerikler gösterilir."
+            : "English selected. Yerel Türkçe içerikler (Goygoy Engine incelemeleri vb.) yabancı kullanıcılara gizlenir."
+        }
+      </p>
+    </div>
+    <div class="settings-box">
       <h3>Sistem</h3>
       <p><strong>Backend:</strong> ${isTauri ? "Rust (Tauri)" : "Demo (tarayıcı mock)"}</p>
       <p><strong>Kütüphane klasörü:</strong><br /><code>${esc(libraryPath)}</code></p>
@@ -2623,7 +2658,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   const criticLoading = loadingCriticFor === appName;
   let criticVal = "—";
   let criticTierClass = "";
-  const criticUrl = critic?.opencritic_url || critic?.metacritic_url || critic?.goygoy_review?.url || "";
+  const showGoygoy = isTurkishUser() && Boolean(critic?.goygoy_review);
+  const criticUrl = critic?.opencritic_url || critic?.metacritic_url || (showGoygoy ? critic?.goygoy_review?.url : "") || "";
   if (critic && critic.supported) {
     const sc = critic.opencritic_score || critic.metacritic_score;
     if (sc) {
@@ -2631,10 +2667,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       if (critic.tier) {
         criticTierClass = `tier-${critic.tier.toLowerCase()}`;
       }
-    } else if (critic.goygoy_review?.score) {
+    } else if (showGoygoy && critic.goygoy_review?.score) {
       criticVal = `${critic.goygoy_review.score} • Goygoy`;
       criticTierClass = "tier-goygoy";
-    } else if (critic.goygoy_review) {
+    } else if (showGoygoy && critic.goygoy_review) {
       criticVal = "Goygoy İnceleme";
       criticTierClass = "tier-goygoy";
     }
@@ -2996,16 +3032,20 @@ function renderCriticCard(critic?: CriticData, isLoading = false): string {
       </div>
     `;
   }
+
+  // Goygoy Engine incelemesi yalnızca Türkçe / Türk kullanıcılara gösterilir
+  const showGoygoy = isTurkishUser() && Boolean(critic?.goygoy_review);
+  const goygoy = showGoygoy ? critic?.goygoy_review : null;
+
   if (
     !critic ||
     !critic.supported ||
-    (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score && !critic.goygoy_review)
+    (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score && !goygoy)
   ) {
     return "";
   }
 
   const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || critic.igdb_score);
-  const goygoy = critic.goygoy_review;
 
   const tierPill = critic.tier
     ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
@@ -3114,6 +3154,7 @@ function updateCriticUI(appName: string, data: CriticData): void {
   const capValEl = document.getElementById("hub-stat-critic-val");
   const capColEl = document.getElementById("hub-stat-critic-col");
   if (capValEl && currentModalAppName === appName) {
+    const showGoygoy = isTurkishUser() && Boolean(data.goygoy_review);
     const sc = data.opencritic_score || data.metacritic_score;
     if (sc) {
       capValEl.textContent = data.tier ? `${sc} • ${data.tier}` : `${sc}`;
@@ -3122,10 +3163,10 @@ function updateCriticUI(appName: string, data: CriticData): void {
       } else {
         capValEl.className = "hub-stat-val";
       }
-    } else if (data.goygoy_review?.score) {
+    } else if (showGoygoy && data.goygoy_review?.score) {
       capValEl.textContent = `${data.goygoy_review.score} • Goygoy`;
       capValEl.className = "hub-stat-val tier-goygoy";
-    } else if (data.goygoy_review) {
+    } else if (showGoygoy && data.goygoy_review) {
       capValEl.textContent = "Goygoy İnceleme";
       capValEl.className = "hub-stat-val tier-goygoy";
     } else {
@@ -3133,11 +3174,15 @@ function updateCriticUI(appName: string, data: CriticData): void {
       capValEl.className = "hub-stat-val";
     }
 
-    const url = data.opencritic_url || data.metacritic_url || data.goygoy_review?.url;
+    const url = data.opencritic_url || data.metacritic_url || (showGoygoy ? data.goygoy_review?.url : "");
     if (url && capColEl) {
       capColEl.classList.add("clickable");
       capColEl.setAttribute("data-act", "open-critic-url");
       capColEl.setAttribute("data-url", url);
+    } else if (capColEl) {
+      capColEl.classList.remove("clickable");
+      capColEl.removeAttribute("data-act");
+      capColEl.removeAttribute("data-url");
     }
   }
 }
@@ -7343,6 +7388,14 @@ document.addEventListener("click", (e) => {
       void epicSetNetworkProfile(prof);
       const label = prof === "max" ? "Maksimum Hız (16 Worker)" : prof === "low" ? "Düşük Tüketim (1 Worker)" : "Dengeli (4 Worker)";
       toast(`İndirme profili: ${label}`, "ok");
+      render();
+    }
+  } else if (act === "set-app-language") {
+    const lang = t.dataset.lang;
+    if (lang && lang !== appLanguage) {
+      appLanguage = lang;
+      localStorage.setItem(LANG_KEY, lang);
+      toast(lang === "tr" ? "Dil Türkçe olarak ayarlandı" : "Language set to English", "ok");
       render();
     }
   } else if (act === "manage-save-args" && id && activeManageSettings) {
