@@ -2820,14 +2820,24 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   }
 }
 
-function renderHltbCard(hltb?: HltbData): string {
+function renderHltbCard(hltb?: HltbData, isLoading = false): string {
+  if (isLoading) {
+    return `
+      <div class="drawer-hltb-card loading">
+        <div class="hltb-head">
+          <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
+          <div class="hltb-loading-text"><span class="hltb-spinner"></span> Tahmini süreler aranıyor…</div>
+        </div>
+      </div>
+    `;
+  }
   if (!hltb || !hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
     return "";
   }
   return `
     <div class="drawer-hltb-card">
       <div class="hltb-head">
-        <div class="hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></div>
+        <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
         <div class="hltb-source">Tahmini Bitiş Süreleri</div>
       </div>
       <div class="hltb-grid">
@@ -2864,6 +2874,52 @@ function renderDrawerOverview(
   const gameCols = epicCollections.filter((c) =>
     c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
   );
+
+  const achSum = epicAchSummaries[s.appName];
+  const isPlat = isAppPlatinum(s.appName);
+  let quickAchHtml = "";
+  if (achSum && achSum.total_achievements > 0) {
+    const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
+    quickAchHtml = `
+      <div class="drawer-quick-ach-strip ${isPlat ? "plat" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="Tüm başarımları detaylı görüntüle">
+        <div class="quick-ach-left">
+          <div class="quick-ach-trophy ${isPlat ? "plat" : ""}">${icon("trophy", 15)}</div>
+          <div class="quick-ach-info">
+            <div class="quick-ach-title-row">
+              <span class="quick-ach-label">${isPlat ? "🏆 Platin Kupa Tamamlandı!" : "Başarım İlerlemesi"}</span>
+              <span class="quick-ach-counts">${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})</span>
+            </div>
+            <div class="quick-ach-bar">
+              <div class="quick-ach-bar-fill ${isPlat ? "plat" : ""}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="quick-ach-xp-col">
+          <span class="quick-ach-xp">${achSum.user_xp}/${achSum.total_xp} XP</span>
+          <span class="quick-ach-arrow">${icon("chevron-right", 13)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const g = rawOf(s.appName);
+  const devRaw = g ? g.metadata.developer : undefined;
+  const dev = typeof devRaw === "string" ? devRaw : "";
+  const dlcRes = dlcCache.get(s.appName);
+  const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
+
+  let fallbackInfoHtml = "";
+  if (!descHtml) {
+    fallbackInfoHtml = `
+      <div class="drawer-meta-chips">
+        ${dev ? `<div class="drawer-meta-chip"><span class="chip-lbl">Geliştirici</span><span class="chip-val">${esc(dev)}</span></div>` : ""}
+        ${currentDlcCount > 0 ? `<div class="drawer-meta-chip clickable" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}"><span class="chip-lbl">Eklentiler</span><span class="chip-val">${currentDlcCount} DLC Mevcut →</span></div>` : ""}
+        ${partner ? `<div class="drawer-meta-chip"><span class="chip-lbl">Başlatıcı</span><span class="chip-val">${esc(partner.name)}</span></div>` : ""}
+        ${antiCheat ? `<div class="drawer-meta-chip"><span class="chip-lbl">Hile Koruması</span><span class="chip-val">${esc(antiCheat)}</span></div>` : ""}
+        <div class="drawer-meta-chip"><span class="chip-lbl">Platform</span><span class="chip-val">Windows (PC)</span></div>
+      </div>
+    `;
+  }
 
   return `
     <div class="drawer-actions">
@@ -2925,26 +2981,16 @@ function renderDrawerOverview(
       </div>
     </div>
 
+    <!-- Başarım Hızlı İlerleme Çubuğu -->
+    ${quickAchHtml}
+
+    <!-- HowLongToBeat Süreleri -->
     <div id="drawer-hltb-container">
-      ${renderHltbCard(loadedHltb.get(s.appName))}
+      ${renderHltbCard(loadedHltb.get(s.appName), loadingHltbFor === s.appName)}
     </div>
 
     ${descHtml}
-
-    <div class="drawer-info-grid">
-      <div class="drawer-info-cell">
-        <div class="info-cell-label">${icon("hard-drive", 12)} Boyut</div>
-        <div class="info-cell-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
-      </div>
-      <div class="drawer-info-cell">
-        <div class="info-cell-label">${icon("monitor", 12)} Platform</div>
-        <div class="info-cell-val">Windows (PC)</div>
-      </div>
-      <div class="drawer-info-cell clickable" data-act="drawer-tab" data-tab="specs" data-id="${s.appName}" title="Sistem gereksinimlerini ve donanım uyumluluğunu incele">
-        <div class="info-cell-label">${icon("cpu", 12)} Sistem Gereksinimi</div>
-        <div class="info-cell-val link-val">Donanımı İncele →</div>
-      </div>
-    </div>
+    ${fallbackInfoHtml}
   `;
 }
 

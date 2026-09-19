@@ -842,50 +842,250 @@ button { font-family: inherit; }
   overflow-y: auto;
 }
 
-/* Sade Teknik Bilgi Grid'i */
-.drawer-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-.drawer-info-cell {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 9px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  transition: all 0.18s ease;
-}
-.drawer-info-cell.clickable { cursor: pointer; }
-.drawer-info-cell.clickable:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(192, 132, 252, 0.3);
-  transform: translateY(-1px);
-}
-.info-cell-label {
-  font-size: 10.5px;
-  color: var(--muted);
-  font-weight: 600;
+/* Başarım Hızlı İlerleme Çubuğu (Overview Compact Achievement Bar) */
+.drawer-quick-ach-strip {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  justify-content: space-between;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.info-cell-val {
-  font-size: 12.5px;
-  color: #fff;
+.drawer-quick-ach-strip:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(255, 255, 255, 0.04));
+  border-color: rgba(245, 158, 11, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+}
+.drawer-quick-ach-strip.plat {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(180, 83, 9, 0.08));
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.drawer-quick-ach-strip.plat:hover {
+  border-color: #ffd700;
+  box-shadow: 0 4px 18px rgba(251, 191, 36, 0.2);
+}
+.quick-ach-left {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 1;
+}
+.quick-ach-trophy {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.quick-ach-trophy.plat {
+  background: linear-gradient(135deg, #ffd700, #b45309);
+  color: #1a0f00;
+  border: none;
+}
+.quick-ach-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.quick-ach-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
   font-weight: 700;
+}
+.quick-ach-label {
+  color: #f5f5f7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.info-cell-val.link-val { color: #c084fc; }
+.quick-ach-counts {
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.quick-ach-bar {
+  height: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.quick-ach-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.quick-ach-bar-fill.plat {
+  background: linear-gradient(90deg, #ffd700, #f59e0b, #b45309);
+}
+.quick-ach-xp-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  flex-shrink: 0;
+}
+.quick-ach-xp {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.quick-ach-arrow {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.drawer-quick-ach-strip:hover .quick-ach-arrow {
+  color: #fff;
+  transform: translateX(2px);
+}
+
+/* HowLongToBeat Bento Kartı */
+.drawer-hltb-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  transition: all 0.18s ease;
+}
+.drawer-hltb-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+.drawer-hltb-card.loading {
+  padding: 11px 14px;
+  margin-bottom: 12px;
+}
+.drawer-hltb-card.loading .hltb-head {
+  margin-bottom: 0;
+}
+.hltb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.hltb-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c084fc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hltb-source {
+  font-size: 11px;
+  color: var(--muted);
+}
+.hltb-loading-text {
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hltb-spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(192, 132, 252, 0.3);
+  border-top-color: #c084fc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+.hltb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.hltb-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.15s ease;
+}
+.hltb-item:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+.hltb-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+.hltb-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Oyun Künyesi / Meta Etiketleri */
+.drawer-meta-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.drawer-meta-chip {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.drawer-meta-chip.clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.drawer-meta-chip.clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(192, 132, 252, 0.3);
+  transform: translateY(-1px);
+}
+.chip-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.chip-val {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* --- İndirmeler & Ayarlar --- */
 .dl-item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px; }
