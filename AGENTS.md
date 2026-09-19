@@ -805,4 +805,22 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Dairesel DualSense / Xbox tarzı düğme simgeleri: `(A)` yeşil/camgöbeği (Seç / Oyna), `(B)` kırmızı (Geri), `(X)` mavi (Favori), `(Y)` sarı (Ara), `(LB/RB)` sekme/filtre tamponu, `(D-Pad)` gezinme.
   - Fare hareket ettiğinde otomatik soluklaşır (`dimmed`), kumandaya dokunulduğunda anında canlanır.
 
+## 52. Goygoy Engine Yerli İnceleme & Eleştirmen Entegrasyonu
+
+- **Arka Plan & Veri Kaynağı:**
+  - `https://goygoyengine.com/` üzerindeki incelemelerin launcher'da ilgili oyunların detay sayfalarında gösterilmesi sağlandı.
+  - Herhangi bir karmaşık HTML kazıma (scraping) yerine sitenin resmi ve temiz `https://goygoyengine.com/incelemeler-data.json` JSON uç noktası entegre edildi.
+- **Rust Backend Mimarisi (`critic.rs`):**
+  - `fetch_goygoy_reviews`: JSON verilerini çeker ve `%USERPROFILE%\.config\legendary\critic\goygoy_reviews.json` içinde 6 saatlik yerel disk önbelleğiyle saklar; ağ hatasında veya çevrimdışı modda son önbellekten kesintisiz okur.
+  - `find_goygoy_review_match`: 2 aşamalı akıllı ad eşleştirme algoritması:
+    1. Aşama: Tam normalize edilmiş ad eşleşmesi (edisyon ve sürüm ön/son ekleri temizlenerek).
+    2. Aşama: En az 5 karakterlik oyun adları için güvenli alt dize (substring) eşleştirmesi (*Watch Dogs*, *Hellblade: Senua's Sacrifice*, *Kingdom Come: Deliverance*, *Starfield*, *Ready or Not*, *Star Wars Outlaws* vb.).
+  - `GoygoyReview` modeli: `title`, `score`, `writer` (örn. EdgeTypE), `summary`, `url`, `image`.
+  - `epic_get_critic` yanıtında `goygoy_review: Option<GoygoyReview>` alanı döner; oyun için global OpenCritic bulunmasa dahi Goygoy incelemesi varsa `supported = true` olarak kabul edilir.
+- **Frontend & PS5 Game Hub Arayüzü (`main.ts`, `epic.ts`, `styles.css`):**
+  - `.hub-goygoy-box`: Goygoy Engine'in imza fıstık yeşili (`#a3e635`) ve derin obsidyen cam tasarımında özel editör kartı.
+  - Kart bileşenleri: Yanıp sönen canlı yeşil nabız noktası (`goygoyPulse`), `Goygoy Engine Özel İnceleme` başlığı, `/100` puan hapı (`.goygoy-score-pill`), italik editör özeti, yazar adı (`EdgeTypE` vb.) ve doğrudan inceleme makalesine götüren `İncelemeyi Oku ↗` aksiyon butonu.
+  - Hızlı Stat Kapsülü (`.hub-stat-capsule`): Genel eleştirmen skoru bulunmayan oyunlarda Goygoy skoru doğrudan `85 • Goygoy` (`tier-goygoy`) olarak yeşil ışıltıyla vitrine taşınır ve tıklandığında makaleyi açar.
+
+
 
