@@ -2722,20 +2722,22 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         <div class="drawer-cover">
           ${art ? `<img src="${art}" alt="" />` : `<div class="pcover" style="color:#94a3b8">${icon("gamepad-2", 48)}</div>`}
           <div class="drawer-gradient"></div>
+          <div class="drawer-hero-info">
+            <h2 class="drawer-title">${esc(s.title)}</h2>
+            <div class="drawer-meta-subline">
+              ${dev ? `<span class="meta-subline-item dev">${esc(dev)}</span>` : ""}
+              ${dev ? `<span class="meta-subline-dot">•</span>` : ""}
+              <span class="meta-subline-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
+              ${partner ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
+              ${antiCheat ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
+              ${s.updateAvailable ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item warn">${icon("zap", 11)} Güncelleme</span>` : ""}
+            </div>
+          </div>
           <button class="drawer-cover-edit-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Afiş ve Kapak Görselini Özelleştir">
             ${icon("image", 14)}
           </button>
         </div>
         <div class="drawer-body">
-          <h2 class="drawer-title">${esc(s.title)}</h2>
-          <div class="drawer-meta-subline">
-            ${dev ? `<span class="meta-subline-item dev">${esc(dev)}</span>` : ""}
-            ${dev ? `<span class="meta-subline-dot">•</span>` : ""}
-            <span class="meta-subline-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
-            ${partner ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
-            ${antiCheat ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-            ${s.updateAvailable ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item warn">${icon("zap", 11)} Güncelleme</span>` : ""}
-          </div>
 
           <div class="drawer-tabs-wrapper">
             <div class="drawer-tabs-fade left">
@@ -2873,8 +2875,7 @@ function renderDrawerOverview(
   antiCheat: string | null = null,
 ): string {
   const pt = playtimeMap.get(s.appName);
-  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "Oynanmadı";
-  const lastPlayedStr = pt?.last_played || "Henüz oynanmadı";
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—";
 
   const gameCols = epicCollections.filter((c) =>
     c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
@@ -2882,49 +2883,37 @@ function renderDrawerOverview(
 
   const achSum = epicAchSummaries[s.appName];
   const isPlat = isAppPlatinum(s.appName);
-  const achData = loadedAchievements.get(s.appName);
-  let quickAchHtml = "";
+
+  // Stat row: Oynama Süresi | Başarımlar | HLTB
+  let achStatVal = "—";
+  let achStatLabel = "Başarımlar";
   if (achSum && achSum.total_achievements > 0) {
     const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
-    let miniThumbsHtml = "";
-    if (achData) {
-      const unlockedList = achData.achievements.filter((a) => a.unlocked || demoPlatinumApps.has(s.appName));
-      if (unlockedList.length > 0) {
-        miniThumbsHtml = `
-          <div class="quick-ach-thumbs-row">
-            ${unlockedList.slice(0, 4).map((a) => `
-              <img class="quick-ach-mini-thumb" src="${esc(a.icon_link || "")}" alt="${esc(a.display_name)}" title="${esc(a.display_name)}" />
-            `).join("")}
-          </div>
-        `;
-      }
-    }
-
-    quickAchHtml = `
-      <div class="drawer-quick-ach-strip ${isPlat ? "plat" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="Tüm başarımları detaylı görüntüle">
-        <div class="quick-ach-left">
-          <div class="quick-ach-trophy ${isPlat ? "plat" : ""}">${icon("trophy", 16)}</div>
-          <div class="quick-ach-info">
-            <div class="quick-ach-title-row">
-              <span class="quick-ach-label">${isPlat ? "🏆 100% Platin Kupa Tamamlandı!" : "Başarım İlerlemesi"}</span>
-              <span class="quick-ach-counts">${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})</span>
-            </div>
-            <div class="quick-ach-bar">
-              <div class="quick-ach-bar-fill ${isPlat ? "plat" : ""}" style="width: ${pct}%"></div>
-            </div>
-          </div>
-        </div>
-        <div class="quick-ach-right">
-          ${miniThumbsHtml}
-          <span class="quick-ach-xp">${achSum.user_xp}/${achSum.total_xp} XP</span>
-          <span class="quick-ach-arrow">${icon("chevron-right", 14)}</span>
-        </div>
-      </div>
-    `;
+    achStatVal = `${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})`;
+    if (isPlat) achStatLabel = "🏆 Platin Kupa";
   }
+
+  const hltb = loadedHltb.get(s.appName);
+  const hltbVal = hltb?.main_story ? `~${hltb.main_story} sa` : (hltb?.main_extra ? `~${hltb.main_extra} sa` : "—");
+  const hltbLoading = loadingHltbFor === s.appName;
 
   const dlcRes = dlcCache.get(s.appName);
   const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
+
+  // Koleksiyon etiketleri
+  let tagsHtml = "";
+  if (gameCols.length > 0 || currentDlcCount > 0) {
+    const pills = gameCols.map((c) => `
+      <button class="drawer-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu göster">
+        ${c.emoji ? `<span>${esc(c.emoji)}</span>` : ""}<span>${esc(c.name)}</span>
+      </button>
+    `).join("");
+    const dlcPill = currentDlcCount > 0 ? `<button class="drawer-tag" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}">${icon("package", 11)} ${currentDlcCount} Eklenti</button>` : "";
+    const addBtn = `<button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon</button>`;
+    tagsHtml = `<div class="drawer-tags-row">${pills}${dlcPill}${addBtn}</div>`;
+  } else {
+    tagsHtml = `<div class="drawer-tags-row"><button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon Ekle</button></div>`;
+  }
 
   let featureStripHtml = "";
   if (!descHtml) {
@@ -2932,7 +2921,6 @@ function renderDrawerOverview(
       <div class="drawer-feature-strip">
         <div class="drawer-feature-pill">${icon("layers", 12)} <span>${partner ? esc(partner.name) : "Epic Games"}</span></div>
         ${antiCheat ? `<div class="drawer-feature-pill">${icon("shield", 12)} <span>${esc(antiCheat)}</span></div>` : ""}
-        ${currentDlcCount > 0 ? `<button class="drawer-feature-pill clickable" data-act="drawer-tab" data-tab="dlcs" data-id="${s.appName}">${icon("package", 12)} <span>${currentDlcCount} Eklenti / DLC</span></button>` : ""}
         <div class="drawer-feature-pill">${icon("monitor", 12)} <span>Windows (PC)</span></div>
       </div>
     `;
@@ -2956,55 +2944,25 @@ function renderDrawerOverview(
       </div>
     </div>
 
-    <!-- Birleşik Bento Bilgi Şeridi (Quick Info Bar) -->
-    <div class="drawer-bento-bar">
-      <!-- 1. Oynama Süresi & Son Aktivite -->
-      <div class="bento-tile bento-playtime" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenlemek için tıklayın">
-        <div class="bento-icon-col">${icon("clock", 16)}</div>
-        <div class="bento-info">
-          <div class="bento-label">
-            <span>Oynama Süresi</span>
-            <span class="bento-edit-hint">${icon("edit", 10)}</span>
-          </div>
-          <div class="bento-val" id="drawer-stat-playtime">${esc(playtimeStr)}</div>
-          <div class="bento-sub" id="drawer-stat-last-activity">${esc(lastPlayedStr)}</div>
-        </div>
+    <!-- PS5 Kompakt İstatistik Şeridi -->
+    <div class="drawer-stats-row">
+      <div class="stat-item clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenle">
+        <span class="stat-val" id="drawer-stat-playtime">${esc(playtimeStr)}<span class="stat-edit-icon">${icon("edit", 9)}</span></span>
+        <span class="stat-label">Oynama Süresi</span>
       </div>
-
-      <!-- 2. Koleksiyonlar -->
-      <div class="bento-tile bento-collections">
-        <div class="bento-icon-col">${icon("folder", 16)}</div>
-        <div class="bento-info">
-          <div class="bento-label-row">
-            <span class="bento-label">Koleksiyon</span>
-            <button class="bento-add-btn drawer-col-edit-btn" data-act="manage-game-collections" data-id="${s.appName}" title="Koleksiyonları Yönet">
-              ${icon("edit", 11)} <span>${gameCols.length > 0 ? "Düzenle" : "+ Ekle"}</span>
-            </button>
-          </div>
-          <div class="bento-chips-wrap" id="drawer-col-chips-container">
-            ${gameCols.length > 0 ? gameCols.map((c) => `
-              <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
-                ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
-                <span class="col-pill-text">${esc(c.name)}</span>
-              </button>
-            `).join("") : `
-              <button class="bento-empty-col" data-act="manage-game-collections" data-id="${s.appName}">
-                <span>Kategori atanmadı</span>
-              </button>
-            `}
-          </div>
-          <div id="drawer-col-subtitle" style="display:none">${gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı"}</div>
-        </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""}>
+        <span class="stat-val">${achStatVal}</span>
+        <span class="stat-label">${achStatLabel}</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-val">${hltbLoading ? `<span class="hltb-spinner"></span>` : hltbVal}</span>
+        <span class="stat-label">Ana Hikaye</span>
       </div>
     </div>
 
-    <!-- HowLongToBeat Süreleri -->
-    <div id="drawer-hltb-container">
-      ${renderHltbCard(loadedHltb.get(s.appName), loadingHltbFor === s.appName)}
-    </div>
-
-    <!-- Başarım Hızlı İlerleme Şeridi -->
-    ${quickAchHtml}
+    ${tagsHtml}
 
     ${descHtml}
     ${featureStripHtml}
@@ -3532,71 +3490,31 @@ function renderDrawerAchievements(s: EpicSummary): string {
   const scopedHidden = scopedAll.filter((a) => a.hidden).length;
 
   return `
-    <!-- 1. PlayStation İlhamlı Atmosferik Hero Kartı -->
-    <div class="ach-sh-hero ${isPlat ? "platinum" : ""}">
-      <div class="ach-sh-hero-body">
-        <div class="ach-sh-trophy-col">
-          <div class="ach-sh-trophy-badge ${isPlat ? "platinum" : ""}">
-            ${icon("trophy", 26)}
-          </div>
+    <!-- 1. PS5 Kompakt Başarım Özet Çubuğu -->
+    <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
+      <div class="ach-summary-left">
+        <div class="ach-progress-ring" style="position:relative">
+          <svg viewBox="0 0 48 48">
+            <circle class="ring-bg" cx="24" cy="24" r="20" />
+            <circle class="ring-fill" cx="24" cy="24" r="20"
+              stroke-dasharray="${2 * Math.PI * 20}"
+              stroke-dashoffset="${2 * Math.PI * 20 * (1 - pct / 100)}" />
+          </svg>
+          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#f8fafc;pointer-events:none">${isPlat ? "🏆" : `%${pct}`}</span>
         </div>
-        <div class="ach-sh-info-col">
-          <div class="ach-sh-headline-row">
-            <h3 class="ach-sh-title">${isPlat ? "100% Platin Kupa!" : "Başarım İlerlemesi"}</h3>
-            <span class="ach-sh-pct-pill ${isPlat ? "platinum" : ""}">${isPlat ? "%100" : `%${pct}`}</span>
-          </div>
-          <div class="ach-sh-stats-row">
-            <span class="ach-sh-stat-main"><strong>${effectiveUnlocked}</strong> / ${data.total_achievements} Kupa Kazanıldı</span>
-            <span class="ach-sh-stat-dot">•</span>
-            <span class="ach-sh-stat-xp"><strong>${effectiveXp.toLocaleString()}</strong> / ${data.total_xp.toLocaleString()} XP</span>
-          </div>
-
-          <!-- İlerleme Çubuğu -->
-          <div class="ach-sh-bar-wrap">
-            <div class="ach-sh-bar">
-              <div class="ach-sh-bar-fill ${isPlat ? "gold" : ""}" style="width: ${pct}%"></div>
-            </div>
-          </div>
-
-          <!-- PS5 Kupa Seviye Sayaçları (Trophy Tier Breakdown) -->
-          <div class="ps-trophy-tier-row">
-            ${effPlatTotal > 0 ? `
-              <div class="ps-tier-badge plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin Kupa">
-                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
-                <span class="ps-tier-name">Platin</span>
-                <span class="ps-tier-val">${effPlatUnlocked}/${effPlatTotal}</span>
-              </div>` : ""}
-            ${goldTotal > 0 ? `
-              <div class="ps-tier-badge gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="Altın Kupa">
-                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
-                <span class="ps-tier-name">Altın</span>
-                <span class="ps-tier-val">${goldUnlocked}/${goldTotal}</span>
-              </div>` : ""}
-            ${silverTotal > 0 ? `
-              <div class="ps-tier-badge silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="Gümüş Kupa">
-                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
-                <span class="ps-tier-name">Gümüş</span>
-                <span class="ps-tier-val">${silverUnlocked}/${silverTotal}</span>
-              </div>` : ""}
-            ${bronzeTotal > 0 ? `
-              <div class="ps-tier-badge bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="Bronz Kupa">
-                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
-                <span class="ps-tier-name">Bronz</span>
-                <span class="ps-tier-val">${bronzeUnlocked}/${bronzeTotal}</span>
-              </div>` : ""}
-          </div>
-
-          ${hasDlc ? `
-          <div class="ach-sh-dual-stats">
-            <span class="dual-stat">${icon("gamepad-2", 11)} Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> (%${Math.round(baseUnlocked/baseTotal*100)})</span>
-            <span class="dual-stat-sep">•</span>
-            <span class="dual-stat">${icon("package", 11)} Ek Paketler: <strong>${dlcUnlocked}/${dlcTotal}</strong> (%${Math.round(dlcUnlocked/dlcTotal*100)})</span>
-          </div>
-          ` : ""}
+        <div class="ach-summary-text">
+          <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
+          <span class="ach-summary-sub">${isPlat ? "Platin Kupa Tamamlandı!" : `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP`}</span>
         </div>
-        <div class="ach-sh-tools-col">
-          <button class="ach-sh-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Verileri Yeniden Sorgula">${icon("refresh", 13)}</button>
-          <button class="ach-sh-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Games Store'da Gör">${icon("external", 13)}</button>
+      </div>
+      <div class="ach-summary-right">
+        ${effPlatTotal > 0 ? `<span class="ach-tier-mini plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin">${icon("trophy", 11)} ${effPlatUnlocked}/${effPlatTotal}</span>` : ""}
+        ${goldTotal > 0 ? `<span class="ach-tier-mini gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="Altın">${icon("trophy", 11)} ${goldUnlocked}/${goldTotal}</span>` : ""}
+        ${silverTotal > 0 ? `<span class="ach-tier-mini silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="Gümüş">${icon("trophy", 11)} ${silverUnlocked}/${silverTotal}</span>` : ""}
+        ${bronzeTotal > 0 ? `<span class="ach-tier-mini bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="Bronz">${icon("trophy", 11)} ${bronzeUnlocked}/${bronzeTotal}</span>` : ""}
+        <div class="ach-summary-tools">
+          <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Verileri Yeniden Sorgula">${icon("refresh", 13)}</button>
+          <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Games Store'da Gör">${icon("external", 13)}</button>
         </div>
       </div>
     </div>
@@ -3779,10 +3697,10 @@ function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): string {
 
         <div class="ach-meta-row">
           <span class="ach-pill tier ${tierClass}">${tierIcon} ${esc(tierName)}</span>
-          ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${icon("clock", 10)} ${fmtAchDate(a.unlock_date)}</span>` : ""}
-          ${a.rarity?.percent != null ? `
-            <span class="ach-pill rarity ${a.rarity.percent < 10 ? "ultra-rare" : ""}">
-              ${a.rarity.percent < 10 ? icon("sparkles", 10) + " " : ""}%${a.rarity.percent.toFixed(1)} ${a.rarity.percent < 10 ? "Nadir" : ""}
+          ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${fmtAchDate(a.unlock_date)}</span>` : ""}
+          ${a.rarity?.percent != null && a.rarity.percent < 10 ? `
+            <span class="ach-pill rarity ultra-rare">
+              ${icon("sparkles", 10)} %${a.rarity.percent.toFixed(1)} Nadir
             </span>` : ""}
         </div>
       </div>
@@ -7880,10 +7798,12 @@ function icon(
     | "check-circle"
     | "arrow-down-a-z"
     | "crown"
+    | "plus"
     | "copy",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     "arrow-down-a-z":
       '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/>',
     image:
