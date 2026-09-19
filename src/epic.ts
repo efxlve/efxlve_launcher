@@ -808,7 +808,16 @@ export interface HltbData {
 export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
   invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
 
-/* ---------- Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic) ---------- */
+/* ---------- Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic / Goygoy Engine) ---------- */
+
+export interface GoygoyReview {
+  title: string;
+  score?: number | null;
+  writer?: string | null;
+  summary?: string | null;
+  url: string;
+  image?: string | null;
+}
 
 export interface CriticData {
   app_name: string;
@@ -820,6 +829,7 @@ export interface CriticData {
   metacritic_url?: string | null;
   igdb_score?: number | null;
   tier?: "Mighty" | "Strong" | "Fair" | "Weak" | null;
+  goygoy_review?: GoygoyReview | null;
 }
 
 export const epicGetCritic = (title: string, appName: string, forceRefresh = false) =>

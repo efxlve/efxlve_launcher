@@ -84,6 +84,7 @@ import {
   epicGetCritic,
   type HltbData,
   type CriticData,
+  type GoygoyReview,
   type GameCollection,
   type PlaytimeRecord,
   type GameStatusEvent,
@@ -2622,7 +2623,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   const criticLoading = loadingCriticFor === appName;
   let criticVal = "—";
   let criticTierClass = "";
-  const criticUrl = critic?.opencritic_url || critic?.metacritic_url || "";
+  const criticUrl = critic?.opencritic_url || critic?.metacritic_url || critic?.goygoy_review?.url || "";
   if (critic && critic.supported) {
     const sc = critic.opencritic_score || critic.metacritic_score;
     if (sc) {
@@ -2630,6 +2631,12 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
       if (critic.tier) {
         criticTierClass = `tier-${critic.tier.toLowerCase()}`;
       }
+    } else if (critic.goygoy_review?.score) {
+      criticVal = `${critic.goygoy_review.score} • Goygoy`;
+      criticTierClass = "tier-goygoy";
+    } else if (critic.goygoy_review) {
+      criticVal = "Goygoy İnceleme";
+      criticTierClass = "tier-goygoy";
     }
   }
 
@@ -2989,20 +2996,26 @@ function renderCriticCard(critic?: CriticData, isLoading = false): string {
       </div>
     `;
   }
-  if (!critic || !critic.supported || (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score)) {
+  if (
+    !critic ||
+    !critic.supported ||
+    (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score && !critic.goygoy_review)
+  ) {
     return "";
   }
 
+  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || critic.igdb_score);
+  const goygoy = critic.goygoy_review;
+
   const tierPill = critic.tier
     ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
-    : "";
+    : goygoy && !hasGlobalScores
+      ? `<span class="critic-tier-pill tier-goygoy">Goygoy Engine</span>`
+      : "";
 
-  return `
-    <div class="hub-card hub-critic-card">
-      <div class="hub-card-header">
-        <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
-        ${tierPill}
-      </div>
+  let globalScoresHtml = "";
+  if (hasGlobalScores) {
+    globalScoresHtml = `
       <div class="hub-critic-grid">
         ${
           critic.opencritic_score
@@ -3033,7 +3046,7 @@ function renderCriticCard(critic?: CriticData, isLoading = false): string {
         ${
           critic.igdb_score
             ? `
-          <div class="hub-critic-badge igdb" title="IGDB Kullanıcı Puanı">
+          <div class="hub-critic-badge igdb" title="IGDB Topluluk Puanı">
             <div class="critic-badge-score igdb">${Math.round(critic.igdb_score <= 10 ? critic.igdb_score * 10 : critic.igdb_score)}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">IGDB</div>
@@ -3043,6 +3056,52 @@ function renderCriticCard(critic?: CriticData, isLoading = false): string {
             : ""
         }
       </div>
+    `;
+  }
+
+  let goygoyHtml = "";
+  if (goygoy) {
+    goygoyHtml = `
+      <div class="hub-goygoy-box clickable" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="Goygoy Engine'de İncelemeyi Oku">
+        <div class="goygoy-box-top">
+          <div class="goygoy-badge-top">
+            <span class="goygoy-pulse-dot"></span>
+            <span class="goygoy-brand"><strong>Goygoy</strong> Engine</span>
+            <span class="goygoy-chip">Özel İnceleme</span>
+          </div>
+          ${
+            goygoy.score
+              ? `<div class="goygoy-score-pill">
+                  <span class="goygoy-score-num">${goygoy.score}</span>
+                  <span class="goygoy-score-denom">/100</span>
+                </div>`
+              : ""
+          }
+        </div>
+        <div class="goygoy-box-title">${esc(goygoy.title)}</div>
+        ${goygoy.summary ? `<div class="goygoy-box-summary">“${esc(goygoy.summary)}”</div>` : ""}
+        <div class="goygoy-box-footer">
+          <div class="goygoy-writer">
+            ${icon("users", 12)}
+            <span>${esc(goygoy.writer || "Goygoy Engine")}</span>
+          </div>
+          <div class="goygoy-read-action">
+            <span>İncelemeyi Oku</span>
+            ${icon("external", 12)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="hub-card hub-critic-card">
+      <div class="hub-card-header">
+        <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
+        ${tierPill}
+      </div>
+      ${globalScoresHtml}
+      ${goygoyHtml}
     </div>
   `;
 }
@@ -3063,15 +3122,22 @@ function updateCriticUI(appName: string, data: CriticData): void {
       } else {
         capValEl.className = "hub-stat-val";
       }
-      const url = data.opencritic_url || data.metacritic_url;
-      if (url && capColEl) {
-        capColEl.classList.add("clickable");
-        capColEl.setAttribute("data-act", "open-critic-url");
-        capColEl.setAttribute("data-url", url);
-      }
+    } else if (data.goygoy_review?.score) {
+      capValEl.textContent = `${data.goygoy_review.score} • Goygoy`;
+      capValEl.className = "hub-stat-val tier-goygoy";
+    } else if (data.goygoy_review) {
+      capValEl.textContent = "Goygoy İnceleme";
+      capValEl.className = "hub-stat-val tier-goygoy";
     } else {
       capValEl.textContent = "—";
       capValEl.className = "hub-stat-val";
+    }
+
+    const url = data.opencritic_url || data.metacritic_url || data.goygoy_review?.url;
+    if (url && capColEl) {
+      capColEl.classList.add("clickable");
+      capColEl.setAttribute("data-act", "open-critic-url");
+      capColEl.setAttribute("data-url", url);
     }
   }
 }
