@@ -125,99 +125,6 @@ fn library_dir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "bilinmiyor".into())
 }
 
-/// Epic Mağaza'yı ANA pencerenin içinde gömülü webview olarak gösterir.
-/// Gerekçe: Epic `X-Frame-Options: SAMEORIGIN` gönderdiği için iframe ile
-/// gömülemez; bu yüzden içerik alanına native bir child webview konur
-/// (`unstable` özelliğindeki `add_child` API'si ile).
-/// Üst bar HTML olarak üstte kalır, sekmeler çalışmaya devam eder.
-///
-/// NOT: child webview'un konumu sonradan değiştirilemediğinden, pencere
-/// yeniden boyutlandırıldığında `recreate=true` ile yeniden kurulur
-/// (etiket sayacı çakışmayı önler, eskiler arka planda kapanır).
-static STORE_VIEW_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
-    window
-        .webviews()
-        .into_iter()
-        .filter(|w| w.label().starts_with("epic-store-view"))
-        .collect()
-}
-
-#[tauri::command]
-async fn show_store_view(
-    app: AppHandle,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    url: String,
-    recreate: bool,
-) -> Result<String, String> {
-    use tauri::{LogicalPosition, LogicalSize, Position, Size, WebviewBuilder, WebviewUrl};
-    eprintln!("[store-view] show url={url} recreate={recreate}");
-    let parsed: url::Url = url.parse().map_err(|_| "adres geçersiz".to_string())?;
-    match parsed.scheme() {
-        "http" | "https" => {}
-        _ => return Err("yalnızca http(s) adresleri açılabilir".to_string()),
-    }
-    let window = app
-        .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
-    let pos = Position::Logical(LogicalPosition::new(x, y));
-    let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
-    if !recreate {
-        if let Some(v) = store_views(&window).into_iter().next() {
-            let _ = v.set_position(pos);
-            let _ = v.set_size(size);
-            v.navigate(parsed).map_err(|e| e.to_string())?;
-            v.show().map_err(|e| e.to_string())?;
-            return Ok("odaklandı".into());
-        }
-    } else {
-        for v in store_views(&window) {
-            let _ = v.close();
-        }
-    }
-    let seq = STORE_VIEW_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let builder = WebviewBuilder::new(
-        format!("epic-store-view-{seq}"),
-        WebviewUrl::External(parsed),
-    );
-    // add_child ana thread'e iş postalar ve bitmesini bekler; olası takılmada
-    // arayüzün kilitlenmemesi için ayrı thread + zaman aşımı ile koşturulur.
-    let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
-    match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
-        Ok(Ok(Ok(_))) => {
-            eprintln!("[store-view] child oluşturuldu");
-            Ok("açıldı".into())
-        }
-        Ok(Ok(Err(e))) => {
-            eprintln!("[store-view] add_child hatası: {e}");
-            Err(e.to_string())
-        }
-        Ok(Err(join_err)) => {
-            eprintln!("[store-view] thread hatası: {join_err}");
-            Err("mağaza görünümü oluşturulamadı".into())
-        }
-        Err(_) => {
-            eprintln!("[store-view] ZAMAN AŞIMI (20 sn)");
-            Err("mağaza görünümü 20 sn içinde açılamadı".into())
-        }
-    }
-}
-
-/// Gömülü mağaza görünümünü gizler (durumu korunur).
-#[tauri::command]
-fn hide_store_view(app: AppHandle) -> Result<String, String> {
-    let window = app
-        .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
-    for v in store_views(&window) {
-        v.hide().map_err(|e| e.to_string())?;
-    }
-    Ok("gizlendi".into())
-}
 
 /// Klasörü dosya yöneticisinde açar.
 /// Not: opener eklentisi yerine doğrudan Rust kullanılır; böylece
@@ -462,8 +369,6 @@ fn main() {
             legendary::transfers::epic_default_install_dir,
             legendary::transfers::epic_set_install_dir,
             legendary::transfers::epic_launch_game,
-            show_store_view,
-            hide_store_view,
             open_folder,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
@@ -471,12 +376,12 @@ fn main() {
             legendary::steamgrid::epic_search_steamgrid,
             legendary::steamgrid::epic_get_steamgrid_covers,
             legendary::commands::epic_get_player_profile,
-            legendary::commands::epic_get_store_hub,
-            legendary::commands::epic_search_store,
-            legendary::commands::epic_get_store_offer_detail,
-            legendary::commands::epic_get_user_wishlist,
-            legendary::commands::epic_toggle_wishlist,
-            legendary::commands::epic_toggle_cart
+            legendary::store::epic_store_home,
+            legendary::store::epic_store_search,
+            legendary::store::epic_store_product_detail,
+            legendary::store::epic_store_wishlist,
+            legendary::store::epic_store_add_wishlist,
+            legendary::store::epic_store_remove_wishlist
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");

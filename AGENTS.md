@@ -30,8 +30,6 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - `npm` yerine **`npm.cmd`** kullan (PowerShell execution policy `npm.ps1`'i engeller).
 - Yeni Rust bağımlılığı eklediğinde `cargo check` + `cargo test` yeşil olmadan bitirme.
 - Frontend değişikliği `tsc` hatasız geçmeli (`npm run build` bunu kapsar).
-- **Mağaza UI'ına dokunduysan** `node tools/store-check/run.mjs` ile gerçek kodu çalıştıran
-  doğrulamayı da geçir (bkz. §7.1) — `tsc` yalnızca tip hatasını yakalar, mantık hatasını yakalamaz.
 
 ## 4. Mimari
 
@@ -71,8 +69,7 @@ Kütüphane: `epic_cached_library`, `epic_list_games`, `epic_list_installed`,
 Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_download`, `epic_uninstall_game`,
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
-Mağaza (Store): `epic_get_store_hub`, `epic_search_store`, `epic_get_user_wishlist`, `epic_toggle_wishlist`, `epic_toggle_cart`, `epic_get_store_offer_detail`
-Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
+Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
 `download-failed {id, message}`, `download-cancelled {id}`, `download-paused {id}`,
@@ -324,33 +321,16 @@ Pencere: `show_store_view`, `hide_store_view`, `open_folder`, `app_minimize`, `a
       `C:\Users\Efe\.gemini\config\skills ➔ C:\Users\Efe\.agents\skills`
     - Bu köprü sayesinde kullanıcının kurduğu `frontend-design` (Anthropic'in resmi UI/UX tasarım yönergesi: AI klişelerinden kaçınma, projeye özgü oyuncu/launcher estetiği, tipografi ve hiyerarşi disiplini) ve `find-skills` (Vercel Labs) yetenekleri Antigravity ve bu ortamda çalışacak tüm AI modelleri tarafından anında tanınır, okunur ve uygulanır.
     - İleride `npx skills add ... -g` ile eklenecek tüm yeni yetenekler de ek bir ayar gerekmeksizin otomatik olarak tüm AI oturumlarında aktif olur.
-40. **Mağaza Vitrini & Ürün Sayfası Mimarisi (GOG Galaxy 2.0 & Steam Standartları, Launcher Teması):**
-    - **Tasarım disiplini:** Mağaza düzeni GOG Galaxy 2.0 ve Steam'in en başarılı ergonomi ilkelerinden ödünç alınır (bölüm sekmeleri, dengeli dikey poster kartları, 16:9 interaktif medya sahnesi, sağ yapışkan sütun satın alma kutusu), ancak PALET LAUNCHER'IN KENDİSİDİR. İthal `#38bdf8` / `#0078f2` "Epic mavisi" mağazadan TAMAMEN çıkarılmıştır. Mağazaya özel belirteçler `.store-shell` içinde `--s-*` ön ekli yerel değişkenlerdir; global `:root`'a dokunulmaz.
-    - **Kart biçimi kararı (GOG Galaxy 2.0 / Steam standardı):**
-      - Eski 292px'lik devasa kartlar kaldırılmıştır. 1080p ve dizüstü ekranlarda tek bakışta **5 ila 6 kartın dikey kesilmeden** rahatça görünmesini sağlayan **184px dikey poster kartı (2:3 oran)** ve `repeat(auto-fill, minmax(180px, 1fr))` ızgara yapısı (`contain-intrinsic-size: 184px 340px;`) benimsenmiştir.
-      - Kart hover katmanında mikro-eylemler (İstek listesi kalbi, sepet) sağ üstte konumlandırılır. Kartın altındaki metin alanında 1 satır oyun adı, geliştirici/yayıncı, yeşil indirim rozeti (`-%XX`), üstü çizili liste fiyatı ve kalın indirimli fiyat daima okunabilir durumdadır.
-    - **Vitrin Hero Carousel:**
-      - Basıklaşmayan 320px ferah sinematik afiş, sol/sağ oklar, alt nokta (dot) navigasyonu ve sağ alt köşede yarı saydam buzlu cam (frosted glass) thumbnail dock şeridi (`.store-hero-thumb`). Aktif slayt değiştiğinde hem dot hem de thumb `.active` senkronize edilir. Otomatik geçiş (`STORE_HERO_INTERVAL`) hover'da durur, `view !== "store"` olunca `render()` içinde temizlenir.
-    - **İndirim rengi YEŞİLDİR** (`--s-deal #22c55e`, koyu metin). Amber/sarı indirim rozeti GOG ve Steam'in ortak konvansiyonuna aykırıydı. Ücretsiz durumu `--s-free #34d399` yeşil metinle ayrışır. Kartlarda fiyat satırı **sağa yaslıdır** (GOG gibi).
-    - **İndirim Yüzdesi Hesaplama Tutarlılığı (`storeItemDiscountPct`):**
-      - egdata'nın `appliedRules` / `discount_percentage` alanı süresi geçmiş kampanya kuralı döndürebilir (örn. gerçek indirim %30 iken eski kuraldan kalan 70 değeri dönebilir). Bu sebeple kartlarda, fiyat satırında ve ürün sayfasında rozet yüzdesi doğrudan gösterilen liste ve indirimli fiyattan (`Math.round(((orig - disc) / orig) * 100)`) hesaplanır (`parseStorePrice`, `storeItemDiscountPct`).
-    - **Bölüm sekmeleri** (`.store-tabbar`): Vitrin / Ücretsiz / İndirimler / Çok Satanlar / Yakında / İstek Listem / Sepetim. Aktif sekme menekşe alt çizgi taşır. Sekmeler yapışkandır (`top: 62px`).
-    - **Vitrin modülleri:** Haftalık ücretsiz oyunlar vitrini (geri sayım sayaçlı), çok satanlar, öne çıkan indirimler, yakında çıkacaklar, kütüphane rafı ("Kütüphanenizde, kurulu değil" — launcher'a özgü), yerel katalogdan türetilen kategori kutucukları (`buildStoreCategories`).
-    - **GOG Galaxy 2.0 / Steam Ürün Sayfası Mimarisi (~%68 Sol / ~%32 Sağ Sütun):**
-      - Karakter kafalarını kesen 100% ham afiş ve üzerine rastgele iliştirilmiş floating pricebox tamamen kaldırılmıştır.
-      - **Tavan Atmosfer Afişi (`.store-pdp-hero`):** Arka planda 240px'lik hafif degrade maskeli atmosferik afiş; sol altta oyun logosu veya tipografik başlık, tür hapları, geliştirici, çıkış tarihi ve yaş sınırı künyesi.
-      - **Fiyat ve Satın Alma Kutusu (`.store-pdp-pricebox`):** Sağ yapışkan sütunun (`.store-pdp-side`) en tepesine yerleştirilmiştir. Büyük "Satın Al / Ücretsiz Al / Kütüphanede Aç" ana CTA butonu, İstek Listesi ve Sepet butonları yan yana şık bir kart olarak sunulur.
-      - **16:9 İnteraktif Medya Vitrini (`#store-pdp-media-viewer`):** Seçili ekran görüntüsü veya fragmanı 16:9 geniş ekranda gösteren ana vitrin kutusu. Altındaki `.store-mediastrip` küçük resimlerine tıklandığında yerinde (in-place) medya değişir; ana görsele tıklandığında tam ekran Lightbox (`storeLightboxIdx`) açılır.
-      - **Sol Sütun (Medya & İçerik - %68):** Medya vitrini, zengin tipografili "Hakkında" metni, ekran görüntüleri ızgarası (`.store-shot`), Windows/Mac sekmeli Min/Önerilen Sistem Gereksinimleri tablosu (`.store-spec-table`), mağaza bağlantıları.
-      - **Sağ Sütun (Satın Alma & Künye - %32, Yapışkan):** Satın alma kartı, varsa kütüphane durumu, öne çıkan özellikler, desteklenen diller (seslendirme/altyazı ayrı), oyun künyesi ve Epic Store dış bağlantısı.
-    - **Medya görüntüleyici (lightbox):** `storeLightboxIdx` + `#store-lightbox`. Escape ve ok tuşları desteklenir; `render()` mağazadan çıkışta kapatır.
-    - **Performans ve Yerinde Güncelleme Disiplini:**
-      - Mağaza gövdesi ASLA `render()` ile baştan çizilmez; `updateStoreBody()` ile yerinde güncellenir (arama kutusu odağı ölmez, görseller tekrar yüklenmez).
-      - İstek listesi/sepet toggle'ı `patchStoreToggle(offerId)` ile SADECE ilgili düğmeleri günceller.
-      - Vitrin rafları yatay kaydırmadır (`scroll-snap`). Kartlarda `content-visibility: auto` + `contain: layout paint style` + `contain-intrinsic-size: 184px 340px` zorunludur.
-    - **Mağaza Doğrulama Koşucusu (`tools/store-check/run.mjs`) Event Loop Kuralı:**
-      - Node tek iş parçacıklıdır. `run.mjs` kendi bünyesinde yerel HTTP sunucusu açarken Chrome'u `execFileSync` ile çağırmak event loop'u kilitler; Chrome'un HTTP GET istekleri Node yanıt veremediği için `ETIMEDOUT` olur. Bu yüzden `execFile`'ın Promise ile sarılarak asenkron `await runMode()` yapılması şarttır.
-    - **Doğrulama:** `npm.cmd run build`, `cargo test --manifest-path src-tauri/Cargo.toml` ve `node tools/store-check/run.mjs --no-build --check` (4 mod, 90 test) testleri tam yeşil olmalıdır.
+40. **Mağaza Sıfırlama Kararı & Gelecek Sıfırdan İnşa Mimarisi (Clean Slate Mandate):**
+    - **Karar:** Eski mağaza arayüzü yamalarla kurtarılmaya çalışıldığında ortaya çıkan orantısız kartlar, ekranı dolduran kesilmiş devasa görseller ve tutarsız düzen nedeniyle kullanıcının kesin talimatıyla **tamamen temizlenmiştir**. `renderStore()` ve `updateStoreBody()` temiz bir sıfırlama durumuna (`.store-reset-shell`) çekilmiş; hiçbir kırık DOM enjeksiyonu bırakılmamıştır.
+    - **Temel Kural (Bir Daha Asla Parça Yaması Yapma):** Yeni mağaza oturumunda kod yazılmaya başlandığında kesinlikle eski CSS/HTML parçaları üzerine yama yapılmayacaktır. Arayüz, `implementation_plan.md` içinde tanımlanan bileşen hiyerarşisiyle **sıfırdan ve insan eliyle tasarlanmış gibi** inşa edilecektir.
+    - **Sıfırdan Mağaza Tasarım Standartları (EGS + Steam + GOG Hibrit):**
+      - **İnsan-Odaklı Tipografi & Palet:** Projenin kendi koyu launcher kimliği (`:root` / `--s-*`), aşırı parlak yapay zeka SaaS şablonlarından ve anlamsız sayaç kutularından tamamen arındırılmış temiz tasarım.
+      - **Hero Vitrin Sahnesi:** Gerçek 16:9 geniş ekran sinematik sahne + sağ tarafta vitrindeki diğer oyunların küçük dikey listesi. Mükerrer görsel kesinlikle yasaktır.
+      - **Dengeli Kart & Raf Sistemi:** Sabit 172px 2:3 dikey poster kartları; ücretsiz oyunlar rafında ise ekranı %75 boş bırakmayan ve dikeyde taşmayan, orantılı ve kontrollü kart düzeni.
+      - **Satın Alma & Ürün Sayfası (PDP):** Medya altı hızlı satın alma şeridi, sağ yapışkan künye ve tam boy Lightbox.
+      - **Altyapı Hazırlığı:** Rust backend uç noktaları (`epic_get_store_hub`, `epic_get_store_offer_detail`, `epic_search_store`, `epic_toggle_wishlist`, `epic_toggle_cart`) eksiksiz ve hazırdır. UI sıfırdan bu API'lere bağlanacaktır.
+    - **Doğrulama:** `npm.cmd run build` ve `cargo test --manifest-path src-tauri/Cargo.toml` her zaman tam yeşil kalmalıdır.
 
 41. **Mağaza Hata Sınıfları (bunlara tekrar düşme):**
     - **Ücretsiz promosyonlar ASLA birleştirilmez.** Epic `promotionalOffers` = şu an aktif,
@@ -578,7 +558,20 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Ürün sayfası: hero + oyun logosu, galeri (ekran görüntüleri + fragman kapakları), Hakkında, öne çıkan özellikler, sekmeli sistem gereksinimleri tablosu, desteklenen diller, türler, resmi bağlantılar ve yapışkan satın alma kutusu.
   - Kütüphane durumu kartı: oyun sahibiyseniz kurulum boyutu, başarım ilerlemesi ve güncelleme durumu doğrudan mağaza sayfasında gösterilir.
   - Palet launcher'ın kendi temasına çekildi (ithal "Epic mavisi" kaldırıldı); mağaza özel belirteçler `.store-shell` içinde yerel tutulur.
-  - Performans: yerinde (in-place) bölüm güncelleme, `content-visibility`, lazy görseller, iskelet shimmer, `backdrop-filter` kaldırıldı, arama için gecikmiş yanıt koruması (`storeSearchSeq`).
+- **Steam-Like Mağaza Tasarımı & Veri Kaynağı Önceliği (Steam Desktop Client Architecture):**
+  - **Veri Kaynağı Stratejisi:**
+    - `store.epicgames.com` doğrudan HTML kazıma Cloudflare 403 engeline takıldığı için kullanılmaz.
+    - Birincil öncelik doğrudan **Resmi Epic Games API'leridir**:
+      - Katalog arama, resmi TL fiyatları ve kapaklar için `launcher.store.epicgames.com/graphql` (410 ms, HTTP 200).
+      - Haftalık 100% ücretsiz oyunlar için resmi Akamai CDN `store-site-backend-static.ak.epicgames.com/freeGamesPromotions` (370 ms).
+      - Ürün medyası ve sistem gereksinimleri için resmi Akamai CDN `store-content-ipv4.ak.epicgames.com` (890 ms).
+    - `egdata.app` ise çok satanlar (top sellers) popülerlik sıralaması ve katalog indekslemesinde yardımcı/yedek servis olarak arka uçta tutulur.
+  - **Steam Masaüstü İstemcisi Ergonomisi:**
+    - Renk paleti: Steam lacivert/arduvaz tonları (`#171a21`, `#1b2838`, `#212c3d`, `#66c0f4`, `#c7d5e0`).
+    - Steam imzası zeytin yeşili indirim kutucuğu (`background: #4c6b22; color: #a4d007; font-weight: 800`).
+    - Steam "Öne Çıkan ve Tavsiye Edilen" (Featured & Recommended) vitrini: Sol tarafta 16:9 ana sahne, sağ tarafta fareyle üzerine gelindiğinde anında sahneyi değiştiren hover-swap özellikli 4 küçük görsel listesi.
+    - Ürün sayfası (PDP): Medya vitrininin altında Steam tarzı satın alma şeridi (`.store-pdp-buy-strip`, `[Oyun Adı] Satın Alın` başlığı, indirim kutucuğu ve yeşil CTA butonu).
+    - Doğrulama: `npm.cmd run build` (0 hata) + `tools/store-check/run.mjs --check` (90/90 PASS, 0 FAIL) + `cargo test` (47 PASS).
 
 ## 9. Çalışma disiplini
 
@@ -586,3 +579,4 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - Kısa ve öz iletişim; gereksiz dosya oluşturma (yeni dosya = sadece açıkça gerekirse).
 - `dist/`, `target/`, `node_modules/` commitlenmez (gitignore'lu).
 - Commit/PR yalnızca açıkça istenirse.
+
