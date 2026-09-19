@@ -725,4 +725,21 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Kompakt Başarım Özet Çubuğu (`.ach-summary-bar`) & Sade Kartlar:**
   - Devasa başarım hero kutusu yerine PS5 konsolundaki gibi yuvarlak SVG ilerleme halkası (`.ach-progress-ring`), kupa sayısı ve minik metalik kupa sayaçları (`.ach-tier-mini` Platin, Altın, Gümüş, Bronz) içeren tek satırlık zarif özet barı eklendi.
   - Başarım kartları (`.ach-card`) gereksiz rozet ve meta kalabalığından arındırıldı; sol kenar mavi vurgusu, temiz başlık/açıklama, ultra-nadir ve tarih etiketi ile akıcı konsol deneyimi sunuldu.
+## 48. PlayStation 5 Full-Screen Cinematic Game Hub (Tam Ekran Konsol Sahnesi)
 
+- **Dar Çekmeceden (560px Drawer) Tam Ekran Konsol Hub'ına Geçiş:**
+  - 560px'lik dar sağ çekmece yapısı terk edilerek ekranı yatayda ve dikeyde dolduran, ferah, nefes alan **PlayStation 5 Game Hub** konsol sahnesi (`.game-hub`, `.hub-stage`, `max-width: 1260px`) inşa edildi.
+  - Arka planda tam ekran yüksek çözünürlüklü oyun sanatı (`.hub-backdrop`) ve derin PS5 obsidyen/gece mavisi degrade perdesi (`.hub-backdrop-gradient`) yer alır; oyunun atmosferi başlatıcıya bütünüyle hakim olur.
+- **Konsol Tipi Üst Navigasyon & Hero Alanı:**
+  - Sol üstte zarif `← Kütüphane [ESC]` geri butonu (`.hub-back-btn`), sağ üstte afişi özelleştirme ve kapatma araçları (`.hub-topbar-tools`) yer alır.
+  - Hero bölümünde 38px bold oyun başlığı, geliştirici, partner launcher ve hile koruması rozetleri sunulur.
+  - Büyük PS5 canlı mavi aksiyon butonu (`[ ▶ Hemen Oyna ]`), ikincil cam butonlar (`[♥ Favori]`, `[↗ Mağaza]`, `[⚙ Yönet]`, `[x İptal]`) ve sağ tarafta yüzen cam stat kapsülü (`.hub-stat-capsule` — Oynama Süresi, Başarım/Platin Kupa, HLTB Hikaye) konumlandırıldı.
+- **Genel Bakış (Overview) 2-Sütunlu Konsol Mimarisi:**
+  - Sol ana alanda (`.hub-overview-main`) geniş ve rahat okunabilir "Oyun Hakkında" kartı ve "Koleksiyonlar & Etiketler" kartı.
+  - Sağ kenar çubuğunda (`.hub-overview-sidebar`) "HowLongToBeat" süre dökümü ve "Platform & Özellikler" detay kartı.
+- **Başarımlar (Trophy Hub) 2-Sütunlu Ferah Konsol Izgarası:**
+  - `.ach-cards-grid` tek sütunluk sıkışık listeden `grid-template-columns: repeat(auto-fill, minmax(480px, 1fr))` ile 2 sütunlu geniş konsol ızgarasına dönüştürüldü.
+  - Her kupa kartı 500px+ genişlikte kupa başlığı, tam açıklama, nadirlik yüzdesi ve XP çipiyle birbirini ezmeden rahatça okunur.
+- **Ergonomi ve Pürüzsüz Geçiş:**
+  - ESC tuşuna veya `← Kütüphane` butonuna basıldığında anında kütüphane ızgarasına dönülür.
+  - Sekmeler arası geçişlerde ve filtrelemelerde sayfa tepesine sıçrama veya DOM kırpışması engellenmiş, kaydırma pozisyonu yerinde korunur.

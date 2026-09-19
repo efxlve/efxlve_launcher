@@ -2586,8 +2586,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     achSearchQuery = "";
     achSortOrder = "default";
   }
-  const prevBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
-  const prevScroll = !isInitialOpen && prevBody ? prevBody.scrollTop : 0;
+  const prevOverlay = modalRoot.querySelector(".overlay") as HTMLElement | null;
+  const prevScroll = !isInitialOpen && prevOverlay ? prevOverlay.scrollTop : 0;
   const g = rawOf(appName);
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const faved = epicFav.has(appName);
@@ -2599,17 +2599,30 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   const partner = getThirdPartyLauncher(g);
   const antiCheat = getAntiCheat(g);
 
+  const pt = playtimeMap.get(appName);
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—";
+
+  let achStatVal = "—";
+  if (achSum && achSum.total_achievements > 0) {
+    const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
+    achStatVal = `${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})`;
+  }
+
+  const hltb = loadedHltb.get(appName);
+  const hltbVal = hltb?.main_story ? `~${hltb.main_story} sa` : (hltb?.main_extra ? `~${hltb.main_extra} sa` : "—");
+  const hltbLoading = loadingHltbFor === appName;
+
   const isRunning = runningGames.has(appName);
   const primary =
     p !== null
-      ? `<button class="btn full primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
       : isRunning
-        ? `<button class="btn full primary running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
+        ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
         : s.installed
-          ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
+          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
           : partner
-            ? `<button class="btn full play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
-            : `<button class="btn full primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
+            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
+            : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
 
   const rawDesc = s.description?.trim();
   const hasRealDesc =
@@ -2649,6 +2662,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         if (el && currentModalAppName === appName) {
           el.innerHTML = renderHltbCard(data);
         }
+        const capEl = document.getElementById("hub-stat-hltb-val");
+        if (capEl && currentModalAppName === appName) {
+          capEl.textContent = data?.main_story ? `~${data.main_story} sa` : (data?.main_extra ? `~${data.main_extra} sa` : "—");
+        }
       })
       .catch(() => {
         loadingHltbFor = null;
@@ -2656,9 +2673,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   }
 
   if (!isInitialOpen) {
-    const existingDrawer = modalRoot.querySelector(".drawer") as HTMLElement | null;
+    const existingHub = modalRoot.querySelector(".game-hub, .drawer") as HTMLElement | null;
+    const overlayEl = modalRoot.querySelector(".overlay") as HTMLElement | null;
     const contentEl = document.getElementById("drawer-tab-content");
-    if (existingDrawer && contentEl && currentModalAppName === appName) {
+    if (existingHub && contentEl && currentModalAppName === appName) {
       modalRoot.querySelectorAll(".drawer-tab").forEach((btn) => {
         const el = btn as HTMLElement;
         const isActive = el.dataset.tab === activeDrawerTab;
@@ -2669,8 +2687,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         }
       });
 
-      const drawerScroll = existingDrawer.scrollTop;
-      const achList = contentEl.querySelector(".ach-list") as HTMLElement | null;
+      const overlayScroll = overlayEl ? overlayEl.scrollTop : (existingHub ? existingHub.scrollTop : 0);
+      const achList = contentEl.querySelector(".ach-list, .ach-list-container") as HTMLElement | null;
       const achScroll = achList ? achList.scrollTop : 0;
 
       contentEl.innerHTML =
@@ -2692,9 +2710,10 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         contentEl.classList.remove("tab-content-enter");
       }
 
-      existingDrawer.scrollTop = drawerScroll;
+      if (overlayEl) overlayEl.scrollTop = overlayScroll;
+      if (existingHub) existingHub.scrollTop = overlayScroll;
       if (achScroll > 0) {
-        const nextAchList = contentEl.querySelector(".ach-list") as HTMLElement | null;
+        const nextAchList = contentEl.querySelector(".ach-list, .ach-list-container") as HTMLElement | null;
         if (nextAchList) nextAchList.scrollTop = achScroll;
       }
 
@@ -2717,28 +2736,80 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
 
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
-      <div class="drawer" style="${isInitialOpen ? "" : "animation:none"}">
-        <button class="drawer-close" data-act="close" title="Kapat">${icon("x", 16)}</button>
-        <div class="drawer-cover">
-          ${art ? `<img src="${art}" alt="" />` : `<div class="pcover" style="color:#94a3b8">${icon("gamepad-2", 48)}</div>`}
-          <div class="drawer-gradient"></div>
-          <div class="drawer-hero-info">
-            <h2 class="drawer-title">${esc(s.title)}</h2>
-            <div class="drawer-meta-subline">
-              ${dev ? `<span class="meta-subline-item dev">${esc(dev)}</span>` : ""}
-              ${dev ? `<span class="meta-subline-dot">•</span>` : ""}
-              <span class="meta-subline-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
-              ${partner ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
-              ${antiCheat ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-              ${s.updateAvailable ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item warn">${icon("zap", 11)} Güncelleme</span>` : ""}
+      <div class="game-hub">
+        <!-- 4K Sinematik Arka Plan & Derin PS5 Atmosferik Degrade -->
+        <div class="hub-backdrop">
+          ${art ? `<img src="${art}" alt="" />` : `<div class="hub-fallback-art">${icon("gamepad-2", 64)}</div>`}
+          <div class="hub-backdrop-gradient"></div>
+        </div>
+
+        <!-- 1260px Genişliğindeki Konsol Sahnesi -->
+        <div class="hub-stage">
+          <!-- Üst Bar: Geri Butonu & Araçlar -->
+          <div class="hub-topbar">
+            <button class="hub-back-btn" data-act="close" title="Kütüphaneye Dön (ESC)">
+              ${icon("arrow-left", 16)}
+              <span>Kütüphane</span>
+              <span class="hub-back-esc">ESC</span>
+            </button>
+            <div class="hub-topbar-tools">
+              <button class="hub-tool-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Afiş ve Kapak Görselini Özelleştir">
+                ${icon("image", 15)}
+              </button>
+              <button class="hub-tool-btn" data-act="close" title="Kapat">
+                ${icon("x", 16)}
+              </button>
             </div>
           </div>
-          <button class="drawer-cover-edit-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Afiş ve Kapak Görselini Özelleştir">
-            ${icon("image", 14)}
-          </button>
-        </div>
-        <div class="drawer-body">
 
+          <!-- Hero Başlık ve Hızlı Kapsül -->
+          <div class="hub-hero">
+            <div class="hub-hero-main">
+              <h1 class="hub-title">${esc(s.title)}</h1>
+              <div class="hub-meta-subline">
+                ${dev ? `<span class="meta-item dev">${esc(dev)}</span><span class="meta-dot">•</span>` : ""}
+                <span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
+                ${partner ? `<span class="meta-dot">•</span><span class="meta-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
+                ${antiCheat ? `<span class="meta-dot">•</span><span class="meta-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
+                ${s.updateAvailable ? `<span class="meta-dot">•</span><span class="meta-item warn">${icon("zap", 11)} Güncelleme Mevcut</span>` : ""}
+              </div>
+
+              <div class="hub-actions-bar">
+                ${primary}
+                <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favorilere Ekle / Çıkar">
+                  ${icon("heart", 15)} <span>${faved ? "Favorilerde" : "Favori"}</span>
+                </button>
+                <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfasını Aç">
+                  ${icon("external", 15)} <span>Mağaza</span>
+                </button>
+                ${s.installed ? `
+                <button class="btn ghost" data-act="drawer-tab" data-tab="manage" data-id="${s.appName}" title="Dosyaları ve Ayarları Yönet">
+                  ${icon("settings", 15)} <span>Yönet</span>
+                </button>` : ""}
+                ${p !== null ? `<button class="btn ghost danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 15)} <span>İptal</span></button>` : ""}
+              </div>
+            </div>
+
+            <!-- Sağ Taraf: Hızlı Stat Kapsülü (PS5 Glass Capsule) -->
+            <div class="hub-stat-capsule">
+              <div class="hub-stat-col clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenle">
+                <span class="hub-stat-label">${icon("clock", 11)} SÜRE</span>
+                <span class="hub-stat-val" id="drawer-stat-playtime">${esc(playtimeStr)}</span>
+              </div>
+              <div class="hub-stat-divider"></div>
+              <div class="hub-stat-col ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""} title="Başarımları Gör">
+                <span class="hub-stat-label">${icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
+                <span class="hub-stat-val ${isPlat ? "plat" : ""}">${achStatVal}</span>
+              </div>
+              <div class="hub-stat-divider"></div>
+              <div class="hub-stat-col" title="HowLongToBeat Hikaye Süresi">
+                <span class="hub-stat-label">${icon("timer", 11)} HİKAYE</span>
+                <span class="hub-stat-val" id="hub-stat-hltb-val">${hltbLoading ? `<span class="hltb-spinner"></span>` : hltbVal}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sekme Başlıkları -->
           <div class="drawer-tabs-wrapper">
             <div class="drawer-tabs-fade left">
               <button class="drawer-tabs-arrow left" data-act="drawer-tabs-scroll" data-dir="left" title="Sola kaydır">
@@ -2770,6 +2841,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
             </div>
           </div>
 
+          <!-- Sekme İçeriği -->
           <div id="drawer-tab-content" class="${animateTabContent ? "tab-content-enter" : ""}">
             ${
               activeDrawerTab === "overview"
@@ -2788,8 +2860,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     </div>`;
 
   if (prevScroll > 0) {
-    const nextBody = modalRoot.querySelector(".drawer-body") as HTMLElement | null;
-    if (nextBody) nextBody.scrollTop = prevScroll;
+    const nextOverlay = modalRoot.querySelector(".overlay") as HTMLElement | null;
+    if (nextOverlay) nextOverlay.scrollTop = prevScroll;
   }
 
   requestAnimationFrame(() => {
@@ -2867,34 +2939,18 @@ function renderHltbCard(hltb?: HltbData, isLoading = false): string {
 
 function renderDrawerOverview(
   s: EpicSummary,
-  primary: string,
-  faved: boolean,
-  p: number | null,
-  descHtml: string,
+  _primary: string,
+  _faved: boolean,
+  _p: number | null,
+  _descHtml: string,
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
-  const pt = playtimeMap.get(s.appName);
-  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—";
-
   const gameCols = epicCollections.filter((c) =>
     c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
   );
 
-  const achSum = epicAchSummaries[s.appName];
-  const isPlat = isAppPlatinum(s.appName);
-
-  // Stat row: Oynama Süresi | Başarımlar | HLTB
-  let achStatVal = "—";
-  let achStatLabel = "Başarımlar";
-  if (achSum && achSum.total_achievements > 0) {
-    const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
-    achStatVal = `${achSum.user_unlocked}/${achSum.total_achievements} (%${pct})`;
-    if (isPlat) achStatLabel = "🏆 Platin Kupa";
-  }
-
   const hltb = loadedHltb.get(s.appName);
-  const hltbVal = hltb?.main_story ? `~${hltb.main_story} sa` : (hltb?.main_extra ? `~${hltb.main_extra} sa` : "—");
   const hltbLoading = loadingHltbFor === s.appName;
 
   const dlcRes = dlcCache.get(s.appName);
@@ -2915,57 +2971,53 @@ function renderDrawerOverview(
     tagsHtml = `<div class="drawer-tags-row"><button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon Ekle</button></div>`;
   }
 
-  let featureStripHtml = "";
-  if (!descHtml) {
-    featureStripHtml = `
-      <div class="drawer-feature-strip">
-        <div class="drawer-feature-pill">${icon("layers", 12)} <span>${partner ? esc(partner.name) : "Epic Games"}</span></div>
-        ${antiCheat ? `<div class="drawer-feature-pill">${icon("shield", 12)} <span>${esc(antiCheat)}</span></div>` : ""}
-        <div class="drawer-feature-pill">${icon("monitor", 12)} <span>Windows (PC)</span></div>
-      </div>
-    `;
-  }
+  const rawDesc = s.description?.trim();
+  const hasRealDesc =
+    rawDesc &&
+    rawDesc !== "Açıklama yok." &&
+    rawDesc !== s.title &&
+    rawDesc.length > 25;
+  const descText = hasRealDesc ? esc(rawDesc) : "Bu oyun için katalog açıklaması henüz eklenmemiş.";
 
   return `
-    <div class="drawer-actions">
-      ${primary}
-      <div class="drawer-actions-row">
-        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favorilere Ekle / Çıkar">
-          ${icon("heart", 14)} <span>${faved ? "Favorilerde" : "Favori"}</span>
-        </button>
-        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfasını Aç">
-          ${icon("external", 14)} <span>Mağaza</span>
-        </button>
-        ${s.installed ? `
-        <button class="btn ghost" data-act="drawer-tab" data-tab="manage" data-id="${s.appName}" title="Dosyaları ve Ayarları Yönet">
-          ${icon("settings", 14)} <span>Yönet</span>
-        </button>` : ""}
-        ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} <span>İptal</span></button>` : ""}
+    <div class="hub-overview-layout">
+      <!-- Sol / Ana Alan: Açıklama & Etiketler -->
+      <div class="hub-overview-main">
+        <div class="hub-card hub-desc-card">
+          <div class="hub-card-header">
+            <h3 class="hub-card-title">${icon("info", 14)} <span>Oyun Hakkında</span></h3>
+          </div>
+          <div class="hub-desc-text">${descText}</div>
+        </div>
+
+        <div class="hub-card hub-tags-card">
+          <div class="hub-card-header">
+            <h3 class="hub-card-title">${icon("folder", 14)} <span>Koleksiyonlar & Etiketler</span></h3>
+          </div>
+          ${tagsHtml}
+        </div>
+      </div>
+
+      <!-- Sağ / Kenar Çubuğu: HowLongToBeat & Özellikler -->
+      <div class="hub-overview-sidebar">
+        <div id="drawer-hltb-container">
+          ${renderHltbCard(hltb, hltbLoading)}
+        </div>
+
+        <div class="hub-card hub-features-card">
+          <div class="hub-card-header">
+            <h3 class="hub-card-title">${icon("layers", 14)} <span>Platform & Özellikler</span></h3>
+          </div>
+          <div class="drawer-feature-strip" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
+            <div class="drawer-feature-pill">${icon("layers", 12)} <span>Başlatıcı: ${partner ? esc(partner.name) : "Epic Games"}</span></div>
+            ${antiCheat ? `<div class="drawer-feature-pill">${icon("shield", 12)} <span>Hile Koruması: ${esc(antiCheat)}</span></div>` : ""}
+            <div class="drawer-feature-pill">${icon("monitor", 12)} <span>Platform: Windows (PC)</span></div>
+            ${s.installedVersion ? `<div class="drawer-feature-pill">${icon("check", 12)} <span>Sürüm: v${esc(s.installedVersion)}</span></div>` : ""}
+            ${s.installSize ? `<div class="drawer-feature-pill">${icon("hard-drive", 12)} <span>Yüklü Boyut: ${fmtBytes(s.installSize)}</span></div>` : ""}
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- PS5 Kompakt İstatistik Şeridi -->
-    <div class="drawer-stats-row">
-      <div class="stat-item clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenle">
-        <span class="stat-val" id="drawer-stat-playtime">${esc(playtimeStr)}<span class="stat-edit-icon">${icon("edit", 9)}</span></span>
-        <span class="stat-label">Oynama Süresi</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""}>
-        <span class="stat-val">${achStatVal}</span>
-        <span class="stat-label">${achStatLabel}</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-val">${hltbLoading ? `<span class="hltb-spinner"></span>` : hltbVal}</span>
-        <span class="stat-label">Ana Hikaye</span>
-      </div>
-    </div>
-
-    ${tagsHtml}
-
-    ${descHtml}
-    ${featureStripHtml}
   `;
 }
 
@@ -6186,7 +6238,7 @@ document.addEventListener("click", (e) => {
   else if (act === "uninstall" && id) void uninstallGame(id);
   else if (act === "close") {
     const el = e.target as HTMLElement;
-    if (el === t || el.closest(".drawer-close") || el.closest(".mclose")) closeModal();
+    if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
   } else if (act === "goto-library") {
     view = "library";
     render();
@@ -7114,7 +7166,7 @@ document.addEventListener("keydown", (e) => {
       closeSelectiveModal();
       return;
     }
-    if (activeManageSettings) {
+    if (manageRoot && manageRoot.innerHTML.trim()) {
       closeManageModal();
       return;
     }
@@ -7777,6 +7829,7 @@ function icon(
     | "chevron-up"
     | "chevron-down"
     | "chevron-left"
+    | "arrow-left"
     | "chevron-right"
     | "volume-2"
     | "search"
@@ -7832,6 +7885,7 @@ function icon(
     "chevron-up": '<polyline points="18 15 12 9 6 15"/>',
     "chevron-down": '<polyline points="6 9 12 15 18 9"/>',
     "chevron-left": '<polyline points="15 18 9 12 15 6"/>',
+    "arrow-left": '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     "chevron-right": '<polyline points="9 18 15 12 9 6"/>',
     download:
       '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
