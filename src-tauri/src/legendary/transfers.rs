@@ -1031,10 +1031,21 @@ async fn spawn_launched(
         .stderr(Stdio::null());
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
 
+    let config = super::skip::default_config_dir();
+    let meta_path = config.join("metadata").join(format!("{app_name}.json"));
+    let game_title = std::fs::read_to_string(&meta_path)
+        .ok()
+        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+        .and_then(|v| v.get("app_title").and_then(|t| t.as_str()).map(|s| s.to_string()))
+        .unwrap_or_else(|| app_name.to_string());
+
+    super::screenshots::set_active_running_game(app_name, &game_title);
+
     // Anında çökme kontrolü: ilk 5 saniyeyi bekle
     match tokio::time::timeout(std::time::Duration::from_secs(5), child.wait()).await {
         Ok(Ok(st)) if st.success() => {
             // Oyun 5 saniye içinde başarıyla kapandı
+            super::screenshots::clear_active_running_game(app_name);
             let _ = app.emit("game-status", serde_json::json!({
                 "id": app_name,
                 "running": false,
@@ -1043,8 +1054,14 @@ async fn spawn_launched(
             let _ = super::playtime::record_session(app_name, 5);
             Ok(())
         }
-        Ok(Ok(_)) => Err("oyun hemen kapandı".into()),
-        Ok(Err(e)) => Err(e.to_string()),
+        Ok(Ok(_)) => {
+            super::screenshots::clear_active_running_game(app_name);
+            Err("oyun hemen kapandı".into())
+        }
+        Ok(Err(e)) => {
+            super::screenshots::clear_active_running_game(app_name);
+            Err(e.to_string())
+        }
         Err(_) => {
             // 5 saniye sonra hala çalışıyor: oyun aktif oynanıyor!
             let _ = app.emit("game-status", serde_json::json!({
@@ -1061,6 +1078,7 @@ async fn spawn_launched(
             tokio::spawn(async move {
                 let _ = child.wait().await;
                 // Oyun kapandı!
+                super::screenshots::clear_active_running_game(&app_name_bg);
                 let elapsed = start_time.elapsed().as_secs() + 5;
                 let rec = super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default();
 

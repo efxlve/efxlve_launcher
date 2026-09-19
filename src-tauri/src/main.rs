@@ -1359,6 +1359,7 @@ fn main() {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
             }
+            legendary::screenshots::start_f12_listener(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {

@@ -860,3 +860,8 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
       - Tıklanan ekran görüntüsünü 90vh yüksekliğinde, yumuşak cam arka plan ve tam ekran sahne (`.lightbox-stage`) ile açar.
       - Sol/Sağ geçiş butonları (`.lightbox-arrow`), dosya adı, çekim tarihi, boyut ve sayaç (`1 / N`) gösterimi.
       - **Klavye & Kontrolcü (Gamepad / 10-ft) Desteği:** `Escape` veya Gamepad `(B)` ile anında kapanır; `Sol Ok` / `Sağ Ok` veya Gamepad D-Pad Sol/Sağ ile fotoğraflar arası akıcı geçiş yapılır. `LB/RB` sekme geçiş döngüsüne `"screenshots"` sekmesi dahil edilmiştir.
+  - **Oyun İçi Global F12 Tuşu ile Ekran Görüntüsü Alma (In-Game Global F12 Capture):**
+    - `screenshots::start_f12_listener` (Windows `user32::GetAsyncKeyState(VK_F12)`): Launcher başlangıcında (`setup`) hafif bir arka plan iş parçacığı başlar.
+    - Sadece bir oyun aktif olarak oynanıyorken (`set_active_running_game`, `clear_active_running_game`) F12 tuşunun basılıp basılmadığını kontrol eder.
+    - Tuşa basıldığı an 600ms cooldown korumasıyla anında ekran görüntüsü yakalar, ilgili oyunun klasörüne kaydeder ve frontend'e `"screenshot-captured"` olayı fırlatır.
+    - Frontend'de Web Audio API ile sıfır harici varlık gerektiren mekanik deklanşör ses efekti (`playScreenshotShutterSound`) çalınır, PlayStation stili toast bildirim verilir ve açık olan galeri anında yerinde güncellenir.
