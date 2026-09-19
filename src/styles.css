@@ -5199,7 +5199,7 @@ select option {
   justify-content: center;
 }
 
-/* Detay Çekmecesi Koleksiyonlar — tek satırlık ince şerit */
+/* Detay Çekmecesi Koleksiyonlar Kartı */
 .drawer-col-card {
   margin-top: 14px;
   padding: 14px 16px;
@@ -5217,116 +5217,44 @@ select option {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-/* Kompakt mod: başlık bloğu yok, tek satırda ikon + haplar + düzenle */
-.drawer-col-card.drawer-col-compact {
-  flex-direction: row;
+.drawer-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-col-header-left {
+  display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 10px;
-  padding: 7px 8px 7px 12px;
-  border-radius: 11px;
-  min-height: 40px;
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: none;
 }
 
-.drawer-col-folder {
-  color: #818cf8;
-  opacity: 0.9;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.drawer-col-chips-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.drawer-col-chips-wrap.drawer-col-single {
-  flex: 1;
-  min-width: 0;
-  flex-wrap: nowrap;
-  overflow: hidden;
-  gap: 6px;
-  mask-image: linear-gradient(to right, black 82%, transparent);
-  -webkit-mask-image: linear-gradient(to right, black 82%, transparent);
-}
-
-.drawer-col-pill {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(129, 140, 248, 0.3);
-  color: #e0e7ff;
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 190px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.drawer-col-pill:hover {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: rgba(129, 140, 248, 0.6);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-}
-
-.col-pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #60a5fa;
-  box-shadow: 0 0 6px #60a5fa;
-  flex-shrink: 0;
-}
-
-.col-pill-text {
-  font-size: 12px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 150px;
-}
-
-.drawer-col-more {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #a5b4fc;
+.drawer-col-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: rgba(99, 102, 241, 0.14);
-  border: 1px solid rgba(129, 140, 248, 0.35);
-  border-radius: 999px;
-  padding: 2px 8px;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.drawer-col-count {
+.drawer-col-label {
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
-  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
 }
 
-.drawer-col-count:empty {
-  display: none;
-}
-
-.drawer-col-empty-text {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.drawer-col-sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-top: 1px;
 }
 
 .drawer-col-edit-btn {
@@ -5348,18 +5276,90 @@ select option {
   background: rgba(99, 102, 241, 0.2);
   border-color: rgba(99, 102, 241, 0.45);
   color: #ffffff;
+  transform: translateY(-1px);
 }
 
-.drawer-col-edit-btn.drawer-col-icon-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  justify-content: center;
+.drawer-col-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.drawer-col-pill {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  color: #e0e7ff;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-col-pill:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(129, 140, 248, 0.6);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.col-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow: 0 0 6px #60a5fa;
   flex-shrink: 0;
 }
 
-.drawer-col-edit-btn.drawer-col-icon-btn:hover {
-  transform: none;
+.col-pill-text {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.col-pill-arrow {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.drawer-col-pill:hover .col-pill-arrow {
+  color: #ffffff;
+  transform: translateX(2px);
+}
+
+.drawer-col-empty-cta {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  color: #94a3b8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.18s ease;
+}
+
+.drawer-col-empty-cta:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+}
+
+.drawer-col-plus {
+  font-size: 16px;
+  font-weight: 700;
+  color: #818cf8;
 }
 
 /* --- KART HOVER MİKRO-HUD (PLAYTIME & ACHIEVEMENTS) --- */
@@ -6539,23 +6539,23 @@ select option {
 }
 
 /* ==========================================================================
-   Yerel Profil & Başarım Merkezi (Modern Cinematic Gaming UI)
+   Yerel Profil & Başarım Merkezi (Native Profile View)
    ========================================================================== */
 
 .profile-container {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 8px 16px 48px;
-  max-width: 1400px;
+  gap: 20px;
+  padding: 8px 12px 36px;
+  max-width: 1300px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Loading & Error States */
-.profile-loading-box, .profile-error-box {
+/* Loading State */
+.profile-loading-box {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6566,8 +6566,8 @@ select option {
 }
 
 .profile-spinner {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border: 3px solid rgba(255, 255, 255, 0.08);
   border-top-color: #6366f1;
   border-right-color: #38bdf8;
@@ -6575,124 +6575,88 @@ select option {
   animation: spin 0.8s linear infinite;
 }
 
-.profile-loading-box h3, .profile-error-box h3 {
-  font-size: 19px;
-  font-weight: 800;
+.profile-loading-box h3 {
+  font-size: 18px;
+  font-weight: 700;
   color: #fff;
   margin: 0;
 }
 
-.profile-loading-box p, .profile-error-box p {
+.profile-loading-box p {
   font-size: 13px;
   color: #94a3b8;
   margin: 0;
 }
 
-.profile-error-icon {
-  color: #ef4444;
-}
-
-/* 1. Sinematik Hero Oyuncu Kartı */
+/* 1. Hero Profil Kartı */
 .profile-hero-card {
   position: relative;
-  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(30, 34, 48, 0.8) 0%, rgba(18, 20, 29, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
-  background: #0d0f17;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-.profile-hero-backdrop {
+.profile-hero-card::before {
+  content: "";
   position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center 25%;
-  opacity: 0.22;
-  filter: blur(10px) saturate(1.5);
-  transform: scale(1.05);
-  transition: all 0.4s ease;
+  top: -80px;
+  left: -80px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 
-.profile-hero-overlay {
+.profile-hero-card::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(13, 15, 23, 0.97) 0%, rgba(13, 15, 23, 0.86) 55%, rgba(13, 15, 23, 0.94) 100%);
+  bottom: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, transparent 70%);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
-.profile-hero-main {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 26px 32px;
-  flex-wrap: wrap;
-}
-
-.profile-hero-user-section {
+.profile-hero-left {
   display: flex;
   align-items: center;
   gap: 22px;
-}
-
-/* Avatar & Seviye Halkası */
-.profile-avatar-container {
   position: relative;
-  width: 82px;
-  height: 82px;
-  flex-shrink: 0;
-}
-
-.profile-avatar-ring {
-  position: absolute;
-  inset: -3px;
-  border-radius: 23px;
-  background: conic-gradient(from 0deg, #6366f1, #38bdf8, #ffd700, #ec4899, #6366f1);
-  animation: spin 14s linear infinite;
-  opacity: 0.85;
-  filter: blur(1px);
+  z-index: 1;
 }
 
 .profile-avatar {
   position: relative;
-  z-index: 1;
-  width: 82px;
-  height: 82px;
+  width: 76px;
+  height: 76px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  border: 2px solid #0d0f17;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
 
 .profile-avatar-letter {
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   user-select: none;
-}
-
-.profile-level-badge {
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  z-index: 3;
-  background: linear-gradient(135deg, #ffd700, #d97706);
-  color: #1a0f00;
-  font-weight: 900;
-  border-radius: 10px;
-  padding: 2px 7px;
-  font-size: 11px;
-  border: 2px solid #0d0f17;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
 }
 
 .profile-hero-meta {
@@ -6709,25 +6673,12 @@ select option {
 }
 
 .profile-display-name {
-  font-size: 27px;
-  font-weight: 900;
+  font-size: 26px;
+  font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.5px;
   margin: 0;
-  line-height: 1.15;
-}
-
-.profile-rank-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.45);
-  color: #a5b4fc;
+  line-height: 1.2;
 }
 
 .profile-status-badge {
@@ -6741,90 +6692,50 @@ select option {
 }
 
 .profile-status-badge.online {
-  background: rgba(16, 185, 129, 0.18);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   color: #34d399;
 }
 
 .profile-status-badge.offline {
-  background: rgba(245, 158, 11, 0.18);
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   color: #fbbf24;
-}
-
-.profile-level-progress-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  max-width: 380px;
-  margin-top: 2px;
-}
-
-.profile-level-progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11.5px;
-  color: #94a3b8;
-}
-
-.profile-next-level-hint {
-  color: #cbd5e1;
-}
-
-.profile-next-level-hint strong {
-  color: #38bdf8;
-}
-
-.profile-level-track {
-  height: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.profile-level-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #38bdf8);
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
-  transition: width 0.4s ease;
 }
 
 .profile-id-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
-  margin-top: 2px;
+  font-size: 12px;
 }
 
 .profile-id-label {
-  color: #64748b;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .profile-id-code {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2px 8px;
   border-radius: 6px;
-  font-family: monospace;
-  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
   color: #cbd5e1;
+  user-select: all;
 }
 
 .profile-copy-btn {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94a3b8;
   border-radius: 6px;
-  padding: 3px 8px;
+  padding: 3px 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
+  justify-content: center;
   transition: all 0.15s ease;
 }
 
@@ -6832,289 +6743,26 @@ select option {
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
-/* Hero Trophy Showcase (Sağ Kısım) */
-.profile-hero-trophy-showcase {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 12px 18px;
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.hero-trophy-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-right: 12px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.hero-trophy-item:last-of-type {
-  border-right: none;
-  padding-right: 4px;
-}
-
-.hero-trophy-item.plat .hero-trophy-icon {
-  color: #ffd700;
-  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
-}
-
-.hero-trophy-item.xp .hero-trophy-icon {
-  color: #c084fc;
-  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.5));
-}
-
-.hero-trophy-item.ach .hero-trophy-icon {
-  color: #fbbf24;
-}
-
-.hero-trophy-item.rate .hero-trophy-icon {
-  color: #34d399;
-}
-
-.hero-trophy-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.hero-trophy-text strong {
-  font-size: 16px;
-  font-weight: 800;
-  color: #fff;
-}
-
-.hero-trophy-text span {
-  font-size: 10px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+.profile-hero-actions {
+  position: relative;
+  z-index: 1;
 }
 
 .profile-refresh-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-left: 6px;
+  gap: 8px;
+  font-weight: 600;
 }
 
 .profile-refresh-btn.spinning svg {
   animation: spin 0.8s linear infinite;
 }
 
-/* 2. 🏆 Platin Kupa Şeref Kürsüsü (Hall of Fame) */
-.profile-hof-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 2px;
-}
-
-.profile-hof-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.profile-hof-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile-hof-badge {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.16), rgba(245, 158, 11, 0.1));
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  color: #ffd700;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.profile-hof-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #fff;
-  margin: 0;
-}
-
-.profile-hof-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fbbf24;
-}
-
-.profile-hof-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 14px;
-}
-
-.profile-hof-card {
-  position: relative;
-  height: 142px;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  background: #131622;
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 215, 0, 0.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.profile-hof-card:hover {
-  transform: translateY(-5px) scale(1.01);
-  border-color: rgba(255, 215, 0, 0.75);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 28px rgba(255, 215, 0, 0.28);
-}
-
-.profile-hof-backdrop {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.3;
-  filter: blur(4px);
-  transition: all 0.3s ease;
-}
-
-.profile-hof-card:hover .profile-hof-backdrop {
-  opacity: 0.48;
-  transform: scale(1.05);
-}
-
-.profile-hof-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(16, 18, 26, 0.95) 0%, rgba(16, 18, 26, 0.72) 60%, rgba(16, 18, 26, 0.9) 100%);
-}
-
-.profile-hof-content {
-  position: relative;
-  z-index: 2;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  box-sizing: border-box;
-}
-
-.profile-hof-poster-wrap {
-  width: 64px;
-  height: 96px;
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-  flex-shrink: 0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
-  border: 1.5px solid rgba(255, 215, 0, 0.45);
-}
-
-.profile-hof-poster {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.profile-hof-poster-empty {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e2028;
-  color: #ffd700;
-}
-
-.profile-hof-crown {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  background: linear-gradient(135deg, #ffd700, #d97706);
-  color: #1a0f00;
-  border-radius: 6px;
-  padding: 2px 4px;
-  font-size: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-}
-
-.profile-hof-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
-}
-
-.profile-hof-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 900;
-  color: #ffd700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.profile-hof-name {
-  font-size: 15.5px;
-  font-weight: 800;
-  color: #fff;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-hof-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.hof-stat-pill {
-  font-size: 11px;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 3px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.hof-stat-pill.xp {
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.3);
-}
-
-.profile-hof-shine {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at 85% 20%, rgba(255, 215, 0, 0.12) 0%, transparent 60%);
-}
-
-/* 3. İstatistik Vitrini (5 Parlayan 3D Cam Kart) */
+/* 2. İstatistik & Kupa Vitrini (5 Kart) */
 .profile-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -7129,22 +6777,23 @@ select option {
   padding: 16px 18px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s, box-shadow 0.22s;
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
   overflow: hidden;
 }
 
 .profile-stat-box:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .profile-stat-icon-wrap {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7153,97 +6802,59 @@ select option {
 }
 
 .profile-stat-box:hover .profile-stat-icon-wrap {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 /* Kutu Temaları */
-.profile-stat-box.xp {
-  border-color: rgba(139, 92, 246, 0.2);
-}
-.profile-stat-box.xp:hover {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 12px 32px rgba(139, 92, 246, 0.15);
-}
 .profile-stat-box.xp .profile-stat-icon-wrap {
   background: rgba(139, 92, 246, 0.16);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  color: #c084fc;
-  box-shadow: 0 0 14px rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+}
+.profile-stat-box.xp:hover {
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
-.profile-stat-box.ach {
-  border-color: rgba(245, 158, 11, 0.2);
-}
-.profile-stat-box.ach:hover {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.15);
-}
 .profile-stat-box.ach .profile-stat-icon-wrap {
   background: rgba(245, 158, 11, 0.16);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   color: #fbbf24;
+}
+.profile-stat-box.ach:hover {
+  border-color: rgba(245, 158, 11, 0.4);
 }
 
 .profile-stat-box.plat {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%);
-  border-color: rgba(255, 215, 0, 0.35);
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.08);
-}
-.profile-stat-box.plat:hover {
-  border-color: rgba(255, 215, 0, 0.7);
-  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.2);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.06) 0%, rgba(245, 158, 11, 0.04) 100%);
+  border-color: rgba(255, 215, 0, 0.22);
 }
 .profile-stat-box.plat .profile-stat-icon-wrap {
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%);
-  border: 1px solid rgba(255, 215, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.4);
   color: #ffd700;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+}
+.profile-stat-box.plat:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.12);
 }
 
-.profile-stat-box.playtime {
-  border-color: rgba(14, 165, 233, 0.2);
-}
-.profile-stat-box.playtime:hover {
-  border-color: rgba(14, 165, 233, 0.5);
-  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.15);
-}
 .profile-stat-box.playtime .profile-stat-icon-wrap {
   background: rgba(14, 165, 233, 0.16);
-  border: 1px solid rgba(14, 165, 233, 0.35);
+  border: 1px solid rgba(14, 165, 233, 0.3);
   color: #38bdf8;
 }
+.profile-stat-box.playtime:hover {
+  border-color: rgba(14, 165, 233, 0.4);
+}
 
-.profile-stat-box.library {
-  border-color: rgba(16, 185, 129, 0.2);
-}
-.profile-stat-box.library:hover {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.15);
-}
 .profile-stat-box.library .profile-stat-icon-wrap {
   background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   color: #34d399;
 }
-
-.stat-corner-glow {
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  opacity: 0.15;
-  pointer-events: none;
-}
-
-.profile-stat-box.xp .stat-corner-glow {
-  background: #a855f7;
-}
-
-.profile-stat-box.plat .stat-corner-glow {
-  background: #ffd700;
-  opacity: 0.25;
+.profile-stat-box.library:hover {
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .profile-stat-content {
@@ -7281,7 +6892,7 @@ select option {
   text-overflow: ellipsis;
 }
 
-/* 4. Oyun Başarımları ve İlerleme Bölümü (2 Sütunlu Zengin Kartlar) */
+/* 3. Oyun Başarımları ve İlerleme Bölümü */
 .profile-games-section {
   display: flex;
   flex-direction: column;
@@ -7298,14 +6909,6 @@ select option {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.profile-title-glow-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #6366f1;
-  box-shadow: 0 0 8px #6366f1;
 }
 
 .profile-section-title {
@@ -7368,12 +6971,6 @@ select option {
   border-color: rgba(255, 255, 255, 0.28);
   font-weight: 700;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.profile-pill.plat.active {
-  background: rgba(255, 215, 0, 0.16);
-  border-color: rgba(255, 215, 0, 0.45);
-  color: #ffd700;
 }
 
 .profile-toolbar-right {
@@ -7449,81 +7046,54 @@ select option {
   border-color: #6366f1;
 }
 
-/* 2 Sütunlu Zengin Oyun Kartları Izgarası */
+/* Oyun Kartları Listesi / Izgarası */
 .profile-games-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(490px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .profile-game-card {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  background: #12141e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   animation: cardFilterEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--pci, 0) * 16ms) backwards;
 }
 
 .profile-game-card:hover {
-  transform: translateY(-3px) scale(1.008);
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateX(3px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
 }
 
 .profile-game-card.platinum {
-  border-color: rgba(255, 215, 0, 0.35);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 18px rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.25);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
 .profile-game-card.platinum:hover {
-  border-color: rgba(255, 215, 0, 0.7);
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55), 0 0 28px rgba(255, 215, 0, 0.22);
-}
-
-.profile-game-backdrop {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center 30%;
-  opacity: 0.16;
-  filter: blur(4px);
-  transition: all 0.3s ease;
-}
-
-.profile-game-card:hover .profile-game-backdrop {
-  opacity: 0.32;
-  transform: scale(1.04);
-}
-
-.profile-game-card-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(16, 18, 26, 0.96) 0%, rgba(16, 18, 26, 0.85) 60%, rgba(16, 18, 26, 0.92) 100%);
-}
-
-.profile-game-card-inner {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
+  border-color: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.09);
 }
 
 .profile-game-cover-wrap {
   position: relative;
-  width: 56px;
-  height: 80px;
-  border-radius: 10px;
+  width: 46px;
+  height: 64px;
+  border-radius: 8px;
   overflow: hidden;
   background: #1e2028;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
 }
 
 .profile-game-cover {
@@ -7542,18 +7112,24 @@ select option {
   color: #475569;
 }
 
-.profile-game-plat-seal {
+.profile-game-plat-ribbon {
   position: absolute;
-  bottom: 3px;
-  right: 3px;
+  bottom: 2px;
+  left: 2px;
+  right: 2px;
   background: linear-gradient(135deg, #ffd700, #d97706);
   color: #1a0f00;
-  border-radius: 6px;
-  padding: 3px;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 1px 3px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  gap: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .profile-game-info {
@@ -7569,24 +7145,18 @@ select option {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-
-.profile-title-left {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .profile-game-title {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14.5px;
+  font-weight: 700;
   color: #ffffff;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 480px;
 }
 
 .profile-game-pills {
@@ -7596,19 +7166,10 @@ select option {
 }
 
 .profile-game-tag {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
   border-radius: 6px;
-}
-
-.profile-game-tag.plat {
-  background: rgba(255, 215, 0, 0.18);
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
 }
 
 .profile-game-tag.installed {
@@ -7618,45 +7179,18 @@ select option {
 }
 
 .profile-game-tag.playtime {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   color: #94a3b8;
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-}
-
-.profile-game-xp-pill {
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 3px 8px;
-  border-radius: 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.profile-game-xp-pill .muted-xp {
-  color: #64748b;
-  font-weight: 500;
-  font-size: 11px;
-}
-
-.profile-game-xp-pill.plat {
-  background: rgba(255, 215, 0, 0.12);
-  border-color: rgba(255, 215, 0, 0.35);
-  color: #ffd700;
 }
 
 .profile-game-progress-wrap {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .profile-game-progress-labels {
@@ -7672,56 +7206,49 @@ select option {
   font-weight: 700;
 }
 
-.profile-game-progress-right {
-  font-size: 11px;
-  color: #64748b;
+.profile-game-progress-right strong {
+  color: #e2e8f0;
+  font-weight: 700;
 }
 
 .profile-game-progress-track {
   width: 100%;
-  height: 7px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .profile-game-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+  background: linear-gradient(90deg, #6366f1, #38bdf8);
   border-radius: 10px;
   transition: width 0.4s ease;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 
 .profile-game-progress-fill.plat {
-  background: linear-gradient(90deg, #ffd700 0%, #f59e0b 100%);
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.6);
+  background: linear-gradient(90deg, #ffd700, #f59e0b);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
 }
 
 .profile-game-action {
   flex-shrink: 0;
 }
 
-.profile-card-inspect-btn {
+.profile-card-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: 11.5px;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
-  cursor: pointer;
-  transition: all 0.18s ease;
+  padding: 5px 10px;
+  border-radius: 7px;
+  transition: all 0.15s ease;
 }
 
-.profile-game-card:hover .profile-card-inspect-btn {
-  background: #0070f3;
-  border-color: #38bdf8;
+.profile-game-card:hover .profile-card-btn {
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  box-shadow: 0 0 12px rgba(0, 112, 243, 0.5);
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 .profile-empty-games {
@@ -7735,7 +7262,6 @@ select option {
   background: rgba(255, 255, 255, 0.02);
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  grid-column: 1 / -1;
 }
 
 .profile-empty-icon {
@@ -7755,816 +7281,140 @@ select option {
   margin: 0;
 }
 
-/* ===== 37. MAĞAZA ===== */
+/* ==========================================================================
+   Minimalist & Profesyonel Mağaza Yükleme Deneyimi (AAA Launcher Aesthetic)
+   ========================================================================== */
 
-/* ── Araç Çubuğu ── */
-.store-toolbar {
+.store-loading-screen {
+  position: absolute;
+  inset: 0;
+  background: #0d0f14;
+  background-image: 
+    radial-gradient(ellipse at 50% 35%, rgba(99, 102, 241, 0.07) 0%, transparent 60%),
+    linear-gradient(to bottom, #0a0c10, #0f1117);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 16px;
-  position: sticky;
-  top: 0;
+  justify-content: center;
   z-index: 10;
-  background: var(--bg);
-}
-
-.store-tabs {
-  display: flex;
-  gap: 4px;
-}
-
-.store-tab {
-  padding: 7px 16px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.store-tab:hover {
-  background: var(--panel);
-  color: var(--text);
-}
-
-.store-tab.active {
-  background: var(--primary);
-  color: #fff;
-}
-
-.store-search-box {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  width: 260px;
-}
-
-.store-search-input {
-  flex: 1;
-  padding: 7px 12px;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
-}
-
-.store-search-input::placeholder {
-  color: var(--muted);
-  opacity: 0.6;
-}
-
-.store-search-btn {
-  padding: 7px 12px;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-}
-
-.store-search-btn:hover {
-  color: var(--text);
-}
-
-/* ── Hero Carousel ── */
-.store-hero {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 24px;
-  cursor: pointer;
-  aspect-ratio: 21 / 9;
-  max-height: 360px;
-}
-
-.store-hero-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center 20%;
-  transition: transform 0.5s ease;
-}
-
-.store-hero:hover .store-hero-bg {
-  transform: scale(1.03);
-}
-
-.store-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(11, 12, 16, 0.95) 0%, rgba(11, 12, 16, 0.4) 40%, transparent 70%);
-  display: flex;
-  align-items: flex-end;
-  padding: 32px;
-}
-
-.store-hero-content {
-  max-width: 560px;
-}
-
-.store-hero-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #fff;
-  margin: 8px 0 6px;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-}
-
-.store-hero-desc {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.5;
-  margin: 0 0 10px;
-}
-
-.store-hero-price {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.store-hero-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s, background 0.2s;
-  z-index: 3;
-}
-
-.store-hero:hover .store-hero-arrow {
-  opacity: 1;
-}
-
-.store-hero-arrow:hover {
-  background: rgba(0, 0, 0, 0.75);
-}
-
-.store-hero-prev { left: 12px; }
-.store-hero-next { right: 12px; }
-
-.store-hero-dots {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  z-index: 3;
-}
-
-.store-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.store-dot.active {
-  background: var(--primary);
-  width: 20px;
-  border-radius: 4px;
-}
-
-/* ── Fiyat ve Rozetler (global) ── */
-.store-price-old {
-  font-size: 12px;
-  color: var(--muted);
-  text-decoration: line-through;
-  opacity: 0.7;
-}
-
-.store-price-current {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.store-price-current.free {
-  color: var(--green);
-}
-
-.store-price-big {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.store-price-big.free {
-  color: var(--green);
-}
-
-.store-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.store-badge-owned {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--green);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.store-badge-discount {
-  background: rgba(245, 158, 11, 0.2);
-  color: var(--yellow);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.store-badge-wish {
-  background: rgba(168, 85, 247, 0.2);
-  color: var(--accent2);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-
-.store-badge-free {
-  background: rgba(255, 215, 0, 0.15);
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.3);
-}
-
-/* ── Ücretsiz Oyunlar Bölümü ── */
-.store-free-section {
-  border: 1px solid rgba(255, 215, 0, 0.15);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.04) 0%, transparent 60%);
-  margin-bottom: 24px;
-}
-
-.store-section-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 14px;
-}
-
-.store-free-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
-.store-free-card {
-  display: flex;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-  height: 120px;
-}
-
-.store-free-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 215, 0, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.store-free-img {
-  width: 180px;
-  min-width: 180px;
-  background-size: cover;
-  background-position: center;
-}
-
-.store-free-info {
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.store-free-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
-  border-radius: 4px;
-  width: fit-content;
-}
-
-.store-free-label.current {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
-}
-
-.store-free-label.upcoming {
-  background: rgba(255, 215, 0, 0.08);
-  color: rgba(255, 215, 0, 0.6);
-}
-
-.store-free-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.store-free-timer {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* ── Raf (Shelf) — Yatay Kaydırma ── */
-.store-section {
-  margin-bottom: 24px;
-}
-
-.store-shelf {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
-}
-
-/* ── Kart ── */
-.store-card {
-  flex: 0 0 165px;
-  width: 165px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--panel);
-  border: 1px solid var(--border);
-}
-
-.store-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  border-color: var(--border-focus);
-}
-
-.store-card-img {
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-}
-
-.store-card-discount {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--yellow);
-  color: #000;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 5px;
-}
-
-.store-card-free {
-  background: #ffd700;
-}
-
-.store-card-owned {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(16, 185, 129, 0.85);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.store-card-wish {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  color: var(--accent2);
-  font-size: 14px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-
-.store-card-info {
-  padding: 10px 10px 12px;
-}
-
-.store-card-title {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 4px;
-}
-
-.store-card-price-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ── Göz At (Browse) ── */
-.store-browse {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.store-browse-filters {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.store-filter-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.store-filter-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-right: 4px;
-}
-
-.store-filter-pill {
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.store-filter-pill:hover {
-  background: var(--panel);
-  color: var(--text);
-}
-
-.store-filter-pill.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-.store-browse-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-  gap: 14px;
-}
-
-.store-browse-grid .store-card {
-  flex: initial;
-  width: 100%;
-}
-
-.store-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 20px 0;
-}
-
-.store-page-btn {
-  padding: 7px 18px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.store-page-btn:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-.store-page-info {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* ── Detay Overlay ── */
-.store-detail-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: storeFadeIn 0.2s ease;
+  animation: storeFadeIn 0.25s ease-out;
+  user-select: none;
 }
 
 @keyframes storeFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
-.store-detail-drawer {
-  width: 680px;
-  max-width: 90vw;
-  max-height: 85vh;
-  background: var(--bg2);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  overflow-y: auto;
-  position: relative;
-  animation: storeSlideUp 0.3s ease;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+.store-loading-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  max-width: 320px;
 }
 
-@keyframes storeSlideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.store-loading-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-.store-detail-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+.store-loading-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  cursor: pointer;
-  z-index: 5;
-  transition: background 0.15s;
+  color: #c7d2fe;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.store-detail-close:hover {
-  background: rgba(0, 0, 0, 0.8);
-}
-
-.store-detail-hero {
-  width: 100%;
-  height: 260px;
-  background-size: cover;
-  background-position: center 20%;
-  position: relative;
-}
-
-.store-detail-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, var(--bg2) 0%, rgba(18, 19, 26, 0.6) 40%, transparent 80%);
+.store-loading-logotype {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 24px;
+  gap: 3px;
 }
 
-.store-detail-title {
-  font-size: 24px;
-  font-weight: 800;
-  color: #fff;
-  margin: 0 0 8px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.store-detail-badges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.store-detail-body {
-  display: flex;
-  gap: 24px;
-  padding: 24px;
-}
-
-.store-detail-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.store-detail-desc h4 {
-  font-size: 15px;
+.store-loading-brand-main {
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text);
-  margin: 0 0 8px;
+  letter-spacing: 0.18em;
+  color: #f1f5f9;
+  text-transform: uppercase;
 }
 
-.store-detail-desc p {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.7;
-  margin: 0;
-}
-
-.store-detail-sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.store-detail-price-box {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.store-detail-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.store-action-btn {
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-}
-
-.store-action-btn:hover {
-  background: var(--panel-hover);
-  border-color: var(--border-focus);
-}
-
-.store-action-primary {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-.store-action-primary:hover {
-  background: var(--primary-hover);
-}
-
-.store-action-wish-active {
-  background: rgba(168, 85, 247, 0.15);
-  color: var(--accent2);
-  border-color: rgba(168, 85, 247, 0.3);
-}
-
-.store-detail-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.store-meta-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.store-meta-label {
+.store-loading-brand-sub {
   font-size: 10px;
   font-weight: 600;
-  color: var(--muted);
+  letter-spacing: 0.12em;
+  color: #64748b;
   text-transform: uppercase;
+}
+
+.store-loading-track-wrap {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.store-loading-track {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.store-loading-laser {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, #818cf8, #c7d2fe, transparent);
+  box-shadow: 0 0 8px #818cf8;
+  border-radius: 999px;
+  animation: storeLaser 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes storeLaser {
+  0% { left: -35%; }
+  100% { left: 100%; }
+}
+
+.store-loading-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.04em;
+  color: #475569;
 }
 
-.store-meta-row > span:last-child {
-  font-size: 13px;
-  color: var(--text);
+.store-loading-status-text {
+  color: #64748b;
 }
 
-/* ── Yükleniyor / Hata / Boş ── */
-.store-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 80px 0;
-  color: var(--muted);
-  font-size: 14px;
+.store-loading-status-dots span {
+  animation: storeDotPulse 1.4s infinite;
+  opacity: 0.2;
+}
+.store-loading-status-dots span:nth-child(1) { animation-delay: 0s; }
+.store-loading-status-dots span:nth-child(2) { animation-delay: 0.2s; }
+.store-loading-status-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes storeDotPulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; color: #a5b4fc; }
 }
 
-.store-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--border);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: storeSpin 0.8s linear infinite;
-}
 
-@keyframes storeSpin {
-  to { transform: rotate(360deg); }
-}
 
-.store-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 80px 0;
-  color: var(--red);
-  font-size: 14px;
-}
 
-.store-retry-btn {
-  padding: 8px 20px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-}
 
-.store-retry-btn:hover {
-  background: var(--primary);
-  color: #fff;
-}
 
-.store-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 60px 0;
-  color: var(--muted);
-  font-size: 14px;
-  text-align: center;
-}
-
-/* ── İstek Listesi ── */
-.store-wishlist-header {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
