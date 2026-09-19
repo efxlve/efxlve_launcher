@@ -2614,10 +2614,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     rawDesc.length > 25;
   const descHtml = hasRealDesc
     ? `<div class="drawer-desc">${esc(rawDesc)}</div>`
-    : `<div class="drawer-desc overview">
-        <p><strong>${esc(s.title)}</strong>${dev ? `, ${esc(dev)} tarafından sunulan ` : " "}Epic Games Store kütüphanendeki resmi sürümdür.</p>
-        <div class="drawer-store-hint">Hikaye, fragmanlar ve detaylar için <a data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Mağaza Sayfası'na göz at</a></div>
-      </div>`;
+    : "";
 
   const achPill = isPlat
     ? `<span class="status-pill plat" style="background:linear-gradient(135deg,#ffd700,#b45309);color:#1a0f00;font-weight:800;border:none">${icon("trophy", 12)} 100% Platin</span>`
@@ -2720,20 +2717,19 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
         <div class="drawer-cover">
           ${art ? `<img src="${art}" alt="" />` : `<div class="pcover" style="color:#94a3b8">${icon("gamepad-2", 48)}</div>`}
           <div class="drawer-gradient"></div>
-          <button class="drawer-cover-edit-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Yatay Afişi Özelleştir">
-            ${icon("image", 12)} Afişi Değiştir
+          <button class="drawer-cover-edit-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Afiş ve Kapak Görselini Özelleştir">
+            ${icon("image", 14)}
           </button>
         </div>
         <div class="drawer-body">
           <h2 class="drawer-title">${esc(s.title)}</h2>
-          ${dev ? `<div class="drawer-dev">${esc(dev)}</div>` : ""}
-          <div class="drawer-pills">
-            <span class="status-pill ${s.installed ? "ok" : ""}">${s.installed ? "● Kurulu" : "○ Kurulu Değil"}</span>
-            ${partner ? `<span class="status-pill partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
-            ${antiCheat ? `<span class="status-pill anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-            ${s.updateAvailable ? `<span class="status-pill warn">${icon("zap", 11)} Güncelleme Mevcut</span>` : ""}
-            ${currentDlcCount > 0 ? `<span class="status-pill">+${currentDlcCount} DLC</span>` : ""}
-            ${s.installSize ? `<span class="status-pill">${fmtBytes(s.installSize)}</span>` : ""}
+          <div class="drawer-meta-subline">
+            ${dev ? `<span class="meta-subline-item dev">${esc(dev)}</span>` : ""}
+            ${dev ? `<span class="meta-subline-dot">•</span>` : ""}
+            <span class="meta-subline-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
+            ${partner ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
+            ${antiCheat ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
+            ${s.updateAvailable ? `<span class="meta-subline-dot">•</span><span class="meta-subline-item warn">${icon("zap", 11)} Güncelleme</span>` : ""}
           </div>
 
           <div class="drawer-tabs-wrapper">
@@ -2865,162 +2861,91 @@ function renderDrawerOverview(
   const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "Oynanmadı";
   const lastPlayedStr = pt?.last_played || "Henüz oynanmadı";
 
-  const achSum = epicAchSummaries[s.appName];
-  const isPlat = isAppPlatinum(s.appName);
-  const hasAchs = Boolean(achSum && achSum.total_achievements > 0);
-  const achProgressStr = isPlat
-    ? `${icon("trophy", 12)} %100 Platin`
-    : hasAchs
-      ? `${achSum.user_unlocked}/${achSum.total_achievements} (%${Math.round((achSum.user_unlocked / achSum.total_achievements) * 100)})`
-      : "Desteklenmiyor";
-
-  let achShowcaseHtml = "";
-  if (hasAchs) {
-    const pct = Math.min(100, Math.round((achSum.user_unlocked / achSum.total_achievements) * 100));
-    const cachedAch = loadedAchievements.get(s.appName);
-    const unlockedList = cachedAch?.achievements?.filter((a) => a.unlocked) || [];
-    const recentIcons = unlockedList.slice(0, 4).map((a) => {
-      const src = a.icon_link || "";
-      return src
-        ? `<img class="ach-showcase-icon" src="${esc(src)}" title="${esc(a.display_name || a.name)}" alt="" />`
-        : `<div class="ach-showcase-icon" style="display:flex;align-items:center;justify-content:center;color:#fbbf24">${icon("trophy", 16)}</div>`;
-    }).join("");
-
-    achShowcaseHtml = `
-      <div class="drawer-ach-showcase">
-        <div class="ach-showcase-head">
-          <div class="ach-showcase-title">
-            ${icon("trophy", 15)}
-            <span>Başarımlar (${achSum.user_unlocked}/${achSum.total_achievements} • %${pct})</span>
-          </div>
-          <a class="ach-showcase-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
-            Tümünü Gör (${achSum.total_achievements}) →
-          </a>
-        </div>
-        <div class="ach-showcase-bar">
-          <div class="ach-showcase-fill" style="width:${pct}%"></div>
-        </div>
-        ${
-          recentIcons
-            ? `<div class="ach-showcase-icons">${recentIcons}</div>`
-            : `<div class="ach-showcase-empty">Henüz başarım kilidi açılmadı. Oynamaya başlayarak kupaları toplayın!</div>`
-        }
-      </div>
-    `;
-  }
-
-  const devRaw = rawOf(s.appName)?.metadata?.developer;
-  const devName = typeof devRaw === "string" ? devRaw : "";
+  const gameCols = epicCollections.filter((c) =>
+    c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+  );
 
   return `
     <div class="drawer-actions">
       ${primary}
       <div class="drawer-actions-row">
-        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">
-          ${icon("heart", 14)} ${faved ? "Favorilerde" : "Favoriye Ekle"}
+        <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favorilere Ekle / Çıkar">
+          ${icon("heart", 14)} <span>${faved ? "Favorilerde" : "Favori"}</span>
         </button>
-        <button class="btn ghost" data-act="open-custom-cover" data-id="${s.appName}" title="Kapak ve Vitrin Afişini Özelleştir">
-          ${icon("image", 14)} Görselleri Değiştir
+        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfasını Aç">
+          ${icon("external", 14)} <span>Mağaza</span>
         </button>
-        <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfası">
-          ${icon("external", 14)} Mağaza
-        </button>
-        ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} İptal Et</button>` : ""}
+        ${s.installed ? `
+        <button class="btn ghost" data-act="drawer-tab" data-tab="manage" data-id="${s.appName}" title="Dosyaları ve Ayarları Yönet">
+          ${icon("settings", 14)} <span>Yönet</span>
+        </button>` : ""}
+        ${p !== null ? `<button class="btn danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 14)} <span>İptal</span></button>` : ""}
       </div>
     </div>
 
-    <div class="drawer-stats-strip">
-      <div class="stat-card stat-card-interactive">
-        <div class="stat-icon" style="color:#38bdf8">${icon("clock", 16)}</div>
-        <div class="stat-meta">
-          <div class="stat-label">Oynama Süresi</div>
-          <div class="stat-val" id="drawer-stat-playtime" style="color:#38bdf8">${esc(playtimeStr)}</div>
+    <!-- Birleşik Bento Bilgi Şeridi (Quick Info Bar) -->
+    <div class="drawer-bento-bar">
+      <!-- 1. Oynama Süresi & Son Aktivite -->
+      <div class="bento-tile bento-playtime" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenlemek için tıklayın">
+        <div class="bento-icon-col">${icon("clock", 16)}</div>
+        <div class="bento-info">
+          <div class="bento-label">
+            <span>Oynama Süresi</span>
+            <span class="bento-edit-hint">${icon("edit", 10)}</span>
+          </div>
+          <div class="bento-val" id="drawer-stat-playtime">${esc(playtimeStr)}</div>
+          <div class="bento-sub" id="drawer-stat-last-activity">${esc(lastPlayedStr)}</div>
         </div>
-        <button class="stat-edit-btn" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama Süresini Düzenle">
-          ${icon("edit", 11)} Düzenle
-        </button>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="color:#a78bfa">${icon("calendar", 16)}</div>
-        <div class="stat-meta">
-          <div class="stat-label">Son Aktivite</div>
-          <div class="stat-val" id="drawer-stat-last-activity">${esc(lastPlayedStr)}</div>
+
+      <!-- 2. Koleksiyonlar -->
+      <div class="bento-tile bento-collections">
+        <div class="bento-icon-col">${icon("folder", 16)}</div>
+        <div class="bento-info">
+          <div class="bento-label-row">
+            <span class="bento-label">Koleksiyon</span>
+            <button class="bento-add-btn drawer-col-edit-btn" data-act="manage-game-collections" data-id="${s.appName}" title="Koleksiyonları Yönet">
+              ${icon("edit", 11)} <span>${gameCols.length > 0 ? "Düzenle" : "+ Ekle"}</span>
+            </button>
+          </div>
+          <div class="bento-chips-wrap" id="drawer-col-chips-container">
+            ${gameCols.length > 0 ? gameCols.map((c) => `
+              <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
+                ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
+                <span class="col-pill-text">${esc(c.name)}</span>
+              </button>
+            `).join("") : `
+              <button class="bento-empty-col" data-act="manage-game-collections" data-id="${s.appName}">
+                <span>Kategori atanmadı</span>
+              </button>
+            `}
+          </div>
+          <div id="drawer-col-subtitle" style="display:none">${gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı"}</div>
         </div>
       </div>
     </div>
-
-    ${(() => {
-      const gameCols = epicCollections.filter((c) =>
-        c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-      );
-      return `
-    <div class="drawer-col-card">
-      <div class="drawer-col-header">
-        <div class="drawer-col-header-left">
-          <div class="drawer-col-icon-badge">
-            ${icon("folder", 15)}
-          </div>
-          <div>
-            <div class="drawer-col-label">Koleksiyonlar</div>
-            <div class="drawer-col-sub" id="drawer-col-subtitle">${gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı"}</div>
-          </div>
-        </div>
-        <button class="drawer-col-edit-btn" data-act="manage-game-collections" data-id="${s.appName}" title="Koleksiyonları Yönet">
-          ${icon("edit", 12)}
-          <span>${gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle"}</span>
-        </button>
-      </div>
-      <div class="drawer-col-chips-wrap" id="drawer-col-chips-container">
-        ${gameCols.length > 0 ? gameCols.map((c) => `
-          <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
-            ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
-            <span class="col-pill-text">${esc(c.name)}</span>
-            <span class="col-pill-arrow">→</span>
-          </button>
-        `).join("") : `
-          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${s.appName}">
-            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
-            <span class="drawer-col-plus">+</span>
-          </button>
-        `}
-      </div>
-    </div>`;
-    })()}
 
     <div id="drawer-hltb-container">
       ${renderHltbCard(loadedHltb.get(s.appName))}
     </div>
 
-    ${achShowcaseHtml}
-
     ${descHtml}
 
-    <div class="drawer-meta-grid">
-      <div class="meta-tile">
-        <div class="tile-label">Geliştirici</div>
-        <div class="tile-val">${esc(devName || "Bilinmiyor")}</div>
+    <div class="drawer-info-grid">
+      <div class="drawer-info-cell">
+        <div class="info-cell-label">${icon("hard-drive", 12)} Boyut</div>
+        <div class="info-cell-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
       </div>
-      <div class="meta-tile">
-        <div class="tile-label">İndirme / Boyut</div>
-        <div class="tile-val">${s.installSize ? fmtBytes(s.installSize) : "—"}</div>
+      <div class="drawer-info-cell">
+        <div class="info-cell-label">${icon("monitor", 12)} Platform</div>
+        <div class="info-cell-val">Windows (PC)</div>
       </div>
-      ${partner ? `
-      <div class="meta-tile">
-        <div class="tile-label">3. Parti Başlatıcı</div>
-        <div class="tile-val" style="color:#60a5fa">${esc(partner.name)} Gereklidir</div>
-      </div>` : ""}
-      ${antiCheat ? `
-      <div class="meta-tile">
-        <div class="tile-label">Hile Koruması</div>
-        <div class="tile-val" style="color:#34d399">${esc(antiCheat)}</div>
-      </div>` : ""}
-      <div class="meta-tile ${!partner && !antiCheat ? "full" : ""}" data-act="drawer-tab" data-tab="specs" data-id="${s.appName}" style="cursor:pointer" title="Sistem Gereksinimlerini Gör">
-        <div class="tile-label">Sistem Gereksinimleri</div>
-        <div class="tile-val" style="color:#a5b4fc;display:flex;align-items:center;gap:4px">
-          Donanım Uyumluluğunu İncele →
-        </div>
+      <div class="drawer-info-cell clickable" data-act="drawer-tab" data-tab="specs" data-id="${s.appName}" title="Sistem gereksinimlerini ve donanım uyumluluğunu incele">
+        <div class="info-cell-label">${icon("cpu", 12)} Sistem Gereksinimi</div>
+        <div class="info-cell-val link-val">Donanımı İncele →</div>
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
 function renderDrawerDlcs(s: EpicSummary): string {
@@ -5966,25 +5891,23 @@ function updateDrawerCollectionsBoxInPlace(appName: string): void {
     subEl.textContent = gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı";
   }
   if (editBtn) {
-    editBtn.textContent = gameCols.length > 0 ? "Düzenle" : "+ Koleksiyon Ekle";
+    editBtn.textContent = gameCols.length > 0 ? "Düzenle" : "+ Ekle";
   }
   container.innerHTML =
     gameCols.length > 0
       ? gameCols
           .map(
             (c) => `
-          <button class="drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
+          <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
             ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
             <span class="col-pill-text">${esc(c.name)}</span>
-            <span class="col-pill-arrow">→</span>
           </button>
         `,
           )
           .join("")
       : `
-          <button class="drawer-col-empty-cta" data-act="manage-game-collections" data-id="${appName}">
-            <span style="display:flex;align-items:center;gap:7px">${icon("folder", 13)} Bu oyunu bir koleksiyona ekleyin</span>
-            <span class="drawer-col-plus">+</span>
+          <button class="bento-empty-col" data-act="manage-game-collections" data-id="${appName}">
+            <span>Kategori atanmadı</span>
           </button>
         `;
 }

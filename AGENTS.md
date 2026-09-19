@@ -627,8 +627,23 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - `norm.indexOf(gNorm) === 0` veya `slug.indexOf(og.s) === 0` gibi kör ön ek / alt dize kontrolleri KESİNLİKLE YASAKTIR. Aksi halde *"Control"* oyununa sahip bir kullanıcıda *"CONTROL Resonant"* gibi devam oyunları veya *"Hitman 3"*, *"Alan Wake 2"* gibi farklı yapımlar yanlışlıkla kütüphanede gösterilir.
     - Eşleme; tam eşleşme, edisyon takılarının temizlenmesi (`stripEdition`: *Premium Edition*, *Standard Edition*, *Director's Cut*, *GOTY* vb.) ve slug edisyon temizliği (`stripSlugEdition`: `-standard-edition`, `-directors-cut` vb.) üzerinden deterministik olarak yapılır.
     - Eşleşmeyen kartlarda veya PDP sayfalarında eski hatalı etiketler (`data-efxlve-owned`, `.efxlve-price-tag`, `.efxlve-pdp-card`) otomatik olarak temizlenir.
-  - **Kesin "İndir" Butonu Temizliği (Shadow DOM + Türkçe 'İ' Normalizasyonu):**
-    - JavaScript'in `"İndir".toLowerCase()` işleminde ürettiği birleşik nokta karakteri (`i\u0307`) `normalize('NFD')` ile giderilir.
-    - Epic Universal Header'ın Shadow DOM ağaçları özyinelemeli taranır ve hem CSS kuralı hem de geometrik/metinsel scrubber ile indirme butonu tüm dillerde tamamen ortadan kaldırılır.
+## 43. Oyun Detay Sayfası / Çekmecesi (Game Detail Drawer) Sadeleştirme & Bento Bilgi Şeridi Mimarisi
+
+- **Kullanıcı Geri Bildirimi & Tasarım Değişikliği Gerekçesi:**
+  - 30+ kişilik kullanıcı test grubunda eski detay çekmecesi aşırı kalabalık, kullanışsız ve SaaS yönetim paneli gibi dağınık kutularla dolu bulunmuştu.
+  - Oyun detay çekmecesi Steam, PlayStation 5 ve GOG Galaxy 2.0 standartlarında tek parça, ferah ve sinematik bir deneyime dönüştürülmüştür.
+- **Tekrarların & Görsel Gürültünün (Visual Noise) Temizlenmesi:**
+  - **Görsel Değiştirme Butonları:** Afiş üzerindeki kaba metin kutusu ve aksiyon barındaki mükerrer buton kaldırılarak afişin sol üst köşesine zarif, dairesel ve yarı saydam cam hover ikon butonu (`.drawer-cover-edit-btn`, `icon("image", 14)`) yerleştirildi.
+  - **Mükerrer Künye Verileri:** Başlık altında 3 kez tekrarlanan geliştirici adı, 3 kez yazılan Ubisoft Connect/3. parti başlatıcı ve 2 kez yazılan BattlEye rozetleri tek bir şık meta satırında (`.drawer-meta-subline`: `Geliştirici • Durum • Launcher • Anti-Cheat`) birleştirildi.
+  - **Sahte / Şablon Açıklama Metni:** Hiçbir bilgi taşımayan ve ekranı işgal eden jenerik dolgu metin (*"Tom Clancy's Rainbow Six Siege, Ubisoft Entertainment tarafından sunulan..."*) tamamen kaldırıldı. Yalnızca oyunun gerçek bir özeti (`s.description`) varsa temiz tipografiyle (`.drawer-desc`) sunulur.
+  - **Başarım Çakışması:** Üstte zaten zengin bir `🏆 Başarımlar` sekmesi yer alırken Genel Bakış sekmesinde duran devasa sarı başarım vitrini kutusu kaldırıldı; sayfa ferahlatıldı.
+  - **Launcher Mor Teması:** Yeşil (`#10b981`) oynatma/başlatma butonları launcher'ın asil mor/indigo gradyanı (`linear-gradient(135deg, #8b5cf6, #7c3aed)`) ile uyumlu hale getirildi.
+- **Tek Parça Bento Bilgi Şeridi (Unified Quick Info Bar):**
+  - Ayrı ayrı çerçeveler halinde duran Oynama Süresi, Son Aktivite ve Koleksiyonlar kutuları tek parça, 2 sütunlu cam efektli Bento Şeridi (`.drawer-bento-bar`, `.bento-tile`) olarak toplandı.
+  - Oynama süresi kutucuğuna tıklanarak doğrudan süre düzenleme modalı (`openEditPlaytimeModal`) açılabilir.
+  - Koleksiyon etiketleri doğrudan kütüphane filtresine yönlendirir veya `+ Ekle` butonu ile yönetim modalını tetikler; `updateDrawerCollectionsBoxInPlace` ve `saveEditedPlaytime` fonksiyonları ile geriye dönük tam uyumlu olarak DOM'da yerinde güncellenir.
+- **Sadeleştirilmiş Teknik Grid:**
+  - Alt kısımdaki hantal 4 kutu yerine yalnızca gerekli teknik bilgileri içeren (İndirme Boyutu, Platform ve Sistem Gereksinimleri sekmesine tek tıkla geçiş sağlayan) minimalist 3 sütunlu `.drawer-info-grid` uygulandı.
+
 
 
