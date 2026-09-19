@@ -13,7 +13,7 @@
 //! tutulmaz). İptal, PID üzerinden işletim sistemine yaptırılır.
 
 use std::collections::VecDeque;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use serde::Serialize;
@@ -1015,6 +1015,207 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
     }
 }
 
+/// Oyun dizinindeki çalıştırılabilir (.exe) dosyaları tespit eder.
+/// Genel kütüphane ve hata raporlayıcı ikili dosyaları elenir.
+pub fn discover_game_executables(install_path: &Path, main_executable: Option<&str>) -> Vec<String> {
+    let mut exes = Vec::new();
+    if let Some(main) = main_executable {
+        let name = Path::new(main)
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or(main);
+        if !name.is_empty() {
+            exes.push(name.to_lowercase());
+        }
+    }
+
+    if install_path.is_dir() {
+        let ignored_keywords = [
+            "vc_redist",
+            "vcredist",
+            "dxsetup",
+            "crashreportclient",
+            "epicgameslauncher",
+            "legendary",
+            "unrealcefsubprocess",
+            "unitycrashhandler",
+        ];
+        scan_dir_for_exes(install_path, 0, 4, &ignored_keywords, &mut exes);
+    }
+
+    exes.sort();
+    exes.dedup();
+    exes
+}
+
+fn scan_dir_for_exes(
+    dir: &Path,
+    depth: usize,
+    max_depth: usize,
+    ignored: &[&str],
+    out: &mut Vec<String>,
+) {
+    if depth > max_depth {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if ext.eq_ignore_ascii_case("exe") {
+                        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                            let lower = name.to_lowercase();
+                            let is_ignored = ignored.iter().any(|ign| lower.contains(ign));
+                            if !is_ignored && !out.contains(&lower) {
+                                out.push(lower);
+                            }
+                        }
+                    }
+                }
+            } else if path.is_dir() {
+                if let Some(dname) = path.file_name().and_then(|n| n.to_str()) {
+                    if !dname.starts_with('.') && !dname.starts_with('$') {
+                        scan_dir_for_exes(&path, depth + 1, max_depth, ignored, out);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod win_process {
+    use std::path::Path;
+
+    type HANDLE = *mut std::ffi::c_void;
+    type BOOL = i32;
+    type DWORD = u32;
+    type WCHAR = u16;
+
+    const INVALID_HANDLE_VALUE: HANDLE = -1isize as HANDLE;
+    const TH32CS_SNAPPROCESS: DWORD = 0x00000002;
+    const PROCESS_QUERY_LIMITED_INFORMATION: DWORD = 0x1000;
+
+    #[repr(C)]
+    struct PROCESSENTRY32W {
+        dw_size: DWORD,
+        cnt_usage: DWORD,
+        th32_process_id: DWORD,
+        th32_default_heap_id: usize,
+        th32_module_id: DWORD,
+        cnt_threads: DWORD,
+        th32_parent_process_id: DWORD,
+        pc_pri_class_base: i32,
+        dw_flags: DWORD,
+        sz_exe_file: [WCHAR; 260],
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn CreateToolhelp32Snapshot(dwFlags: DWORD, th32ProcessID: DWORD) -> HANDLE;
+        fn Process32FirstW(hSnapshot: HANDLE, lppe: *mut PROCESSENTRY32W) -> BOOL;
+        fn Process32NextW(hSnapshot: HANDLE, lppe: *mut PROCESSENTRY32W) -> BOOL;
+        fn CloseHandle(hObject: HANDLE) -> BOOL;
+        fn OpenProcess(dwDesiredAccess: DWORD, bInheritHandle: BOOL, dwProcessId: DWORD) -> HANDLE;
+        fn QueryFullProcessImageNameW(
+            hProcess: HANDLE,
+            dwFlags: DWORD,
+            lpExeName: *mut WCHAR,
+            lpdwSize: *mut DWORD,
+        ) -> BOOL;
+    }
+
+    pub fn is_game_process_running(install_path: Option<&Path>, candidate_exes: &[String]) -> bool {
+        if candidate_exes.is_empty() && install_path.is_none() {
+            return false;
+        }
+
+        let norm_install_path = install_path.map(|p| {
+            p.to_string_lossy()
+                .replace('/', "\\")
+                .trim_end_matches('\\')
+                .to_lowercase()
+        });
+
+        unsafe {
+            let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if snapshot == INVALID_HANDLE_VALUE {
+                return false;
+            }
+
+            let mut entry = std::mem::zeroed::<PROCESSENTRY32W>();
+            entry.dw_size = std::mem::size_of::<PROCESSENTRY32W>() as DWORD;
+
+            if Process32FirstW(snapshot, &mut entry) == 0 {
+                CloseHandle(snapshot);
+                return false;
+            }
+
+            let mut found = false;
+
+            loop {
+                // 1. Process dosya adını al (sz_exe_file)
+                let len = entry
+                    .sz_exe_file
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.sz_exe_file.len());
+                let exe_name = String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase();
+
+                // 2. Candidate exelerle doğrudan eşleştirme (0ms, sıfır izin, EAC tarafından engellenemez)
+                if !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name) {
+                    found = true;
+                    break;
+                }
+
+                // 3. install_path kontrolü (QueryFullProcessImageNameW)
+                if let Some(ref inst) = norm_install_path {
+                    let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
+                    if !h_proc.is_null() {
+                        let mut buf = [0u16; 1024];
+                        let mut size = buf.len() as DWORD;
+                        if QueryFullProcessImageNameW(h_proc, 0, buf.as_mut_ptr(), &mut size) != 0 {
+                            let full_path = String::from_utf16_lossy(&buf[..size as usize])
+                                .replace('/', "\\")
+                                .to_lowercase();
+                            if full_path.starts_with(inst) {
+                                let is_ignored = full_path.contains("crashreportclient")
+                                    || full_path.contains("vc_redist")
+                                    || full_path.contains("vcredist")
+                                    || full_path.contains("dxsetup");
+                                if !is_ignored {
+                                    found = true;
+                                    CloseHandle(h_proc);
+                                    break;
+                                }
+                            }
+                        }
+                        CloseHandle(h_proc);
+                    }
+                }
+
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+
+            CloseHandle(snapshot);
+            found
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+mod win_process {
+    use std::path::Path;
+    pub fn is_game_process_running(_install_path: Option<&Path>, _candidate_exes: &[String]) -> bool {
+        false
+    }
+}
+
+pub use win_process::is_game_process_running;
+
 async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
@@ -1032,101 +1233,201 @@ async fn spawn_launched(
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
 
     let config = super::skip::default_config_dir();
+    let installed_games = super::cache::read_installed(&config);
+    let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
+
+    let install_path: Option<PathBuf> = installed_entry
+        .map(|g| PathBuf::from(&g.install_path))
+        .filter(|p| p.exists());
+
+    let main_executable = installed_entry.map(|g| g.executable.as_str());
+
     let meta_path = config.join("metadata").join(format!("{app_name}.json"));
-    let game_title = std::fs::read_to_string(&meta_path)
-        .ok()
-        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-        .and_then(|v| v.get("app_title").and_then(|t| t.as_str()).map(|s| s.to_string()))
+    let game_title = installed_entry
+        .map(|g| g.title.clone())
+        .filter(|t| !t.trim().is_empty())
+        .or_else(|| {
+            std::fs::read_to_string(&meta_path)
+                .ok()
+                .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+                .and_then(|v| v.get("app_title").and_then(|t| t.as_str()).map(|s| s.to_string()))
+        })
         .unwrap_or_else(|| app_name.to_string());
+
+    let candidate_exes = if let Some(ref ip) = install_path {
+        discover_game_executables(ip, main_executable)
+    } else {
+        let mut v = Vec::new();
+        if let Some(me) = main_executable {
+            let name = Path::new(me)
+                .file_name()
+                .and_then(|f| f.to_str())
+                .unwrap_or(me);
+            if !name.is_empty() {
+                v.push(name.to_lowercase());
+            }
+        }
+        v
+    };
 
     super::screenshots::set_active_running_game(app_name, &game_title);
 
-    // Anında çökme kontrolü: ilk 5 saniyeyi bekle
-    match tokio::time::timeout(std::time::Duration::from_secs(5), child.wait()).await {
-        Ok(Ok(st)) if st.success() => {
-            // Oyun 5 saniye içinde başarıyla kapandı
-            super::screenshots::clear_active_running_game(app_name);
-            let _ = app.emit("game-status", serde_json::json!({
-                "id": app_name,
-                "running": false,
-                "sessionSeconds": 5,
-            }));
-            let _ = super::playtime::record_session(app_name, 5);
-            Ok(())
-        }
-        Ok(Ok(_)) => {
-            super::screenshots::clear_active_running_game(app_name);
-            Err("oyun hemen kapandı".into())
+    // İlk 2.5 saniyede ani çökme kontrolü (yalnızca non-zero hata ve çalışan süreç yoksa hata fırlatılır)
+    let early_failure = match tokio::time::timeout(std::time::Duration::from_millis(2500), child.wait()).await {
+        Ok(Ok(st)) if !st.success() => {
+            if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
+                Some(format!("Oyun başlatılamadı (hata kodu: {:?})", st.code()))
+            } else {
+                None
+            }
         }
         Ok(Err(e)) => {
-            super::screenshots::clear_active_running_game(app_name);
-            Err(e.to_string())
+            if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
+                Some(e.to_string())
+            } else {
+                None
+            }
         }
-        Err(_) => {
-            // 5 saniye sonra hala çalışıyor: oyun aktif oynanıyor!
-            let _ = app.emit("game-status", serde_json::json!({
+        _ => None,
+    };
+
+    if let Some(err) = early_failure {
+        super::screenshots::clear_active_running_game(app_name);
+        let _ = app.emit(
+            "game-status",
+            serde_json::json!({
                 "id": app_name,
-                "running": true,
-            }));
-
-            let app_bg = app.clone();
-            let app_name_bg = app_name.to_string();
-            let bin_bg = bin.clone();
-            let start_time = std::time::Instant::now();
-            let start_system_time = std::time::SystemTime::now();
-
-            tokio::spawn(async move {
-                let _ = child.wait().await;
-                // Oyun kapandı!
-                super::screenshots::clear_active_running_game(&app_name_bg);
-                let elapsed = start_time.elapsed().as_secs() + 5;
-                let rec = super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default();
-
-                // Oyun sırasında alınan yeni ekran görüntülerini otomatik tara ve düzenle
-                let clean_t = super::screenshots::clean_folder_name(&app_name_bg);
-                let new_shots = super::screenshots::scan_new_captures_for_game(&clean_t, start_system_time);
-                if !new_shots.is_empty() {
-                    let _ = app_bg.emit("screenshots-updated", serde_json::json!({
-                        "id": app_name_bg,
-                        "count": new_shots.len(),
-                    }));
-                }
-
-                let _ = app_bg.emit("game-status", serde_json::json!({
-                    "id": app_name_bg,
-                    "running": false,
-                    "sessionSeconds": elapsed,
-                    "totalSeconds": rec.total_seconds,
-                    "sessionCount": rec.session_count,
-                    "lastPlayed": rec.last_played,
-                    "lastPlayedTimestamp": rec.last_played_timestamp,
-                }));
-
-                // Eğer bulut eşitlemesi açıksa, otomatik sync-saves çalıştır
-                let settings_path = super::skip::default_config_dir()
-                    .join("game_settings")
-                    .join(format!("{app_name_bg}.json"));
-                let should_sync = std::fs::read_to_string(&settings_path)
-                    .ok()
-                    .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-                    .and_then(|v| v.get("cloudSavesEnabled").and_then(|c| c.as_bool()))
-                    .unwrap_or(false);
-
-                if should_sync {
-                    let mut sync_cmd = tokio::process::Command::new(&bin_bg);
-                    sync_cmd.arg("sync-saves").arg(&app_name_bg);
-                    sync_cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
-                    let _ = sync_cmd.status().await;
-                    let _ = app_bg.emit("cloud-sync-complete", serde_json::json!({
-                        "id": app_name_bg,
-                        "success": true
-                    }));
-                }
-            });
-
-            Ok(())
-        }
+                "running": false,
+            }),
+        );
+        return Err(err);
     }
+
+    // Oyun başlatıldı! UI'ı "Oynanıyor..." durumuna geçir
+    let _ = app.emit(
+        "game-status",
+        serde_json::json!({
+            "id": app_name,
+            "running": true,
+        }),
+    );
+
+    let app_bg = app.clone();
+    let app_name_bg = app_name.to_string();
+    let bin_bg = bin.clone();
+    let install_path_bg = install_path;
+    let candidate_exes_bg = candidate_exes;
+    let start_time = std::time::Instant::now();
+    let start_system_time = std::time::SystemTime::now();
+
+    tokio::spawn(async move {
+        let mut child = child;
+        let mut child_finished = false;
+        let mut game_detected = false;
+        let mut consecutive_not_found = 0;
+
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+
+            if !child_finished {
+                match child.try_wait() {
+                    Ok(Some(_)) => {
+                        child_finished = true;
+                    }
+                    Ok(None) => {}
+                    Err(_) => {
+                        child_finished = true;
+                    }
+                }
+            }
+
+            let proc_running = is_game_process_running(install_path_bg.as_deref(), &candidate_exes_bg);
+
+            if proc_running || (!child_finished) {
+                game_detected = true;
+                consecutive_not_found = 0;
+                continue;
+            }
+
+            // Ne child ne de oyun süreci görünmüyor
+            if !game_detected {
+                // Tolerans süresi: açılışta EAC/splash ekranı veya motorun yüklenmesi için 20 sn tanı
+                if start_time.elapsed() < std::time::Duration::from_secs(20) {
+                    continue;
+                }
+                // 20 sn içinde hiçbir süreç yakalanamadı ve child kapandı
+                break;
+            } else {
+                // Oyun daha önce aktifti; geçiş anlarında yanlış alarm vermemek için
+                // ardışık 3 kontrol (~4.5 sn) boyunca süreç bulunamamasını bekle
+                consecutive_not_found += 1;
+                if consecutive_not_found >= 3 {
+                    break;
+                }
+            }
+        }
+
+        // --- OYUN SONLANDI ---
+        super::screenshots::clear_active_running_game(&app_name_bg);
+        let elapsed = start_time.elapsed().as_secs();
+        let rec = if game_detected && elapsed >= 5 {
+            super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default()
+        } else {
+            super::playtime::get_game_playtime(&app_name_bg)
+        };
+
+        // Oyun sırasında alınan yeni ekran görüntülerini otomatik tara ve düzenle
+        let clean_t = super::screenshots::clean_folder_name(&app_name_bg);
+        let new_shots = super::screenshots::scan_new_captures_for_game(&clean_t, start_system_time);
+        if !new_shots.is_empty() {
+            let _ = app_bg.emit(
+                "screenshots-updated",
+                serde_json::json!({
+                    "id": app_name_bg,
+                    "count": new_shots.len(),
+                }),
+            );
+        }
+
+        let _ = app_bg.emit(
+            "game-status",
+            serde_json::json!({
+                "id": app_name_bg,
+                "running": false,
+                "sessionSeconds": elapsed,
+                "totalSeconds": rec.total_seconds,
+                "sessionCount": rec.session_count,
+                "lastPlayed": rec.last_played,
+                "lastPlayedTimestamp": rec.last_played_timestamp,
+            }),
+        );
+
+        // Eğer bulut eşitlemesi açıksa, otomatik sync-saves çalıştır
+        let settings_path = super::skip::default_config_dir()
+            .join("game_settings")
+            .join(format!("{app_name_bg}.json"));
+        let should_sync = std::fs::read_to_string(&settings_path)
+            .ok()
+            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+            .and_then(|v| v.get("cloudSavesEnabled").and_then(|c| c.as_bool()))
+            .unwrap_or(false);
+
+        if should_sync {
+            let mut sync_cmd = tokio::process::Command::new(&bin_bg);
+            sync_cmd.arg("sync-saves").arg(&app_name_bg);
+            sync_cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+            let _ = sync_cmd.status().await;
+            let _ = app_bg.emit(
+                "cloud-sync-complete",
+                serde_json::json!({
+                    "id": app_name_bg,
+                    "success": true
+                }),
+            );
+        }
+    });
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1179,5 +1480,36 @@ mod tests {
 
         let disk = parse_speed(line, &["Disk:", "Disk speed:"]);
         assert_eq!(disk, Some(("24.5 MiB/s".to_string(), 25690112)));
+    }
+
+    #[test]
+    fn test_discover_game_executables() {
+        let temp = std::env::temp_dir().join("efxlve_test_discover_exes");
+        let _ = std::fs::remove_dir_all(&temp);
+        let sub = temp.join("Binaries").join("Win64");
+        std::fs::create_dir_all(&sub).unwrap();
+
+        std::fs::write(temp.join("GameWrapper.exe"), b"fake").unwrap();
+        std::fs::write(sub.join("Game-Win64-Shipping.exe"), b"fake").unwrap();
+        std::fs::write(temp.join("CrashReportClient.exe"), b"fake").unwrap();
+        std::fs::write(temp.join("vc_redist.x64.exe"), b"fake").unwrap();
+
+        let exes = discover_game_executables(&temp, Some("GameWrapper.exe"));
+        assert!(exes.contains(&"gamewrapper.exe".to_string()));
+        assert!(exes.contains(&"game-win64-shipping.exe".to_string()));
+        assert!(!exes.contains(&"crashreportclient.exe".to_string()));
+        assert!(!exes.contains(&"vc_redist.x64.exe".to_string()));
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_is_game_process_running() {
+        assert!(!is_game_process_running(None, &["fake_nonexistent_game_xyz_999.exe".to_string()]));
+        #[cfg(target_os = "windows")]
+        {
+            let running = is_game_process_running(None, &["explorer.exe".to_string()]);
+            assert!(running, "explorer.exe should be running on Windows");
+        }
     }
 }
