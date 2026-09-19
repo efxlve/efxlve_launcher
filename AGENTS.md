@@ -642,8 +642,36 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Ayrı ayrı çerçeveler halinde duran Oynama Süresi, Son Aktivite ve Koleksiyonlar kutuları tek parça, 2 sütunlu cam efektli Bento Şeridi (`.drawer-bento-bar`, `.bento-tile`) olarak toplandı.
   - Oynama süresi kutucuğuna tıklanarak doğrudan süre düzenleme modalı (`openEditPlaytimeModal`) açılabilir.
   - Koleksiyon etiketleri doğrudan kütüphane filtresine yönlendirir veya `+ Ekle` butonu ile yönetim modalını tetikler; `updateDrawerCollectionsBoxInPlace` ve `saveEditedPlaytime` fonksiyonları ile geriye dönük tam uyumlu olarak DOM'da yerinde güncellenir.
-- **Sadeleştirilmiş Teknik Grid:**
-  - Alt kısımdaki hantal 4 kutu yerine yalnızca gerekli teknik bilgileri içeren (İndirme Boyutu, Platform ve Sistem Gereksinimleri sekmesine tek tıkla geçiş sağlayan) minimalist 3 sütunlu `.drawer-info-grid` uygulandı.
+- **Sadeleştirilmiş Teknik Bilgiler & Sistem Sekmesi:**
+  - Alt kısımdaki hantal ve mükerrer 3'lü kutu (`.drawer-info-grid`: Boyut, Platform, Sistem Gereksinimi) tamamen kaldırıldı; üstteki özel `[ 🖥 Sistem ]` sekmesi donanım gereksinimleri için tek ve eksiksiz kaynak olarak konumlandırıldı.
+
+## 44. HowLongToBeat (HLTB) Entegrasyonu & Detay Çekmecesi Zenginleştirmesi
+
+- **HowLongToBeat Yeni Nesil Motoru (Rust Backend):**
+  - Eski statik `/api/search` uç noktası Cloudflare/Imperva 403 engeline takıldığı için `howlongtobeatpy` ve Heroic Games Launcher mimarisine uygun dinamik kimlik doğrulama motoru geliştirildi:
+    1. Ana sayfa HTML'i ve `/_next/static/chunks/` betikleri taranarak güncel arama uç noktası (varsayılan: `/api/search/site`) dinamik olarak çözülür.
+    2. `${endpoint}/init?t=${timestamp}` çağrılarak geçici auth token ve dinamik güvenlik anahtar/değer çiftleri (`x-auth-token`, `x-hp-key`, `x-hp-val` / payload içi anahtar) elde edilir.
+    3. Arama isteği bu oturum başlıklarıyla POST edilerek Imperva engeli aşılır (Control, Cyberpunk 2077, GTA V, Rainbow Six Siege vb. tüm oyunlarda 200 OK ile doğrulanmıştır).
+  - **Başlık Temizleme & Unicode Normalizasyonu:**
+    - Eğik tırnaklar (`’`, `‘`, `´`, `\u{2019}` vb.) düz kesme işaretine (`'`) ve ticari semboller (`™`, `®`) boşluğa normalize edilir.
+    - Seri/yayıncı ön ekleri (*Tom Clancy's*, *Marvel's*, *Star Wars* vb.) ve edisyon takıları (*Standard Edition*, *Definitive Edition*, *Game of the Year Edition* vb.) ayıklanarak HLTB veritabanında en yüksek doğrulukla oyun eşleşmesi sağlanır.
+  - **Güvenli Önbellekleme Disiplini:**
+    - Yalnızca geçerli süre verisi içeren (`supported == true`) sonuçlar diske (`%USERPROFILE%\.config\legendary\hltb\<app>.json`) yazılır; geçici ağ sorunları veya boş sonuçlar önbelleği kalıcı olarak kilitlemez (`force_refresh` desteği).
+- **Detay Çekmecesi Bento Arayüzü & Zenginleştirme:**
+  - **HowLongToBeat Bento Kartı (`.drawer-hltb-card`):**
+    - Genel Bakış sekmesinde mor temalı şık Bento kartı olarak yer alır.
+    - Yükleme esnasında zarif dönen halka ve `Tahmini süreler aranıyor…` durum göstergesi sunar.
+    - Sonuç geldiğinde 3 sütunlu net veriler sunar: `Ana Hikaye` (saat), `Ana + Ekstra` (saat) ve `%100 Bitirme` (saat).
+    - HLTB verisi bulunmayan oyunlarda görsel kirlilik yaratmadan temiz bir şekilde gizlenir.
+  - **Kompakt Başarım İlerleme Şeridi (`.drawer-quick-ach-strip`):**
+    - Başarım desteği olan oyunlarda Genel Bakış sekmesini boşluk hissinden kurtaran tek satırlık zarif başarım özeti:
+      - Kupa ikonu, başarım adedi ve tamamlama yüzdesi (`12/48 (%25)`).
+      - Altın/amber gradyanlı ince ilerleme çubuğu.
+      - Toplam kazanılan XP (`450/1000 XP`) ve tıklandığında doğrudan `🏆 Başarımlar` sekmesine pürüzsüz geçiş sağlayan interaktif ok butonu.
+      - Platin kupalı oyunlarda ışıltılı altın kupa ve `🏆 Platin Kupa Tamamlandı!` rozeti.
+  - **Oyun Künyesi & Meta Etiketleri (`.drawer-meta-chips`):**
+    - Epic kataloğunda uzun açıklaması bulunmayan oyunlarda (örn. Rainbow Six Siege) ekranın boş kalmaması için Geliştirici, Eklentiler/DLC adedi (tıklandığında `Eklentiler` sekmesine geçer), 3. Parti Başlatıcı, Hile Koruması ve Platform etiketleri temiz ve modern hap kutucuklar halinde sunulur.
+
 
 
 

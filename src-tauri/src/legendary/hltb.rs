@@ -13,7 +13,9 @@ pub struct HltbData {
 
 /// Arama terimini HLTB için optimize eder (edisyon ve yayıncı takılarını temizler).
 pub fn clean_hltb_search_term(title: &str) -> String {
-    let mut s = title.to_string();
+    let mut s = title
+        .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
+        .replace(['™', '®', '\u{00A0}'], " ");
 
     // Yaygın seri / yayıncı ön ekleri
     let prefixes = [
@@ -21,10 +23,8 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         "Marvel's ",
         "Sid Meier's ",
         "Disney's ",
-        "EA SPORTS™ ",
         "EA SPORTS ",
-        "Star Wars™ ",
-        "STAR WARS™ ",
+        "Star Wars ",
         "STAR WARS ",
         "Warhammer 40,000: ",
         "Warhammer: ",
@@ -89,19 +89,31 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
     if !force_refresh && cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(data) = serde_json::from_str::<HltbData>(&content) {
-                return data;
+                if data.supported {
+                    return data;
+                }
             }
         }
     }
 
     let search_term = clean_hltb_search_term(title);
     let terms: Vec<&str> = search_term.split_whitespace().collect();
+    if terms.is_empty() {
+        return HltbData {
+            app_name: app_name.to_string(),
+            title: title.to_string(),
+            supported: false,
+            main_story: None,
+            main_extra: None,
+            completionist: None,
+        };
+    }
 
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
-        .build();
-
-    let client = match client {
+    let ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(8))
+        .build()
+    {
         Ok(c) => c,
         Err(_) => {
             return HltbData {
@@ -115,18 +127,90 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         }
     };
 
-    let payload = serde_json::json!({
+    // 1. Arama endpoint'ini dinamik tespit et (varsayılan: /api/search/site)
+    let mut search_endpoint = "/api/search/site".to_string();
+    if let Ok(home_resp) = client
+        .get("https://howlongtobeat.com/")
+        .header("User-Agent", ua)
+        .send()
+        .await
+    {
+        if let Ok(home_html) = home_resp.text().await {
+            for part in home_html.split("src=\"") {
+                if let Some(end) = part.find('\"') {
+                    let path = &part[..end];
+                    if path.contains("/_next/static/chunks/") {
+                        let script_url = format!("https://howlongtobeat.com{}", path);
+                        if let Ok(s_resp) = client.get(&script_url).header("User-Agent", ua).send().await {
+                            if let Ok(js_content) = s_resp.text().await {
+                                if let Some(idx) = js_content.find("/api/search/") {
+                                    let sub = &js_content[idx..];
+                                    if let Some(end_quote) = sub.find(['\"', '\'']) {
+                                        let ep = &sub[..end_quote];
+                                        search_endpoint = ep.trim_end_matches('/').to_string();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Auth token & dynamic key/val al
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let init_url = format!("https://howlongtobeat.com{}/init?t={}", search_endpoint, now);
+
+    let mut auth_token = String::new();
+    let mut auth_key = String::new();
+    let mut auth_val = String::new();
+
+    if let Ok(init_resp) = client
+        .get(&init_url)
+        .header("User-Agent", ua)
+        .header("Referer", "https://howlongtobeat.com/")
+        .send()
+        .await
+    {
+        if let Ok(init_json) = init_resp.json::<serde_json::Value>().await {
+            if let Some(t) = init_json.get("token").and_then(|x| x.as_str()) {
+                auth_token = t.to_string();
+            }
+            if let Some(obj) = init_json.as_object() {
+                for (k, v) in obj {
+                    let lower = k.to_lowercase();
+                    if lower.contains("key") {
+                        if let Some(s) = v.as_str() {
+                            auth_key = s.to_string();
+                        }
+                    } else if lower.contains("val") {
+                        if let Some(s) = v.as_str() {
+                            auth_val = s.to_string();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Arama isteğini hazırla
+    let mut payload = serde_json::json!({
         "searchType": "games",
         "searchTerms": terms,
         "searchPage": 1,
-        "size": 5,
+        "size": 20,
         "searchOptions": {
             "games": {
                 "userId": 0,
                 "platform": "",
                 "sortCategory": "popular",
                 "rangeCategory": "main",
-                "rangeTime": { "min": null, "max": null },
+                "rangeTime": { "min": 0, "max": 0 },
                 "gameplay": { "perspective": "", "flow": "", "genre": "", "difficulty": "" },
                 "rangeYear": { "min": "", "max": "" },
                 "modifier": ""
@@ -140,15 +224,32 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         "useCache": true
     });
 
-    let body_str = serde_json::to_string(&payload).unwrap_or_default();
-    let resp = client
-        .post("https://howlongtobeat.com/api/search")
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    if !auth_key.is_empty() && !auth_val.is_empty() {
+        if let Some(m) = payload.as_object_mut() {
+            m.insert(auth_key.clone(), serde_json::Value::String(auth_val.clone()));
+        }
+    }
+
+    let search_url = format!("https://howlongtobeat.com{}", search_endpoint);
+    let mut req = client
+        .post(&search_url)
+        .header("User-Agent", ua)
         .header("Referer", "https://howlongtobeat.com/")
+        .header("Origin", "https://howlongtobeat.com")
         .header("Content-Type", "application/json")
-        .body(body_str)
-        .send()
-        .await;
+        .header("Accept", "*/*");
+
+    if !auth_token.is_empty() {
+        req = req.header("x-auth-token", &auth_token);
+    }
+    if !auth_key.is_empty() {
+        req = req.header("x-hp-key", &auth_key);
+    }
+    if !auth_val.is_empty() {
+        req = req.header("x-hp-val", &auth_val);
+    }
+
+    let resp = req.json(&payload).send().await;
 
     let result_data = match resp {
         Ok(r) if r.status().is_success() => {
@@ -186,10 +287,12 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         },
     };
 
-    // Önbelleğe kaydet
-    if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
-        if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {
-            let _ = tokio::fs::write(&cache_file, json_str).await;
+    // Sadece geçerli süre verisi içeren sonuçları önbelleğe kaydet
+    if result_data.supported {
+        if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
+            if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {
+                let _ = tokio::fs::write(&cache_file, json_str).await;
+            }
         }
     }
 
