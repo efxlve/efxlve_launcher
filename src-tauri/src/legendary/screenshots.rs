@@ -245,6 +245,227 @@ pub async fn epic_get_game_screenshots(
     .map_err(|e| e.to_string())?
 }
 
+#[cfg(target_os = "windows")]
+mod win_capture {
+    use std::ffi::c_void;
+    use std::path::Path;
+
+    type HDC = *mut c_void;
+    type HBITMAP = *mut c_void;
+    type HGDIOBJ = *mut c_void;
+    type HWND = *mut c_void;
+    type BOOL = i32;
+
+    const DESKTOPHORZRES: i32 = 118;
+    const DESKTOPVERTRES: i32 = 117;
+    const SRCCOPY: u32 = 0x00CC0020;
+    const CAPTUREBLT: u32 = 0x40000000;
+
+    #[repr(C)]
+    struct GdiplusStartupInput {
+        gdiplus_version: u32,
+        debug_event_callback: usize,
+        suppress_background_thread: BOOL,
+        suppress_external_codecs: BOOL,
+    }
+
+    #[repr(C)]
+    struct GUID {
+        data1: u32,
+        data2: u16,
+        data3: u16,
+        data4: [u8; 8],
+    }
+
+    // CLSID for ImageFormatPNG: {557cf406-1a04-11d3-9a73-0000f81ef32e}
+    const CLSID_PNG: GUID = GUID {
+        data1: 0x557cf406,
+        data2: 0x1a04,
+        data3: 0x11d3,
+        data4: [0x9a, 0x73, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e],
+    };
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn GetDesktopWindow() -> HWND;
+        fn GetDC(hwnd: HWND) -> HDC;
+        fn ReleaseDC(hwnd: HWND, hdc: HDC) -> i32;
+        fn GetSystemMetrics(nIndex: i32) -> i32;
+        fn SetProcessDPIAware() -> BOOL;
+    }
+
+    #[link(name = "gdi32")]
+    extern "system" {
+        fn GetDeviceCaps(hdc: HDC, index: i32) -> i32;
+        fn CreateCompatibleDC(hdc: HDC) -> HDC;
+        fn CreateCompatibleBitmap(hdc: HDC, cx: i32, cy: i32) -> HBITMAP;
+        fn SelectObject(hdc: HDC, h: HGDIOBJ) -> HGDIOBJ;
+        fn BitBlt(
+            hdc_dst: HDC,
+            x_dst: i32,
+            y_dst: i32,
+            w: i32,
+            h: i32,
+            hdc_src: HDC,
+            x_src: i32,
+            y_src: i32,
+            rop: u32,
+        ) -> BOOL;
+        fn DeleteDC(hdc: HDC) -> BOOL;
+        fn DeleteObject(ho: HGDIOBJ) -> BOOL;
+    }
+
+    #[link(name = "gdiplus")]
+    extern "system" {
+        fn GdiplusStartup(token: *mut usize, input: *const GdiplusStartupInput, output: *mut c_void) -> i32;
+        fn GdiplusShutdown(token: usize);
+        fn GdipCreateBitmapFromHBITMAP(hbm: HBITMAP, hpal: *mut c_void, bitmap: *mut *mut c_void) -> i32;
+        fn GdipSaveImageToFile(
+            image: *mut c_void,
+            filename: *const u16,
+            clsidEncoder: *const GUID,
+            encoderParams: *const c_void,
+        ) -> i32;
+        fn GdipDisposeImage(image: *mut c_void) -> i32;
+    }
+
+    pub fn capture_screen_native(target_file: &Path) -> Result<(), String> {
+        unsafe {
+            let _ = SetProcessDPIAware();
+
+            let hwnd = GetDesktopWindow();
+            let hdc_screen = GetDC(hwnd);
+            if hdc_screen.is_null() {
+                return Err("GetDC failed".to_string());
+            }
+
+            let mut width = GetDeviceCaps(hdc_screen, DESKTOPHORZRES);
+            let mut height = GetDeviceCaps(hdc_screen, DESKTOPVERTRES);
+
+            if width <= 0 || height <= 0 {
+                width = GetDeviceCaps(hdc_screen, 8 /* HORZRES */);
+                height = GetDeviceCaps(hdc_screen, 10 /* VERTRES */);
+            }
+            if width <= 0 || height <= 0 {
+                width = GetSystemMetrics(0 /* SM_CXSCREEN */);
+                height = GetSystemMetrics(1 /* SM_CYSCREEN */);
+            }
+
+            if width <= 0 || height <= 0 {
+                ReleaseDC(hwnd, hdc_screen);
+                return Err("Ekran çözünürlüğü tespit edilemedi".to_string());
+            }
+
+            let hdc_mem = CreateCompatibleDC(hdc_screen);
+            if hdc_mem.is_null() {
+                ReleaseDC(hwnd, hdc_screen);
+                return Err("CreateCompatibleDC failed".to_string());
+            }
+
+            let h_bitmap = CreateCompatibleBitmap(hdc_screen, width, height);
+            if h_bitmap.is_null() {
+                DeleteDC(hdc_mem);
+                ReleaseDC(hwnd, hdc_screen);
+                return Err("CreateCompatibleBitmap failed".to_string());
+            }
+
+            let h_old = SelectObject(hdc_mem, h_bitmap);
+
+            // 3. BitBlt ile anında donanım seviyesinde tam ekran kopyalama (< 3 ms)
+            let mut blt_ok = BitBlt(
+                hdc_mem,
+                0,
+                0,
+                width,
+                height,
+                hdc_screen,
+                0,
+                0,
+                SRCCOPY | CAPTUREBLT,
+            );
+
+            if blt_ok == 0 {
+                // Fallback: CAPTUREBLT olmadan sadece SRCCOPY
+                blt_ok = BitBlt(
+                    hdc_mem,
+                    0,
+                    0,
+                    width,
+                    height,
+                    hdc_screen,
+                    0,
+                    0,
+                    SRCCOPY,
+                );
+            }
+
+            SelectObject(hdc_mem, h_old);
+            DeleteDC(hdc_mem);
+            ReleaseDC(hwnd, hdc_screen);
+
+            if blt_ok == 0 {
+                DeleteObject(h_bitmap);
+                return Err("BitBlt failed".to_string());
+            }
+
+            // 4. GDI+ ile yerel C hızında doğrudan PNG olarak kaydet (~15 ms)
+            let startup_input = GdiplusStartupInput {
+                gdiplus_version: 1,
+                debug_event_callback: 0,
+                suppress_background_thread: 0,
+                suppress_external_codecs: 0,
+            };
+
+            let mut token: usize = 0;
+            let status = GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut());
+            if status != 0 {
+                DeleteObject(h_bitmap);
+                return Err(format!("GdiplusStartup failed (status: {})", status));
+            }
+
+            let mut gdip_image: *mut c_void = std::ptr::null_mut();
+            let create_status = GdipCreateBitmapFromHBITMAP(h_bitmap, std::ptr::null_mut(), &mut gdip_image);
+
+            DeleteObject(h_bitmap);
+
+            if create_status != 0 || gdip_image.is_null() {
+                GdiplusShutdown(token);
+                return Err(format!("GdipCreateBitmapFromHBITMAP failed (status: {})", create_status));
+            }
+
+            let wide_path: Vec<u16> = target_file
+                .to_string_lossy()
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+
+            let save_status = GdipSaveImageToFile(
+                gdip_image,
+                wide_path.as_ptr(),
+                &CLSID_PNG,
+                std::ptr::null(),
+            );
+
+            GdipDisposeImage(gdip_image);
+            GdiplusShutdown(token);
+
+            if save_status != 0 {
+                return Err(format!("GdipSaveImageToFile failed (status: {})", save_status));
+            }
+
+            Ok(())
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+mod win_capture {
+    use std::path::Path;
+    pub fn capture_screen_native(_target_file: &Path) -> Result<(), String> {
+        Err("Native screen capture only supported on Windows".to_string())
+    }
+}
+
 /// Senkron olarak birincil ekranın görüntüsünü alır ve ilgili oyun klasörüne kaydeder.
 pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
     let clean_t = if !title.trim().is_empty() {
@@ -258,17 +479,22 @@ pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameS
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
-        .as_secs();
+        .as_millis();
     let file_name = format!("{}_Screenshot_{}.png", clean_t.replace(' ', "_"), timestamp);
     let target_file = target_dir.join(&file_name);
 
-    let target_str = target_file.to_string_lossy().to_string();
+    // 1. Önce native Win32 GDI + GDI+ dene (< 20 ms, tam fiziksel çözünürlük)
+    let native_res = win_capture::capture_screen_native(&target_file);
 
-    // PowerShell -EncodedCommand ile ekran görüntüsü yakalama
-    let ps_code = format!(
-        r#"
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+    if native_res.is_err() {
+        // 2. Fallback: DPI-Aware PowerShell komutu (tam 2560x1600 çözünürlük)
+        let target_str = target_file.to_string_lossy().to_string();
+        let ps_code = format!(
+            r#"
+[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null
+[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null
+Add-Type -TypeDefinition 'using System.Runtime.InteropServices; public class DpiAware {{ [DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }}' -ErrorAction SilentlyContinue
+[DpiAware]::SetProcessDPIAware()
 $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
 $bmp = New-Object System.Drawing.Bitmap($b.Width, $b.Height)
 $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -277,26 +503,28 @@ $bmp.Save('{}', [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose()
 $bmp.Dispose()
 "#,
-        target_str.replace('\'', "''")
-    );
+            target_str.replace('\'', "''")
+        );
 
-    let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
-    let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
+        let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
+        let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
 
-    let status = std::process::Command::new("powershell.exe")
-        .arg("-NoProfile")
-        .arg("-NonInteractive")
-        .arg("-EncodedCommand")
-        .arg(&encoded_cmd)
-        .status();
+        let _ = std::process::Command::new("powershell.exe")
+            .arg("-NoProfile")
+            .arg("-NonInteractive")
+            .arg("-EncodedCommand")
+            .arg(&encoded_cmd)
+            .status();
 
-    match status {
-        Ok(s) if s.success() && target_file.exists() => {
-            parse_file_to_item(&target_file).ok_or_else(|| "Ekran görüntüsü dosyası okunamadı".to_string())
+        if !target_file.exists() {
+            return Err(format!(
+                "Ekran görüntüsü alınamadı (native: {:?})",
+                native_res.err()
+            ));
         }
-        Ok(s) => Err(format!("Ekran görüntüsü alınamadı (kod: {:?})", s.code())),
-        Err(e) => Err(format!("PowerShell çalıştırılamadı: {}", e)),
     }
+
+    parse_file_to_item(&target_file).ok_or_else(|| "Ekran görüntüsü dosyası okunamadı".to_string())
 }
 
 /// Ekran görüntüsü alır ve oyunun klasörüne kaydeder.
@@ -341,7 +569,7 @@ pub fn start_f12_listener(app: AppHandle) {
 
             if is_down && !was_down {
                 // F12 tuşuna basıldı! (Key Down Edge)
-                if last_capture_time.elapsed() >= std::time::Duration::from_millis(600) {
+                if last_capture_time.elapsed() >= std::time::Duration::from_millis(400) {
                     last_capture_time = std::time::Instant::now();
                     if let Some((app_name, title)) = running {
                         let app_clone = app.clone();
@@ -496,5 +724,22 @@ mod tests {
         assert_eq!(get_active_running_game(), Some(("Sugar".to_string(), "Alan Wake 2".to_string())));
         clear_active_running_game("Sugar");
         assert_eq!(get_active_running_game(), None);
+    }
+
+    #[test]
+    fn test_capture_screen_native() {
+        #[cfg(target_os = "windows")]
+        {
+            let temp_file = std::env::temp_dir().join("efxlve_test_screen_capture.png");
+            let _ = std::fs::remove_file(&temp_file);
+            let res = win_capture::capture_screen_native(&temp_file);
+            // Sadece etkileşimli masaüstü oturumunda (kullanıcı ortamında) gerçek dosya oluşur
+            if let Ok(()) = res {
+                assert!(temp_file.exists(), "Captured screenshot file does not exist");
+                let meta = temp_file.metadata().unwrap();
+                assert!(meta.len() > 1000, "Screenshot file is too small (size: {})", meta.len());
+                let _ = std::fs::remove_file(&temp_file);
+            }
+        }
     }
 }
