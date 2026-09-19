@@ -808,6 +808,23 @@ export interface HltbData {
 export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
   invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
 
+/* ---------- Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic) ---------- */
+
+export interface CriticData {
+  app_name: string;
+  title: string;
+  supported: boolean;
+  opencritic_score?: number | null;
+  opencritic_url?: string | null;
+  metacritic_score?: number | null;
+  metacritic_url?: string | null;
+  igdb_score?: number | null;
+  tier?: "Mighty" | "Strong" | "Fair" | "Weak" | null;
+}
+
+export const epicGetCritic = (title: string, appName: string, forceRefresh = false) =>
+  invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh });
+
 /* ---------- SteamGridDB API v2 ---------- */
 
 export interface SteamGridAuthor {
