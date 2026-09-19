@@ -589,172 +589,370 @@ button { font-family: inherit; }
 .prow h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prow .meta { color: var(--muted); font-size: 12px; margin: 0; }
 
-/* --- SINEMATIK DETAY ÇEKMECESI (DRAWER) GELİŞMİŞ TASARIM --- */
+/* --- PLAYSTATION 5 GAME HUB (FULL-SCREEN CINEMATIC VIEW) --- */
 #modal-root:empty { display: none; }
 .overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(5px);
-  display: flex; align-items: center; justify-content: flex-end; z-index: 50;
-  animation: fade-in 0.2s ease-out;
-}
-@keyframes fade-in { from { opacity: 0; } }
-
-.drawer {
-  background: var(--bg2); border-left: 1px solid var(--border);
-  width: 560px; max-width: 94vw; height: 100vh;
-  display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;
-  box-shadow: -12px 0 40px rgba(0,0,0,0.85);
-  animation: drawer-slide 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
+  position: fixed;
+  inset: 40px 0 0 0;
+  background: #07080d;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  animation: hub-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
   scrollbar-gutter: stable;
 }
-.drawer::-webkit-scrollbar { width: 5px; }
-.drawer::-webkit-scrollbar-track { background: transparent; }
-.drawer::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 10px; }
-.drawer::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
-@keyframes drawer-slide { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes hub-enter {
+  from { opacity: 0; transform: scale(0.995); }
+  to { opacity: 1; transform: scale(1); }
+}
+.overlay::-webkit-scrollbar { width: 6px; }
+.overlay::-webkit-scrollbar-track { background: transparent; }
+.overlay::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 10px; }
+.overlay::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
 
-.drawer-cover {
-  position: relative; height: 280px; flex-shrink: 0; background: var(--panel);
+.game-hub, .drawer {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #07080d;
+  border: none;
+  box-shadow: none;
+  animation: none;
+  max-width: 100%;
 }
-.drawer-cover img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
-.drawer-gradient {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, var(--bg2) 0%, rgba(7, 8, 13, 0.97) 22%, rgba(7, 8, 13, 0.7) 50%, rgba(7, 8, 13, 0.2) 75%, transparent 100%);
-}
-.drawer-hero-info {
+
+/* 4K Sinematik Arka Plan & Derin PS5 Atmosferik Degrade */
+.hub-backdrop {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  padding: 0 28px 14px;
+  height: 520px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.hub-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  filter: brightness(0.85);
+}
+.hub-fallback-art {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(30, 35, 55, 0.5) 0%, rgba(10, 12, 20, 0.95) 100%);
+}
+.hub-backdrop-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(7, 8, 13, 0.2) 0%,
+      rgba(7, 8, 13, 0.65) 45%,
+      rgba(7, 8, 13, 0.96) 80%,
+      #07080d 100%
+    ),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 112, 209, 0.18) 0%, transparent 65%);
+}
+
+/* 1260px Genişliğindeki Konsol Sahnesi */
+.hub-stage {
+  position: relative;
   z-index: 5;
-}
-.drawer-close {
-  position: absolute; top: 16px; right: 16px; z-index: 10;
-  background: rgba(18, 19, 26, 0.85); backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.25); color: #fff;
-  border-radius: 50%; width: 34px; height: 34px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.16s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-.drawer-close:hover { background: rgba(255,255,255,0.25); transform: scale(1.08); }
-
-.drawer-body { padding: 0 28px 32px; flex: 1; display: flex; flex-direction: column; }
-.drawer-title { font-size: 26px; font-weight: 800; margin: 0 0 6px; line-height: 1.2; color: #fff; letter-spacing: -0.4px; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6); }
-.drawer-meta-subline {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  font-size: 12.5px; color: var(--muted); margin-bottom: 16px;
-}
-.meta-subline-dot { opacity: 0.35; font-size: 10px; }
-.meta-subline-item.dev { color: #cbd5e1; font-weight: 600; }
-.meta-subline-item.status { font-weight: 600; color: #94a3b8; }
-.meta-subline-item.status.installed { color: #c084fc; }
-.meta-subline-item.partner {
-  color: #60a5fa; display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.25);
-  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
-}
-.meta-subline-item.anticheat {
-  color: #34d399; display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25);
-  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
-}
-.meta-subline-item.warn {
-  color: #fbbf24; display: inline-flex; align-items: center; gap: 4px;
+  width: 100%;
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 20px 36px 64px;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Aksiyon Butonları */
-.drawer-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-.drawer-actions .btn.full.play,
-.drawer-actions .btn.full.primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
-  font-weight: 700;
-  font-size: 14.5px;
-  padding: 12px 20px;
-  border-radius: 12px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* Üst Bar: Geri Butonu & Araçlar */
+.hub-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
-.drawer-actions .btn.full.play:hover,
-.drawer-actions .btn.full.primary:hover {
-  background: linear-gradient(135deg, #9333ea 0%, #6d28d9 100%);
-  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5);
-  transform: translateY(-1px);
-}
-.drawer-actions-row { display: flex; gap: 8px; }
-.drawer-actions-row .btn {
-  flex: 1;
-  border-radius: 10px;
-  font-size: 12.5px;
+.hub-back-btn {
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+  border-radius: 999px;
+  padding: 8px 16px 8px 12px;
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+.hub-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateX(-2px);
+}
+.hub-back-esc {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.hub-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hub-tool-btn {
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #cbd5e1;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
-.drawer-actions-row .btn.faved {
+.hub-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+/* Hero Başlık ve Aksiyon Bölümü */
+.hub-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding-top: 40px;
+  flex-wrap: wrap;
+}
+.hub-hero-main {
+  flex: 1;
+  min-width: 320px;
+}
+.hub-title {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  margin: 0 0 10px;
+  letter-spacing: -0.6px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+.hub-meta-subline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.hub-meta-subline .meta-item.dev { color: #e2e8f0; font-weight: 600; }
+.hub-meta-subline .meta-item.status.installed { color: #38bdf8; font-weight: 600; }
+.hub-meta-subline .meta-item.partner {
+  color: #60a5fa; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.hub-meta-subline .meta-item.anticheat {
+  color: #34d399; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.hub-meta-subline .meta-item.warn {
+  color: #fbbf24; display: inline-flex; align-items: center; gap: 4px;
+}
+.hub-meta-subline .meta-dot { opacity: 0.35; font-size: 10px; }
+.hub-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hub-actions-bar .btn {
+  white-space: nowrap;
+}
+.hub-actions-bar .btn.full {
+  width: auto;
+}
+.hub-actions-bar .btn.play,
+.hub-actions-bar .btn.primary {
+  height: 46px;
+  padding: 0 28px;
+  font-size: 14.5px;
+  font-weight: 700;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hub-actions-bar .btn.play:hover,
+.hub-actions-bar .btn.primary:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
+  transform: translateY(-2px);
+}
+.hub-actions-bar .btn.ghost {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: rgba(18, 20, 28, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.hub-actions-bar .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.hub-actions-bar .btn.ghost.faved {
   color: #c084fc;
   border-color: rgba(192, 132, 252, 0.4);
   background: rgba(192, 132, 252, 0.12);
 }
 
-/* Kompakt İstatistik Şeridi (PS5 Console Style) */
-.drawer-stats-row {
+/* Hızlı İstatistik Kapsülü (Sağ Taraf) */
+.hub-stat-capsule {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 14px 0;
-  margin-bottom: 18px;
+  gap: 16px;
+  background: rgba(18, 20, 28, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
-.stat-item {
-  flex: 1;
-  text-align: center;
-  cursor: default;
+.hub-stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
-.stat-item.clickable {
+.hub-stat-col.clickable {
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
-.stat-item.clickable:hover {
+.hub-stat-col.clickable:hover {
   opacity: 0.8;
 }
-.stat-val {
+.hub-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hub-stat-val {
   font-size: 15px;
   font-weight: 700;
   color: #f8fafc;
-  display: block;
-  letter-spacing: -0.2px;
   font-feature-settings: "tnum";
 }
-.stat-label {
-  font-size: 10.5px;
-  color: #64748b;
-  margin-top: 3px;
-  display: block;
-  font-weight: 500;
+.hub-stat-val.plat {
+  color: #fbbf24;
 }
-.stat-divider {
+.hub-stat-divider {
   width: 1px;
   height: 28px;
   background: rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
 }
-.stat-edit-icon {
-  display: inline;
-  opacity: 0;
-  margin-left: 3px;
-  transition: opacity 0.15s;
+
+/* Genel Bakış (Overview) 2-Sütunlu Düzen */
+.hub-overview-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
 }
-.stat-item:hover .stat-edit-icon {
-  opacity: 0.7;
+@media (max-width: 960px) {
+  .hub-overview-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px 22px;
+  backdrop-filter: blur(10px);
+  margin-bottom: 16px;
+}
+.hub-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.hub-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  letter-spacing: -0.1px;
+}
+.hub-card-header .hub-card-title {
+  margin: 0;
+}
+.hub-desc-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #94a3b8;
+  white-space: pre-line;
+}
+.hub-overview-sidebar {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Oyun Açıklaması */
@@ -2007,12 +2205,6 @@ button { font-family: inherit; }
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: calc(100vh - 290px);
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  scrollbar-gutter: stable;
 }
 .ach-list-container::-webkit-scrollbar {
   width: 5px;
@@ -2094,9 +2286,9 @@ button { font-family: inherit; }
   background: linear-gradient(90deg, #6366f1, #818cf8);
 }
 .ach-cards-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 8px;
 }
 
 /* --- PS5 Konsol Tarzı Temiz Başarım Kartları --- */
