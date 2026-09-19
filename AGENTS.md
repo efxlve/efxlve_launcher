@@ -865,3 +865,24 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Sadece bir oyun aktif olarak oynanıyorken (`set_active_running_game`, `clear_active_running_game`) F12 tuşunun basılıp basılmadığını kontrol eder.
     - Tuşa basıldığı an 600ms cooldown korumasıyla anında ekran görüntüsü yakalar, ilgili oyunun klasörüne kaydeder ve frontend'e `"screenshot-captured"` olayı fırlatır.
     - Frontend'de Web Audio API ile sıfır harici varlık gerektiren mekanik deklanşör ses efekti (`playScreenshotShutterSound`) çalınır, PlayStation stili toast bildirim verilir ve açık olan galeri anında yerinde güncellenir.
+
+## 55. EasyAntiCheat, Shipping Binaries & Windows Process Watcher Mimarisi
+
+- **Problem & Kök Neden (Bootstrapper Handoff Yanılgısı):**
+  - *Dead by Daylight* (Carnation/Brill), *Cyberpunk 2077* (Ginger), *GTA V*, *RDR2*, *Fortnite* gibi oyunlar doğrudan ana oyun motorunu başlatmak yerine önce bir sarmalayıcı/önyükleyici başlatıcı çalıştırır (`DeadByDaylight.exe`, `redprelauncher.exe`, `PlayGTAV.exe` vb.).
+  - Bu sarmalayıcı EasyAntiCheat (`EasyAntiCheat_EOS_Setup.exe`) veya başlatıcı hizmetlerini tetikleyip asıl oyun motoru ikili dosyasını (`DeadByDaylight-EGS-Shipping.exe`, `bin/x64/Cyberpunk2077.exe`, `GTA5.exe`) başlattıktan hemen sonra (2-3 saniye içinde) `0` (başarı) çıkış koduyla kapanır.
+  - Eski `spawn_launched` mantığı ilk 5 saniyeyi bekleyip `child.wait()` başarıyla tamamlandığında oyunu "kullanıcı 5 saniyede kapattı" sanarak `game-status { running: false }` yayımlıyor, `RUNNING_GAME` durumunu siliyor ve oturum süresini 5 saniyede kesiyordu. Bu durum hem oynama süresinin sayılamamasına hem de F12 oyun içi ekran görüntüsü dinleyicisinin devreden çıkmasına neden oluyordu.
+- **Windows Çekirdek Süreç İzleyicisi (`win_process` & Toolhelp32):**
+  - `discover_game_executables(install_path, main_executable)`: Oyunun kurulum dizinini (`install_path`) derinlik <= 4 olacak şekilde tarar ve çalıştırılabilir oyun ikili dosyalarını listeler (`deadbydaylight.exe`, `deadbydaylight-egs-shipping.exe`, `easyanticheat_eos_setup.exe`). Genel kütüphaneler (`vc_redist*`, `dxsetup.exe`, `crashreportclient.exe`) otomatik elenir.
+  - `is_game_process_running(install_path, candidate_exes)`:
+    - Win32 `CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS)` ve `Process32FirstW/NextW` FFI API'lerini kullanır.
+    - `sz_exe_file` doğrudan Windows çekirdeğinden (kernel) okunduğu için EAC veya yönetici yetkili anti-cheat korumaları tarafından engellenemez (0ms gecikme, sıfır izin gereksinimi).
+    - Ek olarak `QueryFullProcessImageNameW` çağrısı ile sürecin tam dosya yolu kontrol edilerek `install_path` altından çalışan tüm süreçler yakalanır.
+- **Akıllı Süreç Yaşam Döngüsü & Handoff Toleransı:**
+  - `spawn_launched` oyun başlatıldığında derhal `set_active_running_game` durumunu ve `game-status { running: true }` bildirimini aktif kılar.
+  - İlk 2.5 saniyede yalnızca süreç sıfır dışında bir hata koduyla çöktüyse ve arka planda çalışan hiçbir oyun süreci yoksa hata fırlatılır.
+  - Arka planda çalışan `tokio::spawn` izleme döngüsü her 1.5 saniyede bir hem ana `child` sürecini hem de aday oyun süreçlerini denetler.
+  - Önyükleyicinin kapanması ile asıl oyun penceresinin açılması arasındaki el değiştirme boşluğu için 20 saniyelik açılış tolerans süresi (grace period) tanınır.
+  - Oyun tespit edildikten sonra, sahne geçişleri, çözünürlük değişiklikleri veya EAC geçişlerinde yanlış kapanma sinyali üretilmemesi için ardışık 3 kontrol (~4.5 saniye) boyunca hiçbir süreç kalmadığı doğrulandıktan sonra oyun sonlandırılır.
+  - Oyun kapandığında gerçek oturum süresi tam olarak kaydedilir, oturum sırasında alınan yeni ekran görüntüleri taranıp eşitlenir, bulut kayıtları (`sync-saves`) otomatik senkronize edilir ve `game-status { running: false, sessionSeconds, totalSeconds }` yayını yapılır.
+
