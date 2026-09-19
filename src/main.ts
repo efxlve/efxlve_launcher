@@ -2485,7 +2485,7 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
   }
 
   return `
-    <div class="pcard ${i < 24 ? "enter" : ""} ${isPlat ? "platinum" : ""}" style="${i < 24 ? `--ci:${i};animation-delay:${i * 16}ms;` : "animation:none;"}" data-act="epic-detail" data-id="${s.appName}">
+    <div class="pcard ${i < 24 ? "enter" : ""} ${isPlat ? "platinum" : ""}" style="${i < 24 ? `--ci:${i};animation-delay:${i * 16}ms;` : "animation:none;"}" data-act="epic-detail" data-id="${s.appName}" tabindex="0" role="button">
       ${epicArt(s)}
       ${badge}
       ${ribbon}
@@ -3772,7 +3772,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
 
     <!-- 4. Gruplandırılmış Başarım Listesi -->
     <div class="ach-list-container" id="ach-list-container">
-      ${renderAchievementSections(sortedItems, s, hasDlc)}
+      ${renderAchievementSections(sortedItems, s, hasDlc, data.achievements)}
     </div>
   `;
 }
@@ -3781,6 +3781,7 @@ function renderAchievementSections(
   items: EpicAchievementItem[],
   s: EpicSummary,
   shouldGroup: boolean,
+  allAchievements?: EpicAchievementItem[],
 ): string {
   if (items.length === 0) {
     return `
@@ -3802,15 +3803,22 @@ function renderAchievementSections(
   const baseItems = items.filter((a) => a.is_base);
   const dlcItems = items.filter((a) => !a.is_base);
 
-  const baseTotal = baseItems.length;
-  const baseUnlocked = baseItems.filter((a) => a.unlocked || isDemo).length;
-  const basePct = baseTotal > 0 ? Math.round((baseUnlocked / baseTotal) * 100) : 0;
-  const baseXp = baseItems.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+  // Kategori istatistikleri ve ilerleme oranları SADECE filtrelenmiş liste üzerinden değil,
+  // oyunun gerçek tüm başarımları üzerinden hesaplanmalıdır. Aksi halde "Kazanılanlar" filtresinde
+  // kilitli olanlar filtrelendiği için kategori toplamı sadece kazanılanlar sayısına eşitlenip %100 bitmiş gibi görünür.
+  const allSource = allAchievements && allAchievements.length > 0 ? allAchievements : items;
+  const allBase = allSource.filter((a) => a.is_base);
+  const allDlc = allSource.filter((a) => !a.is_base);
 
-  const dlcTotal = dlcItems.length;
-  const dlcUnlocked = dlcItems.filter((a) => a.unlocked || isDemo).length;
+  const baseTotal = allBase.length;
+  const baseUnlocked = isDemo ? baseTotal : allBase.filter((a) => a.unlocked).length;
+  const basePct = baseTotal > 0 ? Math.round((baseUnlocked / baseTotal) * 100) : 0;
+  const baseXp = allBase.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+
+  const dlcTotal = allDlc.length;
+  const dlcUnlocked = isDemo ? dlcTotal : allDlc.filter((a) => a.unlocked).length;
   const dlcPct = dlcTotal > 0 ? Math.round((dlcUnlocked / dlcTotal) * 100) : 0;
-  const dlcXp = dlcItems.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+  const dlcXp = allDlc.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
 
   let html = "";
 
@@ -7338,6 +7346,14 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    const active = document.activeElement as HTMLElement | null;
+    if (active && active.classList.contains("pcard") && !active.closest("input, select, textarea")) {
+      e.preventDefault();
+      active.click();
+      return;
+    }
+  }
   if (e.key === "Escape") {
     const coverRoot = document.getElementById("cover-modal-root");
     if (coverRoot && coverRoot.innerHTML.trim()) {
@@ -7479,7 +7495,7 @@ document.addEventListener("input", (e) => {
           return 0;
         });
         const hasDlc = data.achievements.some((a) => !a.is_base);
-        container.innerHTML = renderAchievementSections(sortedItems, s, hasDlc);
+        container.innerHTML = renderAchievementSections(sortedItems, s, hasDlc, data.achievements);
       }
     }
     return;
@@ -7979,7 +7995,190 @@ async function init(): Promise<void> {
     }
   }
   await refreshGames();
+  initGamepadSupport();
   void bootEpic();
+}
+
+/* ---------- Game Controller (Gamepad / Kol) Desteği ---------- */
+let gamepadPolling = false;
+let lastGamepadActionTime = 0;
+
+function initGamepadSupport(): void {
+  window.addEventListener("gamepadconnected", (e) => {
+    console.log("🎮 Oyun Kolu Bağlandı:", e.gamepad.id);
+    toast(`Oyun Kolu Bağlandı: ${e.gamepad.id.split("(")[0].trim()}`, "ok");
+    if (!gamepadPolling) {
+      gamepadPolling = true;
+      requestAnimationFrame(gamepadLoop);
+    }
+  });
+
+  window.addEventListener("gamepaddisconnected", (e) => {
+    console.log("🎮 Oyun Kolu Ayrıldı:", e.gamepad.id);
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
+    if (!hasAny) {
+      gamepadPolling = false;
+    }
+  });
+
+  // Başlangıçta halihazırda bağlı oyun kolu var mı?
+  setTimeout(() => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (Array.from(gamepads).some((g) => g !== null && g.connected)) {
+      if (!gamepadPolling) {
+        gamepadPolling = true;
+        requestAnimationFrame(gamepadLoop);
+      }
+    }
+  }, 1000);
+}
+
+function gamepadLoop(): void {
+  if (!gamepadPolling) return;
+
+  const now = performance.now();
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const gp = Array.from(gamepads).find((g) => g !== null && g.connected);
+
+  if (gp && now - lastGamepadActionTime > 170) {
+    const btns = gp.buttons;
+    const axes = gp.axes;
+
+    // D-Pad veya Sol Analog Çubuk yönleri
+    const up = btns[12]?.pressed || axes[1] < -0.55;
+    const down = btns[13]?.pressed || axes[1] > 0.55;
+    const left = btns[14]?.pressed || axes[0] < -0.55;
+    const right = btns[15]?.pressed || axes[0] > 0.55;
+
+    // Standart Butonlar: 0: A (✕), 1: B (○), 2: X (□), 3: Y (△), 4: L1/LB, 5: R1/RB
+    const btnA = btns[0]?.pressed;
+    const btnB = btns[1]?.pressed;
+    const btnX = btns[2]?.pressed;
+    const btnY = btns[3]?.pressed;
+    const btnLB = btns[4]?.pressed;
+    const btnRB = btns[5]?.pressed;
+
+    if (btnB) {
+      // B / Daire (○): Geri / Kapat
+      lastGamepadActionTime = now;
+      if (currentModalAppName) {
+        closeModal();
+      }
+    } else if (btnA) {
+      // A / Çarpı (✕): Seç / Tıkla
+      lastGamepadActionTime = now;
+      const active = document.activeElement as HTMLElement | null;
+      if (active && typeof active.click === "function") {
+        active.click();
+      }
+    } else if (btnLB || btnRB) {
+      // L1/LB & R1/RB: Sekme / Filtre Değiştir
+      lastGamepadActionTime = now;
+      handleGamepadTabSwitch(btnRB ? 1 : -1);
+    } else if (btnY) {
+      // Y / Üçgen (△): Arama Kutusuna Odaklan
+      lastGamepadActionTime = now;
+      const searchInput = (document.getElementById("ach-search-input") || document.getElementById("search")) as HTMLInputElement | null;
+      searchInput?.focus();
+    } else if (btnX) {
+      // X / Kare (□): Favorilere Ekle / Çıkar
+      lastGamepadActionTime = now;
+      if (currentModalAppName) {
+        toggleFav(currentModalAppName);
+      }
+    } else if (up || down || left || right) {
+      lastGamepadActionTime = now;
+      handleGamepadDirectionalMove(up ? "up" : down ? "down" : left ? "left" : "right");
+    }
+  }
+
+  requestAnimationFrame(gamepadLoop);
+}
+
+function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): void {
+  const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim());
+  const scope: HTMLElement = modalOpen
+    ? document.getElementById("modal-root")!
+    : (document.getElementById("view") || document.body);
+
+  const selector = 'button:not([disabled]):not(.iconbtn), .pcard, [tabindex="0"], a[href], input:not([disabled]), select:not([disabled])';
+  const focusables = Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter((el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== "hidden";
+  });
+
+  if (focusables.length === 0) return;
+
+  const current = document.activeElement as HTMLElement | null;
+  if (!current || !scope.contains(current) || current === document.body) {
+    const primaryBtn = scope.querySelector<HTMLElement>(".btn.play, .btn.primary, .pcard");
+    if (primaryBtn) {
+      primaryBtn.focus();
+    } else {
+      focusables[0].focus();
+    }
+    return;
+  }
+
+  const curRect = current.getBoundingClientRect();
+  const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
+
+  let bestCandidate: HTMLElement | null = null;
+  let minDistance = Infinity;
+
+  for (const el of focusables) {
+    if (el === current) continue;
+    const r = el.getBoundingClientRect();
+    const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+
+    const dx = center.x - curCenter.x;
+    const dy = center.y - curCenter.y;
+
+    if (dir === "up" && dy >= -4) continue;
+    if (dir === "down" && dy <= 4) continue;
+    if (dir === "left" && dx >= -4) continue;
+    if (dir === "right" && dx <= 4) continue;
+
+    let dist = 0;
+    if (dir === "up" || dir === "down") {
+      dist = Math.abs(dy) + Math.abs(dx) * 1.8;
+    } else {
+      dist = Math.abs(dx) + Math.abs(dy) * 1.8;
+    }
+
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestCandidate = el;
+    }
+  }
+
+  if (bestCandidate) {
+    bestCandidate.focus();
+    bestCandidate.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }
+}
+
+function handleGamepadTabSwitch(step: number): void {
+  if (currentModalAppName) {
+    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs"];
+    const curSummary = epicSummaries.find((x) => x.appName === currentModalAppName);
+    if (curSummary?.installed) tabs.push("manage");
+    tabs.push("specs");
+
+    const curIdx = tabs.indexOf(activeDrawerTab);
+    const nextIdx = (curIdx + step + tabs.length) % tabs.length;
+    activeDrawerTab = tabs[nextIdx];
+    openEpicModal(currentModalAppName, false, true);
+  } else if (view === "library") {
+    const pills = Array.from(document.querySelectorAll<HTMLElement>('.unified-pill[data-act="quick-tab"]'));
+    if (pills.length > 0) {
+      const activeIdx = pills.findIndex((p) => p.classList.contains("active"));
+      const nextIdx = activeIdx === -1 ? 0 : (activeIdx + step + pills.length) % pills.length;
+      pills[nextIdx].click();
+      pills[nextIdx].focus();
+    }
+  }
 }
 
 void init();
