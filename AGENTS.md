@@ -705,3 +705,24 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Konsol Tipi Sadeleştirilmiş Toolbar & Durum Çipleri:**
   - Canlı arama kutusu ve sıralama menüsü üstte tek sırada hizalandı.
   - Altında konsol hap butonları (`[ Tümü ]`, `[ ✓ Kazanılanlar ]`, `[ 🔒 Kilitliler ]`, `[ 👁 Gizli ]`) yer alır.
+
+## 47. Detay Çekmecesinin (Game Detail Drawer) Komple PS5 Yeniden Tasarımı & Sadeleştirilmesi
+
+- **30+ Test Kullanıcısı Geri Bildirimi & Radikal Sadeleşme:**
+  - Önceki çok katmanlı, bento kutulu, aşırı renkli ve kalabalık bulunan detay sayfası PlayStation 5 Game Hub / Trophy Hub felsefesiyle ("Oyun UI'dır", görsel sessizlik ve ferahlık) baştan tasarlandı.
+- **Sinematik Cover Hero (280px & Entegre Başlık):**
+  - Afiş yüksekliği 230px'ten 280px'e çıkarıldı, derin atmosferik degrade (`rgba(7, 8, 13, 0.97)`) eklendi.
+  - Oyun başlığı ve geliştirici/durum meta satırı gövdeden (`drawer-body`) alınıp cover afişinin içine (`.drawer-hero-info`) entegre edildi; PS5'in oyun içine gömülü tipografi dili yakalandı.
+- **Minimal PS5 Çizgi (Underline) Sekmeler:**
+  - Hantal hap (pill) şeklindeki sekmeler yerine, PS5 ana ekranındaki gibi sade, altı mavi çizgili (`border-bottom: 2px solid #3b82f6`) minimal sekmeler (`.drawer-tab`) uygulandı.
+- **Kompakt Tek Satır İstatistik Şeridi (`.drawer-stats-row`):**
+  - Karmaşık bento kutuları, ayrı HLTB kartı ve quick achievement strip kaldırıldı.
+  - Yerine tek bir temiz obsidyen cam çubuk (`.drawer-stats-row`) içinde 3 temel veri toplandı:
+    1. **Oynama Süresi:** `142 sa` (tıklanabilir, düzenleme özellikli)
+    2. **Başarımlar / Platin Kupa:** `39/58 (%67)` (tıklanabilir, doğrudan başarımlar sekmesine geçer)
+    3. **Ana Hikaye:** `~60 sa` (HowLongToBeat anlık entegrasyonu)
+  - Altına sade koleksiyon etiketleri (`.drawer-tags-row`) ve DLC hapı yerleştirildi.
+- **Kompakt Başarım Özet Çubuğu (`.ach-summary-bar`) & Sade Kartlar:**
+  - Devasa başarım hero kutusu yerine PS5 konsolundaki gibi yuvarlak SVG ilerleme halkası (`.ach-progress-ring`), kupa sayısı ve minik metalik kupa sayaçları (`.ach-tier-mini` Platin, Altın, Gümüş, Bronz) içeren tek satırlık zarif özet barı eklendi.
+  - Başarım kartları (`.ach-card`) gereksiz rozet ve meta kalabalığından arındırıldı; sol kenar mavi vurgusu, temiz başlık/açıklama, ultra-nadir ve tarih etiketi ile akıcı konsol deneyimi sunuldu.
+
