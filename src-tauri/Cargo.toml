@@ -16,6 +16,7 @@ thiserror = "1"
 tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots", "stream"] }
 url = "2"
+base64 = "0.22"
 
 [features]
 default = ["custom-protocol"]

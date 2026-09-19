@@ -7,6 +7,8 @@ pub struct GoygoyReview {
     pub score: Option<u32>,
     pub writer: Option<String>,
     pub summary: Option<String>,
+    #[serde(default)]
+    pub summary_en: Option<String>,
     pub url: String,
     pub image: Option<String>,
 }
@@ -40,12 +42,16 @@ pub struct GoygoyRawItem {
     pub writer: Option<String>,
     #[serde(default)]
     pub summary: Option<String>,
+    #[serde(default, rename = "summaryEn")]
+    pub summary_en: Option<String>,
     #[serde(default)]
     pub path: Option<String>,
     #[serde(default)]
     pub slug: Option<String>,
     #[serde(default)]
     pub image: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 /// Arama terimini PCGamingWiki & eleştirmen aramaları için optimize eder.
@@ -201,7 +207,15 @@ pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Opti
 
 fn normalize_for_match(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
+    let lowered = s.to_lowercase()
+        .replace(" ii", " 2")
+        .replace(" iii", " 3")
+        .replace(" iv", " 4")
+        .replace(" v", " 5")
+        .replace(" vi", " 6")
+        .replace(" vii", " 7")
+        .replace(" viii", " 8");
+    for c in lowered.chars() {
         if c.is_alphanumeric() {
             out.extend(c.to_lowercase());
         }
@@ -216,7 +230,7 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
         return None;
     }
 
-    // 1. Aşama: Tam normalize edilmiş ad eşleşmesi
+    // 1. Aşama: Tam normalize edilmiş ad veya etiket eşleşmesi
     for item in items {
         if let Some(ref gn) = item.game_name {
             if normalize_for_match(gn) == norm_title {
@@ -228,6 +242,11 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
                 return make_goygoy_review(item);
             }
         }
+        for tag in &item.tags {
+            if normalize_for_match(tag) == norm_title {
+                return make_goygoy_review(item);
+            }
+        }
     }
 
     // 2. Aşama: Alt dize eşleşmesi (en az 5 karakterli oyun adları için)
@@ -236,6 +255,12 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
             if let Some(ref gn) = item.game_name {
                 let norm_gn = normalize_for_match(gn);
                 if norm_gn.len() >= 5 && (norm_title.contains(&norm_gn) || norm_gn.contains(&norm_title)) {
+                    return make_goygoy_review(item);
+                }
+            }
+            if let Some(ref g) = item.game {
+                let norm_g = normalize_for_match(g);
+                if norm_g.len() >= 5 && (norm_title.contains(&norm_g) || norm_g.contains(&norm_title)) {
                     return make_goygoy_review(item);
                 }
             }
@@ -261,6 +286,7 @@ fn make_goygoy_review(item: &GoygoyRawItem) -> Option<GoygoyReview> {
         score: item.score,
         writer: item.writer.clone(),
         summary: item.summary.clone(),
+        summary_en: item.summary_en.clone(),
         url,
         image: item.image.clone(),
     })
@@ -504,9 +530,11 @@ mod tests {
                 score: Some(78),
                 writer: Some("EdgeTypE".to_string()),
                 summary: Some("Harika bir açık dünya oyunu.".to_string()),
+                summary_en: Some("Great open world game.".to_string()),
                 path: Some("/inceleme/watch-dogs".to_string()),
                 slug: None,
                 image: None,
+                tags: vec!["Watch Dogs".to_string()],
             },
             GoygoyRawItem {
                 title: Some("Kingdom Come: Deliverance II İnceleme".to_string()),
@@ -515,9 +543,11 @@ mod tests {
                 score: Some(96),
                 writer: Some("EdgeTypE".to_string()),
                 summary: Some("Başyapıt.".to_string()),
+                summary_en: Some("Masterpiece.".to_string()),
                 path: Some("/inceleme/kingdom-come-deliverance-2".to_string()),
                 slug: None,
                 image: None,
+                tags: vec!["Kingdom Come: Deliverance 2".to_string()],
             },
         ];
 

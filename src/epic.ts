@@ -815,6 +815,7 @@ export interface GoygoyReview {
   score?: number | null;
   writer?: string | null;
   summary?: string | null;
+  summary_en?: string | null;
   url: string;
   image?: string | null;
 }
@@ -918,4 +919,29 @@ export interface EpicPlayerProfile {
 
 export const epicGetPlayerProfile = (forceRefresh = false) =>
   invoke<EpicPlayerProfile>("epic_get_player_profile", { forceRefresh });
+
+/* ---------- Ekran Görüntüleri (Screenshots) ---------- */
+
+export interface GameScreenshotItem {
+  id: string;
+  file_path: string;
+  file_name: string;
+  date_str: string;
+  timestamp: number;
+  size_bytes: number;
+  size_str: string;
+  data_url: string;
+}
+
+export const epicGetGameScreenshots = (appName: string, title: string) =>
+  invoke<GameScreenshotItem[]>("epic_get_game_screenshots", { appName, title });
+
+export const epicCaptureGameScreenshot = (appName: string, title: string) =>
+  invoke<GameScreenshotItem>("epic_capture_game_screenshot", { appName, title });
+
+export const epicDeleteGameScreenshot = (filePath: string) =>
+  invoke<boolean>("epic_delete_game_screenshot", { filePath });
+
+export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
+  invoke<void>("epic_open_game_screenshots_folder", { appName, title });
 

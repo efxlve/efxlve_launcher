@@ -835,6 +835,28 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - `.hub-goygoy-box` inceleme kartı DOM'dan tamamen gizlenir.
     - Oyun detay vitrinindeki Hızlı Stat Kapsülü (`.hub-stat-capsule`) yabancı kullanıcılara Goygoy skorunu ve bağlantısını sunmaz; yalnızca global OpenCritic/Metacritic skorları gösterilir.
 
+## 54. Çift "Yönet" Düğmesinin Temizlenmesi, Oyun İçi Ekran Görüntüleri Galerisi & Goygoy JSON İyileştirmeleri
 
-
-
+- **Çift "Yönet" Butonunun Ayıklanması:**
+  - PS5 Game Hub vitrinindeki `.hub-actions-bar` içinde yer alan fazlalık "Yönet" butonu kaldırıldı; yönetim işlemleri yalnızca sekmeler çubuğundaki (`.drawer-tabs`) doğal "Yönet" sekmesi üzerinden yürütülerek arayüz sadeleştirildi.
+- **Goygoy Engine JSON Uç Noktası & Eşleşme Zenginleştirmesi (`critic.rs`):**
+  - İnceleme yazarının sunduğu resmi `https://goygoyengine.com/incelemeler-data.json` uç noktası doğrulanıp tam entegre edildi.
+  - `GoygoyReview` ve `GoygoyRawItem` modellerine `summary_en` (İngilizce editör özeti) ve `tags` dizisi eklendi.
+  - `normalize_for_match` algoritmasına Roma rakamı desteği kazandırıldı (`" II"` ↔ `" 2"`, `" III"` ↔ `" 3"` vb.; örn. *Kingdom Come: Deliverance II* kusursuz eşleşir).
+  - Eşleşme kapsamı genişletilerek `tags` alanındaki varyasyonlar üzerinden de tam doğruluk sağlandı.
+- **Oyun İçi Ekran Görüntüleri Galerisi (In-Game Screenshots & Lightbox):**
+  - **Backend Mimarisi (`screenshots.rs`):**
+    - `epic_get_game_screenshots`: `%USERPROFILE%\Pictures\Efxlve Screenshots\<Oyun>`, `%USERPROFILE%\Pictures\<Oyun>` ve `%USERPROFILE%\Videos\Captures` (Windows Game Bar `Win+Alt+PrtScn`) yollarını tarar.
+    - Webview yerel dosya erişim CSP engellerine takılmamak için küçük resim ve tam boyutlu görselleri güvenli `data:image/...;base64` veri URL'si olarak döndürür.
+    - `epic_capture_game_screenshot`: PowerShell tabanlı yüksek performanslı birincil ekran yakalama ile anlık oyun ekran görüntüsü alır ve ilgili klasöre kaydeder.
+    - `epic_delete_game_screenshot`: İstenmeyen görüntüleri diskten güvenle siler.
+    - `epic_open_game_screenshots_folder`: `explorer.exe` ile ilgili oyunun ekran görüntüleri klasörünü Windows Gezgini'nde açar.
+    - `scan_new_captures_for_game` (`transfers.rs`): Oyun oynanırken oturum başlangıç zamanı baz alınarak `Pictures\Screenshots` ve `Videos\Captures` taranır; oyun kapanışında yeni çekilen ekran görüntüleri otomatik olarak oyunun klasörüne kopyalanır ve `"screenshots-updated"` olayı fırlatılır.
+  - **Frontend & PS5 Console Lightbox UI (`main.ts`, `epic.ts`, `styles.css`):**
+    - Drawer modalına 4. sekme olarak `📸 Ekran Görüntüleri` eklendi (mevcut görsel sayısını gösteren rozetle birlikte).
+    - 16:9 oranlı obsidyen cam kartlar, tarih/boyut rozetleri, hover sırasında büyütme ve silme eylemleri.
+    - Henüz görüntü yoksa F12 / `Win+Alt+PrtScn` bilgilendirmesi sunan şık boş durum (empty state) kartı.
+    - **Tam Ekran Lightbox (Sinematik Konsol İzleyici):**
+      - Tıklanan ekran görüntüsünü 90vh yüksekliğinde, yumuşak cam arka plan ve tam ekran sahne (`.lightbox-stage`) ile açar.
+      - Sol/Sağ geçiş butonları (`.lightbox-arrow`), dosya adı, çekim tarihi, boyut ve sayaç (`1 / N`) gösterimi.
+      - **Klavye & Kontrolcü (Gamepad / 10-ft) Desteği:** `Escape` veya Gamepad `(B)` ile anında kapanır; `Sol Ok` / `Sağ Ok` veya Gamepad D-Pad Sol/Sağ ile fotoğraflar arası akıcı geçiş yapılır. `LB/RB` sekme geçiş döngüsüne `"screenshots"` sekmesi dahil edilmiştir.

@@ -1056,12 +1056,23 @@ async fn spawn_launched(
             let app_name_bg = app_name.to_string();
             let bin_bg = bin.clone();
             let start_time = std::time::Instant::now();
+            let start_system_time = std::time::SystemTime::now();
 
             tokio::spawn(async move {
                 let _ = child.wait().await;
                 // Oyun kapandı!
                 let elapsed = start_time.elapsed().as_secs() + 5;
                 let rec = super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default();
+
+                // Oyun sırasında alınan yeni ekran görüntülerini otomatik tara ve düzenle
+                let clean_t = super::screenshots::clean_folder_name(&app_name_bg);
+                let new_shots = super::screenshots::scan_new_captures_for_game(&clean_t, start_system_time);
+                if !new_shots.is_empty() {
+                    let _ = app_bg.emit("screenshots-updated", serde_json::json!({
+                        "id": app_name_bg,
+                        "count": new_shots.len(),
+                    }));
+                }
 
                 let _ = app_bg.emit("game-status", serde_json::json!({
                     "id": app_name_bg,
