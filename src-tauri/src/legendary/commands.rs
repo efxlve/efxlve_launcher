@@ -2206,58 +2206,6 @@ pub async fn epic_get_player_profile(
     super::profile::fetch_player_profile(&config, force_refresh.unwrap_or(false)).await
 }
 
-// -------------------------------------------------------------
-// YERLEŞİK MAĞAZA (NATIVE EPIC STORE HUB)
-// -------------------------------------------------------------
-
-/// Mağaza ana hub verilerini çeker (ücretsiz oyunlar, çok satanlar, indirimler, istek listesi, sepet)
-#[tauri::command]
-pub async fn epic_get_store_hub(
-    force_refresh: Option<bool>,
-) -> Result<super::store::StoreHubResponse, String> {
-    super::store::get_store_hub(force_refresh.unwrap_or(false)).await
-}
-
-/// Mağazada oyun arar (egdata OpenSearch)
-#[tauri::command]
-pub async fn epic_search_store(
-    query: String,
-) -> Result<Vec<super::store::StoreOfferItem>, String> {
-    let config = super::skip::default_config_dir();
-    let country = super::store::get_user_country(&config);
-    super::store::search_store_offers(&query, &country).await
-}
-
-/// Mağaza tekil oyun sayfasının detaylı bilgilerini çeker (ürün sayfası)
-#[tauri::command]
-pub async fn epic_get_store_offer_detail(
-    offer_id: String,
-) -> Result<super::store::StoreOfferDetail, String> {
-    let config = super::skip::default_config_dir();
-    let country = super::store::get_user_country(&config);
-    super::store::fetch_store_offer_detail(&offer_id, &country).await
-}
-
-/// Kullanıcının canlı Epic istek listesini çeker
-#[tauri::command]
-pub async fn epic_get_user_wishlist() -> Result<Vec<super::store::StoreOfferItem>, String> {
-    let config = super::skip::default_config_dir();
-    super::store::fetch_epic_user_wishlist(&config).await
-}
-
-/// İstek listesine ekle veya çıkar (toggle)
-#[tauri::command]
-pub async fn epic_toggle_wishlist(offer_id: String) -> Result<bool, String> {
-    super::store::toggle_wishlist_item(&offer_id)
-}
-
-/// Sepete ekle veya çıkar (toggle)
-#[tauri::command]
-pub async fn epic_toggle_cart(offer_id: String) -> Result<bool, String> {
-    super::store::toggle_cart_item(&offer_id)
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

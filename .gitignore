@@ -29,3 +29,4 @@ tools/store-check/assets/
 tools/store-check/fixtures.json
 tools/store-check/fixtures.js
 tools/store-check/report*.png
+tools/store-check/.tmp-chrome-profile-*/
