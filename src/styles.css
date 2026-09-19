@@ -1887,31 +1887,33 @@ button { font-family: inherit; }
   margin-left: 0;
 }
 
-/* --- SteamHunters İlhamlı Başarımlar Görünümü (Atmospheric & Categorized Dark UI) --- */
+/* --- PlayStation İlhamlı Başarımlar Görünümü (Console Dark Aesthetic) --- */
 .ach-sh-hero {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.015) 100%);
+  background: radial-gradient(circle at 85% 15%, rgba(0, 112, 209, 0.12), transparent 55%),
+              linear-gradient(135deg, rgba(22, 27, 44, 0.65) 0%, rgba(10, 12, 20, 0.75) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 16px 18px;
   margin-bottom: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
   position: relative;
   overflow: hidden;
 }
 .ach-sh-hero.platinum {
   border-color: rgba(251, 191, 36, 0.35);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(20, 21, 28, 0.4) 100%);
-  box-shadow: 0 4px 24px rgba(251, 191, 36, 0.18);
+  background: radial-gradient(circle at 85% 15%, rgba(251, 191, 36, 0.18), transparent 60%),
+              linear-gradient(135deg, rgba(32, 26, 18, 0.7) 0%, rgba(14, 12, 18, 0.8) 100%);
+  box-shadow: 0 4px 28px rgba(251, 191, 36, 0.2);
 }
 .ach-sh-hero.platinum::after {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
-  width: 140px;
+  width: 160px;
   height: 100%;
-  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.15), transparent 70%);
+  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.18), transparent 70%);
   pointer-events: none;
 }
 .ach-sh-hero-body {
@@ -1923,22 +1925,22 @@ button { font-family: inherit; }
   flex-shrink: 0;
 }
 .ach-sh-trophy-badge {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 13px;
   background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 .ach-sh-trophy-badge.platinum {
   background: linear-gradient(135deg, #ffd700, #f59e0b);
   color: #1e1b18;
   border: none;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
 }
 .ach-sh-info-col {
   flex: 1;
@@ -2009,6 +2011,84 @@ button { font-family: inherit; }
   background: linear-gradient(90deg, #f59e0b 0%, #ffd700 50%, #ffffff 100%);
   box-shadow: 0 0 14px rgba(251, 191, 36, 0.65);
 }
+
+/* --- PlayStation 4-Seviye Kupa Rozetleri (PS5 Trophy Tier Breakdown) --- */
+.ps-trophy-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 5px 0 2px;
+}
+.ps-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  transition: all 0.15s ease;
+}
+.ps-tier-badge.plat {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.08);
+}
+.ps-tier-badge.plat.complete {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #7dd3fc;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+.ps-tier-badge.gold {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.08);
+}
+.ps-tier-badge.gold.complete {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fde047;
+}
+.ps-tier-badge.silver {
+  color: #cbd5e1;
+  border-color: rgba(203, 213, 225, 0.25);
+  background: rgba(203, 213, 225, 0.08);
+}
+.ps-tier-badge.silver.complete {
+  background: rgba(203, 213, 225, 0.18);
+  border-color: rgba(203, 213, 225, 0.45);
+  color: #fff;
+}
+.ps-tier-badge.bronze {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.25);
+  background: rgba(249, 115, 22, 0.08);
+}
+.ps-tier-badge.bronze.complete {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #fdba74;
+}
+.ps-tier-gem {
+  display: flex;
+  align-items: center;
+}
+.ps-tier-name {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  opacity: 0.85;
+}
+.ps-tier-val {
+  font-weight: 700;
+  font-feature-settings: "tnum";
+}
+
 .ach-sh-dual-stats {
   display: flex;
   align-items: center;
@@ -2055,12 +2135,12 @@ button { font-family: inherit; }
   transform: translateY(-1px);
 }
 
-/* --- SteamHunters Arama & Sıralama Barı --- */
+/* --- PlayStation Konsol Tarzı Arama & Sıralama Barı --- */
 .ach-toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .ach-search-wrap {
   flex: 1;
@@ -2090,9 +2170,9 @@ button { font-family: inherit; }
 }
 .ach-search-field:focus {
   outline: none;
-  border-color: rgba(251, 191, 36, 0.45);
+  border-color: rgba(56, 189, 248, 0.45);
   background: rgba(0, 0, 0, 0.55);
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
 .ach-search-field::placeholder {
   color: #64748b;
@@ -2134,70 +2214,16 @@ button { font-family: inherit; }
   color: #fff;
 }
 .ach-sort-select:focus {
-  border-color: rgba(251, 191, 36, 0.45);
+  border-color: rgba(56, 189, 248, 0.45);
 }
 
-/* --- Filtre Çubukları (Kapsam & Durum) --- */
-.ach-filter-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.ach-scope-strip {
-  display: flex;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 3px;
-  gap: 4px;
-}
-.ach-scope-pill {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.16s ease;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.ach-scope-pill:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-}
-.ach-scope-pill.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.18);
-}
-.ach-pill-num {
-  font-size: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-weight: 600;
-  color: #cbd5e1;
-}
-.ach-scope-pill.active .ach-pill-num {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
+/* --- PlayStation Tarzı Durum Çipleri (Status Strip) --- */
 .ach-status-strip {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+  margin-bottom: 12px;
 }
 .ach-status-chip {
   background: rgba(255, 255, 255, 0.035);

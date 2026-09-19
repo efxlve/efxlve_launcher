@@ -3381,6 +3381,20 @@ function enrichAchievementsData(appName: string, data: EpicAchievementsData): vo
   }
 }
 
+function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {
+  if (a.tier?.name) {
+    const n = a.tier.name.toLowerCase();
+    if (n.includes("plat")) return "platinum";
+    if (n.includes("gold")) return "gold";
+    if (n.includes("silver")) return "silver";
+    if (n.includes("bronze")) return "bronze";
+  }
+  if (a.xp >= 200) return "platinum";
+  if (a.xp >= 100) return "gold";
+  if (a.xp >= 50) return "silver";
+  return "bronze";
+}
+
 function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = demoPlatinumApps.has(s.appName);
@@ -3445,21 +3459,17 @@ function renderDrawerAchievements(s: EpicSummary): string {
   const dlcTotal = dlcItems.length;
   const dlcUnlocked = isDemo ? dlcTotal : dlcItems.filter((a) => a.unlocked).length;
 
-  // Filtreleme (Arama sorgusu, Kapsam, Durum)
+  // Filtreleme (Arama sorgusu, Durum)
   const query = achSearchQuery.trim().toLowerCase();
 
   const filteredItems = data.achievements.filter((a) => {
-    // 1. Kapsam (Scope)
-    if (activeAchScope === "base" && !a.is_base) return false;
-    if (activeAchScope === "dlc" && a.is_base) return false;
-
-    // 2. Durum (Status)
+    // 1. Durum (Status)
     const isUnlocked = a.unlocked || isDemo;
     if (activeAchFilter === "unlocked" && !isUnlocked) return false;
     if (activeAchFilter === "locked" && isUnlocked) return false;
     if (activeAchFilter === "hidden" && !a.hidden) return false;
 
-    // 3. Arama Sorgusu
+    // 2. Arama Sorgusu
     if (query) {
       const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);
       const matchDesc = (a.description || "").toLowerCase().includes(query);
@@ -3487,23 +3497,47 @@ function renderDrawerAchievements(s: EpicSummary): string {
     return 0; // varsayılan katalog sırası
   });
 
+  // PlayStation 4-Seviyeli Kupa Sayımı (Trophy Breakdown)
+  let platTotal = 0, platUnlocked = 0;
+  let goldTotal = 0, goldUnlocked = 0;
+  let silverTotal = 0, silverUnlocked = 0;
+  let bronzeTotal = 0, bronzeUnlocked = 0;
+
+  for (const a of data.achievements) {
+    const t = getAchTier(a);
+    const u = a.unlocked || isDemo;
+    if (t === "platinum") {
+      platTotal++;
+      if (u) platUnlocked++;
+    } else if (t === "gold") {
+      goldTotal++;
+      if (u) goldUnlocked++;
+    } else if (t === "silver") {
+      silverTotal++;
+      if (u) silverUnlocked++;
+    } else {
+      bronzeTotal++;
+      if (u) bronzeUnlocked++;
+    }
+  }
+
+  const showPlat = platTotal > 0 || isPlat || data.is_platinum || ((data.base_achievements ?? 0) > 0);
+  const effPlatTotal = platTotal > 0 ? platTotal : (showPlat ? 1 : 0);
+  const effPlatUnlocked = platTotal > 0 ? platUnlocked : (isPlat ? 1 : 0);
+
   // Sayaçlar (Status Chips için)
-  const scopedAll = data.achievements.filter((a) => {
-    if (activeAchScope === "base") return a.is_base;
-    if (activeAchScope === "dlc") return !a.is_base;
-    return true;
-  });
+  const scopedAll = data.achievements;
   const scopedUnlocked = isDemo ? scopedAll.length : scopedAll.filter((a) => a.unlocked).length;
   const scopedLocked = scopedAll.length - scopedUnlocked;
   const scopedHidden = scopedAll.filter((a) => a.hidden).length;
 
   return `
-    <!-- 1. SteamHunters Tarzı Sinematik Hero Başlık -->
+    <!-- 1. PlayStation İlhamlı Atmosferik Hero Kartı -->
     <div class="ach-sh-hero ${isPlat ? "platinum" : ""}">
       <div class="ach-sh-hero-body">
         <div class="ach-sh-trophy-col">
           <div class="ach-sh-trophy-badge ${isPlat ? "platinum" : ""}">
-            ${icon("trophy", 24)}
+            ${icon("trophy", 26)}
           </div>
         </div>
         <div class="ach-sh-info-col">
@@ -3516,12 +3550,42 @@ function renderDrawerAchievements(s: EpicSummary): string {
             <span class="ach-sh-stat-dot">•</span>
             <span class="ach-sh-stat-xp"><strong>${effectiveXp.toLocaleString()}</strong> / ${data.total_xp.toLocaleString()} XP</span>
           </div>
+
           <!-- İlerleme Çubuğu -->
           <div class="ach-sh-bar-wrap">
             <div class="ach-sh-bar">
               <div class="ach-sh-bar-fill ${isPlat ? "gold" : ""}" style="width: ${pct}%"></div>
             </div>
           </div>
+
+          <!-- PS5 Kupa Seviye Sayaçları (Trophy Tier Breakdown) -->
+          <div class="ps-trophy-tier-row">
+            ${effPlatTotal > 0 ? `
+              <div class="ps-tier-badge plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin Kupa">
+                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
+                <span class="ps-tier-name">Platin</span>
+                <span class="ps-tier-val">${effPlatUnlocked}/${effPlatTotal}</span>
+              </div>` : ""}
+            ${goldTotal > 0 ? `
+              <div class="ps-tier-badge gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="Altın Kupa">
+                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
+                <span class="ps-tier-name">Altın</span>
+                <span class="ps-tier-val">${goldUnlocked}/${goldTotal}</span>
+              </div>` : ""}
+            ${silverTotal > 0 ? `
+              <div class="ps-tier-badge silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="Gümüş Kupa">
+                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
+                <span class="ps-tier-name">Gümüş</span>
+                <span class="ps-tier-val">${silverUnlocked}/${silverTotal}</span>
+              </div>` : ""}
+            ${bronzeTotal > 0 ? `
+              <div class="ps-tier-badge bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="Bronz Kupa">
+                <span class="ps-tier-gem">${icon("trophy", 11)}</span>
+                <span class="ps-tier-name">Bronz</span>
+                <span class="ps-tier-val">${bronzeUnlocked}/${bronzeTotal}</span>
+              </div>` : ""}
+          </div>
+
           ${hasDlc ? `
           <div class="ach-sh-dual-stats">
             <span class="dual-stat">${icon("gamepad-2", 11)} Ana Oyun: <strong>${baseUnlocked}/${baseTotal}</strong> (%${Math.round(baseUnlocked/baseTotal*100)})</span>
@@ -3537,7 +3601,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
       </div>
     </div>
 
-    <!-- 2. Arama & Filtre & Sıralama Barı -->
+    <!-- 2. Arama & Sıralama Barı -->
     <div class="ach-toolbar">
       <!-- Canlı Arama Kutusu -->
       <div class="ach-search-wrap">
@@ -3557,41 +3621,26 @@ function renderDrawerAchievements(s: EpicSummary): string {
       </div>
     </div>
 
-    <!-- 3. Kapsam (DLC / Ana Oyun) & Durum Sekmeleri -->
-    <div class="ach-filter-row">
-      ${hasDlc ? `
-      <div class="ach-scope-strip">
-        <button class="ach-scope-pill ${activeAchScope === "all" ? "active" : ""}" data-act="ach-scope" data-val="all">
-          Tüm İçerik <span class="ach-pill-num">${data.achievements.length}</span>
-        </button>
-        <button class="ach-scope-pill ${activeAchScope === "base" ? "active" : ""}" data-act="ach-scope" data-val="base">
-          ${icon("gamepad-2", 11)} Ana Oyun <span class="ach-pill-num">${baseUnlocked}/${baseTotal}</span>
-        </button>
-        <button class="ach-scope-pill ${activeAchScope === "dlc" ? "active" : ""}" data-act="ach-scope" data-val="dlc">
-          ${icon("package", 11)} Ek Paketler <span class="ach-pill-num">${dlcUnlocked}/${dlcTotal}</span>
-        </button>
-      </div>` : ""}
-
-      <div class="ach-status-strip">
-        <button class="ach-status-chip ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
-          Tümü <span class="ach-chip-num">${scopedAll.length}</span>
-        </button>
-        <button class="ach-status-chip ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
-          ${icon("check", 11)} Kazanılanlar <span class="ach-chip-num">${scopedUnlocked}</span>
-        </button>
-        <button class="ach-status-chip ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
-          ${icon("lock", 11)} Kilitliler <span class="ach-chip-num">${scopedLocked}</span>
-        </button>
-        ${scopedHidden > 0 ? `
-        <button class="ach-status-chip ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
-          ${icon("eye", 11)} Gizli <span class="ach-chip-num">${scopedHidden}</span>
-        </button>` : ""}
-      </div>
+    <!-- 3. PlayStation Konsol Tarzı Durum Sekmeleri -->
+    <div class="ach-status-strip">
+      <button class="ach-status-chip ${activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
+        Tümü <span class="ach-chip-num">${scopedAll.length}</span>
+      </button>
+      <button class="ach-status-chip ${activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
+        ${icon("check", 11)} Kazanılanlar <span class="ach-chip-num">${scopedUnlocked}</span>
+      </button>
+      <button class="ach-status-chip ${activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
+        ${icon("lock", 11)} Kilitliler <span class="ach-chip-num">${scopedLocked}</span>
+      </button>
+      ${scopedHidden > 0 ? `
+      <button class="ach-status-chip ${activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
+        ${icon("eye", 11)} Gizli <span class="ach-chip-num">${scopedHidden}</span>
+      </button>` : ""}
     </div>
 
-    <!-- 4. SteamHunters Gruplandırılmış Başarım Listesi -->
+    <!-- 4. Gruplandırılmış Başarım Listesi -->
     <div class="ach-list-container" id="ach-list-container">
-      ${renderAchievementSections(sortedItems, s, hasDlc && activeAchScope === "all")}
+      ${renderAchievementSections(sortedItems, s, hasDlc)}
     </div>
   `;
 }
@@ -3689,9 +3738,10 @@ function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): string {
   const desc = isSecretMasked && !isRevealed
     ? "Bu başarım gizlidir. Spoiler'ı görmek için tıklayın."
     : (a.description || "Açıklama yok.");
-  const tierClass = a.tier?.name ? a.tier.name.toLowerCase() : "";
+  const tier = getAchTier(a);
+  const tierClass = tier;
   const tierIcon = icon("trophy", 11);
-  const tierName = fmtTierName(a.tier?.name || "bronze");
+  const tierName = fmtTierName(tier);
 
   return `
     <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
@@ -7243,8 +7293,6 @@ document.addEventListener("input", (e) => {
         const query = achSearchQuery.trim().toLowerCase();
         const isDemo = demoPlatinumApps.has(s.appName);
         const filteredItems = data.achievements.filter((a) => {
-          if (activeAchScope === "base" && !a.is_base) return false;
-          if (activeAchScope === "dlc" && a.is_base) return false;
           const isUnlocked = a.unlocked || isDemo;
           if (activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (activeAchFilter === "locked" && isUnlocked) return false;
@@ -7271,7 +7319,7 @@ document.addEventListener("input", (e) => {
           return 0;
         });
         const hasDlc = data.achievements.some((a) => !a.is_base);
-        container.innerHTML = renderAchievementSections(sortedItems, s, hasDlc && activeAchScope === "all");
+        container.innerHTML = renderAchievementSections(sortedItems, s, hasDlc);
       }
     }
     return;
