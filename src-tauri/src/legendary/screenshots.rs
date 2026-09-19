@@ -259,7 +259,6 @@ mod win_capture {
     const DESKTOPHORZRES: i32 = 118;
     const DESKTOPVERTRES: i32 = 117;
     const SRCCOPY: u32 = 0x00CC0020;
-    const CAPTUREBLT: u32 = 0x40000000;
 
     #[repr(C)]
     struct GdiplusStartupInput {
@@ -287,7 +286,9 @@ mod win_capture {
 
     #[link(name = "user32")]
     extern "system" {
-        fn GetDesktopWindow() -> HWND;
+        fn OpenInputDesktop(dwFlags: u32, fInherit: BOOL, dwDesiredAccess: u32) -> *mut c_void;
+        fn SetThreadDesktop(hDesktop: *mut c_void) -> BOOL;
+        fn CloseDesktop(hDesktop: *mut c_void) -> BOOL;
         fn GetDC(hwnd: HWND) -> HDC;
         fn ReleaseDC(hwnd: HWND, hdc: HDC) -> i32;
         fn GetSystemMetrics(nIndex: i32) -> i32;
@@ -298,7 +299,14 @@ mod win_capture {
     extern "system" {
         fn GetDeviceCaps(hdc: HDC, index: i32) -> i32;
         fn CreateCompatibleDC(hdc: HDC) -> HDC;
-        fn CreateCompatibleBitmap(hdc: HDC, cx: i32, cy: i32) -> HBITMAP;
+        fn CreateDIBSection(
+            hdc: HDC,
+            pbmi: *const BITMAPINFO,
+            usage: u32,
+            ppv_bits: *mut *mut c_void,
+            h_section: *mut c_void,
+            offset: u32,
+        ) -> HBITMAP;
         fn SelectObject(hdc: HDC, h: HGDIOBJ) -> HGDIOBJ;
         fn BitBlt(
             hdc_dst: HDC,
@@ -315,6 +323,27 @@ mod win_capture {
         fn DeleteObject(ho: HGDIOBJ) -> BOOL;
     }
 
+    #[repr(C)]
+    struct BITMAPINFOHEADER {
+        bi_size: u32,
+        bi_width: i32,
+        bi_height: i32,
+        bi_planes: u16,
+        bi_bit_count: u16,
+        bi_compression: u32,
+        bi_size_image: u32,
+        bi_xpels_per_meter: i32,
+        bi_ypels_per_meter: i32,
+        bi_clr_used: u32,
+        bi_clr_important: u32,
+    }
+
+    #[repr(C)]
+    struct BITMAPINFO {
+        bmi_header: BITMAPINFOHEADER,
+        bmi_colors: [u32; 1],
+    }
+
     #[link(name = "gdiplus")]
     extern "system" {
         fn GdiplusStartup(token: *mut usize, input: *const GdiplusStartupInput, output: *mut c_void) -> i32;
@@ -329,14 +358,35 @@ mod win_capture {
         fn GdipDisposeImage(image: *mut c_void) -> i32;
     }
 
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetLastError() -> u32;
+        fn SetLastError(dwErrCode: u32);
+    }
+
     pub fn capture_screen_native(target_file: &Path) -> Result<(), String> {
+        let target_path = target_file.to_path_buf();
+        std::thread::spawn(move || capture_screen_native_thread(&target_path))
+            .join()
+            .map_err(|_| "Worker thread panicked".to_string())?
+    }
+
+    fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
         unsafe {
             let _ = SetProcessDPIAware();
 
-            let hwnd = GetDesktopWindow();
-            let hdc_screen = GetDC(hwnd);
+            // Aktif masaüstüne (input desktop) bağlan — BitBlt'in ERROR_INVALID_HANDLE vermesini önler
+            let h_desk = OpenInputDesktop(0, 0, 0x01FF);
+            if !h_desk.is_null() {
+                let _ = SetThreadDesktop(h_desk);
+            }
+
+            let hdc_screen = GetDC(std::ptr::null_mut());
             if hdc_screen.is_null() {
-                return Err("GetDC failed".to_string());
+                if !h_desk.is_null() {
+                    CloseDesktop(h_desk);
+                }
+                return Err(format!("GetDC failed (err: {})", GetLastError()));
             }
 
             let mut width = GetDeviceCaps(hdc_screen, DESKTOPHORZRES);
@@ -352,27 +402,53 @@ mod win_capture {
             }
 
             if width <= 0 || height <= 0 {
-                ReleaseDC(hwnd, hdc_screen);
+                ReleaseDC(std::ptr::null_mut(), hdc_screen);
                 return Err("Ekran çözünürlüğü tespit edilemedi".to_string());
             }
 
             let hdc_mem = CreateCompatibleDC(hdc_screen);
             if hdc_mem.is_null() {
-                ReleaseDC(hwnd, hdc_screen);
-                return Err("CreateCompatibleDC failed".to_string());
+                ReleaseDC(std::ptr::null_mut(), hdc_screen);
+                return Err(format!("CreateCompatibleDC failed (err: {})", GetLastError()));
             }
 
-            let h_bitmap = CreateCompatibleBitmap(hdc_screen, width, height);
+            // CreateDIBSection ile bellek havuzu limiti olmadan yüksek çözünürlükte bitmap tahsis et
+            let bmi = BITMAPINFO {
+                bmi_header: BITMAPINFOHEADER {
+                    bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                    bi_width: width,
+                    bi_height: -height, // top-down
+                    bi_planes: 1,
+                    bi_bit_count: 32,
+                    bi_compression: 0, // BI_RGB
+                    bi_size_image: (width * height * 4) as u32,
+                    bi_xpels_per_meter: 0,
+                    bi_ypels_per_meter: 0,
+                    bi_clr_used: 0,
+                    bi_clr_important: 0,
+                },
+                bmi_colors: [0],
+            };
+
+            let mut ppv_bits: *mut c_void = std::ptr::null_mut();
+            let h_bitmap = CreateDIBSection(
+                hdc_mem,
+                &bmi,
+                0, // DIB_RGB_COLORS
+                &mut ppv_bits,
+                std::ptr::null_mut(),
+                0,
+            );
+
             if h_bitmap.is_null() {
                 DeleteDC(hdc_mem);
-                ReleaseDC(hwnd, hdc_screen);
-                return Err("CreateCompatibleBitmap failed".to_string());
+                ReleaseDC(std::ptr::null_mut(), hdc_screen);
+                return Err(format!("CreateDIBSection failed (err: {})", GetLastError()));
             }
 
             let h_old = SelectObject(hdc_mem, h_bitmap);
-
-            // 3. BitBlt ile anında donanım seviyesinde tam ekran kopyalama (< 3 ms)
-            let mut blt_ok = BitBlt(
+            SetLastError(0);
+            let blt_ok = BitBlt(
                 hdc_mem,
                 0,
                 0,
@@ -381,31 +457,20 @@ mod win_capture {
                 hdc_screen,
                 0,
                 0,
-                SRCCOPY | CAPTUREBLT,
+                SRCCOPY,
             );
-
-            if blt_ok == 0 {
-                // Fallback: CAPTUREBLT olmadan sadece SRCCOPY
-                blt_ok = BitBlt(
-                    hdc_mem,
-                    0,
-                    0,
-                    width,
-                    height,
-                    hdc_screen,
-                    0,
-                    0,
-                    SRCCOPY,
-                );
-            }
+            let err_code = GetLastError();
 
             SelectObject(hdc_mem, h_old);
             DeleteDC(hdc_mem);
-            ReleaseDC(hwnd, hdc_screen);
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
 
             if blt_ok == 0 {
                 DeleteObject(h_bitmap);
-                return Err("BitBlt failed".to_string());
+                return Err(format!(
+                    "BitBlt failed (err: {}, w: {}, h: {})",
+                    err_code, width, height
+                ));
             }
 
             // 4. GDI+ ile yerel C hızında doğrudan PNG olarak kaydet (~15 ms)
@@ -448,6 +513,10 @@ mod win_capture {
 
             GdipDisposeImage(gdip_image);
             GdiplusShutdown(token);
+
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
 
             if save_status != 0 {
                 return Err(format!("GdipSaveImageToFile failed (status: {})", save_status));
@@ -555,7 +624,7 @@ pub fn start_f12_listener(app: AppHandle) {
         let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(35));
+            std::thread::sleep(std::time::Duration::from_millis(20));
 
             // Sadece bir oyun aktif oynanıyorken F12'yi kontrol et
             let running = get_active_running_game();
@@ -572,6 +641,16 @@ pub fn start_f12_listener(app: AppHandle) {
                 if last_capture_time.elapsed() >= std::time::Duration::from_millis(400) {
                     last_capture_time = std::time::Instant::now();
                     if let Some((app_name, title)) = running {
+                        // 1. ANINDA DEKLANŞÖR TETİKLEMESİ (0 ms gecikmeyle deklanşör sesi ve UI uyarısı)
+                        let _ = app.emit(
+                            "screenshot-shutter",
+                            serde_json::json!({
+                                "id": app_name,
+                                "title": title,
+                            }),
+                        );
+
+                        // 2. Arka planda donanımsal ekran görüntüsü kaydı (< 110 ms)
                         let app_clone = app.clone();
                         let app_name_clone = app_name.clone();
                         let title_clone = title.clone();
@@ -732,11 +811,14 @@ mod tests {
         {
             let temp_file = std::env::temp_dir().join("efxlve_test_screen_capture.png");
             let _ = std::fs::remove_file(&temp_file);
+            let start = std::time::Instant::now();
             let res = win_capture::capture_screen_native(&temp_file);
-            // Sadece etkileşimli masaüstü oturumunda (kullanıcı ortamında) gerçek dosya oluşur
+            let elapsed = start.elapsed();
+            println!("Capture result: {:?}, took: {:?}", res, elapsed);
             if let Ok(()) = res {
                 assert!(temp_file.exists(), "Captured screenshot file does not exist");
                 let meta = temp_file.metadata().unwrap();
+                println!("Captured file size: {} KB", meta.len() / 1024);
                 assert!(meta.len() > 1000, "Screenshot file is too small (size: {})", meta.len());
                 let _ = std::fs::remove_file(&temp_file);
             }

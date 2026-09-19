@@ -7853,10 +7853,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "capture-screenshot" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = t.dataset.title || (s ? s.title : id);
-    toast("Ekran görüntüsü alınıyor…", "");
+    playScreenshotShutterSound();
+    toast("📸 Ekran görüntüsü alınıyor…", "");
     epicCaptureGameScreenshot(id, title)
       .then((item) => {
-        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        toast(`📸 Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
         void fetchAndRenderScreenshots(id, title, true);
       })
       .catch((err) => toast(String(err), "err"));
@@ -8607,12 +8608,21 @@ async function init(): Promise<void> {
       }
     });
 
+    await listen<{ id: string; title: string }>(
+      "screenshot-shutter",
+      (event) => {
+        playScreenshotShutterSound();
+        const sum = epicSummaries.find((x) => x.appName === event.payload.id);
+        const title = sum?.title || event.payload.title || "Oyun";
+        toast(`📸 ${title} — Ekran görüntüsü alınıyor…`, "ok");
+      }
+    );
+
     await listen<{ id: string; title: string; item: GameScreenshotItem }>(
       "screenshot-captured",
       (event) => {
         const { id, item } = event.payload;
-        toast(`📸 Ekran görüntüsü alındı: ${item.file_name}`, "ok");
-        playScreenshotShutterSound();
+        toast(`📸 Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
 
         const existing = loadedScreenshots.get(id) || [];
         loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
