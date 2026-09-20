@@ -170,11 +170,11 @@ Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized
     - `legendary achievements --json <app>` çıktısında doğrudan `achievements` adında bir anahtar YOKTUR; öğeler durumlarına göre `completed`, `in_progress`, `uninitiated` ve `hidden` dizileri altında döner. `GameAchievementsResponse.consolidate()` metodu bu dizileri birleştirerek `achievements` alanını doldurur ve toplamları garantiler.
     - `epic_get_achievements`, diskteki eski boş önbellekleri (`achievements: []` kalmış olanlar) geçersiz sayıp otomatik olarak taze veri çeker. Başarımı olmayan oyunlarda legendary'nin boş çıktısı (`No achievements found`) `supported: Some(false)` olarak zarifçe yakalanıp önbelleklenir ve UI'ın kilitlenmesi engellenir.
     - Platin Kupa (`is_platinum = (total_achievements > 0 && user_unlocked >= total_achievements) || has_platinum_award` veya demo önizleme):
-      - Kütüphane araç çubuğunda `🏆 Platin` filtre çipi (sayı rozetli) ve sıralamada `Platin kupalılar` seçeneği.
-      - Platin filtresi seçildiğinde altın ışıltılı özel kategori tebrik afişi (`.plat-category-banner`).
-      - Portre kart çevresinde asil ve sabit sıcak altın hale (`box-shadow` aurası), periyodik zarif holografik ışık geçişi (`plat-shimmer-pass`, kartlar arası doğal sırayla parıldayan) ve hover anlık ışıma efekti.
-      - Sağ üstte parlak altın kurdele rozet (`.platinum-ribbon` + minik ışıltı `✨` — hover sırasında aksiyon butonlarını engellememesi için `opacity: 0` ile kaybolur).
-      - Detay çekmecesinde "Genel Bakış" ve "🏆 Başarımlar" sekmeleri, altın ilerleme çubuğu, kategori filtreleri (Tümü/Kazanılanlar/Kilitliler), nadirlik yüzdesi, XP hapları, doğrudan gömülü mağazada açan "Mağaza Başarımları" (`epicAchievementsUrl`) butonu ve test için anlık Platin Efekti Aç/Kapat toggle'ı yer alır.
+      - Kütüphane araç çubuğunda `Platin` filtre çipi (sayı rozetli, mor Epic kupa ikonlu) ve sıralamada `Platin kupalılar` seçeneği.
+      - Platin filtresi seçildiğinde asil mor/eflatun özel kategori tebrik afişi (`.plat-category-banner`).
+      - Portre kart çevresinde asil ve sabit mor-platin hale (`box-shadow` aurası), periyodik zarif holografik ışık geçişi (`plat-shimmer-pass`, eflatun ışıltılı) ve hover anlık ışıma efekti.
+      - Sağ üstte metinsiz sade mor Epic Games Platin Kupa rozeti (`.platinum-badge` + mor alevli ve mücevherli kupa vektörü `epicPlatinumIcon` — hover sırasında aksiyon butonlarını engellememesi için `opacity: 0` ile kaybolur).
+      - Detay çekmecesinde "Genel Bakış" ve "Başarımlar" sekmeleri, mor-eflatun platin kupa durum hapı (`.status-pill.plat`), doğrudan gömülü mağazada açan "Mağaza Başarımları" (`epicAchievementsUrl`) butonu ve test için anlık Platin Efekti Aç/Kapat toggle'ı yer alır.
 21. **3. Parti Başlatıcılar (EA App, Ubisoft Connect vb.) ve Hile Koruması (Anti-Cheat):**
     - `legendary list` varsayılan olarak Origin/EA gibi 3. parti harici başlatıcılara devredilen oyunları listelemez. Bu oyunların katalogdan çekilmesi ve yerel önbelleğe (`metadata/*.json`) kaydedilmesi için `list -T --json` (`--third-party`) bayrağı zorunludur.
     - 3. parti oyunların başlatılması: `installed.json` içinde yer almasalar bile `legendary launch <app> --origin` (EA App protocol URI: `link2ea://...`) veya `--ubisoft` (`uplay://...`) bayraklarıyla doğrudan tetiklenir.
@@ -1075,6 +1075,23 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
       - `renderDrawerManage` fonksiyonunda `activeManageSettings.installPath` değeri daima `s.installPath` ile yerinde senkronize tutulur.
       - `epicOpenFolder` fonksiyonu en güncel hedef yolu (`activeManageSettings.installPath` || `s.installPath`) kullanarak kullanıcının `[ Klasörü Aç ]` butonuna bastığında her zaman doğru yeni klasöre ulaşmasını garanti eder.
       - Arka planda `refreshEpicInstalled()` ve `epicGetGameSettings()` çağrılarak diskteki `installed.json` verisiyle frontend state'i %100 senkronize edilir ve Game Hub arayüzü pürüzsüzce yeniden çizilir.
+
+## 65. Epic Games Sade Mor Platin Kupa Rozeti & Vektör Tasarımı
+
+- **"%100 Platin" Metninin Kaldırılması & Sade Kupa Rozeti (`.platinum-badge`):**
+  - Kartların sağ üst köşesinde yer alan eski sarı/altın kurdele ve `%100 Platin` metni kaldırıldı.
+  - Yerine minimalist, şık ve metinsiz kemerli cam rozet (`.platinum-badge`, `width: 28px; height: 32px; border-radius: 12px 12px 7px 7px`) konumlandırıldı.
+  - Rozet arka planı koyu obsidyen-mor cam (`rgba(22, 10, 38, 0.88)`), kenarlığı eflatun/mor (`rgba(192, 132, 252, 0.45)`) ve aurası mor ışıltı (`box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 14px rgba(168, 85, 247, 0.45)`) ile tasarlandı. Hover sırasında aksiyon butonlarını engellememesi için `opacity: 0` ile akıcı kaybolur.
+- **Orijinal Epic Games Platin Kupa Vektörü (`epicPlatinumIcon`):**
+  - Epic Games Store'un resmi başarım ödüllerindeki Platin Kupası birebir analiz edilerek saf SVG olarak kodlandı.
+  - Vektör özellikleri:
+    - Parlak beyaz/eflatun gövdeli, narin saplı ve geniş ağızlı kupa kadehi (`linearGradient #epCup`).
+    - Kadehin ön yüzeyinde kıvrımlı dizilmiş mor mücevher taşları (`#7e22ce`, `#d8b4fe`).
+    - Kadehin içinden yükselen mor-menekşe alev dalgası (`linearGradient #epFlm`) ve sıcak parlak çekirdeği (`#faf5ff`).
+- **Mor Platin Kart Aurası & Kategori Afişi:**
+  - Platin kupalı kartların çerçevesi ve gölgesi sarıdan asil mor-eflatun tonlarına (`rgba(168, 85, 247, 0.75)`, hover'da `#c084fc`) geçirildi.
+  - Işık geçişi efekti (`plat-shimmer-pass`) eflatun parıltıya (`rgba(216, 180, 254, 0.38)`) uyarlandı.
+  - Kategori çipi (`.chip[data-val="platinum"]`), tebrik afişi (`.plat-category-banner`) ve detay çekmecesi başlık rozeti (`.status-pill.plat`) mor Epic platin kupasıyla kusursuz bir uyum sağladı.
 
 
 

@@ -1827,24 +1827,25 @@ button { font-family: inherit; }
 .upd { color: var(--yellow); font-weight: 600; }
 
 /* --- Platin Kupa (%100 Tamamlama) Altın Rozet & Holografik Parıltı Efekti --- */
+/* --- Platin Kupa (%100 Tamamlama) Epic Mor Kupa & Holografik Parıltı Efekti --- */
 .pcard.platinum {
-  border-color: rgba(251, 191, 36, 0.85);
+  border-color: rgba(168, 85, 247, 0.75);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6),
-              0 0 16px rgba(245, 158, 11, 0.35),
-              0 0 32px rgba(217, 119, 6, 0.15);
+              0 0 16px rgba(168, 85, 247, 0.35),
+              0 0 32px rgba(147, 51, 234, 0.15);
   transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.24s ease,
               box-shadow 0.24s ease;
 }
 .pcard.platinum:hover {
   transform: translateY(-6px) scale(1.02);
-  border-color: #ffd700;
+  border-color: #c084fc;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7),
-              0 0 24px rgba(250, 204, 21, 0.5),
-              0 0 45px rgba(245, 158, 11, 0.25);
+              0 0 24px rgba(192, 132, 252, 0.5),
+              0 0 45px rgba(168, 85, 247, 0.25);
 }
 
-/* Koleksiyon kartı holografik ışık geçişi (ağırbaşlı, zarif ve sakin altın parıltı) */
+/* Koleksiyon kartı holografik ışık geçişi (ağırbaşlı, zarif mor-platin parıltı) */
 .pcard.platinum::after {
   content: "";
   position: absolute;
@@ -1853,7 +1854,7 @@ button { font-family: inherit; }
     115deg,
     transparent 35%,
     rgba(255, 255, 255, 0.04) 44%,
-    rgba(255, 235, 150, 0.38) 50%,
+    rgba(216, 180, 254, 0.38) 50%,
     rgba(255, 255, 255, 0.08) 56%,
     transparent 65%
   );
@@ -1889,33 +1890,38 @@ button { font-family: inherit; }
   to { transform: translateX(140%) rotate(12deg); }
 }
 
+/* Epic Games Sade Mor Platin Kupa Rozeti */
+.platinum-badge,
 .platinum-ribbon {
-  position: absolute; top: 8px; right: 8px; z-index: 3;
-  display: inline-flex; align-items: center; gap: 4px;
-  background: linear-gradient(135deg, #ffe066 0%, #f59e0b 60%, #b45309 100%);
-  color: #1a0f00; font-size: 9.5px; font-weight: 850;
-  height: 20px;
-  padding: 0 7px; border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(251, 191, 36, 0.35);
-  pointer-events: none; text-transform: uppercase; letter-spacing: 0.4px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border-radius: 12px 12px 7px 7px;
+  background: rgba(22, 10, 38, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 14px rgba(168, 85, 247, 0.45);
+  pointer-events: none;
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
+
+.platinum-badge svg,
 .platinum-ribbon svg {
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 0 5px rgba(192, 132, 252, 0.7));
 }
+
+.pcard:hover .platinum-badge,
 .pcard:hover .platinum-ribbon {
   opacity: 0;
   transform: translateY(-4px);
-}
-.ribbon-sparkle {
-  font-size: 11px;
-  display: inline-block;
-  animation: plat-sparkle-twinkle 3.5s ease-in-out infinite;
-}
-@keyframes plat-sparkle-twinkle {
-  0%, 70%, 100% { transform: scale(1); opacity: 0.85; }
-  85% { transform: scale(1.3) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 5px #fff); }
 }
 
 .spinner {
@@ -3256,27 +3262,27 @@ button { font-family: inherit; }
 
 /* --- Platin Kupa Filtresi & Kategori Başlığı --- */
 .chip[data-val="platinum"] {
-  border-color: rgba(251, 191, 36, 0.35);
-  color: #fbbf24;
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
 }
 .chip[data-val="platinum"]:hover {
-  border-color: #ffd700;
-  color: #ffd700;
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+  border-color: #d8b4fe;
+  color: #f3e8ff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
 }
 .chip[data-val="platinum"].active {
-  background: linear-gradient(135deg, #ffd700, #f59e0b);
-  color: #1a0f00;
-  border-color: #ffd700;
-  box-shadow: 0 2px 14px rgba(251, 191, 36, 0.45);
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  color: #ffffff;
+  border-color: #c084fc;
+  box-shadow: 0 2px 14px rgba(168, 85, 247, 0.5);
 }
 .chip[data-val="platinum"] .chip-cnt {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
 }
 .chip[data-val="platinum"].active .chip-cnt {
-  background: rgba(0, 0, 0, 0.25);
-  color: #1a0f00;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
   font-weight: 800;
 }
 
@@ -3285,13 +3291,13 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 18px;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(180, 83, 9, 0.05) 100%);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.14) 0%, rgba(126, 34, 206, 0.06) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.35);
   border-radius: 14px;
   padding: 16px 20px;
   margin-bottom: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(251, 191, 36, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(168, 85, 247, 0.15);
 }
 .plat-banner-glow {
   position: absolute;
@@ -3299,13 +3305,16 @@ button { font-family: inherit; }
   right: -40px;
   width: 140px;
   height: 140px;
-  background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.3) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
 .plat-banner-icon {
   font-size: 32px;
-  filter: drop-shadow(0 2px 8px rgba(255, 215, 0, 0.5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 10px rgba(192, 132, 252, 0.6));
 }
 .plat-banner-info {
   flex: 1;
@@ -3313,7 +3322,7 @@ button { font-family: inherit; }
 .plat-banner-title {
   font-size: 16px;
   font-weight: 800;
-  color: #ffd700;
+  color: #f3e8ff;
   margin-bottom: 3px;
   letter-spacing: -0.2px;
 }
