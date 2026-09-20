@@ -33,11 +33,13 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 
 ## 4. Temel İş Akışı & Disiplin Kuralları
 
-1. **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına özetlenmeli ve ardından `git commit` atılmalıdır.
-2. **ZORUNLU TASARIM KURALI:** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır (obsidian & midnight blue `#07080d`/`#0b0d14`, mor-altın-obsidyen kimliği, ferah kupa hiyerarşisi: Platin, Altın, Gümüş, Bronz sayaçları). Telif ihlali oluşturmamak için Sony tescilli logoları kopyalanmaz.
-3. **ZORUNLU KONTROLCÜ & KONSOL KURALI:** Arayüz daima **Game Controller (Gamepad / DualSense / Xbox)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu tasarlanmalıdır. Geniş ferah kartlar, 2 sütunlu kupa ızgarası, büyük butonlar, `:focus-visible` lavanta/mavi odak halkaları ve kontrolcü kısayolları (A: Seç, B: Geri, LB/RB: Sekmeler, Y: Ara, X: Favori) titizlikle korunur.
-4. **"AI TASARIMI GİBİ DURMASIN" KURALI:** YASAKLAR: Mor→indigo→cyan dekoratif gradyanlar, neon parlama (`box-shadow glow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`999px`) çevirmek, cam/blur katmanlarının gereksiz tekrarı ve süs amaçlı mikro animasyonlar (ikon sallama, pulse). Renk yalnızca DURUM bildirir (yeşil = çevrimiçi, amber = çevrimdışı/güncelleme, kırmızı = sayaç/hata).
-5. **DENGE KURALI:** Hedef **sade ama karakterli**. Karakter şu dört kaynaktan gelir: tek kaynaklı bağlamsal ışık, yüzey/derinlik dili, tipografik ses, tek özgüvenli vurgu rengi.
+1. **ZORUNLU 1 NUMARALI ÖNCELİK: OPTİMİZASYON, AKICILIK & DÜŞÜK KAYNAK:** Bu projenin resmi Epic Launcher'a karşı en büyük varoluş sebebi **yüksek performans, 120 FPS akıcılık, sıfır takılma ve düşük bellek (RAM/VRAM) tüketimidir**. Her yeni özellik, ekran veya algoritma tasarlanırken 1 numaralı kıstas performanstır. 500+ oyunluk kütüphanede milisaniyelik gecikmelere, O(N²) döngülere, gereksiz DOM reflow/thrashing tetiklemelerine veya arka planda dönen CPU/GPU yüklerine ASLA izin verilmez.
+2. **ZORUNLU TEMİZLİK & ARTIK KOD/DOSYA BIRAKMAMA (Dead Code Elimination):** Proje GitHub'da açık kaynak ve AI modelleri için her daim "temiz, hafif ve anlaşılır" kalmalıdır. Tek seferlik analiz araçları, test scriptleri (`tools/`, geçici `.mjs`/`.py` dosyaları), kaldırılan özelliklere ait ölü CSS'ler, kullanılmayan tipler veya atıl fonksiyonlar repoda ASLA bırakılmaz. İşi biten geçici her dosya derhal silinir.
+3. **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına özetlenmeli ve ardından `git commit` atılmalıdır.
+4. **ZORUNLU TASARIM KURALI:** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır (obsidian & midnight blue `#07080d`/`#0b0d14`, mor-altın-obsidyen kimliği, ferah kupa hiyerarşisi: Platin, Altın, Gümüş, Bronz sayaçları). Telif ihlali oluşturmamak için Sony tescilli logoları kopyalanmaz.
+5. **ZORUNLU KONTROLCÜ & KONSOL KURALI:** Arayüz daima **Game Controller (Gamepad / DualSense / Xbox)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu tasarlanmalıdır. Geniş ferah kartlar, 2 sütunlu kupa ızgarası, büyük butonlar, `:focus-visible` lavanta/mavi odak halkaları ve kontrolcü kısayolları (A: Seç, B: Geri, LB/RB: Sekmeler, Y: Ara, X: Favori) titizlikle korunur.
+6. **"AI TASARIMI GİBİ DURMASIN" KURALI:** YASAKLAR: Mor→indigo→cyan dekoratif gradyanlar, neon parlama (`box-shadow glow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`999px`) çevirmek, cam/blur katmanlarının gereksiz tekrarı ve süs amaçlı mikro animasyonlar (ikon sallama, pulse). Renk yalnızca DURUM bildirir (yeşil = çevrimiçi, amber = çevrimdışı/güncelleme, kırmızı = sayaç/hata).
+7. **DENGE KURALI:** Hedef **sade ama karakterli**. Karakter şu dört kaynaktan gelir: tek kaynaklı bağlamsal ışık, yüzey/derinlik dili, tipografik ses, tek özgüvenli vurgu rengi.
 
 ## 5. Mimari & Veri Akışı Prensibi
 
@@ -66,6 +68,8 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 14. **Sıralama Performansı:** `list.sort` içinde `localeCompare` her adımda çağrılmaz; global `trCollator = new Intl.Collator("tr")` örneği kullanılır.
 15. **Son Oynanan Disiplini:** `pushRecent(appName)` YALNIZCA oyun gerçekten başlatıldığında çağrılır; detay modalı açıldığında çağrılmaz.
 16. **3. Parti Başlatıcılar (EA / Ubisoft):** `legendary list -T --json` (`--third-party`) bayrağı zorunludur. EA App oyunları `link2ea://` protokolüyle başlatılır.
+17. **Sıfır Reflow / Layout Thrashing:** 170ms'lik gamepad döngüsünde veya scroll dinleyicilerinde `getBoundingClientRect()` ve `getComputedStyle()` ardışık çalıştırılamaz. Görünürlük kontrolünde `offsetParent !== null` gibi hafif yöntemler kullanılır.
+18. **Ölü Kod & Artık Dosya Sıfır Toleransı:** Kaldırılan veya test edilen özelliklere ait tüm yardımcı script'ler (`tools/`), geçici dosyalar, ölü CSS sınıfları ve arayüz artıkları işi bittiğinde derhal silinir. "İleride lazım olur" diye repoda ölü kod tutulmaz.
 
 ---
 
