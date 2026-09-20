@@ -72,76 +72,101 @@ body {
 
 #app { display: flex; flex-direction: column; height: 100vh; }
 
-/* --- Titlebar (Konsol çubuğu) ---
-   Karakter kaynağı: tuş hissi veren yüzeyler + TEK vurgu rengi + gerçek derinlik.
-   YASAK: dekoratif gradyan, neon glow, kapsül, süs animasyonu (bkz. AGENTS.md §3). */
+/* --- Titlebar (PlayStation 5 esinli ortam ışıklı konsol çubuğu) ---
+   PS5'in ruhu KUTUDAN değil IŞIKTAN gelir:
+     · bölüme göre değişen tek kaynaklı ortam (ambient) rengi
+     · odaklanan öğenin ardında yumuşak ışık (dolgu kutusu DEĞİL)
+     · alt kenarda kayan ince beyaz çizgi (aktif öğe göstergesi)
+     · ince-uzun ikonlar, büyük harf aralıklı tipografi
+   YASAK (AGENTS.md §3): dekoratif çok renkli gradyan, neon glow, kapsül, süs animasyonu. */
+
+/* Bölüme göre yumuşak geçiş yapan ortam rengi (kayıtlı özel özellik → renk animasyonu) */
+@property --nav-ambient {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(124, 108, 232, 0.20);
+}
+
 #titlebar {
-  display: flex; align-items: center; gap: 14px;
-  padding: 0 0 0 14px; height: 50px; flex-shrink: 0; z-index: 10;
-  background: linear-gradient(180deg, #13141b 0%, #0d0e13 64%, #0b0c10 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 14px 26px -20px rgba(0, 0, 0, 1);
+  position: relative;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 0 0 16px; height: 54px; flex-shrink: 0; z-index: 10;
+  background: #08090d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 30px -22px rgba(0, 0, 0, 1);
+  transition: --nav-ambient 0.55s ease;
   -webkit-app-region: drag;
+}
+/* Tek kaynaklı ortam ışığı: sol üstten sızar, bölüm değişince renk yumuşakça kayar */
+#titlebar::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(88% 340% at 2% -120%, var(--nav-ambient) 0%, rgba(0, 0, 0, 0) 76%);
+}
+
+/* Aktif öğenin altındaki kayan ince çizgi */
+.nav-underline {
+  position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
+  opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
+  background: #ffffff;
+  box-shadow: 0 0 10px -1px rgba(255, 255, 255, 0.5);
+  transition: transform 0.34s cubic-bezier(0.34, 1.25, 0.64, 1),
+              width 0.34s cubic-bezier(0.34, 1.25, 0.64, 1),
+              opacity 0.18s linear;
 }
 
 /* Marka */
 .logo {
-  display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
   white-space: nowrap; -webkit-app-region: drag; cursor: default;
 }
 .logo-mark {
-  width: 27px; height: 27px; border-radius: 8px;
+  width: 28px; height: 28px; border-radius: 9px;
   display: grid; place-items: center;
-  color: #8f82ea;
-  background: #1b1d26;
+  color: #a99df0;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 8px -4px rgba(0, 0, 0, 0.9);
 }
-.logo-mark svg { width: 15px; height: 15px; }
+.logo-mark svg { width: 16px; height: 16px; stroke-width: 1.8; }
 .logo-text {
-  font-size: 12px; font-weight: 800; letter-spacing: 2.8px; color: #e8e9ef;
+  font-size: 12px; font-weight: 800; letter-spacing: 2.8px; color: #eceef4;
 }
 
-#nav { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; -webkit-app-region: drag; }
+#nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
 /* Segment (Mağaza / Kütüphane / İndirmeler)
-   Çukur yuva + içinde "tuş" hissi veren aktif karo + tek vurgu: alt kenarda düz menekşe çizgi. */
+   PS5 dili: kutu YOK. Öğeler yalnızca ışık ve çizgiyle ayrışır. */
 .nav-seg {
-  position: relative; display: flex; align-items: center; gap: 2px;
-  padding: 3px; border-radius: 9px; flex-shrink: 0;
-  background: #07080b;
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  box-shadow: inset 0 2px 5px -1px rgba(0, 0, 0, 0.85);
+  display: flex; align-items: center; gap: 20px; flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
-.nav-seg-indicator {
-  position: absolute; top: 3px; left: 0; width: 0; height: calc(100% - 6px);
-  border-radius: 7px; opacity: 0; pointer-events: none;
-  background: #1d1f28;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 6px -2px rgba(0, 0, 0, 0.9);
-  transition: transform 0.3s cubic-bezier(0.34, 1.22, 0.64, 1),
-              width 0.3s cubic-bezier(0.34, 1.22, 0.64, 1),
-              opacity 0.16s linear;
-}
-/* Aktif sekmenin alt kenarındaki TEK vurgu rengi */
-.nav-seg-indicator::after {
-  content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px;
-  border-radius: 2px 2px 0 0; background: #7f6ce8;
-}
 #nav .nav-tab {
-  position: relative; z-index: 1; display: flex; align-items: center; gap: 7px;
-  padding: 7px 12px; border-radius: 7px; border: none; background: none;
-  color: #7e8290; font-size: 11px; font-weight: 700; letter-spacing: 0.95px;
+  position: relative; display: flex; align-items: center; gap: 9px;
+  padding: 8px 6px; border-radius: 10px; border: none; background: none;
+  color: #7c8094; font-size: 11px; font-weight: 700; letter-spacing: 1.1px;
   text-transform: uppercase;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.15s ease, transform 0.1s ease;
+  transition: color 0.2s ease;
 }
-#nav .nav-tab:hover { color: #b7bac6; }
-#nav .nav-tab:active { transform: translateY(1px); }
+/* Odak ışığı: dolgu kutusu değil, öğenin ardında yumuşak bir parıltı (PS5 seçim dili) */
+#nav .nav-tab::before {
+  content: ""; position: absolute; inset: 2px -12px; border-radius: 12px;
+  pointer-events: none; opacity: 0;
+  background: radial-gradient(64% 110% at 50% 50%, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0) 74%);
+  transition: opacity 0.28s ease;
+}
+#nav .nav-tab:hover { color: #c8cbd8; }
+#nav .nav-tab:hover::before { opacity: 0.75; }
 #nav .nav-tab.active { color: #ffffff; }
-#nav .nav-tab svg { width: 15px; height: 15px; }
+#nav .nav-tab.active::before { opacity: 1; }
+#nav .nav-tab svg {
+  width: 18px; height: 18px; stroke-width: 1.7;
+  transition: transform 0.32s cubic-bezier(0.34, 1.25, 0.64, 1), opacity 0.2s ease;
+  opacity: 0.85;
+}
+#nav .nav-tab:hover svg { opacity: 1; }
+#nav .nav-tab.active svg { transform: scale(1.12); opacity: 1; }
 
 /* Sağ küme (durum + hesap + ayarlar) */
 .nav-right {
@@ -149,74 +174,78 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Bağlantı durumu — tuş yüzeyi; rengi yalnızca nokta taşır */
+/* Bağlantı durumu — PS5 kontrol merkezi döşemesi (yarı saydam, yumuşak ışıklı) */
 #nav .net-chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 5px 10px; border-radius: 7px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 10px; cursor: pointer;
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.25px; font-family: inherit;
-  color: #a4a8b6; background: #14161d;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  color: #b4b8c6; background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-#nav .net-chip:hover { background: #1a1c25; color: #e6e7ec; }
+#nav .net-chip:hover { background: rgba(255, 255, 255, 0.10); color: #f2f3f7; }
 .net-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #6b6e7a; flex-shrink: 0;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
-#nav .net-chip.online { border-color: rgba(63, 185, 80, 0.26); }
-#nav .net-chip.online:hover { border-color: rgba(63, 185, 80, 0.5); }
+#nav .net-chip.online { border-color: rgba(63, 185, 80, 0.22); }
+#nav .net-chip.online:hover { border-color: rgba(63, 185, 80, 0.42); }
 /* Durum ışığı: neon glow değil, sabit halo */
 #nav .net-chip.online .net-dot { background: #3fb950; box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.14); }
-#nav .net-chip.offline { border-color: rgba(210, 153, 34, 0.28); }
-#nav .net-chip.offline:hover { border-color: rgba(210, 153, 34, 0.52); }
+#nav .net-chip.offline { border-color: rgba(210, 153, 34, 0.24); }
+#nav .net-chip.offline:hover { border-color: rgba(210, 153, 34, 0.44); }
 #nav .net-chip.offline .net-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210, 153, 34, 0.14); }
 
-/* Hesap — aynı tuş yüzeyi dili */
+/* Hesap — aynı PS5 döşeme dili */
 #nav .account-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 3px 11px 3px 3px; border-radius: 7px; cursor: pointer;
-  font-size: 12px; font-weight: 600; font-family: inherit; color: #a4a8b6;
-  background: #14161d; border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  max-width: 200px;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 4px 13px 4px 4px; border-radius: 10px; cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: inherit; color: #b4b8c6;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
+  max-width: 150px;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-#nav .account-chip:hover { background: #1a1c25; color: #e6e7ec; }
+#nav .account-chip:hover { background: rgba(255, 255, 255, 0.10); color: #f2f3f7; }
 #nav .account-chip.active {
-  color: #ffffff; background: #1d1f28; border-color: rgba(255, 255, 255, 0.13);
+  color: #ffffff; background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 #nav .account-avatar {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  display: grid; place-items: center; color: #8b8e9c;
-  background: #1c1e26; border: 1px solid rgba(255, 255, 255, 0.07);
+  width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #9aa0b0;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-#nav .account-avatar svg { width: 14px; height: 14px; }
-#nav .avatar-initial { font-size: 11px; font-weight: 700; color: #d4d6de; letter-spacing: 0; }
-#nav .account-chip.logged { color: #d4d6de; }
+#nav .account-avatar svg { width: 14px; height: 14px; stroke-width: 1.8; }
+#nav .avatar-initial { font-size: 11px; font-weight: 700; color: #e2e4ea; letter-spacing: 0; }
+#nav .account-chip.logged { color: #e2e4ea; }
 /* Girişliyken baş harf vurgu rengini alır — gradyan değil, tek düz renk */
 #nav .account-chip.logged .account-avatar {
-  background: #22242e; border-color: rgba(127, 108, 232, 0.42);
+  background: rgba(127, 108, 232, 0.20);
+  border-color: rgba(160, 145, 245, 0.42);
 }
-#nav .account-chip.logged .avatar-initial { color: #b3a6f5; }
+#nav .account-chip.logged .avatar-initial { color: #c4b8ff; }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Ayarlar — aynı tuş yüzeyi dili */
+/* Ayarlar — aynı PS5 döşeme dili */
 #nav .nav-icon-btn {
-  width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
   display: grid; place-items: center; cursor: pointer;
-  background: #14161d; border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  color: #9a9daa;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
-              transform 0.1s ease;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
+  color: #b4b8c6;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-#nav .nav-icon-btn svg { width: 15px; height: 15px; }
-#nav .nav-icon-btn:hover { background: #1a1c25; color: #ffffff; }
-#nav .nav-icon-btn:active { transform: translateY(1px); }
+#nav .nav-icon-btn svg { width: 16px; height: 16px; stroke-width: 1.8; }
+#nav .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.10); color: #ffffff; }
 #nav .nav-icon-btn.active {
-  background: #1d1f28; color: #b3a6f5; border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.13); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 /* Pencere Kontrol Butonları (Windows Başlık Çubuğu) */
@@ -233,30 +262,32 @@ body {
 .win-btn.win-close:hover { background: #e81123; color: #ffffff; }
 .win-btn.win-close:active { background: #bf0f1d; }
 
-/* Üst barda süs amaçlı ikon animasyonu YOK — tek hareket, aktif karonun kaymasıdır. */
+/* Süs amaçlı ikon animasyonu YOK. Hareket yalnızca: alt çizginin kayması,
+   odak ışığının belirmesi ve aktif ikonun ölçeklenmesi. */
 
 /* İndirme sayacı — sekmede satır içi düz sayaç (metnin üstüne binmez) */
 #nav .nav-tab .badge {
   margin: 0 0 0 1px; flex-shrink: 0;
-  min-width: 14px; height: 14px; padding: 0 4px; line-height: 14px;
-  font-size: 9px; font-weight: 700; text-align: center; border-radius: 4px;
-  color: #fff; background: #e5484d;
+  min-width: 15px; height: 15px; padding: 0 4px; line-height: 15px;
+  font-size: 9px; font-weight: 700; text-align: center; border-radius: 5px;
+  letter-spacing: 0; color: #fff; background: #e5484d;
+  box-shadow: 0 0 0 2px rgba(8, 9, 13, 0.85);
 }
 #nav .nav-tab .badge.hidden { display: none; }
 
 /* Orta dar pencerelerde hesap adını gizle (avatar kalır) */
-@media (max-width: 1060px) {
-  #nav .account-chip { padding: 3px; max-width: none; }
+@media (max-width: 1200px) {
+  #nav .account-chip { padding: 4px; max-width: none; }
   #nav .account-name { display: none; }
 }
 
-/* Güvenlik ağı: çok dar pencerelerde sekmeler ikona iner */
-@media (max-width: 880px) {
-  #titlebar { gap: 10px; }
-  #nav { gap: 8px; }
-  #nav .nav-tab { padding: 7px 10px; }
+/* Güvenlik ağı: çok dar pencerelerde sekmeler ikona iner (min pencere genişliği 1024px) */
+@media (max-width: 960px) {
+  #titlebar { gap: 12px; }
+  .nav-seg { gap: 10px; }
+  #nav .nav-tab { padding: 8px 2px; }
   #nav .nav-tab span:not(.badge) { display: none; }
-  #nav .net-chip { padding: 6px 9px; }
+  #nav .net-chip { padding: 7px 9px; }
   #nav .net-label { display: none; }
 }
 

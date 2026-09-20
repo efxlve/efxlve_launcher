@@ -8,13 +8,13 @@
   <body>
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
+        <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
         <div class="logo" data-act="goto-library" data-tauri-drag-region>
           <span class="logo-mark"><i data-lucide="gamepad-2"></i></span>
           <span class="logo-text">EFXLVE</span>
         </div>
         <nav id="nav">
           <div class="nav-seg" id="nav-seg">
-            <span class="nav-seg-indicator" id="nav-indicator" aria-hidden="true"></span>
             <button class="nav-tab" data-act="open-store" title="Epic Mağazası — Gömülü Mağaza (Ctrl+1)"><i data-lucide="store"></i><span>Mağaza</span></button>
             <button class="nav-tab active" data-view="library" title="Kütüphane (Ctrl+2)"><i data-lucide="layout-grid"></i><span>Kütüphane</span></button>
             <button class="nav-tab" data-view="downloads" title="İndirmeler & Kuyruk (Ctrl+3)"><i data-lucide="download"></i><span>İndirmeler</span><span id="dl-badge" class="badge hidden"></span></button>

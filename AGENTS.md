@@ -34,6 +34,8 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - **ZORUNLU TASARIM KURALI (Kullanıcı Talimatı):** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır. Arayüz PlayStation konsol UI'ına yakın, havadar, derin cam efektli (obsidian & midnight blue `#07080d`/`#0b0d14`), şık kupa hiyerarşili (Platin, Altın, Gümüş, Bronz sayaçları) ve sade konsol zarafetinde olmalıdır. Telif ihlali oluşturmamak için Sony'nin tescilli logo ve ticari markaları birebir kopyalanmaz; launcher'ın kendi mor-altın-obsidyen kimliğiyle özgün bir konsol deneyimi sunulur.
 - **ZORUNLU KONTROLCÜ & KONSOL KULLANILABİLİRLİK KURALI (Kullanıcı Talimatı):** Launcher arayüzü daima **Game Controller (Gamepad / DualSense / Xbox / Kol)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu bir konsol UI'ı olarak tasarlanmalı ve korunmalıdır. Kullanıcının *"MÜKEMMELLLL"* olarak nitelendirdiği mevcut PlayStation 5 Game Hub, Trophy Hub konsol sahnesi, geniş ve ferah kartlar, 2 sütunlu kupa ızgarası, büyük aksiyon butonları ve sade gezinme dili titizlikle korunmalı; karmaşık, sıkışık veya fare odaklı minik bento kutu kalabalığından kesinlikle kaçınılmalıdır. Tüm etkileşimli öğeler elektrik mavisi odak halkasına (`:focus-visible`), D-pad / analog uzamsal navigasyona ve kontrolcü kısayollarına (A: Seç, B: Geri, LB/RB: Sekme, Y: Ara, X: Favori) sahip olmalıdır.
 - **ZORUNLU "AI TASARIMI GİBİ DURMASIN" KURALI (Kullanıcı Talimatı):** Arayüz, "bir AI üretmiş" hissi veren klişelerden arındırılır. YASAK: mor→indigo→cyan gradyanların dekoratif kullanımı, neon parlama (`box-shadow` glow / `drop-shadow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`border-radius: 999px`) çevirmek, cam/blur katmanları ve süs amaçlı mikro animasyonlar (ikon sallama, dönme, pulse). Bunun yerine: düz yüzeyler, ölçülü köşe yarıçapları (6-8px), 1px hairline kenarlıklar, nötr gri metin hiyerarşisi. **Renk yalnızca DURUM bildirir** (yeşil = çevrimiçi, amber = çevrimdışı, kırmızı = sayaç); süs olarak renk kullanılmaz. Hareket yalnızca işlevseldir (ör. aktif sekme karonunun kayması).
+  - **TEK İSTİSNA — bağlamsal ortam ışığı:** Bölüme/içeriğe göre DEĞİŞEN, TEK kaynaklı, düşük alfalı bir ortam (ambient) ışığı serbesttir (PS5'in sahne ışığı gibi: kütüphane=menekşe, mağaza=mavi, indirmeler=turkuaz, profil=altın). Bu bir "çok renkli dekoratif gradyan" DEĞİLDİR; rengi sabit değil bağlama bağlıdır ve barı tek bir noktadan yıkar. Sabit mor→cyan geçişli süs gradyanı yine YASAKTIR.
+- **DENGE KURALI (Kullanıcı Talimatı):** İki uçtan da kaçınılır. (a) gradyan + glow + kapsül = "AI yapmış gibi"; (b) hiç ışık, hiç vurgu, hiç derinlik olmayan düz gri = "ruhsuz / kütük gibi". Hedef **sade ama karakterli**. Karakter şu dört kaynaktan gelir: bağlamsal ışık, yüzey/derinlik dili, tipografik ses, tek özgüvenli vurgu rengi.
 
 ## 4. Mimari
 
@@ -1229,4 +1231,24 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Ölçüler:** bar 48 → **50px**, köşe yarıçapları 9/7px, `.logo-text` 12px/800/`2.8px` letter-spacing.
 
 **Ölçüm:** 1024px'te `seg=355 + right=171` (216px boşluk), 1250px'te `seg=355 + right=204` — taşma yok. Eşikler (§72'deki `≤1060px` / `≤880px`) değişmedi.
+
+## 74. Üst Barın PlayStation 5 Diline Taşınması: Bağlamsal Ortam Işığı, Odak Parıltısı & Kayan Çizgi
+
+**Geri bildirim:** §73'teki "tuş yüzeyli" sürüm de *"hâlâ düz, kütük gibi"* bulundu; kullanıcı PlayStation tasarımından esinlenmeyi önerdi. **Teşhis:** PS5'in ruhu kutulardan değil IŞIKTAN gelir. §73'te her öğeyi bir kutuya (keycap) sarmıştım — kutular çoğaldıkça arayüz "panel yığını" gibi okunuyor. PS5 ise neredeyse hiç kutu kullanmaz; öğeleri ışık ve çizgiyle ayırır.
+
+**Yapılan dönüşüm:**
+- **Kutular kaldırıldı.** `.nav-seg` artık görsel bir yuva değil, sadece 20px boşluklu bir flex grubu. Aktif sekme için dolgu kutusu YOK.
+- **Bağlamsal ortam (ambient) ışığı — en büyük "ruh" kaynağı.** `#titlebar` üzerinde `@property --nav-ambient` (syntax `<color>`) kayıtlı; `#titlebar::before` tek kaynaklı bir radyal yıkama yapar:
+  `radial-gradient(88% 340% at 2% -120%, var(--nav-ambient) 0%, transparent 76%)`.
+  `updateNavAmbient()` (main.ts) aktif bölüme göre rengi atar: mağaza `rgba(56,132,255,.22)` (mavi), kütüphane `rgba(124,108,232,.22)` (menekşe), indirmeler `rgba(0,178,158,.20)` (turkuaz), profil `rgba(206,152,48,.20)` (kupa altını), ayarlar `rgba(120,128,150,.18)`. `@property` sayesinde renk **0.55s'de yumuşakça kayar** (bölüm değişince bar ışığı akıyor). Sabit çok renkli gradyan DEĞİL → §3 istisnası.
+- **Odak parıltısı:** `#nav .nav-tab::before` — öğenin ardında `inset: 2px -12px` radyal beyaz ışık (`rgba(255,255,255,.11)`), hover'da %75, aktifte %100 opaklık. Kutu yerine ışıkla seçim = PS5 dili.
+- **Kayan alt çizgi:** gösterge artık `.nav-underline` olarak **`#titlebar`'ın doğrudan çocuğu** (`position:absolute; bottom:0; height:2px`), beyaz ve hafif bloom'lu. JS konumlandırması `offsetLeft` yerine **`getBoundingClientRect()` farkına** geçti (çizgi artık sekmenin kardeşi değil, barın çocuğu):
+  `translateX(tabRect.left - barRect.left)`, `width = tabRect.width`.
+- **Tipografi/ikon:** ikonlar 15px → **18px**, `stroke-width: 1.7` (ince-uzun konsol ikonları); sekmeler 11px/700/`letter-spacing: 1.1px` UPPERCASE. Aktif ikon `scale(1.12)`.
+- **Sağ küme PS5 kontrol merkezi döşemesi:** düz opak dolgu yerine yarı saydam `rgba(255,255,255,0.055)` + 1px `rgba(255,255,255,0.06)` + `inset` üst ışık + yumuşak gölge. Ortam ışığını içlerinden geçirir. Ayarlar 32px, radius 10px.
+- **Bar 50px → 54px**, `#titlebar` artık `position: relative`.
+
+**Ölçüm (uzun hesap adıyla en kötü durum, Edge headless DOM dump):**
+`vw=1024 nav=736/736 right=181 OVERFLOW=false` · `vw=1200 right=181 (ad gizli)` · `vw=1280 right=296 (ad görünür, 150px'te kırpılır) OVERFLOW=false`.
+Responsive: hesap adı `≤1200px`'te gizlenir (avatar kalır, `max-width: 150px`), ikon-only güvenlik ağı `≤960px`.
 
