@@ -148,17 +148,6 @@ body {
 #view::-webkit-scrollbar-thumb { background: #252634; border-radius: 4px; }
 #view::-webkit-scrollbar-thumb:hover { background: #353648; }
 
-/* --- Statusbar --- */
-#statusbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 8px 24px; border-top: 1px solid var(--border);
-  font-size: 13px; color: var(--muted); flex-shrink: 0; background: var(--bg2);
-}
-#backend-status { white-space: nowrap; font-weight: 500; }
-#backend-status.ok { color: var(--green); }
-#backend-status.mock { color: var(--yellow); }
-#recent { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
-
 /* --- Butonlar & Formlar --- */
 button { font-family: inherit; }
 .btn {
