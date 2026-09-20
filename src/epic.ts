@@ -976,3 +976,44 @@ export const epicReplaceScreenshotWithCompressed = (
     newExt,
   });
 
+/* ---------- Oyun Taşıma (Move Game Files) ---------- */
+
+export interface SystemDriveInfo {
+  letter: string;
+  label: string;
+  total_bytes: number;
+  available_bytes: number;
+}
+
+export interface MoveGameProgress {
+  id: string;
+  stage: "preparing" | "moving" | "verifying" | "cleaning" | "complete" | "failed";
+  percent: number;
+  copied_bytes: number;
+  total_bytes: number;
+  speed: string;
+  eta: string;
+  current_file: string;
+  files_copied: number;
+  total_files: number;
+}
+
+export interface MoveGameResult {
+  success: boolean;
+  new_path: string;
+  message: string;
+}
+
+export const epicGetSystemDrives = () =>
+  invoke<SystemDriveInfo[]>("epic_get_system_drives");
+
+export const epicSelectFolderDialog = (defaultPath?: string | null) =>
+  invoke<string | null>("epic_select_folder_dialog", { defaultPath: defaultPath ?? null });
+
+export const epicMoveGame = (appName: string, targetBasePath: string) =>
+  invoke<MoveGameResult>("epic_move_game", { appName, targetBasePath });
+
+export const epicCancelMoveGame = (appName: string) =>
+  invoke<boolean>("epic_cancel_move_game", { appName });
+
+
