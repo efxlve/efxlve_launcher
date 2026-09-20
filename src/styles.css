@@ -12594,3 +12594,51 @@ select option {
   line-height: 1.5;
 }
 
+/* Canlı Epic Games XMPP Durum Rozeti */
+.steam-chat-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a3b8;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.steam-chat-live-badge .live-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.steam-chat-live-badge.connected {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+.steam-chat-live-badge.connected .live-indicator-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.steam-chat-live-badge.connecting,
+.steam-chat-live-badge.authenticating {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+.steam-chat-live-badge.connecting .live-indicator-dot,
+.steam-chat-live-badge.authenticating .live-indicator-dot {
+  background: #f59e0b;
+  animation: pulseLiveDot 1s infinite alternate;
+}
+@keyframes pulseLiveDot {
+  from { opacity: 0.4; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.15); box-shadow: 0 0 6px #f59e0b; }
+}
+

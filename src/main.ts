@@ -145,6 +145,8 @@ import {
   epicMinimizeSocialWindow,
   epicToggleMaximizeSocialWindow,
   epicOpenOfficialEpicChat,
+  epicGetXmppCredentials,
+  type EpicXmppCredentials,
   type EpicFriend,
   type EpicSocialSummary,
 } from "./epic";
@@ -7827,6 +7829,219 @@ function saveSocialChats(): void {
   } catch {}
 }
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function unescapeXml(str: string): string {
+  return str
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
+}
+
+class EpicXmppManager {
+  private ws: WebSocket | null = null;
+  private status: "disconnected" | "connecting" | "authenticating" | "connected" = "disconnected";
+  private creds: EpicXmppCredentials | null = null;
+  private pingTimer: number | null = null;
+  private reconnectTimer: number | null = null;
+  private reconnectAttempts = 0;
+  public boundJid = "";
+
+  public getStatus(): "disconnected" | "connecting" | "authenticating" | "connected" {
+    return this.status;
+  }
+
+  public isConnected(): boolean {
+    return this.status === "connected";
+  }
+
+  public async connect(): Promise<void> {
+    if (!isTauri) return;
+    if (this.status === "connected" || this.status === "connecting" || this.status === "authenticating") {
+      return;
+    }
+    this.status = "connecting";
+    this.updateStatusUi();
+
+    try {
+      this.creds = await epicGetXmppCredentials();
+      if (!this.creds?.access_token || !this.creds?.account_id) {
+        this.status = "disconnected";
+        this.updateStatusUi();
+        return;
+      }
+
+      this.ws = new WebSocket("wss://xmpp-service-prod.ol.epicgames.com/", ["xmpp"]);
+
+      this.ws.onopen = () => {
+        this.sendRaw('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="prod.ol.epicgames.com" version="1.0"/>');
+      };
+
+      this.ws.onmessage = (e) => {
+        this.handleMessage(String(e.data));
+      };
+
+      this.ws.onclose = () => {
+        this.handleClose();
+      };
+
+      this.ws.onerror = () => {
+        this.handleClose();
+      };
+    } catch {
+      this.status = "disconnected";
+      this.updateStatusUi();
+      this.scheduleReconnect();
+    }
+  }
+
+  private handleMessage(data: string): void {
+    if (data.includes("<mechanisms") && (this.status === "connecting" || this.status === "authenticating")) {
+      if (!this.creds) return;
+      this.status = "authenticating";
+      this.updateStatusUi();
+      const authStr = `\0${this.creds.account_id}\0${this.creds.access_token}`;
+      const authB64 = btoa(authStr);
+      this.sendRaw(`<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">${authB64}</auth>`);
+    } else if (data.includes("<success") && this.status === "authenticating") {
+      this.sendRaw('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="prod.ol.epicgames.com" version="1.0"/>');
+    } else if (data.includes("<stream:features") && data.includes("<bind")) {
+      this.sendRaw('<iq type="set" id="_bind_1"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>V2:launcher:PC</resource></bind></iq>');
+    } else if (data.includes("<iq") && data.includes('id="_bind_1"')) {
+      const jidMatch = data.match(/<jid>([^<]+)<\/jid>/);
+      if (jidMatch) {
+        this.boundJid = jidMatch[1];
+      }
+      this.sendRaw('<iq type="set" id="_session_1"><session xmlns="urn:ietf:params:xml:ns:xmpp-session"/></iq>');
+      this.sendRaw('<presence/>');
+      this.status = "connected";
+      this.reconnectAttempts = 0;
+      this.updateStatusUi();
+      this.startPing();
+    } else if (data.includes("<message")) {
+      this.parseIncomingMessage(data);
+    } else if (data.includes("<failure")) {
+      this.status = "disconnected";
+      this.updateStatusUi();
+      this.scheduleReconnect();
+    }
+  }
+
+  private parseIncomingMessage(xml: string): void {
+    const fromMatch = xml.match(/from="([^@"]+)@prod\.ol\.epicgames\.com/);
+    const bodyMatch = xml.match(/<body>([\s\S]*?)<\/body>/);
+    if (!fromMatch || !bodyMatch) return;
+
+    const senderAccountId = fromMatch[1];
+    const text = unescapeXml(bodyMatch[1]).trim();
+    if (!text) return;
+
+    // Kendi gönderdiğimiz echo mesajlarını atla
+    if (this.creds && senderAccountId === this.creds.account_id) return;
+
+    if (!socialChatHistory[senderAccountId]) {
+      socialChatHistory[senderAccountId] = [];
+    }
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    socialChatHistory[senderAccountId].push({
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sender: "friend",
+      text,
+      time: timeStr,
+    });
+
+    saveSocialChats();
+
+    if (isSocialWindow) {
+      updateSteamSocialChatPane();
+      renderSteamSidebarList();
+    }
+
+    const friend = socialData?.friends?.find((f) => f.account_id === senderAccountId);
+    const friendName = friend ? friend.display_name : "Arkadaş";
+    if (!isSocialWindow || socialActiveChatFriendId !== senderAccountId) {
+      toast(`💬 ${friendName}: ${text.length > 35 ? text.slice(0, 32) + "…" : text}`, "ok");
+    }
+  }
+
+  public sendMessage(recipientAccountId: string, text: string): boolean {
+    if (this.status !== "connected" || !this.ws) {
+      return false;
+    }
+    const safeText = escapeXml(text);
+    this.sendRaw(`<message to="${recipientAccountId}@prod.ol.epicgames.com" type="chat"><body>${safeText}</body></message>`);
+    return true;
+  }
+
+  private sendRaw(xml: string): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(xml);
+    }
+  }
+
+  private startPing(): void {
+    this.stopPing();
+    this.pingTimer = window.setInterval(() => {
+      if (this.status === "connected") {
+        this.sendRaw(`<iq type="get" id="p_${Date.now()}"><ping xmlns="urn:xmpp:ping"/></iq>`);
+      }
+    }, 25000);
+  }
+
+  private stopPing(): void {
+    if (this.pingTimer !== null) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
+    }
+  }
+
+  private handleClose(): void {
+    this.status = "disconnected";
+    this.stopPing();
+    this.updateStatusUi();
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer !== null) return;
+    this.reconnectAttempts++;
+    const delay = Math.min(3000 * Math.pow(1.5, this.reconnectAttempts - 1), 30000);
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
+      void this.connect();
+    }, delay);
+  }
+
+  public updateStatusUi(): void {
+    if (!isSocialWindow) return;
+    const badge = document.querySelector(".steam-chat-live-badge");
+    if (badge) {
+      badge.className = `steam-chat-live-badge ${this.status}`;
+      const label = badge.querySelector(".live-badge-text");
+      if (label) {
+        label.textContent =
+          this.status === "connected" ? "Canlı Sohbet Aktif" :
+          this.status === "authenticating" || this.status === "connecting" ? "Bağlanıyor…" :
+          "Bağlantı Yok";
+      }
+    }
+  }
+}
+
+const epicXmppManager = new EpicXmppManager();
+
 function updateSocialBadge(): void {
   const badge = document.getElementById("social-online-badge");
   if (!badge) return;
@@ -8336,10 +8551,11 @@ function renderSteamSocialChatPane(): string {
         </div>
         <h3>Sohbetler ve Arkadaşlar</h3>
         <p>Mesajlaşmak veya sesli gruba davet etmek için sol listeden bir arkadaşınızı seçin.</p>
-        <div class="steam-chat-empty-actions" style="margin-top: 12px;">
-          <button class="btn primary small" data-act="open-official-epic-chat">
-            💬 Resmî Epic Sohbetini Aç (Shift+F3)
-          </button>
+        <div class="steam-chat-empty-actions" style="margin-top: 14px;">
+          <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" style="margin: 0 auto;">
+            <span class="live-indicator-dot"></span>
+            <span class="live-badge-text">${epicXmppManager.isConnected() ? 'Epic Canlı Sohbet Aktif' : epicXmppManager.getStatus() === 'connecting' || epicXmppManager.getStatus() === 'authenticating' ? 'Epic Sohbetine Bağlanıyor…' : 'Bağlantı Bekleniyor'}</span>
+          </div>
         </div>
       </div>
     `;
@@ -8367,12 +8583,10 @@ function renderSteamSocialChatPane(): string {
       </div>
 
       <div class="steam-chat-header-actions">
-        <button class="steam-header-btn epic-launch" data-act="open-official-epic-chat" title="Resmî Epic Games / EOS Sohbet Penceresini Aç">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>Epic Sohbetini Aç</span>
-        </button>
+        <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" title="${epicXmppManager.isConnected() ? 'Epic Games Canlı Sohbet Sunucusuna Bağlı' : 'Epic Games Sunucusuna Bağlanıyor…'}">
+          <span class="live-indicator-dot"></span>
+          <span class="live-badge-text">${epicXmppManager.isConnected() ? 'Canlı Sohbet Aktif' : epicXmppManager.getStatus() === 'connecting' || epicXmppManager.getStatus() === 'authenticating' ? 'Bağlanıyor…' : 'Bağlantı Yok'}</span>
+        </div>
         <button class="steam-header-btn invite" data-act="social-invite-party" data-id="${esc(socialActiveChatFriendId)}" data-name="${esc(friendName)}" title="Gruba Davet Et">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>
@@ -8386,12 +8600,9 @@ function renderSteamSocialChatPane(): string {
     <div id="steam-chat-messages" class="steam-chat-messages">
       <!-- Görsel 2'deki Bilgilendirme Kutucuğu -->
       <div class="steam-chat-notice-box">
-        <div class="steam-notice-main">Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir.</div>
-        <div class="steam-notice-sub" style="margin-top: 6px; font-size: 11px; opacity: 0.85;">
-          <span>Arkadaşınızla canlı EOS sohbeti için: </span>
-          <button class="steam-notice-link-btn" data-act="open-official-epic-chat" style="background:none;border:none;color:#60a5fa;cursor:pointer;font-weight:700;text-decoration:underline;">
-            Epic Resmî Sohbetinde Aç (Shift+F3)
-          </button>
+        <div class="steam-notice-main">Bu, sohbetin başlangıcı. Mesajlar Epic Games ve yerel bellekte saklanır.</div>
+        <div class="steam-notice-sub" style="margin-top: 4px; font-size: 11px; opacity: 0.85;">
+          <span>Canlı Epic Games XMPP bağlantısı üzerinden arkadaşınıza doğrudan iletilir. ⚡</span>
         </div>
       </div>
 
@@ -8400,7 +8611,7 @@ function renderSteamSocialChatPane(): string {
           ? `
             <div class="steam-chat-first-time">
               <span class="steam-chat-wave">👋</span>
-              <p><strong>${esc(friendName)}</strong> adlı arkadaşınıza henüz mesaj göndermediniz.<br>Aşağıdaki hazır kutulardan veya <button class="link-btn-inline" data-act="open-official-epic-chat" style="background:none;border:none;color:#60a5fa;cursor:pointer;font-weight:600;text-decoration:underline;">Epic Resmî Sohbeti</button> üzerinden mesajlaşabilirsiniz.</p>
+              <p><strong>${esc(friendName)}</strong> adlı arkadaşınıza henüz mesaj göndermediniz.<br>Aşağıdaki hazır kutulardan veya aşağıdaki metin alanından selam gönderin!</p>
             </div>
           `
           : history.map((m) => `
@@ -8439,7 +8650,7 @@ function renderSteamSocialChatPane(): string {
         </button>
       </div>
       <div class="steam-chat-subhint">
-        <span>Sohbet raporlama kapalı • Canlı sohbet için: <a href="javascript:void(0)" data-act="open-official-epic-chat" style="color:#60a5fa;text-decoration:none;font-weight:600;">Epic Sohbetini Aç (Shift+F3)</a></span>
+        <span>Sohbet raporlama kapalı • Epic Games Canlı Sohbet Bağlantısı ${epicXmppManager.isConnected() ? 'Aktif 🟢' : 'Beklemede 🟡'}</span>
       </div>
     </div>
   `;
@@ -8480,6 +8691,12 @@ function sendActiveSocialChatMessage(textToSend?: string): void {
   });
 
   saveSocialChats();
+
+  // Canlı Epic Games XMPP bağlantısı üzerinden anında ilet
+  const sent = epicXmppManager.sendMessage(socialActiveChatFriendId, text);
+  if (!sent && !epicXmppManager.isConnected()) {
+    void epicXmppManager.connect();
+  }
 
   if (isSocialWindow) {
     updateSteamSocialChatPane();
@@ -8550,6 +8767,7 @@ async function initSteamSocialWindow(): Promise<void> {
   }
 
   renderSteamSocialWindow();
+  void epicXmppManager.connect();
   await fetchSocialData(false);
 
   // Periyodik senkronizasyon (15 sn)
@@ -11049,6 +11267,7 @@ async function init(): Promise<void> {
   updateMaxIcon();
   if (isTauri) {
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});
+    void epicXmppManager.connect();
   }
   createIcons({
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2 },

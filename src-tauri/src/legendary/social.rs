@@ -36,6 +36,13 @@ pub struct EpicSocialSummary {
     pub eos_overlay_enabled: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EpicXmppCredentials {
+    pub account_id: String,
+    pub display_name: String,
+    pub access_token: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct RawFriendItem {
     #[serde(rename = "accountId")]
@@ -96,6 +103,16 @@ fn read_user_credentials(config_dir: &Path) -> Result<(String, String, String), 
         .to_string();
 
     Ok((account_id, display_name, access_token))
+}
+
+/// Epic Games XMPP canlı sohbet bağlantısı için gereken kimlik bilgilerini döndürür
+pub fn get_xmpp_credentials(config_dir: &Path) -> Result<EpicXmppCredentials, String> {
+    let (account_id, display_name, access_token) = read_user_credentials(config_dir)?;
+    Ok(EpicXmppCredentials {
+        account_id,
+        display_name,
+        access_token,
+    })
 }
 
 /// EOS Overlay'in sistemde yüklü ve etkin olup olmadığını denetler
