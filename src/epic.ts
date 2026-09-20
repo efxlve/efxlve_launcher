@@ -1077,3 +1077,12 @@ export const epicToggleMaximizeSocialWindow = () =>
 
 export const epicOpenOfficialEpicChat = () =>
   invoke<void>("open_official_epic_chat");
+
+export interface EpicXmppCredentials {
+  account_id: string;
+  display_name: string;
+  access_token: string;
+}
+
+export const epicGetXmppCredentials = () =>
+  invoke<EpicXmppCredentials>("epic_get_xmpp_credentials");

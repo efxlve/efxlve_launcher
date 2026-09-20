@@ -73,7 +73,7 @@ Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_downloa
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
 Mağaza: `show_store_view`, `resize_store_view`, `hide_store_view`
-Sosyal & EOS: `epic_get_social_summary`, `epic_search_user`, `epic_send_friend_request`, `epic_remove_friend`, `epic_get_eos_overlay_info`, `open_social_window`, `toggle_social_window`, `close_social_window`, `minimize_social_window`, `toggle_maximize_social_window`
+Sosyal & EOS: `epic_get_social_summary`, `epic_search_user`, `epic_send_friend_request`, `epic_remove_friend`, `epic_get_eos_overlay_info`, `epic_get_xmpp_credentials`, `open_social_window`, `toggle_social_window`, `close_social_window`, `minimize_social_window`, `toggle_maximize_social_window`, `open_official_epic_chat`
 Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -1217,8 +1217,15 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - **Gelen İstekler Düzeni & Aksiyon Butonları:**
     - Sol kenar çubuğundaki taşma ve metin kırılmalarını önlemek için durum `"İstek gönderdi"` olarak optimize edildi.
     - `.steam-action-btn.accept` (yeşil) ve `.steam-action-btn.decline` (kırmızı) onay/red butonları modern konsol buton stilleriyle giydirildi.
-  - **Resmî Epic Games & EOS Canlı Sohbet Köprüsü (`open_official_epic_chat`):**
-    - Epic Games 5222 XMPP portunu kapattığı ve canlı peer-to-peer metin sohbetini EOS istemcisi (`EOSOverlayRenderer-Win64-Shipping.exe`) üzerinden yürüttüğü için, sosyal pencere başlığına ve bilgi kutusuna tek tıkla resmî Epic Games sohbetini açan/odaklayan `[💬 Epic Sohbetini Aç]` butonu (`open_official_epic_chat` Rust komutu) ve oyun içi `Shift+F3` kısayol rehberliği eklendi.
+  - **Doğrudan & Yerel Canlı Epic Games XMPP Sohbet Entegrasyonu (`EpicXmppManager` & RFC 7395 WSS):**
+    - Kullanıcıyı eski Epic Games Launcher'a yönlendiren arayüz butonları kaldırıldı; sohbet tamamen Efxlve içine taşındı.
+    - **Protokol:** Epic Games'in XMPP sunucusunun `wss://xmpp-service-prod.ol.epicgames.com/` (RFC 7395 XMPP over WebSocket, Port 443) üzerinde canlı olduğu doğrulandı.
+    - **Kimlik Doğrulama & Oturum:** Rust `epic_get_xmpp_credentials` komutuyla diskten okunan `account_id` ve `access_token`, SASL PLAIN (`\0account_id\0access_token`) ile el sıkışır, stream reset sonrası `V2:launcher:PC` kaynağına bağlanarak (`bind`) canlı oturum açar ve `<presence/>` yayınlar.
+    - **Keep-Alive:** Bağlantının kopmasını önlemek için 25 saniyelik periyodik XMPP ping (`<iq><ping/></iq>`) ve üstel geri çekilme (exponential backoff) ile oto-yeniden bağlanma mekanizması çalışır.
+    - **Çift Yönlü İletim:**
+      - Giden: `<message to="{friendId}@prod.ol.epicgames.com" type="chat"><body>{text}</body></message>` XML paketi WebSocket üzerinden anında Epic sunucusuna gönderilir ve arkadaşın resmi Epic Games / EOS istemcisine düşer.
+      - Gelen: Sunucudan WebSocket üzerinden gelen `<message ...><body>...</body></message>` paketleri çözülür; yerel `localStorage` geçmişine işlenir, açık sohbette anında baloncuk olarak çizilir, arka planda ise toast bildirimi verir.
+    - **Canlı Durum Göstergesi:** Sohbet başlığı ve boş durum ekranında `.steam-chat-live-badge` ile canlı bağlantı durumu (Canlı Sohbet Aktif 🟢 / Bağlanıyor… 🟡 / Bağlantı Yok ⚪) şık bir şekilde sunulur.
 
 
 

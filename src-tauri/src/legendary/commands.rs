@@ -2312,6 +2312,13 @@ pub fn epic_get_eos_overlay_info() -> Result<bool, String> {
     Ok(super::social::check_eos_overlay_enabled())
 }
 
+/// Epic Games XMPP canlı sohbet bağlantısı için gereken kimlik bilgilerini döndürür
+#[tauri::command]
+pub fn epic_get_xmpp_credentials() -> Result<super::social::EpicXmppCredentials, String> {
+    let config = super::skip::default_config_dir();
+    super::social::get_xmpp_credentials(&config)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1560,7 +1560,8 @@ fn main() {
             legendary::commands::epic_search_user,
             legendary::commands::epic_send_friend_request,
             legendary::commands::epic_remove_friend,
-            legendary::commands::epic_get_eos_overlay_info
+            legendary::commands::epic_get_eos_overlay_info,
+            legendary::commands::epic_get_xmpp_credentials
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");
