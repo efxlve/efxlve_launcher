@@ -962,5 +962,19 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
      - Tüm 51 Rust birim testi (`cargo test`) yeşil, frontend TypeScript ve Vite derlemesi (`npm.cmd run build`) hatasızdır.
      - PlayStation 5 dark console estetiği ve gamepad uyumluluğu titizlikle korunmuştur.
 
+## 60. Detay Sayfası / Game Hub Açıkken Sayfalar Arası Gezinme & Modal Temizliği (Modal Overlay Isolation Fix)
+
+- **Problem & Kök Neden:**
+  - Bir oyunun detay sayfası (Game Hub / Drawer) açıldığında `#modal-root` içerisine `.overlay` sınıfıyla tam ekran sabit (`position: fixed; inset: 40px 0 0 0; z-index: 50;`) bir katman yerleştirilir.
+  - Kullanıcı üst bardaki navigasyon butonlarına (ör. "Ayarlar", "İndirmeler", "Kütüphane", "Profil") tıkladığında `view` değişkeni ve `#nav` aktiflik durumu güncellenip `#view` içerisine yeni sayfa çiziliyordu; ancak `#modal-root` temizlenmediği (`closeModal()` çağrılmadığı) için detay sayfası ekranı örtmeye devam ediyor ve seçilen yeni sayfa görünmüyordu.
+- **Uygulanan Çözüm:**
+  1. **`closeAllModals()` Fonksiyonu:** `closeModal()`, `closeScreenshotLightbox()`, `closeShareModal()`, `closeCustomCoverModal()`, `closeCollectionModal()` ve dinamik modal köklerini (`manageRoot`, `selectiveRoot`, `playtimeRoot`) tek seferde temizleyen merkezi kapatma işlevi eklendi.
+  2. **Navigasyon Geçişlerinde Otomatik Temizlik:** `[data-view]` tıklama olay delegasyonunda, `openProfile()`, `openStoreUrl()` ve `act === "goto-library"` kancalarında sayfa değişmeden önce `closeAllModals()` zorunlu kılındı.
+  3. **`render()` Güvenlik Kilidi:** `render()` fonksiyonu çağrıldığında eğer `view !== "library"` ise ve `modalRoot` içerisinde içerik kalmışsa otomatik olarak `closeModal()` çağrılarak ekranın kilitli kalması kesin olarak engellendi.
+  4. **Logo Eylemi:** Üst bardaki `EFXLVE` logosuna `data-act="goto-library"` eklenerek doğrudan kütüphaneye dönmesi ve tüm açık modalları kapatması sağlandı.
+- **Sonuç:**
+  - Kullanıcı detay sayfasındayken üst bardan Ayarlar, İndirmeler, Profil veya Kütüphane'ye tıkladığında detay sayfası anında kapanır ve hedeflenen sayfa kusursuz şekilde açılır.
+
+
 
 
