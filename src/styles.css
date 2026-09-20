@@ -7727,21 +7727,22 @@ select option {
   margin: 0;
 }
 
-/* 1. Hero Profil Kartı */
+/* 1. PS5 Konsol Hero Profil Sahnesi */
 .profile-hero-card {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 24px 28px;
-  background: linear-gradient(135deg, rgba(30, 34, 48, 0.8) 0%, rgba(18, 20, 29, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  gap: 24px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, rgba(16, 19, 29, 0.9) 0%, rgba(10, 12, 19, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .profile-hero-card::before {
@@ -7749,9 +7750,9 @@ select option {
   position: absolute;
   top: -80px;
   left: -80px;
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -7759,11 +7760,11 @@ select option {
 .profile-hero-card::after {
   content: "";
   position: absolute;
-  bottom: -60px;
-  right: -60px;
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, transparent 70%);
+  bottom: -70px;
+  right: -70px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -7778,24 +7779,42 @@ select option {
 
 .profile-avatar {
   position: relative;
-  width: 76px;
-  height: 76px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #7e22ce 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 26px rgba(79, 70, 229, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
 }
 
 .profile-avatar-letter {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   user-select: none;
+}
+
+.profile-avatar-pip {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid #0a0c13;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+.profile-avatar-pip.online {
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+}
+.profile-avatar-pip.offline {
+  background: #fbbf24;
 }
 
 .profile-hero-meta {
@@ -7815,9 +7834,16 @@ select option {
   font-size: 26px;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   margin: 0;
   line-height: 1.2;
+}
+
+.profile-hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .profile-status-badge {
@@ -7826,8 +7852,9 @@ select option {
   gap: 6px;
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .profile-status-badge.online {
@@ -7840,6 +7867,21 @@ select option {
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid rgba(245, 158, 11, 0.3);
   color: #fbbf24;
+}
+
+.profile-trophy-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  color: #f3e8ff;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
+  letter-spacing: 0.3px;
 }
 
 .profile-id-row {
@@ -7860,7 +7902,7 @@ select option {
   padding: 2px 8px;
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11.5px;
+  font-size: 11px;
   color: #cbd5e1;
   user-select: all;
 }
@@ -7885,157 +7927,163 @@ select option {
   transform: translateY(-1px);
 }
 
-.profile-hero-actions {
+.profile-hero-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   position: relative;
   z-index: 1;
+  flex-wrap: wrap;
+}
+
+.profile-hero-trophy-capsule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px 16px;
+  backdrop-filter: blur(8px);
+}
+
+.hero-trophy-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-feature-settings: "tnum";
+}
+.hero-trophy-item.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.45);
+}
+.hero-trophy-item.ach {
+  color: #e2e8f0;
+}
+.hero-trophy-item.xp {
+  color: #38bdf8;
+}
+
+.capsule-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .profile-refresh-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  padding: 9px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.profile-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .profile-refresh-btn.spinning svg {
   animation: spin 0.8s linear infinite;
 }
 
-/* 2. İstatistik & Kupa Vitrini (5 Kart) */
-.profile-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
-}
-
-.profile-stat-box {
-  position: relative;
+/* 2. PS5 Birleşik Konsol İstatistik Kapsülü (Stat Capsule) */
+.profile-stats-capsule {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
+  justify-content: space-around;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
-  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 16px 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.profile-stat-box:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
-.profile-stat-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.profile-stat-box:hover .profile-stat-icon-wrap {
-  transform: scale(1.06);
-}
-
-/* Kutu Temaları */
-.profile-stat-box.xp .profile-stat-icon-wrap {
-  background: rgba(139, 92, 246, 0.16);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #a78bfa;
-}
-.profile-stat-box.xp:hover {
-  border-color: rgba(139, 92, 246, 0.4);
-}
-
-.profile-stat-box.ach .profile-stat-icon-wrap {
-  background: rgba(245, 158, 11, 0.16);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
-}
-.profile-stat-box.ach:hover {
-  border-color: rgba(245, 158, 11, 0.4);
-}
-
-.profile-stat-box.plat {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(126, 34, 206, 0.06) 100%);
-  border-color: rgba(192, 132, 252, 0.3);
-}
-.profile-stat-box.plat .profile-stat-icon-wrap {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(126, 34, 206, 0.3) 100%);
-  border: 1px solid rgba(192, 132, 252, 0.5);
-  color: #c084fc;
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
-}
-.profile-stat-box.plat:hover {
-  border-color: rgba(192, 132, 252, 0.6);
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25);
-}
-
-.profile-stat-box.playtime .profile-stat-icon-wrap {
-  background: rgba(14, 165, 233, 0.16);
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  color: #38bdf8;
-}
-.profile-stat-box.playtime:hover {
-  border-color: rgba(14, 165, 233, 0.4);
-}
-
-.profile-stat-box.library .profile-stat-icon-wrap {
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
-}
-.profile-stat-box.library:hover {
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.profile-stat-content {
+.profile-stat-col {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  min-width: 140px;
+  flex: 1;
+  transition: transform 0.15s ease;
 }
 
-.profile-stat-value {
-  font-size: 21px;
+.profile-stat-col:hover {
+  transform: translateY(-1px);
+}
+
+.profile-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.profile-stat-label.plat {
+  color: #d8b4fe;
+}
+
+.profile-stat-val {
+  font-size: 19px;
   font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.4px;
-  line-height: 1.2;
+  color: #f8fafc;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.3px;
+}
+.profile-stat-val.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.45);
 }
 
 .profile-stat-unit {
   font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
-}
-
-.profile-stat-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #cbd5e1;
+  margin-left: 2px;
 }
 
 .profile-stat-sub {
   font-size: 11px;
   color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.profile-stat-sub.plat {
+  color: #c084fc;
+  opacity: 0.9;
 }
 
-/* 3. Oyun Başarımları ve İlerleme Bölümü */
+.profile-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+/* 3. PlayStation Kupa Vitrini ve Oyun İlerlemesi */
 .profile-games-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .profile-games-header {
@@ -8051,7 +8099,7 @@ select option {
 }
 
 .profile-section-title {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.3px;
@@ -8086,22 +8134,23 @@ select option {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: #94a3b8;
-  border-radius: 9px;
-  padding: 6px 12px;
+  border-radius: 10px;
+  padding: 7px 14px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
   user-select: none;
 }
 
 .profile-pill:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
 }
 
 .profile-pill.active {
@@ -8110,6 +8159,14 @@ select option {
   border-color: rgba(255, 255, 255, 0.28);
   font-weight: 700;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.profile-pill.active.plat {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(192, 132, 252, 0.45);
+  color: #f3e8ff;
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.35);
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
 }
 
 .profile-toolbar-right {
@@ -8135,20 +8192,21 @@ select option {
 
 .profile-search-input {
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 6px 28px 6px 30px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9px;
+  padding: 7px 28px 7px 32px;
   font-size: 12px;
   color: #fff;
   outline: none;
-  width: 170px;
+  width: 190px;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .profile-search-input:focus {
-  width: 220px;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  width: 230px;
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
 .profile-search-clear {
@@ -8171,78 +8229,104 @@ select option {
 
 .profile-sort-select {
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9px;
+  padding: 7px 12px;
   font-size: 12px;
   color: #cbd5e1;
   outline: none;
   cursor: pointer;
   font-weight: 500;
+  font-family: inherit;
+  transition: border-color 0.16s ease;
 }
 
 .profile-sort-select:focus {
-  border-color: #6366f1;
+  border-color: #38bdf8;
 }
 
-/* Oyun Kartları Listesi / Izgarası */
+/* 4. PS5 2-Sütunlu Kupa Kartları Izgarası (Grid) */
 .profile-games-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(540px, 1fr));
+  gap: 14px;
 }
 
-.profile-game-card {
+@media (max-width: 1160px) {
+  .profile-games-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ps5-profile-game-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  appearance: none;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
   animation: cardFilterEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--pci, 0) * 16ms) backwards;
 }
 
-.profile-game-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.14);
-  transform: translateX(3px);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+.ps5-profile-game-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-.profile-game-card.platinum {
-  border-color: rgba(255, 215, 0, 0.25);
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+.ps5-profile-game-card:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #60a5fa, 0 0 22px rgba(96, 165, 250, 0.6) !important;
+  transform: translateY(-2px);
 }
 
-.profile-game-card.platinum:hover {
-  border-color: rgba(255, 215, 0, 0.45);
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.09);
+.ps5-profile-game-card.platinum {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.07) 0%, rgba(255, 255, 255, 0.025) 100%);
 }
 
-.profile-game-cover-wrap {
+.ps5-profile-game-card.platinum:hover {
+  border-color: rgba(192, 132, 252, 0.55);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.18);
+}
+
+.ps5-card-poster-wrap {
   position: relative;
-  width: 46px;
-  height: 64px;
-  border-radius: 8px;
+  width: 66px;
+  height: 92px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #1e2028;
+  background: #12151e;
   flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
-.profile-game-cover {
+.ps5-card-poster {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.2s ease;
 }
 
-.profile-game-cover-empty {
+.ps5-profile-game-card:hover .ps5-card-poster {
+  transform: scale(1.04);
+}
+
+.ps5-card-poster-empty {
   width: 100%;
   height: 100%;
   display: flex;
@@ -8251,35 +8335,31 @@ select option {
   color: #475569;
 }
 
-.profile-game-plat-ribbon {
+.ps5-card-plat-badge {
   position: absolute;
-  bottom: 2px;
-  left: 2px;
-  right: 2px;
-  background: linear-gradient(135deg, #ffd700, #d97706);
-  color: #1a0f00;
-  font-size: 8.5px;
-  font-weight: 900;
-  padding: 1px 3px;
-  border-radius: 4px;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(22, 10, 38, 0.88);
+  border: 1px solid rgba(192, 132, 252, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 10px rgba(168, 85, 247, 0.45);
+  backdrop-filter: blur(4px);
 }
 
-.profile-game-info {
+.ps5-card-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
-.profile-game-title-row {
+.ps5-card-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8287,18 +8367,18 @@ select option {
   flex-wrap: wrap;
 }
 
-.profile-game-title {
-  font-size: 14.5px;
+.ps5-card-title {
+  font-size: 15px;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 480px;
+  max-width: 320px;
 }
 
-.profile-game-pills {
+.ps5-card-tags {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -8326,68 +8406,114 @@ select option {
   gap: 4px;
 }
 
-.profile-game-progress-wrap {
+.ps5-card-progress-section {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
-.profile-game-progress-labels {
+.ps5-card-progress-labels {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 12px;
   color: #94a3b8;
 }
 
-.profile-game-progress-left strong {
+.ps5-card-progress-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ps5-card-percent {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  font-feature-settings: "tnum";
+}
+.ps5-card-percent.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.45);
+}
+
+.ps5-card-count {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.ps5-card-xp {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  font-feature-settings: "tnum";
+}
+.ps5-card-xp strong {
   color: #ffffff;
   font-weight: 700;
 }
 
-.profile-game-progress-right strong {
-  color: #e2e8f0;
-  font-weight: 700;
-}
-
-.profile-game-progress-track {
+.ps5-card-progress-track {
   width: 100%;
   height: 6px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  border-radius: 99px;
   overflow: hidden;
 }
 
-.profile-game-progress-fill {
+.ps5-card-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #38bdf8);
-  border-radius: 10px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
   transition: width 0.4s ease;
 }
 
-.profile-game-progress-fill.plat {
-  background: linear-gradient(90deg, #ffd700, #f59e0b);
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
+.ps5-card-progress-fill.plat {
+  background: linear-gradient(90deg, #6b21a8, #9333ea, #c084fc, #e9d5ff);
+  box-shadow: 0 0 14px rgba(192, 132, 252, 0.6);
 }
 
-.profile-game-action {
+.ps5-card-action {
   flex-shrink: 0;
 }
 
-.profile-card-btn {
+.ps5-card-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
-  padding: 5px 10px;
-  border-radius: 7px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.15s ease;
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.profile-game-card:hover .profile-card-btn {
+.ps5-profile-game-card:hover .ps5-card-btn {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* 5. 10-Ft Konsol / Gamepad İpuçları Çubuğu */
+.ps5-profile-controller-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 12px 20px;
+  background: rgba(10, 12, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  margin-top: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  flex-wrap: wrap;
 }
 
 .profile-empty-games {
@@ -8400,7 +8526,8 @@ select option {
   text-align: center;
   background: rgba(255, 255, 255, 0.02);
   border: 1px dashed rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 16px;
+  grid-column: 1 / -1;
 }
 
 .profile-empty-icon {
@@ -8408,7 +8535,7 @@ select option {
 }
 
 .profile-empty-games h4 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: #cbd5e1;
   margin: 0;
