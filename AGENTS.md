@@ -1316,3 +1316,5 @@ Responsive: hesap adı `≤1200px`'te gizlenir (avatar kalır, `max-width: 150px
 **Karşılaştırmanın okunması:** 1. tur "fazla AI", 2. tur "fazla ruhsuz", 3. tur "kutularla çözmeye çalışıyor", 4. tur "ışık ve çizgiyle çözüyor". §3'teki **DENGE KURALI**nın görsel kanıtı: karakter kutulardan değil; (1) bağlamsal ışık, (2) yüzey/derinlik dili, (3) tipografik ses, (4) tek kararlı vurgu renginden gelir.
 
 **Üretim betiği:** `%TEMP%\efx-prev\build_compare.py` (repoya girmez — tek seferlik analiz aracı). Çıktı: `karsilastirma.png` (2800×1348, 2x). Yeni bir tur eklendiğinde `VERSIONS` listesine commit hash'i ekleyip yeniden koşmak yeterli.
+
+**Arşiv kopyası:** `.workbuddy-ai/artifacts/ust-bar-tasarim-turlari.png` (yerel referans; bilinçli olarak git'e eklenmez — repoda ikili dosya tutmuyoruz).
