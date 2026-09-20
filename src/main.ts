@@ -699,7 +699,7 @@ async function openStore(): Promise<void> {
 }
 
 async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
-  closeModal();
+  closeAllModals();
   if (storeVisible && lastStoreUrl === url && storeMode === mode) return;
   lastStoreUrl = url;
   storeVisible = true;
@@ -735,6 +735,7 @@ async function loadPlayerProfile(forceRefresh = false): Promise<void> {
 
 async function openProfile(): Promise<void> {
   closeStore();
+  closeAllModals();
   view = "profile";
   if (!playerProfileData && !profileLoading) {
     void loadPlayerProfile();
@@ -2221,6 +2222,9 @@ function render(): void {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
     return;
+  }
+  if (view !== "library" && modalRoot.innerHTML.trim()) {
+    closeModal();
   }
   viewEl.innerHTML =
     view === "library" ? renderEpic()
@@ -5675,6 +5679,17 @@ function closeModal(): void {
   updateGamepadHud(gamepadPolling);
 }
 
+function closeAllModals(): void {
+  closeModal();
+  closeScreenshotLightbox();
+  closeShareModal();
+  closeCustomCoverModal();
+  closeCollectionModal();
+  if (manageRoot) manageRoot.innerHTML = "";
+  if (selectiveRoot) selectiveRoot.innerHTML = "";
+  if (playtimeRoot) playtimeRoot.innerHTML = "";
+}
+
 function closeCustomCoverModal(): void {
   const root = document.getElementById("cover-modal-root");
   if (root) root.innerHTML = "";
@@ -7332,6 +7347,7 @@ document.addEventListener("click", (e) => {
 
   if (t.dataset.view) {
     closeStore();
+    closeAllModals();
     view = t.dataset.view as typeof view;
     if (view === "library") void bootEpic();
     if (view === "profile") {
@@ -7362,6 +7378,7 @@ document.addEventListener("click", (e) => {
     const el = e.target as HTMLElement;
     if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
   } else if (act === "goto-library") {
+    closeAllModals();
     view = "library";
     render();
   } else if (act === "reset-demo") {
