@@ -72,192 +72,130 @@ body {
 
 #app { display: flex; flex-direction: column; height: 100vh; }
 
-/* --- Titlebar (Next-Gen Konsol Çubuğu) --- */
+/* --- Titlebar (Sade, alet gibi konsol çubuğu) ---
+   İlke: düz yüzeyler, tek vurgu rengi, parlama yok, gradyan yok.
+   Renk sadece DURUM bildirir (yeşil/amber nokta); süs olarak kullanılmaz. */
 #titlebar {
-  position: relative;
-  display: flex; align-items: center; gap: 16px;
-  padding: 0 0 0 16px; height: 56px; flex-shrink: 0; z-index: 10;
-  background:
-    radial-gradient(120% 240% at 4% -20%, rgba(139, 92, 246, 0.20) 0%, rgba(139, 92, 246, 0) 58%),
-    radial-gradient(90% 220% at 78% -30%, rgba(14, 165, 233, 0.13) 0%, rgba(14, 165, 233, 0) 62%),
-    linear-gradient(180deg, #111220 0%, #0a0b11 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 12px 34px -20px rgba(0, 0, 0, 1);
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 0 0 14px; height: 48px; flex-shrink: 0; z-index: 10;
+  background: linear-gradient(180deg, #101118 0%, #0c0d12 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   -webkit-app-region: drag;
-}
-#titlebar::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-  pointer-events: none;
-  background: linear-gradient(90deg,
-    rgba(139, 92, 246, 0) 0%, rgba(139, 92, 246, 0.55) 18%,
-    rgba(99, 102, 241, 0.40) 48%, rgba(139, 92, 246, 0) 86%);
 }
 
 /* Marka */
 .logo {
-  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 9px; flex-shrink: 0;
   white-space: nowrap; -webkit-app-region: drag; cursor: default;
 }
 .logo-mark {
-  width: 30px; height: 30px; border-radius: 10px;
-  display: grid; place-items: center; color: #fff;
-  background: linear-gradient(140deg, #a855f7 0%, #6366f1 58%, #0ea5e9 100%);
-  box-shadow: 0 6px 16px -6px rgba(139, 92, 246, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  width: 26px; height: 26px; border-radius: 7px;
+  display: grid; place-items: center;
+  color: #9d94e8;
+  background: #1a1c24;
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
-.logo-mark svg { width: 17px; height: 17px; }
-.logo:hover .logo-mark {
-  transform: rotate(-8deg) scale(1.07);
-  box-shadow: 0 9px 24px -6px rgba(139, 92, 246, 1), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
+.logo-mark svg { width: 15px; height: 15px; }
 .logo-text {
-  font-size: 14px; font-weight: 800; letter-spacing: 3.4px;
-  background: linear-gradient(92deg, #ffffff 0%, #ddd2ff 55%, #a5b4fc 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-size: 13px; font-weight: 700; letter-spacing: 2.4px; color: #dcdde3;
 }
 
-#nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
+#nav { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
-/* Segment (Mağaza / Kütüphane / İndirmeler) */
+/* Segment (Mağaza / Kütüphane / İndirmeler) — çukur zemin + düz aktif karo */
 .nav-seg {
-  position: relative; display: flex; align-items: center; gap: 3px;
-  padding: 4px; border-radius: 15px; flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 22px -14px rgba(0, 0, 0, 1);
+  position: relative; display: flex; align-items: center; gap: 2px;
+  padding: 3px; border-radius: 8px; flex-shrink: 0;
+  background: #090a0e;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   -webkit-app-region: no-drag;
 }
 .nav-seg-indicator {
-  position: absolute; top: 4px; left: 0; width: 0; height: calc(100% - 8px);
-  border-radius: 11px; opacity: 0; pointer-events: none;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #4f46e5 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 7px 20px -7px rgba(124, 58, 237, 0.95);
-  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.22s ease;
+  position: absolute; top: 3px; left: 0; width: 0; height: calc(100% - 6px);
+  border-radius: 6px; opacity: 0; pointer-events: none;
+  background: #24262f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1),
+              width 0.24s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.16s linear;
 }
 #nav .nav-tab {
   position: relative; z-index: 1; display: flex; align-items: center; gap: 7px;
-  padding: 8px 15px; border-radius: 11px; border: none; background: none;
-  color: #9296ab; font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
+  padding: 7px 13px; border-radius: 6px; border: none; background: none;
+  color: #8b8e9c; font-size: 12.5px; font-weight: 600; letter-spacing: 0.2px;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.2s ease, background 0.2s ease, transform 0.16s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-#nav .nav-tab:hover { color: #e8e9f2; background: rgba(255, 255, 255, 0.05); }
-#nav .nav-tab:active { transform: scale(0.97); }
-#nav .nav-tab.active { color: #fff; }
-#nav .nav-tab svg { width: 16px; height: 16px; transition: transform 0.22s ease, color 0.22s ease; }
-#nav .nav-tab:hover svg { transform: scale(1.08); }
-#nav .nav-tab.active svg { color: #fff; transform: scale(1.06); }
+#nav .nav-tab:hover { color: #d4d6de; }
+#nav .nav-tab.active { color: #ffffff; }
+#nav .nav-tab svg { width: 15px; height: 15px; }
 
 /* Sağ küme (durum + hesap + ayarlar) */
 .nav-right {
-  display: flex; align-items: center; gap: 9px; margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 
-/* Bağlantı durumu rozeti */
+/* Bağlantı durumu — nötr etiket, rengi yalnızca nokta taşır */
 #nav .net-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 14px; border-radius: 999px; cursor: pointer;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.25px; font-family: inherit;
-  color: #a2a6ba; background: rgba(255, 255, 255, 0.04);
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 11px; border-radius: 6px; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.3px; font-family: inherit;
+  color: #a9acb8; background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
-              box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-#nav .net-chip:hover { transform: translateY(-1px); }
+#nav .net-chip:hover { background: #16181f; color: #e6e7ec; }
 .net-dot {
-  position: relative; width: 8px; height: 8px; border-radius: 50%;
-  background: #64748b; flex-shrink: 0; transition: background 0.2s ease;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #6b6e7a; flex-shrink: 0; transition: background 0.15s ease;
 }
-#nav .net-chip.online {
-  color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35);
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.04) 100%);
-}
-#nav .net-chip.online:hover {
-  border-color: rgba(16, 185, 129, 0.62); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.10);
-}
-#nav .net-chip.online .net-dot {
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16), 0 0 10px rgba(16, 185, 129, 0.9);
-}
-#nav .net-chip.online .net-dot::after {
-  content: ""; position: absolute; inset: -1px; border-radius: 50%;
-  border: 1.5px solid rgba(16, 185, 129, 0.7);
-  animation: net-pulse 2.4s ease-out infinite;
-}
-@keyframes net-pulse {
-  0% { transform: scale(0.8); opacity: 0.9; }
-  70% { transform: scale(2.1); opacity: 0; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
-#nav .net-chip.offline {
-  color: #fbbf24; border-color: rgba(245, 158, 11, 0.38);
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.16) 0%, rgba(245, 158, 11, 0.04) 100%);
-}
-#nav .net-chip.offline:hover {
-  border-color: rgba(245, 158, 11, 0.68); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.10);
-}
-#nav .net-chip.offline .net-dot {
-  background: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16), 0 0 10px rgba(245, 158, 11, 0.8);
-}
+#nav .net-chip.online { border-color: rgba(63, 185, 80, 0.30); }
+#nav .net-chip.online:hover { border-color: rgba(63, 185, 80, 0.55); }
+#nav .net-chip.online .net-dot { background: #3fb950; }
+#nav .net-chip.offline { border-color: rgba(210, 153, 34, 0.32); }
+#nav .net-chip.offline:hover { border-color: rgba(210, 153, 34, 0.58); }
+#nav .net-chip.offline .net-dot { background: #d29922; }
 
-/* Hesap çipi */
+/* Hesap */
 #nav .account-chip {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 4px 15px 4px 4px; border-radius: 999px; cursor: pointer;
-  font-size: 12.5px; font-weight: 700; font-family: inherit; color: #b9bccd;
-  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
-  max-width: 220px;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
-              box-shadow 0.2s ease, transform 0.2s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 3px 11px 3px 3px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: inherit; color: #a9acb8;
+  background: transparent; border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 200px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-#nav .account-chip:hover {
-  color: #fff; transform: translateY(-1px);
-  border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.12);
-}
+#nav .account-chip:hover { background: #16181f; color: #e6e7ec; }
 #nav .account-chip.active {
-  color: #fff; border-color: rgba(139, 92, 246, 0.72);
-  background: rgba(139, 92, 246, 0.18);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+  color: #ffffff; background: #1c1e26; border-color: rgba(255, 255, 255, 0.14);
 }
 #nav .account-avatar {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-  display: grid; place-items: center; color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  transition: background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #8b8e9c;
+  background: #1c1e26; border: 1px solid rgba(255, 255, 255, 0.08);
 }
-#nav .account-avatar svg { width: 15px; height: 15px; }
-#nav .avatar-initial { font-size: 12.5px; font-weight: 800; color: #fff; letter-spacing: 0; }
-#nav .account-chip.logged { color: #e9e9f5; }
+#nav .account-avatar svg { width: 14px; height: 14px; }
+#nav .avatar-initial { font-size: 11px; font-weight: 700; color: #d4d6de; letter-spacing: 0; }
+#nav .account-chip.logged { color: #d4d6de; }
 #nav .account-chip.logged .account-avatar {
-  background: linear-gradient(140deg, #a855f7 0%, #6366f1 55%, #0ea5e9 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 4px 14px -4px rgba(139, 92, 246, 0.95);
+  background: #2a2d38; border-color: rgba(255, 255, 255, 0.13);
 }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Ayarlar düğmesi */
+/* Ayarlar */
 #nav .nav-icon-btn {
-  width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
   display: grid; place-items: center; cursor: pointer;
-  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a2a6ba;
-  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
-              box-shadow 0.22s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  background: transparent; border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9a9daa;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-#nav .nav-icon-btn svg { width: 17px; height: 17px; }
-#nav .nav-icon-btn:hover {
-  color: #fff; background: rgba(139, 92, 246, 0.16);
-  border-color: rgba(139, 92, 246, 0.5); transform: rotate(38deg);
-}
+#nav .nav-icon-btn svg { width: 15px; height: 15px; }
+#nav .nav-icon-btn:hover { background: #16181f; color: #ffffff; }
 #nav .nav-icon-btn.active {
-  color: #fff; border-color: transparent; transform: none;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  box-shadow: 0 7px 20px -7px rgba(124, 58, 237, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: #24262f; color: #ffffff; border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Pencere Kontrol Butonları (Windows Başlık Çubuğu) */
@@ -274,41 +212,30 @@ body {
 .win-btn.win-close:hover { background: #e81123; color: #ffffff; }
 .win-btn.win-close:active { background: #bf0f1d; }
 
-/* Üst bar mikro animasyonlar */
-#nav button[data-act="open-store"]:hover svg { animation: nav-wiggle 0.4s ease; }
-@keyframes nav-wiggle { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+/* Üst barda süs amaçlı ikon animasyonu YOK — tek hareket, aktif karonun kaymasıdır. */
 
-#nav button[data-view="library"]:hover svg { animation: nav-pulse 0.45s ease; }
-@keyframes nav-pulse { 40% { transform: scale(1.25); } }
-
-#nav button[data-view="downloads"]:hover svg { animation: nav-drop 0.5s ease; }
-@keyframes nav-drop { 0% { transform: translateY(-3px); opacity: 0.3; } 60% { transform: translateY(2px); opacity: 1; } }
-
-/* İndirme sayacı — sekme köşesinde bildirim rozeti */
+/* İndirme sayacı — sekmede satır içi düz sayaç (metnin üstüne binmez) */
 #nav .nav-tab .badge {
-  position: absolute; top: 0; right: 3px; margin: 0;
-  min-width: 16px; height: 16px; padding: 0 5px; line-height: 16px;
-  font-size: 9.5px; font-weight: 800; text-align: center; border-radius: 9px;
-  color: #fff; background: linear-gradient(135deg, #f43f5e, #e11d48);
-  box-shadow: 0 0 0 2px #0c0d15, 0 4px 10px -2px rgba(244, 63, 94, 0.9);
-  animation: badge-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  margin: 0 0 0 1px; flex-shrink: 0;
+  min-width: 14px; height: 14px; padding: 0 4px; line-height: 14px;
+  font-size: 9px; font-weight: 700; text-align: center; border-radius: 4px;
+  color: #fff; background: #e5484d;
 }
-@keyframes badge-pop { 0% { transform: scale(0.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 #nav .nav-tab .badge.hidden { display: none; }
 
 /* Orta dar pencerelerde hesap adını gizle (avatar kalır) */
-@media (max-width: 1120px) {
-  #nav .account-chip { padding: 4px; max-width: none; }
+@media (max-width: 1060px) {
+  #nav .account-chip { padding: 3px; max-width: none; }
   #nav .account-name { display: none; }
 }
 
 /* Güvenlik ağı: çok dar pencerelerde sekmeler ikona iner */
-@media (max-width: 940px) {
-  #titlebar { gap: 12px; }
-  #nav { gap: 10px; }
-  #nav .nav-tab { padding: 8px 12px; }
+@media (max-width: 880px) {
+  #titlebar { gap: 10px; }
+  #nav { gap: 8px; }
+  #nav .nav-tab { padding: 7px 10px; }
   #nav .nav-tab span:not(.badge) { display: none; }
-  #nav .net-chip { padding: 7px 11px; }
+  #nav .net-chip { padding: 6px 9px; }
   #nav .net-label { display: none; }
 }
 

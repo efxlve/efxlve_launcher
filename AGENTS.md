@@ -33,6 +33,7 @@ cargo test                 # birim testleri (şart: yeni parse/mantık → test 
 - **ZORUNLU KURAL (Kullanıcı Talimatı):** Her işlem/görev bittiğinde mutlaka yapılanlar `AGENTS.md` dosyasına güncellenmeli ve ardından `git commit` atılmalıdır.
 - **ZORUNLU TASARIM KURALI (Kullanıcı Talimatı):** Launcher arayüzünde daima **PlayStation-Inspired (PS5 Console) Dark Aesthetic** kullanılır. Arayüz PlayStation konsol UI'ına yakın, havadar, derin cam efektli (obsidian & midnight blue `#07080d`/`#0b0d14`), şık kupa hiyerarşili (Platin, Altın, Gümüş, Bronz sayaçları) ve sade konsol zarafetinde olmalıdır. Telif ihlali oluşturmamak için Sony'nin tescilli logo ve ticari markaları birebir kopyalanmaz; launcher'ın kendi mor-altın-obsidyen kimliğiyle özgün bir konsol deneyimi sunulur.
 - **ZORUNLU KONTROLCÜ & KONSOL KULLANILABİLİRLİK KURALI (Kullanıcı Talimatı):** Launcher arayüzü daima **Game Controller (Gamepad / DualSense / Xbox / Kol)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu bir konsol UI'ı olarak tasarlanmalı ve korunmalıdır. Kullanıcının *"MÜKEMMELLLL"* olarak nitelendirdiği mevcut PlayStation 5 Game Hub, Trophy Hub konsol sahnesi, geniş ve ferah kartlar, 2 sütunlu kupa ızgarası, büyük aksiyon butonları ve sade gezinme dili titizlikle korunmalı; karmaşık, sıkışık veya fare odaklı minik bento kutu kalabalığından kesinlikle kaçınılmalıdır. Tüm etkileşimli öğeler elektrik mavisi odak halkasına (`:focus-visible`), D-pad / analog uzamsal navigasyona ve kontrolcü kısayollarına (A: Seç, B: Geri, LB/RB: Sekme, Y: Ara, X: Favori) sahip olmalıdır.
+- **ZORUNLU "AI TASARIMI GİBİ DURMASIN" KURALI (Kullanıcı Talimatı):** Arayüz, "bir AI üretmiş" hissi veren klişelerden arındırılır. YASAK: mor→indigo→cyan gradyanların dekoratif kullanımı, neon parlama (`box-shadow` glow / `drop-shadow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`border-radius: 999px`) çevirmek, cam/blur katmanları ve süs amaçlı mikro animasyonlar (ikon sallama, dönme, pulse). Bunun yerine: düz yüzeyler, ölçülü köşe yarıçapları (6-8px), 1px hairline kenarlıklar, nötr gri metin hiyerarşisi. **Renk yalnızca DURUM bildirir** (yeşil = çevrimiçi, amber = çevrimdışı, kırmızı = sayaç); süs olarak renk kullanılmaz. Hareket yalnızca işlevseldir (ör. aktif sekme karonunun kayması).
 
 ## 4. Mimari
 
@@ -1200,4 +1201,17 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - 1024px'te ölçüm: `seg=352px + right=200px` → taşma yok (167px boşluk).
 
 **Ölü kod temizliği:** `.offline-toggle-btn` CSS bloğu kaldırıldı (artık `.net-chip` kullanılıyor).
+
+## 72. Üst Barın "AI Tasarımı" Klişelerinden Arındırılması (Sade Konsol Çubuğu)
+
+**Geri bildirim:** Kullanıcının çevresinden gelen eleştiri — *"ai sıçmış gibi, tüm ai tasarımlar böyle, her yerde 305 milyon tane var"*. §71'deki tasarım tam da AI üretimi tasarımların üç imzasını taşıyordu: **mor→indigo→cyan gradyan**, **neon parlama** ve **her şeyi tam yuvarlak kapsül** yapmak. §3'e "ZORUNLU AI TASARIMI GİBİ DURMASIN KURALI" eklendi.
+
+**Yapılan sadeleştirme (davranış değişmedi, yalnızca görsel dil):**
+- **Yükseklik 56px → 48px.** Ölçülü, "alet gibi" bir çubuk. `storeRect()` yine `offsetHeight` okuduğu için gömülü mağaza otomatik uyum sağlar.
+- **Kaldırılan süsler:** `#titlebar` üzerindeki iki radyal gradyan (mor + cyan) ve `::after` mor alt çizgi; `.logo-mark` gradyan dolgusu + parlama + hover'da dönme; `.logo-text` gradyan metni; `nav-seg-indicator` gradyanı + mor glow; `.net-dot` nabız animasyonu (`net-pulse`); `nav-wiggle` / `nav-pulse` / `nav-drop` ikon animasyonları; `.nav-icon-btn:hover` 38° dönme; `translateY(-1px)` hover kaldırmaları; `.account-avatar` gradyanı; rozetteki `badge-pop` animasyonu ve glow.
+- **Yeni dil:** `#titlebar` düz 2 duraklı koyu gradyan (`#101118 → #0c0d12`) + 1px `rgba(255,255,255,0.07)` hairline. `.nav-seg` **çukur** zemin (`#090a0e`), aktif karo **düz** `#24262f` + 1px inset üst ışık. Köşe yarıçapları 15/11px → **8/6px**. Kapsüller (`border-radius: 999px`) → **6px** dikdörtgen çipler.
+- **Renk disiplini:** Etiketler nötr gri (`#8b8e9c` → hover `#d4d6de` → aktif `#fff`). Bağlantı rozetinde **metin nötr kalır, rengi yalnızca nokta taşır** (yeşil `#3fb950` / amber `#d29922`), kenarlık çok hafif tonlanır. Hesap avatarı nötr `#2a2d38` (gradyan yok). Tek marka vurgusu `.logo-mark` ikonundaki düz `#9d94e8`.
+- **Rozet taşma düzeltmesi:** İndirme sayacı `position: absolute` köşe rozetiydi ve dar sekmede "İndirmeler" metninin üstüne biniyordu → **satır içi** düz sayaca çevrildi (`#e5484d`, 14px, `border-radius: 4px`). Satır içi olduğu için sekme genişliği değişir → `updateBadge()` sonunda `updateNavIndicator()` çağrısı eklendi (aksi halde kayan karo bayat kalır).
+- **Responsive eşikler yeni ölçülere göre daraltıldı:** hesap adı `≤1060px`'te gizlenir (avatar kalır), ikon-only güvenlik ağı `≤880px`. Ölçüm: 1024px'te `seg=326 + right=173`, taşma yok (246px boşluk); 1250px'te de sorunsuz.
+- **Korunanlar:** Kayan aktif karo (tek işlevsel hareket), `Ctrl+1/2/3/,` kısayolları, `.nav-seg-indicator` JS konumlandırması, `updateChrome` `dataset.acct` önbelleği.
 

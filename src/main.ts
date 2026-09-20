@@ -1006,6 +1006,8 @@ function updateBadge(): void {
   const active = [...downloads.values()].filter((d) => !d.done).length;
   dlBadge.textContent = active > 0 ? String(active) : "";
   dlBadge.classList.toggle("hidden", active === 0);
+  // Sayaç satır içi olduğu için sekme genişliği değişir → kayan göstergeyi tazele.
+  updateNavIndicator();
 }
 
 /* ---------- Aksiyonlar ---------- */
