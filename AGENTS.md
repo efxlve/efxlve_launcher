@@ -468,6 +468,41 @@ Sonra düzeltmeyi geri koy. Zamanlamaya bağlı testlerde (yarış durumları) b
   gerçekten yüklenmesi, JS hatası olmaması.
 - **Yeni bir mağaza özelliği eklediğinde buraya bir iddia (assertion) ekle.**
 
+### 7.2 Tasarım/görsel doğrulama (headless Edge ekran görüntüsü)
+
+`tools/store-check` **davranışı** sınar; **görsel tasarımı** sınamaz (hizalama, taşma,
+gösterge konumu, ışık/derinlik). Tasarım turlarında bu boşluk `msedge.exe --headless=new
+--screenshot` ile doldurulur. Ortamda Playwright yok; Edge her Windows'ta hazır.
+
+```bash
+MSEDGE="/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+"$MSEDGE" --headless=new --disable-gpu --hide-scrollbars \
+  --force-device-scale-factor=2 --allow-file-access-from-files \
+  --user-data-dir="$TEMP/fresh-$RANDOM" --window-size=1280,60 \
+  --screenshot="$TEMP/out.png" "file:///C:/.../preview.html"
+```
+
+**Kanla öğrenilen kurallar (bunlara uymazsan yanlış ekran görüntüsü alırsın):**
+1. **Her koşuda TAZE `--user-data-dir`.** Aksi halde Edge önceki koşunun stil dosyasını
+   önbellekten kullanır ve eski tasarımı çeker (sessizce yanlış sonuç).
+2. **`--dump-dom` ile ölçme.** `--dump-dom` koşusunda `innerWidth = 0` olur → `@media`
+   sorguları yanlış değerlendirilir (örn. `max-width: 960px` yürürlüğe girer, sekmeler
+   ikona iner ve sekme genişliği 40px ölçülür). Ölçüm ile görüntüyü **ayrı koşularda** al.
+   `--virtual-time-budget` da `--dump-dom` ile birlikte viewport'u bozar.
+3. **JS ile konumlandırılan göstergeler ilk karede yanlış hesaplanır** (viewport 0 → sonra
+   gerçek genişlik). Konumlandırmayı `resize` olayında, `document.fonts.ready` sonrasında ve
+   birkaç karelik `requestAnimationFrame` döngüsünde **tekrarla**. Ekran görüntüsü öncesi
+   animasyonları kapat (`*{transition:none !important;animation:none !important}`).
+4. **`offsetLeft` yerine `getBoundingClientRect()` farkı** kullan (containing block'un
+   `border-left` genişliğini çıkar) — ölçek faktöründen etkilenmez.
+5. **Görüntü alanı = gerçek pencere genişliği.** `tauri.conf.json`'daki varsayılan 1280px'i
+   kullan; 1080px'te `@media (max-width: 1200px)` devreye girer ve farklı bir düzen görürsün.
+   Responsive iddiaları için ayrıca 1024 (min) ve 960 (ikon-only eşiği) ölçülür.
+6. **En kötü durumu zorla:** uzun hesap adı, 3 haneli indirme sayacı — kısa örnekle ölçüm
+   taşmayı gizler.
+7. `-webkit-app-region` / `data-tauri-drag-region` tarayıcıda etkisizdir; sürükleme
+   davranışını bu yöntemle doğrulayamazsın (gerçek uygulamada elle dene).
+
 ## 8. Durum ve yol haritası
 
 Biten: Faz 0 (kurulum/auth/kütüphane) • Faz 1 (başlatma: online→offline fallback) •
@@ -586,6 +621,10 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Steam "Öne Çıkan ve Tavsiye Edilen" (Featured & Recommended) vitrini: Sol tarafta 16:9 ana sahne, sağ tarafta fareyle üzerine gelindiğinde anında sahneyi değiştiren hover-swap özellikli 4 küçük görsel listesi.
     - Ürün sayfası (PDP): Medya vitrininin altında Steam tarzı satın alma şeridi (`.store-pdp-buy-strip`, `[Oyun Adı] Satın Alın` başlığı, indirim kutucuğu ve yeşil CTA butonu).
     - Doğrulama: `npm.cmd run build` (0 hata) + `tools/store-check/run.mjs --check` (90/90 PASS, 0 FAIL) + `cargo test` (47 PASS).
+- **Üst Bar (Titlebar) Dört Turluk Tasarım Evrimi & Yan Yana Karşılaştırma (§71–§75):**
+  - Gradyan/kapsül (56px) → aşırı sadeleştirme (48px) → tuş yüzeyleri (50px) → **PS5 ortam ışığı (54px)**. Bkz. §74 (mevcut dil) ve §75 (karşılaştırma + headless görsel doğrulama dersleri).
+  - Karar: kutular değil ışık ve çizgi. `@property --nav-ambient` ile bağlamsal renk geçişi, kayan beyaz alt çizgi, PS5 kontrol merkezi döşemeli sağ küme.
+  - Kısayollar: `Ctrl+1` Mağaza, `Ctrl+2` Kütüphane, `Ctrl+3` İndirmeler, `Ctrl+,` Ayarlar.
 
 ## 9. Çalışma disiplini
 
@@ -1252,3 +1291,28 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 `vw=1024 nav=736/736 right=181 OVERFLOW=false` · `vw=1200 right=181 (ad gizli)` · `vw=1280 right=296 (ad görünür, 150px'te kırpılır) OVERFLOW=false`.
 Responsive: hesap adı `≤1200px`'te gizlenir (avatar kalır, `max-width: 150px`), ikon-only güvenlik ağı `≤960px`.
 
+
+
+## 75. Üst Bar Tasarım Turlarının Yan Yana Karşılaştırması (Design Iteration Comparison)
+
+**Talep:** *"ikisinin karşılaştırmasını görsek bi ha"* — kullanıcı §71–§74 arasındaki turları yan yana görmek istedi. Karar: **ikisini değil dördünü birden** koy, seçimi kullanıcı yapsın.
+
+**Yöntem (elle yeniden yazma YOK — gerçek CSS):** Her turun `src/styles.css` ve `index.html`'i ilgili commit'ten `git show` ile çıkarıldı:
+| Etiket | Commit | Sürüm | Yükseklik |
+|---|---|---|---|
+| 1. TUR | `f4a278a` | gradyan + parlama + kapsül | 56px |
+| 2. TUR | `6028c40` | aşırı sadeleştirme | 48px |
+| 3. TUR | `55a09b9` | tuş yüzeyleri | 50px |
+| 4. TUR | `9ab7659` | PS5 ortam ışığı | 54px |
+
+Çıkarım sınırları: `/* --- Titlebar` → `\n#content {`. Bu aralık **üst bar + pencere kontrol butonları + üst bara ait `@media` kurallarını** birlikte alır (medya sorguları `/* Pencere Kontrol Butonları` bloğunun *sonrasında* durur; eski sınır onları dışarıda bırakıyordu → hesap adı 1080px'te yanlış görünüyordu). `:root` ayrıca alınır, lucide `<i data-lucide>` etiketleri satır içi SVG'ye çevrilir.
+
+**Kritik doğruluk kararı — 1280px:** Karşılaştırma **uygulamanın varsayılan pencere genişliğinde** (`tauri.conf.json` → `width: 1280`) yapılır. 1080px'te `@media (max-width: 1200px)` devreye girip hesap adını gizlediği için 4. tur diğerlerinden *tasarım dışı* bir sebeple farklı görünüyordu; 1280px'te dört sürüm de tam masaüstü düzenini gösterir → adil karşılaştırma.
+
+**Kanla öğrenilen iki headless dersi (yeni bir karşılaştırma üretirken ŞART):**
+1. **`--dump-dom` ortamı ölçüm için güvenilmez:** viewport `innerWidth = 0` olur → `@media (max-width: 960px)` yürürlüğe girer, sekmeler ikona iner (40px), ölçümler yanlış çıkar. Ayrıca `--virtual-time-budget` ile birlikte kullanıldığında da bozulur. Ölçüm için `--dump-dom`, görüntü için `--screenshot` ayrı ayrı koşulmalı; **aynı koşuda ölçüp aynı koşuda ekran alma**.
+2. **Inline `place()` yeterli değil:** headless'ta görüntü alanı yükleme sırasında bir süre 0 kalır, sonra gerçek genişliğe geçer. Bu yüzden göstergenin JS ile konumlandırılması **ilk karede yanlış** hesaplanır ve öyle donar (v1'de aktif çizgi "Mağaza" altında kalmıştı — teşhis: görüntü alanı 0 iken sekme genişliği 40px ölçülüyor, sonra düzen genişliyor ama inline stil bayat kalıyor). Çözüm: konumlandırmayı **`resize` olayında + `document.fonts.ready` + birkaç karelik `requestAnimationFrame` döngüsünde** tekrarla; ekran görüntüsü için animasyonları kapat (`*{transition:none !important}`) ki gösterge kesin konumunda yakalansın. Ayrıca `offsetLeft` yerine **`getBoundingClientRect()` farkı** kullan (containing block'un `border-left` genişliğini çıkar) — ölçek faktöründen etkilenmez.
+
+**Karşılaştırmanın okunması:** 1. tur "fazla AI", 2. tur "fazla ruhsuz", 3. tur "kutularla çözmeye çalışıyor", 4. tur "ışık ve çizgiyle çözüyor". §3'teki **DENGE KURALI**nın görsel kanıtı: karakter kutulardan değil; (1) bağlamsal ışık, (2) yüzey/derinlik dili, (3) tipografik ses, (4) tek kararlı vurgu renginden gelir.
+
+**Üretim betiği:** `%TEMP%\efx-prev\build_compare.py` (repoya girmez — tek seferlik analiz aracı). Çıktı: `karsilastirma.png` (2800×1348, 2x). Yeni bir tur eklendiğinde `VERSIONS` listesine commit hash'i ekleyip yeniden koşmak yeterli.
