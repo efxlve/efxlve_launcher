@@ -975,6 +975,25 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Sonuç:**
   - Kullanıcı detay sayfasındayken üst bardan Ayarlar, İndirmeler, Profil veya Kütüphane'ye tıkladığında detay sayfası anında kapanır ve hedeflenen sayfa kusursuz şekilde açılır.
 
+## 61. Oyun Özellikleri & Destek Kartı Veri & Yerleşim İyileştirmeleri (Dead by Daylight Fix)
+
+- **Problem & Kök Neden:**
+  - *Dead by Daylight* ve benzeri oyunlarda "Oyun Özellikleri & Destek" kartında 5 temel hata bulunuyordu:
+    1. **Kontrolcü Desteği:** Her oyunda istisnasız `✓ DualSense / Xbox / Gamepad` hardcoded yazılmıştı. PC'de Dead by Daylight vb. oyunlar yerel olarak yalnızca Xbox / XInput kollarını destekler; DualSense için üçüncü parti emülasyon gerekir.
+    2. **Bulut Kayıtları:** Bulut klasörü (`CloudSaveFolder`) bulunmayan çevrimiçi oyunlar doğrudan "Yerel Kayıt" olarak işaretleniyordu. Oysa Dead by Daylight sunucu tabanlıdır; karakter ve ilerleme verileri doğrudan çevrimiçi hesapta/sunucuda tutulur.
+    3. **Çevrimdışı Oynanış:** Epic metadata'sındaki genel DRM izin bayrağı (`CanRunOffline = true`) baz alındığı için saf çevrimiçi oyunlarda bile `✓ Destekleniyor (Çevrimdışı)` görünüyordu.
+    4. **Oyun Modu:** Akamai etiketleri boş geldiğinde sistem varsayılan olarak `"Tek Oyunculu"`ya düşüyordu; Dead by Daylight gibi 4v1 asimetrik PvP oyunlar tek oyunculu görünüyordu.
+    5. **Yüklü Boyut & Sürüm:** `DBD_Udon_HF2_EGS_Shipping_6_3797605_10.1.2.4` gibi 53 karakterlik dahili derleme adları, `.hub-feature-label`'da `flex-shrink: 0; white-space: nowrap;` olmadığı için etiketi ezerek iki satıra bölüyor ve `Yüklü 60.7 GB Boyut(vDBD...)` şeklinde bozuk bir yerleşim yaratıyordu.
+- **Uygulanan Çözüm:**
+  1. **`detectControllerSupport()` Fonksiyonu:** Sony PC portları ve yerel DualSense desteği olan yapımlar için `✓ DualSense & Xbox Kolu`, klavye-fare odaklı strateji/simülasyonlar için `Klavye & Fare`, standart Windows PC yapımları (Dead by Daylight dahil) için ise `✓ Xbox & Gamepad (XInput)` değerini atayan dinamik motor eklendi.
+  2. **`isOnlineOnlyGame()` Fonksiyonu:** Bilinen saf çevrimiçi yapımları (Dead by Daylight, Fortnite, Fall Guys, Destiny 2 vb.) ve açıklamalardaki asimetrik 4v1/multiplayer/online-only ifadelerini tespit eden kütüphane eklendi.
+  3. **Çevrimiçi Sunucu Kaydı & İnternet Gereksinimi:** Çevrimiçi oyunlar için bulut kaydı `✓ Çevrimiçi Sunucu Kaydı` rozetine, çevrimdışı oynanış ise `Sürekli İnternet Gerekir` uyarı rozetine bağlandı.
+  4. **Akıllı Oyun Modu Analizi:** Etiketler, açıklamalar, koleksiyonlar ve oyun şeması taranarak `Çok Oyunculu (4v1 PvP)`, `Eşli Oyun (Co-op)`, `Tek Oyunculu & Co-op`, `Tek & Çok Oyunculu` tespit mekanizması getirildi.
+  5. **`cleanDisplayVersion()` & Konsol Obsidian Rozeti:** Uzun derleme adlarındaki gerçek yama versiyonu (örn. `v10.1.2.4`) ayıklandı, ham yapı adı `title` tooltip'ine taşındı. CSS'te `.hub-feature-label` `flex-shrink: 0; white-space: nowrap;`, `.hub-version-badge` ise taşmayan zarif bir konsol hap rozeti haline getirildi.
+- **Sonuç:**
+  - Dead by Daylight için Kontrolcü: `✓ Xbox & Gamepad (XInput)`, Bulut: `✓ Çevrimiçi Sunucu Kaydı`, Çevrimdışı: `Sürekli İnternet Gerekir`, Oyun Modu: `Çok Oyunculu (4v1 PvP)`, Boyut: `60.7 GB [v10.1.2.4]` olarak kusursuz ve doğru şekilde sunulmaktadır.
+
+
 
 
 
