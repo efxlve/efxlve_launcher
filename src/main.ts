@@ -2268,15 +2268,33 @@ function renderProfile(): string {
   `;
 }
 
-/* ---------- Üst bar: kayan aktif sekme göstergesi ---------- */
+/* ---------- Üst bar: PS5 esinli ortam ışığı + kayan aktif çizgi ---------- */
 
 let navIndicatorReady = false;
 
-/** Aktif sekmeyi takip eden yumuşak geçişli göstergeyi konumlandırır. */
+/** Bölüme göre ortam (ambient) rengi — PS5'te sahne ışığı içeriğe göre değişir. */
+const NAV_AMBIENT: Record<string, string> = {
+  store: "rgba(56, 132, 255, 0.22)",
+  library: "rgba(124, 108, 232, 0.22)",
+  downloads: "rgba(0, 178, 158, 0.20)",
+  profile: "rgba(206, 152, 48, 0.20)",
+  settings: "rgba(120, 128, 150, 0.18)",
+  "dlc-manager": "rgba(0, 178, 158, 0.18)",
+};
+
+function updateNavAmbient(): void {
+  const bar = document.getElementById("titlebar");
+  if (!bar) return;
+  const key = storeVisible ? "store" : view;
+  bar.style.setProperty("--nav-ambient", NAV_AMBIENT[key] ?? NAV_AMBIENT.library);
+}
+
+/** Aktif sekmeyi takip eden alt çizgiyi konumlandırır (çizgi #titlebar'ın çocuğudur). */
 function updateNavIndicator(): void {
+  const bar = document.getElementById("titlebar");
   const seg = document.getElementById("nav-seg");
   const ind = document.getElementById("nav-indicator");
-  if (!seg || !ind) return;
+  if (!bar || !seg || !ind) return;
   const active = seg.querySelector<HTMLElement>(".nav-tab.active");
   if (!active) {
     ind.style.opacity = "0";
@@ -2288,8 +2306,10 @@ function updateNavIndicator(): void {
     navIndicatorReady = true;
     window.setTimeout(() => { ind.style.transition = ""; }, 80);
   }
-  ind.style.width = `${active.offsetWidth}px`;
-  ind.style.transform = `translateX(${active.offsetLeft}px)`;
+  const barRect = bar.getBoundingClientRect();
+  const tabRect = active.getBoundingClientRect();
+  ind.style.width = `${tabRect.width}px`;
+  ind.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
   ind.style.opacity = "1";
 }
 
@@ -2302,6 +2322,7 @@ function render(): void {
     el.classList.toggle("active", active);
   });
   updateNavIndicator();
+  updateNavAmbient();
   if (storeVisible) {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
