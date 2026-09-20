@@ -86,6 +86,9 @@ import {
   epicCaptureGameScreenshot,
   epicDeleteGameScreenshot,
   epicOpenGameScreenshotsFolder,
+  epicSetScreenshotHotkey,
+  epicGetScreenshotHotkey,
+  epicReplaceScreenshotWithCompressed,
   type HltbData,
   type CriticData,
   type GoygoyReview,
@@ -439,10 +442,42 @@ let loadingAchFor: string | null = null;
 type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
 let activeDrawerTab: DrawerTab = "overview";
 
-/* ---------- Ekran Görüntüleri Durumu ---------- */
+/* ---------- Ekran Görüntüleri Durumu & Ayarları ---------- */
+const SS_HOTKEY_KEY = "efxlve-ss-hotkey";
+const SS_HOTKEY_NAME_KEY = "efxlve-ss-hotkey-name";
+const SS_COMPRESS_KEY = "efxlve-ss-compression";
+const SS_FORMAT_KEY = "efxlve-ss-format";
+const SS_QUALITY_KEY = "efxlve-ss-quality";
+
+let screenshotHotkey: number = Number(localStorage.getItem(SS_HOTKEY_KEY)) || 0x7B; // 123 = F12
+let screenshotHotkeyName: string = localStorage.getItem(SS_HOTKEY_NAME_KEY) || "F12";
+let screenshotCompressionEnabled: boolean = localStorage.getItem(SS_COMPRESS_KEY) === "true"; // DEFAULT: KAPALI!
+let screenshotCompressionFormat: "avif" | "webp" | "jpg" =
+  (localStorage.getItem(SS_FORMAT_KEY) as "avif" | "webp" | "jpg") || "avif";
+let screenshotCompressionQuality: number =
+  Number(localStorage.getItem(SS_QUALITY_KEY)) || 0.85;
+let isRecordingScreenshotHotkey = false;
+
+const PRESET_HOTKEYS: { code: number; name: string }[] = [
+  { code: 0x7B, name: "F12 (Varsayılan)" },
+  { code: 0x7A, name: "F11" },
+  { code: 0x79, name: "F10" },
+  { code: 0x78, name: "F9" },
+  { code: 0x77, name: "F8" },
+  { code: 0x76, name: "F7" },
+  { code: 0x75, name: "F6" },
+  { code: 0x74, name: "F5" },
+  { code: 0x2C, name: "Print Screen (PrtScn)" },
+  { code: 0x91, name: "Scroll Lock" },
+  { code: 0x13, name: "Pause / Break" },
+  { code: 0x2D, name: "Insert" },
+  { code: 0x24, name: "Home" },
+];
+
 let loadedScreenshots: Map<string, GameScreenshotItem[]> = new Map();
 let loadingScreenshotsFor: string | null = null;
 let activeLightboxScreenshot: { appName: string; index: number } | null = null;
+let activeShareScreenshot: { appName: string; item: GameScreenshotItem } | null = null;
 let activeAchScope: "all" | "base" | "dlc" = "all";
 let activeAchFilter: "all" | "unlocked" | "locked" | "hidden" = "all";
 let achSearchQuery = "";
@@ -1780,6 +1815,84 @@ function renderSettings(): string {
       </p>
     </div>
     <div class="settings-box">
+      <h3>${icon("camera", 16)} Ekran Görüntüleri (Screenshots)</h3>
+      <p>Oyun içi ekran görüntüsü kısayol tuşunu ve depolama sıkıştırma seçeneklerini özelleştirin.</p>
+      
+      <!-- Kısayol Tuşu -->
+      <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px">
+        <label style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:#fff;margin-bottom:8px">
+          ${icon("keyboard", 14)} Ekran Görüntüsü Kısayol Tuşu
+        </label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select id="ss-hotkey-select" class="text-input" style="width:auto;min-width:190px" data-act="change-ss-hotkey">
+            ${PRESET_HOTKEYS.map(k => `
+              <option value="${k.code}" ${k.code === screenshotHotkey ? "selected" : ""}>${k.name}</option>
+            `).join("")}
+            ${!PRESET_HOTKEYS.some(k => k.code === screenshotHotkey) ? `
+              <option value="${screenshotHotkey}" selected>Özel: ${esc(screenshotHotkeyName)} (${screenshotHotkey})</option>
+            ` : ""}
+          </select>
+          <button type="button" class="btn ghost small ${isRecordingScreenshotHotkey ? "active" : ""}" data-act="record-screenshot-hotkey" style="${isRecordingScreenshotHotkey ? "background:rgba(239,68,68,0.2);border-color:#ef4444;color:#fca5a5" : ""}">
+            ${isRecordingScreenshotHotkey ? "🛑 Tuşa Basın…" : `${icon("edit", 12)} Yeni Tuş Ata`}
+          </button>
+          <span class="muted" style="font-size:12px">Aktif tuş: <strong style="color:var(--accent);background:rgba(124,58,237,0.15);padding:2px 6px;border-radius:4px">${esc(screenshotHotkeyName)}</strong></span>
+        </div>
+      </div>
+
+      <!-- Görsel Sıkıştırma (Opsiyonel - Varsayılan Kapalı) -->
+      <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <label style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:#fff">
+              ${icon("minimize-2", 14)} Görsel Sıkıştırma (Opsiyonel)
+            </label>
+            <p class="muted" style="font-size:12px;margin:4px 0 0">
+              Yeni çekilen ekran görüntülerini otomatik sıkıştırarak disk alanından %70-85 tasarruf sağlar.
+            </p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" data-act="toggle-screenshot-compression" ${screenshotCompressionEnabled ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        ${screenshotCompressionEnabled ? `
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:600;color:var(--muted)">Format:</span>
+              <div class="ss-format-pills">
+                <button type="button" class="ss-format-btn ${screenshotCompressionFormat === "avif" ? "active" : ""}" data-act="set-ss-format" data-format="avif">
+                  AVIF (En Yüksek Verim - Önerilen)
+                </button>
+                <button type="button" class="ss-format-btn ${screenshotCompressionFormat === "webp" ? "active" : ""}" data-act="set-ss-format" data-format="webp">
+                  WebP (Dengeli)
+                </button>
+                <button type="button" class="ss-format-btn ${screenshotCompressionFormat === "jpg" ? "active" : ""}" data-act="set-ss-format" data-format="jpg">
+                  JPEG (Evrensel)
+                </button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:600;color:var(--muted)">Kalite:</span>
+              <input type="range" min="0.70" max="0.95" step="0.05" value="${screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" style="width:140px;accent-color:var(--accent)" />
+              <span id="ss-quality-val" style="font-size:12px;font-weight:600;color:#fff">%${Math.round(screenshotCompressionQuality * 100)}</span>
+              <span class="muted" style="font-size:11px">(%85 önerilen görsel netliği sunar)</span>
+            </div>
+
+            <div style="font-size:11px;color:#93c5fd;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:6px">
+              ${icon("info", 13)}
+              <span><strong>AVIF Teknolojisi:</strong> Modern AV1 kodlaması sayesinde 12-15 MB'lık ham PNG ekran görüntüleri görsel fark olmaksızın ~1.2 MB'a sıkıştırılır.</span>
+            </div>
+          </div>
+        ` : `
+          <p class="muted" style="font-size:11px;margin-top:6px;opacity:0.8">
+            Sıkıştırma kapalıyken görüntüler doğrudan orijinal, sıkıştırmasız ham PNG formatında kaydedilir.
+          </p>
+        `}
+      </div>
+    </div>
+    <div class="settings-box">
       <h3>Sistem</h3>
       <p><strong>Backend:</strong> ${isTauri ? "Rust (Tauri)" : "Demo (tarayıcı mock)"}</p>
       <p><strong>Kütüphane klasörü:</strong><br /><code>${esc(libraryPath)}</code></p>
@@ -2127,6 +2240,9 @@ async function bootEpic(): Promise<void> {
   if (!isTauri || epicBooted) return;
   epicBooted = true;
   void epicGetSteamGridKey().then((k) => { steamGridApiKey = k; }).catch(() => {});
+  if (screenshotHotkey && screenshotHotkey > 0) {
+    void epicSetScreenshotHotkey(screenshotHotkey).catch(() => {});
+  }
   await refreshEpic();
 }
 
@@ -3637,6 +3753,229 @@ function formatScreenshotDate(ts: number, fallbackStr?: string): string {
   return fallbackStr || "";
 }
 
+async function copyScreenshotImageToClipboard(item: GameScreenshotItem): Promise<boolean> {
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = item.data_url;
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = () => rej(new Error("Görsel yüklenemedi"));
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D context alınamadı");
+    ctx.drawImage(img, 0, 0);
+
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+    if (!blob) throw new Error("PNG Blob oluşturulamadı");
+
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+
+    toast("📸 Görsel panoya kopyalandı! (Discord veya sohbette Ctrl+V ile yapıştırabilirsiniz)", "ok");
+    return true;
+  } catch (err) {
+    console.warn("Görsel kopyalanamadı:", err);
+    try {
+      await navigator.clipboard.writeText(item.file_path);
+      toast("📁 Dosya yolu panoya kopyalandı: " + item.file_name, "ok");
+      return true;
+    } catch {
+      toast("Panoya kopyalama başarısız oldu", "err");
+      return false;
+    }
+  }
+}
+
+async function compressImageToBlob(
+  dataUrl: string,
+  format: "avif" | "webp" | "jpg",
+  quality: number = 0.85
+): Promise<{ base64: string; ext: string; bytes: number }> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = dataUrl;
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error("Görsel yüklenemedi"));
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth || img.width;
+  canvas.height = img.naturalHeight || img.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas context 2D alınamadı");
+  ctx.drawImage(img, 0, 0);
+
+  let mimeType = format === "avif" ? "image/avif" : format === "webp" ? "image/webp" : "image/jpeg";
+  let targetExt = format === "jpg" ? "jpg" : format;
+  if (format === "avif") {
+    try {
+      const test = canvas.toDataURL("image/avif");
+      if (!test.startsWith("data:image/avif")) {
+        mimeType = "image/webp";
+        targetExt = "webp";
+      }
+    } catch {
+      mimeType = "image/webp";
+      targetExt = "webp";
+    }
+  }
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((b) => resolve(b), mimeType, quality);
+  });
+
+  if (!blob) throw new Error("Görsel sıkıştırma başarısız oldu");
+
+  const buffer = await blob.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+
+  return { base64, ext: targetExt, bytes: blob.size };
+}
+
+async function compressScreenshotItem(
+  appName: string,
+  item: GameScreenshotItem,
+  format: "avif" | "webp" | "jpg" = screenshotCompressionFormat,
+  quality: number = screenshotCompressionQuality,
+  silent = false
+): Promise<GameScreenshotItem | null> {
+  try {
+    const { base64, ext, bytes } = await compressImageToBlob(item.data_url, format, quality);
+    const updated = await epicReplaceScreenshotWithCompressed(item.file_path, base64, ext);
+
+    const list = loadedScreenshots.get(appName) || [];
+    const idx = list.findIndex((x) => x.file_path === item.file_path || x.id === item.id);
+    if (idx !== -1) {
+      list[idx] = updated;
+    } else {
+      list.unshift(updated);
+    }
+    loadedScreenshots.set(appName, [...list]);
+
+    if (activeLightboxScreenshot && activeLightboxScreenshot.appName === appName) {
+      openScreenshotLightbox(appName, activeLightboxScreenshot.index);
+    }
+
+    if (currentModalAppName === appName && activeDrawerTab === "screenshots") {
+      const contentEl = document.getElementById("drawer-tab-content");
+      const curSummary = epicSummaries.find((x) => x.appName === appName);
+      if (contentEl && curSummary) {
+        contentEl.innerHTML = renderDrawerScreenshots(curSummary);
+      }
+    }
+
+    if (!silent) {
+      const oldSize = item.size_str;
+      const newSize = updated.size_str;
+      const savedPercent = item.size_bytes > 0 ? Math.round((1 - bytes / item.size_bytes) * 100) : 0;
+      toast(`⚡ Sıkıştırıldı: ${oldSize} ➔ ${newSize} (%${savedPercent > 0 ? savedPercent : 0} Kazanç)`, "ok");
+    }
+    return updated;
+  } catch (err) {
+    if (!silent) toast(`Sıkıştırma hatası: ${String(err)}`, "err");
+    return null;
+  }
+}
+
+function openShareModal(appName: string, item: GameScreenshotItem): void {
+  activeShareScreenshot = { appName, item };
+  let shareRoot = document.getElementById("share-modal-root");
+  if (!shareRoot) {
+    shareRoot = document.createElement("div");
+    shareRoot.id = "share-modal-root";
+    document.body.appendChild(shareRoot);
+  }
+  const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+  shareRoot.innerHTML = `
+    <div class="ss-share-backdrop" data-act="close-share-modal">
+      <div class="ss-share-card" role="dialog" aria-modal="true">
+        <div class="ss-share-head">
+          <div class="ss-share-preview-thumb">
+            <img src="${item.data_url}" alt="${esc(item.file_name)}" />
+          </div>
+          <div class="ss-share-meta">
+            <h3 class="ss-share-title">Görseli Paylaş</h3>
+            <span class="ss-share-sub">${esc(item.file_name)}</span>
+            <div class="ss-share-chips">
+              <span class="ss-share-chip">${esc(item.size_str)}</span>
+              <span class="ss-share-chip ${isAvifOrWebp ? "format" : ""}">${isAvifOrWebp ? "⚡ Sıkıştırılmış" : "Ham PNG"}</span>
+            </div>
+          </div>
+          <button class="ss-share-close" data-act="close-share-modal" title="Kapat">
+            ${icon("x", 16)}
+          </button>
+        </div>
+
+        <div class="ss-share-actions">
+          <button class="ss-share-btn primary" data-act="do-copy-image">
+            <div class="ss-share-btn-icon" style="color:#60a5fa">${icon("copy", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">Görseli Panoya Kopyala</span>
+              <span class="ss-btn-hint">Discord, WhatsApp veya sohbete Ctrl+V ile anında yapıştırın</span>
+            </div>
+            <span class="ss-badge-recommended">Önerilen</span>
+          </button>
+
+          <button class="ss-share-btn" data-act="do-copy-path">
+            <div class="ss-share-btn-icon" style="color:#a78bfa">${icon("link", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">Dosya Yolunu Kopyala</span>
+              <span class="ss-btn-hint" title="${esc(item.file_path)}">${esc(item.file_path)}</span>
+            </div>
+          </button>
+
+          <button class="ss-share-btn" data-act="do-open-folder">
+            <div class="ss-share-btn-icon" style="color:#fbbf24">${icon("folder", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">Klasörde Göster</span>
+              <span class="ss-btn-hint">Windows Dosya Gezgini'nde aç</span>
+            </div>
+          </button>
+
+          ${!isAvifOrWebp ? `
+            <button class="ss-share-btn" data-act="do-compress-from-share">
+              <div class="ss-share-btn-icon" style="color:#34d399">${icon("minimize-2", 18)}</div>
+              <div class="ss-share-btn-text">
+                <span class="ss-btn-main">Görseli Sıkıştır (AVIF/WebP)</span>
+                <span class="ss-btn-hint">Dosya boyutunu %70-85 oranında küçülterek paylaşımı hızlandırın</span>
+              </div>
+            </button>
+          ` : ""}
+
+          ${typeof navigator.share === "function" ? `
+            <button class="ss-share-btn" data-act="do-native-share">
+              <div class="ss-share-btn-icon" style="color:#f472b6">${icon("share-2", 18)}</div>
+              <div class="ss-share-btn-text">
+                <span class="ss-btn-main">Windows Paylaşım Menüsü</span>
+                <span class="ss-btn-hint">Yakındakilerle Paylaş, E-posta vb.</span>
+              </div>
+            </button>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeShareModal(): void {
+  activeShareScreenshot = null;
+  const shareRoot = document.getElementById("share-modal-root");
+  if (shareRoot) shareRoot.innerHTML = "";
+}
+
 function renderDrawerScreenshots(s: EpicSummary): string {
   const screenshots = loadedScreenshots.get(s.appName) || [];
   const isLoading = loadingScreenshotsFor === s.appName;
@@ -3652,6 +3991,8 @@ function renderDrawerScreenshots(s: EpicSummary): string {
     `;
   }
 
+  const hasUncompressed = screenshots.some(item => !item.file_name.endsWith(".avif") && !item.file_name.endsWith(".webp"));
+
   const headerHtml = `
     <div class="screenshots-gallery-head">
       <div class="screenshots-head-info">
@@ -3660,8 +4001,13 @@ function renderDrawerScreenshots(s: EpicSummary): string {
       </div>
       <div class="screenshots-head-actions">
         <button class="btn primary small" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}" title="Hemen ekran görüntüsü al">
-          ${icon("image", 13)} Ekran Görüntüsü Al
+          ${icon("camera", 13)} Ekran Görüntüsü Al
         </button>
+        ${hasUncompressed ? `
+          <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="Tüm ham PNG ekran görüntülerini sıkıştırıp disk alanı kazanın">
+            ${icon("minimize-2", 13)} Tümünü Sıkıştır
+          </button>
+        ` : ""}
         <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="Klasörü Explorer'da Aç">
           ${icon("folder", 13)} Klasörü Aç
         </button>
@@ -3677,11 +4023,11 @@ function renderDrawerScreenshots(s: EpicSummary): string {
           <div class="screenshots-empty-icon">${icon("image", 44)}</div>
           <h4 class="screenshots-empty-title">Henüz Ekran Görüntüsü Yok</h4>
           <p class="screenshots-empty-desc">
-            Oyun oynarken <strong>F12</strong> veya <strong>Win + Alt + PrtScn</strong> tuşlarına basarak ekran görüntüsü yakalayabilirsiniz. Alınan görüntüler otomatik olarak burada toplanır.
+            Oyun oynarken <strong>${esc(screenshotHotkeyName)}</strong> veya <strong>Win + Alt + PrtScn</strong> tuşlarına basarak ekran görüntüsü yakalayabilirsiniz. Alınan görüntüler otomatik olarak burada toplanır.
           </p>
           <div class="screenshots-empty-actions">
             <button class="btn primary" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}">
-              ${icon("image", 14)} Hemen Ekran Görüntüsü Al
+              ${icon("camera", 14)} Hemen Ekran Görüntüsü Al
             </button>
             <button class="btn ghost" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}">
               ${icon("folder", 14)} Ekran Görüntüleri Klasörünü Aç
@@ -3694,7 +4040,9 @@ function renderDrawerScreenshots(s: EpicSummary): string {
 
   const cardsHtml = screenshots
     .map(
-      (item, idx) => `
+      (item, idx) => {
+        const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+        return `
     <div class="screenshot-card" data-act="open-screenshot-lightbox" data-id="${s.appName}" data-idx="${idx}" tabindex="0" title="${esc(item.file_name)}">
       <div class="screenshot-thumb-wrap">
         <img src="${item.data_url}" alt="${esc(item.file_name)}" loading="lazy" />
@@ -3705,6 +4053,16 @@ function renderDrawerScreenshots(s: EpicSummary): string {
           </div>
           <div class="screenshot-overlay-bottom">
             <span class="ss-view-btn">${icon("eye", 12)} Büyüt</span>
+            <button class="ss-share-btn" data-act="share-screenshot" data-id="${s.appName}" data-idx="${idx}" title="Paylaş / Panoya Kopyala">
+              ${icon("share-2", 12)} Paylaş
+            </button>
+            ${!isAvifOrWebp ? `
+              <button class="ss-compress-btn" data-act="compress-screenshot" data-id="${s.appName}" data-idx="${idx}" title="Bu Görseli Sıkıştır (AVIF/WebP)">
+                ${icon("minimize-2", 12)}
+              </button>
+            ` : `
+              <span class="ss-compressed-tag" title="Sıkıştırılmış format">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
+            `}
             <button class="ss-delete-btn" data-act="delete-screenshot" data-id="${s.appName}" data-path="${esc(item.file_path)}" title="Sil">
               ${icon("trash", 12)}
             </button>
@@ -3716,7 +4074,8 @@ function renderDrawerScreenshots(s: EpicSummary): string {
         <span class="ss-date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</span>
       </div>
     </div>
-  `
+  `;
+      }
     )
     .join("");
 
@@ -3735,6 +4094,8 @@ function renderScreenshotLightbox(appName: string, index: number): string {
   const item = list[index];
   if (!item) return "";
 
+  const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+
   return `
     <div class="screenshot-lightbox-overlay" data-act="close-screenshot-lightbox-backdrop">
       <div class="screenshot-lightbox-box">
@@ -3744,6 +4105,16 @@ function renderScreenshotLightbox(appName: string, index: number): string {
             <span class="lightbox-meta">${esc(formatScreenshotDate(item.timestamp, item.date_str))} • ${esc(item.size_str)}</span>
           </div>
           <div class="lightbox-tools">
+            <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="Görseli Paylaş (Panoya Kopyala / Paylaşım Menüsü)">
+              ${icon("share-2", 13)} Paylaş
+            </button>
+            ${!isAvifOrWebp ? `
+              <button class="btn ghost small" data-act="compress-screenshot" data-id="${appName}" data-idx="${index}" title="Görseli Sıkıştır (%70-85 Boyut Tasarrufu)">
+                ${icon("minimize-2", 13)} Sıkıştır
+              </button>
+            ` : `
+              <span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "⚡ AVIF" : "⚡ WebP"}</span>
+            `}
             <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="Klasörde Göster">
               ${icon("folder", 12)} Klasörde Aç
             </button>
@@ -7917,6 +8288,92 @@ document.addEventListener("click", (e) => {
   } else if (act === "lightbox-nav") {
     const dir = (t.dataset.dir as "prev" | "next") || "next";
     navigateScreenshotLightbox(dir);
+  } else if (act === "share-screenshot" && id) {
+    const idx = parseInt(t.dataset.idx || "0", 10);
+    const list = loadedScreenshots.get(id) || [];
+    const item = list[idx];
+    if (item) {
+      openShareModal(id, item);
+    }
+  } else if (act === "close-share-modal") {
+    closeShareModal();
+  } else if (act === "do-copy-image") {
+    if (activeShareScreenshot) {
+      void copyScreenshotImageToClipboard(activeShareScreenshot.item);
+      closeShareModal();
+    }
+  } else if (act === "do-copy-path") {
+    if (activeShareScreenshot) {
+      const path = activeShareScreenshot.item.file_path;
+      navigator.clipboard.writeText(path).then(() => {
+        toast("📁 Dosya yolu panoya kopyalandı", "ok");
+      }).catch(() => {
+        toast(path, "");
+      });
+      closeShareModal();
+    }
+  } else if (act === "do-open-folder") {
+    if (activeShareScreenshot) {
+      const s = epicSummaries.find((x) => x.appName === activeShareScreenshot?.appName);
+      const title = s ? s.title : activeShareScreenshot.appName;
+      void epicOpenGameScreenshotsFolder(activeShareScreenshot.appName, title);
+      closeShareModal();
+    }
+  } else if (act === "do-compress-from-share") {
+    if (activeShareScreenshot) {
+      const { appName, item } = activeShareScreenshot;
+      closeShareModal();
+      void compressScreenshotItem(appName, item);
+    }
+  } else if (act === "do-native-share") {
+    if (activeShareScreenshot && typeof navigator.share === "function") {
+      const item = activeShareScreenshot.item;
+      navigator.share({
+        title: item.file_name,
+        text: `Oyun Ekran Görüntüsü: ${item.file_name}`,
+      }).catch(() => {});
+      closeShareModal();
+    }
+  } else if (act === "compress-screenshot" && id) {
+    const idx = parseInt(t.dataset.idx || "0", 10);
+    const list = loadedScreenshots.get(id) || [];
+    const item = list[idx];
+    if (item) {
+      void compressScreenshotItem(id, item);
+    }
+  } else if (act === "compress-all-screenshots" && id) {
+    const list = loadedScreenshots.get(id) || [];
+    const uncompressed = list.filter((x) => !x.file_name.endsWith(".avif") && !x.file_name.endsWith(".webp"));
+    if (uncompressed.length === 0) {
+      toast("Tüm ekran görüntüleri zaten sıkıştırılmış", "ok");
+    } else {
+      toast(`⚡ ${uncompressed.length} ekran görüntüsü sıkıştırılıyor…`, "");
+      (async () => {
+        let count = 0;
+        for (const item of uncompressed) {
+          const res = await compressScreenshotItem(id, item, screenshotCompressionFormat, screenshotCompressionQuality, true);
+          if (res) count++;
+        }
+        toast(`✅ ${count} ekran görüntüsü ${screenshotCompressionFormat.toUpperCase()} formatına sıkıştırıldı!`, "ok");
+      })();
+    }
+  } else if (act === "toggle-screenshot-compression") {
+    screenshotCompressionEnabled = !screenshotCompressionEnabled;
+    localStorage.setItem(SS_COMPRESS_KEY, String(screenshotCompressionEnabled));
+    toast(screenshotCompressionEnabled ? "Görsel sıkıştırma etkinleştirildi" : "Görsel sıkıştırma kapatıldı (Ham PNG)", "ok");
+    render();
+  } else if (act === "set-ss-format" && t.dataset.format) {
+    const fmt = t.dataset.format as "avif" | "webp" | "jpg";
+    screenshotCompressionFormat = fmt;
+    localStorage.setItem(SS_FORMAT_KEY, fmt);
+    toast(`Sıkıştırma formatı: ${fmt.toUpperCase()}`, "ok");
+    render();
+  } else if (act === "record-screenshot-hotkey") {
+    isRecordingScreenshotHotkey = !isRecordingScreenshotHotkey;
+    if (isRecordingScreenshotHotkey) {
+      toast("Klavyeden istediğiniz tuşa basın…", "");
+    }
+    render();
   } else if (act === "win-minimize") {
     if (isTauri) void invoke("app_minimize");
   } else if (act === "win-maximize") {
@@ -7959,6 +8416,32 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("keydown", (e) => {
+  if (isRecordingScreenshotHotkey) {
+    e.preventDefault();
+    e.stopPropagation();
+    const code = e.keyCode || e.which;
+    if (code && code > 0) {
+      const keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      screenshotHotkey = code;
+      screenshotHotkeyName = keyName;
+      localStorage.setItem(SS_HOTKEY_KEY, String(code));
+      localStorage.setItem(SS_HOTKEY_NAME_KEY, keyName);
+      if (isTauri) void epicSetScreenshotHotkey(code);
+      isRecordingScreenshotHotkey = false;
+      toast(`Kısayol tuşu atandı: ${keyName} (${code})`, "ok");
+      render();
+    }
+    return;
+  }
+
+  if (activeShareScreenshot) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeShareModal();
+      return;
+    }
+  }
+
   if (activeLightboxScreenshot) {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -7977,7 +8460,7 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  if (e.key === "F12") {
+  if (e.keyCode === screenshotHotkey || e.key === screenshotHotkeyName || (screenshotHotkey === 0x7B && e.key === "F12")) {
     if (currentModalAppName) {
       e.preventDefault();
       const s = epicSummaries.find((x) => x.appName === currentModalAppName);
@@ -8102,10 +8585,33 @@ document.addEventListener("change", (e) => {
     }
     return;
   }
+  if (target && target.id === "ss-hotkey-select") {
+    const code = parseInt(target.value, 10);
+    if (code && code > 0) {
+      screenshotHotkey = code;
+      const found = PRESET_HOTKEYS.find((k) => k.code === code);
+      const name = found ? found.name.split(" ")[0] : `Key_${code}`;
+      screenshotHotkeyName = name;
+      localStorage.setItem(SS_HOTKEY_KEY, String(code));
+      localStorage.setItem(SS_HOTKEY_NAME_KEY, name);
+      if (isTauri) void epicSetScreenshotHotkey(code);
+      toast(`Kısayol tuşu güncellendi: ${name}`, "ok");
+      render();
+    }
+    return;
+  }
 });
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t && t.id === "ss-quality-slider") {
+    const val = parseFloat((t as HTMLInputElement).value);
+    screenshotCompressionQuality = val;
+    localStorage.setItem(SS_QUALITY_KEY, String(val));
+    const label = document.getElementById("ss-quality-val");
+    if (label) label.textContent = `%${Math.round(val * 100)}`;
+    return;
+  }
   if (t.id === "ach-search-input" && currentModalAppName) {
     achSearchQuery = (t as HTMLInputElement).value;
     const container = document.getElementById("ach-list-container");
@@ -8665,6 +9171,10 @@ async function init(): Promise<void> {
             }
           }
         }
+
+        if (screenshotCompressionEnabled) {
+          void compressScreenshotItem(id, item, screenshotCompressionFormat, screenshotCompressionQuality, false);
+        }
       }
     );
 
@@ -9002,10 +9512,25 @@ function icon(
     | "crown"
     | "plus"
     | "copy"
+    | "camera"
+    | "keyboard"
+    | "minimize-2"
+    | "link"
+    | "share-2"
     | "users",
   size = 15,
 ): string {
   const paths: Record<string, string> = {
+    camera:
+      '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    keyboard:
+      '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/>',
+    "minimize-2":
+      '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/>',
+    link:
+      '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    "share-2":
+      '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>',
     users:
       '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
