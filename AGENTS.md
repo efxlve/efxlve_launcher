@@ -936,4 +936,31 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
      - Ekran görüntülerinin tarihi de saati de kullanıcının bilgisayarındaki saatle birebir ve saniyesine kadar kusursuz eşitlenmiştir.
      - Tüm 49 Rust birim testi ve frontend derlemesi hatasızdır.
 
+## 59. Ekran Görüntüsü Paylaşma, Opsiyonel Sıkıştırma (AVIF / WebP / JPEG) & Özelleştirilebilir Kısayol Tuşu
+
+- **Gereksinim & Kullanıcı Talepleri:**
+  1. **Paylaşma (Sharing):** Ekran görüntülerinin doğrudan Discord, WhatsApp, Telegram vb. sohbet uygulamalarına yapıştırılabilmesi veya dosya olarak paylaşılabilmesi.
+  2. **Opsiyonel Sıkıştırma (Compression):** Varsayılan olarak KAPALI tutulan; istendiğinde modern AVIF (veya WebP / JPEG) formatında dosya boyutunu kaliteden ödün vermeden %70-85 küçülten sıkıştırma motoru ve ayarları.
+  3. **Kısayol Tuşu Değiştirme (Custom Hotkey):** Varsayılan F12 tuşunu ayarlar üzerinden F1-F12, PrtScn veya klavyeden herhangi bir tuşa atayabilme.
+- **Uygulanan Mimariler & Çözümler:**
+  1. **Panoya Doğrudan Görsel Kopyalama (Instant Discord/Chat Paste):**
+     - `copyScreenshotImageToClipboard(item)`: Görsel verisini HTMLCanvasElement üzerinde çizerek yerel `image/png` Blob'una dönüştürür ve `navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])` ile doğrudan Windows sistem panosuna yerleştirir.
+     - Oyuncular Discord, WhatsApp Desktop, Slack veya web tarayıcılarına geçip `Ctrl + V` yaptıklarında görsel anında sohbete yapışır.
+     - Ayrıca "Dosya Yolunu Kopyala", "Klasörde Göster" ve yerel Windows paylaşım menüsü (`navigator.share`) entegre edilmiştir.
+  2. **Modern AVIF / WebP / JPEG Sıkıştırma Pipeline'ı:**
+     - Ayarlar altında "Görsel Sıkıştırma (Opsiyonel)" kartı eklendi. **Varsayılan olarak KAPALI (Ham PNG)** gelir.
+     - Açıldığında arkadaşının önerdiği en verimli format olan **AVIF** (AV1 Image File Format), **WebP** ve **JPEG** formatları ile %70 - %95 kalite kaydırıcısı (%85 varsayılan) seçilebilir.
+     - `compressImageToBlob` ile donanımsal Canvas AVIF/WebP kodlaması yapılır; Rust `epic_replace_screenshot_with_compressed` komutu yeni sıkıştırılmış dosyayı yazıp eski ham PNG dosyasını silerek diski anında rahatlatır.
+     - Hem yeni çekilen ekran görüntüleri otomatik sıkıştırılabilir, hem de galerideki mevcut ekran görüntüleri tek tek veya "Tümünü Sıkıştır" ile albüm bazında dönüştürülebilir.
+     - Rust `parse_file_to_item` ve `file_to_data_url` fonksiyonlarına `.avif` ve `image/avif` desteği eklendi.
+  3. **Dinamik Win32 Kısayol Tuşu Mimarisi:**
+     - `screenshots.rs` içinde sabit `VK_F12` yerine thread-safe `static SCREENSHOT_HOTKEY: AtomicI32 = AtomicI32::new(0x7B)` tanımlandı.
+     - `epic_set_screenshot_hotkey` ve `epic_get_screenshot_hotkey` Tauri komutları eklendi.
+     - Ayarlar sayfasında hazır tuş listesi (F12, F11, F10, F9, F8, F7, F6, F5, PrtScn, Scroll Lock, Pause, Insert, Home) ve etkileşimli "Yeni Tuş Ata" (Key Recorder) sunuldu. Tuş seçildiğinde `localStorage`'a yazılır ve Rust dinleyicisine anında senkronize edilir.
+     - Launcher başlatılırken (`bootEpic`) kaydedilmiş tuş kodu otomatik olarak Rust tarafına yüklenir.
+  4. **Sonuçlar:**
+     - Tüm 51 Rust birim testi (`cargo test`) yeşil, frontend TypeScript ve Vite derlemesi (`npm.cmd run build`) hatasızdır.
+     - PlayStation 5 dark console estetiği ve gamepad uyumluluğu titizlikle korunmuştur.
+
+
 

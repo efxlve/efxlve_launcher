@@ -87,6 +87,7 @@ fn file_to_data_url(path: &Path) -> Option<String> {
     let mime = match ext.as_str() {
         "jpg" | "jpeg" => "image/jpeg",
         "webp" => "image/webp",
+        "avif" => "image/avif",
         "bmp" => "image/bmp",
         _ => "image/png",
     };
@@ -168,7 +169,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_lowercase();
-    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp") {
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif") {
         return None;
     }
 
@@ -686,7 +687,23 @@ pub async fn epic_capture_game_screenshot(
     .map_err(|e| e.to_string())?
 }
 
-/// Oyun açıkken F12 tuşuna basıldığında ekran görüntüsü yakalayan arka plan dinleyicisi.
+static SCREENSHOT_HOTKEY: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0x7B);
+
+/// Ekran görüntüsü kısayol tuşunu günceller (varsayılan: 0x7B = VK_F12).
+#[tauri::command]
+pub fn epic_set_screenshot_hotkey(vkey: i32) {
+    if vkey > 0 {
+        SCREENSHOT_HOTKEY.store(vkey, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// Aktif ekran görüntüsü kısayol tuşu sanal kodunu döndürür.
+#[tauri::command]
+pub fn epic_get_screenshot_hotkey() -> i32 {
+    SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Oyun açıkken belirlenen kısayol tuşuna (varsayılan F12) basıldığında ekran görüntüsü yakalayan arka plan dinleyicisi.
 #[cfg(target_os = "windows")]
 pub fn start_f12_listener(app: AppHandle) {
     std::thread::spawn(move || {
@@ -695,25 +712,25 @@ pub fn start_f12_listener(app: AppHandle) {
             fn GetAsyncKeyState(vKey: i32) -> i16;
         }
 
-        const VK_F12: i32 = 0x7B;
         let mut was_down = false;
         let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
             std::thread::sleep(std::time::Duration::from_millis(20));
 
-            // Sadece bir oyun aktif oynanıyorken F12'yi kontrol et
+            // Sadece bir oyun aktif oynanıyorken kısayol tuşunu kontrol et
             let running = get_active_running_game();
             if running.is_none() {
                 was_down = false;
                 continue;
             }
 
-            let state = unsafe { GetAsyncKeyState(VK_F12) };
+            let hotkey = SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed);
+            let state = unsafe { GetAsyncKeyState(hotkey) };
             let is_down = (state as u16 & 0x8000) != 0;
 
             if is_down && !was_down {
-                // F12 tuşuna basıldı! (Key Down Edge)
+                // Kısayol tuşuna basıldı! (Key Down Edge)
                 if last_capture_time.elapsed() >= std::time::Duration::from_millis(400) {
                     last_capture_time = std::time::Instant::now();
                     if let Some((app_name, title)) = running {
@@ -753,6 +770,62 @@ pub fn start_f12_listener(app: AppHandle) {
 
 #[cfg(not(target_os = "windows"))]
 pub fn start_f12_listener(_app: AppHandle) {}
+
+/// Orijinal ekran görüntüsünü sıkıştırılmış görsel ile değiştirir (AVIF / WebP / JPEG).
+/// Başarılı olduğunda orijinal ham dosyayı kaldırıp yeni dosyayı döndürür.
+#[tauri::command]
+pub async fn epic_replace_screenshot_with_compressed(
+    _app: AppHandle,
+    original_path: String,
+    compressed_base64: String,
+    new_ext: String,
+) -> Result<GameScreenshotItem, String> {
+    tokio::task::spawn_blocking(move || {
+        let orig = Path::new(&original_path);
+        if !orig.exists() || !orig.is_file() {
+            return Err("Orijinal ekran görüntüsü dosyası bulunamadı".to_string());
+        }
+
+        let clean_b64 = if let Some(idx) = compressed_base64.find(',') {
+            &compressed_base64[idx + 1..]
+        } else {
+            &compressed_base64
+        };
+
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(clean_b64)
+            .map_err(|e| format!("Base64 çözme hatası: {e}"))?;
+
+        if bytes.is_empty() {
+            return Err("Sıkıştırılmış veri boş".to_string());
+        }
+
+        let clean_ext = new_ext.trim().trim_start_matches('.').to_lowercase();
+        let valid_ext = match clean_ext.as_str() {
+            "avif" => "avif",
+            "webp" => "webp",
+            "jpg" | "jpeg" => "jpg",
+            _ => "avif",
+        };
+
+        let parent_dir = orig.parent().unwrap_or_else(|| Path::new("."));
+        let file_stem = orig.file_stem().and_then(|s| s.to_str()).unwrap_or("screenshot");
+        let new_file_name = format!("{}.{}", file_stem, valid_ext);
+        let new_path = parent_dir.join(&new_file_name);
+
+        std::fs::write(&new_path, &bytes)
+            .map_err(|e| format!("Sıkıştırılmış dosya diske yazılamadı: {e}"))?;
+
+        // Eski ham dosya farklı bir uzantıdaysa temizle (ör. .png -> .avif)
+        if new_path != orig && orig.exists() {
+            let _ = std::fs::remove_file(orig);
+        }
+
+        parse_file_to_item(&new_path).ok_or_else(|| "Sıkıştırılmış dosya okunamadı".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 
 /// Ekran görüntüsü dosyasını siler.
 #[tauri::command]
@@ -924,6 +997,25 @@ mod tests {
         {
             assert!(dt_str.contains("2026"));
         }
+        let _ = std::fs::remove_file(&temp_file);
+    }
+
+    #[test]
+    fn test_screenshot_hotkey_set_and_get() {
+        epic_set_screenshot_hotkey(0x7A); // F11
+        assert_eq!(epic_get_screenshot_hotkey(), 0x7A);
+        epic_set_screenshot_hotkey(0x7B); // F12 (reset)
+        assert_eq!(epic_get_screenshot_hotkey(), 0x7B);
+    }
+
+    #[test]
+    fn test_avif_parsing_and_mime() {
+        let temp_file = std::env::temp_dir().join("efxlve_test_avif.avif");
+        std::fs::write(&temp_file, b"fake avif byte content").unwrap();
+        let item = parse_file_to_item(&temp_file);
+        assert!(item.is_some(), "AVIF file should be parsed to item");
+        let unwrapped = item.unwrap();
+        assert!(unwrapped.data_url.starts_with("data:image/avif;base64,"));
         let _ = std::fs::remove_file(&temp_file);
     }
 }

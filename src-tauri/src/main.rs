@@ -1456,7 +1456,10 @@ fn main() {
             legendary::screenshots::epic_get_game_screenshots,
             legendary::screenshots::epic_capture_game_screenshot,
             legendary::screenshots::epic_delete_game_screenshot,
-            legendary::screenshots::epic_open_game_screenshots_folder
+            legendary::screenshots::epic_open_game_screenshots_folder,
+            legendary::screenshots::epic_set_screenshot_hotkey,
+            legendary::screenshots::epic_get_screenshot_hotkey,
+            legendary::screenshots::epic_replace_screenshot_with_compressed
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");

@@ -945,3 +945,20 @@ export const epicDeleteGameScreenshot = (filePath: string) =>
 export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
   invoke<void>("epic_open_game_screenshots_folder", { appName, title });
 
+export const epicSetScreenshotHotkey = (vkey: number) =>
+  invoke<void>("epic_set_screenshot_hotkey", { vkey });
+
+export const epicGetScreenshotHotkey = () =>
+  invoke<number>("epic_get_screenshot_hotkey");
+
+export const epicReplaceScreenshotWithCompressed = (
+  originalPath: string,
+  compressedBase64: string,
+  newExt: string
+) =>
+  invoke<GameScreenshotItem>("epic_replace_screenshot_with_compressed", {
+    originalPath,
+    compressedBase64,
+    newExt,
+  });
+
