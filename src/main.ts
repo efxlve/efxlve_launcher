@@ -2268,27 +2268,9 @@ function renderProfile(): string {
   `;
 }
 
-/* ---------- Üst bar: PS5 esinli ortam ışığı + kayan aktif çizgi ---------- */
+/* ---------- Üst bar: tek mor kimlik + kayan aktif çizgi ---------- */
 
 let navIndicatorReady = false;
-
-/** Bölüme göre ortam (ambient) rengi — PS5'te sahne ışığı içeriğe göre değişir.
- *  Mor kimlik tabanı (::before) sabit kaldığı için bölüm ışıkları düşük alfalı tutulur. */
-const NAV_AMBIENT: Record<string, string> = {
-  store: "rgba(56, 132, 255, 0.13)",
-  library: "rgba(124, 108, 232, 0.20)",
-  downloads: "rgba(0, 178, 158, 0.13)",
-  profile: "rgba(206, 152, 48, 0.13)",
-  settings: "rgba(120, 128, 150, 0.12)",
-  "dlc-manager": "rgba(0, 178, 158, 0.12)",
-};
-
-function updateNavAmbient(): void {
-  const bar = document.getElementById("titlebar");
-  if (!bar) return;
-  const key = storeVisible ? "store" : view;
-  bar.style.setProperty("--nav-ambient", NAV_AMBIENT[key] ?? NAV_AMBIENT.library);
-}
 
 /** Aktif sekmeyi takip eden alt çizgiyi konumlandırır (çizgi #titlebar'ın çocuğudur). */
 function updateNavIndicator(): void {
@@ -2323,7 +2305,6 @@ function render(): void {
     el.classList.toggle("active", active);
   });
   updateNavIndicator();
-  updateNavAmbient();
   if (storeVisible) {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();

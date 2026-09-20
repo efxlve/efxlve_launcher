@@ -1333,5 +1333,23 @@ Responsive: hesap adı `≤1200px`'te gizlenir (avatar kalır, `max-width: 150px
 - **Logo kalkanı mor cam:** `rgba(139,92,246,.16)` zemin + `rgba(167,139,250,.30)` kenarlık + mor tonlu gölge. Girişli avatar bir tık zenginleşti (`rgba(139,92,246,.24)` / `#d3c6ff`).
 - **Korunanlar:** 54px yükseklik, `updateNavIndicator()` (getBoundingClientRect farkı), `updateNavAmbient()`, sağ küme PS5 döşemesi, `Ctrl+1/2/3/,` kısayolları, responsive eşikler (≤1200px ad gizli, ≤960px ikon-only). Süs animasyonu eklenmedi.
 
+
+## 77. Tek Renk Üst Bar & Profil Sayfası Mor Kimlik Uyumu
+
+**Talep:** (1) *"Sekmeden sekmeye renk değiştirme işine karşıyım — tek renk olsun."* (2) *"Oyuncu profili kısmını güncelle."*
+
+**1. Üst bar — bölümsel ortam ışığı tamamen kaldırıldı:**
+- `#titlebar::after` (bölümsel renk katmanı), `@property --nav-ambient`, `transition: --nav-ambient` ve JS tarafındaki `NAV_AMBIENT` + `updateNavAmbient()` silindi; `render()` içindeki çağrı temizlendi.
+- Bar artık **her bölümde aynı sabit menekşe ışığı** taşır (`#titlebar::before`, `rgba(139,92,246,.17)`). Bölümler arası yalnızca aktif sekmenin lavanta parıltısı, mor ikonu ve kayan menekşe çizgi değişir.
+
+**2. Profil sayfası — üst barla aynı mor dile çekildi:**
+- **Hero:** çift radyal mavi+mor gradient → **tek kaynaklı menekşe ışık** (`radial-gradient(90% 300% at 8% -40%, rgba(139,92,246,.22) …)`); avatar `mavi→mor` degrade yerine **saf menekşe** (`#8b5cf6→#6d28d9→#4c1d95`), halo lavanta.
+- **Seviye & XP:** seviye barı elektrik mavisi (`#2563eb→#38bdf8`) → **menekşe-lavanta** (`#7c3aed→#a78bfa`); seviye yüzdesi `#38bdf8` → `#c4b5fd`; XP kapsülü cyan → lavanta; seviye brövesi degrade → düz mor cam.
+- **Kupa kartları:** ilerleme çubuğu mavi → menekşe-lavanta; hover halo + chevron mavi → mor; kart `:focus-visible` odak halkası elektrik mavisi → lavanta.
+- **Durum renkleri korundu (§3):** yeşil "Epic Games Bağlı" rozeti, yeşil "Yüklü" etiketi ve çevrimiçi nokta değişmedi (renk yalnızca DURUM bildirir). Rozet 20px pill → 8px ölçülü yarıçap (kapsül yasağı).
+- Platin kartlar zaten mor idi — değişmedi; artık tüm sayfa tek aile.
+
+**Doğrulama:** `npm.cmd run build` (tsc + vite, 0 hata). Headless Edge (taze user-data-dir, animasyonlar kapalı) ile üst barın tek renk hali (Mağaza/İndirmeler aynı menekşe) ve profil sayfasının tamamı (hero + 4 kupa kartı) gerçek CSS ile görsel doğrulandı. Araç: `node tools/ui-preview/profile-preview.mjs` → `%TEMP%\efx-profile-preview\profile.html`.
+
 **Doğrulama:** `npm.cmd run build` (tsc + vite, 0 hata). Headless Edge ile 1280px, 2x, taze `--user-data-dir`, animasyonlar kapalı olmak üzere **3 bölümün** (Mağaza/Kütüphane/İndirmeler) gerçek-CSS ekran görüntüsü alındı ve gözle doğrulandı. Yeniden üretilebilir araç: `node tools/ui-preview/titlebar-preview.mjs` → `%TEMP%\efx-nav-preview\preview-{store,library,downloads}.html` (bölüm başına aktif sekme + doğru `--nav-ambient` enjekte eder; §75'teki rAF + fonts.ready kuralı uygulanır).
 

@@ -33,15 +33,8 @@ bar = bar
   .replace("Giriş yapılmadı", "Efxlve")
   .replace('<span id="dl-badge" class="badge hidden"></span>', '<span id="dl-badge" class="badge">2</span>');
 
-// Uygulamadaki NAV_AMBIENT haritasının birebir kopyası (src/main.ts ile senkron tutulur)
-const NAV_AMBIENT = {
-  store: "rgba(56, 132, 255, 0.13)",
-  library: "rgba(124, 108, 232, 0.20)",
-  downloads: "rgba(0, 178, 158, 0.13)",
-  profile: "rgba(206, 152, 48, 0.13)",
-};
-
-// Her bölüm için ayrı önizleme sayfası üret (aktif sekme + ortam ışığı)
+// Üst bar artık tek renk (menekşe) — bölümsel ortam ışığı YOK.
+// Her bölüm için yalnızca aktif sekme değişen önizleme sayfaları üretilir.
 const views = ["store", "library", "downloads"];
 for (const v of views) {
   let b = bar;
@@ -59,7 +52,6 @@ for (const v of views) {
     '#app{display:flex;flex-direction:column;height:100vh}',
     '#content{flex:1;background:linear-gradient(180deg,#0b0c10,#0d0e14)}',
     '*{transition:none !important;animation:none !important}',
-    `#titlebar{--nav-ambient:${NAV_AMBIENT[v]}}`,
     '</style></head><body><div id="app">', b, '<main id="content"></main></div>',
     '<scr' + 'ipt>',
     "function place(){const bar=document.getElementById('titlebar');const seg=document.getElementById('nav-seg');const ind=document.getElementById('nav-indicator');if(!bar||!seg||!ind)return;const active=seg.querySelector('.nav-tab.active');if(!active){ind.style.opacity='0';return}const b=bar.getBoundingClientRect();const t=active.getBoundingClientRect();ind.style.width=t.width+'px';ind.style.transform='translateX('+(t.left-b.left)+'px)';ind.style.opacity='1'}",
