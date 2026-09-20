@@ -1069,7 +1069,12 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Hedef klasör yolu girişi, `[ Gözat… ]` butonu ve oyunun son yerleşeceği tam yolu gösteren dinamik canlı önizleme rozeti (`.move-path-preview`, örn: `Oyun hedef konumu: D:\Games\AbsoluteDrift`).
     - Dinamik Kapasite Bildirim Rozeti (`.move-space-badge.ok` / `.move-space-badge.warn`): Hedef diskteki boş alan ile oyun boyutu karşılaştırması; yetersiz alan uyarısı, aynı sürücü anlık taşıma bildirimi veya güvenli boş alan hesabı.
     - Canlı İlerleme Paneli (`.move-live-progress`): PS5 neon degrade ilerleme çubuğu, gerçek zamanlı hız, kalan süre, dosya sayısı ve aktarılan dosya adı.
-    - Taşıma bittiğinde kütüphane ve Game Hub arayüzü yerinde otomatik güncellenir.
+    - **Anında (0ms) Kurulum Konumu Senkronizasyonu (`applyMovedGamePath`):**
+      - Taşıma işlemi bittiğinde (`res.success` veya `move-complete` olayı) modal kapandığı anda kullanıcının önündeki ekranda yer alan tüm `#manage-install-path` DOM metinleri 0 milisaniye içinde yeni yolla güncellenir.
+      - Bellekteki `activeManageSettings.installPath` ve `epicSummaries[x].installPath` değerleri anında yeni yola eşitlenir; böylece Game Hub Yönet (Manage) sekmesindeki "Kurulum Konumu" satırında bayat/eski yolun kalması engellenir.
+      - `renderDrawerManage` fonksiyonunda `activeManageSettings.installPath` değeri daima `s.installPath` ile yerinde senkronize tutulur.
+      - `epicOpenFolder` fonksiyonu en güncel hedef yolu (`activeManageSettings.installPath` || `s.installPath`) kullanarak kullanıcının `[ Klasörü Aç ]` butonuna bastığında her zaman doğru yeni klasöre ulaşmasını garanti eder.
+      - Arka planda `refreshEpicInstalled()` ve `epicGetGameSettings()` çağrılarak diskteki `installed.json` verisiyle frontend state'i %100 senkronize edilir ve Game Hub arayüzü pürüzsüzce yeniden çizilir.
 
 
 

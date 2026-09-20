@@ -4743,6 +4743,8 @@ function renderDrawerManage(s: EpicSummary): string {
         updateManageModalInputsInPlace(st);
       }
     }).catch(() => {});
+  } else if (s.installPath && s.installPath !== activeManageSettings.installPath) {
+    activeManageSettings.installPath = s.installPath;
   }
   const st = activeManageSettings;
   const v = verifyingMap.get(st.appName);
@@ -4793,7 +4795,7 @@ function renderDrawerManage(s: EpicSummary): string {
               <div class="manage-item-icon" style="color:#38bdf8">${icon("folder", 18)}</div>
               <div class="manage-item-info">
                 <div class="manage-item-title">Kurulum Konumu</div>
-                <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(st.installPath || s.installPath || "Belirtilmemiş")}</div>
+                <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(s.installPath || st.installPath || "Belirtilmemiş")}</div>
               </div>
             </div>
             <div class="manage-item-right">
@@ -5673,15 +5675,18 @@ async function fetchAndRenderRequirements(appName: string, title: string, forceR
 
 async function epicOpenFolder(appName: string): Promise<void> {
   const s = epicSummaries.find((x) => x.appName === appName);
-  if (!s?.installPath) {
+  const targetPath =
+    (activeManageSettings?.appName === appName ? activeManageSettings.installPath : null) ||
+    s?.installPath;
+  if (!targetPath) {
     toast("Kurulum klasörü bilinmiyor", "err");
     return;
   }
   try {
     if (isTauri) {
-      const msg = await invoke<string>("open_folder", { path: s.installPath });
+      const msg = await invoke<string>("open_folder", { path: targetPath });
       toast(msg, "ok");
-    } else toast(`(demo) ${s.installPath}`, "");
+    } else toast(`(demo) ${targetPath}`, "");
   } catch (e) {
     toast(String(e), "err");
   }
@@ -6885,8 +6890,10 @@ function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   const installTitle = document.getElementById("manage-install-title");
   if (installTitle) installTitle.textContent = `Yükleme • ${fmtBytes(st.installSize)}`;
 
-  const installPath = document.getElementById("manage-install-path");
-  if (installPath) installPath.textContent = st.installPath;
+  const installPaths = document.querySelectorAll("#manage-install-path");
+  installPaths.forEach((el) => {
+    el.textContent = st.installPath || "Belirtilmemiş";
+  });
 
   const headSub = document.getElementById("manage-head-sub");
   if (headSub) headSub.textContent = `Yönet & Özellikler • v${st.version}`;
@@ -7210,6 +7217,32 @@ function renderManageModal(): void {
 }
 
 /* ---------- Oyun Dosyalarını Taşıma (Move Game Files) ---------- */
+
+function applyMovedGamePath(appName: string, newPath: string): void {
+  if (!appName || !newPath) return;
+
+  // 1. epicSummaries listesindeki oyunun installPath değerini hemen güncelle
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (s) {
+    s.installPath = newPath;
+  }
+
+  // 2. Aktif yönetim ayarları açıksa (drawer veya modal) oradaki yolu güncelle
+  if (activeManageSettings && activeManageSettings.appName === appName) {
+    activeManageSettings.installPath = newPath;
+  }
+
+  // 3. Ekranda açık olan tüm "Kurulum Konumu" DOM metinlerini anında (0ms) güncelle
+  const pathEls = document.querySelectorAll("#manage-install-path");
+  pathEls.forEach((el) => {
+    el.textContent = newPath;
+  });
+
+  // 4. Quick manage modal açıksa inputları da yerinde senkronize et
+  if (activeManageSettings && activeManageSettings.appName === appName) {
+    updateManageModalInputsInPlace(activeManageSettings);
+  }
+}
 
 function closeMoveGameModal(): void {
   if (isMovingGame) {
@@ -7659,10 +7692,32 @@ async function startMoveGame(appName: string): Promise<void> {
   try {
     const res = await epicMoveGame(appName, target);
     if (res.success) {
+      const newPath = res.new_path || (res as any).newPath || "";
+      if (newPath) {
+        applyMovedGamePath(appName, newPath);
+      }
       toast(res.message || "Oyun dosyaları başarıyla yeni konuma taşındı!", "ok");
       isMovingGame = false;
       closeMoveGameModal();
+
+      // Diskten güncel kurulu oyunlar listesini tazele
       await refreshEpicInstalled();
+
+      // Arka planda taze ayarları çek ve state'i senkronize tut
+      try {
+        const freshSettings = await epicGetGameSettings(appName);
+        if (activeManageSettings && activeManageSettings.appName === appName) {
+          activeManageSettings = freshSettings;
+          updateManageModalInputsInPlace(freshSettings);
+        }
+      } catch {}
+
+      // refreshEpicInstalled sonrası hafıza nesnesi yenilendiyse tekrar garantiye al
+      if (newPath) {
+        applyMovedGamePath(appName, newPath);
+      }
+
+      // Game Hub drawer açık ise arayüzü pürüzsüzce yeniden çiz
       if (currentModalAppName === appName) {
         openEpicModal(appName, false);
       }
@@ -10139,14 +10194,23 @@ async function init(): Promise<void> {
         }
       }
     });
-    await listen<MoveGameResult>("move-complete", (event) => {
-      const { success, message } = event.payload;
-      if (!success && isMovingGame) {
-        toast(`Taşıma işlemi tamamlanamadı: ${message}`, "err");
-        isMovingGame = false;
-        renderMoveGameModalFrame();
+    await listen<{ id?: string; success: boolean; newPath?: string; new_path?: string; message?: string }>(
+      "move-complete",
+      (event) => {
+        const payload = event.payload;
+        if (!payload) return;
+        if (payload.success && payload.id) {
+          const np = payload.newPath || payload.new_path;
+          if (np) {
+            applyMovedGamePath(payload.id, np);
+          }
+        } else if (!payload.success && isMovingGame) {
+          toast(`Taşıma işlemi tamamlanamadı: ${payload.message || "Hata"}`, "err");
+          isMovingGame = false;
+          renderMoveGameModalFrame();
+        }
       }
-    });
+    );
 
     await listen<{ appName?: string; title?: string; slug?: string }>(
       "efxlve-open-game-from-store",
