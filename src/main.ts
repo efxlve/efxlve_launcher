@@ -1952,11 +1952,6 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
                     ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
                   </div>
                 </div>
-
-                <div class="ps5-card-percent-badge ${isPlat ? "plat" : ""}">
-                  <span class="ps5-card-percent">%${g.unlocked_percent}</span>
-                  <span class="ps5-card-percent-sub">${isPlat ? "Tamamlandı" : "İlerleme"}</span>
-                </div>
               </div>
 
               <div class="ps5-card-progress-section">
@@ -1979,10 +1974,12 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
               </div>
             </div>
 
-            <div class="ps5-card-action">
-              <button type="button" class="ps5-card-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="-1">
-                <span>İncele</span> ${icon("chevron-right", 12)}
-              </button>
+            <div class="ps5-card-right">
+              <div class="ps5-card-percent-badge ${isPlat ? "plat" : ""}">
+                <span class="ps5-card-percent">%${g.unlocked_percent}</span>
+                <span class="ps5-card-percent-sub">${isPlat ? "Tamamlandı" : "İlerleme"}</span>
+              </div>
+              <div class="ps5-card-chevron">${icon("chevron-right", 16)}</div>
             </div>
           </div>
         </div>
@@ -2145,10 +2142,12 @@ function renderProfile(): string {
               <div class="ps5-hero-sub-row">
                 <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} Oyun</span>
                 <span class="ps5-sub-dot">•</span>
-                <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr} Oynama</span>
+                <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr}</span>
+                <span class="ps5-sub-dot">•</span>
+                <span class="ps5-sub-item">${icon("trophy", 12)} ${totalUnlocked.toLocaleString()} Kupa</span>
                 <span class="ps5-sub-dot">•</span>
                 <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID: ${esc(accountId)} (Kopyalamak için tıkla)">
-                  <span>ID: ${esc(accountId ? accountId.slice(0, 8) + "…" : "—")}</span>
+                  <span>ID Kopyala</span>
                   ${icon("copy", 11)}
                 </button>
               </div>
@@ -2165,21 +2164,21 @@ function renderProfile(): string {
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col gold" title="Altın Kupa Tahmini">
+              <div class="ps5-tier-col gold" title="Altın Kupa">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${goldTrophies}</span>
                 <span class="ps5-tier-label">Altın</span>
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col silver" title="Gümüş Kupa Tahmini">
+              <div class="ps5-tier-col silver" title="Gümüş Kupa">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${silverTrophies}</span>
                 <span class="ps5-tier-label">Gümüş</span>
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col bronze" title="Bronz Kupa Tahmini">
+              <div class="ps5-tier-col bronze" title="Bronz Kupa">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${bronzeTrophies}</span>
                 <span class="ps5-tier-label">Bronz</span>
@@ -2199,44 +2198,7 @@ function renderProfile(): string {
         </div>
       </div>
 
-      <!-- 2. PS5 Birleşik Konsol İstatistik Kapsülü -->
-      <div class="profile-stats-capsule">
-        <div class="profile-stat-col">
-          <span class="profile-stat-label">${icon("sparkles", 11)} TOPLAM XP</span>
-          <span class="profile-stat-val">${totalXp.toLocaleString()} <span class="profile-stat-unit">XP</span></span>
-          <span class="profile-stat-sub">Epic Kupa Puanı</span>
-        </div>
-        <div class="profile-stat-divider"></div>
-
-        <div class="profile-stat-col">
-          <span class="profile-stat-label">${icon("trophy", 11)} AÇILAN KUPALAR</span>
-          <span class="profile-stat-val">${totalUnlocked.toLocaleString()} <span class="profile-stat-unit">Kupa</span></span>
-          <span class="profile-stat-sub">${allGames.filter((g) => g.total_unlocked > 0).length} Farklı Oyunda</span>
-        </div>
-        <div class="profile-stat-divider"></div>
-
-        <div class="profile-stat-col">
-          <span class="profile-stat-label plat">${epicPlatinumIcon(11)} PLATİN KUPA</span>
-          <span class="profile-stat-val plat">${platCount} <span class="profile-stat-unit">Platin</span></span>
-          <span class="profile-stat-sub plat">%100 Tamamlanan</span>
-        </div>
-        <div class="profile-stat-divider"></div>
-
-        <div class="profile-stat-col">
-          <span class="profile-stat-label">${icon("clock", 11)} OYNAMA SÜRESİ</span>
-          <span class="profile-stat-val">${totalPlaytimeStr}</span>
-          <span class="profile-stat-sub">Launcher Takip Kaydı</span>
-        </div>
-        <div class="profile-stat-divider"></div>
-
-        <div class="profile-stat-col">
-          <span class="profile-stat-label">${icon("gamepad-2", 11)} KÜTÜPHANE</span>
-          <span class="profile-stat-val">${totalOwnedGames} <span class="profile-stat-unit">Oyun</span></span>
-          <span class="profile-stat-sub">${totalInstalledGames} Yüklü Oyun</span>
-        </div>
-      </div>
-
-      <!-- 3. PlayStation Kupa Vitrini ve Oyun İlerlemesi -->
+      <!-- 2. PlayStation Kupa Vitrini ve Oyun İlerlemesi -->
       <div class="profile-games-section">
         <div class="profile-games-header">
           <div class="profile-games-title-group">
@@ -2288,15 +2250,6 @@ function renderProfile(): string {
         <div id="profile-games-grid" class="profile-games-grid">
           ${renderProfileGameCards(filteredGames)}
         </div>
-
-        <!-- 10-Ft Konsol / Gamepad İpuçları -->
-        <div class="ps5-profile-controller-hint">
-          <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Oyunu / Kupaları İncele</span></div>
-          <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Profili Yenile</span></div>
-          <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
-          <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Filtreler</span></div>
-          <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
-        </div>
       </div>
     </div>
   `;
@@ -2328,6 +2281,7 @@ function render(): void {
     drawSpeedCanvas();
   }
   updateChrome();
+  updateGamepadHud(gamepadPolling);
 }
 
 /* ---------- Epic (Legendary) ---------- */
@@ -10502,6 +10456,14 @@ function updateGamepadHud(active = true): void {
       <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>Geri</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+    `;
+  } else if (view === "profile") {
+    hud.innerHTML = `
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Kupaları İncele</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Profili Yenile</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Filtreler</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
     `;
   } else {
