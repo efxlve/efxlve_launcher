@@ -7841,6 +7841,7 @@ function escapeXml(str: string): string {
 function unescapeXml(str: string): string {
   return str
     .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&gt;/g, ">")
     .replace(/&lt;/g, "<")
@@ -7854,6 +7855,8 @@ class EpicXmppManager {
   private pingTimer: number | null = null;
   private reconnectTimer: number | null = null;
   private reconnectAttempts = 0;
+  private resource = "V2:launcher:PC:" + Math.floor(100000 + Math.random() * 900000);
+  private pendingQueue: Array<{ recipient: string; text: string }> = [];
   public boundJid = "";
 
   public getStatus(): "disconnected" | "connecting" | "authenticating" | "connected" {
@@ -7869,12 +7872,14 @@ class EpicXmppManager {
     if (this.status === "connected" || this.status === "connecting" || this.status === "authenticating") {
       return;
     }
+    console.log(`[EpicXmpp] Bağlantı başlatılıyor (${this.resource})...`);
     this.status = "connecting";
     this.updateStatusUi();
 
     try {
       this.creds = await epicGetXmppCredentials();
       if (!this.creds?.access_token || !this.creds?.account_id) {
+        console.warn("[EpicXmpp] Giriş bilgileri (token/account_id) bulunamadı.");
         this.status = "disconnected";
         this.updateStatusUi();
         return;
@@ -7883,6 +7888,7 @@ class EpicXmppManager {
       this.ws = new WebSocket("wss://xmpp-service-prod.ol.epicgames.com/", ["xmpp"]);
 
       this.ws.onopen = () => {
+        console.log("[EpicXmpp] WebSocket açık, <open> gönderiliyor...");
         this.sendRaw('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="prod.ol.epicgames.com" version="1.0"/>');
       };
 
@@ -7890,14 +7896,17 @@ class EpicXmppManager {
         this.handleMessage(String(e.data));
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (e) => {
+        console.warn("[EpicXmpp] WebSocket kapandı:", e.code, e.reason);
         this.handleClose();
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (e) => {
+        console.error("[EpicXmpp] WebSocket hatası:", e);
         this.handleClose();
       };
-    } catch {
+    } catch (err) {
+      console.error("[EpicXmpp] Bağlantı kurulum hatası:", err);
       this.status = "disconnected";
       this.updateStatusUi();
       this.scheduleReconnect();
@@ -7909,36 +7918,42 @@ class EpicXmppManager {
       if (!this.creds) return;
       this.status = "authenticating";
       this.updateStatusUi();
+      console.log("[EpicXmpp] SASL PLAIN ile yetkilendiriliyor...");
       const authStr = `\0${this.creds.account_id}\0${this.creds.access_token}`;
       const authB64 = btoa(authStr);
       this.sendRaw(`<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">${authB64}</auth>`);
     } else if (data.includes("<success") && this.status === "authenticating") {
+      console.log("[EpicXmpp] SASL başarılı, stream yeniden açılıyor...");
       this.sendRaw('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="prod.ol.epicgames.com" version="1.0"/>');
     } else if (data.includes("<stream:features") && data.includes("<bind")) {
-      this.sendRaw('<iq type="set" id="_bind_1"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>V2:launcher:PC</resource></bind></iq>');
+      console.log(`[EpicXmpp] Kaynak bağlanıyor (${this.resource})...`);
+      this.sendRaw(`<iq type="set" id="_bind_1"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>${this.resource}</resource></bind></iq>`);
     } else if (data.includes("<iq") && data.includes('id="_bind_1"')) {
       const jidMatch = data.match(/<jid>([^<]+)<\/jid>/);
       if (jidMatch) {
         this.boundJid = jidMatch[1];
       }
+      console.log(`[EpicXmpp] Başarıyla bağlandı (${this.boundJid}), oturum ve varlık açılıyor...`);
       this.sendRaw('<iq type="set" id="_session_1"><session xmlns="urn:ietf:params:xml:ns:xmpp-session"/></iq>');
       this.sendRaw('<presence/>');
       this.status = "connected";
       this.reconnectAttempts = 0;
       this.updateStatusUi();
       this.startPing();
+      this.flushPendingQueue();
     } else if (data.includes("<message")) {
       this.parseIncomingMessage(data);
-    } else if (data.includes("<failure")) {
-      this.status = "disconnected";
-      this.updateStatusUi();
-      this.scheduleReconnect();
+    } else if (data.includes("<conflict") || data.includes("<failure")) {
+      console.warn("[EpicXmpp] Çakışma veya kimlik doğrulama başarısız:", data);
+      this.resource = "V2:launcher:PC:" + Math.floor(100000 + Math.random() * 900000);
+      this.handleClose();
     }
   }
 
   private parseIncomingMessage(xml: string): void {
-    const fromMatch = xml.match(/from="([^@"]+)@prod\.ol\.epicgames\.com/);
-    const bodyMatch = xml.match(/<body>([\s\S]*?)<\/body>/);
+    // Epic XMPP formatları: from="id@prod.ol.epicgames.com/resource" veya from='...'
+    const fromMatch = xml.match(/from=["']([^@'"]+)@prod\.ol\.epicgames\.com/i);
+    const bodyMatch = xml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (!fromMatch || !bodyMatch) return;
 
     const senderAccountId = fromMatch[1];
@@ -7950,6 +7965,13 @@ class EpicXmppManager {
 
     if (!socialChatHistory[senderAccountId]) {
       socialChatHistory[senderAccountId] = [];
+    }
+
+    // Mükerrer (duplicate) mesaj koruması
+    const history = socialChatHistory[senderAccountId];
+    const lastMsg = history[history.length - 1];
+    if (lastMsg && lastMsg.sender === "friend" && lastMsg.text === text) {
+      return;
     }
 
     const now = new Date();
@@ -7978,11 +8000,29 @@ class EpicXmppManager {
 
   public sendMessage(recipientAccountId: string, text: string): boolean {
     if (this.status !== "connected" || !this.ws) {
+      console.warn("[EpicXmpp] Canlı bağlantı henüz aktif değil, mesaj giden kutusuna eklendi.");
+      this.pendingQueue.push({ recipient: recipientAccountId, text });
+      if (this.status === "disconnected") {
+        void this.connect();
+      }
       return false;
     }
+    this.sendChatMessage(recipientAccountId, text);
+    return true;
+  }
+
+  private sendChatMessage(recipientAccountId: string, text: string): void {
     const safeText = escapeXml(text);
     this.sendRaw(`<message to="${recipientAccountId}@prod.ol.epicgames.com" type="chat"><body>${safeText}</body></message>`);
-    return true;
+  }
+
+  private flushPendingQueue(): void {
+    if (this.status !== "connected" || !this.ws) return;
+    while (this.pendingQueue.length > 0) {
+      const item = this.pendingQueue.shift()!;
+      console.log("[EpicXmpp] Kuyruktaki mesaj gönderiliyor:", item);
+      this.sendChatMessage(item.recipient, item.text);
+    }
   }
 
   private sendRaw(xml: string): void {
@@ -8036,6 +8076,12 @@ class EpicXmppManager {
           this.status === "authenticating" || this.status === "connecting" ? "Bağlanıyor…" :
           "Bağlantı Yok";
       }
+    }
+    const hint = document.querySelector(".steam-chat-subhint span");
+    if (hint) {
+      hint.textContent = `Sohbet raporlama kapalı • Epic Games Canlı Sohbet Bağlantısı ${
+        this.status === "connected" ? "Aktif 🟢" : this.status === "connecting" || this.status === "authenticating" ? "Bağlanıyor 🟡" : "Beklemede ⚪"
+      }`;
     }
   }
 }
@@ -8552,9 +8598,9 @@ function renderSteamSocialChatPane(): string {
         <h3>Sohbetler ve Arkadaşlar</h3>
         <p>Mesajlaşmak veya sesli gruba davet etmek için sol listeden bir arkadaşınızı seçin.</p>
         <div class="steam-chat-empty-actions" style="margin-top: 14px;">
-          <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" style="margin: 0 auto;">
+          <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" data-act="social-reconnect-chat" title="${epicXmppManager.isConnected() ? 'Epic Games Canlı Sohbet Sunucusuna Bağlı' : 'Yeniden Bağlanmak İçin Tıklayın'}" style="margin: 0 auto; cursor: pointer;">
             <span class="live-indicator-dot"></span>
-            <span class="live-badge-text">${epicXmppManager.isConnected() ? 'Epic Canlı Sohbet Aktif' : epicXmppManager.getStatus() === 'connecting' || epicXmppManager.getStatus() === 'authenticating' ? 'Epic Sohbetine Bağlanıyor…' : 'Bağlantı Bekleniyor'}</span>
+            <span class="live-badge-text">${epicXmppManager.isConnected() ? 'Epic Canlı Sohbet Aktif' : epicXmppManager.getStatus() === 'connecting' || epicXmppManager.getStatus() === 'authenticating' ? 'Epic Sohbetine Bağlanıyor…' : 'Bağlantı Yok'}</span>
           </div>
         </div>
       </div>
@@ -8583,7 +8629,7 @@ function renderSteamSocialChatPane(): string {
       </div>
 
       <div class="steam-chat-header-actions">
-        <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" title="${epicXmppManager.isConnected() ? 'Epic Games Canlı Sohbet Sunucusuna Bağlı' : 'Epic Games Sunucusuna Bağlanıyor…'}">
+        <div class="steam-chat-live-badge ${epicXmppManager.getStatus()}" data-act="social-reconnect-chat" title="${epicXmppManager.isConnected() ? 'Epic Games Canlı Sohbet Sunucusuna Bağlı' : 'Yeniden Bağlanmak İçin Tıklayın'}" style="cursor: pointer;">
           <span class="live-indicator-dot"></span>
           <span class="live-badge-text">${epicXmppManager.isConnected() ? 'Canlı Sohbet Aktif' : epicXmppManager.getStatus() === 'connecting' || epicXmppManager.getStatus() === 'authenticating' ? 'Bağlanıyor…' : 'Bağlantı Yok'}</span>
         </div>
@@ -9571,6 +9617,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "social-refresh") {
     toast("Sosyal liste yenileniyor…", "");
     void fetchSocialData();
+    return;
+  } else if (act === "social-reconnect-chat") {
+    toast("Epic Games sohbet sunucusuna bağlanılıyor…", "");
+    void epicXmppManager.connect();
     return;
   } else if (act === "social-send-chat") {
     sendActiveSocialChatMessage();
