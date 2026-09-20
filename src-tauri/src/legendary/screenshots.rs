@@ -716,14 +716,15 @@ pub fn start_f12_listener(app: AppHandle) {
         let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(20));
-
             // Sadece bir oyun aktif oynanıyorken kısayol tuşunu kontrol et
             let running = get_active_running_game();
             if running.is_none() {
                 was_down = false;
+                std::thread::sleep(std::time::Duration::from_millis(250));
                 continue;
             }
+
+            std::thread::sleep(std::time::Duration::from_millis(20));
 
             let hotkey = SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed);
             let state = unsafe { GetAsyncKeyState(hotkey) };

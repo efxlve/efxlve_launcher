@@ -597,19 +597,14 @@ button { font-family: inherit; }
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.22s ease,
               box-shadow 0.22s ease;
-  /* 8 GB RAM ve Düşük Donanım Akıcılık Optimizasyonu */
-  content-visibility: auto;
-  contain-intrinsic-size: 240px 320px;
-  contain: layout paint style;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  contain: layout paint;
 }
 .pcard.enter {
   animation: cardFilterEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--ci, 0) * 16ms);
 }
 .pcard:hover {
-  transform: translateY(-6px) scale(1.02) translateZ(0);
+  transform: translateY(-6px) scale(1.02);
   border-color: rgba(99, 102, 241, 0.45);
   box-shadow: var(--glow-ambient);
   z-index: 5;
@@ -617,18 +612,15 @@ button { font-family: inherit; }
 .pcard > img, .pgrid .pcover {
   width: 100%; height: 100%; object-fit: cover; display: block;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  transform: translateZ(0);
 }
-.pcard:hover > img { transform: scale(1.05) translateZ(0); }
+.pcard:hover > img { transform: scale(1.05); }
 .pgrid .pcover { display: flex; align-items: center; justify-content: center; font-size: 64px; }
 
 /* Kart Durum Rozeti (Sol Üst) */
 .pbadge {
   position: absolute; top: 8px; left: 8px; z-index: 3;
   display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(7, 9, 14, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(7, 9, 14, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.12);
   height: 20px;
   padding: 0 7px;
@@ -680,7 +672,7 @@ button { font-family: inherit; }
 /* Butonlar SAĞ ÜSTTE yan yana durur, sol üstteki rozete ASLA binmez */
 .poverlay .top { display: flex; justify-content: flex-end; gap: 6px; }
 .iconbtn {
-  background: rgba(18, 19, 26, 0.85); backdrop-filter: blur(10px);
+  background: rgba(18, 20, 29, 0.94);
   border: 1px solid rgba(255,255,255,0.2); color: #fff;
   border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 14px;
   display: flex; align-items: center; justify-content: center;
@@ -2015,7 +2007,7 @@ button { font-family: inherit; }
               0 0 45px rgba(168, 85, 247, 0.25);
 }
 
-/* Koleksiyon kartı holografik ışık geçişi (ağırbaşlı, zarif mor-platin parıltı) */
+/* Koleksiyon kartı holografik ışık geçişi (hover anında zarif mor-platin parıltı) */
 .pcard.platinum::after {
   content: "";
   position: absolute;
@@ -2031,27 +2023,12 @@ button { font-family: inherit; }
   transform: translateX(-140%) rotate(12deg);
   pointer-events: none;
   z-index: 2;
-  animation: plat-shimmer-pass 10s ease-in-out infinite;
-}
-
-/* Kartlar aynı anda değil, sırayla parıldasın */
-.pcard.platinum:nth-child(even)::after {
-  animation-delay: 5s;
-}
-.pcard.platinum:nth-child(3n)::after {
-  animation-delay: 2.5s;
-}
-
-@keyframes plat-shimmer-pass {
-  0%, 60% {
-    transform: translateX(-140%) rotate(12deg);
-  }
-  90%, 100% {
-    transform: translateX(140%) rotate(12deg);
-  }
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .pcard.platinum:hover::after {
+  opacity: 1;
   animation: plat-hover-glint 1.2s ease-out forwards;
 }
 
@@ -8442,10 +8419,8 @@ select option {
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  background: rgba(13, 16, 25, 0.85);
+  background: rgba(13, 16, 25, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
@@ -8463,9 +8438,8 @@ select option {
   inset: 0;
   background-size: cover;
   background-position: center right;
-  opacity: 0.18;
-  filter: blur(10px) saturate(1.25);
-  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+  opacity: 0.16;
+  transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
   z-index: 0;
 }
@@ -8495,8 +8469,7 @@ select option {
 }
 
 .ps5-profile-game-card:hover .ps5-card-backdrop {
-  opacity: 0.32;
-  filter: blur(4px) saturate(1.4);
+  opacity: 0.28;
   transform: scale(1.03);
 }
 
