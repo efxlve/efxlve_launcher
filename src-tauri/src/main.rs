@@ -1314,6 +1314,19 @@ fn toggle_maximize_social_window(app: AppHandle) -> Result<bool, String> {
     }
 }
 
+#[tauri::command]
+fn open_official_epic_chat() -> Result<(), String> {
+    let path = std::path::Path::new("C:\\Program Files\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe");
+    if path.is_file() {
+        let _ = std::process::Command::new(path).spawn();
+    } else {
+        let _ = std::process::Command::new("cmd")
+            .args(["/c", "start", "com.epicgames.launcher://"])
+            .spawn();
+    }
+    Ok(())
+}
+
 /// Demo kurulum: ilerlemeyi "download-progress" event'i ile yayınlar.
 #[tauri::command]
 fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
@@ -1467,6 +1480,7 @@ fn main() {
             close_social_window,
             minimize_social_window,
             toggle_maximize_social_window,
+            open_official_epic_chat,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
             legendary::commands::epic_status,
