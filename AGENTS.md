@@ -1211,6 +1211,14 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - **`Shift + F3`** veya ana launcher'daki `[👥 Sosyal]` butonu pencereyi anında odaklar/açar/kapatır.
     - **`Escape`** tuşu bağımsız sosyal pencereyi güvenle gizler.
     - Pencereler arası anlık mesaj eşitlemesi `localStorage` + `storage` event'i ile çift yönlü sağlanır.
+  - **Sohbet Paneli "undefined" Hatası & In-Place Güncelleme:**
+    - `renderSteamSocialChatPane(): string` artık HTML dizgesi döndürür; şablon içinde `${renderSteamSocialChatPane()}` çağrıldığında DOM'a `undefined` yazılması kalıcı olarak engellenmiştir.
+    - Arkadaş seçimi ve harici depolama (`storage`) güncellemelerinde `updateSteamSocialChatPane()` kullanılarak kaydırma konumu ve içerik yerinde güncellenir.
+  - **Gelen İstekler Düzeni & Aksiyon Butonları:**
+    - Sol kenar çubuğundaki taşma ve metin kırılmalarını önlemek için durum `"İstek gönderdi"` olarak optimize edildi.
+    - `.steam-action-btn.accept` (yeşil) ve `.steam-action-btn.decline` (kırmızı) onay/red butonları modern konsol buton stilleriyle giydirildi.
+  - **Resmî Epic Games & EOS Canlı Sohbet Köprüsü (`open_official_epic_chat`):**
+    - Epic Games 5222 XMPP portunu kapattığı ve canlı peer-to-peer metin sohbetini EOS istemcisi (`EOSOverlayRenderer-Win64-Shipping.exe`) üzerinden yürüttüğü için, sosyal pencere başlığına ve bilgi kutusuna tek tıkla resmî Epic Games sohbetini açan/odaklayan `[💬 Epic Sohbetini Aç]` butonu (`open_official_epic_chat` Rust komutu) ve oyun içi `Shift+F3` kısayol rehberliği eklendi.
 
 
 

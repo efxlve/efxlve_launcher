@@ -144,6 +144,7 @@ import {
   epicCloseSocialWindow,
   epicMinimizeSocialWindow,
   epicToggleMaximizeSocialWindow,
+  epicOpenOfficialEpicChat,
   type EpicFriend,
   type EpicSocialSummary,
 } from "./epic";
@@ -8142,8 +8143,8 @@ function renderSteamFriendsList(): string {
                 <div class="steam-friend-avatar">${esc(f.display_name.charAt(0).toUpperCase())}</div>
               </div>
               <div class="steam-friend-meta">
-                <span class="steam-friend-name">${esc(f.display_name)}</span>
-                <span class="steam-friend-sub">Arkadaşlık isteği gönderdi</span>
+                <span class="steam-friend-name" title="${esc(f.display_name)}">${esc(f.display_name)}</span>
+                <span class="steam-friend-sub">İstek gönderdi</span>
               </div>
               <div class="steam-friend-actions">
                 <button class="steam-action-btn accept" data-act="social-accept-friend" data-id="${esc(f.account_id)}" title="Kabul Et">✓</button>
@@ -8324,12 +8325,9 @@ function renderSteamSidebarList(): void {
     : renderSteamChatsList();
 }
 
-function renderSteamSocialChatPane(): void {
-  const container = document.getElementById("steam-chat-pane-container");
-  if (!container) return;
-
+function renderSteamSocialChatPane(): string {
   if (!socialActiveChatFriendId) {
-    container.innerHTML = `
+    return `
       <div class="steam-chat-empty-state">
         <div class="steam-chat-empty-icon">
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -8338,9 +8336,13 @@ function renderSteamSocialChatPane(): void {
         </div>
         <h3>Sohbetler ve Arkadaşlar</h3>
         <p>Mesajlaşmak veya sesli gruba davet etmek için sol listeden bir arkadaşınızı seçin.</p>
+        <div class="steam-chat-empty-actions" style="margin-top: 12px;">
+          <button class="btn primary small" data-act="open-official-epic-chat">
+            💬 Resmî Epic Sohbetini Aç (Shift+F3)
+          </button>
+        </div>
       </div>
     `;
-    return;
   }
 
   const friends = socialData?.friends || [];
@@ -8350,7 +8352,7 @@ function renderSteamSocialChatPane(): void {
   const act = friend ? formatFriendActivity(friend) : { statusClass: "offline", statusLabel: "Çevrimdışı", isOnline: false };
   const history = socialChatHistory[socialActiveChatFriendId] || [];
 
-  container.innerHTML = `
+  return `
     <!-- Sohbet Üst Başlığı (Görsel 2) -->
     <div class="steam-chat-header">
       <div class="steam-chat-header-user">
@@ -8365,14 +8367,17 @@ function renderSteamSocialChatPane(): void {
       </div>
 
       <div class="steam-chat-header-actions">
+        <button class="steam-header-btn epic-launch" data-act="open-official-epic-chat" title="Resmî Epic Games / EOS Sohbet Penceresini Aç">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>Epic Sohbetini Aç</span>
+        </button>
         <button class="steam-header-btn invite" data-act="social-invite-party" data-id="${esc(socialActiveChatFriendId)}" data-name="${esc(friendName)}" title="Gruba Davet Et">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>
           </svg>
           <span>Gruba Davet Et</span>
-        </button>
-        <button class="steam-header-btn icon" title="Seçenekler">
-          ${icon("dots", 14)}
         </button>
       </div>
     </div>
@@ -8381,7 +8386,13 @@ function renderSteamSocialChatPane(): void {
     <div id="steam-chat-messages" class="steam-chat-messages">
       <!-- Görsel 2'deki Bilgilendirme Kutucuğu -->
       <div class="steam-chat-notice-box">
-        <span>Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir.</span>
+        <div class="steam-notice-main">Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir.</div>
+        <div class="steam-notice-sub" style="margin-top: 6px; font-size: 11px; opacity: 0.85;">
+          <span>Arkadaşınızla canlı EOS sohbeti için: </span>
+          <button class="steam-notice-link-btn" data-act="open-official-epic-chat" style="background:none;border:none;color:#60a5fa;cursor:pointer;font-weight:700;text-decoration:underline;">
+            Epic Resmî Sohbetinde Aç (Shift+F3)
+          </button>
+        </div>
       </div>
 
       ${
@@ -8389,7 +8400,7 @@ function renderSteamSocialChatPane(): void {
           ? `
             <div class="steam-chat-first-time">
               <span class="steam-chat-wave">👋</span>
-              <p><strong>${esc(friendName)}</strong> adlı arkadaşınıza henüz mesaj göndermediniz.<br>Aşağıdaki hazır kutulardan veya metin kutusundan bir selam gönderin!</p>
+              <p><strong>${esc(friendName)}</strong> adlı arkadaşınıza henüz mesaj göndermediniz.<br>Aşağıdaki hazır kutulardan veya <button class="link-btn-inline" data-act="open-official-epic-chat" style="background:none;border:none;color:#60a5fa;cursor:pointer;font-weight:600;text-decoration:underline;">Epic Resmî Sohbeti</button> üzerinden mesajlaşabilirsiniz.</p>
             </div>
           `
           : history.map((m) => `
@@ -8428,11 +8439,16 @@ function renderSteamSocialChatPane(): void {
         </button>
       </div>
       <div class="steam-chat-subhint">
-        <span>Sohbet raporlama kapalı</span>
+        <span>Sohbet raporlama kapalı • Canlı sohbet için: <a href="javascript:void(0)" data-act="open-official-epic-chat" style="color:#60a5fa;text-decoration:none;font-weight:600;">Epic Sohbetini Aç (Shift+F3)</a></span>
       </div>
     </div>
   `;
+}
 
+function updateSteamSocialChatPane(): void {
+  const container = document.getElementById("steam-chat-pane-container");
+  if (!container) return;
+  container.innerHTML = renderSteamSocialChatPane();
   setTimeout(() => {
     const msgBox = document.getElementById("steam-chat-messages");
     if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
@@ -8449,15 +8465,15 @@ function sendActiveSocialChatMessage(textToSend?: string): void {
     input.value = "";
   }
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-
   if (!socialChatHistory[socialActiveChatFriendId]) {
     socialChatHistory[socialActiveChatFriendId] = [];
   }
 
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
   socialChatHistory[socialActiveChatFriendId].push({
-    id: "msg-" + Date.now(),
+    id: `msg-${Date.now()}`,
     sender: "me",
     text,
     time: timeStr,
@@ -8466,7 +8482,7 @@ function sendActiveSocialChatMessage(textToSend?: string): void {
   saveSocialChats();
 
   if (isSocialWindow) {
-    renderSteamSocialChatPane();
+    updateSteamSocialChatPane();
     renderSteamSidebarList();
   }
 
@@ -8547,7 +8563,7 @@ async function initSteamSocialWindow(): Promise<void> {
       try {
         if (e.newValue) {
           socialChatHistory = JSON.parse(e.newValue);
-          renderSteamSocialChatPane();
+          updateSteamSocialChatPane();
           renderSteamSidebarList();
         }
       } catch {}
@@ -9287,7 +9303,7 @@ document.addEventListener("click", (e) => {
     if (friendId) {
       socialActiveChatFriendId = friendId;
       if (isSocialWindow) {
-        renderSteamSocialChatPane();
+        updateSteamSocialChatPane();
         renderSteamSidebarList();
         setTimeout(() => {
           const inp = document.getElementById("social-chat-input") as HTMLInputElement | null;
@@ -9371,6 +9387,10 @@ document.addEventListener("click", (e) => {
     if (isSocialWindow) {
       renderSteamSidebarList();
     }
+    return;
+  } else if (act === "open-official-epic-chat") {
+    if (isTauri) void epicOpenOfficialEpicChat();
+    toast("Resmî Epic Games sohbeti açılıyor… (Shift+F3)", "ok");
     return;
   }
 

@@ -1074,3 +1074,6 @@ export const epicMinimizeSocialWindow = () =>
 
 export const epicToggleMaximizeSocialWindow = () =>
   invoke<boolean>("toggle_maximize_social_window");
+
+export const epicOpenOfficialEpicChat = () =>
+  invoke<void>("open_official_epic_chat");

@@ -12125,11 +12125,65 @@ select option {
   color: #60a5fa;
 }
 
+.steam-friend-sub {
+  font-size: 10.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.steam-friend-row.incoming {
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  cursor: default;
+}
+.steam-friend-row.incoming:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
 .steam-friend-actions {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+.steam-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.steam-action-btn.accept {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.steam-action-btn.accept:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  transform: scale(1.05);
+}
+.steam-action-btn.decline {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+.steam-action-btn.decline:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: scale(1.05);
+}
+
 .steam-action-icon-btn {
   background: transparent;
   border: none;
@@ -12288,6 +12342,16 @@ select option {
 .steam-header-btn.invite:hover {
   background: rgba(59, 130, 246, 0.25);
 }
+.steam-header-btn.epic-launch {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
+.steam-header-btn.epic-launch:hover {
+  background: rgba(59, 130, 246, 0.32);
+  border-color: #60a5fa;
+  color: #ffffff;
+}
 .steam-header-btn.icon {
   background: rgba(255, 255, 255, 0.04);
   color: #94a3b8;
@@ -12320,6 +12384,33 @@ select option {
   padding: 8px 16px;
   border-radius: 8px;
   margin-bottom: 12px;
+}
+
+.steam-notice-main {
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.steam-notice-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.steam-notice-link-btn {
+  transition: all 0.15s ease;
+}
+.steam-notice-link-btn:hover {
+  color: #93c5fd !important;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+}
+
+.link-btn-inline {
+  transition: all 0.15s ease;
+}
+.link-btn-inline:hover {
+  color: #93c5fd !important;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
 }
 
 .steam-chat-first-time {
