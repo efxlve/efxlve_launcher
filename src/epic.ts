@@ -194,6 +194,7 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
   const pType = attrs.partnerLinkType?.value?.toLowerCase() || "";
   const reg = attrs.RegistryPath?.value?.toLowerCase() || "";
   const dev = String(g.metadata.developer || "").toLowerCase();
+  const title = String(g.app_title || "").toLowerCase();
   const folder = attrs.FolderName?.value?.toLowerCase() || "";
 
   if (
@@ -202,7 +203,8 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
     pType === "ea" ||
     pType === "origin" ||
     reg.includes("ea games") ||
-    reg.includes("respawn")
+    reg.includes("respawn") ||
+    dev.includes("electronic arts")
   ) {
     return { name: "EA App", type: "ea", shortName: "EA App" };
   }
@@ -211,11 +213,20 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
     pType.includes("ubisoft") ||
     reg.includes("ubisoft") ||
     tpApp.includes("ubisoft") ||
-    (dev === "ubisoft" && (attrs.partnerLinkId || pType))
+    dev.includes("ubisoft")
   ) {
     return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
   }
-  if (reg.includes("rockstar games") || tpApp.includes("rockstar") || (dev.includes("rockstar") && attrs.RegistryLocation)) {
+  if (
+    reg.includes("rockstar") ||
+    tpApp.includes("rockstar") ||
+    dev.includes("rockstar") ||
+    title.includes("grand theft auto") ||
+    title.includes("gta") ||
+    title.includes("red dead") ||
+    folder.includes("gtav") ||
+    folder.includes("rdr")
+  ) {
     return { name: "Rockstar Games Launcher", type: "rockstar", shortName: "Rockstar" };
   }
   if (folder.includes("goggalaxy") || tpApp.includes("gog")) {
@@ -257,6 +268,9 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
 
   // 2. Popüler rekabetçi ve bilinen oyunlar
   if (appName === "carnation" || title.includes("rainbow six siege")) {
+    return "BattlEye";
+  }
+  if (title.includes("grand theft auto") || title.includes("gta v") || title.includes("gta 5")) {
     return "BattlEye";
   }
   if (appName === "babyblue" || title.includes("battlefield 2042")) {

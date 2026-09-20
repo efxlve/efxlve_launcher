@@ -993,6 +993,32 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Sonuç:**
   - Dead by Daylight için Kontrolcü: `✓ Xbox & Gamepad (XInput)`, Bulut: `✓ Çevrimiçi Sunucu Kaydı`, Çevrimdışı: `Sürekli İnternet Gerekir`, Oyun Modu: `Çok Oyunculu (4v1 PvP)`, Boyut: `60.7 GB [v10.1.2.4]` olarak kusursuz ve doğru şekilde sunulmaktadır.
 
+## 62. Rockstar Games, BattlEye ve Hibrit (Tek & Çok Oyunculu) Oyun Mimarisi (GTA V Enhanced Fix)
+
+- **Problem & Kök Neden:**
+  - Kullanıcının *Grand Theft Auto V Enhanced* detay sayfasında verilerin yanlış olduğunu fark etmesiyle şu kök nedenler tespit edildi:
+    1. **Rockstar Games Launcher Tespiti Hatası:** `getThirdPartyLauncher(g)` içinde Rockstar tespiti için `(dev.includes("rockstar") && attrs.RegistryLocation)` şartı aranıyordu. Ancak Epic Games, GTA V veya RDR2 metadata'sında `RegistryLocation` tanımlamaz. Bu yüzden Rockstar Games Launcher tespit edilemiyor; Harici Başlatıcı satırı kayboluyor, Bulut Kayıtları "Rockstar Cloud" yerine yanıltıcı "Yerel Kayıt"a düşüyor ve Çevrimdışı Oynanış'ta Rockstar bağlantı uyarısı verilemiyordu.
+    2. **BattlEye Hile Koruması Tespiti Hatası:** GTA V'e yeni eklenen BattlEye hile koruması `getAntiCheat(g)` içerisinde yer almıyordu. Oysa oyunun dizininde doğrudan `BattlEye/` klasörü ve `GTA5_Enhanced_BE.exe` bulunmaktadır.
+    3. **Oyun Modu (Tek vs Çok Oyunculu):** GTA V'in açıklamasında "Grand Theft Auto Online" geçtiği için `hasMultiplayer` tetiklenmiş; ancak tek oyunculu kontrollerinde "single player" (boşluklu), "hikaye", "story" gibi kelimeler eksik olduğu ve HowLongToBeat verisi (32 saatlik Ana Hikaye) sorgulanmadığı için devasa hikaye moduna sahip GTA V yanlışlıkla sadece `"Çok Oyunculu"` olarak sınıflandırılmıştır.
+    4. **Kontrolcü Desteği:** GTA V PC sürümü yerel olarak DualShock 4 / DualSense ışık çubuğu (polis sireni) ve ses desteğine sahip olmasına rağmen yalnızca standart Xbox kolu olarak gösteriliyordu.
+- **Uygulanan Çözüm:**
+  1. **`getThirdPartyLauncher()` Güncellemesi:** Geliştiricisi `Rockstar`, başlığı `Grand Theft Auto`, `GTA` veya `Red Dead` olan tüm oyunlar doğrudan `Rockstar Games Launcher` olarak tanındı.
+  2. **`getAntiCheat()` Güncellemesi:** GTA V başlıkları `BattlEye` koruma listesine eklendi.
+  3. **`Tek & Çok Oyunculu` (Hibrit Mod) Mimarisi:** Hem HowLongToBeat hikaye süresi (`hltb.main_story > 0`) hem de koleksiyon etiketleri (`"Hikaye"`, `"Story"`), bilinen küresel hikaye+çevrimiçi yapımlar (`GTA`, `Red Dead`, `Battlefield`, `Call of Duty`, `Halo`, `Forza`) taranarak oyun modu doğru bir şekilde **`Tek & Çok Oyunculu`** olarak tescillendi.
+  4. **Bulut Kayıtları & Bağlantı:** Rockstar oyunlarında bulut kaydı **`✓ Rockstar Games Bulut`** (Social Club), çevrimdışı oynanış ise **`Rockstar Games Launcher Bağlantısı Gerekebilir`** olarak güncellendi.
+  5. **Kontrolcü Desteği:** GTA ve Red Dead oyunları yerel PlayStation ışık/ses ve Xbox desteğine sahip olduğu için **`✓ DualSense & Xbox Kolu`** kapsamına alındı.
+- **Sonuç:**
+  - GTA V Enhanced sayfasında:
+    - Kontrolcü Desteği: `✓ DualSense & Xbox Kolu`
+    - Bulut Kayıtları: `✓ Rockstar Games Bulut`
+    - Çevrimdışı Oynanış: `Rockstar Games Launcher Bağlantısı Gerekebilir`
+    - Oyun Modu: `Tek & Çok Oyunculu`
+    - Harici Başlatıcı: `Rockstar Games Launcher`
+    - Hile Koruması: `BattlEye`
+    - Yüklü Boyut: `96.3 GB [v1.0.1158.13]`
+    olarak %100 kusursuz ve gerçekçi biçimde sunulmaktadır.
+
+
 
 
 

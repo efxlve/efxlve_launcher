@@ -3397,12 +3397,15 @@ function detectControllerSupport(
     titleLower.includes("cyberpunk 2077") ||
     titleLower.includes("alan wake 2") ||
     titleLower.includes("metro exodus") ||
-    titleLower.includes("witcher 3");
+    titleLower.includes("witcher 3") ||
+    titleLower.includes("grand theft auto") ||
+    titleLower.includes("gta") ||
+    titleLower.includes("red dead");
 
   if (isDualSenseNative) {
     return {
       label: "✓ DualSense & Xbox Kolu",
-      tooltip: "PC'de yerel DualSense (Dokunsal Titreşim / Uyarlanabilir Tetik) ve Xbox kolları desteklenir.",
+      tooltip: "PC'de yerel DualSense / PlayStation (ışık çubuğu, ses) ve Xbox kolları desteklenir.",
       iconName: "gamepad-2",
       className: "supported",
     };
@@ -3433,7 +3436,7 @@ function detectControllerSupport(
     };
   }
 
-  // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, GTA V, etc.)
+  // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, etc.)
   return {
     label: "✓ Xbox & Gamepad (XInput)",
     tooltip: "Xbox ve XInput uyumlu kollar doğrudan çalışır. DualSense için XInput / DS4Windows gerekebilir.",
@@ -3531,9 +3534,10 @@ function renderGameFeatures(
     cloudClass = "supported";
     cloudTooltip = "Epic Games bulut kayıtları etkin.";
   } else if (partner) {
-    cloudVal = `✓ ${partner.name} Bulut`;
+    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
+    cloudVal = `✓ ${pName} Bulut`;
     cloudClass = "accent";
-    cloudTooltip = `${partner.name} bulut senkronizasyonu kullanılır.`;
+    cloudTooltip = `${partner.name} bulut senkronizasyonu (Social Club) kullanılır.`;
   }
 
   // 3. Başarım durumu
@@ -3559,7 +3563,7 @@ function renderGameFeatures(
   } else if (partner) {
     offlineVal = `${partner.name} Bağlantısı Gerekebilir`;
     offlineClass = "muted";
-    offlineTooltip = `${partner.name} istemcisi ve hesabı doğrulaması gerekebilir.`;
+    offlineTooltip = `${partner.name} istemcisi ve hesabı ile ilk doğrulama/çevrimdışı mod gereklidir.`;
   } else if (canRunOffline) {
     offlineVal = "✓ Destekleniyor (Çevrimdışı)";
     offlineClass = "supported";
@@ -3579,6 +3583,39 @@ function renderGameFeatures(
 
   const titleLower = s.title.toLowerCase();
   const appLower = s.appName.toLowerCase();
+
+  const hltb = loadedHltb.get(s.appName);
+  const hasHltbStory = Boolean(hltb?.main_story && hltb.main_story > 0);
+
+  const isKnownSingleAndMulti =
+    titleLower.includes("grand theft auto") ||
+    titleLower.includes("gta") ||
+    titleLower.includes("red dead") ||
+    titleLower.includes("battlefield") ||
+    titleLower.includes("call of duty") ||
+    titleLower.includes("halo") ||
+    titleLower.includes("forza");
+
+  const hasCoop = textCorpus.includes("coop") || textCorpus.includes("co-op") || textCorpus.includes("eşli");
+  const hasMultiplayer =
+    textCorpus.includes("multiplayer") ||
+    textCorpus.includes("çok oyunculu") ||
+    textCorpus.includes("online") ||
+    textCorpus.includes("pvp") ||
+    titleLower.includes("online");
+
+  const hasSinglePlayer =
+    hasHltbStory ||
+    isKnownSingleAndMulti ||
+    textCorpus.includes("single_player") ||
+    textCorpus.includes("singleplayer") ||
+    textCorpus.includes("single player") ||
+    textCorpus.includes("tek oyunculu") ||
+    textCorpus.includes("tek kişilik") ||
+    textCorpus.includes("campaign") ||
+    textCorpus.includes("senaryo") ||
+    textCorpus.includes("hikaye") ||
+    textCorpus.includes("story");
 
   let modeVal = "Tek Oyunculu";
   let modeClass = "supported";
@@ -3600,32 +3637,26 @@ function renderGameFeatures(
     modeVal = "Devasa Çok Oyunculu (MMO)";
     modeClass = "accent";
     modeTooltip = "Geniş oyuncu topluluğu ile sürekli çevrimiçi dünya.";
+  } else if (isKnownSingleAndMulti || (hasSinglePlayer && (hasMultiplayer || isOnlineOnly))) {
+    modeVal = "Tek & Çok Oyunculu";
+    modeClass = "accent";
+    modeTooltip = "Hem zengin tek oyunculu hikaye modu hem de çevrimiçi çok oyunculu modlar içerir.";
+  } else if (hasCoop && hasSinglePlayer) {
+    modeVal = "Tek Oyunculu & Co-op";
+    modeClass = "accent";
+    modeTooltip = "Hem tek başına hem de arkadaşlarınızla eşli oynanabilir.";
+  } else if (hasCoop) {
+    modeVal = "Eşli Oyun (Co-op)";
+    modeClass = "accent";
+    modeTooltip = "Takım halinde eşli oynanış.";
+  } else if (hasMultiplayer || isOnlineOnly) {
+    modeVal = "Çok Oyunculu";
+    modeClass = "accent";
+    modeTooltip = "Çevrimiçi çok oyunculu karşılaşmalar.";
   } else {
-    const hasCoop = textCorpus.includes("coop") || textCorpus.includes("co-op") || textCorpus.includes("eşli");
-    const hasMultiplayer = textCorpus.includes("multiplayer") || textCorpus.includes("çok oyunculu") || textCorpus.includes("online") || textCorpus.includes("pvp");
-    const hasSinglePlayer = textCorpus.includes("single_player") || textCorpus.includes("singleplayer") || textCorpus.includes("tek oyunculu") || textCorpus.includes("campaign") || textCorpus.includes("senaryo");
-
-    if (hasCoop && hasSinglePlayer) {
-      modeVal = "Tek Oyunculu & Co-op";
-      modeClass = "accent";
-      modeTooltip = "Hem tek başına hem de arkadaşlarınızla eşli oynanabilir.";
-    } else if (hasCoop) {
-      modeVal = "Eşli Oyun (Co-op)";
-      modeClass = "accent";
-      modeTooltip = "Takım halinde eşli oynanış.";
-    } else if (hasMultiplayer && hasSinglePlayer) {
-      modeVal = "Tek & Çok Oyunculu";
-      modeClass = "accent";
-      modeTooltip = "Hem tek oyunculu hikaye modu hem de çevrimiçi çok oyunculu modlar içerir.";
-    } else if (hasMultiplayer || isOnlineOnly) {
-      modeVal = "Çok Oyunculu";
-      modeClass = "accent";
-      modeTooltip = "Çevrimiçi çok oyunculu karşılaşmalar.";
-    } else {
-      modeVal = "Tek Oyunculu";
-      modeClass = "supported";
-      modeTooltip = "Tek oyunculu oyun deneyimi.";
-    }
+    modeVal = "Tek Oyunculu";
+    modeClass = "supported";
+    modeTooltip = "Tek oyunculu oyun deneyimi.";
   }
 
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
