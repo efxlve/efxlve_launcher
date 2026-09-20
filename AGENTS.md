@@ -1112,3 +1112,24 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Başarım sekmesindeki özet halkası (`.ach-summary-bar.platinum .ring-fill`), özet kartı (`.ach-summary-bar.platinum`), mini kupa sayaçları (`.ach-tier-mini.plat`), kartlardaki platin rozeti (`.ach-pill.tier.platinum`) ve dikey scrollbar (`.ach-list-container::-webkit-scrollbar-thumb:hover`) sarıdan mor-eflatun tonlara geçirildi.
   - **Genel Sistem Bütünlüğü:**
     - Raflar görünümündeki mini kupa rozeti (`.micro-chip.plat`), yerel profil sayfası platin kupa kutusu (`.profile-stat-box.plat`) ve kategori tebrik afişi ikonu (`.plat-banner-icon`) mor Epic Platin Kupa kimliğiyle tamamen eşleştirildi.
+
+## 67. PlayStation 5 Console (Trophy Hub) Profil Sayfası Yenilemesi
+
+- **PS5 Hero Stage (`.profile-hero-card`):**
+  - Sayfa başında derin cam efektli, çift radyal ortam ışıklı (PlayStation mavisi `#2563eb` ve derin mor `#7c3aed`) konsol sahnesi oluşturuldu.
+  - Squircle kullanıcı avatarı (`.profile-avatar-squircle`), parlak mavi neon hale (`box-shadow: 0 0 20px rgba(37,99,235,0.4)`), ve canlı çevrim içi yeşil durum pini (`.profile-avatar-pip`) eklendi.
+  - Kullanıcı adı yanında `● Epic Games Bağlı` durum hapı ve dinamik kupa seviyesi rozeti (`.profile-trophy-level-badge`: `${epicPlatinumIcon(12)} Seviye ${trophyLevel}`) konumlandırıldı.
+  - Sahne sağında PS5 tarzı tek satır kupa özet kapsülü (`.profile-hero-trophy-capsule`): Platin Kupa sayısı (`epicPlatinumIcon`), Toplam Açılan Kupa ve Toplam XP sayacı + kompakt yenileme butonu yer aldı.
+- **PlayStation 5 Glass Stats Kapsülü (`.profile-stats-capsule`):**
+  - Eski sıkışık 5 bento kutusu tamamen kaldırıldı; yerine Game Hub (`.hub-stat-capsule`) ile tam uyumlu 5 sütunlu tek parça cam konsol kapsülü getirildi.
+  - Sütunlar: Toplam XP, Açılan Kupalar, Platin Kupa (mor ışıltılı `.profile-stat-val.plat`), Oynama Süresi ve Kütüphane oyun sayısı. Sütunlar dikey yarı saydam ayırıcı çizgilerle (`.profile-stat-divider`) estetik şekilde ayrıldı.
+- **2 Sütunlu PS5 Console Trophy Game Cards Izgarası (`.profile-games-grid` ve `.ps5-profile-game-card`):**
+  - Eski dar, yatay ve sarı çubuklu oyun satırları yerine 2 sütunlu ferah PlayStation konsol kupa kartı ızgarası (`repeat(auto-fill, minmax(540px, 1fr))`) uygulandı.
+  - Sol tarafta 2:3 oranlı (66x92px) dikey sinematik oyun posteri (`.ps5-card-poster-wrap`), platin oyunlarda sol üstte zarif mor squircle platin kupa amblemi (`.ps5-card-plat-badge` + `epicPlatinumIcon(15)`).
+  - Sağ tarafta oyun başlığı, son oynanma ve süre bilgisi (`.ps5-card-meta`), kupa sayaçları ve yüzde metni (`.ps5-card-progress-text`).
+  - İlerleme çubukları (`.ps5-card-progress-fill`): Platin oyunlar için asil mor degrade (`linear-gradient(90deg, #6b21a8, #9333ea, #c084fc, #e9d5ff)`), devam eden oyunlar için PlayStation elektrik mavisi (`linear-gradient(90deg, #2563eb, #38bdf8)`). Eski sarı renk tamamen kaldırıldı.
+  - Sağ uçta 10 fit gezinme için `İncele` aksiyon butonu.
+- **10 Fit TV / Konsol Gezinme İpuçları Barı (`.ps5-profile-controller-hint`):**
+  - Sayfa altında PlayStation DualSense / Xbox kontrolcü kısayol ipuçları (A: Oyunu İncele, X: Kupa Filtresi, Y: Arama, ⟳: Yenile, B: Geri Dön) eklendi.
+  - Tüm kartlarda klavye ve gamepad navigasyonu için `:focus-visible` elektrik mavisi odak halkası (`box-shadow: 0 0 0 2px #60a5fa, 0 0 24px rgba(96, 165, 250, 0.4)`) entegre edildi.
+
