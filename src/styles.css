@@ -1083,6 +1083,331 @@ button { font-family: inherit; }
   display: none; /* Stat row'a entegre edildi, artık ayrı strip gerekmiyor */
 }
 
+/* --- PlayStation 5 Kupa Vitrini (Trophy Spotlight) --- */
+.hub-trophy-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hub-card-link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.hub-card-link:hover {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c084fc;
+}
+
+/* Kupa İlerleme Kutusu */
+.hub-trophy-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.hub-trophy-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hub-trophy-percent-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.hub-trophy-percent-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.5px;
+  font-feature-settings: "tnum";
+}
+.hub-trophy-counts {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+.hub-trophy-medals {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.hub-medal-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-feature-settings: "tnum";
+}
+.hub-medal-item.plat { color: #38bdf8; }
+.hub-medal-item.gold { color: #fbbf24; }
+.hub-medal-item.silver { color: #cbd5e1; }
+.hub-medal-item.bronze { color: #d97706; }
+
+/* Kupa Çubuğu */
+.hub-trophy-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+.hub-trophy-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+  transition: width 0.4s ease;
+}
+
+/* Sıradaki Hedef Kupalar (Next Up) */
+.hub-trophy-next-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+.hub-trophy-target-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+.hub-trophy-target-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.hub-trophy-target-card:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(96, 165, 250, 0.6) !important;
+  transform: translateY(-2px);
+}
+.hub-trophy-target-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: #fbbf24;
+}
+.hub-trophy-target-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hub-trophy-target-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hub-trophy-target-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-trophy-target-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.hub-trophy-target-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.hub-trophy-target-badge.bronze { background: rgba(217, 119, 6, 0.15); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.3); }
+.hub-trophy-target-badge.silver { background: rgba(203, 213, 225, 0.12); color: #e2e8f0; border: 1px solid rgba(203, 213, 225, 0.25); }
+.hub-trophy-target-badge.gold { background: rgba(251, 191, 36, 0.18); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.35); }
+.hub-trophy-target-badge.plat { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+
+/* --- PlayStation 5 Medya Galerisi (Media Spotlight) --- */
+.hub-media-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hub-card-hotkey {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #c084fc;
+  letter-spacing: 0.3px;
+}
+.hub-card-count {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 2px;
+}
+.hub-media-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.hub-media-item {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  display: block;
+  width: 100%;
+}
+.hub-media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+.hub-media-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 58, 237, 0.25);
+}
+.hub-media-item:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(96, 165, 250, 0.6) !important;
+  transform: translateY(-3px) scale(1.02);
+}
+.hub-media-item:hover img {
+  transform: scale(1.05);
+}
+.hub-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(7, 8, 13, 0.85) 0%, rgba(7, 8, 13, 0.2) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.hub-media-item:hover .hub-media-overlay {
+  opacity: 1;
+}
+.hub-media-zoom-icon {
+  align-self: flex-end;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f1f5f9;
+}
+.hub-media-date {
+  font-size: 10px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Medya Boş Durumu (Empty State) */
+.hub-media-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.hub-media-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  color: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hub-media-empty-info {
+  flex: 1;
+  min-width: 0;
+}
+.hub-media-empty-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 2px;
+}
+.hub-media-empty-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+.hub-media-empty-desc strong {
+  color: #c084fc;
+}
+
 /* HowLongToBeat Bento Kartı */
 .drawer-hltb-card {
   background: rgba(255, 255, 255, 0.035);

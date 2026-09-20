@@ -1018,6 +1018,27 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Yüklü Boyut: `96.3 GB [v1.0.1158.13]`
     olarak %100 kusursuz ve gerçekçi biçimde sunulmaktadır.
 
+## 63. PlayStation 5 Game Hub: Hibrit Kupa & Medya Vitrini (Trophy & Media Spotlight)
+
+- **Kullanıcı Talebi & Tasarım Amacı:**
+  - Game Hub (oyun detay çekmecesi) genel bakış sekmesinde sol alt sütunun ("Oyun Hakkında" ve "Koleksiyonlar & Etiketler" kartlarının altı) boş kalması üzerine, kullanıcının onayıyla PlayStation 5 konsol Game Hub standartlarında **Hibrit Vitrin (Trophy Spotlight + Media Gallery Spotlight)** geliştirilmiştir.
+- **Kupa & Başarım Vitrini (`hub-trophy-spotlight`):**
+  - **Genel İlerleme Kutusu:** Oyunun toplam başarım ilerleme yüzdesi (`%XX`), kazanılan / toplam kupa sayısı ve kazanılan XP miktarı (`X / Y Kupa • Z XP`).
+  - **PlayStation 5 Tarzı Madalya Sayaçları:** Platin (🏆 `#38bdf8`), Altın (🏆 `#fbbf24`), Gümüş (🏆 `#cbd5e1`) ve Bronz (🏆 `#d97706`) madalya sayaçları.
+  - **Sıcak Altın İlerleme Çubuğu:** `.hub-trophy-bar-track` ve parlak altın auralı `.hub-trophy-bar-fill` ile sinematik dolum animasyonu.
+  - **"Sıradaki Hedef Kupalar" (Next Up Cards):** Henüz kazanılmamış 2 sıradaki hedef kupa (oyun ikonu, başlık, açıklama ve Altın/Gümüş/Bronz + XP rozeti) etkileşimli konsol kartı olarak sunulur. Gizli başarılarda spoiler koruması devrededir (`🔒 Gizli Başarım`). Tıklandığında doğrudan oyunun kupa detaylarına geçiş yapar.
+  - **Harici Başlatıcı & Desteği Olmayan Oyunlar:** EA App vb. harici başlatıcılı oyunlarda partner başarım takip kutusu gösterilir; başarımı bulunmayan nadir oyunlarda ise boş alan bırakılmadan zarifçe gizlenir.
+  - **0ms Sıfır Gecikme:** Disk üzerindeki `metadata/*.json` ve `achievements.json` üzerinden anında senkronize okunur; çekmece ilk açılışında arka planda ağ isteği tetiklemez (Kural 24'e %100 sadık).
+- **Medya Galerisi Vitrini (`hub-media-spotlight`):**
+  - **Başlık Çubuğu & Kısayol Etiketi:** Oyunun kayıtlı ekran görüntüsü sayısı, kullanıcı ayarlarından okunan dinamik kısayol etiketi (`F12`, `PrtScn` vb.) ve "Tümü >" butonu.
+  - **16:9 Sinematik Minyatürler (`.hub-media-strip`):** Kullanıcının oyunda aldığı son 3 ekran görüntüsü; hover durumunda 3D yükselme (`translateY(-3px)`), mor konsol ışıması, yerel tarih etiketi ve büyütme ikonu sunar. Tıklandığında anında tam ekran Lightbox galerisini açar.
+  - **Konsol Boş Durumu (`.hub-media-empty`):** Henüz görüntü alınmamış oyunlar için kamera ikonu, kısayol tuşu kullanım ipucu ve doğrudan klasörü açan "Klasör" aksiyonu sunar.
+  - **Dinamik Yerinde Güncelleme:** Ekran görüntüsü alındığında, silindiğinde veya sıkıştırıldığında `#overview-media-container` yerinde (in-place) anında yenilenir; sayfa kırpışması yaşanmaz.
+- **Konsol / Gamepad 10-fit Erişilebilirlik Disiplini:**
+  - Tüm kupa hedef kartları ve medya minyatürleri `<button type="button">` semantiğiyle tanımlanmış olup D-pad/Analog uzamsal gezinme, Klavye (Enter/Space) ve Gamepad (A butonu) ile doğrudan tetiklenebilir.
+  - Odak durumunda PlayStation elektrik mavisi halo halkası (`:focus-visible`) ve hafif 3D kalkış uygulanır.
+
+
 
 
 
