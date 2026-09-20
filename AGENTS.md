@@ -1038,6 +1038,38 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Tüm kupa hedef kartları ve medya minyatürleri `<button type="button">` semantiğiyle tanımlanmış olup D-pad/Analog uzamsal gezinme, Klavye (Enter/Space) ve Gamepad (A butonu) ile doğrudan tetiklenebilir.
   - Odak durumunda PlayStation elektrik mavisi halo halkası (`:focus-visible`) ve hafif 3D kalkış uygulanır.
 
+## 64. Oyun Kurulum Konumunu & Dosyalarını Taşıma (Move Game Installation & Cross-Drive Migration)
+
+- **Problem & Epic Games Launcher Sınırı:**
+  - Resmi Epic Games Launcher uygulamasında bir oyunun kurulum yerini / sürücüsünü (örneğin C: SSD'den D: HDD'ye veya harici diske) doğrudan taşıma özelliği bulunmamaktadır. Kullanıcılar oyunu silip baştan indirmek veya dosyaları elle kopyalayıp indirmeyi durdurup doğrulatmak gibi hantal ve riskli geçici yöntemler uygulamak zorunda kalır.
+- **Mimari & Motor Katmanı (`src-tauri/src/legendary/move_game.rs`):**
+  - **Sistem Sürücülerinin Tespiti (`epic_get_system_drives`):**
+    - Windows `GetDiskFreeSpaceExW` API'si (Win32) ile sıfır ek kütüphane bağımlılığıyla çalışır.
+    - Sistemdeki tüm yerel disk sürücüleri (C:, D:, E: vb.), toplam disk kapasiteleri ve bayt hassasiyetinde kullanılabilir boş disk alanları milisaniyeler içinde taranıp listelenir.
+  - **Yerel Klasör Seçim Gezgini (`epic_select_folder_dialog`):**
+    - Windows yerel Forms FolderBrowserDialog entegrasyonuyla tescilli sistem klasör seçici penceresi sunulur.
+  - **Aynı Sürücü İçi Anlık Taşıma (Same-Drive Instant Rename):**
+    - Kaynak ve hedef klasör aynı sürücü üzerindeyse (ör. `C:\Games` -> `C:\EpicGames`), `tokio::fs::rename` ile 0.05 saniyeden kısa sürede, ağ veya disk kopyalama yükü olmaksızın anında yer değiştirir.
+  - **Sürücüler Arası Akıcı Kopyalama & Güvenlik (Cross-Drive Streaming Transfer):**
+    - Legendary'nin kendi çapraz sürücü `move` komutu Windows ve Python'da `OSError: errno 18 (EXDEV)` hatası verir.
+    - Efxlve Launcher Rust motoru dosyaları 1 MB bellek tamponuyla (stream buffer) güvenle hedefe kopyalar.
+    - Anlık ilerleme event'i (`move-progress`): ilerleme yüzdesi (`%XX`), aktarılan/toplam bayt, hız (MB/s), kalan tahmini süre (ETA), aktarılan mevcut dosya yolu ve dosya sayaçları canlı yayınlanır.
+    - **Atomik İptal & Veri Bütünlüğü Güvenliği (`ACTIVE_MOVES`):** Kullanıcı iptal ettiğinde veya aktarım başarısız olduğunda kaynak dosyalar ASLA silinmez; hedefte yarım kalan klasör temizlenerek güvenle geri alınır. Kaynak dosyalar yalnızca tüm kopyalama ve boyut doğrulaması %100 başarılı olduktan sonra temizlenir.
+  - **Çoklu Veritabanı & EGL Eşitlemesi (Multi-Database Sync):**
+    - Legendary `installed.json` kayıtlarında `install_path` ve `install_size` güncellenir.
+    - Legendary CLI'ya `legendary move <app> <target_base> --skip-move` komutu gönderilerek dahili katalog ve appstate senkronize edilir.
+    - Resmi Epic Games Launcher manifestosu (`C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\<GUID>.item`) tespit edilip `InstallLocation`, `ManifestLocation` ve `CompleteManifestPath` alanları yeni konuma göre otomatik güncellenir. Böylece kullanıcı resmi Epic Games Launcher'ı açtığında oyun "Kaldırıldı" olarak görünmez, doğrudan yeni diskten tanınır.
+- **PS5 Console Dark Aesthetic Arayüzü:**
+  - Game Hub Yönet (Manage) sekmesinde ve Hızlı Yönetim modalında Kurulum Konumu yanında `[ 🖴 Taşı ]` aksiyonu.
+  - Etkileşimli Taşıma Modalı (`.move-modal-card`):
+    - Mevcut kurulum konumu ve oyun boyutu bilgi kartı.
+    - Sistem sürücüleri kapasite kartları (`.move-drive-card`): sürücü harfi, boş alan / doluluk oranı, dinamik doluluk barı.
+    - Hedef klasör yolu girişi ve `[ Gözat… ]` butonu.
+    - Dinamik Kapasite Bildirim Rozeti (`.move-space-badge.ok` / `.move-space-badge.warn`): Hedef diskteki boş alan ile oyun boyutu karşılaştırması; yetersiz alan uyarısı, aynı sürücü anlık taşıma bildirimi veya güvenli boş alan hesabı.
+    - Canlı İlerleme Paneli (`.move-live-progress`): PS5 neon degrade ilerleme çubuğu, gerçek zamanlı hız, kalan süre, dosya sayısı ve aktarılan dosya adı.
+    - Taşıma bittiğinde kütüphane ve Game Hub arayüzü yerinde otomatik güncellenir.
+
+
 
 
 

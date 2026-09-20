@@ -2245,6 +2245,39 @@ pub async fn epic_get_player_profile(
     super::profile::fetch_player_profile(&config, force_refresh.unwrap_or(false)).await
 }
 
+// -------------------------------------------------------------
+// OYUN DOSYALARI TAŞIMA (MOVE GAME FILES)
+// -------------------------------------------------------------
+
+/// Sistemdeki tüm yerel disk sürücülerini (C:, D: vb.) ve boş alanlarını listeler
+#[tauri::command]
+pub fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> {
+    super::move_game::get_system_drives()
+}
+
+/// Windows yerel klasör seçim diyaloğunu ("Gözat") açar
+#[tauri::command]
+pub async fn epic_select_folder_dialog(default_path: Option<String>) -> Result<Option<String>, String> {
+    super::move_game::select_folder_dialog(default_path).await
+}
+
+/// Bir oyunu başka bir klasöre/sürücüye taşır
+#[tauri::command]
+pub async fn epic_move_game(
+    app: AppHandle,
+    app_name: String,
+    target_base_path: String,
+) -> Result<super::move_game::MoveGameResult, String> {
+    let config = super::skip::default_config_dir();
+    super::move_game::move_game_folder(app, &config, app_name, target_base_path).await
+}
+
+/// Devam eden bir oyun taşıma işlemini iptal eder
+#[tauri::command]
+pub async fn epic_cancel_move_game(app_name: String) -> bool {
+    super::move_game::cancel_move_game(&app_name).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

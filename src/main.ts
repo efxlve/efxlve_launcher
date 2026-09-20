@@ -127,6 +127,13 @@ import {
   epicGetPlayerProfile,
   type EpicPlayerProfile,
   type ProfileGameRecord,
+  epicGetSystemDrives,
+  epicSelectFolderDialog,
+  epicMoveGame,
+  epicCancelMoveGame,
+  type SystemDriveInfo,
+  type MoveGameProgress,
+  type MoveGameResult,
 } from "./epic";
 
 /* ---------- Tipler ---------- */
@@ -759,8 +766,16 @@ const modalRoot = document.getElementById("modal-root") as HTMLElement;
 const manageRoot = document.getElementById("manage-root") as HTMLElement;
 const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
 const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
+const moveModalRoot = document.getElementById("move-modal-root") as HTMLElement;
 const toastsEl = document.getElementById("toasts") as HTMLElement;
 const dlBadge = document.getElementById("dl-badge") as HTMLElement;
+
+let activeMoveModalAppName: string | null = null;
+let moveSystemDrives: SystemDriveInfo[] = [];
+let selectedMoveDriveLetter: string = "";
+let selectedMoveTargetPath: string = "";
+let isMovingGame: boolean = false;
+let activeMoveProgress: MoveGameProgress | null = null;
 
 let activeDlcAppName: string | null = null;
 const dlcCache = new Map<string, GameDlcResponse>();
@@ -4782,6 +4797,9 @@ function renderDrawerManage(s: EpicSummary): string {
               </div>
             </div>
             <div class="manage-item-right">
+              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="Oyun Dosyalarını Başka Bir Diske veya Klasöre Taşı">
+                ${icon("hard-drive", 13)} Taşı
+              </button>
               <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}">
                 ${icon("folder", 13)} Klasörü Aç
               </button>
@@ -7132,6 +7150,9 @@ function renderManageModal(): void {
               </div>
             </div>
             <div class="manage-right">
+              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="Oyun Dosyalarını Başka Bir Diske veya Klasöre Taşı">
+                ${icon("hard-drive", 13)} Taşı
+              </button>
               <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}" title="Kurulum Klasörünü Aç">
                 ${icon("folder", 13)} Klasör
               </button>
@@ -7186,6 +7207,464 @@ function renderManageModal(): void {
         </div>
       </div>
     </div>`;
+}
+
+/* ---------- Oyun Dosyalarını Taşıma (Move Game Files) ---------- */
+
+function closeMoveGameModal(): void {
+  if (isMovingGame) {
+    toast("Taşıma işlemi devam ediyor, lütfen önce iptal edin!", "");
+    return;
+  }
+  activeMoveModalAppName = null;
+  activeMoveProgress = null;
+  const root = moveModalRoot || document.getElementById("move-modal-root");
+  if (root) root.innerHTML = "";
+}
+
+function updateMoveSpaceBadgeInPlace(): void {
+  if (!activeMoveModalAppName) return;
+  const s = epicSummaries.find((x) => x.appName === activeMoveModalAppName);
+  if (!s) return;
+
+  const curPath = s.installPath || "";
+  const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
+  const installSize = s.installSize || 0;
+  const targetDrive = moveSystemDrives.find(
+    (d) => d.letter.toUpperCase() === selectedMoveDriveLetter.toUpperCase()
+  );
+  const availableBytes = targetDrive ? targetDrive.available_bytes : 0;
+  const isSameDrive =
+    Boolean(selectedMoveDriveLetter && curDrive && selectedMoveDriveLetter.toUpperCase() === curDrive.toUpperCase());
+  const hasEnoughSpace = isSameDrive || availableBytes >= installSize;
+
+  let badgeHtml = "";
+  let canStart = true;
+
+  if (!selectedMoveTargetPath.trim()) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Lütfen geçerli bir hedef klasör yolu belirtin.</span></div>`;
+    canStart = false;
+  } else if (
+    selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
+    curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
+  ) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Hedef klasör mevcut kurulum konumu ile aynı! Lütfen farklı bir konum seçin.</span></div>`;
+    canStart = false;
+  } else if (!hasEnoughSpace) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>Yetersiz Disk Alanı:</strong> Gerekli ${fmtBytes(installSize)} • Seçilen Sürücüde Boş: ${fmtBytes(availableBytes)}</span></div>`;
+    canStart = false;
+  } else if (isSameDrive) {
+    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>Aynı Sürücü:</strong> Dosyalar anında (&lt;1 saniyede) taşınacaktır. Yeniden indirme gerekmez.</span></div>`;
+  } else {
+    const remaining = Math.max(0, availableBytes - installSize);
+    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>Disk Alanı Yeterli:</strong> Gerekli ${fmtBytes(installSize)} • Aktarım sonrası boş kalacak: ${fmtBytes(remaining)}</span></div>`;
+  }
+
+  const badgeContainer = document.getElementById("move-space-badge-container");
+  if (badgeContainer) {
+    badgeContainer.innerHTML = badgeHtml;
+  }
+
+  const startBtn = document.querySelector('[data-act="start-move-game"]') as HTMLButtonElement | null;
+  if (startBtn && !isMovingGame) {
+    startBtn.disabled = !canStart;
+  }
+}
+
+function updateMoveProgressInPlace(p: MoveGameProgress): void {
+  const pct = Math.min(100, Math.max(0, Math.round(p.percent)));
+  const pctEl = document.getElementById("move-progress-pct-val");
+  if (pctEl) pctEl.textContent = `%${pct}`;
+
+  const fillEl = document.getElementById("move-progress-bar-fill-el");
+  if (fillEl) fillEl.style.width = `${pct}%`;
+
+  let stageText = "Hazırlanıyor…";
+  if (p.stage === "moving") stageText = "Dosyalar Taşınıyor…";
+  else if (p.stage === "verifying") stageText = "Bütünlük Doğrulanıyor…";
+  else if (p.stage === "cleaning") stageText = "Eski Konum Temizleniyor…";
+  else if (p.stage === "complete") stageText = "Taşıma Tamamlandı!";
+  else if (p.stage === "failed") stageText = "İşlem Başarısız Oldu";
+
+  const stageEl = document.getElementById("move-progress-stage-val");
+  if (stageEl) stageEl.textContent = stageText;
+
+  const speedEtaEl = document.getElementById("move-progress-speed-eta");
+  if (speedEtaEl) {
+    const speedPart = p.speed ? `Hız: ${p.speed}` : "";
+    const sizePart = `${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}`;
+    speedEtaEl.textContent = speedPart ? `${speedPart} • ${sizePart}` : sizePart;
+  }
+
+  const fileCountEl = document.getElementById("move-progress-file-count");
+  if (fileCountEl) {
+    const etaPart = p.eta ? `Kalan: ${p.eta}` : "";
+    const countPart = p.total_files > 0 ? `${p.files_copied} / ${p.total_files} Dosya` : "";
+    fileCountEl.textContent = etaPart && countPart ? `${etaPart} • ${countPart}` : etaPart || countPart;
+  }
+
+  const curFileEl = document.getElementById("move-progress-cur-file");
+  if (curFileEl) {
+    const filename = p.current_file ? p.current_file.split(/[\\/]/).pop() || p.current_file : "";
+    curFileEl.textContent = filename;
+    curFileEl.title = p.current_file || "";
+  }
+}
+
+function renderMoveGameModalFrame(): void {
+  const root = moveModalRoot || document.getElementById("move-modal-root");
+  if (!root || !activeMoveModalAppName) return;
+  const s = epicSummaries.find((x) => x.appName === activeMoveModalAppName);
+  if (!s) return;
+
+  const title = s.title;
+  const curPath = s.installPath || "Bilinmiyor";
+  const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
+  const installSize = s.installSize || 0;
+
+  const driveCardsHtml =
+    moveSystemDrives.length > 0
+      ? moveSystemDrives
+          .map((d) => {
+            const isSel = d.letter.toUpperCase() === selectedMoveDriveLetter.toUpperCase();
+            const isCur = d.letter.toUpperCase() === curDrive.toUpperCase();
+            const usedBytes = Math.max(0, d.total_bytes - d.available_bytes);
+            const usedPct =
+              d.total_bytes > 0 ? Math.min(100, Math.round((usedBytes / d.total_bytes) * 100)) : 0;
+            const barColor = usedPct > 90 ? "#ef4444" : usedPct > 75 ? "#f59e0b" : "#3b82f6";
+            return `
+              <button type="button" class="move-drive-card ${isSel ? "selected" : ""}" data-act="select-move-drive" data-drive="${d.letter}" ${isMovingGame ? "disabled" : ""}>
+                <div class="move-drive-top">
+                  <div class="move-drive-letter">
+                    ${icon("hard-drive", 16)} ${d.letter}:
+                  </div>
+                  <span class="move-drive-tag">${isCur ? "Mevcut" : isSel ? "Seçili" : (d.label || "Yerel Disk")}</span>
+                </div>
+                <div class="move-drive-meter-track">
+                  <div class="move-drive-meter-fill" style="width:${usedPct}%; background:${barColor}"></div>
+                </div>
+                <div class="move-drive-space-text">
+                  <span>Boş: <strong>${fmtBytes(d.available_bytes)}</strong></span>
+                  <span>%${usedPct} Dolu</span>
+                </div>
+              </button>
+            `;
+          })
+          .join("")
+      : `<div style="grid-column: 1/-1; padding: 12px; color: #94a3b8; font-size: 12px;">Sürücü bilgisi yüklenemedi. Aşağıdan doğrudan klasör seçebilirsiniz.</div>`;
+
+  const targetDrive = moveSystemDrives.find(
+    (d) => d.letter.toUpperCase() === selectedMoveDriveLetter.toUpperCase()
+  );
+  const availableBytes = targetDrive ? targetDrive.available_bytes : 0;
+  const isSameDrive =
+    Boolean(selectedMoveDriveLetter && curDrive && selectedMoveDriveLetter.toUpperCase() === curDrive.toUpperCase());
+  const hasEnoughSpace = isSameDrive || availableBytes >= installSize;
+
+  let badgeHtml = "";
+  let canStart = true;
+  if (!selectedMoveTargetPath.trim()) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Lütfen geçerli bir hedef klasör yolu belirtin.</span></div>`;
+    canStart = false;
+  } else if (
+    selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
+    curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
+  ) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Hedef klasör mevcut kurulum konumu ile aynı! Lütfen farklı bir konum seçin.</span></div>`;
+    canStart = false;
+  } else if (!hasEnoughSpace) {
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>Yetersiz Disk Alanı:</strong> Gerekli ${fmtBytes(installSize)} • Seçilen Sürücüde Boş: ${fmtBytes(availableBytes)}</span></div>`;
+    canStart = false;
+  } else if (isSameDrive) {
+    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>Aynı Sürücü:</strong> Dosyalar anında (&lt;1 saniyede) taşınacaktır. Yeniden indirme gerekmez.</span></div>`;
+  } else {
+    const remaining = Math.max(0, availableBytes - installSize);
+    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>Disk Alanı Yeterli:</strong> Gerekli ${fmtBytes(installSize)} • Aktarım sonrası boş kalacak: ${fmtBytes(remaining)}</span></div>`;
+  }
+
+  let progressHtml = "";
+  if (isMovingGame) {
+    const p = activeMoveProgress || {
+      id: s.appName,
+      stage: "preparing",
+      percent: 0,
+      copied_bytes: 0,
+      total_bytes: installSize,
+      speed: "Başlatılıyor…",
+      eta: "Hesaplanıyor…",
+      current_file: "",
+      files_copied: 0,
+      total_files: 0,
+    };
+    const pct = Math.min(100, Math.max(0, Math.round(p.percent)));
+    let stageText = "Hazırlanıyor…";
+    if (p.stage === "moving") stageText = "Dosyalar Taşınıyor…";
+    else if (p.stage === "verifying") stageText = "Bütünlük Doğrulanıyor…";
+    else if (p.stage === "cleaning") stageText = "Eski Konum Temizleniyor…";
+    else if (p.stage === "complete") stageText = "Taşıma Tamamlandı!";
+    else if (p.stage === "failed") stageText = "İşlem Başarısız Oldu";
+
+    const filename = p.current_file ? p.current_file.split(/[\\/]/).pop() || p.current_file : "";
+
+    progressHtml = `
+      <div class="move-live-progress">
+        <div class="move-progress-top">
+          <div class="move-progress-stage">
+            <span class="running-dot"></span>
+            <span id="move-progress-stage-val">${stageText}</span>
+          </div>
+          <div id="move-progress-pct-val" class="move-progress-pct">%${pct}</div>
+        </div>
+        <div class="move-progress-bar-track">
+          <div id="move-progress-bar-fill-el" class="move-progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="move-progress-meta-row">
+          <span id="move-progress-speed-eta">${p.speed ? `Hız: ${p.speed}` : ""} • ${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}</span>
+          <span id="move-progress-file-count">${p.eta ? `Kalan: ${p.eta}` : ""} • ${p.files_copied} / ${p.total_files} Dosya</span>
+        </div>
+        <div id="move-progress-cur-file" class="move-progress-file" title="${esc(p.current_file)}">
+          ${esc(filename)}
+        </div>
+      </div>
+    `;
+  }
+
+  root.innerHTML = `
+    <div class="move-modal-backdrop" data-act="move-overlay-close">
+      <div class="move-modal-card" role="dialog" aria-modal="true">
+        <div class="move-modal-head">
+          <div class="move-modal-title-group">
+            <div class="move-modal-icon">${icon("hard-drive", 20)}</div>
+            <div>
+              <h2 class="move-modal-title">Oyun Dosyalarını Taşı</h2>
+              <div class="move-modal-subtitle">${esc(title)}</div>
+            </div>
+          </div>
+          <button class="move-modal-close" data-act="close-move-modal" title="Kapat" ${isMovingGame ? "disabled" : ""}>
+            ${icon("x", 16)}
+          </button>
+        </div>
+
+        <div class="move-modal-body">
+          <!-- 1. Mevcut Konum & Boyut Bilgisi -->
+          <div class="move-current-box">
+            <div class="move-current-info">
+              <div class="move-current-label">Mevcut Kurulum Konumu</div>
+              <div class="move-current-path" title="${esc(curPath)}">${esc(curPath)}</div>
+            </div>
+            <div class="move-current-size">
+              <span class="move-size-val">${fmtBytes(installSize)}</span>
+              <span class="move-size-label">Gerekli Boyut</span>
+            </div>
+          </div>
+
+          <!-- 2. Hedef Sürücü Seçimi -->
+          <div>
+            <div class="move-section-label">
+              ${icon("hard-drive", 14)} Hedef Disk Sürücüsü Seçin
+            </div>
+            <div class="move-drive-grid">
+              ${driveCardsHtml}
+            </div>
+          </div>
+
+          <!-- 3. Hedef Klasör Yolu & Gözat Butonu -->
+          <div>
+            <div class="move-section-label">
+              ${icon("folder", 14)} Hedef Klasör
+            </div>
+            <div class="move-path-input-group">
+              <input
+                id="move-target-input"
+                class="move-path-input"
+                type="text"
+                value="${esc(selectedMoveTargetPath)}"
+                placeholder="Örn: D:\\Games"
+                spellcheck="false"
+                autocomplete="off"
+                ${isMovingGame ? "disabled" : ""}
+              />
+              <button
+                type="button"
+                class="btn ghost move-browse-btn"
+                data-act="browse-move-target"
+                ${isMovingGame ? "disabled" : ""}
+                title="Sistem Klasör Gezginini Aç"
+              >
+                ${icon("folder", 14)} Gözat…
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. Kapasite Durum Bildirimi -->
+          <div id="move-space-badge-container">
+            ${badgeHtml}
+          </div>
+
+          <!-- 5. Canlı İlerleme Çubuğu (Taşıma sırasında görünür) -->
+          <div id="move-live-progress-container">
+            ${progressHtml}
+          </div>
+        </div>
+
+        <div class="move-modal-foot">
+          ${
+            isMovingGame
+              ? `
+            <button class="btn danger" data-act="cancel-move-game" data-id="${s.appName}">
+              ${icon("x", 14)} İptal Et
+            </button>
+          `
+              : `
+            <button class="btn ghost" data-act="close-move-modal">Vazgeç</button>
+            <button
+              class="btn primary"
+              data-act="start-move-game"
+              data-id="${s.appName}"
+              ${!canStart ? "disabled" : ""}
+            >
+              ${icon("hard-drive", 14)} Taşımayı Başlat
+            </button>
+          `
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function openMoveGameModal(appName: string): Promise<void> {
+  if (isMovingGame) {
+    toast("Başka bir taşıma işlemi devam ediyor!", "");
+    return;
+  }
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (!s || !s.installed) {
+    toast("Bu oyun kurulu değil veya bulunamadı!", "err");
+    return;
+  }
+
+  activeMoveModalAppName = appName;
+  activeMoveProgress = null;
+
+  try {
+    moveSystemDrives = await epicGetSystemDrives();
+  } catch (err) {
+    console.warn("Sürücüler tespit edilemedi:", err);
+    moveSystemDrives = [];
+  }
+
+  const curPath = s.installPath || "";
+  const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
+  const installSize = s.installSize || 0;
+
+  // Varsayılan hedef sürücü: Mevcut sürücü dışındaki ilk yeterli alana sahip sürücü
+  const otherDriveWithSpace = moveSystemDrives.find(
+    (d) => d.letter.toUpperCase() !== curDrive && d.available_bytes >= installSize
+  );
+  const anyOtherDrive = moveSystemDrives.find((d) => d.letter.toUpperCase() !== curDrive);
+
+  if (otherDriveWithSpace) {
+    selectedMoveDriveLetter = otherDriveWithSpace.letter.toUpperCase();
+  } else if (anyOtherDrive) {
+    selectedMoveDriveLetter = anyOtherDrive.letter.toUpperCase();
+  } else if (curDrive) {
+    selectedMoveDriveLetter = curDrive;
+  } else if (moveSystemDrives.length > 0) {
+    selectedMoveDriveLetter = moveSystemDrives[0].letter.toUpperCase();
+  } else {
+    selectedMoveDriveLetter = "D";
+  }
+
+  // Varsayılan hedef klasör: seçilen sürücüde \Games
+  selectedMoveTargetPath = `${selectedMoveDriveLetter}:\\Games`;
+
+  renderMoveGameModalFrame();
+}
+
+async function browseMoveTarget(): Promise<void> {
+  if (isMovingGame) return;
+  const defaultDir =
+    selectedMoveTargetPath ||
+    (selectedMoveDriveLetter ? `${selectedMoveDriveLetter}:\\` : null);
+  try {
+    const chosen = await epicSelectFolderDialog(defaultDir);
+    if (chosen) {
+      selectedMoveTargetPath = chosen;
+      if (chosen.length >= 2 && chosen[1] === ":") {
+        selectedMoveDriveLetter = chosen[0].toUpperCase();
+      }
+      renderMoveGameModalFrame();
+    }
+  } catch (err) {
+    toast(`Klasör seçim hatası: ${String(err)}`, "err");
+  }
+}
+
+async function startMoveGame(appName: string): Promise<void> {
+  if (isMovingGame) return;
+  const s = epicSummaries.find((x) => x.appName === appName);
+  if (!s) return;
+
+  if (runningGames.has(appName)) {
+    toast("Oyun şu anda açık/çalışıyor! Lütfen önce oyunu kapatın.", "err");
+    return;
+  }
+  if (epicDlProgress(appName) !== null) {
+    toast("Oyun şu anda indiriliyor veya güncelleniyor! Lütfen bitmesini bekleyin.", "err");
+    return;
+  }
+
+  const target = selectedMoveTargetPath.trim();
+  if (!target) {
+    toast("Lütfen geçerli bir hedef klasör belirtin!", "");
+    return;
+  }
+
+  isMovingGame = true;
+  activeMoveProgress = {
+    id: appName,
+    stage: "preparing",
+    percent: 0,
+    copied_bytes: 0,
+    total_bytes: s.installSize || 0,
+    speed: "Başlatılıyor…",
+    eta: "Hesaplanıyor…",
+    current_file: "",
+    files_copied: 0,
+    total_files: 0,
+  };
+  renderMoveGameModalFrame();
+
+  try {
+    const res = await epicMoveGame(appName, target);
+    if (res.success) {
+      toast(res.message || "Oyun dosyaları başarıyla yeni konuma taşındı!", "ok");
+      isMovingGame = false;
+      closeMoveGameModal();
+      await refreshEpicInstalled();
+      if (currentModalAppName === appName) {
+        openEpicModal(appName, false);
+      }
+    } else {
+      toast(`Taşıma işlemi tamamlanamadı: ${res.message}`, "err");
+      isMovingGame = false;
+      renderMoveGameModalFrame();
+    }
+  } catch (err) {
+    toast(`Taşıma hatası: ${String(err)}`, "err");
+    isMovingGame = false;
+    renderMoveGameModalFrame();
+  }
+}
+
+async function cancelMoveGame(appName: string): Promise<void> {
+  try {
+    await epicCancelMoveGame(appName);
+    toast("Taşıma iptal ediliyor… Kaynak dosyalar güvende.", "");
+  } catch (err) {
+    toast(`İptal isteği gönderilemedi: ${String(err)}`, "err");
+  }
 }
 
 /* ---------- Epic indirme ---------- */
@@ -8486,6 +8965,27 @@ document.addEventListener("click", (e) => {
   } else if (act === "manage-game" && id) {
     activeDrawerTab = "manage";
     openEpicModal(id, false);
+  } else if (act === "open-move-game-modal" && id) {
+    void openMoveGameModal(id);
+  } else if (act === "close-move-modal") {
+    closeMoveGameModal();
+  } else if (act === "move-overlay-close") {
+    const el = e.target as HTMLElement;
+    if (el === t && !isMovingGame) closeMoveGameModal();
+  } else if (act === "select-move-drive") {
+    const drv = t.dataset.drive;
+    if (drv && !isMovingGame) {
+      selectedMoveDriveLetter = drv.toUpperCase();
+      const curPath = selectedMoveTargetPath.replace(/^[a-zA-Z]:[\\/]/, "");
+      selectedMoveTargetPath = `${selectedMoveDriveLetter}:\\${curPath || "Games"}`;
+      renderMoveGameModalFrame();
+    }
+  } else if (act === "browse-move-target") {
+    void browseMoveTarget();
+  } else if (act === "start-move-game" && id) {
+    void startMoveGame(id);
+  } else if (act === "cancel-move-game" && id) {
+    void cancelMoveGame(id);
   } else if (act === "manage-close") {
     closeManageModal();
   } else if (act === "manage-overlay-close") {
@@ -9017,6 +9517,14 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
+    if (activeMoveModalAppName) {
+      if (isMovingGame) {
+        toast("Taşıma işlemi devam ediyor, lütfen önce iptal edin!", "");
+      } else {
+        closeMoveGameModal();
+      }
+      return;
+    }
     const coverRoot = document.getElementById("cover-modal-root");
     if (coverRoot && coverRoot.innerHTML.trim()) {
       closeCustomCoverModal();
@@ -9259,6 +9767,28 @@ document.addEventListener("input", (e) => {
       }
       grid.innerHTML = renderProfileGameCards(filtered);
     }
+    return;
+  }
+  if (t.id === "move-target-input") {
+    const val = (t as HTMLInputElement).value;
+    selectedMoveTargetPath = val;
+    const trimmed = val.trim();
+    if (trimmed.length >= 2 && trimmed[1] === ":") {
+      const letter = trimmed[0].toUpperCase();
+      if (letter !== selectedMoveDriveLetter.toUpperCase()) {
+        selectedMoveDriveLetter = letter;
+        const cards = document.querySelectorAll(".move-drive-card");
+        cards.forEach((c) => {
+          const el = c as HTMLElement;
+          if (el.dataset.drive?.toUpperCase() === letter) {
+            el.classList.add("selected");
+          } else {
+            el.classList.remove("selected");
+          }
+        });
+      }
+    }
+    updateMoveSpaceBadgeInPlace();
     return;
   }
 });
@@ -9576,6 +10106,25 @@ async function init(): Promise<void> {
         toast("Dosyalar başarıyla doğrulandı.", "ok");
       } else {
         toast(`Doğrulama hatası: ${message}`, "err");
+      }
+    });
+
+    await listen<MoveGameProgress>("move-progress", (event) => {
+      const payload = event.payload;
+      if (!payload || !activeMoveModalAppName) return;
+      if (payload.id === activeMoveModalAppName) {
+        activeMoveProgress = payload;
+        if (isMovingGame) {
+          updateMoveProgressInPlace(payload);
+        }
+      }
+    });
+    await listen<MoveGameResult>("move-complete", (event) => {
+      const { success, message } = event.payload;
+      if (!success && isMovingGame) {
+        toast(`Taşıma işlemi tamamlanamadı: ${message}`, "err");
+        isMovingGame = false;
+        renderMoveGameModalFrame();
       }
     });
 

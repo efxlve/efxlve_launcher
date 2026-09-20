@@ -19,6 +19,7 @@ pub mod steamgrid;
 pub mod profile;
 pub mod critic;
 pub mod screenshots;
+pub mod move_game;
 
 use thiserror::Error;
 
