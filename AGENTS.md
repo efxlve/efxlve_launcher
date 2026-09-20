@@ -1215,3 +1215,18 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **Responsive eşikler yeni ölçülere göre daraltıldı:** hesap adı `≤1060px`'te gizlenir (avatar kalır), ikon-only güvenlik ağı `≤880px`. Ölçüm: 1024px'te `seg=326 + right=173`, taşma yok (246px boşluk); 1250px'te de sorunsuz.
 - **Korunanlar:** Kayan aktif karo (tek işlevsel hareket), `Ctrl+1/2/3/,` kısayolları, `.nav-seg-indicator` JS konumlandırması, `updateChrome` `dataset.acct` önbelleği.
 
+## 73. Üst Bara Karakter Kazandırma: Tuş Yüzeyleri, Tek Vurgu Rengi & Tipografik Ses
+
+**Geri bildirim:** §72'deki aşırı sadeleştirme *"çok ruhsuz, kütük gibi duruyor"* bulundu. Ders: AI klişelerini sökmek ile tasarımı ruhsuz bırakmak aynı şey değil. Karakter; **gradyandan değil**, yüzey dilinden, tipografiden, derinlikten ve tek bir özgüvenli vurgu renginden gelir.
+
+**Karakter kaynakları (hepsi §3 kuralına uygun — gradyan/glow/kapsül YOK):**
+- **Tuş (keycap) yüzey dili:** Tüm etkileşimli öğeler aynı fiziksel dili konuşur — düz koyu dolgu (`#14161d`), 1px `rgba(255,255,255,0.07)` kenarlık, `inset 0 1px 0 rgba(255,255,255,0.045)` üst iç ışık. Basılınca `translateY(1px)` (gerçek tuş hissi, ölçek animasyonu değil).
+- **Gerçek derinlik:** `#titlebar` artık içeriğe gölge düşürür (`0 14px 26px -20px #000`). Parlama değil, gölge — bar fiziksel bir panel gibi okunur. Segment yuvası da çukur: `inset 0 2px 5px -1px rgba(0,0,0,0.85)`.
+- **Tek vurgu rengi = menekşe `#7f6ce8`**, üç yerde ve hep düz: (1) aktif sekmenin alt kenarındaki 2px çizgi (`.nav-seg-indicator::after`), (2) `.logo-mark` ikonu, (3) girişliyken `.avatar-initial` metni + avatar kenarlığı `rgba(127,108,232,0.42)` ve aktif ayarlar ikonu. Gradyan olarak ASLA.
+- **Tipografik ses:** Sekmeler **UPPERCASE, 11px, weight 700, `letter-spacing: 0.95px`**. `index.html` `lang="tr"` olduğu için Chromium yerel büyütme yapar → "İndirmeler" → "İNDİRMELER" (noktalı İ) doğru çıkar. Bu, arayüzü "konsol sistem menüsü" gibi okutur ve AI tasarımlarının küçük harfli yuvarlak tipografisinden ayrıştırır.
+- **Durum ışığı halosu:** `.net-dot` neon glow değil, **sabit** halo alır (`box-shadow: 0 0 0 3px rgba(...,0.14)`) — gerçek bir LED gibi. Nabız animasyonu yok.
+- **Hareket tek ve amaçlı:** Kayan karo `cubic-bezier(0.34, 1.22, 0.64, 1)` ile hafif taşmalı (overshoot) kayar — canlılık verir, gösteriş yapmaz. Başka hiçbir süs animasyonu yok.
+- **Ölçüler:** bar 48 → **50px**, köşe yarıçapları 9/7px, `.logo-text` 12px/800/`2.8px` letter-spacing.
+
+**Ölçüm:** 1024px'te `seg=355 + right=171` (216px boşluk), 1250px'te `seg=355 + right=204` — taşma yok. Eşikler (§72'deki `≤1060px` / `≤880px`) değişmedi.
+
