@@ -1,3 +1,4 @@
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -125,29 +126,154 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
     drives
 }
 
-/// Windows yerel klasör seçim diyaloğunu açar
+/// Windows yerel modern klasör seçim diyaloğunu ("Klasör Seç") açar
 pub async fn select_folder_dialog(default_path: Option<String>) -> Result<Option<String>, String> {
     #[cfg(windows)]
     {
         tokio::task::spawn_blocking(move || {
-            let def_line = if let Some(p) = default_path {
-                let clean = p.replace('\'', "''");
-                format!("if (Test-Path '{clean}') {{ $f.SelectedPath = '{clean}' }};")
+            let clean_default_path = if let Some(p) = default_path {
+                p.replace('\'', "''")
             } else {
                 String::new()
             };
 
             let script = format!(
-                "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms') | Out-Null;\
-                 $f = New-Object System.Windows.Forms.FolderBrowserDialog;\
-                 $f.Description = 'Oyunun taşınacağı yeni ana klasörü seçin';\
-                 $f.ShowNewFolderButton = $true;\
-                 {def_line}\
-                 if ($f.ShowDialog() -eq 'OK') {{ [Console]::WriteLine($f.SelectedPath) }}"
+                r#"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+$code = @'
+using System;
+using System.Runtime.InteropServices;
+
+public class NativeFolderPicker {{
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern int SHCreateItemFromParsingName(
+        [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
+        IntPtr pbc,
+        [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid,
+        [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
+
+    [ComImport]
+    [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
+    [CoClass(typeof(FileOpenDialogClass))]
+    private interface IFileOpenDialog : IFileDialog {{ }}
+
+    [ComImport]
+    [Guid("42f85136-db7e-439c-85f1-e4075d135fc8")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IFileDialog {{
+        [PreserveSig] int Show(IntPtr parent);
+        void SetFileTypes();
+        void SetFileTypeIndex();
+        void GetFileTypeIndex();
+        void Advise();
+        void Unadvise();
+        void SetOptions(uint fos);
+        void GetOptions(out uint fos);
+        void SetDefaultFolder(IShellItem psi);
+        void SetFolder(IShellItem psi);
+        void GetFolder(out IShellItem ppsi);
+        void GetCurrentSelection(out IShellItem ppsi);
+        void SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+        void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
+        void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
+        void SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
+        void SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
+        void GetResult(out IShellItem ppsi);
+        void AddPlace();
+        void SetDefaultExtension();
+        void Close();
+        void SetClientGuid();
+        void ClearClientData();
+        void SetFilter();
+    }}
+
+    [ComImport]
+    [Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IShellItem {{
+        void BindToHandler();
+        void GetParent();
+        void GetDisplayName(uint sigdnName, [MarshalAs(UnmanagedType.LPWStr)] out string ppszName);
+        void GetAttributes();
+        void Compare();
+    }}
+
+    [ComImport]
+    [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
+    [ClassInterface(ClassInterfaceType.None)]
+    private class FileOpenDialogClass {{ }}
+
+    private const uint FOS_PICKFOLDERS = 0x00000020;
+    private const uint FOS_FORCEFILESYSTEM = 0x00000040;
+    private const uint SIGDN_FILESYSPATH = 0x80058000;
+
+    public static string SelectFolder(string title, string initialDir) {{
+        var dialog = (IFileOpenDialog)new FileOpenDialogClass();
+        uint options = FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM;
+        dialog.SetOptions(options);
+
+        if (!string.IsNullOrEmpty(title)) {{
+            dialog.SetTitle(title);
+        }}
+
+        string targetDir = initialDir;
+        while (!string.IsNullOrEmpty(targetDir) && !System.IO.Directory.Exists(targetDir)) {{
+            try {{
+                targetDir = System.IO.Path.GetDirectoryName(targetDir);
+            }} catch {{
+                targetDir = null;
+            }}
+        }}
+
+        if (!string.IsNullOrEmpty(targetDir) && System.IO.Directory.Exists(targetDir)) {{
+            try {{
+                IShellItem folderItem;
+                Guid iid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE");
+                if (SHCreateItemFromParsingName(targetDir, IntPtr.Zero, iid, out folderItem) == 0 && folderItem != null) {{
+                    dialog.SetFolder(folderItem);
+                }}
+            }} catch {{ }}
+        }}
+
+        int hr = dialog.Show(IntPtr.Zero);
+        if (hr == 0) {{
+            IShellItem resultItem;
+            dialog.GetResult(out resultItem);
+            if (resultItem != null) {{
+                string path;
+                resultItem.GetDisplayName(SIGDN_FILESYSPATH, out path);
+                return path;
+            }}
+        }}
+        return null;
+    }}
+}}
+'@;
+Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue;
+$chosen = $null;
+try {{
+    $chosen = [NativeFolderPicker]::SelectFolder('Oyun Dosyalarının Taşınacağı Klasörü Seçin', '{def_path}');
+}} catch {{}}
+if (-not $chosen) {{
+    # İkincil güvence: Nadir durumlarda Forms diyaloğu
+    [System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms') | Out-Null;
+    $f = New-Object System.Windows.Forms.FolderBrowserDialog;
+    $f.Description = 'Oyunun taşınacağı yeni ana klasörü seçin';
+    $f.ShowNewFolderButton = $true;
+    if (Test-Path '{def_path}') {{ $f.SelectedPath = '{def_path}' }};
+    if ($f.ShowDialog() -eq 'OK') {{ $chosen = $f.SelectedPath }};
+}}
+if ($chosen) {{
+    [Console]::WriteLine($chosen);
+}}
+"#,
+                def_path = clean_default_path
             );
 
-            let output = std::process::Command::new("powershell")
-                .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+            let utf16_bytes: Vec<u8> = script.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
+            let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
+
+            let output = std::process::Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded_cmd])
                 .output()
                 .map_err(|e| format!("Klasör seçici açılamadı: {}", e))?;
 
@@ -507,7 +633,11 @@ async fn move_game_folder_internal(
     }
 
     // B) legendary move <app> <target_base> --skip-move
-    let _ = tokio::process::Command::new("legendary")
+    let settings = crate::load_settings(app);
+    let bin_path = crate::legendary::paths::resolve_binary(app, settings.alt_legendary_bin.as_deref())
+        .unwrap_or_else(|_| PathBuf::from("legendary"));
+
+    let _ = tokio::process::Command::new(bin_path)
         .args([
             "move",
             app_name,

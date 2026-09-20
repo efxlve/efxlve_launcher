@@ -1047,7 +1047,9 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Windows `GetDiskFreeSpaceExW` API'si (Win32) ile sıfır ek kütüphane bağımlılığıyla çalışır.
     - Sistemdeki tüm yerel disk sürücüleri (C:, D:, E: vb.), toplam disk kapasiteleri ve bayt hassasiyetinde kullanılabilir boş disk alanları milisaniyeler içinde taranıp listelenir.
   - **Yerel Klasör Seçim Gezgini (`epic_select_folder_dialog`):**
-    - Windows yerel Forms FolderBrowserDialog entegrasyonuyla tescilli sistem klasör seçici penceresi sunulur.
+    - Windows yerel modern `IFileOpenDialog` (Vista/7/10/11 Dosya Gezgini) entegrasyonuyla tam özellikli sistem klasör seçici penceresi sunulur.
+    - Eski Forms `FolderBrowserDialog` yerine modern gezgin kullanılarak kullanıcının yeni klasör oluşturması, F2 veya sağ tık ile klasör adını anında değiştirebilmesi (rename) ve adres çubuğuyla gezinebilmesi sağlandı.
+    - PowerShell standart OEM konsol kod sayfası yerine `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` uygulanarak Türkçe karakterlerin (`ö`, `ı`, `ş`, `ç`, `ğ`, `ü`) bozulması (elmas soru işareti `` hatası) tamamen giderildi.
   - **Aynı Sürücü İçi Anlık Taşıma (Same-Drive Instant Rename):**
     - Kaynak ve hedef klasör aynı sürücü üzerindeyse (ör. `C:\Games` -> `C:\EpicGames`), `tokio::fs::rename` ile 0.05 saniyeden kısa sürede, ağ veya disk kopyalama yükü olmaksızın anında yer değiştirir.
   - **Sürücüler Arası Akıcı Kopyalama & Güvenlik (Cross-Drive Streaming Transfer):**
@@ -1057,14 +1059,14 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - **Atomik İptal & Veri Bütünlüğü Güvenliği (`ACTIVE_MOVES`):** Kullanıcı iptal ettiğinde veya aktarım başarısız olduğunda kaynak dosyalar ASLA silinmez; hedefte yarım kalan klasör temizlenerek güvenle geri alınır. Kaynak dosyalar yalnızca tüm kopyalama ve boyut doğrulaması %100 başarılı olduktan sonra temizlenir.
   - **Çoklu Veritabanı & EGL Eşitlemesi (Multi-Database Sync):**
     - Legendary `installed.json` kayıtlarında `install_path` ve `install_size` güncellenir.
-    - Legendary CLI'ya `legendary move <app> <target_base> --skip-move` komutu gönderilerek dahili katalog ve appstate senkronize edilir.
+    - Legendary CLI'ya `legendary move <app> <target_base> --skip-move` komutu gönderilerek dahili katalog ve appstate senkronize edilir (ikili yol `resolve_binary` ile dinamik çözümlenir).
     - Resmi Epic Games Launcher manifestosu (`C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\<GUID>.item`) tespit edilip `InstallLocation`, `ManifestLocation` ve `CompleteManifestPath` alanları yeni konuma göre otomatik güncellenir. Böylece kullanıcı resmi Epic Games Launcher'ı açtığında oyun "Kaldırıldı" olarak görünmez, doğrudan yeni diskten tanınır.
 - **PS5 Console Dark Aesthetic Arayüzü:**
   - Game Hub Yönet (Manage) sekmesinde ve Hızlı Yönetim modalında Kurulum Konumu yanında `[ 🖴 Taşı ]` aksiyonu.
   - Etkileşimli Taşıma Modalı (`.move-modal-card`):
     - Mevcut kurulum konumu ve oyun boyutu bilgi kartı.
     - Sistem sürücüleri kapasite kartları (`.move-drive-card`): sürücü harfi, boş alan / doluluk oranı, dinamik doluluk barı.
-    - Hedef klasör yolu girişi ve `[ Gözat… ]` butonu.
+    - Hedef klasör yolu girişi, `[ Gözat… ]` butonu ve oyunun son yerleşeceği tam yolu gösteren dinamik canlı önizleme rozeti (`.move-path-preview`, örn: `Oyun hedef konumu: D:\Games\AbsoluteDrift`).
     - Dinamik Kapasite Bildirim Rozeti (`.move-space-badge.ok` / `.move-space-badge.warn`): Hedef diskteki boş alan ile oyun boyutu karşılaştırması; yetersiz alan uyarısı, aynı sürücü anlık taşıma bildirimi veya güvenli boş alan hesabı.
     - Canlı İlerleme Paneli (`.move-live-progress`): PS5 neon degrade ilerleme çubuğu, gerçek zamanlı hız, kalan süre, dosya sayısı ve aktarılan dosya adı.
     - Taşıma bittiğinde kütüphane ve Game Hub arayüzü yerinde otomatik güncellenir.

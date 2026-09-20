@@ -7265,6 +7265,15 @@ function updateMoveSpaceBadgeInPlace(): void {
     badgeContainer.innerHTML = badgeHtml;
   }
 
+  const previewEl = document.getElementById("move-path-preview");
+  if (previewEl) {
+    const gameFolderName =
+      curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || activeMoveModalAppName;
+    const cleanBase = selectedMoveTargetPath.trim().replace(/[\\/]+$/, "");
+    const finalDestPath = cleanBase ? `${cleanBase}\\${gameFolderName}` : "—";
+    previewEl.innerHTML = `${icon("info", 13)} <span>Oyun hedef konumu: <strong title="${esc(finalDestPath)}">${esc(finalDestPath)}</strong></span>`;
+  }
+
   const startBtn = document.querySelector('[data-act="start-move-game"]') as HTMLButtonElement | null;
   if (startBtn && !isMovingGame) {
     startBtn.disabled = !canStart;
@@ -7493,6 +7502,17 @@ function renderMoveGameModalFrame(): void {
               >
                 ${icon("folder", 14)} Gözat…
               </button>
+            </div>
+            <div class="move-path-preview" id="move-path-preview">
+              ${icon("info", 13)} <span>Oyun hedef konumu: <strong title="${esc(
+                selectedMoveTargetPath.trim()
+                  ? `${selectedMoveTargetPath.trim().replace(/[\\/]+$/, "")}\\${curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || activeMoveModalAppName}`
+                  : "—"
+              )}">${esc(
+                selectedMoveTargetPath.trim()
+                  ? `${selectedMoveTargetPath.trim().replace(/[\\/]+$/, "")}\\${curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || activeMoveModalAppName}`
+                  : "—"
+              )}</strong></span>
             </div>
           </div>
 
