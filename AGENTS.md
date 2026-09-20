@@ -41,7 +41,7 @@ src/
   main.ts      # TÜM UI mantığı (~1300 satır): view'lar, render, olay delegasyonu
   epic.ts      # Epic API katmanı: tipler (snake_case!), invoke sarmalayıcıları, kapak/açıklama seçimi
   styles.css   # Tek stil dosyası, CSS değişkenli tema (:root)
-  index.html   # Üst bar + içerik + alt bar iskeleti
+  index.html   # Üst bar + içerik iskeleti (tam ekran konsol düzeni)
 src-tauri/src/
   main.rs                  # Komut kayıtları (generate_handler), AppState, ayarlar, mağaza/klasör pencereleri
   legendary/
@@ -1132,4 +1132,16 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
 - **10 Fit TV / Konsol Gezinme İpuçları Barı (`.ps5-profile-controller-hint`):**
   - Sayfa altında PlayStation DualSense / Xbox kontrolcü kısayol ipuçları (A: Oyunu İncele, X: Kupa Filtresi, Y: Arama, ⟳: Yenile, B: Geri Dön) eklendi.
   - Tüm kartlarda klavye ve gamepad navigasyonu için `:focus-visible` elektrik mavisi odak halkası (`box-shadow: 0 0 0 2px #60a5fa, 0 0 24px rgba(96, 165, 250, 0.4)`) entegre edildi.
+
+## 68. Alt Durum Çubuğunun (Statusbar) Kaldırılması & Tam Ekran Konsol Görünümü
+
+- **Eski Durum Çubuğunun (`#statusbar`) Tamamen Kaldırılması:**
+  - Ekranın en altında yer alan ve dikey kullanım alanını daraltan `Son: ...` (`#recent`) ve `● backend bağlı (Rust)` (`#backend-status`) durum çubuğu tamamen kaldırıldı.
+  - `index.html`: `<footer id="statusbar">...</footer>` DOM'dan temizlendi.
+  - `src/styles.css`: `#statusbar`, `#backend-status`, `#recent` CSS kuralları temizlendi.
+  - `src/main.ts`:
+    - `syncEpicAccountUI` içerisindeki `recentEl` işlemleri kaldırıldı.
+    - `storeRect` fonksiyonu basitleştirildi; alt durum çubuğu ofsetine ihtiyaç kalmadan pencere tam yüksekliğini (`window.innerHeight - top`) kullanacak şekilde optimize edildi.
+    - `statusEl` değişkeni ve `refreshGames` içindeki bayat DOM atamaları güvenle temizlendi.
+  - Uygulama böylece gereksiz geliştirici/hata ayıklama kalıntılarından arındırılarak modern, sade ve tam ekran PlayStation konsol arayüzüne kavuşturuldu.
 

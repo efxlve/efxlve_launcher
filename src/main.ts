@@ -629,18 +629,6 @@ function updateChrome(): void {
     }
     acc.classList.toggle("logged", !!epicAccount);
   }
-  const recentEl = document.getElementById("recent");
-  if (recentEl) {
-    const lastPlayedInstalled = epicRecent.find((id) =>
-      epicSummaries.some((x) => x.appName === id && x.installed),
-    );
-    if (lastPlayedInstalled) {
-      const s = epicSummaries.find((x) => x.appName === lastPlayedInstalled);
-      recentEl.textContent = `Son: ${s ? s.title : lastPlayedInstalled}`;
-    } else {
-      recentEl.textContent = "Son: —";
-    }
-  }
 }
 
 /* ---------- Gömülü mağaza (ana pencere içi webview) ---------- */
@@ -651,14 +639,12 @@ let storeResizeTimer = 0;
 
 function storeRect(): { x: number; y: number; width: number; height: number } {
   const titlebar = document.getElementById("titlebar");
-  const statusbar = document.getElementById("statusbar");
   const top = titlebar ? titlebar.offsetHeight : 0;
-  const bottom = statusbar ? statusbar.offsetHeight : 0;
   return {
     x: 0,
     y: top,
     width: window.innerWidth,
-    height: Math.max(100, window.innerHeight - top - bottom),
+    height: Math.max(100, window.innerHeight - top),
   };
 }
 
@@ -761,7 +747,6 @@ const downloads = new Map<string, { progress: number; done: boolean; title: stri
 let libraryPath = "—";
 
 const viewEl = document.getElementById("view") as HTMLElement;
-const statusEl = document.getElementById("backend-status") as HTMLElement;
 const modalRoot = document.getElementById("modal-root") as HTMLElement;
 const manageRoot = document.getElementById("manage-root") as HTMLElement;
 const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
@@ -1017,9 +1002,6 @@ function updateBadge(): void {
 async function refreshGames(): Promise<void> {
   try {
     games = await fetchGames();
-    statusEl.textContent = isTauri ? "● backend bağlı (Rust)" : "● demo modu (tarayıcı)";
-    statusEl.className = isTauri ? "ok" : "mock";
-    statusEl.id = "backend-status";
   } catch (e) {
     toast(`Oyun listesi alınamadı: ${String(e)}`, "err");
   }
