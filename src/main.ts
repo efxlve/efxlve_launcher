@@ -2652,7 +2652,7 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
         ? `<span class="pbadge ready"><span class="dot"></span>Yüklü</span>`
         : "";
   const ribbon = isPlat
-    ? `<div class="platinum-ribbon">${icon("trophy", 11)} 100% Platin</div>`
+    ? `<div class="platinum-badge" title="Platin Kupa (${esc(s.title)})">${epicPlatinumIcon(18)}</div>`
     : "";
   const dlBar =
     p !== null
@@ -2665,7 +2665,7 @@ function epicCardPortrait(s: EpicSummary, i: number): string {
   }
   const achSum = epicAchSummaries[s.appName];
   if (isPlat) {
-    microChips.push(`<span class="micro-chip plat">${icon("trophy", 10)} Platin</span>`);
+    microChips.push(`<span class="micro-chip plat" style="background:rgba(168,85,247,0.18);border-color:rgba(168,85,247,0.38);color:#e9d5ff">${epicPlatinumIcon(11)} Platin</span>`);
   } else if (achSum && achSum.total_achievements > 0) {
     const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
     microChips.push(`<span class="micro-chip ach">${icon("trophy", 10)} %${pct}</span>`);
@@ -2707,7 +2707,7 @@ function epicRowHtml(s: EpicSummary): string {
     ? ` • <span style="color:#38bdf8;display:inline-flex;align-items:center;gap:3px">${icon("clock", 12)} ${fmtPlaytime(pt.total_seconds)}</span>`
     : "";
   const achMeta = isPlat
-    ? ` • <span style="color:#ffd700;font-weight:700;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} Platin</span>`
+    ? ` • <span style="color:#c084fc;font-weight:700;display:inline-flex;align-items:center;gap:3px">${epicPlatinumIcon(12)} Platin</span>`
     : achSum && achSum.total_achievements > 0
       ? ` • <span style="color:#a1a1aa;display:inline-flex;align-items:center;gap:3px">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements}</span>`
       : "";
@@ -2844,7 +2844,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
     : "";
 
   const achPill = isPlat
-    ? `<span class="status-pill plat" style="background:linear-gradient(135deg,#ffd700,#b45309);color:#1a0f00;font-weight:800;border:none">${icon("trophy", 12)} 100% Platin</span>`
+    ? `<span class="status-pill plat" style="background:linear-gradient(135deg,rgba(168,85,247,0.22),rgba(126,34,206,0.38));color:#f3e8ff;border:1px solid rgba(192,132,252,0.4);font-weight:700">${epicPlatinumIcon(13)} Platin Kupa</span>`
     : achSum && achSum.total_achievements > 0
       ? `<span class="status-pill ach" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(245,158,11,0.08)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
       : "";
@@ -3028,7 +3028,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
               </div>
               <div class="hub-stat-divider"></div>
               <div class="hub-stat-col ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""} title="Başarımları Gör">
-                <span class="hub-stat-label">${icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
+                <span class="hub-stat-label">${isPlat ? epicPlatinumIcon(11) : icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
                 <span class="hub-stat-val ${isPlat ? "plat" : ""}">${achStatVal}</span>
               </div>
               <div class="hub-stat-divider"></div>
@@ -5175,7 +5175,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
               stroke-dasharray="${2 * Math.PI * 20}"
               stroke-dashoffset="${2 * Math.PI * 20 * (1 - pct / 100)}" />
           </svg>
-          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#f8fafc;pointer-events:none">${isPlat ? "🏆" : `%${pct}`}</span>
+          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#f8fafc;pointer-events:none">${isPlat ? epicPlatinumIcon(16) : `%${pct}`}</span>
         </div>
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
@@ -5183,7 +5183,7 @@ function renderDrawerAchievements(s: EpicSummary): string {
         </div>
       </div>
       <div class="ach-summary-right">
-        ${effPlatTotal > 0 ? `<span class="ach-tier-mini plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin">${icon("trophy", 11)} ${effPlatUnlocked}/${effPlatTotal}</span>` : ""}
+        ${effPlatTotal > 0 ? `<span class="ach-tier-mini plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin">${epicPlatinumIcon(11)} ${effPlatUnlocked}/${effPlatTotal}</span>` : ""}
         ${goldTotal > 0 ? `<span class="ach-tier-mini gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="Altın">${icon("trophy", 11)} ${goldUnlocked}/${goldTotal}</span>` : ""}
         ${silverTotal > 0 ? `<span class="ach-tier-mini silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="Gümüş">${icon("trophy", 11)} ${silverUnlocked}/${silverTotal}</span>` : ""}
         ${bronzeTotal > 0 ? `<span class="ach-tier-mini bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="Bronz">${icon("trophy", 11)} ${bronzeUnlocked}/${bronzeTotal}</span>` : ""}
@@ -6038,7 +6038,7 @@ function renderEpic(): string {
           <span class="pill-cnt">${favTotalCount}</span>
         </button>
         <button class="unified-pill ${epicFilter === "platinum" ? "active" : ""}" data-act="quick-tab" data-tab="platinum">
-          <span class="pill-icon">${icon("trophy", 13)}</span>
+          <span class="pill-icon">${epicPlatinumIcon(13)}</span>
           <span>Platin</span>
           <span class="pill-cnt">${platCount}</span>
         </button>
@@ -6142,7 +6142,7 @@ function renderEpic(): string {
     ${epicFilter === "platinum" ? `
     <div class="plat-category-banner">
       <div class="plat-banner-glow"></div>
-      <div class="plat-banner-icon">${icon("trophy", 28)}</div>
+      <div class="plat-banner-icon">${epicPlatinumIcon(32)}</div>
       <div class="plat-banner-info">
         <div class="plat-banner-title">Platin Kupa Koleksiyonu</div>
         <div class="plat-banner-desc">Tüm başarımlarını %100 tamamlayarak vitrine eklediğin oyunlar. Harika iş!</div>
@@ -10616,6 +10616,36 @@ function handleGamepadTabSwitch(step: number): void {
 }
 
 void init();
+
+/* ---------- Epic Games Platinum Kupa İkonu (Mor alevli ve mücevherli kupa) ---------- */
+
+function epicPlatinumIcon(size = 18): string {
+  const h = Math.round(size * 1.16);
+  return `<svg width="${size}" height="${h}" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg" class="epic-plat-cup-svg">
+    <defs>
+      <linearGradient id="epFlm" x1="12" y1="1" x2="12" y2="13" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f5d0fe"/>
+        <stop offset="35%" stop-color="#c084fc"/>
+        <stop offset="75%" stop-color="#9333ea"/>
+        <stop offset="100%" stop-color="#6b21a8"/>
+      </linearGradient>
+      <linearGradient id="epCup" x1="12" y1="10" x2="12" y2="25" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#f3e8ff"/>
+        <stop offset="85%" stop-color="#d8b4fe"/>
+        <stop offset="100%" stop-color="#a855f7"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 1.5C12 1.5 15.2 4.5 15.2 7.8C15.2 9.2 14.3 10.2 13.2 10.7C14.6 10.1 16 8.8 16 6.8C17.5 9 17.2 11.8 15.6 13.2C14.5 14.1 13.3 14.5 12 14.5C10.7 14.5 9.5 14.1 8.4 13.2C6.8 11.8 6.5 9 8 6.8C8 8.8 9.4 10.1 10.8 10.7C9.7 10.2 8.8 9.2 8.8 7.8C8.8 4.5 12 1.5 12 1.5Z" fill="url(#epFlm)"/>
+    <path d="M12 5C12 5 13.4 7 13.4 8.8C13.4 9.7 12.8 10.4 12 10.7C11.2 10.4 10.6 9.7 10.6 8.8C10.6 7 12 5 12 5Z" fill="#faf5ff"/>
+    <path d="M4.5 11.5C4.5 11 5 10.5 5.5 10.5H18.5C19 10.5 19.5 11 19.5 11.5C19.5 15.8 16 18.8 13.5 19.2V22.5H16.8C17.2 22.5 17.5 22.8 17.5 23.2C17.5 23.7 17.2 24.5 16.5 24.5H7.5C6.8 24.5 6.5 23.7 6.5 23.2C6.5 22.8 6.8 22.5 7.2 22.5H10.5V19.2C8 18.8 4.5 15.8 4.5 11.5Z" fill="url(#epCup)" stroke="#c084fc" stroke-width="0.8"/>
+    <path d="M4 11.5C4 11 4.5 10.5 5.2 10.5H18.8C19.5 10.5 20 11 20 11.5C20 12 19.5 12.5 18.8 12.5H5.2C4.5 12.5 4 12 4 11.5Z" fill="#ffffff" stroke="#a855f7" stroke-width="0.6"/>
+    <circle cx="7.5" cy="14.5" r="1.1" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
+    <circle cx="10.5" cy="15.2" r="1.15" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
+    <circle cx="13.5" cy="15.2" r="1.15" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
+    <circle cx="16.5" cy="14.5" r="1.1" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
+  </svg>`;
+}
 
 /* ---------- İkonlar (Lucide, inline SVG) ---------- */
 
