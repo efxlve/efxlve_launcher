@@ -3754,6 +3754,249 @@ function renderGameFeatures(
   `;
 }
 
+function renderOverviewTrophySpotlight(
+  s: EpicSummary,
+  g?: EpicGame,
+  achSum?: EpicAchievementSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+): string {
+  const isPlat = isAppPlatinum(s.appName);
+  const isDemo = demoPlatinumApps.has(s.appName);
+  const raw = (g?.achievements || (g?.metadata as any)?.achievements) as any;
+  const rawList: any[] = raw?.achievements || (Array.isArray(raw) ? raw : []);
+
+  const hasAch = Boolean(
+    (achSum && achSum.supported !== false && achSum.total_achievements > 0) ||
+    rawList.length > 0,
+  );
+
+  if (!hasAch) {
+    if (partner) {
+      return `
+        <div class="hub-card hub-trophy-spotlight">
+          <div class="hub-card-header">
+            <h3 class="hub-card-title">${icon("trophy", 14)} <span>${esc(partner.name)} Başarımları</span></h3>
+            <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
+              <span>İncele</span> ${icon("chevron-right", 12)}
+            </button>
+          </div>
+          <div class="hub-media-empty">
+            <div class="hub-media-empty-icon">${icon("trophy", 20)}</div>
+            <div class="hub-media-empty-info">
+              <div class="hub-media-empty-title">${esc(partner.name)} Başarım Takibi</div>
+              <div class="hub-media-empty-desc">
+                Bu oyunun başarımları doğrudan <strong>${esc(partner.name)}</strong> istemcisi üzerinden takip edilmektedir.
+              </div>
+            </div>
+            <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
+              ${icon("external", 12)} <span>Detay</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+    return "";
+  }
+
+  const cachedData = loadedAchievements.get(s.appName);
+  const totalAch = achSum?.total_achievements || rawList.length || 0;
+  const unlockedAch = isDemo ? totalAch : (achSum?.user_unlocked ?? 0);
+  const pct = totalAch > 0 ? Math.min(100, Math.round((unlockedAch / totalAch) * 100)) : 0;
+  const userXp = isDemo ? (achSum?.total_xp || 1000) : (achSum?.user_xp ?? 0);
+  const totalXp = achSum?.total_xp || 0;
+
+  // Madalya sayıları (Platin, Altın, Gümüş, Bronz)
+  let platCount = isPlat || isDemo ? 1 : 0;
+  let goldCount = 0;
+  let silverCount = 0;
+  let bronzeCount = 0;
+
+  if (cachedData && cachedData.achievements.length > 0) {
+    for (const a of cachedData.achievements) {
+      if (a.unlocked || isDemo) {
+        const t = getAchTier(a);
+        if (t === "gold") goldCount++;
+        else if (t === "silver") silverCount++;
+        else if (t === "bronze") bronzeCount++;
+        else if (t === "platinum" && !platCount) platCount = 1;
+      }
+    }
+  } else {
+    // Disk metadata'sındaki ham kupa dağılımı
+    for (const item of rawList) {
+      const ach = (item as any)?.achievement || item;
+      const t = (ach.tier?.name || "").toLowerCase();
+      const xp = Number(ach.XP || ach.xp || 0);
+      if (t.includes("plat") || xp >= 200) platCount++;
+      else if (t.includes("gold") || xp >= 100) goldCount++;
+      else if (t.includes("silver") || xp >= 50) silverCount++;
+      else bronzeCount++;
+    }
+    if (unlockedAch === 0 && !isDemo && !isPlat) {
+      platCount = 0;
+      goldCount = 0;
+      silverCount = 0;
+      bronzeCount = 0;
+    }
+  }
+
+  // Sıradaki Hedef Kupalar (Next Up)
+  interface TargetTrophy {
+    title: string;
+    desc: string;
+    icon: string;
+    badgeText: string;
+    tierClass: "bronze" | "silver" | "gold" | "plat";
+  }
+  const targets: TargetTrophy[] = [];
+
+  if (cachedData && cachedData.achievements.length > 0) {
+    const lockedItems = cachedData.achievements.filter((a) => !a.unlocked && !isDemo);
+    const sourceItems = lockedItems.length > 0 ? lockedItems : cachedData.achievements;
+    for (const a of sourceItems.slice(0, 2)) {
+      const tier = getAchTier(a);
+      const tierName = tier === "platinum" ? "Platin" : tier === "gold" ? "Altın" : tier === "silver" ? "Gümüş" : "Bronz";
+      const xpText = a.xp > 0 ? ` • +${a.xp} XP` : "";
+      targets.push({
+        title: a.display_name || a.name,
+        desc: a.hidden && !a.unlocked ? "Gizli Başarım — Detaylar için kupaları görüntüleyin." : (a.description || "Kupa hedefini tamamlayın."),
+        icon: a.icon_link,
+        badgeText: `${tierName}${xpText}`,
+        tierClass: tier === "platinum" ? "plat" : tier,
+      });
+    }
+  } else if (rawList.length > 0) {
+    for (const item of rawList.slice(0, 2)) {
+      const ach = (item as any)?.achievement || item;
+      const t = (ach.tier?.name || "").toLowerCase();
+      const xp = Number(ach.XP || ach.xp || 0);
+      const tierClass: "bronze" | "silver" | "gold" | "plat" =
+        t.includes("plat") || xp >= 200 ? "plat" : t.includes("gold") || xp >= 100 ? "gold" : t.includes("silver") || xp >= 50 ? "silver" : "bronze";
+      const tierName = tierClass === "plat" ? "Platin" : tierClass === "gold" ? "Altın" : tierClass === "silver" ? "Gümüş" : "Bronz";
+      const xpText = xp > 0 ? ` • +${xp} XP` : "";
+      const isHidden = Boolean(ach.hidden);
+      const title = ach.unlockedDisplayName || ach.lockedDisplayName || ach.name || "Kupa Hedefi";
+      const desc = isHidden ? "Gizli Başarım — Detaylar için kupaları görüntüleyin." : (ach.unlockedDescription || ach.lockedDescription || "Kupa hedefini tamamlayın.");
+      const iconUrl = ach.unlockedIconLink || ach.lockedIconLink || "";
+      targets.push({
+        title,
+        desc,
+        icon: iconUrl,
+        badgeText: `${tierName}${xpText}`,
+        tierClass,
+      });
+    }
+  }
+
+  const targetsHtml = targets.length > 0 ? `
+    <div class="hub-trophy-next-list">
+      ${targets.map((t) => `
+        <button type="button" class="hub-trophy-target-card" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${esc(t.title)} - ${esc(t.desc)}">
+          <div class="hub-trophy-target-icon">
+            ${t.icon ? `<img src="${esc(t.icon)}" alt="" loading="lazy" />` : icon("trophy", 18)}
+          </div>
+          <div class="hub-trophy-target-info">
+            <div class="hub-trophy-target-title">${esc(t.title)}</div>
+            <div class="hub-trophy-target-desc">${esc(t.desc)}</div>
+            <span class="hub-trophy-target-badge ${t.tierClass}">${esc(t.badgeText)}</span>
+          </div>
+        </button>
+      `).join("")}
+    </div>
+  ` : "";
+
+  return `
+    <div class="hub-card hub-trophy-spotlight">
+      <div class="hub-card-header">
+        <h3 class="hub-card-title">${icon("trophy", 14)} <span>Kupa & Başarım İlerlemesi</span></h3>
+        <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
+          <span>Tüm Kupalar</span> ${icon("chevron-right", 12)}
+        </button>
+      </div>
+
+      <!-- Kupa İlerleme Kutusu -->
+      <div class="hub-trophy-progress-box">
+        <div class="hub-trophy-progress-top">
+          <div class="hub-trophy-percent-badge">
+            <span class="hub-trophy-percent-num">%${pct}</span>
+            <span class="hub-trophy-counts">${unlockedAch} / ${totalAch} Kupa ${totalXp > 0 ? `• ${userXp} XP` : ""}</span>
+          </div>
+          <div class="hub-trophy-medals">
+            <div class="hub-medal-item plat" title="Platin Kupa">${icon("trophy", 12)} <span>${platCount}</span></div>
+            <div class="hub-medal-item gold" title="Altın Kupa">${icon("trophy", 12)} <span>${goldCount}</span></div>
+            <div class="hub-medal-item silver" title="Gümüş Kupa">${icon("trophy", 12)} <span>${silverCount}</span></div>
+            <div class="hub-medal-item bronze" title="Bronz Kupa">${icon("trophy", 12)} <span>${bronzeCount}</span></div>
+          </div>
+        </div>
+        <div class="hub-trophy-bar-track">
+          <div class="hub-trophy-bar-fill" style="width: ${pct}%"></div>
+        </div>
+      </div>
+
+      ${targetsHtml}
+    </div>
+  `;
+}
+
+function renderOverviewMediaSpotlight(s: EpicSummary): string {
+  const screenshots = loadedScreenshots.get(s.appName) || [];
+  const recent = screenshots.slice(0, 3);
+
+  const headerRight = `
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="hub-card-hotkey" title="Ekran görüntüsü kısayolu">${esc(screenshotHotkeyName)}</span>
+      <button class="hub-card-link" data-act="drawer-tab" data-tab="screenshots" data-id="${s.appName}">
+        <span>Tümü</span> ${icon("chevron-right", 12)}
+      </button>
+    </div>
+  `;
+
+  let contentHtml = "";
+  if (recent.length > 0) {
+    contentHtml = `
+      <div class="hub-media-strip">
+        ${recent.map((item, idx) => `
+          <button type="button" class="hub-media-item" data-act="open-screenshot-lightbox" data-id="${s.appName}" data-idx="${idx}" title="${esc(item.file_name)}">
+            <img src="${item.data_url}" alt="${esc(item.file_name)}" loading="lazy" />
+            <div class="hub-media-overlay">
+              <div class="hub-media-zoom-icon">${icon("eye", 12)}</div>
+              <div class="hub-media-date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</div>
+            </div>
+          </button>
+        `).join("")}
+      </div>
+    `;
+  } else {
+    contentHtml = `
+      <div class="hub-media-empty">
+        <div class="hub-media-empty-icon">${icon("camera", 20)}</div>
+        <div class="hub-media-empty-info">
+          <div class="hub-media-empty-title">Ekran Görüntüleri & Klipler</div>
+          <div class="hub-media-empty-desc">
+            Oyun oynarken <strong>${esc(screenshotHotkeyName)}</strong> tuşu ile yakaladığınız kareler burada sergilenir.
+          </div>
+        </div>
+        <button class="hub-card-link" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="Ekran görüntüleri klasörünü aç">
+          ${icon("folder", 12)} <span>Klasör</span>
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="hub-card hub-media-spotlight">
+      <div class="hub-card-header">
+        <h3 class="hub-card-title">
+          ${icon("camera", 14)} <span>Medya Galerisi</span>
+          ${screenshots.length > 0 ? `<span class="hub-card-count">(${screenshots.length})</span>` : ""}
+        </h3>
+        ${headerRight}
+      </div>
+      ${contentHtml}
+    </div>
+  `;
+}
+
 function renderDrawerOverview(
   s: EpicSummary,
   _primary: string,
@@ -3773,6 +4016,7 @@ function renderDrawerOverview(
   const criticLoading = loadingCriticFor === s.appName;
   const g = rawOf(s.appName);
   const reqData = loadedRequirements.get(s.appName);
+  const achSum = epicAchSummaries[s.appName];
 
   // Koleksiyon etiketleri (Eklentiler sekmesi yukarıda olduğu için burada yalnızca koleksiyonlar listelenir)
   let tagsHtml = "";
@@ -3800,7 +4044,7 @@ function renderDrawerOverview(
 
   return `
     <div class="hub-overview-layout">
-      <!-- Sol / Ana Alan: Açıklama & Etiketler -->
+      <!-- Sol / Ana Alan: Açıklama, Etiketler, Kupa & Medya Vitrini -->
       <div class="hub-overview-main">
         <div class="hub-card hub-desc-card">
           <div class="hub-card-header">
@@ -3814,6 +4058,12 @@ function renderDrawerOverview(
             <h3 class="hub-card-title">${icon("folder", 14)} <span>Koleksiyonlar & Etiketler</span></h3>
           </div>
           ${tagsHtml}
+        </div>
+
+        ${renderOverviewTrophySpotlight(s, g, achSum, partner)}
+
+        <div id="overview-media-container">
+          ${renderOverviewMediaSpotlight(s)}
         </div>
       </div>
 
@@ -3949,6 +4199,12 @@ function fetchAndRenderScreenshots(appName: string, title: string, force = false
           if (contentEl) {
             const curSummary = epicSummaries.find((x) => x.appName === appName);
             if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
+          }
+        } else if (activeDrawerTab === "overview") {
+          const mediaContainer = document.getElementById("overview-media-container");
+          if (mediaContainer) {
+            const curSummary = epicSummaries.find((x) => x.appName === appName);
+            if (curSummary) mediaContainer.innerHTML = renderOverviewMediaSpotlight(curSummary);
           }
         }
       }
