@@ -1248,6 +1248,72 @@ fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> 
     window.set_decorations(decorations).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn open_social_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_window("social") {
+        let _ = win.unminimize();
+        win.show().map_err(|e| e.to_string())?;
+        win.set_focus().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Sosyal pencere bulunamadı".into())
+    }
+}
+
+#[tauri::command]
+fn toggle_social_window(app: AppHandle) -> Result<bool, String> {
+    if let Some(win) = app.get_window("social") {
+        let is_vis = win.is_visible().unwrap_or(false);
+        if is_vis {
+            win.hide().map_err(|e| e.to_string())?;
+            Ok(false)
+        } else {
+            let _ = win.unminimize();
+            win.show().map_err(|e| e.to_string())?;
+            win.set_focus().map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+    } else {
+        Err("Sosyal pencere bulunamadı".into())
+    }
+}
+
+#[tauri::command]
+fn close_social_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_window("social") {
+        win.hide().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Sosyal pencere bulunamadı".into())
+    }
+}
+
+#[tauri::command]
+fn minimize_social_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_window("social") {
+        win.minimize().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Sosyal pencere bulunamadı".into())
+    }
+}
+
+#[tauri::command]
+fn toggle_maximize_social_window(app: AppHandle) -> Result<bool, String> {
+    if let Some(win) = app.get_window("social") {
+        let is_max = win.is_maximized().unwrap_or(false);
+        if is_max {
+            win.unmaximize().map_err(|e| e.to_string())?;
+            Ok(false)
+        } else {
+            win.maximize().map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+    } else {
+        Err("Sosyal pencere bulunamadı".into())
+    }
+}
+
 /// Demo kurulum: ilerlemeyi "download-progress" event'i ile yayınlar.
 #[tauri::command]
 fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
@@ -1363,6 +1429,13 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "social" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                    return;
+                }
+            }
             if let tauri::WindowEvent::Resized(physical_size) = event {
                 if let Ok(scale_factor) = window.scale_factor() {
                     let logical_size = physical_size.to_logical::<f64>(scale_factor);
@@ -1389,6 +1462,11 @@ fn main() {
             app_is_maximized,
             app_close,
             app_set_decorations,
+            open_social_window,
+            toggle_social_window,
+            close_social_window,
+            minimize_social_window,
+            toggle_maximize_social_window,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
             legendary::commands::epic_status,
