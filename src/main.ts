@@ -2702,7 +2702,7 @@ function epicRowHtml(s: EpicSummary): string {
       ${epicArt(s)}
       <div class="grow">
         <h4>${esc(s.title)}</h4>
-        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: v${esc(s.installedVersion)}` : ""}${hasUpdate ? ` • <span class="upd">Güncelleme</span>` : ""}${runTag}${ptMeta}${achMeta}</div>
+        <div class="meta">v${esc(s.version)}${s.installedVersion ? ` • kurulu: ${esc(cleanDisplayVersion(s.installedVersion).display || s.installedVersion)}` : ""}${hasUpdate ? ` • <span class="upd">Güncelleme</span>` : ""}${runTag}${ptMeta}${achMeta}</div>
       </div>
       <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favori">${icon("heart", 15)}</button>
       ${epicActionButtons(s, "small")}
@@ -3340,6 +3340,166 @@ function cleanStoreDescription(raw: string): string {
   return t;
 }
 
+function cleanDisplayVersion(rawVersion?: string | null): { display: string; full: string } {
+  if (!rawVersion) return { display: "", full: "" };
+  const trimmed = rawVersion.trim();
+  if (!trimmed) return { display: "", full: "" };
+
+  // Match trailing semantic version after underscore, dash or space:
+  // e.g. "DBD_Udon_HF2_EGS_Shipping_6_3797605_10.1.2.4" -> "10.1.2.4"
+  // or "1.0.1158.13_v1" -> "1.0.1158.13_v1"
+  // or "Build_20260630.0" -> "20260630.0"
+  const trailingSemver = trimmed.match(/(?:[_\-]v?|\bv)(\d+\.\d+(?:\.\d+)*(?:[a-zA-Z0-9_\-]+)?)$/i);
+  if (trailingSemver && trailingSemver[1]) {
+    const v = trailingSemver[1].replace(/^v/i, "");
+    return { display: `v${v}`, full: trimmed };
+  }
+
+  const embeddedSemver = trimmed.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+  if (embeddedSemver && embeddedSemver[1]) {
+    return { display: `v${embeddedSemver[1]}`, full: trimmed };
+  }
+
+  if (trimmed.length > 18) {
+    return { display: `${trimmed.slice(0, 16)}…`, full: trimmed };
+  }
+
+  const display = trimmed.startsWith("v") || trimmed.startsWith("V") ? trimmed : `v${trimmed}`;
+  return { display, full: trimmed };
+}
+
+function detectControllerSupport(
+  s: EpicSummary,
+  g?: EpicGame,
+  _reqData?: GameRequirementsResponse,
+): { label: string; tooltip: string; iconName: "gamepad-2" | "keyboard"; className: string } {
+  const titleLower = s.title.toLowerCase();
+  const devRaw = (g?.metadata as { developer?: unknown } | undefined)?.developer;
+  const devLower = typeof devRaw === "string" ? devRaw.toLowerCase() : "";
+
+  // 1. Sony / PlayStation PC titles and games with native DualSense PC implementation
+  const isDualSenseNative =
+    devLower.includes("playstation") ||
+    devLower.includes("sony interactive") ||
+    titleLower.includes("spider-man") ||
+    titleLower.includes("god of war") ||
+    titleLower.includes("last of us") ||
+    titleLower.includes("horizon zero dawn") ||
+    titleLower.includes("horizon forbidden west") ||
+    titleLower.includes("days gone") ||
+    titleLower.includes("ratchet & clank") ||
+    titleLower.includes("returnal") ||
+    titleLower.includes("ghost of tsushima") ||
+    titleLower.includes("uncharted") ||
+    titleLower.includes("sackboy") ||
+    titleLower.includes("helldivers") ||
+    titleLower.includes("death stranding") ||
+    titleLower.includes("cyberpunk 2077") ||
+    titleLower.includes("alan wake 2") ||
+    titleLower.includes("metro exodus") ||
+    titleLower.includes("witcher 3");
+
+  if (isDualSenseNative) {
+    return {
+      label: "✓ DualSense & Xbox Kolu",
+      tooltip: "PC'de yerel DualSense (Dokunsal Titreşim / Uyarlanabilir Tetik) ve Xbox kolları desteklenir.",
+      iconName: "gamepad-2",
+      className: "supported",
+    };
+  }
+
+  // 2. Pure Keyboard & Mouse titles (Strategy, RTS, Simulation, City Builder)
+  const isKbMouseOnly =
+    titleLower.includes("civilization") ||
+    titleLower.includes("total war") ||
+    titleLower.includes("cities: skylines") ||
+    titleLower.includes("football manager") ||
+    titleLower.includes("crusader kings") ||
+    titleLower.includes("europa universalis") ||
+    titleLower.includes("hearts of iron") ||
+    titleLower.includes("stellaris") ||
+    titleLower.includes("age of empires") ||
+    titleLower.includes("command & conquer") ||
+    titleLower.includes("simcity") ||
+    titleLower.includes("factorio") ||
+    titleLower.includes("rimworld");
+
+  if (isKbMouseOnly) {
+    return {
+      label: "Klavye & Fare",
+      tooltip: "Oyun kontrolleri ve menüleri klavye ve fare için tasarlanmıştır.",
+      iconName: "keyboard",
+      className: "muted",
+    };
+  }
+
+  // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, GTA V, etc.)
+  return {
+    label: "✓ Xbox & Gamepad (XInput)",
+    tooltip: "Xbox ve XInput uyumlu kollar doğrudan çalışır. DualSense için XInput / DS4Windows gerekebilir.",
+    iconName: "gamepad-2",
+    className: "supported",
+  };
+}
+
+function isOnlineOnlyGame(
+  s: EpicSummary,
+  _g?: EpicGame,
+  reqData?: GameRequirementsResponse,
+): boolean {
+  const titleLower = s.title.toLowerCase();
+  const appLower = s.appName.toLowerCase();
+
+  // Known online-only titles (Brill = Dead by Daylight)
+  if (
+    appLower === "brill" ||
+    titleLower.includes("dead by daylight") ||
+    titleLower.includes("fortnite") ||
+    titleLower.includes("rocket league") ||
+    titleLower.includes("fall guys") ||
+    titleLower.includes("destiny 2") ||
+    titleLower.includes("rainbow six siege") ||
+    titleLower.includes("apex legends") ||
+    titleLower.includes("valorant") ||
+    titleLower.includes("warframe") ||
+    titleLower.includes("overwatch") ||
+    titleLower.includes("the division") ||
+    titleLower.includes("genshin impact") ||
+    titleLower.includes("honkai") ||
+    titleLower.includes("pubg") ||
+    titleLower.includes("the finals") ||
+    titleLower.includes("world of warships") ||
+    titleLower.includes("paladins") ||
+    titleLower.includes("smite") ||
+    titleLower.includes("rogue company")
+  ) {
+    return true;
+  }
+
+  // Check description and tags for explicit online-only signals
+  const allText = [
+    ...(reqData?.tags || []),
+    reqData?.shortDescription || "",
+    reqData?.description || "",
+    s.description || "",
+  ].join(" ").toLowerCase();
+
+  if (
+    allText.includes("multiplayer (4vs1)") ||
+    allText.includes("multiplayer (4v1)") ||
+    allText.includes("online-only") ||
+    allText.includes("requires internet connection") ||
+    allText.includes("internet connection required") ||
+    allText.includes("persistent internet connection") ||
+    allText.includes("sadece çevrimiçi") ||
+    allText.includes("sürekli internet bağlantısı")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function renderGameFeatures(
   s: EpicSummary,
   g?: EpicGame,
@@ -3353,37 +3513,30 @@ function renderGameFeatures(
   const hasCloud = Boolean(cloudFolder || (activeManageSettings?.appName === s.appName && activeManageSettings.cloudSavesEnabled));
   const canRunOffline = customAttrs?.CanRunOffline?.value === "true";
 
-  // Akamai etiketlerinden oyun modu
-  const tags = reqData?.tags || [];
-  const hasCoop = tags.some((t) => t.toUpperCase().includes("COOP") || t.toUpperCase().includes("CO-OP"));
-  const hasMultiplayer = tags.some((t) => t.toUpperCase().includes("MULTIPLAYER") || t.toUpperCase().includes("ONLINE"));
-  const hasSinglePlayer = tags.some((t) => t.toUpperCase().includes("SINGLE_PLAYER") || t.toUpperCase().includes("SINGLEPLAYER"));
+  const isOnlineOnly = isOnlineOnlyGame(s, g, reqData);
 
-  let modeVal = "Tek Oyunculu";
-  let modeClass = "supported";
-  if (hasCoop) {
-    modeVal = "Eşli Oyun (Co-op)";
-    modeClass = "accent";
-  } else if (hasMultiplayer) {
-    modeVal = "Çok Oyunculu";
-    modeClass = "accent";
-  } else if (hasSinglePlayer) {
-    modeVal = "Tek Oyunculu";
-    modeClass = "supported";
-  }
+  // 1. Kontrolcü Desteği
+  const ctrl = detectControllerSupport(s, g, reqData);
 
-  // Bulut kayıt durumu
+  // 2. Bulut / Sunucu Kayıtları
   let cloudVal = "Yerel Kayıt";
   let cloudClass = "";
-  if (hasCloud) {
+  let cloudTooltip = "Kayıt dosyaları yerel diskte saklanır. Launcher üzerinden yedekleyebilirsiniz.";
+  if (isOnlineOnly) {
+    cloudVal = "✓ Çevrimiçi Sunucu Kaydı";
+    cloudClass = "supported";
+    cloudTooltip = "Karakterleriniz ve ilerlemeniz doğrudan oyun sunucuları ve hesabınızla senkronize edilir.";
+  } else if (hasCloud) {
     cloudVal = "✓ Epic Cloud";
     cloudClass = "supported";
+    cloudTooltip = "Epic Games bulut kayıtları etkin.";
   } else if (partner) {
     cloudVal = `✓ ${partner.name} Bulut`;
     cloudClass = "accent";
+    cloudTooltip = `${partner.name} bulut senkronizasyonu kullanılır.`;
   }
 
-  // Başarım durumu
+  // 3. Başarım durumu
   let achVal = "Bulunmuyor";
   let achClass = "";
   if (achSum && achSum.total_achievements > 0) {
@@ -3395,27 +3548,98 @@ function renderGameFeatures(
     achClass = "accent";
   }
 
-  // Çevrimdışı oynanış
-  let offlineVal = "✓ Destekleniyor";
+  // 4. Çevrimdışı oynanış
+  let offlineVal = "✓ Destekleniyor (Çevrimdışı)";
   let offlineClass = "supported";
-  if (partner) {
+  let offlineTooltip = "İnternet bağlantısı olmadan yerel olarak oynanabilir.";
+  if (isOnlineOnly) {
+    offlineVal = "Sürekli İnternet Gerekir";
+    offlineClass = "accent";
+    offlineTooltip = "Bu oyun sunucu tabanlıdır; çalışmak için aktif internet bağlantısı gerektirir.";
+  } else if (partner) {
     offlineVal = `${partner.name} Bağlantısı Gerekebilir`;
-    offlineClass = "";
+    offlineClass = "muted";
+    offlineTooltip = `${partner.name} istemcisi ve hesabı doğrulaması gerekebilir.`;
   } else if (canRunOffline) {
     offlineVal = "✓ Destekleniyor (Çevrimdışı)";
     offlineClass = "supported";
   }
 
+  // 5. Oyun Modu Analizi
+  const gameCols = epicCollections.filter((c) =>
+    c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+  );
+  const textCorpus = [
+    ...(reqData?.tags || []),
+    reqData?.shortDescription || "",
+    reqData?.description || "",
+    s.description || "",
+    ...gameCols.map((c) => c.name),
+  ].join(" ").toLowerCase();
+
+  const titleLower = s.title.toLowerCase();
+  const appLower = s.appName.toLowerCase();
+
+  let modeVal = "Tek Oyunculu";
+  let modeClass = "supported";
+  let modeTooltip = "Tek oyunculu hikaye veya oyun deneyimi.";
+
+  if (appLower === "brill" || titleLower.includes("dead by daylight")) {
+    modeVal = "Çok Oyunculu (4v1 PvP)";
+    modeClass = "accent";
+    modeTooltip = "1 Katil ve 4 Kurbandan oluşan asimetrik çevrimiçi çok oyunculu korku oyunu.";
+  } else if (textCorpus.includes("4vs1") || textCorpus.includes("4v1") || textCorpus.includes("asymmetric")) {
+    modeVal = "Çok Oyunculu (Asimetrik)";
+    modeClass = "accent";
+    modeTooltip = "Asimetrik çevrimiçi çok oyunculu oyun deneyimi.";
+  } else if (textCorpus.includes("battle royale")) {
+    modeVal = "Çok Oyunculu (Battle Royale)";
+    modeClass = "accent";
+    modeTooltip = "Çok oyunculu hayatta kalma ve son kalan olma mücadelesi.";
+  } else if (textCorpus.includes("mmo") || textCorpus.includes("mmorpg")) {
+    modeVal = "Devasa Çok Oyunculu (MMO)";
+    modeClass = "accent";
+    modeTooltip = "Geniş oyuncu topluluğu ile sürekli çevrimiçi dünya.";
+  } else {
+    const hasCoop = textCorpus.includes("coop") || textCorpus.includes("co-op") || textCorpus.includes("eşli");
+    const hasMultiplayer = textCorpus.includes("multiplayer") || textCorpus.includes("çok oyunculu") || textCorpus.includes("online") || textCorpus.includes("pvp");
+    const hasSinglePlayer = textCorpus.includes("single_player") || textCorpus.includes("singleplayer") || textCorpus.includes("tek oyunculu") || textCorpus.includes("campaign") || textCorpus.includes("senaryo");
+
+    if (hasCoop && hasSinglePlayer) {
+      modeVal = "Tek Oyunculu & Co-op";
+      modeClass = "accent";
+      modeTooltip = "Hem tek başına hem de arkadaşlarınızla eşli oynanabilir.";
+    } else if (hasCoop) {
+      modeVal = "Eşli Oyun (Co-op)";
+      modeClass = "accent";
+      modeTooltip = "Takım halinde eşli oynanış.";
+    } else if (hasMultiplayer && hasSinglePlayer) {
+      modeVal = "Tek & Çok Oyunculu";
+      modeClass = "accent";
+      modeTooltip = "Hem tek oyunculu hikaye modu hem de çevrimiçi çok oyunculu modlar içerir.";
+    } else if (hasMultiplayer || isOnlineOnly) {
+      modeVal = "Çok Oyunculu";
+      modeClass = "accent";
+      modeTooltip = "Çevrimiçi çok oyunculu karşılaşmalar.";
+    } else {
+      modeVal = "Tek Oyunculu";
+      modeClass = "supported";
+      modeTooltip = "Tek oyunculu oyun deneyimi.";
+    }
+  }
+
+  const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
+
   return `
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("gamepad-2", 12)}</div>
+        <div class="hub-feature-icon">${icon(ctrl.iconName, 12)}</div>
         <span>Kontrolcü Desteği</span>
       </div>
-      <div class="hub-feature-val supported">${icon("check", 11)} DualSense / Xbox / Gamepad</div>
+      <div class="hub-feature-val ${ctrl.className}">${ctrl.label}</div>
     </div>
 
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="${esc(cloudTooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("cloud", 12)}</div>
         <span>Bulut Kayıtları</span>
@@ -3431,15 +3655,15 @@ function renderGameFeatures(
       <div class="hub-feature-val ${achClass}">${achVal}</div>
     </div>
 
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="${esc(offlineTooltip)}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("globe", 12)}</div>
+        <div class="hub-feature-icon">${icon(isOnlineOnly ? "wifi" : "globe", 12)}</div>
         <span>Çevrimdışı Oynanış</span>
       </div>
       <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
     </div>
 
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="${esc(modeTooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("users", 12)}</div>
         <span>Oyun Modu</span>
@@ -3450,7 +3674,7 @@ function renderGameFeatures(
     ${
       partner
         ? `
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="${esc(partner.name)} harici başlatıcısı üzerinden yürütülür.">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("layers", 12)}</div>
         <span>Harici Başlatıcı</span>
@@ -3463,7 +3687,7 @@ function renderGameFeatures(
     ${
       antiCheat
         ? `
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="Aktif Hile Koruması: ${esc(antiCheat)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("shield", 12)}</div>
         <span>Hile Koruması</span>
@@ -3484,12 +3708,15 @@ function renderGameFeatures(
     ${
       s.installed && s.installSize
         ? `
-    <div class="hub-feature-row">
+    <div class="hub-feature-row" title="Yüklü disk boyutu ve derleme sürümü">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
         <span>Yüklü Boyut</span>
       </div>
-      <div class="hub-feature-val">${fmtBytes(s.installSize)}${s.installedVersion ? ` (v${esc(s.installedVersion)})` : ""}</div>
+      <div class="hub-feature-val">
+        <span class="hub-size-val">${fmtBytes(s.installSize)}</span>
+        ${versionInfo.display ? `<span class="hub-version-badge" title="Sürüm Yapısı: ${esc(versionInfo.full)}">${esc(versionInfo.display)}</span>` : ""}
+      </div>
     </div>`
         : ""
     }
