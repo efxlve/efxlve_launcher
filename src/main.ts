@@ -278,6 +278,22 @@ let epicSort: EpicSort = (localStorage.getItem("efxlve-sort") as EpicSort) || "r
 let epicViewMode: EpicViewMode = (localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid";
 let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSize) || "normal";
 let epicGamesRaw: EpicGame[] = [];
+let epicGamesRawMap: Map<string, EpicGame> = new Map();
+let epicSummariesMap: Map<string, EpicSummary> = new Map();
+
+function setEpicGamesRaw(games: EpicGame[]): void {
+  epicGamesRaw = games;
+  epicGamesRawMap = new Map(games.map((g) => [g.app_name, g]));
+}
+
+function setEpicSummaries(sums: EpicSummary[]): void {
+  epicSummaries = sums;
+  epicSummariesMap = new Map(sums.map((s) => [s.appName, s]));
+}
+
+function summaryOf(appName: string): EpicSummary | undefined {
+  return epicSummariesMap.get(appName);
+}
 
 const sortOptions: { id: EpicSort; label: string; icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh" }[] = [
   { id: "recent", label: "Son oynanan", icon: "clock" },
@@ -577,7 +593,7 @@ function pruneRecent(): void {
 }
 
 function pushRecent(appName: string): void {
-  const s = epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   if (!s || !s.installed) return;
   epicRecent = [appName, ...epicRecent.filter((x) => x !== appName)].slice(0, 8);
   localStorage.setItem(RECENT_KEY, JSON.stringify(epicRecent));
@@ -585,7 +601,7 @@ function pushRecent(appName: string): void {
 }
 
 function rawOf(appName: string): EpicGame | undefined {
-  return epicGamesRaw.find((g) => g.app_name === appName);
+  return epicGamesRawMap.get(appName);
 }
 
 function fmtBytes(bytes: number): string {
@@ -754,6 +770,7 @@ function closeStore(): void {
 }
 
 let query = "";
+let libSearchTimer: number | null = null;
 const downloads = new Map<string, { progress: number; done: boolean; title: string }>();
 let libraryPath = "—";
 
@@ -2296,6 +2313,17 @@ function updateNavIndicator(): void {
   ind.style.opacity = "1";
 }
 
+let renderScheduled = false;
+
+function scheduleRender(): void {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(() => {
+    renderScheduled = false;
+    render();
+  });
+}
+
 function render(): void {
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;
@@ -2319,6 +2347,9 @@ function render(): void {
     : view === "dlc-manager" ? renderDlcManager()
     : view === "profile" ? renderProfile()
     : renderSettings();
+  if (view === "library") {
+    setupLibScrollObserver();
+  }
   if (view === "downloads") {
     drawSpeedCanvas();
   }
@@ -2363,10 +2394,9 @@ async function refreshEpic(): Promise<void> {
       return;
     }
     epicAccount = cached.account;
-    epicAccountId = cached.accountId;
-    epicSummaries = summarize(cached.games, cached.installed, cached.skipped);
+    setEpicSummaries(summarize(cached.games, cached.installed, cached.skipped));
     pruneRecent();
-    epicGamesRaw = cached.games;
+    setEpicGamesRaw(cached.games);
     epicPhase = "library";
     render();
     void loadEpicAchSummaries();
@@ -2384,7 +2414,7 @@ async function loadEpicCollections(): Promise<void> {
   if (!isTauri) return;
   try {
     epicCollections = await epicGetCollections();
-    if (view === "library") render();
+    if (view === "library") scheduleRender();
   } catch (e) {
     console.warn("Koleksiyonlar alınamadı:", e);
   }
@@ -2394,7 +2424,7 @@ async function loadEpicAchSummaries(): Promise<void> {
   if (!isTauri) return;
   try {
     epicAchSummaries = await epicGetAchievementsSummary();
-    if (view === "library") render();
+    if (view === "library") scheduleRender();
   } catch (e) {
     console.warn("Başarım özetleri alınamadı:", e);
   }
@@ -2409,7 +2439,7 @@ async function refreshUpdates(): Promise<void> {
       availableUpdates.set(u.appName, u);
     }
     if (availableUpdates.size > 0 && view === "library") {
-      render();
+      scheduleRender();
     }
   } catch (e) {
     console.warn("Güncelleme denetimi yapılamadı:", e);
@@ -2440,9 +2470,9 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
       epicListInstalled(),
       epicListSkipped(),
     ]);
-    epicSummaries = summarize(egames, einstalled, eskipped);
+    setEpicSummaries(summarize(egames, einstalled, eskipped));
     pruneRecent();
-    epicGamesRaw = egames;
+    setEpicGamesRaw(egames);
     epicSkippedCount = eskipped.length;
     epicSyncNote = "";
     epicBusyMsg = "";
@@ -2467,7 +2497,7 @@ async function syncEpicLibrary(manual: boolean): Promise<void> {
   } finally {
     epicSyncing = false;
     epicBusyMsg = "";
-    if (view === "library") render();
+    if (view === "library") scheduleRender();
   }
 }
 
@@ -2529,43 +2559,41 @@ async function epicDoLogout(): Promise<void> {
     toast(String(e), "err");
   }
   epicAccount = "";
-  epicAccountId = null;
-  epicSummaries = [];
-  epicGamesRaw = [];
+  setEpicSummaries([]);
+  setEpicGamesRaw([]);
   epicSkippedCount = 0;
   await refreshEpic();
 }
 
+const trCollator = new Intl.Collator("tr", { sensitivity: "base" });
+
 function epicVisibleSummaries(): EpicSummary[] {
-  const q = query.toLocaleLowerCase("tr");
+  const q = query.trim().toLocaleLowerCase("tr");
   const activeCol =
     activeCollectionId && activeCollectionId !== "all" && activeCollectionId !== "fav"
       ? epicCollections.find((c) => c.id === activeCollectionId)
       : null;
+  const colSet = activeCol
+    ? new Set(activeCol.app_names.map((n) => n.toLowerCase()))
+    : null;
 
   const list = epicSummaries.filter((s) => {
     if (activeCollectionId === "fav") {
       if (!epicFav.has(s.appName)) return false;
-    } else if (activeCol) {
-      const inCollection = activeCol.app_names.some(
-        (name) => name.toLowerCase() === s.appName.toLowerCase(),
-      );
-      if (!inCollection) return false;
+    } else if (colSet) {
+      if (!colSet.has(s.appName.toLowerCase())) return false;
     }
 
     if (epicFilter === "installed" && !s.installed) return false;
     if (epicFilter === "fav" && !epicFav.has(s.appName)) return false;
     if (epicFilter === "updates" && !s.updateAvailable && !availableUpdates.has(s.appName)) return false;
     if (epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
-    return s.title.toLocaleLowerCase("tr").includes(q);
+    if (q && !s.title.toLocaleLowerCase("tr").includes(q)) return false;
+    return true;
   });
-  const recentIdx = (id: string): number => {
-    const isInst = epicSummaries.some((s) => s.appName === id && s.installed);
-    if (!isInst) return Number.MAX_SAFE_INTEGER;
-    const i = epicRecent.indexOf(id);
-    return i === -1 ? Number.MAX_SAFE_INTEGER : i;
-  };
-  const byTitle = (a: EpicSummary, b: EpicSummary) => a.title.localeCompare(b.title, "tr");
+
+  const byTitle = (a: EpicSummary, b: EpicSummary) => trCollator.compare(a.title, b.title);
+
   switch (epicSort) {
     case "alpha":
       return [...list].sort(byTitle);
@@ -2582,8 +2610,17 @@ function epicVisibleSummaries(): EpicSummary[] {
       return [...list].sort(
         (a, b) => Number(isAppPlatinum(b.appName)) - Number(isAppPlatinum(a.appName)) || byTitle(a, b),
       );
-    default:
-      return [...list].sort((a, b) => recentIdx(a.appName) - recentIdx(b.appName));
+    default: {
+      const recentIdxMap = new Map<string, number>();
+      for (let i = 0; i < epicRecent.length; i++) {
+        recentIdxMap.set(epicRecent[i], i);
+      }
+      const rank = (s: EpicSummary): number => {
+        if (!s.installed) return 999999;
+        return recentIdxMap.get(s.appName) ?? 999999;
+      };
+      return [...list].sort((a, b) => rank(a) - rank(b) || byTitle(a, b));
+    }
   }
 }
 
@@ -5924,15 +5961,84 @@ function renderEpicShelves(): string {
   return `<div class="shelves-container">${sections.join("")}</div>`;
 }
 
+const INITIAL_CARD_CHUNK = 48;
+const MORE_CARD_CHUNK = 36;
+let renderedCardCount = INITIAL_CARD_CHUNK;
+let libScrollObserver: IntersectionObserver | null = null;
+
+function resetCardChunk(): void {
+  renderedCardCount = INITIAL_CARD_CHUNK;
+}
+
 function renderEpicItems(): string {
   if (epicViewMode === "shelves") {
     return renderEpicShelves();
   }
   const visible = epicVisibleSummaries();
-  return (
-    visible.map(epicViewMode === "grid" ? epicCardPortrait : epicRowHtml).join("") ||
-    `<div class="empty">Oyun bulunamadı.</div>`
-  );
+  if (visible.length === 0) {
+    return `<div class="empty">Oyun bulunamadı.</div>`;
+  }
+
+  const chunk = visible.slice(0, renderedCardCount);
+  const cardsHtml = chunk.map((s, idx) =>
+    epicViewMode === "grid" ? epicCardPortrait(s, idx) : epicRowHtml(s)
+  ).join("");
+
+  const hasMore = renderedCardCount < visible.length;
+  const sentinelHtml = hasMore
+    ? `<div id="lib-scroll-sentinel" style="height:24px;grid-column:1/-1;width:100%;pointer-events:none;"></div>`
+    : "";
+
+  return cardsHtml + sentinelHtml;
+}
+
+function setupLibScrollObserver(): void {
+  if (libScrollObserver) {
+    libScrollObserver.disconnect();
+    libScrollObserver = null;
+  }
+  if (epicViewMode === "shelves") return;
+
+  const sentinel = document.getElementById("lib-scroll-sentinel");
+  if (!sentinel) return;
+
+  libScrollObserver = new IntersectionObserver((entries) => {
+    const entry = entries[0];
+    if (!entry || !entry.isIntersecting) return;
+
+    const visible = epicVisibleSummaries();
+    if (renderedCardCount >= visible.length) {
+      sentinel.remove();
+      libScrollObserver?.disconnect();
+      libScrollObserver = null;
+      return;
+    }
+
+    const nextSlice = visible.slice(renderedCardCount, renderedCardCount + MORE_CARD_CHUNK);
+    const startIdx = renderedCardCount;
+    renderedCardCount += nextSlice.length;
+
+    const newCardsHtml = nextSlice
+      .map((s, idx) =>
+        epicViewMode === "grid"
+          ? epicCardPortrait(s, startIdx + idx)
+          : epicRowHtml(s)
+      )
+      .join("");
+
+    sentinel.insertAdjacentHTML("beforebegin", newCardsHtml);
+
+    if (renderedCardCount >= visible.length) {
+      sentinel.remove();
+      libScrollObserver?.disconnect();
+      libScrollObserver = null;
+    }
+  }, {
+    root: viewEl,
+    rootMargin: "450px",
+  });
+
+  libScrollObserver.observe(sentinel);
 }
 
 function renderSkeletonLibrary(): string {
@@ -6276,10 +6382,9 @@ function updateLibraryFilterInPlace(): boolean {
   }
 
   resultsEl.className = epicViewMode === "grid" ? `pgrid size-${epicCardSize}` : epicViewMode === "shelves" ? "shelves-container" : "";
-  resultsEl.style.animation = "none";
-  void resultsEl.offsetHeight;
-  resultsEl.style.animation = "";
+  resetCardChunk();
   resultsEl.innerHTML = renderEpicItems();
+  setupLibScrollObserver();
 
   return true;
 }
@@ -7917,10 +8022,10 @@ async function refreshEpicInstalled(): Promise<void> {
   if (!isTauri) return;
   try {
     const [einstalled, eskipped] = await Promise.all([epicListInstalled(), epicListSkipped()]);
-    epicSummaries = summarize(epicGamesRaw, einstalled, eskipped);
+    setEpicSummaries(summarize(epicGamesRaw, einstalled, eskipped));
     pruneRecent();
     epicSkippedCount = eskipped.length;
-    if (view === "library") render();
+    if (view === "library") scheduleRender();
     void refreshUpdates();
   } catch (e) {
     toast(`Kurulu listesi tazelenemedi: ${String(e)}`, "err");
@@ -9864,9 +9969,20 @@ document.addEventListener("input", (e) => {
     return;
   }
   if (t.id === "search") {
-    query = (t as HTMLInputElement).value;
-    const box = document.getElementById("lib-results");
-    if (box) box.innerHTML = renderEpicItems();
+    const val = (t as HTMLInputElement).value;
+    if (libSearchTimer !== null) {
+      window.clearTimeout(libSearchTimer);
+    }
+    libSearchTimer = window.setTimeout(() => {
+      libSearchTimer = null;
+      query = val;
+      resetCardChunk();
+      const box = document.getElementById("lib-results");
+      if (box) {
+        box.innerHTML = renderEpicItems();
+        setupLibScrollObserver();
+      }
+    }, 120);
     return;
   }
   if (t.id === "dlc-search") {
@@ -10058,8 +10174,9 @@ document.addEventListener("change", (e) => {
 });
 
 viewEl.addEventListener("scroll", () => {
-  document.getElementById("totop")?.classList.toggle("show", viewEl.scrollTop > 600);
-});
+  const totop = document.getElementById("totop");
+  if (totop) totop.classList.toggle("show", viewEl.scrollTop > 600);
+}, { passive: true });
 
 function updateMaxIcon(isMax?: boolean): void {
   const iconEl = document.getElementById("win-max-icon");
@@ -10116,7 +10233,16 @@ document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
   }
 });
 
-window.addEventListener("resize", handleWindowResize);
+let resizeRaf: number | null = null;
+function throttledWindowResize(): void {
+  if (resizeRaf !== null) return;
+  resizeRaf = window.requestAnimationFrame(() => {
+    resizeRaf = null;
+    handleWindowResize();
+  });
+}
+
+window.addEventListener("resize", throttledWindowResize, { passive: true });
 
 /* ---------- Üst bar klavye kısayolları ----------
    Ctrl+1 Mağaza · Ctrl+2 Kütüphane · Ctrl+3 İndirmeler · Ctrl+, Ayarlar */
@@ -10165,7 +10291,6 @@ async function init(): Promise<void> {
     });
     await listen<LibraryEvent>("legendary-library", (event) => {
       epicBusyMsg = event.payload.message;
-      if (view === "library") render();
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
@@ -10653,10 +10778,34 @@ function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): vo
     ? document.getElementById("modal-root")!
     : (document.getElementById("view") || document.body);
 
+  if (dir === "down" && view === "library" && !modalOpen) {
+    const sentinel = document.getElementById("lib-scroll-sentinel");
+    if (sentinel) {
+      const visible = epicVisibleSummaries();
+      if (renderedCardCount < visible.length) {
+        const nextSlice = visible.slice(renderedCardCount, renderedCardCount + MORE_CARD_CHUNK);
+        const startIdx = renderedCardCount;
+        renderedCardCount += nextSlice.length;
+        const newCardsHtml = nextSlice
+          .map((s, idx) =>
+            epicViewMode === "grid"
+              ? epicCardPortrait(s, startIdx + idx)
+              : epicRowHtml(s)
+          )
+          .join("");
+        sentinel.insertAdjacentHTML("beforebegin", newCardsHtml);
+        if (renderedCardCount >= visible.length) {
+          sentinel.remove();
+          libScrollObserver?.disconnect();
+          libScrollObserver = null;
+        }
+      }
+    }
+  }
+
   const selector = 'button:not([disabled]):not(.iconbtn), .pcard, [tabindex="0"], a[href], input:not([disabled]), select:not([disabled])';
   const focusables = Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter((el) => {
-    const rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== "hidden";
+    return el.offsetParent !== null;
   });
 
   if (focusables.length === 0) return;
