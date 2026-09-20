@@ -1318,3 +1318,20 @@ Responsive: hesap adı `≤1200px`'te gizlenir (avatar kalır, `max-width: 150px
 **Üretim betiği:** `%TEMP%\efx-prev\build_compare.py` (repoya girmez — tek seferlik analiz aracı). Çıktı: `karsilastirma.png` (2800×1348, 2x). Yeni bir tur eklendiğinde `VERSIONS` listesine commit hash'i ekleyip yeniden koşmak yeterli.
 
 **Arşiv kopyası:** `.workbuddy-ai/artifacts/ust-bar-tasarim-turlari.png` (yerel referans; bilinçli olarak git'e eklenmez — repoda ikili dosya tutmuyoruz).
+
+## 76. Üst Bar "Mor Kimlik" Turu (5. Tur) — Sabit Mor Taban + Menekşe Kayan Çizgi
+
+**Talep:** *"Mor temayı koruyarak güzel, modern bir güncelleme; kullanıcıya hoş gelen bir şey."*
+
+**Teşhis (4. turun zaafları):** Bölümsel ortam ışığı tam renk değiştirdiği için barın mor kimliği Mağaza'da maviye, İndirmeler'de turkuaza "kaçıyordu"; kayan alt çizgi ve odak parıltısı jenerik beyazdı.
+
+**Çözüm — iki katmanlı ışık mimarisi:**
+- **`#titlebar::before` = sabit menekşe kimlik tabanı** (`rgba(139,92,246,.16)` radyal, sol üstten). Bölümden bağımsız daima hissedilir.
+- **`#titlebar::after` = bölümsel sahne ışığı** (`var(--nav-ambient)`, alfaları düşürüldü: store/dl/profile `.13`, settings `.12`, library `.20`) — mor tabanın üstüne oturur, kimlik kaybolmaz. `@property` geçiş animasyonu korunur.
+- **Kayan alt çizgi mor:** `#ffffff` → `linear-gradient(90deg, #8b5cf6, #c4b5fd)` + `0 -1px 8px -1px rgba(167,139,250,.45)` üst bloom. Platin kupa rozetleriyle aynı aile.
+- **Aktif sekme dili mora bağlandı:** `::before` odak parıltısı aktifte lavanta (`rgba(167,139,250,.16)`), aktif metin sıcak beyaz-lavanta (`#f4f1ff`), aktif ikon `#c4b5fd`. Hover'da parıltı nötr beyaz kalır (renk yalnızca SEÇİLİ durumu bildirir → §3 renk disiplini).
+- **Logo kalkanı mor cam:** `rgba(139,92,246,.16)` zemin + `rgba(167,139,250,.30)` kenarlık + mor tonlu gölge. Girişli avatar bir tık zenginleşti (`rgba(139,92,246,.24)` / `#d3c6ff`).
+- **Korunanlar:** 54px yükseklik, `updateNavIndicator()` (getBoundingClientRect farkı), `updateNavAmbient()`, sağ küme PS5 döşemesi, `Ctrl+1/2/3/,` kısayolları, responsive eşikler (≤1200px ad gizli, ≤960px ikon-only). Süs animasyonu eklenmedi.
+
+**Doğrulama:** `npm.cmd run build` (tsc + vite, 0 hata). Headless Edge ile 1280px, 2x, taze `--user-data-dir`, animasyonlar kapalı olmak üzere **3 bölümün** (Mağaza/Kütüphane/İndirmeler) gerçek-CSS ekran görüntüsü alındı ve gözle doğrulandı. Yeniden üretilebilir araç: `node tools/ui-preview/titlebar-preview.mjs` → `%TEMP%\efx-nav-preview\preview-{store,library,downloads}.html` (bölüm başına aktif sekme + doğru `--nav-ambient` enjekte eder; §75'teki rAF + fonts.ready kuralı uygulanır).
+
