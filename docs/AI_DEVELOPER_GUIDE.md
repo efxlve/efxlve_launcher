@@ -51,6 +51,8 @@
 | **6. Permanent 401 Catalog Items** | Library sync hangs or crashes. | Delisted/unowned games yield permanent 401s. `skip.rs` marks them in `skipped.json` and generates stub metadata. |
 | **7. Store Webview iframe attempt** | Epic Games Store page displays blank/refuses to connect. | Epic blocks iframes (`X-Frame-Options: DENY`). Must use native child webview (`unstable` + `add_child`). |
 | **8. Layout thrashing in Gamepad Loop** | Gamepad navigation stutters or drops frames. | Do not read `getBoundingClientRect()` or `getComputedStyle()` inside the 170ms gamepad polling loop. |
+| **9. Raw OS Emojis in UI** | Cheap, amateur look; inconsistent rendering across Windows versions. | Strictly zero emojis. Always use Lucide / inline SVG vector icons (`icon("name", size)`) or ISO codes. |
+| **10. Missing `tabular-nums` on counters** | Numbers jumping cause buttons and cards to visually jitter/shake. | Enforce `font-variant-numeric: tabular-nums` on all speeds, sizes, times, and counts. |
 
 ---
 

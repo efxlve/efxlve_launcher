@@ -1824,12 +1824,12 @@ function renderSettings(): string {
       <p>Launcher arayüzü ve yerel içeriklerin görüntüleneceği dili belirleyin.</p>
       <div class="lang-selection-group">
         <button class="lang-option-btn ${appLanguage === "tr" ? "active" : ""}" data-act="set-app-language" data-lang="tr">
-          <span class="lang-flag">🇹🇷</span>
+          <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">TR</span>
           <span class="lang-name">Türkçe</span>
           <span class="lang-tag">Varsayılan</span>
         </button>
         <button class="lang-option-btn ${appLanguage === "en" ? "active" : ""}" data-act="set-app-language" data-lang="en">
-          <span class="lang-flag">🌐</span>
+          <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">EN</span>
           <span class="lang-name">English</span>
           <span class="lang-tag ${appLanguage === "en" ? "" : "coming-soon"}">${appLanguage === "en" ? "Active" : "Yakında"}</span>
         </button>
@@ -1861,7 +1861,7 @@ function renderSettings(): string {
             ` : ""}
           </select>
           <button type="button" class="btn ghost small ${isRecordingScreenshotHotkey ? "active" : ""}" data-act="record-screenshot-hotkey" style="${isRecordingScreenshotHotkey ? "background:rgba(239,68,68,0.2);border-color:#ef4444;color:#fca5a5" : ""}">
-            ${isRecordingScreenshotHotkey ? "🛑 Tuşa Basın…" : `${icon("edit", 12)} Yeni Tuş Ata`}
+            ${isRecordingScreenshotHotkey ? `${icon("keyboard", 12)} Tuşa Basın…` : `${icon("edit", 12)} Yeni Tuş Ata`}
           </button>
           <span class="muted" style="font-size:12px">Aktif tuş: <strong style="color:var(--accent);background:rgba(124,58,237,0.15);padding:2px 6px;border-radius:4px">${esc(screenshotHotkeyName)}</strong></span>
         </div>
@@ -4421,13 +4421,13 @@ async function copyScreenshotImageToClipboard(item: GameScreenshotItem): Promise
       new ClipboardItem({ "image/png": blob })
     ]);
 
-    toast("📸 Görsel panoya kopyalandı! (Discord veya sohbette Ctrl+V ile yapıştırabilirsiniz)", "ok");
+    toast("Görsel panoya kopyalandı.", "ok");
     return true;
   } catch (err) {
     console.warn("Görsel kopyalanamadı:", err);
     try {
       await navigator.clipboard.writeText(item.file_path);
-      toast("📁 Dosya yolu panoya kopyalandı: " + item.file_name, "ok");
+      toast("Dosya yolu panoya kopyalandı: " + item.file_name, "ok");
       return true;
     } catch {
       toast("Panoya kopyalama başarısız oldu", "err");
@@ -9530,10 +9530,10 @@ document.addEventListener("click", (e) => {
     const s = epicSummaries.find((x) => x.appName === id);
     const title = t.dataset.title || (s ? s.title : id);
     playScreenshotShutterSound();
-    toast("📸 Ekran görüntüsü alınıyor…", "");
+    toast("Ekran görüntüsü alınıyor…", "");
     epicCaptureGameScreenshot(id, title)
       .then((item) => {
-        toast(`📸 Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
         void fetchAndRenderScreenshots(id, title, true);
       })
       .catch((err) => toast(String(err), "err"));
@@ -9591,7 +9591,7 @@ document.addEventListener("click", (e) => {
     if (activeShareScreenshot) {
       const path = activeShareScreenshot.item.file_path;
       navigator.clipboard.writeText(path).then(() => {
-        toast("📁 Dosya yolu panoya kopyalandı", "ok");
+        toast("Dosya yolu panoya kopyalandı.", "ok");
       }).catch(() => {
         toast(path, "");
       });
@@ -10539,7 +10539,7 @@ async function init(): Promise<void> {
         playScreenshotShutterSound();
         const sum = epicSummaries.find((x) => x.appName === event.payload.id);
         const title = sum?.title || event.payload.title || "Oyun";
-        toast(`📸 ${title} — Ekran görüntüsü alınıyor…`, "ok");
+        toast(`${title} — Ekran görüntüsü alınıyor…`, "ok");
       }
     );
 
@@ -10547,7 +10547,7 @@ async function init(): Promise<void> {
       "screenshot-captured",
       (event) => {
         const { id, item } = event.payload;
-        toast(`📸 Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
 
         const existing = loadedScreenshots.get(id) || [];
         loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
@@ -10665,7 +10665,7 @@ function updateGamepadHud(active = true): void {
 
 function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
-    console.log("🎮 Oyun Kolu Bağlandı:", e.gamepad.id);
+    console.log("[Gamepad] Bağlandı:", e.gamepad.id);
     toast(`Oyun Kolu Bağlandı: ${e.gamepad.id.split("(")[0].trim()}`, "ok");
     if (!gamepadPolling) {
       gamepadPolling = true;
@@ -10675,7 +10675,7 @@ function initGamepadSupport(): void {
   });
 
   window.addEventListener("gamepaddisconnected", (e) => {
-    console.log("🎮 Oyun Kolu Ayrıldı:", e.gamepad.id);
+    console.log("[Gamepad] Ayrıldı:", e.gamepad.id);
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {

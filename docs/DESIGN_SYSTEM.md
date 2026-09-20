@@ -391,12 +391,72 @@ All buttons must strictly adhere to these 4 classes and fixed dimensions:
 
 ---
 
-## 7. Quality Checklist for Future UI Changes
+## 7. Konsol Seviyesi Profesyonellik Standartları & Katı Yasaklar (Zero-Tolerance Invariants)
+
+Steam, PlayStation 5 OS ve Xbox Dashboard seviyesinde bir masaüstü konsol deneyimi sunmak için aşağıdaki kurallar **tavizsizdir**:
+
+### 7.1. SIFIR EMOJİ POLİTİKASI (Zero-Emoji Policy)
+- **KESİNLİKLE YASAK:** Arayüzde hiçbir buton, bildirim (`toast`), başlık, etiket, sekme, dil seçimi veya koleksiyon etiketinde işletim sistemi emojisi (`🇹🇷`, `🌐`, `🎮`, `⭐`, `🔥`, `🚀`, `📸`, `📋`, `✨`, `⌨️` vb.) KULLANILAMAZ.
+- **Neden?** Emojiler Windows 10, Windows 11 veya Linux'ta farklı renk, boyut ve biçimde çizilir. Arayüzü ucuz bir mobil sohbet uygulaması veya amatör web sitesi gibi gösterir. Konsol işletim sistemlerinde asla ham işletim sistemi emojisi görülmez.
+- **Standart:**
+  - İkon gerekiyorsa: Her zaman tek tip stroke kalınlığına sahip Lucide / inline SVG ikonu (`icon("camera", 16)`, `icon("globe", 16)`).
+  - Dil seçimi gerekiyorsa: Bayrak emojisi yerine temiz tipografiyle ISO dil kodları (`TR`, `EN`) veya `.ps5-lang-pill` kullanılır.
+
+### 7.2. SAYISAL TİTREME ENGELLEME (Tabular Numbers Zorunluluğu)
+- **KESİNLİKLE YASAK:** Canlı akan indirme hızları (`18.4 MB/s`), disk yazma hızları, yüzdeler (`%45`), oyun süreleri (`14 sa 20 dk`), kupa sayaçları, saat veya ETA sürelerinde orantılı (proportional) font kullanılamaz.
+- **Neden?** Standart fontlarda `1` sayısı ile `8` sayısının piksel genişliği farklıdır. Sayı değiştikçe metin kutuları, butonlar ve sayaçlar sürekli titrer (layout jitter / shake).
+- **Standart:** Tüm dinamik sayısal verilerde CSS kuralı zorunludur:
+  ```css
+  font-variant-numeric: tabular-nums;
+  ```
+
+### 7.3. SIFIR METİN TAŞMASI (Strict Ellipsis & Line-Clamp)
+- **KESİNLİKLE YASAK:** Hiçbir oyun başlığı, klasör yolu veya etiket bir kartın veya ızgaranın yüksekliğini rastgele genişletip hizada bozulmaya yol açamaz.
+- **Standart:**
+  - Tek satırlık alanlar:
+    ```css
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    ```
+  - Çok satırlık açıklamalar:
+    ```css
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    ```
+
+### 7.4. TARAYICI VARSAYILANI SIFIR TOLERANSI (No Native Browser Elements)
+- **KESİNLİKLE YASAK:** Webview varsayılanı mavi/siyah odak halkaları (`outline: auto`), beyaz sayı değiştirici oklar (`input[type="number"]::-webkit-inner-spin-button`), gri ham butonlar (`<button>`), Windows sistem kaydırma çubuğu veya sistem açılır kutuları (`<select>`) KESİNLİKLE YASAKTIR.
+- **Standart:** Her form elemanı özel PS5 surface (`--ps5-surface-2`), 10px köşe yuvarlama (`--ps5-radius-md`) ve lavanta odak halkası taşımalıdır.
+
+### 7.5. SOĞUKKANLI KONSOL DİLİ (Microcopy Discipline)
+- **KESİNLİKLE YASAK:** Ünlem işaretli ("Hemen Oyna!", "Süper Fırsat!", "Yedeği Geri Yükle!"), çocuksu veya laubali arayüz metinleri ("Hata çıktı :(", "Oyun silindi gitti", "Harika seçim!") YASAKTIR.
+- **Standart:** PlayStation ve Steam gibi soğukkanlı, net, kısa ve profesyonel sistem dili kullanılır:
+  - `"Oyna"`, `"Yükle"`, `"Doğrula"`, `"Kaldır"`, `"İptal"`
+  - `"Bütünlük doğrulanıyor…"`, `"Yetersiz disk alanı"`, `"Ekran görüntüsü panoya kopyalandı"`
+
+### 7.6. DOKUNSAL GERİ BİLDİRİM & HIZ SINIRI (Tactile Micro-Feedback)
+- **KESİNLİKLE YASAK:** Tıklandığında hiçbir tepki vermeyen ölü butonlar veya 250ms'den uzun süren hantal CSS animasyonları.
+- **Standart:** Tıklanabilir tüm elemanlar `:active` anında hafifçe ezilmelidir (`transform: scale(0.98)`). Geçiş animasyonları asla 120–150ms'yi aşmamalıdır (`transition: all 0.15s cubic-bezier(0.2, 0, 0, 1)`).
+
+### 7.7. ZARİF BOŞ DURUMLAR (Empty State Elegance)
+- **KESİNLİKLE YASAK:** Bir sayfa veya liste asla kırık ya da kuru bir "Kayıt yok" yazısıyla boş bırakılamaz.
+- **Standart:** 36-40px soluk vektör ikonu, net bir başlık ("İndirme Kuyruğu Boş"), yönlendirici kısa bir açıklama ve birincil yönlendirme butonu (`.ps5-btn.primary` -> "Kütüphaneye Git").
+
+---
+
+## 8. Quality Checklist for Future UI Changes
 
 Before submitting any UI modification, verify:
+- [ ] Are all raw OS emojis eliminated? (Only inline SVG vector icons or ISO codes allowed).
+- [ ] Do dynamic numbers, timers, and speeds use `font-variant-numeric: tabular-nums`?
+- [ ] Are long titles and paths truncated with strict `text-overflow: ellipsis`?
 - [ ] Does this page use `.ps5-page-header` with kicker, title, and subtitle?
 - [ ] Are all surfaces using `--ps5-surface-1`, `--ps5-surface-2`, or `--ps5-surface-3`?
 - [ ] Are all border-radii strictly `6px`, `10px`, `14px`, or `20px`?
 - [ ] Are buttons using `.ps5-btn.primary`, `.secondary`, `.danger`, or `.ps5-btn-icon`?
 - [ ] Are there zero decorative neon glow effects or rainbow gradients?
 - [ ] Does Gamepad navigation outline the element with the 2px lavender focus ring without layout shifting?
+

@@ -71,9 +71,33 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 17. **Sıfır Reflow / Layout Thrashing:** 170ms'lik gamepad döngüsünde veya scroll dinleyicilerinde `getBoundingClientRect()` ve `getComputedStyle()` ardışık çalıştırılamaz. Görünürlük kontrolünde `offsetParent !== null` gibi hafif yöntemler kullanılır.
 18. **Ölü Kod & Artık Dosya Sıfır Toleransı:** Kaldırılan veya test edilen özelliklere ait tüm yardımcı script'ler (`tools/`), geçici dosyalar, ölü CSS sınıfları ve arayüz artıkları işi bittiğinde derhal silinir. "İleride lazım olur" diye repoda ölü kod tutulmaz.
 
+## 7. Konsol Seviyesi Profesyonellik & Katı Yasaklar (Zero-Tolerance Invariants)
+
+Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol deneyimi sunması için tavizsizdir:
+
+1. **SIFIR EMOJİ POLİTİKASI (Zero-Emoji Policy — KESİNLİKLE YASAK):**
+   - Arayüzün hiçbir yerinde (bildirimler/toast'lar, butonlar, başlıklar, etiketler, sekmeler, dil seçenekleri, koleksiyonlar) işletim sistemi emojisi (`🇹🇷`, `🌐`, `🎮`, `⭐`, `🔥`, `🚀`, `📸`, `📋`, `✨`, `⌨️` vb.) KULLANILAMAZ.
+   - Her zaman net, ölçeklenebilir inline SVG vektör ikonu (`icon("camera", 16)`, `icon("globe", 16)`) veya ISO dil kodları (`TR`, `EN`) temiz tipografiyle yazılır. Emojiler platformlar arasında (Win10 vs Win11) tutarsızdır ve konsol ciddiyetini bozar.
+2. **SAYISAL TİTREME ENGELLEME (Tabular Nums Zorunluluğu):**
+   - İndirme hızları (`MB/s`), disk hızları, yüzdeler (`%45`), oyun süreleri, kupa sayaçları, saat veya ETA sürelerinde `font-variant-numeric: tabular-nums` ZORUNLUDUR. Orantılı (proportional) sayılar genişlik değiştirdikçe butonları ve kartları titreterek (layout jitter) son derece kalitesiz gösterir.
+3. **SIFIR METİN TAŞMASI (Strict Ellipsis & Line-Clamp):**
+   - Hiçbir oyun başlığı, klasör yolu veya etiket bir kartın veya ızgaranın yüksekliğini rastgele genişletemez. Tek satırlık alanlarda `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` şarttır. Açıklamalarda `-webkit-line-clamp: 2` ile maksimum 2 satır sınırı konur.
+4. **TARAYICI VARSAYILANI SIFIR TOLERANSI (No Native Browser Elements):**
+   - Webview varsayılanı mavi/siyah odak halkaları (`outline: auto`), beyaz sayı okları (`input[type="number"]`), gri ham butonlar, Windows sistem scrollbar'ı veya sistem açılır kutuları (`<select>`) KESİNLİKLE YASAKTIR. Her form bileşeni PS5 dark token'larını taşır.
+5. **SOĞUKKANLI KONSOL DİLİ (Microcopy Discipline):**
+   - Ünlem işaretli ("Hemen Oyna!", "Süper Fırsat!", "Yedeği Geri Yükle!"), abartılı veya laubali ifadeler ("Hata çıktı :(", "Oyun silindi gitti") YASAKTIR. Konsol düzeyinde net, profesyonel sistem dili kullanılır ("Oyna", "Kur", "Doğrulanıyor…", "Yetersiz disk alanı", "Ekran görüntüsü panoya kopyalandı").
+6. **YASAKLI AI / OYUNCU KLİŞELERİ (No Rainbow / Neon Glitz):**
+   - Mor→cyan gradyanlar, sarkan neon gölgeler (`box-shadow glow`), gradyan metinler (`background-clip: text`), her öğeyi 999px hap kapsüle çevirmek YASAKTIR. Konsol estetiği sakin, tok, lüks obsidyen ve tek lavanta vurgu rengidir (`#8b5cf6`).
+7. **DOKUNSAL GERİ BİLDİRİM & HIZ SINIRI (Tactile Micro-Feedback):**
+   - Tıklanabilir tüm bileşenlerde `:active` anında hafif basılma (`transform: scale(0.98)`) olmalı; animasyon süreleri asla 120–150ms'yi aşmamalıdır (yavaş animasyonlar arayüzü hantal hissettirir).
+8. **ZARİF BOŞ DURUMLAR (Empty State Elegance):**
+   - Sayfa veya liste asla kuru/kırık bir metinle boş bırakılamaz. İlgili temanın 36-40px vektör ikonu (soluk ton), net bir başlık, yönlendirici kısa bir açıklama ve birincil yönlendirme butonu bulunmalıdır.
+9. **10-FOOT KOLTUK & GAMEPAD ODAK HİJYENİ:**
+   - Gamepad ile gezinirken odak halkası 2px lavanta (`#8b5cf6`), 3px `outline-offset` ile belirgin olmalı; odaklanıldığında kartı büyütüp (`transform: scale(1.1)`) yanındaki kartları kaydıran veya titreten layout shift efektleri KESİNLİKLE KULLANILAMAZ.
+
 ---
 
-## 7. Ek Dokümantasyon Referansları
+## 8. Ek Dokümantasyon Referansları
 
 - **Detaylı Sistem Mimarisi:** [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 - **Kod Tabanı & Sembol Haritası:** [`docs/CODEBASE_MAP.md`](./docs/CODEBASE_MAP.md)
@@ -81,4 +105,5 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 - **Tauri IPC & Backend Komut Referansı:** [`docs/TAURI_IPC_REFERENCE.md`](./docs/TAURI_IPC_REFERENCE.md)
 - **AI Geliştirici & Mental Model Rehberi:** [`docs/AI_DEVELOPER_GUIDE.md`](./docs/AI_DEVELOPER_GUIDE.md)
 - **Tarihçe & Geçmiş Sürüm Günlükleri (Bölüm 1–78):** [`docs/CHANGELOG_INTERNAL.md`](./docs/CHANGELOG_INTERNAL.md)
+
 
