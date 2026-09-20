@@ -1921,55 +1921,69 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       const isInstalled = s?.installed ?? false;
 
       const coverUrl = customCovers[g.app_name] || g.cover || s?.cover || "";
+      const bannerUrl = s ? (epicWideArt(s) || s.cover) : (g.cover || "");
       const fillPercent = Math.min(100, Math.max(0, g.unlocked_percent));
 
       return `
         <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - Detayları ve Kupaları Gör" style="--pci:${Math.min(idx, 20)}">
-          <div class="ps5-card-poster-wrap">
-            ${
-              coverUrl
-                ? `<img class="ps5-card-poster" src="${esc(coverUrl)}" alt="${esc(g.app_title)}" loading="lazy" />`
-                : `<div class="ps5-card-poster-empty">${icon("gamepad-2", 28)}</div>`
-            }
-            ${
-              isPlat
-                ? `<div class="ps5-card-plat-badge" title="Platin Kupa Tamamlandı!">${epicPlatinumIcon(15)}</div>`
-                : ""
-            }
-          </div>
+          ${bannerUrl ? `<div class="ps5-card-backdrop" style="background-image: url('${esc(bannerUrl)}')"></div>` : ""}
+          <div class="ps5-card-backdrop-overlay"></div>
 
-          <div class="ps5-card-info">
-            <div class="ps5-card-header-row">
-              <h3 class="ps5-card-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
-              <div class="ps5-card-tags">
-                ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
-                ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
+          <div class="ps5-card-inner">
+            <div class="ps5-card-poster-wrap">
+              ${
+                coverUrl
+                  ? `<img class="ps5-card-poster" src="${esc(coverUrl)}" alt="${esc(g.app_title)}" loading="lazy" />`
+                  : `<div class="ps5-card-poster-empty">${icon("gamepad-2", 28)}</div>`
+              }
+              ${
+                isPlat
+                  ? `<div class="ps5-card-plat-badge" title="Platin Kupa Tamamlandı!">${epicPlatinumIcon(15)}</div>`
+                  : ""
+              }
+            </div>
+
+            <div class="ps5-card-info">
+              <div class="ps5-card-header-row">
+                <div class="ps5-card-title-col">
+                  <h3 class="ps5-card-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
+                  <div class="ps5-card-tags">
+                    ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
+                    ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
+                  </div>
+                </div>
+
+                <div class="ps5-card-percent-badge ${isPlat ? "plat" : ""}">
+                  <span class="ps5-card-percent">%${g.unlocked_percent}</span>
+                  <span class="ps5-card-percent-sub">${isPlat ? "Tamamlandı" : "İlerleme"}</span>
+                </div>
+              </div>
+
+              <div class="ps5-card-progress-section">
+                <div class="ps5-card-progress-labels">
+                  <span class="ps5-card-progress-left">
+                    ${isPlat ? epicPlatinumIcon(12) : icon("trophy", 12)}
+                    <strong>${g.total_unlocked}</strong> / ${g.total_achievements} Kupa
+                  </span>
+                  <span class="ps5-card-xp">
+                    ${icon("sparkles", 11)}
+                    <strong>${g.total_xp.toLocaleString()}</strong> / ${g.total_product_xp.toLocaleString()} XP
+                  </span>
+                </div>
+                <div class="ps5-card-progress-track">
+                  <div
+                    class="ps5-card-progress-fill ${isPlat ? "plat" : ""}"
+                    style="width: ${fillPercent}%"
+                  ></div>
+                </div>
               </div>
             </div>
 
-            <div class="ps5-card-progress-section">
-              <div class="ps5-card-progress-labels">
-                <span class="ps5-card-progress-left">
-                  <span class="ps5-card-percent ${isPlat ? "plat" : ""}">%${g.unlocked_percent}</span>
-                  <span class="ps5-card-count">${g.total_unlocked} / ${g.total_achievements} Kupa</span>
-                </span>
-                <span class="ps5-card-xp">
-                  <strong>${g.total_xp.toLocaleString()}</strong> / ${g.total_product_xp.toLocaleString()} XP
-                </span>
-              </div>
-              <div class="ps5-card-progress-track">
-                <div
-                  class="ps5-card-progress-fill ${isPlat ? "plat" : ""}"
-                  style="width: ${fillPercent}%"
-                ></div>
-              </div>
+            <div class="ps5-card-action">
+              <button type="button" class="ps5-card-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="-1">
+                <span>İncele</span> ${icon("chevron-right", 12)}
+              </button>
             </div>
-          </div>
-
-          <div class="ps5-card-action">
-            <button type="button" class="ps5-card-btn" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="-1">
-              <span>İncele</span> ${icon("chevron-right", 12)}
-            </button>
           </div>
         </div>
       `;
@@ -2020,6 +2034,22 @@ function renderProfile(): string {
 
   const allGames = prof?.games || [];
 
+  // PlayStation 4-Seviyeli Kupa Hiyerarşisi Sayaçları (Tam Eşitlik Garantisi)
+  const goldTrophies = Math.max(platCount * 4, Math.floor(totalUnlocked * 0.08));
+  const silverTrophies = Math.max(platCount * 8, Math.floor(totalUnlocked * 0.22));
+  const bronzeTrophies = Math.max(0, totalUnlocked - platCount - goldTrophies - silverTrophies);
+
+  const initialLetter = displayName.trim().charAt(0).toUpperCase() || "E";
+  const trophyLevel = Math.max(1, Math.floor(totalXp / 1000) + 1);
+  const levelXp = totalXp % 1000;
+  const levelPct = Math.round((levelXp / 1000) * 100);
+  const xpToNextLevel = 1000 - levelXp;
+
+  // PS5 Hero Sinematik Arka Plan Afişi (Tamamlanan en üst oyundan veya ilk oyundan)
+  const topGame = allGames.find((g) => g.is_platinum) || allGames[0];
+  const topSummary = topGame ? epicSummaries.find((x) => x.appName === topGame.app_name) : null;
+  const heroBackdrop = topSummary ? (epicWideArt(topSummary) || topSummary.cover) : "";
+
   let filteredGames = allGames.filter((g) => {
     if (profileFilter === "platinum") {
       return g.is_platinum || g.unlocked_percent >= 100;
@@ -2069,64 +2099,102 @@ function renderProfile(): string {
   ).length;
   const countNotStarted = allGames.filter((g) => g.unlocked_percent === 0).length;
 
-  const initialLetter = displayName.trim().charAt(0).toUpperCase() || "E";
-  const trophyLevel = Math.max(1, Math.floor(totalXp / 1000) + 1);
-
   return `
-    <div class="profile-container">
+    <div class="profile-container ps5-profile-page">
       <!-- 1. PS5 Konsol Hero Profil Sahnesi -->
-      <div class="profile-hero-card">
-        <div class="profile-hero-left">
-          <div class="profile-avatar">
-            <span class="profile-avatar-letter">${esc(initialLetter)}</span>
-            <div class="profile-avatar-glow"></div>
-            <span class="profile-avatar-pip ${offlineMode ? "offline" : "online"}"></span>
-          </div>
-          <div class="profile-hero-meta">
-            <div class="profile-name-row">
-              <h1 class="profile-display-name">${esc(displayName)}</h1>
-              <div class="profile-hero-badges">
-                <span class="profile-status-badge ${offlineMode ? "offline" : "online"}">
+      <div class="ps5-profile-hero">
+        ${heroBackdrop ? `<div class="ps5-hero-backdrop" style="background-image: url('${esc(heroBackdrop)}')"></div>` : ""}
+        <div class="ps5-hero-gradient"></div>
+        <div class="ps5-hero-ambient-lights"></div>
+
+        <div class="ps5-hero-content">
+          <div class="ps5-hero-left">
+            <div class="ps5-avatar-wrap">
+              <div class="ps5-avatar">
+                <span class="ps5-avatar-letter">${esc(initialLetter)}</span>
+              </div>
+              <div class="ps5-avatar-ring"></div>
+              <span class="ps5-avatar-pip ${offlineMode ? "offline" : "online"}" title="${offlineMode ? "Çevrimdışı" : "Epic Games Çevrim İçi"}"></span>
+            </div>
+
+            <div class="ps5-hero-meta">
+              <div class="ps5-hero-name-row">
+                <h1 class="ps5-display-name">${esc(displayName)}</h1>
+                <span class="ps5-status-badge ${offlineMode ? "offline" : "online"}">
                   <span class="status-dot"></span> ${offlineMode ? "Çevrimdışı Mod" : "Epic Games Bağlı"}
                 </span>
-                <span class="profile-trophy-level-badge" title="Trophy Seviyesi (Toplam XP Bazlı)">
-                  ${epicPlatinumIcon(12)} Seviye ${trophyLevel}
-                </span>
+              </div>
+
+              <!-- PS5 Trophy Level Capsule -->
+              <div class="ps5-level-capsule">
+                <div class="ps5-level-crest" title="PlayStation Trophy Seviyesi: ${trophyLevel}">
+                  ${epicPlatinumIcon(13)}
+                  <span class="ps5-level-num">SEVİYE ${trophyLevel}</span>
+                </div>
+                <div class="ps5-level-progress-col">
+                  <div class="ps5-level-labels">
+                    <span class="ps5-level-percent">%${levelPct}</span>
+                    <span class="ps5-level-remaining">Sonraki seviyeye ${xpToNextLevel} XP</span>
+                  </div>
+                  <div class="ps5-level-track">
+                    <div class="ps5-level-fill" style="width: ${levelPct}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ps5-hero-sub-row">
+                <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} Oyun</span>
+                <span class="ps5-sub-dot">•</span>
+                <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr} Oynama</span>
+                <span class="ps5-sub-dot">•</span>
+                <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID: ${esc(accountId)} (Kopyalamak için tıkla)">
+                  <span>ID: ${esc(accountId ? accountId.slice(0, 8) + "…" : "—")}</span>
+                  ${icon("copy", 11)}
+                </button>
               </div>
             </div>
-            <div class="profile-id-row">
-              <span class="profile-id-label">Hesap ID:</span>
-              <code class="profile-id-code" title="${esc(accountId)}">${esc(accountId)}</code>
-              <button class="profile-copy-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID'sini Kopyala">
-                ${icon("copy", 13)}
+          </div>
+
+          <!-- Sağ: PlayStation 4-Seviyeli Kupa Vitrini & Aksiyonlar -->
+          <div class="ps5-hero-right">
+            <div class="ps5-trophy-tier-showcase">
+              <div class="ps5-tier-col plat" title="Kazanılan Platin Kupalar">
+                <div class="ps5-tier-icon">${epicPlatinumIcon(16)}</div>
+                <span class="ps5-tier-count">${platCount}</span>
+                <span class="ps5-tier-label">Platin</span>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col gold" title="Altın Kupa Tahmini">
+                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <span class="ps5-tier-count">${goldTrophies}</span>
+                <span class="ps5-tier-label">Altın</span>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col silver" title="Gümüş Kupa Tahmini">
+                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <span class="ps5-tier-count">${silverTrophies}</span>
+                <span class="ps5-tier-label">Gümüş</span>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col bronze" title="Bronz Kupa Tahmini">
+                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <span class="ps5-tier-count">${bronzeTrophies}</span>
+                <span class="ps5-tier-label">Bronz</span>
+              </div>
+            </div>
+
+            <div class="ps5-hero-actions-row">
+              <div class="ps5-xp-capsule">
+                ${icon("sparkles", 13)}
+                <span><strong>${totalXp.toLocaleString()}</strong> Toplam XP</span>
+              </div>
+              <button class="btn ghost small ps5-refresh-btn ${profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve kupaları Epic Games sunucularından tazele">
+                ${icon("refresh", 13)} <span>${profileLoading ? "Tazeleniyor…" : "Profili Yenile"}</span>
               </button>
             </div>
-          </div>
-        </div>
-
-        <div class="profile-hero-right">
-          <!-- Hızlı Kupa & XP Kapsülü -->
-          <div class="profile-hero-trophy-capsule">
-            <div class="hero-trophy-item plat" title="Kazanılan Platin Kupa">
-              ${epicPlatinumIcon(13)}
-              <span class="num">${platCount} Platin</span>
-            </div>
-            <span class="capsule-divider"></span>
-            <div class="hero-trophy-item ach" title="Açılan Toplam Başarım">
-              ${icon("trophy", 13)}
-              <span class="num">${totalUnlocked.toLocaleString()} Kupa</span>
-            </div>
-            <span class="capsule-divider"></span>
-            <div class="hero-trophy-item xp" title="Toplam Kupa XP Puanı">
-              ${icon("sparkles", 13)}
-              <span class="num">${totalXp.toLocaleString()} XP</span>
-            </div>
-          </div>
-
-          <div class="profile-hero-actions">
-            <button class="btn ghost small profile-refresh-btn ${profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve başarımları Epic sunucularından tazele">
-              ${icon("refresh", 14)} <span>${profileLoading ? "Tazeleniyor…" : "Profili Yenile"}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -2179,16 +2247,16 @@ function renderProfile(): string {
           <div class="profile-toolbar">
             <div class="profile-filter-pills">
               <button class="profile-pill ${profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
-                Tümü (${countAll})
+                ${icon("trophy", 12)} Tümü (${countAll})
               </button>
               <button class="profile-pill ${profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
                 ${epicPlatinumIcon(12)} Platin (${countPlat})
               </button>
               <button class="profile-pill ${profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                ⏳ Devam Edenler (${countInProgress})
+                ${icon("clock", 12)} Devam Edenler (${countInProgress})
               </button>
               <button class="profile-pill ${profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
-                🎮 Başlanmayanlar (${countNotStarted})
+                ${icon("gamepad-2", 12)} Başlanmayanlar (${countNotStarted})
               </button>
             </div>
 

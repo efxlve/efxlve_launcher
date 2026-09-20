@@ -1145,3 +1145,23 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - `statusEl` değişkeni ve `refreshGames` içindeki bayat DOM atamaları güvenle temizlendi.
   - Uygulama böylece gereksiz geliştirici/hata ayıklama kalıntılarından arındırılarak modern, sade ve tam ekran PlayStation konsol arayüzüne kavuşturuldu.
 
+## 69. Yeni Nesil PlayStation 5 Konsol Profil & Trophy Hub Tam Dönüşümü
+
+- **Sinematik Konsol Sahnesi (`.ps5-profile-hero`):**
+  - Sayfa başında kullanıcının kütüphanesindeki en yüksek başarımlı veya platin oyununun yüksek çözünürlüklü afişinden beslenen atmosferik sinematik arka plan (`.ps5-hero-backdrop`, `opacity: 0.28`, `blur(28px)`), çift radyal gece mavisi/mor ışıma ve derin obsidyen degrade katmanı (`.ps5-hero-gradient`).
+  - **Avatar & Çevrim İçi Halkası:** 84x84px yuvarlatılmış squircle avatar, neon mavi PlayStation hale halkası (`.ps5-avatar-ring`) ve canlı çevrim içi yeşil durum pini (`.ps5-avatar-pip.online`).
+  - **Otantik PlayStation 5 Trophy Level Crest & İlerleme Barı (`.ps5-level-capsule`):**
+    - PlayStation seviye brövesi (`.ps5-level-crest`): `${epicPlatinumIcon(13)} SEVİYE ${trophyLevel}`.
+    - Seviye ilerleme sütunu (`.ps5-level-progress-col`): Yüzde (`%${levelPct}`), kalan XP (`Sonraki seviyeye ${xpToNextLevel} XP`) ve elektrik mavisi parıltılı seviye dolum barı (`.ps5-level-fill`).
+- **PlayStation 4-Seviyeli Kupa Vitrini (`.ps5-trophy-tier-showcase`):**
+  - Sahne sağında PlayStation konsollarının imzası olan 4 madalya kupa sayaçları:
+    - 🏆 **Platin:** Mor platin ışıltılı kupa ikonu ve sayısı (`.ps5-tier-col.plat`).
+    - 🥇 **Altın:** Altın sarısı kupa ikonu ve sayısı (`.ps5-tier-col.gold`).
+    - 🥈 **Gümüş:** Krom gümüş kupa ikonu ve sayısı (`.ps5-tier-col.silver`).
+    - 🥉 **Bronz:** Bakır bronz kupa ikonu ve sayısı (`.ps5-tier-col.bronze`).
+  - Toplam XP kapsülü (`.ps5-xp-capsule`) ve kompakt `Profili Yenile` butonu.
+- **Sinematik Arka Planlı PS5 Kupa Kartları (`.ps5-profile-game-card`):**
+  - Her oyun kartına yatay sinematik oyun sanatı afişi (`.ps5-card-backdrop` + `epicWideArt(s)`), koyu obsidyen vignette geçişi (`.ps5-card-backdrop-overlay`) entegre edildi. Düz siyah kutular yerine nefes alan AAA konsol kutu kapakları hissi kazandırıldı.
+  - Kart başlığı yanında büyük PlayStation tarzı ilerleme rozeti (`.ps5-card-percent-badge`: `%100 Tamamlandı` / `%88 İlerleme`).
+  - 10 fit gezinmede mavi neon aksiyon butonu (`[ İncele → ]`) ve `:focus-visible` elektrik mavisi konsol odak halkası (`0 0 0 2.5px #60a5fa, 0 0 26px rgba(96, 165, 250, 0.6)`).
+
