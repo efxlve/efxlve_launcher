@@ -139,6 +139,11 @@ import {
   epicSendFriendRequest,
   epicRemoveFriend,
   epicGetEosOverlayInfo,
+  epicOpenSocialWindow,
+  epicToggleSocialWindow,
+  epicCloseSocialWindow,
+  epicMinimizeSocialWindow,
+  epicToggleMaximizeSocialWindow,
   type EpicFriend,
   type EpicSocialSummary,
 } from "./epic";
@@ -6263,7 +6268,6 @@ function closeAllModals(): void {
   closeShareModal();
   closeCustomCoverModal();
   closeCollectionModal();
-  closeSocialDrawer();
   if (manageRoot) manageRoot.innerHTML = "";
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
@@ -7784,9 +7788,12 @@ async function cancelMoveGame(appName: string): Promise<void> {
   }
 }
 
-/* ---------- EOS Sosyal, Arkadaşlar & Sohbet (Social Drawer) ---------- */
+/* ---------- EOS Sosyal, Arkadaşlar & Sohbet (Steam-Style Bağımsız Pencere) ---------- */
 
-let socialDrawerOpen = false;
+const isSocialWindow =
+  typeof window !== "undefined" &&
+  (window.location.search.includes("window=social") || window.location.hash === "#social");
+
 let socialActiveTab: "friends" | "chat" = "friends";
 let socialData: EpicSocialSummary | null = null;
 let socialLoading = false;
@@ -7848,43 +7855,26 @@ async function fetchSocialData(background = false): Promise<void> {
   if (!isTauri) return;
   if (!background) {
     socialLoading = true;
-    if (socialDrawerOpen) renderSocialDrawer();
+    if (isSocialWindow) renderSteamSocialWindow();
   }
   try {
     const data = await epicGetSocialSummary();
     socialData = data;
     socialError = "";
     updateSocialBadge();
+
+    // İlk arkadaşı otomatik seçme (seçili değilse)
+    if (isSocialWindow && !socialActiveChatFriendId && data.friends.length > 0) {
+      const recentOrOnline = data.friends.find((f) => Boolean(socialChatHistory[f.account_id]?.length)) || data.friends[0];
+      socialActiveChatFriendId = recentOrOnline.account_id;
+    }
   } catch (err) {
     socialError = String(err);
   } finally {
     socialLoading = false;
-    if (socialDrawerOpen) renderSocialDrawer();
-  }
-}
-
-function openSocialDrawer(): void {
-  socialDrawerOpen = true;
-  const btn = document.getElementById("btn-social-drawer");
-  if (btn) btn.classList.add("active");
-  renderSocialDrawer();
-  if (!socialData && !socialLoading) {
-    void fetchSocialData();
-  }
-}
-
-function closeSocialDrawer(): void {
-  socialDrawerOpen = false;
-  const btn = document.getElementById("btn-social-drawer");
-  if (btn) btn.classList.remove("active");
-  if (socialRoot) socialRoot.innerHTML = "";
-}
-
-function toggleSocialDrawer(): void {
-  if (socialDrawerOpen) {
-    closeSocialDrawer();
-  } else {
-    openSocialDrawer();
+    if (isSocialWindow) {
+      renderSteamSocialWindow();
+    }
   }
 }
 
@@ -7910,24 +7900,59 @@ function formatFriendActivity(f: EpicFriend): { statusClass: string; statusLabel
   }
 }
 
-function renderSocialDrawer(): void {
-  if (!socialRoot) return;
-  if (!socialDrawerOpen) {
-    socialRoot.innerHTML = "";
-    return;
-  }
+/* ---------- Steam Tarzı Bağımsız Sosyal Pencere Render Fonksiyonları ---------- */
 
+function renderSteamSocialWindow(): void {
+  const root = document.getElementById("steam-social-root");
+  if (!root) return;
+
+  root.innerHTML = `
+    <!-- 1. Steam Tarzı Çerçevesiz Pencere Başlık Çubuğu -->
+    <header class="steam-social-titlebar" data-tauri-drag-region>
+      <div class="steam-titlebar-left" data-tauri-drag-region>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="steam-titlebar-text">Arkadaşlar ve Sohbet</span>
+        <span class="steam-titlebar-tag">EOS</span>
+      </div>
+
+      <div class="steam-titlebar-controls">
+        <button class="steam-win-btn" data-act="social-win-minimize" title="Simge Durumuna Küçült">
+          <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button class="steam-win-btn" data-act="social-win-maximize" title="Ekranı Kapla / Geri Yükle">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </button>
+        <button class="steam-win-btn steam-win-close" data-act="social-win-close" title="Kapat">
+          <svg width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M1 1l8 8M9 1L1 9"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. İki Sütunlu Steam / Epic Düzeni -->
+    <div class="steam-social-layout">
+      <!-- Sol Kenar Çubuğu: Profil + Sekmeler + Arkadaşlar/Sohbetler Listesi -->
+      <aside class="steam-social-sidebar">
+        ${renderSteamSidebarHeader()}
+        ${renderSteamSidebarTabs()}
+        <div id="steam-sidebar-list-container" class="steam-sidebar-list-container">
+          ${socialActiveTab === "friends" ? renderSteamFriendsList() : renderSteamChatsList()}
+        </div>
+      </aside>
+
+      <!-- Sağ Ana Sohbet Alanı -->
+      <main id="steam-chat-pane-container" class="steam-social-chat-pane">
+        ${renderSteamSocialChatPane()}
+      </main>
+    </div>
+  `;
+}
+
+function renderSteamSidebarHeader(): string {
   const myDisplayName = socialData?.my_display_name || epicAccount || "Efxlve";
   const initialLetter = myDisplayName.trim().charAt(0).toUpperCase() || "E";
   const isEosActive = socialData?.eos_overlay_enabled ?? true;
-
-  const friends = socialData?.friends || [];
-  const onlineFriends = friends.filter((f) => {
-    const act = formatFriendActivity(f);
-    return act.isOnline;
-  });
-  const onlineCount = onlineFriends.length;
-  const hasUnread = false;
 
   const privacyText =
     socialPartyPrivacy === "invite" ? "Yalnızca davetliler"
@@ -7936,145 +7961,107 @@ function renderSocialDrawer(): void {
 
   const privacyIcon =
     socialPartyPrivacy === "invite"
-      ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
       : socialPartyPrivacy === "friends"
-      ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>`
-      : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+      : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>`;
 
-  socialRoot.innerHTML = `
-    <div class="ps5-social-overlay" data-act="close-social-overlay">
-      <div class="ps5-social-drawer" role="dialog" aria-label="EOS Sosyal Paneli">
-        
-        <!-- Üst Gezinme Şeridi: Arkadaşlar, Sohbet ve Profil Avatarı (Görsel 2) -->
-        <div class="social-top-header">
-          <div class="social-nav-tabs">
-            <button class="social-nav-tab ${socialActiveTab === "friends" ? "active" : ""}" data-act="social-tab" data-val="friends" title="Arkadaşlar">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              ${onlineCount > 0 ? `<span class="social-tab-badge">${onlineCount}</span>` : ""}
-            </button>
-            <button class="social-nav-tab ${socialActiveTab === "chat" ? "active" : ""}" data-act="social-tab" data-val="chat" title="Sohbetler">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
-              </svg>
-              ${hasUnread ? `<span class="social-tab-dot"></span>` : ""}
-            </button>
-          </div>
-
-          <div class="social-user-avatar-pip" title="${esc(myDisplayName)} (Çevrim İçi)">
-            <div class="social-mini-avatar">${esc(initialLetter)}</div>
-            <span class="social-mini-dot online"></span>
-          </div>
+  return `
+    <div class="steam-sidebar-header">
+      <!-- Kullanıcı Profil Kartı -->
+      <div class="steam-self-card">
+        <div class="steam-self-avatar-wrap">
+          <div class="steam-self-avatar">${esc(initialLetter)}</div>
+          <span class="steam-self-dot online"></span>
         </div>
-
-        <!-- Başlık & Ses/Grup Hızlı Eylemleri (Görsel 2) -->
-        <div class="social-hero-header">
-          <div class="social-title-row">
-            <div class="social-title-group">
-              <h2 class="social-main-title">Sosyal</h2>
-              <span class="social-overlay-tag" title="Epic Online Services">EOS</span>
-            </div>
-            <div class="social-header-actions">
-              <button class="social-icon-btn ${socialLoading ? "spinning" : ""}" data-act="social-refresh" title="Listeyi Yenile">
-                ${icon("refresh", 13)}
-              </button>
-              <button class="social-close-btn" data-act="close-social" title="Kapat (Esc / Shift+F3)">×</button>
-            </div>
+        <div class="steam-self-info">
+          <div class="steam-self-name-row">
+            <span class="steam-self-name">${esc(myDisplayName)}</span>
+            <span class="steam-self-badge">Sen</span>
           </div>
-
-          <!-- Görsel 2 ile Birebir Hızlı Butonlar: Kilit, Mikrofon, Kulaklık, Seçenekler -->
-          <div class="social-controls-row">
-            <button class="social-control-btn privacy-btn" data-act="social-toggle-privacy" title="Grup Gizliliği: ${privacyText} (Değiştirmek için tıkla)">
-              ${privacyIcon}
-            </button>
-
-            <button class="social-control-btn mic-btn ${socialMicMuted ? "muted" : "unmuted"}" data-act="social-toggle-mic" title="Mikrofon: ${socialMicMuted ? "Kapalı (Açmak için tıkla)" : "Açık (Susturmak için tıkla)"}">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                ${socialMicMuted
-                  ? `<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`
-                  : `<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`
-                }
-              </svg>
-              <span class="social-control-chevron">▾</span>
-            </button>
-
-            <button class="social-control-btn deafen-btn ${socialAudioDeafened ? "muted" : ""}" data-act="social-toggle-deafen" title="Ses Çıkışı: ${socialAudioDeafened ? "Susturuldu (Açmak için tıkla)" : "Açık"}">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-              </svg>
-              <span class="social-control-chevron">▾</span>
-            </button>
-
-            <button class="social-control-btn more-btn ${socialShowAddModal ? "active" : ""}" data-act="social-toggle-add-modal" title="Arkadaş Ekle / Oyuncu Ara">
-              ${icon("user-plus", 14)}
-            </button>
-          </div>
-
-          <!-- Görsel 2 Durum Alt Metni -->
-          <div class="social-status-sub-line">
-            <span>${privacyText}</span>
-            <span class="dot">•</span>
-            <span class="${socialMicMuted ? "text-muted" : "text-ok"}">${socialMicMuted ? "Mikrofon kapalı" : "Mikrofon açık"}</span>
-            <span class="dot">•</span>
-            <span>Raporlama kapalı</span>
-          </div>
-
-          <!-- Aktif Kullanıcı Kartı (Görsel 2'deki 'Efxlve Sen Çevrimiçi') -->
-          <div class="social-self-card">
-            <div class="social-self-avatar-wrap">
-              <div class="social-self-avatar">${esc(initialLetter)}</div>
-              <span class="social-self-dot online"></span>
-            </div>
-            <div class="social-self-info">
-              <div class="social-self-name-row">
-                <span class="social-self-name">${esc(myDisplayName)}</span>
-                <span class="social-self-badge">Sen</span>
-              </div>
-              <span class="social-self-status">Çevrimiçi</span>
-            </div>
-            <div class="social-self-mic-status ${socialMicMuted ? "muted" : "active"}" title="${socialMicMuted ? "Mikrofonunuz kapalı" : "Mikrofonunuz açık"}">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                ${socialMicMuted
-                  ? `<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>`
-                  : `<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>`
-                }
-              </svg>
-            </div>
-          </div>
-
-          <!-- EOS In-Game Overlay Durum Göstergesi -->
-          <div class="social-eos-pill ${isEosActive ? "active" : ""}">
-            <span class="social-eos-dot"></span>
-            <span>EOS In-Game Overlay: <strong>${isEosActive ? "Aktif (Shift+F3)" : "Yüklü Değil"}</strong></span>
-          </div>
+          <span class="steam-self-status">Çevrimiçi</span>
         </div>
-
-        <!-- Gövde: Sekmeye Göre Arkadaşlar veya Sohbet -->
-        <div class="social-drawer-body">
-          ${socialActiveTab === "friends" ? renderSocialFriendsTab() : renderSocialChatsTab()}
+        <div class="steam-header-actions">
+          <button class="steam-icon-btn ${socialLoading ? "spinning" : ""}" data-act="social-refresh" title="Yenile">
+            ${icon("refresh", 12)}
+          </button>
         </div>
+      </div>
+
+      <!-- Hızlı Kontroller (Kilit, Mikrofon, Kulaklık, Ekle) -->
+      <div class="steam-controls-row">
+        <button class="steam-control-btn privacy" data-act="social-toggle-privacy" title="Grup Gizliliği: ${privacyText}">
+          ${privacyIcon}
+        </button>
+        <button class="steam-control-btn mic ${socialMicMuted ? "muted" : "unmuted"}" data-act="social-toggle-mic" title="Mikrofon: ${socialMicMuted ? "Kapalı" : "Açık"}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            ${socialMicMuted
+              ? `<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`
+              : `<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`
+            }
+          </svg>
+          <span class="chevron">▾</span>
+        </button>
+        <button class="steam-control-btn deafen ${socialAudioDeafened ? "muted" : ""}" data-act="social-toggle-deafen" title="Ses Çıkışı: ${socialAudioDeafened ? "Kapalı" : "Açık"}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+          </svg>
+          <span class="chevron">▾</span>
+        </button>
+        <button class="steam-control-btn add ${socialShowAddModal ? "active" : ""}" data-act="social-toggle-add-modal" title="Arkadaş Ekle">
+          ${icon("user-plus", 13)}
+        </button>
+      </div>
+
+      <!-- Durum Alt Metni -->
+      <div class="steam-status-subline">
+        <span>${privacyText}</span>
+        <span class="dot">•</span>
+        <span class="${socialMicMuted ? "text-muted" : "text-ok"}">${socialMicMuted ? "Mikrofon kapalı" : "Mikrofon açık"}</span>
+        <span class="dot">•</span>
+        <span>Raporlama kapalı</span>
+      </div>
+
+      <!-- EOS In-Game Overlay Durumu -->
+      <div class="steam-eos-pill ${isEosActive ? "active" : ""}">
+        <span class="eos-dot"></span>
+        <span>EOS In-Game Overlay: <strong>${isEosActive ? "Aktif (Shift+F3)" : "Yüklü Değil"}</strong></span>
       </div>
     </div>
   `;
 }
 
-function renderSocialFriendsTab(): string {
+function renderSteamSidebarTabs(): string {
+  const friends = socialData?.friends || [];
+  const onlineCount = friends.filter((f) => formatFriendActivity(f).isOnline).length;
+  const totalCount = friends.length;
+
+  return `
+    <div class="steam-sidebar-tabs">
+      <button class="steam-sidebar-tab ${socialActiveTab === "friends" ? "active" : ""}" data-act="social-tab" data-val="friends">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Arkadaşlar</span>
+        <span class="tab-count">${onlineCount}/${totalCount}</span>
+      </button>
+
+      <button class="steam-sidebar-tab ${socialActiveTab === "chat" ? "active" : ""}" data-act="social-tab" data-val="chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+        </svg>
+        <span>Sohbetler</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderSteamFriendsList(): string {
   if (socialLoading && !socialData) {
     return `
-      <div class="social-loading-state">
+      <div class="steam-loading-state">
         <div class="social-spinner"></div>
-        <span>Epic Games arkadaş listesi alınıyor…</span>
-      </div>
-    `;
-  }
-
-  if (socialError && !socialData) {
-    return `
-      <div class="social-error-state">
-        <p>${esc(socialError)}</p>
-        <button class="btn primary small" data-act="social-refresh">${icon("refresh", 12)} Tekrar Dene</button>
+        <span>Arkadaşlar yükleniyor…</span>
       </div>
     `;
   }
@@ -8084,20 +8071,35 @@ function renderSocialFriendsTab(): string {
 
   let html = "";
 
-  // Arkadaş Ekleme Modalı / Giriş Çubuğu
+  // 1. Arama Kutusu
+  html += `
+    <div class="steam-search-bar">
+      ${icon("search", 13)}
+      <input
+        type="text"
+        id="social-search"
+        class="steam-search-input"
+        placeholder="Arkadaş ara…"
+        value="${esc(socialSearchQuery)}"
+      />
+      ${socialSearchQuery ? `<button class="steam-search-clear" data-act="social-clear-search">×</button>` : ""}
+    </div>
+  `;
+
+  // 2. Arkadaş Ekle Paneli
   if (socialShowAddModal) {
     html += `
-      <div class="social-add-panel">
-        <div class="social-add-header">
-          <span>${icon("user-plus", 13)} Arkadaş Ekle</span>
-          <button class="social-add-close" data-act="social-toggle-add-modal">×</button>
+      <div class="steam-add-panel">
+        <div class="steam-add-header">
+          <span>${icon("user-plus", 13)} Epic Arkadaşı Ekle</span>
+          <button class="steam-add-close" data-act="social-toggle-add-modal">×</button>
         </div>
-        <div class="social-add-input-row">
+        <div class="steam-add-input-row">
           <input
             type="text"
             id="social-add-input"
-            class="social-add-input"
-            placeholder="Epic kullanıcı adı girin…"
+            class="steam-add-input"
+            placeholder="Epic kullanıcı adı…"
             value="${esc(socialAddQuery)}"
           />
           <button class="btn primary small ${socialAddLoading ? "disabled" : ""}" data-act="social-search-add">
@@ -8106,14 +8108,13 @@ function renderSocialFriendsTab(): string {
         </div>
         ${
           socialAddResult === "not_found"
-            ? `<div class="social-add-msg not-found">Oyuncu bulunamadı. Kullanıcı adını kontrol edin.</div>`
+            ? `<div class="steam-add-msg not-found">Oyuncu bulunamadı.</div>`
             : socialAddResult
             ? `
-              <div class="social-add-result-card">
-                <div class="social-friend-avatar">${esc(socialAddResult.display_name.charAt(0).toUpperCase())}</div>
-                <div class="social-friend-meta">
-                  <span class="social-friend-name">${esc(socialAddResult.display_name)}</span>
-                  <span class="social-friend-sub">Epic Games Hesabı</span>
+              <div class="steam-add-result-card">
+                <div class="steam-friend-avatar small">${esc(socialAddResult.display_name.charAt(0).toUpperCase())}</div>
+                <div class="steam-friend-meta">
+                  <span class="steam-friend-name">${esc(socialAddResult.display_name)}</span>
                 </div>
                 <button class="btn primary small" data-act="social-send-invite" data-id="${esc(socialAddResult.account_id)}">
                   + İstek Gönder
@@ -8126,42 +8127,27 @@ function renderSocialFriendsTab(): string {
     `;
   }
 
-  // Arama Kutusu
-  html += `
-    <div class="social-search-bar">
-      ${icon("search", 13)}
-      <input
-        type="text"
-        id="social-search"
-        class="social-search-field"
-        placeholder="Arkadaş ara…"
-        value="${esc(socialSearchQuery)}"
-      />
-      ${socialSearchQuery ? `<button class="social-search-clear" data-act="social-clear-search">×</button>` : ""}
-    </div>
-  `;
-
-  // Gelen İstekler (Incoming)
+  // 3. Gelen İstekler
   if (incoming.length > 0) {
     html += `
-      <div class="social-group-section">
-        <div class="social-group-title">
+      <div class="steam-group-section">
+        <div class="steam-group-title">
           <span>Gelen İstekler</span>
-          <span class="social-group-count">${incoming.length}</span>
+          <span class="steam-group-badge">${incoming.length}</span>
         </div>
-        <div class="social-friends-list">
+        <div class="steam-friends-list">
           ${incoming.map((f) => `
-            <div class="social-friend-row incoming">
-              <div class="social-friend-avatar-wrap">
-                <div class="social-friend-avatar">${esc(f.display_name.charAt(0).toUpperCase())}</div>
+            <div class="steam-friend-row incoming">
+              <div class="steam-friend-avatar-wrap">
+                <div class="steam-friend-avatar">${esc(f.display_name.charAt(0).toUpperCase())}</div>
               </div>
-              <div class="social-friend-meta">
-                <span class="social-friend-name">${esc(f.display_name)}</span>
-                <span class="social-friend-sub">Arkadaşlık isteği gönderdi</span>
+              <div class="steam-friend-meta">
+                <span class="steam-friend-name">${esc(f.display_name)}</span>
+                <span class="steam-friend-sub">Arkadaşlık isteği gönderdi</span>
               </div>
-              <div class="social-friend-actions">
-                <button class="btn primary small" data-act="social-accept-friend" data-id="${esc(f.account_id)}" title="Kabul Et">✓</button>
-                <button class="btn ghost small" data-act="social-decline-friend" data-id="${esc(f.account_id)}" title="Reddet">✕</button>
+              <div class="steam-friend-actions">
+                <button class="steam-action-btn accept" data-act="social-accept-friend" data-id="${esc(f.account_id)}" title="Kabul Et">✓</button>
+                <button class="steam-action-btn decline" data-act="social-decline-friend" data-id="${esc(f.account_id)}" title="Reddet">✕</button>
               </div>
             </div>
           `).join("")}
@@ -8170,7 +8156,7 @@ function renderSocialFriendsTab(): string {
     `;
   }
 
-  // Arkadaş Filtreleme
+  // 4. Arkadaşları Çevrim İçi / Çevrim Dışı Ayır
   let filtered = friends;
   if (socialSearchQuery.trim()) {
     const q = socialSearchQuery.trim().toLowerCase();
@@ -8181,45 +8167,41 @@ function renderSocialFriendsTab(): string {
 
   const onlineList: EpicFriend[] = [];
   const offlineList: EpicFriend[] = [];
-
   for (const f of filtered) {
     const act = formatFriendActivity(f);
-    if (act.isOnline) {
-      onlineList.push(f);
-    } else {
-      offlineList.push(f);
-    }
+    if (act.isOnline) onlineList.push(f);
+    else offlineList.push(f);
   }
 
-  // 1. Çevrim İçi Arkadaşlar
+  // Çevrim İçi
   html += `
-    <div class="social-group-section">
-      <div class="social-group-title">
+    <div class="steam-group-section">
+      <div class="steam-group-title">
         <span>Çevrim İçi</span>
-        <span class="social-group-count">${onlineList.length}</span>
+        <span class="steam-group-badge">${onlineList.length}</span>
       </div>
-      <div class="social-friends-list">
+      <div class="steam-friends-list">
         ${
           onlineList.length === 0
-            ? `<div class="social-empty-sub">Şu an çevrim içi arkadaşınız yok.</div>`
-            : onlineList.map((f) => renderFriendRow(f, true)).join("")
+            ? `<div class="steam-empty-sub">Şu an çevrim içi arkadaşınız yok.</div>`
+            : onlineList.map((f) => renderSteamFriendRow(f, true)).join("")
         }
       </div>
     </div>
   `;
 
-  // 2. Çevrim Dışı Arkadaşlar
+  // Çevrim Dışı
   html += `
-    <div class="social-group-section">
-      <div class="social-group-title">
+    <div class="steam-group-section">
+      <div class="steam-group-title">
         <span>Çevrim Dışı</span>
-        <span class="social-group-count">${offlineList.length}</span>
+        <span class="steam-group-badge">${offlineList.length}</span>
       </div>
-      <div class="social-friends-list">
+      <div class="steam-friends-list">
         ${
           offlineList.length === 0
-            ? `<div class="social-empty-sub">Arkadaş bulunamadı.</div>`
-            : offlineList.map((f) => renderFriendRow(f, false)).join("")
+            ? `<div class="steam-empty-sub">Arkadaş bulunamadı.</div>`
+            : offlineList.map((f) => renderSteamFriendRow(f, false)).join("")
         }
       </div>
     </div>
@@ -8228,156 +8210,233 @@ function renderSocialFriendsTab(): string {
   return html;
 }
 
-function renderFriendRow(f: EpicFriend, isOnline: boolean): string {
+function renderSteamFriendRow(f: EpicFriend, isOnline: boolean): string {
   const act = formatFriendActivity(f);
   const initial = f.display_name.trim().charAt(0).toUpperCase() || "A";
   const hasSteam = Boolean(f.external_auths?.steam);
   const hasPsn = Boolean(f.external_auths?.psn);
+  const isSelected = f.account_id === socialActiveChatFriendId;
 
   return `
-    <div class="social-friend-row ${isOnline ? "online" : "offline"}" data-act="social-open-chat" data-id="${esc(f.account_id)}" role="button" tabindex="0" title="${esc(f.display_name)} ile sohbet başlat">
-      <div class="social-friend-avatar-wrap">
-        <div class="social-friend-avatar">${esc(initial)}</div>
-        <span class="social-friend-dot ${act.statusClass}"></span>
+    <div
+      class="steam-friend-row ${isOnline ? "online" : "offline"} ${isSelected ? "selected" : ""}"
+      data-act="social-select-friend"
+      data-id="${esc(f.account_id)}"
+      role="button"
+      tabindex="0"
+      title="${esc(f.display_name)} ile sohbeti aç"
+    >
+      <div class="steam-friend-avatar-wrap">
+        <div class="steam-friend-avatar">${esc(initial)}</div>
+        <span class="steam-friend-dot ${act.statusClass}"></span>
       </div>
 
-      <div class="social-friend-meta">
-        <div class="social-friend-name-row">
-          <span class="social-friend-name">${esc(f.display_name)}</span>
-          ${f.alias ? `<span class="social-friend-alias">(${esc(f.alias)})</span>` : ""}
-          ${f.is_favorite ? `<span class="social-friend-star" title="Favori Arkadaş">★</span>` : ""}
+      <div class="steam-friend-meta">
+        <div class="steam-friend-name-row">
+          <span class="steam-friend-name">${esc(f.display_name)}</span>
+          ${f.alias ? `<span class="steam-friend-alias">(${esc(f.alias)})</span>` : ""}
+          ${f.is_favorite ? `<span class="steam-friend-star" title="Favori">★</span>` : ""}
         </div>
-        <div class="social-friend-sub-row">
-          <span class="social-friend-status ${act.statusClass}">${esc(act.statusLabel)}</span>
-          ${hasSteam ? `<span class="social-platform-tag steam" title="Steam Bağlantılı">Steam</span>` : ""}
-          ${hasPsn ? `<span class="social-platform-tag psn" title="PlayStation Network">PSN</span>` : ""}
+        <div class="steam-friend-sub-row">
+          <span class="steam-friend-status ${act.statusClass}">${esc(act.statusLabel)}</span>
+          ${hasSteam ? `<span class="steam-platform-tag steam">Steam</span>` : ""}
+          ${hasPsn ? `<span class="steam-platform-tag psn">PSN</span>` : ""}
         </div>
       </div>
 
-      <div class="social-friend-actions">
-        <button class="social-action-btn chat-btn" data-act="social-open-chat" data-id="${esc(f.account_id)}" title="Sohbet Aç">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
-        </button>
-        <button class="social-action-btn invite-btn" data-act="social-invite-party" data-id="${esc(f.account_id)}" data-name="${esc(f.display_name)}" title="Gruba Davet Et">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      <div class="steam-friend-actions">
+        <button class="steam-action-icon-btn" data-act="social-select-friend" data-id="${esc(f.account_id)}" title="Sohbet">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
         </button>
       </div>
     </div>
   `;
 }
 
-function renderSocialChatsTab(): string {
+function renderSteamChatsList(): string {
   const friends = socialData?.friends || [];
 
-  // Arkadaş seçili değilse: Sohbet başlatılabilecek arkadaşlar listesi
-  if (!socialActiveChatFriendId) {
-    return `
-      <div class="social-chats-overview">
-        <div class="social-chats-intro">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
-          <h3>Sohbetler</h3>
-          <p>Mesajlaşmak istediğiniz bir arkadaşınızı seçin.</p>
-        </div>
+  return `
+    <div class="steam-chats-list-wrapper">
+      <div class="steam-new-chat-btn-row">
+        <button class="steam-new-chat-btn" data-act="social-tab" data-val="friends">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Yeni sohbet</span>
+        </button>
+      </div>
 
-        <div class="social-friends-list">
-          ${friends.map((f) => {
+      <div class="steam-party-chat-item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <div class="steam-party-chat-meta">
+          <span class="steam-party-chat-title">Parti yazılı sohbeti</span>
+          <span class="steam-party-chat-sub">Bir partide değil</span>
+        </div>
+      </div>
+
+      <div class="steam-friends-list">
+        ${
+          friends.map((f) => {
             const history = socialChatHistory[f.account_id] || [];
             const lastMsg = history[history.length - 1];
             const initial = f.display_name.trim().charAt(0).toUpperCase() || "A";
             const act = formatFriendActivity(f);
+            const isSelected = f.account_id === socialActiveChatFriendId;
 
             return `
-              <div class="social-friend-row" data-act="social-open-chat" data-id="${esc(f.account_id)}" role="button" tabindex="0">
-                <div class="social-friend-avatar-wrap">
-                  <div class="social-friend-avatar">${esc(initial)}</div>
-                  <span class="social-friend-dot ${act.statusClass}"></span>
+              <div
+                class="steam-friend-row chat-mode ${isSelected ? "selected" : ""}"
+                data-act="social-select-friend"
+                data-id="${esc(f.account_id)}"
+                role="button"
+                tabindex="0"
+                title="${esc(f.display_name)} ile sohbet"
+              >
+                <div class="steam-friend-avatar-wrap">
+                  <div class="steam-friend-avatar">${esc(initial)}</div>
+                  <span class="steam-friend-dot ${act.statusClass}"></span>
                 </div>
-                <div class="social-friend-meta">
-                  <div class="social-friend-name-row">
-                    <span class="social-friend-name">${esc(f.display_name)}</span>
-                    ${lastMsg ? `<span class="social-chat-time">${esc(lastMsg.time)}</span>` : ""}
+                <div class="steam-friend-meta">
+                  <div class="steam-friend-name-row">
+                    <span class="steam-friend-name">${esc(f.display_name)}</span>
+                    <span class="steam-chat-time">${lastMsg ? esc(lastMsg.time) : esc(act.statusLabel)}</span>
                   </div>
-                  <span class="social-chat-snippet">
-                    ${lastMsg ? (lastMsg.sender === "me" ? "Sen: " : "") + esc(lastMsg.text) : esc(act.statusLabel)}
+                  <span class="steam-chat-snippet">
+                    ${lastMsg ? (lastMsg.sender === "me" ? "Sen: " : "") + esc(lastMsg.text) : "Sohbet oluşturuldu."}
                   </span>
                 </div>
               </div>
             `;
-          }).join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  // Arkadaş seçiliyse: Doğrudan mesajlaşma penceresi
-  const activeFriend = friends.find((f) => f.account_id === socialActiveChatFriendId);
-  const friendName = activeFriend ? activeFriend.display_name : "Arkadaş";
-  const friendInitial = friendName.trim().charAt(0).toUpperCase() || "A";
-  const act = activeFriend ? formatFriendActivity(activeFriend) : { statusClass: "offline", statusLabel: "Çevrimdışı", isOnline: false };
-  const history = socialChatHistory[socialActiveChatFriendId] || [];
-
-  return `
-    <div class="social-chat-view">
-      <!-- Sohbet Üst Başlığı -->
-      <div class="social-chat-header">
-        <button class="social-chat-back-btn" data-act="social-back-to-chats" title="Geri">
-          ${icon("arrow-left", 14)}
-        </button>
-        <div class="social-friend-avatar-wrap small">
-          <div class="social-friend-avatar">${esc(friendInitial)}</div>
-          <span class="social-friend-dot ${act.statusClass}"></span>
-        </div>
-        <div class="social-chat-header-meta">
-          <span class="social-chat-header-name">${esc(friendName)}</span>
-          <span class="social-chat-header-status ${act.statusClass}">${esc(act.statusLabel)}</span>
-        </div>
-      </div>
-
-      <!-- Mesaj Baloncukları Alanı -->
-      <div id="social-chat-messages" class="social-chat-messages">
-        ${
-          history.length === 0
-            ? `
-              <div class="social-chat-empty">
-                <span class="social-chat-wave">👋</span>
-                <p>Henüz mesaj yok.<br /><strong>${esc(friendName)}</strong> adlı arkadaşınıza selam verin!</p>
-              </div>
-            `
-            : history.map((m) => `
-              <div class="social-msg-row ${m.sender === "me" ? "me" : "friend"}">
-                <div class="social-msg-bubble">
-                  <span class="social-msg-text">${esc(m.text)}</span>
-                  <span class="social-msg-time">${esc(m.time)}</span>
-                </div>
-              </div>
-            `).join("")
+          }).join("")
         }
       </div>
+    </div>
+  `;
+}
 
-      <!-- Hızlı Öneri Hapları -->
-      <div class="social-chat-quick-strip">
-        <button class="social-quick-pill" data-act="social-quick-msg" data-text="Selam! 👋">Selam! 👋</button>
-        <button class="social-quick-pill" data-act="social-quick-msg" data-text="Oyuna geliyorum! 🎮">Oyuna gel! 🎮</button>
-        <button class="social-quick-pill" data-act="social-quick-msg" data-text="Sese geçelim mi? 🎧">Sese geçelim mi? 🎧</button>
+function renderSteamSidebarList(): void {
+  const listContainer = document.getElementById("steam-sidebar-list-container");
+  if (!listContainer) return;
+
+  listContainer.innerHTML = socialActiveTab === "friends"
+    ? renderSteamFriendsList()
+    : renderSteamChatsList();
+}
+
+function renderSteamSocialChatPane(): void {
+  const container = document.getElementById("steam-chat-pane-container");
+  if (!container) return;
+
+  if (!socialActiveChatFriendId) {
+    container.innerHTML = `
+      <div class="steam-chat-empty-state">
+        <div class="steam-chat-empty-icon">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3>Sohbetler ve Arkadaşlar</h3>
+        <p>Mesajlaşmak veya sesli gruba davet etmek için sol listeden bir arkadaşınızı seçin.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const friends = socialData?.friends || [];
+  const friend = friends.find((f) => f.account_id === socialActiveChatFriendId);
+  const friendName = friend ? friend.display_name : "Arkadaş";
+  const friendInitial = friendName.trim().charAt(0).toUpperCase() || "A";
+  const act = friend ? formatFriendActivity(friend) : { statusClass: "offline", statusLabel: "Çevrimdışı", isOnline: false };
+  const history = socialChatHistory[socialActiveChatFriendId] || [];
+
+  container.innerHTML = `
+    <!-- Sohbet Üst Başlığı (Görsel 2) -->
+    <div class="steam-chat-header">
+      <div class="steam-chat-header-user">
+        <div class="steam-friend-avatar-wrap">
+          <div class="steam-friend-avatar">${esc(friendInitial)}</div>
+          <span class="steam-friend-dot ${act.statusClass}"></span>
+        </div>
+        <div class="steam-chat-header-meta">
+          <span class="steam-chat-header-name">${esc(friendName)}</span>
+          <span class="steam-chat-header-status ${act.statusClass}">${esc(act.statusLabel)}</span>
+        </div>
       </div>
 
-      <!-- Mesaj Giriş Alanı -->
-      <div class="social-chat-input-bar">
+      <div class="steam-chat-header-actions">
+        <button class="steam-header-btn invite" data-act="social-invite-party" data-id="${esc(socialActiveChatFriendId)}" data-name="${esc(friendName)}" title="Gruba Davet Et">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>
+          </svg>
+          <span>Gruba Davet Et</span>
+        </button>
+        <button class="steam-header-btn icon" title="Seçenekler">
+          ${icon("dots", 14)}
+        </button>
+      </div>
+    </div>
+
+    <!-- Mesaj Akışı -->
+    <div id="steam-chat-messages" class="steam-chat-messages">
+      <!-- Görsel 2'deki Bilgilendirme Kutucuğu -->
+      <div class="steam-chat-notice-box">
+        <span>Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir.</span>
+      </div>
+
+      ${
+        history.length === 0
+          ? `
+            <div class="steam-chat-first-time">
+              <span class="steam-chat-wave">👋</span>
+              <p><strong>${esc(friendName)}</strong> adlı arkadaşınıza henüz mesaj göndermediniz.<br>Aşağıdaki hazır kutulardan veya metin kutusundan bir selam gönderin!</p>
+            </div>
+          `
+          : history.map((m) => `
+            <div class="steam-msg-row ${m.sender === "me" ? "me" : "friend"}">
+              <div class="steam-msg-bubble">
+                <span class="steam-msg-text">${esc(m.text)}</span>
+                <span class="steam-msg-time">${esc(m.time)}</span>
+              </div>
+            </div>
+          `).join("")
+      }
+    </div>
+
+    <!-- Hızlı Öneri Hapları -->
+    <div class="steam-chat-quick-strip">
+      <button class="steam-quick-pill" data-act="social-quick-msg" data-text="Selam! 👋">Selam! 👋</button>
+      <button class="steam-quick-pill" data-act="social-quick-msg" data-text="Oyuna gel! 🎮">Oyuna gel! 🎮</button>
+      <button class="steam-quick-pill" data-act="social-quick-msg" data-text="Sese geçelim mi? 🎧">Sese geçelim mi? 🎧</button>
+      <button class="steam-quick-pill" data-act="social-quick-msg" data-text="Gruptayım! 🛡️">Gruptayım! 🛡️</button>
+    </div>
+
+    <!-- Alt Giriş Barı (Görsel 2) -->
+    <div class="steam-chat-input-container">
+      <div class="steam-chat-input-box">
         <input
           type="text"
           id="social-chat-input"
-          class="social-chat-input"
+          class="steam-chat-input"
           placeholder="Mesaj yazın… (Enter ile gönder)"
           autocomplete="off"
         />
-        <button class="social-send-btn" data-act="social-send-chat" title="Gönder">
+        <button class="steam-chat-send-btn" data-act="social-send-chat" title="Gönder (Enter)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
       </div>
+      <div class="steam-chat-subhint">
+        <span>Sohbet raporlama kapalı</span>
+      </div>
     </div>
   `;
+
+  setTimeout(() => {
+    const msgBox = document.getElementById("steam-chat-messages");
+    if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+  }, 10);
 }
 
 function sendActiveSocialChatMessage(textToSend?: string): void {
@@ -8405,11 +8464,14 @@ function sendActiveSocialChatMessage(textToSend?: string): void {
   });
 
   saveSocialChats();
-  renderSocialDrawer();
 
-  // Otomatik alta kaydır
+  if (isSocialWindow) {
+    renderSteamSocialChatPane();
+    renderSteamSidebarList();
+  }
+
   setTimeout(() => {
-    const msgBox = document.getElementById("social-chat-messages");
+    const msgBox = document.getElementById("steam-chat-messages");
     if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
     const nextInput = document.getElementById("social-chat-input") as HTMLInputElement | null;
     if (nextInput) nextInput.focus();
@@ -8420,7 +8482,7 @@ async function performSocialUserSearch(name: string): Promise<void> {
   if (!name.trim()) return;
   socialAddLoading = true;
   socialAddResult = null;
-  renderSocialDrawer();
+  if (isSocialWindow) renderSteamSidebarList();
   try {
     const user = await epicSearchUser(name.trim());
     socialAddResult = user ? user : "not_found";
@@ -8428,7 +8490,7 @@ async function performSocialUserSearch(name: string): Promise<void> {
     socialAddResult = "not_found";
   } finally {
     socialAddLoading = false;
-    renderSocialDrawer();
+    if (isSocialWindow) renderSteamSidebarList();
   }
 }
 
@@ -8447,11 +8509,50 @@ async function performSendFriendInvite(targetAccountId: string): Promise<void> {
 async function performRemoveFriend(targetAccountId: string): Promise<void> {
   try {
     await epicRemoveFriend(targetAccountId);
-    toast("Arkadaşlık işlemi tamamlandı.", "ok");
+    toast("İşlem tamamlandı.", "ok");
     void fetchSocialData(true);
   } catch (err) {
     toast(`İşlem başarısız: ${String(err)}`, "err");
   }
+}
+
+async function initSteamSocialWindow(): Promise<void> {
+  document.title = "Efxlve - Arkadaşlar ve Sohbet";
+  document.body.classList.add("steam-social-window-body");
+
+  const appEl = document.getElementById("app");
+  if (appEl) appEl.style.display = "none";
+  const totop = document.getElementById("totop");
+  if (totop) totop.style.display = "none";
+
+  let root = document.getElementById("steam-social-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "steam-social-root";
+    root.className = "steam-social-root";
+    document.body.appendChild(root);
+  }
+
+  renderSteamSocialWindow();
+  await fetchSocialData(false);
+
+  // Periyodik senkronizasyon (15 sn)
+  setInterval(() => {
+    void fetchSocialData(true);
+  }, 15000);
+
+  // Diğer pencerelerden gelen mesajları dinle
+  window.addEventListener("storage", (e) => {
+    if (e.key === "efxlve-social-chats") {
+      try {
+        if (e.newValue) {
+          socialChatHistory = JSON.parse(e.newValue);
+          renderSteamSocialChatPane();
+          renderSteamSidebarList();
+        }
+      } catch {}
+    }
+  });
 }
 
 /* ---------- Epic indirme ---------- */
@@ -9153,70 +9254,89 @@ document.addEventListener("click", (e) => {
   const id = t.dataset.id;
 
   if (act === "toggle-social") {
-    toggleSocialDrawer();
-    return;
-  } else if (act === "close-social") {
-    closeSocialDrawer();
-    return;
-  } else if (act === "close-social-overlay") {
-    const target = e.target as HTMLElement;
-    if (target.classList.contains("ps5-social-overlay")) {
-      closeSocialDrawer();
+    if (isTauri) {
+      void epicToggleSocialWindow();
+    } else {
+      window.open("?window=social", "_blank", "width=960,height=640");
     }
+    return;
+  } else if (act === "social-win-minimize") {
+    if (isTauri) void epicMinimizeSocialWindow();
+    return;
+  } else if (act === "social-win-maximize") {
+    if (isTauri) void epicToggleMaximizeSocialWindow();
+    return;
+  } else if (act === "social-win-close") {
+    if (isTauri) void epicCloseSocialWindow();
     return;
   } else if (act === "social-tab") {
     const val = t.dataset.val as "friends" | "chat";
     if (val === "friends" || val === "chat") {
       socialActiveTab = val;
-      renderSocialDrawer();
+      if (isSocialWindow) {
+        const tabsEl = document.querySelector(".steam-sidebar-tabs");
+        if (tabsEl) {
+          tabsEl.outerHTML = renderSteamSidebarTabs();
+        }
+        renderSteamSidebarList();
+      }
+    }
+    return;
+  } else if (act === "social-select-friend") {
+    const friendId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;
+    if (friendId) {
+      socialActiveChatFriendId = friendId;
+      if (isSocialWindow) {
+        renderSteamSocialChatPane();
+        renderSteamSidebarList();
+        setTimeout(() => {
+          const inp = document.getElementById("social-chat-input") as HTMLInputElement | null;
+          if (inp) inp.focus();
+        }, 50);
+      }
     }
     return;
   } else if (act === "social-toggle-privacy") {
     socialPartyPrivacy = socialPartyPrivacy === "invite" ? "friends" : socialPartyPrivacy === "friends" ? "public" : "invite";
-    renderSocialDrawer();
+    if (isSocialWindow) {
+      const header = document.querySelector(".steam-sidebar-header");
+      if (header) header.outerHTML = renderSteamSidebarHeader();
+    }
     const pLabel = socialPartyPrivacy === "invite" ? "Yalnızca davetliler" : socialPartyPrivacy === "friends" ? "Sadece arkadaşlar" : "Herkese açık";
     toast(`Grup Gizliliği: ${pLabel}`, "ok");
     return;
   } else if (act === "social-toggle-mic") {
     socialMicMuted = !socialMicMuted;
-    renderSocialDrawer();
+    if (isSocialWindow) {
+      const header = document.querySelector(".steam-sidebar-header");
+      if (header) header.outerHTML = renderSteamSidebarHeader();
+    }
     toast(socialMicMuted ? "Mikrofon kapatıldı 🔇" : "Mikrofon açıldı 🎙️", "ok");
     return;
   } else if (act === "social-toggle-deafen") {
     socialAudioDeafened = !socialAudioDeafened;
-    renderSocialDrawer();
+    if (isSocialWindow) {
+      const header = document.querySelector(".steam-sidebar-header");
+      if (header) header.outerHTML = renderSteamSidebarHeader();
+    }
     toast(socialAudioDeafened ? "Kulaklık sesi kapatıldı 🔇" : "Kulaklık sesi açıldı 🎧", "ok");
     return;
   } else if (act === "social-toggle-add-modal") {
     socialShowAddModal = !socialShowAddModal;
     socialAddResult = null;
-    renderSocialDrawer();
-    if (socialShowAddModal) {
-      setTimeout(() => {
-        const inp = document.getElementById("social-add-input") as HTMLInputElement | null;
-        if (inp) inp.focus();
-      }, 50);
+    if (isSocialWindow) {
+      renderSteamSidebarList();
+      if (socialShowAddModal) {
+        setTimeout(() => {
+          const inp = document.getElementById("social-add-input") as HTMLInputElement | null;
+          if (inp) inp.focus();
+        }, 50);
+      }
     }
     return;
   } else if (act === "social-refresh") {
     toast("Sosyal liste yenileniyor…", "");
     void fetchSocialData();
-    return;
-  } else if (act === "social-open-chat") {
-    const friendId = t.dataset.id;
-    if (friendId) {
-      socialActiveTab = "chat";
-      socialActiveChatFriendId = friendId;
-      renderSocialDrawer();
-      setTimeout(() => {
-        const inp = document.getElementById("social-chat-input") as HTMLInputElement | null;
-        if (inp) inp.focus();
-      }, 50);
-    }
-    return;
-  } else if (act === "social-back-to-chats") {
-    socialActiveChatFriendId = null;
-    renderSocialDrawer();
     return;
   } else if (act === "social-send-chat") {
     sendActiveSocialChatMessage();
@@ -9248,9 +9368,8 @@ document.addEventListener("click", (e) => {
     return;
   } else if (act === "social-clear-search") {
     socialSearchQuery = "";
-    const body = document.querySelector(".social-drawer-body");
-    if (body) {
-      body.innerHTML = socialActiveTab === "friends" ? renderSocialFriendsTab() : renderSocialChatsTab();
+    if (isSocialWindow) {
+      renderSteamSidebarList();
     }
     return;
   }
@@ -10340,7 +10459,11 @@ window.addEventListener("resize", () => {
 document.addEventListener("keydown", (e) => {
   if (e.shiftKey && (e.key === "F3" || e.keyCode === 114)) {
     e.preventDefault();
-    toggleSocialDrawer();
+    if (isTauri) {
+      void epicToggleSocialWindow();
+    } else {
+      window.open("?window=social", "_blank", "width=960,height=640");
+    }
     return;
   }
 
@@ -10414,8 +10537,8 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
-    if (socialDrawerOpen) {
-      closeSocialDrawer();
+    if (isSocialWindow) {
+      if (isTauri) void epicCloseSocialWindow();
       return;
     }
     if (activeMoveModalAppName) {
@@ -10557,9 +10680,8 @@ document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
   if (t && t.id === "social-search") {
     socialSearchQuery = (t as HTMLInputElement).value;
-    const body = document.querySelector(".social-drawer-body");
-    if (body) {
-      body.innerHTML = socialActiveTab === "friends" ? renderSocialFriendsTab() : renderSocialChatsTab();
+    if (isSocialWindow) {
+      renderSteamSidebarList();
       const searchInp = document.getElementById("social-search") as HTMLInputElement | null;
       if (searchInp) {
         searchInp.focus();
@@ -10900,6 +11022,10 @@ window.addEventListener("resize", handleWindowResize);
 /* ---------- Başlat ---------- */
 
 async function init(): Promise<void> {
+  if (isSocialWindow) {
+    void initSteamSocialWindow();
+    return;
+  }
   updateMaxIcon();
   if (isTauri) {
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});

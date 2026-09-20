@@ -73,6 +73,7 @@ Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_downloa
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
 Mağaza: `show_store_view`, `resize_store_view`, `hide_store_view`
+Sosyal & EOS: `epic_get_social_summary`, `epic_search_user`, `epic_send_friend_request`, `epic_remove_friend`, `epic_get_eos_overlay_info`, `open_social_window`, `toggle_social_window`, `close_social_window`, `minimize_social_window`, `toggle_maximize_social_window`
 Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -1176,7 +1177,7 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Global kontrolcü HUD sistemine (`updateGamepadHud`) `view === "profile"` dalı entegre edildi (`(A) Kupaları İncele`, `(X) Profili Yenile`, `(Y) Ara`, `(LB/RB) Filtreler`, `(D-Pad) Gezin`).
   - `render()` döngüsüne `updateGamepadHud(gamepadPolling)` entegre edilerek, kontrolcü takılı DEĞİLKEN (`gamepadPolling === false`) ekranda kontrolcüye dair hiçbir ipucunun ÇIKMAMASI garantilendi; kontrolcü bağlandığında ise anında konsol HUD çubuğu aktifleşir.
 
-## 71. EOS Sosyal Entegrasyonu, Arkadaşlar & Canlı Sohbet Paneli (PlayStation 5 Console Dark Aesthetic)
+## 71. EOS Sosyal Entegrasyonu & Steam Tarzı Bağımsız Arkadaşlar ve Sohbet Penceresi (Standalone Window)
 
 - **Doğal Epic Games & EOS API Katmanı (`legendary/social.rs` & `epic.ts`):**
   - `%USERPROFILE%\.config\legendary\user.json` içindeki aktif OAuth `access_token` kullanılarak doğrudan resmi Epic Online Services (EOS) mikroservislerine bağlanır:
@@ -1185,17 +1186,31 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
     - Çevrim İçi Varlık & Son Görülme: `https://presence-public-service-prod.ol.epicgames.com/presence/api/v1/_/{accountId}/last-online` ile son görülme zamanları çekilir.
     - Arkadaş Arama & İstek Gönderme: `https://account-public-service-prod.ol.epicgames.com/account/api/public/account/displayName/{name}` üzerinden kullanıcı adı araması ve POST/DELETE ile istek yönetimi.
     - EOS In-Game Overlay Durumu: `EOSOverlayRenderer-Win64-Shipping.exe` taranarak oyun içi arayüz desteği doğrulanır.
-- **PlayStation 5 Konsol Tarzı Sağdan Kayan Sosyal Çekmece (EOS Social Drawer):**
-  - Üst gezinme çubuğuna `[👥 Sosyal]` butonu ve anlık çevrim içi arkadaş sayısını gösteren yeşil parlak rozet (`#social-online-badge`) eklendi.
-  - Resmi Epic Games Sosyal arayüzü ve kullanıcının referans görseliyle birebir uyumlu:
-    - **Üst Gezinme & Sekmeler:** Sol tarafta Arkadaşlar (👥) ve Sohbetler (💬) sekmeleri; sağ tarafta mor/mavi konsol avatarı ve çevrim içi göstergesi.
-    - **Konsol Kontrol Butonları:** Grup Gizliliği kilidi (`🔒 Yalnızca Davetliler` / `👥 Arkadaşlar` / `🌐 Herkese Açık`), Kırmızı/Yeşil Mikrofon susturma butonu (`🔇`/`🎙️`), Kulaklık sağırlaştırma butonu (`🎧`), ve `+` Oyuncu Arama/Ekleme paneli.
-    - **Durum Alt Şeridi:** `🔒 Yalnızca davetliler • Mikrofon açık/kapalı • Raporlama kapalı`.
-    - **Aktif Kullanıcı Kartı:** `(E) Efxlve   Sen   Çevrimiçi   🎙️` şeklinde kullanıcının kendi durumu ve mikrofon göstergesi.
-    - **EOS In-Game Overlay Hapı:** Shift+F3 desteğini gösteren konsol rozeti.
-    - **Arkadaşlar Sekmesi:** Arama çubuğu, Gelen İstekler onay/ret butonları, Çevrim İçi ve Çevrim Dışı grupları; Steam ve PSN platform etiketleri, son görülme hesaplayıcı (`5 dk önce`, `Dün`), sohbet başlatma ve gruba davet etme butonları.
-    - **Sohbet Sekmesi:** Seçili arkadaş ile canlı mesajlaşma, PlayStation/EOS konsol mesaj baloncukları, hızlı hazır mesaj hapları (`Selam! 👋`, `Oyuna gel! 🎮`, `Sese geçelim mi? 🎧`), enter ile anında gönderim ve `localStorage` kalıcı mesaj hafızası.
-- **Kısayol & Hızlı Erişim:**
-  - Standart Epic Games oyun içi kısayolu olan **`Shift + F3`** veya üst bar `Sosyal` butonuyla açılıp kapanır; **`Escape`** ile zarifçe çekilir.
+
+- **Steam & Epic Tarzı Bağımsız Masaüstü Penceresi (`Efxlve - Arkadaşlar ve Sohbet`):**
+  - Kullanıcının geri bildirimi doğrultusunda, ana launcher ekranını karartan/kilitleyen çekmece (drawer) yerine **Steam'in Arkadaşlar ve Sohbet penceresi gibi bağımsız çalışan, ayrı bir masaüstü penceresi** (`label: "social"`, 960x640px) mimarisine geçildi.
+  - **Arka Planda Hazır & 0ms Açılış:** `tauri.conf.json` içinde `"visible": false` olarak başlatılır. Açılışta gecikme olmadan anında görünür hale gelir.
+  - **Pencere Kapatma Koruması (`CloseRequested` Engelleme):** Rust tarafında `tauri::WindowEvent::CloseRequested` olayı yakalanarak pencere yok edilmez (`api.prevent_close()`), arka plana gizlenir (`window.hide()`). Böylece açık sohbetler, mesaj geçmişi ve kaydırma konumu bellekte korunur, yeniden tıklandığında anında ekrana gelir.
+  - **Özel Çerçevesiz Başlık Çubuğu & Pencere Kontrolleri:**
+    - Üstte `-webkit-app-region: drag` özellikli sürükleme alanı, mavi EOS logosu ve başlık metni.
+    - Sağ üstte özel Simge Durumu (`_`), Ekranı Kapla (`▢`) ve Kapat (`✕`) butonları (`minimize_social_window`, `toggle_maximize_social_window`, `close_social_window`).
+  - **Steam / Epic İki Sütunlu Görünüm & Mesajlaşma Deneyimi:**
+    - **Sol Kenar Çubuğu (310px):**
+      - Profil Kartı: Kullanıcı avatarı (`(E)`), görünen adı, `Sen` etiketi, `Çevrimiçi` durumu ve `Yenile` butonu.
+      - Hızlı Kontroller: Grup Gizliliği kilidi (`🔒 Yalnızca Davetliler` / `👥 Arkadaşlar` / `🌐 Herkese Açık`), Mikrofon susturma (`🔇`/`🎙️`), Kulaklık sağırlaştırma (`🎧`), ve `+` Arkadaş Ekle butonu.
+      - Çift Sekme Şeridi: `[👥 Arkadaşlar (çevrimiçi/toplam)]` ve `[💬 Sohbetler]` sekmeleri.
+      - Arama Kutusu: Canlı filtreleme, metin temizleme (`×`).
+      - Arkadaş Listesi: Gelen İstekler (onay/ret), Çevrim İçi ve Çevrim Dışı grupları; Steam ve PSN platform etiketleri, son görülme süresi (`5 dk önce`, `Dün`), tek tıkla sohbet başlatma.
+      - Sohbetler Listesi: `+ Yeni sohbet`, `Parti yazılı sohbeti (Bir partide değil)`, son mesajlaşmalar ve önizleme metinleri.
+    - **Sağ Ana Sohbet Alanı:**
+      - Başlık: Aktif arkadaşın avatarı, durumu ve `[Gruba Davet Et]` aksiyon butonu.
+      - Mesaj Akışı: Üstte bilgilendirme kutusu (`"Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir."`), modern konsol mesaj baloncukları (Sen: mavi, Arkadaş: cam efekti), zaman damgaları.
+      - Hızlı Yanıt Hapları: `Selam! 👋`, `Oyuna gel! 🎮`, `Sese geçelim mi? 🎧`, `Gruptayım! 🛡️`.
+      - Alt Giriş Alanı: Enter tuşuyla anında mesaj gönderimi, gönder butonu ve alt bilgilendirme (`"Sohbet raporlama kapalı"`).
+  - **Klavye Kısayolları & Eşitleme:**
+    - **`Shift + F3`** veya ana launcher'daki `[👥 Sosyal]` butonu pencereyi anında odaklar/açar/kapatır.
+    - **`Escape`** tuşu bağımsız sosyal pencereyi güvenle gizler.
+    - Pencereler arası anlık mesaj eşitlemesi `localStorage` + `storage` event'i ile çift yönlü sağlanır.
+
 
 

@@ -1060,5 +1060,17 @@ export const epicRemoveFriend = (targetAccountId: string) =>
 export const epicGetEosOverlayInfo = () =>
   invoke<boolean>("epic_get_eos_overlay_info");
 
+export const epicOpenSocialWindow = () =>
+  invoke<void>("open_social_window");
 
+export const epicToggleSocialWindow = () =>
+  invoke<boolean>("toggle_social_window");
 
+export const epicCloseSocialWindow = () =>
+  invoke<void>("close_social_window");
+
+export const epicMinimizeSocialWindow = () =>
+  invoke<void>("minimize_social_window");
+
+export const epicToggleMaximizeSocialWindow = () =>
+  invoke<boolean>("toggle_maximize_social_window");

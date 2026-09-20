@@ -20,6 +20,17 @@
         "minHeight": 640,
         "center": true,
         "decorations": false
+      },
+      {
+        "label": "social",
+        "title": "Efxlve - Arkadaşlar ve Sohbet",
+        "url": "index.html?window=social",
+        "width": 960,
+        "height": 640,
+        "minWidth": 680,
+        "minHeight": 480,
+        "visible": false,
+        "decorations": false
       }
     ],
     "security": {
