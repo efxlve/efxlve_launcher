@@ -1093,10 +1093,22 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Işık geçişi efekti (`plat-shimmer-pass`) eflatun parıltıya (`rgba(216, 180, 254, 0.38)`) uyarlandı.
   - Kategori çipi (`.chip[data-val="platinum"]`), tebrik afişi (`.plat-category-banner`) ve detay çekmecesi başlık rozeti (`.status-pill.plat`) mor Epic platin kupasıyla kusursuz bir uyum sağladı.
 
+## 66. Oyun Detay Sayfası (Game Hub) & Başarım Kupa Mor Platin Teması
 
-
-
-
-
-
-
+- **Detay Sayfası Sarı Kupa Öğelerinin Mor Platin Rengine Dönüştürülmesi:**
+  - **Üst Hızlı Stat Kapsülü (PS5 Glass Capsule):**
+    - `PLATİN 28/28 (%100)` sayaç metni sarıdan (`#fbbf24`) asil mor platin rengine (`.hub-stat-val.plat { color: #c084fc; text-shadow: 0 0 10px rgba(192, 132, 252, 0.4); }`) dönüştürüldü.
+    - Kapsül etiketi mor platin tonuna (`.hub-stat-label.plat { color: #d8b4fe; }`) uyarlandı.
+  - **Kupa & Başarım İlerlemesi Kartı (`.hub-trophy-spotlight`):**
+    - Başlık ikonu platin oyunlarda `epicPlatinumIcon(14)` olarak güncellendi.
+    - Yüzde göstergesi (`.hub-trophy-percent-num.plat`) mor parıltılı hale getirildi.
+    - Kupa ilerleme çubuğu (`.hub-trophy-bar-fill`) sarı/altın gradyandan asil mor gradyana (`linear-gradient(90deg, #7e22ce, #a855f7, #c084fc)`) ve platin oyunlar için parlak eflatun gradyana (`.hub-trophy-bar-fill.plat`) geçirildi.
+    - Madalya listesindeki Platin Kupa ikonu (`.hub-medal-item.plat`) açık mavi/sarılık yerine `epicPlatinumIcon(12)` ve mor renge (`#c084fc`) bağlandı.
+    - Sıradaki hedef kupalarda fallback ikonu (`.hub-trophy-target-icon`) ve platin hedef rozeti (`.hub-trophy-target-badge.plat`) mor tema ile yenilendi; bronz rozet rengi sarıdan bronz turuncuya (`#fb923c`) çekilerek hiyerarşi netleştirildi.
+  - **Oyun Özellikleri & Destek (Sağ Sütun):**
+    - `Başarımlar: ✓ 28 Kupa • 1000 XP` satırı sarıdan mor renge (`.hub-feature-val.plat { color: #c084fc; font-weight: 700; }`) ve satır ikonu `epicPlatinumIcon(12)` ile mor renge güncellendi.
+  - **Detay Sekmeleri & Başarım Görünümü:**
+    - "🏆 Başarımlar" çekmece sekme butonu platin oyunlarda `epicPlatinumIcon(13)` ve mor aktif çizgiye (`.drawer-tab.plat`) bağlandı; sekme rozeti (`.drawer-tab-badge.plat`) mora uyarlandı.
+    - Başarım sekmesindeki özet halkası (`.ach-summary-bar.platinum .ring-fill`), özet kartı (`.ach-summary-bar.platinum`), mini kupa sayaçları (`.ach-tier-mini.plat`), kartlardaki platin rozeti (`.ach-pill.tier.platinum`) ve dikey scrollbar (`.ach-list-container::-webkit-scrollbar-thumb:hover`) sarıdan mor-eflatun tonlara geçirildi.
+  - **Genel Sistem Bütünlüğü:**
+    - Raflar görünümündeki mini kupa rozeti (`.micro-chip.plat`), yerel profil sayfası platin kupa kutusu (`.profile-stat-box.plat`) ve kategori tebrik afişi ikonu (`.plat-banner-icon`) mor Epic Platin Kupa kimliğiyle tamamen eşleştirildi.

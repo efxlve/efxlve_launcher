@@ -2846,7 +2846,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
   const achPill = isPlat
     ? `<span class="status-pill plat" style="background:linear-gradient(135deg,rgba(168,85,247,0.22),rgba(126,34,206,0.38));color:#f3e8ff;border:1px solid rgba(192,132,252,0.4);font-weight:700">${epicPlatinumIcon(13)} Platin Kupa</span>`
     : achSum && achSum.total_achievements > 0
-      ? `<span class="status-pill ach" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(245,158,11,0.08)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
+      ? `<span class="status-pill ach" style="color:#c084fc;border-color:rgba(192,132,252,0.35);background:rgba(168,85,247,0.12)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
       : "";
 
 
@@ -2953,7 +2953,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
 
       const achTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="achievements"]');
       if (achTabBtn) {
-        achTabBtn.innerHTML = `${icon("trophy", 13)} Başarımlar`;
+        achTabBtn.innerHTML = `${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} Başarımlar`;
+        achTabBtn.classList.toggle("plat", isPlat);
       }
       const dlcTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
       if (dlcTabBtn) {
@@ -3028,7 +3029,7 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
               </div>
               <div class="hub-stat-divider"></div>
               <div class="hub-stat-col ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""} title="Başarımları Gör">
-                <span class="hub-stat-label">${isPlat ? epicPlatinumIcon(11) : icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
+                <span class="hub-stat-label ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(11) : icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
                 <span class="hub-stat-val ${isPlat ? "plat" : ""}">${achStatVal}</span>
               </div>
               <div class="hub-stat-divider"></div>
@@ -3055,8 +3056,8 @@ function openEpicModal(appName: string, isInitialOpen = true, animateTabContent 
               <button class="drawer-tab ${activeDrawerTab === "overview" ? "active" : ""}" data-act="drawer-tab" data-tab="overview">
                 ${icon("gamepad-2", 13)} Genel Bakış
               </button>
-              <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
-                ${icon("trophy", 13)} Başarımlar
+              <button class="drawer-tab ${activeDrawerTab === "achievements" ? "active" : ""} ${isPlat ? "plat" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
+                ${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} Başarımlar
               </button>
               <button class="drawer-tab ${activeDrawerTab === "dlcs" ? "active" : ""}" data-act="drawer-tab" data-tab="dlcs" data-id="${appName}">
                 ${icon("layers", 13)} Eklentiler ${dlcTabBadge}
@@ -3561,7 +3562,7 @@ function renderGameFeatures(
   if (achSum && achSum.total_achievements > 0) {
     const totalXp = achSum.total_xp || 0;
     achVal = `✓ ${achSum.total_achievements} Kupa${totalXp > 0 ? ` • ${totalXp} XP` : ""}`;
-    achClass = "gold";
+    achClass = isAppPlatinum(s.appName) ? "plat" : "gold";
   } else if (partner) {
     achVal = `✓ ${partner.name} Başarımları`;
     achClass = "accent";
@@ -3695,7 +3696,7 @@ function renderGameFeatures(
 
     <div class="hub-feature-row">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("trophy", 12)}</div>
+        <div class="hub-feature-icon">${isAppPlatinum(s.appName) ? epicPlatinumIcon(12) : icon("trophy", 12)}</div>
         <span>Başarımlar</span>
       </div>
       <div class="hub-feature-val ${achClass}">${achVal}</div>
@@ -3907,8 +3908,8 @@ function renderOverviewTrophySpotlight(
     <div class="hub-trophy-next-list">
       ${targets.map((t) => `
         <button type="button" class="hub-trophy-target-card" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${esc(t.title)} - ${esc(t.desc)}">
-          <div class="hub-trophy-target-icon">
-            ${t.icon ? `<img src="${esc(t.icon)}" alt="" loading="lazy" />` : icon("trophy", 18)}
+          <div class="hub-trophy-target-icon ${t.tierClass === "plat" ? "plat" : ""}">
+            ${t.icon ? `<img src="${esc(t.icon)}" alt="" loading="lazy" />` : (t.tierClass === "plat" ? epicPlatinumIcon(18) : icon("trophy", 18))}
           </div>
           <div class="hub-trophy-target-info">
             <div class="hub-trophy-target-title">${esc(t.title)}</div>
@@ -3921,30 +3922,30 @@ function renderOverviewTrophySpotlight(
   ` : "";
 
   return `
-    <div class="hub-card hub-trophy-spotlight">
+    <div class="hub-card hub-trophy-spotlight ${isPlat ? "plat" : ""}">
       <div class="hub-card-header">
-        <h3 class="hub-card-title">${icon("trophy", 14)} <span>Kupa & Başarım İlerlemesi</span></h3>
+        <h3 class="hub-card-title">${isPlat ? epicPlatinumIcon(14) : icon("trophy", 14)} <span>Kupa & Başarım İlerlemesi</span></h3>
         <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
           <span>Tüm Kupalar</span> ${icon("chevron-right", 12)}
         </button>
       </div>
 
       <!-- Kupa İlerleme Kutusu -->
-      <div class="hub-trophy-progress-box">
+      <div class="hub-trophy-progress-box ${isPlat ? "plat" : ""}">
         <div class="hub-trophy-progress-top">
           <div class="hub-trophy-percent-badge">
-            <span class="hub-trophy-percent-num">%${pct}</span>
+            <span class="hub-trophy-percent-num ${isPlat ? "plat" : ""}">%${pct}</span>
             <span class="hub-trophy-counts">${unlockedAch} / ${totalAch} Kupa ${totalXp > 0 ? `• ${userXp} XP` : ""}</span>
           </div>
           <div class="hub-trophy-medals">
-            <div class="hub-medal-item plat" title="Platin Kupa">${icon("trophy", 12)} <span>${platCount}</span></div>
+            <div class="hub-medal-item plat" title="Platin Kupa">${epicPlatinumIcon(12)} <span>${platCount}</span></div>
             <div class="hub-medal-item gold" title="Altın Kupa">${icon("trophy", 12)} <span>${goldCount}</span></div>
             <div class="hub-medal-item silver" title="Gümüş Kupa">${icon("trophy", 12)} <span>${silverCount}</span></div>
             <div class="hub-medal-item bronze" title="Bronz Kupa">${icon("trophy", 12)} <span>${bronzeCount}</span></div>
           </div>
         </div>
         <div class="hub-trophy-bar-track">
-          <div class="hub-trophy-bar-fill" style="width: ${pct}%"></div>
+          <div class="hub-trophy-bar-fill ${isPlat ? "plat" : ""}" style="width: ${pct}%"></div>
         </div>
       </div>
 
@@ -6185,7 +6186,7 @@ function updateLibraryFilterInPlace(): boolean {
       const bannerHtml = `
         <div class="plat-category-banner">
           <div class="plat-banner-glow"></div>
-          <div class="plat-banner-icon">${icon("trophy", 28)}</div>
+          <div class="plat-banner-icon">${epicPlatinumIcon(28)}</div>
           <div class="plat-banner-info">
             <div class="plat-banner-title">Platin Kupa Koleksiyonu</div>
             <div class="plat-banner-desc">Tüm başarımlarını %100 tamamlayarak vitrine eklediğin oyunlar. Harika iş!</div>

@@ -909,7 +909,12 @@ button { font-family: inherit; }
   font-feature-settings: "tnum";
 }
 .hub-stat-val.plat {
-  color: #fbbf24;
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+}
+.hub-stat-label.plat,
+.hub-stat-col:has(.hub-stat-val.plat) .hub-stat-label {
+  color: #d8b4fe;
 }
 .hub-stat-divider {
   width: 1px;
@@ -1031,6 +1036,14 @@ button { font-family: inherit; }
 .hub-feature-val.gold {
   color: #fbbf24;
 }
+.hub-feature-val.plat {
+  color: #c084fc;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.35);
+}
+.hub-feature-row:has(.hub-feature-val.plat) .hub-feature-icon {
+  color: #c084fc;
+}
 .hub-feature-val.warn {
   color: #fb923c;
 }
@@ -1089,6 +1102,11 @@ button { font-family: inherit; }
   flex-direction: column;
   gap: 12px;
 }
+.hub-trophy-spotlight.plat {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: linear-gradient(180deg, rgba(22, 10, 38, 0.4) 0%, rgba(15, 17, 26, 0.7) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 24px rgba(168, 85, 247, 0.12);
+}
 .hub-card-link {
   background: transparent;
   border: none;
@@ -1118,6 +1136,10 @@ button { font-family: inherit; }
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
 }
+.hub-trophy-progress-box.plat {
+  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(168, 85, 247, 0.2);
+}
 .hub-trophy-progress-top {
   display: flex;
   align-items: center;
@@ -1136,6 +1158,10 @@ button { font-family: inherit; }
   color: #f1f5f9;
   letter-spacing: -0.5px;
   font-feature-settings: "tnum";
+}
+.hub-trophy-percent-num.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
 }
 .hub-trophy-counts {
   font-size: 12px;
@@ -1159,7 +1185,7 @@ button { font-family: inherit; }
   font-weight: 700;
   font-feature-settings: "tnum";
 }
-.hub-medal-item.plat { color: #38bdf8; }
+.hub-medal-item.plat { color: #c084fc; }
 .hub-medal-item.gold { color: #fbbf24; }
 .hub-medal-item.silver { color: #cbd5e1; }
 .hub-medal-item.bronze { color: #d97706; }
@@ -1176,9 +1202,13 @@ button { font-family: inherit; }
 .hub-trophy-bar-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+  background: linear-gradient(90deg, #7e22ce, #a855f7, #c084fc);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
   transition: width 0.4s ease;
+}
+.hub-trophy-bar-fill.plat {
+  background: linear-gradient(90deg, #6b21a8, #9333ea, #c084fc, #e9d5ff);
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.6);
 }
 
 /* Sıradaki Hedef Kupalar (Next Up) */
@@ -1227,7 +1257,10 @@ button { font-family: inherit; }
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  color: #fbbf24;
+  color: #c084fc;
+}
+.hub-trophy-target-icon.plat {
+  color: #c084fc;
 }
 .hub-trophy-target-icon img {
   width: 100%;
@@ -1265,10 +1298,10 @@ button { font-family: inherit; }
   align-self: flex-start;
   margin-top: 2px;
 }
-.hub-trophy-target-badge.bronze { background: rgba(217, 119, 6, 0.15); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.3); }
+.hub-trophy-target-badge.bronze { background: rgba(217, 119, 6, 0.15); color: #fb923c; border: 1px solid rgba(217, 119, 6, 0.3); }
 .hub-trophy-target-badge.silver { background: rgba(203, 213, 225, 0.12); color: #e2e8f0; border: 1px solid rgba(203, 213, 225, 0.25); }
 .hub-trophy-target-badge.gold { background: rgba(251, 191, 36, 0.18); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.35); }
-.hub-trophy-target-badge.plat { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+.hub-trophy-target-badge.plat { background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.4); }
 
 /* --- PlayStation 5 Medya Galerisi (Media Spotlight) --- */
 .hub-media-spotlight {
@@ -2066,12 +2099,20 @@ button { font-family: inherit; }
   opacity: 1;
   color: #93c5fd;
 }
+.drawer-tab.plat {
+  color: #c084fc;
+}
+.drawer-tab.plat.active {
+  color: #f3e8ff;
+  border-bottom-color: #a855f7;
+}
 .drawer-tab-badge.plat {
-  color: #fbbf24;
+  color: #c084fc;
   font-weight: 700;
 }
 .drawer-tab.active .drawer-tab-badge.plat {
-  color: #fde047;
+  color: #e9d5ff;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
 }
 
 /* --- Sekme İçerik Geçiş Animasyonu --- */
@@ -2146,8 +2187,8 @@ button { font-family: inherit; }
 
 /* --- Başarımlar Mini Vitrini (Overview Tab) --- */
 .drawer-ach-showcase {
-  background: linear-gradient(180deg, rgba(251, 191, 36, 0.08) 0%, rgba(20, 21, 28, 0.4) 100%);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, rgba(20, 21, 28, 0.4) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
   border-radius: 14px;
   padding: 13px 16px;
   margin-bottom: 18px;
@@ -2163,7 +2204,7 @@ button { font-family: inherit; }
 .ach-showcase-title {
   font-size: 13px;
   font-weight: 700;
-  color: #fbbf24;
+  color: #c084fc;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2190,7 +2231,7 @@ button { font-family: inherit; }
 }
 .ach-showcase-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  background: linear-gradient(90deg, #7e22ce, #a855f7, #c084fc);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -2475,8 +2516,9 @@ button { font-family: inherit; }
   margin-bottom: 14px;
 }
 .ach-summary-bar.platinum {
-  border-color: rgba(251, 191, 36, 0.25);
-  background: rgba(251, 191, 36, 0.04);
+  border-color: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(126, 34, 206, 0.04));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 24px rgba(168, 85, 247, 0.1);
 }
 .ach-summary-left {
   display: flex;
@@ -2508,7 +2550,8 @@ button { font-family: inherit; }
   transition: stroke-dashoffset 0.4s ease;
 }
 .ach-summary-bar.platinum .ring-fill {
-  stroke: #fbbf24;
+  stroke: #c084fc;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.6));
 }
 .ach-summary-text {
   display: flex;
@@ -2543,8 +2586,8 @@ button { font-family: inherit; }
   color: #64748b;
   font-feature-settings: "tnum";
 }
-.ach-tier-mini.plat { color: #38bdf8; }
-.ach-tier-mini.plat.complete { color: #7dd3fc; }
+.ach-tier-mini.plat { color: #c084fc; }
+.ach-tier-mini.plat.complete { color: #e9d5ff; }
 .ach-tier-mini.gold { color: #fbbf24; }
 .ach-tier-mini.gold.complete { color: #fde047; }
 .ach-tier-mini.silver { color: #94a3b8; }
@@ -2727,7 +2770,7 @@ button { font-family: inherit; }
   border-radius: 999px;
 }
 .ach-list-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 191, 36, 0.5);
+  background: rgba(168, 85, 247, 0.5);
 }
 
 .ach-group-section {
@@ -2925,7 +2968,7 @@ button { font-family: inherit; }
 .ach-pill.tier.bronze { color: #f97316; }
 .ach-pill.tier.silver { color: #94a3b8; }
 .ach-pill.tier.gold { color: #fbbf24; }
-.ach-pill.tier.platinum { color: #38bdf8; }
+.ach-pill.tier.platinum { color: #c084fc; }
 .ach-pill.date { color: #64748b; }
 .ach-pill.rarity { color: #64748b; }
 .ach-pill.rarity.ultra-rare {
@@ -6480,8 +6523,8 @@ select option {
   color: #cbd5e1;
 }
 .micro-chip.playtime { color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); }
-.micro-chip.ach { color: #fbbf24; border-color: rgba(251, 191, 36, 0.35); }
-.micro-chip.plat { color: #facc15; border-color: rgba(250, 204, 21, 0.5); background: rgba(250, 204, 21, 0.14); }
+.micro-chip.ach { color: #c084fc; border-color: rgba(192, 132, 252, 0.35); }
+.micro-chip.plat { color: #e9d5ff; border-color: rgba(192, 132, 252, 0.5); background: rgba(168, 85, 247, 0.18); }
 
 /* --- STEAM RAFLAR (SHELVES) GÖRÜNÜMÜ --- */
 .shelves-container {
@@ -7921,18 +7964,18 @@ select option {
 }
 
 .profile-stat-box.plat {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.06) 0%, rgba(245, 158, 11, 0.04) 100%);
-  border-color: rgba(255, 215, 0, 0.22);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(126, 34, 206, 0.06) 100%);
+  border-color: rgba(192, 132, 252, 0.3);
 }
 .profile-stat-box.plat .profile-stat-icon-wrap {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%);
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  color: #ffd700;
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(126, 34, 206, 0.3) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.5);
+  color: #c084fc;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
 }
 .profile-stat-box.plat:hover {
-  border-color: rgba(255, 215, 0, 0.5);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.12);
+  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25);
 }
 
 .profile-stat-box.playtime .profile-stat-icon-wrap {
