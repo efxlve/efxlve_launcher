@@ -29,6 +29,36 @@
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
+/* --- PlayStation 5 Console Professionalism Standards --- */
+
+/* 1. Tabular numbers on all metrics, speeds, gauges, and counters (prevents layout jitter) */
+.dl-stat-value,
+.dl-progress-pct,
+#dl-stat-bytes,
+.verify-meta,
+.move-progress-meta-row,
+.ps5-level-percent,
+.ps5-level-remaining,
+.ps5-tier-count,
+.ps5-card-percent,
+.ps5-card-xp,
+.pcard-stat,
+.pcard-time,
+.clock-time,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 2. Tactile micro-feedback on active clicks */
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+.ps5-btn:active:not(:disabled),
+.ps5-btn-icon:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 0.08s ease;
+}
+
+
 /* Number input spinners removal (prevents white stepper box in Chromium/WebView2) */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
