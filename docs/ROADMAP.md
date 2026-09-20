@@ -38,8 +38,43 @@
 
 ---
 
+### 📌 Beyaz Parlama / Flashbang (FOUC) Sorunu — Launcher ve Mağazada Aniden Ekranın Beyaz Olması
+
+- **Durum:** 📋 `YAPILACAK` (Kullanıcı talimatı: *Not al; sonraki adımda uygulanacak.*)
+- **Etkilenen Dosyalar:**
+  - `src-tauri/tauri.conf.json` (Ana pencere arka plan rengi / transparent ayarı)
+  - `index.html` (Critical inline background & color-scheme eksikliği)
+  - `src-tauri/src/main.rs` (`WebviewBuilder` child webview varsayılan native arka plan rengi)
+  - `src/styles.css` (`html, body` ilk render anti-flicker kuralları)
+
+#### A. Gözlemlenen Hata ve Semptomlar
+1. **Aniden Ekranın Beyaz Olması (Flashbang):** Launcher açılırken, sayfalar arası geçiş yapılırken veya pencere boyutu değiştirilirken anlık olarak ekran bembeyaz parlayıp (flashback / white flicker) gözü alıyor.
+2. **Özellikle Mağazada Şiddetlenmesi:** "Mağaza"ya tıklandığında veya mağaza içinde bir oyun sayfasına yönlenirken, Chromium render motoru DOM ve harici web içeriği yüklenene kadar tüm ekranı saf beyaz (`#FFFFFF`) ile temizliyor.
+3. **Kullanıcı Deneyimini Baltalaması:** Koyu obsidyen PlayStation konsol estetiğine sahip bir launcher'da bu tarz anlık beyaz parlamalar hem profesyonelliği zedeliyor hem de gece kullanımında rahatsız ediyor.
+
+#### B. Teknik Kök Neden Analizi (Root Cause)
+1. **WebView2 Native Controller Varsayılanı:** Windows üzerinde Microsoft Edge WebView2 motoru (`ICoreWebView2Controller`), işletim sistemi düzeyinde varsayılan olarak saf beyaz (`COLORREF 0x00FFFFFF`) arka planla başlatılır.
+2. **Tauri Konfigürasyon Eksikliği:** `tauri.conf.json` dosyasındaki pencere tanımında `"backgroundColor": "#07080d"` veya native transparent parametresi tanımlanmadığı için pencere oluştuğu milisaniyede WebView2 beyaz arka planı ekrana basar.
+3. **HTML Inline Kritik Stil Eksikliği:** `index.html` dosyasında `<html>` ve `<body>` üzerinde doğrudan inline `style="background-color: #07080d; color-scheme: dark;"` bulunmadığı için CSS dosyası (`styles.css`) Vite tarafından ayrıştırılana kadarki ilk karede FOUC (Flash of Unstyled Content) oluşur.
+4. **Gömülü Mağaza Webview'i:** `WebviewBuilder::new(...)` ile oluşturulan child webview için native arka plan rengi belirtilmemiştir. Mağazadaki her sayfa geçişinde Chromium DirectX swap chain'i sıfırlarken beyaz arka plan fırlar.
+
+#### C. Planlanan Çözüm Adımları
+1. **`index.html` ve Head Düzeyinde Anti-Flash:**  
+   - `<html>` ve `<body>` etiketlerine doğrudan inline `style="background-color: #07080d; color-scheme: dark;"` eklenecek.
+   - `<head>` içine `<meta name="color-scheme" content="dark">` yerleştirilerek CSS yüklenmeden önce bile tarayıcının saf obsidyen siyahı çizmesi sağlanacak.
+2. **`tauri.conf.json` Pencere Ayarları:**  
+   - Pencere ayarlarına native dark background tanımlanarak WebView2'nin Win32 penceresini beyazla boyaması engellenecek.
+3. **Rust WebviewBuilder Arka Planı:**  
+   - `src-tauri/src/main.rs` içinde `WebviewBuilder` oluşturulurken `.transparent(true)` veya Windows controller seviyesinde `default_background_color: [7, 8, 13, 255]` tanımlanacak.
+4. **Mağaza Sayfa Geçişlerinde Karartma Maskesi:**  
+   - `STORE_EXTENSION_SCRIPT` içindeki CSS'in `document_start` anında enjekte edilmesi ve ilk boyama gerçekleşene kadar sayfanın `#07080d` opak kaplamayla tutulup hazır olduğunda yumuşak (fade-in) gösterilmesi.
+
+---
+
 ## 2. Gelecek Adımlar (Next Milestones)
 
 - [ ] **Milestone 1:** Üst menü (Titlebar / Nav) PS5 UI yenilemesi ve Mağaza/Kütüphane webview durum makinesi refactor'ü.
-- [ ] **Milestone 2:** `docs/DESIGN_SYSTEM.md` standartlarının **Ayarlar** (Settings) ve **İndirmeler** (Downloads) sayfalarına eksiksiz uygulanması.
-- [ ] **Milestone 3:** `master_refactor_plan.md` doğrultusunda 11.000 satırlık `src/main.ts` dosyasının `src/features/` modüllerine bölünmesi.
+- [ ] **Milestone 2:** Beyaz parlama (flashbang / FOUC) sorununun `tauri.conf.json`, `index.html` ve Rust `WebviewBuilder` seviyesinde kökten çözülmesi.
+- [ ] **Milestone 3:** `docs/DESIGN_SYSTEM.md` standartlarının **Ayarlar** (Settings) ve **İndirmeler** (Downloads) sayfalarına eksiksiz uygulanması.
+- [ ] **Milestone 4:** `master_refactor_plan.md` doğrultusunda 11.000 satırlık `src/main.ts` dosyasının `src/features/` modüllerine bölünmesi.
+
