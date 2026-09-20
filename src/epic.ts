@@ -1016,4 +1016,49 @@ export const epicMoveGame = (appName: string, targetBasePath: string) =>
 export const epicCancelMoveGame = (appName: string) =>
   invoke<boolean>("epic_cancel_move_game", { appName });
 
+/* ---------- EOS Sosyal, Arkadaşlar & Ses / Grup ---------- */
+
+export interface ExternalAuthInfo {
+  account_id?: string | null;
+  auth_type?: string | null;
+  external_display_name?: string | null;
+  avatar?: string | null;
+}
+
+export interface EpicFriend {
+  account_id: string;
+  display_name: string;
+  alias?: string | null;
+  status: "ONLINE" | "AWAY" | "OFFLINE";
+  last_online?: string | null;
+  is_favorite: boolean;
+  mutual_count: number;
+  external_auths: Record<string, ExternalAuthInfo>;
+}
+
+export interface EpicSocialSummary {
+  my_account_id: string;
+  my_display_name: string;
+  friends: EpicFriend[];
+  incoming: EpicFriend[];
+  outgoing: EpicFriend[];
+  eos_overlay_enabled: boolean;
+}
+
+export const epicGetSocialSummary = () =>
+  invoke<EpicSocialSummary>("epic_get_social_summary");
+
+export const epicSearchUser = (displayName: string) =>
+  invoke<EpicFriend | null>("epic_search_user", { displayName });
+
+export const epicSendFriendRequest = (targetAccountId: string) =>
+  invoke<void>("epic_send_friend_request", { targetAccountId });
+
+export const epicRemoveFriend = (targetAccountId: string) =>
+  invoke<void>("epic_remove_friend", { targetAccountId });
+
+export const epicGetEosOverlayInfo = () =>
+  invoke<boolean>("epic_get_eos_overlay_info");
+
+
 

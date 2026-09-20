@@ -20,6 +20,7 @@ pub mod profile;
 pub mod critic;
 pub mod screenshots;
 pub mod move_game;
+pub mod social;
 
 use thiserror::Error;
 

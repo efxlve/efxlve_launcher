@@ -1463,7 +1463,12 @@ fn main() {
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,
-            legendary::commands::epic_cancel_move_game
+            legendary::commands::epic_cancel_move_game,
+            legendary::commands::epic_get_social_summary,
+            legendary::commands::epic_search_user,
+            legendary::commands::epic_send_friend_request,
+            legendary::commands::epic_remove_friend,
+            legendary::commands::epic_get_eos_overlay_info
         ])
         .run(tauri::generate_context!())
         .expect("Tauri uygulaması çalıştırılamadı");
