@@ -2278,47 +2278,6 @@ pub async fn epic_cancel_move_game(app_name: String) -> bool {
     super::move_game::cancel_move_game(&app_name).await
 }
 
-/// Epic Games ve EOS sosyal durumunu (arkadaşlar, bekleyen istekler, son çevrim içi) getirir
-#[tauri::command]
-pub async fn epic_get_social_summary() -> Result<super::social::EpicSocialSummary, String> {
-    let config = super::skip::default_config_dir();
-    super::social::fetch_social_summary(&config).await
-}
-
-/// Kullanıcı adına göre Epic Games oyuncusu arar
-#[tauri::command]
-pub async fn epic_search_user(display_name: String) -> Result<Option<super::social::EpicFriend>, String> {
-    let config = super::skip::default_config_dir();
-    super::social::search_user(&config, &display_name).await
-}
-
-/// Arkadaşlık isteği gönderir veya gelen isteği onaylar
-#[tauri::command]
-pub async fn epic_send_friend_request(target_account_id: String) -> Result<(), String> {
-    let config = super::skip::default_config_dir();
-    super::social::send_friend_request(&config, &target_account_id).await
-}
-
-/// Arkadaşı siler veya gelen isteği reddeder
-#[tauri::command]
-pub async fn epic_remove_friend(target_account_id: String) -> Result<(), String> {
-    let config = super::skip::default_config_dir();
-    super::social::remove_friend(&config, &target_account_id).await
-}
-
-/// EOS Overlay'in sistemde yüklü/etkin olup olmadığını döndürür
-#[tauri::command]
-pub fn epic_get_eos_overlay_info() -> Result<bool, String> {
-    Ok(super::social::check_eos_overlay_enabled())
-}
-
-/// Epic Games XMPP canlı sohbet bağlantısı için gereken kimlik bilgilerini döndürür
-#[tauri::command]
-pub fn epic_get_xmpp_credentials() -> Result<super::social::EpicXmppCredentials, String> {
-    let config = super::skip::default_config_dir();
-    super::social::get_xmpp_credentials(&config)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
