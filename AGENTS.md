@@ -1165,3 +1165,14 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Kart başlığı yanında büyük PlayStation tarzı ilerleme rozeti (`.ps5-card-percent-badge`: `%100 Tamamlandı` / `%88 İlerleme`).
   - 10 fit gezinmede mavi neon aksiyon butonu (`[ İncele → ]`) ve `:focus-visible` elektrik mavisi konsol odak halkası (`0 0 0 2.5px #60a5fa, 0 0 26px rgba(96, 165, 250, 0.6)`).
 
+## 70. PlayStation 5 Konsol Profil Rafinasyonu & Dinamik Kontrolcü HUD Mimarisi
+
+- **"AI Yapmış" Cliclerini Temizleme & Doğal PlayStation 5 Konsol Zarafeti:**
+  - **Mükerrer İkinci Kutu Temizliği:** Hero sahnesinin hemen altında yer alan ve yukarıda zaten yer alan metrikleri (Toplam XP, Açılan Kupalar, Platin Kupa, Oynama Süresi, Kütüphane) gereksiz yere ikinci kez gösteren devasa 5 sütunlu `.profile-stats-capsule` kutusu tamamen kaldırıldı. Hero sahnesi doğrudan ferah kupa vitrini ve oyun listesiyle buluşturuldu.
+  - **Kullanıcı Kimliği & Hero Metin Rafinasyonu:** Monospace kod karmaşası yerine sol tarafta tek satırlık temiz konsol meta dizilimi (`Oyun Sayısı • Oynama Süresi • Toplam Kupa • ID Kopyala`) ve PS5 seviye kapsülü yerleştirildi; sağ tarafta 4 seviyeli kupa vitrini (Platin, Altın, Gümüş, Bronz) ve toplam XP alanı konumlandırıldı.
+  - **Mekanik Düğmelerin Kaldırılması & Kart Mimarisi:** Her 20+ oyun kartının üzerinde tekrar eden gri `[ İncele > ]` butonları kaldırıldı. Kartın tamamı tıklanabilir konsol medya döşemesine dönüştürüldü; kartın sağ tarafına büyük kristal netliğinde tamamlama yüzdesi (`%100` veya `%64`) ve hover/gamepad odaklanmasında parıldayan konsol yön göstergesi (`.ps5-card-chevron`) entegre edildi.
+- **Dinamik Kontrolcü HUD Mimarisi & Kol Takılı Değilken Gizleme Güvencesi:**
+  - Profil sayfasının altına statik HTML olarak gömülen `<div class="ps5-profile-controller-hint">` tamamen temizlendi.
+  - Global kontrolcü HUD sistemine (`updateGamepadHud`) `view === "profile"` dalı entegre edildi (`(A) Kupaları İncele`, `(X) Profili Yenile`, `(Y) Ara`, `(LB/RB) Filtreler`, `(D-Pad) Gezin`).
+  - `render()` döngüsüne `updateGamepadHud(gamepadPolling)` entegre edilerek, kontrolcü takılı DEĞİLKEN (`gamepadPolling === false`) ekranda kontrolcüye dair hiçbir ipucunun ÇIKMAMASI garantilendi; kontrolcü bağlandığında ise anında konsol HUD çubuğu aktifleşir.
+
