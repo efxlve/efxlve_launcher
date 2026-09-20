@@ -73,7 +73,6 @@ Transfer: `epic_install_game`, `epic_install_with_options`, `epic_cancel_downloa
 `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`
 SteamGridDB: `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers`
 Mağaza: `show_store_view`, `resize_store_view`, `hide_store_view`
-Sosyal & EOS: `epic_get_social_summary`, `epic_search_user`, `epic_send_friend_request`, `epic_remove_friend`, `epic_get_eos_overlay_info`, `epic_get_xmpp_credentials`, `open_social_window`, `toggle_social_window`, `close_social_window`, `minimize_social_window`, `toggle_maximize_social_window`, `open_official_epic_chat`
 Pencere: `open_folder`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`
 
 **Event'ler (frontend dinler):** `download-progress {id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes}`,
@@ -1176,62 +1175,4 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Profil sayfasının altına statik HTML olarak gömülen `<div class="ps5-profile-controller-hint">` tamamen temizlendi.
   - Global kontrolcü HUD sistemine (`updateGamepadHud`) `view === "profile"` dalı entegre edildi (`(A) Kupaları İncele`, `(X) Profili Yenile`, `(Y) Ara`, `(LB/RB) Filtreler`, `(D-Pad) Gezin`).
   - `render()` döngüsüne `updateGamepadHud(gamepadPolling)` entegre edilerek, kontrolcü takılı DEĞİLKEN (`gamepadPolling === false`) ekranda kontrolcüye dair hiçbir ipucunun ÇIKMAMASI garantilendi; kontrolcü bağlandığında ise anında konsol HUD çubuğu aktifleşir.
-
-## 71. EOS Sosyal Entegrasyonu & Steam Tarzı Bağımsız Arkadaşlar ve Sohbet Penceresi (Standalone Window)
-
-- **Doğal Epic Games & EOS API Katmanı (`legendary/social.rs` & `epic.ts`):**
-  - `%USERPROFILE%\.config\legendary\user.json` içindeki aktif OAuth `access_token` kullanılarak doğrudan resmi Epic Online Services (EOS) mikroservislerine bağlanır:
-    - Arkadaş Listesi & Özet: `https://friends-public-service-prod.ol.epicgames.com/friends/api/v1/{accountId}/summary` (arkadaşlar, gelen ve giden istekler).
-    - Kullanıcı Kimlikleri & Platform Eşleşmeleri: `https://account-public-service-prod.ol.epicgames.com/account/api/public/account?accountId=...` ile toplu olarak Steam, PSN ve Epic Games görünen adları (display_name) disk/ağ üzerinden çözülür.
-    - Çevrim İçi Varlık & Son Görülme: `https://presence-public-service-prod.ol.epicgames.com/presence/api/v1/_/{accountId}/last-online` ile son görülme zamanları çekilir.
-    - Arkadaş Arama & İstek Gönderme: `https://account-public-service-prod.ol.epicgames.com/account/api/public/account/displayName/{name}` üzerinden kullanıcı adı araması ve POST/DELETE ile istek yönetimi.
-    - EOS In-Game Overlay Durumu: `EOSOverlayRenderer-Win64-Shipping.exe` taranarak oyun içi arayüz desteği doğrulanır.
-
-- **Steam & Epic Tarzı Bağımsız Masaüstü Penceresi (`Efxlve - Arkadaşlar ve Sohbet`):**
-  - Kullanıcının geri bildirimi doğrultusunda, ana launcher ekranını karartan/kilitleyen çekmece (drawer) yerine **Steam'in Arkadaşlar ve Sohbet penceresi gibi bağımsız çalışan, ayrı bir masaüstü penceresi** (`label: "social"`, 960x640px) mimarisine geçildi.
-  - **Arka Planda Hazır & 0ms Açılış:** `tauri.conf.json` içinde `"visible": false` olarak başlatılır. Açılışta gecikme olmadan anında görünür hale gelir.
-  - **Pencere Kapatma Koruması (`CloseRequested` Engelleme):** Rust tarafında `tauri::WindowEvent::CloseRequested` olayı yakalanarak pencere yok edilmez (`api.prevent_close()`), arka plana gizlenir (`window.hide()`). Böylece açık sohbetler, mesaj geçmişi ve kaydırma konumu bellekte korunur, yeniden tıklandığında anında ekrana gelir.
-  - **Özel Çerçevesiz Başlık Çubuğu & Pencere Kontrolleri:**
-    - Üstte `-webkit-app-region: drag` özellikli sürükleme alanı, mavi EOS logosu ve başlık metni.
-    - Sağ üstte özel Simge Durumu (`_`), Ekranı Kapla (`▢`) ve Kapat (`✕`) butonları (`minimize_social_window`, `toggle_maximize_social_window`, `close_social_window`).
-  - **Steam / Epic İki Sütunlu Görünüm & Mesajlaşma Deneyimi:**
-    - **Sol Kenar Çubuğu (310px):**
-      - Profil Kartı: Kullanıcı avatarı (`(E)`), görünen adı, `Sen` etiketi, `Çevrimiçi` durumu ve `Yenile` butonu.
-      - Hızlı Kontroller: Grup Gizliliği kilidi (`🔒 Yalnızca Davetliler` / `👥 Arkadaşlar` / `🌐 Herkese Açık`), Mikrofon susturma (`🔇`/`🎙️`), Kulaklık sağırlaştırma (`🎧`), ve `+` Arkadaş Ekle butonu.
-      - Çift Sekme Şeridi: `[👥 Arkadaşlar (çevrimiçi/toplam)]` ve `[💬 Sohbetler]` sekmeleri.
-      - Arama Kutusu: Canlı filtreleme, metin temizleme (`×`).
-      - Arkadaş Listesi: Gelen İstekler (onay/ret), Çevrim İçi ve Çevrim Dışı grupları; Steam ve PSN platform etiketleri, son görülme süresi (`5 dk önce`, `Dün`), tek tıkla sohbet başlatma.
-      - Sohbetler Listesi: `+ Yeni sohbet`, `Parti yazılı sohbeti (Bir partide değil)`, son mesajlaşmalar ve önizleme metinleri.
-    - **Sağ Ana Sohbet Alanı:**
-      - Başlık: Aktif arkadaşın avatarı, durumu ve `[Gruba Davet Et]` aksiyon butonu.
-      - Mesaj Akışı: Üstte bilgilendirme kutusu (`"Bu, sohbetin başlangıcı. Mesajlar 30 gün boyunca kaydedilir."`), modern konsol mesaj baloncukları (Sen: mavi, Arkadaş: cam efekti), zaman damgaları.
-      - Hızlı Yanıt Hapları: `Selam! 👋`, `Oyuna gel! 🎮`, `Sese geçelim mi? 🎧`, `Gruptayım! 🛡️`.
-      - Alt Giriş Alanı: Enter tuşuyla anında mesaj gönderimi, gönder butonu ve alt bilgilendirme (`"Sohbet raporlama kapalı"`).
-  - **Klavye Kısayolları & Eşitleme:**
-    - **`Shift + F3`** veya ana launcher'daki `[👥 Sosyal]` butonu pencereyi anında odaklar/açar/kapatır.
-    - **`Escape`** tuşu bağımsız sosyal pencereyi güvenle gizler.
-    - Pencereler arası anlık mesaj eşitlemesi `localStorage` + `storage` event'i ile çift yönlü sağlanır.
-  - **Sohbet Paneli "undefined" Hatası & In-Place Güncelleme:**
-    - `renderSteamSocialChatPane(): string` artık HTML dizgesi döndürür; şablon içinde `${renderSteamSocialChatPane()}` çağrıldığında DOM'a `undefined` yazılması kalıcı olarak engellenmiştir.
-    - Arkadaş seçimi ve harici depolama (`storage`) güncellemelerinde `updateSteamSocialChatPane()` kullanılarak kaydırma konumu ve içerik yerinde güncellenir.
-  - **Gelen İstekler Düzeni & Aksiyon Butonları:**
-    - Sol kenar çubuğundaki taşma ve metin kırılmalarını önlemek için durum `"İstek gönderdi"` olarak optimize edildi.
-    - `.steam-action-btn.accept` (yeşil) ve `.steam-action-btn.decline` (kırmızı) onay/red butonları modern konsol buton stilleriyle giydirildi.
-  - **Doğrudan & Yerel Canlı Epic Games XMPP Sohbet Entegrasyonu (`EpicXmppManager` & RFC 7395 WSS):**
-    - Kullanıcıyı eski Epic Games Launcher'a yönlendiren arayüz butonları kaldırıldı; sohbet tamamen Efxlve içine taşındı.
-    - **Protokol:** Epic Games'in XMPP sunucusunun `wss://xmpp-service-prod.ol.epicgames.com/` (RFC 7395 XMPP over WebSocket, Port 443) üzerinde canlı olduğu doğrulandı.
-    - **Kimlik Doğrulama & Oturum:** Rust `epic_get_xmpp_credentials` komutuyla diskten okunan `account_id` ve `access_token`, SASL PLAIN (`\0account_id\0access_token`) ile el sıkışır, stream reset sonrası `V2:launcher:PC` kaynağına bağlanarak (`bind`) canlı oturum açar ve `<presence/>` yayınlar.
-    - **Keep-Alive:** Bağlantının kopmasını önlemek için 25 saniyelik periyodik XMPP ping (`<iq><ping/></iq>`) ve üstel geri çekilme (exponential backoff) ile oto-yeniden bağlanma mekanizması çalışır.
-    - **Çift Yönlü İletim:**
-      - Giden: `<message to="{friendId}@prod.ol.epicgames.com" type="chat"><body>{text}</body></message>` XML paketi WebSocket üzerinden anında Epic sunucusuna gönderilir ve arkadaşın resmi Epic Games / EOS istemcisine düşer.
-      - Gelen: Sunucudan WebSocket üzerinden gelen `<message ...><body>...</body></message>` paketleri çözülür; yerel `localStorage` geçmişine işlenir, açık sohbette anında baloncuk olarak çizilir, arka planda ise toast bildirimi verir.
-    - **Canlı Durum Göstergesi:** Sohbet başlığı ve boş durum ekranında `.steam-chat-live-badge` ile canlı bağlantı durumu (Canlı Sohbet Aktif 🟢 / Bağlanıyor… 🟡 / Bağlantı Yok ⚪) şık bir şekilde sunulur.
-    - **XMPP Bağlantı Çakışması & "Bağlantı Yok" Çözümü (Benzersiz Kaynak Bağlama):**
-      - **Kök Neden:** Epic Games XMPP sunucusuna hardcoded `<resource>V2:launcher:PC</resource>` ile bağlanıldığında, hem ana launcher penceresi hem de bağımsız sosyal pencere aynı anda çalıştığında (veya resmi `EpicGamesLauncher.exe` arka planda açık olduğunda) aynı JID (`account_id@prod.ol.epicgames.com/V2:launcher:PC`) nedeniyle sunucu bağlantılardan birini anında `<stream:error><conflict/></stream:error><close/>` ile koparıyordu; bu durum `[⚪ Bağlantı Yok]` hatasına yol açıyordu.
-      - **Benzersiz Sayısal Kaynak Sonek:** `EpicXmppManager` her pencere/örnek için benzersiz bir sayısal PID/instance sonek (`V2:launcher:PC:${100000..999999}`) üreterek bağlanır. Böylece ana pencere, sosyal pencere ve resmi Epic Games Launcher aynı anda çakışmasız, birbirini düşürmeden (`<conflict>` yaşamadan) canlı kalır.
-      - **Gelişmiş XML Ayrıştırma & Tek Tırnak/Öznitelik Toleransı:** Sunucudan gelen tek veya çift tırnaklı JID'ler (`from=["']...`) ve öznitelikli gövde etiketleri (`<body[^>]*>...</body>`), `unescapeXml` ile eksiksiz çözümlenir; mükerrer (duplicate) mesaj filtrelemesiyle çift kayıt engellenir.
-      - **Sıfır Kayıp Giden Kutusu Kuyruğu (Outbox Queue):** Canlı soket geçici olarak el sıkışırken veya yeniden bağlanırken kullanıcı mesaj gönderirse mesaj kaybolmaz, giden kuyruğuna alınır ve `_session_1` + `presence` tamamlandığı anda sunucuya otomatik olarak boşaltılır.
-      - **Tıklanabilir Canlı Rozet & Yeniden Bağlanma:** Durum rozetine (`.steam-chat-live-badge`) `data-act="social-reconnect-chat"` eklenerek olası ağ kopmalarında kullanıcının tek tıkla bağlantıyı anında yenilemesi sağlandı.
-
-
 
