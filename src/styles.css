@@ -10473,3 +10473,1050 @@ select option {
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* ==========================================================================
+   EOS SOSYAL OVERLAY & ARKADAŞLAR PANELİ (PS5 CONSOLE DARK AESTHETIC)
+   ========================================================================== */
+
+/* EOS Sosyal Üst Bar Butonu */
+#nav button.social-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#nav button.social-nav-btn.active {
+  color: #60a5fa;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+}
+#nav button.social-nav-btn .badge-count {
+  margin-left: 2px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.3;
+}
+#nav button.social-nav-btn .badge-count.hidden {
+  display: none !important;
+}
+
+.ps5-social-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: flex-end;
+  animation: socialOverlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes socialOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ps5-social-drawer {
+  width: 380px;
+  max-width: 92vw;
+  height: 100vh;
+  background: linear-gradient(180deg, #090c14 0%, #07090f 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: -16px 0 50px rgba(0, 0, 0, 0.75), inset 1px 0 0 rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  animation: socialDrawerSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes socialDrawerSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 1. Üst Gezinme Şeridi */
+.social-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.social-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social-nav-tab {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  width: 42px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.18s ease;
+}
+
+.social-nav-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.social-nav-tab.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.social-tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 99px;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.social-tab-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #3b82f6;
+}
+
+.social-user-avatar-pip {
+  position: relative;
+  cursor: pointer;
+}
+
+.social-mini-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+
+.social-mini-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid #090c14;
+}
+.social-mini-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+/* 2. Hero Başlık & Hızlı Kontroller */
+.social-hero-header {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.01);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.social-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social-main-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.3px;
+}
+
+.social-overlay-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.social-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-icon-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+}
+
+.social-icon-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.social-icon-btn.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+.social-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+}
+
+.social-close-btn:hover {
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Kontrol Butonları Satırı: Kilit, Mikrofon, Kulaklık, Ekle */
+.social-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social-control-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  height: 34px;
+  border-radius: 17px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.social-control-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.social-control-btn.privacy-btn {
+  padding: 0 10px;
+}
+
+.social-control-btn.mic-btn.muted {
+  background: rgba(220, 38, 38, 0.85);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.35);
+}
+
+.social-control-btn.mic-btn.unmuted {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.social-control-btn.deafen-btn.muted {
+  background: rgba(220, 38, 38, 0.85);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.35);
+}
+
+.social-control-btn.more-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #60a5fa;
+}
+
+.social-control-chevron {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.social-status-sub-line {
+  font-size: 11.5px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.social-status-sub-line .dot {
+  opacity: 0.4;
+}
+.social-status-sub-line .text-ok {
+  color: #34d399;
+}
+.social-status-sub-line .text-muted {
+  color: #f87171;
+}
+
+/* Kullanıcı Kendisi Kartı */
+.social-self-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.social-self-avatar-wrap {
+  position: relative;
+}
+
+.social-self-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-self-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #090c14;
+}
+.social-self-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.social-self-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.social-self-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-self-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-self-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.social-self-status {
+  font-size: 11.5px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.social-self-mic-status {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.social-self-mic-status.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.social-self-mic-status.muted {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.social-eos-pill {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.social-eos-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.social-eos-pill.active .social-eos-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 6px #3b82f6;
+}
+.social-eos-pill.active strong {
+  color: #93c5fd;
+}
+
+/* 3. Gövde */
+.social-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.social-loading-state,
+.social-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 16px;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.social-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Arkadaş Ekleme Paneli */
+.social-add-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: socialOverlayFadeIn 0.2s ease;
+}
+
+.social-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.social-add-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.social-add-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.social-add-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #f8fafc;
+  outline: none;
+  font-family: inherit;
+}
+.social-add-input:focus {
+  border-color: #3b82f6;
+}
+
+.social-add-msg.not-found {
+  font-size: 11.5px;
+  color: #f87171;
+}
+
+.social-add-result-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+/* Arama Kutusu */
+.social-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin-bottom: 14px;
+  color: #94a3b8;
+  transition: border-color 0.18s ease;
+}
+.social-search-bar:focus-within {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.social-search-field {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.social-search-clear {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+/* Bölüm ve Arkadaş Listesi */
+.social-group-section {
+  margin-bottom: 16px;
+}
+
+.social-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+  padding: 4px 4px 8px;
+}
+
+.social-group-count {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 99px;
+  color: #cbd5e1;
+}
+
+.social-friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.social-empty-sub {
+  font-size: 12px;
+  color: #64748b;
+  padding: 10px 4px;
+  font-style: italic;
+}
+
+/* Arkadaş Satırı (Görsel 2 Tasarımı) */
+.social-friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.social-friend-row:hover,
+.social-friend-row:focus-visible {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  outline: none;
+  transform: translateX(2px);
+}
+
+.social-friend-row.incoming {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+.social-friend-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.social-friend-avatar-wrap.small .social-friend-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 12.5px;
+}
+
+.social-friend-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.social-friend-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #090c14;
+}
+.social-friend-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+.social-friend-dot.away {
+  background: #f59e0b;
+}
+.social-friend-dot.offline {
+  background: #64748b;
+}
+
+.social-friend-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.social-friend-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-friend-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-friend-alias {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.social-friend-star {
+  color: #eab308;
+  font-size: 12px;
+}
+
+.social-friend-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
+.social-friend-status {
+  white-space: nowrap;
+}
+.social-friend-status.online {
+  color: #34d399;
+  font-weight: 600;
+}
+.social-friend-status.away {
+  color: #fbbf24;
+}
+.social-friend-status.offline {
+  color: #64748b;
+}
+
+.social-friend-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.social-platform-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.social-platform-tag.steam {
+  background: rgba(30, 64, 175, 0.25);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.social-platform-tag.psn {
+  background: rgba(30, 58, 138, 0.35);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.social-friend-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.social-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.social-action-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  transform: scale(1.06);
+}
+
+/* 4. Sohbet Görünümü */
+.social-chats-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.social-chats-intro {
+  text-align: center;
+  padding: 20px 10px 10px;
+}
+.social-chats-intro h3 {
+  margin: 8px 0 4px;
+  font-size: 16px;
+  color: #f1f5f9;
+}
+.social-chats-intro p {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.social-chat-time {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.social-chat-snippet {
+  font-size: 11.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.social-chat-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.social-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.social-chat-back-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.social-chat-back-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.social-chat-header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.social-chat-header-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.social-chat-header-status {
+  font-size: 11px;
+}
+.social-chat-header-status.online {
+  color: #34d399;
+}
+.social-chat-header-status.away {
+  color: #fbbf24;
+}
+.social-chat-header-status.offline {
+  color: #64748b;
+}
+
+.social-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 2px;
+  min-height: 180px;
+}
+
+.social-chat-empty {
+  margin: auto;
+  text-align: center;
+  padding: 30px 10px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+.social-chat-wave {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.social-msg-row {
+  display: flex;
+  max-width: 82%;
+}
+.social-msg-row.me {
+  align-self: flex-end;
+}
+.social-msg-row.friend {
+  align-self: flex-start;
+}
+
+.social-msg-bubble {
+  padding: 8px 12px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.social-msg-row.me .social-msg-bubble {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  border-bottom-right-radius: 3px;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
+}
+
+.social-msg-row.friend .social-msg-bubble {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  border-bottom-left-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.social-msg-time {
+  font-size: 9.5px;
+  opacity: 0.65;
+  align-self: flex-end;
+}
+
+/* Hızlı Öneri Hapları */
+.social-chat-quick-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 0;
+  scrollbar-width: none;
+}
+.social-chat-quick-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.social-quick-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.social-quick-pill:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #60a5fa;
+}
+
+/* Mesaj Giriş Alanı */
+.social-chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.social-chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: #f8fafc;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+.social-chat-input:focus {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.social-send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #3b82f6;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.social-send-btn:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+

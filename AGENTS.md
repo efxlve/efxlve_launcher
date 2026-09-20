@@ -1176,3 +1176,26 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Global kontrolcü HUD sistemine (`updateGamepadHud`) `view === "profile"` dalı entegre edildi (`(A) Kupaları İncele`, `(X) Profili Yenile`, `(Y) Ara`, `(LB/RB) Filtreler`, `(D-Pad) Gezin`).
   - `render()` döngüsüne `updateGamepadHud(gamepadPolling)` entegre edilerek, kontrolcü takılı DEĞİLKEN (`gamepadPolling === false`) ekranda kontrolcüye dair hiçbir ipucunun ÇIKMAMASI garantilendi; kontrolcü bağlandığında ise anında konsol HUD çubuğu aktifleşir.
 
+## 71. EOS Sosyal Entegrasyonu, Arkadaşlar & Canlı Sohbet Paneli (PlayStation 5 Console Dark Aesthetic)
+
+- **Doğal Epic Games & EOS API Katmanı (`legendary/social.rs` & `epic.ts`):**
+  - `%USERPROFILE%\.config\legendary\user.json` içindeki aktif OAuth `access_token` kullanılarak doğrudan resmi Epic Online Services (EOS) mikroservislerine bağlanır:
+    - Arkadaş Listesi & Özet: `https://friends-public-service-prod.ol.epicgames.com/friends/api/v1/{accountId}/summary` (arkadaşlar, gelen ve giden istekler).
+    - Kullanıcı Kimlikleri & Platform Eşleşmeleri: `https://account-public-service-prod.ol.epicgames.com/account/api/public/account?accountId=...` ile toplu olarak Steam, PSN ve Epic Games görünen adları (display_name) disk/ağ üzerinden çözülür.
+    - Çevrim İçi Varlık & Son Görülme: `https://presence-public-service-prod.ol.epicgames.com/presence/api/v1/_/{accountId}/last-online` ile son görülme zamanları çekilir.
+    - Arkadaş Arama & İstek Gönderme: `https://account-public-service-prod.ol.epicgames.com/account/api/public/account/displayName/{name}` üzerinden kullanıcı adı araması ve POST/DELETE ile istek yönetimi.
+    - EOS In-Game Overlay Durumu: `EOSOverlayRenderer-Win64-Shipping.exe` taranarak oyun içi arayüz desteği doğrulanır.
+- **PlayStation 5 Konsol Tarzı Sağdan Kayan Sosyal Çekmece (EOS Social Drawer):**
+  - Üst gezinme çubuğuna `[👥 Sosyal]` butonu ve anlık çevrim içi arkadaş sayısını gösteren yeşil parlak rozet (`#social-online-badge`) eklendi.
+  - Resmi Epic Games Sosyal arayüzü ve kullanıcının referans görseliyle birebir uyumlu:
+    - **Üst Gezinme & Sekmeler:** Sol tarafta Arkadaşlar (👥) ve Sohbetler (💬) sekmeleri; sağ tarafta mor/mavi konsol avatarı ve çevrim içi göstergesi.
+    - **Konsol Kontrol Butonları:** Grup Gizliliği kilidi (`🔒 Yalnızca Davetliler` / `👥 Arkadaşlar` / `🌐 Herkese Açık`), Kırmızı/Yeşil Mikrofon susturma butonu (`🔇`/`🎙️`), Kulaklık sağırlaştırma butonu (`🎧`), ve `+` Oyuncu Arama/Ekleme paneli.
+    - **Durum Alt Şeridi:** `🔒 Yalnızca davetliler • Mikrofon açık/kapalı • Raporlama kapalı`.
+    - **Aktif Kullanıcı Kartı:** `(E) Efxlve   Sen   Çevrimiçi   🎙️` şeklinde kullanıcının kendi durumu ve mikrofon göstergesi.
+    - **EOS In-Game Overlay Hapı:** Shift+F3 desteğini gösteren konsol rozeti.
+    - **Arkadaşlar Sekmesi:** Arama çubuğu, Gelen İstekler onay/ret butonları, Çevrim İçi ve Çevrim Dışı grupları; Steam ve PSN platform etiketleri, son görülme hesaplayıcı (`5 dk önce`, `Dün`), sohbet başlatma ve gruba davet etme butonları.
+    - **Sohbet Sekmesi:** Seçili arkadaş ile canlı mesajlaşma, PlayStation/EOS konsol mesaj baloncukları, hızlı hazır mesaj hapları (`Selam! 👋`, `Oyuna gel! 🎮`, `Sese geçelim mi? 🎧`), enter ile anında gönderim ve `localStorage` kalıcı mesaj hafızası.
+- **Kısayol & Hızlı Erişim:**
+  - Standart Epic Games oyun içi kısayolu olan **`Shift + F3`** veya üst bar `Sosyal` butonuyla açılıp kapanır; **`Escape`** ile zarifçe çekilir.
+
+
