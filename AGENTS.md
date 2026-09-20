@@ -1226,6 +1226,12 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
       - Giden: `<message to="{friendId}@prod.ol.epicgames.com" type="chat"><body>{text}</body></message>` XML paketi WebSocket üzerinden anında Epic sunucusuna gönderilir ve arkadaşın resmi Epic Games / EOS istemcisine düşer.
       - Gelen: Sunucudan WebSocket üzerinden gelen `<message ...><body>...</body></message>` paketleri çözülür; yerel `localStorage` geçmişine işlenir, açık sohbette anında baloncuk olarak çizilir, arka planda ise toast bildirimi verir.
     - **Canlı Durum Göstergesi:** Sohbet başlığı ve boş durum ekranında `.steam-chat-live-badge` ile canlı bağlantı durumu (Canlı Sohbet Aktif 🟢 / Bağlanıyor… 🟡 / Bağlantı Yok ⚪) şık bir şekilde sunulur.
+    - **XMPP Bağlantı Çakışması & "Bağlantı Yok" Çözümü (Benzersiz Kaynak Bağlama):**
+      - **Kök Neden:** Epic Games XMPP sunucusuna hardcoded `<resource>V2:launcher:PC</resource>` ile bağlanıldığında, hem ana launcher penceresi hem de bağımsız sosyal pencere aynı anda çalıştığında (veya resmi `EpicGamesLauncher.exe` arka planda açık olduğunda) aynı JID (`account_id@prod.ol.epicgames.com/V2:launcher:PC`) nedeniyle sunucu bağlantılardan birini anında `<stream:error><conflict/></stream:error><close/>` ile koparıyordu; bu durum `[⚪ Bağlantı Yok]` hatasına yol açıyordu.
+      - **Benzersiz Sayısal Kaynak Sonek:** `EpicXmppManager` her pencere/örnek için benzersiz bir sayısal PID/instance sonek (`V2:launcher:PC:${100000..999999}`) üreterek bağlanır. Böylece ana pencere, sosyal pencere ve resmi Epic Games Launcher aynı anda çakışmasız, birbirini düşürmeden (`<conflict>` yaşamadan) canlı kalır.
+      - **Gelişmiş XML Ayrıştırma & Tek Tırnak/Öznitelik Toleransı:** Sunucudan gelen tek veya çift tırnaklı JID'ler (`from=["']...`) ve öznitelikli gövde etiketleri (`<body[^>]*>...</body>`), `unescapeXml` ile eksiksiz çözümlenir; mükerrer (duplicate) mesaj filtrelemesiyle çift kayıt engellenir.
+      - **Sıfır Kayıp Giden Kutusu Kuyruğu (Outbox Queue):** Canlı soket geçici olarak el sıkışırken veya yeniden bağlanırken kullanıcı mesaj gönderirse mesaj kaybolmaz, giden kuyruğuna alınır ve `_session_1` + `presence` tamamlandığı anda sunucuya otomatik olarak boşaltılır.
+      - **Tıklanabilir Canlı Rozet & Yeniden Bağlanma:** Durum rozetine (`.steam-chat-live-badge`) `data-act="social-reconnect-chat"` eklenerek olası ağ kopmalarında kullanıcının tek tıkla bağlantıyı anında yenilemesi sağlandı.
 
 
 
