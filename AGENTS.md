@@ -1176,3 +1176,28 @@ Faz 2 (indirme: kuyruk/iptal/kaldırma/ilerleme) • Modern Kütüphane Deneyimi
   - Global kontrolcü HUD sistemine (`updateGamepadHud`) `view === "profile"` dalı entegre edildi (`(A) Kupaları İncele`, `(X) Profili Yenile`, `(Y) Ara`, `(LB/RB) Filtreler`, `(D-Pad) Gezin`).
   - `render()` döngüsüne `updateGamepadHud(gamepadPolling)` entegre edilerek, kontrolcü takılı DEĞİLKEN (`gamepadPolling === false`) ekranda kontrolcüye dair hiçbir ipucunun ÇIKMAMASI garantilendi; kontrolcü bağlandığında ise anında konsol HUD çubuğu aktifleşir.
 
+## 71. Üst Bar (Titlebar) Yeni Nesil Konsol Navigasyonu, Canlı Durum Rozeti & Hesap Çipi
+
+**Sorun:** Üst bar düz metin sekmelerden (alt kenarlıklı, 2015 hissi) oluşuyordu; "Çevrimiçi" düğmesi sönük gri bir kutuya, hesap alanı ise ikon+metinden ibaret sıradan bir butona benziyordu. Ayarlar dişlisi sağda tek başına sıkışıyordu.
+
+**Çözüm — `index.html` üst bar iskeleti tamamen yenilendi:**
+- **Yükseklik 42px → 56px** (havadar konsol çubuğu). `storeRect()` yüksekliği `titlebar.offsetHeight`'tan okuduğu için gömülü mağaza webview'i otomatik uyum sağlar — sabit sayı GÖMME.
+- **Marka:** `.logo-mark` (mor→indigo→sky gradyan yuvarlatılmış kare, hover'da hafif dönme + parlama) + `.logo-text` (beyaz→lavanta gradyan metin).
+- **Segment navigasyon (`.nav-seg`):** Mağaza / Kütüphane / İndirmeler tek bir cam kapsül içinde; aktif sekme **kayan gradyan gösterge** (`.nav-seg-indicator`) ile işaretlenir. Eski `#nav button.active { border-bottom-color }` deseni kaldırıldı.
+- **Bağlantı rozeti (`.net-chip`):** `Çevrimiçi` = yeşil nabız atan nokta (`.net-dot::after` → `net-pulse`), `Çevrimdışı` = amber. Tıklanınca mod değişir.
+- **Hesap çipi (`.account-chip`):** Girişliyken gradyan avatar içinde kullanıcı baş harfi (`.avatar-initial`), girişsizken soluk `circle-user-round` ikonu + "Giriş yapılmadı".
+- **Ayarlar (`.nav-icon-btn`):** Yuvarlatılmış kare ikon düğmesi; hover'da 38° döner, aktifken gradyan dolgu.
+
+**JS tarafı (kritik noktalar):**
+- `updateNavIndicator()` (main.ts): aktif sekmeyi `.nav-tab.active` üzerinden bulur, `offsetWidth`/`offsetLeft` ile göstergeyi konumlar. `render()` içinde ve `handleWindowResize()` içinde çağrılır. İlk konumlandırmada `transition: none` ile sıfırdan kayma animasyonu bastırılır (`navIndicatorReady` bayrağı). Aktif sekme segment dışındaysa (profil/ayarlar) gösterge `opacity: 0` olur.
+- `updateOfflineModeUi()` artık `innerHTML` YENİDEN YAZMAZ; statik `.net-dot` + `.net-label` işaretlemesini korur, yalnızca `online`/`offline` sınıfını ve etiket metnini değiştirir.
+- `updateChrome()` hesap çipini `acc.dataset.acct` ile önbellekler. **DİKKAT:** `createIcons` `<i data-lucide>`'i `<svg>`'ye çevirdiği için `innerHTML` karşılaştırması SONSUZ döngü yaratır — karşılaştırma daima `dataset` üzerinden yapılmalı.
+- **Klavye kısayolları:** `Ctrl+1` Mağaza, `Ctrl+2` Kütüphane, `Ctrl+3` İndirmeler, `Ctrl+,` Ayarlar. Input/textarea odaktayken devre dışı. İlgili düğmeler `.click()` ile tetiklenir (document-level delegasyon yakalar).
+
+**Responsive (pencere min genişliği 1024px):**
+- `≤1120px`: hesap adı gizlenir, avatar kalır (`max-width: none`).
+- `≤940px` (güvenlik ağı): sekme etiketleri ve bağlantı etiketi gizlenir, ikon-only moda iner.
+- 1024px'te ölçüm: `seg=352px + right=200px` → taşma yok (167px boşluk).
+
+**Ölü kod temizliği:** `.offline-toggle-btn` CSS bloğu kaldırıldı (artık `.net-chip` kullanılıyor).
+

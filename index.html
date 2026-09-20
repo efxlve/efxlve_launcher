@@ -8,14 +8,27 @@
   <body>
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
-        <div class="logo" data-act="goto-library" data-tauri-drag-region><i data-lucide="gamepad-2"></i><span>EFXLVE</span></div>
+        <div class="logo" data-act="goto-library" data-tauri-drag-region>
+          <span class="logo-mark"><i data-lucide="gamepad-2"></i></span>
+          <span class="logo-text">EFXLVE</span>
+        </div>
         <nav id="nav">
-          <button data-act="open-store"><i data-lucide="store"></i><span>Mağaza</span></button>
-          <button data-view="library" class="active"><i data-lucide="layout-grid"></i><span>Kütüphane</span></button>
-          <button data-view="downloads"><i data-lucide="download"></i><span>İndirmeler</span><span id="dl-badge" class="badge hidden"></span></button>
-          <button id="account" class="profile" data-view="profile" title="Epic profili"><i data-lucide="circle-user-round"></i><span>Giriş yapılmadı</span></button>
-          <button id="btn-offline-mode" class="offline-toggle-btn" data-act="toggle-offline-mode" title="Çevrimdışı Modu Aç/Kapat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg><span>Çevrimiçi</span></button>
-          <button data-view="settings" class="right" title="Ayarlar"><i data-lucide="settings"></i></button>
+          <div class="nav-seg" id="nav-seg">
+            <span class="nav-seg-indicator" id="nav-indicator" aria-hidden="true"></span>
+            <button class="nav-tab" data-act="open-store" title="Epic Mağazası — Gömülü Mağaza (Ctrl+1)"><i data-lucide="store"></i><span>Mağaza</span></button>
+            <button class="nav-tab active" data-view="library" title="Kütüphane (Ctrl+2)"><i data-lucide="layout-grid"></i><span>Kütüphane</span></button>
+            <button class="nav-tab" data-view="downloads" title="İndirmeler & Kuyruk (Ctrl+3)"><i data-lucide="download"></i><span>İndirmeler</span><span id="dl-badge" class="badge hidden"></span></button>
+          </div>
+          <div class="nav-right">
+            <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" title="Çevrimiçi Mod Aktif (Çevrimdışı moda geçmek için tıklayın)">
+              <span class="net-dot"></span><span class="net-label">Çevrimiçi</span>
+            </button>
+            <button id="account" class="account-chip" data-view="profile" title="Epic profili">
+              <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
+              <span class="account-name">Giriş yapılmadı</span>
+            </button>
+            <button class="nav-icon-btn" data-view="settings" title="Ayarlar (Ctrl+,)"><i data-lucide="settings"></i></button>
+          </div>
         </nav>
         <div class="win-controls">
           <button class="win-btn" data-act="win-minimize" title="Simge Durumuna Küçült">

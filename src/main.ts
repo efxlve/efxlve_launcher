@@ -524,15 +524,13 @@ let isBackingUp = false;
 function updateOfflineModeUi(): void {
   const btn = document.getElementById("btn-offline-mode");
   if (!btn) return;
-  if (offlineMode) {
-    btn.classList.add("active");
-    btn.innerHTML = `${icon("wifi-off", 13)} <span>Çevrimdışı</span>`;
-    btn.title = "Çevrimdışı Mod Aktif (Çevrimiçi olmak için tıklayın)";
-  } else {
-    btn.classList.remove("active");
-    btn.innerHTML = `${icon("wifi", 13)} <span>Çevrimiçi</span>`;
-    btn.title = "Çevrimiçi Mod Aktif (Çevrimdışı moda geçmek için tıklayın)";
-  }
+  btn.classList.toggle("offline", offlineMode);
+  btn.classList.toggle("online", !offlineMode);
+  const label = btn.querySelector<HTMLElement>(".net-label");
+  if (label) label.textContent = offlineMode ? "Çevrimdışı" : "Çevrimiçi";
+  btn.title = offlineMode
+    ? "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)"
+    : "Çevrimiçi Mod Aktif — Epic ağına bağlı (Çevrimdışı moda geçmek için tıklayın)";
 }
 
 function isAppPlatinum(appName: string): boolean {
@@ -618,16 +616,29 @@ function epicWideArt(s: EpicSummary): string | null {
   return s.cover;
 }
 
-/** Üst bar hesap + alt bar son-oynanan göstergesini tazeler. */
+/** Üst bar hesap çipini tazeler. */
 function updateChrome(): void {
   const acc = document.getElementById("account");
   if (acc) {
     const name = epicAccount || "Giriş yapılmadı";
-    if (acc.textContent !== name || !acc.querySelector("svg")) {
-      acc.innerHTML = `<i data-lucide="circle-user-round"></i><span>${esc(name)}</span>`;
-      createIcons({ icons: { CircleUserRound } });
+    if (acc.dataset.acct !== (epicAccount || "")) {
+      acc.dataset.acct = epicAccount || "";
+      if (epicAccount) {
+        const initial = (epicAccount.trim()[0] || "?").toUpperCase();
+        acc.innerHTML =
+          `<span class="account-avatar"><span class="avatar-initial">${esc(initial)}</span></span>` +
+          `<span class="account-name">${esc(name)}</span>`;
+      } else {
+        acc.innerHTML =
+          `<span class="account-avatar"><i data-lucide="circle-user-round"></i></span>` +
+          `<span class="account-name">Giriş yapılmadı</span>`;
+        createIcons({ icons: { CircleUserRound } });
+      }
     }
     acc.classList.toggle("logged", !!epicAccount);
+    acc.title = epicAccount
+      ? `Epic profili: ${name} (Profil için tıklayın)`
+      : "Epic hesabına giriş yapılmadı (Giriş için tıklayın)";
   }
 }
 
@@ -2255,6 +2266,31 @@ function renderProfile(): string {
   `;
 }
 
+/* ---------- Üst bar: kayan aktif sekme göstergesi ---------- */
+
+let navIndicatorReady = false;
+
+/** Aktif sekmeyi takip eden yumuşak geçişli göstergeyi konumlandırır. */
+function updateNavIndicator(): void {
+  const seg = document.getElementById("nav-seg");
+  const ind = document.getElementById("nav-indicator");
+  if (!seg || !ind) return;
+  const active = seg.querySelector<HTMLElement>(".nav-tab.active");
+  if (!active) {
+    ind.style.opacity = "0";
+    return;
+  }
+  if (!navIndicatorReady) {
+    // İlk konumlandırmada animasyon oynamasın (0 genişlikten kaymasın).
+    ind.style.transition = "none";
+    navIndicatorReady = true;
+    window.setTimeout(() => { ind.style.transition = ""; }, 80);
+  }
+  ind.style.width = `${active.offsetWidth}px`;
+  ind.style.transform = `translateX(${active.offsetLeft}px)`;
+  ind.style.opacity = "1";
+}
+
 function render(): void {
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;
@@ -2263,6 +2299,7 @@ function render(): void {
       : el.dataset.view === view;
     el.classList.toggle("active", active);
   });
+  updateNavIndicator();
   if (storeVisible) {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
@@ -10038,6 +10075,7 @@ function updateMaxIcon(isMax?: boolean): void {
 
 function handleWindowResize(): void {
   updateMaxIcon();
+  updateNavIndicator();
   if (typeof updateDrawerTabArrows === "function") {
     updateDrawerTabArrows();
   }
@@ -10074,6 +10112,24 @@ document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
 });
 
 window.addEventListener("resize", handleWindowResize);
+
+/* ---------- Üst bar klavye kısayolları ----------
+   Ctrl+1 Mağaza · Ctrl+2 Kütüphane · Ctrl+3 İndirmeler · Ctrl+, Ayarlar */
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+  const t = e.target as HTMLElement | null;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  const targets: Record<string, string> = {
+    "1": '[data-act="open-store"]',
+    "2": '[data-view="library"]',
+    "3": '[data-view="downloads"]',
+    ",": '[data-view="settings"]',
+  };
+  const sel = targets[e.key];
+  if (!sel) return;
+  e.preventDefault();
+  document.querySelector<HTMLElement>(`#nav ${sel}`)?.click();
+});
 
 /* ---------- Başlat ---------- */
 
