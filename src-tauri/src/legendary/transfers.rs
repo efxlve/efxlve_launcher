@@ -18,7 +18,7 @@ use std::process::Stdio;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 
 use super::{cmd_error, paths};
 use crate::{load_settings, AppState};
@@ -327,6 +327,54 @@ fn spawn_drain(stdout: Option<tokio::process::ChildStdout>) -> tokio::task::Join
     })
 }
 
+/// Legendary indirme ilerlemesini tek satırda `\r` (carriage return) ile ezer.
+/// Standart `BufReader::lines()` yalnızca `\n` beklediği için hız/ETA verileri
+/// arayüze zamanında ulaşmaz. Bu okuyucu hem `\n` hem `\r` sınırlarını satır
+/// sonu kabul eder; böylece canlı hız akışı kesintisiz olur.
+struct CrlfLines<R> {
+    reader: R,
+    buf: Vec<u8>,
+    pending: Vec<u8>,
+}
+
+impl<R: AsyncRead + Unpin> CrlfLines<R> {
+    fn new(reader: R) -> Self {
+        Self {
+            reader,
+            buf: vec![0u8; 4096],
+            pending: Vec::new(),
+        }
+    }
+
+    async fn next_line(&mut self) -> Option<String> {
+        loop {
+            if let Some(pos) = self
+                .pending
+                .iter()
+                .position(|&b| b == b'\n' || b == b'\r')
+            {
+                let line: Vec<u8> = self.pending.drain(..=pos).collect();
+                let s = String::from_utf8_lossy(&line[..line.len().saturating_sub(1)])
+                    .trim()
+                    .to_string();
+                if s.is_empty() {
+                    continue;
+                }
+                return Some(s);
+            }
+            match self.reader.read(&mut self.buf).await {
+                Ok(0) => {
+                    let s = String::from_utf8_lossy(&self.pending).trim().to_string();
+                    self.pending.clear();
+                    return if s.is_empty() { None } else { Some(s) };
+                }
+                Ok(n) => self.pending.extend_from_slice(&self.buf[..n]),
+                Err(_) => return None,
+            }
+        }
+    }
+}
+
 /// `= Progress: 50.46% (1156/2291)` satırından yüzde.
 /// legendary'nin kendi hesabı en doğrusudur; MiB hesabı yedektir.
 fn parse_progress_percent(line: &str) -> Option<i32> {
@@ -431,8 +479,8 @@ async fn monitor_download(
         // stdout ilerleme TAŞIMAZ ama boru dolmasın diye tüketilir.
         let out_task = spawn_drain(stdout.take());
         if let Some(e) = stderr.take() {
-            let mut r = BufReader::new(e).lines();
-            while let Ok(Some(line)) = r.next_line().await {
+            let mut r = CrlfLines::new(e);
+            while let Some(line) = r.next_line().await {
                 if tail.len() >= 60 {
                     tail.pop_front();
                 }
@@ -441,11 +489,17 @@ async fn monitor_download(
                     current_eta = Some(eta_s);
                     current_eta_seconds = Some(secs);
                 }
-                if let Some((spd_s, bytes_sec)) = parse_speed(&line, &["Download:", "Download speed:", "Speed:"]) {
+                if let Some((spd_s, bytes_sec)) = parse_speed(
+                    &line,
+                    &["Download speed:", "Download Speed:", "Download:", "Speed:", "Net:"],
+                ) {
                     current_speed = Some(spd_s);
                     current_speed_bytes = Some(bytes_sec);
                 }
-                if let Some((d_spd_s, d_bytes_sec)) = parse_speed(&line, &["Disk:", "Disk speed:", "Written speed:"]) {
+                if let Some((d_spd_s, d_bytes_sec)) = parse_speed(
+                    &line,
+                    &["Disk speed:", "Disk Speed:", "Written speed:", "Disk:", "Written:", "Write:"],
+                ) {
                     current_disk_speed = Some(d_spd_s);
                     current_disk_bytes = Some(d_bytes_sec);
                 }
@@ -1480,6 +1534,18 @@ mod tests {
 
         let disk = parse_speed(line, &["Disk:", "Disk speed:"]);
         assert_eq!(disk, Some(("24.5 MiB/s".to_string(), 25690112)));
+    }
+
+    #[tokio::test]
+    async fn crlf_lines_splits_on_carriage_return() {
+        // Legendary ilerlemeyi `\r` ile ezer; okuyucu hem \r hem \n'de bölmeli.
+        let data = b"first line\nDownload: 5.0 MiB/s\rDownload: 6.0 MiB/s\r\nlast";
+        let mut r = CrlfLines::new(&data[..]);
+        assert_eq!(r.next_line().await.as_deref(), Some("first line"));
+        assert_eq!(r.next_line().await.as_deref(), Some("Download: 5.0 MiB/s"));
+        assert_eq!(r.next_line().await.as_deref(), Some("Download: 6.0 MiB/s"));
+        assert_eq!(r.next_line().await.as_deref(), Some("last"));
+        assert_eq!(r.next_line().await, None);
     }
 
     #[test]

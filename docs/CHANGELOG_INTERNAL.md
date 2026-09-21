@@ -1419,3 +1419,23 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 4. **Mağaza içi geçiş kaplaması:** `STORE_EXTENSION_SCRIPT` içine `#efxlve-store-veil` eklendi — `document_start` anında en erken kurulan, tam ekran `#07080d` opak kaplama; `load` + `requestAnimationFrame` sonrası 0.22s fade ile kaldırılır. Ağ çok yavaş olsa bile 2.5 sn güvenlik ağı kaplamayı temizler (`pointer-events: none` olduğu için mağaza etkileşimini bloke etmez).
 5. **Tema tutarlılığı:** `--bg` `#0b0c10` → `#07080d` (DESIGN_SYSTEM.md kanvas rengi) ile native pencere arka planı ve gövde rengi birebir hizalandı; dikiş/renk sıçraması kalmadı.
 
+## 81. İndirme Hızı CR/LF Bug'ı, PS5 İndirmeler Sayfası & İndirme Ayarları Paneli (Milestone 3)
+
+**Sorun:** Legendary indirme ilerlemesini `\r` (carriage return) ile tek satırda eziyor; Rust tarafındaki `BufReader::lines()` yalnızca `\n` beklediği için hız/ETA verileri arayüze zamanında ulaşmıyor, hız `—`/`0 B/s` olarak takılı kalıyordu. Ayrıca İndirmeler sayfasının standart sayfa başlığı ve indirme ayar paneli yoktu.
+
+**Çözüm 1 — Rust CR/LF okuyucusu (`transfers.rs`):**
+- `CrlfLines<R>` yapısı eklendi: 4KB blok okuyup hem `\n` hem `\r` sınırlarında satır üretir; `\r\n` ardışıklığını ve boş parçaları tolere eder.
+- `monitor_download` stderr döngüsü `BufReader::lines()` yerine `CrlfLines::new(e).next_line()` kullanır; canlı hız akışı artık 250ms emit eşiğine kesintisiz ulaşır.
+- Hız anahtar kelimeleri genişletildi: ağ için `Download speed:`, `Download Speed:`, `Download:`, `Speed:`, `Net:`; disk için `Disk speed:`, `Disk Speed:`, `Written speed:`, `Disk:`, `Written:`, `Write:`.
+- Yeni birim testi: `crlf_lines_splits_on_carriage_return` (`\r`, `\n` ve `\r\n` karışık girdi). Toplam 54 test yeşil.
+
+**Çözüm 2 — PS5 Standart Sayfa Kabuğu & Bileşen Kütüphanesi (`styles.css`):**
+- DESIGN_SYSTEM.md §3 tokenleri (`--ps5-surface-*`, `--ps5-border-*`, `--ps5-accent`, `--ps5-radius-*`, durum renkleri) `:root`'a eklendi.
+- §4-5 standartları uygulandı: `.ps5-page`, `.ps5-page-header`, `.ps5-header-kicker/title/subtitle/actions`, `.ps5-page-body`, `.ps5-btn` (primary/secondary/danger), `.ps5-btn-icon`, `.ps5-input`.
+- `.net-profile-btn.active` mavi (`#0070f3` + glow) → lavanta (`--ps5-accent`) tek vurgu rengine çekildi.
+
+**Çözüm 3 — İndirmeler Sayfası Yenilemesi (`main.ts`):**
+- `renderDownloads()` artık `.ps5-page.ps5-downloads-page` + standart başlık (kicker: `AĞ & AKTARIM MERKEZİ`, title: `İndirmeler`, subtitle) ile sarılıyor.
+- Başlık aksiyon alanına aktif indirme varsa `Duraklat`/`Devam Et` (`.ps5-btn`) eklendi.
+- Yeni `.dl-settings-panel`: Ağ Profili pilleri (Maks/Dengeli/Eko) + Kurulum Klasörü hızlı değiştirici (`#dl-install-dir`, klasör seç dialogu `dl-pick-install-dir`, kaydet `dl-save-install-dir`). Boşta/eski `.dl-header-group` kaldırıldı.
+

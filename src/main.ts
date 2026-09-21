@@ -1369,16 +1369,64 @@ function renderDownloads(): string {
     `;
   }
 
-  return `
-    <div class="dl-hub">
-      <div class="dl-header-group">
-        <h2>İndirme Yöneticisi</h2>
-        <span class="muted" style="font-size:13px">${activeDl ? "1 aktif indirme yürütülüyor" : "Boşta"}</span>
+  const settingsPanel = `
+    <div class="dl-settings-panel">
+      <div class="dl-settings-head">
+        <div class="dl-settings-title">${icon("settings", 16)} İndirme Ayarları</div>
+        <span class="dl-settings-hint">Bu tercihler tüm indirmelere uygulanır</span>
       </div>
-      ${heroMarkup}
-      ${chartMarkup}
-      ${queueSection}
-      ${completedSection}
+      <div class="dl-settings-grid">
+        <div class="dl-settings-field">
+          <div class="dl-settings-label">Ağ Profili (Bant Genişliği & Worker)</div>
+          <div class="net-profile-pills">
+            <button class="net-profile-btn ${networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
+              ${icon("zap", 13)} Maksimum (16 Worker)
+            </button>
+            <button class="net-profile-btn ${networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">
+              ${icon("shield-check", 13)} Dengeli (4 Worker)
+            </button>
+            <button class="net-profile-btn ${networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">
+              ${icon("clock", 13)} Eko (1 Worker)
+            </button>
+          </div>
+        </div>
+        <div class="dl-settings-field">
+          <div class="dl-settings-label">Kurulum Klasörü</div>
+          <div class="dl-settings-dir-row">
+            <input id="dl-install-dir" class="text-input" value="${esc(epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(epicDefaultDir || "varsayılan")}" autocomplete="off" spellcheck="false" />
+            <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="Klasör Seç">${icon("folder", 15)}</button>
+            <button class="ps5-btn primary" data-act="dl-save-install-dir">Kaydet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const headerAction = activeDl
+    ? dlQueueStatus.isPaused
+      ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} Devam Et</button>`
+      : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} Duraklat</button>`
+    : "";
+
+  return `
+    <div class="ps5-page ps5-downloads-page">
+      <header class="ps5-page-header">
+        <div class="ps5-header-main">
+          <div class="ps5-header-kicker">${icon("download", 14)} <span>AĞ & AKTARIM MERKEZİ</span></div>
+          <h1 class="ps5-header-title">İndirmeler</h1>
+          <p class="ps5-header-subtitle">Aktif kurulumlar, indirme kuyruğu ve anlık disk yazma performansı.</p>
+        </div>
+        <div class="ps5-header-actions">${headerAction}</div>
+      </header>
+      <main class="ps5-page-body">
+        <div class="dl-hub">
+          ${heroMarkup}
+          ${chartMarkup}
+          ${settingsPanel}
+          ${queueSection}
+          ${completedSection}
+        </div>
+      </main>
     </div>
   `;
 }
@@ -9217,6 +9265,32 @@ document.addEventListener("click", (e) => {
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "dl-save-install-dir") {
+    const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
+    const v = input?.value?.trim() ?? "";
+    epicSetInstallDir(v ? v : null)
+      .then((st: EpicSettings) => {
+        epicSettingsCache = st;
+        toast("Kurulum klasörü kaydedildi", "ok");
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "dl-pick-install-dir") {
+    void (async () => {
+      const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
+      const current = input?.value?.trim() || epicDefaultDir || null;
+      const chosen = await epicSelectFolderDialog(current).catch(() => null);
+      if (!chosen) return;
+      if (input) input.value = chosen;
+      try {
+        const st = await epicSetInstallDir(chosen);
+        epicSettingsCache = st;
+        toast("Kurulum klasörü kaydedildi", "ok");
+        render();
+      } catch (e) {
+        toast(String(e), "err");
+      }
+    })();
   } else if (act === "epic-sync-egl") {
     if (eglSyncing) return;
     eglSyncing = true;
