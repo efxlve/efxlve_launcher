@@ -22,7 +22,7 @@ import { toast } from "../../core/toast";
 import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
-import { setLanguage } from "../../i18n";
+import { setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicSetInstallDir, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
 import {
   bootEpic,
@@ -866,14 +866,14 @@ document.addEventListener("click", (e) => {
         if (S.activeManageSettings && S.activeManageSettings.appName === id) {
           S.activeManageSettings.lastCloudSync = now;
         }
-        if (cloudSub) cloudSub.textContent = `En son eşitleme: ${now}`;
+        if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: now });
       })
       .catch((err) => {
-        toast(`Bulut eşitleme hatası: ${String(err)}`, "err");
+        toast(i18nT("manage.syncFailed", { msg: String(err) }), "err");
         if (cloudSub && S.activeManageSettings) {
           cloudSub.textContent = S.activeManageSettings.lastCloudSync
-            ? `En son eşitleme: ${esc(S.activeManageSettings.lastCloudSync)}`
-            : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet";
+            ? i18nT("manage.lastSync", { time: esc(S.activeManageSettings.lastCloudSync) })
+            : i18nT("manage.cloudDesc");
         }
       })
       .finally(() => {

@@ -7,7 +7,31 @@
  */
 
 import type { EpicGame, EpicSummary } from "../epic";
+import { t } from "../i18n";
 import { S } from "./state";
+
+/**
+ * Maps the canonical stored "last played" values to translation keys. The stored
+ * values are kept as-is for backward compatibility; only the displayed label is
+ * translated.
+ */
+const LAST_PLAYED_MAP: Record<string, string> = {
+  "Daha önce oynandı (Epic Games)": "playtime.epicPrevious",
+  "Bugün": "playtime.today",
+  "Dün": "playtime.yesterday",
+  "Bu hafta": "playtime.thisWeek",
+  "Bu ay": "playtime.thisMonth",
+  "Geçen ay": "playtime.lastMonth",
+  "6 ay önce": "playtime.sixMonths",
+  "1 yıl önce veya daha eski": "playtime.oneYear",
+};
+
+/** Translate a stored "last played" value for display (custom values pass through). */
+export function lastPlayedLabel(value: string | null | undefined): string {
+  if (!value) return t("playtime.notPlayedYet");
+  const key = LAST_PLAYED_MAP[value];
+  return key ? t(key) : value;
+}
 
 /** Replace the raw game list and rebuild its lookup map. */
 export function setEpicGamesRaw(games: EpicGame[]): void {

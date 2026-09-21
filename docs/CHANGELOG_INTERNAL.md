@@ -1769,3 +1769,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `gamepad.ts` HUD etiketleri (`gamepad.*`) ve kontrolcü bağlantı toast'ı `t()`'e taşındı.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 117. i18n Metin Taşıma (devam): Oynama Süresi Modalı & `lastPlayedLabel`
+
+- **`playtime-view.ts`** (`playtime.*`, ~25 anahtar): düzenleme başlığı, Epic verisi açıklaması, süre girişleri, hızlı ekleme, son aktivite seçenekleri, kaydet/vazgeç, oturum özeti ve toast'lar.
+- **Geriye dönük uyumluluk:** `last_played` verisi yerelleştirilmiş metin olarak saklandığından, `core/selectors.ts`'e `lastPlayedLabel(value)` eklendi — bilinen değerleri `t()` ile çevirir, özel değerleri olduğu gibi bırakır. Çekmece (drawer-view) ve yönetim (manage-view) görünümleri de bunu kullanır.
+- `click-router.ts` bulut eşitleme mesajları `i18nT` takma adıyla çevrildi (yerel `t` eleman değişkeni çakışması nedeniyle).
+- `tr.json`/`en.json`'a ~30 yeni anahtar eklendi. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+**Kalan:** drawer içerikleri (`drawer-widgets`/`drawer-view`), kapak/SteamGrid, ekran görüntüsü paylaşımı, toast/hata mesajları.
+
