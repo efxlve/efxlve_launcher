@@ -1674,3 +1674,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `bootEpic`, `refreshEpic`, `loadEpicAchSummaries`, `syncEpicLibrary`, `epicDownload`, `epicDoLogin`, `epicDoImport`, `epicDoLogout` → `src/features/auth/auth-actions.ts` (~204 satır).
 - `main.ts` ~3.309 → ~3.143 satır (başlangıç 11.422'den toplam ~8.279 satır azaldı, ~%72.5). `tsc`/`vite build` yeşil.
 
+## 105. Modülerleştirme Faz 5 (devam): Çevrimdışı Mod, Favori & Demo Aksiyonları
+
+- `updateOfflineModeUi` → `core/nav.ts`; `toggleFav` → `core/game-view.ts`.
+- **Demo aksiyonları** (`gameById`, `refreshGames`, `installGame`, `launchGame`, `uninstallGame`) → `core/demo.ts` (Tauri'siz tarayıcı modu için).
+- `main.ts` ~3.143 → ~2.960 satır civarı. `tsc`/`vite build` yeşil.
+

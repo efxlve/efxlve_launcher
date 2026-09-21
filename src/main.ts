@@ -176,7 +176,20 @@ import {
   selectiveRoot,
   viewEl,
 } from "./core/dom";
-import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum } from "./core/game-view";
+import {
+  epicActionButtons,
+  epicArt,
+  epicDlProgress,
+  isAppPlatinum,
+  toggleFav,
+} from "./core/game-view";
+import {
+  gameById,
+  installGame,
+  launchGame,
+  refreshGames,
+  uninstallGame,
+} from "./core/demo";
 import {
   bootEpic,
   epicDoImport,
@@ -195,7 +208,7 @@ import {
   refreshEpicInstalled,
   refreshUpdates,
 } from "./core/epic-actions";
-import { updateBadge, updateChrome, updateNavIndicator } from "./core/nav";
+import { updateBadge, updateChrome, updateNavIndicator, updateOfflineModeUi } from "./core/nav";
 import { pruneRecent, pushRecent } from "./core/recent";
 import {
   registerCloseAllModals,
@@ -457,47 +470,9 @@ try {
 
 
 
-function updateOfflineModeUi(): void {
-  const btn = document.getElementById("btn-offline-mode");
-  if (!btn) return;
-  btn.classList.toggle("offline", S.offlineMode);
-  btn.classList.toggle("online", !S.offlineMode);
-  const label = btn.querySelector<HTMLElement>(".net-label");
-  if (label) label.textContent = S.offlineMode ? t("nav.offline") : t("nav.online");
-  btn.title = S.offlineMode
-    ? "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)"
-    : "Çevrimiçi Mod Aktif — Epic ağına bağlı (Çevrimdışı moda geçmek için tıklayın)";
-}
 
 
 
-
-
-function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
-  const isNowFaved = !S.epicFav.has(appName);
-  if (isNowFaved) S.epicFav.add(appName);
-  else S.epicFav.delete(appName);
-  localStorage.setItem(FAV_KEY, JSON.stringify([...S.epicFav]));
-  render();
-
-  if (triggerBtn) {
-    triggerBtn.classList.toggle("faved", isNowFaved);
-    triggerBtn.classList.add("heart-burst");
-    setTimeout(() => triggerBtn.classList.remove("heart-burst"), 600);
-  }
-
-  if (S.currentModalAppName === appName) {
-    const favBtn = modalRoot.querySelector(`button[data-act="epic-fav"][data-id="${appName}"]`) as HTMLElement | null;
-    if (favBtn) {
-      favBtn.classList.toggle("faved", isNowFaved);
-      favBtn.classList.add("heart-burst");
-      setTimeout(() => favBtn.classList.remove("heart-burst"), 600);
-      if (favBtn.classList.contains("btn")) {
-        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? "Favorilerde" : "Favoriye Ekle"}`;
-      }
-    }
-  }
-}
 
 /* ---------- Gömülü mağaza (ana pencere içi webview) ---------- */
 
@@ -548,83 +523,6 @@ function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
 
 
 /* ---------- Yardımcılar ---------- */
-
-function gameById(id: string): Game | undefined {
-  return S.games.find((g) => g.id === id);
-}
-
-/* ---------- Aksiyonlar ---------- */
-
-async function refreshGames(): Promise<void> {
-  try {
-    S.games = await fetchGames();
-  } catch (e) {
-    toast(`Oyun listesi alınamadı: ${String(e)}`, "err");
-  }
-  render();
-}
-
-async function installGame(id: string): Promise<void> {
-  const game = gameById(id);
-  if (!game || game.installed || S.downloads.get(id)?.done === false) return;
-  S.downloads.set(id, { progress: 0, done: false, title: game.title });
-  updateBadge();
-  render();
-
-  try {
-    if (isTauri) {
-      const msg = await invoke<string>("install_game", { id });
-      toast(msg, "ok");
-    } else {
-      for (let p = 5; p <= 100; p += 5) {
-        await new Promise((r) => setTimeout(r, 90));
-        S.downloads.set(id, { progress: p, done: false, title: game.title });
-        if (S.view === "downloads" || S.view === "library") render();
-        updateBadge();
-      }
-      S.downloads.set(id, { progress: 100, done: true, title: game.title });
-      const set = mockInstalled();
-      set.add(id);
-      saveMockInstalled(set);
-      toast(`${game.title} kuruldu`, "ok");
-    }
-  } catch (e) {
-    S.downloads.delete(id);
-    toast(`Kurulum başarısız: ${String(e)}`, "err");
-  }
-  await refreshGames();
-}
-
-async function launchGame(id: string): Promise<void> {
-  try {
-    if (isTauri) {
-      const msg = await invoke<string>("launch_game", { id });
-      toast(msg, "ok");
-    } else {
-      toast(`${gameById(id)?.title ?? id} başlatılıyor… (demo modu)`, "ok");
-    }
-  } catch (e) {
-    toast(String(e), "err");
-  }
-}
-
-async function uninstallGame(id: string): Promise<void> {
-  try {
-    if (isTauri) {
-      const msg = await invoke<string>("uninstall_game", { id });
-      toast(msg, "ok");
-    } else {
-      const set = mockInstalled();
-      set.delete(id);
-      saveMockInstalled(set);
-      toast(`${gameById(id)?.title ?? id} kaldırıldı`, "ok");
-    }
-  } catch (e) {
-    toast(String(e), "err");
-  }
-  closeModal();
-  await refreshGames();
-}
 
 /* ---------- Render ---------- */
 
