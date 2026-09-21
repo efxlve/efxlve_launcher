@@ -52,16 +52,14 @@ export function updateOfflineModeUi(): void {
   btn.classList.toggle("online", !S.offlineMode);
   const label = btn.querySelector<HTMLElement>(".net-label");
   if (label) label.textContent = S.offlineMode ? t("nav.offline") : t("nav.online");
-  btn.title = S.offlineMode
-    ? "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)"
-    : "Çevrimiçi Mod Aktif — Epic ağına bağlı (Çevrimdışı moda geçmek için tıklayın)";
+  btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
 }
 
 /** Refresh the account chip in the top bar. */
 export function updateChrome(): void {
   const acc = document.getElementById("account");
   if (acc) {
-    const name = S.epicAccount || "Giriş yapılmadı";
+    const name = S.epicAccount || t("nav.notLoggedIn");
     if (acc.dataset.acct !== (S.epicAccount || "")) {
       acc.dataset.acct = S.epicAccount || "";
       if (S.epicAccount) {
@@ -78,7 +76,7 @@ export function updateChrome(): void {
     }
     acc.classList.toggle("logged", !!S.epicAccount);
     acc.title = S.epicAccount
-      ? `Epic profili: ${name} (Profil için tıklayın)`
-      : "Epic hesabına giriş yapılmadı (Giriş için tıklayın)";
+      ? t("nav.profileTip", { name })
+      : t("nav.loginTip");
   }
 }
