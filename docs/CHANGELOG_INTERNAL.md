@@ -1470,3 +1470,23 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Tüm metinler konsol diline uygun, sıfır emoji, yalnızca inline SVG ikonlar; tek kaynaklı düşük alfalı menekşe ortam ışığı.
 - Giriş/aktarma başarısında ve çıkışta `onboardingStep = 1`'e sıfırlanır; `onboarding-goto` aksiyonu adımlar arası geçişi yönetir.
 
+## 84. Çoklu Dil & Lokalizasyon (i18n) Mimarisi — 15 Dil (Milestone 6)
+
+**Sorun:** Arayüz metinleri `main.ts` içine ham gömülüydü; yalnızca TR/EN seçeneği vardı ve EN "Yakında" olarak işaretliydi. Ölçeklenebilir bir çeviri altyapısı yoktu.
+
+**Çözüm — `src/i18n.ts` motoru:**
+- `LANGUAGES` kaydı: Epic'in desteklediği 15 dil (TR, EN, DE, ES, FR, IT, JA, KO, PL, PT-BR, RU, ZH-Hans, ZH-Hant, AR, TH) + `dir` (ar = RTL).
+- `t(key, vars?)` yardımcısı: eksik anahtar sırasıyla seçili dil → İngilizce → Türkçe → anahtar; `{isim}` yer tutucu desteği.
+- `setLanguage(lang)`: seçili dili yükler, `<html lang>` ve `<html dir>` (RTL) uygular, statik çevirileri tazeler. TR/EN ana pakete dahil; diğer 13 dil **dinamik import** ile ayrı chunk olarak yüklenir (ana bundle şişmez — Vite çıktısında her dil ayrı `.js`).
+- `applyStaticTranslations()`: `data-i18n` / `data-i18n-title` öznitelikli statik HTML öğelerini çevirir.
+
+**Çeviri dosyaları:** `src/locales/{tr,en,de,es,fr,it,ja,ko,pl,pt-BR,ru,zh-Hans,zh-Hant,ar,th}.json`. Çekirdek anahtar seti (nav, common, downloads, ctx, ob, settings) 15 dilde çevrildi; onboarding'in uzun açıklamaları TR/EN'de tam, diğer dillerde İngilizce fallback.
+
+**Migre edilen yüzeyler:**
+- Üst bar (Mağaza/Kütüphane/İndirmeler/Çevrimiçi/Giriş yapılmadı) — `index.html` `data-i18n` + `updateOfflineModeUi`/`updateChrome`.
+- İndirmeler sayfası (başlık, alt başlık, ayar paneli, boş durum, kuyruk boş, duraklat/devam).
+- Sağ tık menüsü tüm öğeleri.
+- Onboarding sihirbazı (adımlar, başlıklar, butonlar, rehber).
+- Ayarlar dil seçici: 15 dilin tamamı ızgara (`.lang-selection-group` grid) hâlinde; TR "Varsayılan" etiketli.
+- Dil seçici görsel dili lavanta vurguya çekildi (mavi glow kaldırıldı), `.lang-tag` kapsül → `--ps5-radius-sm`.
+
