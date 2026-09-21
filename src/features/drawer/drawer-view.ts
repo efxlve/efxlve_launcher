@@ -684,16 +684,16 @@ export function renderDrawerManage(s: EpicSummary): string {
 
   return `
     <div class="manage-tab-content">
-      <!-- 1. Dosyalar & Kurulum -->
+      <!-- 1. Files & installation -->
       <div class="manage-card-group">
-        <div class="manage-group-title">${icon("folder", 14)} Dosyalar & Kurulum</div>
+        <div class="manage-group-title">${icon("folder", 14)} ${t("manage.groupFiles")}</div>
         <div class="manage-group-card">
           <div class="manage-item-row">
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#60a5fa">${icon("shield", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Dosyaları Doğrula</div>
-                <div class="manage-item-desc">Oyun dosyalarının bütünlüğünü kontrol et ve hasarlı parçaları onar</div>
+                <div class="manage-item-title">${t("manage.verifyTitle")}</div>
+                <div class="manage-item-desc">${t("manage.verifyDesc")}</div>
                 <div id="manage-verify-box-container">
                   ${
                     isVerifying && v
@@ -714,7 +714,7 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
             <div class="manage-item-right">
               <button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${st.appName}" ${isVerifying ? "disabled" : ""}>
-                ${isVerifying ? "Doğrulanıyor…" : "Doğrula"}
+                ${isVerifying ? t("manage.verifying") : t("manage.verify")}
               </button>
             </div>
           </div>
@@ -723,16 +723,16 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#38bdf8">${icon("folder", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Kurulum Konumu</div>
-                <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(s.installPath || st.installPath || "Belirtilmemiş")}</div>
+                <div class="manage-item-title">${t("manage.installLocation")}</div>
+                <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</div>
               </div>
             </div>
             <div class="manage-item-right">
-              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="Oyun Dosyalarını Başka Bir Diske veya Klasöre Taşı">
-                ${icon("hard-drive", 13)} Taşı
+              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="${t("manage.moveTitle")}">
+                ${icon("hard-drive", 13)} ${t("manage.move")}
               </button>
               <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}">
-                ${icon("folder", 13)} Klasörü Aç
+                ${icon("folder", 13)} ${t("manage.openFolder")}
               </button>
             </div>
           </div>
@@ -741,42 +741,42 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#a78bfa">${icon("monitor", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Masaüstü Kısayolu</div>
-                <div class="manage-item-desc">Oyunu masaüstünden tek tıkla doğrudan başlatmak için kısayol ekle</div>
+                <div class="manage-item-title">${t("manage.shortcutTitle")}</div>
+                <div class="manage-item-desc">${t("manage.shortcutDesc")}</div>
               </div>
             </div>
             <div class="manage-item-right">
               <button class="btn ghost small" data-act="manage-create-shortcut" data-id="${st.appName}">
-                Kısayol Oluştur
+                ${t("manage.createShortcut")}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 2. Kayıt Dosyaları & Bulut -->
+      <!-- 2. Save files & cloud -->
       <div class="manage-card-group">
-        <div class="manage-group-title">${icon("cloud", 14)} Kayıt Dosyaları & Bulut</div>
+        <div class="manage-group-title">${icon("cloud", 14)} ${t("manage.groupSaves")}</div>
         <div class="manage-group-card">
           <div class="manage-item-row">
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#38bdf8">${icon("cloud", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">EOS Bulut Kayıtları</div>
+                <div class="manage-item-title">${t("manage.eosCloudTitle")}</div>
                 <div id="manage-cloud-subtitle" class="manage-item-desc">
                   ${
                     S.manageSyncingSaves
-                      ? "Bulut ile eşitleniyor…"
+                      ? t("manage.syncing")
                       : st.lastCloudSync
-                        ? `En son eşitleme: ${esc(st.lastCloudSync)}`
-                        : "İlerlemeleri Epic Online Services (EOS) bulutuna kaydet"
+                        ? t("manage.lastSync", { time: esc(st.lastCloudSync) })
+                        : t("manage.cloudDesc")
                   }
                 </div>
               </div>
             </div>
             <div class="manage-item-right">
-              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="Şimdi Eşitle" ${S.manageSyncingSaves ? "disabled" : ""}>
-                ${icon("refresh", 13)} Eşitle
+              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>
+                ${icon("refresh", 13)} ${t("manage.sync")}
               </button>
               <label class="toggle-switch">
                 <input type="checkbox" data-act="manage-toggle-cloud" ${st.cloudSavesEnabled ? "checked" : ""} />
@@ -790,16 +790,16 @@ export function renderDrawerManage(s: EpicSummary): string {
               <div class="manage-item-left">
                 <div class="manage-item-icon" style="color:#c084fc">${icon("hard-drive", 18)}</div>
                 <div class="manage-item-info">
-                  <div class="manage-item-title">Yerel Kayıt Yedekleme (Save Backup)</div>
-                  <div class="manage-item-desc">İlerlemenizi korumak için yerel arşiv oluşturun veya geri yükleyin</div>
+                  <div class="manage-item-title">${t("manage.localBackupTitle")}</div>
+                  <div class="manage-item-desc">${t("manage.backupDesc")}</div>
                 </div>
               </div>
               <div class="manage-item-right">
-                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="Yedek Klasörünü Aç">
-                  ${icon("folder", 13)} Klasör
+                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="${t("manage.openBackupFolder")}">
+                  ${icon("folder", 13)} ${t("manage.folder")}
                 </button>
                 <button class="btn primary small" data-act="manage-create-backup" data-id="${st.appName}" ${S.isBackingUp ? "disabled" : ""}>
-                  ${S.isBackingUp ? "Yedekleniyor…" : "Yedek Al"}
+                  ${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}
                 </button>
               </div>
             </div>
@@ -810,16 +810,16 @@ export function renderDrawerManage(s: EpicSummary): string {
         </div>
       </div>
 
-      <!-- 3. Başlatma ve Güncellemeler -->
+      <!-- 3. Launch & updates -->
       <div class="manage-card-group">
-        <div class="manage-group-title">${icon("zap", 14)} Başlatma ve Güncellemeler</div>
+        <div class="manage-group-title">${icon("zap", 14)} ${t("manage.groupLaunch")}</div>
         <div class="manage-group-card">
           <div class="manage-item-row">
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#34d399">${icon("refresh", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Otomatik Güncelleme</div>
-                <div class="manage-item-desc">Yeni bir güncelleme yayınlandığında otomatik indir</div>
+                <div class="manage-item-title">${t("manage.autoUpdateTitle")}</div>
+                <div class="manage-item-desc">${t("manage.autoUpdateDesc")}</div>
               </div>
             </div>
             <div class="manage-item-right">
@@ -834,8 +834,8 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#f59e0b">${icon("zap", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Öncelikli İndirmeler</div>
-                <div class="manage-item-desc">Bu oyunun güncellemelerini indirme kuyruğunda en öne al</div>
+                <div class="manage-item-title">${t("manage.priorityTitle")}</div>
+                <div class="manage-item-desc">${t("manage.priorityDesc")}</div>
               </div>
             </div>
             <div class="manage-item-right">
@@ -850,33 +850,33 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#fb7185">${icon("terminal", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Başlatma Parametreleri (Launch Arguments)</div>
-                <div class="manage-item-desc">Gelişmiş komut satırı parametreleri ekleyin (örn: -dx11, -novid)</div>
+                <div class="manage-item-title">${t("manage.argsTitle")}</div>
+                <div class="manage-item-desc">${t("manage.argsDesc")}</div>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:10px;width:100%">
               <input id="manage-args-input" class="text-input" style="flex:1" placeholder="-dx11 -novid" value="${esc(st.launchParameters || "")}" />
-              <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">Kaydet</button>
+              <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">${t("common.save")}</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 4. Oynama Süresi & İstatistikler -->
+      <!-- 4. Playtime & statistics -->
       <div class="manage-card-group">
-        <div class="manage-group-title">${icon("clock", 14)} Oynama Süresi & İstatistikler</div>
+        <div class="manage-group-title">${icon("clock", 14)} ${t("manage.groupPlaytime")}</div>
         <div class="manage-group-card">
           <div class="manage-item-row">
             <div class="manage-item-left">
               <div class="manage-item-icon" style="color:#38bdf8">${icon("clock", 18)}</div>
               <div class="manage-item-info">
-                <div class="manage-item-title">Toplam Oynama Süresi: <span id="manage-playtime-val" style="color:#38bdf8;font-weight:700">${esc(playtimeStr)}</span></div>
-                <div id="manage-playtime-meta" class="manage-item-desc">${pt?.session_count ? `${pt.session_count} oturum kaydedildi • Son: ${esc(lastPlayedStr)}` : "Bu launcher üzerinden henüz oturum kaydedilmedi"}</div>
+                <div class="manage-item-title">${t("manage.totalPlaytime")}: <span id="manage-playtime-val" style="color:#38bdf8;font-weight:700">${esc(playtimeStr)}</span></div>
+                <div id="manage-playtime-meta" class="manage-item-desc">${pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedStr) }) : t("manage.noSession")}</div>
               </div>
             </div>
             <div class="manage-item-right">
               <button class="btn ghost small" data-act="open-edit-playtime" data-id="${st.appName}">
-                ${icon("edit", 13)} Süreyi Düzenle
+                ${icon("edit", 13)} ${t("manage.editTime")}
               </button>
             </div>
           </div>
@@ -884,30 +884,30 @@ export function renderDrawerManage(s: EpicSummary): string {
           <div class="manage-info-callout">
             <div class="manage-callout-icon">${icon("info", 16)}</div>
             <div class="manage-callout-text">
-              <strong>Epic Games Verileri Neden Otomatik Alınamıyor?</strong>
+              <strong>${t("manage.epicDataTitle")}</strong>
               <p>
-                Epic Games Store, oynama sürelerini sadece kendi sunucularındaki özel telemetri sisteminde depolar ve üçüncü parti istemcilerin (Heroic, GOG Galaxy vb.) erişebileceği bir REST/GraphQL veya OAuth API sağlamaz.
+                ${t("manage.epicDataP1")}
               </p>
               <p>
-                Launcher üzerinden oyunu başlattığınızda oturum süreleri yerel olarak kaydedilir. Daha önce Epic Games'te geçirdiğiniz süreyi yukarıdaki "Süreyi Düzenle" butonundan bir kez ekleyerek kaldığınız yerden biriktirmeye devam edebilirsiniz.
+                ${t("manage.epicDataP2")}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 5. Tehlikeli Bölge -->
+      <!-- 5. Danger zone -->
       <div class="manage-danger-card">
         <div class="manage-item-left">
           <div class="manage-item-icon" style="color:#ef4444;background:rgba(239,68,68,0.1)">${icon("trash", 18)}</div>
           <div class="manage-item-info">
-            <div class="manage-item-title" style="color:#f87171">Oyunu Bilgisayardan Kaldır</div>
-            <div class="manage-item-desc">Kurulum dosyaları diskten silinecektir. Kayıt dosyalarınız korunur.</div>
+            <div class="manage-item-title" style="color:#f87171">${t("manage.dangerTitle")}</div>
+            <div class="manage-item-desc">${t("manage.dangerDesc")}</div>
           </div>
         </div>
         <div class="manage-item-right">
           <button class="btn danger small" data-act="epic-uninstall" data-id="${st.appName}">
-            ${icon("trash", 13)} Oyunu Kaldır
+            ${icon("trash", 13)} ${t("manage.uninstallTitle")}
           </button>
         </div>
       </div>
