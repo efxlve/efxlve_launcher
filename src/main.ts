@@ -269,6 +269,8 @@ let setupProgress: number | null = null;
 let setupMessage = "";
 let epicBusyMsg = "";
 let epicSyncing = false;
+/** İlk kurulum (onboarding) sihirbazı adımı: 1 Hoş Geldiniz, 2 Hesap Bağla, 3 Doğrulama. */
+let onboardingStep = 1;
 let epicSyncNote = "";
 
 /* ---------- Epic kütüphane görünümü (filtre/sıralama/boyut) ---------- */
@@ -2680,6 +2682,7 @@ async function epicDoLogin(code: string): Promise<void> {
   render();
   try {
     epicAccount = await epicLoginWithCode(code);
+    onboardingStep = 1;
     toast(`${epicAccount} olarak giriş yapıldı`, "ok");
     await refreshEpic();
   } catch (e) {
@@ -2696,6 +2699,7 @@ async function epicDoImport(): Promise<void> {
   render();
   try {
     epicAccount = await epicImportEgl();
+    onboardingStep = 1;
     toast(`${epicAccount} oturumu aktarıldı`, "ok");
     await refreshEpic();
   } catch (e) {
@@ -6248,6 +6252,109 @@ function renderSkeletonLibrary(): string {
     <div class="pgrid size-${epicCardSize}">${skelCards}</div>`;
 }
 
+/** İlk kurulum / oturum açma sihirbazı (Onboarding). */
+function renderOnboarding(): string {
+  if (epicPhase === "setup") {
+    const pct = setupProgress ?? 0;
+    return `
+      <div class="onboarding-shell">
+        <div class="onboarding-card ob-card-setup">
+          <div class="ob-hero-mark">${icon("download", 34)}</div>
+          <h1 class="ob-title">Kurulum Gerekli</h1>
+          <p class="ob-lead">Epic oyunlarını yönetmek için açık kaynak <strong>legendary</strong> aracı gerekir. Tek seferlik olarak indirilir (~45 MB).</p>
+          ${epicBusy === "download" ? `<div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div><p class="ob-muted">${esc(setupMessage || "indiriliyor…")}</p>` : ""}
+          <div class="ob-actions">
+            <button class="ps5-btn primary" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? "İndiriliyor…" : "legendary'yi indir"}</button>
+          </div>
+          <p class="ob-fineprint">Kaynak: github.com/legendary-gl/legendary (GPL-3.0)</p>
+        </div>
+      </div>`;
+  }
+
+  const steps = ["Hoş Geldiniz", "Hesap Bağla", "Doğrulama"];
+  const stepper = steps
+    .map((label, i) => {
+      const n = i + 1;
+      const cls = onboardingStep === n ? "active" : onboardingStep > n ? "done" : "";
+      const num = onboardingStep > n ? icon("check", 12) : String(n);
+      const line = i < steps.length - 1 ? `<span class="ob-step-line"></span>` : "";
+      return `<div class="ob-step ${cls}"><span class="ob-step-num">${num}</span><span class="ob-step-label">${label}</span></div>${line}`;
+    })
+    .join("");
+
+  let body = "";
+  if (onboardingStep === 1) {
+    body = `
+      <div class="ob-hero">
+        <div class="ob-hero-mark">${icon("gamepad-2", 34)}</div>
+        <h1 class="ob-title">Efxlve Launcher'a Hoş Geldin</h1>
+        <p class="ob-lead">Epic Games kütüphaneni PlayStation konsol estetiğinde, yüksek performanslı ve bağımsız bir masaüstü deneyimiyle yönet.</p>
+        <div class="ob-features">
+          <div class="ob-feature">${icon("zap", 18)}<div><strong>Akıcı & Hafif</strong><span>120 FPS konsol arayüzü, düşük bellek tüketimi.</span></div></div>
+          <div class="ob-feature">${icon("gamepad-2", 18)}<div><strong>Kontrolcü Odaklı</strong><span>10 fit TV/koltuk kullanımı, DualSense ve Xbox desteği.</span></div></div>
+          <div class="ob-feature">${icon("shield-check", 18)}<div><strong>Güvenli Bağlantı</strong><span>Resmi Epic yetkilendirme kodu ile güvenli giriş.</span></div></div>
+        </div>
+        <div class="ob-actions">
+          <button class="ps5-btn primary" data-act="onboarding-goto" data-step="2">Başla ${icon("chevron-right", 15)}</button>
+        </div>
+      </div>`;
+  } else if (onboardingStep === 2) {
+    body = `
+      <div class="ob-head">
+        <h1 class="ob-title">Hesabını Bağla</h1>
+        <p class="ob-lead">Kütüphaneni görmek için Epic Games hesabını bağla. İki güvenli yöntemden birini seç.</p>
+      </div>
+      <div class="ob-methods">
+        <button class="ob-method" data-act="epic-import" ${epicBusy ? "disabled" : ""}>
+          <div class="ob-method-icon">${icon("download", 22)}</div>
+          <div class="ob-method-body">
+            <div class="ob-method-title">Tek Tıkla İçe Aktar</div>
+            <div class="ob-method-desc">Bilgisayarında resmi Epic Games Launcher kuruluysa oturumunu şifresiz aktar.</div>
+          </div>
+          <span class="ob-method-badge">${epicBusy === "import" ? "Aktarılıyor…" : "Önerilen"}</span>
+        </button>
+        <button class="ob-method" data-act="onboarding-goto" data-step="3">
+          <div class="ob-method-icon">${icon("external", 22)}</div>
+          <div class="ob-method-body">
+            <div class="ob-method-title">Resmi Güvenli Kod</div>
+            <div class="ob-method-desc">Epic yetkilendirme sayfasından aldığın tek kullanımlık kodu yapıştır.</div>
+          </div>
+          <span class="ob-method-arrow">${icon("chevron-right", 16)}</span>
+        </button>
+      </div>
+      <div class="ob-actions">
+        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="1">${icon("arrow-left", 15)} Geri</button>
+      </div>`;
+  } else {
+    body = `
+      <div class="ob-head">
+        <h1 class="ob-title">Yetkilendirme Kodu</h1>
+        <p class="ob-lead">Aşağıdaki adımları izleyerek tek kullanımlık kodu al ve yapıştır.</p>
+      </div>
+      <div class="ob-guide">
+        <div class="ob-guide-step"><span class="ob-guide-num">1</span><div><strong>Giriş sayfasını aç</strong><span>Epic hesabınla güvenli sayfada oturum aç.</span></div></div>
+        <div class="ob-guide-step"><span class="ob-guide-num">2</span><div><strong>Kodu kopyala</strong><span>Sayfadaki JSON yanıtındaki <code>authorizationCode</code> değerini kopyala.</span></div></div>
+        <div class="ob-guide-step"><span class="ob-guide-num">3</span><div><strong>Buraya yapıştır</strong><span>Kodu aşağıdaki alana yapıştırıp giriş yap.</span></div></div>
+      </div>
+      <div class="ob-actions ob-actions-column">
+        <button class="ps5-btn secondary" data-act="epic-open-login">${icon("external", 15)} Epic giriş sayfasını aç</button>
+        <input id="epic-code" class="ps5-input ob-code-input" placeholder='{"authorizationCode": "..."}' autocomplete="off" spellcheck="false" />
+        <button class="ps5-btn primary" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? "Giriş yapılıyor…" : "Giriş yap"}</button>
+      </div>
+      <div class="ob-actions">
+        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="2">${icon("arrow-left", 15)} Geri</button>
+      </div>`;
+  }
+
+  return `
+    <div class="onboarding-shell">
+      <div class="onboarding-card">
+        <div class="onboarding-stepper">${stepper}</div>
+        <div class="onboarding-body">${body}</div>
+      </div>
+    </div>`;
+}
+
 function renderEpic(): string {
   if (!isTauri) {
     return `<h2>${icon("zap", 18)} Epic</h2><p class="subtitle">Epic entegrasyonu</p><div class="empty">Bu bölüm yalnızca masaüstü uygulamasında çalışır.</div>`;
@@ -6255,31 +6362,8 @@ function renderEpic(): string {
   if (epicPhase === "checking" || (epicPhase === "library" && epicSummaries.length === 0)) {
     return renderSkeletonLibrary();
   }
-  if (epicPhase === "setup") {
-    const pct = setupProgress ?? 0;
-    return `
-      <h2>Kütüphane</h2><p class="subtitle">Önce legendary gerekli</p>
-      <div class="settings-box">
-        <p>Epic oyunların için açık kaynak <strong>legendary</strong> aracı kullanılır. Tek seferlik indirilir (~45 MB).</p>
-        ${epicBusy === "download" ? `<div class="bar" style="margin:12px 0"><div style="width:${pct}%"></div></div><p class="muted">${esc(setupMessage || "indiriliyor…")}</p>` : ""}
-        <p><button class="btn primary" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? "İndiriliyor…" : "legendary'yi indir"}</button></p>
-        <p class="muted">Kaynak: github.com/legendary-gl/legendary (GPL-3.0)</p>
-      </div>`;
-  }
-  if (epicPhase === "login") {
-    return `
-      <h2>Kütüphane</h2><p class="subtitle">Hesabınla giriş yap</p>
-      <div class="settings-box">
-        <ol class="steps">
-          <li><button class="btn ghost small" data-act="epic-open-login">Epic giriş sayfasını aç</button> ve giriş yap.</li>
-          <li>Açılan JSON yanıttaki <code>authorizationCode</code> değerini (veya tüm JSON'u) yapıştır:</li>
-        </ol>
-        <p><input id="epic-code" class="text-input" placeholder='{"authorizationCode": "..."}' autocomplete="off" spellcheck="false" /></p>
-        <p style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn primary" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? "Giriş yapılıyor…" : "Giriş yap"}</button>
-          <button class="btn ghost" data-act="epic-import" ${epicBusy ? "disabled" : ""}>${epicBusy === "import" ? "Aktarılıyor…" : "Epic Launcher'dan aktar"}</button>
-        </p>
-      </div>`;
+  if (epicPhase === "setup" || epicPhase === "login") {
+    return renderOnboarding();
   }
   if (epicPhase === "error") {
     return `
@@ -8797,6 +8881,12 @@ document.addEventListener("click", (e) => {
     void epicDoLogin(input?.value ?? "");
   } else if (act === "epic-import") {
     void epicDoImport();
+  } else if (act === "onboarding-goto") {
+    const step = parseInt(t.dataset.step || "1", 10);
+    if (step >= 1 && step <= 3) {
+      onboardingStep = step;
+      render();
+    }
   } else if (act === "epic-logout") {
     void epicDoLogout();
   } else if (act === "epic-refresh") {

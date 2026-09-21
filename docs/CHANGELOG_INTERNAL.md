@@ -1456,3 +1456,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Yeni capture-phase `keydown` dinleyicisi `F5`, `Ctrl+R` (reload) ve `Ctrl +/-/0` (zoom) davranışlarını engeller.
 - `tauri.conf.json` ana penceresine `"backgroundThrottling": "disabled"` eklendi: oyun inerken pencere arka plana alınsa bile indirme ilerleme IPC olayları ve arayüz güncellemeleri kısılmaz.
 
+## 83. İlk Kurulum (Onboarding) & Epic Hesap Bağlama Sihirbazı (Milestone 5)
+
+**Sorun:** `epicPhase === "setup"` ve `"login"` durumları düz `<h2>` + `.settings-box` ile sıkıcı, dağınık ve güven vermeyen bir ekran sunuyordu; hesap bağlama yöntemleri ve kodun nereden alınacağı yeterince anlatılmıyordu.
+
+**Çözüm — `renderOnboarding()` sihirbazı (`main.ts` + `styles.css`):**
+- `onboardingStep` durumu (1 Hoş Geldiniz, 2 Hesap Bağla, 3 Doğrulama) eklendi; `renderEpic()` artık `setup` ve `login` fazlarında bu sihirbazı çizer.
+- **Kurulum (legendary binary yok):** ortam ışıklı kartta `Kurulum Gerekli` ekranı, canlı ilerleme çubuğu ve tek tık indirme.
+- **1. Adım — Hoş Geldiniz:** launcher felsefesi (akıcı/hafif, kontrolcü odaklı, güvenli bağlantı) üç özellik kartıyla; `Başla` butonu.
+- **2. Adım — Hesap Bağla:** iki yöntem kartı — `Tek Tıkla İçe Aktar` (EGL, "Önerilen") ve `Resmi Güvenli Kod` (3. adıma geçer).
+- **3. Adım — Doğrulama:** 3 adımlı görsel rehber (giriş sayfasını aç → `authorizationCode` kopyala → yapıştır), güvenli kod giriş alanı (`#epic-code`) ve giriş butonu.
+- Üstte adım göstergesi (`.onboarding-stepper`; aktif = lavanta, tamamlanan = yeşil onay ikonu).
+- Tüm metinler konsol diline uygun, sıfır emoji, yalnızca inline SVG ikonlar; tek kaynaklı düşük alfalı menekşe ortam ışığı.
+- Giriş/aktarma başarısında ve çıkışta `onboardingStep = 1`'e sıfırlanır; `onboarding-goto` aksiyonu adımlar arası geçişi yönetir.
+
