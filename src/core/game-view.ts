@@ -7,6 +7,7 @@
  */
 
 import { getThirdPartyLauncher, epicPortrait, type EpicSummary } from "../epic";
+import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { modalRoot } from "./dom";
 import { icon } from "./icons";
@@ -57,7 +58,7 @@ export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): voi
       favBtn.classList.add("heart-burst");
       setTimeout(() => favBtn.classList.remove("heart-burst"), 600);
       if (favBtn.classList.contains("btn")) {
-        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? "Favorilerde" : "Favoriye Ekle"}`;
+        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? t("common.favorited") : t("common.favorite")}`;
       }
     }
   }
@@ -69,23 +70,23 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   const p = epicDlProgress(s.appName);
   if (p !== null) {
     return `<button class="btn primary${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
-      <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">İptal</button>`;
+      <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancelShort")}</button>`;
   }
   const isRunning = S.runningGames.has(s.appName);
   if (isRunning) {
-    return `<button class="btn primary${btn} running" data-act="epic-play" data-id="${s.appName}" title="Oyun Çalışıyor"><span class="running-dot"></span> Oynanıyor…</button>`;
+    return `<button class="btn primary${btn} running" data-act="epic-play" data-id="${s.appName}" title="${t("common.gameRunning")}"><span class="running-dot"></span> ${t("common.playing")}</button>`;
   }
   if (s.installed) {
     const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
     if (hasUpdate) {
-      return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}" title="Güncellemeyi İndir">${icon("download", 14)} Güncelle</button>`;
+      return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}" title="${t("common.updateDownload")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }
-    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} Oyna</button>`;
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
   const g = rawOf(s.appName);
   const partner = getThirdPartyLauncher(g);
   if (partner) {
-    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${esc(partner.name)} ile Başlat">${icon("external", 14)} ${esc(partner.shortName)}</button>`;
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.launchWith", { name: esc(partner.name) })}">${icon("external", 14)} ${esc(partner.shortName)}</button>`;
   }
-  return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} Yükle</button>`;
+  return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} ${t("common.install")}</button>`;
 }
