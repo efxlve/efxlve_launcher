@@ -1842,7 +1842,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
 - `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-**Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `profile-view.ts` yorumları.
+**Kalan i18n yüzeyi:** `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `auth-actions.ts`, `downloads-view.ts`, `profile-view.ts`/`gamepad.ts`/`epic.ts`/`drawer-widgets.ts` yorumları.
+
+## 126. i18n: Kapak / SteamGridDB Modalı
+
+- `cover-view.ts` tamamen `t()`'e taşındı (`cover.*`, ~60 anahtar): hedef segmenti, canlı önizleme, URL/dosya sekmeleri, SteamGridDB kurulum sihirbazı, arama çubuğu, stil filtreleri, galeri kartları ve alt bilgi. Türkçe yorumlar İngilizce; ölü boş satır bloğu temizlendi.
+- `tr.json`/`en.json` ~840 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
 ## 125. i18n: Taşıma Modalı, Ekran Görüntüleri, State Ölü Alanı
 
