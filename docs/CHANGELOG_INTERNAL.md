@@ -1598,3 +1598,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Modül `S`, `icon`, `esc`, `fmtBytes`, `t`, `epicWideArt` import eder; hız grafiği hedefli DOM güncellemesi disiplinini korur (tam sayfa render yok).
 - `main.ts` ~9.837 → ~9.381 satır. `tsc`/`vite build` yeşil.
 
+## 94. Modülerleştirme Faz 5 (devam): Kütüphane & Onboarding Modülleri
+
+- **Paylaşılan oyun-render yardımcıları** (`isAppPlatinum`, `epicDlProgress`, `epicArt`, `epicActionButtons`) → `src/core/game-view.ts`. Birden fazla özellik kullandığı için `core`'a konuldu.
+- **Kütüphane** (`epicVisibleSummaries`, `getDailyGame`, `renderHeroSpotlight`, `epicCardPortrait`, `epicRowHtml`, `renderShelfHeroCard`, `renderShelfSection`, `renderEpicShelves`, `resetCardChunk`, `renderEpicItems`, `setupLibScrollObserver`, `renderSkeletonLibrary`, `renderEpic`, `updateLibraryFilterInPlace`) → `src/features/library/library-view.ts` (~849 satır).
+- **Onboarding** (`renderOnboarding`) → `src/features/onboarding/onboarding-view.ts` (~113 satır). Kütüphane modülü bunu import eder.
+- F3'te yerel tipli oldukları için taşınamayan durumlar da merkezileştirildi: `EpicPhase`, `EpicFilter`, `EpicSort`, `EpicViewMode`, `CardSize` tipleri `core/types.ts`'e; `S.epicPhase`, `S.epicFilter`, `S.epicSort`, `S.epicViewMode`, `S.epicCardSize` alanları `S`'e taşındı. `sortOptions` kütüphane modülüne taşındı.
+- `main.ts` ~9.381 → ~8.412 satır (başlangıç 11.422'den toplam ~3.010 satır azaldı). `tsc`/`vite build` yeşil.
+
