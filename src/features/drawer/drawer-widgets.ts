@@ -239,8 +239,8 @@ export function detectControllerSupport(
 
   if (isDualSenseNative) {
     return {
-      label: "✓ DualSense & Xbox Kolu",
-      tooltip: "PC'de yerel DualSense / PlayStation (ışık çubuğu, ses) ve Xbox kolları desteklenir.",
+      label: i18nT("feat.dualSense"),
+      tooltip: i18nT("feat.dualSenseTip"),
       iconName: "gamepad-2",
       className: "supported",
     };
@@ -264,8 +264,8 @@ export function detectControllerSupport(
 
   if (isKbMouseOnly) {
     return {
-      label: "Klavye & Fare",
-      tooltip: "Oyun kontrolleri ve menüleri klavye ve fare için tasarlanmıştır.",
+      label: i18nT("feat.kbMouse"),
+      tooltip: i18nT("feat.kbMouseTip"),
       iconName: "keyboard",
       className: "muted",
     };
@@ -273,8 +273,8 @@ export function detectControllerSupport(
 
   // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, etc.)
   return {
-    label: "✓ Xbox & Gamepad (XInput)",
-    tooltip: "Xbox ve XInput uyumlu kollar doğrudan çalışır. DualSense için XInput / DS4Windows gerekebilir.",
+    label: i18nT("feat.xboxGamepad"),
+    tooltip: i18nT("feat.xboxGamepadTip"),
     iconName: "gamepad-2",
     className: "supported",
   };
@@ -357,50 +357,53 @@ export function renderGameFeatures(
   const ctrl = detectControllerSupport(s, g, reqData);
 
   // 2. Bulut / Sunucu Kayıtları
-  let cloudVal = "Yerel Kayıt";
+  let cloudVal = i18nT("feat.localSave");
   let cloudClass = "";
-  let cloudTooltip = "Kayıt dosyaları yerel diskte saklanır. Launcher üzerinden yedekleyebilirsiniz.";
+  let cloudTooltip = i18nT("feat.localSaveTip");
   if (isOnlineOnly) {
-    cloudVal = "✓ Çevrimiçi Sunucu Kaydı";
+    cloudVal = i18nT("feat.onlineServerSave");
     cloudClass = "supported";
-    cloudTooltip = "Karakterleriniz ve ilerlemeniz doğrudan oyun sunucuları ve hesabınızla senkronize edilir.";
+    cloudTooltip = i18nT("feat.onlineServerSaveTip");
   } else if (hasCloud) {
-    cloudVal = "✓ Epic Cloud";
+    cloudVal = i18nT("feat.epicCloud");
     cloudClass = "supported";
-    cloudTooltip = "Epic Games bulut kayıtları etkin.";
+    cloudTooltip = i18nT("feat.epicCloudTip");
   } else if (partner) {
     const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
-    cloudVal = `✓ ${pName} Bulut`;
+    cloudVal = i18nT("feat.partnerCloud", { name: pName });
     cloudClass = "accent";
-    cloudTooltip = `${partner.name} bulut senkronizasyonu (Social Club) kullanılır.`;
+    cloudTooltip = i18nT("feat.partnerCloudTip", { name: partner.name });
   }
 
-  // 3. Başarım durumu
-  let achVal = "Bulunmuyor";
+  // 3. Achievement status
+  let achVal = i18nT("feat.none");
   let achClass = "";
   if (achSum && achSum.total_achievements > 0) {
     const totalXp = achSum.total_xp || 0;
-    achVal = `✓ ${achSum.total_achievements} Kupa${totalXp > 0 ? ` • ${totalXp} XP` : ""}`;
+    achVal = i18nT("feat.trophiesXp", {
+      count: achSum.total_achievements,
+      extra: totalXp > 0 ? ` • ${totalXp} XP` : "",
+    });
     achClass = isAppPlatinum(s.appName) ? "plat" : "gold";
   } else if (partner) {
-    achVal = `✓ ${partner.name} Başarımları`;
+    achVal = i18nT("feat.partnerAchievements", { name: partner.name });
     achClass = "accent";
   }
 
-  // 4. Çevrimdışı oynanış
-  let offlineVal = "✓ Destekleniyor (Çevrimdışı)";
+  // 4. Offline play
+  let offlineVal = i18nT("feat.supportedOffline");
   let offlineClass = "supported";
-  let offlineTooltip = "İnternet bağlantısı olmadan yerel olarak oynanabilir.";
+  let offlineTooltip = i18nT("feat.supportedOfflineTip");
   if (isOnlineOnly) {
-    offlineVal = "Sürekli İnternet Gerekir";
+    offlineVal = i18nT("feat.alwaysOnline");
     offlineClass = "accent";
-    offlineTooltip = "Bu oyun sunucu tabanlıdır; çalışmak için aktif internet bağlantısı gerektirir.";
+    offlineTooltip = i18nT("feat.alwaysOnlineTip");
   } else if (partner) {
-    offlineVal = `${partner.name} Bağlantısı Gerekebilir`;
+    offlineVal = i18nT("feat.partnerRequired", { name: partner.name });
     offlineClass = "muted";
-    offlineTooltip = `${partner.name} istemcisi ve hesabı ile ilk doğrulama/çevrimdışı mod gereklidir.`;
+    offlineTooltip = i18nT("feat.partnerRequiredTip", { name: partner.name });
   } else if (canRunOffline) {
-    offlineVal = "✓ Destekleniyor (Çevrimdışı)";
+    offlineVal = i18nT("feat.supportedOffline");
     offlineClass = "supported";
   }
 
@@ -452,46 +455,46 @@ export function renderGameFeatures(
     textCorpus.includes("hikaye") ||
     textCorpus.includes("story");
 
-  let modeVal = "Tek Oyunculu";
+  let modeVal = i18nT("feat.singlePlayer");
   let modeClass = "supported";
-  let modeTooltip = "Tek oyunculu hikaye veya oyun deneyimi.";
+  let modeTooltip = i18nT("feat.singlePlayerStoryTip");
 
   if (appLower === "brill" || titleLower.includes("dead by daylight")) {
-    modeVal = "Çok Oyunculu (4v1 PvP)";
+    modeVal = i18nT("feat.multi4v1");
     modeClass = "accent";
-    modeTooltip = "1 Katil ve 4 Kurbandan oluşan asimetrik çevrimiçi çok oyunculu korku oyunu.";
+    modeTooltip = i18nT("feat.multi4v1Tip");
   } else if (textCorpus.includes("4vs1") || textCorpus.includes("4v1") || textCorpus.includes("asymmetric")) {
-    modeVal = "Çok Oyunculu (Asimetrik)";
+    modeVal = i18nT("feat.multiAsym");
     modeClass = "accent";
-    modeTooltip = "Asimetrik çevrimiçi çok oyunculu oyun deneyimi.";
+    modeTooltip = i18nT("feat.multiAsymTip");
   } else if (textCorpus.includes("battle royale")) {
-    modeVal = "Çok Oyunculu (Battle Royale)";
+    modeVal = i18nT("feat.battleRoyale");
     modeClass = "accent";
-    modeTooltip = "Çok oyunculu hayatta kalma ve son kalan olma mücadelesi.";
+    modeTooltip = i18nT("feat.battleRoyaleTip");
   } else if (textCorpus.includes("mmo") || textCorpus.includes("mmorpg")) {
-    modeVal = "Devasa Çok Oyunculu (MMO)";
+    modeVal = i18nT("feat.mmo");
     modeClass = "accent";
-    modeTooltip = "Geniş oyuncu topluluğu ile sürekli çevrimiçi dünya.";
+    modeTooltip = i18nT("feat.mmoTip");
   } else if (isKnownSingleAndMulti || (hasSinglePlayer && (hasMultiplayer || isOnlineOnly))) {
-    modeVal = "Tek & Çok Oyunculu";
+    modeVal = i18nT("feat.singleMulti");
     modeClass = "accent";
-    modeTooltip = "Hem zengin tek oyunculu hikaye modu hem de çevrimiçi çok oyunculu modlar içerir.";
+    modeTooltip = i18nT("feat.singleMultiTip");
   } else if (hasCoop && hasSinglePlayer) {
-    modeVal = "Tek Oyunculu & Co-op";
+    modeVal = i18nT("feat.singleCoop");
     modeClass = "accent";
-    modeTooltip = "Hem tek başına hem de arkadaşlarınızla eşli oynanabilir.";
+    modeTooltip = i18nT("feat.singleCoopTip");
   } else if (hasCoop) {
-    modeVal = "Eşli Oyun (Co-op)";
+    modeVal = i18nT("feat.coop");
     modeClass = "accent";
-    modeTooltip = "Takım halinde eşli oynanış.";
+    modeTooltip = i18nT("feat.coopTip");
   } else if (hasMultiplayer || isOnlineOnly) {
-    modeVal = "Çok Oyunculu";
+    modeVal = i18nT("feat.multiplayer");
     modeClass = "accent";
-    modeTooltip = "Çevrimiçi çok oyunculu karşılaşmalar.";
+    modeTooltip = i18nT("feat.multiplayerTip");
   } else {
-    modeVal = "Tek Oyunculu";
+    modeVal = i18nT("feat.singlePlayer");
     modeClass = "supported";
-    modeTooltip = "Tek oyunculu oyun deneyimi.";
+    modeTooltip = i18nT("feat.singlePlayerTip");
   }
 
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
@@ -500,7 +503,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon(ctrl.iconName, 12)}</div>
-        <span>Kontrolcü Desteği</span>
+        <span>${i18nT("feat.controller")}</span>
       </div>
       <div class="hub-feature-val ${ctrl.className}">${ctrl.label}</div>
     </div>
@@ -508,7 +511,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row" title="${esc(cloudTooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("cloud", 12)}</div>
-        <span>Bulut Kayıtları</span>
+        <span>${i18nT("feat.cloud")}</span>
       </div>
       <div class="hub-feature-val ${cloudClass}">${cloudVal}</div>
     </div>
@@ -516,7 +519,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${isAppPlatinum(s.appName) ? epicPlatinumIcon(12) : icon("trophy", 12)}</div>
-        <span>Başarımlar</span>
+        <span>${i18nT("feat.achievements")}</span>
       </div>
       <div class="hub-feature-val ${achClass}">${achVal}</div>
     </div>
@@ -524,7 +527,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row" title="${esc(offlineTooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon(isOnlineOnly ? "wifi" : "globe", 12)}</div>
-        <span>Çevrimdışı Oynanış</span>
+        <span>${i18nT("feat.offline")}</span>
       </div>
       <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
     </div>
@@ -532,7 +535,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row" title="${esc(modeTooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("users", 12)}</div>
-        <span>Oyun Modu</span>
+        <span>${i18nT("feat.mode")}</span>
       </div>
       <div class="hub-feature-val ${modeClass}">${modeVal}</div>
     </div>
