@@ -179,7 +179,7 @@ src/
 Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/sonrasında ele alınacak:
 
 1. **Türkçe metinlerin i18n'e taşınması (Localization) — DEVAM EDİYOR:**
-   - ✅ Migre edilenler: nav, indirmeler, sağ tık menüsü, onboarding, ayarlar/profil başlıkları, **çekmece sekmeleri**, **kütüphane filtre pilleri**.
+   - ✅ Migre edilenler: nav, sağ tık menüsü, onboarding, **çekmece sekmeleri**, **kütüphane filtre pilleri**, **indirmeler sayfası (tam)**, **ayarlar sayfası (tam)**, **profil sayfası (tam)**.
    - 🚧 Kalan: drawer içerik bölümleri (`renderDrawer*`), `renderManageModal`, `renderSelectiveModal`, `renderCustomCover*`, `renderDlcManager`, gamepad HUD, toast/hata mesajları, boş durumlar.
    - Yöntem: `src/locales/tr.json` + `en.json`'a anahtar ekle → `t("...")` kullan. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84).
 2. **Gereksiz / optimize olmayan kod temizliği — TAMAMLANDI (temel):**
