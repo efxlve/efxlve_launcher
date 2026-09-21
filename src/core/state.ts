@@ -22,7 +22,7 @@ import {
   SS_QUALITY_KEY,
   loadStrSet,
 } from "./constants";
-import type { DlMetrics, Game, View } from "./types";
+import type { CardSize, DlMetrics, EpicFilter, EpicPhase, EpicSort, EpicViewMode, Game, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
@@ -30,6 +30,7 @@ export const S = {
   view: ("library") as View,
   lastNonStoreView: ("library") as Exclude<View, "store">,
   storeShown: false,
+  epicPhase: "checking" as EpicPhase,
   epicBooted: false,
   epicAccount: "",
   epicAccountId: (null) as string | null,
@@ -73,6 +74,10 @@ export const S = {
   appLanguage: (localStorage.getItem(LANG_KEY) || "tr") as string,
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
+  epicFilter: "all" as EpicFilter,
+  epicSort: ((localStorage.getItem("efxlve-sort") as EpicSort) || "recent") as EpicSort,
+  epicViewMode: ((localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid") as EpicViewMode,
+  epicCardSize: ((localStorage.getItem("efxlve-card-size") as CardSize) || "normal") as CardSize,
   isHeroCollapsed: localStorage.getItem("efxlve-hero-collapsed") === "1",
   isColDropdownOpen: false,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,

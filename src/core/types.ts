@@ -28,6 +28,18 @@ export interface CatalogMeta {
 /** Top-level application view/route. */
 export type View = "library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store";
 
+/** Account/setup lifecycle phase. */
+export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
+
+/** Library filter modes. */
+export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum";
+/** Library sort modes. */
+export type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
+/** Library layout mode. */
+export type EpicViewMode = "grid" | "shelves" | "list";
+/** Poster card size. */
+export type CardSize = "compact" | "normal" | "large";
+
 /** Live metrics for the currently active download (speed, disk, ETA). */
 export interface DlMetrics {
   id: string;
