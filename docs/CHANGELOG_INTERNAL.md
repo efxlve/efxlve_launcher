@@ -1695,3 +1695,14 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `loadSettingsView` → `src/features/settings/settings-view.ts`.
 - `main.ts` ~2.684 → ~2.663 satır. `tsc`/`vite build` yeşil.
 
+## 109. Modülerleştirme Faz 6: Olay Katmanı Ayrıldı — main.ts ~961 Satıra İndi (DÖNÜM NOKTASI)
+
+- **Olay katmanı** iki modüle ayrıldı:
+  - `src/features/events/click-router.ts` (~1.356 satır): tek `document.addEventListener("click", ...)` delegasyon yönlendiricisi (`data-act` / `data-view`).
+  - `src/features/events/input-listeners.ts` (~549 satır): `wheel`, `resize`, `keydown`, `change`, `input` ve `viewEl` scroll dinleyicileri.
+- `main.ts` bu modülleri yan etki (side-effect) import ederek dinleyicileri kaydeder.
+- **`main.ts` 11.422 → ~963 satır (~%91.6 azalma).** Artık yalnızca bootstrap, `init()`, `render()`/`scheduleRender()` orkestrasyonu ve `closeAllModals()` kaldı.
+- Tüm özellik dosyaları ~1.500 satır sınırının altında. `tsc` + `vite build` + `cargo check` yeşil.
+
+**Kalan küçük işler:** `init()` + IPC `listen(...)` kayıtlarını `core/ipc.ts`'e ayırmak; `render()`/`scheduleRender()`'ı ince tutmak; ardından §6.6 backlog (i18n metin taşıma + optimizasyon/ölü kod temizliği).
+
