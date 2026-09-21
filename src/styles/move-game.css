@@ -6,7 +6,7 @@
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
-   PlayStation 5 Game Hub: Oyun Dosyalarını Taşıma Modalı (Move Game Files)
+   PlayStation 5 Game Hub: move game files modal
    ========================================================================== */
 
 .move-modal-backdrop {
@@ -105,7 +105,7 @@
   overflow-y: auto;
 }
 
-/* Mevcut Konum & Boyut Bilgi Şeridi */
+/* Current location & size info strip */
 .move-current-box {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -160,7 +160,7 @@
   font-weight: 600;
 }
 
-/* Hedef Sürücü Kartları / Izgara */
+/* Target drive cards / grid */
 .move-section-label {
   font-size: 12px;
   font-weight: 700;
@@ -262,7 +262,7 @@
   color: #f1f5f9;
 }
 
-/* Klasör Yolu Girişi & Gözat Butonu */
+/* Folder path input & browse button */
 .move-path-input-group {
   display: flex;
   gap: 8px;
@@ -338,7 +338,7 @@
   color: #fca5a5;
 }
 
-/* Canlı İlerleme Paneli */
+/* Live progress panel */
 .move-live-progress {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -405,7 +405,7 @@
   text-overflow: ellipsis;
 }
 
-/* Modal Alt Barı (Footer) */
+/* Modal footer */
 .move-modal-foot {
   padding: 16px 24px;
   display: flex;

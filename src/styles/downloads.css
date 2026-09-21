@@ -5,7 +5,7 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- İndirmeler & Ayarlar --- */
+/* --- Downloads & settings --- */
 .dl-item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px; }
 .dl-item .row { margin-bottom: 10px; display: flex; justify-content: space-between; }
 .bar { height: 8px; background: #08080a; border-radius: 4px; overflow: hidden; }
@@ -22,7 +22,7 @@
 }
 .text-input:focus { border-color: var(--primary); }
 
-/* --- Diller / Language Ayarları --- */
+/* --- Language settings --- */
 .lang-selection-group {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -102,7 +102,7 @@
 .toast.err { border-left-color: var(--red); }
 @keyframes slide { from { transform: translateX(30px); opacity: 0; } }
 
-/* --- Başa Dön Düğmesi --- */
+/* --- Scroll-to-top button --- */
 #totop {
   position: fixed; right: 24px; bottom: 54px; width: 38px; height: 38px;
   border-radius: 50%; border: 1px solid var(--border); background: var(--panel);
@@ -113,7 +113,7 @@
 #totop.show { display: flex; }
 #totop:hover { border-color: var(--primary); transform: translateY(-2px); }
 
-/* --- MODERN SKELETON SHIMMER YÜKLEME EKRANI --- */
+/* --- MODERN SKELETON SHIMMER LOADING SCREEN --- */
 @keyframes skeletonShimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

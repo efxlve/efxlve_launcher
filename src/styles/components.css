@@ -6,7 +6,7 @@
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
-   PS5 Standart Sayfa Kabuğu & Bileşen Kütüphanesi (docs/DESIGN_SYSTEM.md §4-5)
+   PS5 standard page shell & component library (docs/DESIGN_SYSTEM.md §4-5)
    ========================================================================== */
 
 .ps5-page {
@@ -123,7 +123,7 @@
 }
 .ps5-input:focus { border-color: var(--ps5-accent); }
 
-/* --- PS5 / Steam Tarzı Özel Sağ Tık Menüsü --- */
+/* --- PS5 / Steam-style custom context menu --- */
 .ps5-context-menu {
   position: fixed;
   top: 0;
@@ -187,8 +187,8 @@
   background: var(--ps5-border-subtle);
 }
 
-/* --- Webview Zırhlama (Hardening) --- */
-/* Metin yalnızca giriş alanlarında seçilebilir; görseller sürüklenemez. */
+/* --- Webview hardening --- */
+/* Text is selectable only in input fields; images cannot be dragged. */
 input, textarea, [contenteditable="true"] {
   user-select: text;
   -webkit-user-select: text;
@@ -199,7 +199,7 @@ img, a {
 }
 
 /* ==========================================================================
-   İlk Kurulum & Hesap Bağlama Sihirbazı (Onboarding Wizard)
+   First-run & account linking wizard (onboarding)
    ========================================================================== */
 
 .onboarding-shell {
@@ -221,7 +221,7 @@ img, a {
   box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.95);
   overflow: hidden;
 }
-/* Tek kaynaklı, düşük alfalı menekşe ortam ışığı (dekoratif gradyan değil). */
+/* Single-source, low-alpha violet ambient light (not a decorative gradient). */
 .onboarding-card::before {
   content: "";
   position: absolute;
@@ -418,7 +418,7 @@ img, a {
 .ob-progress-fill { height: 100%; background: var(--ps5-accent); transition: width 0.2s ease; }
 
 /* ==========================================================================
-   3. Parti Başlatıcılar Hub'ı (EA App / Ubisoft Connect / Rockstar)
+   Third-party launchers hub (EA App / Ubisoft Connect / Rockstar)
    ========================================================================== */
 
 .tpl-grid {

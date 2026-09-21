@@ -6,7 +6,7 @@
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
-   Yerel Profil & Başarım Merkezi (Native Profile View)
+   Native profile & achievement center
    ========================================================================== */
 
 .profile-container {
@@ -476,7 +476,7 @@
 }
 
 
-/* 3. PlayStation Kupa Vitrini ve Oyun İlerlemesi */
+/* 3. PlayStation trophy showcase and game progress */
 .profile-games-section {
   display: flex;
   flex-direction: column;
@@ -642,7 +642,7 @@
   border-color: #38bdf8;
 }
 
-/* 4. PS5 2-Sütunlu Kupa Kartları Izgarası (Grid) */
+/* 4. PS5 two-column trophy card grid */
 .profile-games-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(540px, 1fr));

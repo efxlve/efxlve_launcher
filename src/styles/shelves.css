@@ -5,7 +5,7 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- KART HOVER MİKRO-HUD (PLAYTIME & ACHIEVEMENTS) --- */
+/* --- CARD HOVER MICRO-HUD (PLAYTIME & ACHIEVEMENTS) --- */
 .pcard-micro-hud {
   display: flex;
   align-items: center;
@@ -21,9 +21,9 @@
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* Opaque surface instead of backdrop-filter: this chip repeats on every card
+     and per-element GPU blur is too costly on low-end integrated GPUs. */
+  background: rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
 }
@@ -31,7 +31,7 @@
 .micro-chip.ach { color: #c084fc; border-color: rgba(192, 132, 252, 0.35); }
 .micro-chip.plat { color: #e9d5ff; border-color: rgba(192, 132, 252, 0.5); background: rgba(168, 85, 247, 0.18); }
 
-/* --- STEAM RAFLAR (SHELVES) GÖRÜNÜMÜ --- */
+/* --- STEAM SHELVES VIEW --- */
 .shelves-container {
   display: flex;
   flex-direction: column;
@@ -294,7 +294,7 @@
   color: #94a3b8;
 }
 
-/* --- ÖZEL KAPAK MODALI --- */
+/* --- CUSTOM COVER MODAL --- */
 #cover-modal-root:empty { display: none; }
 .cover-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82);
@@ -362,7 +362,7 @@
   max-height: calc(88vh - 130px);
 }
 
-/* Düzenleme Hedefi Segment Kontrolü */
+/* Edit target segment control */
 .cover-target-segment {
   display: flex;
   gap: 6px;
@@ -411,7 +411,7 @@
   flex-shrink: 0;
 }
 
-/* Aktif Hedef Önizleme Bölümü */
+/* Active target preview section */
 .cover-preview-section {
   display: flex;
   gap: 18px;

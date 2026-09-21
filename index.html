@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#07080d" />
     <title>Efxlve Launcher</title>
     <style>
-      /* Anti-FOUC: CSS yüklenmeden önceki ilk karede saf obsidyen çizilir. */
+      /* Anti-FOUC: paint pure obsidian on the first frame before the CSS loads. */
       html, body { margin: 0; background-color: #07080d; color-scheme: dark; }
     </style>
   </head>
@@ -21,29 +21,29 @@
         </div>
         <nav id="nav">
           <div class="nav-seg" id="nav-seg">
-            <button class="nav-tab" data-act="open-store" title="Epic Mağazası — Gömülü Mağaza (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Mağaza</span></button>
-            <button class="nav-tab active" data-view="library" title="Kütüphane (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Kütüphane</span></button>
-            <button class="nav-tab" data-view="downloads" title="İndirmeler & Kuyruk (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">İndirmeler</span><span id="dl-badge" class="badge hidden"></span></button>
+            <button class="nav-tab" data-act="open-store" data-i18n-title="nav.storeTitle" title="Epic Games Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Store</span></button>
+            <button class="nav-tab active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
+            <button class="nav-tab" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads &amp; Queue (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="badge hidden"></span></button>
           </div>
           <div class="nav-right">
-            <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" title="Çevrimiçi Mod Aktif (Çevrimdışı moda geçmek için tıklayın)">
+            <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online Mode Active">
               <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Çevrimiçi</span>
             </button>
-            <button id="account" class="account-chip" data-view="profile" title="Epic profili">
+            <button id="account" class="account-chip" data-view="profile" data-i18n-title="nav.profileTitle" title="Epic profile">
               <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
               <span class="account-name" data-i18n="nav.notLoggedIn">Giriş yapılmadı</span>
             </button>
-            <button class="nav-icon-btn" data-view="settings" title="Ayarlar (Ctrl+,)"><i data-lucide="settings"></i></button>
+            <button class="nav-icon-btn" data-view="settings" data-i18n-title="nav.settingsTitle" title="Settings (Ctrl+,)"><i data-lucide="settings"></i></button>
           </div>
         </nav>
         <div class="win-controls">
-          <button class="win-btn" data-act="win-minimize" title="Simge Durumuna Küçült">
+          <button class="win-btn" data-act="win-minimize" data-i18n-title="win.minimize" title="Minimize">
             <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
           </button>
-          <button class="win-btn" data-act="win-maximize" title="Ekranı Kapla">
+          <button class="win-btn" data-act="win-maximize" data-i18n-title="win.maximize" title="Maximize">
             <svg id="win-max-icon" width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
           </button>
-          <button class="win-btn win-close" data-act="win-close" title="Kapat">
+          <button class="win-btn win-close" data-act="win-close" data-i18n-title="common.close" title="Close">
             <svg width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M1 1l8 8M9 1L1 9"/></svg>
           </button>
         </div>
@@ -61,7 +61,7 @@
     <div id="move-modal-root"></div>
     <div id="ctx-root"></div>
     <div id="toasts"></div>
-    <button id="totop" data-act="to-top" title="Başa dön">↑</button>
+    <button id="totop" data-act="to-top" data-i18n-title="common.toTop" title="Back to top">↑</button>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

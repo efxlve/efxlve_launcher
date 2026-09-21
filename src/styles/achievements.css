@@ -5,7 +5,7 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- SteamHunters Gruplandırılmış Başarım Listesi --- */
+/* --- SteamHunters grouped achievement list --- */
 .ach-list-container {
   display: flex;
   flex-direction: column;
@@ -96,7 +96,7 @@
   gap: 8px;
 }
 
-/* --- PS5 Konsol Tarzı Temiz Başarım Kartları --- */
+/* --- PS5 console-style clean achievement cards --- */
 .ach-card {
   display: flex;
   align-items: center;
@@ -324,7 +324,7 @@
   color: #94a3b8;
 }
 
-/* --- Sistem Gereksinimleri Tasarımı --- */
+/* --- System requirements design --- */
 .sys-req-container {
   display: flex;
   flex-direction: column;
@@ -467,7 +467,7 @@
   margin-top: 4px;
 }
 
-/* --- Gizli Başarımlar (Secret Achievements) --- */
+/* --- Secret achievements --- */
 .ach-title-row {
   display: flex;
   align-items: center;
@@ -555,7 +555,7 @@
 
 
 
-/* --- Platin Kupa Filtresi & Kategori Başlığı --- */
+/* --- Platinum trophy filter & category header --- */
 .chip[data-val="platinum"] {
   border-color: rgba(168, 85, 247, 0.4);
   color: #c084fc;

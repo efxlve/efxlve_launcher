@@ -5,9 +5,9 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- PlayStation Konsol & Gamepad Odak Halkası (Console Focus Ring) ---
+/* --- PlayStation console & gamepad focus ring ---
    AGENTS.md §7.9: 2px lavanta (#8b5cf6) halka, 3px offset. Neon glow ve odakta
-   ölçekleme/kaydırma (layout shift) YASAK — yalnızca halka ve kenarlık konuşur. */
+   scaling/shifting (layout shift) is FORBIDDEN — only the ring and border speak. */
 :focus-visible {
   outline: 2px solid #8b5cf6 !important;
   outline-offset: 3px !important;

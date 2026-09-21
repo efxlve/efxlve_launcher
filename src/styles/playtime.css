@@ -5,7 +5,7 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* ---------- Canlı Oyun Durumu & Oynanıyor Butonu ---------- */
+/* ---------- Live game status & playing button ---------- */
 @keyframes pulse-green {
   0%, 100% {
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.5), inset 0 0 6px rgba(16, 185, 129, 0.3);
@@ -45,7 +45,7 @@
   animation: pulse-green 1.5s infinite;
 }
 
-/* Oynama Süresi Rozeti */
+/* Playtime badge */
 .playtime-badge {
   display: inline-flex;
   align-items: center;
@@ -59,9 +59,9 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Çevrimdışı Mod üst bar kontrolü artık `#nav .net-chip` (bkz. Titlebar bölümü) */
+/* Offline mode top-bar control is now `#nav .net-chip` (see the Titlebar section) */
 
-/* Ağ Profili Segment Seçici */
+/* Network profile segment selector */
 .net-profile-pills {
   display: flex;
   background: rgba(0, 0, 0, 0.35);
@@ -97,7 +97,7 @@
   color: #fff;
 }
 
-/* İndirme Ayarları Paneli (Downloads sayfası) */
+/* Download settings panel (downloads page) */
 .dl-settings-panel {
   background: var(--ps5-surface-1);
   border: 1px solid var(--ps5-border-subtle);
@@ -162,7 +162,7 @@
 }
 .dl-settings-dir-row .text-input:focus { border-color: var(--ps5-accent); }
 
-/* Kayıt Yedekleme Bölümü */
+/* Save backup section */
 .backup-list {
   display: flex;
   flex-direction: column;
@@ -207,7 +207,7 @@
 }
 
 /* ==========================================================================
-   Oynama Süresi & İstatistikler & Bilgilendirme Notları
+   Playtime & statistics & info notes
    ========================================================================== */
 
 .stat-card.stat-card-interactive {
