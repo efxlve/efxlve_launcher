@@ -155,7 +155,9 @@ export function renderHeroSpotlight(): string {
       : isRunning
         ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
-          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} ${t("common.playNow")}</button>`
+          ? s.updateAvailable || S.availableUpdates.has(s.appName)
+            ? `<button class="btn update" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} ${t("common.update")}</button>`
+            : `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} ${t("common.playNow")}</button>`
           : partner
             ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${t("common.launchWith", { name: esc(partner.name) })}</button>`
             : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} ${t("common.install")}</button>`;
@@ -307,7 +309,9 @@ export function renderShelfHeroCard(s: EpicSummary): string {
       : isRunning
         ? `<button class="btn primary small running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
-          ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 13)} ${t("common.play")}</button>`
+          ? s.updateAvailable || S.availableUpdates.has(s.appName)
+            ? `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`
+            : `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 13)} ${t("common.play")}</button>`
           : partner
             ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("lib.launch")}</button>`
             : `<button class="btn primary small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.install")}</button>`;
