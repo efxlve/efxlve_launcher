@@ -8,7 +8,7 @@
 
 ### 📌 Üst Menü ("Mağaza", "Kütüphane") Webview Çakışma Bug'ı ve Üst Navigasyon UI Yenilemesi
 
-- **Durum:** 📋 `YAPILACAK` (Kullanıcı talimatı: *Şimdilik kod değişikliği yapma, not al; sonraki adımda uygulanacak.*)
+- **Durum:** ✅ `TAMAMLANDI` (Milestone 1 — bkz. CHANGELOG_INTERNAL.md §79)
 - **Etkilenen Dosyalar:**
   - `src/main.ts` (Titlebar render, `#nav`, `openStore`, `closeStore`, `updateNavIndicator`, click router)
   - `src/styles.css` (`.ps5-top-bar`, `#nav`, `.nav-indicator`, `.store-loading-screen`)
@@ -40,7 +40,7 @@
 
 ### 📌 Beyaz Parlama / Flashbang (FOUC) Sorunu — Launcher ve Mağazada Aniden Ekranın Beyaz Olması
 
-- **Durum:** 📋 `YAPILACAK` (Kullanıcı talimatı: *Not al; sonraki adımda uygulanacak.*)
+- **Durum:** ✅ `TAMAMLANDI` (Milestone 2 — bkz. CHANGELOG_INTERNAL.md §80)
 - **Etkilenen Dosyalar:**
   - `src-tauri/tauri.conf.json` (Ana pencere arka plan rengi / transparent ayarı)
   - `index.html` (Critical inline background & color-scheme eksikliği)
@@ -73,7 +73,7 @@
 
 ### 📌 İndirme Hızı Görünmeme Bug'ı & İndirme Sayfası / Ayarları Yenilemesi
 
-- **Durum:** 📋 `YAPILACAK`
+- **Durum:** ✅ `TAMAMLANDI` (Milestone 3 — bkz. CHANGELOG_INTERNAL.md §81)
 - **Etkilenen Dosyalar:**
   - `src-tauri/src/legendary/transfers.rs` (`parse_speed`, stderr okuma döngüsü)
   - `src/main.ts` (`renderDownloads`, `activeDlMetrics`)
@@ -175,13 +175,13 @@
 
 ## 4. Gelecek Adımlar (Next Milestones)
 
-- [ ] **Milestone 1:** Üst menü (Titlebar / Nav) PS5 UI yenilemesi ve Mağaza/Kütüphane webview durum makinesi refactor'ü.
-- [ ] **Milestone 2:** Beyaz parlama (flashbang / FOUC) sorununun `tauri.conf.json`, `index.html` ve Rust `WebviewBuilder` seviyesinde kökten çözülmesi.
-- [ ] **Milestone 3:** İndirme hızı veri akışı bug'ının (`transfers.rs` CR/LF) çözülmesi, İndirme sayfası PS5 UI yenilemesi ve indirme ayarları paneli.
-- [ ] **Milestone 4:** Steam/PS5 tarzı özel sağ tık menüsü (Context Menu) ve tarayıcı zırhlama (Webview Hardening).
-- [ ] **Milestone 5:** İlk kurulum (Onboarding) ve Epic Games hesap bağlama sihirbazı.
-- [ ] **Milestone 6:** Çoklu dil (i18n) mimarisi (16+ dil desteği) ve modüler parçalama.
-- [ ] **Milestone 7:** Ayarlar'da 3. parti başlatıcılar hub'ı (EA, Ubisoft, Rockstar).
-- [ ] **Milestone 8:** Linux/macOS Wine & Proton uyumluluk katmanı araştırması ve mimari tasarımı.
+- [x] **Milestone 1:** Üst menü (Titlebar / Nav) PS5 UI yenilemesi ve Mağaza/Kütüphane webview durum makinesi refactor'ü. → CHANGELOG §79
+- [x] **Milestone 2:** Beyaz parlama (flashbang / FOUC) sorununun `tauri.conf.json`, `index.html` ve Rust `WebviewBuilder` seviyesinde kökten çözülmesi. → CHANGELOG §80
+- [x] **Milestone 3:** İndirme hızı veri akışı bug'ının (`transfers.rs` CR/LF) çözülmesi, İndirme sayfası PS5 UI yenilemesi ve indirme ayarları paneli. → CHANGELOG §81
+- [x] **Milestone 4:** Steam/PS5 tarzı özel sağ tık menüsü (Context Menu) ve tarayıcı zırhlama (Webview Hardening). → CHANGELOG §82
+- [x] **Milestone 5:** İlk kurulum (Onboarding) ve Epic Games hesap bağlama sihirbazı. → CHANGELOG §83
+- [x] **Milestone 6:** Çoklu dil (i18n) mimarisi (15 dil desteği) ve modüler parçalama. → CHANGELOG §84
+- [x] **Milestone 7:** Ayarlar'da 3. parti başlatıcılar hub'ı (EA, Ubisoft, Rockstar). → CHANGELOG §85
+- [x] **Milestone 8:** Linux/macOS Wine & Proton uyumluluk katmanı araştırması ve mimari tasarımı. → [`CROSS_PLATFORM.md`](./CROSS_PLATFORM.md)
 
 
