@@ -425,6 +425,8 @@ export interface EpicSettings {
   network_profile?: string | null;
   offline_mode?: boolean | null;
   steamgrid_api_key?: string | null;
+  presence_enabled?: boolean | null;
+  presence_client_id?: string | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
@@ -437,6 +439,15 @@ export const epicUninstallGame = (appName: string, keepFiles = false) =>
 export const epicLaunchGame = (appName: string) =>
   invoke<string>("epic_launch_game", { appName });
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
+
+/** Discord Rich Presence: enable/disable and set the Discord application id. */
+export const epicPresenceConfigure = (enabled: boolean, clientId: string) =>
+  invoke<void>("epic_presence_configure", { enabled, clientId });
+/** Discord Rich Presence: push a localized activity (details + state). */
+export const epicPresenceUpdate = (details: string, state: string) =>
+  invoke<void>("epic_presence_update", { details, state });
+/** Discord Rich Presence: clear the current activity. */
+export const epicPresenceClear = () => invoke<void>("epic_presence_clear");
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");
 export const epicSetInstallDir = (dir: string | null) =>
   invoke<EpicSettings>("epic_set_install_dir", { dir });

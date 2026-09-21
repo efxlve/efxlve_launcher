@@ -71,6 +71,7 @@ import {
   startMoveGame,
 } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
+import { applyPresenceSettings } from "../presence/presence";
 import {
   closeEditPlaytimeModal,
   openEditPlaytimeModal,
@@ -1242,6 +1243,10 @@ document.addEventListener("click", (e) => {
         toast(i18nT("ss.compressedCount", { count, format: S.screenshotCompressionFormat.toUpperCase() }), "ok");
       })();
     }
+  } else if (act === "toggle-presence") {
+    S.presenceEnabled = !S.presenceEnabled;
+    applyPresenceSettings();
+    render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;
     localStorage.setItem(SS_COMPRESS_KEY, String(S.screenshotCompressionEnabled));

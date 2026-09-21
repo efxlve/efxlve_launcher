@@ -38,6 +38,7 @@ import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-inst
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
+import { applyPresenceSettings } from "../presence/presence";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { renderProfileGameCards } from "../profile/profile-view";
 import {
@@ -236,6 +237,11 @@ document.addEventListener("change", (e) => {
       }
     };
     reader.readAsDataURL(file);
+  }
+  if (target && target.id === "presence-client-id") {
+    S.presenceClientId = target.value.trim();
+    applyPresenceSettings();
+    return;
   }
   if (target && (target as HTMLElement).id === "ach-sort-select") {
     S.achSortOrder = (target as unknown as HTMLSelectElement).value as any;

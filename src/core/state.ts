@@ -172,6 +172,8 @@ export const S = {
   renderedCardCount: INITIAL_CARD_CHUNK,
   libScrollObserver: (null) as IntersectionObserver | null,
   epicSettingsCache: (null) as EpicSettings | null,
+  presenceEnabled: false,
+  presenceClientId: "",
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
