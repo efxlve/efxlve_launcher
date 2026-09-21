@@ -14,7 +14,7 @@ import { modalRoot } from "../../core/dom";
 
 import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
-import { updateGamepadHud } from "../../core/render";
+import { presenceSync, updateGamepadHud } from "../../core/render";
 import { epicWideArt, isTurkishUser, lastPlayedLabel, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -432,6 +432,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
       .catch(() => {});
   }
   updateGamepadHud(S.gamepadPolling);
+  presenceSync();
 }
 
 export function updateCriticUI(appName: string, data: CriticData): void {
