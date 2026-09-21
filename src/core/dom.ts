@@ -1,10 +1,13 @@
 /**
- * Cached references to the root DOM containers.
+ * Cached references to the root DOM containers and shared modal helpers.
  *
  * These elements exist in `index.html` before the module loads, so they are
  * resolved once at import time instead of being queried on every render. This
  * keeps hot paths free of repeated `getElementById` calls.
  */
+
+import { updateGamepadHud } from "./render";
+import { S } from "./state";
 
 /** Main view container that renders the active page. */
 export const viewEl = document.getElementById("view") as HTMLElement;
@@ -26,3 +29,10 @@ export const dlBadge = document.getElementById("dl-badge") as HTMLElement;
 export const ctxRoot = document.getElementById("ctx-root") as HTMLElement | null;
 /** Collections modal root. */
 export const collectionRoot = document.getElementById("collection-root");
+
+/** Close the game detail drawer and refresh the gamepad HUD. */
+export function closeModal(): void {
+  modalRoot.innerHTML = "";
+  S.currentModalAppName = null;
+  updateGamepadHud(S.gamepadPolling);
+}

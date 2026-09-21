@@ -163,6 +163,7 @@ import {
   saveMockInstalled,
 } from "./core/constants";
 import {
+  closeModal,
   collectionRoot,
   ctxRoot,
   dlBadge,
@@ -174,10 +175,26 @@ import {
   viewEl,
 } from "./core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum } from "./core/game-view";
-import { registerRender } from "./core/render";
+import {
+  epicCancel,
+  epicInstall,
+  epicPlay,
+  epicUninstall,
+  refreshEpicInstalled,
+  refreshUpdates,
+} from "./core/epic-actions";
+import { updateBadge, updateChrome, updateNavIndicator } from "./core/nav";
+import { pruneRecent, pushRecent } from "./core/recent";
+import { registerGamepadHud, registerRender } from "./core/render";
 import { epicWideArt, isTurkishUser, rawOf, setEpicGamesRaw, setEpicSummaries, summaryOf } from "./core/selectors";
 import { initContextMenu } from "./features/context-menu/context-menu";
 import { renderDlcManager, renderDlcRows } from "./features/dlc/dlc-manager";
+import {
+  applySelectiveInstall,
+  closeSelectiveModal,
+  openSelectiveModal,
+  renderSelectiveModal,
+} from "./features/dlc/selective-install";
 import {
   renderMoveGameModalFrame,
   updateMoveProgressInPlace,
@@ -521,47 +538,6 @@ function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
   }
 }
 
-function pruneRecent(): void {
-  S.epicRecent = S.epicRecent.filter((id) =>
-    S.epicSummaries.some((s) => s.appName === id && s.installed),
-  );
-  localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
-}
-
-function pushRecent(appName: string): void {
-  const s = summaryOf(appName);
-  if (!s || !s.installed) return;
-  S.epicRecent = [appName, ...S.epicRecent.filter((x) => x !== appName)].slice(0, 8);
-  localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
-  updateChrome();
-}
-
-/** Üst bar hesap çipini tazeler. */
-function updateChrome(): void {
-  const acc = document.getElementById("account");
-  if (acc) {
-    const name = S.epicAccount || "Giriş yapılmadı";
-    if (acc.dataset.acct !== (S.epicAccount || "")) {
-      acc.dataset.acct = S.epicAccount || "";
-      if (S.epicAccount) {
-        const initial = (S.epicAccount.trim()[0] || "?").toUpperCase();
-        acc.innerHTML =
-          `<span class="account-avatar"><span class="avatar-initial">${esc(initial)}</span></span>` +
-          `<span class="account-name">${esc(name)}</span>`;
-      } else {
-        acc.innerHTML =
-          `<span class="account-avatar"><i data-lucide="circle-user-round"></i></span>` +
-          `<span class="account-name">${t("nav.notLoggedIn")}</span>`;
-        createIcons({ icons: { CircleUserRound } });
-      }
-    }
-    acc.classList.toggle("logged", !!S.epicAccount);
-    acc.title = S.epicAccount
-      ? `Epic profili: ${name} (Profil için tıklayın)`
-      : "Epic hesabına giriş yapılmadı (Giriş için tıklayın)";
-  }
-}
-
 /* ---------- Gömülü mağaza (ana pencere içi webview) ---------- */
 
 
@@ -730,27 +706,8 @@ function setView(next: View): void {
 
 /* ---------- Yardımcılar ---------- */
 
-async function epicPlay(appName: string): Promise<void> {
-  pushRecent(appName);
-  toast("Oyun başlatılıyor…", "");
-  try {
-    const msg = await epicLaunchGame(appName);
-    toast(msg, "ok");
-  } catch (e) {
-    toast(String(e), "err");
-  }
-}
-
 function gameById(id: string): Game | undefined {
   return S.games.find((g) => g.id === id);
-}
-
-function updateBadge(): void {
-  const active = [...S.downloads.values()].filter((d) => !d.done).length;
-  dlBadge.textContent = active > 0 ? String(active) : "";
-  dlBadge.classList.toggle("hidden", active === 0);
-  // Sayaç satır içi olduğu için sekme genişliği değişir → kayan göstergeyi tazele.
-  updateNavIndicator();
 }
 
 /* ---------- Aksiyonlar ---------- */
@@ -831,251 +788,9 @@ async function uninstallGame(id: string): Promise<void> {
 
 /* ---------- Seçici Kurulum (Selective Install - Screenshot 3) ---------- */
 
-async function openSelectiveModal(appName: string): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
-  if (s?.installed) {
-    // Kurulu oyun için doğrudan güncelleme/onarım çalıştır
-    void epicInstall(appName);
-    return;
-  }
-  toast("Kurulum seçenekleri denetleniyor…", "");
-  try {
-    const opts = await epicGetInstallOptions(appName);
-    if (!opts.hasOptions) {
-      void epicInstall(appName);
-      return;
-    }
-    S.selectiveInstallOptions = opts;
-    S.selectedInstallTags.clear();
-    S.selectedDlcAppIds.clear();
-    renderSelectiveModal();
-  } catch (_err) {
-    void epicInstall(appName);
-  }
-}
-
-async function applySelectiveInstall(appName: string, tags: string[], dlcs: string[]): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
-  const title = s ? s.title : appName;
-  closeSelectiveModal();
-  S.downloads.set(appName, { progress: 0, done: false, title });
-  if (!S.activeDlMetrics || S.activeDlMetrics.done) {
-    S.activeDlMetrics = {
-      id: appName,
-      title,
-      progress: 0,
-      done: false,
-      speed: "Başlatılıyor…",
-      speedBytes: 0,
-      diskSpeed: "—",
-      diskBytes: 0,
-      eta: "Hesaplanıyor…",
-      downloadedBytes: 0,
-      totalBytes: 0,
-    };
-  }
-  updateBadge();
-  render();
-  toast("Seçici kurulum başlatılıyor…", "");
-  try {
-    const msg = await epicInstallWithOptions(appName, tags, dlcs, null);
-    toast(msg, "ok");
-    void refreshEpicInstalled();
-  } catch (e) {
-    S.downloads.delete(appName);
-    if (S.activeDlMetrics?.id === appName) S.activeDlMetrics = null;
-    updateBadge();
-    render();
-    toast(`Kurulum başlatılamadı: ${String(e)}`, "err");
-  }
-}
-
-function closeSelectiveModal(): void {
-  S.selectiveInstallOptions = null;
-  S.selectedInstallTags.clear();
-  S.selectedDlcAppIds.clear();
-  if (selectiveRoot) selectiveRoot.innerHTML = "";
-}
-
-function renderSelectiveModal(): void {
-  if (!selectiveRoot || !S.selectiveInstallOptions) return;
-  const opts = S.selectiveInstallOptions;
-
-  const existingBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
-  const scrollPos = existingBody ? existingBody.scrollTop : 0;
-
-  const langTags = opts.tags.filter((t) => t.category === "languages");
-  const extraTags = opts.tags.filter((t) => t.category === "extras");
-  const uninstalledDlcs = opts.dlcs.filter((d) => !d.installed);
-
-  let totalDl = opts.baseDownloadSize || opts.baseSize;
-  let totalDisk = opts.baseSize;
-
-  for (const tag of opts.tags) {
-    if (S.selectedInstallTags.has(tag.tag)) {
-      totalDl += tag.downloadSize || tag.size;
-      totalDisk += tag.size;
-    }
-  }
-
-  for (const dlc of opts.dlcs) {
-    if (S.selectedDlcAppIds.has(dlc.appId)) {
-      totalDl += dlc.size;
-      totalDisk += dlc.size;
-    }
-  }
-
-  let langsHtml = "";
-  if (langTags.length > 0) {
-    langsHtml = `
-      <div class="selective-accordion">
-        <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Ek Diller (${langTags.length})
-        </div>
-        <div class="selective-accordion-list">
-          ${langTags
-            .map((t) => {
-              const isChecked = S.selectedInstallTags.has(t.tag);
-              return `
-                <div class="selective-row">
-                  <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(t.label)}</span>
-                  </div>
-                  <div class="selective-row-right">
-                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
-                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
-                  </div>
-                </div>
-              `;
-            })
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  let extrasHtml = "";
-  if (extraTags.length > 0) {
-    extrasHtml = `
-      <div class="selective-accordion">
-        <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Ek Paketler &amp; Dokular (${extraTags.length})
-        </div>
-        <div class="selective-accordion-list">
-          ${extraTags
-            .map((t) => {
-              const isChecked = S.selectedInstallTags.has(t.tag);
-              return `
-                <div class="selective-row">
-                  <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(t.label)}</span>
-                  </div>
-                  <div class="selective-row-right">
-                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
-                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
-                  </div>
-                </div>
-              `;
-            })
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  let dlcsHtml = "";
-  if (uninstalledDlcs.length > 0) {
-    dlcsHtml = `
-      <div class="selective-accordion">
-        <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Eklentiler &amp; DLC (${uninstalledDlcs.length})
-        </div>
-        <div class="selective-accordion-list">
-          ${uninstalledDlcs
-            .map((d) => {
-              const isChecked = S.selectedDlcAppIds.has(d.appId);
-              return `
-                <div class="selective-row">
-                  <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(d.title)}</span>
-                  </div>
-                  <div class="selective-row-right">
-                    <span class="selective-row-size">${fmtBytes(d.size)}</span>
-                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-dlc" data-dlc="${esc(d.appId)}" ${isChecked ? "checked" : ""} />
-                  </div>
-                </div>
-              `;
-            })
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  selectiveRoot.innerHTML = `
-    <div class="selective-overlay" data-act="selective-overlay-close">
-      <div class="selective-dialog">
-        <div class="selective-header">
-          <h2>${esc(opts.title)} Yükleme Seçenekleri</h2>
-          <button class="manage-head-close" data-act="selective-close" title="Kapat">${icon("x", 16)}</button>
-        </div>
-        <div class="selective-body">
-          <div class="selective-row base">
-            <div class="selective-row-info">
-              <span class="selective-row-label">${esc(opts.title)} <span class="muted-sub">(Gerekli)</span></span>
-            </div>
-            <div class="selective-row-right">
-              <span class="selective-row-size">${fmtBytes(opts.baseSize)}</span>
-              <input type="checkbox" class="selective-checkbox" checked disabled />
-            </div>
-          </div>
-
-          ${langsHtml}
-          ${extrasHtml}
-          ${dlcsHtml}
-        </div>
-
-        <div class="selective-footer">
-          <div class="selective-footer-stats">
-            <span>İndirilecek Dosya Boyutu: <strong>${fmtBytes(totalDl)}</strong></span>
-            <span>Gerekli Depolama Alanı: <strong>${fmtBytes(totalDisk)}</strong></span>
-          </div>
-          <button class="selective-apply-btn" data-act="selective-apply" data-id="${esc(opts.appName)}">
-            Uygula
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const newBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
-  if (newBody && scrollPos > 0) newBody.scrollTop = scrollPos;
-}
-
 /* ---------- Top bar: active tab underline ---------- */
 
-function updateNavIndicator(): void {
-  const bar = document.getElementById("titlebar");
-  const seg = document.getElementById("nav-seg");
-  const ind = document.getElementById("nav-indicator");
-  if (!bar || !seg || !ind) return;
-  const active = seg.querySelector<HTMLElement>(".nav-tab.active");
-  if (!active) {
-    ind.style.opacity = "0";
-    return;
-  }
-  if (!S.navIndicatorReady) {
-    // İlk konumlandırmada animasyon oynamasın (0 genişlikten kaymasın).
-    ind.style.transition = "none";
-    S.navIndicatorReady = true;
-    window.setTimeout(() => { ind.style.transition = ""; }, 80);
-  }
-  const barRect = bar.getBoundingClientRect();
-  const tabRect = active.getBoundingClientRect();
-  ind.style.width = `${tabRect.width}px`;
-  ind.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
-  ind.style.opacity = "1";
-}
+
 
 
 
@@ -1183,22 +898,6 @@ async function loadEpicAchSummaries(): Promise<void> {
     if (S.view === "library") scheduleRender();
   } catch (e) {
     console.warn("Başarım özetleri alınamadı:", e);
-  }
-}
-
-async function refreshUpdates(): Promise<void> {
-  if (!isTauri) return;
-  try {
-    const updates = await epicCheckUpdates();
-    S.availableUpdates.clear();
-    for (const u of updates) {
-      S.availableUpdates.set(u.appName, u);
-    }
-    if (S.availableUpdates.size > 0 && S.view === "library") {
-      scheduleRender();
-    }
-  } catch (e) {
-    console.warn("Güncelleme denetimi yapılamadı:", e);
   }
 }
 
@@ -2698,12 +2397,6 @@ async function epicOpenFolder(appName: string): Promise<void> {
   }
 }
 
-function closeModal(): void {
-  modalRoot.innerHTML = "";
-  S.currentModalAppName = null;
-  updateGamepadHud(S.gamepadPolling);
-}
-
 function closeAllModals(): void {
   closeModal();
   closeScreenshotLightbox();
@@ -3309,89 +3002,6 @@ async function cancelMoveGame(appName: string): Promise<void> {
 }
 
 /* ---------- Epic indirme ---------- */
-
-async function epicInstall(appName: string): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
-  if (!s || epicDlProgress(appName) !== null) return;
-  const g = rawOf(appName);
-  const partner = getThirdPartyLauncher(g);
-  if (partner) {
-    void epicPlay(appName);
-    return;
-  }
-  S.downloads.set(appName, { progress: 0, done: false, title: s.title });
-  if (!S.activeDlMetrics || S.activeDlMetrics.done) {
-    S.activeDlMetrics = {
-      id: appName,
-      title: s.title,
-      progress: 0,
-      done: false,
-      speed: "Başlatılıyor…",
-      speedBytes: 0,
-      diskSpeed: "—",
-      diskBytes: 0,
-      eta: "Hesaplanıyor…",
-      downloadedBytes: 0,
-      totalBytes: s.installSize || 0,
-    };
-  }
-  updateBadge();
-  void epicGetQueue().then((q) => {
-    S.dlQueueStatus = q;
-    if (S.view === "library" || S.view === "downloads") render();
-  }).catch(() => {
-    if (S.view === "library" || S.view === "downloads") render();
-  });
-  try {
-    const msg = await epicInstallGame(appName);
-    toast(msg, "ok");
-  } catch (e) {
-    S.downloads.delete(appName);
-    if (S.activeDlMetrics?.id === appName) S.activeDlMetrics = null;
-    updateBadge();
-    toast(String(e), "err");
-    if (S.view === "library" || S.view === "downloads") render();
-  }
-}
-
-async function epicCancel(appName: string): Promise<void> {
-  try {
-    const msg = await epicCancelDownload(appName);
-    toast(msg, "ok");
-  } catch (e) {
-    toast(String(e), "err");
-  }
-}
-
-async function epicUninstall(appName: string): Promise<void> {
-  try {
-    const msg = await epicUninstallGame(appName);
-    toast(msg, "ok");
-  } catch (e) {
-    toast(String(e), "err");
-  }
-  closeModal();
-  await refreshEpicInstalled();
-}
-
-async function refreshEpicInstalled(): Promise<void> {
-  if (!isTauri) return;
-  try {
-    const [einstalled, eskipped] = await Promise.all([epicListInstalled(), epicListSkipped()]);
-    setEpicSummaries(summarize(S.epicGamesRaw, einstalled, eskipped));
-    pruneRecent();
-    S.epicSkippedCount = eskipped.length;
-    if (S.view === "library") scheduleRender();
-    void refreshUpdates();
-  } catch (e) {
-    toast(`Kurulu listesi tazelenemedi: ${String(e)}`, "err");
-  }
-}
-
-
-
-
-
 
 
 async function loadSettingsView(): Promise<void> {
@@ -5233,6 +4843,7 @@ async function init(): Promise<void> {
   updateOfflineModeUi();
   initContextMenu();
   registerRender(render, scheduleRender);
+  registerGamepadHud(updateGamepadHud);
   if (isTauri) {
     try {
       S.libraryPath = await invoke<string>("library_dir");

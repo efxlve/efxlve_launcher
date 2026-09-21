@@ -1634,3 +1634,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Yönetim modalı** (`openManageModal`, `closeManageModal`, `updateManageModalInputsInPlace`, `updateVerifyProgressInPlace`, `resetVerifyInPlace`, `renderManageModal`) → `src/features/manage/manage-view.ts` (~407 satır).
 - `main.ts` ~6.389 → ~5.837 satır (başlangıç 11.422'den toplam ~5.585 satır azaldı). `tsc`/`vite build` yeşil.
 
+## 99. Modülerleştirme Faz 5 (devam): Paylaşılan Core Modülleri & Seçici Kurulum
+
+- **`core/nav.ts`:** `updateNavIndicator`, `updateBadge`, `updateChrome` (üst bar göstergesi, indirme sayacı, hesap çipi).
+- **`core/recent.ts`:** `pruneRecent`, `pushRecent` (son oynananlar listesi).
+- **`core/epic-actions.ts`:** `epicPlay`, `epicInstall`, `epicCancel`, `epicUninstall`, `refreshEpicInstalled`, `refreshUpdates` (paylaşılan Epic aksiyonları).
+- **`core/render.ts` genişletildi:** `registerGamepadHud`/`updateGamepadHud` kancası; `main.ts` `init()`'te kaydeder.
+- **`core/dom.ts` genişletildi:** `closeModal` (drawer kapatma + HUD tazeleme) buraya taşındı.
+- **Seçici kurulum** (`openSelectiveModal`, `applySelectiveInstall`, `closeSelectiveModal`, `renderSelectiveModal`) → `src/features/dlc/selective-install.ts` (~240 satır).
+- `main.ts` ~5.837 → ~5.455 satır (başlangıç 11.422'den toplam ~5.967 satır azaldı, ~%52). `tsc`/`vite build` yeşil.
+
