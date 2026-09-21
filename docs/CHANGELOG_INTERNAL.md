@@ -1555,3 +1555,18 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Not:** Bu faz satır sayısını düşürmez; amacı **özellik modüllerinin çıkarılabilmesini mümkün kılmaktır** (F4–F6).
 
+## 89. Modülerleştirme Faz 3b & 4 (Başlangıç): DOM/Toast/Selector Katmanları & Context Menu Modülü
+
+**F3b — Paylaşılan çekirdek modülleri:**
+- `src/core/dom.ts`: Modül düzeyi DOM referansları (`viewEl`, `modalRoot`, `manageRoot`, `selectiveRoot`, `playtimeRoot`, `moveModalRoot`, `toastsEl`, `dlBadge`, `ctxRoot`, `collectionRoot`). Import anında bir kez çözülür; sıcak yollarda tekrarlı `getElementById` yok.
+- `src/core/toast.ts`: `toast()` bildirim yardımcısı (hata toast'ları tıklayınca kopyalar, 3 ile sınırlı).
+- `src/core/selectors.ts`: O(1) sorgular — `summaryOf`, `rawOf`, `setEpicSummaries`, `setEpicGamesRaw` (hash map'leri senkron tutar).
+- `main.ts` bu modüllerden import eder; yerel tanımlar silindi.
+
+**F4 — İlk özellik modülü (`src/features/context-menu/context-menu.ts`):**
+- PS5/Steam tarzı sağ tık menüsü (`showContextMenu`, `hideContextMenu`, `initContextMenu`) `main.ts`'ten çıkarıldı.
+- Modül `S`, `summaryOf`, `icon`, `esc`, `t`, `ctxRoot` import eder; menü öğeleri global `data-act` yönlendirmesini kullanmaya devam eder (kod tekrarı yok).
+- `init()` artık `initContextMenu()` çağırır.
+
+**Sonuç:** `main.ts` ~11.020 → ~10.900 satır. Mimari artık kanıtlanmış: bir özellik `S` + `core/*` import ederek güvenle dışarı taşınabiliyor. Sıradaki adım, büyük render/handler gruplarının (dlc, move-game, collections, screenshots, profile, settings, library, drawer, downloads) aynı desenle çıkarılması.
+
