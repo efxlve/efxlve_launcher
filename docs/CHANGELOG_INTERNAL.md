@@ -1746,3 +1746,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `tr.json` / `en.json`'a ~28 yeni anahtar eklendi (`dl.*`, `downloads.profile*`, `downloads.defaultPlaceholder`).
 - `tsc` + `vite build` + `noUnusedLocals` (0 hata) yeşil.
 
+## 114. i18n Metin Taşıma (devam): Ayarlar & Profil Sayfaları
+
+- **`settings-view.ts` tamamen migre edildi:** hesap, kurulum klasörü, EGL entegrasyonu, 3. parti başlatıcılar, koleksiyonlar, SteamGridDB, ağ profili, çevrimdışı mod, ekran görüntüleri (kısayol/sıkıştırma/format/kalite), sistem bölümü. `settings.*` (~70 anahtar).
+- **`profile-view.ts` tamamen migre edildi:** boş durum, oyun kartları, yükleme/hata kutuları, hero sahnesi (seviye, XP, kupa hiyerarşisi), filtre pilleri, arama, sıralama. `profile.*` (~35 anahtar). `t("profile.xpToNext", { n })` ve `t("profile.copyIdTitle", { id })` yer tutucuları kullanıldı.
+- `profile-view.ts` sonundaki ölü yorumlar temizlendi.
+- `tsc` + `vite build` + `noUnusedLocals` (0 hata) yeşil.
+
+**Kalan i18n işi:** drawer içerik bölümleri, yönetim modalı, seçici kurulum, kapak/SteamGrid, DLC yöneticisi, gamepad HUD, toast/hata mesajları.
+
