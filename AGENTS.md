@@ -47,6 +47,12 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
    ```ts
    // Explain why this exists and any non-obvious tradeoff.
    ```
+10. **DÜŞÜK DONANIM & YAVAŞ AĞ TABANI (Zorunlu Performans Sözleşmesi):** Efxlve Launcher'ın varlık sebebi, resmi Epic Games Launcher'ın "oyuncuyu düşünmeyen, optimizasyondan uzak kod yığını" olmasına karşı çıkmaktır. **Referans taban donanım: 8 GB RAM + Intel i5 (5. nesil) + entegre GPU + HDD + yavaş internet.** Bu taban donanımda launcher **akıcı** kalmalı; sadece bir indie oyun oynamak isteyen kullanıcı "bilgisayar can çekişiyor" hissini ASLA yaşamamalıdır. Zorunlu pratikler:
+    - **Boşta sıfır yük:** Arka planda daimi çalışan `requestAnimationFrame` döngüsü, yoklama (polling) veya CSS animasyonu bırakılmaz. Döngüler yalnızca aktif etkileşim/gamepad bağlıyken çalışır ve iş bitince durur.
+    - **Bellek/VRAM disiplini:** 500+ oyunluk kütüphanede tüm kapak görselleri DOM'a basılmaz (`loading="lazy"` + progressive chunk zorunlu). `backdrop-filter`, büyük gölge ve çok katmanlı blur düşük donanımda yasaktır (Kural §6.13).
+    - **Yavaş ağ önceliği:** Arayüz daima disk önbelleğinden anında açılır; hiçbir ağ isteği UI'yi bloklayamaz. Görsel/varlık istekleri tembel ve iptal edilebilir olur; başarısız ağ UI'yi kilitlemez (Heroic Prensibi, §5).
+    - **Kademeli yükleme:** İlk boyama (FCP) için kritik olmayan her şey (kupa özetleri, HLTB, eleştirmen skorları, DLC listesi, ekran görüntüleri) talep üzerine ve sekme açıldığında yüklenir.
+    - **Görsel modernlikten ödün yok:** Bu optimizasyonlar UI kalitesini düşürmez; PS5 konsol estetiği, ferah kartlar ve akıcı geçişler korunur. Performans ve estetik birlikte zorunludur.
 
 ## 5. Mimari & Veri Akışı Prensibi
 

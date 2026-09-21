@@ -62,7 +62,7 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal, openSelectiveModal } from "../dlc/selective-install";
 import { updateLibraryFilterInPlace } from "../library/library-view";
-import { closeManageModal, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import {
   browseMoveTarget,
   cancelMoveGame,
@@ -842,11 +842,6 @@ document.addEventListener("click", (e) => {
     void startMoveGame(id);
   } else if (act === "cancel-move-game" && id) {
     void cancelMoveGame(id);
-  } else if (act === "manage-close") {
-    closeManageModal();
-  } else if (act === "manage-overlay-close") {
-    const el = e.target as HTMLElement;
-    if (el === t) closeManageModal();
   } else if (act === "manage-verify" && id) {
     updateVerifyProgressInPlace(id, 0, 100, 0, "Başlatılıyor…", "Başlatılıyor…");
     epicVerifyGame(id).catch((err) => {

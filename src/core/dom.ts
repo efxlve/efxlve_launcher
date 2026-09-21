@@ -13,8 +13,6 @@ import { S } from "./state";
 export const viewEl = document.getElementById("view") as HTMLElement;
 /** Game detail drawer (modal) root. */
 export const modalRoot = document.getElementById("modal-root") as HTMLElement;
-/** Manage/settings modal root. */
-export const manageRoot = document.getElementById("manage-root") as HTMLElement;
 /** Selective install modal root. */
 export const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
 /** Playtime editor modal root. */
@@ -34,5 +32,7 @@ export const collectionRoot = document.getElementById("collection-root");
 export function closeModal(): void {
   modalRoot.innerHTML = "";
   S.currentModalAppName = null;
+  // Drop per-game manage state along with the drawer that owns the manage tab.
+  S.activeManageSettings = null;
   updateGamepadHud(S.gamepadPolling);
 }

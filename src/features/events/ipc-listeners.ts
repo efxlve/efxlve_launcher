@@ -50,7 +50,7 @@ import { initContextMenu } from "../context-menu/context-menu";
 import { drawSpeedCanvas, pushSpeedData, startSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
-import { renderManageModal, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { applyMovedGamePath } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame, updateMoveProgressInPlace } from "../move-game/move-game-view";
 import {
@@ -323,10 +323,7 @@ export async function initApp(hooks: {
         render();
       }
 
-      if (S.activeManageSettings?.appName === id) {
-        renderManageModal();
-      }
-      if (S.currentModalAppName === id && S.activeDrawerTab === "overview") {
+      if (S.currentModalAppName === id && (S.activeDrawerTab === "overview" || S.activeDrawerTab === "manage")) {
         openEpicModal(id, false);
       }
     });
