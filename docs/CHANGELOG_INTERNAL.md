@@ -1740,3 +1740,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Diğer 13 dil, eksik anahtarlar için İngilizce'ye düşer (fallback).
 - **Kalan i18n işi** (kademeli): drawer içerikleri, downloads, settings, profile, manage, screenshots, toasts/hata mesajları. Bkz. §6.6.
 
+## 113. i18n Metin Taşıma (devam): İndirmeler Sayfası Tamamen Migre Edildi
+
+- `downloads-view.ts` içindeki tüm kalan sabit metinler `t()`'e taşındı: durum etiketleri, metrik kutuları (hız/disk/ETA/boyut + alt açıklamalar), hız grafiği başlığı ve efsanesi, kuyruk satırları (boyut/sıra/taşı/hemen indir/çıkar), kuyruk ve tamamlanan bölüm başlıkları, ağ profili pilleri ve varsayılan klasör yer tutucusu.
+- `tr.json` / `en.json`'a ~28 yeni anahtar eklendi (`dl.*`, `downloads.profile*`, `downloads.defaultPlaceholder`).
+- `tsc` + `vite build` + `noUnusedLocals` (0 hata) yeşil.
+

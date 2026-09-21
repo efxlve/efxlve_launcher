@@ -186,8 +186,8 @@ export function renderDownloads(): string {
                 <div class="dl-hero-badges">
                   ${
                     isPaused
-                      ? `<span class="dl-status-tag paused">${icon("pause", 11)} Duraklatıldı</span>`
-                      : `<span class="dl-status-tag active">${icon("zap", 11)} İndiriliyor</span>`
+                      ? `<span class="dl-status-tag paused">${icon("pause", 11)} ${t("dl.statusPaused")}</span>`
+                      : `<span class="dl-status-tag active">${icon("zap", 11)} ${t("dl.statusActive")}</span>`
                   }
                 </div>
               </div>
@@ -196,17 +196,17 @@ export function renderDownloads(): string {
               ${
                 isPaused
                   ? `<button class="btn primary small" data-act="dl-resume" data-id="${activeDl.id}">
-                      ${icon("play", 13)} Devam Et
+                      ${icon("play", 13)} ${t("downloads.resume")}
                     </button>`
                   : `<button class="btn ghost small" data-act="dl-pause" data-id="${activeDl.id}">
-                      ${icon("pause", 13)} Duraklat
+                      ${icon("pause", 13)} ${t("downloads.pause")}
                     </button>`
               }
               <button class="btn ghost small" data-act="manage-game" data-id="${activeDl.id}">
-                ${icon("settings", 13)} Yönet
+                ${icon("settings", 13)} ${t("common.manage")}
               </button>
               <button class="btn danger small" data-act="epic-cancel" data-id="${activeDl.id}">
-                İptal Et
+                ${t("common.cancel")}
               </button>
             </div>
           </div>
@@ -227,33 +227,33 @@ export function renderDownloads(): string {
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box speed">${icon("download", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">İndirme Hızı</div>
+                <div class="dl-stat-label">${t("dl.speed")}</div>
                 <div class="dl-stat-value highlight-cyan" id="dl-stat-speed">${activeDl.speed || "0 B/s"}</div>
-                <div class="dl-stat-sub">Anlık ağ akışı</div>
+                <div class="dl-stat-sub">${t("dl.speedSub")}</div>
               </div>
             </div>
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box disk">${icon("hard-drive", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Disk Yazma</div>
+                <div class="dl-stat-label">${t("dl.disk")}</div>
                 <div class="dl-stat-value highlight-green" id="dl-stat-disk">${activeDl.diskSpeed || "0 B/s"}</div>
-                <div class="dl-stat-sub">Diske işlenen</div>
+                <div class="dl-stat-sub">${t("dl.diskSub")}</div>
               </div>
             </div>
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box eta">${icon("clock", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Kalan Süre (ETA)</div>
-                <div class="dl-stat-value" id="dl-stat-eta">${activeDl.eta || "Hesaplanıyor…"}</div>
-                <div class="dl-stat-sub">Tahmini bitiş</div>
+                <div class="dl-stat-label">${t("dl.eta")}</div>
+                <div class="dl-stat-value" id="dl-stat-eta">${activeDl.eta || t("dl.calculating")}</div>
+                <div class="dl-stat-sub">${t("dl.etaSub")}</div>
               </div>
             </div>
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box size">${icon("layers", 18)}</div>
               <div class="dl-stat-info">
-                <div class="dl-stat-label">Toplam Boyut</div>
+                <div class="dl-stat-label">${t("dl.totalSize")}</div>
                 <div class="dl-stat-value">${fmtBytes(activeDl.totalBytes)}</div>
-                <div class="dl-stat-sub">Paket boyutu</div>
+                <div class="dl-stat-sub">${t("dl.sizeSub")}</div>
               </div>
             </div>
           </div>
@@ -283,16 +283,16 @@ export function renderDownloads(): string {
     <div class="dl-chart-card">
       <div class="dl-chart-head">
         <div class="dl-chart-title">
-          ${icon("zap", 16)} Canlı Ağ ve Disk Aktivitesi
+          ${icon("zap", 16)} ${t("dl.chartTitle")}
         </div>
         <div class="dl-chart-legend">
           <div class="dl-legend-item">
             <span class="dl-legend-dot net"></span>
-            <span>Ağ Hızı: <strong id="dl-legend-net-val" style="color:#00e5ff">${esc(netLegendVal)}</strong></span>
+            <span>${t("dl.legendNet")}: <strong id="dl-legend-net-val" style="color:#00e5ff">${esc(netLegendVal)}</strong></span>
           </div>
           <div class="dl-legend-item">
             <span class="dl-legend-dot disk"></span>
-            <span>Disk Hızı: <strong id="dl-legend-disk-val" style="color:#00d26a">${esc(diskLegendVal)}</strong></span>
+            <span>${t("dl.legendDisk")}: <strong id="dl-legend-disk-val" style="color:#00d26a">${esc(diskLegendVal)}</strong></span>
           </div>
         </div>
       </div>
@@ -309,7 +309,7 @@ export function renderDownloads(): string {
       const s = S.epicSummaries.find((x) => x.appName === appId);
       const title = s?.title || appId;
       const cover = s?.cover || "";
-      const sizeStr = s?.installSize ? `Boyut: ${fmtBytes(s.installSize)}` : "Sıraya alındı";
+      const sizeStr = s?.installSize ? `${t("dl.sizeLabel")}: ${fmtBytes(s.installSize)}` : t("dl.queued");
       const isFirst = idx === 0;
       const isLast = idx === queueApps.length - 1;
       return `
@@ -323,16 +323,16 @@ export function renderDownloads(): string {
             </div>
           </div>
           <div class="dl-queue-right">
-            <button class="dl-reorder-btn" data-act="dl-reorder-up" data-id="${appId}" title="Yukarı Taşı" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+            <button class="dl-reorder-btn" data-act="dl-reorder-up" data-id="${appId}" title="${t("dl.moveUp")}" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
               ${icon("chevron-up", 14)}
             </button>
-            <button class="dl-reorder-btn" data-act="dl-reorder-down" data-id="${appId}" title="Aşağı Taşı" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+            <button class="dl-reorder-btn" data-act="dl-reorder-down" data-id="${appId}" title="${t("dl.moveDown")}" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
               ${icon("chevron-down", 14)}
             </button>
-            <button class="btn primary small" data-act="dl-reorder-now" data-id="${appId}" title="Hemen İndir">
-              ${icon("play", 11)} Şimdi İndir
+            <button class="btn primary small" data-act="dl-reorder-now" data-id="${appId}" title="${t("dl.downloadNow")}">
+              ${icon("play", 11)} ${t("dl.downloadNow")}
             </button>
-            <button class="dl-reorder-btn" data-act="dl-reorder-remove" data-id="${appId}" title="Kuyruktan Çıkar">
+            <button class="dl-reorder-btn" data-act="dl-reorder-remove" data-id="${appId}" title="${t("dl.removeFromQueue")}">
               ${icon("x", 14)}
             </button>
           </div>
@@ -345,7 +345,7 @@ export function renderDownloads(): string {
 
   const queueSection = `
     <div class="dl-section-title">
-      <span>Kuyruktaki Oyunlar (${queueApps.length})</span>
+      <span>${t("dl.queueTitle")} (${queueApps.length})</span>
     </div>
     <div class="dl-queue-container">
       ${queueItemsMarkup}
@@ -365,15 +365,15 @@ export function renderDownloads(): string {
             ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(d.title)}" />` : `<div class="dl-queue-thumb"></div>`}
             <div class="dl-queue-info">
               <div class="dl-queue-name">${esc(d.title)}</div>
-              <div class="dl-queue-meta" style="color:#00d26a">Tamamlandı • Oynamaya hazır</div>
+              <div class="dl-queue-meta" style="color:#00d26a">${t("dl.completedReady")}</div>
             </div>
           </div>
           <div class="dl-queue-right">
             <button class="btn primary small" data-act="play" data-id="${appId}">
-              ${icon("play", 12)} Oyna
+              ${icon("play", 12)} ${t("common.play")}
             </button>
             <button class="btn ghost small" data-act="manage-game" data-id="${appId}">
-              ${icon("settings", 12)} Yönet
+              ${icon("settings", 12)} ${t("common.manage")}
             </button>
           </div>
         </div>
@@ -382,7 +382,7 @@ export function renderDownloads(): string {
 
     completedSection = `
       <div class="dl-section-title" style="margin-top: 24px;">
-        <span>Son Tamamlananlar (${completedEntries.length})</span>
+        <span>${t("dl.recentCompleted")} (${completedEntries.length})</span>
       </div>
       <div class="dl-queue-container">
         ${items}
@@ -401,20 +401,20 @@ export function renderDownloads(): string {
           <div class="dl-settings-label">${t("downloads.netProfile")}</div>
           <div class="net-profile-pills">
             <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
-              ${icon("zap", 13)} Maksimum (16 Worker)
+              ${icon("zap", 13)} ${t("downloads.profileMax")}
             </button>
             <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">
-              ${icon("shield-check", 13)} Dengeli (4 Worker)
+              ${icon("shield-check", 13)} ${t("downloads.profileBalanced")}
             </button>
             <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">
-              ${icon("clock", 13)} Eko (1 Worker)
+              ${icon("clock", 13)} ${t("downloads.profileLow")}
             </button>
           </div>
         </div>
         <div class="dl-settings-field">
           <div class="dl-settings-label">${t("downloads.installDir")}</div>
           <div class="dl-settings-dir-row">
-            <input id="dl-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || "varsayılan")}" autocomplete="off" spellcheck="false" />
+            <input id="dl-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
             <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="${t("downloads.pickFolder")}">${icon("folder", 15)}</button>
             <button class="ps5-btn primary" data-act="dl-save-install-dir">${t("common.save")}</button>
           </div>
