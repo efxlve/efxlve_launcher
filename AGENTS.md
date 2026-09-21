@@ -3,7 +3,7 @@
 > Bu dosya, bu projede çalışacak AI ajanları (ve insan geliştiriciler) için **ana operasyonel rehberdir**.
 > Kısa tut, güncel tut: kritik kuralları net koru, geçmiş sürüm detayları için `docs/CHANGELOG_INTERNAL.md` dosyasına başvur.
 >
-> **GÜNCEL DURUM / DEVAM EDEN İŞ:** Modülerleştirme (Faz 4, kısmi) sürüyor. `main.ts` ~9.837 satır; hedef yalnızca `init()` + bootstrap. Kaldığı yerden devam etmek için **`docs/REFACTOR_PLAN.md` §6.5 (Handoff / Current Status)** bölümünü oku. Son çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–92.
+> **GÜNCEL DURUM:** Modülerleştirme **tamamlandı** — `main.ts` 11.422 → **86 satır** (yalnızca `render`/`scheduleRender`/`closeAllModals` + bootstrap). Tüm özellik dosyaları ~1.500 satır altında. Mimari: **`docs/REFACTOR_PLAN.md` §6.5**. Kalan opsiyonel işler (i18n metin taşıma + optimizasyon/ölü kod temizliği): **`docs/REFACTOR_PLAN.md` §6.6**. Çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–110.
 
 ---
 

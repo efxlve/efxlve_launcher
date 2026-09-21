@@ -136,50 +136,37 @@ cargo test            # Rust tarafı bozulmadı mı
 > Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
 > devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
 
-**Son güncelleme:** Modülerleştirme Faz 5 (kısmi). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. `main.ts` **11.422 → ~6.904 satır**.
+**Son güncelleme:** Modülerleştirme TAMAMLANDI (Faz 6 final). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. **`main.ts` 11.422 → 86 satır.**
 
 **Tamamlanan yapı:**
 ```
 src/
-├── main.ts                 ~6.904 satır  (hedef: bootstrap + init)
+├── main.ts                 86 satır  (render/scheduleRender/closeAllModals + bootstrap)
 ├── i18n.ts                 15 dilli çeviri motoru
 ├── core/
-│   ├── types.ts            Game, View, EpicPhase, EpicFilter/Sort/ViewMode, CardSize, DlMetrics
-│   ├── constants.ts        isTauri, demo katalog, localStorage anahtarları, loadStrSet
-│   ├── utils.ts            esc, fmt*, cleanDisplayVersion, formatScreenshotDate
-│   ├── icons.ts            icon(), epicPlatinumIcon()
+│   ├── types.ts, constants.ts, utils.ts, icons.ts
 │   ├── state.ts            S (tek paylaşılan durum nesnesi)
-│   ├── dom.ts              DOM kök referansları
-│   ├── toast.ts            toast()
-│   ├── selectors.ts        summaryOf, rawOf, epicWideArt, isTurkishUser, setEpicSummaries/Raw
-│   ├── game-view.ts        isAppPlatinum, epicDlProgress, epicArt, epicActionButtons
-│   └── render.ts           render bus (registerRender; main.ts kaydeder)
+│   ├── dom.ts              DOM kök referansları + closeModal
+│   ├── toast.ts, selectors.ts, game-view.ts
+│   ├── nav.ts              updateNavIndicator/Badge/Chrome/OfflineModeUi
+│   ├── recent.ts, demo.ts, window.ts
+│   ├── render.ts           render/HUD/openEpicModal/closeAllModals bus kancaları
+│   └── epic-actions.ts     epicPlay/Install/Cancel/Uninstall/refresh
 ├── features/
-│   ├── context-menu/context-menu.ts
-│   ├── library/library-view.ts
-│   ├── onboarding/onboarding-view.ts
-│   ├── drawer/drawer-widgets.ts
-│   ├── downloads/downloads-view.ts
-│   ├── dlc/dlc-manager.ts
-│   ├── move-game/move-game-view.ts
-│   ├── settings/settings-view.ts
-│   ├── profile/profile-view.ts
-│   └── collections/collections-view.ts
+│   ├── auth, collections, context-menu, cover, dlc, downloads, drawer,
+│   ├── events (click-router, input-listeners, ipc-listeners),
+│   ├── gamepad, library, manage, move-game, onboarding, playtime,
+│   ├── profile, screenshots, settings, store
 ├── styles/                 24 modül CSS + index.css
 └── locales/                15 dil JSON
 ```
 
-**`main.ts`'te kalan iş (öncelik sırasıyla):**
-1. `features/drawer/` (kalan) — `openEpicModal`, `renderDrawerOverview/Dlcs/Screenshots/Manage/Achievements/SystemRequirements`, `fetchAndRenderScreenshots/Achievements/Requirements`, `updateCriticUI`, ekran görüntüsü lightbox/paylaşım. Bunlar lazy-load fetch'i tetiklediği için render+fetch birlikte taşınmalı; `openEpicModal` bağımlılıkları (updateGamepadHud, closeModal, ensureTabVisible) için callback/core'a taşıma gerekir.
-2. `features/screenshots/` — galeri, lightbox, paylaşım/sıkıştırma (screenshot fonksiyonları).
-3. `features/dlc/` (seçici kurulum) — `openSelectiveModal`, `applySelectiveInstall`, `renderSelectiveModal`.
-4. `features/steamgrid/` + özel kapak modalı.
-5. `features/gamepad/` — `gamepadLoop`, `handleGamepadDirectionalMove`, `updateGamepadHud`, `handleGamepadTabSwitch` (birçok main fonksiyonuna bağlı; en son).
-6. `core/ipc.ts` — `listen(...)` kayıtları (download-progress, game-status, screenshot-captured, move-game-progress, verify-*, legendary-*).
-7. **Olay delegasyonu router'ı** (~1.700 satır `document.addEventListener("click", ...)`) — `act → handler` kayıt defterine bölünmeli. En büyük kazanç ama en riskli adım.
-8. `main.ts` yalnızca `init()` + bootstrap kalana kadar devam.
+**Kalan işler (opsiyonel, backlog):**
+1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 86 satır kabul edilebilir.
+2. **Olay router'ı** (`click-router.ts`, ~1.356 satır) `act → handler` kayıt defterine bölünebilir (opsiyonel; şu an sınırın altında).
+3. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması, (b) optimizasyon/ölü kod temizliği.
 
-**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()` gerektiren modüller `core/render.ts`'ten import eder. Saf render fonksiyonları kolayca taşınır.
+**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()`/`openEpicModal()`/`closeAllModals()`/`updateGamepadHud()` gerektiren modüller `core/render.ts` bus'ından import eder; `main.ts`/`ipc-listeners.ts` gerçek implementasyonları kaydeder.
 
 **Yöntem notu (F3a):** Durum taşıma, TypeScript dil servisi (`findReferences`) ile yapıldı; mekanik regex KULLANILMADI (yerel gölgeleme riski). Geçici betikler `%TEMP%\opencode\` altındaydı, repoda tutulmadı.
 
