@@ -79,7 +79,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
     `;
   }
 
-  // Goygoy Engine incelemesi yalnızca Türkçe / Türk kullanıcılara gösterilir
+  // The Goygoy Engine review is only shown to Turkish users.
   const showGoygoy = isTurkishUser() && Boolean(critic?.goygoy_review);
   const goygoy = showGoygoy ? critic?.goygoy_review : null;
 
@@ -353,10 +353,10 @@ export function renderGameFeatures(
 
   const isOnlineOnly = isOnlineOnlyGame(s, g, reqData);
 
-  // 1. Kontrolcü Desteği
+  // 1. Controller support
   const ctrl = detectControllerSupport(s, g, reqData);
 
-  // 2. Bulut / Sunucu Kayıtları
+  // 2. Cloud / server saves
   let cloudVal = i18nT("feat.localSave");
   let cloudClass = "";
   let cloudTooltip = i18nT("feat.localSaveTip");
@@ -643,7 +643,7 @@ export function renderOverviewTrophySpotlight(
   const userXp = isDemo ? (achSum?.total_xp || 1000) : (achSum?.user_xp ?? 0);
   const totalXp = achSum?.total_xp || 0;
 
-  // Madalya sayıları (Platin, Altın, Gümüş, Bronz)
+  // Medal counts (Platinum, Gold, Silver, Bronze)
   let platCount = isPlat || isDemo ? 1 : 0;
   let goldCount = 0;
   let silverCount = 0;
@@ -660,7 +660,7 @@ export function renderOverviewTrophySpotlight(
       }
     }
   } else {
-    // Disk metadata'sındaki ham kupa dağılımı
+    // Raw trophy distribution from disk metadata
     for (const item of rawList) {
       const ach = (item as any)?.achievement || item;
       const t = (ach.tier?.name || "").toLowerCase();
@@ -678,7 +678,7 @@ export function renderOverviewTrophySpotlight(
     }
   }
 
-  // Sıradaki Hedef Kupalar (Next Up)
+  // Next up trophies
   interface TargetTrophy {
     title: string;
     desc: string;
@@ -857,13 +857,13 @@ export function renderAchievementSections(
     return `<div class="ach-cards-grid">${items.map((a) => renderAchievementCard(a, s)).join("")}</div>`;
   }
 
-  // SteamHunters Kategori Grupları: Ana Oyun ve Ek Paketler
+  // SteamHunters category groups: base game and add-on packs
   const baseItems = items.filter((a) => a.is_base);
   const dlcItems = items.filter((a) => !a.is_base);
 
-  // Kategori istatistikleri ve ilerleme oranları SADECE filtrelenmiş liste üzerinden değil,
-  // oyunun gerçek tüm başarımları üzerinden hesaplanmalıdır. Aksi halde "Kazanılanlar" filtresinde
-  // kilitli olanlar filtrelendiği için kategori toplamı sadece kazanılanlar sayısına eşitlenip %100 bitmiş gibi görünür.
+  // Category stats and completion ratios must be computed from ALL of the game's
+  // achievements, not just the filtered list. Otherwise, under the "Unlocked" filter,
+  // locked ones are filtered out and the category total collapses to the unlocked count, looking 100% complete.
   const allSource = allAchievements && allAchievements.length > 0 ? allAchievements : items;
   const allBase = allSource.filter((a) => a.is_base);
   const allDlc = allSource.filter((a) => !a.is_base);

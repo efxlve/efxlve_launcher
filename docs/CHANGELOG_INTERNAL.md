@@ -1842,7 +1842,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
 - `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-**Kalan i18n yüzeyi:** `profile-view.ts`/`gamepad.ts`/`epic.ts`/`drawer-widgets.ts` yorumları.
+## 128. i18n Tamamlandı: Kalan Türkçe Yorumlar İngilizce'ye Çevrildi
+
+- `epic.ts` (26 bölüm başlığı/açıklama), `gamepad.ts` (kontroller + konsol logları), `profile-view.ts` ve `drawer-widgets.ts` içindeki tüm Türkçe yorumlar İngilizce'ye çevrildi (Kural §4.9).
+- Tarama sonucu: kullanıcıya dönük tüm metinler `t()` üzerinden geliyor. Kalan Türkçe dizeler yalnızca **veri sabitleri** (demo katalog, `NO_DESC` sentinel, `last_played` eşleme anahtarları, mağaza açıklaması anahtar kelime tespiti) ve **dil adları** (`Türkçe`, `Français`) — bunların yerelleşmemesi doğrudur.
+- `tr.json`/`en.json`: **879 anahtar**, duplicate yok, iki dosya arasında eksik anahtar yok.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
 ## 127. i18n: Olay Yönlendiricileri, Kimlik Doğrulama, İndirmeler
 

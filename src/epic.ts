@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { NO_DESC } from "./core/constants";
 
-/* ---------- Tipler (Rust modelleriyle birebir, snake_case) ---------- */
+/* ---------- Types (match the Rust models, snake_case) ---------- */
 
 export interface EpicGameAsset {
   app_name: string;
@@ -88,7 +88,7 @@ export const NOT_AUTH = "NOT_AUTHENTICATED";
 export const EPIC_LOGIN_URL = "https://legendary.gl/epiclogin";
 export const isNotAuth = (e: unknown): boolean => String(e).includes(NOT_AUTH);
 
-/* ---------- Sunum yardımcıları ---------- */
+/* ---------- Presentation helpers ---------- */
 
 const COVER_PRIORITY = [
   "DieselGameBox",
@@ -110,7 +110,7 @@ export function epicCover(g: EpicGame): string | null {
   return any ? (any.url as string) : null;
 }
 
-/** Portre kartlar için uzun kapak: Tall → geniş kapak → ilk bulunan. */
+/** Portrait cover for cards: Tall → wide art → first available. */
 export function epicPortrait(g: EpicGame): string | null {
   const imgs = g.metadata?.keyImages;
   if (!Array.isArray(imgs)) return epicCover(g);
@@ -165,7 +165,7 @@ export function isDlc(g: EpicGame): boolean {
 
 const UE_CATEGORY_PATHS = ["assets", "asset-format", "plugins", "projects"];
 
-/** Oyun değil: Unreal Engine içeriği veya mod (Heroic ile aynı kural). */
+/** Not a game: Unreal Engine content or a mod (same rule as Heroic). */
 export function isNonGameContent(g: EpicGame): boolean {
   const md = g.metadata as {
     namespace?: unknown;
@@ -187,7 +187,7 @@ export interface ThirdPartyLauncherInfo {
   shortName: string;
 }
 
-/** 3. parti başlatıcı tespiti (EA App, Ubisoft Connect, Rockstar Games vb.) */
+/** Third-party launcher detection (EA App, Ubisoft Connect, Rockstar Games, etc.). */
 export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPartyLauncherInfo | null {
   if (!g?.metadata) return null;
   const attrs = (g.metadata.customAttributes as Record<string, { value?: string }>) || {};
@@ -253,7 +253,7 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
     .map(([, v]) => v?.value || "")
     .join(" ");
 
-  // 1. Process adları ve argümanlar
+  // 1. Process names and arguments
   const combined = (procNames + " " + extraArgs + " " + (attrs.RequirementsJson?.value || "")).toLowerCase();
   if (combined.includes("battleye") || combined.includes("beservice")) {
     return "BattlEye";
@@ -268,7 +268,7 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
     return "Riot Vanguard";
   }
 
-  // 2. Popüler rekabetçi ve bilinen oyunlar
+  // 2. Popular competitive and well-known games
   if (appName === "carnation" || title.includes("rainbow six siege")) {
     return "BattlEye";
   }
@@ -339,7 +339,7 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
     return "Easy Anti-Cheat";
   }
 
-  // 3. customAttributes genel kontrolü
+  // 3. Generic customAttributes check
   for (const [k, v] of Object.entries(attrs)) {
     const val = (v?.value || "").toLowerCase();
     const key = k.toLowerCase();
@@ -366,7 +366,7 @@ export interface EpicSummary {
   updateAvailable: boolean;
 }
 
-/** DLC'leri ve atlanan bozuk öğeleri eleyip kurulu bilgisiyle birleştirir. */
+/** Filters out DLCs and skipped broken items, merging in installed info. */
 export function summarize(
   games: EpicGame[],
   installed: EpicInstalled[],
@@ -396,7 +396,7 @@ export function summarize(
     .sort((a, b) => a.title.localeCompare(b.title, "tr"));
 }
 
-/* ---------- Komut sarmalayıcıları ---------- */
+/* ---------- Command wrappers ---------- */
 
 export const epicSetupStatus = () => invoke<SetupStatus>("epic_setup_status");
 export const epicEnsureBinary = () => invoke<string>("epic_ensure_binary");
@@ -428,7 +428,7 @@ export interface EpicSettings {
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
-  // Not: Tauri komut argümanları varsayılan camelCase'tir (Rust snake_case olsa bile)!
+  // Note: Tauri command arguments are camelCase by default (even if Rust uses snake_case)!
   invoke<string>("epic_install_game", { appName, installDir: installDir ?? null });
 export const epicCancelDownload = (appName: string) =>
   invoke<string>("epic_cancel_download", { appName });
@@ -441,7 +441,7 @@ export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_
 export const epicSetInstallDir = (dir: string | null) =>
   invoke<EpicSettings>("epic_set_install_dir", { dir });
 
-/* ---------- Başarımlar (Achievements) ---------- */
+/* ---------- Achievements ---------- */
 
 export interface EpicAchievementTier {
   name: string;
@@ -543,7 +543,7 @@ export const epicDetectEglGames = () =>
 export const epicSyncEglInstalled = () =>
   invoke<number>("epic_sync_egl_installed");
 
-/* ---------- 3. Parti Başlatıcılar (EA App, Ubisoft Connect, Rockstar) ---------- */
+/* ---------- Third-party launchers (EA App, Ubisoft Connect, Rockstar) ---------- */
 
 export interface ThirdPartyLauncher {
   id: string;
@@ -557,7 +557,7 @@ export interface ThirdPartyLauncher {
 export const epicThirdPartyLaunchers = () =>
   invoke<ThirdPartyLauncher[]>("epic_third_party_launchers");
 
-/* ---------- Oyun Yönetimi & Doğrulama (Game Management) ---------- */
+/* ---------- Game management & verification ---------- */
 
 export interface GameLocalSettings {
   appName: string;
@@ -602,7 +602,7 @@ export const epicSyncSaves = (appName: string) =>
 export const epicCreateDesktopShortcut = (appName: string) =>
   invoke<string>("epic_create_desktop_shortcut", { appName });
 
-/* ---------- Gelişmiş İndirme & Kuyruk (Download Hub) ---------- */
+/* ---------- Advanced downloads & queue ---------- */
 
 export interface DlProgressEvent {
   id: string;
@@ -637,7 +637,7 @@ export const epicReorderQueue = (
 
 export const epicGetQueue = () => invoke<DlQueueStatus>("epic_get_queue");
 
-/* ---------- Eklenti & DLC Yönetimi (DLC Manager) ---------- */
+/* ---------- Add-on & DLC management ---------- */
 
 export interface GameDlcItem {
   appId: string;
@@ -657,7 +657,7 @@ export interface GameDlcResponse {
 export const epicGetGameDlcs = (appName: string) =>
   invoke<GameDlcResponse>("epic_get_game_dlcs", { appName });
 
-/* ---------- Seçici Kurulum (Selective Install Options) ---------- */
+/* ---------- Selective install options ---------- */
 
 export interface InstallOptionTag {
   tag: string;
@@ -693,7 +693,7 @@ export const epicInstallWithOptions = (
     installDir: installDir || null,
   });
 
-/* ---------- Güncelleme Motoru (Update Engine) ---------- */
+/* ---------- Update engine ---------- */
 
 export interface GameUpdateInfo {
   appName: string;
@@ -705,7 +705,7 @@ export interface GameUpdateInfo {
 export const epicCheckUpdates = () =>
   invoke<GameUpdateInfo[]>("epic_check_updates");
 
-/* ---------- Oynama Süresi & Canlı Durum (Playtime & Game Status) ---------- */
+/* ---------- Playtime & live game status ---------- */
 
 export interface PlaytimeRecord {
   total_seconds: number;
@@ -738,7 +738,7 @@ export const epicSetPlaytime = (
     lastPlayed: lastPlayed ?? null,
   });
 
-/* ---------- İndirme Ağ Profili (Network Profile) ---------- */
+/* ---------- Download network profile ---------- */
 
 export type NetworkProfileType = "max" | "balanced" | "low";
 
@@ -748,7 +748,7 @@ export const epicGetNetworkProfile = () =>
 export const epicSetNetworkProfile = (profile: string) =>
   invoke<void>("epic_set_network_profile", { profile });
 
-/* ---------- Çevrimdışı Mod (Offline Mode) ---------- */
+/* ---------- Offline mode ---------- */
 
 export const epicGetOfflineMode = () =>
   invoke<boolean>("epic_get_offline_mode");
@@ -756,7 +756,7 @@ export const epicGetOfflineMode = () =>
 export const epicSetOfflineMode = (enabled: boolean) =>
   invoke<void>("epic_set_offline_mode", { enabled });
 
-/* ---------- Oyun Kayıtları Yedekleme (Save Backup Manager) ---------- */
+/* ---------- Save backup manager ---------- */
 
 export interface SaveBackupInfo {
   id: string;
@@ -838,7 +838,7 @@ export interface HltbData {
 export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
   invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
 
-/* ---------- Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic / Goygoy Engine) ---------- */
+/* ---------- Critic & review scores (OpenCritic / Metacritic / Goygoy Engine) ---------- */
 
 export interface GoygoyReview {
   title: string;
@@ -920,7 +920,7 @@ export const epicGetSteamGridCovers = (
     dimensions: dimensions ?? null,
   });
 
-/* ---------- Oyuncu Profili ve Başarımlar ---------- */
+/* ---------- Player profile & achievements ---------- */
 
 export interface ProfileGameRecord {
   sandbox_id: string;
@@ -950,7 +950,7 @@ export interface EpicPlayerProfile {
 export const epicGetPlayerProfile = (forceRefresh = false) =>
   invoke<EpicPlayerProfile>("epic_get_player_profile", { forceRefresh });
 
-/* ---------- Ekran Görüntüleri (Screenshots) ---------- */
+/* ---------- Screenshots ---------- */
 
 export interface GameScreenshotItem {
   id: string;
@@ -992,7 +992,7 @@ export const epicReplaceScreenshotWithCompressed = (
     newExt,
   });
 
-/* ---------- Oyun Taşıma (Move Game Files) ---------- */
+/* ---------- Move game files ---------- */
 
 export interface SystemDriveInfo {
   letter: string;
