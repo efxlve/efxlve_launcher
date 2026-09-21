@@ -55,7 +55,7 @@ struct SteamGridResponse<T> {
     errors: Option<Vec<String>>,
 }
 
-/// Arama terimini SteamGridDB için optimize eder (edisyon ve yayıncı takılarını temizler).
+/// Optimizes the search term for SteamGridDB (strips edition and publisher suffixes).
 pub fn clean_steamgrid_search_term(title: &str) -> String {
     let mut s = title.to_string();
 
@@ -150,26 +150,26 @@ pub async fn search_games(api_key: &str, term: &str) -> Result<Vec<SteamGridGame
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(8))
         .build()
-        .map_err(|e| format!("HTTP istemci hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.httpClientFailed\u{1f}{}", e))?;
 
     let res = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .send()
         .await
-        .map_err(|e| format!("SteamGridDB bağlantı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.connectFailed\u{1f}{}", e))?;
 
     let status = res.status();
     if status == reqwest::StatusCode::UNAUTHORIZED {
-        return Err("Geçersiz veya yetkisiz SteamGridDB API anahtarı".to_string());
+        return Err("@t:cover.invalidKey".to_string());
     }
     if !status.is_success() {
-        return Err(format!("SteamGridDB arama hatası (HTTP {})", status.as_u16()));
+        return Err(format!("@t:cover.searchFailed\u{1f}{}", status.as_u16()));
     }
 
-    let text = res.text().await.map_err(|e| format!("Yanıt okunamadı: {}", e))?;
+    let text = res.text().await.map_err(|e| format!("@t:cover.readFailed\u{1f}{}", e))?;
     let parsed: SteamGridResponse<SteamGridGame> = serde_json::from_str(&text)
-        .map_err(|e| format!("SteamGridDB veri formatı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -178,7 +178,7 @@ pub async fn search_games(api_key: &str, term: &str) -> Result<Vec<SteamGridGame
         }
         Ok(parsed.data)
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "Bilinmeyen arama hatası".to_string());
+        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.unknownSearchError".to_string());
         Err(err_msg)
     }
 }
@@ -225,7 +225,7 @@ pub async fn get_grids(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| format!("HTTP istemci hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.httpClientFailed\u{1f}{}", e))?;
 
     let res = client
         .get(&url)
@@ -233,19 +233,19 @@ pub async fn get_grids(
         .query(&query_params)
         .send()
         .await
-        .map_err(|e| format!("SteamGridDB bağlantı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.connectFailed\u{1f}{}", e))?;
 
     let status = res.status();
     if status == reqwest::StatusCode::UNAUTHORIZED {
-        return Err("Geçersiz veya yetkisiz SteamGridDB API anahtarı".to_string());
+        return Err("@t:cover.invalidKey".to_string());
     }
     if !status.is_success() {
-        return Err(format!("SteamGridDB kapak getirme hatası (HTTP {})", status.as_u16()));
+        return Err(format!("@t:cover.coversFailed\u{1f}{}", status.as_u16()));
     }
 
-    let text = res.text().await.map_err(|e| format!("Yanıt okunamadı: {}", e))?;
+    let text = res.text().await.map_err(|e| format!("@t:cover.readFailed\u{1f}{}", e))?;
     let parsed: SteamGridResponse<SteamGridImage> = serde_json::from_str(&text)
-        .map_err(|e| format!("SteamGridDB veri formatı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -254,7 +254,7 @@ pub async fn get_grids(
         }
         Ok(parsed.data)
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "Kapaklar yüklenemedi".to_string());
+        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.coversLoadFailed".to_string());
         Err(err_msg)
     }
 }
@@ -286,7 +286,7 @@ pub async fn get_heroes(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| format!("HTTP istemci hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.httpClientFailed\u{1f}{}", e))?;
 
     let res = client
         .get(&url)
@@ -294,19 +294,19 @@ pub async fn get_heroes(
         .query(&query_params)
         .send()
         .await
-        .map_err(|e| format!("SteamGridDB bağlantı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.connectFailed\u{1f}{}", e))?;
 
     let status = res.status();
     if status == reqwest::StatusCode::UNAUTHORIZED {
-        return Err("Geçersiz veya yetkisiz SteamGridDB API anahtarı".to_string());
+        return Err("@t:cover.invalidKey".to_string());
     }
     if !status.is_success() {
-        return Err(format!("SteamGridDB afiş getirme hatası (HTTP {})", status.as_u16()));
+        return Err(format!("@t:cover.heroesFailed\u{1f}{}", status.as_u16()));
     }
 
-    let text = res.text().await.map_err(|e| format!("Yanıt okunamadı: {}", e))?;
+    let text = res.text().await.map_err(|e| format!("@t:cover.readFailed\u{1f}{}", e))?;
     let parsed: SteamGridResponse<SteamGridImage> = serde_json::from_str(&text)
-        .map_err(|e| format!("SteamGridDB veri formatı hatası: {}", e))?;
+        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -315,7 +315,7 @@ pub async fn get_heroes(
         }
         Ok(parsed.data)
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "Afişler yüklenemedi".to_string());
+        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.heroesLoadFailed".to_string());
         Err(err_msg)
     }
 }
@@ -345,9 +345,9 @@ pub fn epic_set_steamgrid_key(app: AppHandle, api_key: String) -> Result<(), Str
 pub async fn epic_test_steamgrid_key(api_key: String) -> Result<bool, String> {
     let trimmed = api_key.trim();
     if trimmed.is_empty() {
-        return Err("Lütfen bir API anahtarı girin".to_string());
+        return Err("@t:cover.enterKey".to_string());
     }
-    // Basit bir test araması
+    // A simple test search
     let _ = search_games(trimmed, "Portal").await?;
     Ok(true)
 }
@@ -358,7 +358,7 @@ pub async fn epic_search_steamgrid(
     term: String,
 ) -> Result<Vec<SteamGridGame>, String> {
     let key = epic_get_steamgrid_key(app)
-        .ok_or_else(|| "SteamGridDB API anahtarı yapılandırılmamış".to_string())?;
+        .ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
     let mut results = search_games(&key, &term).await?;
     if results.is_empty() {
         let cleaned = clean_steamgrid_search_term(&term);
@@ -378,7 +378,7 @@ pub async fn epic_get_steamgrid_covers(
     dimensions: Option<String>,
 ) -> Result<Vec<SteamGridImage>, String> {
     let key = epic_get_steamgrid_key(app)
-        .ok_or_else(|| "SteamGridDB API anahtarı yapılandırılmamış".to_string())?;
+        .ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
     let at = asset_type.as_deref().unwrap_or("grids");
     if at == "heroes" {
         get_heroes(&key, game_id, styles).await

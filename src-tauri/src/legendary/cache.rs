@@ -1,8 +1,8 @@
-//! Heroic deseni: kütüphane ÖNCE yerelden okunur, ağ senkronu arka plandadır.
+//! Heroic pattern: the library is read from disk FIRST, network sync runs in the background.
 //!
-//! `metadata/*.json` + `installed.json` + `user.json` doğrudan parse edilir;
-//! böylece Epic API'si aksasa bile arayüz önbelleği gösterir.
-//! `list --json` çıktısıyla disk formatı aynıdır (`Game.__dict__`).
+//! `metadata/*.json` + `installed.json` + `user.json` are parsed directly,
+//! so the UI shows the cache even when the Epic API fails.
+//! The on-disk format matches `list --json` output (`Game.__dict__`).
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -13,15 +13,15 @@ use super::models::{InstalledGame, LegendaryGame};
 
 #[derive(Debug, Clone, Default, Deserialize)]
 struct UserFile {
-    // DİKKAT: user.json anahtarları snake_case'dir (account_id),
-    // yanlış rename + #[serde(default)] sessizce boş string verir!
+    // CAUTION: user.json keys are snake_case (account_id),
+    // a wrong rename + #[serde(default)] silently yields an empty string!
     #[serde(default)]
     account_id: String,
     #[serde(default, rename = "displayName")]
     display_name: String,
 }
 
-/// Giriş yapılmışsa (görünen ad, account_id); profil URL'si id'den kurulur:
+/// When signed in (display name, account_id); the profile URL is built from the id:
 /// `https://store.epicgames.com/u/<account_id>`
 pub fn read_user(config: &Path) -> Option<(String, Option<String>)> {
     let text = std::fs::read_to_string(config.join("user.json")).ok()?;
@@ -34,7 +34,7 @@ pub fn read_user(config: &Path) -> Option<(String, Option<String>)> {
     Some((name, if id.is_empty() { None } else { Some(id) }))
 }
 
-/// Önbellekteki tüm oyun metadataları (bozuk dosyalar atlanır).
+/// All game metadata in the cache (broken files are skipped).
 pub fn read_cached_games(config: &Path) -> Vec<LegendaryGame> {
     let mut out = Vec::new();
     if let Ok(entries) = std::fs::read_dir(config.join("metadata")) {
@@ -72,7 +72,7 @@ pub struct EglDetectedGame {
     pub install_size: u64,
 }
 
-/// Epic Games Launcher Data/Manifests klasörü yolu.
+/// Path to the Epic Games Launcher Data/Manifests folder.
 pub fn egl_manifests_dir() -> std::path::PathBuf {
     if let Ok(pd) = std::env::var("ProgramData") {
         let p = Path::new(&pd).join("Epic").join("EpicGamesLauncher").join("Data").join("Manifests");
@@ -83,7 +83,7 @@ pub fn egl_manifests_dir() -> std::path::PathBuf {
     std::path::PathBuf::from(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests")
 }
 
-/// Epic Games Launcher'da kurulu ve diskte mevcut ana oyunları tarar.
+/// Scans main games installed in the Epic Games Launcher and present on disk.
 pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
     let dir = egl_manifests_dir();
     if !dir.is_dir() {
@@ -131,7 +131,7 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
     out
 }
 
-/// EGL ile kurulu oyunların manifest dosyasını .egstore klasöründen legendary manifests dizinine kopyalar
+/// Copies the manifest of EGL-installed games from the .egstore folder to the legendary manifests dir
 pub fn ensure_egl_manifest(
     config: &Path,
     app_name: &str,
@@ -204,7 +204,7 @@ fn query_registry_path(_reg_path: &str, _reg_key: &str) -> Option<String> {
     None
 }
 
-/// 3. parti harici başlatıcılara (Ubisoft Connect, EA App) devredilen oyunları Registry'den tarar.
+/// Scans the registry for games handed off to third-party launchers (Ubisoft Connect, EA App).
 pub fn read_third_party_installed_games(
     config: &Path,
     already_installed: &HashMap<String, InstalledGame>,
@@ -293,7 +293,7 @@ pub fn read_third_party_installed_games(
     out
 }
 
-/// Kurulu oyunları oku: installed.json + EGL manifestleri + 3. parti registry.
+/// Read installed games: installed.json + EGL manifests + third-party registry.
 pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     let installed_file = config.join("installed.json");
     let mut map: HashMap<String, InstalledGame> = HashMap::new();
@@ -305,7 +305,7 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
 
     let mut changed = false;
 
-    // 1. Epic Games Launcher manifestlerini oku ve eksik olanları ekle
+    // 1. Read the Epic Games Launcher manifests and add the missing ones
     for egl in read_egl_installed_games() {
         ensure_egl_manifest(config, &egl.app_name, &egl.install_path, &egl.version, "Windows");
         if !map.contains_key(&egl.app_name) {
@@ -338,15 +338,15 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
         }
     }
 
-    // Otomatik senkron: yeni algılanan EGL oyunlarını installed.json kütüğüne kalıcı işle
+    // Auto-sync: persistently record newly detected EGL games into installed.json
     if changed {
         if let Ok(json_str) = serde_json::to_string_pretty(&map) {
             let _ = std::fs::write(&installed_file, json_str);
         }
     }
 
-    // 2. 3. parti başlatıcı (Ubisoft Connect, EA vb.) ile kurulu oyunları Registry'den algıla
-    // DİKKAT: 3. parti oyunlar installed.json'a kalıcı YAZILMAZ! (legendary manifesti olmadığı için python TypeError verir)
+    // 2. Detect games installed via third-party launchers (Ubisoft Connect, EA, ...) from the registry
+    // CAUTION: third-party games are NOT persisted to installed.json! (no legendary manifest -> python TypeError)
     let mut extra_tp = Vec::new();
     for tp in read_third_party_installed_games(config, &map) {
         if !map.contains_key(&tp.app_name) {
@@ -364,8 +364,8 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
 mod tests {
     use super::*;
 
-    /// user.json GERÇEK anahtar düzenini kullanır (snake_case!).
-    /// `rename = "accountId"` gibi bir hata sessizce boş id üretirdi.
+    /// user.json uses its REAL key layout (snake_case!).
+    /// A mistake like `rename = "accountId"` would silently produce an empty id.
     const SAMPLE_USER: &str = r#"{
         "account_id": "4cff91c2292944e9a8548f46a1c95ef0",
         "displayName": "Efxlve",
@@ -383,9 +383,9 @@ mod tests {
     fn test_read_egl_installed_games_parses() {
         let games = read_egl_installed_games();
         if egl_manifests_dir().is_dir() {
-            assert!(!games.is_empty(), "EGL klasörü mevcutsa en az bir oyun bulunmalı");
+            assert!(!games.is_empty(), "If the EGL folder exists there must be at least one game");
             let has_cyberpunk_or_rdr = games.iter().any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
-            assert!(has_cyberpunk_or_rdr, "Cyberpunk veya RDR2 algılanabilmeli");
+            assert!(has_cyberpunk_or_rdr, "Cyberpunk or RDR2 must be detected");
         }
     }
 
@@ -394,9 +394,9 @@ mod tests {
         let config = crate::legendary::skip::default_config_dir();
         let installed = read_installed(&config);
         if egl_manifests_dir().is_dir() {
-            assert!(installed.len() >= 6, "En az 6 kurulu oyun (EGL + Legendary) bulunmalı");
+            assert!(installed.len() >= 6, "At least 6 installed games (EGL + Legendary) must be found");
             let has_spider_or_wand = installed.iter().any(|g| g.app_name.contains("be23672deb69402781cd47cc2919caf4") || g.title.contains("Spider-Man") || g.title == "Wand");
-            assert!(has_spider_or_wand, "Spider-Man veya Wand kurulu listesinde yer almalı");
+            assert!(has_spider_or_wand, "Spider-Man or Wand must be in the installed list");
         }
     }
 }

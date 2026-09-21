@@ -1,4 +1,4 @@
-// Release modunda Windows'ta fazladan konsol penceresi açılmasını engeller.
+// Prevents an extra console window from opening on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod legendary;
@@ -8,14 +8,14 @@ use std::{collections::HashMap, sync::Mutex, time::Duration};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
-// camelCase: frontend (TS) ile birebir aynı isimler (sizeMb, installPath...)
+// camelCase: names identical to the frontend (TS) (sizeMb, installPath...)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Game {
     id: String,
     title: String,
     genre: String,
-    /// 0 = ücretsiz, aksi halde TL fiyatı
+    /// 0 = free, otherwise the TRY price
     price: f32,
     size_mb: u64,
     version: String,
@@ -36,7 +36,7 @@ pub struct AppState {
     pub epic_dl: Mutex<legendary::transfers::EpicDlState>,
 }
 
-/// Mağaza kataloğu (demo verisi). Gerçek projede burası bir API'den beslenir.
+/// Store catalog (demo data). In the real project this is fed from an API.
 fn default_catalog() -> Vec<Game> {
     vec![
         Game { id: "anadolu-efsaneleri".into(), title: "Anadolu Efsaneleri".into(), genre: "RPG".into(), price: 0.0, size_mb: 4200, version: "1.4.2".into(), installed: false, install_path: None },
@@ -48,7 +48,7 @@ fn default_catalog() -> Vec<Game> {
     ]
 }
 
-/// Kurulu oyunların tutulduğu dosya: <app_data>/library.json
+/// File where installed games are kept: <app_data>/library.json
 fn library_file(app: &AppHandle) -> std::path::PathBuf {
     app.path()
         .app_data_dir()
@@ -56,7 +56,7 @@ fn library_file(app: &AppHandle) -> std::path::PathBuf {
         .join("library.json")
 }
 
-/// id -> kurulum klasörü eşleşmesi
+/// id -> install folder mapping
 fn load_library(app: &AppHandle) -> HashMap<String, String> {
     std::fs::read_to_string(library_file(app))
         .ok()
@@ -74,7 +74,7 @@ fn save_library(app: &AppHandle, lib: &HashMap<String, String>) {
     }
 }
 
-/// Epic/Legendary ayarları (`<app_data>/settings.json`).
+/// Epic/Legendary settings (`<app_data>/settings.json`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EpicSettings {
     pub alt_legendary_bin: Option<String>,
@@ -125,15 +125,15 @@ fn library_dir(app: AppHandle) -> String {
         .unwrap_or_else(|_| "bilinmiyor".into())
 }
 
-/// Epic Mağaza'yı ANA pencerenin içinde gömülü webview olarak gösterir.
-/// Gerekçe: Epic `X-Frame-Options: SAMEORIGIN` gönderdiği için iframe ile
-/// gömülemez; bu yüzden içerik alanına native bir child webview konur
-/// (`unstable` özelliğindeki `add_child` API'si ile).
-/// Üst bar HTML olarak üstte kalır, sekmeler çalışmaya devam eder.
+/// Shows the Epic Store as an embedded webview inside the MAIN window.
+/// Reason: Epic sends `X-Frame-Options: SAMEORIGIN`, so it cannot be embedded
+/// with an iframe; therefore a native child webview is placed in the content area
+/// (using the `add_child` API behind the `unstable` feature).
+/// The top bar stays on top as HTML and the tabs keep working.
 ///
-/// NOT: child webview'un konumu sonradan değiştirilemediğinden, pencere
-/// yeniden boyutlandırıldığında `recreate=true` ile yeniden kurulur
-/// (etiket sayacı çakışmayı önler, eskiler arka planda kapanır).
+/// NOTE: because the child webview position cannot be changed afterwards, when
+/// the window is resized it is rebuilt with `recreate=true`
+/// (a label counter prevents collisions; old ones close in the background).
 static STORE_VIEW_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
@@ -192,7 +192,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
 (function() {
     'use strict';
 
-    // 1. Metin normalizasyonu (Türkçe 'İ', 'ı', aksanlar ve boşlukları kusursuz temizler)
+    // 1. Text normalization (perfectly cleans Turkish 'İ', 'ı', accents and whitespace)
     function normalizeText(str) {
         return (str || '')
             .normalize('NFD')
@@ -201,8 +201,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             .trim();
     }
 
-    // SVG İkonları (KESİNLİKLE EMOJİ YOKTUR - Tamamen temiz inline SVG, kayma yapmayan flex-hizalı)
-    // Kütüphane simgesi: Başlık çubuğundaki kütüphane ikonuyla (LayoutGrid / 4 kare) birebir aynı
+    // SVG icons (ABSOLUTELY NO EMOJI - fully clean inline SVG, flex-aligned without shifting)
+    // Library icon: identical to the library icon in the title bar (LayoutGrid / 4 squares)
     var SVG_GRID = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>';
     var SVG_GAMEPAD = SVG_GRID;
     var SVG_PLAY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>';
@@ -212,15 +212,15 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     var SVG_SHIELD_GAMEPAD = SVG_SHIELD_GRID;
     var SVG_SHIELD_PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>';
 
-    // 2. Anti-flash, Fiyat Alanı Etiketi, PDP Buton ve İndir Butonu Gizleme CSS'i
+    // 2. Anti-flash, price-area label, PDP button and download-button hiding CSS
     var CSS_TEXT = `
         html, body {
             background-color: #07080d !important;
             color-scheme: dark !important;
         }
 
-        /* Anti-FOUC kaplaması: ilk boyama hazır olana kadar sayfayı obsidyenle tutar,
-           sonra yumuşakça (fade) kaldırılır. Beyaz parlama/yanıp sönme engellenir. */
+        /* Anti-FOUC overlay: holds the page in obsidian until the first paint is ready,
+           then fades out smoothly. White flashes/flicker are prevented. */
         #efxlve-store-veil {
             position: fixed !important;
             inset: 0 !important;
@@ -232,7 +232,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         }
         #efxlve-store-veil.gone { opacity: 0 !important; }
 
-        /* Fotoğraf üstü rozetleri tamamen kapat (Kullanıcı fotoğraf üstünde istemiyor) */
+        /* Fully disable badges on top of images (the user does not want them on images) */
         .efxlve-store-badge {
             display: none !important;
             visibility: hidden !important;
@@ -267,7 +267,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             padding: 0 !important;
         }
 
-        /* Fiyat Alanında Kütüphane Gösterimi (Oyun fotoğrafının üzerinde değil!) */
+        /* Library indicator in the price area (NOT on top of the game image!) */
         .efxlve-price-tag {
             display: inline-flex !important;
             align-items: center !important;
@@ -303,7 +303,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             box-shadow: 0 2px 10px rgba(251, 191, 36, 0.16) !important;
         }
 
-        /* Detay Sayfası Efxlve Kartı */
+        /* Detail page Efxlve card */
         .efxlve-pdp-card {
             position: relative !important;
             margin: 14px 0 18px 0 !important;
@@ -455,7 +455,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     }
     injectStyle();
 
-    // 2b. Anti-FOUC kaplamasını en erken anda kur, ilk boyamada yumuşakça kaldır.
+    // 2b. Install the anti-FOUC overlay as early as possible, remove it smoothly on first paint.
     function installVeil() {
         try {
             if (document.getElementById('efxlve-store-veil')) return;
@@ -476,13 +476,13 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             } else {
                 window.addEventListener('load', function() { requestAnimationFrame(reveal); }, { once: true });
             }
-            // Güvenlik ağı: ağ çok yavaş olsa bile kaplama kalıcı olarak kalmaz.
+            // Safety net: even on a very slow network the overlay never stays permanently.
             setTimeout(reveal, 2500);
         } catch(e) {}
     }
     installVeil();
 
-    // 3. Sağ üstteki "İndir" butonunu kesin gizleme fonksiyonu
+    // 3. Function that definitively hides the "Download" button at the top right
     function hideDownloadButton() {
         try {
             function scanTree(root) {
@@ -566,7 +566,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         if (dlCheckCount > 24) clearInterval(dlCheckTimer);
     }, 250);
 
-    // 4. Çoklu dil sözlüğü (KESİNLİKLE EMOJİ YOKTUR)
+    // 4. Multi-language dictionary (ABSOLUTELY NO EMOJI)
     function getI18n() {
         var lang = (document.documentElement.lang || navigator.language || 'tr').toLowerCase();
         if (lang.indexOf('tr') === 0) {
@@ -602,25 +602,25 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         }
     }
 
-    // Edisyon ve takıları temizleyen fonksiyon (GTA V Premium Edition -> GTA 5, Watch Dogs 2 Standard Edition -> Watch Dogs 2)
+    // Function that strips editions and suffixes (GTA V Premium Edition -> GTA 5, Watch Dogs 2 Standard Edition -> Watch Dogs 2)
     function stripEdition(title) {
         if (!title) return '';
         var s = normalizeText(title);
-        // İki nokta veya tire sonrası edisyon / sürüm ifadelerini kaldır
+        // Remove edition / version phrases after a colon or dash
         s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
         
-        // Edisyon kelimelerini kaldır
+        // Remove edition words
         s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');
         s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, '');
 
-        // Yaygın oyun kısaltmaları (GTA V / GTA 5)
+        // Common game abbreviations (GTA V / GTA 5)
         s = s.replace(/\bgrand theft auto\b/gi, 'gta');
         s = s.replace(/\bgta\s*v\b/gi, 'gta 5');
 
         return s.replace(/[^a-z0-9]+/g, ' ').trim();
     }
 
-    // URL slug'larındaki edisyon takılarını temizleyen fonksiyon
+    // Function that strips edition suffixes from URL slugs
     function stripSlugEdition(slug) {
         if (!slug) return '';
         var s = slug.toLowerCase();
@@ -630,7 +630,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         return s;
     }
 
-    // 5. Slug ve Başlık haritası
+    // 5. Slug and title map
     var slugMap = {};
     var strippedSlugMap = {};
     var titleMap = {};
@@ -661,7 +661,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         }
     }
 
-    // Güvenli ve Kesin Oyun Eşleme (Farklı devam oyunları/spinoff'ların çakışmasını engeller)
+    // Safe and exact game matching (prevents collisions between sequels/spinoffs)
     function matchGame(card, href) {
         var slug = '';
         if (href) {
@@ -669,7 +669,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             if (m && m[1]) slug = m[1].toLowerCase();
         }
 
-        // 1. Doğrudan ve Edisyonsuz Slug Eşleşmesi
+        // 1. Direct and edition-stripped slug match
         if (slug) {
             if (slugMap[slug]) return slugMap[slug];
             var strippedSlug = stripSlugEdition(slug);
@@ -678,7 +678,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             }
         }
 
-        // 2. Kart Başlığı Tespiti
+        // 2. Card title detection
         var titleEl = card.querySelector('[data-testid*="title" i], [class*="title" i], [class*="Title" i], h1, h2, h3, h4');
         var rawTitle = titleEl ? (titleEl.textContent || '').trim() : '';
         if (!rawTitle && (card === document || card === document.body)) {
@@ -701,7 +701,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             }
         }
 
-        // 3. Başlık Eşleşmesi (Tam ve Edisyonsuz)
+        // 3. Title match (exact and edition-stripped)
         if (rawTitle) {
             var norm = normalizeText(rawTitle);
             if (titleMap[norm]) return titleMap[norm];
@@ -712,7 +712,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             var titleSlug = norm.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
             if (titleSlug && slugMap[titleSlug]) return slugMap[titleSlug];
 
-            // Edisyonsuz birebir eşleşme (örn: GTA V Premium Edition -> GTA 5, Watch Dogs 2 Standard Edition -> Watch Dogs 2)
+            // Exact edition-stripped match (e.g. GTA V Premium Edition -> GTA 5, Watch Dogs 2 Standard Edition -> Watch Dogs 2)
             var strippedCardTitle = stripEdition(rawTitle);
             if (strippedCardTitle && strippedTitleMap[strippedCardTitle]) {
                 return strippedTitleMap[strippedCardTitle];
@@ -731,9 +731,9 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         return false;
     }
 
-    // Kart içindeki fiyat kapsayıcısını bulur (İndirimli veya standart fiyat satırı)
+    // Finds the price container inside a card (discounted or standard price row)
     function getPriceContainer(card) {
-        // 1. İndirimli kart: İndirim rozeti (-%95, -%50 vb.) varsa onun ebeveyni tüm fiyat satırıdır
+        // 1. Discounted card: if a discount badge (-95%, -50%, etc.) exists, its parent is the whole price row
         var all = card.querySelectorAll('span, div, p');
         var discountEl = null;
         for (var i = 0; i < all.length; i++) {
@@ -747,7 +747,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             return discountEl.parentElement;
         }
 
-        // 2. Standart fiyat bileşeni (data-component veya class bazlı)
+        // 2. Standard price component (data-component or class based)
         var priceEl = card.querySelector('[data-component*="Price" i], [class*="price" i], [class*="Price" i], [data-testid*="price" i]');
         if (priceEl) {
             if (priceEl.parentElement && !isCardRoot(priceEl.parentElement) && priceEl.parentElement.querySelectorAll('span, div').length > 1) {
@@ -756,7 +756,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             return priceEl;
         }
 
-        // 3. Metin içeriğine göre fiyat / ücretsiz / çıkış tarihi tespiti
+        // 3. Detect price / free / release date from text content
         for (var j = all.length - 1; j >= 0; j--) {
             var txt = (all[j].textContent || '').trim();
             if (/^[₺$€£]|ücretsiz|ucretsiz|free|\d+[,.]\d{2}/i.test(txt)) {
@@ -769,7 +769,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             }
         }
 
-        // 4. Başlık konteyneri yedeği
+        // 4. Title container fallback
         var titleEl = card.querySelector('[data-testid*="title" i], [class*="title" i], [class*="Title" i], h2, h3, h4');
         if (titleEl && titleEl.parentElement && !isCardRoot(titleEl.parentElement)) {
             return titleEl.parentElement;
@@ -778,7 +778,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         return null;
     }
 
-    // Detay sayfası satın alma / kütüphane konteyneri ve eylem butonunu bulur
+    // Finds the detail page purchase / library container and the action button
     function findPdpTarget() {
         var allBtns = document.querySelectorAll('button, a[role="button"], div[role="button"]');
         var actionBtn = null;
@@ -838,7 +838,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             hideDownloadButton();
             var i18n = getI18n();
 
-            // Eski görsel üstü rozetleri DOM'dan tamamen temizle
+            // Fully remove old on-image badges from the DOM
             var legacyBadges = document.querySelectorAll('.efxlve-store-badge');
             for (var b = 0; b < legacyBadges.length; b++) {
                 legacyBadges[b].remove();
@@ -848,7 +848,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             var curPdpMatch = curPath.match(/\/p\/([a-z0-9-]+)/i);
             var currentPdpSlug = curPdpMatch ? curPdpMatch[1].toLowerCase() : null;
 
-            // A. Mağaza Kartları (Fiyat alanında Kütüphanede gösterimi)
+            // A. Store cards (library indicator in the price area)
             var links = document.querySelectorAll('a[href*="/p/"], a[href*="/bundles/"]');
             for (var i = 0; i < links.length; i++) {
                 var link = links[i];
@@ -883,7 +883,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                                 '</span>';
                         }
 
-                        // İndirimli kartlarda eski indirim rozetlerini (-%95) ve üstü çizili fiyatları kesin gizle
+                        // On discounted cards, definitively hide old discount badges (-95%) and strikethrough prices
                         var leftovers = card.querySelectorAll('[class*="discount" i], [class*="Discount" i], s, del, [class*="strike" i], [class*="original" i]');
                         for (var d = 0; d < leftovers.length; d++) {
                             if (leftovers[d] !== priceContainer && !priceContainer.contains(leftovers[d])) {
@@ -912,7 +912,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                     }
                 }
 
-                // İstek listesi kontrolü (Fiyat alanına eklenir)
+                // Wishlist check (added to the price area)
                 var wishBtn = card.querySelector('button[aria-label*="istek" i], button[aria-label*="wishlist" i], [data-testid*="wishlist" i]');
                 if (wishBtn) {
                     var aria = normalizeText(wishBtn.getAttribute('aria-label'));
@@ -932,7 +932,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 }
             }
 
-            // B. Ürün Detay Sayfası (PDP)
+            // B. Product Detail Page (PDP)
             if (currentPdpSlug) {
                 var pageH1 = '';
                 var h1El = document.querySelector('h1');
@@ -956,7 +956,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                     else if (strippedTitleMap[stripEdition(docTitle)]) pMatch = strippedTitleMap[stripEdition(docTitle)];
                 }
 
-                // Sayfadaki eylem butonunu ve satın alma konteynerini bul
+                // Find the page's action button and purchase container
                 var pdpTarget = findPdpTarget();
                 var pageHasOwnedBtn = false;
                 if (pdpTarget && pdpTarget.button) {
@@ -967,7 +967,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                     }
                 }
 
-                // Epic Store'un kendisi "Kütüphanede" diyorsa ama slug eşleşmediyse fuzzy arama / güvenli yedek
+                // If the Epic Store itself says "In Library" but the slug did not match, fuzzy search / safe fallback
                 if (!pMatch && pageHasOwnedBtn) {
                     var targetTokens = (pageH1 || docTitle || currentPdpSlug).toLowerCase();
                     for (var og = 0; og < ownedGamesList.length; og++) {
@@ -988,13 +988,13 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                     }
                 }
 
-                // Üstteki özel Efxlve kartı kaldırıldı, Epic'in kendi aktif mavi butonu kullanılıyor
+                // The custom Efxlve card on top was removed; Epic's own active blue button is used
                 var strayCards = document.querySelectorAll('.efxlve-pdp-card, .efxlve-pdp-banner');
                 for (var sc = 0; sc < strayCards.length; sc++) {
                     strayCards[sc].remove();
                 }
 
-                // Epic'in kendi oluşturduğu "Kütüphanede" butonunu yakala, disabled'ı kaldır ve kütüphaneye yönlendir
+                // Capture Epic's own "In Library" button, remove disabled and route to the library
                 var epicButtons = document.querySelectorAll('button, a, div[role="button"]');
                 for (var ebIndex = 0; ebIndex < epicButtons.length; ebIndex++) {
                     var eb = epicButtons[ebIndex];
@@ -1007,7 +1007,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                         eb.style.setProperty('cursor', 'pointer', 'important');
                         eb.style.setProperty('pointer-events', 'auto', 'important');
                         eb.style.setProperty('opacity', '1', 'important');
-                        eb.title = 'Efxlve Launcher kütüphanesinde aç';
+                        eb.title = getI18n().ctaOpen;
                         if (!eb.getAttribute('data-efxlve-hijacked')) {
                             eb.setAttribute('data-efxlve-hijacked', '1');
                             eb.addEventListener('click', function(ev) {
@@ -1107,13 +1107,13 @@ async fn show_store_view(
 
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
 
     let owned_games = get_owned_games_json();
 
-    // Webview zaten mevcutsa hiçbir ağ isteği beklemeden ANINDA (0 ms) göster
+    // If the webview already exists, show it INSTANTLY (0 ms) without waiting for any network request
     if !recreate {
         if let Some(v) = store_views(&window).into_iter().next() {
             let _ = v.set_position(pos);
@@ -1127,7 +1127,7 @@ async fn show_store_view(
                     }
                 }
             }
-            return Ok("odaklandı".into());
+            return Ok("@t:win.focused".into());
         }
     } else {
         for v in store_views(&window) {
@@ -1135,10 +1135,10 @@ async fn show_store_view(
         }
     }
 
-    let parsed: url::Url = url.parse().map_err(|_| "adres geçersiz".to_string())?;
+    let parsed: url::Url = url.parse().map_err(|_| "@t:win.invalidUrl".to_string())?;
     match parsed.scheme() {
         "http" | "https" => {}
-        _ => return Err("yalnızca http(s) adresleri açılabilir".to_string()),
+        _ => return Err("@t:win.onlyHttp".to_string()),
     }
 
     let init_script = format!(
@@ -1151,7 +1151,7 @@ async fn show_store_view(
         format!("epic-store-view-{seq}"),
         WebviewUrl::External(parsed),
     )
-    // Native WebView2 arka planı saf obsidyen: sayfa geçişlerinde beyaz parlama (FOUC) engellenir.
+    // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
     .background_color(tauri::webview::Color(7, 8, 13, 255))
     .initialization_script(&init_script)
     .on_navigation(move |url| {
@@ -1173,36 +1173,36 @@ async fn show_store_view(
         }
         true
     });
-    // add_child ana thread'e iş postalar ve bitmesini bekler; olası takılmada
-    // arayüzün kilitlenmemesi için ayrı thread + zaman aşımı ile koşturulur.
+    // add_child posts work to the main thread and waits; to avoid locking the UI
+    // on a possible hang, it runs on a separate thread with a timeout.
     let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {
-            eprintln!("[store-view] child oluşturuldu");
-            Ok("açıldı".into())
+            eprintln!("[store-view] child created");
+            Ok("@t:store.opened".into())
         }
         Ok(Ok(Err(e))) => {
-            eprintln!("[store-view] add_child hatası: {e}");
+            eprintln!("[store-view] add_child error: {e}");
             Err(e.to_string())
         }
         Ok(Err(join_err)) => {
-            eprintln!("[store-view] thread hatası: {join_err}");
-            Err("mağaza görünümü oluşturulamadı".into())
+            eprintln!("[store-view] thread error: {join_err}");
+            Err("@t:store.viewCreateFailed".into())
         }
         Err(_) => {
-            eprintln!("[store-view] ZAMAN AŞIMI (20 sn)");
-            Err("mağaza görünümü 20 sn içinde açılamadı".into())
+            eprintln!("[store-view] TIMEOUT (20s)");
+            Err("@t:store.viewTimeout".into())
         }
     }
 }
 
-/// Gömülü mağaza görünümünü yeniden boyutlandırır (sayfayı yenilemez).
+/// Resizes the embedded store view (does not reload the page).
 #[tauri::command]
 fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size};
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
     for v in store_views(&window) {
@@ -1212,16 +1212,16 @@ fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64) ->
     Ok(())
 }
 
-/// Gömülü mağaza görünümünü gizler (durumu korunur).
-/// Kesin gizleme garantisi: `hide()`'a ek olarak native pencere ekran dışına
-/// taşınır ve 1x1'e küçültülür; böylece asenkron IPC gecikmesinde bile ekranda
-/// piksel kalıntısı veya üst üste binme oluşamaz.
+/// Hides the embedded store view (its state is preserved).
+/// Guaranteed hiding: in addition to `hide()` the native window is moved off-screen
+/// and shrunk to 1x1, so that even with async IPC latency no pixel residue or
+/// overlap can remain on screen.
 #[tauri::command]
 fn hide_store_view(app: AppHandle) -> Result<String, String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size};
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     for v in store_views(&window) {
         let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
         let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
@@ -1230,14 +1230,14 @@ fn hide_store_view(app: AppHandle) -> Result<String, String> {
     Ok("gizlendi".into())
 }
 
-/// Klasörü dosya yöneticisinde açar.
-/// Not: opener eklentisi yerine doğrudan Rust kullanılır; böylece
-/// capability kapsam (scope) sorunları yaşanmaz, her sürücü desteklenir.
+/// Opens a folder in the file manager.
+/// Note: Rust is used directly instead of the opener plugin, so no capability
+/// scope issues occur and every drive is supported.
 #[tauri::command]
 fn open_folder(path: String) -> Result<String, String> {
     let p = std::path::PathBuf::from(path.trim());
     if !p.is_dir() {
-        return Err("klasör bulunamadı".to_string());
+        return Err("@t:win.folderNotFound".to_string());
     }
     #[cfg(windows)]
     let res = std::process::Command::new("explorer").arg(&p).spawn();
@@ -1245,15 +1245,15 @@ fn open_folder(path: String) -> Result<String, String> {
     let res = std::process::Command::new("open").arg(&p).spawn();
     #[cfg(all(not(windows), not(target_os = "macos")))]
     let res = std::process::Command::new("xdg-open").arg(&p).spawn();
-    res.map(|_| "Klasör açıldı".to_string())
-        .map_err(|e| format!("klasör açılamadı: {e}"))
+    res.map(|_| "@t:win.folderOpened".to_string())
+        .map_err(|e| format!("@t:win.folderOpenFailed\u{1f}{e}"))
 }
 
 #[tauri::command]
 fn app_minimize(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     window.minimize().map_err(|e| e.to_string())
 }
 
@@ -1261,7 +1261,7 @@ fn app_minimize(app: AppHandle) -> Result<(), String> {
 fn app_toggle_maximize(app: AppHandle) -> Result<bool, String> {
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let is_max = window.is_maximized().unwrap_or(false);
     if is_max {
         window.unmaximize().map_err(|e| e.to_string())?;
@@ -1276,7 +1276,7 @@ fn app_toggle_maximize(app: AppHandle) -> Result<bool, String> {
 fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     window.is_maximized().map_err(|e| e.to_string())
 }
 
@@ -1284,7 +1284,7 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
 fn app_close(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     window.close().map_err(|e| e.to_string())
 }
 
@@ -1292,16 +1292,16 @@ fn app_close(app: AppHandle) -> Result<(), String> {
 fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> {
     let window = app
         .get_window("main")
-        .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     window.set_decorations(decorations).map_err(|e| e.to_string())
 }
 
-/// Demo kurulum: ilerlemeyi "download-progress" event'i ile yayınlar.
+/// Demo install: emits progress via the "download-progress" event.
 #[tauri::command]
 fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
     {
         let games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter().find(|g| g.id == id).ok_or("Oyun bulunamadı")?;
+        let game = games.iter().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
         if game.installed {
             return Err("Oyun zaten kurulu".into());
         }
@@ -1318,7 +1318,7 @@ fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Resul
 
     let title = {
         let mut games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter_mut().find(|g| g.id == id).ok_or("Oyun bulunamadı")?;
+        let game = games.iter_mut().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
         let dir = library_file(&app);
         let base = dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(std::env::temp_dir);
         let install_dir = base.join("games").join(&game.id);
@@ -1347,28 +1347,28 @@ fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Resul
 #[tauri::command]
 fn launch_game(state: State<'_, AppState>, id: String) -> Result<String, String> {
     let games = state.games.lock().map_err(|e| e.to_string())?;
-    let game = games.iter().find(|g| g.id == id).ok_or("Oyun bulunamadı")?;
+    let game = games.iter().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
     if !game.installed {
-        return Err("Oyun kurulu değil, önce yükleyin".into());
+        return Err("@t:demo.notInstalledInstallFirst".into());
     }
-    // Gerçek bir exe varsa çalıştır, yoksa demo modunda simüle et.
+    // Run a real exe if present, otherwise simulate in demo mode.
     if let Some(path) = &game.install_path {
         let exe = std::path::Path::new(path).join(format!("{}.exe", game.id));
         if exe.exists() {
             std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
-            return Ok(format!("{} başlatıldı", game.title));
+            return Ok(format!("@t:dl.launched\u{1f}{}", game.title));
         }
     }
-    Ok(format!("{} başlatılıyor… (demo modu)", game.title))
+    Ok(format!("@t:demo.launching\u{1f}{}", game.title))
 }
 
 #[tauri::command]
 fn uninstall_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
     let title = {
         let mut games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter_mut().find(|g| g.id == id).ok_or("Oyun bulunamadı")?;
+        let game = games.iter_mut().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
         if !game.installed {
-            return Err("Oyun zaten kurulu değil".into());
+            return Err("@t:demo.notInstalled".into());
         }
         if let Some(path) = game.install_path.take() {
             let _ = std::fs::remove_dir_all(path);
@@ -1379,7 +1379,7 @@ fn uninstall_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Res
     let mut lib = load_library(&app);
     lib.remove(&id);
     save_library(&app, &lib);
-    Ok(format!("{title} kaldırıldı"))
+    Ok(format!("@t:dl.uninstalled\u{1f}{title}"))
 }
 
 fn main() {
@@ -1390,7 +1390,7 @@ fn main() {
             epic_dl: Mutex::new(legendary::transfers::EpicDlState::default()),
         })
         .setup(|app| {
-            // Önceki kurulumları geri yükle
+            // Restore previous installs
             let lib = load_library(app.handle());
             if !lib.is_empty() {
                 if let Some(state) = app.try_state::<AppState>() {
@@ -1515,5 +1515,5 @@ fn main() {
             legendary::commands::epic_cancel_move_game
         ])
         .run(tauri::generate_context!())
-        .expect("Tauri uygulaması çalıştırılamadı");
+        .expect("Tauri application failed to run");
 }

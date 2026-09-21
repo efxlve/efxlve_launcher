@@ -181,7 +181,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     let duration = modified.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
     let timestamp = duration.as_secs();
 
-    // Windows'un gerçek yerel dosya saatini ve tarihini al (UTC yerine yerel saat dilimi)
+    // Get Windows' real local file time and date (local timezone instead of UTC)
     let datetime = get_file_local_datetime_str(path, &metadata, timestamp);
     let data_url = file_to_data_url(path)?;
 
@@ -242,7 +242,7 @@ fn chrono_fallback(epoch_sec: u64) -> String {
     format!("{:02}.{:02}.{:04} {:02}:{:02}:{:02}", day, month, year, hours, minutes, seconds)
 }
 
-/// Oyunun tüm ekran görüntülerini diskten tarar ve döndürür.
+/// Scans and returns all of a game's screenshots from disk.
 #[tauri::command]
 pub async fn epic_get_game_screenshots(
     _app: AppHandle,
@@ -256,7 +256,7 @@ pub async fn epic_get_game_screenshots(
 
         let mut scanned_paths = std::collections::HashSet::new();
 
-        // 1. Dedicated Efxlve Screenshots klasörleri: %USERPROFILE%\Pictures\Efxlve Screenshots\<clean_t>
+        // 1. Dedicated Efxlve Screenshots folders: %USERPROFILE%\Pictures\Efxlve Screenshots\<clean_t>
         let dirs_to_check = vec![
             game_screenshots_dir(&clean_t),
             game_screenshots_dir(&clean_app),
@@ -278,7 +278,7 @@ pub async fn epic_get_game_screenshots(
             }
         }
 
-        // 2. Windows Game Bar / Captures klasörü: %USERPROFILE%\Videos\Captures
+        // 2. Windows Game Bar / Captures folder: %USERPROFILE%\Videos\Captures
         let captures_dir = get_user_videos_dir().join("Captures");
         if captures_dir.is_dir() {
             if let Ok(entries) = std::fs::read_dir(&captures_dir) {
@@ -287,7 +287,7 @@ pub async fn epic_get_game_screenshots(
                 for entry in entries.flatten() {
                     let path = entry.path();
                     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
-                    // Dosya adı oyun başlığını veya app_name'i içeriyorsa eşle
+                    // Match when the file name contains the game title or app_name
                     if (name.contains(&lower_title) || (!lower_app.is_empty() && name.contains(&lower_app)))
                         && scanned_paths.insert(path.clone())
                     {
@@ -299,7 +299,7 @@ pub async fn epic_get_game_screenshots(
             }
         }
 
-        // En yeniden en eskiye sırala
+        // Sort newest to oldest
         results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
         Ok(results)
     })
@@ -437,7 +437,7 @@ mod win_capture {
         unsafe {
             let _ = SetProcessDPIAware();
 
-            // Aktif masaüstüne (input desktop) bağlan — BitBlt'in ERROR_INVALID_HANDLE vermesini önler
+            // Attach to the active (input) desktop - prevents BitBlt from returning ERROR_INVALID_HANDLE
             let h_desk = OpenInputDesktop(0, 0, 0x01FF);
             if !h_desk.is_null() {
                 let _ = SetThreadDesktop(h_desk);
@@ -465,7 +465,7 @@ mod win_capture {
 
             if width <= 0 || height <= 0 {
                 ReleaseDC(std::ptr::null_mut(), hdc_screen);
-                return Err("Ekran çözünürlüğü tespit edilemedi".to_string());
+                return Err("@t:ss.noResolution".to_string());
             }
 
             let hdc_mem = CreateCompatibleDC(hdc_screen);
@@ -474,7 +474,7 @@ mod win_capture {
                 return Err(format!("CreateCompatibleDC failed (err: {})", GetLastError()));
             }
 
-            // CreateDIBSection ile bellek havuzu limiti olmadan yüksek çözünürlükte bitmap tahsis et
+            // Allocate a high-resolution bitmap with CreateDIBSection without a memory-pool limit
             let bmi = BITMAPINFO {
                 bmi_header: BITMAPINFOHEADER {
                     bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
@@ -535,7 +535,7 @@ mod win_capture {
                 ));
             }
 
-            // 4. GDI+ ile yerel C hızında doğrudan PNG olarak kaydet (~15 ms)
+            // 4. Save directly as PNG at native C speed via GDI+ (~15 ms)
             let startup_input = GdiplusStartupInput {
                 gdiplus_version: 1,
                 debug_event_callback: 0,
@@ -597,7 +597,7 @@ mod win_capture {
     }
 }
 
-/// Senkron olarak birincil ekranın görüntüsünü alır ve ilgili oyun klasörüne kaydeder.
+/// Synchronously captures the primary screen and saves it to the game's folder.
 pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
     let clean_t = if !title.trim().is_empty() {
         clean_folder_name(title)
@@ -629,11 +629,11 @@ pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameS
     };
     let target_file = target_dir.join(&file_name);
 
-    // 1. Önce native Win32 GDI + GDI+ dene (< 20 ms, tam fiziksel çözünürlük)
+    // 1. Try native Win32 GDI + GDI+ first (< 20 ms, full physical resolution)
     let native_res = win_capture::capture_screen_native(&target_file);
 
     if native_res.is_err() {
-        // 2. Fallback: DPI-Aware PowerShell komutu (tam 2560x1600 çözünürlük)
+        // 2. Fallback: DPI-aware PowerShell command (full 2560x1600 resolution)
         let target_str = target_file.to_string_lossy().to_string();
         let ps_code = format!(
             r#"
@@ -664,16 +664,16 @@ $bmp.Dispose()
 
         if !target_file.exists() {
             return Err(format!(
-                "Ekran görüntüsü alınamadı (native: {:?})",
+                "@t:ss.captureFailedNative\u{1f}{:?}",
                 native_res.err()
             ));
         }
     }
 
-    parse_file_to_item(&target_file).ok_or_else(|| "Ekran görüntüsü dosyası okunamadı".to_string())
+    parse_file_to_item(&target_file).ok_or_else(|| "@t:ss.fileReadFailed".to_string())
 }
 
-/// Ekran görüntüsü alır ve oyunun klasörüne kaydeder.
+/// Captures a screenshot and saves it to the game's folder.
 #[tauri::command]
 pub async fn epic_capture_game_screenshot(
     _app: AppHandle,
@@ -689,7 +689,7 @@ pub async fn epic_capture_game_screenshot(
 
 static SCREENSHOT_HOTKEY: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0x7B);
 
-/// Ekran görüntüsü kısayol tuşunu günceller (varsayılan: 0x7B = VK_F12).
+/// Updates the screenshot hotkey (default: 0x7B = VK_F12).
 #[tauri::command]
 pub fn epic_set_screenshot_hotkey(vkey: i32) {
     if vkey > 0 {
@@ -697,13 +697,13 @@ pub fn epic_set_screenshot_hotkey(vkey: i32) {
     }
 }
 
-/// Aktif ekran görüntüsü kısayol tuşu sanal kodunu döndürür.
+/// Returns the active screenshot hotkey virtual key code.
 #[tauri::command]
 pub fn epic_get_screenshot_hotkey() -> i32 {
     SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-/// Oyun açıkken belirlenen kısayol tuşuna (varsayılan F12) basıldığında ekran görüntüsü yakalayan arka plan dinleyicisi.
+/// Background listener that captures a screenshot when the hotkey (default F12) is pressed while a game is running.
 #[cfg(target_os = "windows")]
 pub fn start_f12_listener(app: AppHandle) {
     std::thread::spawn(move || {
@@ -716,7 +716,7 @@ pub fn start_f12_listener(app: AppHandle) {
         let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
-            // Sadece bir oyun aktif oynanıyorken kısayol tuşunu kontrol et
+            // Only check the hotkey while a game is actively running
             let running = get_active_running_game();
             if running.is_none() {
                 was_down = false;
@@ -731,11 +731,11 @@ pub fn start_f12_listener(app: AppHandle) {
             let is_down = (state as u16 & 0x8000) != 0;
 
             if is_down && !was_down {
-                // Kısayol tuşuna basıldı! (Key Down Edge)
+                // Hotkey pressed! (key-down edge)
                 if last_capture_time.elapsed() >= std::time::Duration::from_millis(400) {
                     last_capture_time = std::time::Instant::now();
                     if let Some((app_name, title)) = running {
-                        // 1. ANINDA DEKLANŞÖR TETİKLEMESİ (0 ms gecikmeyle deklanşör sesi ve UI uyarısı)
+                        // 1. IMMEDIATE SHUTTER TRIGGER (shutter sound and UI notice with 0 ms delay)
                         let _ = app.emit(
                             "screenshot-shutter",
                             serde_json::json!({
@@ -744,7 +744,7 @@ pub fn start_f12_listener(app: AppHandle) {
                             }),
                         );
 
-                        // 2. Arka planda donanımsal ekran görüntüsü kaydı (< 110 ms)
+                        // 2. Hardware screenshot capture in the background (< 110 ms)
                         let app_clone = app.clone();
                         let app_name_clone = app_name.clone();
                         let title_clone = title.clone();
@@ -772,8 +772,8 @@ pub fn start_f12_listener(app: AppHandle) {
 #[cfg(not(target_os = "windows"))]
 pub fn start_f12_listener(_app: AppHandle) {}
 
-/// Orijinal ekran görüntüsünü sıkıştırılmış görsel ile değiştirir (AVIF / WebP / JPEG).
-/// Başarılı olduğunda orijinal ham dosyayı kaldırıp yeni dosyayı döndürür.
+/// Replaces the original screenshot with a compressed image (AVIF / WebP / JPEG).
+/// On success it removes the original raw file and returns the new file.
 #[tauri::command]
 pub async fn epic_replace_screenshot_with_compressed(
     _app: AppHandle,
@@ -784,7 +784,7 @@ pub async fn epic_replace_screenshot_with_compressed(
     tokio::task::spawn_blocking(move || {
         let orig = Path::new(&original_path);
         if !orig.exists() || !orig.is_file() {
-            return Err("Orijinal ekran görüntüsü dosyası bulunamadı".to_string());
+            return Err("@t:ss.originalNotFound".to_string());
         }
 
         let clean_b64 = if let Some(idx) = compressed_base64.find(',') {
@@ -795,10 +795,10 @@ pub async fn epic_replace_screenshot_with_compressed(
 
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(clean_b64)
-            .map_err(|e| format!("Base64 çözme hatası: {e}"))?;
+            .map_err(|e| format!("@t:ss.base64Failed\u{1f}{e}"))?;
 
         if bytes.is_empty() {
-            return Err("Sıkıştırılmış veri boş".to_string());
+            return Err("@t:ss.emptyData".to_string());
         }
 
         let clean_ext = new_ext.trim().trim_start_matches('.').to_lowercase();
@@ -815,20 +815,20 @@ pub async fn epic_replace_screenshot_with_compressed(
         let new_path = parent_dir.join(&new_file_name);
 
         std::fs::write(&new_path, &bytes)
-            .map_err(|e| format!("Sıkıştırılmış dosya diske yazılamadı: {e}"))?;
+            .map_err(|e| format!("@t:ss.writeCompressedFailed\u{1f}{e}"))?;
 
-        // Eski ham dosya farklı bir uzantıdaysa temizle (ör. .png -> .avif)
+        // Clean up the old raw file if it has a different extension (e.g. .png -> .avif)
         if new_path != orig && orig.exists() {
             let _ = std::fs::remove_file(orig);
         }
 
-        parse_file_to_item(&new_path).ok_or_else(|| "Sıkıştırılmış dosya okunamadı".to_string())
+        parse_file_to_item(&new_path).ok_or_else(|| "@t:ss.compressedReadFailed".to_string())
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
-/// Ekran görüntüsü dosyasını siler.
+/// Deletes a screenshot file.
 #[tauri::command]
 pub async fn epic_delete_game_screenshot(_app: AppHandle, file_path: String) -> Result<bool, String> {
     tokio::task::spawn_blocking(move || {
@@ -836,14 +836,14 @@ pub async fn epic_delete_game_screenshot(_app: AppHandle, file_path: String) -> 
         if p.exists() && p.is_file() {
             std::fs::remove_file(p).map(|_| true).map_err(|e| e.to_string())
         } else {
-            Err("Dosya bulunamadı".to_string())
+            Err("@t:ss.fileNotFound".to_string())
         }
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
-/// Oyunun ekran görüntüleri klasörünü Windows Explorer ile açar.
+/// Opens the game's screenshots folder with Windows Explorer.
 #[tauri::command]
 pub async fn epic_open_game_screenshots_folder(
     _app: AppHandle,
@@ -859,7 +859,7 @@ pub async fn epic_open_game_screenshots_folder(
         let target_dir = game_screenshots_dir(&clean_t);
         let _ = std::fs::create_dir_all(&target_dir);
 
-        // Kural 10: Klasör açma = Rust'tan explorer
+        // Rule 10: opening a folder = explorer from Rust
         let _ = std::process::Command::new("explorer.exe")
             .arg(&target_dir)
             .spawn();
@@ -869,13 +869,13 @@ pub async fn epic_open_game_screenshots_folder(
     .map_err(|e| e.to_string())?
 }
 
-/// Oyun oynanırken alınan yeni ekran görüntülerini tespit edip taşır / bağlar.
+/// Detects new screenshots taken during play and moves / links them.
 pub fn scan_new_captures_for_game(clean_title: &str, start_time: std::time::SystemTime) -> Vec<PathBuf> {
     let mut added = Vec::new();
     let target_dir = game_screenshots_dir(clean_title);
     let _ = std::fs::create_dir_all(&target_dir);
 
-    // 1. Pictures\Screenshots kontrolü
+    // 1. Pictures\Screenshots check
     let pic_ss = get_user_pictures_dir().join("Screenshots");
     if pic_ss.is_dir() {
         if let Ok(entries) = std::fs::read_dir(pic_ss) {
@@ -901,7 +901,7 @@ pub fn scan_new_captures_for_game(clean_title: &str, start_time: std::time::Syst
         }
     }
 
-    // 2. Videos\Captures kontrolü
+    // 2. Videos\Captures check
     let vid_cap = get_user_videos_dir().join("Captures");
     if vid_cap.is_dir() {
         if let Ok(entries) = std::fs::read_dir(vid_cap) {

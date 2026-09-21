@@ -88,7 +88,7 @@ struct GqlResponse {
     errors: Option<Vec<serde_json::Value>>,
 }
 
-/// Metadata dizininden taranan özet oyun bilgisi
+/// Summary game info scanned from the metadata directory
 struct MetaGameInfo {
     app_name: String,
     app_title: String,
@@ -129,7 +129,7 @@ fn pick_best_cover(meta: &serde_json::Value) -> Option<String> {
         }
     }
 
-    // İlk geçerli URL
+    // First valid URL
     for img in key_images {
         if let Some(url) = img.get("url").and_then(|u| u.as_str()) {
             if !url.is_empty() {
@@ -141,7 +141,7 @@ fn pick_best_cover(meta: &serde_json::Value) -> Option<String> {
     None
 }
 
-/// Disk üzerindeki metadata/*.json dosyalarını tarar
+/// Scans the metadata/*.json files on disk
 fn scan_metadata_files(config: &Path) -> Vec<MetaGameInfo> {
     let mut list = Vec::new();
     let meta_dir = config.join("metadata");
@@ -215,14 +215,14 @@ pub fn profile_cache_path(config: &Path) -> PathBuf {
     config.join("profile_cache.json")
 }
 
-/// Epic Games resmi GraphQL API'sinden kullanıcı profil ve başarım verilerini çeker
+/// Fetches user profile and achievement data from the official Epic Games GraphQL API
 pub async fn fetch_player_profile(
     config: &Path,
     force_refresh: bool,
 ) -> Result<EpicPlayerProfile, String> {
     let cache_file = profile_cache_path(config);
 
-    // 1. Önbellek kontrolü (force_refresh false ise ve dosya varsa anında dön)
+    // 1. Cache check (return instantly if force_refresh is false and the file exists)
     if !force_refresh && cache_file.is_file() {
         if let Ok(content) = fs::read_to_string(&cache_file) {
             if let Ok(prof) = serde_json::from_str::<EpicPlayerProfile>(&content) {
@@ -234,18 +234,18 @@ pub async fn fetch_player_profile(
     // 2. user.json'dan kimlik bilgilerini oku
     let user_file = config.join("user.json");
     if !user_file.is_file() {
-        return Err("Epic hesabına giriş yapılmamış (user.json bulunamadı)".into());
+        return Err("@t:profile.notLoggedIn".into());
     }
 
     let user_content =
-        fs::read_to_string(&user_file).map_err(|e| format!("user.json okunamadı: {e}"))?;
+        fs::read_to_string(&user_file).map_err(|e| format!("@t:profile.userReadFailed\u{1f}{e}"))?;
     let user_json: serde_json::Value =
-        serde_json::from_str(&user_content).map_err(|e| format!("user.json geçersiz: {e}"))?;
+        serde_json::from_str(&user_content).map_err(|e| format!("@t:profile.userInvalid\u{1f}{e}"))?;
 
     let account_id = user_json
         .get("account_id")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| "user.json içinde account_id bulunamadı".to_string())?
+        .ok_or_else(|| "@t:profile.noAccountId".to_string())?
         .to_string();
 
     let display_name = user_json
@@ -258,9 +258,9 @@ pub async fn fetch_player_profile(
     let access_token = user_json
         .get("access_token")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| "user.json içinde access_token bulunamadı".to_string())?;
+        .ok_or_else(|| "@t:profile.noAccessToken".to_string())?;
 
-    // 3. GraphQL sorgusu hazırla
+    // 3. Prepare the GraphQL query
     let query = r#"
         query PlayerGameAchievementProgress($epicAccountId: String!) {
           PlayerAchievement {
@@ -298,7 +298,7 @@ pub async fn fetch_player_profile(
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(12))
         .build()
-        .map_err(|e| format!("HTTP istemcisi oluşturulamadı: {e}"))?;
+        .map_err(|e| format!("@t:profile.httpClientFailed\u{1f}{e}"))?;
 
     let url = "https://launcher.store.epicgames.com/graphql";
     let resp = client
@@ -312,15 +312,15 @@ pub async fn fetch_player_profile(
         .body(payload.to_string())
         .send()
         .await
-        .map_err(|e| format!("Epic Games GraphQL sunucusuna bağlanılamadı: {e}"))?;
+        .map_err(|e| format!("@t:profile.graphqlConnectFailed\u{1f}{e}"))?;
 
     let status = resp.status();
     if !status.is_success() {
         if status.as_u16() == 401 {
-            return Err("Epic oturum anahtarının süresi dolmuş, lütfen kütüphaneyi yenileyin veya tekrar giriş yapın.".into());
+            return Err("@t:profile.tokenExpired".into());
         }
         return Err(format!(
-            "Epic GraphQL hatası: HTTP {} - {}",
+            "@t:profile.graphqlError\u{1f}{}\u{1f}{}",
             status.as_u16(),
             status.canonical_reason().unwrap_or("Bilinmeyen hata")
         ));
@@ -329,10 +329,10 @@ pub async fn fetch_player_profile(
     let text = resp
         .text()
         .await
-        .map_err(|e| format!("GraphQL cevabı okunamadı: {e}"))?;
+        .map_err(|e| format!("@t:profile.graphqlReadFailed\u{1f}{e}"))?;
 
     let gql_resp: GqlResponse =
-        serde_json::from_str(&text).map_err(|e| format!("GraphQL cevabı çözümlenemedi: {e}"))?;
+        serde_json::from_str(&text).map_err(|e| format!("@t:profile.graphqlParseFailed\u{1f}{e}"))?;
 
     let records = gql_resp
         .data
@@ -341,7 +341,7 @@ pub async fn fetch_player_profile(
         .and_then(|r| r.records)
         .unwrap_or_default();
 
-    // 4. Metadata dosyalarını tara ve eşle
+    // 4. Scan and match the metadata files
     let meta_games = scan_metadata_files(config);
 
     let mut game_records: Vec<ProfileGameRecord> = Vec::new();
@@ -387,7 +387,7 @@ pub async fn fetch_player_profile(
         let mut total_ach = match_game.map(|m| m.total_achievements).unwrap_or(0);
         let mut total_prod_xp = match_game.map(|m| m.total_product_xp).unwrap_or(0);
 
-        // Fallback: Başarım sayısı metadata'da boşsa veya 0 ise
+        // Fallback: when the achievement count is missing or 0 in metadata
         if total_ach == 0 && unl > 0 {
             total_ach = unl;
         }
@@ -426,10 +426,10 @@ pub async fn fetch_player_profile(
         });
     }
 
-    // Epic Games Store her Platin kupa için +250 XP bonus verir
+    // Epic Games Store grants a +250 XP bonus for each platinum trophy
     let total_xp = base_xp + (platinum_count * 250);
 
-    // Oyunları sırala: Platinler ve yüksek ilerlemeliler önce, sonra XP'ye göre
+    // Sort games: platinums and high completion first, then by XP
     game_records.sort_by(|a, b| {
         b.is_platinum
             .cmp(&a.is_platinum)
@@ -454,7 +454,7 @@ pub async fn fetch_player_profile(
         last_updated: now_epoch,
     };
 
-    // 5. Diske önbellekle
+    // 5. Cache to disk
     if let Ok(serialized) = serde_json::to_string_pretty(&profile) {
         let _ = fs::write(&cache_file, serialized);
     }

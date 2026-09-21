@@ -1,12 +1,12 @@
-//! `legendary ... --json` çıktılarının serde modelleri.
+//! serde models for `legendary ... --json` output.
 //!
-//! Alan adları legendary'nin Python `Game`/`InstalledGame` dataclass'larıyla
-//! birebir aynıdır (snake_case). Sürüm farklarına dayanıklılık için çoğu
+//! Field names match legendary's Python `Game`/`InstalledGame` dataclasses
+//! exactly (snake_case). For resilience against version differences, most
 //! alan `#[serde(default)]` ile opsiyoneldir.
 //!
-//! ÖNEMLİ: legendary bazı alanları açıkça `null` gönderir (örn.
-//! `manifest_path: null`). `#[serde(default)]` yalnız EKSİK anahtarı
-//! kurtarır; `null` için `deserialize_with = "null_string"` gerekir.
+//! IMPORTANT: legendary sends some fields explicitly as `null` (e.g.
+//! `manifest_path: null`). `#[serde(default)]` only recovers a MISSING key;
+//! `null` requires `deserialize_with = "null_string"`.
 
 use std::collections::HashMap;
 
@@ -29,14 +29,14 @@ where
     Ok(Option::<u64>::deserialize(d)?.unwrap_or_default())
 }
 
-/// `asset_infos` içindeki platform (örn. "Windows") varlığı.
+/// A platform asset inside `asset_infos` (e.g. "Windows").
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct GameAsset {
     #[serde(default, deserialize_with = "null_string")]
     pub app_name: String,
     #[serde(default, deserialize_with = "null_string")]
     pub asset_id: String,
-    /// Epic'teki derleme sürümü — güncelleme karşılaştırması buradan yapılır.
+    /// Build version on Epic - update comparison is done from here.
     #[serde(default, deserialize_with = "null_string")]
     pub build_version: String,
     #[serde(default, deserialize_with = "null_string")]
@@ -51,7 +51,7 @@ pub struct GameAsset {
     pub sidecar_rev: i64,
 }
 
-/// `legendary list --json` dizisinin bir elemanı.
+/// One element of the `legendary list --json` array.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LegendaryGame {
     #[serde(default, deserialize_with = "null_string")]
@@ -62,17 +62,17 @@ pub struct LegendaryGame {
     pub asset_infos: HashMap<String, GameAsset>,
     #[serde(default)]
     pub base_urls: Vec<String>,
-    /// Epic katalog metadata'sı: açıklama, keyImages (kapaklar), DLC bilgisi...
+    /// Epic catalog metadata: description, keyImages (covers), DLC info...
     #[serde(default)]
     pub metadata: HashMap<String, Value>,
     pub sidecar: Option<Value>,
     pub achievements: Option<Value>,
-    /// `list --json` her oyuna DLC listesini gömülü olarak ekler.
+    /// `list --json` embeds the DLC list into each game.
     #[serde(default)]
     pub dlcs: Vec<Value>,
 }
 
-/// `legendary list-installed --json` dizisinin bir elemanı.
+/// One element of the `legendary list-installed --json` array.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct InstalledGame {
     #[serde(default, deserialize_with = "null_string")]
@@ -114,8 +114,8 @@ pub struct InstalledGame {
     pub is_preloaded: bool,
 }
 
-/// `legendary status --offline --json` çıktısı.
-/// Giriş yapılmamışsa `account == "<not logged in>"` olur.
+/// `legendary status --offline --json` output.
+/// When not signed in, `account == "<not logged in>"`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LegendaryStatus {
     #[serde(default, deserialize_with = "null_string")]
@@ -127,7 +127,7 @@ pub struct LegendaryStatus {
     pub config_directory: String,
 }
 
-/// Başarım kademesi (bronze, silver, gold, platinum).
+/// Achievement tier (bronze, silver, gold, platinum).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AchievementTier {
     #[serde(default, deserialize_with = "null_string")]
@@ -140,14 +140,14 @@ pub struct AchievementTier {
     pub max: Option<u32>,
 }
 
-/// Başarım nadirlik yüzdesi.
+/// Achievement rarity percentage.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AchievementRarity {
     #[serde(default)]
     pub percent: Option<f64>,
 }
 
-/// Tek bir başarım öğesi.
+/// A single achievement item.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AchievementItem {
     #[serde(default, deserialize_with = "null_string")]
@@ -175,7 +175,7 @@ pub struct AchievementItem {
     pub is_base: bool,
 }
 
-/// Kullanıcı ödülü (örn. PLATINUM kupa).
+/// User reward (e.g. PLATINUM trophy).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct UserAward {
     #[serde(default, rename = "awardType", deserialize_with = "null_string")]
@@ -186,7 +186,7 @@ pub struct UserAward {
     pub achievement_set_id: String,
 }
 
-/// `legendary achievements --json <app>` çıktısının Rust modeli.
+/// Rust model for `legendary achievements --json <app>` output.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct GameAchievementsResponse {
     #[serde(default)]
@@ -225,7 +225,7 @@ pub struct GameAchievementsResponse {
 
 impl GameAchievementsResponse {
     /// Legendary CLI `completed`, `in_progress`, `uninitiated`, `hidden` sepetlerini
-    /// tek bir `achievements` listesinde birleştirir ve toplamları hesaplar.
+    /// merges into a single `achievements` list and computes the totals.
     pub fn consolidate(&mut self) {
         if self.achievements.is_empty() {
             let mut all = Vec::new();
@@ -259,14 +259,14 @@ impl GameAchievementsResponse {
             .iter()
             .any(|a| a.award_type.eq_ignore_ascii_case("PLATINUM"));
 
-        // Platin Kupa kuralı: Ana Oyun (Base Game) %100 tamamlandığında veya PLATINUM ödülü varsa verilir.
+        // Platinum trophy rule: granted when the Base Game is 100% complete or a PLATINUM reward exists.
         let base_plat = self.base_achievements > 0 && self.base_unlocked >= self.base_achievements;
         let all_plat = self.total_achievements > 0 && self.user_unlocked >= self.total_achievements;
         self.is_platinum = base_plat || all_plat || has_plat_award;
     }
 }
 
-/// Kütüphane kartları için hafif başarım özeti.
+/// Lightweight achievement summary for library cards.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct GameAchievementSummary {
     #[serde(default, deserialize_with = "null_string")]
@@ -289,7 +289,7 @@ pub struct GameAchievementSummary {
     pub base_unlocked: u32,
 }
 
-/// Epic Games Store sistem gereksinimi öğesi (OS, Processor, Memory, Storage vb.)
+/// Epic Games Store system requirement item (OS, Processor, Memory, Storage, etc.)
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemDetailItem {
@@ -311,7 +311,7 @@ pub struct SystemRequirement {
     pub details: Vec<SystemDetailItem>,
 }
 
-/// Frontend'e dönülen oyun sistem gereksinimleri yanıtı
+/// Game system requirements response returned to the frontend
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GameRequirementsResponse {
@@ -331,7 +331,7 @@ pub struct GameRequirementsResponse {
 mod tests {
     use super::*;
 
-    /// Gerçek `list-installed --json` çıktısı: manifest_path null gelir.
+    /// Real `list-installed --json` output: manifest_path arrives as null.
     /// (Hata: "invalid type: null, expected a string at line 1 column 753")
     #[test]
     fn installed_with_nulls_parses() {
@@ -381,7 +381,7 @@ mod tests {
                 }
             ]
         }"##;
-        let res: GameAchievementsResponse = serde_json::from_str(json).expect("başarımlar parse edilmeli");
+        let res: GameAchievementsResponse = serde_json::from_str(json).expect("achievements must parse");
         assert_eq!(res.user_unlocked, 1);
         assert_eq!(res.user_xp, 10);
         assert_eq!(res.achievements.len(), 1);

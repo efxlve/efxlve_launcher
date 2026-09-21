@@ -1,7 +1,7 @@
-//! legendary binary'sinin bulunması ve indirme adresleri.
+//! legendary binary resolution and download URLs.
 //!
-//! Çözümleme sırası: ayarlarda alternatif yol → app_data'ya indirilmiş
-//! binary → bulunamadı hatası (ardından oto-indirme devreye girer).
+//! Resolution order: alternative path from settings -> binary downloaded into app_data
+//! -> not-found error (then auto-download kicks in).
 
 use std::path::PathBuf;
 

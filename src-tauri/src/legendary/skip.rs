@@ -1,12 +1,12 @@
-//! Bozuk katalog öğelerinin otomatik atlanması.
+//! Automatic skipping of broken catalog items.
 //!
-//! Bazı Epic katalog öğeleri kalıcı 401 döndürür (kaldırılmış/bölge kilitli).
-//! legendary tek bir öğede çöküp tüm senkronu öldürdüğü için bu modül:
-//! 1. 401 hatasındaki namespace/catalogItemId'yi yakalar,
+//! Some Epic catalog items permanently return 401 (removed/region-locked).
+//! Because legendary crashes on a single item and kills the whole sync, this module:
+//! 1. Captures the namespace/catalogItemId from the 401 error,
 //! 2. `assets.json`'dan app_name ve platformu bulur,
-//! 3. legendary formatında stub metadata yazar (bir dahaki sefere "güncel"
-//!    sayılıp atlanılır),
-//! 4. kaydı `skipped.json`'a işler (arayüzde gösterilir).
+//! 3. Writes stub metadata in legendary format (so next time it is considered
+//!    "up to date" and skipped),
+//! 4. Records it in `skipped.json` (shown in the UI).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -17,10 +17,10 @@ use tauri::{AppHandle, Manager};
 use super::models::GameAsset;
 use super::LegendaryError;
 
-/// 401 veren katalog URL'sinden (namespace, catalogItemId) çıkarır.
-/// Örn: `.../namespace/<ns>/bulk/items?id=<item>&...`
-/// NOT: namespace her zaman hex değildir (`rosemallow` gibi okunabilir
-/// adlar da olur); o yüzden sadece biçim denetimi yapılır.
+/// Extracts (namespace, catalogItemId) from the 401 catalog URL.
+/// E.g.: `.../namespace/<ns>/bulk/items?id=<item>&...`
+/// NOTE: the namespace is not always hex (readable names like `rosemallow`
+/// also occur); so only a format check is performed.
 pub fn parse_401_item(stderr: &str) -> Option<(String, String)> {
     if !(stderr.contains("401 Client Error") || stderr.contains("Unauthorized")) {
         return None;
@@ -50,8 +50,8 @@ pub fn parse_401_item(stderr: &str) -> Option<(String, String)> {
     }
 }
 
-/// `assets.json` (`{platform: [asset, ...]}`) içinden uygulamayı bulur.
-/// Döndürür: (app_name, platform, asset).
+/// Finds the application inside `assets.json` (`{platform: [asset, ...]}`).
+/// Returns: (app_name, platform, asset).
 pub fn find_app(
     config_dir: &Path,
     namespace: &str,
@@ -110,8 +110,8 @@ pub fn record_skipped(app: &AppHandle, item: SkippedItem) {
 }
 
 /// Seed JSON'u kurar (saf fonksiyon — test edilebilir).
-/// NOT: `json!` içinde çıplak değişken anahtar yazılmaz (literal'a dönüşür!),
-/// bu yüzden `asset_infos` haritası açıkça kurulur.
+/// NOTE: a bare variable key in `json!` is not written (it becomes a literal!),
+/// so the `asset_infos` map is built explicitly.
 pub fn build_seed(app_name: &str, platform: &str, asset: &GameAsset) -> serde_json::Value {
     let mut asset_infos = serde_json::Map::new();
     asset_infos.insert(
@@ -143,8 +143,8 @@ pub fn build_seed(app_name: &str, platform: &str, asset: &GameAsset) -> serde_js
     })
 }
 
-/// legendary'nin `Game.from_json` formatında stub yazar (ASCII-only).
-/// Asset sürümleri birebir kopyalanır ki "güncel" sayılıp atlanılsın.
+/// Writes a stub in legendary's `Game.from_json` format (ASCII-only).
+/// Asset versions are copied verbatim so it is considered "up to date" and skipped.
 pub fn write_seed(
     config_dir: &Path,
     app_name: &str,
@@ -160,7 +160,7 @@ pub fn write_seed(
     Ok(())
 }
 
-/// legendary varsayılan config dizini (status komutu çalışmazsa yedek).
+/// legendary default config dir (fallback when the status command fails).
 pub fn default_config_dir() -> PathBuf {
     #[cfg(windows)]
     {
@@ -180,7 +180,7 @@ pub fn default_config_dir() -> PathBuf {
     }
 }
 
-/// Tek adımlı otomatik atlama: bul → stub yaz → kaydet. app_name döndürür.
+/// One-step auto-skip: find -> write stub -> record. Returns app_name.
 pub fn skip_item(
     app: &AppHandle,
     config_dir: &Path,
@@ -243,7 +243,7 @@ mod tests {
             ..Default::default()
         };
         let seed = build_seed("x", "Windows", &asset);
-        // Değişken anahtar literal'a dönüşmemeli!
+        // The variable key must not turn into a literal!
         assert!(seed["asset_infos"].get("Windows").is_some());
         assert!(seed["asset_infos"].get("platform").is_none());
         assert_eq!(seed["asset_infos"]["Windows"]["build_version"], "1.2");
