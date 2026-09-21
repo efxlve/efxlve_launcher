@@ -10,6 +10,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
+import { t } from "../../i18n";
 
 import type { ProfileGameRecord } from "../../epic";
 export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
@@ -17,8 +18,8 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     return `
       <div class="profile-empty-games">
         <div class="profile-empty-icon">${icon("gamepad-2", 40)}</div>
-        <h4>Kupa Kaydı Bulunamadı</h4>
-        <p>Seçtiğiniz filtreye veya arama kriterine uygun oyun bulunmuyor.</p>
+        <h4>${t("profile.emptyTitle")}</h4>
+        <p>${t("profile.emptyDesc")}</p>
       </div>
     `;
   }
@@ -36,7 +37,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       const fillPercent = Math.min(100, Math.max(0, g.unlocked_percent));
 
       return `
-        <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - Detayları ve Kupaları Gör" style="--pci:${Math.min(idx, 20)}">
+        <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - ${t("profile.detailsTitle")}" style="--pci:${Math.min(idx, 20)}">
           ${bannerUrl ? `<div class="ps5-card-backdrop" style="background-image: url('${esc(bannerUrl)}')"></div>` : ""}
           <div class="ps5-card-backdrop-overlay"></div>
 
@@ -49,7 +50,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
               }
               ${
                 isPlat
-                  ? `<div class="ps5-card-plat-badge" title="Platin Kupa Tamamlandı!">${epicPlatinumIcon(15)}</div>`
+                  ? `<div class="ps5-card-plat-badge" title="${t("profile.platinumComplete")}">${epicPlatinumIcon(15)}</div>`
                   : ""
               }
             </div>
@@ -59,7 +60,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
                 <div class="ps5-card-title-col">
                   <h3 class="ps5-card-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
                   <div class="ps5-card-tags">
-                    ${isInstalled ? `<span class="profile-game-tag installed">● Yüklü</span>` : ""}
+                    ${isInstalled ? `<span class="profile-game-tag installed">● ${t("profile.installed")}</span>` : ""}
                     ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
                   </div>
                 </div>
@@ -69,7 +70,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
                 <div class="ps5-card-progress-labels">
                   <span class="ps5-card-progress-left">
                     ${isPlat ? epicPlatinumIcon(12) : icon("trophy", 12)}
-                    <strong>${g.total_unlocked}</strong> / ${g.total_achievements} Kupa
+                    <strong>${g.total_unlocked}</strong> / ${g.total_achievements} ${t("profile.trophies")}
                   </span>
                   <span class="ps5-card-xp">
                     ${icon("sparkles", 11)}
@@ -88,7 +89,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
             <div class="ps5-card-right">
               <div class="ps5-card-percent-badge ${isPlat ? "plat" : ""}">
                 <span class="ps5-card-percent">%${g.unlocked_percent}</span>
-                <span class="ps5-card-percent-sub">${isPlat ? "Tamamlandı" : "İlerleme"}</span>
+                <span class="ps5-card-percent-sub">${isPlat ? t("profile.completed") : t("profile.progress")}</span>
               </div>
               <div class="ps5-card-chevron">${icon("chevron-right", 16)}</div>
             </div>
@@ -105,8 +106,8 @@ export function renderProfile(): string {
       <div class="profile-container">
         <div class="profile-loading-box">
           <div class="profile-spinner"></div>
-          <h3>Epic Games Profil Verileri Alınıyor…</h3>
-          <p>Başarımlarınız, kazanılan XP'leriniz ve kupa kayıtlarınız yükleniyor.</p>
+          <h3>${t("profile.loadingTitle")}</h3>
+          <p>${t("profile.loadingDesc")}</p>
         </div>
       </div>
     `;
@@ -117,16 +118,16 @@ export function renderProfile(): string {
       <div class="profile-container">
         <div class="profile-error-box">
           <div class="profile-error-icon">${icon("info", 32)}</div>
-          <h3>Profil Yüklenemedi</h3>
+          <h3>${t("profile.errorTitle")}</h3>
           <p>${esc(S.profileError)}</p>
-          <button class="btn primary" data-act="refresh-profile">${icon("refresh", 14)} Tekrar Dene</button>
+          <button class="btn primary" data-act="refresh-profile">${icon("refresh", 14)} ${t("profile.retry")}</button>
         </div>
       </div>
     `;
   }
 
   const prof = S.playerProfileData;
-  const displayName = prof?.display_name || S.epicAccount || "Oyuncu";
+  const displayName = prof?.display_name || S.epicAccount || t("profile.player");
   const accountId = prof?.account_id || S.epicAccountId || "";
   const totalXp = prof?.total_xp || 0;
   const totalUnlocked = prof?.total_unlocked || 0;
@@ -221,14 +222,14 @@ export function renderProfile(): string {
                 <span class="ps5-avatar-letter">${esc(initialLetter)}</span>
               </div>
               <div class="ps5-avatar-ring"></div>
-              <span class="ps5-avatar-pip ${S.offlineMode ? "offline" : "online"}" title="${S.offlineMode ? "Çevrimdışı" : "Epic Games Çevrim İçi"}"></span>
+              <span class="ps5-avatar-pip ${S.offlineMode ? "offline" : "online"}" title="${S.offlineMode ? t("nav.offline") : t("profile.online")}"></span>
             </div>
 
             <div class="ps5-hero-meta">
               <div class="ps5-hero-name-row">
                 <h1 class="ps5-display-name">${esc(displayName)}</h1>
                 <span class="ps5-status-badge ${S.offlineMode ? "offline" : "online"}">
-                  <span class="status-dot"></span> ${S.offlineMode ? "Çevrimdışı Mod" : "Epic Games Bağlı"}
+                  <span class="status-dot"></span> ${S.offlineMode ? t("profile.offlineMode") : t("profile.connected")}
                 </span>
               </div>
 
@@ -236,12 +237,12 @@ export function renderProfile(): string {
               <div class="ps5-level-capsule">
                 <div class="ps5-level-crest" title="PlayStation Trophy Seviyesi: ${trophyLevel}">
                   ${epicPlatinumIcon(13)}
-                  <span class="ps5-level-num">SEVİYE ${trophyLevel}</span>
+                  <span class="ps5-level-num">${t("profile.level")} ${trophyLevel}</span>
                 </div>
                 <div class="ps5-level-progress-col">
                   <div class="ps5-level-labels">
                     <span class="ps5-level-percent">%${levelPct}</span>
-                    <span class="ps5-level-remaining">Sonraki seviyeye ${xpToNextLevel} XP</span>
+                    <span class="ps5-level-remaining">${t("profile.xpToNext", { n: xpToNextLevel })}</span>
                   </div>
                   <div class="ps5-level-track">
                     <div class="ps5-level-fill" style="width: ${levelPct}%"></div>
@@ -250,14 +251,14 @@ export function renderProfile(): string {
               </div>
 
               <div class="ps5-hero-sub-row">
-                <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} Oyun</span>
+                <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} ${t("profile.games")}</span>
                 <span class="ps5-sub-dot">•</span>
                 <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr}</span>
                 <span class="ps5-sub-dot">•</span>
-                <span class="ps5-sub-item">${icon("trophy", 12)} ${totalUnlocked.toLocaleString()} Kupa</span>
+                <span class="ps5-sub-item">${icon("trophy", 12)} ${totalUnlocked.toLocaleString()} ${t("profile.trophies")}</span>
                 <span class="ps5-sub-dot">•</span>
-                <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="Hesap ID: ${esc(accountId)} (Kopyalamak için tıkla)">
-                  <span>ID Kopyala</span>
+                <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyIdTitle", { id: accountId })}">
+                  <span>${t("profile.copyId")}</span>
                   ${icon("copy", 11)}
                 </button>
               </div>
@@ -267,41 +268,41 @@ export function renderProfile(): string {
           <!-- Sağ: PlayStation 4-Seviyeli Kupa Vitrini & Aksiyonlar -->
           <div class="ps5-hero-right">
             <div class="ps5-trophy-tier-showcase">
-              <div class="ps5-tier-col plat" title="Kazanılan Platin Kupalar">
+              <div class="ps5-tier-col plat" title="${t("profile.platLabel")}">
                 <div class="ps5-tier-icon">${epicPlatinumIcon(16)}</div>
                 <span class="ps5-tier-count">${platCount}</span>
-                <span class="ps5-tier-label">Platin</span>
+                <span class="ps5-tier-label">${t("profile.platLabel")}</span>
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col gold" title="Altın Kupa">
+              <div class="ps5-tier-col gold" title="${t("profile.goldLabel")}">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${goldTrophies}</span>
-                <span class="ps5-tier-label">Altın</span>
+                <span class="ps5-tier-label">${t("profile.goldLabel")}</span>
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col silver" title="Gümüş Kupa">
+              <div class="ps5-tier-col silver" title="${t("profile.silverLabel")}">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${silverTrophies}</span>
-                <span class="ps5-tier-label">Gümüş</span>
+                <span class="ps5-tier-label">${t("profile.silverLabel")}</span>
               </div>
               <div class="ps5-tier-divider"></div>
 
-              <div class="ps5-tier-col bronze" title="Bronz Kupa">
+              <div class="ps5-tier-col bronze" title="${t("profile.bronzeLabel")}">
                 <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
                 <span class="ps5-tier-count">${bronzeTrophies}</span>
-                <span class="ps5-tier-label">Bronz</span>
+                <span class="ps5-tier-label">${t("profile.bronzeLabel")}</span>
               </div>
             </div>
 
             <div class="ps5-hero-actions-row">
               <div class="ps5-xp-capsule">
                 ${icon("sparkles", 13)}
-                <span><strong>${totalXp.toLocaleString()}</strong> Toplam XP</span>
+                <span><strong>${totalXp.toLocaleString()}</strong> ${t("profile.totalXp")}</span>
               </div>
-              <button class="btn ghost small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="Profili ve kupaları Epic Games sunucularından tazele">
-                ${icon("refresh", 13)} <span>${S.profileLoading ? "Tazeleniyor…" : "Profili Yenile"}</span>
+              <button class="btn ghost small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
+                ${icon("refresh", 13)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
               </button>
             </div>
           </div>
@@ -312,23 +313,23 @@ export function renderProfile(): string {
       <div class="profile-games-section">
         <div class="profile-games-header">
           <div class="profile-games-title-group">
-            <h2 class="profile-section-title">Kupa Vitrini & Oyun İlerlemesi</h2>
-            <span class="profile-section-badge">${filteredGames.length} Oyun</span>
+            <h2 class="profile-section-title">${t("profile.sectionTitle")}</h2>
+            <span class="profile-section-badge">${filteredGames.length} ${t("profile.games")}</span>
           </div>
 
           <div class="profile-toolbar">
             <div class="profile-filter-pills">
               <button class="profile-pill ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
-                ${icon("trophy", 12)} Tümü (${countAll})
+                ${icon("trophy", 12)} ${t("profile.filterAll")} (${countAll})
               </button>
               <button class="profile-pill ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
-                ${epicPlatinumIcon(12)} Platin (${countPlat})
+                ${epicPlatinumIcon(12)} ${t("profile.filterPlatinum")} (${countPlat})
               </button>
               <button class="profile-pill ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                ${icon("clock", 12)} Devam Edenler (${countInProgress})
+                ${icon("clock", 12)} ${t("profile.filterInProgress")} (${countInProgress})
               </button>
               <button class="profile-pill ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
-                ${icon("gamepad-2", 12)} Başlanmayanlar (${countNotStarted})
+                ${icon("gamepad-2", 12)} ${t("profile.filterNotStarted")} (${countNotStarted})
               </button>
             </div>
 
@@ -339,7 +340,7 @@ export function renderProfile(): string {
                   type="text"
                   id="profile-search"
                   class="profile-search-input"
-                  placeholder="Başarım veya oyun ara…"
+                  placeholder="${t("profile.searchPlaceholder")}"
                   value="${esc(S.profileSearchQuery)}"
                 />
                 ${S.profileSearchQuery ? `<button class="profile-search-clear" data-act="profile-search-clear">×</button>` : ""}
@@ -347,10 +348,10 @@ export function renderProfile(): string {
 
               <div class="profile-sort-select-wrap">
                 <select id="profile-sort-select" class="profile-sort-select" data-act="profile-sort-change">
-                  <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>İlerleme Yüzdesi</option>
-                  <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>Kazanılan XP</option>
-                  <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>Oynama Süresi</option>
-                  <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>Alfabetik (A-Z)</option>
+                  <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
+                  <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
+                  <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
+                  <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
                 </select>
               </div>
             </div>
@@ -364,9 +365,3 @@ export function renderProfile(): string {
     </div>
   `;
 }
-
-/* ---------- Üst bar: tek mor kimlik + kayan aktif çizgi ---------- */
-
-
-
-/** Aktif sekmeyi takip eden alt çizgiyi konumlandırır (çizgi #titlebar'ın çocuğudur). */
