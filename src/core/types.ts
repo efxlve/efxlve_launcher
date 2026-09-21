@@ -27,3 +27,18 @@ export interface CatalogMeta {
 
 /** Top-level application view/route. */
 export type View = "library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store";
+
+/** Live metrics for the currently active download (speed, disk, ETA). */
+export interface DlMetrics {
+  id: string;
+  title: string;
+  progress: number;
+  done: boolean;
+  speed: string;
+  speedBytes: number;
+  diskSpeed: string;
+  diskBytes: number;
+  eta: string;
+  downloadedBytes: number;
+  totalBytes: number;
+}

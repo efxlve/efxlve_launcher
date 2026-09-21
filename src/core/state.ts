@@ -22,7 +22,7 @@ import {
   SS_QUALITY_KEY,
   loadStrSet,
 } from "./constants";
-import type { Game, View } from "./types";
+import type { DlMetrics, Game, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
@@ -162,6 +162,7 @@ export const S = {
   activeManageSettings: (null) as GameLocalSettings | null,
   manageShowArgs: false,
   manageSyncingSaves: false,
+  activeDlMetrics: (null) as DlMetrics | null,
   peakNetSpeedBytes: 0,
   speedHistory: (new Array(60).fill(0)) as number[],
   diskHistory: (new Array(60).fill(0)) as number[],
