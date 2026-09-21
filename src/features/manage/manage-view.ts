@@ -10,6 +10,7 @@ import { manageRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import { lastPlayedLabel } from "../../core/selectors";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 
@@ -196,7 +197,7 @@ export function renderManageModal(): void {
               <div class="manage-info">
                 <div class="manage-title">${t("manage.playStats")}</div>
                 <div class="manage-subtitle">
-                  ${t("manage.totalTime")}: <strong style="color:#fff">${fmtPlaytime(pt?.total_seconds || 0)}</strong> • ${t("manage.sessionCount")}: <strong style="color:#fff">${pt?.session_count || 0}</strong> • ${t("manage.last")}: <strong style="color:#fff">${pt?.last_played || t("manage.neverPlayed")}</strong>
+                  ${t("manage.totalTime")}: <strong style="color:#fff">${fmtPlaytime(pt?.total_seconds || 0)}</strong> • ${t("manage.sessionCount")}: <strong style="color:#fff">${pt?.session_count || 0}</strong> • ${t("manage.last")}: <strong style="color:#fff">${lastPlayedLabel(pt?.last_played)}</strong>
                 </div>
               </div>
             </div>

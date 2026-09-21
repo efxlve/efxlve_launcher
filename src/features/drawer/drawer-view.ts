@@ -15,7 +15,7 @@ import { modalRoot } from "../../core/dom";
 import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { updateGamepadHud } from "../../core/render";
-import { epicWideArt, isTurkishUser, rawOf } from "../../core/selectors";
+import { epicWideArt, isTurkishUser, lastPlayedLabel, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -679,8 +679,8 @@ export function renderDrawerManage(s: EpicSummary): string {
   const v = S.verifyingMap.get(st.appName);
   const isVerifying = Boolean(v);
   const pt = S.playtimeMap.get(st.appName);
-  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "Oynanmadı";
-  const lastPlayedStr = pt?.last_played || "Henüz oynanmadı";
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const lastPlayedStr = lastPlayedLabel(pt?.last_played);
 
   return `
     <div class="manage-tab-content">
