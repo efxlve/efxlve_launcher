@@ -84,7 +84,7 @@
     radial-gradient(ellipse at 80% 20%, rgba(0, 112, 209, 0.18) 0%, transparent 65%);
 }
 
-/* 1260px Genişliğindeki Konsol Sahnesi */
+/* 1260px console stage */
 .hub-stage {
   position: relative;
   z-index: 5;
@@ -96,7 +96,7 @@
   flex-direction: column;
 }
 
-/* Üst Bar: Geri Butonu & Araçlar */
+/* Top bar: back button & tools */
 .hub-topbar {
   display: flex;
   align-items: center;
@@ -161,7 +161,7 @@
   transform: scale(1.08);
 }
 
-/* Hero Başlık ve Aksiyon Bölümü */
+/* Hero title and actions section */
 .hub-hero {
   display: flex;
   justify-content: space-between;
@@ -285,7 +285,7 @@
   transform: translateY(-1px);
 }
 
-/* Hızlı İstatistik Kapsülü (Sağ Taraf) */
+/* Quick stat capsule (right side) */
 .hub-stat-capsule {
   display: flex;
   align-items: center;
@@ -339,7 +339,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Genel Bakış (Overview) 2-Sütunlu Düzen */
+/* Overview two-column layout */
 .hub-overview-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -352,11 +352,11 @@
   }
 }
 .hub-card {
-  background: rgba(255, 255, 255, 0.025);
+  /* Opaque obsidian surface: avoids per-card backdrop-filter cost on low-end GPUs. */
+  background: #12141c;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 20px 22px;
-  backdrop-filter: blur(10px);
   margin-bottom: 16px;
 }
 .hub-card-header {
@@ -389,7 +389,7 @@
   flex-direction: column;
 }
 
-/* --- PlayStation Konsol Tarzı Oyun Özellikleri & Destek Kartı --- */
+/* --- PlayStation console-style game features & support card --- */
 .hub-features-list {
   display: flex;
   flex-direction: column;
@@ -494,7 +494,7 @@
   color: #f8fafc;
 }
 
-/* Oyun Açıklaması */
+/* Game description */
 .drawer-desc {
   color: #c0c1cf;
   font-size: 13px;
@@ -508,9 +508,9 @@
   overflow-y: auto;
 }
 
-/* Başarım Mini İlerleme (Overview için) */
+/* Achievement mini progress (for overview) */
 .drawer-quick-ach-strip {
-  display: none; /* Stat row'a entegre edildi, artık ayrı strip gerekmiyor */
+  display: none; /* Integrated into the stat row; a separate strip is no longer needed */
 }
 
 /* --- PlayStation 5 Kupa Vitrini (Trophy Spotlight) --- */
@@ -543,7 +543,7 @@
   color: #c084fc;
 }
 
-/* Kupa İlerleme Kutusu */
+/* Trophy progress box */
 .hub-trophy-progress-box {
   display: flex;
   flex-direction: column;
@@ -607,7 +607,7 @@
 .hub-medal-item.silver { color: #cbd5e1; }
 .hub-medal-item.bronze { color: #d97706; }
 
-/* Kupa Çubuğu */
+/* Trophy bar */
 .hub-trophy-bar-track {
   width: 100%;
   height: 6px;
@@ -628,7 +628,7 @@
   box-shadow: 0 0 16px rgba(192, 132, 252, 0.6);
 }
 
-/* Sıradaki Hedef Kupalar (Next Up) */
+/* Next up trophies */
 .hub-trophy-next-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -819,7 +819,7 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
-/* Medya Boş Durumu (Empty State) */
+/* Media empty state */
 .hub-media-empty {
   display: flex;
   align-items: center;
@@ -860,7 +860,7 @@
   color: #c084fc;
 }
 
-/* HowLongToBeat Bento Kartı */
+/* HowLongToBeat bento card */
 .drawer-hltb-card {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -948,7 +948,7 @@
   font-weight: 600;
 }
 
-/* Koleksiyon & Etiket Satırı */
+/* Collection & tag row */
 .drawer-tags-row {
   display: flex;
   flex-wrap: wrap;
@@ -994,7 +994,7 @@
   color: #c084fc;
 }
 
-/* Oyun Künyesi / Meta Etiketleri */
+/* Game credits / meta tags */
 .drawer-meta-chips {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

@@ -5,8 +5,8 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- Platin Kupa (%100 Tamamlama) Altın Rozet & Holografik Parıltı Efekti --- */
-/* --- Platin Kupa (%100 Tamamlama) Epic Mor Kupa & Holografik Parıltı Efekti --- */
+/* --- Platinum trophy (100% completion) gold badge & holographic shimmer effect --- */
+/* --- Platinum trophy (100% completion) Epic violet trophy & holographic shimmer effect --- */
 .pcard.platinum {
   border-color: rgba(168, 85, 247, 0.75);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6),
@@ -24,7 +24,7 @@
               0 0 45px rgba(168, 85, 247, 0.25);
 }
 
-/* Koleksiyon kartı holografik ışık geçişi (hover anında zarif mor-platin parıltı) */
+/* Collection card holographic light sweep (elegant violet-platinum shimmer on hover) */
 .pcard.platinum::after {
   content: "";
   position: absolute;
@@ -99,7 +99,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* --- Detay Çekmecesi Sekmeleri (Kaydırılabilir & Yumuşak Fade Navigasyon) --- */
+/* --- Detail drawer tabs (scrollable & soft-fade navigation) --- */
 .drawer-tabs-wrapper {
   position: relative;
   width: 100%;
@@ -124,7 +124,7 @@
   display: none;
 }
 
-/* Yumuşak Kenar Fade & Ok Katmanı (Animasyonlu ve Kademeli Geçiş) */
+/* Soft edge fade & arrow layer (animated and gradual transition) */
 .drawer-tabs-fade {
   position: absolute;
   top: 0;

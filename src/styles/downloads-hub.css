@@ -6,7 +6,7 @@
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
-   STEAM TARZI GELİŞMİŞ İNDİRME MERKEZİ (DOWNLOADS HUB)
+   STEAM-STYLE ADVANCED DOWNLOAD HUB
    ========================================================================== */
 
 .dl-hub {
@@ -33,7 +33,7 @@
   margin: 0;
 }
 
-/* Aktif İndirme Hero Kartı */
+/* Active download hero card */
 .dl-active-hero {
   position: relative;
   background: #14161a;
@@ -141,7 +141,7 @@
   gap: 10px;
 }
 
-/* İlerleme Çubuğu */
+/* Progress bar */
 .dl-hero-progress-section {
   display: flex;
   flex-direction: column;
@@ -180,7 +180,7 @@
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
 }
 
-/* İstatistik Kutucukları Izgarası */
+/* Stat tile grid */
 .dl-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -262,7 +262,7 @@
   color: #71717a;
 }
 
-/* Steam Canlı Hız Grafiği */
+/* Steam live speed chart */
 .dl-chart-card {
   background: #14161a;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -337,7 +337,7 @@
   display: block;
 }
 
-/* Kuyruk Bölümü */
+/* Queue section */
 .dl-section-title {
   font-size: 15px;
   font-weight: 700;
@@ -449,7 +449,7 @@
 }
 
 /* ==========================================================================
-   Eklenti & DLC Yönetim Sayfası (DLC Manager - Screenshot 2)
+   Add-on & DLC management page (DLC manager)
    ========================================================================== */
 
 .dlc-manager-container {
@@ -525,7 +525,7 @@
   pointer-events: none;
 }
 
-/* Tanıtım / Mağaza Banner'ı */
+/* Promo / store banner */
 .dlc-promo-banner {
   background: #14161a;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -655,7 +655,7 @@
 }
 
 /* ==========================================================================
-   Seçici Kurulum Modalı (Selective Install - Screenshot 3)
+   Selective install modal
    ========================================================================== */
 
 .selective-overlay {
@@ -838,7 +838,7 @@
   transform: scale(0.99);
 }
 
-/* Güncelleme Rozetleri */
+/* Update badges */
 .update-tag-pill {
   display: inline-flex;
   align-items: center;

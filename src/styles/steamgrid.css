@@ -93,7 +93,7 @@
   flex: 1;
 }
 
-/* Eşleşen Oyunlar Tek Satır Şerit */
+/* Matching games single-row strip */
 .sgdb-matching-games-bar {
   display: flex;
   align-items: center;
@@ -283,9 +283,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* Repeats on every gallery card: opaque tag instead of per-card GPU blur. */
+  background: rgba(0, 0, 0, 0.85);
   padding: 2px 6px;
   border-radius: 4px;
   color: #cbd5e1;
@@ -295,9 +294,7 @@
 .sgdb-score-tag {
   font-size: 9.5px;
   font-weight: 700;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.85);
   padding: 2px 6px;
   border-radius: 4px;
   color: #38bdf8;
@@ -360,7 +357,7 @@
   }
 }
 
-/* Çekmece Afişini Değiştir Butonu */
+/* Change drawer banner button */
 .drawer-cover-edit-btn {
   position: absolute;
   top: 16px;

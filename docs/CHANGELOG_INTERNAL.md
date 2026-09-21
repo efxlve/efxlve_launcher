@@ -1842,12 +1842,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
 - `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-## 128. i18n Tamamlandı: Kalan Türkçe Yorumlar İngilizce'ye Çevrildi
+## 125. i18n: Taşıma Modalı, Ekran Görüntüleri, State Ölü Alanı
 
-- `epic.ts` (26 bölüm başlığı/açıklama), `gamepad.ts` (kontroller + konsol logları), `profile-view.ts` ve `drawer-widgets.ts` içindeki tüm Türkçe yorumlar İngilizce'ye çevrildi (Kural §4.9).
-- Tarama sonucu: kullanıcıya dönük tüm metinler `t()` üzerinden geliyor. Kalan Türkçe dizeler yalnızca **veri sabitleri** (demo katalog, `NO_DESC` sentinel, `last_played` eşleme anahtarları, mağaza açıklaması anahtar kelime tespiti) ve **dil adları** (`Türkçe`, `Français`) — bunların yerelleşmemesi doğrudur.
-- `tr.json`/`en.json`: **879 anahtar**, duplicate yok, iki dosya arasında eksik anahtar yok.
-- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+- `move-game-view.ts` + `move-game-actions.ts` tamamen `t()`'e taşındı (`move.*`, ~45 anahtar): sürücü kartları, kapasite rozetleri, canlı ilerleme aşamaları, hedef yol önizlemesi, toast'lar. Aşama etiketi tek `moveStageLabel()` yardımcısına indirildi (duplike mantık kaldırıldı). Türkçe yorumlar İngilizce.
+- `screenshots-view.ts` tamamen `t()`'e taşındı (`ss.*`): paylaşım sayfası, galeri başlığı/boş durumu, lightbox araçları, panoya kopyalama toast'ları. İç `throw new Error` metinleri İngilizce'ye çevrildi.
+- **Ölü kod:** `core/state.ts` içindeki kullanılmayan `sortLabelMap` kaldırıldı. Hotkey ön ayar etiketi `"F12 (Varsayılan)"` → `"F12"` yapıldı; "(Varsayılan)" artık `settings.defaultKey` ile yerelleşiyor.
+- `tr.json`/`en.json` ~780 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+## 126. i18n: Kapak / SteamGridDB Modalı
+
+- `cover-view.ts` tamamen `t()`'e taşındı (`cover.*`, ~60 anahtar): hedef segmenti, canlı önizleme, URL/dosya sekmeleri, SteamGridDB kurulum sihirbazı, arama çubuğu, stil filtreleri, galeri kartları ve alt bilgi. Türkçe yorumlar İngilizce; ölü boş satır bloğu temizlendi.
+- `tr.json`/`en.json` ~840 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
 ## 127. i18n: Olay Yönlendiricileri, Kimlik Doğrulama, İndirmeler
 
@@ -1857,15 +1862,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `auth-actions.ts`: senkron mesajları (`lib.syncing`, `lib.updated`, `lib.offlineCache`) migre edildi; `downloads-view.ts` ETA + yorumlar.
 - `tr.json`/`en.json` ~860 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-## 126. i18n: Kapak / SteamGridDB Modalı
+## 128. i18n Tamamlandı: Kalan Türkçe Yorumlar İngilizce'ye Çevrildi
 
-- `cover-view.ts` tamamen `t()`'e taşındı (`cover.*`, ~60 anahtar): hedef segmenti, canlı önizleme, URL/dosya sekmeleri, SteamGridDB kurulum sihirbazı, arama çubuğu, stil filtreleri, galeri kartları ve alt bilgi. Türkçe yorumlar İngilizce; ölü boş satır bloğu temizlendi.
-- `tr.json`/`en.json` ~840 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+- `epic.ts` (26 bölüm başlığı/açıklama), `gamepad.ts` (kontroller + konsol logları), `profile-view.ts` ve `drawer-widgets.ts` içindeki tüm Türkçe yorumlar İngilizce'ye çevrildi (Kural §4.9).
+- Tarama sonucu: kullanıcıya dönük tüm metinler `t()` üzerinden geliyor. Kalan Türkçe dizeler yalnızca **veri sabitleri** (demo katalog, `NO_DESC` sentinel, `last_played` eşleme anahtarları, mağaza açıklaması anahtar kelime tespiti) ve **dil adları** (`Türkçe`, `Français`) — bunların yerelleşmemesi doğrudur.
+- `tr.json`/`en.json`: **879 anahtar**, duplicate yok, iki dosya arasında eksik anahtar yok.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-## 125. i18n: Taşıma Modalı, Ekran Görüntüleri, State Ölü Alanı
+## 129. Performans Denetimi + CSS/HTML Yorum ve Metin Temizliği
 
-- `move-game-view.ts` + `move-game-actions.ts` tamamen `t()`'e taşındı (`move.*`, ~45 anahtar): sürücü kartları, kapasite rozetleri, canlı ilerleme aşamaları, hedef yol önizlemesi, toast'lar. Aşama etiketi tek `moveStageLabel()` yardımcısına indirildi (duplike mantık kaldırıldı). Türkçe yorumlar İngilizce.
-- `screenshots-view.ts` tamamen `t()`'e taşındı (`ss.*`): paylaşım sayfası, galeri başlığı/boş durumu, lightbox araçları, panoya kopyalama toast'ları. İç `throw new Error` metinleri İngilizce'ye çevrildi.
-- **Ölü kod:** `core/state.ts` içindeki kullanılmayan `sortLabelMap` kaldırıldı. Hotkey ön ayar etiketi `"F12 (Varsayılan)"` → `"F12"` yapıldı; "(Varsayılan)" artık `settings.defaultKey` ile yerelleşiyor.
-- `tr.json`/`en.json` ~780 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+- **GPU/VRAM disiplini (Kural §6.13):** Yinelenen kart öğelerinden `backdrop-filter` kaldırıldı ve opak obsidyen yüzeylere geçildi: `.micro-chip` (kütüphane kartı), `.hub-card` (çekmece kartları), `.ss-chip` (ekran görüntüsü kartları), `.sgdb-style-tag`/`.sgdb-score-tag` (galeri kartları). `.prow` (liste satırı) üzerindeki gereksiz `transform: translateZ(0)` kaldırıldı.
+- **CSS yorumları:** 24 CSS dosyasındaki ~132 Türkçe yorum İngilizce'ye çevrildi (Kural §4.9). CSS taraması artık temiz.
+- **index.html:** Statik Türkçe `title` öznitelikleri `data-i18n-title` + yeni anahtarlarla yerelleştirildi (`nav.*Title`, `win.minimize/maximize`, `common.toTop`); Anti-FOUC yorumu İngilizce.
+- `tr.json`/`en.json` ~890 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 

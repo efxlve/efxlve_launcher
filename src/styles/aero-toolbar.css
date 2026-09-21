@@ -104,7 +104,7 @@
   box-shadow: 0 0 8px #10b981;
 }
 
-/* Koleksiyon Açılır Menüsü */
+/* Collections dropdown */
 .col-dropdown-container {
   position: relative;
   display: inline-block;
@@ -310,7 +310,7 @@
   color: #fff;
 }
 
-/* Sağ Araçlar */
+/* Right tools */
 .unified-toolbar-right {
   display: flex;
   align-items: center;
@@ -379,7 +379,7 @@ select option {
   color: #f1f5f9;
 }
 
-/* Sıralama Açılır Menüsü (Custom Dark Selectbox) */
+/* Sort dropdown (custom dark selectbox) */
 .sort-dropdown-container {
   position: relative;
   display: inline-block;
@@ -499,7 +499,7 @@ select option {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Koleksiyon Modalı */
+/* Collections modal */
 .col-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -801,7 +801,7 @@ select option {
   color: #ffffff;
 }
 
-/* Detay Çekmecesi Tarzı Kaydırılabilir Hızlı Şablonlar */
+/* Detail-drawer style scrollable quick presets */
 .col-presets-wrapper {
   display: flex;
   align-items: center;
@@ -936,7 +936,7 @@ select option {
   transform: translateY(-1px);
 }
 
-/* Oyun Seçim Kutusu */
+/* Game picker box */
 .col-picker-box {
   display: flex;
   flex-direction: column;
@@ -1128,7 +1128,7 @@ select option {
   box-shadow: 0 0 16px rgba(0, 120, 242, 0.14);
 }
 
-/* Özel Tasarım SVG Checkbox */
+/* Custom SVG checkbox */
 .col-custom-cb {
   width: 20px;
   height: 20px;
@@ -1244,7 +1244,7 @@ select option {
   justify-content: center;
 }
 
-/* Detay Çekmecesi Koleksiyonlar Kartı */
+/* Detail-drawer collections card */
 .drawer-col-card {
   margin-top: 14px;
   padding: 14px 16px;

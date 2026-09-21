@@ -46,7 +46,7 @@ input[type="number"] {
   -moz-appearance: textfield !important;
 }
 
-/* --- Global Modern Özel Scrollbar --- */
+/* --- Global modern custom scrollbar --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -78,14 +78,14 @@ body {
 
 #app { display: flex; flex-direction: column; height: 100vh; }
 
-/* --- Titlebar (PlayStation 5 esinli konsol çubuğu — Tek Mor Kimlik) ---
-   Kullanıcı kararı: sekmeden sekmeye renk DEĞİŞMEZ. Barın ışığı daima menekşe.
-     · tek kaynaklı sabit menekşe ortam ışığı (bölümsel renk katmanı YOK)
-     · odaklanan öğenin ardında yumuşak ışık (dolgu kutusu DEĞİL)
-     · alt kenarda kayan ince menekşe çizgi (aktif öğe göstergesi)
-     · ince-uzun ikonlar, büyük harf aralıklı tipografi
-   YASAK (AGENTS.md §3): dekoratif çok renkli gradyan, neon glow, kapsül, süs animasyonu.
-   İSTİSNA (§3): tek kaynaklı, düşük alfalı ortam ışığı serbesttir. */
+/* --- Titlebar (PlayStation 5-inspired console bar — single violet identity) ---
+   Design decision: the color does NOT change between tabs. The bar light is always violet.
+     · single-source fixed violet ambient light (NO per-section color layer)
+     · soft light behind the focused item (NOT a fill box)
+     · thin violet line sliding along the bottom edge (active item indicator)
+     · slim icons, wide-tracked uppercase typography
+   FORBIDDEN (AGENTS.md §3): decorative multicolor gradient, neon glow, capsule, ornamental animation.
+   EXCEPTION (§3): single-source, low-alpha ambient light is allowed. */
 
 #titlebar {
   position: relative;
@@ -96,13 +96,13 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 30px -22px rgba(0, 0, 0, 1);
   -webkit-app-region: drag;
 }
-/* Sabit menekşe kimlik ışığı: sol üstten sızar, bölümden bağımsız daima aynı */
+/* Fixed violet identity light: bleeds from the top-left, always identical regardless of section */
 #titlebar::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(96% 380% at 0% -140%, rgba(139, 92, 246, 0.17) 0%, rgba(139, 92, 246, 0) 72%);
 }
 
-/* Aktif öğenin altındaki kayan ince çizgi — launcher'ın mor kimliğiyle konuşur */
+/* Thin line sliding under the active item — speaks the launcher's violet identity */
 .nav-underline {
   position: absolute; bottom: 0; left: 0; width: 0; height: 2px; z-index: 2;
   opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
@@ -134,8 +134,8 @@ body {
 
 #nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
-/* Segment (Mağaza / Kütüphane / İndirmeler)
-   PS5 dili: kutu YOK. Öğeler yalnızca ışık ve çizgiyle ayrışır. */
+/* Segment (Store / Library / Downloads)
+   PS5 language: NO box. Items are distinguished only by light and line. */
 .nav-seg {
   display: flex; align-items: center; gap: 20px; flex-shrink: 0;
   -webkit-app-region: no-drag;
@@ -154,8 +154,8 @@ body {
   outline: 2px solid #8b5cf6 !important;
   outline-offset: 3px !important;
 }
-/* Odak ışığı: dolgu kutusu değil, öğenin ardında yumuşak bir parıltı (PS5 seçim dili).
-   Hover'da nötr beyaz, aktifte sıcak lavanta — seçili öğe mor kimlikle konuşur. */
+/* Focus light: not a fill box, but a soft glow behind the item (PS5 selection language).
+   Neutral white on hover, warm lavender when active — the selected item speaks the violet identity. */
 #nav .nav-tab::before {
   content: ""; position: absolute; inset: 2px -12px; border-radius: 12px;
   pointer-events: none; opacity: 0;
@@ -177,13 +177,13 @@ body {
 #nav .nav-tab:hover svg { opacity: 1; }
 #nav .nav-tab.active svg { opacity: 1; color: #c4b5fd; }
 
-/* Sağ küme (durum + hesap + ayarlar) */
+/* Right cluster (status + account + settings) */
 .nav-right {
   display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 
-/* Bağlantı durumu — PS5 kontrol merkezi döşemesi (yarı saydam, yumuşak ışıklı) */
+/* Connection status — PS5 control-center tile (translucent, softly lit) */
 #nav .net-chip {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 12px; border-radius: 10px; cursor: pointer;
@@ -201,13 +201,13 @@ body {
 }
 #nav .net-chip.online { border-color: rgba(63, 185, 80, 0.22); }
 #nav .net-chip.online:hover { border-color: rgba(63, 185, 80, 0.42); }
-/* Durum ışığı: neon glow değil, sabit halo */
+/* Status light: a steady halo, not a neon glow */
 #nav .net-chip.online .net-dot { background: #3fb950; box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.14); }
 #nav .net-chip.offline { border-color: rgba(210, 153, 34, 0.24); }
 #nav .net-chip.offline:hover { border-color: rgba(210, 153, 34, 0.44); }
 #nav .net-chip.offline .net-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210, 153, 34, 0.14); }
 
-/* Hesap — aynı PS5 döşeme dili */
+/* Account — same PS5 tile language */
 #nav .account-chip {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 4px 13px 4px 4px; border-radius: 10px; cursor: pointer;
@@ -232,7 +232,7 @@ body {
 #nav .account-avatar svg { width: 14px; height: 14px; stroke-width: 1.8; }
 #nav .avatar-initial { font-size: 11px; font-weight: 700; color: #e2e4ea; letter-spacing: 0; }
 #nav .account-chip.logged { color: #e2e4ea; }
-/* Girişliyken baş harf vurgu rengini alır — gradyan değil, tek düz renk */
+/* When signed in the initial takes the accent color — a single flat color, not a gradient */
 #nav .account-chip.logged .account-avatar {
   background: rgba(139, 92, 246, 0.24);
   border-color: rgba(167, 139, 250, 0.48);
@@ -240,7 +240,7 @@ body {
 #nav .account-chip.logged .avatar-initial { color: #d3c6ff; }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Ayarlar — aynı PS5 döşeme dili */
+/* Settings — same PS5 tile language */
 #nav .nav-icon-btn {
   width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
   display: grid; place-items: center; cursor: pointer;
@@ -257,7 +257,7 @@ body {
   border-color: rgba(255, 255, 255, 0.16);
 }
 
-/* Pencere Kontrol Butonları (Windows Başlık Çubuğu) */
+/* Window control buttons (Windows title bar) */
 .win-controls {
   display: flex; align-items: stretch; height: 100%; margin-left: 8px; -webkit-app-region: no-drag;
 }
@@ -271,10 +271,10 @@ body {
 .win-btn.win-close:hover { background: #e81123; color: #ffffff; }
 .win-btn.win-close:active { background: #bf0f1d; }
 
-/* Süs amaçlı ikon animasyonu YOK. Hareket yalnızca: alt çizginin kayması,
-   odak ışığının belirmesi ve aktif ikonun ölçeklenmesi. */
+/* NO ornamental icon animation. Motion is limited to: the underline sliding,
+   the focus light appearing and the active icon scaling. */
 
-/* İndirme sayacı — sekmede satır içi düz sayaç (metnin üstüne binmez) */
+/* Download counter — inline flat counter on the tab (never overlaps the text) */
 #nav .nav-tab .badge {
   margin: 0 0 0 1px; flex-shrink: 0;
   min-width: 15px; height: 15px; padding: 0 4px; line-height: 15px;
@@ -284,13 +284,13 @@ body {
 }
 #nav .nav-tab .badge.hidden { display: none; }
 
-/* Orta dar pencerelerde hesap adını gizle (avatar kalır) */
+/* Hide the account name in medium-narrow windows (the avatar remains) */
 @media (max-width: 1200px) {
   #nav .account-chip { padding: 4px; max-width: none; }
   #nav .account-name { display: none; }
 }
 
-/* Güvenlik ağı: çok dar pencerelerde sekmeler ikona iner (min pencere genişliği 1024px) */
+/* Safety net: in very narrow windows the tabs collapse to icons (min window width 1024px) */
 @media (max-width: 960px) {
   #titlebar { gap: 12px; }
   .nav-seg { gap: 10px; }
@@ -333,7 +333,7 @@ button { font-family: inherit; }
   filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.5));
 }
 
-/* Kalp / Favori Tıklama Animasyonu (Heart Burst) */
+/* Heart / favorite click animation (heart burst) */
 @keyframes heartBurst {
   0% { transform: scale(1); }
   25% { transform: scale(1.4) rotate(-8deg); }
