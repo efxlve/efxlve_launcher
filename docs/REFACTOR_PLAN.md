@@ -178,13 +178,14 @@ src/
 
 Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/sonrasında ele alınacak:
 
-1. **Türkçe metinlerin i18n'e taşınması (Localization) — DEVAM EDİYOR:**
-   - ✅ Migre edilenler: nav, sağ tık menüsü, onboarding, **çekmece sekmeleri**, **kütüphane filtre pilleri**, **indirmeler sayfası (tam)**, **ayarlar sayfası (tam)**, **profil sayfası (tam)**.
-   - 🚧 Kalan: drawer içerik bölümleri (`renderDrawer*`), `renderManageModal`, `renderSelectiveModal`, `renderCustomCover*`, `renderDlcManager`, gamepad HUD, toast/hata mesajları, boş durumlar.
-   - Yöntem: `src/locales/tr.json` + `en.json`'a anahtar ekle → `t("...")` kullan. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84).
+1. **Türkçe metinlerin i18n'e taşınması (Localization) — TAMAMLANDI:**
+   - ✅ Tüm kullanıcıya dönük metinler `t()` üzerinden geliyor: nav, sağ tık menüsü, onboarding, çekmece (tüm sekmeler + widget'lar), kütüphane, indirmeler, ayarlar, profil, koleksiyonlar, taşıma modalı, ekran görüntüleri, kapak/SteamGridDB modalı, olay yöneticileri, auth, mağaza yükleme, toast/hata mesajları ve boş durumlar.
+   - ✅ Tüm kod yorumları İngilizce (Kural §4.9). Kalan Türkçe dizeler yalnızca veri sabitleri (demo katalog, sentinel'ler, anahtar kelime tespiti) ve dil adları.
+   - `src/locales/tr.json` + `en.json`: **879 anahtar**, tam eşlikli. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84).
 2. **Gereksiz / optimize olmayan kod temizliği — TAMAMLANDI (temel):**
    - ✅ Kullanılmayan importlar ve ölü yerel değişkenler temizlendi (`noUnusedLocals` 0 hata).
    - ✅ Sıfır-emoji politikası ihlali giderildi: `POPULAR_COL_EMOJIS` kaldırıldı, `core/collection-icons.ts` (24 SVG ikon) ile değiştirildi.
+   - ✅ Ölü bağımsız yönetim modalı (`openManageModal`/`renderManageModal`/`#manage-root`) ve `sortLabelMap`/`fmtPrice` kaldırıldı.
    - 🚧 Gelecekte: taşımalar sırasında yeni fark edilen tekrar eden mantık/performans borcu.
 
 ---

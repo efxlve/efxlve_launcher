@@ -3,7 +3,7 @@
 > Bu dosya, bu projede çalışacak AI ajanları (ve insan geliştiriciler) için **ana operasyonel rehberdir**.
 > Kısa tut, güncel tut: kritik kuralları net koru, geçmiş sürüm detayları için `docs/CHANGELOG_INTERNAL.md` dosyasına başvur.
 >
-> **GÜNCEL DURUM:** Modülerleştirme **tamamlandı** — `main.ts` 11.422 → **86 satır** (yalnızca `render`/`scheduleRender`/`closeAllModals` + bootstrap). Tüm özellik dosyaları ~1.500 satır altında. Mimari: **`docs/REFACTOR_PLAN.md` §6.5**. Kalan opsiyonel işler (i18n metin taşıma + optimizasyon/ölü kod temizliği): **`docs/REFACTOR_PLAN.md` §6.6**. Çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–110.
+> **GÜNCEL DURUM:** Modülerleştirme **tamamlandı** — `main.ts` 11.422 → **86 satır** (yalnızca `render`/`scheduleRender`/`closeAllModals` + bootstrap). Tüm özellik dosyaları ~1.500 satır altında. Mimari: **`docs/REFACTOR_PLAN.md` §6.5**. **i18n metin taşıma tamamlandı** (879 anahtar, tr/en tam eşlikli) ve ölü kod temizliği yapıldı: **`docs/REFACTOR_PLAN.md` §6.6**. Çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–128.
 
 ---
 
@@ -58,8 +58,8 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 
 - **Heroic Prensibi:** Arayüz ÖNCE disk önbelleğinden anında okunur (`epic_cached_library`), ağ senkronu (`epic_list_games`) arka planda sessizce yürütülür. Ağ başarısız olsa bile arayüz kilitlenmez, önbellek korunur. Asla tüm kütüphaneyi tek `list` çağrısına bağlama.
 - **Modüler Yapı (hedef mimari — [`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)):**
-  - `src/core/`: `types.ts` ✅, `constants.ts` ✅, `utils.ts` ✅, `icons.ts` ✅, `i18n.ts` ✅; `state.ts`, `dom.ts`, `ipc.ts`, `toast.ts` (Faz 3) ve `epic.ts` (API/Invoke barrel).
-  - `src/features/`: `library/`, `drawer/`, `profile/`, `downloads/`, `gamepad/`, `store/`, `settings/`, `screenshots/`, `collections/`, `move-game/`, `dlc/`, `context-menu/`.
+  - `src/core/`: `types.ts`, `constants.ts`, `utils.ts`, `icons.ts`, `i18n.ts`, `state.ts`, `dom.ts`, `toast.ts`, `render.ts`, `selectors.ts`, `game-view.ts`, `nav.ts`, `recent.ts`, `epic-actions.ts`, `collection-icons.ts`, `window.ts`, `demo.ts`; `epic.ts` (API/Invoke barrel) ✅.
+  - `src/features/`: `library/`, `drawer/`, `profile/`, `downloads/`, `gamepad/`, `store/`, `settings/`, `screenshots/`, `collections/`, `move-game/`, `dlc/`, `manage/`, `cover/`, `playtime/`, `onboarding/`, `context-menu/`, `events/` ✅.
   - `src/styles/`: 24 parçalanmış modüler CSS + `index.css` (tek giriş noktası) ✅.
   - `src/locales/`: 15 dil JSON'u ✅.
   - `src-tauri/src/legendary/`: `cache`, `client`, `commands`, `downloader`, `models`, `move_game`, `playtime`, `profile`, `screenshots`, `skip`, `steamgrid`, `transfers`.
