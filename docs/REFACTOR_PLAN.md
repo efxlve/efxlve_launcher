@@ -113,7 +113,7 @@ adıma geçilmez. Yerel değişken gölgelemesi (shadowing) her adımda elle kon
 | **F2** | `core/types.ts`, `core/constants.ts`, `core/utils.ts`, `core/icons.ts` çıkar. | ✅ Tamamlandı |
 | **F3a** | `core/state.ts` (tek `S` nesnesi); `main.ts` referanslarını `S.*`'e taşı (TS dil servisi ile, tsc doğrulamalı). | ✅ Tamamlandı |
 | **F3b** | `core/dom.ts` ✅ + `core/toast.ts` ✅ + `core/selectors.ts` ✅; `core/ipc.ts` (olay kayıtları) 🚧. | 🟡 Kısmi |
-| **F4** | `features/context-menu` ✅, `features/gamepad` 🚧, `features/screenshots` 🚧, `features/dlc` 🚧, `features/move-game` 🚧, `features/collections` 🚧. | 🟡 Devam ediyor |
+| **F4** | `features/context-menu` ✅, `features/dlc` ✅, `features/move-game` ✅ (view), `features/settings` ✅, `features/profile` ✅; `features/gamepad` 🚧, `features/screenshots` 🚧, `features/collections` 🚧. | 🟡 Devam ediyor |
 | **F5** | `features/library`, `features/drawer`, `features/downloads`, `features/profile`, `features/settings` çıkar. | 🚧 Planlandı |
 | **F6** | `features/collections`, `features/move-game`, `features/dlc`, `features/store` çıkar; `main.ts` yalnızca bootstrap kalır. | 🚧 Planlandı |
 
@@ -128,6 +128,54 @@ cargo test            # Rust tarafı bozulmadı mı
 
 - AGENTS.md kuralı: her faz sonunda `docs/CHANGELOG_INTERNAL.md`'ye özet + `git commit`.
 - `AGENTS.md` §4.2 (ölü kod sıfır tolerans): taşıma sonrası eski tanımlar silinir.
+
+---
+
+## 6.5. Handoff / Current Status (Devir Teslim)
+
+> Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
+> devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
+
+**Son güncelleme:** Modülerleştirme Faz 4 (kısmi). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil.
+
+**Tamamlanan yapı:**
+```
+src/
+├── main.ts                 ~9.837 satır  (hedef: bootstrap + init)
+├── i18n.ts                 15 dilli çeviri motoru
+├── core/
+│   ├── types.ts            Game, CatalogMeta, View
+│   ├── constants.ts        isTauri, demo katalog, localStorage anahtarları, loadStrSet
+│   ├── utils.ts            esc, fmt*, cleanDisplayVersion
+│   ├── icons.ts            icon(), epicPlatinumIcon()
+│   ├── state.ts            S (tek paylaşılan durum nesnesi, ~144 alan)
+│   ├── dom.ts              DOM kök referansları
+│   ├── toast.ts            toast()
+│   └── selectors.ts        summaryOf, rawOf, epicWideArt, setEpicSummaries/Raw
+├── features/
+│   ├── context-menu/context-menu.ts
+│   ├── dlc/dlc-manager.ts
+│   ├── move-game/move-game-view.ts
+│   ├── settings/settings-view.ts
+│   └── profile/profile-view.ts
+├── styles/                 24 modül CSS + index.css
+└── locales/                15 dil JSON
+```
+
+**`main.ts`'te kalan iş (öncelik sırasıyla):**
+1. `features/library/` — `renderHeroSpotlight`, `renderShelfSection`, `renderEpicItems`, `renderEpic`, kart/raflar.
+2. `features/drawer/` — `renderDrawerOverview/Achievements/Dlcs/Screenshots/Specs`, `renderEpicModal`.
+3. `features/downloads/` — `renderDownloads`, hız grafiği (`drawSpeedCanvas`, `pushSpeedData`).
+4. `features/screenshots/` — galeri, lightbox, paylaşım/sıkıştırma.
+5. `features/collections/` — koleksiyon + oyun-koleksiyon modalları.
+6. `features/gamepad/` — `gamepadLoop`, `handleGamepadDirectionalMove`, `updateGamepadHud`, `handleGamepadTabSwitch`.
+7. `core/ipc.ts` — `listen(...)` kayıtları (download-progress, game-status, screenshot-captured, move-game-progress, verify-*, legendary-*).
+8. **Olay delegasyonu router'ı** (~1.800 satır `document.addEventListener("click", ...)`) — `act → handler` kayıt defterine bölünmeli. En büyük kazanç ama en riskli adım; özellik modülleri çıkarıldıkça handler'lar da modüllere taşınmalı.
+9. `main.ts` yalnızca `init()` + bootstrap kalana kadar devam.
+
+**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). Saf render fonksiyonları kolayca taşınır; I/O/handler fonksiyonları `render()` gerektiriyorsa callback enjeksiyonu veya önce paylaşılan bir `core/render.ts` kaydı gerekir.
+
+**Yöntem notu (F3a):** Durum taşıma, TypeScript dil servisi (`findReferences`) ile yapıldı; mekanik regex KULLANILMADI (yerel gölgeleme riski). Sıradaki büyük taşımalarda da aynı yöntem önerilir. Geçici betikler `%TEMP%\opencode\` altındaydı, repoda tutulmadı.
 
 ---
 
