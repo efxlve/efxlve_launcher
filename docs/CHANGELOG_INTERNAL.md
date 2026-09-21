@@ -1706,3 +1706,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan küçük işler:** `init()` + IPC `listen(...)` kayıtlarını `core/ipc.ts`'e ayırmak; `render()`/`scheduleRender()`'ı ince tutmak; ardından §6.6 backlog (i18n metin taşıma + optimizasyon/ölü kod temizliği).
 
+## 110. Modülerleştirme Faz 6 (FİNAL): main.ts 86 Satıra İndi
+
+- `init()` + tüm `listen(...)` IPC kayıtları + bootstrap → `src/features/events/ipc-listeners.ts` (`initApp(hooks)`; render bus'a `main.ts`'in `render`/`scheduleRender`/`closeAllModals` fonksiyonlarını enjekte eder).
+- `main.ts` kullanılmayan importlardan arındırıldı; yalnızca `render()`, `scheduleRender()`, `closeAllModals()` ve bootstrap çağrısı kaldı.
+- **`main.ts` 11.422 → 86 satır (~%99.2 azalma).** Tüm dosyalar ~1.500 satır sınırının altında.
+- `tsc --noEmit` + `vite build` + `cargo check` yeşil.
+
+**Nihai mimari:** `src/core/` (types, constants, utils, icons, state, dom, toast, selectors, game-view, nav, recent, render, epic-actions, demo, window, i18n), `src/features/` (auth, collections, context-menu, cover, dlc, downloads, drawer, events, gamepad, library, manage, move-game, onboarding, playtime, profile, screenshots, settings, store), `src/styles/` (24 dosya), `src/locales/` (15 dil).
+
