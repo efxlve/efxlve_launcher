@@ -60,7 +60,7 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
                 <div class="ps5-card-title-col">
                   <h3 class="ps5-card-title" title="${esc(g.app_title)}">${esc(g.app_title)}</h3>
                   <div class="ps5-card-tags">
-                    ${isInstalled ? `<span class="profile-game-tag installed">● ${t("profile.installed")}</span>` : ""}
+                    ${isInstalled ? `<span class="profile-game-tag installed">${icon("check", 10)} ${t("profile.installed")}</span>` : ""}
                     ${playtimeStr ? `<span class="profile-game-tag playtime">${icon("clock", 10)} ${playtimeStr}</span>` : ""}
                   </div>
                 </div>

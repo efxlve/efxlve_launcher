@@ -11,6 +11,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, formatScreenshotDate } from "../../core/utils";
+import { t } from "../../i18n";
 
 import {
   epicGetGameScreenshots,
@@ -224,11 +225,11 @@ export async function compressScreenshotItem(
       const oldSize = item.size_str;
       const newSize = updated.size_str;
       const savedPercent = item.size_bytes > 0 ? Math.round((1 - bytes / item.size_bytes) * 100) : 0;
-      toast(`⚡ Sıkıştırıldı: ${oldSize} ➔ ${newSize} (%${savedPercent > 0 ? savedPercent : 0} Kazanç)`, "ok");
+      toast(t("ss.compressedOne", { old: oldSize, new: newSize, pct: savedPercent > 0 ? savedPercent : 0 }), "ok");
     }
     return updated;
   } catch (err) {
-    if (!silent) toast(`Sıkıştırma hatası: ${String(err)}`, "err");
+    if (!silent) toast(t("ss.compressFailed", { msg: String(err) }), "err");
     return null;
   }
 }
@@ -250,11 +251,11 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
             <img src="${item.data_url}" alt="${esc(item.file_name)}" />
           </div>
           <div class="ss-share-meta">
-            <h3 class="ss-share-title">Görseli Paylaş</h3>
+            <h3 class="ss-share-title">${t("ss.shareTitle")}</h3>
             <span class="ss-share-sub">${esc(item.file_name)}</span>
             <div class="ss-share-chips">
               <span class="ss-share-chip">${esc(item.size_str)}</span>
-              <span class="ss-share-chip ${isAvifOrWebp ? "format" : ""}">${isAvifOrWebp ? "⚡ Sıkıştırılmış" : "Ham PNG"}</span>
+              <span class="ss-share-chip ${isAvifOrWebp ? "format" : ""}">${isAvifOrWebp ? t("ss.compressedChip") : t("ss.rawPng")}</span>
             </div>
           </div>
           <button class="ss-share-close" data-act="close-share-modal" title="Kapat">
@@ -456,7 +457,7 @@ export function renderScreenshotLightbox(appName: string, index: number): string
                 ${icon("minimize-2", 13)} Sıkıştır
               </button>
             ` : `
-              <span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "⚡ AVIF" : "⚡ WebP"}</span>
+              <span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
             `}
             <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="Klasörde Göster">
               ${icon("folder", 12)} Klasörde Aç

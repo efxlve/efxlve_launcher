@@ -1809,3 +1809,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 `tsc` + `vite build` yeşil.
 
+## 121. i18n (drawer yönetim/başarım/specs) + Emoji & Dingbat Temizliği
+
+- `renderDrawerManage`, `renderDrawerAchievements`, `renderDrawerSystemRequirements` ve `openEpicModal` üst barı (`drawer.*`, `manage.*`, `ach.*`, `sys.*`, `common.*`) tamamen `t()`'e taşındı; Türkçe kod yorumları İngilizce'ye çevrildi.
+- `NO_DESC` sabiti `core/constants.ts`'e eklendi (epic.ts + drawer-view.ts'teki "Açıklama yok." sihirli metni merkezileştirildi).
+- **Zero-Emoji ihlalleri giderildi:** `⚡`/`✅` toast ve ekran görüntüsü rozetlerinden, `✓` `feat.*` etiketlerinden kaldırıldı (durum yalnızca renkle bildirilir — Kural 6).
+- Metin ok karakterleri SVG ikonlarla değiştirildi: `▾` → `chevron-down`, `▲` → `chevron-up`, `●` → `check`.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+**Kalan i18n yüzeyi (geniş):** `library-view.ts` (raflar, hero, boş durumlar), `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `collections-view.ts` (koleksiyon modalı), `game-view.ts`/`nav.ts`/`epic-actions.ts` (durum butonları ve ağ çipleri), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `store-view.ts` (yükleme ekranı), `profile-view.ts` yorumları.
+
