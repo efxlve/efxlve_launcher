@@ -1439,3 +1439,20 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Başlık aksiyon alanına aktif indirme varsa `Duraklat`/`Devam Et` (`.ps5-btn`) eklendi.
 - Yeni `.dl-settings-panel`: Ağ Profili pilleri (Maks/Dengeli/Eko) + Kurulum Klasörü hızlı değiştirici (`#dl-install-dir`, klasör seç dialogu `dl-pick-install-dir`, kaydet `dl-save-install-dir`). Boşta/eski `.dl-header-group` kaldırıldı.
 
+## 82. PS5 / Steam Tarzı Özel Sağ Tık Menüsü & Webview Zırhlama (Milestone 4)
+
+**Sorun:** Oyun kartına sağ tıklandığında varsayılan tarayıcı menüsü (Kopyala, İncele, Yeniden Yükle vb.) açılıyordu; ayrıca webview'de kazara F5/Ctrl+R, zoom ve görsel sürükleme gibi tarayıcı davranışları arayüzü bozabiliyordu.
+
+**Çözüm 1 — Özel Konsol Sağ Tık Menüsü (`main.ts` + `styles.css`):**
+- `contextmenu` global olarak `preventDefault` edilir; yalnızca `[data-act="epic-detail"][data-id]` (portre kartı `.pcard` veya liste satırı `.prow`) hedef alınırsa menü açılır.
+- `.ps5-context-menu` bileşeni tıklama koordinatında render edilir; ekran dışına taşma ölçüp kırpılır (tek `getBoundingClientRect`, layout thrashing yok), ilk öğe odaklanır.
+- Menü içeriği: `Oyna`/`Yükle` (kurulum durumuna göre), `Özellikler & Yönet`, `Masaüstü Kısayolu Oluştur`, `Kurulum Klasörünü Aç`, `Kayıt Dosyalarını Yedekle`, `Favorilere Ekle/Çıkar`, `Kaldır` (kırmızı/tehlikeli).
+- Öğeler mevcut `data-act` yönlendirmesini kullanır (kod tekrarı yok); menü dışına tıklama, kaydırma veya pencere boyutlandırmada kapanır.
+- `index.html`'e `#ctx-root` eklendi.
+
+**Çözüm 2 — Webview Zırhlama:**
+- Metin seçimi yalnızca `input`, `textarea`, `[contenteditable]` ile sınırlandı (`user-select: none` gövdede zaten vardı, giriş alanları açıkça `user-select: text`).
+- `img, a { -webkit-user-drag: none; }` ile görsel/bağlantı sürükleme engellendi.
+- Yeni capture-phase `keydown` dinleyicisi `F5`, `Ctrl+R` (reload) ve `Ctrl +/-/0` (zoom) davranışlarını engeller.
+- `tauri.conf.json` ana penceresine `"backgroundThrottling": "disabled"` eklendi: oyun inerken pencere arka plana alınsa bile indirme ilerleme IPC olayları ve arayüz güncellemeleri kısılmaz.
+

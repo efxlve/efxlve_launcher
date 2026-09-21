@@ -799,6 +799,94 @@ const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
 const moveModalRoot = document.getElementById("move-modal-root") as HTMLElement;
 const toastsEl = document.getElementById("toasts") as HTMLElement;
 const dlBadge = document.getElementById("dl-badge") as HTMLElement;
+const ctxRoot = document.getElementById("ctx-root") as HTMLElement | null;
+
+/* ---------- PS5 / Steam Tarzı Özel Sağ Tık Menüsü (Context Menu) ---------- */
+
+let ctxMenuEl: HTMLElement | null = null;
+
+function hideContextMenu(): void {
+  if (ctxMenuEl) {
+    ctxMenuEl.remove();
+    ctxMenuEl = null;
+  }
+}
+
+function showContextMenu(x: number, y: number, appName: string): void {
+  hideContextMenu();
+  const s = summaryOf(appName);
+  if (!s) return;
+  const installed = !!s.installed;
+  const faved = epicFav.has(appName);
+
+  const item = (
+    act: string,
+    label: string,
+    iconName: Parameters<typeof icon>[0],
+    danger = false,
+  ): string =>
+    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}">${icon(iconName, 15)}<span>${label}</span></button>`;
+
+  const menu = document.createElement("div");
+  menu.className = "ps5-context-menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = `
+    <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
+    ${installed ? item("play", "Oyna", "play") : item("install", "Yükle", "download")}
+    ${item("manage-game", "Özellikler & Yönet", "settings")}
+    <div class="ps5-context-sep"></div>
+    ${item("manage-create-shortcut", "Masaüstü Kısayolu Oluştur", "external")}
+    ${installed ? item("epic-open-folder", "Kurulum Klasörünü Aç", "folder") : ""}
+    ${installed ? item("manage-create-backup", "Kayıt Dosyalarını Yedekle", "cloud") : ""}
+    ${item("epic-fav", faved ? "Favorilerden Çıkar" : "Favorilere Ekle", "heart")}
+    ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", "Kaldır", "trash", true)}` : ""}
+  `;
+
+  const root = ctxRoot || document.body;
+  root.appendChild(menu);
+  ctxMenuEl = menu;
+
+  // Ekran dışına taşmayı önle (ölçüm yalnızca bir kez, layout thrashing yok).
+  const rect = menu.getBoundingClientRect();
+  const px = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+  const py = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+  menu.style.left = `${px}px`;
+  menu.style.top = `${py}px`;
+  menu.querySelector<HTMLElement>(".ps5-context-item")?.focus();
+}
+
+document.addEventListener(
+  "contextmenu",
+  (e) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
+    if (!target) {
+      hideContextMenu();
+      return;
+    }
+    e.preventDefault();
+    const id = target.dataset.id;
+    if (id) showContextMenu(e.clientX, e.clientY, id);
+  },
+  true,
+);
+
+// Menü dışına tıklama veya kaydırma menüyü kapatır; menü öğesine tıklamada
+// önce global data-act yönlendirmesi çalışır, ardından menü kapanır.
+document.addEventListener(
+  "click",
+  (e) => {
+    const t = e.target as HTMLElement;
+    if (t.closest(".ps5-context-menu")) {
+      window.setTimeout(hideContextMenu, 0);
+      return;
+    }
+    hideContextMenu();
+  },
+  true,
+);
+
+window.addEventListener("scroll", hideContextMenu, true);
+window.addEventListener("resize", hideContextMenu, { passive: true });
 
 let activeMoveModalAppName: string | null = null;
 let moveSystemDrives: SystemDriveInfo[] = [];
@@ -10353,6 +10441,20 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
   document.querySelector<HTMLElement>(`#nav ${sel}`)?.click();
 });
+
+/* ---------- Webview Zırhlama: kazara yenileme ve ölçek bozulmasını engelle ----------
+   F5 / Ctrl+R (reload) ve Ctrl +/-/0 (zoom) tarayıcı davranışı konsol deneyimini bozar. */
+document.addEventListener(
+  "keydown",
+  (e) => {
+    const k = e.key.toLowerCase();
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (k === "f5" || (ctrl && (k === "r" || k === "+" || k === "-" || k === "=" || k === "0"))) {
+      e.preventDefault();
+    }
+  },
+  { capture: true },
+);
 
 /* ---------- Başlat ---------- */
 
