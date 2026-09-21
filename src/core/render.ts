@@ -8,11 +8,22 @@
 
 let renderImpl: () => void = () => {};
 let scheduleImpl: () => void = () => {};
+let gamepadHudImpl: (active?: boolean) => void = () => {};
 
 /** Called once by main.ts to wire the real render functions. */
 export function registerRender(render: () => void, scheduleRender: () => void): void {
   renderImpl = render;
   scheduleImpl = scheduleRender;
+}
+
+/** Called once by main.ts to wire the gamepad HUD updater. */
+export function registerGamepadHud(fn: (active?: boolean) => void): void {
+  gamepadHudImpl = fn;
+}
+
+/** Refresh the gamepad HUD bar (no-op until registered). */
+export function updateGamepadHud(active?: boolean): void {
+  gamepadHudImpl(active);
 }
 
 /** Request a synchronous full re-render of the active view. */
