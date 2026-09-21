@@ -12,25 +12,7 @@ import { render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import {
-  epicCachedLibrary,
-  epicEnsureBinary,
-  epicGetAchievementsSummary,
-  epicGetSteamGridKey,
-  epicImportEgl,
-  epicImportEglCollections,
-  epicListGames,
-  epicListInstalled,
-  epicListSkipped,
-  epicLoginWithCode,
-  epicLogout,
-  epicSetScreenshotHotkey,
-  epicSetupStatus,
-  epicStatus,
-  isNotAuth,
-  summarize,
-  type CachedLibrary,
-} from "../../epic";
+import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;

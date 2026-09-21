@@ -9,8 +9,8 @@
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { t } from "../../i18n";
+import { esc, fmtPlaytime } from "../../core/utils";
+
 import type { ProfileGameRecord } from "../../epic";
 export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
@@ -138,7 +138,6 @@ export function renderProfile(): string {
   }
   const totalPlaytimeStr = fmtPlaytime(totalPlaytimeSec);
   const totalOwnedGames = S.epicSummaries.length || S.games.length;
-  const totalInstalledGames = S.epicSummaries.filter((s) => s.installed).length;
 
   const allGames = prof?.games || [];
 

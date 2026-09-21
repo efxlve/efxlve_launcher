@@ -11,7 +11,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, formatScreenshotDate } from "../../core/utils";
-import { t } from "../../i18n";
+
 import {
   epicGetGameScreenshots,
   epicReplaceScreenshotWithCompressed,

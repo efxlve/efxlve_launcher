@@ -13,14 +13,8 @@ import { render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
-import { t } from "../../i18n";
-import {
-  epicDeleteCollection,
-  epicGetCollections,
-  epicSaveCollection,
-  epicSetGameCollections,
-  type GameCollection,
-} from "../../epic";
+
+import { epicDeleteCollection, epicGetCollections, epicSaveCollection, epicSetGameCollections } from "../../epic";
 export function openCollectionModal(colId?: string | null): void {
   S.activeEditingColId = colId ?? null;
   S.colModalSearchQuery = "";
