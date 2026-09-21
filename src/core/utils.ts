@@ -1,0 +1,82 @@
+/**
+ * Pure, side-effect-free formatting and sanitization helpers.
+ * Yan etkisi olmayan saf biçimlendirme ve temizleme yardımcıları.
+ *
+ * EN: These helpers never touch application state or the DOM, which makes them
+ *     safe to unit-test and reuse from any module.
+ * TR: Bu yardımcılar uygulama durumuna veya DOM'a dokunmaz; bu yüzden birim
+ *     testi için güvenli ve her modülden yeniden kullanılabilir.
+ */
+
+/** EN: Escape a string for safe HTML interpolation. TR: HTML'e güvenli gömme için metni kaçırır. */
+export function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
+}
+
+/** EN: Format a demo catalog price. TR: Demo katalog fiyatını biçimlendirir. */
+export function fmtPrice(p: number): string {
+  return p === 0 ? "Ücretsiz" : `₺${p.toFixed(2)}`;
+}
+
+/** EN: Format megabytes as MB/GB. TR: Megabaytı MB/GB olarak biçimlendirir. */
+export function fmtSize(mb: number): string {
+  return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb} MB`;
+}
+
+/** EN: Format a byte count as MB/GB. TR: Bayt miktarını MB/GB olarak biçimlendirir. */
+export function fmtBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return "—";
+  const gb = bytes / 1024 ** 3;
+  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  return `${Math.round(bytes / 1024 ** 2)} MB`;
+}
+
+/** EN: Format tracked playtime seconds into a short human label. TR: Takip edilen oynama süresini kısa etikete çevirir. */
+export function fmtPlaytime(seconds: number): string {
+  if (!seconds || seconds <= 0) return "Oynanmadı";
+  if (seconds < 60) return "< 1 dk";
+  if (seconds < 3600) return `${Math.round(seconds / 60)} dk`;
+  const hours = seconds / 3600;
+  return hours >= 10 ? `${Math.round(hours)} sa` : `${hours.toFixed(1)} sa`;
+}
+
+/** EN: Format an achievement unlock date for the Turkish locale. TR: Başarım açılış tarihini TR yereline göre biçimlendirir. */
+export function fmtAchDate(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * EN: Extract a clean, display-friendly version from Legendary's messy version strings.
+ * TR: Legendary'nin dağınık sürüm metinlerinden temiz, gösterilebilir bir sürüm çıkarır.
+ */
+export function cleanDisplayVersion(rawVersion?: string | null): { display: string; full: string } {
+  if (!rawVersion) return { display: "", full: "" };
+  const trimmed = rawVersion.trim();
+  if (!trimmed) return { display: "", full: "" };
+
+  // EN: Match a trailing semantic version after underscore/dash/space.
+  // TR: Alt çizgi/tire/boşluk sonrası sondaki anlamsal sürümü yakalar.
+  const trailingSemver = trimmed.match(/(?:[_\-]v?|\bv)(\d+\.\d+(?:\.\d+)*(?:[a-zA-Z0-9_\-]+)?)$/i);
+  if (trailingSemver && trailingSemver[1]) {
+    const v = trailingSemver[1].replace(/^v/i, "");
+    return { display: `v${v}`, full: trimmed };
+  }
+
+  const embeddedSemver = trimmed.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+  if (embeddedSemver && embeddedSemver[1]) {
+    return { display: `v${embeddedSemver[1]}`, full: trimmed };
+  }
+
+  if (trimmed.length > 18) {
+    return { display: `${trimmed.slice(0, 16)}…`, full: trimmed };
+  }
+
+  const display = trimmed.startsWith("v") || trimmed.startsWith("V") ? trimmed : `v${trimmed}`;
+  return { display, full: trimmed };
+}

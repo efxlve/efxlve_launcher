@@ -1,0 +1,60 @@
+/* ==========================================================================
+   Design Tokens & Global Reset
+   Tasarim Tokenleri & Global Reset
+
+   EN: Root CSS variables (legacy + PS5 design system tokens), box-sizing and scrollbar defaults.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: Kok CSS degiskenleri (eski + PS5 tasarim sistemi tokenleri), box-sizing ve scrollbar varsayilanlari.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+  --bg: #07080d;
+  --bg2: #12131a;
+  --panel: #171821;
+  --panel-hover: #1f202c;
+  --border: #252634;
+  --border-focus: #4b4d66;
+  --text: #f5f5f7;
+  --muted: #9596a3;
+  --accent: #f5f5f7;
+  --accent2: #a855f7;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --on-accent: #0b0c10;
+  --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.35);
+  --yellow: #f59e0b;
+  --yellow-glow: rgba(245, 158, 11, 0.35);
+  --red: #ef4444;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --glow-ambient: 0 14px 34px -4px rgba(0, 0, 0, 0.85), 0 0 26px -2px rgba(99, 102, 241, 0.32);
+
+  /* --- PS5 Console Design System Tokenleri (docs/DESIGN_SYSTEM.md §3) --- */
+  --ps5-surface-1: #0e1017;
+  --ps5-surface-2: #151822;
+  --ps5-surface-3: #1c202d;
+  --ps5-border-subtle: rgba(255, 255, 255, 0.06);
+  --ps5-border-default: rgba(255, 255, 255, 0.10);
+  --ps5-accent: #8b5cf6;
+  --ps5-accent-hover: #9d75f7;
+  --ps5-text-secondary: #94a3b8;
+  --ps5-text-muted: #64748b;
+  --ps5-radius-sm: 6px;
+  --ps5-radius-md: 10px;
+  --ps5-radius-lg: 14px;
+  --ps5-radius-xl: 20px;
+  --ps5-status-online: #10b981;
+  --ps5-status-warn: #f59e0b;
+  --ps5-status-err: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+

@@ -1,0 +1,128 @@
+/* ==========================================================================
+   Gamepad HUD Bar
+   Gamepad HUD Bari
+
+   EN: 10-foot couch controller HUD bar and button glyphs.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: 10 fit koltuk kontrolcu HUD bari ve buton glifleri.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* ==========================================================================
+   PlayStation Console Gamepad HUD Bar & Glyphs (10-ft Couch Controller Mode)
+   ========================================================================== */
+
+.gamepad-hud-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 20px;
+  background: rgba(11, 13, 20, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75), 0 0 24px rgba(59, 130, 246, 0.18);
+  z-index: 10000;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: hudSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hudSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.gamepad-hud-bar.hidden {
+  display: none !important;
+}
+
+.gamepad-hud-bar.dimmed {
+  opacity: 0.3;
+}
+
+.gp-hud-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #cbd5e1;
+}
+
+.gp-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  background: #131722;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.gp-glyph.btn-a {
+  border-color: #34d399;
+  color: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.gp-glyph.btn-b {
+  border-color: #f87171;
+  color: #f87171;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
+}
+
+.gp-glyph.btn-x {
+  border-color: #60a5fa;
+  color: #60a5fa;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+}
+
+.gp-glyph.btn-y {
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.gp-glyph.btn-bumper {
+  width: auto;
+  min-width: 26px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border-color: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: #e2e8f0;
+}
+
+.gp-glyph.btn-dpad {
+  width: auto;
+  padding: 0 6px;
+  border-radius: 5px;
+  border-color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+

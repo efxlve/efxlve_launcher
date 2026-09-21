@@ -1,0 +1,1041 @@
+/* ==========================================================================
+   PS5 Game Hub (Cinematic Detail View)
+   PS5 Oyun Merkezi (Sinematik Detay Gorunumu)
+
+   EN: Full-screen game detail hub: hero header, stats, features/support, trophy and media spotlights, HLTB card.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: Tam ekran oyun detay merkezi: hero basligi, istatistikler, ozellik/destek, kupa ve medya vitrinleri, HLTB karti.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* --- PLAYSTATION 5 GAME HUB (FULL-SCREEN CINEMATIC VIEW) --- */
+#modal-root:empty { display: none; }
+.overlay {
+  position: fixed;
+  inset: 40px 0 0 0;
+  background: #07080d;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  animation: hub-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-gutter: stable;
+}
+@keyframes hub-enter {
+  from { opacity: 0; transform: scale(0.995); }
+  to { opacity: 1; transform: scale(1); }
+}
+.overlay::-webkit-scrollbar { width: 6px; }
+.overlay::-webkit-scrollbar-track { background: transparent; }
+.overlay::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 10px; }
+.overlay::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
+
+.game-hub, .drawer {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #07080d;
+  border: none;
+  box-shadow: none;
+  animation: none;
+  max-width: 100%;
+}
+
+/* 4K Sinematik Arka Plan & Derin PS5 Atmosferik Degrade */
+.hub-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 520px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.hub-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  filter: brightness(0.85);
+}
+.hub-fallback-art {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(30, 35, 55, 0.5) 0%, rgba(10, 12, 20, 0.95) 100%);
+}
+.hub-backdrop-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(7, 8, 13, 0.2) 0%,
+      rgba(7, 8, 13, 0.65) 45%,
+      rgba(7, 8, 13, 0.96) 80%,
+      #07080d 100%
+    ),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 112, 209, 0.18) 0%, transparent 65%);
+}
+
+/* 1260px Genişliğindeki Konsol Sahnesi */
+.hub-stage {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 20px 36px 64px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Üst Bar: Geri Butonu & Araçlar */
+.hub-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.hub-back-btn {
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+  border-radius: 999px;
+  padding: 8px 16px 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+.hub-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateX(-2px);
+}
+.hub-back-esc {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.hub-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hub-tool-btn {
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #cbd5e1;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.hub-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+/* Hero Başlık ve Aksiyon Bölümü */
+.hub-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding-top: 40px;
+  flex-wrap: wrap;
+}
+.hub-hero-main {
+  flex: 1;
+  min-width: 320px;
+}
+.hub-title {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  margin: 0 0 10px;
+  letter-spacing: -0.6px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+.hub-meta-subline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.hub-meta-subline .meta-item.dev { color: #e2e8f0; font-weight: 600; }
+.hub-meta-subline .meta-item.status.installed { color: #38bdf8; font-weight: 600; }
+.hub-meta-subline .meta-item.partner {
+  color: #60a5fa; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.hub-meta-subline .meta-item.anticheat {
+  color: #34d399; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+}
+.hub-meta-subline .meta-item.warn {
+  color: #fbbf24; display: inline-flex; align-items: center; gap: 4px;
+}
+.hub-meta-subline .meta-dot { opacity: 0.35; font-size: 10px; }
+.hub-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hub-actions-bar .btn {
+  white-space: nowrap;
+}
+.hub-actions-bar .btn.full {
+  width: auto;
+}
+.hub-actions-bar .btn.play,
+.hub-actions-bar .btn.primary {
+  height: 46px;
+  padding: 0 28px;
+  font-size: 14.5px;
+  font-weight: 700;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hub-actions-bar .btn.play:hover,
+.hub-actions-bar .btn.primary:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
+  transform: translateY(-2px);
+}
+.hub-actions-bar .btn.ghost {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: rgba(18, 20, 28, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.hub-actions-bar .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.hub-actions-bar .btn.ghost.faved {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f8fafc;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+}
+.hub-actions-bar .btn.ghost.faved svg {
+  color: #ef4444;
+  fill: #ef4444;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
+}
+.hub-actions-bar .btn.ghost.faved:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 4px 22px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Hızlı İstatistik Kapsülü (Sağ Taraf) */
+.hub-stat-capsule {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(18, 20, 28, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+.hub-stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hub-stat-col.clickable {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.hub-stat-col.clickable:hover {
+  opacity: 0.8;
+}
+.hub-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hub-stat-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  font-feature-settings: "tnum";
+}
+.hub-stat-val.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+}
+.hub-stat-label.plat,
+.hub-stat-col:has(.hub-stat-val.plat) .hub-stat-label {
+  color: #d8b4fe;
+}
+.hub-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Genel Bakış (Overview) 2-Sütunlu Düzen */
+.hub-overview-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .hub-overview-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px 22px;
+  backdrop-filter: blur(10px);
+  margin-bottom: 16px;
+}
+.hub-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.hub-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  letter-spacing: -0.1px;
+}
+.hub-card-header .hub-card-title {
+  margin: 0;
+}
+.hub-desc-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #94a3b8;
+  white-space: pre-line;
+}
+.hub-overview-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- PlayStation Konsol Tarzı Oyun Özellikleri & Destek Kartı --- */
+.hub-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.hub-feature-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  min-width: 0;
+}
+.hub-feature-row:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.hub-feature-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.hub-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+.hub-feature-val {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  text-align: right;
+  flex-shrink: 1;
+}
+.hub-feature-val.supported {
+  color: #34d399;
+}
+.hub-feature-val.accent {
+  color: #38bdf8;
+}
+.hub-feature-val.gold {
+  color: #fbbf24;
+}
+.hub-feature-val.plat {
+  color: #c084fc;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.35);
+}
+.hub-feature-row:has(.hub-feature-val.plat) .hub-feature-icon {
+  color: #c084fc;
+}
+.hub-feature-val.warn {
+  color: #fb923c;
+}
+.hub-feature-val.muted {
+  color: #64748b;
+}
+.hub-size-val {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.hub-version-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+  letter-spacing: 0.2px;
+  transition: all 0.15s ease;
+}
+.hub-version-badge:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+}
+
+/* Oyun Açıklaması */
+.drawer-desc {
+  color: #c0c1cf;
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+/* Başarım Mini İlerleme (Overview için) */
+.drawer-quick-ach-strip {
+  display: none; /* Stat row'a entegre edildi, artık ayrı strip gerekmiyor */
+}
+
+/* --- PlayStation 5 Kupa Vitrini (Trophy Spotlight) --- */
+.hub-trophy-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hub-trophy-spotlight.plat {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: linear-gradient(180deg, rgba(22, 10, 38, 0.4) 0%, rgba(15, 17, 26, 0.7) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 24px rgba(168, 85, 247, 0.12);
+}
+.hub-card-link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.hub-card-link:hover {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c084fc;
+}
+
+/* Kupa İlerleme Kutusu */
+.hub-trophy-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.hub-trophy-progress-box.plat {
+  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+.hub-trophy-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hub-trophy-percent-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.hub-trophy-percent-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.5px;
+  font-feature-settings: "tnum";
+}
+.hub-trophy-percent-num.plat {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+}
+.hub-trophy-counts {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+.hub-trophy-medals {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.hub-medal-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-feature-settings: "tnum";
+}
+.hub-medal-item.plat { color: #c084fc; }
+.hub-medal-item.gold { color: #fbbf24; }
+.hub-medal-item.silver { color: #cbd5e1; }
+.hub-medal-item.bronze { color: #d97706; }
+
+/* Kupa Çubuğu */
+.hub-trophy-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+.hub-trophy-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #7e22ce, #a855f7, #c084fc);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
+  transition: width 0.4s ease;
+}
+.hub-trophy-bar-fill.plat {
+  background: linear-gradient(90deg, #6b21a8, #9333ea, #c084fc, #e9d5ff);
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.6);
+}
+
+/* Sıradaki Hedef Kupalar (Next Up) */
+.hub-trophy-next-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+.hub-trophy-target-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+.hub-trophy-target-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.hub-trophy-target-card:focus-visible {
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
+}
+.hub-trophy-target-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: #c084fc;
+}
+.hub-trophy-target-icon.plat {
+  color: #c084fc;
+}
+.hub-trophy-target-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hub-trophy-target-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hub-trophy-target-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-trophy-target-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.hub-trophy-target-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.hub-trophy-target-badge.bronze { background: rgba(217, 119, 6, 0.15); color: #fb923c; border: 1px solid rgba(217, 119, 6, 0.3); }
+.hub-trophy-target-badge.silver { background: rgba(203, 213, 225, 0.12); color: #e2e8f0; border: 1px solid rgba(203, 213, 225, 0.25); }
+.hub-trophy-target-badge.gold { background: rgba(251, 191, 36, 0.18); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.35); }
+.hub-trophy-target-badge.plat { background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.4); }
+
+/* --- PlayStation 5 Medya Galerisi (Media Spotlight) --- */
+.hub-media-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hub-card-hotkey {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #c084fc;
+  letter-spacing: 0.3px;
+}
+.hub-card-count {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 2px;
+}
+.hub-media-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.hub-media-item {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  display: block;
+  width: 100%;
+}
+.hub-media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+.hub-media-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 58, 237, 0.25);
+}
+.hub-media-item:focus-visible {
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
+}
+.hub-media-item:hover img {
+  transform: scale(1.05);
+}
+.hub-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(7, 8, 13, 0.85) 0%, rgba(7, 8, 13, 0.2) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.hub-media-item:hover .hub-media-overlay {
+  opacity: 1;
+}
+.hub-media-zoom-icon {
+  align-self: flex-end;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f1f5f9;
+}
+.hub-media-date {
+  font-size: 10px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Medya Boş Durumu (Empty State) */
+.hub-media-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.hub-media-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  color: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hub-media-empty-info {
+  flex: 1;
+  min-width: 0;
+}
+.hub-media-empty-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 2px;
+}
+.hub-media-empty-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+.hub-media-empty-desc strong {
+  color: #c084fc;
+}
+
+/* HowLongToBeat Bento Kartı */
+.drawer-hltb-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  transition: all 0.18s ease;
+}
+.drawer-hltb-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+.drawer-hltb-card.loading {
+  padding: 11px 14px;
+  margin-bottom: 12px;
+}
+.drawer-hltb-card.loading .hltb-head {
+  margin-bottom: 0;
+}
+.hltb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.hltb-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c084fc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hltb-source {
+  font-size: 11px;
+  color: var(--muted);
+}
+.hltb-loading-text {
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hltb-spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(192, 132, 252, 0.3);
+  border-top-color: #c084fc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+.hltb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.hltb-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.15s ease;
+}
+.hltb-item:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+.hltb-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+.hltb-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Koleksiyon & Etiket Satırı */
+.drawer-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.drawer-tag {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(192, 132, 252, 0.22);
+  color: #d8b4fe;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.drawer-tag:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(192, 132, 252, 0.4);
+  color: #fff;
+}
+.drawer-tag-add {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: #64748b;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+.drawer-tag-add:hover {
+  border-color: rgba(192, 132, 252, 0.35);
+  color: #c084fc;
+}
+
+/* Oyun Künyesi / Meta Etiketleri */
+.drawer-meta-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.drawer-meta-chip {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.drawer-meta-chip.clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.drawer-meta-chip.clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(192, 132, 252, 0.3);
+  transform: translateY(-1px);
+}
+.chip-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.chip-val {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+

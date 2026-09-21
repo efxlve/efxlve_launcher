@@ -1,0 +1,252 @@
+/* ==========================================================================
+   Platinum Badges & Drawer Tabs
+   Platin Rozetleri & Cekmece Sekmeleri
+
+   EN: Platinum trophy badge and holographic glint, detail drawer tab navigation with fade/arrow layers.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: Platin kupa rozeti ve holografik parilti, cekmece sekme navigasyonu (fade/ok katmanlari).
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* --- Platin Kupa (%100 Tamamlama) Altın Rozet & Holografik Parıltı Efekti --- */
+/* --- Platin Kupa (%100 Tamamlama) Epic Mor Kupa & Holografik Parıltı Efekti --- */
+.pcard.platinum {
+  border-color: rgba(168, 85, 247, 0.75);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6),
+              0 0 16px rgba(168, 85, 247, 0.35),
+              0 0 32px rgba(147, 51, 234, 0.15);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s ease,
+              box-shadow 0.24s ease;
+}
+.pcard.platinum:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: #c084fc;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7),
+              0 0 24px rgba(192, 132, 252, 0.5),
+              0 0 45px rgba(168, 85, 247, 0.25);
+}
+
+/* Koleksiyon kartı holografik ışık geçişi (hover anında zarif mor-platin parıltı) */
+.pcard.platinum::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.04) 44%,
+    rgba(216, 180, 254, 0.38) 50%,
+    rgba(255, 255, 255, 0.08) 56%,
+    transparent 65%
+  );
+  transform: translateX(-140%) rotate(12deg);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pcard.platinum:hover::after {
+  opacity: 1;
+  animation: plat-hover-glint 1.2s ease-out forwards;
+}
+
+@keyframes plat-hover-glint {
+  from { transform: translateX(-140%) rotate(12deg); }
+  to { transform: translateX(140%) rotate(12deg); }
+}
+
+/* Epic Games Sade Mor Platin Kupa Rozeti */
+.platinum-badge,
+.platinum-ribbon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border-radius: 12px 12px 7px 7px;
+  background: rgba(22, 10, 38, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 14px rgba(168, 85, 247, 0.45);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.platinum-badge svg,
+.platinum-ribbon svg {
+  filter: drop-shadow(0 0 5px rgba(192, 132, 252, 0.7));
+}
+
+.pcard:hover .platinum-badge,
+.pcard:hover .platinum-ribbon {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.spinner {
+  width: 26px; height: 26px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Detay Çekmecesi Sekmeleri (Kaydırılabilir & Yumuşak Fade Navigasyon) --- */
+.drawer-tabs-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.drawer-tabs {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 4px;
+  width: 100%;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.drawer-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Yumuşak Kenar Fade & Ok Katmanı (Animasyonlu ve Kademeli Geçiş) */
+.drawer-tabs-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 58px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-tabs-fade.left {
+  left: 0;
+  background: linear-gradient(to right, var(--bg2) 35%, rgba(18, 19, 26, 0.8) 65%, transparent 100%);
+  justify-content: flex-start;
+  padding-left: 4px;
+  transform: translateX(-12px);
+}
+
+.drawer-tabs-fade.right {
+  right: 0;
+  background: linear-gradient(to left, var(--bg2) 35%, rgba(18, 19, 26, 0.8) 65%, transparent 100%);
+  justify-content: flex-end;
+  padding-right: 4px;
+  transform: translateX(12px);
+}
+
+.drawer-tabs-fade.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.drawer-tabs-arrow {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(28, 30, 40, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  padding: 0;
+  pointer-events: auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+
+.drawer-tabs-arrow:hover {
+  background: rgba(45, 48, 64, 1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: scale(1.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.75);
+}
+
+.drawer-tabs-arrow:active {
+  transform: scale(0.92);
+}
+
+.drawer-tab {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+}
+.drawer-tab:hover {
+  color: #e2e8f0;
+}
+.drawer-tab:active {
+  opacity: 0.8;
+}
+.drawer-tab.active {
+  color: #f8fafc;
+  border-bottom-color: #3b82f6;
+  font-weight: 700;
+}
+.drawer-tab-badge {
+  font-size: 10.5px;
+  opacity: 0.7;
+  font-weight: 600;
+}
+.drawer-tab.active .drawer-tab-badge {
+  opacity: 1;
+  color: #93c5fd;
+}
+.drawer-tab.plat {
+  color: #c084fc;
+}
+.drawer-tab.plat.active {
+  color: #f3e8ff;
+  border-bottom-color: #a855f7;
+}
+.drawer-tab-badge.plat {
+  color: #c084fc;
+  font-weight: 700;
+}
+.drawer-tab.active .drawer-tab-badge.plat {
+  color: #e9d5ff;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+}
+
