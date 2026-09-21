@@ -1715,3 +1715,20 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Nihai mimari:** `src/core/` (types, constants, utils, icons, state, dom, toast, selectors, game-view, nav, recent, render, epic-actions, demo, window, i18n), `src/features/` (auth, collections, context-menu, cover, dlc, downloads, drawer, events, gamepad, library, manage, move-game, onboarding, playtime, profile, screenshots, settings, store), `src/styles/` (24 dosya), `src/locales/` (15 dil).
 
+## 111. Optimizasyon & Ölü Kod Temizliği + Sıfır-Emoji Politikası İhlalinin Giderilmesi
+
+**Ölü kod / kullanılmayan semboller:**
+- TypeScript AST tabanlı bir betikle tüm `src/**` dosyalarındaki kullanılmayan import belirteçleri temizlendi (13 dosya).
+- `noUnusedLocals` ile tespit edilen ölü yerel değişkenler kaldırıldı (`achPill`, `baseUnlocked`, `dlcUnlocked`, `baseItems/baseTotal/dlcTotal`, `installedCount`, `updateCount`, `totalInstalledGames`) ve kullanılmayan `t` importları silindi.
+- `node tsc --noEmit --noUnusedLocals` artık **0 hata** veriyor.
+
+**Sıfır-emoji politikası (AGENTS.md §7.1) ihlali giderildi:**
+- `POPULAR_COL_EMOJIS` (32 emoji) kaldırıldı; yerine `src/core/collection-icons.ts` eklendi: `COLLECTION_ICONS` (24 adet inline SVG ikon), `isCollectionIcon()`, `collectionMarker()`.
+- Koleksiyon modalındaki emoji seçici → SVG ikon paleti (`col-marker-*` sınıfları); serbest emoji girişi ve `apply-custom-emoji` aksiyonu kaldırıldı.
+- Hızlı şablon çipleri artık ikon + etiket (`data-icon`).
+- `colModalSelectedEmoji` → `colModalMarker`, `isEmojiPaletteOpen` → `isMarkerPaletteOpen`, `updateEmojiUi` → `updateMarkerUi` olarak yeniden adlandırıldı.
+- Koleksiyon işaretleri kütüphane raflarında, çiplerde, çekmecede ve menüde `collectionMarker()` ile çizilir; eski emoji değerleri klasör ikonuna düşer.
+- CSS sınıfları `col-emoji-*` → `col-marker-*` olarak güncellendi; ölü `.col-custom-emoji-row` bloğu ve hover `scale` süsü kaldırıldı.
+
+`tsc` + `vite build` + `cargo test` (54/54) yeşil. **Kalan iş:** i18n metin taşıma (bkz. §6.6).
+

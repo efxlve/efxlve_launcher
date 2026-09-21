@@ -6,6 +6,7 @@
  * re-renders go through the render bus.
  */
 
+import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -19,14 +20,14 @@ export function openCollectionModal(colId?: string | null): void {
   S.activeEditingColId = colId ?? null;
   S.colModalSearchQuery = "";
   S.colModalTabFilter = "all";
-  S.isEmojiPaletteOpen = false;
+  S.isMarkerPaletteOpen = false;
   if (colId) {
     const col = S.epicCollections.find((c) => c.id === colId);
     S.colModalSelectedApps = new Set(col?.app_names || []);
-    S.colModalSelectedEmoji = col?.emoji || "";
+    S.colModalMarker = isCollectionIcon(col?.emoji) ? (col!.emoji as string) : "";
   } else {
     S.colModalSelectedApps = new Set();
-    S.colModalSelectedEmoji = "";
+    S.colModalMarker = "";
   }
   renderCollectionModal();
 }
@@ -35,29 +36,28 @@ export function closeCollectionModal(): void {
   if (collectionRoot) collectionRoot.innerHTML = "";
   S.activeEditingColId = null;
   S.gameColModalAppName = null;
-  S.isEmojiPaletteOpen = false;
+  S.isMarkerPaletteOpen = false;
 }
 
-export function updateEmojiUi(): void {
-  const display = document.getElementById("col-emoji-display");
-  const avatarBtn = document.querySelector(".col-emoji-avatar-btn");
+/** Refresh the marker avatar/palette in place (avoids a full modal re-render). */
+export function updateMarkerUi(): void {
+  const display = document.getElementById("col-marker-display");
+  const avatarBtn = document.querySelector(".col-marker-avatar-btn");
   const headerAvatar = document.getElementById("col-header-avatar");
   if (display) {
-    display.innerHTML = S.colModalSelectedEmoji ? esc(S.colModalSelectedEmoji) : icon("folder", 20);
+    display.innerHTML = collectionMarker(S.colModalMarker, 20);
   }
   if (avatarBtn) {
-    avatarBtn.classList.toggle("has-emoji", Boolean(S.colModalSelectedEmoji));
+    avatarBtn.classList.toggle("has-marker", Boolean(S.colModalMarker));
   }
   if (headerAvatar) {
-    headerAvatar.innerHTML = S.colModalSelectedEmoji
-      ? `<span class="col-header-emoji">${esc(S.colModalSelectedEmoji)}</span>`
-      : icon("folder", 18);
+    headerAvatar.innerHTML = collectionMarker(S.colModalMarker, 18);
   }
-  const pal = document.getElementById("col-emoji-palette");
+  const pal = document.getElementById("col-marker-palette");
   if (pal) {
-    pal.classList.toggle("open", S.isEmojiPaletteOpen);
-    pal.querySelectorAll(".col-emoji-item").forEach((btn) => {
-      btn.classList.toggle("active", (btn as HTMLElement).dataset.emoji === S.colModalSelectedEmoji);
+    pal.classList.toggle("open", S.isMarkerPaletteOpen);
+    pal.querySelectorAll(".col-marker-item").forEach((btn) => {
+      btn.classList.toggle("active", (btn as HTMLElement).dataset.icon === S.colModalMarker);
     });
   }
 }
@@ -103,7 +103,7 @@ export function renderCollectionModal(): void {
         <div class="col-modal-header">
           <div class="col-modal-title">
             <div class="col-modal-header-avatar" id="col-header-avatar">
-              ${S.colModalSelectedEmoji ? `<span class="col-header-emoji">${esc(S.colModalSelectedEmoji)}</span>` : icon("folder", 20)}
+              ${collectionMarker(S.colModalMarker, 20)}
             </div>
             <div>
               <h2>
@@ -122,24 +122,20 @@ export function renderCollectionModal(): void {
           <div class="col-input-group">
             <label for="col-name-input" class="col-label">Koleksiyon Simgesi & Adı</label>
             <div class="col-name-row">
-              <div class="col-emoji-picker-container">
-                <button type="button" class="col-emoji-avatar-btn ${S.colModalSelectedEmoji ? "has-emoji" : ""}" data-act="toggle-col-emoji-palette" title="Emoji / Simge Seç">
-                  <span id="col-emoji-display">${S.colModalSelectedEmoji ? esc(S.colModalSelectedEmoji) : icon("folder", 22)}</span>
-                  <span class="col-emoji-edit-badge">${icon("edit", 10)}</span>
+              <div class="col-marker-picker-container">
+                <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="Simge Seç">
+                  <span id="col-marker-display">${collectionMarker(S.colModalMarker, 22)}</span>
+                  <span class="col-marker-edit-badge">${icon("edit", 10)}</span>
                 </button>
-                <div id="col-emoji-palette" class="col-emoji-palette ${S.isEmojiPaletteOpen ? "open" : ""}">
-                  <div class="col-emoji-palette-header">
+                <div id="col-marker-palette" class="col-marker-palette ${S.isMarkerPaletteOpen ? "open" : ""}">
+                  <div class="col-marker-palette-header">
                     <span>Bir Simge Seçin</span>
-                    ${S.colModalSelectedEmoji ? `<button type="button" class="col-emoji-clear-btn" data-act="clear-col-emoji">${icon("trash", 11)} Kaldır</button>` : ""}
+                    ${S.colModalMarker ? `<button type="button" class="col-marker-clear-btn" data-act="clear-col-marker">${icon("trash", 11)} Kaldır</button>` : ""}
                   </div>
-                  <div class="col-emoji-grid">
-                    ${S.POPULAR_COL_EMOJIS.map((e) => `
-                      <button type="button" class="col-emoji-item ${S.colModalSelectedEmoji === e ? "active" : ""}" data-act="pick-col-emoji" data-emoji="${e}">${e}</button>
+                  <div class="col-marker-grid">
+                    ${COLLECTION_ICONS.map((name) => `
+                      <button type="button" class="col-marker-item ${S.colModalMarker === name ? "active" : ""}" data-act="pick-col-marker" data-icon="${name}" title="${name}">${icon(name, 18)}</button>
                     `).join("")}
-                  </div>
-                  <div class="col-custom-emoji-row">
-                    <input id="col-custom-emoji-input" class="text-input small" placeholder="Farklı bir emoji..." maxlength="4" value="${esc(S.colModalSelectedEmoji)}" />
-                    <button type="button" class="btn ghost small" data-act="apply-custom-emoji">Uygula</button>
                   </div>
                 </div>
               </div>
@@ -156,20 +152,20 @@ export function renderCollectionModal(): void {
                   </button>
                 </div>
                 <div class="col-quick-presets" id="col-presets-scrollable">
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="📖" data-name="Hikaye">📖 Hikaye</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🌐" data-name="Online">🌐 Online</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🏆" data-name="Platin Hedef">🏆 Platin Hedef</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="⚔️" data-name="RPG">⚔️ RPG</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🚗" data-name="Yarış">🚗 Yarış</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="👻" data-name="Korku">👻 Korku</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🔥" data-name="Favoriler">🔥 Favoriler</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="⚡" data-name="Aksiyon">⚡ Aksiyon</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🧩" data-name="Bulmaca">🧩 Bulmaca</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🚀" data-name="Bilim Kurgu">🚀 Bilim Kurgu</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🕹️" data-name="Retro / Klasik">🕹️ Klasik</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="🎯" data-name="Strateji">🎯 Strateji</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="👑" data-name="VIP / Özel">👑 Özel</button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-emoji="📦" data-name="Bitirdiklerim">📦 Bitirdiklerim</button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="list" data-name="Hikaye">${icon("list", 13)} <span>Hikaye</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="globe" data-name="Online">${icon("globe", 13)} <span>Online</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="trophy" data-name="Platin Hedef">${icon("trophy", 13)} <span>Platin Hedef</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="shield" data-name="RPG">${icon("shield", 13)} <span>RPG</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="Yarış">${icon("zap", 13)} <span>Yarış</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="eye" data-name="Korku">${icon("eye", 13)} <span>Korku</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="heart" data-name="Favoriler">${icon("heart", 13)} <span>Favoriler</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="Aksiyon">${icon("zap", 13)} <span>Aksiyon</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="layers" data-name="Bulmaca">${icon("layers", 13)} <span>Bulmaca</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="rocket" data-name="Bilim Kurgu">${icon("rocket", 13)} <span>Bilim Kurgu</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="gamepad-2" data-name="Retro / Klasik">${icon("gamepad-2", 13)} <span>Retro / Klasik</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="cpu" data-name="Strateji">${icon("cpu", 13)} <span>Strateji</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="crown" data-name="VIP / Özel">${icon("crown", 13)} <span>VIP / Özel</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="check-circle" data-name="Bitirdiklerim">${icon("check-circle", 13)} <span>Bitirdiklerim</span></button>
                 </div>
                 <div class="col-presets-fade right">
                   <button type="button" class="col-presets-arrow right" data-act="col-presets-scroll" data-dir="right" title="Sağa kaydır">
@@ -306,7 +302,7 @@ export async function saveCollectionFromModal(): Promise<void> {
       name,
       Array.from(S.colModalSelectedApps),
       S.activeEditingColId,
-      S.colModalSelectedEmoji || null,
+      S.colModalMarker || null,
     );
     toast(`"${saved.name}" koleksiyonu kaydedildi`, "ok");
     closeCollectionModal();
@@ -380,7 +376,7 @@ export function openGameCollectionsModal(appName: string): void {
                   </div>
                   <div class="col-game-info">
                     <div class="col-game-title">
-                      ${c.emoji ? `<span class="col-item-emoji">${esc(c.emoji)}</span> ` : ""}${esc(c.name)}
+                      ${isCollectionIcon(c.emoji) ? `<span class="col-item-marker">${collectionMarker(c.emoji, 14)}</span> ` : ""}${esc(c.name)}
                     </div>
                     <div class="col-game-sub">${c.app_names.length} oyun</div>
                   </div>
@@ -444,7 +440,7 @@ export function updateDrawerCollectionsBoxInPlace(appName: string): void {
           .map(
             (c) => `
           <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
-            ${c.emoji ? `<span class="col-pill-emoji">${esc(c.emoji)}</span>` : `<span class="col-pill-dot"></span>`}
+            ${isCollectionIcon(c.emoji) ? `<span class="col-pill-marker">${collectionMarker(c.emoji, 13)}</span>` : `<span class="col-pill-dot"></span>`}
             <span class="col-pill-text">${esc(c.name)}</span>
           </button>
         `,

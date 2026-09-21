@@ -43,7 +43,7 @@ import {
   saveGameCollectionsFromModal,
   updateColGamesListInPlace,
   updateColPresetArrows,
-  updateEmojiUi,
+  updateMarkerUi,
 } from "../collections/collections-view";
 import {
   closeCustomCoverModal,
@@ -111,12 +111,12 @@ document.addEventListener("click", (e) => {
     }
   }
 
-  // Emoji paleti dışına tıklanırsa kapat
-  if (S.isEmojiPaletteOpen) {
+  // Marker palette closes when clicking outside it.
+  if (S.isMarkerPaletteOpen) {
     const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".col-emoji-picker-container")) {
-      S.isEmojiPaletteOpen = false;
-      const pal = document.getElementById("col-emoji-palette");
+    if (!targetEl.closest(".col-marker-picker-container")) {
+      S.isMarkerPaletteOpen = false;
+      const pal = document.getElementById("col-marker-palette");
       if (pal) pal.classList.remove("open");
     }
   }
@@ -575,35 +575,27 @@ document.addEventListener("click", (e) => {
     closeCollectionModal();
   } else if (act === "col-modal-backdrop") {
     if (e.target === t) closeCollectionModal();
-  } else if (act === "toggle-col-emoji-palette") {
-    S.isEmojiPaletteOpen = !S.isEmojiPaletteOpen;
-    const pal = document.getElementById("col-emoji-palette");
-    if (pal) pal.classList.toggle("open", S.isEmojiPaletteOpen);
-  } else if (act === "pick-col-emoji") {
-    const emoji = t.dataset.emoji;
-    if (emoji) {
-      S.colModalSelectedEmoji = emoji;
-      S.isEmojiPaletteOpen = false;
-      updateEmojiUi();
+  } else if (act === "toggle-col-marker-palette") {
+    S.isMarkerPaletteOpen = !S.isMarkerPaletteOpen;
+    const pal = document.getElementById("col-marker-palette");
+    if (pal) pal.classList.toggle("open", S.isMarkerPaletteOpen);
+  } else if (act === "pick-col-marker") {
+    const marker = t.dataset.icon;
+    if (marker) {
+      S.colModalMarker = marker;
+      S.isMarkerPaletteOpen = false;
+      updateMarkerUi();
     }
-  } else if (act === "clear-col-emoji") {
-    S.colModalSelectedEmoji = "";
-    S.isEmojiPaletteOpen = false;
-    updateEmojiUi();
-  } else if (act === "apply-custom-emoji") {
-    const customInput = document.getElementById("col-custom-emoji-input") as HTMLInputElement | null;
-    const val = customInput?.value.trim() || "";
-    if (val) {
-      S.colModalSelectedEmoji = val;
-      S.isEmojiPaletteOpen = false;
-      updateEmojiUi();
-    }
+  } else if (act === "clear-col-marker") {
+    S.colModalMarker = "";
+    S.isMarkerPaletteOpen = false;
+    updateMarkerUi();
   } else if (act === "quick-col-preset") {
-    const presetEmoji = t.dataset.emoji;
+    const presetMarker = t.dataset.icon;
     const presetName = t.dataset.name;
-    if (presetEmoji) {
-      S.colModalSelectedEmoji = presetEmoji;
-      updateEmojiUi();
+    if (presetMarker) {
+      S.colModalMarker = presetMarker;
+      updateMarkerUi();
     }
     const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
     if (nameInput && presetName) {
