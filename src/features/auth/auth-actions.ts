@@ -12,7 +12,7 @@ import { render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 export async function bootEpic(): Promise<void> {
@@ -61,7 +61,7 @@ export async function refreshEpic(): Promise<void> {
     void syncEpicLibrary(false);
   } catch (e) {
     S.epicPhase = "error";
-    S.epicError = String(e);
+    S.epicError = localizeMessage(String(e));
     render();
   }
 }
@@ -128,10 +128,10 @@ export async function epicDownload(): Promise<void> {
   render();
   try {
     await epicEnsureBinary();
-    toast("legendary hazır", "ok");
+    toast(t("auth.legendaryReady"), "ok");
     await refreshEpic();
   } catch (e) {
-    toast(`İndirme başarısız: ${String(e)}`, "err");
+    toast(t("auth.downloadFailed", { msg: localizeMessage(String(e)) }), "err");
   } finally {
     S.epicBusy = "";
     S.setupProgress = null;
@@ -146,10 +146,10 @@ export async function epicDoLogin(code: string): Promise<void> {
   try {
     S.epicAccount = await epicLoginWithCode(code);
     S.onboardingStep = 1;
-    toast(`${S.epicAccount} olarak giriş yapıldı`, "ok");
+    toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
     await refreshEpic();
   } catch (e) {
-    toast(`Giriş başarısız: ${String(e)}`, "err");
+    toast(t("auth.signInFailed", { msg: localizeMessage(String(e)) }), "err");
   } finally {
     S.epicBusy = "";
     if (S.view === "library") render();
@@ -163,10 +163,10 @@ export async function epicDoImport(): Promise<void> {
   try {
     S.epicAccount = await epicImportEgl();
     S.onboardingStep = 1;
-    toast(`${S.epicAccount} oturumu aktarıldı`, "ok");
+    toast(t("auth.imported", { name: S.epicAccount ?? "" }), "ok");
     await refreshEpic();
   } catch (e) {
-    toast(`Aktarma başarısız: ${String(e)}`, "err");
+    toast(t("auth.importFailed", { msg: localizeMessage(String(e)) }), "err");
   } finally {
     S.epicBusy = "";
     if (S.view === "library") render();

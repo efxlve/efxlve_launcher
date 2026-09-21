@@ -115,7 +115,7 @@ export async function browseMoveTarget(): Promise<void> {
     S.selectedMoveTargetPath ||
     (S.selectedMoveDriveLetter ? `${S.selectedMoveDriveLetter}:\\` : null);
   try {
-    const chosen = await epicSelectFolderDialog(defaultDir);
+    const chosen = await epicSelectFolderDialog(defaultDir, t("move.pickerTitle"));
     if (chosen) {
       S.selectedMoveTargetPath = chosen;
       if (chosen.length >= 2 && chosen[1] === ":") {
@@ -124,7 +124,7 @@ export async function browseMoveTarget(): Promise<void> {
       renderMoveGameModalFrame();
     }
   } catch (err) {
-    toast(`Klasör seçim hatası: ${String(err)}`, "err");
+    toast(t("move.folderSelectFailed", { msg: String(err) }), "err");
   }
 }
 
@@ -134,17 +134,17 @@ export async function startMoveGame(appName: string): Promise<void> {
   if (!s) return;
 
   if (S.runningGames.has(appName)) {
-    toast("Oyun şu anda açık/çalışıyor! Lütfen önce oyunu kapatın.", "err");
+    toast(t("move.gameRunning"), "err");
     return;
   }
   if (epicDlProgress(appName) !== null) {
-    toast("Oyun şu anda indiriliyor veya güncelleniyor! Lütfen bitmesini bekleyin.", "err");
+    toast(t("move.gameDownloading"), "err");
     return;
   }
 
   const target = S.selectedMoveTargetPath.trim();
   if (!target) {
-    toast("Lütfen geçerli bir hedef klasör belirtin!", "");
+    toast(t("move.invalidTarget"), "");
     return;
   }
 

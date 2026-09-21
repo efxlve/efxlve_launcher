@@ -12,6 +12,7 @@ import { updateBadge } from "./nav";
 import { render } from "./render";
 import { S } from "./state";
 import { toast } from "./toast";
+import { t } from "../i18n";
 import type { Game } from "./types";
 
 /** Look up a demo game by id. */
@@ -24,7 +25,7 @@ export async function refreshGames(): Promise<void> {
   try {
     S.games = await fetchGames();
   } catch (e) {
-    toast(`Oyun listesi alınamadı: ${String(e)}`, "err");
+    toast(t("demo.listFailed", { msg: String(e) }), "err");
   }
   render();
 }
@@ -52,11 +53,11 @@ export async function installGame(id: string): Promise<void> {
       const set = mockInstalled();
       set.add(id);
       saveMockInstalled(set);
-      toast(`${game.title} kuruldu`, "ok");
+      toast(t("demo.installed", { title: game.title }), "ok");
     }
   } catch (e) {
     S.downloads.delete(id);
-    toast(`Kurulum başarısız: ${String(e)}`, "err");
+    toast(t("demo.installFailed", { msg: String(e) }), "err");
   }
   await refreshGames();
 }
@@ -68,7 +69,7 @@ export async function launchGame(id: string): Promise<void> {
       const msg = await invoke<string>("launch_game", { id });
       toast(msg, "ok");
     } else {
-      toast(`${gameById(id)?.title ?? id} başlatılıyor… (demo modu)`, "ok");
+      toast(t("demo.launching", { title: gameById(id)?.title ?? id }), "ok");
     }
   } catch (e) {
     toast(String(e), "err");
@@ -85,7 +86,7 @@ export async function uninstallGame(id: string): Promise<void> {
       const set = mockInstalled();
       set.delete(id);
       saveMockInstalled(set);
-      toast(`${gameById(id)?.title ?? id} kaldırıldı`, "ok");
+      toast(t("demo.uninstalled", { title: gameById(id)?.title ?? id }), "ok");
     }
   } catch (e) {
     toast(String(e), "err");

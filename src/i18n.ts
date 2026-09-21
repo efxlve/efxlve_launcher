@@ -70,6 +70,23 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   return s;
 }
 
+/**
+ * Localizes a message coming from the Rust backend.
+ *
+ * Backend messages are either a plain developer string or a translation
+ * descriptor of the form `@t:<key>` / `@t:<key>\u001f<arg1>\u001f<arg2>...`
+ * where positional args map to `{a1}`, `{a2}`, ... placeholders. Anything that
+ * does not start with `@t:` is returned unchanged.
+ */
+export function localizeMessage(raw: string): string {
+  if (!raw || !raw.startsWith("@t:")) return raw;
+  const parts = raw.slice(3).split("\u001f");
+  const key = parts[0];
+  const vars: Record<string, string> = {};
+  for (let i = 1; i < parts.length; i++) vars[`a${i}`] = parts[i];
+  return t(key, vars);
+}
+
 function applyDir(lang: string): void {
   const meta = LANGUAGES.find((l) => l.code === lang);
   document.documentElement.lang = lang;

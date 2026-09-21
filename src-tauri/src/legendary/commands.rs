@@ -2371,8 +2371,11 @@ pub fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> {
 
 /// Windows yerel klasör seçim diyaloğunu ("Gözat") açar
 #[tauri::command]
-pub async fn epic_select_folder_dialog(default_path: Option<String>) -> Result<Option<String>, String> {
-    super::move_game::select_folder_dialog(default_path).await
+pub async fn epic_select_folder_dialog(
+    default_path: Option<String>,
+    title: Option<String>,
+) -> Result<Option<String>, String> {
+    super::move_game::select_folder_dialog(default_path, title).await
 }
 
 /// Bir oyunu başka bir klasöre/sürücüye taşır

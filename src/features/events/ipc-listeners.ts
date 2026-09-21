@@ -27,7 +27,7 @@ import {
   type VerifyCompleteEvent,
   type VerifyProgressEvent,
 } from "../../epic";
-import { applyStaticTranslations, setLanguage, t } from "../../i18n";
+import { applyStaticTranslations, localizeMessage, setLanguage, t } from "../../i18n";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 import { gameById, refreshGames } from "../../core/demo";
@@ -99,7 +99,7 @@ export async function initApp(hooks: {
       if (S.view === "library") render();
     });
     await listen<LibraryEvent>("legendary-library", (event) => {
-      S.epicBusyMsg = event.payload.message;
+      S.epicBusyMsg = localizeMessage(event.payload.message);
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
@@ -194,7 +194,7 @@ export async function initApp(hooks: {
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       updateBadge();
-      toast(`İndirme başarısız: ${event.payload.message}`, "err");
+      toast(t("dl.downloadFailed", { msg: localizeMessage(event.payload.message) }), "err");
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
         if (S.view === "downloads" || S.view === "library") render();
@@ -204,7 +204,7 @@ export async function initApp(hooks: {
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       updateBadge();
-      toast("İndirme iptal edildi", "");
+      toast(t("dl.cancelled"), "");
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
         if (S.view === "downloads" || S.view === "library") render();
@@ -222,9 +222,9 @@ export async function initApp(hooks: {
       const { id, success, message } = event.payload;
       resetVerifyInPlace(id);
       if (success) {
-        toast("Dosyalar başarıyla doğrulandı.", "ok");
+        toast(t("verify.success"), "ok");
       } else {
-        toast(`Doğrulama hatası: ${message}`, "err");
+        toast(t("verify.failed", { msg: localizeMessage(message) }), "err");
       }
     });
 
@@ -249,7 +249,7 @@ export async function initApp(hooks: {
             applyMovedGamePath(payload.id, np);
           }
         } else if (!payload.success && S.isMovingGame) {
-          toast(`Taşıma işlemi tamamlanamadı: ${payload.message || "Hata"}`, "err");
+          toast(t("move.failed", { msg: payload.message ? localizeMessage(payload.message) : t("common.error") }), "err");
           S.isMovingGame = false;
           renderMoveGameModalFrame();
         }
@@ -336,7 +336,7 @@ export async function initApp(hooks: {
     await listen<{ id: string; count: number }>("screenshots-updated", (event) => {
       const { id, count } = event.payload;
       if (count > 0) {
-        toast(`${count} yeni ekran görüntüsü kaydedildi`, "ok");
+        toast(t("ss.newCaptures", { count }), "ok");
         const s = S.epicSummaries.find((x) => x.appName === id);
         const title = s ? s.title : id;
         void fetchAndRenderScreenshots(id, title, true);
@@ -349,7 +349,7 @@ export async function initApp(hooks: {
         playScreenshotShutterSound();
         const sum = S.epicSummaries.find((x) => x.appName === event.payload.id);
         const title = sum?.title || event.payload.title || "Oyun";
-        toast(`${title} — Ekran görüntüsü alınıyor…`, "ok");
+        toast(t("ss.capturingTitle", { title }), "ok");
       }
     );
 
@@ -357,7 +357,7 @@ export async function initApp(hooks: {
       "screenshot-captured",
       (event) => {
         const { id, item } = event.payload;
-        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        toast(t("ss.saved", { file: item.file_name }), "ok");
 
         const existing = S.loadedScreenshots.get(id) || [];
         S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);

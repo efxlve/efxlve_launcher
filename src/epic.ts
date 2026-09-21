@@ -1023,8 +1023,8 @@ export interface MoveGameResult {
 export const epicGetSystemDrives = () =>
   invoke<SystemDriveInfo[]>("epic_get_system_drives");
 
-export const epicSelectFolderDialog = (defaultPath?: string | null) =>
-  invoke<string | null>("epic_select_folder_dialog", { defaultPath: defaultPath ?? null });
+export const epicSelectFolderDialog = (defaultPath?: string | null, title?: string | null) =>
+  invoke<string | null>("epic_select_folder_dialog", { defaultPath: defaultPath ?? null, title: title ?? null });
 
 export const epicMoveGame = (appName: string, targetBasePath: string) =>
   invoke<MoveGameResult>("epic_move_game", { appName, targetBasePath });

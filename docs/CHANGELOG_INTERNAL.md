@@ -1876,3 +1876,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **index.html:** Statik Türkçe `title` öznitelikleri `data-i18n-title` + yeni anahtarlarla yerelleştirildi (`nav.*Title`, `win.minimize/maximize`, `common.toTop`); Anti-FOUC yorumu İngilizce.
 - `tr.json`/`en.json` ~890 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 130. Rust Mesaj Yerelleştirme Altyapısı + Kaçırılan Toast Metinleri
+
+- **`@t:` konvansiyonu:** Rust, kullanıcıya dönük mesajları artık `@t:<anahtar>` / `@t:<anahtar>\u001f<arg1>\u001f<arg2>` biçiminde döndürür. Frontend `i18n.ts`'teki `localizeMessage()` bu biçimi seçili dile çevirir; `toast()` ve hata/ilerleme gösterim noktaları bunu kullanır.
+- `legendary/mod.rs` hata enum'ları (`err.*`) ve `transfers.rs` indirme/oynatma mesajları (`dl.*`) bu biçime taşındı.
+- **Tarayıcı düzeltmesi:** Önceki tarama `t(` içeren satırları atladığı için `toast("...Türkçe...")` metinleri kaçmıştı. Yeni tarama ile ~90 kaçırılan toast metni bulundu ve `t()`'e taşındı: `core/demo.ts`, `auth-actions.ts`, `click-router.ts`, `input-listeners.ts`, `ipc-listeners.ts`, `move-game-actions.ts`.
+- Yerel klasör seçici artık başlığı frontend'ten alıyor (`epic_select_folder_dialog(default_path, title)`), böylece diyalog seçili dili izliyor.
+- `tr.json`/`en.json` ~980 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) + `cargo check` yeşil.
+

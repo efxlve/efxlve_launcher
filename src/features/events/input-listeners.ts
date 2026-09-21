@@ -83,7 +83,7 @@ document.addEventListener("keydown", (e) => {
       localStorage.setItem(SS_HOTKEY_NAME_KEY, keyName);
       if (isTauri) void epicSetScreenshotHotkey(code);
       S.isRecordingScreenshotHotkey = false;
-      toast(`Kısayol tuşu atandı: ${keyName} (${code})`, "ok");
+      toast(i18nT("ss.hotkeyAssigned", { key: keyName, code }), "ok");
       render();
     }
     return;
@@ -120,10 +120,10 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
       const title = s ? s.title : S.currentModalAppName;
-      toast("Ekran görüntüsü alınıyor…", "");
+      toast(i18nT("ss.capturing"), "");
       epicCaptureGameScreenshot(S.currentModalAppName, title)
         .then((item) => {
-          toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+          toast(i18nT("ss.saved", { file: item.file_name }), "ok");
           playScreenshotShutterSound();
           void fetchAndRenderScreenshots(S.currentModalAppName!, title, true);
         })
@@ -143,7 +143,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (S.activeMoveModalAppName) {
       if (S.isMovingGame) {
-        toast("Taşıma işlemi devam ediyor, lütfen önce iptal edin!", "");
+        toast(i18nT("move.inProgress"), "");
       } else {
         closeMoveGameModal();
       }
@@ -179,13 +179,13 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       const key = (activeEl as HTMLInputElement).value.trim();
       if (!key) {
-        toast("Lütfen geçerli bir SteamGridDB API anahtarı girin", "err");
+        toast(i18nT("cover.needKey"), "err");
         return;
       }
       epicSetSteamGridKey(key)
         .then(() => {
           S.steamGridApiKey = key;
-          toast("SteamGridDB API anahtarı kaydedildi", "ok");
+          toast(i18nT("cover.keySaved"), "ok");
           renderCustomCoverModalContent(S.activeCustomCoverAppName);
           void searchAndLoadSteamGrid(S.activeCustomCoverAppName, S.sgdbSearchQuery);
         })
@@ -254,7 +254,7 @@ document.addEventListener("change", (e) => {
       localStorage.setItem(SS_HOTKEY_KEY, String(code));
       localStorage.setItem(SS_HOTKEY_NAME_KEY, name);
       if (isTauri) void epicSetScreenshotHotkey(code);
-      toast(`Kısayol tuşu güncellendi: ${name}`, "ok");
+      toast(i18nT("ss.hotkeyUpdated", { key: name }), "ok");
       render();
     }
     return;
@@ -498,7 +498,7 @@ document.addEventListener("change", (e) => {
         toast("Eklenti kuruluyor…", "");
         epicInstallGame(dlcId)
           .then(() => {
-            toast("Eklenti indirme kuyruğuna eklendi", "ok");
+            toast(i18nT("dl.dlcQueued"), "ok");
             const cached = S.dlcCache.get(app);
             if (cached) {
               const item = cached.dlcs.find((d) => d.appId === dlcId);
@@ -507,13 +507,13 @@ document.addEventListener("change", (e) => {
           })
           .catch((err) => {
             (t as HTMLInputElement).checked = false;
-            toast(`Eklenti kurulum hatası: ${String(err)}`, "err");
+            toast(i18nT("dl.dlcInstallFailed", { msg: String(err) }), "err");
           });
       } else {
-        toast("Eklenti kaldırılıyor…", "");
+        toast(i18nT("dl.dlcRemoving"), "");
         epicUninstallGame(dlcId)
           .then(() => {
-            toast("Eklenti kaldırıldı", "ok");
+            toast(i18nT("dl.dlcRemoved"), "ok");
             const cached = S.dlcCache.get(app);
             if (cached) {
               const item = cached.dlcs.find((d) => d.appId === dlcId);
@@ -522,7 +522,7 @@ document.addEventListener("change", (e) => {
           })
           .catch((err) => {
             (t as HTMLInputElement).checked = true;
-            toast(`Eklenti kaldırılamadı: ${String(err)}`, "err");
+            toast(i18nT("dl.dlcRemoveFailed", { msg: String(err) }), "err");
           });
       }
     }
