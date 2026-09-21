@@ -24,6 +24,7 @@ import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
 import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
+import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
 
 /** Batch the next render onto the animation frame. */
@@ -81,6 +82,7 @@ function closeAllModals(): void {
   closeShareModal();
   closeCustomCoverModal();
   closeCollectionModal();
+  closeStorageManager();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

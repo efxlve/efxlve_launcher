@@ -456,11 +456,14 @@ export function renderDownloads(): string {
     </div>
   `;
 
-  const headerAction = activeDl
-    ? S.dlQueueStatus.isPaused
-      ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
-      : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
-    : "";
+  const storageBtn = `<button class="ps5-btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>`;
+  const headerAction = `${storageBtn}${
+    activeDl
+      ? S.dlQueueStatus.isPaused
+        ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
+        : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
+      : ""
+  }`;
 
   return `
     <div class="ps5-page ps5-downloads-page">
