@@ -1490,3 +1490,18 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Ayarlar dil seçici: 15 dilin tamamı ızgara (`.lang-selection-group` grid) hâlinde; TR "Varsayılan" etiketli.
 - Dil seçici görsel dili lavanta vurguya çekildi (mavi glow kaldırıldı), `.lang-tag` kapsül → `--ps5-radius-sm`.
 
+## 85. Ayarlar'da 3. Parti Başlatıcılar Hub'ı (EA App / Ubisoft Connect / Rockstar) (Milestone 7)
+
+**Sorun:** Kütüphanedeki birçok oyun (Assassin's Creed, FC/FIFA, GTA V) harici başlatıcı gerektiriyor; ancak sistemde kurulu olup olmadıklarını gösteren veya kurulum sayfasına yönlendiren bir panel yoktu.
+
+**Çözüm 1 — Rust tespit komutu (`commands.rs` + `main.rs`):**
+- `scan_uninstall_registry()`: `reg query ...\Uninstall /s` ile HKLM/HKLM-WOW6432Node/HKCU anahtarlarını tarar; `DisplayName`, `DisplayVersion`, `InstallLocation` (REG_SZ/REG_EXPAND_SZ) değerlerini anahtar blokları hâlinde ayrıştırır. Ek crate bağımlılığı YOK.
+- `epic_third_party_launchers()` komutu; EA App (`ea app`, `origin`), Ubisoft Connect (`ubisoft connect`, `uplay`) ve Rockstar Games Launcher (`rockstar games launcher`) için `{id, name, installed, version, installPath, downloadUrl}` döndürür.
+- `generate_handler!` tablosuna kaydedildi.
+
+**Çözüm 2 — Frontend (`epic.ts` + `main.ts` + `styles.css`):**
+- `ThirdPartyLauncher` tipi ve `epicThirdPartyLaunchers()` sarmalayıcısı eklendi.
+- `loadSettingsView()` `Promise.all`'una dahil edildi; Ayarlar'da EGL entegrasyonunun altına `.tpl-grid` hub'ı eklendi.
+- Her kart: ad, durum rozeti (`Kurulu · vX` yeşil / `Kurulu değil` nötr), kurulum yolu (ellipsis) ve `Resmi indirme sayfası` butonu (`open-external-url` ile mevcut harici açma altyapısını kullanır).
+- `third-party-refresh` aksiyonu ile yeniden tarama desteği.
+

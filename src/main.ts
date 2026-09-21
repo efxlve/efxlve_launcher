@@ -52,6 +52,8 @@ import {
   type EpicGame,
   epicDetectEglGames,
   epicSyncEglInstalled,
+  epicThirdPartyLaunchers,
+  type ThirdPartyLauncher,
   epicGetGameSettings,
   epicSaveGameSettings,
   epicVerifyGame,
@@ -1915,6 +1917,38 @@ function renderSettings(): string {
           <p><button class="btn ghost small" data-act="epic-refresh-egl">${icon("refresh", 12)} Yeniden Tara</button></p>
           `
       }
+    </div>
+    <div class="settings-box">
+      <h3>${icon("gamepad-2", 16)} 3. Parti Başlatıcılar (EA, Ubisoft, Rockstar)</h3>
+      <p>Bazı Epic oyunları harici bir başlatıcı gerektirir. Sistemde kurulu olup olmadıklarını buradan kontrol edebilirsin.</p>
+      <div class="tpl-grid">
+        ${thirdPartyLaunchers.length === 0
+          ? `<p class="muted">Tarama yapılıyor…</p>`
+          : thirdPartyLaunchers
+              .map(
+                (l) => `
+          <div class="tpl-card ${l.installed ? "installed" : ""}">
+            <div class="tpl-head">
+              <span class="tpl-name">${esc(l.name)}</span>
+              <span class="tpl-status ${l.installed ? "on" : "off"}">
+                ${l.installed ? `${icon("check", 11)} Kurulu${l.version ? ` · v${esc(l.version)}` : ""}` : "Kurulu değil"}
+              </span>
+            </div>
+            <div class="tpl-path" title="${esc(l.installPath || "")}">
+              ${l.installed ? esc(l.installPath || "Kurulum yolu bilinmiyor") : "Harici başlatıcı gerektiren oyunlar için önerilir."}
+            </div>
+            <div class="tpl-actions">
+              <button class="ps5-btn secondary" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">
+                ${icon("external", 13)} Resmi indirme sayfası
+              </button>
+            </div>
+          </div>`,
+              )
+              .join("")}
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn ghost small" data-act="third-party-refresh">${icon("refresh", 12)} Yeniden Tara</button>
+      </div>
     </div>
     <div class="settings-box">
       <h3>${icon("folder", 16)} Epic Games Koleksiyonları (Kategoriler)</h3>
@@ -8267,20 +8301,23 @@ let epicSettingsCache: EpicSettings | null = null;
 let epicDefaultDir = "";
 let eglDetectedList: EglDetectedGame[] = [];
 let eglSyncing = false;
+let thirdPartyLaunchers: ThirdPartyLauncher[] = [];
 
 async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, eglList, sgdbKey] = await Promise.all([
+      const [st, dir, eglList, sgdbKey, thirdParty] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
         epicGetSteamGridKey().catch(() => null),
+        epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
       ]);
       epicSettingsCache = st;
       epicDefaultDir = dir;
       eglDetectedList = eglList;
       steamGridApiKey = sgdbKey;
+      thirdPartyLaunchers = thirdParty;
     } catch {
       // sessiz geç
     }
@@ -9478,6 +9515,13 @@ document.addEventListener("click", (e) => {
       });
   } else if (act === "epic-refresh-egl") {
     void loadSettingsView();
+  } else if (act === "third-party-refresh") {
+    epicThirdPartyLaunchers()
+      .then((list) => {
+        thirdPartyLaunchers = list;
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "manage-game" && id) {
     activeDrawerTab = "manage";
     openEpicModal(id, false);

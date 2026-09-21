@@ -1133,6 +1133,120 @@ pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
     Ok(imported_count)
 }
 
+/* ---------- 3. Parti Başlatıcılar (EA App, Ubisoft Connect, Rockstar) ---------- */
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThirdPartyLauncher {
+    pub id: String,
+    pub name: String,
+    pub installed: bool,
+    pub version: Option<String>,
+    pub install_path: Option<String>,
+    pub download_url: String,
+}
+
+/// Windows kayıt defterindeki `Uninstall` anahtarlarını tarayıp
+/// (DisplayName, DisplayVersion, InstallLocation) üçlülerini döndürür.
+fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
+    fn reg_value(rest: &str) -> Option<String> {
+        for marker in ["REG_EXPAND_SZ", "REG_SZ"] {
+            if let Some(idx) = rest.find(marker) {
+                return Some(rest[idx + marker.len()..].trim().to_string());
+            }
+        }
+        None
+    }
+
+    let roots = [
+        r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        r"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+        r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+    ];
+
+    let mut result = Vec::new();
+    for root in roots {
+        let output = match std::process::Command::new("reg")
+            .args(["query", root, "/s"])
+            .output()
+        {
+            Ok(o) if o.status.success() => o,
+            _ => continue,
+        };
+        let text = String::from_utf8_lossy(&output.stdout);
+        let mut name: Option<String> = None;
+        let mut version: Option<String> = None;
+        let mut location: Option<String> = None;
+
+        for line in text.lines() {
+            if line.starts_with("HKEY_") {
+                if let Some(n) = name.take() {
+                    result.push((n, version.take(), location.take()));
+                }
+                version = None;
+                location = None;
+            } else {
+                let trimmed = line.trim();
+                if let Some(rest) = trimmed.strip_prefix("DisplayName") {
+                    name = reg_value(rest);
+                } else if let Some(rest) = trimmed.strip_prefix("DisplayVersion") {
+                    version = reg_value(rest);
+                } else if let Some(rest) = trimmed.strip_prefix("InstallLocation") {
+                    location = reg_value(rest);
+                }
+            }
+        }
+        if let Some(n) = name.take() {
+            result.push((n, version.take(), location.take()));
+        }
+    }
+    result
+}
+
+/// Sistemde kurulu 3. parti oyun başlatıcılarını (EA App, Ubisoft Connect,
+/// Rockstar Games Launcher) algılar; sürüm ve kurulum yolu ile birlikte döndürür.
+#[tauri::command]
+pub fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
+    let entries = scan_uninstall_registry();
+    let defs: [(&str, &str, &[&str], &str); 3] = [
+        (
+            "ea",
+            "EA App",
+            &["ea app", "origin"],
+            "https://www.ea.com/ea-app",
+        ),
+        (
+            "ubisoft",
+            "Ubisoft Connect",
+            &["ubisoft connect", "uplay"],
+            "https://ubisoftconnect.com/",
+        ),
+        (
+            "rockstar",
+            "Rockstar Games Launcher",
+            &["rockstar games launcher"],
+            "https://socialclub.rockstargames.com/rockstar-games-launcher",
+        ),
+    ];
+
+    defs.iter()
+        .map(|(id, name, keys, url)| {
+            let found = entries.iter().find(|(n, _, _)| {
+                let low = n.to_lowercase();
+                keys.iter().any(|k| low.contains(k))
+            });
+            ThirdPartyLauncher {
+                id: (*id).to_string(),
+                name: (*name).to_string(),
+                installed: found.is_some(),
+                version: found.and_then(|(_, v, _)| v.clone()),
+                install_path: found.and_then(|(_, _, l)| l.clone()),
+                download_url: (*url).to_string(),
+            }
+        })
+        .collect()
+}
+
 /* ---------- Oyun Yönetimi & Doğrulama (Game Management) ---------- */
 
 #[derive(Debug, Clone, Serialize)]
