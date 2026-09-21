@@ -14,15 +14,16 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
+import { t } from "../../i18n";
 import { epicGetInstallOptions, epicInstallWithOptions } from "../../epic";
 export async function openSelectiveModal(appName: string): Promise<void> {
   const s = S.epicSummaries.find((x) => x.appName === appName);
   if (s?.installed) {
-    // Kurulu oyun için doğrudan güncelleme/onarım çalıştır
+    // Installed game: run update/repair directly.
     void epicInstall(appName);
     return;
   }
-  toast("Kurulum seçenekleri denetleniyor…", "");
+  toast(t("selective.checking"), "");
   try {
     const opts = await epicGetInstallOptions(appName);
     if (!opts.hasOptions) {
@@ -49,18 +50,18 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
       title,
       progress: 0,
       done: false,
-      speed: "Başlatılıyor…",
+      speed: t("dl.starting"),
       speedBytes: 0,
       diskSpeed: "—",
       diskBytes: 0,
-      eta: "Hesaplanıyor…",
+      eta: t("dl.calculating"),
       downloadedBytes: 0,
       totalBytes: 0,
     };
   }
   updateBadge();
   render();
-  toast("Seçici kurulum başlatılıyor…", "");
+  toast(t("selective.starting"), "");
   try {
     const msg = await epicInstallWithOptions(appName, tags, dlcs, null);
     toast(msg, "ok");
@@ -70,7 +71,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
     if (S.activeDlMetrics?.id === appName) S.activeDlMetrics = null;
     updateBadge();
     render();
-    toast(`Kurulum başlatılamadı: ${String(e)}`, "err");
+    toast(t("selective.startFailed", { msg: String(e) }), "err");
   }
 }
 
@@ -88,8 +89,8 @@ export function renderSelectiveModal(): void {
   const existingBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
   const scrollPos = existingBody ? existingBody.scrollTop : 0;
 
-  const langTags = opts.tags.filter((t) => t.category === "languages");
-  const extraTags = opts.tags.filter((t) => t.category === "extras");
+  const langTags = opts.tags.filter((tag) => tag.category === "languages");
+  const extraTags = opts.tags.filter((tag) => tag.category === "extras");
   const uninstalledDlcs = opts.dlcs.filter((d) => !d.installed);
 
   let totalDl = opts.baseDownloadSize || opts.baseSize;
@@ -114,20 +115,20 @@ export function renderSelectiveModal(): void {
     langsHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Ek Diller (${langTags.length})
+          <span style="font-size:11px">▾</span> ${t("selective.extraLanguages")} (${langTags.length})
         </div>
         <div class="selective-accordion-list">
           ${langTags
-            .map((t) => {
-              const isChecked = S.selectedInstallTags.has(t.tag);
+            .map((tag) => {
+              const isChecked = S.selectedInstallTags.has(tag.tag);
               return `
                 <div class="selective-row">
                   <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(t.label)}</span>
+                    <span class="selective-row-label">${esc(tag.label)}</span>
                   </div>
                   <div class="selective-row-right">
-                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
-                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
+                    <span class="selective-row-size">${fmtBytes(tag.size)}</span>
+                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${isChecked ? "checked" : ""} />
                   </div>
                 </div>
               `;
@@ -143,20 +144,20 @@ export function renderSelectiveModal(): void {
     extrasHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Ek Paketler &amp; Dokular (${extraTags.length})
+          <span style="font-size:11px">▾</span> ${t("selective.extraPacks")} (${extraTags.length})
         </div>
         <div class="selective-accordion-list">
           ${extraTags
-            .map((t) => {
-              const isChecked = S.selectedInstallTags.has(t.tag);
+            .map((tag) => {
+              const isChecked = S.selectedInstallTags.has(tag.tag);
               return `
                 <div class="selective-row">
                   <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(t.label)}</span>
+                    <span class="selective-row-label">${esc(tag.label)}</span>
                   </div>
                   <div class="selective-row-right">
-                    <span class="selective-row-size">${fmtBytes(t.size)}</span>
-                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(t.tag)}" ${isChecked ? "checked" : ""} />
+                    <span class="selective-row-size">${fmtBytes(tag.size)}</span>
+                    <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${isChecked ? "checked" : ""} />
                   </div>
                 </div>
               `;
@@ -172,7 +173,7 @@ export function renderSelectiveModal(): void {
     dlcsHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> Eklentiler &amp; DLC (${uninstalledDlcs.length})
+          <span style="font-size:11px">▾</span> ${t("selective.dlcs")} (${uninstalledDlcs.length})
         </div>
         <div class="selective-accordion-list">
           ${uninstalledDlcs
@@ -200,13 +201,13 @@ export function renderSelectiveModal(): void {
     <div class="selective-overlay" data-act="selective-overlay-close">
       <div class="selective-dialog">
         <div class="selective-header">
-          <h2>${esc(opts.title)} Yükleme Seçenekleri</h2>
-          <button class="manage-head-close" data-act="selective-close" title="Kapat">${icon("x", 16)}</button>
+          <h2>${esc(opts.title)} ${t("selective.options")}</h2>
+          <button class="manage-head-close" data-act="selective-close" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
         <div class="selective-body">
           <div class="selective-row base">
             <div class="selective-row-info">
-              <span class="selective-row-label">${esc(opts.title)} <span class="muted-sub">(Gerekli)</span></span>
+              <span class="selective-row-label">${esc(opts.title)} <span class="muted-sub">${t("selective.required")}</span></span>
             </div>
             <div class="selective-row-right">
               <span class="selective-row-size">${fmtBytes(opts.baseSize)}</span>
@@ -221,11 +222,11 @@ export function renderSelectiveModal(): void {
 
         <div class="selective-footer">
           <div class="selective-footer-stats">
-            <span>İndirilecek Dosya Boyutu: <strong>${fmtBytes(totalDl)}</strong></span>
-            <span>Gerekli Depolama Alanı: <strong>${fmtBytes(totalDisk)}</strong></span>
+            <span>${t("selective.downloadSize")}: <strong>${fmtBytes(totalDl)}</strong></span>
+            <span>${t("selective.storageSize")}: <strong>${fmtBytes(totalDisk)}</strong></span>
           </div>
           <button class="selective-apply-btn" data-act="selective-apply" data-id="${esc(opts.appName)}">
-            Uygula
+            ${t("selective.apply")}
           </button>
         </div>
       </div>
