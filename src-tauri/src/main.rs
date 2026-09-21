@@ -29,6 +29,9 @@ pub struct EpicSettings {
     pub presence_enabled: Option<bool>,
     #[serde(default)]
     pub presence_client_id: Option<String>,
+    /// Preferred Epic CDN hostname for downloads (`--preferred-cdn`).
+    #[serde(default)]
+    pub preferred_cdn: Option<String>,
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -1314,6 +1317,9 @@ fn main() {
             legendary::commands::epic_logout,
             legendary::commands::epic_get_settings,
             legendary::commands::epic_set_alt_bin,
+            legendary::commands::epic_measure_cdns,
+            legendary::commands::epic_set_preferred_cdn,
+            legendary::commands::epic_cleanup_cache,
             presence::epic_presence_configure,
             presence::epic_presence_update,
             presence::epic_presence_clear,

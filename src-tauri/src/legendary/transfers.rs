@@ -257,12 +257,26 @@ fn parse_mib_after(line: &str, key: &str) -> Option<f64> {
     })
 }
 
+/// Concurrent chunk download workers per network profile. Higher worker counts
+/// saturate fast connections better (Epic's own launcher uses ChunkDownloads=32).
 fn get_worker_count_arg(app: &AppHandle) -> Option<&'static str> {
     let s = load_settings(app);
     match s.network_profile.as_deref() {
-        Some("max") => Some("16"),
-        Some("low") => Some("1"),
-        Some("balanced") => Some("4"),
+        Some("max") => Some("32"),
+        Some("low") => Some("2"),
+        Some("balanced") => Some("8"),
+        _ => None,
+    }
+}
+
+/// Shared chunk-buffer memory (MiB) per network profile. Kept modest so low-RAM
+/// machines (8 GB baseline) are never starved.
+fn get_max_memory_arg(app: &AppHandle) -> Option<&'static str> {
+    let s = load_settings(app);
+    match s.network_profile.as_deref() {
+        Some("max") => Some("2048"),
+        Some("low") => Some("512"),
+        Some("balanced") => Some("1024"),
         _ => None,
     }
 }
@@ -298,6 +312,11 @@ fn spawn_install_with_tags(
         cmd.arg("--max-workers").arg(w);
     }
 
+    // Preferred CDN (from the auto speed test) can noticeably improve throughput.
+    if let Some(cdn) = load_settings(app).preferred_cdn.filter(|c| !c.trim().is_empty()) {
+        cmd.arg("--preferred-cdn").arg(cdn);
+    }
+
     if install_tags.is_empty() {
         cmd.arg("--skip-sdl");
     } else {
@@ -312,6 +331,8 @@ fn spawn_install_with_tags(
         .kill_on_drop(true);
     if high_mem {
         cmd.arg("--max-shared-memory").arg("5000");
+    } else if let Some(m) = get_max_memory_arg(app) {
+        cmd.arg("--max-shared-memory").arg(m);
     }
     cmd.spawn()
 }

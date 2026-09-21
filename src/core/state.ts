@@ -173,6 +173,7 @@ export const S = {
   epicSettingsCache: (null) as EpicSettings | null,
   presenceEnabled: false,
   presenceClientId: "",
+  preferredCdn: "",
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,

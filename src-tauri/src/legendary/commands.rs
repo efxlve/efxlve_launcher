@@ -322,6 +322,100 @@ pub fn epic_set_alt_bin(app: AppHandle, path: Option<String>) -> Result<crate::E
     Ok(s)
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CdnProbe {
+    pub host: String,
+    pub url: String,
+    pub ms: u64,
+}
+
+/// Measures time-to-first-byte for each unique CDN host in `base_urls`.
+/// Used to pick the fastest CDN (`--preferred-cdn`) before installing.
+#[tauri::command]
+pub async fn epic_measure_cdns(base_urls: Vec<String>) -> Result<Vec<CdnProbe>, String> {
+    use std::collections::HashSet;
+    use std::time::{Duration, Instant};
+
+    let mut seen = HashSet::new();
+    let mut targets: Vec<(String, String)> = Vec::new();
+    for raw in base_urls {
+        let parsed = match url::Url::parse(&raw) {
+            Ok(u) => u,
+            Err(_) => continue,
+        };
+        if let Some(host) = parsed.host_str() {
+            let host = host.to_string();
+            if seen.insert(host.clone()) {
+                targets.push((host, raw));
+            }
+        }
+    }
+    if targets.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut handles = Vec::with_capacity(targets.len());
+    for (host, url) in targets {
+        handles.push(tokio::spawn(async move {
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(4))
+                .build()
+                .ok()?;
+            let start = Instant::now();
+            let ok = client
+                .get(&url)
+                .header("Range", "bytes=0-0")
+                .send()
+                .await
+                .is_ok();
+            if !ok {
+                return None;
+            }
+            Some(CdnProbe {
+                host,
+                url,
+                ms: start.elapsed().as_millis() as u64,
+            })
+        }));
+    }
+
+    let mut probes = Vec::new();
+    for h in handles {
+        if let Ok(Some(p)) = h.await {
+            probes.push(p);
+        }
+    }
+    probes.sort_by_key(|p| p.ms);
+    Ok(probes)
+}
+
+/// Persists the preferred CDN hostname (empty clears it).
+#[tauri::command]
+pub fn epic_set_preferred_cdn(app: AppHandle, host: Option<String>) -> Result<(), String> {
+    let mut s = load_settings(&app);
+    s.preferred_cdn = host.and_then(|h| {
+        let t = h.trim().to_string();
+        if t.is_empty() {
+            None
+        } else {
+            Some(t)
+        }
+    });
+    save_settings(&app, &s);
+    Ok(())
+}
+
+/// Removes legendary's temporary, metadata and manifest files.
+#[tauri::command]
+pub async fn epic_cleanup_cache(app: AppHandle) -> Result<String, String> {
+    let bin = resolve_or_err(&app)?;
+    client::run_unit(&bin, &["cleanup"])
+        .await
+        .map_err(|e| fail(&app, e))?;
+    Ok("@t:dl.cacheCleared".into())
+}
+
 /// Fills in achievement hidden/is_base flags from the metadata file and fills
 /// in any missing description/name/icons.
 pub fn enrich_achievements_from_metadata(resp: &mut GameAchievementsResponse, app_name: &str) {
