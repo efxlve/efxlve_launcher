@@ -1944,6 +1944,15 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Performans: satırlarda blur yok, opak obsidyen yüzeyler (Kural §6.13); `tabular-nums`.
 - `tr.json`/`en.json` **1116 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 139. İndirmeler Sayfası Baştan Tasarlandı (Sade Düzen)
+
+- **Aktif indirme kartı kompaktlaştırıldı:** Dev hero + 5 büyük kutucuk yerine tek kart: kapak + başlık + durum, ince ilerleme çubuğu ve **satır içi metrik şeridi** (Hız / Zirve / Disk / Kalan / Boyut). Ölçülü, ferah, tek odak.
+- **Boş durum küçültüldü:** 450px'lik dev kutu yerine kompakt yatay kart (ikon + başlık + açıklama + "Kütüphaneye Git").
+- **Grafik koşullu:** Canlı ağ/disk grafiği yalnızca aktif indirme veya veri varken gösterilir; boş sayfada görünmez.
+- **Ayarlar ikincil hâle geldi:** Başlıktaki "İndirme Ayarları" düğmesiyle açılıp kapanan panel (`S.downloadsSettingsOpen`, varsayılan kapalı). Böylece sayfa içerik odaklı kaldı.
+- **Temizlik:** Eski `.dl-active-hero/.dl-hero-*/.dl-stat-tile*` CSS'i (~130 satır) kaldırıldı; `base.css` tabular-nums listesi `.dl-metric-value` ile güncellendi. Ayrıca eski HTML `dl-stat-tiles-grid` sınıfını kullanıyordu ama CSS `.dl-stats-grid` idi (kutucuklar stillenmiyordu) — bu uyuşmazlık da ortadan kalktı.
+- `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
 ## 138. Storage Manager Veri Hatası + İndirme Ayar UI'ı Sadeleştirme
 
 - **Kök neden (Storage Manager boş):** Rust `SystemDriveInfo.letter` değeri `"C"` yerine `"C:\"` dönüyordu. Bu yüzden oyunlar sürücüyle eşleşmiyor, taşıma modalında sürücü seçimi/vurgusu ve boş alan kontrolü de bozuktu (`"C" !== "C:\"`). `letter` artık sade harf; `label` boş (frontend `move.localDisk` ile yerelleştiriyor). Hardcoded "Yerel Disk (C:)" metni ve kullanılmayan `move.driveLabel` anahtarı kaldırıldı.

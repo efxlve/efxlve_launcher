@@ -169,116 +169,58 @@ export function renderDownloads(): string {
   const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
-  // Active Hero markup
+  // Active download card (compact) or a small idle card.
   let heroMarkup = "";
   if (activeDl) {
     const isPaused = S.dlQueueStatus.isPaused;
     const pct = Math.round(activeDl.progress);
     heroMarkup = `
-      <div class="dl-active-hero">
-        ${activeWide ? `<img class="dl-hero-bg" src="${esc(activeWide)}" alt="" />` : ""}
-        <div class="dl-hero-content">
-          <div class="dl-hero-top">
-            <div class="dl-hero-game-info">
-              ${activeCover ? `<img class="dl-hero-thumb" src="${esc(activeCover)}" alt="${esc(activeTitle)}" />` : `<div class="dl-hero-thumb"></div>`}
-              <div class="dl-hero-details">
-                <div class="dl-hero-title">${esc(activeTitle)}</div>
-                <div class="dl-hero-badges">
-                  ${
-                    isPaused
-                      ? `<span class="dl-status-tag paused">${icon("pause", 11)} ${t("dl.statusPaused")}</span>`
-                      : `<span class="dl-status-tag active">${icon("zap", 11)} ${t("dl.statusActive")}</span>`
-                  }
-                </div>
-              </div>
-            </div>
-            <div class="dl-hero-actions">
+      <div class="dl-active-card">
+        ${activeWide ? `<img class="dl-active-bg" src="${esc(activeWide)}" alt="" />` : ""}
+        <div class="dl-active-inner">
+          <div class="dl-active-head">
+            ${activeCover ? `<img class="dl-active-thumb" src="${esc(activeCover)}" alt="${esc(activeTitle)}" />` : `<div class="dl-active-thumb"></div>`}
+            <div class="dl-active-text">
+              <div class="dl-active-title" title="${esc(activeTitle)}">${esc(activeTitle)}</div>
               ${
                 isPaused
-                  ? `<button class="btn primary small" data-act="dl-resume" data-id="${activeDl.id}">
-                      ${icon("play", 13)} ${t("downloads.resume")}
-                    </button>`
-                  : `<button class="btn ghost small" data-act="dl-pause" data-id="${activeDl.id}">
-                      ${icon("pause", 13)} ${t("downloads.pause")}
-                    </button>`
+                  ? `<span class="dl-status-tag paused">${icon("pause", 11)} ${t("dl.statusPaused")}</span>`
+                  : `<span class="dl-status-tag active">${icon("zap", 11)} ${t("dl.statusActive")}</span>`
               }
-              <button class="btn ghost small" data-act="manage-game" data-id="${activeDl.id}">
-                ${icon("settings", 13)} ${t("common.manage")}
-              </button>
-              <button class="btn danger small" data-act="epic-cancel" data-id="${activeDl.id}">
-                ${t("common.cancel")}
-              </button>
+            </div>
+            <div class="dl-active-actions">
+              ${
+                isPaused
+                  ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
+                  : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`
+              }
+              <button class="ps5-btn ghost" data-act="manage-game" data-id="${activeDl.id}">${icon("settings", 13)} ${t("common.manage")}</button>
+              <button class="ps5-btn ghost danger" data-act="epic-cancel" data-id="${activeDl.id}">${t("common.cancel")}</button>
             </div>
           </div>
-
-          <!-- Progress bar -->
-          <div class="dl-hero-progress-section">
-            <div class="dl-progress-meta-row">
-              <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
-              <span id="dl-stat-bytes">${fmtBytes(activeDl.downloadedBytes)} / ${fmtBytes(activeDl.totalBytes)}</span>
-            </div>
-            <div class="dl-hero-track">
-              <div class="dl-hero-fill" id="dl-hero-fill" style="width:${pct}%"></div>
-            </div>
+          <div class="dl-active-progress">
+            <div class="dl-progress-track"><div class="dl-progress-fill" id="dl-hero-fill" style="width:${pct}%"></div></div>
+            <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
           </div>
-
-          <!-- Live metric tiles -->
-          <div class="dl-stat-tiles-grid">
-            <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box speed">${icon("download", 18)}</div>
-              <div class="dl-stat-info">
-                <div class="dl-stat-label">${t("dl.speed")}</div>
-                <div class="dl-stat-value highlight-cyan" id="dl-stat-speed">${fmtSpeed(activeDl.speedBytes, S.speedInBits)}</div>
-                <div class="dl-stat-sub">${t("dl.speedSub")}</div>
-              </div>
-            </div>
-            <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box peak">${icon("zap", 18)}</div>
-              <div class="dl-stat-info">
-                <div class="dl-stat-label">${t("dl.peak")}</div>
-                <div class="dl-stat-value highlight-cyan" id="dl-stat-peak">${fmtSpeed(S.peakNetSpeedBytes, S.speedInBits)}</div>
-                <div class="dl-stat-sub">${t("dl.peakSub")}</div>
-              </div>
-            </div>
-            <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box disk">${icon("hard-drive", 18)}</div>
-              <div class="dl-stat-info">
-                <div class="dl-stat-label">${t("dl.disk")}</div>
-                <div class="dl-stat-value highlight-green" id="dl-stat-disk">${fmtSpeed(activeDl.diskBytes, S.speedInBits)}</div>
-                <div class="dl-stat-sub">${t("dl.diskSub")}</div>
-              </div>
-            </div>
-            <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box eta">${icon("clock", 18)}</div>
-              <div class="dl-stat-info">
-                <div class="dl-stat-label">${t("dl.eta")}</div>
-                <div class="dl-stat-value" id="dl-stat-eta">${localizeMessage(activeDl.eta) || t("dl.calculating")}</div>
-                <div class="dl-stat-sub">${t("dl.etaSub")}</div>
-              </div>
-            </div>
-            <div class="dl-stat-tile">
-              <div class="dl-stat-icon-box size">${icon("layers", 18)}</div>
-              <div class="dl-stat-info">
-                <div class="dl-stat-label">${t("dl.totalSize")}</div>
-                <div class="dl-stat-value">${fmtBytes(activeDl.totalBytes)}</div>
-                <div class="dl-stat-sub">${t("dl.sizeSub")}</div>
-              </div>
-            </div>
+          <div class="dl-metrics-row">
+            <div class="dl-metric"><span class="dl-metric-label">${t("dl.speed")}</span><span class="dl-metric-value accent" id="dl-stat-speed">${fmtSpeed(activeDl.speedBytes, S.speedInBits)}</span></div>
+            <div class="dl-metric"><span class="dl-metric-label">${t("dl.peak")}</span><span class="dl-metric-value accent" id="dl-stat-peak">${fmtSpeed(S.peakNetSpeedBytes, S.speedInBits)}</span></div>
+            <div class="dl-metric"><span class="dl-metric-label">${t("dl.disk")}</span><span class="dl-metric-value green" id="dl-stat-disk">${fmtSpeed(activeDl.diskBytes, S.speedInBits)}</span></div>
+            <div class="dl-metric"><span class="dl-metric-label">${t("dl.eta")}</span><span class="dl-metric-value" id="dl-stat-eta">${localizeMessage(activeDl.eta) || t("dl.calculating")}</span></div>
+            <div class="dl-metric"><span class="dl-metric-label">${t("dl.totalSize")}</span><span class="dl-metric-value" id="dl-stat-bytes">${fmtBytes(activeDl.downloadedBytes)} / ${fmtBytes(activeDl.totalBytes)}</span></div>
           </div>
         </div>
       </div>
     `;
   } else if (queueApps.length === 0 && completedEntries.length === 0) {
     heroMarkup = `
-      <div class="dl-active-hero" style="text-align:center;padding:48px 24px;align-items:center;">
-        <div style="color:var(--muted);margin-bottom:12px;">${icon("download", 38)}</div>
-        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">${t("downloads.emptyTitle")}</div>
-        <div class="muted" style="margin-bottom:20px;max-width:420px;font-size:13px;line-height:1.5;">
-          ${t("downloads.emptyDesc")}
+      <div class="dl-empty-card">
+        <div class="dl-empty-icon">${icon("download", 26)}</div>
+        <div class="dl-empty-text">
+          <div class="dl-empty-title">${t("downloads.emptyTitle")}</div>
+          <div class="dl-empty-desc">${t("downloads.emptyDesc")}</div>
         </div>
-        <div>
-          <button class="btn primary" data-act="goto-library">${t("downloads.goLibrary")}</button>
-        </div>
+        <button class="ps5-btn primary" data-act="goto-library">${t("downloads.goLibrary")}</button>
       </div>
     `;
   }
@@ -289,7 +231,10 @@ export function renderDownloads(): string {
   const netLegendVal = fmtSpeed(activeDl?.speedBytes || lastNet, S.speedInBits);
   const diskLegendVal = fmtSpeed(activeDl?.diskBytes || lastDisk, S.speedInBits);
 
-  const chartMarkup = `
+  // The chart is only useful while there is traffic; keep it out of the idle page.
+  const hasChartData = !!activeDl || S.speedHistory.some((v) => v > 0) || S.diskHistory.some((v) => v > 0);
+  const chartMarkup = hasChartData
+    ? `
     <div class="dl-chart-card">
       <div class="dl-chart-head">
         <div class="dl-chart-title">
@@ -310,7 +255,8 @@ export function renderDownloads(): string {
         <canvas id="dl-speed-canvas"></canvas>
       </div>
     </div>
-  `;
+  `
+    : "";
 
   // Queue Markup
   let queueItemsMarkup = "";
@@ -467,14 +413,16 @@ export function renderDownloads(): string {
     </div>
   `;
 
-  const storageBtn = `<button class="ps5-btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>`;
-  const headerAction = `${storageBtn}${
-    activeDl
-      ? S.dlQueueStatus.isPaused
-        ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
-        : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
-      : ""
-  }`;
+  const headerAction = `
+    <button class="ps5-btn ghost ${S.downloadsSettingsOpen ? "active" : ""}" data-act="toggle-downloads-settings">${icon("settings", 14)} ${t("downloads.settingsTitle")}</button>
+    <button class="ps5-btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>
+    ${
+      activeDl
+        ? S.dlQueueStatus.isPaused
+          ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
+          : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
+        : ""
+    }`;
 
   return `
     <div class="ps5-page ps5-downloads-page">
@@ -490,7 +438,7 @@ export function renderDownloads(): string {
         <div class="dl-hub">
           ${heroMarkup}
           ${chartMarkup}
-          ${settingsPanel}
+          ${S.downloadsSettingsOpen ? settingsPanel : ""}
           ${queueSection}
           ${completedSection}
         </div>

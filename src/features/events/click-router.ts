@@ -1288,6 +1288,9 @@ document.addEventListener("click", (e) => {
     S.presenceEnabled = !S.presenceEnabled;
     applyPresenceSettings();
     render();
+  } else if (act === "toggle-downloads-settings") {
+    S.downloadsSettingsOpen = !S.downloadsSettingsOpen;
+    render();
   } else if (act === "toggle-speed-bits") {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));

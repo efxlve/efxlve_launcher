@@ -8,7 +8,7 @@
 /* --- PlayStation 5 Console Professionalism Standards --- */
 
 /* 1. Tabular numbers on all metrics, speeds, gauges, and counters (prevents layout jitter) */
-.dl-stat-value,
+.dl-metric-value,
 .dl-progress-pct,
 #dl-stat-bytes,
 .verify-meta,
