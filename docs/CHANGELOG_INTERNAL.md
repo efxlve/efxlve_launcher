@@ -1620,3 +1620,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Koleksiyonlar** (`openCollectionModal`, `closeCollectionModal`, `updateEmojiUi`, `updateColPresetArrows`, `renderCollectionModal`, `updateColGamesListInPlace`, `saveCollectionFromModal`, `deleteCollectionFromModal`, `openGameCollectionsModal`, `saveGameCollectionsFromModal`, `updateDrawerCollectionsBoxInPlace`, `loadEpicCollections`) → `src/features/collections/collections-view.ts` (~475 satır). Artık `render()` yerine render bus kullanır.
 - `main.ts` ~7.352 → ~6.904 satır (başlangıç 11.422'den toplam ~4.518 satır azaldı). `tsc`/`vite build` yeşil.
 
+## 97. Modülerleştirme Faz 5 (devam): Ekran Görüntüleri Modülü
+
+- `DrawerTab` tipi `core/types.ts`'e, `S.activeDrawerTab` alanı `S`'e taşındı (F3'te yerel tipten dolayı kalmıştı).
+- **Ekran görüntüleri** (`fetchAndRenderScreenshots`, `playScreenshotShutterSound`, `copyScreenshotImageToClipboard`, `compressImageToBlob`, `compressScreenshotItem`, `openShareModal`, `closeShareModal`, `renderDrawerScreenshots`, `renderScreenshotLightbox`, `openScreenshotLightbox`, `closeScreenshotLightbox`, `navigateScreenshotLightbox`) → `src/features/screenshots/screenshots-view.ts` (~532 satır).
+- Modül `S`, `icon`, `esc`, `t`, `toast`, `formatScreenshotDate`, `modalRoot`, Epic ekran görüntüsü komutlarını ve `renderOverviewMediaSpotlight`'ı import eder.
+- `main.ts` ~6.904 → ~6.389 satır. `tsc`/`vite build` yeşil.
+- **Backlog notu:** Kullanıcı talebiyle `docs/REFACTOR_PLAN.md` §6.6 eklendi — (1) kalan Türkçe metinlerin `src/locales/*.json`'a taşınması, (2) ölü/optimize olmayan kod temizliği.
+
