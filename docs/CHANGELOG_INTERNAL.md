@@ -1644,3 +1644,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Seçici kurulum** (`openSelectiveModal`, `applySelectiveInstall`, `closeSelectiveModal`, `renderSelectiveModal`) → `src/features/dlc/selective-install.ts` (~240 satır).
 - `main.ts` ~5.837 → ~5.455 satır (başlangıç 11.422'den toplam ~5.967 satır azaldı, ~%52). `tsc`/`vite build` yeşil.
 
+## 100. Modülerleştirme Faz 5 (devam): Kapak & SteamGridDB Modülü
+
+- **`core/render.ts`**'e `registerOpenEpicModal`/`openEpicModal` kancası eklendi (kapak modülü `main.ts`'e döngüsel bağımlılık olmadan detay çekmecesini açabilir); `main.ts` `init()`'te kaydeder.
+- `CUSTOM_COVERS_KEY`, `CUSTOM_HEROES_KEY` `core/constants.ts`'e taşındı.
+- **Kapak/SteamGrid** (`saveCustomCover`, `resetCustomCover`, `saveCustomHero`, `resetCustomHero`, `cleanSteamGridSearchTerm`, `closeCustomCoverModal`, `openCustomCoverModal`, `renderCustomCoverModalFrame`, `renderCustomCoverModalContent`, `searchAndLoadSteamGrid`, `loadSteamGridCovers`) → `src/features/cover/cover-view.ts` (~520 satır).
+- `main.ts` ~5.455 → ~4.962 satır (başlangıç 11.422'den toplam ~6.460 satır azaldı, ~%57). `tsc`/`vite build` yeşil.
+
