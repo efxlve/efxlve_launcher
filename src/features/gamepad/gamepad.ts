@@ -11,6 +11,7 @@ import { toggleFav } from "../../core/game-view";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import { t } from "../../i18n";
 import type { DrawerTab } from "../../core/types";
 import {
   epicCardPortrait,
@@ -46,27 +47,27 @@ export function updateGamepadHud(active = true): void {
 
   if (modalOpen) {
     hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Seç / Oyna</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>Geri</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.select")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>${t("common.back")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.favorite")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
     `;
   } else if (S.view === "profile") {
     hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Kupaları İncele</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Profili Yenile</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.inspectTrophies")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("profile.refresh")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>${t("common.search")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
     `;
   } else {
     hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Detay</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.detail")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.favorite")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>${t("common.search")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
     `;
   }
 }
@@ -74,7 +75,7 @@ export function updateGamepadHud(active = true): void {
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
     console.log("[Gamepad] Bağlandı:", e.gamepad.id);
-    toast(`Oyun Kolu Bağlandı: ${e.gamepad.id.split("(")[0].trim()}`, "ok");
+    toast(t("gamepad.connected", { name: e.gamepad.id.split("(")[0].trim() }), "ok");
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
