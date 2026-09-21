@@ -698,7 +698,7 @@ export function renderEpic(): string {
             ${icon("folder", 13)}
             <span>Koleksiyonlar</span>
             ${S.epicCollections.length > 0 ? `<span class="pill-cnt">${S.epicCollections.length}</span>` : ""}
-            <span class="dropdown-chevron">▾</span>
+            <span class="dropdown-chevron">${icon("chevron-down", 12)}</span>
           </button>`}
 
           <div id="col-dropdown-menu" class="col-dropdown-menu ${S.isColDropdownOpen ? "show" : ""}">
@@ -744,7 +744,7 @@ export function renderEpic(): string {
           <button class="unified-pill sort-btn" data-act="toggle-sort-dropdown" title="Sıralama: ${esc(currentSortOpt.label)}">
             ${icon(currentSortOpt.icon, 13)}
             <span class="sort-btn-label">${esc(currentSortOpt.label)}</span>
-            <span class="dropdown-chevron">▾</span>
+            <span class="dropdown-chevron">${icon("chevron-down", 12)}</span>
           </button>
           <div id="sort-dropdown-menu" class="sort-dropdown-menu ${S.isSortDropdownOpen ? "show" : ""}">
             <div class="sort-menu-header">Sırala</div>

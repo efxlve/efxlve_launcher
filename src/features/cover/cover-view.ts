@@ -445,7 +445,7 @@ export function renderCustomCoverModalContent(appName: string): void {
                   <img src="${esc(thumbUrl)}" loading="lazy" alt="Cover" />
                   <div class="sgdb-card-badges">
                     ${styleLabel ? `<span class="sgdb-style-tag">${esc(styleLabel)}</span>` : "<span></span>"}
-                    <span class="sgdb-score-tag">▲ ${item.score}</span>
+                    <span class="sgdb-score-tag">${icon("chevron-up", 10)} ${item.score}</span>
                   </div>
                   <div class="sgdb-card-footer">${esc(authorName)}</div>
                   ${isSel ? `<div class="sgdb-selected-check">${icon("check", 14)}</div>` : ""}

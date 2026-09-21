@@ -115,7 +115,7 @@ export function renderSelectiveModal(): void {
     langsHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> ${t("selective.extraLanguages")} (${langTags.length})
+          ${icon("chevron-down", 11)} ${t("selective.extraLanguages")} (${langTags.length})
         </div>
         <div class="selective-accordion-list">
           ${langTags
@@ -144,7 +144,7 @@ export function renderSelectiveModal(): void {
     extrasHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> ${t("selective.extraPacks")} (${extraTags.length})
+          ${icon("chevron-down", 11)} ${t("selective.extraPacks")} (${extraTags.length})
         </div>
         <div class="selective-accordion-list">
           ${extraTags
@@ -173,7 +173,7 @@ export function renderSelectiveModal(): void {
     dlcsHtml = `
       <div class="selective-accordion">
         <div class="selective-accordion-head">
-          <span style="font-size:11px">▾</span> ${t("selective.dlcs")} (${uninstalledDlcs.length})
+          ${icon("chevron-down", 11)} ${t("selective.dlcs")} (${uninstalledDlcs.length})
         </div>
         <div class="selective-accordion-list">
           ${uninstalledDlcs

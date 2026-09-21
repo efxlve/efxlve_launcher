@@ -1235,16 +1235,16 @@ document.addEventListener("click", (e) => {
     const list = S.loadedScreenshots.get(id) || [];
     const uncompressed = list.filter((x) => !x.file_name.endsWith(".avif") && !x.file_name.endsWith(".webp"));
     if (uncompressed.length === 0) {
-      toast("Tüm ekran görüntüleri zaten sıkıştırılmış", "ok");
+      toast(i18nT("ss.allCompressed"), "ok");
     } else {
-      toast(`⚡ ${uncompressed.length} ekran görüntüsü sıkıştırılıyor…`, "");
+      toast(i18nT("ss.compressingCount", { count: uncompressed.length }), "");
       (async () => {
         let count = 0;
         for (const item of uncompressed) {
           const res = await compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
           if (res) count++;
         }
-        toast(`✅ ${count} ekran görüntüsü ${S.screenshotCompressionFormat.toUpperCase()} formatına sıkıştırıldı!`, "ok");
+        toast(i18nT("ss.compressedCount", { count, format: S.screenshotCompressionFormat.toUpperCase() }), "ok");
       })();
     }
   } else if (act === "toggle-screenshot-compression") {
