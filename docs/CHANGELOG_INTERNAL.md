@@ -1519,3 +1519,25 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **ROADMAP güncellemesi:** Milestone 1–8 tamamlandı olarak işaretlendi; üç aktif görev durumu `YAPILACAK` → `TAMAMLANDI` yapıldı.
 
+## 87. Modülerleştirme Faz 1–2: CSS Parçalama, `src/core/` Katmanı & İki Dilli Yorum Standardı
+
+**Sorun:** `src/styles.css` ~10.100, `src/main.ts` ~11.400 satırdı; hem AI hem insan inceleyiciler için okunamaz hâldeydi. Yorumlar tek dilliydi.
+
+**Çözüm 1 — CSS 24 modüle bölündü (`src/styles/`):**
+- `index.css` tek giriş noktası; 24 dosyayı `@import` ile cascade sırasında birleştirir (`main.ts` yalnızca bunu import eder, Vite derleme anında tek dosyaya indirger).
+- Dosyalar: `tokens`, `components`, `base`, `library`, `gamehub`, `downloads`, `trophies`, `drawer`, `achievements`, `manage`, `downloads-hub`, `playtime`, `library-toolbar`, `aero-toolbar`, `shelves`, `steamgrid`, `profile`, `store-loading`, `focus`, `critic`, `gamepad`, `screenshots`, `screenshot-share`, `move-game`.
+- Her dosya ~1.500 satırın altında ve iki dilli başlık yorumu taşır. Çıktı CSS bundle'ı davranışsal olarak birebir korundu.
+
+**Çözüm 2 — `src/core/` katmanı kuruldu:**
+- `core/types.ts`: `Game`, `CatalogMeta`, `View` (ölü `ProgressEvent` kaldırıldı).
+- `core/constants.ts`: `isTauri`, demo `META`/`FALLBACK_META`/`metaOf`, mock katalog + `fetchGames`.
+- `core/utils.ts`: saf yardımcılar (`esc`, `fmtPrice`, `fmtSize`, `fmtBytes`, `fmtPlaytime`, `fmtAchDate`, `cleanDisplayVersion`).
+- `core/icons.ts`: `IconName` tipi, `icon()` (inline SVG) ve `epicPlatinumIcon()`.
+- `main.ts` bu modülleri import eder; tekrar eden tanımlar silindi (~360 satır azaldı). `tsc`/`vite` yeşil.
+
+**Çözüm 3 — Dokümantasyon & standartlar:**
+- `docs/REFACTOR_PLAN.md` eklendi: hedef dizin yapısı, tek `AppState` nesnesi stratejisi, 6 fazlı plan (F1–F6), doğrulama adımları ve riskler.
+- `AGENTS.md` §4.8 (Dosya Boyutu & Modülerlik, ~1.500 satır sınırı) ve §4.9 (İki Dilli Yorum Kuralı: önce İngilizce, sonra Türkçe, açıklayıcı) eklendi; §5 mimari bölümü güncellendi.
+
+**Sıradaki faz (F3):** `core/state.ts` (tek `S` nesnesi), `core/dom.ts`, `core/toast.ts`, `core/ipc.ts`; ardından `features/*` modülleri. Bkz. `docs/REFACTOR_PLAN.md`.
+

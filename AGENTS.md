@@ -40,14 +40,21 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 5. **ZORUNLU KONTROLCÜ & KONSOL KURALI:** Arayüz daima **Game Controller (Gamepad / DualSense / Xbox)** ile 10 fit (TV / Koltuk / Konsol modu) kullanıma tam uyumlu tasarlanmalıdır. Geniş ferah kartlar, 2 sütunlu kupa ızgarası, büyük butonlar, `:focus-visible` lavanta/mavi odak halkaları ve kontrolcü kısayolları (A: Seç, B: Geri, LB/RB: Sekmeler, Y: Ara, X: Favori) titizlikle korunur.
 6. **"AI TASARIMI GİBİ DURMASIN" KURALI:** YASAKLAR: Mor→indigo→cyan dekoratif gradyanlar, neon parlama (`box-shadow glow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`999px`) çevirmek, cam/blur katmanlarının gereksiz tekrarı ve süs amaçlı mikro animasyonlar (ikon sallama, pulse). Renk yalnızca DURUM bildirir (yeşil = çevrimiçi, amber = çevrimdışı/güncelleme, kırmızı = sayaç/hata).
 7. **DENGE KURALI:** Hedef **sade ama karakterli**. Karakter şu dört kaynaktan gelir: tek kaynaklı bağlamsal ışık, yüzey/derinlik dili, tipografik ses, tek özgüvenli vurgu rengi.
+8. **DOSYA BOYUTU & MODÜLERLİK KURALI:** Hiçbir kaynak dosya **~1.500 satırı** geçmez. Geçen dosya sorumluluğu tek olan modüllere bölünür. Yeni özellikler doğrudan ilgili `src/features/<ad>/` modülüne yazılır; `main.ts` yalnızca bootstrap + ince orkestrasyon olacak şekilde küçültülür. Detaylı plan: [`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md).
+9. **İKİ DİLLİ YORUM KURALI (Bilingual Comments):** Tüm yeni ve taşınan kodda yorumlar **önce İngilizce, sonra Türkçe** ve açıklayıcı yazılır (proje harici inceleyiciler, örn. Epic Games çalışanları, tarafından okunacaktır). Tek dilli/anlamsız/kopyala-yapıştır yorum yasaktır. Format:
+   ```ts
+   // EN: Explain why this exists and any non-obvious tradeoff.
+   // TR: Bunun neden var olduğunu ve bariz olmayan ödünleşimi açıkla.
+   ```
 
 ## 5. Mimari & Veri Akışı Prensibi
 
 - **Heroic Prensibi:** Arayüz ÖNCE disk önbelleğinden anında okunur (`epic_cached_library`), ağ senkronu (`epic_list_games`) arka planda sessizce yürütülür. Ağ başarısız olsa bile arayüz kilitlenmez, önbellek korunur. Asla tüm kütüphaneyi tek `list` çağrısına bağlama.
-- **Modüler Yapı (`master_refactor_plan.md`):**
-  - `src/core/`: `epic.ts` (API/Invoke), durum (state), olaylar (events) ve yardımcılar (utils).
-  - `src/features/`: `library/`, `drawer/`, `profile/`, `downloads/`, `gamepad/`, `store/`, `settings/`.
-  - `src/styles/`: Parçalanmış modüler CSS (`theme.css`, `pcard.css`, `drawer.css`, vb.).
+- **Modüler Yapı (hedef mimari — [`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)):**
+  - `src/core/`: `types.ts` ✅, `constants.ts` ✅, `utils.ts` ✅, `icons.ts` ✅, `i18n.ts` ✅; `state.ts`, `dom.ts`, `ipc.ts`, `toast.ts` (Faz 3) ve `epic.ts` (API/Invoke barrel).
+  - `src/features/`: `library/`, `drawer/`, `profile/`, `downloads/`, `gamepad/`, `store/`, `settings/`, `screenshots/`, `collections/`, `move-game/`, `dlc/`, `context-menu/`.
+  - `src/styles/`: 24 parçalanmış modüler CSS + `index.css` (tek giriş noktası) ✅.
+  - `src/locales/`: 15 dil JSON'u ✅.
   - `src-tauri/src/legendary/`: `cache`, `client`, `commands`, `downloader`, `models`, `move_game`, `playtime`, `profile`, `screenshots`, `skip`, `steamgrid`, `transfers`.
 
 ## 6. Kanla Öğrenilmiş Altın Kurallar (OKUMADAN KOD YAZMA)

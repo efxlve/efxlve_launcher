@@ -1,0 +1,655 @@
+/* ==========================================================================
+   Achievements & System Requirements
+   Basarimlar & Sistem Gereksinimleri
+
+   EN: SteamHunters grouped list, clean PS5 achievement cards, system requirements layout, secret achievements and platinum filter.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: SteamHunters gruplu liste, temiz PS5 basarim kartlari, sistem gereksinimleri duzeni, gizli basarimlar ve platin filtresi.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* --- SteamHunters Gruplandırılmış Başarım Listesi --- */
+.ach-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ach-list-container::-webkit-scrollbar {
+  width: 5px;
+}
+.ach-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ach-list-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+.ach-list-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+.ach-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ach-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0 4px;
+}
+.ach-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ach-group-icon {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+.ach-group-section.dlc .ach-group-icon {
+  color: #818cf8;
+}
+.ach-group-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+.ach-group-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+.ach-group-badge.complete {
+  color: #4ade80;
+}
+.ach-group-xp {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+.ach-group-section.dlc .ach-group-xp {
+  color: #818cf8;
+}
+.ach-group-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.ach-group-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.ach-group-bar-fill.gold {
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+}
+.ach-group-bar-fill.purple {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+.ach-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 8px;
+}
+
+/* --- PS5 Konsol Tarzı Temiz Başarım Kartları --- */
+.ach-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.18s ease;
+  position: relative;
+  background: transparent;
+}
+.ach-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.ach-card.unlocked {
+  border-left: 3px solid rgba(59, 130, 246, 0.5);
+}
+.ach-card.unlocked:hover {
+  background: rgba(59, 130, 246, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  border-left-color: #3b82f6;
+}
+.ach-card.locked {
+  opacity: 0.6;
+  border-left: 3px solid transparent;
+}
+.ach-card.locked:hover {
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ach-card.hidden-secret {
+  cursor: pointer;
+}
+
+.ach-icon-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.03);
+}
+.ach-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ach-card.locked .ach-art {
+  filter: grayscale(90%) opacity(0.35);
+}
+.ach-locked-badge {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+.ach-mystery-box, .ach-fallback-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #475569;
+}
+
+.ach-content {
+  flex: 1;
+  min-width: 0;
+}
+.ach-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1px;
+}
+.ach-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.3;
+}
+.ach-card.locked .ach-name {
+  color: #94a3b8;
+}
+.ach-description {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 2px 0 0;
+  word-break: break-word;
+}
+.ach-card.locked .ach-description {
+  color: #475569;
+}
+.ach-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: #475569;
+  margin-top: 4px;
+}
+.ach-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  color: #64748b;
+  border: none;
+}
+.ach-pill.tier.bronze { color: #f97316; }
+.ach-pill.tier.silver { color: #94a3b8; }
+.ach-pill.tier.gold { color: #fbbf24; }
+.ach-pill.tier.platinum { color: #c084fc; }
+.ach-pill.date { color: #64748b; }
+.ach-pill.rarity { color: #64748b; }
+.ach-pill.rarity.ultra-rare {
+  color: #c084fc;
+  font-weight: 700;
+}
+.ach-pill.secret {
+  color: #a78bfa;
+  font-size: 10px;
+}
+.ach-pill.dlc {
+  color: #818cf8;
+  font-size: 10px;
+}
+.ach-reveal-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  color: #a78bfa;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.ach-reveal-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c4b5fd;
+}
+.ach-reveal-btn.revealed {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #64748b;
+}
+
+.ach-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ach-xp-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+.ach-xp-chip.unlocked {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+}
+.ach-xp-chip.locked {
+  color: #475569;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ach-status-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ach-status-icon.earned {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.ach-status-icon.locked {
+  background: transparent;
+  color: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ach-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+.ach-empty-state-icon {
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+}
+.ach-empty-state-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.ach-empty-state-sub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* --- Sistem Gereksinimleri Tasarımı --- */
+.sys-req-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 20px;
+}
+.sys-req-platforms {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.sys-req-plat-pill {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.sys-req-plat-pill:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.sys-req-plat-pill.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+}
+
+.sys-req-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sys-req-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.sys-req-card.min {
+  border-left: 3px solid #60a5fa;
+}
+.sys-req-card.rec {
+  border-left: 3px solid #34d399;
+}
+.sys-req-card-head {
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sys-req-badge {
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sys-req-badge.min { color: #93c5fd; }
+.sys-req-badge.rec { color: #6ee7b7; }
+.sys-req-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.sys-req-body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sys-req-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+}
+.sys-req-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.sys-req-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sys-req-val {
+  font-size: 12px;
+  color: #f1f5f9;
+  line-height: 1.4;
+  padding-left: 19px;
+}
+.sys-req-lang-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sys-req-lang-head {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sys-req-lang-body {
+  font-size: 11.5px;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+.sys-req-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* --- Gizli Başarımlar (Secret Achievements) --- */
+.ach-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+}
+.ach-item.hidden-secret {
+  cursor: pointer;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.015);
+  transition: all 0.2s ease;
+}
+.ach-item.hidden-secret:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+.ach-item.revealed-secret {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(0, 0, 0, 0.3));
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+}
+.ach-mystery-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  background: radial-gradient(circle, #27272a 0%, #18181b 100%);
+}
+.ach-reveal-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.ach-reveal-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.ach-reveal-btn.revealed {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
+.ach-reveal-btn.revealed:hover {
+  background: rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+.ach-badge-secret {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.ach-badge-dlc {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+
+
+/* --- Platin Kupa Filtresi & Kategori Başlığı --- */
+.chip[data-val="platinum"] {
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+.chip[data-val="platinum"]:hover {
+  border-color: #d8b4fe;
+  color: #f3e8ff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+}
+.chip[data-val="platinum"].active {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  color: #ffffff;
+  border-color: #c084fc;
+  box-shadow: 0 2px 14px rgba(168, 85, 247, 0.5);
+}
+.chip[data-val="platinum"] .chip-cnt {
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
+}
+.chip[data-val="platinum"].active .chip-cnt {
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.plat-category-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.14) 0%, rgba(126, 34, 206, 0.06) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(168, 85, 247, 0.15);
+}
+.plat-banner-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.plat-banner-icon {
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 10px rgba(192, 132, 252, 0.6));
+}
+.plat-banner-info {
+  flex: 1;
+}
+.plat-banner-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f3e8ff;
+  margin-bottom: 3px;
+  letter-spacing: -0.2px;
+}
+.plat-banner-desc {
+  font-size: 13px;
+  color: #d1d5db;
+  line-height: 1.4;
+}
+.plat-banner-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 10px;
+  padding: 8px 18px;
+  min-width: 90px;
+}
+.plat-banner-stat .val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffd700;
+}
+.plat-banner-stat .lbl {
+  font-size: 10px;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+

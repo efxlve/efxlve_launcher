@@ -1,0 +1,34 @@
+/* ==========================================================================
+   Stylesheet Entry Point
+   Stil Giris Noktasi
+
+   EN: Aggregates all modular stylesheets in cascade order. src/main.ts
+       imports only this file; Vite inlines the imports at build time.
+   TR: Tum modul stil dosyalarini cascade sirasina gore birlestirir.
+       src/main.ts yalnizca bu dosyayi import eder; Vite derleme aninda
+       importlari tek dosyaya indirger.
+   ========================================================================== */
+@import "./tokens.css";
+@import "./components.css";
+@import "./base.css";
+@import "./library.css";
+@import "./gamehub.css";
+@import "./downloads.css";
+@import "./trophies.css";
+@import "./drawer.css";
+@import "./achievements.css";
+@import "./manage.css";
+@import "./downloads-hub.css";
+@import "./playtime.css";
+@import "./library-toolbar.css";
+@import "./aero-toolbar.css";
+@import "./shelves.css";
+@import "./steamgrid.css";
+@import "./profile.css";
+@import "./store-loading.css";
+@import "./focus.css";
+@import "./critic.css";
+@import "./gamepad.css";
+@import "./screenshots.css";
+@import "./screenshot-share.css";
+@import "./move-game.css";

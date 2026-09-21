@@ -1,0 +1,371 @@
+/* ==========================================================================
+   Critic & Review Scores
+   Elestirmen & Inceleme Skorlari
+
+   EN: OpenCritic/Metacritic review score cards and tier styling.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: OpenCritic/Metacritic inceleme skoru kartlari ve seviye stilleri.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* ==========================================================================
+   PlayStation 5 Game Hub: Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic)
+   ========================================================================== */
+
+.hub-stat-val.tier-mighty {
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+}
+
+.hub-stat-val.tier-strong {
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.45);
+}
+
+.hub-stat-val.tier-fair {
+  color: #38bdf8;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+.hub-stat-val.tier-weak {
+  color: #94a3b8;
+}
+
+.hub-stat-val.tier-goygoy {
+  color: #a3e635;
+  text-shadow: 0 0 12px rgba(163, 230, 53, 0.45);
+}
+
+.hub-critic-card {
+  margin-bottom: 16px;
+}
+
+.critic-tier-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.critic-tier-pill.tier-mighty {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+}
+
+.critic-tier-pill.tier-strong {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.2);
+}
+
+.critic-tier-pill.tier-fair {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.critic-tier-pill.tier-weak {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+.critic-tier-pill.tier-goygoy {
+  background: rgba(163, 230, 53, 0.15);
+  border: 1px solid rgba(163, 230, 53, 0.4);
+  color: #a3e635;
+  box-shadow: 0 0 14px rgba(163, 230, 53, 0.2);
+}
+
+.hub-critic-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hub-critic-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-critic-badge.clickable {
+  cursor: pointer;
+}
+
+.hub-critic-badge.clickable:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateX(3px);
+}
+
+.critic-badge-score {
+  font-size: 18px;
+  font-weight: 800;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.critic-badge-score.tier-mighty {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.critic-badge-score.tier-strong {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
+}
+
+.critic-badge-score.tier-fair {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.critic-badge-score.mc {
+  background: rgba(51, 204, 51, 0.15);
+  border-color: rgba(51, 204, 51, 0.4);
+  color: #4ade80;
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.2);
+}
+
+.critic-badge-score.igdb {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+}
+
+.critic-badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.critic-badge-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.critic-badge-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.critic-badge-ext {
+  color: var(--muted);
+  opacity: 0.7;
+  transition: opacity 0.18s ease;
+}
+
+.hub-critic-badge.clickable:hover .critic-badge-ext {
+  color: #fff;
+  opacity: 1;
+}
+
+.critic-loading-text {
+  padding: 16px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Goygoy Engine Özel İnceleme Kartı */
+.hub-goygoy-box {
+  margin-top: 10px;
+  background: linear-gradient(135deg, rgba(163, 230, 53, 0.05) 0%, rgba(14, 18, 26, 0.7) 100%);
+  border: 1px solid rgba(163, 230, 53, 0.22);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-goygoy-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3.5px;
+  height: 100%;
+  background: linear-gradient(180deg, #a3e635, #65a30d);
+  box-shadow: 0 0 8px rgba(163, 230, 53, 0.5);
+}
+
+.hub-goygoy-box.clickable {
+  cursor: pointer;
+}
+
+.hub-goygoy-box.clickable:hover {
+  background: linear-gradient(135deg, rgba(163, 230, 53, 0.09) 0%, rgba(14, 18, 26, 0.9) 100%);
+  border-color: rgba(163, 230, 53, 0.45);
+  transform: translateX(3px);
+  box-shadow: 0 4px 20px rgba(163, 230, 53, 0.12);
+}
+
+.goygoy-box-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.goygoy-badge-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.goygoy-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a3e635;
+  box-shadow: 0 0 8px #a3e635;
+  animation: goygoyPulse 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes goygoyPulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 12px #a3e635;
+  }
+}
+
+.goygoy-brand {
+  color: #f1f5f9;
+  letter-spacing: 0.02em;
+}
+
+.goygoy-brand strong {
+  color: #a3e635;
+  font-weight: 800;
+}
+
+.goygoy-chip {
+  background: rgba(163, 230, 53, 0.12);
+  border: 1px solid rgba(163, 230, 53, 0.25);
+  color: #bef264;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.goygoy-score-pill {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  background: rgba(163, 230, 53, 0.12);
+  border: 1px solid rgba(163, 230, 53, 0.35);
+  border-radius: 7px;
+  padding: 2px 7px;
+  box-shadow: 0 0 10px rgba(163, 230, 53, 0.15);
+}
+
+.goygoy-score-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: #a3e635;
+  line-height: 1;
+}
+
+.goygoy-score-denom {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.goygoy-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.goygoy-box-summary {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.goygoy-box-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+}
+
+.goygoy-writer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.goygoy-read-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #bef264;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.hub-goygoy-box.clickable:hover .goygoy-read-action {
+  color: #a3e635;
+  transform: translateX(2px);
+}
+

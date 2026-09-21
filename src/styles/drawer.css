@@ -1,0 +1,649 @@
+/* ==========================================================================
+   Detail Drawer Sections & Toolbar
+   Detay Cekmecesi Bolumleri & Arac Cubugu
+
+   EN: Drawer tab transition, stat strip, achievement mini showcase, manage/DLC groups, feature strip, trophy summary and search/sort bar.
+       Split from the former monolithic src/styles.css to keep every file
+       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   TR: Cekmece sekme gecisi, istatistik seridi, basarim mini vitrini, yonetim/DLC gruplari, ozellik seridi, kupa ozeti ve arama/siralama cubugu.
+       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
+       (bkz. docs/REFACTOR_PLAN.md).
+   ========================================================================== */
+/* --- Sekme İçerik Geçiş Animasyonu --- */
+@keyframes tabContentEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.tab-content-enter {
+  animation: tabContentEnter 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+/* --- İstatistik Şeridi (2-Sütunlu Dengeli Kartlar) --- */
+.drawer-stats-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.18s ease;
+}
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+.stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-label {
+  font-size: 10.5px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+.stat-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Başarımlar Mini Vitrini (Overview Tab) --- */
+.drawer-ach-showcase {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, rgba(20, 21, 28, 0.4) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 14px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ach-showcase-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ach-showcase-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c084fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ach-showcase-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a5b4fc;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ach-showcase-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.ach-showcase-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ach-showcase-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7e22ce, #a855f7, #c084fc);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.ach-showcase-icons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ach-showcase-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  object-fit: cover;
+  transition: transform 0.15s;
+}
+.ach-showcase-icon:hover {
+  transform: scale(1.08);
+}
+.ach-showcase-empty {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* --- Yönet & Ayarlar Çekmece İçi Kart Grupları --- */
+.manage-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.manage-card-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.manage-group-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding-left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.manage-group-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.manage-item-row {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 14px;
+  transition: background 0.15s ease;
+}
+.manage-item-row:last-child {
+  border-bottom: none;
+}
+.manage-item-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.manage-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.manage-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+}
+.manage-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.manage-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.manage-item-desc {
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+.manage-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.manage-danger-card {
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 4px;
+}
+.manage-danger-card:hover {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+/* --- Eklentiler & DLC Çekmece İçi Görünümü --- */
+.dlc-drawer-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dlc-drawer-search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  gap: 8px;
+}
+.dlc-drawer-search-bar input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+.dlc-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
+}
+.dlc-drawer-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dlc-drawer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.dlc-drawer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.dlc-drawer-thumb {
+  width: 44px;
+  height: 25px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dlc-drawer-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dlc-drawer-size {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+.dlc-badge-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.dlc-badge-active:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+/* --- Çekmece Özellik Şeridi & Hızlı Başarım Önizleme --- */
+.drawer-feature-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.drawer-feature-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.drawer-feature-pill.clickable {
+  cursor: pointer;
+  font-family: inherit;
+}
+.drawer-feature-pill.clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.quick-ach-thumbs-row {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+.quick-ach-mini-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1.5px solid #141720;
+  margin-left: -6px;
+  background: #0d0f15;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.quick-ach-thumbs-row .quick-ach-mini-thumb:first-child {
+  margin-left: 0;
+}
+
+/* --- PS5 Kompakt Başarım Özet Çubuğu (Trophy Summary Bar) --- */
+.ach-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.ach-summary-bar.platinum {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(126, 34, 206, 0.04));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 24px rgba(168, 85, 247, 0.1);
+}
+.ach-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.ach-progress-ring {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+.ach-progress-ring svg {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-90deg);
+}
+.ach-progress-ring .ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 4;
+}
+.ach-progress-ring .ring-fill {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+.ach-summary-bar.platinum .ring-fill {
+  stroke: #c084fc;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.6));
+}
+.ach-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ach-summary-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.2px;
+  font-feature-settings: "tnum";
+}
+.ach-summary-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+.ach-summary-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ach-tier-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  font-feature-settings: "tnum";
+}
+.ach-tier-mini.plat { color: #c084fc; }
+.ach-tier-mini.plat.complete { color: #e9d5ff; }
+.ach-tier-mini.gold { color: #fbbf24; }
+.ach-tier-mini.gold.complete { color: #fde047; }
+.ach-tier-mini.silver { color: #94a3b8; }
+.ach-tier-mini.silver.complete { color: #cbd5e1; }
+.ach-tier-mini.bronze { color: #f97316; }
+.ach-tier-mini.bronze.complete { color: #fb923c; }
+.ach-summary-tools {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.ach-tool-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #64748b;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+.ach-tool-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* --- PlayStation Konsol Tarzı Arama & Sıralama Barı --- */
+.ach-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ach-search-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ach-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #64748b;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.ach-search-field {
+  width: 100%;
+  height: 34px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 0 30px 0 32px;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.16s ease;
+}
+.ach-search-field:focus {
+  outline: none;
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+}
+.ach-search-field::placeholder {
+  color: #64748b;
+}
+.ach-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+.ach-search-clear:hover {
+  color: #f1f5f9;
+}
+.ach-sort-wrap {
+  flex-shrink: 0;
+}
+.ach-sort-select {
+  height: 34px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 0 10px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  outline: none;
+}
+.ach-sort-select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.ach-sort-select:focus {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+/* --- PlayStation Tarzı Durum Çipleri (Status Strip) --- */
+.ach-status-strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ach-status-chip {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ach-status-chip:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+.ach-status-chip:active {
+  transform: scale(0.96);
+}
+.ach-status-chip.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+}
+.ach-chip-num {
+  font-size: 10px;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0 5px;
+  border-radius: 6px;
+}
+.ach-status-chip.active .ach-chip-num {
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
