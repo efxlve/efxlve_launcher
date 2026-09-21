@@ -30,7 +30,7 @@ import {
 import { applyStaticTranslations, localizeMessage, setLanguage, t } from "../../i18n";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
-import { gameById, refreshGames } from "../../core/demo";
+
 import { refreshEpicInstalled } from "../../core/epic-actions";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -107,8 +107,7 @@ export async function initApp(hooks: {
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
-      const title =
-        gameById(id)?.title ?? S.epicSummaries.find((s) => s.appName === id)?.title ?? id;
+      const title = S.epicSummaries.find((s) => s.appName === id)?.title ?? id;
 
       if (!done) {
         const cur = S.downloads.get(id);
@@ -188,7 +187,6 @@ export async function initApp(hooks: {
         render();
       }).catch(() => render());
       if (S.epicSummaries.some((s) => s.appName === id)) void refreshEpicInstalled();
-      else void refreshGames();
     });
     await listen<{ id: string }>("download-paused", (_event) => {
       S.dlQueueStatus.isPaused = true;
@@ -415,7 +413,6 @@ export async function initApp(hooks: {
       // ignore
     }
   }
-  await refreshGames();
   initGamepadSupport();
   void bootEpic();
 }

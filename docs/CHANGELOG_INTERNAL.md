@@ -1912,3 +1912,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Ölü anahtar temizliği:** silinen yönetim modalından kalan 18 `manage.*` anahtarı + `common.refresh` + `move.pickerDesc` kaldırıldı. `tr.json`/`en.json` **1100 anahtar**, duplicate yok, tam eşlik.
 - `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 134. Demo/Mock Katalog Kaldırıldı
+
+- **Frontend:** `core/demo.ts` silindi; `constants.ts`'ten `META`, `FALLBACK_META`, `metaOf`, `mockInstalled`, `saveMockInstalled`, `mockCatalog`, `fetchGames`, `MOCK_KEY` kaldırıldı; `types.ts`'ten `Game`/`CatalogMeta`; `state.ts`'ten `S.games`. `click-router` (demo `install`/`play`/`uninstall` + `reset-demo`), `ipc-listeners` (`refreshGames` çağrıları), `profile-view` ve ayarlardaki "Demo verisini sıfırla" butonu temizlendi. `settings.backendDemo` → `settings.backendBrowser`.
+- **Rust:** `main.rs`'ten `Game`/`InstallProgress` struct'ları, `default_catalog()`, `library.json` yardımcıları, `list_games`/`install_game`/`launch_game`/`uninstall_game` komutları ve kurulum geri yükleme bloğu kaldırıldı; `AppState` artık yalnızca `epic_dl` tutuyor. `library_dir` fallback'i `"unknown"` yapıldı. Kullanılmayan `HashMap`/`Duration`/`Emitter`/`State` importları temizlendi.
+- **i18n:** 9 `demo.*` anahtarı + `settings.resetDemo` kaldırıldı. `tr.json`/`en.json` **1090 anahtar**, duplicate yok, tam eşlik.
+- Not: Tarayıcı (Tauri'siz) modu artık "yalnızca masaüstü uygulamasında çalışır" mesajını gösterir; gerçek kütüphane her zaman legendary'den gelir.
+- `cargo check` (uyarısız) + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

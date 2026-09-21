@@ -184,4 +184,15 @@
 - [x] **Milestone 7:** Ayarlar'da 3. parti başlatıcılar hub'ı (EA, Ubisoft, Rockstar). → CHANGELOG §85
 - [x] **Milestone 8:** Linux/macOS Wine & Proton uyumluluk katmanı araştırması ve mimari tasarımı. → [`CROSS_PLATFORM.md`](./CROSS_PLATFORM.md)
 
+---
+
+## 5. İsteğe Bağlı Backlog (Sonra Yapılacak)
+
+Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre ele alınacak:
+
+1. **Diğer 13 dilin tam çevirisi:** Şu an `de/es/fr/it/ja/ko/pl/pt-BR/ru/th/zh-Hans/zh-Hant/ar` dosyalarında yalnızca 45 çekirdek anahtar var; gerisi İngilizce'ye düşüyor. Tam çeviri ~13 × 1100 anahtar (büyük iş, kalite riski; insan/AI çeviri turu gerekir).
+2. **Discord Rich Presence görseli:** Discord uygulamasına "large image" asset yükleyip `activity::Assets::new().large_image(...)` ile logo/kapak gösterimi eklemek (uygulama simgesi dışında).
+3. **Cross-platform (Linux/macOS Wine/Proton):** Yalnızca araştırma/araştırma dokümanı mevcut ([`CROSS_PLATFORM.md`](./CROSS_PLATFORM.md)); gerçek implementasyon ayrı bir proje büyüklüğünde (Proton/DXVK/VKD3D, GPTK, prefix yöneticisi).
+4. **Discord RPC ek bağlamlar:** İsteğe bağlı olarak kupa/başarım ilerlemesi gibi daha zengin durum metinleri.
+
 
