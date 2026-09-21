@@ -7,6 +7,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
@@ -499,7 +500,7 @@ export function renderDrawerOverview(
   if (gameCols.length > 0) {
     const pills = gameCols.map((c) => `
       <button class="drawer-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu göster">
-        ${c.emoji ? `<span>${esc(c.emoji)}</span>` : ""}<span>${esc(c.name)}</span>
+        ${isCollectionIcon(c.emoji) ? `<span>${collectionMarker(c.emoji, 13)}</span>` : ""}<span>${esc(c.name)}</span>
       </button>
     `).join("");
     const addBtn = `<button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon</button>`;

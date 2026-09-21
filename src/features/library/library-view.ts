@@ -6,6 +6,7 @@
  * are routed through the global data-act delegation in main.ts.
  */
 
+import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum } from "../../core/game-view";
@@ -331,11 +332,10 @@ export function renderShelfHeroCard(s: EpicSummary): string {
 }
 
 export function renderShelfSection(
-  iconOrEmoji: any,
+  markerIcon: string,
   title: string,
   items: EpicSummary[],
   featuredFirst = false,
-  isEmoji = false,
 ): string {
   if (items.length === 0) return "";
   const firstItem = featuredFirst ? items[0] : null;
@@ -345,7 +345,7 @@ export function renderShelfSection(
     <div class="shelf-section">
       <div class="shelf-header">
         <div class="shelf-title-group">
-          <span class="shelf-icon">${isEmoji ? `<span class="shelf-emoji">${esc(iconOrEmoji)}</span>` : icon(iconOrEmoji, 15)}</span>
+          <span class="shelf-icon">${icon(isCollectionIcon(markerIcon) ? markerIcon : "folder", 15)}</span>
           <h3 class="shelf-title">${esc(title)}</h3>
           <span class="shelf-badge">${items.length}</span>
         </div>
@@ -387,7 +387,7 @@ export function renderEpicShelves(): string {
       <div class="shelf-section">
         <div class="shelf-header">
           <div class="shelf-title-group">
-            <span class="shelf-icon">${activeCol?.emoji ? `<span class="shelf-emoji">${esc(activeCol.emoji)}</span>` : icon("rows", 15)}</span>
+            <span class="shelf-icon">${isCollectionIcon(activeCol?.emoji) ? collectionMarker(activeCol!.emoji, 15) : icon("rows", 15)}</span>
             <h3 class="shelf-title">${esc(title)}</h3>
             <span class="shelf-badge">${visible.length}</span>
           </div>
@@ -435,7 +435,7 @@ export function renderEpicShelves(): string {
       col.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
     );
     if (colGames.length > 0) {
-      sections.push(renderShelfSection(col.emoji || "folder", col.name, colGames, false, Boolean(col.emoji)));
+      sections.push(renderShelfSection(isCollectionIcon(col.emoji) ? col.emoji : "folder", col.name, colGames, false));
     }
   }
 
@@ -688,7 +688,7 @@ export function renderEpic(): string {
         <div class="col-dropdown-container">
           ${selectedCol ? `
           <button class="unified-pill col-btn active ${isColNewlyChanged ? "pill-dynamic" : ""}" data-act="toggle-col-dropdown" title="${esc(selectedCol.name)} koleksiyonu seçili">
-            ${selectedCol.emoji ? `<span class="col-pill-emoji">${esc(selectedCol.emoji)}</span>` : icon("folder", 13)}
+            ${isCollectionIcon(selectedCol.emoji) ? `<span class="col-pill-marker">${collectionMarker(selectedCol.emoji, 13)}</span>` : icon("folder", 13)}
             <span class="col-btn-name">${esc(selectedCol.name)}</span>
             <span class="pill-cnt">${totalColCount}</span>
             <span class="col-clear-btn" data-act="clear-collection" title="Koleksiyon filtresini kaldır">${icon("x", 11)}</span>
@@ -710,7 +710,7 @@ export function renderEpic(): string {
                 return `
                 <div class="col-menu-item-row ${isAct ? "selected" : ""}">
                   <button class="col-menu-item-btn" data-act="select-collection" data-col-id="${esc(col.id)}">
-                    ${col.emoji ? `<span class="col-menu-emoji">${esc(col.emoji)}</span>` : `<span class="col-menu-dot"></span>`}
+                    ${isCollectionIcon(col.emoji) ? `<span class="col-menu-marker">${collectionMarker(col.emoji, 13)}</span>` : `<span class="col-menu-dot"></span>`}
                     <span class="col-menu-name">${esc(col.name)}</span>
                     <span class="col-menu-count">${count}</span>
                   </button>

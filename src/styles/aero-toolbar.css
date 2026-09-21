@@ -558,7 +558,7 @@ select option {
   box-shadow: 0 4px 14px rgba(0, 120, 242, 0.18);
 }
 
-.col-header-emoji {
+.col-header-marker {
   font-size: 22px;
   line-height: 1;
 }
@@ -643,12 +643,12 @@ select option {
   position: relative;
 }
 
-.col-emoji-picker-container {
+.col-marker-picker-container {
   position: relative;
   flex-shrink: 0;
 }
 
-.col-emoji-avatar-btn {
+.col-marker-avatar-btn {
   width: 50px;
   height: 50px;
   border-radius: 14px;
@@ -657,25 +657,26 @@ select option {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   cursor: pointer;
   position: relative;
   transition: all 0.18s ease;
   color: #cbd5e1;
 }
+.col-marker-avatar-btn svg { width: 24px; height: 24px; }
+.col-header-marker svg { width: 22px; height: 22px; }
 
-.col-emoji-avatar-btn:hover {
+.col-marker-avatar-btn:hover {
   background: rgba(0, 120, 242, 0.18);
   border-color: rgba(0, 120, 242, 0.45);
   transform: translateY(-1px);
 }
 
-.col-emoji-avatar-btn.has-emoji {
+.col-marker-avatar-btn.has-marker {
   border-color: rgba(0, 120, 242, 0.5);
   box-shadow: 0 0 16px rgba(0, 120, 242, 0.28);
 }
 
-.col-emoji-edit-badge {
+.col-marker-edit-badge {
   position: absolute;
   bottom: -2px;
   right: -2px;
@@ -708,7 +709,7 @@ select option {
 }
 
 /* Emoji Popover (360px, NO horizontal scroll) */
-.col-emoji-palette {
+.col-marker-palette {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
@@ -727,11 +728,11 @@ select option {
   animation: popIn 0.15s ease;
 }
 
-.col-emoji-palette.open {
+.col-marker-palette.open {
   display: flex;
 }
 
-.col-emoji-palette-header {
+.col-marker-palette-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -743,7 +744,7 @@ select option {
   padding-bottom: 2px;
 }
 
-.col-emoji-clear-btn {
+.col-marker-clear-btn {
   background: transparent;
   border: none;
   color: #ef4444;
@@ -758,11 +759,11 @@ select option {
   transition: all 0.12s;
 }
 
-.col-emoji-clear-btn:hover {
+.col-marker-clear-btn:hover {
   background: rgba(239, 68, 68, 0.15);
 }
 
-.col-emoji-grid {
+.col-marker-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 6px;
@@ -774,43 +775,30 @@ select option {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-.col-emoji-item {
+.col-marker-item {
   width: 34px;
   height: 34px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
-  font-size: 18px;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
   user-select: none;
 }
 
-.col-emoji-item:hover {
+.col-marker-item:hover {
   background: rgba(255, 255, 255, 0.12);
-  transform: scale(1.15);
+  color: #ffffff;
 }
 
-.col-emoji-item.active {
+.col-marker-item.active {
   background: rgba(0, 120, 242, 0.25);
   border-color: #0078f2;
-}
-
-.col-custom-emoji-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.col-custom-emoji-row input {
-  flex: 1;
-  height: 34px;
-  font-size: 12.5px;
+  color: #ffffff;
 }
 
 /* Detay Çekmecesi Tarzı Kaydırılabilir Hızlı Şablonlar */
@@ -1244,11 +1232,11 @@ select option {
   font-weight: 700;
 }
 
-.col-pill-emoji,
-.col-menu-emoji,
+.col-pill-marker,
+.col-menu-marker,
 .col-chip-emoji,
-.col-item-emoji,
-.shelf-emoji {
+.col-item-marker,
+.shelf-marker {
   font-size: 14px;
   line-height: 1;
   display: inline-flex;
