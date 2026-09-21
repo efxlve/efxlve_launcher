@@ -1614,3 +1614,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `main.ts` ~8.412 → ~7.352 satır. `tsc`/`vite build` yeşil.
 - **Not:** Çekmece render'ları lazy-load için `fetchAndRender*` çağırdığından, kalan çekmece kodu (render+fetch) bir sonraki adımda birlikte `features/drawer/`'a taşınmalı.
 
+## 96. Modülerleştirme Faz 5 (devam): Render Kayıt Defteri & Koleksiyonlar Modülü
+
+- **`src/core/render.ts` (Render Bus):** `main.ts` başlangıçta gerçek `render`/`scheduleRender` fonksiyonlarını `registerRender()` ile kaydeder; özellik modülleri `render()`/`scheduleRender()`'ı buradan import ederek `main.ts`'e döngüsel bağımlılık oluşturmadan yeniden çizim isteyebilir. `init()` içinde `registerRender(render, scheduleRender)` çağrılır.
+- **Koleksiyonlar** (`openCollectionModal`, `closeCollectionModal`, `updateEmojiUi`, `updateColPresetArrows`, `renderCollectionModal`, `updateColGamesListInPlace`, `saveCollectionFromModal`, `deleteCollectionFromModal`, `openGameCollectionsModal`, `saveGameCollectionsFromModal`, `updateDrawerCollectionsBoxInPlace`, `loadEpicCollections`) → `src/features/collections/collections-view.ts` (~475 satır). Artık `render()` yerine render bus kullanır.
+- `main.ts` ~7.352 → ~6.904 satır (başlangıç 11.422'den toplam ~4.518 satır azaldı). `tsc`/`vite build` yeşil.
+
