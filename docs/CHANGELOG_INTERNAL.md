@@ -1577,3 +1577,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `main.ts` ~10.900 → ~10.785 satır. İki çağrı yeri (`render()` dağıtıcısı ve DLC arama güncellemesi) artık import edilen fonksiyonları kullanır.
 - `tsc`/`vite build` yeşil.
 
+## 91. Modülerleştirme Faz 4 (devam): Oyun Taşıma Görünümü Modülü
+
+- `updateMoveSpaceBadgeInPlace`, `updateMoveProgressInPlace` ve `renderMoveGameModalFrame` `src/features/move-game/move-game-view.ts` modülüne taşındı (~330 satır).
+- Modül yalnızca `S`, `icon`, `esc`, `fmtBytes`, `moveModalRoot` ve `MoveGameProgress` tipini import eder; saf render/yerinde güncelleme fonksiyonlarıdır (tam sayfa `render()` çağırmaz).
+- Modal açma/başlatma/iptal mantığı (I/O içeren `openMoveGameModal`, `startMoveGame`, `closeMoveGameModal`) şimdilik `main.ts`'te kaldı.
+- `main.ts` ~10.785 → ~10.455 satır. `tsc`/`vite build` yeşil.
+
