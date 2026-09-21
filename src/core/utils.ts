@@ -1,18 +1,16 @@
 /**
- * Pure, side-effect-free formatting and sanitization helpers.
+ * Formatting and sanitization helpers.
  *
- * These helpers never touch application state or the DOM, which makes them
- * safe to unit-test and reuse from any module.
+ * Most helpers are pure and never touch application state or the DOM. The few
+ * user-facing formatters (`fmtPlaytime`, `fmtAchDate`) read the active language
+ * through i18n so their output is localized.
  */
+
+import { currentLanguage, t } from "../i18n";
 
 /** Escape a string for safe HTML interpolation. */
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
-}
-
-/** Format a demo catalog price. */
-export function fmtPrice(p: number): string {
-  return p === 0 ? "Ücretsiz" : `₺${p.toFixed(2)}`;
 }
 
 /** Format megabytes as MB/GB. */
@@ -28,21 +26,23 @@ export function fmtBytes(bytes: number): string {
   return `${Math.round(bytes / 1024 ** 2)} MB`;
 }
 
-/** Format tracked playtime seconds into a short human label. */
+/** Format tracked playtime seconds into a short, localized human label. */
 export function fmtPlaytime(seconds: number): string {
-  if (!seconds || seconds <= 0) return "Oynanmadı";
-  if (seconds < 60) return "< 1 dk";
-  if (seconds < 3600) return `${Math.round(seconds / 60)} dk`;
+  if (!seconds || seconds <= 0) return t("playtime.notPlayed");
+  if (seconds < 60) return t("common.lessThanMinute");
+  if (seconds < 3600) return `${Math.round(seconds / 60)} ${t("common.minutesUnit")}`;
   const hours = seconds / 3600;
-  return hours >= 10 ? `${Math.round(hours)} sa` : `${hours.toFixed(1)} sa`;
+  return hours >= 10
+    ? `${Math.round(hours)} ${t("common.hoursShort")}`
+    : `${hours.toFixed(1)} ${t("common.hoursShort")}`;
 }
 
-/** Format an achievement unlock date for the Turkish locale. */
+/** Format an achievement unlock date for the active locale. */
 export function fmtAchDate(iso: string | null): string {
   if (!iso) return "";
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+    return d.toLocaleDateString(currentLanguage(), { day: "numeric", month: "short", year: "numeric" });
   } catch {
     return iso;
   }

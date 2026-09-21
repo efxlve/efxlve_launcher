@@ -13,6 +13,7 @@ import { closeAllModals, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
+import { t } from "../../i18n";
 import type { View } from "../../core/types";
 export function storeRect(): { x: number; y: number; width: number; height: number } {
   const titlebar = document.getElementById("titlebar");
@@ -45,7 +46,7 @@ export function renderStoreLoadingScreen(): string {
           </div>
           <div class="store-loading-logotype">
             <span class="store-loading-brand-main">EPIC GAMES STORE</span>
-            <span class="store-loading-brand-sub">GÖMÜLÜ MAĞAZA</span>
+            <span class="store-loading-brand-sub">${t("store.embedded")}</span>
           </div>
         </div>
 
@@ -56,7 +57,7 @@ export function renderStoreLoadingScreen(): string {
         </div>
 
         <div class="store-loading-status-wrap">
-          <span class="store-loading-status-text">Mağaza ve oturum başlatılıyor</span>
+          <span class="store-loading-status-text">${t("store.starting")}</span>
           <span class="store-loading-status-dots"><span>.</span><span>.</span><span>.</span></span>
         </div>
       </div>
@@ -74,7 +75,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   S.lastStoreUrl = url;
   S.storeMode = mode;
   S.view = "store";
-  // Mağaza açılırken modern ve şık yükleme animasyonunu göster
+  // Show the modern loading animation while the store opens.
   viewEl.innerHTML = renderStoreLoadingScreen();
   render();
   try {
@@ -114,7 +115,7 @@ export async function openProfile(): Promise<void> {
   render();
 }
 
-/** Gömülü mağaza webview'ini atomik olarak gizler; mağazada kalındıysa son mağaza dışı görünüme döner. */
+/** Atomically hides the embedded store webview; falls back to the last non-store view. */
 export function hideStore(): void {
   if (S.storeShown) {
     S.storeShown = false;
@@ -123,7 +124,7 @@ export function hideStore(): void {
   if (S.view === "store") S.view = S.lastNonStoreView;
 }
 
-/** Görünüm değişimlerinin tek giriş noktası: mağaza durumu her zaman atomik güncellenir. */
+/** Single entry point for view changes: store visibility is always updated atomically. */
 export function setView(next: View): void {
   if (next !== "store") {
     hideStore();

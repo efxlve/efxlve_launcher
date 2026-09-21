@@ -1834,3 +1834,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Yönetim toggle toast'ları i18n'e taşındı (`manage.autoUpdateOn/Off`, `priorityOn/Off`, `cloudOn/Off`).
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 124. i18n: Koleksiyon Modalı, Mağaza Yükleme, Çekirdek Yardımcılar
+
+- `collections-view.ts` tamamen `t()`'e taşındı (`col.*`, ~55 anahtar): düzenleyici modal, hızlı şablonlar (isimleri de yerelleşir), filtre sekmeleri, oyun listesi, alt bilgi, silme onayı ve oyun-koleksiyon seçici. Türkçe yorumlar İngilizce'ye çevrildi.
+- `store-view.ts` (gömülü mağaza yükleme ekranı, `store.*`) ve `core/epic-actions.ts` (başlatma/indirme durumu, `dl.launching`) migre edildi.
+- `core/utils.ts`: ölü `fmtPrice` kaldırıldı; `fmtPlaytime` artık yerelleşmiş birimler kullanıyor (`common.minutesUnit`, `lessThanMinute`, `hoursShort`); `fmtAchDate` etkin dili kullanıyor (`currentLanguage()`).
+- `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
+- `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+**Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `profile-view.ts` yorumları.
+

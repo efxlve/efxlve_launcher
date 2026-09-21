@@ -79,8 +79,8 @@ export function throttledWindowResize(): void {
 
 window.addEventListener("resize", throttledWindowResize, { passive: true });
 
-/* ---------- Üst bar klavye kısayolları ----------
-   Ctrl+1 Mağaza · Ctrl+2 Kütüphane · Ctrl+3 İndirmeler · Ctrl+, Ayarlar */
+/* ---------- Top bar keyboard shortcuts ----------
+   Ctrl+1 Store · Ctrl+2 Library · Ctrl+3 Downloads · Ctrl+, Settings */
 document.addEventListener("keydown", (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
   const t = e.target as HTMLElement | null;
@@ -97,8 +97,8 @@ document.addEventListener("keydown", (e) => {
   document.querySelector<HTMLElement>(`#nav ${sel}`)?.click();
 });
 
-/* ---------- Webview Zırhlama: kazara yenileme ve ölçek bozulmasını engelle ----------
-   F5 / Ctrl+R (reload) ve Ctrl +/-/0 (zoom) tarayıcı davranışı konsol deneyimini bozar. */
+/* ---------- Webview hardening: block accidental reload and zoom ----------
+   F5 / Ctrl+R (reload) and Ctrl +/-/0 (zoom) break the console experience. */
 document.addEventListener(
   "keydown",
   (e) => {
