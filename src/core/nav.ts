@@ -44,6 +44,19 @@ export function updateBadge(): void {
   updateNavIndicator();
 }
 
+/** Reflect the offline-mode state on the top-bar network chip. */
+export function updateOfflineModeUi(): void {
+  const btn = document.getElementById("btn-offline-mode");
+  if (!btn) return;
+  btn.classList.toggle("offline", S.offlineMode);
+  btn.classList.toggle("online", !S.offlineMode);
+  const label = btn.querySelector<HTMLElement>(".net-label");
+  if (label) label.textContent = S.offlineMode ? t("nav.offline") : t("nav.online");
+  btn.title = S.offlineMode
+    ? "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)"
+    : "Çevrimiçi Mod Aktif — Epic ağına bağlı (Çevrimdışı moda geçmek için tıklayın)";
+}
+
 /** Refresh the account chip in the top bar. */
 export function updateChrome(): void {
   const acc = document.getElementById("account");

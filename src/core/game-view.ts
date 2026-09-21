@@ -7,7 +7,10 @@
  */
 
 import { getThirdPartyLauncher, epicPortrait, type EpicSummary } from "../epic";
+import { FAV_KEY } from "./constants";
+import { modalRoot } from "./dom";
 import { icon } from "./icons";
+import { render } from "./render";
 import { rawOf } from "./selectors";
 import { S } from "./state";
 import { esc } from "./utils";
@@ -31,6 +34,33 @@ export function epicArt(s: EpicSummary): string {
   const url = g ? epicPortrait(g) : s.cover;
   if (url) return `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`;
   return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52);color:#94a3b8">${icon("gamepad-2", 40)}</div>`;
+}
+
+/** Toggle a game's favorite state, persist it and update any visible button. */
+export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
+  const isNowFaved = !S.epicFav.has(appName);
+  if (isNowFaved) S.epicFav.add(appName);
+  else S.epicFav.delete(appName);
+  localStorage.setItem(FAV_KEY, JSON.stringify([...S.epicFav]));
+  render();
+
+  if (triggerBtn) {
+    triggerBtn.classList.toggle("faved", isNowFaved);
+    triggerBtn.classList.add("heart-burst");
+    setTimeout(() => triggerBtn.classList.remove("heart-burst"), 600);
+  }
+
+  if (S.currentModalAppName === appName) {
+    const favBtn = modalRoot.querySelector(`button[data-act="epic-fav"][data-id="${appName}"]`) as HTMLElement | null;
+    if (favBtn) {
+      favBtn.classList.toggle("faved", isNowFaved);
+      favBtn.classList.add("heart-burst");
+      setTimeout(() => favBtn.classList.remove("heart-burst"), 600);
+      if (favBtn.classList.contains("btn")) {
+        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? "Favorilerde" : "Favoriye Ekle"}`;
+      }
+    }
+  }
 }
 
 /** Primary action buttons (play/install/update/cancel) for a game card. */
