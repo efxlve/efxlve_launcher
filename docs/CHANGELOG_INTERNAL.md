@@ -1591,3 +1591,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `epicWideArt` (geniş kapak seçici) paylaşıldığı için `src/core/selectors.ts`'e taşındı; hem `main.ts` hem profil modülü oradan import eder.
 - `main.ts` ~10.455 → ~9.858 satır. `tsc`/`vite build` yeşil.
 
+## 93. Modülerleştirme Faz 5 (başlangıç): İndirmeler Görünümü Modülü
+
+- `activeDlMetrics` (main.ts'e özel `DlMetrics` tipinden dolayı taşınamamıştı) merkezileştirildi: `DlMetrics` tipi `core/types.ts`'e, alanı `S.activeDlMetrics`'e taşındı; `main.ts`'teki tüm referanslar güncellendi.
+- `pushSpeedData`, `drawSpeedCanvas`, `startSpeedChartTimer` ve `renderDownloads` → `src/features/downloads/downloads-view.ts` (~449 satır).
+- Modül `S`, `icon`, `esc`, `fmtBytes`, `t`, `epicWideArt` import eder; hız grafiği hedefli DOM güncellemesi disiplinini korur (tam sayfa render yok).
+- `main.ts` ~9.837 → ~9.381 satır. `tsc`/`vite build` yeşil.
+
