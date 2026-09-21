@@ -1928,3 +1928,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Mümkün olmayanlar (dürüstçe atlandı):** bant genişliği sınırlama (legendary'de throttle yok), ülke/bölge seçimi (CDN seçimiyle kısmen), LAN transferi, shader pre-caching.
 - `tr.json`/`en.json` **1105 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 136. İndirme UI: Steam Benzeri Zirve Göstergesi, Bit/s Seçeneği + Canlı Hız Bug'ı
+
+- **Bug fix (canlı hız):** `ipc-listeners` `dl-stat-net` ID'sini güncelliyordu ama kart `dl-stat-speed` idi → indirme hızı canlı güncellenmiyordu (yalnızca tam render'da). ID düzeltildi.
+- **Bug fix (demo kalıntısı):** "Tamamlananlar" listesindeki Oyna butonu kaldırılan demo `play` aksiyonunu çağırıyordu → `epic-play` yapıldı.
+- **Zirve (Peak) göstergesi:** Steam'deki NETWORK/PEAK/DISK düzenine uygun yeni kutucuk (`S.peakNetSpeedBytes`); canlı güncelleniyor.
+- **Bit/s seçeneği:** `fmtSpeed()` yardımcısı (utils) + ayarlarda "İndirme hızını bit cinsinden göster" anahtarı (`SPEED_BITS_KEY`). Hız/zirve/disk ve grafik legend'i seçime göre Mbps/MB/s gösterir.
+- `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

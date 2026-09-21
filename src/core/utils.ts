@@ -18,6 +18,25 @@ export function fmtSize(mb: number): string {
   return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb} MB`;
 }
 
+/**
+ * Format a transfer rate. When `bits` is true the value is shown in bits per
+ * second (Mbps/Kbps), which some users prefer over bytes (MB/s).
+ */
+export function fmtSpeed(bytesPerSec: number, bits = false): string {
+  if (!bytesPerSec || bytesPerSec <= 0) return bits ? "0 bps" : "0 B/s";
+  if (bits) {
+    const b = bytesPerSec * 8;
+    if (b >= 1e9) return `${(b / 1e9).toFixed(1)} Gbps`;
+    if (b >= 1e6) return `${(b / 1e6).toFixed(1)} Mbps`;
+    if (b >= 1e3) return `${(b / 1e3).toFixed(1)} Kbps`;
+    return `${Math.round(b)} bps`;
+  }
+  if (bytesPerSec >= 1024 ** 3) return `${(bytesPerSec / 1024 ** 3).toFixed(1)} GB/s`;
+  if (bytesPerSec >= 1024 ** 2) return `${(bytesPerSec / 1024 ** 2).toFixed(1)} MB/s`;
+  if (bytesPerSec >= 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
+  return `${Math.round(bytesPerSec)} B/s`;
+}
+
 /** Format a byte count as MB/GB. */
 export function fmtBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return "—";

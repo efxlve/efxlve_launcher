@@ -20,6 +20,7 @@ import {
   SS_HOTKEY_KEY,
   SS_HOTKEY_NAME_KEY,
   SS_QUALITY_KEY,
+  SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
 import type { CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, View } from "./types";
@@ -161,6 +162,7 @@ export const S = {
   manageSyncingSaves: false,
   activeDlMetrics: (null) as DlMetrics | null,
   peakNetSpeedBytes: 0,
+  speedInBits: (localStorage.getItem(SPEED_BITS_KEY) === "true") as boolean,
   speedHistory: (new Array(60).fill(0)) as number[],
   diskHistory: (new Array(60).fill(0)) as number[],
   dlQueueStatus: ({ isPaused: false, queue: [] }) as DlQueueStatus,
