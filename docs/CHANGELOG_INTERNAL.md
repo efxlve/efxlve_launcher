@@ -1764,3 +1764,8 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan:** drawer içerikleri (`drawer-widgets`/`drawer-view`), kapak/SteamGrid, gamepad HUD, oynama süresi modalı, ekran görüntüsü paylaşımı, toast/hata mesajları.
 
+## 116. i18n Metin Taşıma (devam): Gamepad HUD
+
+- `gamepad.ts` HUD etiketleri (`gamepad.*`) ve kontrolcü bağlantı toast'ı `t()`'e taşındı.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
