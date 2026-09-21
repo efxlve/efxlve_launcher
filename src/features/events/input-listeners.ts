@@ -200,8 +200,8 @@ document.addEventListener("keydown", (e) => {
         const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
         if (previewWrapper) {
           previewWrapper.innerHTML = `
-            <img id="cover-preview-img" src="${esc(val)}" alt="Önizleme" />
-            <div class="cover-preview-badge">Önizleme</div>
+            <img id="cover-preview-img" src="${esc(val)}" alt="${i18nT("cover.previewAlt")}" />
+            <div class="cover-preview-badge">${i18nT("cover.preview")}</div>
           `;
         }
       }
@@ -230,8 +230,8 @@ document.addEventListener("change", (e) => {
       if (urlInput) urlInput.value = result;
       if (previewWrapper) {
         previewWrapper.innerHTML = `
-          <img id="cover-preview-img" src="${result}" alt="Önizleme" />
-          <div class="cover-preview-badge">Yerel Dosya</div>
+          <img id="cover-preview-img" src="${result}" alt="${i18nT("cover.previewAlt")}" />
+          <div class="cover-preview-badge">${i18nT("cover.localFile")}</div>
         `;
       }
     };

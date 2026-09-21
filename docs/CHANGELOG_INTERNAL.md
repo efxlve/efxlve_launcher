@@ -1842,7 +1842,15 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
 - `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-**Kalan i18n yüzeyi:** `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `auth-actions.ts`, `downloads-view.ts`, `profile-view.ts`/`gamepad.ts`/`epic.ts`/`drawer-widgets.ts` yorumları.
+**Kalan i18n yüzeyi:** `profile-view.ts`/`gamepad.ts`/`epic.ts`/`drawer-widgets.ts` yorumları.
+
+## 127. i18n: Olay Yönlendiricileri, Kimlik Doğrulama, İndirmeler
+
+- `click-router.ts`: kapa önizleme rozetleri, ağ modu/profil toast'ları, doğrulama/bulut senkronu durumları, ekran görüntüsü silme onayı ve paylaşım metni `i18nT()`'e taşındı; tarih biçimi `currentLanguage()` kullanıyor; yorumlar İngilizce.
+- `input-listeners.ts`: kapa önizleme rozetleri yerelleşti.
+- `ipc-listeners.ts`: oyun durumu toast'ları (`status.*`), bulut eşitleme durumları, `libraryPath` hata metni ve indirme ETA'sı `t()`'e taşındı.
+- `auth-actions.ts`: senkron mesajları (`lib.syncing`, `lib.updated`, `lib.offlineCache`) migre edildi; `downloads-view.ts` ETA + yorumlar.
+- `tr.json`/`en.json` ~860 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
 ## 126. i18n: Kapak / SteamGridDB Modalı
 
