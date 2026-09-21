@@ -71,10 +71,117 @@
 
 ---
 
-## 2. Gelecek Adımlar (Next Milestones)
+### 📌 İndirme Hızı Görünmeme Bug'ı & İndirme Sayfası / Ayarları Yenilemesi
+
+- **Durum:** 📋 `YAPILACAK`
+- **Etkilenen Dosyalar:**
+  - `src-tauri/src/legendary/transfers.rs` (`parse_speed`, stderr okuma döngüsü)
+  - `src/main.ts` (`renderDownloads`, `activeDlMetrics`)
+  - `src/styles.css` (`.dl-page`, `.dl-stat-tile`)
+
+#### A. Gözlemlenen Hata ve Semptomlar
+1. **İndirme Hızının Görünmemesi:** Aktif bir oyun indirilirken indirme hızı kutusunda anlık hız gösterilmiyor veya `—` / `0 B/s` olarak takılı kalıyor.
+2. **İndirme Ayarlarının Eksikliği:** Kullanıcının bant genişliğini sınırlama (hız limiti), eşzamanlı indirme sayısı, indirme dizini ve indirme worker profilini doğrudan İndirmeler sayfasından yönetebileceği bir ayar paneli bulunmuyor.
+
+#### B. Teknik Kök Neden Analizi
+- **Legendary CLI Stderr Çıktı Biçimi:** Legendary indirme sürecinde terminal ilerlemesini satır sonu (`\n`) yerine carriage return (`\r`) ile tek satırda ezerek günceller (`sys.stderr.write("\r= Progress: ...")`). Rust tarafında `BufReader::lines()` satır sonu gelene kadar beklediği için hız verileri IPC üzerinden arayüze zamanında veya hiç aktarılamayabiliyor.
+- **Hız Deseni (Regex/Prefix) Uyuşmazlığı:** `parse_speed` fonksiyonunda aranan anahtar kelimeler (`Download:`, `Download speed:`) Legendary'nin farklı sürümlerinde değişkenlik gösterebiliyor.
+
+#### C. Planlanan Çözüm Adımları
+1. **Rust İlerleme Okuyucusunun Sağlamlaştırılması:** `transfers.rs` içerisindeki stderr okuyucu hem `\n` hem de `\r` (CR) karakterlerine duyarlı hale getirilecek; hız desenleri genişletilecek.
+2. **Gelişmiş İndirme Ayarları Paneli:**
+   - Hız Sınırlama (Bandwidth Throttling / Limitsiz / 10 MB/s / 25 MB/s vb.).
+   - İndirme dizini hızlı değiştirici.
+   - İndirme profili (Düşük / Dengeli / Maksimum CPU-Ağ performansı).
+
+---
+
+## 2. Planlanan Yeni Özellikler & Fonksiyonel Geliştirmeler
+
+### 📌 2.1. Özel Konsol Sağ Tık Menüsü (Steam / PS5 Context Menu)
+- **Açıklama:** Kullanıcı oyun kartına veya satırına sağ tıkladığında varsayılan tarayıcı menüsü (Kopyala, Yapıştır, İncele vb.) yerine Steam / konsol benzeri zengin, odaklı bir aksiyon menüsü açılacak.
+- **Menü İçeriği:**
+  - `Oyna` / `Başlat` (Kuruluysa) veya `Yükle` (Kurulu değilse)
+  - `Özellikler & Yönet` (Yönetim modalını açar)
+  - `Masaüstü Kısayolu Oluştur`
+  - `Kurulum Klasörünü Aç` (Explorer)
+  - `Kayıt Dosyalarını Yedekle`
+  - `Favorilere Ekle / Çıkar`
+  - `Kaldır` (Kırmızı / Tehlikeli aksiyon)
+- **Teknik Çözüm:** `window.addEventListener("contextmenu", e => e.preventDefault())` ile global varsayılan tarayıcı menüsü engellenecek; tıklandığı koordinatta şık bir `.ps5-context-menu` bileşeni render edilecek.
+
+---
+
+### 📌 2.2. Tarayıcı / Webview Zırhlama & Olası Sorunları Önceden Engelleme (Webview Hardening)
+- **Açıklama:** Kullanıcının bir webview / tarayıcı kullandığını hissettiren veya arayüzü bozabilecek tüm Chromium davranışlarının proaktif olarak engellenmesi.
+- **Engellenecek Unsurlar:**
+  1. **Metin Seçimi:** Metin alanları (`input`, `textarea`) hariç tüm arayüzde `user-select: none` kuralı zorunlu tutulacak.
+  2. **Görsel Sürükleme:** Afişlerin veya ikonların fareyle masaüstüne sürüklenip arayüzün kaymasını önlemek için `-webkit-user-drag: none`.
+  3. **Kazara Sayfa Yenileme (Reload Traps):** Kullanıcının yanlışlıkla `F5` veya `Ctrl+R` basarak uygulamayı sıfırlaması klavye dinleyicisinde engellenecek.
+  4. **Pinch-to-Zoom / Ölçek Bozulması:** `Ctrl +` veya dokunmatik fareyle arayüzün zoom yapıp bozulması engellenecek.
+  5. **Arka Plan Güç Kısma (Background Throttling):** Oyun inerken launcher simge durumuna küçültüldüğünde Windows'un indirme hızını kısmasını engellemek için WebView2 ayarlarında arka plan aktivitesi korunacak.
+
+---
+
+### 📌 2.3. İlk Kurulum (Onboarding) & Epic Games Giriş Sihirbazı
+- **Açıklama:** Launcher'ı ilk kez indiren veya henüz oturum açmamış kullanıcılar için sinematik, güven veren bir karşılama ekranı.
+- **İçerik & Adımlar:**
+  - **1. Adım: Hoş Geldiniz:** Efxlve Launcher'ın felsefesi (PlayStation konsol estetiği, yüksek performans, bağımsız kütüphane).
+  - **2. Adım: Hesap Bağlama Seçenekleri:**
+    - *Yöntem A (1-Tıkla İçe Aktar):* Bilgisayarda resmi Epic Games Launcher kuruluysa tek tıkla şifresiz içe aktarma (`epic_import_egl`).
+    - *Yöntem B (Resmi Güvenli Kod):* `https://legendary.gl/epiclogin` üzerinden resmi Epic Games yetkilendirme kodunun alınıp yapıştırılması (`epic_login_with_code`).
+  - **3. Adım: Görsel Rehber:** Yetkilendirme kodunun nereden kopyalanacağını gösteren adım adım mini infografik.
+
+---
+
+### 📌 2.4. Çoklu Dil & Lokalizasyon (i18n) Mimarisi
+- **Açıklama:** Epic Games Store'un resmi olarak desteklediği **tüm dillerin** (16+ dil) launcher'a eklenmesi.
+- **Desteklenecek Diller:**  
+  Türkçe (TR), English (EN), Deutsch (DE), Español (ES), Français (FR), Italiano (IT), 日本語 (JA), 한국어 (KO), Polski (PL), Português - Brasil (PT-BR), Русский (RU), 简体中文 (ZH-Hans), 繁體中文 (ZH-Hant), العربية (AR), ไทย (TH).
+- **Mimari Disiplin:**
+  - Kod tabanı modüllere parçalanırken tüm arayüz metinleri `src/locales/{lang}.json` dosyalarına taşınacak.
+  - Bileşenlerde `t("play")`, `t("install")` gibi dinamik çeviri yardımcıları kullanılacak.
+  - Asla kod içine harici ham metin gömülmeyecek.
+
+---
+
+### 📌 2.5. İlk Kurulum Bağımlılık Yöneticisi (Setup Wizard & Binary Downloader)
+- **Açıklama:** Launcher ilk çalıştırıldığında sistemde `legendary.exe` binary'si veya gerekli C++ çalışma zamanı (Visual C++ Redistributable) eksikse kullanıcının manuel uğraşmasına gerek kalmadan otomatik çözülecek.
+- **Özellikler:**
+  - `legendary.exe` github release üzerinden en güncel sürümün otomatik indirilmesi ve SHA-256 doğrulamasının yapılması.
+  - İndirme sürecini gösteren konsol ilerleme çubuğu.
+
+---
+
+### 📌 2.6. Ayarlar'da 3. Parti Başlatıcılar Kolaylık Hub'ı (Ubisoft, EA, Rockstar)
+- **Açıklama:** Epic Games kütüphanesindeki birçok oyun (Assassin's Creed, FIFA/FC, GTA V) harici başlatıcı gerektirir. Ayarlar sayfasına özel bir entegrasyon paneli eklenecek.
+- **Özellikler:**
+  - **EA App:** Sistemde kurulu mu? (Kuruluysa sürüm bilgisi; değilse 1-tıkla resmi kurulum dosyasını indirme butonu).
+  - **Ubisoft Connect:** Sistemde kurulu mu? (Kuruluysa durum; değilse resmi yükleyiciyi indirme butonu).
+  - **Rockstar Games Launcher:** Sistemde kurulu mu? (Kuruluysa durum; değilse resmi yükleyici butonu).
+
+---
+
+## 3. Uzun Vadeli Platform Genişlemesi (Cross-Platform)
+
+### 📌 3.1. Linux ve macOS / Wine & Proton Entegrasyonu (Heroic Launcher Modeli)
+- **Açıklama:** Tıpkı Heroic Games Launcher gibi, Linux ve macOS kullanıcılarının Epic Games kütüphanelerindeki Windows oyunlarını doğrudan çalıştırabilmesi.
+- **Bileşenler:**
+  - **Linux:** Proton (Valve), Wine-GE, DXVK (DirectX -> Vulkan) ve VKD3D entegrasyonu.
+  - **macOS:** Apple Game Porting Toolkit (GPTK) ve CrossOver / Wine uyumluluk katmanı köprüsü.
+  - **Prefix Yöneticisi:** Her oyun için bağımsız `WINEPREFIX` oluşturma, DXVK açıp kapama ve FSR ayarları.
+
+---
+
+## 4. Gelecek Adımlar (Next Milestones)
 
 - [ ] **Milestone 1:** Üst menü (Titlebar / Nav) PS5 UI yenilemesi ve Mağaza/Kütüphane webview durum makinesi refactor'ü.
 - [ ] **Milestone 2:** Beyaz parlama (flashbang / FOUC) sorununun `tauri.conf.json`, `index.html` ve Rust `WebviewBuilder` seviyesinde kökten çözülmesi.
-- [ ] **Milestone 3:** `docs/DESIGN_SYSTEM.md` standartlarının **Ayarlar** (Settings) ve **İndirmeler** (Downloads) sayfalarına eksiksiz uygulanması.
-- [ ] **Milestone 4:** `master_refactor_plan.md` doğrultusunda 11.000 satırlık `src/main.ts` dosyasının `src/features/` modüllerine bölünmesi.
+- [ ] **Milestone 3:** İndirme hızı veri akışı bug'ının (`transfers.rs` CR/LF) çözülmesi, İndirme sayfası PS5 UI yenilemesi ve indirme ayarları paneli.
+- [ ] **Milestone 4:** Steam/PS5 tarzı özel sağ tık menüsü (Context Menu) ve tarayıcı zırhlama (Webview Hardening).
+- [ ] **Milestone 5:** İlk kurulum (Onboarding) ve Epic Games hesap bağlama sihirbazı.
+- [ ] **Milestone 6:** Çoklu dil (i18n) mimarisi (16+ dil desteği) ve modüler parçalama.
+- [ ] **Milestone 7:** Ayarlar'da 3. parti başlatıcılar hub'ı (EA, Ubisoft, Rockstar).
+- [ ] **Milestone 8:** Linux/macOS Wine & Proton uyumluluk katmanı araştırması ve mimari tasarımı.
+
 
