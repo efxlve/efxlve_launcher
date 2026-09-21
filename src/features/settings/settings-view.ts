@@ -8,10 +8,20 @@
 
 import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
+import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
-import type { EglDetectedGame } from "../../epic";
+import {
+  epicDefaultInstallDir,
+  epicDetectEglGames,
+  epicGetSettings,
+  epicGetSteamGridKey,
+  epicThirdPartyLaunchers,
+  type EglDetectedGame,
+  type ThirdPartyLauncher,
+} from "../../epic";
+
 export function renderSettings(): string {
   return `
     <h2>Ayarlar</h2><p class="subtitle">Launcher yapılandırması</p>
@@ -257,4 +267,27 @@ export function renderSettings(): string {
         <button class="btn ghost" data-act="reset-demo">Demo verisini sıfırla</button>
       </p>
     </div>`;
+}
+
+/** Load settings, default dir, EGL games, SteamGrid key and third-party launchers. */
+export async function loadSettingsView(): Promise<void> {
+  if (isTauri) {
+    try {
+      const [st, dir, eglList, sgdbKey, thirdParty] = await Promise.all([
+        epicGetSettings(),
+        epicDefaultInstallDir(),
+        epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
+        epicGetSteamGridKey().catch(() => null),
+        epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
+      ]);
+      S.epicSettingsCache = st;
+      S.epicDefaultDir = dir;
+      S.eglDetectedList = eglList;
+      S.steamGridApiKey = sgdbKey;
+      S.thirdPartyLaunchers = thirdParty;
+    } catch {
+      // Silent: keep the last cached values.
+    }
+  }
+  render();
 }

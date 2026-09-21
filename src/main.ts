@@ -362,7 +362,7 @@ import {
   updateLibraryFilterInPlace,
 } from "./features/library/library-view";
 import { renderProfile, renderProfileGameCards } from "./features/profile/profile-view";
-import { renderSettings } from "./features/settings/settings-view";
+import { loadSettingsView, renderSettings } from "./features/settings/settings-view";
 import { toast } from "./core/toast";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime, fmtPrice, fmtSize, formatScreenshotDate } from "./core/utils";
 import { epicPlatinumIcon, icon, type IconName } from "./core/icons";
@@ -599,28 +599,6 @@ function closeAllModals(): void {
   if (manageRoot) manageRoot.innerHTML = "";
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
-}
-
-async function loadSettingsView(): Promise<void> {
-  if (isTauri) {
-    try {
-      const [st, dir, eglList, sgdbKey, thirdParty] = await Promise.all([
-        epicGetSettings(),
-        epicDefaultInstallDir(),
-        epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
-        epicGetSteamGridKey().catch(() => null),
-        epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
-      ]);
-      S.epicSettingsCache = st;
-      S.epicDefaultDir = dir;
-      S.eglDetectedList = eglList;
-      S.steamGridApiKey = sgdbKey;
-      S.thirdPartyLaunchers = thirdParty;
-    } catch {
-      // sessiz geç
-    }
-  }
-  render();
 }
 
 /* ---------- Olaylar (delegation) ---------- */

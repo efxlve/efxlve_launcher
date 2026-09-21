@@ -1690,3 +1690,8 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `updateMaxIcon`, `handleWindowResize`, `throttledWindowResize` ve `resize`/`keydown` (Ctrl+1/2/3, F5/zoom engelleme) dinleyicileri → `src/core/window.ts` (~115 satır).
 - `main.ts` ~2.775 → ~2.684 satır. `tsc`/`vite build` yeşil.
 
+## 108. Modülerleştirme Faz 5 (devam): loadSettingsView Taşıması
+
+- `loadSettingsView` → `src/features/settings/settings-view.ts`.
+- `main.ts` ~2.684 → ~2.663 satır. `tsc`/`vite build` yeşil.
+
