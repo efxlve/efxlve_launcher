@@ -245,6 +245,28 @@
   box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
   transform: translateY(-2px);
 }
+/* Update uses the amber status color (amber = update), matching the play button's size. */
+.hub-actions-bar .btn.update {
+  height: 46px;
+  padding: 0 28px;
+  font-size: 14.5px;
+  font-weight: 700;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--yellow);
+  color: #1a1206;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px var(--yellow-glow);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hub-actions-bar .btn.update:hover {
+  background: #d97706;
+  box-shadow: 0 6px 28px var(--yellow-glow);
+  transform: translateY(-2px);
+}
 .hub-actions-bar .btn.ghost {
   height: 44px;
   padding: 0 16px;

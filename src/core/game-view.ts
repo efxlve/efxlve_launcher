@@ -79,7 +79,7 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   if (s.installed) {
     const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
     if (hasUpdate) {
-      return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}" title="${t("common.updateDownload")}">${icon("download", 14)} ${t("common.update")}</button>`;
+      return `<button class="btn update${btn}" data-act="epic-install" data-id="${s.appName}" title="${t("common.updateDownload")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
   }

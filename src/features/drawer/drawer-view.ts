@@ -130,7 +130,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
         ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
           ? hasUpdate
-            ? `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`
+            ? `<button class="btn update" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`
             : `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
           : partner
             ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner.name) })}</button>`

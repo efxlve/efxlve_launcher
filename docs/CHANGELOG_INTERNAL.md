@@ -1965,3 +1965,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Oyun detayında "Güncelleme Mevcut" rozeti görünse de ana buton daima "Hemen Oyna" diyordu. `openEpicModal` artık `s.updateAvailable || S.availableUpdates` kontrolüyle **"Güncelle"** (data-act `epic-install`) gösteriyor; paylaşılan `epicActionButtons` ile tutarlı hale geldi.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 141. Güncelle Butonu Amber Rengi + Tüm Oyun Butonlarında Güncelleme Kontrolü
+
+- Yeni `.btn.update` stili (amber `--yellow`, koyu metin) — tasarım kuralı gereği **amber = güncelleme durumu**. `gamehub.css`'te hub aksiyon barında Oyna butonuyla aynı ölçülerde (46px) tanımlandı.
+- Güncelleme kontrolü tüm oyun butonlarına yayıldı: `drawer-view` (detay), `game-view.epicActionButtons` (kartlar/satırlar), `library-view` hero vitrini ve raf hero kartı. Güncelleme varsa artık hepsi amber "Güncelle" gösterir.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
