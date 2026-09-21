@@ -81,8 +81,9 @@ body {
 /* --- Titlebar (PlayStation 5-inspired console bar — single violet identity) ---
    Design decision: the color does NOT change between tabs. The bar light is always violet.
      · single-source fixed violet ambient light (NO per-section color layer)
-     · soft light behind the focused item (NOT a fill box)
-     · thin violet line sliding along the bottom edge (active item indicator)
+     · rail-grouped nav segment: tabs sit inside one shallow inset track
+     · violet-tint fill on the active tab (same idiom as the account avatar)
+     · thin violet LED tick centered under the active icon (NOT a full-width underline)
      · slim icons, wide-tracked uppercase typography
    FORBIDDEN (AGENTS.md §3): decorative multicolor gradient, neon glow, capsule, ornamental animation.
    EXCEPTION (§3): single-source, low-alpha ambient light is allowed. */
@@ -102,15 +103,15 @@ body {
   background: radial-gradient(96% 380% at 0% -140%, rgba(139, 92, 246, 0.17) 0%, rgba(139, 92, 246, 0) 72%);
 }
 
-/* Thin line sliding under the active item — speaks the launcher's violet identity */
+/* LED tick sliding under the active item's icon — speaks the launcher's violet identity.
+   Positioned by JS (see core/nav.ts updateNavIndicator): fixed 14px width, centered under the active tab. */
 .nav-underline {
-  position: absolute; bottom: 0; left: 0; width: 0; height: 2px; z-index: 2;
-  opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
-  background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
-  box-shadow: 0 -1px 8px -1px rgba(167, 139, 250, 0.45);
-  will-change: transform, width;
-  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1),
-              width 0.18s cubic-bezier(0.2, 0, 0, 1),
+  position: absolute; bottom: 3px; left: 0; width: 14px; height: 2px; z-index: 2;
+  opacity: 0; pointer-events: none; border-radius: 2px;
+  background: #c4b5fd;
+  will-change: left;
+  transition: left 0.16s cubic-bezier(0.2, 0, 0, 1),
+              width 0.16s cubic-bezier(0.2, 0, 0, 1),
               opacity 0.14s linear;
 }
 
@@ -135,39 +136,35 @@ body {
 #nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
 /* Segment (Store / Library / Downloads)
-   PS5 language: NO box. Items are distinguished only by light and line. */
+   Rail language: tabs sit inside one shallow inset track, not floating loose text. */
 .nav-seg {
-  display: flex; align-items: center; gap: 20px; flex-shrink: 0;
+  position: relative;
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+  padding: 4px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.035);
   -webkit-app-region: no-drag;
 }
 #nav .nav-tab {
   position: relative; display: flex; align-items: center; gap: 9px;
-  padding: 9px 6px; border-radius: 10px; border: none; background: none;
+  padding: 8px 12px 9px; border-radius: 9px; border: none; background: none;
   color: #7c8094; font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px;
   text-transform: uppercase;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.14s ease, transform 0.14s ease;
+  transition: color 0.14s ease, background 0.14s ease, transform 0.14s ease;
 }
 #nav .nav-tab:active { transform: scale(0.98); }
 #nav .nav-tab:focus-visible {
   outline: 2px solid #8b5cf6 !important;
   outline-offset: 3px !important;
 }
-/* Focus light: not a fill box, but a soft glow behind the item (PS5 selection language).
-   Neutral white on hover, warm lavender when active — the selected item speaks the violet identity. */
-#nav .nav-tab::before {
-  content: ""; position: absolute; inset: 2px -12px; border-radius: 12px;
-  pointer-events: none; opacity: 0;
-  background: radial-gradient(64% 110% at 50% 50%, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 74%);
-  transition: opacity 0.14s ease, background 0.14s ease;
-}
 #nav .nav-tab:hover { color: #d6d3e2; }
-#nav .nav-tab:hover::before { opacity: 0.75; }
-#nav .nav-tab.active { color: #f4f1ff; }
-#nav .nav-tab.active::before {
-  opacity: 1;
-  background: radial-gradient(64% 110% at 50% 50%, rgba(167, 139, 250, 0.16) 0%, rgba(167, 139, 250, 0) 74%);
+/* Violet-tint fill on the active tab (same idiom as the account avatar). */
+#nav .nav-tab.active {
+  color: #f4f1ff;
+  background: rgba(139, 92, 246, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 #nav .nav-tab svg {
   width: 18px; height: 18px; stroke-width: 1.7;
@@ -271,8 +268,8 @@ body {
 .win-btn.win-close:hover { background: #e81123; color: #ffffff; }
 .win-btn.win-close:active { background: #bf0f1d; }
 
-/* NO ornamental icon animation. Motion is limited to: the underline sliding,
-   the focus light appearing and the active icon scaling. */
+/* NO ornamental icon animation. Motion is limited to: the LED tick sliding,
+   the active tab's tint fill appearing and the active icon scaling. */
 
 /* Download counter — inline flat counter on the tab (never overlaps the text) */
 #nav .nav-tab .badge {
@@ -293,7 +290,6 @@ body {
 /* Safety net: in very narrow windows the tabs collapse to icons (min window width 1024px) */
 @media (max-width: 960px) {
   #titlebar { gap: 12px; }
-  .nav-seg { gap: 10px; }
   #nav .nav-tab { padding: 8px 2px; }
   #nav .nav-tab span:not(.badge) { display: none; }
   #nav .net-chip { padding: 7px 9px; }
