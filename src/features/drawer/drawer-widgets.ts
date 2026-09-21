@@ -845,8 +845,8 @@ export function renderAchievementSections(
     return `
       <div class="ach-empty-state">
         <div class="ach-empty-state-icon">${icon("search", 28)}</div>
-        <div class="ach-empty-state-title">Aramanıza Uygun Başarım Bulunamadı</div>
-        <div class="ach-empty-state-sub">Filtreleri veya arama terimini değiştirerek tekrar deneyin.</div>
+        <div class="ach-empty-state-title">${i18nT("ach.emptyTitle")}</div>
+        <div class="ach-empty-state-sub">${i18nT("ach.emptyDesc")}</div>
       </div>
     `;
   }
@@ -886,7 +886,7 @@ export function renderAchievementSections(
         <div class="ach-group-header">
           <div class="ach-group-title">
             <span class="ach-group-icon">${icon("gamepad-2", 14)}</span>
-            <span class="ach-group-heading">Ana Oyun</span>
+            <span class="ach-group-heading">${i18nT("ach.baseGame")}</span>
             <span class="ach-group-badge ${baseUnlocked === baseTotal ? "complete" : ""}">${baseUnlocked}/${baseTotal} (%${basePct})</span>
           </div>
           <div class="ach-group-xp">${baseXp} XP</div>
@@ -907,7 +907,7 @@ export function renderAchievementSections(
         <div class="ach-group-header">
           <div class="ach-group-title">
             <span class="ach-group-icon">${icon("package", 14)}</span>
-            <span class="ach-group-heading">Ek Paketler & DLC</span>
+            <span class="ach-group-heading">${i18nT("ach.dlcPacks")}</span>
             <span class="ach-group-badge ${dlcUnlocked === dlcTotal ? "complete" : ""}">${dlcUnlocked}/${dlcTotal} (%${dlcPct})</span>
           </div>
           <div class="ach-group-xp">${dlcXp} XP</div>
@@ -932,10 +932,10 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
   const isSecretMasked = isHidden && !isUnlocked;
   const isRevealed = S.revealedAchievements.has(`${s.appName}:${a.name}`);
 
-  const title = isSecretMasked && !isRevealed ? "Gizli Başarım" : (a.display_name || a.name);
+  const title = isSecretMasked && !isRevealed ? i18nT("ach.hiddenName") : (a.display_name || a.name);
   const desc = isSecretMasked && !isRevealed
-    ? "Bu başarım gizlidir. Spoiler'ı görmek için tıklayın."
-    : (a.description || "Açıklama yok.");
+    ? i18nT("ach.hiddenDesc")
+    : (a.description || i18nT("ach.noDesc"));
   const tier = getAchTier(a);
   const tierClass = tier;
   const tierIcon = icon("trophy", 11);
@@ -943,7 +943,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
 
   return `
     <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
-         ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? "Tekrar gizle" : "Ayrıntıları gör"}"` : ""}>
+         ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? i18nT("ach.hideTitle") : i18nT("ach.revealTitle")}"` : ""}>
       
       <!-- Sol: 52px İkon -->
       <div class="ach-icon-wrapper">
@@ -964,10 +964,10 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
           ${
             isSecretMasked
               ? (isRevealed
-                  ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı tekrar gizle">${icon("eye-off", 10)} Gizle</button>`
-                  : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="Spoilerı göster">${icon("eye", 10)} Göster</button>`)
+                  ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="${i18nT("ach.hideSpoiler")}">${icon("eye-off", 10)} ${i18nT("ach.hide")}</button>`
+                  : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="${i18nT("ach.showSpoiler")}">${icon("eye", 10)} ${i18nT("ach.show")}</button>`)
               : isHidden && isUnlocked
-                ? `<span class="ach-pill secret">${icon("lock", 9)} Gizli</span>`
+                ? `<span class="ach-pill secret">${icon("lock", 9)} ${i18nT("ach.secret")}</span>`
                 : ""
           }
           ${!a.is_base ? `<span class="ach-pill dlc">${icon("package", 9)} DLC</span>` : ""}
@@ -980,7 +980,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
           ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${fmtAchDate(a.unlock_date)}</span>` : ""}
           ${a.rarity?.percent != null && a.rarity.percent < 10 ? `
             <span class="ach-pill rarity ultra-rare">
-              ${icon("sparkles", 10)} %${a.rarity.percent.toFixed(1)} Nadir
+              ${icon("sparkles", 10)} %${a.rarity.percent.toFixed(1)} ${i18nT("ach.rare")}
             </span>` : ""}
         </div>
       </div>
@@ -989,8 +989,8 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
       <div class="ach-aside">
         <div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
         ${isUnlocked
-          ? `<div class="ach-status-icon earned" title="Kazanıldı">${icon("check", 13)}</div>`
-          : `<div class="ach-status-icon locked" title="Kilitli">${icon("lock", 12)}</div>`
+          ? `<div class="ach-status-icon earned" title="${i18nT("ach.earned")}">${icon("check", 13)}</div>`
+          : `<div class="ach-status-icon locked" title="${i18nT("ach.locked")}">${icon("lock", 12)}</div>`
         }
       </div>
     </div>
@@ -999,10 +999,10 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
 
 export function fmtTierName(name: string): string {
   const n = name.toLowerCase().trim();
-  if (n === "bronze") return "Bronz";
-  if (n === "silver") return "Gümüş";
-  if (n === "gold") return "Altın";
-  if (n === "platinum") return "Platin";
+  if (n === "bronze") return i18nT("trophy.bronze");
+  if (n === "silver") return i18nT("trophy.silver");
+  if (n === "gold") return i18nT("trophy.gold");
+  if (n === "platinum") return i18nT("trophy.plat");
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
@@ -1019,16 +1019,16 @@ export function getHardwareIcon(title: string): string {
 }
 
 export function getHardwareLabel(title: string): string {
-  const t = title.toLowerCase().trim();
-  if (t.includes("os") || t.includes("işletim")) return "İşletim Sistemi";
-  if (t.includes("processor") || t.includes("işlemci") || t.includes("cpu")) return "İşlemci (CPU)";
-  if (t.includes("memory") || t.includes("bellek") || t.includes("ram")) return "Bellek (RAM)";
-  if (t.includes("storage") || t.includes("depolama") || t.includes("space")) return "Depolama Alanı";
-  if (t.includes("graphics") || t.includes("ekran") || t.includes("gpu")) return "Ekran Kartı (GPU)";
-  if (t.includes("direct")) return "DirectX Sürümü";
-  if (t.includes("sound") || t.includes("ses") || t.includes("audio")) return "Ses Kartı";
-  if (t.includes("net") || t.includes("ağ") || t.includes("internet")) return "İnternet / Ağ Bağlantısı";
-  if (t.includes("other") || t.includes("ek")) return "Ek Gereksinimler";
+  const h = title.toLowerCase().trim();
+  if (h.includes("os") || h.includes("işletim")) return i18nT("hw.os");
+  if (h.includes("processor") || h.includes("işlemci") || h.includes("cpu")) return i18nT("hw.cpu");
+  if (h.includes("memory") || h.includes("bellek") || h.includes("ram")) return i18nT("hw.ram");
+  if (h.includes("storage") || h.includes("depolama") || h.includes("space")) return i18nT("hw.storage");
+  if (h.includes("graphics") || h.includes("ekran") || h.includes("gpu")) return i18nT("hw.gpu");
+  if (h.includes("direct")) return i18nT("hw.directx");
+  if (h.includes("sound") || h.includes("ses") || h.includes("audio")) return i18nT("hw.sound");
+  if (h.includes("net") || h.includes("ağ") || h.includes("internet")) return i18nT("hw.net");
+  if (h.includes("other") || h.includes("ek")) return i18nT("hw.other");
   return title;
 }
 
@@ -1045,7 +1045,7 @@ export function isMacSys(type: string): boolean {
 export function renderBackupListHtml(appName: string): string {
   const list = S.gameBackupsMap.get(appName) || [];
   if (list.length === 0) {
-    return `<div style="color:#64748b;font-size:12px;padding:6px 0">Henüz yerel kayıt yedeği alınmamış.</div>`;
+    return `<div style="color:#64748b;font-size:12px;padding:6px 0">${i18nT("ach.noBackup")}</div>`;
   }
   return list
     .map(
@@ -1053,13 +1053,13 @@ export function renderBackupListHtml(appName: string): string {
     <div class="backup-item">
       <div class="backup-item-meta">
         <span class="backup-item-title">${esc(b.formatted_date)}</span>
-        <span class="backup-item-sub">${b.file_count} dosya • ${fmtBytes(b.size_bytes)}</span>
+        <span class="backup-item-sub">${b.file_count} ${i18nT("ach.files")} • ${fmtBytes(b.size_bytes)}</span>
       </div>
       <div class="backup-item-actions">
-        <button class="btn ghost small" data-act="manage-restore-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="Bu Yedeği Geri Yükle">
-          Geri Yükle
+        <button class="btn ghost small" data-act="manage-restore-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.restoreTitle")}">
+          ${i18nT("ach.restore")}
         </button>
-        <button class="btn ghost small" data-act="manage-delete-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="Yedeği Sil" style="color:#ef4444">
+        <button class="btn ghost small" data-act="manage-delete-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.deleteTitle")}" style="color:#ef4444">
           ${icon("trash", 12)}
         </button>
       </div>
