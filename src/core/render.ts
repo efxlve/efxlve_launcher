@@ -41,6 +41,18 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   openEpicModalImpl(appName, isInitialOpen, animateTabContent);
 }
 
+let presenceSyncImpl: () => void = () => {};
+
+/** Called once by main.ts to wire the Discord presence sync. */
+export function registerPresenceSync(fn: () => void): void {
+  presenceSyncImpl = fn;
+}
+
+/** Refresh the Discord presence from the current view/game. No-op until registered. */
+export function presenceSync(): void {
+  presenceSyncImpl();
+}
+
 let closeAllModalsImpl: () => void = () => {};
 
 /** Called once by main.ts to wire the "close every modal" routine. */

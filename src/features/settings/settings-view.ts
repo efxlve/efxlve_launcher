@@ -12,6 +12,7 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
+import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
 import {
   epicDefaultInstallDir,
   epicDetectEglGames,
@@ -277,7 +278,7 @@ export function renderSettings(): string {
       ${S.presenceEnabled ? `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)">
           <label style="font-size:12px;color:var(--muted);display:block">${t("settings.presenceClientIdLabel")}</label>
-          <input id="presence-client-id" class="text-input" style="margin-top:6px" placeholder="${t("settings.presenceClientIdPlaceholder")}" value="${esc(S.presenceClientId)}" spellcheck="false" autocomplete="off" />
+          <input id="presence-client-id" class="text-input" style="margin-top:6px" placeholder="${DEFAULT_DISCORD_CLIENT_ID}" value="${esc(S.presenceClientId)}" spellcheck="false" autocomplete="off" />
           <p class="muted" style="font-size:11px;margin:6px 0 0;line-height:1.45">${t("settings.presenceClientIdDesc")}</p>
         </div>
       ` : ""}

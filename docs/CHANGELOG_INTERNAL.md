@@ -1902,3 +1902,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Not:** Discord RPC, kullanıcı bir Discord uygulaması oluşturup Client ID girmelidir (Client ID gizli değildir). Discord kapalıysa özellik sessizce bekler.
 - `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil. `tr.json`/`en.json` **1119 anahtar**.
 
+## 133. Discord RPC Düzeltmeleri: Tek Tıkla Varsayılan ID + Mağaza/Profil/Oyun Detay
+
+- **Varsayılan Discord Client ID gömüldü** (`DEFAULT_DISCORD_CLIENT_ID`): Discord RPC uygulama kimliği sır değildir, bu yüzden varsayılan olarak koda eklendi. Kullanıcı sadece anahtarı açarak tek tıkla kullanır; isterse kendi uygulamasının ID'sini girebilir (boş bırakılırsa varsayılan kullanılır).
+- **Mağaza bug'ı:** `render()` mağaza dalında `return` ettiği için `presenceSync()` atlanıyordu → erken `return`'den önce çağrılıyor.
+- **Oyun detay bug'ı:** `openEpicModal` `render()` çağırmadığı için presence güncellenmiyordu → çekmece açılışında `presenceSync()` eklendi; çekmece kapanışı `closeModal()` içinden tetikleniyor.
+- **Render bus:** `core/render.ts`'e `registerPresenceSync`/`presenceSync()` eklendi; `core/dom.ts` `closeModal()` presence'ı tazeliyor (core→features bağımlılığı olmadan).
+- **Profil bağlamı** eklendi (`presence.profile`).
+- **Ölü anahtar temizliği:** silinen yönetim modalından kalan 18 `manage.*` anahtarı + `common.refresh` + `move.pickerDesc` kaldırıldı. `tr.json`/`en.json` **1100 anahtar**, duplicate yok, tam eşlik.
+- `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

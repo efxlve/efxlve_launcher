@@ -11,7 +11,18 @@ import { S } from "../../core/state";
 import { epicGetSettings, epicPresenceClear, epicPresenceConfigure, epicPresenceUpdate } from "../../epic";
 import { t } from "../../i18n";
 
+/**
+ * Public Efxlve Launcher Discord application id. Discord RPC client ids are not
+ * secrets, so this ships as the default and the feature works with one click.
+ */
+export const DEFAULT_DISCORD_CLIENT_ID = "1551663205426794596";
+
 let lastKey = "";
+
+/** The Discord application id to use: the user's override, else the default. */
+export function effectivePresenceClientId(): string {
+  return S.presenceClientId.trim() || DEFAULT_DISCORD_CLIENT_ID;
+}
 
 /** Loads the persisted presence settings and configures the backend worker. */
 export async function initPresence(): Promise<void> {
@@ -29,7 +40,7 @@ export async function initPresence(): Promise<void> {
 /** Re-applies the current settings to the backend worker. */
 export function applyPresenceSettings(): void {
   lastKey = "";
-  void epicPresenceConfigure(S.presenceEnabled, S.presenceClientId).catch(() => {});
+  void epicPresenceConfigure(S.presenceEnabled, effectivePresenceClientId()).catch(() => {});
   syncPresence();
 }
 
@@ -58,6 +69,9 @@ function presenceContext(): { details: string; state: string } | null {
   if (S.view === "settings") {
     return { details: t("presence.settings"), state: t("presence.settingsState") };
   }
+  if (S.view === "profile") {
+    return { details: t("presence.profile"), state: t("presence.profileState") };
+  }
 
   // Library (and profile / DLC manager): show the open game when the drawer is up.
   if (S.currentModalAppName) {
@@ -73,7 +87,7 @@ function presenceContext(): { details: string; state: string } | null {
 
 /** Pushes the current activity to Discord if it changed since the last call. */
 export function syncPresence(): void {
-  if (!S.presenceEnabled || !S.presenceClientId) {
+  if (!S.presenceEnabled) {
     if (lastKey !== "") {
       lastKey = "";
       void epicPresenceClear().catch(() => {});
