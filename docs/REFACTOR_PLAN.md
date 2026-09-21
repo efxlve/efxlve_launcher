@@ -136,46 +136,54 @@ cargo test            # Rust tarafı bozulmadı mı
 > Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
 > devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
 
-**Son güncelleme:** Modülerleştirme Faz 4 (kısmi). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil.
+**Son güncelleme:** Modülerleştirme Faz 5 (kısmi). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. `main.ts` **11.422 → ~6.904 satır**.
 
 **Tamamlanan yapı:**
 ```
 src/
-├── main.ts                 ~9.837 satır  (hedef: bootstrap + init)
+├── main.ts                 ~6.904 satır  (hedef: bootstrap + init)
 ├── i18n.ts                 15 dilli çeviri motoru
 ├── core/
-│   ├── types.ts            Game, CatalogMeta, View
+│   ├── types.ts            Game, View, EpicPhase, EpicFilter/Sort/ViewMode, CardSize, DlMetrics
 │   ├── constants.ts        isTauri, demo katalog, localStorage anahtarları, loadStrSet
-│   ├── utils.ts            esc, fmt*, cleanDisplayVersion
+│   ├── utils.ts            esc, fmt*, cleanDisplayVersion, formatScreenshotDate
 │   ├── icons.ts            icon(), epicPlatinumIcon()
-│   ├── state.ts            S (tek paylaşılan durum nesnesi, ~144 alan)
+│   ├── state.ts            S (tek paylaşılan durum nesnesi)
 │   ├── dom.ts              DOM kök referansları
 │   ├── toast.ts            toast()
-│   └── selectors.ts        summaryOf, rawOf, epicWideArt, setEpicSummaries/Raw
+│   ├── selectors.ts        summaryOf, rawOf, epicWideArt, isTurkishUser, setEpicSummaries/Raw
+│   ├── game-view.ts        isAppPlatinum, epicDlProgress, epicArt, epicActionButtons
+│   └── render.ts           render bus (registerRender; main.ts kaydeder)
 ├── features/
 │   ├── context-menu/context-menu.ts
+│   ├── library/library-view.ts
+│   ├── onboarding/onboarding-view.ts
+│   ├── drawer/drawer-widgets.ts
+│   ├── downloads/downloads-view.ts
 │   ├── dlc/dlc-manager.ts
 │   ├── move-game/move-game-view.ts
 │   ├── settings/settings-view.ts
-│   └── profile/profile-view.ts
+│   ├── profile/profile-view.ts
+│   └── collections/collections-view.ts
 ├── styles/                 24 modül CSS + index.css
 └── locales/                15 dil JSON
 ```
 
 **`main.ts`'te kalan iş (öncelik sırasıyla):**
-1. `features/library/` — `renderHeroSpotlight`, `renderShelfSection`, `renderEpicItems`, `renderEpic`, kart/raflar.
-2. `features/drawer/` — `renderDrawerOverview/Achievements/Dlcs/Screenshots/Specs`, `renderEpicModal`.
-3. `features/downloads/` — `renderDownloads`, hız grafiği (`drawSpeedCanvas`, `pushSpeedData`).
-4. `features/screenshots/` — galeri, lightbox, paylaşım/sıkıştırma.
-5. `features/collections/` — koleksiyon + oyun-koleksiyon modalları.
-6. `features/gamepad/` — `gamepadLoop`, `handleGamepadDirectionalMove`, `updateGamepadHud`, `handleGamepadTabSwitch`.
-7. `core/ipc.ts` — `listen(...)` kayıtları (download-progress, game-status, screenshot-captured, move-game-progress, verify-*, legendary-*).
-8. **Olay delegasyonu router'ı** (~1.800 satır `document.addEventListener("click", ...)`) — `act → handler` kayıt defterine bölünmeli. En büyük kazanç ama en riskli adım; özellik modülleri çıkarıldıkça handler'lar da modüllere taşınmalı.
-9. `main.ts` yalnızca `init()` + bootstrap kalana kadar devam.
+1. `features/drawer/` (kalan) — `openEpicModal`, `renderDrawerOverview/Dlcs/Screenshots/Manage/Achievements/SystemRequirements`, `fetchAndRenderScreenshots/Achievements/Requirements`, `updateCriticUI`, ekran görüntüsü lightbox/paylaşım. Bunlar lazy-load fetch'i tetiklediği için render+fetch birlikte taşınmalı; `openEpicModal` bağımlılıkları (updateGamepadHud, closeModal, ensureTabVisible) için callback/core'a taşıma gerekir.
+2. `features/screenshots/` — galeri, lightbox, paylaşım/sıkıştırma (screenshot fonksiyonları).
+3. `features/dlc/` (seçici kurulum) — `openSelectiveModal`, `applySelectiveInstall`, `renderSelectiveModal`.
+4. `features/steamgrid/` + özel kapak modalı.
+5. `features/gamepad/` — `gamepadLoop`, `handleGamepadDirectionalMove`, `updateGamepadHud`, `handleGamepadTabSwitch` (birçok main fonksiyonuna bağlı; en son).
+6. `core/ipc.ts` — `listen(...)` kayıtları (download-progress, game-status, screenshot-captured, move-game-progress, verify-*, legendary-*).
+7. **Olay delegasyonu router'ı** (~1.700 satır `document.addEventListener("click", ...)`) — `act → handler` kayıt defterine bölünmeli. En büyük kazanç ama en riskli adım.
+8. `main.ts` yalnızca `init()` + bootstrap kalana kadar devam.
 
-**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). Saf render fonksiyonları kolayca taşınır; I/O/handler fonksiyonları `render()` gerektiriyorsa callback enjeksiyonu veya önce paylaşılan bir `core/render.ts` kaydı gerekir.
+**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()` gerektiren modüller `core/render.ts`'ten import eder. Saf render fonksiyonları kolayca taşınır.
 
-**Yöntem notu (F3a):** Durum taşıma, TypeScript dil servisi (`findReferences`) ile yapıldı; mekanik regex KULLANILMADI (yerel gölgeleme riski). Sıradaki büyük taşımalarda da aynı yöntem önerilir. Geçici betikler `%TEMP%\opencode\` altındaydı, repoda tutulmadı.
+**Yöntem notu (F3a):** Durum taşıma, TypeScript dil servisi (`findReferences`) ile yapıldı; mekanik regex KULLANILMADI (yerel gölgeleme riski). Geçici betikler `%TEMP%\opencode\` altındaydı, repoda tutulmadı.
+
+**DİKKAT (satır kayması):** Toplu kesim betikleri çalıştırılmadan önce hedef fonksiyon satır numaraları YENİDEN alınmalı (import eklemeleri numaraları kaydırır). Aksi hâlde fonksiyon gövdesi/başlığı yanlış kesilir ve `tsc` sözdizimi hatası verir; `git checkout -- src/main.ts` ile geri dönüp tekrar denenmelidir.
 
 ---
 
