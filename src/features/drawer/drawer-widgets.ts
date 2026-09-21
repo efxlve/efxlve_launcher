@@ -543,10 +543,10 @@ export function renderGameFeatures(
     ${
       partner
         ? `
-    <div class="hub-feature-row" title="${esc(partner.name)} harici başlatıcısı üzerinden yürütülür.">
+    <div class="hub-feature-row" title="${esc(i18nT("feat.externalLauncherTip", { name: partner.name }))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("layers", 12)}</div>
-        <span>Harici Başlatıcı</span>
+        <span>${i18nT("feat.externalLauncher")}</span>
       </div>
       <div class="hub-feature-val accent">${esc(partner.name)}</div>
     </div>`
@@ -556,10 +556,10 @@ export function renderGameFeatures(
     ${
       antiCheat
         ? `
-    <div class="hub-feature-row" title="Aktif Hile Koruması: ${esc(antiCheat)}">
+    <div class="hub-feature-row" title="${esc(i18nT("feat.antiCheatTip", { name: antiCheat }))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("shield", 12)}</div>
-        <span>Hile Koruması</span>
+        <span>${i18nT("feat.antiCheat")}</span>
       </div>
       <div class="hub-feature-val accent">${esc(antiCheat)}</div>
     </div>`
@@ -569,7 +569,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("monitor", 12)}</div>
-        <span>Platform</span>
+        <span>${i18nT("feat.platform")}</span>
       </div>
       <div class="hub-feature-val supported">Windows (PC x64)</div>
     </div>
@@ -577,14 +577,14 @@ export function renderGameFeatures(
     ${
       s.installed && s.installSize
         ? `
-    <div class="hub-feature-row" title="Yüklü disk boyutu ve derleme sürümü">
+    <div class="hub-feature-row" title="${i18nT("feat.installedSizeTip")}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
-        <span>Yüklü Boyut</span>
+        <span>${i18nT("feat.installedSize")}</span>
       </div>
       <div class="hub-feature-val">
         <span class="hub-size-val">${fmtBytes(s.installSize)}</span>
-        ${versionInfo.display ? `<span class="hub-version-badge" title="Sürüm Yapısı: ${esc(versionInfo.full)}">${esc(versionInfo.display)}</span>` : ""}
+        ${versionInfo.display ? `<span class="hub-version-badge" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">${esc(versionInfo.display)}</span>` : ""}
       </div>
     </div>`
         : ""
@@ -613,21 +613,21 @@ export function renderOverviewTrophySpotlight(
       return `
         <div class="hub-card hub-trophy-spotlight">
           <div class="hub-card-header">
-            <h3 class="hub-card-title">${icon("trophy", 14)} <span>${esc(partner.name)} Başarımları</span></h3>
+            <h3 class="hub-card-title">${icon("trophy", 14)} <span>${i18nT("feat.partnerAchievements", { name: esc(partner.name) })}</span></h3>
             <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
-              <span>İncele</span> ${icon("chevron-right", 12)}
+              <span>${i18nT("trophy.inspect")}</span> ${icon("chevron-right", 12)}
             </button>
           </div>
           <div class="hub-media-empty">
             <div class="hub-media-empty-icon">${icon("trophy", 20)}</div>
             <div class="hub-media-empty-info">
-              <div class="hub-media-empty-title">${esc(partner.name)} Başarım Takibi</div>
+              <div class="hub-media-empty-title">${i18nT("trophy.partnerTrackingTitle", { name: esc(partner.name) })}</div>
               <div class="hub-media-empty-desc">
-                Bu oyunun başarımları doğrudan <strong>${esc(partner.name)}</strong> istemcisi üzerinden takip edilmektedir.
+                ${i18nT("trophy.partnerTrackingDesc", { name: `<strong>${esc(partner.name)}</strong>` })}
               </div>
             </div>
             <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
-              ${icon("external", 12)} <span>Detay</span>
+              ${icon("external", 12)} <span>${i18nT("trophy.detail")}</span>
             </button>
           </div>
         </div>
@@ -693,11 +693,11 @@ export function renderOverviewTrophySpotlight(
     const sourceItems = lockedItems.length > 0 ? lockedItems : cachedData.achievements;
     for (const a of sourceItems.slice(0, 2)) {
       const tier = getAchTier(a);
-      const tierName = tier === "platinum" ? "Platin" : tier === "gold" ? "Altın" : tier === "silver" ? "Gümüş" : "Bronz";
+      const tierName = tier === "platinum" ? i18nT("trophy.plat") : tier === "gold" ? i18nT("trophy.gold") : tier === "silver" ? i18nT("trophy.silver") : i18nT("trophy.bronze");
       const xpText = a.xp > 0 ? ` • +${a.xp} XP` : "";
       targets.push({
         title: a.display_name || a.name,
-        desc: a.hidden && !a.unlocked ? "Gizli Başarım — Detaylar için kupaları görüntüleyin." : (a.description || "Kupa hedefini tamamlayın."),
+        desc: a.hidden && !a.unlocked ? i18nT("trophy.hidden") : (a.description || i18nT("trophy.completeTarget")),
         icon: a.icon_link,
         badgeText: `${tierName}${xpText}`,
         tierClass: tier === "platinum" ? "plat" : tier,
@@ -710,11 +710,11 @@ export function renderOverviewTrophySpotlight(
       const xp = Number(ach.XP || ach.xp || 0);
       const tierClass: "bronze" | "silver" | "gold" | "plat" =
         t.includes("plat") || xp >= 200 ? "plat" : t.includes("gold") || xp >= 100 ? "gold" : t.includes("silver") || xp >= 50 ? "silver" : "bronze";
-      const tierName = tierClass === "plat" ? "Platin" : tierClass === "gold" ? "Altın" : tierClass === "silver" ? "Gümüş" : "Bronz";
+      const tierName = tierClass === "plat" ? i18nT("trophy.plat") : tierClass === "gold" ? i18nT("trophy.gold") : tierClass === "silver" ? i18nT("trophy.silver") : i18nT("trophy.bronze");
       const xpText = xp > 0 ? ` • +${xp} XP` : "";
       const isHidden = Boolean(ach.hidden);
-      const title = ach.unlockedDisplayName || ach.lockedDisplayName || ach.name || "Kupa Hedefi";
-      const desc = isHidden ? "Gizli Başarım — Detaylar için kupaları görüntüleyin." : (ach.unlockedDescription || ach.lockedDescription || "Kupa hedefini tamamlayın.");
+      const title = ach.unlockedDisplayName || ach.lockedDisplayName || ach.name || i18nT("trophy.target");
+      const desc = isHidden ? i18nT("trophy.hidden") : (ach.unlockedDescription || ach.lockedDescription || i18nT("trophy.completeTarget"));
       const iconUrl = ach.unlockedIconLink || ach.lockedIconLink || "";
       targets.push({
         title,
@@ -746,9 +746,9 @@ export function renderOverviewTrophySpotlight(
   return `
     <div class="hub-card hub-trophy-spotlight ${isPlat ? "plat" : ""}">
       <div class="hub-card-header">
-        <h3 class="hub-card-title">${isPlat ? epicPlatinumIcon(14) : icon("trophy", 14)} <span>Kupa & Başarım İlerlemesi</span></h3>
+        <h3 class="hub-card-title">${isPlat ? epicPlatinumIcon(14) : icon("trophy", 14)} <span>${i18nT("trophy.title")}</span></h3>
         <button class="hub-card-link" data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}">
-          <span>Tüm Kupalar</span> ${icon("chevron-right", 12)}
+          <span>${i18nT("trophy.all")}</span> ${icon("chevron-right", 12)}
         </button>
       </div>
 
@@ -757,13 +757,13 @@ export function renderOverviewTrophySpotlight(
         <div class="hub-trophy-progress-top">
           <div class="hub-trophy-percent-badge">
             <span class="hub-trophy-percent-num ${isPlat ? "plat" : ""}">%${pct}</span>
-            <span class="hub-trophy-counts">${unlockedAch} / ${totalAch} Kupa ${totalXp > 0 ? `• ${userXp} XP` : ""}</span>
+            <span class="hub-trophy-counts">${unlockedAch} / ${totalAch} ${i18nT("trophy.trophies")} ${totalXp > 0 ? `• ${userXp} XP` : ""}</span>
           </div>
           <div class="hub-trophy-medals">
-            <div class="hub-medal-item plat" title="Platin Kupa">${epicPlatinumIcon(12)} <span>${platCount}</span></div>
-            <div class="hub-medal-item gold" title="Altın Kupa">${icon("trophy", 12)} <span>${goldCount}</span></div>
-            <div class="hub-medal-item silver" title="Gümüş Kupa">${icon("trophy", 12)} <span>${silverCount}</span></div>
-            <div class="hub-medal-item bronze" title="Bronz Kupa">${icon("trophy", 12)} <span>${bronzeCount}</span></div>
+            <div class="hub-medal-item plat" title="${i18nT("trophy.platTitle")}">${epicPlatinumIcon(12)} <span>${platCount}</span></div>
+            <div class="hub-medal-item gold" title="${i18nT("trophy.goldTitle")}">${icon("trophy", 12)} <span>${goldCount}</span></div>
+            <div class="hub-medal-item silver" title="${i18nT("trophy.silverTitle")}">${icon("trophy", 12)} <span>${silverCount}</span></div>
+            <div class="hub-medal-item bronze" title="${i18nT("trophy.bronzeTitle")}">${icon("trophy", 12)} <span>${bronzeCount}</span></div>
           </div>
         </div>
         <div class="hub-trophy-bar-track">
@@ -782,9 +782,9 @@ export function renderOverviewMediaSpotlight(s: EpicSummary): string {
 
   const headerRight = `
     <div style="display:flex;align-items:center;gap:6px">
-      <span class="hub-card-hotkey" title="Ekran görüntüsü kısayolu">${esc(S.screenshotHotkeyName)}</span>
+      <span class="hub-card-hotkey" title="${i18nT("media.hotkeyTitle")}">${esc(S.screenshotHotkeyName)}</span>
       <button class="hub-card-link" data-act="drawer-tab" data-tab="screenshots" data-id="${s.appName}">
-        <span>Tümü</span> ${icon("chevron-right", 12)}
+        <span>${i18nT("media.all")}</span> ${icon("chevron-right", 12)}
       </button>
     </div>
   `;
@@ -809,13 +809,13 @@ export function renderOverviewMediaSpotlight(s: EpicSummary): string {
       <div class="hub-media-empty">
         <div class="hub-media-empty-icon">${icon("camera", 20)}</div>
         <div class="hub-media-empty-info">
-          <div class="hub-media-empty-title">Ekran Görüntüleri & Klipler</div>
+          <div class="hub-media-empty-title">${i18nT("media.emptyTitle")}</div>
           <div class="hub-media-empty-desc">
-            Oyun oynarken <strong>${esc(S.screenshotHotkeyName)}</strong> tuşu ile yakaladığınız kareler burada sergilenir.
+            ${i18nT("media.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </div>
         </div>
-        <button class="hub-card-link" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="Ekran görüntüleri klasörünü aç">
-          ${icon("folder", 12)} <span>Klasör</span>
+        <button class="hub-card-link" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="${i18nT("media.openFolder")}">
+          ${icon("folder", 12)} <span>${i18nT("media.folder")}</span>
         </button>
       </div>
     `;
@@ -825,7 +825,7 @@ export function renderOverviewMediaSpotlight(s: EpicSummary): string {
     <div class="hub-card hub-media-spotlight">
       <div class="hub-card-header">
         <h3 class="hub-card-title">
-          ${icon("camera", 14)} <span>Medya Galerisi</span>
+          ${icon("camera", 14)} <span>${i18nT("media.gallery")}</span>
           ${screenshots.length > 0 ? `<span class="hub-card-count">(${screenshots.length})</span>` : ""}
         </h3>
         ${headerRight}
