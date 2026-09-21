@@ -11,7 +11,7 @@ export interface LanguageMeta {
   dir: "ltr" | "rtl";
 }
 
-/** Epic Games Store'un resmi olarak desteklediği diller (16+). */
+/** Languages officially supported by the Epic Games Store (16+). */
 export const LANGUAGES: LanguageMeta[] = [
   { code: "tr", label: "Türkçe", dir: "ltr" },
   { code: "en", label: "English", dir: "ltr" },
@@ -32,7 +32,7 @@ export const LANGUAGES: LanguageMeta[] = [
 
 const REGISTRY: Record<string, Dict> = { tr, en };
 
-// İlk yüklemede ana pakete dahil edilmeyen diller dinamik olarak içe aktarılır.
+// Languages not bundled in the main chunk are lazy-loaded on demand.
 const LOADERS: Record<string, () => Promise<{ default: Dict }>> = {
   de: () => import("./locales/de.json"),
   es: () => import("./locales/es.json"),
@@ -57,8 +57,8 @@ export function currentLanguage(): string {
 }
 
 /**
- * Çeviri yardımcısı. Eksik anahtar sırasıyla: seçili dil → İngilizce → Türkçe → anahtar.
- * `{isim}` yer tutucuları `vars` ile değiştirilir.
+ * Translation helper. Missing-key fallback order: selected language → English → Turkish → key.
+ * `{name}` placeholders are replaced from `vars`.
  */
 export function t(key: string, vars?: Record<string, string | number>): string {
   let s = current[key] ?? en[key] ?? tr[key] ?? key;
@@ -76,7 +76,7 @@ function applyDir(lang: string): void {
   document.documentElement.dir = meta?.dir ?? "ltr";
 }
 
-/** Statik HTML üzerindeki `data-i18n` / `data-i18n-title` öğelerini çevirir. */
+/** Translates `data-i18n` / `data-i18n-title` elements in the static HTML. */
 export function applyStaticTranslations(): void {
   document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
@@ -88,7 +88,7 @@ export function applyStaticTranslations(): void {
   });
 }
 
-/** Dili yükler, yönü uygular ve statik çevirileri tazeler. */
+/** Loads a language, applies its direction and refreshes static translations. */
 export async function setLanguage(lang: string): Promise<void> {
   currentLang = lang;
   if (REGISTRY[lang]) {
