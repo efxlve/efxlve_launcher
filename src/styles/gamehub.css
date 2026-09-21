@@ -245,7 +245,7 @@
   box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
   transform: translateY(-2px);
 }
-/* Update uses the amber status color (amber = update), matching the play button's size. */
+/* Update mirrors the play button's treatment in a deeper amber (amber = update). */
 .hub-actions-bar .btn.update {
   height: 46px;
   padding: 0 28px;
@@ -255,16 +255,16 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--yellow);
-  color: #1a1206;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px var(--yellow-glow);
+  box-shadow: 0 4px 20px rgba(217, 119, 6, 0.45);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.update:hover {
-  background: #d97706;
-  box-shadow: 0 6px 28px var(--yellow-glow);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 6px 28px rgba(217, 119, 6, 0.65);
   transform: translateY(-2px);
 }
 .hub-actions-bar .btn.ghost {
