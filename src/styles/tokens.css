@@ -7,6 +7,10 @@
    ========================================================================== */
 :root {
   color-scheme: dark;
+  /* Single source of truth for the top-bar height; overlays that should sit
+     below the bar (e.g. the game detail drawer) reference this so they never
+     overlap the navigation. */
+  --titlebar-h: 56px;
   --bg: #07080d;
   --bg2: #12131a;
   --panel: #171821;

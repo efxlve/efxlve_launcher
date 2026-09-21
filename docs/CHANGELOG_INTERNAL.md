@@ -1795,3 +1795,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan:** `drawer-view.ts` içindeki `renderDrawerManage`, `renderDrawerAchievements`, `renderDrawerSystemRequirements`, `fetchAndRender*` toast'ları; kapak/SteamGrid, ekran görüntüsü paylaşımı, kalan toast/hata mesajları.
 
+## 120. Bug Fix: Detay Çekmecesi Üst Barı Örtüyordu (Üst Menü "Yukarı Kayma")
+
+**Semptom (kullanıcı bildirimi):** Oyun detay sayfası (Game Hub çekmecesi) açıldığında üst menüdeki "Mağaza / Kütüphane / İndirmeler" sekmeleri kesik/yukarı kaymış gibi görünüyordu.
+
+**Kök neden:** `.overlay` (detay çekmecesi) `inset: 40px 0 0 0` ile konumlanıyordu; ancak üst bar (`#titlebar`) yüksekliği Milestone 1'de `54px → 56px` yapılmıştı. Çekmece, üst barın **alt 16px'ini örtüyordu** — bu da nav sekmelerini ve kayan göstergeyi görsel olarak kesiyordu. İki değer ayrı ayrı sabit kodlanmıştı.
+
+**Çözüm — tek kaynak değişken (`--titlebar-h`):**
+- `tokens.css` `:root`'a `--titlebar-h: 56px` eklendi (tek doğruluk kaynağı).
+- `base.css` `#titlebar { height: var(--titlebar-h); }` olarak güncellendi.
+- `gamehub.css` `.overlay { inset: var(--titlebar-h) 0 0 0; }` olarak düzeltildi; çekmece artık tam olarak üst barın altından başlar ve navigasyon her zaman görünür/kullanılabilir kalır.
+- Diğer modal katmanlarının (yönetim, seçici kurulum, taşıma, kapak, lightbox) tam ekran `inset: 0` kullanması kasıtlıdır (modal oldukları için üst barı örtmeleri doğrudur).
+
+`tsc` + `vite build` yeşil.
+
