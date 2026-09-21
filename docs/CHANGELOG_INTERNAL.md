@@ -1584,3 +1584,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Modal açma/başlatma/iptal mantığı (I/O içeren `openMoveGameModal`, `startMoveGame`, `closeMoveGameModal`) şimdilik `main.ts`'te kaldı.
 - `main.ts` ~10.785 → ~10.455 satır. `tsc`/`vite build` yeşil.
 
+## 92. Modülerleştirme Faz 4 (devam): Ayarlar & Profil Görünüm Modülleri
+
+- `renderSettings` → `src/features/settings/settings-view.ts` (~247 satır). Modül `S`, `icon`, `esc`, `fmtBytes`, `t`, `LANGUAGES`, `isTauri` ve `EglDetectedGame` import eder; tüm aksiyonlar global `data-act` yönlendirmesinde kalır.
+- `renderProfileGameCards` + `renderProfile` → `src/features/profile/profile-view.ts` (~360 satır). Modül `S`, `icon`, `epicPlatinumIcon`, `esc`, `fmtBytes`, `fmtPlaytime`, `t`, `epicWideArt` ve `ProfileGameRecord` import eder.
+- `epicWideArt` (geniş kapak seçici) paylaşıldığı için `src/core/selectors.ts`'e taşındı; hem `main.ts` hem profil modülü oradan import eder.
+- `main.ts` ~10.455 → ~9.858 satır. `tsc`/`vite build` yeşil.
+

@@ -30,3 +30,27 @@ export function summaryOf(appName: string): EpicSummary | undefined {
 export function rawOf(appName: string): EpicGame | undefined {
   return S.epicGamesRawMap.get(appName);
 }
+
+/**
+ * Resolve the wide landscape artwork used by hero banners and the detail
+ * drawer. Priority: custom user hero -> Epic key art -> portrait cover.
+ */
+export function epicWideArt(s: EpicSummary): string | null {
+  const customHero = S.customHeroes[s.appName];
+  if (customHero) return customHero;
+  const g = rawOf(s.appName);
+  const imgs = g?.metadata?.keyImages;
+  if (Array.isArray(imgs)) {
+    for (const t of [
+      "OfferImageWide",
+      "DieselStoreFrontWide",
+      "DieselGameBox",
+      "DieselGameBoxTall",
+      "OfferImageTall",
+    ]) {
+      const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
+      if (found) return found.url;
+    }
+  }
+  return s.cover;
+}
