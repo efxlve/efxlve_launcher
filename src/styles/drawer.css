@@ -1,13 +1,9 @@
 /* ==========================================================================
    Detail Drawer Sections & Toolbar
-   Detay Cekmecesi Bolumleri & Arac Cubugu
 
-   EN: Drawer tab transition, stat strip, achievement mini showcase, manage/DLC groups, feature strip, trophy summary and search/sort bar.
+   Drawer tab transition, stat strip, achievement mini showcase, manage/DLC groups, feature strip, trophy summary and search/sort bar.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Cekmece sekme gecisi, istatistik seridi, basarim mini vitrini, yonetim/DLC gruplari, ozellik seridi, kupa ozeti ve arama/siralama cubugu.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- Sekme İçerik Geçiş Animasyonu --- */
 @keyframes tabContentEnter {

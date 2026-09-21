@@ -1,13 +1,9 @@
 /* ==========================================================================
    PS5 Page Shell, Buttons, Context Menu & Overlays
-   PS5 Sayfa Kabugu, Butonlar, Sag Tik Menusu & Katmanlar
 
-   EN: Shared PS5 component library (page header, buttons, inputs), context menu, webview hardening, onboarding wizard and third-party launcher cards.
+   Shared PS5 component library (page header, buttons, inputs), context menu, webview hardening, onboarding wizard and third-party launcher cards.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Paylasilan PS5 bilesen kutuphanesi (sayfa basligi, butonlar, girdiler), sag tik menusu, webview zirhlama, ilk kurulum sihirbazi ve 3. parti baslatici kartlari.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    PS5 Standart Sayfa Kabuğu & Bileşen Kütüphanesi (docs/DESIGN_SYSTEM.md §4-5)

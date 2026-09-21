@@ -1,13 +1,9 @@
 /* ==========================================================================
    Critic & Review Scores
-   Elestirmen & Inceleme Skorlari
 
-   EN: OpenCritic/Metacritic review score cards and tier styling.
+   OpenCritic/Metacritic review score cards and tier styling.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: OpenCritic/Metacritic inceleme skoru kartlari ve seviye stilleri.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    PlayStation 5 Game Hub: Eleştirmen & İnceleme Skorları (OpenCritic / Metacritic)

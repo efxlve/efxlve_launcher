@@ -1,13 +1,9 @@
 /* ==========================================================================
    Game Management Panel
-   Oyun Yonetimi Paneli
 
-   EN: In-drawer game management modal (files, saves, verify, move, uninstall).
+   In-drawer game management modal (files, saves, verify, move, uninstall).
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Cekmece ici oyun yonetim modali (dosyalar, kayitlar, dogrulama, tasima, kaldirma).
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ---------- Oyun Yönetimi Paneli (Game Manage Modal) ---------- */
 

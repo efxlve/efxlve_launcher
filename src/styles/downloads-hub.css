@@ -1,13 +1,9 @@
 /* ==========================================================================
    Downloads Hub, DLC Manager & Selective Install
-   Indirme Merkezi, DLC Yoneticisi & Secici Kurulum
 
-   EN: Steam-style download hub, active hero, speed chart, queue rows, DLC manager and selective install modal.
+   Steam-style download hub, active hero, speed chart, queue rows, DLC manager and selective install modal.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Steam tarzi indirme merkezi, aktif hero, hiz grafigi, kuyruk satirlari, DLC yoneticisi ve secici kurulum modali.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    STEAM TARZI GELİŞMİŞ İNDİRME MERKEZİ (DOWNLOADS HUB)

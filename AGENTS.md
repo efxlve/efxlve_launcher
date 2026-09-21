@@ -41,10 +41,9 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 6. **"AI TASARIMI GİBİ DURMASIN" KURALI:** YASAKLAR: Mor→indigo→cyan dekoratif gradyanlar, neon parlama (`box-shadow glow`), gradyan metin (`background-clip: text`), her öğeyi tam yuvarlak kapsüle (`999px`) çevirmek, cam/blur katmanlarının gereksiz tekrarı ve süs amaçlı mikro animasyonlar (ikon sallama, pulse). Renk yalnızca DURUM bildirir (yeşil = çevrimiçi, amber = çevrimdışı/güncelleme, kırmızı = sayaç/hata).
 7. **DENGE KURALI:** Hedef **sade ama karakterli**. Karakter şu dört kaynaktan gelir: tek kaynaklı bağlamsal ışık, yüzey/derinlik dili, tipografik ses, tek özgüvenli vurgu rengi.
 8. **DOSYA BOYUTU & MODÜLERLİK KURALI:** Hiçbir kaynak dosya **~1.500 satırı** geçmez. Geçen dosya sorumluluğu tek olan modüllere bölünür. Yeni özellikler doğrudan ilgili `src/features/<ad>/` modülüne yazılır; `main.ts` yalnızca bootstrap + ince orkestrasyon olacak şekilde küçültülür. Detaylı plan: [`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md).
-9. **İKİ DİLLİ YORUM KURALI (Bilingual Comments):** Tüm yeni ve taşınan kodda yorumlar **önce İngilizce, sonra Türkçe** ve açıklayıcı yazılır (proje harici inceleyiciler, örn. Epic Games çalışanları, tarafından okunacaktır). Tek dilli/anlamsız/kopyala-yapıştır yorum yasaktır. Format:
+9. **İNGİLİZCE YORUM KURALI (English-Only Comments):** Tüm kod yorumları **yalnızca İngilizce** ve açıklayıcı yazılır (proje harici inceleyiciler, örn. Epic Games çalışanları, tarafından okunacaktır). Anlamsız/kopyala-yapıştır yorum yasaktır. Kod taşındıkça veya düzenlendikçe mevcut Türkçe yorumlar da İngilizce'ye çevrilir. Format:
    ```ts
-   // EN: Explain why this exists and any non-obvious tradeoff.
-   // TR: Bunun neden var olduğunu ve bariz olmayan ödünleşimi açıkla.
+   // Explain why this exists and any non-obvious tradeoff.
    ```
 
 ## 5. Mimari & Veri Akışı Prensibi

@@ -1,13 +1,9 @@
 /* ==========================================================================
    Library Spotlight, Toolbar & Game Cards
-   Kutuphane Vitrin, Arac Cubugu & Oyun Kartlari
 
-   EN: Hero spotlight banner, floating cover, filter toolbar and portrait/row game cards.
+   Hero spotlight banner, floating cover, filter toolbar and portrait/row game cards.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: One cikan oyun vitrini, yuzer kapak, filtre arac cubugu ve portre/satir oyun kartlari.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- HERO SPOTLIGHT BANNER --- */
 .hero-spotlight {

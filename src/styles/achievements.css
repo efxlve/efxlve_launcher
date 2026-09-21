@@ -1,13 +1,9 @@
 /* ==========================================================================
    Achievements & System Requirements
-   Basarimlar & Sistem Gereksinimleri
 
-   EN: SteamHunters grouped list, clean PS5 achievement cards, system requirements layout, secret achievements and platinum filter.
+   SteamHunters grouped list, clean PS5 achievement cards, system requirements layout, secret achievements and platinum filter.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: SteamHunters gruplu liste, temiz PS5 basarim kartlari, sistem gereksinimleri duzeni, gizli basarimlar ve platin filtresi.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- SteamHunters Gruplandırılmış Başarım Listesi --- */
 .ach-list-container {

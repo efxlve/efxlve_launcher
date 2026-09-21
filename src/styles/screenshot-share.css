@@ -1,13 +1,9 @@
 /* ==========================================================================
    Screenshot Share & Compression
-   Ekran Goruntusu Paylasma & Sikistirma
 
-   EN: Screenshot share sheet and AVIF/WebP/JPEG compression controls.
+   Screenshot share sheet and AVIF/WebP/JPEG compression controls.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Ekran goruntusu paylasma sayfasi ve AVIF/WebP/JPEG sikistirma kontrolleri.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ---------- PS5 Console Aesthetic: Screenshot Share & Compression ---------- */
 

@@ -1,13 +1,9 @@
 /* ==========================================================================
    Global Standards, Titlebar & Forms
-   Global Standartlar, Ust Bar & Formlar
 
-   EN: Console professionalism standards, custom scrollbar, PS5 titlebar/navigation and base button/form styling.
+   Console professionalism standards, custom scrollbar, PS5 titlebar/navigation and base button/form styling.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Konsol profesyonellik standartlari, ozel scrollbar, PS5 ust bar/navigasyon ve temel buton/form stilleri.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- PlayStation 5 Console Professionalism Standards --- */
 

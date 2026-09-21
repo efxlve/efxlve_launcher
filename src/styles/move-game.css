@@ -1,13 +1,9 @@
 /* ==========================================================================
    Move Game Files Modal
-   Oyun Dosyalarini Tasma Modali
 
-   EN: Cross-drive game installation move modal and progress UI.
+   Cross-drive game installation move modal and progress UI.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Suruculer arasi oyun kurulumu tasima modali ve ilerleme arayuzu.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    PlayStation 5 Game Hub: Oyun Dosyalarını Taşıma Modalı (Move Game Files)

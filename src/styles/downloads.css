@@ -1,13 +1,9 @@
 /* ==========================================================================
    Downloads, Language, Toasts & Skeleton
-   Indirmeler, Dil, Bildirimler & Iskelet
 
-   EN: Downloads/settings base, language selector, toast notifications, scroll-to-top and skeleton shimmer loading.
+   Downloads/settings base, language selector, toast notifications, scroll-to-top and skeleton shimmer loading.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Indirmeler/ayarlar temeli, dil secici, bildirimler, basa don ve iskelet parilti yukleme.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- İndirmeler & Ayarlar --- */
 .dl-item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px; }

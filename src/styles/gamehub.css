@@ -1,13 +1,9 @@
 /* ==========================================================================
    PS5 Game Hub (Cinematic Detail View)
-   PS5 Oyun Merkezi (Sinematik Detay Gorunumu)
 
-   EN: Full-screen game detail hub: hero header, stats, features/support, trophy and media spotlights, HLTB card.
+   Full-screen game detail hub: hero header, stats, features/support, trophy and media spotlights, HLTB card.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Tam ekran oyun detay merkezi: hero basligi, istatistikler, ozellik/destek, kupa ve medya vitrinleri, HLTB karti.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- PLAYSTATION 5 GAME HUB (FULL-SCREEN CINEMATIC VIEW) --- */
 #modal-root:empty { display: none; }

@@ -1,13 +1,9 @@
 /* ==========================================================================
    Profile & Trophy Hub
-   Profil & Kupa Merkezi
 
-   EN: Native profile view and PS5 console dark profile/trophy hub with dynamic backdrops.
+   Native profile view and PS5 console dark profile/trophy hub with dynamic backdrops.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Yerel profil gorunumu ve PS5 konsol koyu profil/kupa merkezi (dinamik arka planlar).
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    Yerel Profil & Başarım Merkezi (Native Profile View)

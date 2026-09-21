@@ -1,12 +1,8 @@
 /* ==========================================================================
    Stylesheet Entry Point
-   Stil Giris Noktasi
 
-   EN: Aggregates all modular stylesheets in cascade order. src/main.ts
+   Aggregates all modular stylesheets in cascade order. src/main.ts
        imports only this file; Vite inlines the imports at build time.
-   TR: Tum modul stil dosyalarini cascade sirasina gore birlestirir.
-       src/main.ts yalnizca bu dosyayi import eder; Vite derleme aninda
-       importlari tek dosyaya indirger.
    ========================================================================== */
 @import "./tokens.css";
 @import "./components.css";

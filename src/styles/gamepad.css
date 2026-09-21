@@ -1,13 +1,9 @@
 /* ==========================================================================
    Gamepad HUD Bar
-   Gamepad HUD Bari
 
-   EN: 10-foot couch controller HUD bar and button glyphs.
+   10-foot couch controller HUD bar and button glyphs.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: 10 fit koltuk kontrolcu HUD bari ve buton glifleri.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    PlayStation Console Gamepad HUD Bar & Glyphs (10-ft Couch Controller Mode)

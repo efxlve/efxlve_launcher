@@ -1,13 +1,9 @@
 /* ==========================================================================
    SteamGridDB Integration
-   SteamGridDB Entegrasyonu
 
-   EN: SteamGridDB search modal, grid/hero asset pickers and preview cards.
+   SteamGridDB search modal, grid/hero asset pickers and preview cards.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: SteamGridDB arama modali, grid/hero gorsel secicileri ve onizleme kartlari.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- STEAMGRIDDB ENTEGRASYONU --- */
 

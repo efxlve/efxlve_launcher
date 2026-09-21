@@ -1,13 +1,9 @@
 /* ==========================================================================
    Screenshot Gallery & Lightbox
-   Ekran Goruntusu Galerisi & Lightbox
 
-   EN: In-game screenshot gallery, cards and full-screen lightbox.
+   In-game screenshot gallery, cards and full-screen lightbox.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Oyun ici ekran goruntusu galerisi, kartlar ve tam ekran lightbox.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    Oyun İçi Ekran Görüntüleri Galerisi & Tam Ekran Lightbox (PS5 Console Aesthetic)
