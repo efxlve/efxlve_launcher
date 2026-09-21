@@ -541,6 +541,20 @@ export const epicDetectEglGames = () =>
 export const epicSyncEglInstalled = () =>
   invoke<number>("epic_sync_egl_installed");
 
+/* ---------- 3. Parti Başlatıcılar (EA App, Ubisoft Connect, Rockstar) ---------- */
+
+export interface ThirdPartyLauncher {
+  id: string;
+  name: string;
+  installed: boolean;
+  version: string | null;
+  installPath: string | null;
+  downloadUrl: string;
+}
+
+export const epicThirdPartyLaunchers = () =>
+  invoke<ThirdPartyLauncher[]>("epic_third_party_launchers");
+
 /* ---------- Oyun Yönetimi & Doğrulama (Game Management) ---------- */
 
 export interface GameLocalSettings {
