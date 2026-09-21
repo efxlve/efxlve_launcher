@@ -1842,5 +1842,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `core/window.ts` klavye kısayolu/webview yorumları İngilizce'ye çevrildi.
 - `tr.json`/`en.json` ~700 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-**Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `profile-view.ts` yorumları.
+**Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `profile-view.ts` yorumları.
+
+## 125. i18n: Taşıma Modalı, Ekran Görüntüleri, State Ölü Alanı
+
+- `move-game-view.ts` + `move-game-actions.ts` tamamen `t()`'e taşındı (`move.*`, ~45 anahtar): sürücü kartları, kapasite rozetleri, canlı ilerleme aşamaları, hedef yol önizlemesi, toast'lar. Aşama etiketi tek `moveStageLabel()` yardımcısına indirildi (duplike mantık kaldırıldı). Türkçe yorumlar İngilizce.
+- `screenshots-view.ts` tamamen `t()`'e taşındı (`ss.*`): paylaşım sayfası, galeri başlığı/boş durumu, lightbox araçları, panoya kopyalama toast'ları. İç `throw new Error` metinleri İngilizce'ye çevrildi.
+- **Ölü kod:** `core/state.ts` içindeki kullanılmayan `sortLabelMap` kaldırıldı. Hotkey ön ayar etiketi `"F12 (Varsayılan)"` → `"F12"` yapıldı; "(Varsayılan)" artık `settings.defaultKey` ile yerelleşiyor.
+- `tr.json`/`en.json` ~780 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 

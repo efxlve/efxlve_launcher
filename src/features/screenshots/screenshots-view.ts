@@ -67,7 +67,7 @@ export function playScreenshotShutterSound(): void {
     const ctx = new AudioContextClass();
     const now = ctx.currentTime;
 
-    // 1. Deklanşör Tıklaması (Mekanik Shutter Başlangıcı)
+    // 1. Shutter click (mechanical shutter start).
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
@@ -80,7 +80,7 @@ export function playScreenshotShutterSound(): void {
     osc1.start(now);
     osc1.stop(now + 0.045);
 
-    // 2. Deklanşör Kapanışı (Mechanical Snap)
+    // 2. Shutter close (mechanical snap).
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "triangle";
@@ -93,7 +93,7 @@ export function playScreenshotShutterSound(): void {
     osc2.start(now + 0.035);
     osc2.stop(now + 0.085);
   } catch {
-    // Ses engellendiyse sessizce geç
+    // Audio blocked: fail silently.
   }
 }
 
@@ -104,33 +104,33 @@ export async function copyScreenshotImageToClipboard(item: GameScreenshotItem): 
     img.src = item.data_url;
     await new Promise((res, rej) => {
       img.onload = res;
-      img.onerror = () => rej(new Error("Görsel yüklenemedi"));
+      img.onerror = () => rej(new Error("Image could not be loaded"));
     });
 
     const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth || img.width;
     canvas.height = img.naturalHeight || img.height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D context alınamadı");
+    if (!ctx) throw new Error("Canvas 2D context unavailable");
     ctx.drawImage(img, 0, 0);
 
     const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
-    if (!blob) throw new Error("PNG Blob oluşturulamadı");
+    if (!blob) throw new Error("PNG blob could not be created");
 
     await navigator.clipboard.write([
       new ClipboardItem({ "image/png": blob })
     ]);
 
-    toast("Görsel panoya kopyalandı.", "ok");
+    toast(t("ss.copied"), "ok");
     return true;
   } catch (err) {
-    console.warn("Görsel kopyalanamadı:", err);
+    console.warn("Image could not be copied:", err);
     try {
       await navigator.clipboard.writeText(item.file_path);
-      toast("Dosya yolu panoya kopyalandı: " + item.file_name, "ok");
+      toast(t("ss.pathCopied", { file: item.file_name }), "ok");
       return true;
     } catch {
-      toast("Panoya kopyalama başarısız oldu", "err");
+      toast(t("ss.copyFailed"), "err");
       return false;
     }
   }
@@ -146,14 +146,14 @@ export async function compressImageToBlob(
   img.src = dataUrl;
   await new Promise((resolve, reject) => {
     img.onload = resolve;
-    img.onerror = () => reject(new Error("Görsel yüklenemedi"));
+    img.onerror = () => reject(new Error("Image could not be loaded"));
   });
 
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas context 2D alınamadı");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
   ctx.drawImage(img, 0, 0);
 
   let mimeType = format === "avif" ? "image/avif" : format === "webp" ? "image/webp" : "image/jpeg";
@@ -175,7 +175,7 @@ export async function compressImageToBlob(
     canvas.toBlob((b) => resolve(b), mimeType, quality);
   });
 
-  if (!blob) throw new Error("Görsel sıkıştırma başarısız oldu");
+  if (!blob) throw new Error("Image compression failed");
 
   const buffer = await blob.arrayBuffer();
   let binary = "";
@@ -267,16 +267,16 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
           <button class="ss-share-btn primary" data-act="do-copy-image">
             <div class="ss-share-btn-icon" style="color:#60a5fa">${icon("copy", 18)}</div>
             <div class="ss-share-btn-text">
-              <span class="ss-btn-main">Görseli Panoya Kopyala</span>
-              <span class="ss-btn-hint">Discord, WhatsApp veya sohbete Ctrl+V ile anında yapıştırın</span>
+              <span class="ss-btn-main">${t("ss.copyImage")}</span>
+              <span class="ss-btn-hint">${t("ss.copyHint")}</span>
             </div>
-            <span class="ss-badge-recommended">Önerilen</span>
+            <span class="ss-badge-recommended">${t("ss.recommended")}</span>
           </button>
 
           <button class="ss-share-btn" data-act="do-copy-path">
             <div class="ss-share-btn-icon" style="color:#a78bfa">${icon("link", 18)}</div>
             <div class="ss-share-btn-text">
-              <span class="ss-btn-main">Dosya Yolunu Kopyala</span>
+              <span class="ss-btn-main">${t("ss.copyPath")}</span>
               <span class="ss-btn-hint" title="${esc(item.file_path)}">${esc(item.file_path)}</span>
             </div>
           </button>
@@ -284,8 +284,8 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
           <button class="ss-share-btn" data-act="do-open-folder">
             <div class="ss-share-btn-icon" style="color:#fbbf24">${icon("folder", 18)}</div>
             <div class="ss-share-btn-text">
-              <span class="ss-btn-main">Klasörde Göster</span>
-              <span class="ss-btn-hint">Windows Dosya Gezgini'nde aç</span>
+              <span class="ss-btn-main">${t("ss.showInFolder")}</span>
+              <span class="ss-btn-hint">${t("ss.showInFolderHint")}</span>
             </div>
           </button>
 
@@ -293,8 +293,8 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
             <button class="ss-share-btn" data-act="do-compress-from-share">
               <div class="ss-share-btn-icon" style="color:#34d399">${icon("minimize-2", 18)}</div>
               <div class="ss-share-btn-text">
-                <span class="ss-btn-main">Görseli Sıkıştır (AVIF/WebP)</span>
-                <span class="ss-btn-hint">Dosya boyutunu %70-85 oranında küçülterek paylaşımı hızlandırın</span>
+                <span class="ss-btn-main">${t("ss.compressImage")}</span>
+                <span class="ss-btn-hint">${t("ss.compressHint")}</span>
               </div>
             </button>
           ` : ""}
@@ -303,8 +303,8 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
             <button class="ss-share-btn" data-act="do-native-share">
               <div class="ss-share-btn-icon" style="color:#f472b6">${icon("share-2", 18)}</div>
               <div class="ss-share-btn-text">
-                <span class="ss-btn-main">Windows Paylaşım Menüsü</span>
-                <span class="ss-btn-hint">Yakındakilerle Paylaş, E-posta vb.</span>
+                <span class="ss-btn-main">${t("ss.winShare")}</span>
+                <span class="ss-btn-hint">${t("ss.winShareHint")}</span>
               </div>
             </button>
           ` : ""}
@@ -329,7 +329,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
       <div class="screenshots-tab-container">
         <div class="screenshots-loading-box">
           <span class="hltb-spinner" style="width:28px;height:28px;border-width:3px"></span>
-          <span>Ekran görüntüleri taranıyor…</span>
+          <span>${t("ss.scanning")}</span>
         </div>
       </div>
     `;
@@ -340,20 +340,20 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   const headerHtml = `
     <div class="screenshots-gallery-head">
       <div class="screenshots-head-info">
-        <h3 class="screenshots-title">${icon("image", 15)} <span>Oyun Ekran Görüntüleri</span></h3>
-        <span class="screenshots-count-chip">${screenshots.length} Fotoğraf</span>
+        <h3 class="screenshots-title">${icon("image", 15)} <span>${t("ss.title")}</span></h3>
+        <span class="screenshots-count-chip">${t("ss.photoCount", { count: screenshots.length })}</span>
       </div>
       <div class="screenshots-head-actions">
-        <button class="btn primary small" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}" title="Hemen ekran görüntüsü al">
-          ${icon("camera", 13)} Ekran Görüntüsü Al
+        <button class="btn primary small" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}" title="${t("ss.captureTip")}">
+          ${icon("camera", 13)} ${t("ss.capture")}
         </button>
         ${hasUncompressed ? `
-          <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="Tüm ham PNG ekran görüntülerini sıkıştırıp disk alanı kazanın">
-            ${icon("minimize-2", 13)} Tümünü Sıkıştır
+          <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="${t("ss.compressAllTip")}">
+            ${icon("minimize-2", 13)} ${t("ss.compressAll")}
           </button>
         ` : ""}
-        <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="Klasörü Explorer'da Aç">
-          ${icon("folder", 13)} Klasörü Aç
+        <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="${t("ss.openFolderTip")}">
+          ${icon("folder", 13)} ${t("ss.openFolder")}
         </button>
       </div>
     </div>
@@ -365,16 +365,16 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
         ${headerHtml}
         <div class="screenshots-empty-card">
           <div class="screenshots-empty-icon">${icon("image", 44)}</div>
-          <h4 class="screenshots-empty-title">Henüz Ekran Görüntüsü Yok</h4>
+          <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
           <p class="screenshots-empty-desc">
-            Oyun oynarken <strong>${esc(S.screenshotHotkeyName)}</strong> veya <strong>Win + Alt + PrtScn</strong> tuşlarına basarak ekran görüntüsü yakalayabilirsiniz. Alınan görüntüler otomatik olarak burada toplanır.
+            ${t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </p>
           <div class="screenshots-empty-actions">
             <button class="btn primary" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}">
-              ${icon("camera", 14)} Hemen Ekran Görüntüsü Al
+              ${icon("camera", 14)} ${t("ss.captureNow")}
             </button>
             <button class="btn ghost" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}">
-              ${icon("folder", 14)} Ekran Görüntüleri Klasörünü Aç
+              ${icon("folder", 14)} ${t("ss.openFolderLong")}
             </button>
           </div>
         </div>
@@ -396,18 +396,18 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
             <span class="ss-chip size">${esc(item.size_str)}</span>
           </div>
           <div class="screenshot-overlay-bottom">
-            <span class="ss-view-btn">${icon("eye", 12)} Büyüt</span>
-            <button class="ss-share-btn" data-act="share-screenshot" data-id="${s.appName}" data-idx="${idx}" title="Paylaş / Panoya Kopyala">
-              ${icon("share-2", 12)} Paylaş
+            <span class="ss-view-btn">${icon("eye", 12)} ${t("ss.zoom")}</span>
+            <button class="ss-share-btn" data-act="share-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.shareTip")}">
+              ${icon("share-2", 12)} ${t("ss.share")}
             </button>
             ${!isAvifOrWebp ? `
-              <button class="ss-compress-btn" data-act="compress-screenshot" data-id="${s.appName}" data-idx="${idx}" title="Bu Görseli Sıkıştır (AVIF/WebP)">
+              <button class="ss-compress-btn" data-act="compress-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.compressTip")}">
                 ${icon("minimize-2", 12)}
               </button>
             ` : `
-              <span class="ss-compressed-tag" title="Sıkıştırılmış format">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
+              <span class="ss-compressed-tag" title="${t("ss.compressedFormatTip")}">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
             `}
-            <button class="ss-delete-btn" data-act="delete-screenshot" data-id="${s.appName}" data-path="${esc(item.file_path)}" title="Sil">
+            <button class="ss-delete-btn" data-act="delete-screenshot" data-id="${s.appName}" data-path="${esc(item.file_path)}" title="${t("common.delete")}">
               ${icon("trash", 12)}
             </button>
           </div>
@@ -449,23 +449,23 @@ export function renderScreenshotLightbox(appName: string, index: number): string
             <span class="lightbox-meta">${esc(formatScreenshotDate(item.timestamp, item.date_str))} • ${esc(item.size_str)}</span>
           </div>
           <div class="lightbox-tools">
-            <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="Görseli Paylaş (Panoya Kopyala / Paylaşım Menüsü)">
-              ${icon("share-2", 13)} Paylaş
+            <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.shareTip2")}">
+              ${icon("share-2", 13)} ${t("ss.share")}
             </button>
             ${!isAvifOrWebp ? `
-              <button class="btn ghost small" data-act="compress-screenshot" data-id="${appName}" data-idx="${index}" title="Görseli Sıkıştır (%70-85 Boyut Tasarrufu)">
-                ${icon("minimize-2", 13)} Sıkıştır
+              <button class="btn ghost small" data-act="compress-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.compressTip2")}">
+                ${icon("minimize-2", 13)} ${t("ss.compress")}
               </button>
             ` : `
               <span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
             `}
-            <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="Klasörde Göster">
-              ${icon("folder", 12)} Klasörde Aç
+            <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="${t("ss.showInFolder")}">
+              ${icon("folder", 12)} ${t("ss.showInFolderShort")}
             </button>
-            <button class="btn ghost danger small" data-act="delete-screenshot" data-id="${appName}" data-path="${esc(item.file_path)}" data-lightbox="true" title="Ekran görüntüsünü sil">
-              ${icon("trash", 12)} Sil
+            <button class="btn ghost danger small" data-act="delete-screenshot" data-id="${appName}" data-path="${esc(item.file_path)}" data-lightbox="true" title="${t("ss.deleteTip")}">
+              ${icon("trash", 12)} ${t("common.delete")}
             </button>
-            <button class="btn ghost small" data-act="close-screenshot-lightbox" title="Kapat (ESC)">
+            <button class="btn ghost small" data-act="close-screenshot-lightbox" title="${t("common.close")} (ESC)">
               ${icon("x", 14)}
             </button>
           </div>
@@ -475,7 +475,7 @@ export function renderScreenshotLightbox(appName: string, index: number): string
           ${
             list.length > 1
               ? `
-            <button class="lightbox-arrow prev" data-act="lightbox-nav" data-dir="prev" title="Önceki (Sol Ok)">
+            <button class="lightbox-arrow prev" data-act="lightbox-nav" data-dir="prev" title="${t("ss.prevTip")}">
               ${icon("chevron-left", 22)}
             </button>
           `
@@ -489,7 +489,7 @@ export function renderScreenshotLightbox(appName: string, index: number): string
           ${
             list.length > 1
               ? `
-            <button class="lightbox-arrow next" data-act="lightbox-nav" data-dir="next" title="Sonraki (Sağ Ok)">
+            <button class="lightbox-arrow next" data-act="lightbox-nav" data-dir="next" title="${t("ss.nextTip")}">
               ${icon("chevron-right", 22)}
             </button>
           `

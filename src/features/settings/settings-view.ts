@@ -192,7 +192,7 @@ export function renderSettings(): string {
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <select id="ss-hotkey-select" class="text-input" style="width:auto;min-width:190px" data-act="change-ss-hotkey">
             ${S.PRESET_HOTKEYS.map(k => `
-              <option value="${k.code}" ${k.code === S.screenshotHotkey ? "selected" : ""}>${k.name}</option>
+              <option value="${k.code}" ${k.code === S.screenshotHotkey ? "selected" : ""}>${k.name}${k.code === 0x7b ? ` (${t("settings.defaultKey")})` : ""}</option>
             `).join("")}
             ${!S.PRESET_HOTKEYS.some(k => k.code === S.screenshotHotkey) ? `
               <option value="${S.screenshotHotkey}" selected>${t("settings.customKey")}: ${esc(S.screenshotHotkeyName)} (${S.screenshotHotkey})</option>
