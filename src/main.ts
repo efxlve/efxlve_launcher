@@ -2,6 +2,7 @@ import "./styles.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { LANGUAGES, applyStaticTranslations, setLanguage, t } from "./i18n";
 import {
   CircleUserRound,
   Download,
@@ -550,7 +551,7 @@ function updateOfflineModeUi(): void {
   btn.classList.toggle("offline", offlineMode);
   btn.classList.toggle("online", !offlineMode);
   const label = btn.querySelector<HTMLElement>(".net-label");
-  if (label) label.textContent = offlineMode ? "Çevrimdışı" : "Çevrimiçi";
+  if (label) label.textContent = offlineMode ? t("nav.offline") : t("nav.online");
   btn.title = offlineMode
     ? "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)"
     : "Çevrimiçi Mod Aktif — Epic ağına bağlı (Çevrimdışı moda geçmek için tıklayın)";
@@ -654,7 +655,7 @@ function updateChrome(): void {
       } else {
         acc.innerHTML =
           `<span class="account-avatar"><i data-lucide="circle-user-round"></i></span>` +
-          `<span class="account-name">Giriş yapılmadı</span>`;
+          `<span class="account-name">${t("nav.notLoggedIn")}</span>`;
         createIcons({ icons: { CircleUserRound } });
       }
     }
@@ -834,14 +835,14 @@ function showContextMenu(x: number, y: number, appName: string): void {
   menu.setAttribute("role", "menu");
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
-    ${installed ? item("play", "Oyna", "play") : item("install", "Yükle", "download")}
-    ${item("manage-game", "Özellikler & Yönet", "settings")}
+    ${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
+    ${item("manage-game", t("common.manage"), "settings")}
     <div class="ps5-context-sep"></div>
-    ${item("manage-create-shortcut", "Masaüstü Kısayolu Oluştur", "external")}
-    ${installed ? item("epic-open-folder", "Kurulum Klasörünü Aç", "folder") : ""}
-    ${installed ? item("manage-create-backup", "Kayıt Dosyalarını Yedekle", "cloud") : ""}
-    ${item("epic-fav", faved ? "Favorilerden Çıkar" : "Favorilere Ekle", "heart")}
-    ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", "Kaldır", "trash", true)}` : ""}
+    ${item("manage-create-shortcut", t("ctx.shortcut"), "external")}
+    ${installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
+    ${installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
+    ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
+    ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", t("common.uninstall"), "trash", true)}` : ""}
   `;
 
   const root = ctxRoot || document.body;
@@ -1333,12 +1334,12 @@ function renderDownloads(): string {
     heroMarkup = `
       <div class="dl-active-hero" style="text-align:center;padding:48px 24px;align-items:center;">
         <div style="color:var(--muted);margin-bottom:12px;">${icon("download", 38)}</div>
-        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">Aktif İndirme Bulunmuyor</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">${t("downloads.emptyTitle")}</div>
         <div class="muted" style="margin-bottom:20px;max-width:420px;font-size:13px;line-height:1.5;">
-          Kütüphanenden dilediğin oyunu seçerek indirmeyi başlatabilir, indirme hızını ve disk durumunu buradan canlı takip edebilirsin.
+          ${t("downloads.emptyDesc")}
         </div>
         <div>
-          <button class="btn primary" data-act="goto-library">Kütüphaneye Git</button>
+          <button class="btn primary" data-act="goto-library">${t("downloads.goLibrary")}</button>
         </div>
       </div>
     `;
@@ -1409,7 +1410,7 @@ function renderDownloads(): string {
       `;
     }).join("");
   } else {
-    queueItemsMarkup = `<div class="muted" style="padding: 16px; background: #14161a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; font-size: 13px;">Kuyrukta bekleyen oyun yok.</div>`;
+    queueItemsMarkup = `<div class="muted" style="padding: 16px; background: #14161a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; font-size: 13px;">${t("downloads.queueEmpty")}</div>`;
   }
 
   const queueSection = `
@@ -1462,12 +1463,12 @@ function renderDownloads(): string {
   const settingsPanel = `
     <div class="dl-settings-panel">
       <div class="dl-settings-head">
-        <div class="dl-settings-title">${icon("settings", 16)} İndirme Ayarları</div>
-        <span class="dl-settings-hint">Bu tercihler tüm indirmelere uygulanır</span>
+        <div class="dl-settings-title">${icon("settings", 16)} ${t("downloads.settingsTitle")}</div>
+        <span class="dl-settings-hint">${t("downloads.settingsHint")}</span>
       </div>
       <div class="dl-settings-grid">
         <div class="dl-settings-field">
-          <div class="dl-settings-label">Ağ Profili (Bant Genişliği & Worker)</div>
+          <div class="dl-settings-label">${t("downloads.netProfile")}</div>
           <div class="net-profile-pills">
             <button class="net-profile-btn ${networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
               ${icon("zap", 13)} Maksimum (16 Worker)
@@ -1481,11 +1482,11 @@ function renderDownloads(): string {
           </div>
         </div>
         <div class="dl-settings-field">
-          <div class="dl-settings-label">Kurulum Klasörü</div>
+          <div class="dl-settings-label">${t("downloads.installDir")}</div>
           <div class="dl-settings-dir-row">
             <input id="dl-install-dir" class="text-input" value="${esc(epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(epicDefaultDir || "varsayılan")}" autocomplete="off" spellcheck="false" />
-            <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="Klasör Seç">${icon("folder", 15)}</button>
-            <button class="ps5-btn primary" data-act="dl-save-install-dir">Kaydet</button>
+            <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="${t("downloads.pickFolder")}">${icon("folder", 15)}</button>
+            <button class="ps5-btn primary" data-act="dl-save-install-dir">${t("common.save")}</button>
           </div>
         </div>
       </div>
@@ -1494,17 +1495,17 @@ function renderDownloads(): string {
 
   const headerAction = activeDl
     ? dlQueueStatus.isPaused
-      ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} Devam Et</button>`
-      : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} Duraklat</button>`
+      ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
+      : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
     : "";
 
   return `
     <div class="ps5-page ps5-downloads-page">
       <header class="ps5-page-header">
         <div class="ps5-header-main">
-          <div class="ps5-header-kicker">${icon("download", 14)} <span>AĞ & AKTARIM MERKEZİ</span></div>
-          <h1 class="ps5-header-title">İndirmeler</h1>
-          <p class="ps5-header-subtitle">Aktif kurulumlar, indirme kuyruğu ve anlık disk yazma performansı.</p>
+          <div class="ps5-header-kicker">${icon("download", 14)} <span>${t("downloads.kicker")}</span></div>
+          <h1 class="ps5-header-title">${t("downloads.title")}</h1>
+          <p class="ps5-header-subtitle">${t("downloads.subtitle")}</p>
         </div>
         <div class="ps5-header-actions">${headerAction}</div>
       </header>
@@ -1975,27 +1976,18 @@ function renderSettings(): string {
       </div>
     </div>
     <div class="settings-box">
-      <h3>${icon("globe", 16)} Dil Seçimi (Language)</h3>
-      <p>Launcher arayüzü ve yerel içeriklerin görüntüleneceği dili belirleyin.</p>
+      <h3>${icon("globe", 16)} ${t("settings.language")}</h3>
+      <p>${t("settings.languageDesc")}</p>
       <div class="lang-selection-group">
-        <button class="lang-option-btn ${appLanguage === "tr" ? "active" : ""}" data-act="set-app-language" data-lang="tr">
-          <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">TR</span>
-          <span class="lang-name">Türkçe</span>
-          <span class="lang-tag">Varsayılan</span>
-        </button>
-        <button class="lang-option-btn ${appLanguage === "en" ? "active" : ""}" data-act="set-app-language" data-lang="en">
-          <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">EN</span>
-          <span class="lang-name">English</span>
-          <span class="lang-tag ${appLanguage === "en" ? "" : "coming-soon"}">${appLanguage === "en" ? "Active" : "Yakında"}</span>
-        </button>
+        ${LANGUAGES.map(
+          (l) => `
+          <button class="lang-option-btn ${appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
+            <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">${esc(l.code.toUpperCase())}</span>
+            <span class="lang-name">${esc(l.label)}</span>
+            ${l.code === "tr" ? `<span class="lang-tag">${t("settings.defaultTag")}</span>` : ""}
+          </button>`,
+        ).join("")}
       </div>
-      <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5">
-        ${
-          appLanguage === "tr"
-            ? "Türkçe dili etkin. Goygoy Engine gibi yerel Türkçe eleştirmen incelemeleri ve yerelleştirilmiş içerikler gösterilir."
-            : "English selected. Yerel Türkçe içerikler (Goygoy Engine incelemeleri vb.) yabancı kullanıcılara gizlenir."
-        }
-      </p>
     </div>
     <div class="settings-box">
       <h3>${icon("camera", 16)} Ekran Görüntüleri (Screenshots)</h3>
@@ -6260,18 +6252,18 @@ function renderOnboarding(): string {
       <div class="onboarding-shell">
         <div class="onboarding-card ob-card-setup">
           <div class="ob-hero-mark">${icon("download", 34)}</div>
-          <h1 class="ob-title">Kurulum Gerekli</h1>
-          <p class="ob-lead">Epic oyunlarını yönetmek için açık kaynak <strong>legendary</strong> aracı gerekir. Tek seferlik olarak indirilir (~45 MB).</p>
-          ${epicBusy === "download" ? `<div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div><p class="ob-muted">${esc(setupMessage || "indiriliyor…")}</p>` : ""}
+          <h1 class="ob-title">${t("ob.setupTitle")}</h1>
+          <p class="ob-lead">${t("ob.setupLead")}</p>
+          ${epicBusy === "download" ? `<div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div><p class="ob-muted">${esc(setupMessage || t("ob.downloading"))}</p>` : ""}
           <div class="ob-actions">
-            <button class="ps5-btn primary" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? "İndiriliyor…" : "legendary'yi indir"}</button>
+            <button class="ps5-btn primary" data-act="epic-download" ${epicBusy ? "disabled" : ""}>${epicBusy ? t("ob.downloading") : t("ob.setupDownload")}</button>
           </div>
           <p class="ob-fineprint">Kaynak: github.com/legendary-gl/legendary (GPL-3.0)</p>
         </div>
       </div>`;
   }
 
-  const steps = ["Hoş Geldiniz", "Hesap Bağla", "Doğrulama"];
+  const steps = [t("ob.stepWelcome"), t("ob.stepLink"), t("ob.stepVerify")];
   const stepper = steps
     .map((label, i) => {
       const n = i + 1;
@@ -6287,62 +6279,62 @@ function renderOnboarding(): string {
     body = `
       <div class="ob-hero">
         <div class="ob-hero-mark">${icon("gamepad-2", 34)}</div>
-        <h1 class="ob-title">Efxlve Launcher'a Hoş Geldin</h1>
-        <p class="ob-lead">Epic Games kütüphaneni PlayStation konsol estetiğinde, yüksek performanslı ve bağımsız bir masaüstü deneyimiyle yönet.</p>
+        <h1 class="ob-title">${t("ob.welcomeTitle")}</h1>
+        <p class="ob-lead">${t("ob.welcomeLead")}</p>
         <div class="ob-features">
-          <div class="ob-feature">${icon("zap", 18)}<div><strong>Akıcı & Hafif</strong><span>120 FPS konsol arayüzü, düşük bellek tüketimi.</span></div></div>
-          <div class="ob-feature">${icon("gamepad-2", 18)}<div><strong>Kontrolcü Odaklı</strong><span>10 fit TV/koltuk kullanımı, DualSense ve Xbox desteği.</span></div></div>
-          <div class="ob-feature">${icon("shield-check", 18)}<div><strong>Güvenli Bağlantı</strong><span>Resmi Epic yetkilendirme kodu ile güvenli giriş.</span></div></div>
+          <div class="ob-feature">${icon("zap", 18)}<div><strong>${t("ob.f1Title")}</strong><span>${t("ob.f1Desc")}</span></div></div>
+          <div class="ob-feature">${icon("gamepad-2", 18)}<div><strong>${t("ob.f2Title")}</strong><span>${t("ob.f2Desc")}</span></div></div>
+          <div class="ob-feature">${icon("shield-check", 18)}<div><strong>${t("ob.f3Title")}</strong><span>${t("ob.f3Desc")}</span></div></div>
         </div>
         <div class="ob-actions">
-          <button class="ps5-btn primary" data-act="onboarding-goto" data-step="2">Başla ${icon("chevron-right", 15)}</button>
+          <button class="ps5-btn primary" data-act="onboarding-goto" data-step="2">${t("ob.start")} ${icon("chevron-right", 15)}</button>
         </div>
       </div>`;
   } else if (onboardingStep === 2) {
     body = `
       <div class="ob-head">
-        <h1 class="ob-title">Hesabını Bağla</h1>
-        <p class="ob-lead">Kütüphaneni görmek için Epic Games hesabını bağla. İki güvenli yöntemden birini seç.</p>
+        <h1 class="ob-title">${t("ob.linkTitle")}</h1>
+        <p class="ob-lead">${t("ob.linkLead")}</p>
       </div>
       <div class="ob-methods">
         <button class="ob-method" data-act="epic-import" ${epicBusy ? "disabled" : ""}>
           <div class="ob-method-icon">${icon("download", 22)}</div>
           <div class="ob-method-body">
-            <div class="ob-method-title">Tek Tıkla İçe Aktar</div>
-            <div class="ob-method-desc">Bilgisayarında resmi Epic Games Launcher kuruluysa oturumunu şifresiz aktar.</div>
+            <div class="ob-method-title">${t("ob.importTitle")}</div>
+            <div class="ob-method-desc">${t("ob.importDesc")}</div>
           </div>
-          <span class="ob-method-badge">${epicBusy === "import" ? "Aktarılıyor…" : "Önerilen"}</span>
+          <span class="ob-method-badge">${epicBusy === "import" ? t("ob.importing") : t("ob.recommended")}</span>
         </button>
         <button class="ob-method" data-act="onboarding-goto" data-step="3">
           <div class="ob-method-icon">${icon("external", 22)}</div>
           <div class="ob-method-body">
-            <div class="ob-method-title">Resmi Güvenli Kod</div>
-            <div class="ob-method-desc">Epic yetkilendirme sayfasından aldığın tek kullanımlık kodu yapıştır.</div>
+            <div class="ob-method-title">${t("ob.codeTitle")}</div>
+            <div class="ob-method-desc">${t("ob.codeDesc")}</div>
           </div>
           <span class="ob-method-arrow">${icon("chevron-right", 16)}</span>
         </button>
       </div>
       <div class="ob-actions">
-        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="1">${icon("arrow-left", 15)} Geri</button>
+        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="1">${icon("arrow-left", 15)} ${t("ob.back")}</button>
       </div>`;
   } else {
     body = `
       <div class="ob-head">
-        <h1 class="ob-title">Yetkilendirme Kodu</h1>
-        <p class="ob-lead">Aşağıdaki adımları izleyerek tek kullanımlık kodu al ve yapıştır.</p>
+        <h1 class="ob-title">${t("ob.verifyTitle")}</h1>
+        <p class="ob-lead">${t("ob.verifyLead")}</p>
       </div>
       <div class="ob-guide">
-        <div class="ob-guide-step"><span class="ob-guide-num">1</span><div><strong>Giriş sayfasını aç</strong><span>Epic hesabınla güvenli sayfada oturum aç.</span></div></div>
-        <div class="ob-guide-step"><span class="ob-guide-num">2</span><div><strong>Kodu kopyala</strong><span>Sayfadaki JSON yanıtındaki <code>authorizationCode</code> değerini kopyala.</span></div></div>
-        <div class="ob-guide-step"><span class="ob-guide-num">3</span><div><strong>Buraya yapıştır</strong><span>Kodu aşağıdaki alana yapıştırıp giriş yap.</span></div></div>
+        <div class="ob-guide-step"><span class="ob-guide-num">1</span><div><strong>${t("ob.g1Title")}</strong><span>${t("ob.g1Desc")}</span></div></div>
+        <div class="ob-guide-step"><span class="ob-guide-num">2</span><div><strong>${t("ob.g2Title")}</strong><span>${t("ob.g2Desc")}</span></div></div>
+        <div class="ob-guide-step"><span class="ob-guide-num">3</span><div><strong>${t("ob.g3Title")}</strong><span>${t("ob.g3Desc")}</span></div></div>
       </div>
       <div class="ob-actions ob-actions-column">
-        <button class="ps5-btn secondary" data-act="epic-open-login">${icon("external", 15)} Epic giriş sayfasını aç</button>
+        <button class="ps5-btn secondary" data-act="epic-open-login">${icon("external", 15)} ${t("ob.openLogin")}</button>
         <input id="epic-code" class="ps5-input ob-code-input" placeholder='{"authorizationCode": "..."}' autocomplete="off" spellcheck="false" />
-        <button class="ps5-btn primary" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? "Giriş yapılıyor…" : "Giriş yap"}</button>
+        <button class="ps5-btn primary" data-act="epic-do-login" ${epicBusy ? "disabled" : ""}>${epicBusy === "login" ? t("ob.loggingIn") : t("ob.login")}</button>
       </div>
       <div class="ob-actions">
-        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="2">${icon("arrow-left", 15)} Geri</button>
+        <button class="ps5-btn secondary" data-act="onboarding-goto" data-step="2">${icon("arrow-left", 15)} ${t("ob.back")}</button>
       </div>`;
   }
 
@@ -9616,8 +9608,11 @@ document.addEventListener("click", (e) => {
     if (lang && lang !== appLanguage) {
       appLanguage = lang;
       localStorage.setItem(LANG_KEY, lang);
-      toast(lang === "tr" ? "Dil Türkçe olarak ayarlandı" : "Language set to English", "ok");
-      render();
+      void setLanguage(lang).then(() => {
+        updateOfflineModeUi();
+        toast(lang === "tr" ? "Dil Türkçe olarak ayarlandı" : "Language updated", "ok");
+        render();
+      });
     }
   } else if (act === "manage-save-args" && id && activeManageSettings) {
     const input = document.getElementById("manage-args-input") as HTMLInputElement | null;
@@ -10556,6 +10551,10 @@ async function init(): Promise<void> {
   createIcons({
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2 },
   });
+  // Seçili dili yükle, yönü (LTR/RTL) uygula ve statik üst bar metinlerini çevir.
+  await setLanguage(appLanguage);
+  applyStaticTranslations();
+  updateOfflineModeUi();
   if (isTauri) {
     try {
       libraryPath = await invoke<string>("library_dir");
