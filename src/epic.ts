@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { NO_DESC } from "./core/constants";
+
 /* ---------- Tipler (Rust modelleriyle birebir, snake_case) ---------- */
 
 export interface EpicGameAsset {
@@ -154,7 +156,7 @@ export function epicVersion(g: EpicGame): string {
 
 export function epicDescription(g: EpicGame): string {
   const d = g.metadata?.description;
-  return typeof d === "string" && d ? d : "Açıklama yok.";
+  return typeof d === "string" && d ? d : NO_DESC;
 }
 
 export function isDlc(g: EpicGame): boolean {

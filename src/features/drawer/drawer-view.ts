@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
-import { isTauri } from "../../core/constants";
+import { isTauri, NO_DESC } from "../../core/constants";
 import { t } from "../../i18n";
 import { modalRoot } from "../../core/dom";
 
@@ -116,7 +116,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
       criticVal = `${critic.goygoy_review.score} • Goygoy`;
       criticTierClass = "tier-goygoy";
     } else if (showGoygoy && critic.goygoy_review) {
-      criticVal = "Goygoy İnceleme";
+      criticVal = t("drawer.goygoyReview");
       criticTierClass = "tier-goygoy";
     }
   }
@@ -124,19 +124,19 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   const isRunning = S.runningGames.has(appName);
   const primary =
     p !== null
-      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">%${p} indiriliyor…</button>`
+      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
       : isRunning
-        ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> Oynanıyor…</button>`
+        ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
-          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} Hemen Oyna</button>`
+          ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
           : partner
-            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${esc(partner.name)} ile Başlat / Yükle</button>`
-            : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} Yükle</button>`;
+            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner.name) })}</button>`
+            : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
 
   const rawDesc = s.description?.trim();
   const hasRealDesc =
     rawDesc &&
-    rawDesc !== "Açıklama yok." &&
+    rawDesc !== NO_DESC &&
     rawDesc !== s.title &&
     rawDesc.length > 25;
   const descHtml = hasRealDesc
@@ -166,7 +166,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
         }
         const capEl = document.getElementById("hub-stat-hltb-val");
         if (capEl && S.currentModalAppName === appName) {
-          capEl.textContent = data?.main_story ? `~${data.main_story} sa` : (data?.main_extra ? `~${data.main_extra} sa` : "—");
+          capEl.textContent = data?.main_story ? `~${data.main_story} ${t("common.hoursShort")}` : (data?.main_extra ? `~${data.main_extra} ${t("common.hoursShort")}` : "—");
         }
       })
       .catch(() => {
@@ -265,38 +265,38 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   modalRoot.innerHTML = `
     <div class="overlay" data-act="close">
       <div class="game-hub">
-        <!-- 4K Sinematik Arka Plan & Derin PS5 Atmosferik Degrade -->
-        <div class="hub-backdrop">
-          ${art ? `<img src="${art}" alt="" />` : `<div class="hub-fallback-art">${icon("gamepad-2", 64)}</div>`}
-          <div class="hub-backdrop-gradient"></div>
-        </div>
+              <!-- 4K cinematic backdrop with deep PS5 atmospheric gradient -->
+              <div class="hub-backdrop">
+                ${art ? `<img src="${art}" alt="" />` : `<div class="hub-fallback-art">${icon("gamepad-2", 64)}</div>`}
+                <div class="hub-backdrop-gradient"></div>
+              </div>
 
-        <!-- 1260px Genişliğindeki Konsol Sahnesi -->
-        <div class="hub-stage">
-          <!-- Üst Bar: Geri Butonu & Araçlar -->
-          <div class="hub-topbar">
-            <button class="hub-back-btn" data-act="close" title="Kütüphaneye Dön (ESC)">
-              ${icon("arrow-left", 16)}
-              <span>Kütüphane</span>
+              <!-- 1260px console stage -->
+              <div class="hub-stage">
+                <!-- Top bar: back button & tools -->
+                <div class="hub-topbar">
+                  <button class="hub-back-btn" data-act="close" title="${t("drawer.backToLibrary")}">
+                    ${icon("arrow-left", 16)}
+                    <span>${t("drawer.library")}</span>
               <span class="hub-back-esc">ESC</span>
             </button>
-            <div class="hub-topbar-tools">
-              <button class="hub-tool-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="Afiş ve Kapak Görselini Özelleştir">
-                ${icon("image", 15)}
-              </button>
-              <button class="hub-tool-btn" data-act="close" title="Kapat">
-                ${icon("x", 16)}
-              </button>
-            </div>
-          </div>
+                  <div class="hub-topbar-tools">
+                    <button class="hub-tool-btn" data-act="open-custom-cover" data-target="hero" data-id="${s.appName}" title="${t("drawer.customizeCover")}">
+                      ${icon("image", 15)}
+                    </button>
+                    <button class="hub-tool-btn" data-act="close" title="${t("common.close")}">
+                      ${icon("x", 16)}
+                    </button>
+                  </div>
+                </div>
 
-          <!-- Hero Başlık ve Hızlı Kapsül -->
-          <div class="hub-hero">
-            <div class="hub-hero-main">
-              <h1 class="hub-title">${esc(s.title)}</h1>
-              <div class="hub-meta-subline">
-                ${dev ? `<span class="meta-item dev">${esc(dev)}</span><span class="meta-dot">•</span>` : ""}
-                <span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
+                <!-- Hero title and quick capsule -->
+                <div class="hub-hero">
+                  <div class="hub-hero-main">
+                    <h1 class="hub-title">${esc(s.title)}</h1>
+                    <div class="hub-meta-subline">
+                      ${dev ? `<span class="meta-item dev">${esc(dev)}</span><span class="meta-dot"></span>` : ""}
+                      <span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? t("common.installed") : t("common.notInstalled")}</span>
                 ${partner ? `<span class="meta-dot">•</span><span class="meta-item partner" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
                 ${antiCheat ? `<span class="meta-dot">•</span><span class="meta-item anticheat" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
                 ${s.updateAvailable ? `<span class="meta-dot">•</span><span class="meta-item warn">${icon("zap", 11)} ${t("drawer.updateAvailable")}</span>` : ""}
@@ -338,7 +338,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
             </div>
           </div>
 
-          <!-- Sekme Başlıkları -->
+                <!-- Tab headers -->
           <div class="drawer-tabs-wrapper">
             <div class="drawer-tabs-fade left">
               <button class="drawer-tabs-arrow left" data-act="drawer-tabs-scroll" data-dir="left" title="${t("drawer.scrollLeft")}">
@@ -496,7 +496,7 @@ export function renderDrawerOverview(
   const reqData = S.loadedRequirements.get(s.appName);
   const achSum = S.epicAchSummaries[s.appName];
 
-  // Koleksiyon etiketleri (Eklentiler sekmesi yukarıda olduğu için burada yalnızca koleksiyonlar listelenir)
+  // Collection tags (the add-ons tab is separate, so only collections are listed here).
   let tagsHtml = "";
   if (gameCols.length > 0) {
     const pills = gameCols.map((c) => `
@@ -513,7 +513,7 @@ export function renderDrawerOverview(
   const rawDesc = s.description?.trim();
   const hasRealDesc =
     rawDesc &&
-    rawDesc !== "Açıklama yok." &&
+    rawDesc !== NO_DESC &&
     rawDesc !== s.title &&
     rawDesc.length > 25;
   const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : null);
@@ -953,7 +953,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     return `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:12px;color:var(--muted)">
         <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600">Epic Games Store başarımları yükleniyor…</div>
+        <div style="font-size:13px;font-weight:600">${t("ach.loadingStore")}</div>
       </div>`;
   }
 
@@ -962,7 +962,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     return `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:12px;color:var(--muted)">
         <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600">Başarımlar kontrol ediliyor…</div>
+        <div style="font-size:13px;font-weight:600">${t("ach.checking")}</div>
       </div>`;
   }
 
@@ -971,26 +971,26 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       return `
         <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
           <div style="color:var(--muted);margin-bottom:8px">${icon("gamepad-2", 32)}</div>
-          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">${esc(partner.name)} Başarımları</div>
-          <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 14px">Bu oyunun başarımları doğrudan <strong>${esc(partner.name)}</strong> üzerinden takip edilmektedir.</div>
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">${t("ach.partnerTitle", { name: esc(partner.name) })}</div>
+          <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 14px">${t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` })}</div>
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-            <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
-            <button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${esc(partner.name)}'i Aç</button>
+            <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} ${t("ach.retry")}</button>
+            <button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("ach.openPartner", { name: esc(partner.name) })}</button>
           </div>
         </div>`;
     }
     return `
       <div style="text-align:center;padding:30px 16px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
         <div style="color:var(--muted);margin-bottom:8px">${icon("trophy", 32)}</div>
-        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Başarım Desteği Bulunmuyor</div>
-        <div style="font-size:12px;color:var(--muted);max-width:300px;margin:0 auto 14px">Bu oyun için Epic Games Store üzerinde tanımlı başarım bulunmuyor.</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">${t("ach.noSupportTitle")}</div>
+        <div style="font-size:12px;color:var(--muted);max-width:300px;margin:0 auto 14px">${t("ach.noSupportDesc")}</div>
         <div style="display:flex;justify-content:center;gap:8px">
-          <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
+          <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} ${t("ach.retry")}</button>
         </div>
       </div>`;
   }
 
-  // Katalog metadatasıyla anında zenginleştir (gizli başarımlar ve ana oyun bayrakları)
+  // Enrich instantly from catalog metadata (hidden achievements and base-game flags).
   enrichAchievementsData(s.appName, data);
 
   const dlcItems = data.achievements.filter((a) => !a.is_base);
@@ -1001,17 +1001,17 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
 
 
-  // Filtreleme (Arama sorgusu, Durum)
+  // Filtering (search query, status).
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filteredItems = data.achievements.filter((a) => {
-    // 1. Durum (Status)
+    // 1. Status
     const isUnlocked = a.unlocked || isDemo;
     if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
     if (S.activeAchFilter === "locked" && isUnlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
 
-    // 2. Arama Sorgusu
+    // 2. Search query
     if (query) {
       const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);
       const matchDesc = (a.description || "").toLowerCase().includes(query);
@@ -1021,7 +1021,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     return true;
   });
 
-  // Sıralama (Sort)
+  // Sorting
   const sortedItems = [...filteredItems].sort((a, b) => {
     if (S.achSortOrder === "rarity") {
       const ra = a.rarity?.percent ?? 100;
@@ -1036,10 +1036,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       const db = b.unlock_date ? new Date(b.unlock_date).getTime() : 0;
       return db - da;
     }
-    return 0; // varsayılan katalog sırası
+    return 0; // default catalog order
   });
 
-  // PlayStation 4-Seviyeli Kupa Sayımı (Trophy Breakdown)
+  // PlayStation four-tier trophy breakdown.
   let platTotal = 0, platUnlocked = 0;
   let goldTotal = 0, goldUnlocked = 0;
   let silverTotal = 0, silverUnlocked = 0;
@@ -1067,14 +1067,14 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const effPlatTotal = platTotal > 0 ? platTotal : (showPlat ? 1 : 0);
   const effPlatUnlocked = platTotal > 0 ? platUnlocked : (isPlat ? 1 : 0);
 
-  // Sayaçlar (Status Chips için)
+  // Counters (for the status chips)
   const scopedAll = data.achievements;
   const scopedUnlocked = isDemo ? scopedAll.length : scopedAll.filter((a) => a.unlocked).length;
   const scopedLocked = scopedAll.length - scopedUnlocked;
   const scopedHidden = scopedAll.filter((a) => a.hidden).length;
 
   return `
-    <!-- 1. PS5 Kompakt Başarım Özet Çubuğu -->
+    <!-- 1. PS5 compact achievement summary bar -->
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-left">
         <div class="ach-progress-ring" style="position:relative">
@@ -1088,59 +1088,59 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         </div>
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
-          <span class="ach-summary-sub">${isPlat ? "Platin Kupa Tamamlandı!" : `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP`}</span>
+          <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP`}</span>
         </div>
       </div>
       <div class="ach-summary-right">
-        ${effPlatTotal > 0 ? `<span class="ach-tier-mini plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="Platin">${epicPlatinumIcon(11)} ${effPlatUnlocked}/${effPlatTotal}</span>` : ""}
-        ${goldTotal > 0 ? `<span class="ach-tier-mini gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="Altın">${icon("trophy", 11)} ${goldUnlocked}/${goldTotal}</span>` : ""}
-        ${silverTotal > 0 ? `<span class="ach-tier-mini silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="Gümüş">${icon("trophy", 11)} ${silverUnlocked}/${silverTotal}</span>` : ""}
-        ${bronzeTotal > 0 ? `<span class="ach-tier-mini bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="Bronz">${icon("trophy", 11)} ${bronzeUnlocked}/${bronzeTotal}</span>` : ""}
+        ${effPlatTotal > 0 ? `<span class="ach-tier-mini plat ${effPlatUnlocked >= effPlatTotal ? "complete" : ""}" title="${t("ach.tierPlatinum")}">${epicPlatinumIcon(11)} ${effPlatUnlocked}/${effPlatTotal}</span>` : ""}
+        ${goldTotal > 0 ? `<span class="ach-tier-mini gold ${goldUnlocked >= goldTotal ? "complete" : ""}" title="${t("ach.tierGold")}">${icon("trophy", 11)} ${goldUnlocked}/${goldTotal}</span>` : ""}
+        ${silverTotal > 0 ? `<span class="ach-tier-mini silver ${silverUnlocked >= silverTotal ? "complete" : ""}" title="${t("ach.tierSilver")}">${icon("trophy", 11)} ${silverUnlocked}/${silverTotal}</span>` : ""}
+        ${bronzeTotal > 0 ? `<span class="ach-tier-mini bronze ${bronzeUnlocked >= bronzeTotal ? "complete" : ""}" title="${t("ach.tierBronze")}">${icon("trophy", 11)} ${bronzeUnlocked}/${bronzeTotal}</span>` : ""}
         <div class="ach-summary-tools">
-          <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="Verileri Yeniden Sorgula">${icon("refresh", 13)}</button>
-          <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="Epic Games Store'da Gör">${icon("external", 13)}</button>
+          <button class="ach-tool-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 13)}</button>
+          <button class="ach-tool-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 13)}</button>
         </div>
       </div>
     </div>
 
-    <!-- 2. Arama & Sıralama Barı -->
+    <!-- 2. Search & sort bar -->
     <div class="ach-toolbar">
-      <!-- Canlı Arama Kutusu -->
+      <!-- Live search box -->
       <div class="ach-search-wrap">
         <span class="ach-search-icon">${icon("search", 13)}</span>
-        <input type="text" id="ach-search-input" class="ach-search-field" placeholder="Başarım ara..." value="${esc(S.achSearchQuery)}" autocomplete="off" />
-        ${S.achSearchQuery ? `<button class="ach-search-clear" data-act="clear-ach-search" title="Aramayı Temizle">${icon("x", 12)}</button>` : ""}
+        <input type="text" id="ach-search-input" class="ach-search-field" placeholder="${t("ach.searchPlaceholder")}" value="${esc(S.achSearchQuery)}" autocomplete="off" />
+        ${S.achSearchQuery ? `<button class="ach-search-clear" data-act="clear-ach-search" title="${t("ach.clearSearch")}">${icon("x", 12)}</button>` : ""}
       </div>
 
-      <!-- Sıralama Seçimi -->
+      <!-- Sort selection -->
       <div class="ach-sort-wrap">
-        <select id="ach-sort-select" class="ach-sort-select" title="Sıralama Düzeni">
-          <option value="default" ${S.achSortOrder === "default" ? "selected" : ""}>Varsayılan Sıra</option>
-          <option value="rarity" ${S.achSortOrder === "rarity" ? "selected" : ""}>Nadirliğe Göre</option>
-          <option value="xp" ${S.achSortOrder === "xp" ? "selected" : ""}>XP'ye Göre</option>
-          <option value="date" ${S.achSortOrder === "date" ? "selected" : ""}>Kazanılma Tarihine Göre</option>
+        <select id="ach-sort-select" class="ach-sort-select" title="${t("ach.sortTitle")}">
+          <option value="default" ${S.achSortOrder === "default" ? "selected" : ""}>${t("ach.sortDefault")}</option>
+          <option value="rarity" ${S.achSortOrder === "rarity" ? "selected" : ""}>${t("ach.sortRarity")}</option>
+          <option value="xp" ${S.achSortOrder === "xp" ? "selected" : ""}>${t("ach.sortXp")}</option>
+          <option value="date" ${S.achSortOrder === "date" ? "selected" : ""}>${t("ach.sortDate")}</option>
         </select>
       </div>
     </div>
 
-    <!-- 3. PlayStation Konsol Tarzı Durum Sekmeleri -->
+    <!-- 3. PlayStation-style status tabs -->
     <div class="ach-status-strip">
       <button class="ach-status-chip ${S.activeAchFilter === "all" ? "active" : ""}" data-act="ach-filter" data-val="all">
-        Tümü <span class="ach-chip-num">${scopedAll.length}</span>
+        ${t("ach.filterAll")} <span class="ach-chip-num">${scopedAll.length}</span>
       </button>
       <button class="ach-status-chip ${S.activeAchFilter === "unlocked" ? "active" : ""}" data-act="ach-filter" data-val="unlocked">
-        ${icon("check", 11)} Kazanılanlar <span class="ach-chip-num">${scopedUnlocked}</span>
+        ${icon("check", 11)} ${t("ach.filterUnlocked")} <span class="ach-chip-num">${scopedUnlocked}</span>
       </button>
       <button class="ach-status-chip ${S.activeAchFilter === "locked" ? "active" : ""}" data-act="ach-filter" data-val="locked">
-        ${icon("lock", 11)} Kilitliler <span class="ach-chip-num">${scopedLocked}</span>
+        ${icon("lock", 11)} ${t("ach.filterLocked")} <span class="ach-chip-num">${scopedLocked}</span>
       </button>
       ${scopedHidden > 0 ? `
       <button class="ach-status-chip ${S.activeAchFilter === "hidden" ? "active" : ""}" data-act="ach-filter" data-val="hidden">
-        ${icon("eye", 11)} Gizli <span class="ach-chip-num">${scopedHidden}</span>
+        ${icon("eye", 11)} ${t("ach.filterHidden")} <span class="ach-chip-num">${scopedHidden}</span>
       </button>` : ""}
     </div>
 
-    <!-- 4. Gruplandırılmış Başarım Listesi -->
+    <!-- 4. Grouped achievement list -->
     <div class="ach-list-container" id="ach-list-container">
       ${renderAchievementSections(sortedItems, s, hasDlc, data.achievements)}
     </div>
@@ -1175,7 +1175,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
       S.epicAchSummaries[appName].is_platinum = data.is_platinum;
     }
   } catch (e) {
-    console.warn("Başarımlar alınamadı veya bu oyun için başarım desteği yok:", e);
+    console.warn("Achievements could not be fetched or this game has no achievement support:", e);
     S.loadedAchievements.set(appName, {
       achievements: [],
       hidden: [],
@@ -1193,14 +1193,14 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
   }
 }
 
-/* ---------- Sistem Gereksinimleri UI ---------- */
+/* ---------- System requirements UI ---------- */
 
 export function renderDrawerSystemRequirements(s: EpicSummary): string {
   if (S.loadingReqFor === s.appName) {
     return `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px;color:var(--muted)">
         <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600">Epic Games Store sistem gereksinimleri alınıyor…</div>
+        <div style="font-size:13px;font-weight:600">${t("sys.loadingStore")}</div>
       </div>`;
   }
 
@@ -1212,7 +1212,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
     return `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px;color:var(--muted)">
         <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600">Sistem gereksinimleri alınıyor…</div>
+        <div style="font-size:13px;font-weight:600">${t("sys.loading")}</div>
       </div>`;
   }
 
@@ -1220,11 +1220,11 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
     return `
       <div style="text-align:center;padding:36px 18px;background:rgba(0,0,0,0.2);border:1px dashed var(--border);border-radius:12px">
         <div style="color:var(--muted);margin-bottom:10px">${icon("cpu", 36)}</div>
-        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">Gereksinim Tablosu Bulunamadı</div>
-        <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 16px;line-height:1.5">Bu oyun için Epic Games Store üzerinde doğrudan donanım tablosu tanımlanmamış olabilir.</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">${t("sys.notFoundTitle")}</div>
+        <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 16px;line-height:1.5">${t("sys.notFoundDesc")}</div>
         <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-          <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} Tekrar Dene</button>
-          <button class="btn play small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Mağaza Sayfası'na Git</button>
+          <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} ${t("common.retry")}</button>
+          <button class="btn play small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("sys.goStore")}</button>
         </div>
       </div>`;
   }
@@ -1242,7 +1242,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
 
   const renderDetailList = (items: SystemDetailItem[], isMin: boolean) => {
     if (items.length === 0) {
-      return `<div style="font-size:11.5px;color:var(--muted);padding:8px">Gereksinim belirtilmemiş.</div>`;
+      return `<div style="font-size:11.5px;color:var(--muted);padding:8px">${t("sys.unspecified")}</div>`;
     }
     return items
       .map((d) => {
@@ -1265,7 +1265,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ? `<div class="sys-req-lang-card">
           <div class="sys-req-lang-head">
             ${icon("globe", 13)}
-            <span>Desteklenen Diller</span>
+            <span>${t("sys.languages")}</span>
           </div>
           <div class="sys-req-lang-body">${esc(data.languages.join(" • "))}</div>
         </div>`
@@ -1278,10 +1278,10 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
           ? `
           <div class="sys-req-platforms">
             <button class="sys-req-plat-pill ${isWinSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Windows">
-              ${icon("layers", 13)} Windows (PC)
+              ${icon("layers", 13)} ${t("sys.windowsPc")}
             </button>
             <button class="sys-req-plat-pill ${isMacSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Mac">
-              ${icon("monitor", 13)} macOS
+              ${icon("monitor", 13)} ${t("sys.macos")}
             </button>
           </div>`
           : ""
@@ -1290,8 +1290,8 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       <div class="sys-req-cards-grid">
         <div class="sys-req-card min">
           <div class="sys-req-card-head">
-            <div class="sys-req-badge min">${icon("cpu", 12)} Minimum Gereksinimler</div>
-            <div class="sys-req-hint">Oyunu açıp oynamak için gereken temel donanım</div>
+            <div class="sys-req-badge min">${icon("cpu", 12)} ${t("sys.minTitle")}</div>
+            <div class="sys-req-hint">${t("sys.minHint")}</div>
           </div>
           <div class="sys-req-body">
             ${renderDetailList(minItems, true)}
@@ -1303,8 +1303,8 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
             ? `
           <div class="sys-req-card rec">
             <div class="sys-req-card-head">
-              <div class="sys-req-badge rec">${icon("rocket", 12)} Önerilen Gereksinimler</div>
-              <div class="sys-req-hint">Yüksek kare hızı ve akıcı grafik deneyimi için</div>
+              <div class="sys-req-badge rec">${icon("rocket", 12)} ${t("sys.recTitle")}</div>
+              <div class="sys-req-hint">${t("sys.recHint")}</div>
             </div>
             <div class="sys-req-body">
               ${renderDetailList(recItems, false)}
@@ -1317,8 +1317,8 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${languagesHtml}
 
       <div class="sys-req-footer">
-        <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} Yeniden Sorgula</button>
-        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} Epic Mağazası'nda Aç</button>
+        <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 12)} ${t("sys.requery")}</button>
+        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("sys.openStore")}</button>
       </div>
     </div>`;
 }
@@ -1331,17 +1331,17 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
     const data = await epicGetSystemRequirements(title, appName, forceRefresh);
     S.loadedRequirements.set(appName, data);
 
-    // Açıklaması olmayan oyunlarda mağaza açıklamasını güncelle
+    // Fill in the store description for games that lack one.
     if (data.shortDescription || data.description) {
       const curSummary = S.epicSummaries.find((x) => x.appName === appName);
       const sDesc = curSummary?.description?.trim();
-      const needsDesc = !sDesc || sDesc === "Açıklama yok." || sDesc === curSummary?.title || sDesc.length <= 25;
+      const needsDesc = !sDesc || sDesc === NO_DESC || sDesc === curSummary?.title || sDesc.length <= 25;
       if (needsDesc && curSummary) {
         curSummary.description = data.shortDescription || cleanStoreDescription(data.description || "");
       }
     }
 
-    // Modal açıksa ve Genel Bakış (overview) sekmesindeyse, arayüzü DOM üzerinde yerinde güncelle
+    // If the modal is open on the overview tab, update the DOM in place.
     if (S.currentModalAppName === appName && S.activeDrawerTab === "overview") {
       const descEl = document.getElementById("hub-desc-text");
       if (descEl && (data.shortDescription || data.description)) {
@@ -1359,7 +1359,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       }
     }
   } catch (e) {
-    console.warn("Sistem gereksinimleri alınamadı:", e);
+    console.warn("System requirements could not be fetched:", e);
     S.loadedRequirements.set(appName, {
       supported: false,
       systems: [],
@@ -1381,7 +1381,7 @@ export async function epicOpenFolder(appName: string): Promise<void> {
     (S.activeManageSettings?.appName === appName ? S.activeManageSettings.installPath : null) ||
     s?.installPath;
   if (!targetPath) {
-    toast("Kurulum klasörü bilinmiyor", "err");
+    toast(t("common.installPathUnknown"), "err");
     return;
   }
   try {

@@ -103,6 +103,13 @@ export async function fetchGames(): Promise<Game[]> {
 /* localStorage keys and state hydration helpers.                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Internal sentinel stored in `EpicSummary.description` when the store item has
+ * no description. It is never rendered raw (UI guards against it) and is kept
+ * language-neutral in code so cache identity checks stay stable.
+ */
+export const NO_DESC = "Açıklama yok.";
+
 /** Selected UI language. */
 export const LANG_KEY = "efxlve-lang";
 /** Demo platinum trophy set. */
