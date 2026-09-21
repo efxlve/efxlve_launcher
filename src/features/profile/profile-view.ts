@@ -138,7 +138,7 @@ export function renderProfile(): string {
     totalPlaytimeSec += r.total_seconds || 0;
   }
   const totalPlaytimeStr = fmtPlaytime(totalPlaytimeSec);
-  const totalOwnedGames = S.epicSummaries.length || S.games.length;
+  const totalOwnedGames = S.epicSummaries.length;
 
   const allGames = prof?.games || [];
 

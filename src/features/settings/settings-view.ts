@@ -286,12 +286,9 @@ export function renderSettings(): string {
 
     <div class="settings-box">
       <h3>${t("settings.systemTitle")}</h3>
-      <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendDemo")}</p>
+      <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</p>
       <p><strong>${t("settings.libraryFolder")}:</strong><br /><code>${esc(S.libraryPath)}</code></p>
       <p><strong>${t("settings.version")}:</strong> 0.1.0</p>
-      <p style="margin-top:16px">
-        <button class="btn ghost" data-act="reset-demo">${t("settings.resetDemo")}</button>
-      </p>
     </div>`;
 }
 

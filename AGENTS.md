@@ -58,7 +58,7 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
 
 - **Heroic Prensibi:** Arayüz ÖNCE disk önbelleğinden anında okunur (`epic_cached_library`), ağ senkronu (`epic_list_games`) arka planda sessizce yürütülür. Ağ başarısız olsa bile arayüz kilitlenmez, önbellek korunur. Asla tüm kütüphaneyi tek `list` çağrısına bağlama.
 - **Modüler Yapı (hedef mimari — [`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)):**
-  - `src/core/`: `types.ts`, `constants.ts`, `utils.ts`, `icons.ts`, `i18n.ts`, `state.ts`, `dom.ts`, `toast.ts`, `render.ts`, `selectors.ts`, `game-view.ts`, `nav.ts`, `recent.ts`, `epic-actions.ts`, `collection-icons.ts`, `window.ts`, `demo.ts`; `epic.ts` (API/Invoke barrel) ✅.
+  - `src/core/`: `types.ts`, `constants.ts`, `utils.ts`, `icons.ts`, `i18n.ts`, `state.ts`, `dom.ts`, `toast.ts`, `render.ts`, `selectors.ts`, `game-view.ts`, `nav.ts`, `recent.ts`, `epic-actions.ts`, `collection-icons.ts`, `window.ts`; `epic.ts` (API/Invoke barrel) ✅.
   - `src/features/`: `library/`, `drawer/`, `profile/`, `downloads/`, `gamepad/`, `store/`, `settings/`, `screenshots/`, `collections/`, `move-game/`, `dlc/`, `manage/`, `cover/`, `playtime/`, `onboarding/`, `context-menu/`, `events/` ✅.
   - `src/styles/`: 24 parçalanmış modüler CSS + `index.css` (tek giriş noktası) ✅.
   - `src/locales/`: 15 dil JSON'u ✅.

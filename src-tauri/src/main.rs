@@ -4,75 +4,13 @@
 mod legendary;
 mod presence;
 
-use std::{collections::HashMap, sync::Mutex, time::Duration};
+use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, State};
-
-// camelCase: names identical to the frontend (TS) (sizeMb, installPath...)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Game {
-    id: String,
-    title: String,
-    genre: String,
-    /// 0 = free, otherwise the TRY price
-    price: f32,
-    size_mb: u64,
-    version: String,
-    installed: bool,
-    install_path: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct InstallProgress {
-    id: String,
-    progress: u8,
-    done: bool,
-}
+use tauri::{AppHandle, Manager};
 
 pub struct AppState {
-    games: Mutex<Vec<Game>>,
     pub epic_dl: Mutex<legendary::transfers::EpicDlState>,
-}
-
-/// Store catalog (demo data). In the real project this is fed from an API.
-fn default_catalog() -> Vec<Game> {
-    vec![
-        Game { id: "anadolu-efsaneleri".into(), title: "Anadolu Efsaneleri".into(), genre: "RPG".into(), price: 0.0, size_mb: 4200, version: "1.4.2".into(), installed: false, install_path: None },
-        Game { id: "neon-surucu".into(), title: "Neon Sürücü".into(), genre: "Yarış".into(), price: 249.0, size_mb: 8100, version: "2.0.1".into(), installed: false, install_path: None },
-        Game { id: "uzay-madencisi".into(), title: "Uzay Madencisi".into(), genre: "Simülasyon".into(), price: 149.0, size_mb: 2300, version: "0.9.7".into(), installed: false, install_path: None },
-        Game { id: "kale-kusatmasi".into(), title: "Kale Kuşatması".into(), genre: "Strateji".into(), price: 399.0, size_mb: 12500, version: "3.2.0".into(), installed: false, install_path: None },
-        Game { id: "piksel-ciftligi".into(), title: "Piksel Çiftliği".into(), genre: "Bağımsız".into(), price: 99.0, size_mb: 900, version: "1.1.0".into(), installed: false, install_path: None },
-        Game { id: "derin-dehlizler".into(), title: "Derin Dehlizler".into(), genre: "Roguelike".into(), price: 0.0, size_mb: 1600, version: "1.0.5".into(), installed: false, install_path: None },
-    ]
-}
-
-/// File where installed games are kept: <app_data>/library.json
-fn library_file(app: &AppHandle) -> std::path::PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("library.json")
-}
-
-/// id -> install folder mapping
-fn load_library(app: &AppHandle) -> HashMap<String, String> {
-    std::fs::read_to_string(library_file(app))
-        .ok()
-        .and_then(|data| serde_json::from_str(&data).ok())
-        .unwrap_or_default()
-}
-
-fn save_library(app: &AppHandle, lib: &HashMap<String, String>) {
-    let path = library_file(app);
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    if let Ok(data) = serde_json::to_string_pretty(lib) {
-        let _ = std::fs::write(path, data);
-    }
 }
 
 /// Epic/Legendary settings (`<app_data>/settings.json`).
@@ -118,16 +56,11 @@ pub fn save_settings(app: &AppHandle, s: &EpicSettings) {
 }
 
 #[tauri::command]
-fn list_games(state: State<'_, AppState>) -> Vec<Game> {
-    state.games.lock().map(|g| g.clone()).unwrap_or_default()
-}
-
-#[tauri::command]
 fn library_dir(app: AppHandle) -> String {
     app.path()
         .app_data_dir()
         .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|_| "bilinmiyor".into())
+        .unwrap_or_else(|_| "unknown".into())
 }
 
 /// Shows the Epic Store as an embedded webview inside the MAIN window.
@@ -1301,114 +1234,13 @@ fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> 
     window.set_decorations(decorations).map_err(|e| e.to_string())
 }
 
-/// Demo install: emits progress via the "download-progress" event.
-#[tauri::command]
-fn install_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
-    {
-        let games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
-        if game.installed {
-            return Err("Oyun zaten kurulu".into());
-        }
-    }
-
-    let steps: u32 = 20;
-    for i in 1..=steps {
-        std::thread::sleep(Duration::from_millis(120));
-        let _ = app.emit(
-            "download-progress",
-            InstallProgress { id: id.clone(), progress: (i * 100 / steps) as u8, done: false },
-        );
-    }
-
-    let title = {
-        let mut games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter_mut().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
-        let dir = library_file(&app);
-        let base = dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(std::env::temp_dir);
-        let install_dir = base.join("games").join(&game.id);
-        let _ = std::fs::create_dir_all(&install_dir);
-        game.installed = true;
-        game.install_path = Some(install_dir.to_string_lossy().to_string());
-        game.title.clone()
-    };
-
-    let mut lib = load_library(&app);
-    let path = state
-        .games
-        .lock()
-        .map_err(|e| e.to_string())?
-        .iter()
-        .find(|g| g.id == id)
-        .and_then(|g| g.install_path.clone())
-        .unwrap_or_default();
-    lib.insert(id.clone(), path);
-    save_library(&app, &lib);
-
-    let _ = app.emit("download-progress", InstallProgress { id, progress: 100, done: true });
-    Ok(format!("{title} kuruldu"))
-}
-
-#[tauri::command]
-fn launch_game(state: State<'_, AppState>, id: String) -> Result<String, String> {
-    let games = state.games.lock().map_err(|e| e.to_string())?;
-    let game = games.iter().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
-    if !game.installed {
-        return Err("@t:demo.notInstalledInstallFirst".into());
-    }
-    // Run a real exe if present, otherwise simulate in demo mode.
-    if let Some(path) = &game.install_path {
-        let exe = std::path::Path::new(path).join(format!("{}.exe", game.id));
-        if exe.exists() {
-            std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
-            return Ok(format!("@t:dl.launched\u{1f}{}", game.title));
-        }
-    }
-    Ok(format!("@t:demo.launching\u{1f}{}", game.title))
-}
-
-#[tauri::command]
-fn uninstall_game(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<String, String> {
-    let title = {
-        let mut games = state.games.lock().map_err(|e| e.to_string())?;
-        let game = games.iter_mut().find(|g| g.id == id).ok_or("@t:demo.gameNotFound")?;
-        if !game.installed {
-            return Err("@t:demo.notInstalled".into());
-        }
-        if let Some(path) = game.install_path.take() {
-            let _ = std::fs::remove_dir_all(path);
-        }
-        game.installed = false;
-        game.title.clone()
-    };
-    let mut lib = load_library(&app);
-    lib.remove(&id);
-    save_library(&app, &lib);
-    Ok(format!("@t:dl.uninstalled\u{1f}{title}"))
-}
-
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState {
-            games: Mutex::new(default_catalog()),
             epic_dl: Mutex::new(legendary::transfers::EpicDlState::default()),
         })
         .setup(|app| {
-            // Restore previous installs
-            let lib = load_library(app.handle());
-            if !lib.is_empty() {
-                if let Some(state) = app.try_state::<AppState>() {
-                    if let Ok(mut games) = state.games.lock() {
-                        for game in games.iter_mut() {
-                            if let Some(path) = lib.get(&game.id) {
-                                game.installed = true;
-                                game.install_path = Some(path.clone());
-                            }
-                        }
-                    }
-                }
-            }
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
             }
@@ -1432,11 +1264,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            list_games,
             library_dir,
-            install_game,
-            launch_game,
-            uninstall_game,
             app_minimize,
             app_toggle_maximize,
             app_is_maximized,

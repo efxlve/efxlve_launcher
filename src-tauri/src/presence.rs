@@ -70,14 +70,6 @@ pub fn clear() {
     }
 }
 
-/// Stops the worker (used when the setting is turned off).
-pub fn shutdown() {
-    let mut guard = HANDLE.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(handle) = guard.take() {
-        let _ = handle.tx.send(Msg::Stop);
-    }
-}
-
 fn worker(rx: Receiver<Msg>, client_id: String) {
     let mut client: Option<DiscordIpcClient> = None;
     let mut last: Option<(String, String)> = None;

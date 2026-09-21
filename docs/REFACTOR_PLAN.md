@@ -52,7 +52,7 @@ src/
 ├── i18n.ts                     # Çeviri motoru (mevcut)
 ├── core/                       # Durum, IPC, yardımcılar (paylaşılan çekirdek)
 │   ├── types.ts                # ✅ Alan tipleri
-│   ├── constants.ts            # ✅ Sabitler + demo katalog
+│   ├── constants.ts            # ✅ Sabitler + localStorage anahtarları
 │   ├── utils.ts                # ✅ Saf biçimlendirme/temizleme
 │   ├── icons.ts                # ✅ SVG ikon sistemi
 │   ├── state.ts                # 🚧 Tek paylaşılan `AppState` nesnesi
@@ -149,7 +149,7 @@ src/
 │   ├── dom.ts              DOM kök referansları + closeModal
 │   ├── toast.ts, selectors.ts, game-view.ts
 │   ├── nav.ts              updateNavIndicator/Badge/Chrome/OfflineModeUi
-│   ├── recent.ts, demo.ts, window.ts
+│   ├── recent.ts, window.ts
 │   ├── render.ts           render/HUD/openEpicModal/closeAllModals bus kancaları
 │   └── epic-actions.ts     epicPlay/Install/Cancel/Uninstall/refresh
 ├── features/

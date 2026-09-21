@@ -9,13 +9,12 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { DEMO_PLAT_KEY, LANG_KEY, MOCK_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { DEMO_PLAT_KEY, LANG_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { closeModal, viewEl } from "../../core/dom";
-import { installGame, launchGame, refreshGames, uninstallGame } from "../../core/demo";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { updateBadge, updateOfflineModeUi } from "../../core/nav";
+import { updateOfflineModeUi } from "../../core/nav";
 import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -190,22 +189,13 @@ document.addEventListener("click", (e) => {
   }
   const act = t.dataset.act;
   const id = t.dataset.id;
-  if (act === "install" && id) void installGame(id);
-  else if (act === "play" && id) void launchGame(id);
-  else if (act === "uninstall" && id) void uninstallGame(id);
-  else if (act === "close") {
+  if (act === "close") {
     const el = e.target as HTMLElement;
     if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
   } else if (act === "goto-library") {
     closeAllModals();
     setView("library");
     render();
-  } else if (act === "reset-demo") {
-    localStorage.removeItem(MOCK_KEY);
-    S.downloads.clear();
-    updateBadge();
-    toast(i18nT("demo.reset"), "ok");
-    void refreshGames();
   } else if (act === "epic-download") {
     void epicDownload();
   } else if (act === "epic-open-login") {
