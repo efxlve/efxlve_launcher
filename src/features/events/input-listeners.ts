@@ -4,11 +4,12 @@
  */
 
 import { SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
-import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
+import { closeModal, collectionRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
+import { t as i18nT } from "../../i18n";
 import {
   epicCaptureGameScreenshot,
   epicInstallGame,
@@ -35,7 +36,6 @@ import { renderAchievementSections } from "../drawer/drawer-widgets";
 import { renderDlcRows } from "../dlc/dlc-manager";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
-import { closeManageModal } from "../manage/manage-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
@@ -164,10 +164,6 @@ document.addEventListener("keydown", (e) => {
     }
     if (S.selectiveInstallOptions) {
       closeSelectiveModal();
-      return;
-    }
-    if (manageRoot && manageRoot.innerHTML.trim()) {
-      closeManageModal();
       return;
     }
     closeModal();
@@ -461,28 +457,18 @@ document.addEventListener("change", (e) => {
   if (act === "manage-toggle-autoupdate" && S.activeManageSettings) {
     S.activeManageSettings.autoUpdate = (t as HTMLInputElement).checked;
     epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast(S.activeManageSettings?.autoUpdate ? "Otomatik güncelleme açıldı" : "Otomatik güncelleme kapatıldı", ""))
+      .then(() => toast(i18nT(S.activeManageSettings?.autoUpdate ? "manage.autoUpdateOn" : "manage.autoUpdateOff"), ""))
       .catch((err) => toast(String(err), "err"));
   } else if (act === "manage-toggle-priority" && S.activeManageSettings) {
     S.activeManageSettings.highPriority = (t as HTMLInputElement).checked;
     epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast(S.activeManageSettings?.highPriority ? "Öncelikli indirme açıldı" : "Öncelikli indirme kapatıldı", ""))
+      .then(() => toast(i18nT(S.activeManageSettings?.highPriority ? "manage.priorityOn" : "manage.priorityOff"), ""))
       .catch((err) => toast(String(err), "err"));
   } else if (act === "manage-toggle-cloud" && S.activeManageSettings) {
     S.activeManageSettings.cloudSavesEnabled = (t as HTMLInputElement).checked;
     epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast(S.activeManageSettings?.cloudSavesEnabled ? "Bulut kayıtları açıldı" : "Bulut kayıtları kapatıldı", ""))
+      .then(() => toast(i18nT(S.activeManageSettings?.cloudSavesEnabled ? "manage.cloudOn" : "manage.cloudOff"), ""))
       .catch((err) => toast(String(err), "err"));
-  } else if (act === "manage-toggle-args-panel") {
-    S.manageShowArgs = (t as HTMLInputElement).checked;
-    const container = document.getElementById("manage-args-container");
-    if (container) {
-      container.style.display = S.manageShowArgs ? "" : "none";
-      if (S.manageShowArgs) {
-        const inp = document.getElementById("manage-args-input") as HTMLInputElement | null;
-        inp?.focus();
-      }
-    }
   } else if (act === "selective-toggle-tag") {
     const tag = t.dataset.tag;
     if (tag) {

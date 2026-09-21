@@ -8,7 +8,7 @@
  */
 
 import "./styles/index.css";
-import { closeModal, manageRoot, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
+import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavIndicator } from "./core/nav";
 import { S } from "./core/state";
 import { closeCollectionModal } from "./features/collections/collections-view";
@@ -78,7 +78,6 @@ function closeAllModals(): void {
   closeShareModal();
   closeCustomCoverModal();
   closeCollectionModal();
-  if (manageRoot) manageRoot.innerHTML = "";
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

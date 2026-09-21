@@ -1825,3 +1825,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `collections-view.ts` (koleksiyon modalı), `epic-actions.ts` (indirme durumu), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `store-view.ts` (yükleme ekranı), `profile-view.ts` yorumları.
 
+## 123. Ölü Kod Temizliği: Bağımsız Yönetim Modalı + Performans İlkesi
+
+- **AGENTS.md §4.10** eklendi: "Düşük Donanım & Yavaş Ağ Tabanı" — referans donanım (8 GB RAM, i5 5. nesil, entegre GPU, HDD, yavaş internet) ve boşta sıfır yük / VRAM disiplini / yavaş ağ önceliği / kademeli yükleme zorunlulukları.
+- **Ölü kod silindi:** `manage-view.ts` içindeki `openManageModal`, `renderManageModal` ve `closeManageModal` (hiçbiri çağrılmıyordu; canlı yol `drawer-view.ts`'teki yönetim sekmesi). `#manage-root` DOM kökü, `manageRoot` referansı ve `S.manageShowArgs` state alanı kaldırıldı. `manage-view.ts` 408 → 105 satır.
+- İlgili ölü handler'lar silindi: `manage-close`, `manage-overlay-close`, `manage-toggle-args-panel` ve Escape'teki `manageRoot` dalı. `game-status` olayında yönetim sekmesi artık `openEpicModal(id, false)` ile yerinde yenileniyor.
+- `manage.css` sadece paylaşılan kontrollere indirildi (`.toggle-switch`, `.verify-*`, `.manage-head-close`). Ana JS paketi ~12 kB küçüldü (416 → 405 kB).
+- Yönetim toggle toast'ları i18n'e taşındı (`manage.autoUpdateOn/Off`, `priorityOn/Off`, `cloudOn/Off`).
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

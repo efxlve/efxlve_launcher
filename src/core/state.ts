@@ -166,7 +166,6 @@ export const S = {
 }) as Record<string, string>,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
-  manageShowArgs: false,
   manageSyncingSaves: false,
   activeDlMetrics: (null) as DlMetrics | null,
   peakNetSpeedBytes: 0,
