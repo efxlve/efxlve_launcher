@@ -1570,3 +1570,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Sonuç:** `main.ts` ~11.020 → ~10.900 satır. Mimari artık kanıtlanmış: bir özellik `S` + `core/*` import ederek güvenle dışarı taşınabiliyor. Sıradaki adım, büyük render/handler gruplarının (dlc, move-game, collections, screenshots, profile, settings, library, drawer, downloads) aynı desenle çıkarılması.
 
+## 90. Modülerleştirme Faz 4 (devam): DLC Yöneticisi Modülü
+
+- `renderDlcRows` ve `renderDlcManager` `src/features/dlc/dlc-manager.ts` modülüne taşındı.
+- Modül yalnızca `S`, `icon`, `esc`, `fmtBytes` ve `GameDlcItem` tipini import eder; kurulum aç/kapa işlemi global `data-act="dlc-toggle-install"` yönlendirmesinde kalır.
+- `main.ts` ~10.900 → ~10.785 satır. İki çağrı yeri (`render()` dağıtıcısı ve DLC arama güncellemesi) artık import edilen fonksiyonları kullanır.
+- `tsc`/`vite build` yeşil.
+
