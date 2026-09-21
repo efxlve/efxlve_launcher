@@ -22,7 +22,7 @@ import { toast } from "../../core/toast";
 import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
-import { setLanguage, t as i18nT } from "../../i18n";
+import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicSetInstallDir, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
 import {
   bootEpic,
@@ -91,7 +91,7 @@ import {
 import { loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { loadSettingsView } from "../settings/settings-view";
 document.addEventListener("click", (e) => {
-  // Sıralama açılır menüsü dışına tıklanırsa kapat
+  // Close the sort dropdown when clicking outside it.
   if (S.isSortDropdownOpen) {
     const targetEl = e.target as HTMLElement;
     if (!targetEl.closest(".sort-dropdown-container")) {
@@ -101,7 +101,7 @@ document.addEventListener("click", (e) => {
     }
   }
 
-  // Koleksiyon açılır menüsü dışına tıklanırsa kapat
+  // Close the collection dropdown when clicking outside it.
   if (S.isColDropdownOpen) {
     const targetEl = e.target as HTMLElement;
     if (!targetEl.closest(".col-dropdown-container")) {
@@ -121,7 +121,7 @@ document.addEventListener("click", (e) => {
     }
   }
 
-  // Modal içi oyun/koleksiyon seçimi
+  // In-modal game/collection selection.
   const gameItem = (e.target as HTMLElement).closest<HTMLElement>(".col-game-item");
   if (gameItem) {
     const appName = gameItem.dataset.app;
@@ -140,7 +140,7 @@ document.addEventListener("click", (e) => {
       if (cntEl) cntEl.textContent = String(S.colModalSelectedApps.size);
 
       const headerBadge = document.getElementById("col-header-selected-badge");
-      if (headerBadge) headerBadge.textContent = `${S.colModalSelectedApps.size} Seçildi`;
+      if (headerBadge) headerBadge.textContent = i18nT("col.selectedCount", { count: S.colModalSelectedApps.size });
 
       const footerCnt = document.getElementById("col-footer-count");
       if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
@@ -368,7 +368,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "cover-modal-backdrop") {
     if (e.target === t) closeCustomCoverModal();
   } else if (act === "prevent-modal-close") {
-    // İçeriğe tıklandığında modal kapanmasın
+    // Keep the modal open when its content is clicked.
   } else if (act === "close-custom-cover") {
     if (t.classList.contains("cover-overlay") && e.target !== t) return;
     closeCustomCoverModal();
@@ -432,12 +432,12 @@ document.addEventListener("click", (e) => {
       previewImg.src = S.sgdbSelectedCoverUrl;
     } else if (previewWrapper) {
       previewWrapper.innerHTML = `
-        <img id="cover-preview-img" src="${esc(S.sgdbSelectedCoverUrl)}" alt="Önizleme" />
-        <div class="cover-preview-badge">Seçilen Önizleme</div>
+        <img id="cover-preview-img" src="${esc(S.sgdbSelectedCoverUrl)}" alt="${i18nT("cover.previewAlt")}" />
+        <div class="cover-preview-badge">${i18nT("cover.selectedPreview")}</div>
       `;
     }
     const badge = previewWrapper?.querySelector(".cover-preview-badge");
-    if (badge) badge.textContent = "Seçilen Önizleme";
+    if (badge) badge.textContent = i18nT("cover.selectedPreview");
     const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
     if (input) input.value = S.sgdbSelectedCoverUrl;
   } else if (act === "save-inline-sgdb-key" && id) {
@@ -501,12 +501,12 @@ document.addEventListener("click", (e) => {
         previewImg.src = val;
       } else if (previewWrapper) {
         previewWrapper.innerHTML = `
-          <img id="cover-preview-img" src="${esc(val)}" alt="Önizleme" />
-          <div class="cover-preview-badge">Web Bağlantısı</div>
+          <img id="cover-preview-img" src="${esc(val)}" alt="${i18nT("cover.previewAlt")}" />
+          <div class="cover-preview-badge">${i18nT("cover.webLink")}</div>
         `;
       }
       const badge = previewWrapper?.querySelector(".cover-preview-badge");
-      if (badge) badge.textContent = "Web Bağlantısı";
+      if (badge) badge.textContent = i18nT("cover.webLink");
     }
   } else if (act === "save-custom-cover" && id) {
     const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
@@ -843,21 +843,21 @@ document.addEventListener("click", (e) => {
   } else if (act === "cancel-move-game" && id) {
     void cancelMoveGame(id);
   } else if (act === "manage-verify" && id) {
-    updateVerifyProgressInPlace(id, 0, 100, 0, "Başlatılıyor…", "Başlatılıyor…");
+    updateVerifyProgressInPlace(id, 0, 100, 0, i18nT("dl.starting"), i18nT("dl.starting"));
     epicVerifyGame(id).catch((err) => {
       resetVerifyInPlace(id);
-      toast(`Doğrulama başlatılamadı: ${String(err)}`, "err");
+      toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
     });
   } else if (act === "manage-sync-saves" && id && !S.manageSyncingSaves) {
     S.manageSyncingSaves = true;
     const syncBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-sync-saves"]');
     const cloudSub = document.getElementById("manage-cloud-subtitle");
     if (syncBtn) syncBtn.disabled = true;
-    if (cloudSub) cloudSub.textContent = "Bulut ile eşitleniyor…";
+    if (cloudSub) cloudSub.textContent = i18nT("manage.syncing");
     epicSyncSaves(id)
       .then((msg) => {
         toast(msg, "ok");
-        const now = new Date().toLocaleString("tr-TR");
+        const now = new Date().toLocaleString(currentLanguage());
         if (S.activeManageSettings && S.activeManageSettings.appName === id) {
           S.activeManageSettings.lastCloudSync = now;
         }
@@ -927,15 +927,15 @@ document.addEventListener("click", (e) => {
     S.offlineMode = !S.offlineMode;
     updateOfflineModeUi();
     void epicSetOfflineMode(S.offlineMode);
-    toast(S.offlineMode ? "Çevrimdışı moda geçildi" : "Çevrimiçi moda geçildi", "ok");
+    toast(i18nT(S.offlineMode ? "net.offlineOn" : "net.offlineOff"), "ok");
     render();
   } else if (act === "set-net-profile") {
     const prof = t.dataset.profile;
     if (prof) {
       S.networkProfile = prof;
       void epicSetNetworkProfile(prof);
-      const label = prof === "max" ? "Maksimum Hız (16 Worker)" : prof === "low" ? "Düşük Tüketim (1 Worker)" : "Dengeli (4 Worker)";
-      toast(`İndirme profili: ${label}`, "ok");
+      const label = prof === "max" ? i18nT("net.profileMax") : prof === "low" ? i18nT("net.profileLow") : i18nT("net.profileBalanced");
+      toast(i18nT("net.profileToast", { label }), "ok");
       render();
     }
   } else if (act === "set-app-language") {
@@ -1145,17 +1145,17 @@ document.addEventListener("click", (e) => {
     const filePath = t.dataset.path;
     const isLightbox = t.dataset.lightbox === "true";
     if (filePath) {
-      if (confirm("Bu ekran görüntüsünü silmek istediğinize emin misiniz?")) {
+      if (confirm(i18nT("ss.deleteConfirm"))) {
         epicDeleteGameScreenshot(filePath)
           .then((success) => {
             if (success) {
-              toast("Ekran görüntüsü silindi", "ok");
+              toast(i18nT("ss.deleted"), "ok");
               const s = S.epicSummaries.find((x) => x.appName === id);
               const title = s ? s.title : id;
               if (isLightbox) closeScreenshotLightbox();
               void fetchAndRenderScreenshots(id, title, true);
             } else {
-              toast("Ekran görüntüsü silinemedi", "err");
+              toast(i18nT("ss.deleteFailed"), "err");
             }
           })
           .catch((err) => toast(String(err), "err"));
@@ -1191,7 +1191,7 @@ document.addEventListener("click", (e) => {
     if (S.activeShareScreenshot) {
       const path = S.activeShareScreenshot.item.file_path;
       navigator.clipboard.writeText(path).then(() => {
-        toast("Dosya yolu panoya kopyalandı.", "ok");
+        toast(i18nT("ss.pathCopiedShort"), "ok");
       }).catch(() => {
         toast(path, "");
       });
@@ -1215,7 +1215,7 @@ document.addEventListener("click", (e) => {
       const item = S.activeShareScreenshot.item;
       navigator.share({
         title: item.file_name,
-        text: `Oyun Ekran Görüntüsü: ${item.file_name}`,
+        text: i18nT("ss.shareText", { file: item.file_name }),
       }).catch(() => {});
       closeShareModal();
     }
@@ -1276,4 +1276,4 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// Yatay kaydırılabilir sekmeler için fare tekerleği desteği
+// Mouse-wheel support for horizontally scrollable tab strips.

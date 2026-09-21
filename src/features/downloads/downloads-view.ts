@@ -154,7 +154,7 @@ export function renderDownloads(): string {
         speedBytes: 0,
         diskSpeed: "—",
         diskBytes: 0,
-        eta: "Hesaplanıyor…",
+        eta: t("common.calculating"),
         downloadedBytes: 0,
         totalBytes: 0,
       };
@@ -211,7 +211,7 @@ export function renderDownloads(): string {
             </div>
           </div>
 
-          <!-- İlerleme Çubuğu -->
+          <!-- Progress bar -->
           <div class="dl-hero-progress-section">
             <div class="dl-progress-meta-row">
               <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
@@ -222,7 +222,7 @@ export function renderDownloads(): string {
             </div>
           </div>
 
-          <!-- Canlı Metrik Kutuları -->
+          <!-- Live metric tiles -->
           <div class="dl-stat-tiles-grid">
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box speed">${icon("download", 18)}</div>

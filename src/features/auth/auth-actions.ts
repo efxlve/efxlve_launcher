@@ -12,6 +12,7 @@ import { render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import { t } from "../../i18n";
 import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 export async function bootEpic(): Promise<void> {
@@ -71,16 +72,16 @@ export async function loadEpicAchSummaries(): Promise<void> {
     S.epicAchSummaries = await epicGetAchievementsSummary();
     if (S.view === "library") scheduleRender();
   } catch (e) {
-    console.warn("Başarım özetleri alınamadı:", e);
+    console.warn("Achievement summaries could not be fetched:", e);
   }
 }
 
-/** Arka plan senkronu */
+/** Background sync. */
 export async function syncEpicLibrary(manual: boolean): Promise<void> {
   if (!isTauri || S.epicSyncing) return;
   S.epicSyncing = true;
   if (manual) {
-    S.epicBusyMsg = "Kütüphane senkronize ediliyor…";
+    S.epicBusyMsg = t("lib.syncing");
     if (S.view === "library") render();
   }
   try {
@@ -103,7 +104,7 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
       } catch {
         void loadEpicCollections();
       }
-      toast("Kütüphane ve koleksiyonlar güncellendi", "ok");
+      toast(t("lib.updated"), "ok");
     } else {
       void loadEpicCollections();
     }
@@ -111,7 +112,7 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
     if (isNotAuth(e)) {
       S.epicPhase = "login";
     } else {
-      S.epicSyncNote = "Çevrimdışı önbellek gösteriliyor — senkron başarısız oldu.";
+      S.epicSyncNote = t("lib.offlineCache");
     }
   } finally {
     S.epicSyncing = false;

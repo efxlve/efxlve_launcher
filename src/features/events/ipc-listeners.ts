@@ -27,7 +27,7 @@ import {
   type VerifyCompleteEvent,
   type VerifyProgressEvent,
 } from "../../epic";
-import { applyStaticTranslations, setLanguage } from "../../i18n";
+import { applyStaticTranslations, setLanguage, t } from "../../i18n";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 import { gameById, refreshGames } from "../../core/demo";
@@ -72,7 +72,7 @@ export async function initApp(hooks: {
   createIcons({
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2 },
   });
-  // Seçili dili yükle, yönü (LTR/RTL) uygula ve statik üst bar metinlerini çevir.
+  // Load the selected language, apply its direction (LTR/RTL) and translate the static top bar.
   await setLanguage(S.appLanguage);
   applyStaticTranslations();
   updateOfflineModeUi();
@@ -85,7 +85,7 @@ export async function initApp(hooks: {
     try {
       S.libraryPath = await invoke<string>("library_dir");
     } catch {
-      S.libraryPath = "alınamadı";
+      S.libraryPath = t("common.unavailable");
     }
     try {
       S.epicSkippedCount = (await epicListSkipped()).length;
@@ -121,7 +121,7 @@ export async function initApp(hooks: {
             speedBytes: speedBytes ?? 0,
             diskSpeed: diskSpeed ?? "—",
             diskBytes: diskBytes ?? 0,
-            eta: eta ?? "Hesaplanıyor…",
+            eta: eta ?? t("common.calculating"),
             downloadedBytes: downloadedBytes ?? 0,
             totalBytes: totalBytes ?? 0,
           };
@@ -292,7 +292,7 @@ export async function initApp(hooks: {
 
       if (running) {
         S.runningGames.add(id);
-        toast(`${title} çalışıyor…`, "ok");
+        toast(t("status.running", { title }), "ok");
       } else {
         S.runningGames.delete(id);
         if (totalSeconds !== undefined) {
@@ -303,15 +303,20 @@ export async function initApp(hooks: {
             last_played_timestamp: lastPlayedTimestamp,
           });
         }
-        toast(`${title} kapandı ${sessionSeconds ? `(Oturum: ${fmtPlaytime(sessionSeconds)})` : ""}`, "");
+        toast(
+          sessionSeconds
+            ? t("status.closedSession", { title, time: fmtPlaytime(sessionSeconds) })
+            : t("status.closed", { title }),
+          "",
+        );
       }
 
-      // Butonları ve rozetleri güncelle
+      // Update buttons and badges.
       document.querySelectorAll<HTMLElement>(`[data-id="${id}"]`).forEach((el) => {
         if (el.dataset.act === "epic-play") {
           if (running) {
             el.classList.add("running");
-            el.innerHTML = `<span class="running-dot"></span> Oynanıyor…`;
+            el.innerHTML = `<span class="running-dot"></span> ${t("common.playing")}`;
           } else {
             el.classList.remove("running");
             el.innerHTML = `${icon("play", 14)} Oyna`;
@@ -383,9 +388,9 @@ export async function initApp(hooks: {
     );
 
     await listen<{ id: string; success: boolean }>("cloud-sync-complete", () => {
-      toast("Bulut kayıtları eşitlendi (EOS)", "ok");
+      toast(t("manage.cloudSynced"), "ok");
       const cloudSub = document.getElementById("manage-cloud-subtitle");
-      if (cloudSub) cloudSub.textContent = "Bulut kayıtları güncel";
+      if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
     });
 
     try {
