@@ -167,6 +167,16 @@
 | `epic_set_game_collections`| `(appName: string, collectionIds: string[]) => Promise<void>` | `legendary/commands.rs` | Updates collection memberships for a game. |
 | `epic_import_egl_collections`| `() => Promise<GameCollection[]>` | `legendary/commands.rs` | Imports collections from official Epic Games Launcher. |
 
+### 2.12. Discord Rich Presence (Optional)
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_presence_configure` | `(enabled: boolean, clientId: string) => Promise<void>` | `presence.rs` | Enables/disables presence and persists the Discord application id. |
+| `epic_presence_update` | `(details: string, state: string) => Promise<void>` | `presence.rs` | Pushes a localized activity (frontend owns the text). |
+| `epic_presence_clear` | `() => Promise<void>` | `presence.rs` | Clears the current activity. |
+
+> Presence is **off by default**. A single background worker thread owns the Discord IPC client, de-duplicates updates and backs off on failures; it exits when disabled, so idle cost is zero. The activity text is localized in the frontend and forwarded as plain strings.
+
 ---
 
 ## 3. Background IPC Event Payloads

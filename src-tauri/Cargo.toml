@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt",
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots", "stream"] }
 url = "2"
 base64 = "0.22"
+discord-rich-presence = "1.1"
 
 [features]
 default = ["custom-protocol"]

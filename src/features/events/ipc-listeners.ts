@@ -52,6 +52,7 @@ import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { applyMovedGamePath } from "../move-game/move-game-actions";
+import { initPresence } from "../presence/presence";
 import { renderMoveGameModalFrame, updateMoveProgressInPlace } from "../move-game/move-game-view";
 import {
   compressScreenshotItem,
@@ -81,6 +82,7 @@ export async function initApp(hooks: {
   registerCloseAllModals(hooks.closeAllModals);
   registerGamepadHud(updateGamepadHud);
   registerOpenEpicModal(openEpicModal);
+  void initPresence();
   if (isTauri) {
     try {
       S.libraryPath = await invoke<string>("library_dir");

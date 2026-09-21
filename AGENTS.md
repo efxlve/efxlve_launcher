@@ -3,7 +3,7 @@
 > Bu dosya, bu projede çalışacak AI ajanları (ve insan geliştiriciler) için **ana operasyonel rehberdir**.
 > Kısa tut, güncel tut: kritik kuralları net koru, geçmiş sürüm detayları için `docs/CHANGELOG_INTERNAL.md` dosyasına başvur.
 >
-> **GÜNCEL DURUM:** Modülerleştirme **tamamlandı** — `main.ts` 11.422 → **86 satır** (yalnızca `render`/`scheduleRender`/`closeAllModals` + bootstrap). Tüm özellik dosyaları ~1.500 satır altında. Mimari: **`docs/REFACTOR_PLAN.md` §6.5**. **i18n metin taşıma tamamlandı** (879 anahtar, tr/en tam eşlikli) ve ölü kod temizliği yapıldı: **`docs/REFACTOR_PLAN.md` §6.6**. Çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–128.
+> **GÜNCEL DURUM:** Modülerleştirme **tamamlandı** — `main.ts` 11.422 → **86 satır** (yalnızca `render`/`scheduleRender`/`closeAllModals` + bootstrap). Tüm özellik dosyaları ~1.500 satır altında. Mimari: **`docs/REFACTOR_PLAN.md` §6.5**. **i18n tamamlandı** (Rust dahil, 1119 anahtar, tr/en tam eşlikli) ve ölü kod temizliği yapıldı: **`docs/REFACTOR_PLAN.md` §6.6**. Yeni: **Discord Rich Presence (opsiyonel, varsayılan kapalı)** — `src-tauri/src/presence.rs`. Çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–132.
 
 ---
 

@@ -258,6 +258,31 @@ export function renderSettings(): string {
         `}
       </div>
     </div>
+
+    <!-- Discord Rich Presence (optional, off by default) -->
+    <div class="settings-box">
+      <h3>${icon("gamepad-2", 15)} ${t("settings.presenceTitle")}</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <label style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:#fff">
+            ${t("settings.presenceLabel")}
+          </label>
+          <p class="muted" style="font-size:12px;margin:4px 0 0">${t("settings.presenceDesc")}</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" data-act="toggle-presence" ${S.presenceEnabled ? "checked" : ""} />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      ${S.presenceEnabled ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)">
+          <label style="font-size:12px;color:var(--muted);display:block">${t("settings.presenceClientIdLabel")}</label>
+          <input id="presence-client-id" class="text-input" style="margin-top:6px" placeholder="${t("settings.presenceClientIdPlaceholder")}" value="${esc(S.presenceClientId)}" spellcheck="false" autocomplete="off" />
+          <p class="muted" style="font-size:11px;margin:6px 0 0;line-height:1.45">${t("settings.presenceClientIdDesc")}</p>
+        </div>
+      ` : ""}
+    </div>
+
     <div class="settings-box">
       <h3>${t("settings.systemTitle")}</h3>
       <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendDemo")}</p>

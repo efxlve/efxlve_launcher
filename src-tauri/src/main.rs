@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod legendary;
+mod presence;
 
 use std::{collections::HashMap, sync::Mutex, time::Duration};
 
@@ -86,6 +87,10 @@ pub struct EpicSettings {
     pub offline_mode: Option<bool>,
     #[serde(default)]
     pub steamgrid_api_key: Option<String>,
+    #[serde(default)]
+    pub presence_enabled: Option<bool>,
+    #[serde(default)]
+    pub presence_client_id: Option<String>,
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -1481,6 +1486,9 @@ fn main() {
             legendary::commands::epic_logout,
             legendary::commands::epic_get_settings,
             legendary::commands::epic_set_alt_bin,
+            presence::epic_presence_configure,
+            presence::epic_presence_update,
+            presence::epic_presence_clear,
             legendary::transfers::epic_install_game,
             legendary::transfers::epic_install_with_options,
             legendary::transfers::epic_pause_download,

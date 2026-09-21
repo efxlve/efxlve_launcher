@@ -1892,3 +1892,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Anahtar hijyeni:** `dl.queued` çakışması `dl.queuedActive` olarak ayrıldı; `lib.updates` eklendi. Doğrulama scripti: kullanılan 1059 anahtarın tümü tr/en'de mevcut; **1100 anahtar**, duplicate yok, tam eşlik.
 - `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 132. Özellik: Discord Rich Presence (Opsiyonel)
+
+- **`src-tauri/src/presence.rs`:** `discord-rich-presence` (1.1) ile hafif IPC entegrasyonu. Tek bir arka plan worker thread'i Discord istemcisine bağlanır; UI'dan gelen aktiviteyi **tekilleştirir** (de-dupe), bağlantı hatalarında 30 sn geri çekilir, devre dışı bırakılınca thread'i kapatıp aktiviteyi temizler. **Boşta sıfır maliyet** (§4.10).
+- **Yerelleştirme:** Metinler frontend'de `t()` ile üretilip düz string olarak gönderilir; böylece RPC da seçili dili izler.
+- **Komutlar:** `epic_presence_configure(enabled, clientId)`, `epic_presence_update(details, state)`, `epic_presence_clear()`; ayarlar `settings.json`'a (`presence_enabled`, `presence_client_id`) yazılır.
+- **Frontend:** `features/presence/presence.ts` (`initPresence`/`applyPresenceSettings`/`syncPresence`), `render()` içinden çağrılır. Bağlamlar: oyun oynanıyor, mağazada gezinme, kütüphane (oyun sayısı), oyun detayı, indirme yüzdesi, ayarlar.
+- **Ayar UI:** Ayarlar sayfasına "Discord'da göster" anahtarı + Discord Uygulama Kimliği (Client ID) alanı eklendi. Varsayılan **kapalı**.
+- **Not:** Discord RPC, kullanıcı bir Discord uygulaması oluşturup Client ID girmelidir (Client ID gizli değildir). Discord kapalıysa özellik sessizce bekler.
+- `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil. `tr.json`/`en.json` **1119 anahtar**.
+

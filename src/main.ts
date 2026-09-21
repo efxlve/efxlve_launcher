@@ -20,6 +20,7 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
+import { syncPresence } from "./features/presence/presence";
 import { renderProfile } from "./features/profile/profile-view";
 import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
@@ -69,6 +70,7 @@ function render(): void {
   }
   updateChrome();
   updateGamepadHud(S.gamepadPolling);
+  syncPresence();
 }
 
 /** Close every modal/drawer root. */
