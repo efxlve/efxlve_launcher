@@ -12,6 +12,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, formatScreenshotDate } from "../../core/utils";
+import { t as i18nT } from "../../i18n";
 import { type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -34,7 +35,7 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
       <div class="drawer-hltb-card loading">
         <div class="hltb-head">
           <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
-          <div class="hltb-loading-text"><span class="hltb-spinner"></span> Tahmini süreler aranıyor…</div>
+          <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
         </div>
       </div>
     `;
@@ -46,20 +47,20 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     <div class="drawer-hltb-card">
       <div class="hltb-head">
         <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
-        <div class="hltb-source">Tahmini Bitiş Süreleri</div>
+        <div class="hltb-source">${i18nT("hltb.times")}</div>
       </div>
       <div class="hltb-grid">
         <div class="hltb-item">
-          <div class="hltb-val">${hltb.main_story ? `${hltb.main_story} sa` : "—"}</div>
-          <div class="hltb-label">Ana Hikaye</div>
+          <div class="hltb-val">${hltb.main_story ? i18nT("hltb.hours", { n: hltb.main_story }) : "—"}</div>
+          <div class="hltb-label">${i18nT("hltb.mainStory")}</div>
         </div>
         <div class="hltb-item">
-          <div class="hltb-val">${hltb.main_extra ? `${hltb.main_extra} sa` : "—"}</div>
-          <div class="hltb-label">Ana + Ekstra</div>
+          <div class="hltb-val">${hltb.main_extra ? i18nT("hltb.hours", { n: hltb.main_extra }) : "—"}</div>
+          <div class="hltb-label">${i18nT("hltb.mainExtra")}</div>
         </div>
         <div class="hltb-item">
-          <div class="hltb-val">${hltb.completionist ? `${hltb.completionist} sa` : "—"}</div>
-          <div class="hltb-label">%100 Bitirme</div>
+          <div class="hltb-val">${hltb.completionist ? i18nT("hltb.hours", { n: hltb.completionist }) : "—"}</div>
+          <div class="hltb-label">${i18nT("hltb.completionist")}</div>
         </div>
       </div>
     </div>
@@ -71,9 +72,9 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
     return `
       <div class="hub-card hub-critic-card loading">
         <div class="hub-card-header">
-          <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
+          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.title")}</span></h3>
         </div>
-        <div class="critic-loading-text"><span class="hltb-spinner"></span> Skorlar taranıyor…</div>
+        <div class="critic-loading-text"><span class="hltb-spinner"></span> ${i18nT("critic.scanning")}</div>
       </div>
     `;
   }
@@ -105,11 +106,11 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
         ${
           critic.opencritic_score
             ? `
-          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="OpenCritic İnceleme Sayfasını Aç">
+          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
             <div class="critic-badge-score ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">OpenCritic</div>
-              <div class="critic-badge-sub">Top Critic Skoru</div>
+              <div class="critic-badge-sub">${i18nT("critic.topCritic")}</div>
             </div>
             ${critic.opencritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
           </div>`
@@ -118,11 +119,11 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
         ${
           critic.metacritic_score
             ? `
-          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="Metacritic İnceleme Sayfasını Aç">
+          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="${i18nT("critic.metacriticPage")}">
             <div class="critic-badge-score mc">${critic.metacritic_score}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">Metacritic</div>
-              <div class="critic-badge-sub">Metascore</div>
+              <div class="critic-badge-sub">${i18nT("critic.metascore")}</div>
             </div>
             ${critic.metacritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
           </div>`
@@ -131,11 +132,11 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
         ${
           critic.igdb_score
             ? `
-          <div class="hub-critic-badge igdb" title="IGDB Topluluk Puanı">
+          <div class="hub-critic-badge igdb" title="${i18nT("critic.igdbCommunity")}">
             <div class="critic-badge-score igdb">${Math.round(critic.igdb_score <= 10 ? critic.igdb_score * 10 : critic.igdb_score)}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">IGDB</div>
-              <div class="critic-badge-sub">Topluluk Skoru</div>
+              <div class="critic-badge-sub">${i18nT("critic.communityScore")}</div>
             </div>
           </div>`
             : ""
@@ -147,12 +148,12 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
   let goygoyHtml = "";
   if (goygoy) {
     goygoyHtml = `
-      <div class="hub-goygoy-box clickable" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="Goygoy Engine'de İncelemeyi Oku">
+      <div class="hub-goygoy-box clickable" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="${i18nT("critic.readOnGoygoy")}">
         <div class="goygoy-box-top">
           <div class="goygoy-badge-top">
             <span class="goygoy-pulse-dot"></span>
             <span class="goygoy-brand"><strong>Goygoy</strong> Engine</span>
-            <span class="goygoy-chip">Özel İnceleme</span>
+            <span class="goygoy-chip">${i18nT("critic.specialReview")}</span>
           </div>
           ${
             goygoy.score
@@ -171,7 +172,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
             <span>${esc(goygoy.writer || "Goygoy Engine")}</span>
           </div>
           <div class="goygoy-read-action">
-            <span>İncelemeyi Oku</span>
+            <span>${i18nT("critic.readReview")}</span>
             ${icon("external", 12)}
           </div>
         </div>
@@ -182,7 +183,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
   return `
     <div class="hub-card hub-critic-card">
       <div class="hub-card-header">
-        <h3 class="hub-card-title">${icon("star", 14)} <span>İnceleme & Eleştirmen Skorları</span></h3>
+        <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.title")}</span></h3>
         ${tierPill}
       </div>
       ${globalScoresHtml}

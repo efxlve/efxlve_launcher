@@ -1778,3 +1778,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan:** drawer içerikleri (`drawer-widgets`/`drawer-view`), kapak/SteamGrid, ekran görüntüsü paylaşımı, toast/hata mesajları.
 
+## 118. i18n Metin Taşıma (devam): Drawer HLTB & Eleştirmen Kartları
+
+- `drawer-widgets.ts` içinde `renderHltbCard` ve `renderCriticCard` `i18nT` (takma adlı `t`) ile migre edildi: `hltb.*` (arama, süre etiketleri, saat biçimi) ve `critic.*` (başlık, skor etiketleri, sayfa başlıkları, Goygoy incelemesi).
+- Yerel `t` değişkeni çakışması nedeniyle `import { t as i18nT }` kullanıldı.
+- `tr.json`/`en.json`'a ~25 yeni anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+**Not:** Drawer grubu (~1.700 Türkçe satır) kademeli migre ediliyor. Kalan drawer bölümleri (oyun özellikleri, kupa vitrini, medya, başarım listeleri, sistem gereksinimleri, çekmece yönetimi) sonraki adımda.
+
