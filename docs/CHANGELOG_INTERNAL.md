@@ -1606,3 +1606,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - F3'te yerel tipli oldukları için taşınamayan durumlar da merkezileştirildi: `EpicPhase`, `EpicFilter`, `EpicSort`, `EpicViewMode`, `CardSize` tipleri `core/types.ts`'e; `S.epicPhase`, `S.epicFilter`, `S.epicSort`, `S.epicViewMode`, `S.epicCardSize` alanları `S`'e taşındı. `sortOptions` kütüphane modülüne taşındı.
 - `main.ts` ~9.381 → ~8.412 satır (başlangıç 11.422'den toplam ~3.010 satır azaldı). `tsc`/`vite build` yeşil.
 
+## 95. Modülerleştirme Faz 5 (devam): Detay Çekmecesi Widget'ları
+
+- **Saf sunum widget'ları** (`renderHltbCard`, `renderCriticCard`, `cleanStoreDescription`, `detectControllerSupport`, `isOnlineOnlyGame`, `renderGameFeatures`, `renderOverviewTrophySpotlight`, `renderOverviewMediaSpotlight`, `renderAchievementSections`, `renderAchievementCard`, `fmtTierName`, `getAchTier`, `getHardwareIcon`, `getHardwareLabel`, `isWinSys`, `isMacSys`, `renderBackupListHtml`) → `src/features/drawer/drawer-widgets.ts` (~1.063 satır). Ağ isteği tetiklemezler (güvenli, yeniden kullanılabilir).
+- Paylaşılan yardımcılar `core`'a taşındı: `isTurkishUser` → `core/selectors.ts`; `formatScreenshotDate` → `core/utils.ts`; `getAchTier` → drawer modülü.
+- I/O ve orkestrasyon içeren çekmece fonksiyonları (`openEpicModal`, `renderDrawerOverview/Dlcs/Screenshots/Manage/Achievements/SystemRequirements`, `fetchAndRender*`) şimdilik `main.ts`'te; bunlar saf widget'ları import eder.
+- `main.ts` ~8.412 → ~7.352 satır. `tsc`/`vite build` yeşil.
+- **Not:** Çekmece render'ları lazy-load için `fetchAndRender*` çağırdığından, kalan çekmece kodu (render+fetch) bir sonraki adımda birlikte `features/drawer/`'a taşınmalı.
+

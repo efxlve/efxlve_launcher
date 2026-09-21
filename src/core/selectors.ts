@@ -32,6 +32,18 @@ export function rawOf(appName: string): EpicGame | undefined {
 }
 
 /**
+ * True when the selected UI language is Turkish. Used to show locale-specific
+ * content (e.g. the Goygoy Engine Turkish reviews).
+ */
+export function isTurkishUser(): boolean {
+  if (S.appLanguage) {
+    return S.appLanguage === "tr";
+  }
+  const navLang = navigator.language?.toLowerCase() || "";
+  return navLang.startsWith("tr");
+}
+
+/**
  * Resolve the wide landscape artwork used by hero banners and the detail
  * drawer. Priority: custom user hero -> Epic key art -> portrait cover.
  */
