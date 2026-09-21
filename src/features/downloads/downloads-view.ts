@@ -406,49 +406,60 @@ export function renderDownloads(): string {
         <div class="dl-settings-title">${icon("settings", 16)} ${t("downloads.settingsTitle")}</div>
         <span class="dl-settings-hint">${t("downloads.settingsHint")}</span>
       </div>
-      <div class="dl-settings-grid">
-        <div class="dl-settings-field">
-          <div class="dl-settings-label">${t("downloads.netProfile")}</div>
-          <div class="net-profile-pills">
-            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
-              ${icon("zap", 13)} ${t("downloads.profileMax")}
-            </button>
-            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">
-              ${icon("shield-check", 13)} ${t("downloads.profileBalanced")}
-            </button>
-            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">
-              ${icon("clock", 13)} ${t("downloads.profileLow")}
-            </button>
+      <div class="dl-settings-rows">
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.netProfile")}</div>
+            <div class="dl-settings-row-desc">${t("downloads.netProfileDesc")}</div>
+          </div>
+          <div class="dl-settings-row-control net-profile-pills">
+            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">${icon("zap", 13)} ${t("downloads.profileMax")}</button>
+            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">${icon("shield-check", 13)} ${t("downloads.profileBalanced")}</button>
+            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("downloads.profileLow")}</button>
           </div>
         </div>
-        <div class="dl-settings-field">
-          <div class="dl-settings-label">${t("downloads.speedBits")}</div>
-          <label class="toggle-switch">
-            <input type="checkbox" data-act="toggle-speed-bits" ${S.speedInBits ? "checked" : ""} />
-            <span class="toggle-slider"></span>
-          </label>
+
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.speedBits")}</div>
+          </div>
+          <div class="dl-settings-row-control">
+            <label class="toggle-switch">
+              <input type="checkbox" data-act="toggle-speed-bits" ${S.speedInBits ? "checked" : ""} />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
-        <div class="dl-settings-field">
-          <div class="dl-settings-label">${t("downloads.installDir")}</div>
-          <div class="dl-settings-dir-row">
+
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.installDir")}</div>
+          </div>
+          <div class="dl-settings-row-control">
             <input id="dl-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
             <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="${t("downloads.pickFolder")}">${icon("folder", 15)}</button>
             <button class="ps5-btn primary" data-act="dl-save-install-dir">${t("common.save")}</button>
           </div>
         </div>
-        <div class="dl-settings-field">
-          <div class="dl-settings-label">${t("downloads.cdnLabel")}</div>
-          <div class="dl-settings-dir-row">
-            <span class="dl-settings-hint" id="dl-cdn-current">${S.preferredCdn ? esc(S.preferredCdn) : t("downloads.cdnAuto")}</span>
+
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.cdnLabel")}</div>
+            <div class="dl-settings-row-desc">${t("downloads.cdnHint")}</div>
+          </div>
+          <div class="dl-settings-row-control">
+            <span class="dl-cdn-current" id="dl-cdn-current" title="${S.preferredCdn ? esc(S.preferredCdn) : ""}">${S.preferredCdn ? esc(S.preferredCdn) : t("downloads.cdnAuto")}</span>
             <button class="ps5-btn" data-act="dl-find-fastest-cdn">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
             ${S.preferredCdn ? `<button class="ps5-btn ghost" data-act="dl-reset-cdn">${t("downloads.cdnReset")}</button>` : ""}
           </div>
-          <div class="dl-settings-hint">${t("downloads.cdnHint")}</div>
         </div>
-        <div class="dl-settings-field">
-          <div class="dl-settings-label">${t("downloads.cacheLabel")}</div>
-          <div class="dl-settings-dir-row">
-            <span class="dl-settings-hint">${t("downloads.cacheDesc")}</span>
+
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.cacheLabel")}</div>
+            <div class="dl-settings-row-desc">${t("downloads.cacheDesc")}</div>
+          </div>
+          <div class="dl-settings-row-control">
             <button class="ps5-btn ghost" data-act="dl-cleanup-cache">${icon("trash", 13)} ${t("downloads.cacheClear")}</button>
           </div>
         </div>

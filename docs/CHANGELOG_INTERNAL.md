@@ -1944,3 +1944,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Performans: satırlarda blur yok, opak obsidyen yüzeyler (Kural §6.13); `tabular-nums`.
 - `tr.json`/`en.json` **1116 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 138. Storage Manager Veri Hatası + İndirme Ayar UI'ı Sadeleştirme
+
+- **Kök neden (Storage Manager boş):** Rust `SystemDriveInfo.letter` değeri `"C"` yerine `"C:\"` dönüyordu. Bu yüzden oyunlar sürücüyle eşleşmiyor, taşıma modalında sürücü seçimi/vurgusu ve boş alan kontrolü de bozuktu (`"C" !== "C:\"`). `letter` artık sade harf; `label` boş (frontend `move.localDisk` ile yerelleştiriyor). Hardcoded "Yerel Disk (C:)" metni ve kullanılmayan `move.driveLabel` anahtarı kaldırıldı.
+- **Ayar paneli sadeleştirildi:** Dağınık 2 sütunlu ızgara + yüzen toggle yerine Steam tarzı **tek sütun satır düzeni** (başlık + açıklama solda, kontrol sağda). Dar pencerede satırlar dikey yığılır. Eski `.dl-settings-grid/.field/.dir-row/.label` CSS'i kaldırıldı.
+- **Storage Manager cilası:** "Oyunlar 0 B" (— yerine), sürücü adı `C:` (çift etiket yok).
+- `tr.json`/`en.json` **1116 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
