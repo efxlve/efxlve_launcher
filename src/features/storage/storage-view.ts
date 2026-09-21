@@ -84,8 +84,8 @@ export function renderStorageManager(): void {
             <div class="storage-seg free" style="width:${pct(free)}%"></div>
           </div>
           <div class="storage-legend">
-            <span><i class="dot games"></i>${t("storage.games")} <strong>${fmtBytes(gamesSize)}</strong></span>
-            <span><i class="dot other"></i>${t("storage.other")} <strong>${fmtBytes(otherUsed)}</strong></span>
+            <span><i class="dot games"></i>${t("storage.games")} <strong>${gamesSize > 0 ? fmtBytes(gamesSize) : "0 B"}</strong></span>
+            <span><i class="dot other"></i>${t("storage.other")} <strong>${otherUsed > 0 ? fmtBytes(otherUsed) : "0 B"}</strong></span>
             <span><i class="dot free"></i>${t("storage.free")} <strong>${fmtBytes(free)}</strong></span>
           </div>
           <div class="storage-games">

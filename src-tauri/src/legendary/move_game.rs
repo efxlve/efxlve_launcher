@@ -97,14 +97,11 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
             let drive_path = Path::new(&drive_str);
             if let Some((free, total)) = win_disk::get_disk_space(drive_path) {
                 if total > 0 {
-                    let label = if letter_char == b'C' {
-                        format!("Yerel Disk ({}:)", letter_char as char)
-                    } else {
-                        format!("@t:move.driveLabel\u{1f}{}", letter_char as char)
-                    };
+                    // `letter` is the bare drive letter (e.g. "C"); the frontend
+                    // renders the localized "Local Disk" label when it is empty.
                     drives.push(SystemDriveInfo {
-                        letter: drive_str,
-                        label,
+                        letter: (letter_char as char).to_string(),
+                        label: String::new(),
                         total_bytes: total,
                         available_bytes: free,
                     });
