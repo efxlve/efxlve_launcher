@@ -9,6 +9,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
+import { t } from "../../i18n";
 import { modalRoot } from "../../core/dom";
 
 import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
@@ -245,12 +246,12 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
 
       const achTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="achievements"]');
       if (achTabBtn) {
-        achTabBtn.innerHTML = `${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} Başarımlar`;
+        achTabBtn.innerHTML = `${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} ${t("drawer.achievements")}`;
         achTabBtn.classList.toggle("plat", isPlat);
       }
       const dlcTabBtn = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
       if (dlcTabBtn) {
-        dlcTabBtn.innerHTML = `${icon("layers", 13)} Eklentiler ${dlcTabBadge}`;
+        dlcTabBtn.innerHTML = `${icon("layers", 13)} ${t("drawer.dlcs")} ${dlcTabBadge}`;
       }
 
       requestAnimationFrame(() => {
@@ -346,23 +347,23 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
             </div>
             <div class="drawer-tabs" id="drawer-tabs-scrollable">
               <button class="drawer-tab ${S.activeDrawerTab === "overview" ? "active" : ""}" data-act="drawer-tab" data-tab="overview">
-                ${icon("gamepad-2", 13)} Genel Bakış
+                ${icon("gamepad-2", 13)} ${t("drawer.overview")}
               </button>
               <button class="drawer-tab ${S.activeDrawerTab === "achievements" ? "active" : ""} ${isPlat ? "plat" : ""}" data-act="drawer-tab" data-tab="achievements" data-id="${appName}">
-                ${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} Başarımlar
+                ${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)} ${t("drawer.achievements")}
               </button>
               <button class="drawer-tab ${S.activeDrawerTab === "dlcs" ? "active" : ""}" data-act="drawer-tab" data-tab="dlcs" data-id="${appName}">
-                ${icon("layers", 13)} Eklentiler ${dlcTabBadge}
+                ${icon("layers", 13)} ${t("drawer.dlcs")} ${dlcTabBadge}
               </button>
               <button class="drawer-tab ${S.activeDrawerTab === "screenshots" ? "active" : ""}" data-act="drawer-tab" data-tab="screenshots" data-id="${appName}">
-                ${icon("image", 13)} Ekran Görüntüleri ${ssTabBadge}
+                ${icon("image", 13)} ${t("drawer.screenshots")} ${ssTabBadge}
               </button>
               ${s.installed ? `
               <button class="drawer-tab ${S.activeDrawerTab === "manage" ? "active" : ""}" data-act="drawer-tab" data-tab="manage" data-id="${appName}">
-                ${icon("settings", 13)} Yönet
+                ${icon("settings", 13)} ${t("drawer.manage")}
               </button>` : ""}
               <button class="drawer-tab ${S.activeDrawerTab === "specs" ? "active" : ""}" data-act="drawer-tab" data-tab="specs" data-id="${appName}">
-                ${icon("monitor", 13)} Sistem
+                ${icon("monitor", 13)} ${t("drawer.specs")}
               </button>
             </div>
             <div class="drawer-tabs-fade right">

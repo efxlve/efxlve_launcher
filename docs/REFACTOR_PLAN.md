@@ -178,8 +178,14 @@ src/
 
 Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/sonrasında ele alınacak:
 
-1. **Türkçe metinlerin i18n'e taşınması (Localization):** Modüller çıkarılırken ve sonrasında, kod içine gömülü tüm Türkçe arayüz metinleri (`render*` fonksiyonları, toast mesajları, etiketler, boş durumlar, `renderDrawer*`, `renderManageModal`, `renderSelectiveModal`, `renderCustomCover*`, gamepad HUD, IPC hata mesajları) `src/locales/*.json` anahtarlarına taşınmalı ve `t("...")` kullanılmalı. Zaten `t()` motoru ve 15 dil dosyası hazır (bkz. §84). Çekirdek yüzeyler (nav, indirmeler, sağ tık, onboarding, ayarlar, profil başlıkları) migre edildi; kalanı kapsam genişletilecek.
-2. **Gereksiz / optimize olmayan kod temizliği:** Modül taşımaları sırasında fark edilen ölü kod, kullanılmayan import/değişken, tekrar eden mantık, gereksiz DOM sorguları ve performanssız döngüler düzeltilmeli (AGENTS.md §4.2 ölü kod sıfır tolerans + §6 altın kurallar). Örnek bilinen borç: `POPULAR_COL_EMOJIS` (emoji paleti) sıfır-emoji politikasına aykırı — koleksiyon emoji özelliği yeniden tasarlanmalı veya kaldırılmalı.
+1. **Türkçe metinlerin i18n'e taşınması (Localization) — DEVAM EDİYOR:**
+   - ✅ Migre edilenler: nav, indirmeler, sağ tık menüsü, onboarding, ayarlar/profil başlıkları, **çekmece sekmeleri**, **kütüphane filtre pilleri**.
+   - 🚧 Kalan: drawer içerik bölümleri (`renderDrawer*`), `renderManageModal`, `renderSelectiveModal`, `renderCustomCover*`, `renderDlcManager`, gamepad HUD, toast/hata mesajları, boş durumlar.
+   - Yöntem: `src/locales/tr.json` + `en.json`'a anahtar ekle → `t("...")` kullan. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84).
+2. **Gereksiz / optimize olmayan kod temizliği — TAMAMLANDI (temel):**
+   - ✅ Kullanılmayan importlar ve ölü yerel değişkenler temizlendi (`noUnusedLocals` 0 hata).
+   - ✅ Sıfır-emoji politikası ihlali giderildi: `POPULAR_COL_EMOJIS` kaldırıldı, `core/collection-icons.ts` (24 SVG ikon) ile değiştirildi.
+   - 🚧 Gelecekte: taşımalar sırasında yeni fark edilen tekrar eden mantık/performans borcu.
 
 ---
 
