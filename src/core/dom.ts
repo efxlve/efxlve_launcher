@@ -27,6 +27,8 @@ export const dlBadge = document.getElementById("dl-badge") as HTMLElement;
 export const ctxRoot = document.getElementById("ctx-root") as HTMLElement | null;
 /** Collections modal root. */
 export const collectionRoot = document.getElementById("collection-root");
+/** Storage manager modal root. */
+export const storageRoot = document.getElementById("storage-root");
 
 /** Close the game detail drawer and refresh the gamepad HUD. */
 export function closeModal(): void {

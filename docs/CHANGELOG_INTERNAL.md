@@ -1936,3 +1936,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Bit/s seçeneği:** `fmtSpeed()` yardımcısı (utils) + ayarlarda "İndirme hızını bit cinsinden göster" anahtarı (`SPEED_BITS_KEY`). Hız/zirve/disk ve grafik legend'i seçime göre Mbps/MB/s gösterir.
 - `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 137. Depolama Yöneticisi (Steam Benzeri)
+
+- **Yeni modül** `features/storage/storage-view.ts` + `styles/storage.css` + `#storage-root`: kurulu oyunları **sürücüye göre gruplar**, her sürücü için yığınlı kullanım çubuğu (Oyunlar / Diğer / Boş) ve oyun listesi (kapak, boyut, Taşı / Kaldır) gösterir.
+- Sürücü verisi mevcut `epic_get_system_drives` komutundan; taşıma mevcut taşıma modalını açar, kaldırma `epicUninstall`'a gider. Modal önce önbellekten anında açılır, sonra sürücüler tazelenir.
+- İndirmeler sayfası başlığına "Depolama Yöneticisi" butonu eklendi; `closeAllModals` bu modalı da kapatır.
+- Performans: satırlarda blur yok, opak obsidyen yüzeyler (Kural §6.13); `tabular-nums`.
+- `tr.json`/`en.json` **1116 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

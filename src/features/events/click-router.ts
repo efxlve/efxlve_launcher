@@ -71,6 +71,7 @@ import {
 } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
+import { closeStorageManager, openStorageManager } from "../storage/storage-view";
 import {
   closeEditPlaytimeModal,
   openEditPlaytimeModal,
@@ -823,6 +824,18 @@ document.addEventListener("click", (e) => {
         toast(msg, "ok");
       })
       .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "open-storage-manager") {
+    void openStorageManager();
+  } else if (act === "close-storage-manager") {
+    closeStorageManager();
+  } else if (act === "storage-overlay-close") {
+    if (e.target === t) closeStorageManager();
+  } else if (act === "storage-move-game" && id) {
+    closeStorageManager();
+    void openMoveGameModal(id);
+  } else if (act === "storage-uninstall" && id) {
+    closeStorageManager();
+    void epicUninstall(id);
   } else if (act === "epic-sync-egl") {
     if (S.eglSyncing) return;
     S.eglSyncing = true;
