@@ -11,6 +11,7 @@ import { listen } from "@tauri-apps/api/event";
 import { CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
 import {
   epicGetNetworkProfile,
+  epicGetSettings,
   epicGetOfflineMode,
   epicGetPlaytimes,
   epicGetQueue,
@@ -409,6 +410,11 @@ export async function initApp(hooks: {
     }
     try {
       S.networkProfile = await epicGetNetworkProfile();
+    } catch {
+      // ignore
+    }
+    try {
+      S.preferredCdn = (await epicGetSettings()).preferred_cdn ?? "";
     } catch {
       // ignore
     }

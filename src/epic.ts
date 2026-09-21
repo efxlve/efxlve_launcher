@@ -427,6 +427,7 @@ export interface EpicSettings {
   steamgrid_api_key?: string | null;
   presence_enabled?: boolean | null;
   presence_client_id?: string | null;
+  preferred_cdn?: string | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
@@ -448,6 +449,22 @@ export const epicPresenceUpdate = (details: string, state: string) =>
   invoke<void>("epic_presence_update", { details, state });
 /** Discord Rich Presence: clear the current activity. */
 export const epicPresenceClear = () => invoke<void>("epic_presence_clear");
+
+/** CDN speed probe result (time-to-first-byte in ms). */
+export interface CdnProbe {
+  host: string;
+  url: string;
+  ms: number;
+}
+
+/** Measures the Epic CDNs in `baseUrls` and returns them fastest-first. */
+export const epicMeasureCdns = (baseUrls: string[]) =>
+  invoke<CdnProbe[]>("epic_measure_cdns", { baseUrls });
+/** Persists the preferred CDN hostname (null clears it). */
+export const epicSetPreferredCdn = (host: string | null) =>
+  invoke<void>("epic_set_preferred_cdn", { host });
+/** Removes legendary's temporary/metadata/manifest files. */
+export const epicCleanupCache = () => invoke<string>("epic_cleanup_cache");
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");
 export const epicSetInstallDir = (dir: string | null) =>
   invoke<EpicSettings>("epic_set_install_dir", { dir });

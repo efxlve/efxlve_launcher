@@ -1920,3 +1920,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Not: Tarayıcı (Tauri'siz) modu artık "yalnızca masaüstü uygulamasında çalışır" mesajını gösterir; gerçek kütüphane her zaman legendary'den gelir.
 - `cargo check` (uyarısız) + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 135. İndirme Hızı: Worker/Memory Tuning + Akıllı CDN Seçimi + Önbellek Temizleme
+
+- **Worker/memory profilleri** (`transfers.rs`): `max` → 32 worker / 2048 MiB, `balanced` → 8 / 1024, `low` → 2 / 512. (Epic'in kendi launcher'ı `ChunkDownloads=32` kullanıyor; legendary zaten chunk'ları paralel indiriyor.) MemoryError retry yolu yine 5000 MiB.
+- **Akıllı CDN seçimi:** `epic_measure_cdns(baseUrls)` her CDN host'una `Range: bytes=0-0` isteğiyle TTFB ölçer (paralel, 4 sn timeout) ve en hızlısını döndürür; `epic_set_preferred_cdn` bunu `settings.json`'a yazar ve indirmelere `--preferred-cdn` olarak geçer. İndirmeler sayfasına "En hızlısını bul" / "Otomatiğe dön" eklendi.
+- **Önbellek temizleme:** `epic_cleanup_cache` → `legendary cleanup` (geçici dosyalar + eski metadata/manifest). İndirmeler sayfasına buton eklendi.
+- **Mümkün olmayanlar (dürüstçe atlandı):** bant genişliği sınırlama (legendary'de throttle yok), ülke/bölge seçimi (CDN seçimiyle kısmen), LAN transferi, shader pre-caching.
+- `tr.json`/`en.json` **1105 anahtar**. `cargo check` + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

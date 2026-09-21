@@ -22,7 +22,7 @@ import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicSetInstallDir, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
 import {
   bootEpic,
   epicDoImport,
@@ -785,6 +785,44 @@ document.addEventListener("click", (e) => {
         toast(String(e), "err");
       }
     })();
+  } else if (act === "dl-find-fastest-cdn") {
+    void (async () => {
+      const urls = S.epicGamesRaw.flatMap((g) => g.base_urls || []).filter(Boolean);
+      if (urls.length === 0) {
+        toast(i18nT("downloads.cdnNoData"), "err");
+        return;
+      }
+      toast(i18nT("downloads.cdnTesting"), "");
+      try {
+        const probes = await epicMeasureCdns(urls);
+        if (probes.length === 0) {
+          toast(i18nT("downloads.cdnNoResult"), "err");
+          return;
+        }
+        const best = probes[0];
+        await epicSetPreferredCdn(best.host);
+        S.preferredCdn = best.host;
+        toast(i18nT("downloads.cdnPicked", { host: best.host, ms: best.ms }), "ok");
+        render();
+      } catch (e) {
+        toast(String(e), "err");
+      }
+    })();
+  } else if (act === "dl-reset-cdn") {
+    void epicSetPreferredCdn(null)
+      .then(() => {
+        S.preferredCdn = "";
+        toast(i18nT("downloads.cdnResetDone"), "ok");
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "dl-cleanup-cache") {
+    toast(i18nT("downloads.cacheClearing"), "");
+    void epicCleanupCache()
+      .then((msg) => {
+        toast(msg, "ok");
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "epic-sync-egl") {
     if (S.eglSyncing) return;
     S.eglSyncing = true;

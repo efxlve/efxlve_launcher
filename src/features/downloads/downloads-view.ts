@@ -419,6 +419,22 @@ export function renderDownloads(): string {
             <button class="ps5-btn primary" data-act="dl-save-install-dir">${t("common.save")}</button>
           </div>
         </div>
+        <div class="dl-settings-field">
+          <div class="dl-settings-label">${t("downloads.cdnLabel")}</div>
+          <div class="dl-settings-dir-row">
+            <span class="dl-settings-hint" id="dl-cdn-current">${S.preferredCdn ? esc(S.preferredCdn) : t("downloads.cdnAuto")}</span>
+            <button class="ps5-btn" data-act="dl-find-fastest-cdn">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
+            ${S.preferredCdn ? `<button class="ps5-btn ghost" data-act="dl-reset-cdn">${t("downloads.cdnReset")}</button>` : ""}
+          </div>
+          <div class="dl-settings-hint">${t("downloads.cdnHint")}</div>
+        </div>
+        <div class="dl-settings-field">
+          <div class="dl-settings-label">${t("downloads.cacheLabel")}</div>
+          <div class="dl-settings-dir-row">
+            <span class="dl-settings-hint">${t("downloads.cacheDesc")}</span>
+            <button class="ps5-btn ghost" data-act="dl-cleanup-cache">${icon("trash", 13)} ${t("downloads.cacheClear")}</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
