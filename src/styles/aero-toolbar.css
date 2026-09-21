@@ -1,13 +1,9 @@
 /* ==========================================================================
    Aero Unified Toolbar & Collections
-   Aero Birlesik Arac Cubugu & Koleksiyonlar
 
-   EN: Aero single-row toolbar, collection chips, filter dropdowns and related controls.
+   Aero single-row toolbar, collection chips, filter dropdowns and related controls.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Aero tek satir arac cubugu, koleksiyon cipleri, filtre acilir listeleri ve ilgili kontroller.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- Aero Unified Single-Row Toolbar --- */
 @keyframes pillSlideIn {

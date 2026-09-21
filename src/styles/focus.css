@@ -1,13 +1,9 @@
 /* ==========================================================================
    Console Focus Ring
-   Konsol Odak Halkasi
 
-   EN: Unified gamepad/keyboard focus ring and card focus states (lavender, no layout shift).
+   Unified gamepad/keyboard focus ring and card focus states (lavender, no layout shift).
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Birlesik gamepad/klavye odak halkasi ve kart odak durumlari (lavanta, layout kaymasi yok).
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- PlayStation Konsol & Gamepad Odak Halkası (Console Focus Ring) ---
    AGENTS.md §7.9: 2px lavanta (#8b5cf6) halka, 3px offset. Neon glow ve odakta

@@ -1,24 +1,21 @@
 /**
  * Static constants and demo/mock catalog helpers.
- * Sabitler ve demo/mock katalog yardımcıları.
  *
- * EN: `isTauri` decides whether the UI talks to the Rust backend or falls back
- *     to an in-browser mock catalog (useful for `vite dev` without Tauri).
- * TR: `isTauri`, arayüzün Rust backend ile mi konuşacağını yoksa tarayıcı içi
- *     mock kataloğa mı düşeceğini belirler (Tauri'siz `vite dev` için faydalı).
+ * `isTauri` decides whether the UI talks to the Rust backend or falls back to
+ * an in-browser mock catalog (useful for `vite dev` without Tauri).
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import type { CatalogMeta, Game } from "./types";
 
-/** EN: True when running inside the Tauri shell. TR: Tauri kabuğunda çalışıyorsa true. */
+/** True when running inside the Tauri shell. */
 export const isTauri =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-/** EN: localStorage key for the demo "installed" set. TR: Demo "kurulu" kümesi için localStorage anahtarı. */
+/** localStorage key for the demo "installed" set. */
 export const MOCK_KEY = "efxlve-mock-installed";
 
-/** EN: Presentation metadata for the demo catalog. TR: Demo katalog için sunum meta verisi. */
+/** Presentation metadata for the demo catalog. */
 export const META: Record<string, CatalogMeta> = {
   "anadolu-efsaneleri": {
     description:
@@ -58,17 +55,17 @@ export const META: Record<string, CatalogMeta> = {
   },
 };
 
-/** EN: Fallback metadata when a demo game has no entry. TR: Demo oyunun kaydı yoksa kullanılan yedek meta. */
+/** Fallback metadata when a demo game has no entry. */
 export const FALLBACK_META: CatalogMeta = {
   description: "Açıklama yakında eklenecek.",
   gradient: "linear-gradient(135deg,#2d3436,#636e72)",
   rating: 0,
 };
 
-/** EN: Safe metadata lookup. TR: Güvenli meta sorgusu. */
+/** Safe metadata lookup. */
 export const metaOf = (id: string): CatalogMeta => META[id] ?? FALLBACK_META;
 
-/** EN: Read the demo installed set. TR: Demo kurulu kümesini okur. */
+/** Read the demo installed set. */
 export function mockInstalled(): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(MOCK_KEY) ?? "[]") as string[]);
@@ -77,12 +74,12 @@ export function mockInstalled(): Set<string> {
   }
 }
 
-/** EN: Persist the demo installed set. TR: Demo kurulu kümesini kaydeder. */
+/** Persist the demo installed set. */
 export function saveMockInstalled(set: Set<string>): void {
   localStorage.setItem(MOCK_KEY, JSON.stringify([...set]));
 }
 
-/** EN: Fake catalog used when running in a browser without Tauri. TR: Tauri olmadan tarayıcıda kullanılan sahte katalog. */
+/** Fake catalog used when running in a browser without Tauri. */
 export function mockCatalog(): Game[] {
   const installed = mockInstalled();
   return [
@@ -95,7 +92,7 @@ export function mockCatalog(): Game[] {
   ];
 }
 
-/** EN: Fetch the game list from Rust or the mock catalog. TR: Oyun listesini Rust'tan veya mock katalogdan alır. */
+/** Fetch the game list from Rust or the mock catalog. */
 export async function fetchGames(): Promise<Game[]> {
   if (isTauri) return await invoke<Game[]>("list_games");
   await new Promise((r) => setTimeout(r, 200));

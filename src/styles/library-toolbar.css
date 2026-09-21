@@ -1,13 +1,9 @@
 /* ==========================================================================
    Modern Library Top Bar
-   Modern Kutuphane Ust Bari
 
-   EN: Modern library top bar and integrated control center.
+   Modern library top bar and integrated control center.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Modern kutuphane ust bari ve entegre kontrol merkezi.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ==========================================================================
    Modern Kütüphane Üst Barı & Bütünleşik Kontrol Merkezi

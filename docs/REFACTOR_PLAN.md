@@ -22,29 +22,25 @@ sorumluluğu tek olan modüllere ayrılmalıdır.
 
 ---
 
-## 2. Yorum Standardı / Comment Convention
+## 2. Comment Convention / Yorum Standardı
 
-Tüm yeni ve taşınan kodda yorumlar **iki dilli** olmalıdır: önce **İngilizce**,
-sonra **Türkçe**, ve açıklayıcı olmalıdır. Bu, projeyi harici (örn. Epic Games
-çalışanları veya diğer inceleyiciler) için okunabilir kılar.
+All code comments must be **English-only** and explanatory. This keeps the
+project readable for external reviewers (e.g. Epic Games staff) and for
+contributors who do not speak Turkish. Existing Turkish comments are converted
+to English as files are touched or refactored.
 
 ```ts
 /**
- * EN: Resolve the cached cover for a game, falling back to official key art.
- *     Order: custom user cover -> SteamGrid cache -> Epic DieselGameBox.
- * TR: Bir oyun için önbellekteki kapağı çözer, yoksa resmi key art'a düşer.
- *     Sıra: kullanıcı özel kapağı -> SteamGrid önbelleği -> Epic DieselGameBox.
+ * Resolve the cached cover for a game, falling back to official key art.
+ * Order: custom user cover -> SteamGrid cache -> Epic DieselGameBox.
  */
 ```
 
-Kısa satır içi yorumlarda da aynı kural:
-
 ```ts
-// EN: Cache the value to avoid an O(n) lookup on every render.
-// TR: Her render'da O(n) aramayı önlemek için değeri önbelleğe al.
+// Cache the value to avoid an O(n) lookup on every render.
 ```
 
-**Yasak:** Tek dilli, açıklamasız veya kopyala-yapıştır anlamsız yorumlar.
+**Forbidden:** Non-English, meaningless or copy-pasted comments.
 
 ---
 

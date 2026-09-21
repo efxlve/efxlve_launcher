@@ -1,17 +1,12 @@
 /**
  * Inline SVG icon system and the PlayStation platinum trophy artwork.
- * Satır içi SVG ikon sistemi ve PlayStation platin kupa görseli.
  *
- * EN: The project forbids raw OS emojis in the UI (see AGENTS.md zero-emoji
- *     policy). All icons are crisp, scalable inline SVG vectors with a single
- *     stroke width so they render identically on Windows 10/11 and Linux.
- * TR: Proje arayüzde ham işletim sistemi emojisi kullanımını yasaklar
- *     (bkz. AGENTS.md sıfır-emoji politikası). Tüm ikonlar tek stroke
- *     kalınlığına sahip, ölçeklenebilir satır içi SVG vektörlerdir; böylece
- *     Windows 10/11 ve Linux'ta birebir aynı görünür.
+ * The project forbids raw OS emojis in the UI (see AGENTS.md zero-emoji
+ * policy). All icons are crisp, scalable inline SVG vectors with a single
+ * stroke width so they render identically on Windows 10/11 and Linux.
  */
 
-/** EN: Allowed icon identifiers (Lucide-style names). TR: İzin verilen ikon kimlikleri (Lucide tarzı isimler). */
+/** Allowed icon identifiers (Lucide-style names). */
 export type IconName =
   | "heart"
   | "dots"
@@ -75,7 +70,7 @@ export type IconName =
   | "share-2"
   | "users";
 
-/** EN: SVG path bodies keyed by icon name. TR: İkon adına göre SVG path gövdeleri. */
+/** SVG path bodies keyed by icon name. */
 const ICON_PATHS: Record<string, string> = {
   camera:
     '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -183,16 +178,14 @@ const ICON_PATHS: Record<string, string> = {
     '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
 };
 
-/** EN: Render an inline SVG icon. TR: Satır içi SVG ikon üretir. */
+/** Render an inline SVG icon. */
 export function icon(name: IconName, size = 15): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] ?? ""}</svg>`;
 }
 
 /**
- * EN: Custom PlayStation-inspired platinum trophy artwork (purple flame + gems).
- *     Not a copy of any Sony trademark; an original vector in the launcher identity.
- * TR: Özgün PlayStation esinli platin kupa görseli (mor alev + mücevherler).
- *     Sony tescilli logosunun kopyası değil; launcher kimliğine ait özgün vektör.
+ * Custom PlayStation-inspired platinum trophy artwork (purple flame + gems).
+ * Not a copy of any Sony trademark; an original vector in the launcher identity.
  */
 export function epicPlatinumIcon(size = 18): string {
   const h = Math.round(size * 1.16);

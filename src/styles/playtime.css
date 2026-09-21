@@ -1,13 +1,9 @@
 /* ==========================================================================
    Live Game Status & Playtime Stats
-   Canli Oyun Durumu & Oynama Suresi Istatistikleri
 
-   EN: Running game status, play button states, playtime edit modal and statistics cards.
+   Running game status, play button states, playtime edit modal and statistics cards.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Calisan oyun durumu, oyna butonu durumlari, oynama suresi duzenleme modali ve istatistik kartlari.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ---------- Canlı Oyun Durumu & Oynanıyor Butonu ---------- */
 @keyframes pulse-green {

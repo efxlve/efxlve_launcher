@@ -1,13 +1,9 @@
 /* ==========================================================================
    Design Tokens & Global Reset
-   Tasarim Tokenleri & Global Reset
 
-   EN: Root CSS variables (legacy + PS5 design system tokens), box-sizing and scrollbar defaults.
+   Root CSS variables (legacy + PS5 design system tokens), box-sizing and scrollbar defaults.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Kok CSS degiskenleri (eski + PS5 tasarim sistemi tokenleri), box-sizing ve scrollbar varsayilanlari.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 :root {
   color-scheme: dark;

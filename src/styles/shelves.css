@@ -1,13 +1,9 @@
 /* ==========================================================================
    Shelves, HLTB & Custom Cover Modal
-   Raflar, HLTB & Ozel Kapak Modali
 
-   EN: Card hover micro-HUD, Steam-style shelves, HowLongToBeat card and custom cover modal.
+   Card hover micro-HUD, Steam-style shelves, HowLongToBeat card and custom cover modal.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Kart hover mikro-HUD, Steam tarzi raflar, HowLongToBeat karti ve ozel kapak modali.
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- KART HOVER MİKRO-HUD (PLAYTIME & ACHIEVEMENTS) --- */
 .pcard-micro-hud {

@@ -1,13 +1,9 @@
 /* ==========================================================================
    Platinum Badges & Drawer Tabs
-   Platin Rozetleri & Cekmece Sekmeleri
 
-   EN: Platinum trophy badge and holographic glint, detail drawer tab navigation with fade/arrow layers.
+   Platinum trophy badge and holographic glint, detail drawer tab navigation with fade/arrow layers.
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   TR: Platin kupa rozeti ve holografik parilti, cekmece sekme navigasyonu (fade/ok katmanlari).
-       Okunabilirlik icin eski tek parca src/styles.css dosyasindan ayrildi
-       (bkz. docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* --- Platin Kupa (%100 Tamamlama) Altın Rozet & Holografik Parıltı Efekti --- */
 /* --- Platin Kupa (%100 Tamamlama) Epic Mor Kupa & Holografik Parıltı Efekti --- */
