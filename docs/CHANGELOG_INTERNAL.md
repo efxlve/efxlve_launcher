@@ -1408,3 +1408,14 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - LB/RB artık modal kapalıyken üst seviye konsol sekmelerini (Mağaza → Kütüphane → İndirmeler) `cycleTopView()` ile döndürür (modal açıkken çekmece sekmeleri korunur).
 - B/Daire mağaza görünümündeyken `lastNonStoreView`'e geri döner. HUD etiketi "Filtreler" → "Sekmeler" olarak güncellendi.
 
+## 80. Beyaz Parlama / Flashbang (FOUC) Kökten Çözümü (Milestone 2)
+
+**Sorun:** Launcher açılışında, sayfa geçişlerinde ve özellikle mağaza içi gezinmede WebView2 native denetleyicisinin varsayılan saf beyaz (`0x00FFFFFF`) arka planı bir kare boyunca ekrana basılıyordu.
+
+**Çözüm — dört katmanlı anti-flash:**
+1. **`index.html` (head düzeyi):** `<html>` ve `<body>` etiketlerine doğrudan inline `background-color: #07080d; color-scheme: dark;` eklendi; `<meta name="color-scheme" content="dark">` + `<meta name="theme-color" content="#07080d">` ve CSS'ten önce çalışan kritik inline `html, body` stili yerleştirildi. Böylece `styles.css` Vite tarafından ayrıştırılmadan önceki ilk kare bile obsidyen çizilir.
+2. **`src-tauri/tauri.conf.json`:** Ana pencereye `"backgroundColor": "#07080d"` tanımlandı; WebView2'nin Win32 penceresini beyaz boyaması engellendi.
+3. **`src-tauri/src/main.rs` (native child webview):** `WebviewBuilder::new(...).background_color(tauri::webview::Color(7, 8, 13, 255))` eklendi. Mağaza sayfaları arası DirectX swap chain sıfırlamasında beyaz fırlamaz.
+4. **Mağaza içi geçiş kaplaması:** `STORE_EXTENSION_SCRIPT` içine `#efxlve-store-veil` eklendi — `document_start` anında en erken kurulan, tam ekran `#07080d` opak kaplama; `load` + `requestAnimationFrame` sonrası 0.22s fade ile kaldırılır. Ağ çok yavaş olsa bile 2.5 sn güvenlik ağı kaplamayı temizler (`pointer-events: none` olduğu için mağaza etkileşimini bloke etmez).
+5. **Tema tutarlılığı:** `--bg` `#0b0c10` → `#07080d` (DESIGN_SYSTEM.md kanvas rengi) ile native pencere arka planı ve gövde rengi birebir hizalandı; dikiş/renk sıçraması kalmadı.
+

@@ -215,9 +215,22 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     // 2. Anti-flash, Fiyat Alanı Etiketi, PDP Buton ve İndir Butonu Gizleme CSS'i
     var CSS_TEXT = `
         html, body {
-            background-color: #121212 !important;
+            background-color: #07080d !important;
             color-scheme: dark !important;
         }
+
+        /* Anti-FOUC kaplaması: ilk boyama hazır olana kadar sayfayı obsidyenle tutar,
+           sonra yumuşakça (fade) kaldırılır. Beyaz parlama/yanıp sönme engellenir. */
+        #efxlve-store-veil {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 2147483647 !important;
+            background: #07080d !important;
+            pointer-events: none !important;
+            opacity: 1 !important;
+            transition: opacity 0.22s ease !important;
+        }
+        #efxlve-store-veil.gone { opacity: 0 !important; }
 
         /* Fotoğraf üstü rozetleri tamamen kapat (Kullanıcı fotoğraf üstünde istemiyor) */
         .efxlve-store-badge {
@@ -441,6 +454,33 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         }
     }
     injectStyle();
+
+    // 2b. Anti-FOUC kaplamasını en erken anda kur, ilk boyamada yumuşakça kaldır.
+    function installVeil() {
+        try {
+            if (document.getElementById('efxlve-store-veil')) return;
+            var veil = document.createElement('div');
+            veil.id = 'efxlve-store-veil';
+            (document.body || document.documentElement).appendChild(veil);
+            var revealed = false;
+            function reveal() {
+                if (revealed) return;
+                revealed = true;
+                var el = document.getElementById('efxlve-store-veil');
+                if (!el) return;
+                el.classList.add('gone');
+                setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+            }
+            if (document.readyState === 'complete') {
+                requestAnimationFrame(reveal);
+            } else {
+                window.addEventListener('load', function() { requestAnimationFrame(reveal); }, { once: true });
+            }
+            // Güvenlik ağı: ağ çok yavaş olsa bile kaplama kalıcı olarak kalmaz.
+            setTimeout(reveal, 2500);
+        } catch(e) {}
+    }
+    installVeil();
 
     // 3. Sağ üstteki "İndir" butonunu kesin gizleme fonksiyonu
     function hideDownloadButton() {
@@ -1111,6 +1151,8 @@ async fn show_store_view(
         format!("epic-store-view-{seq}"),
         WebviewUrl::External(parsed),
     )
+    // Native WebView2 arka planı saf obsidyen: sayfa geçişlerinde beyaz parlama (FOUC) engellenir.
+    .background_color(tauri::webview::Color(7, 8, 13, 255))
     .initialization_script(&init_script)
     .on_navigation(move |url| {
         if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
