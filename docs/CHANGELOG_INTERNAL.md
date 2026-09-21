@@ -1505,3 +1505,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Her kart: ad, durum rozeti (`Kurulu · vX` yeşil / `Kurulu değil` nötr), kurulum yolu (ellipsis) ve `Resmi indirme sayfası` butonu (`open-external-url` ile mevcut harici açma altyapısını kullanır).
 - `third-party-refresh` aksiyonu ile yeniden tarama desteği.
 
+## 86. Linux/macOS Wine & Proton Uyumluluk Katmanı Araştırması ve Mimari Tasarımı (Milestone 8)
+
+**Kapsam:** Uygulama değil, araştırma ve mimari tasarım. Yeni `docs/CROSS_PLATFORM.md` belgesi eklendi.
+
+**Öne çıkan tasarım kararları:**
+- **Taşınabilirlik avantajı:** `legendary` ve Tauri v2/Vite zaten platformdan bağımsız; yalnızca Windows'a özgü yüzeyler (Registry, Win32 hook, `add_child` webview, kabuk entegrasyonu, sürücü harfleri) taşınmalı.
+- **`src-tauri/src/platform/` soyutlaması:** `PlatformHost` trait'i + `#[cfg(target_os)]` implementasyonları (windows/unix); iş mantığı platformdan ayrıştırılır.
+- **Linux:** GE-Proton / Proton-cachyos / Wine-GE runner'ları, `umu-launcher`, DXVK + VKD3D-Proton, oyun başına izole `WINEPREFIX`/`STEAM_COMPAT_DATA_PATH`, Wine Manager (GitHub Releases + SHA-256), ProtonDB/Steam Deck rozetleri, Flatpak + AppImage paketleme.
+- **macOS:** Apple Silicon + macOS Sonoma+ hedefi (CrossOver 27 Intel/32-bit desteğini kaldırdı); Apple Game Porting Toolkit 4 / D3DMetal birincil, DXMT alternatif, CrossOver bottle desteği.
+- **Fazlı plan:** F0 platform soyutlaması → F1 temel Linux → F2 Wine Manager → F3 ProtonDB/Flatpak → F4 macOS → F5 parite.
+- **Riskler:** kernel anticheat uyumsuzluğu, Apple GPTK lisans kısıtı, Wine performans ek yükü, legendary fork uyumu.
+
+**ROADMAP güncellemesi:** Milestone 1–8 tamamlandı olarak işaretlendi; üç aktif görev durumu `YAPILACAK` → `TAMAMLANDI` yapıldı.
+
