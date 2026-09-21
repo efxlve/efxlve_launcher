@@ -1967,7 +1967,7 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 ## 141. Güncelle Butonu Amber Rengi + Tüm Oyun Butonlarında Güncelleme Kontrolü
 
-- Yeni `.btn.update` stili (amber `--yellow`, koyu metin) — tasarım kuralı gereği **amber = güncelleme durumu**. `gamehub.css`'te hub aksiyon barında Oyna butonuyla aynı ölçülerde (46px) tanımlandı.
+- Yeni `.btn.update` stili: **tok amber** (`#d97706 → #b45309` gradyan, beyaz metin) — Oyna butonuyla aynı ölçü/çerçeve/gölge (46px). Parlak sarı + koyu metin denemesi geri alındı (çirkin duruyordu). Tasarım kuralı gereği **amber = güncelleme durumu**.
 - Güncelleme kontrolü tüm oyun butonlarına yayıldı: `drawer-view` (detay), `game-view.epicActionButtons` (kartlar/satırlar), `library-view` hero vitrini ve raf hero kartı. Güncelleme varsa artık hepsi amber "Güncelle" gösterir.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 

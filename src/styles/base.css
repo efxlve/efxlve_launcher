@@ -349,8 +349,8 @@ button { font-family: inherit; }
 .btn.play:hover { background: #059669; }
 .btn.primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); }
 .btn.primary:hover { background: var(--primary-hover); }
-.btn.update { background: var(--yellow); color: #1a1206; box-shadow: 0 4px 14px var(--yellow-glow); }
-.btn.update:hover { background: #d97706; }
+.btn.update { background: #d97706; color: #fff; box-shadow: 0 4px 14px var(--yellow-glow); }
+.btn.update:hover { background: #b45309; }
 .btn.danger { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--red); }
 .btn.danger:hover { background: var(--red); color: #fff; }
 .btn.small { padding: 5px 11px; font-size: 12px; border-radius: 6px; }
