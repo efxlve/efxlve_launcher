@@ -92,7 +92,7 @@ export const S = {
   screenshotCompressionQuality: (Number(localStorage.getItem(SS_QUALITY_KEY)) || 0.85) as number,
   isRecordingScreenshotHotkey: false,
   PRESET_HOTKEYS: ([
-  { code: 0x7B, name: "F12 (Varsayılan)" },
+  { code: 0x7B, name: "F12" },
   { code: 0x7A, name: "F11" },
   { code: 0x79, name: "F10" },
   { code: 0x78, name: "F9" },
@@ -157,13 +157,6 @@ export const S = {
   prevRenderedUpdatesCount: (-1) as number,
   prevRenderedColId: (undefined) as string | null | undefined,
   isSortDropdownOpen: false,
-  sortLabelMap: ({
-  recent: "Son oynanan",
-  alpha: "Alfabetik",
-  installed: "Yüklü önce",
-  platinum: "Platin kupalılar",
-  updates: "Güncelleme olanlar",
-}) as Record<string, string>,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,

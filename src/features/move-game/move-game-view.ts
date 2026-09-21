@@ -10,7 +10,26 @@ import { moveModalRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
+import { t } from "../../i18n";
 import type { MoveGameProgress } from "../../epic";
+
+/** Localized label for a move stage. */
+function moveStageLabel(stage: string): string {
+  switch (stage) {
+    case "moving":
+      return t("move.stageMoving");
+    case "verifying":
+      return t("move.stageVerifying");
+    case "cleaning":
+      return t("move.stageCleaning");
+    case "complete":
+      return t("move.stageComplete");
+    case "failed":
+      return t("move.stageFailed");
+    default:
+      return t("move.preparing");
+  }
+}
 
 /** Recompute and paint the free-space badge + start button state in place. */
 export function updateMoveSpaceBadgeInPlace(): void {
@@ -33,22 +52,22 @@ export function updateMoveSpaceBadgeInPlace(): void {
   let canStart = true;
 
   if (!S.selectedMoveTargetPath.trim()) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Lütfen geçerli bir hedef klasör yolu belirtin.</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.invalidPath")}</span></div>`;
     canStart = false;
   } else if (
     S.selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
     curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
   ) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Hedef klasör mevcut kurulum konumu ile aynı! Lütfen farklı bir konum seçin.</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.samePath")}</span></div>`;
     canStart = false;
   } else if (!hasEnoughSpace) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>Yetersiz Disk Alanı:</strong> Gerekli ${fmtBytes(installSize)} • Seçilen Sürücüde Boş: ${fmtBytes(availableBytes)}</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>${t("move.insufficientTitle")}</strong> ${t("move.insufficientBody", { required: fmtBytes(installSize), available: fmtBytes(availableBytes) })}</span></div>`;
     canStart = false;
   } else if (isSameDrive) {
-    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>Aynı Sürücü:</strong> Dosyalar anında (&lt;1 saniyede) taşınacaktır. Yeniden indirme gerekmez.</span></div>`;
+    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>${t("move.sameDriveTitle")}</strong> ${t("move.sameDriveBody")}</span></div>`;
   } else {
     const remaining = Math.max(0, availableBytes - installSize);
-    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>Disk Alanı Yeterli:</strong> Gerekli ${fmtBytes(installSize)} • Aktarım sonrası boş kalacak: ${fmtBytes(remaining)}</span></div>`;
+    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>${t("move.enoughTitle")}</strong> ${t("move.enoughBody", { required: fmtBytes(installSize), remaining: fmtBytes(remaining) })}</span></div>`;
   }
 
   const badgeContainer = document.getElementById("move-space-badge-container");
@@ -62,7 +81,8 @@ export function updateMoveSpaceBadgeInPlace(): void {
       curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || S.activeMoveModalAppName;
     const cleanBase = S.selectedMoveTargetPath.trim().replace(/[\\/]+$/, "");
     const finalDestPath = cleanBase ? `${cleanBase}\\${gameFolderName}` : "—";
-    previewEl.innerHTML = `${icon("info", 13)} <span>Oyun hedef konumu: <strong title="${esc(finalDestPath)}">${esc(finalDestPath)}</strong></span>`;
+    const pathHtml = `<strong title="${esc(finalDestPath)}">${esc(finalDestPath)}</strong>`;
+    previewEl.innerHTML = `${icon("info", 13)} <span>${t("move.targetPreview", { path: pathHtml })}</span>`;
   }
 
   const startBtn = document.querySelector('[data-act="start-move-game"]') as HTMLButtonElement | null;
@@ -80,27 +100,22 @@ export function updateMoveProgressInPlace(p: MoveGameProgress): void {
   const fillEl = document.getElementById("move-progress-bar-fill-el");
   if (fillEl) fillEl.style.width = `${pct}%`;
 
-  let stageText = "Hazırlanıyor…";
-  if (p.stage === "moving") stageText = "Dosyalar Taşınıyor…";
-  else if (p.stage === "verifying") stageText = "Bütünlük Doğrulanıyor…";
-  else if (p.stage === "cleaning") stageText = "Eski Konum Temizleniyor…";
-  else if (p.stage === "complete") stageText = "Taşıma Tamamlandı!";
-  else if (p.stage === "failed") stageText = "İşlem Başarısız Oldu";
+  const stageText = moveStageLabel(p.stage);
 
   const stageEl = document.getElementById("move-progress-stage-val");
   if (stageEl) stageEl.textContent = stageText;
 
   const speedEtaEl = document.getElementById("move-progress-speed-eta");
   if (speedEtaEl) {
-    const speedPart = p.speed ? `Hız: ${p.speed}` : "";
+    const speedPart = p.speed ? t("move.speed", { speed: p.speed }) : "";
     const sizePart = `${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}`;
     speedEtaEl.textContent = speedPart ? `${speedPart} • ${sizePart}` : sizePart;
   }
 
   const fileCountEl = document.getElementById("move-progress-file-count");
   if (fileCountEl) {
-    const etaPart = p.eta ? `Kalan: ${p.eta}` : "";
-    const countPart = p.total_files > 0 ? `${p.files_copied} / ${p.total_files} Dosya` : "";
+    const etaPart = p.eta ? t("move.eta", { eta: p.eta }) : "";
+    const countPart = p.total_files > 0 ? t("move.fileCount", { done: p.files_copied, total: p.total_files }) : "";
     fileCountEl.textContent = etaPart && countPart ? `${etaPart} • ${countPart}` : etaPart || countPart;
   }
 
@@ -120,7 +135,7 @@ export function renderMoveGameModalFrame(): void {
   if (!s) return;
 
   const title = s.title;
-  const curPath = s.installPath || "Bilinmiyor";
+  const curPath = s.installPath || t("move.unknown");
   const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
   const installSize = s.installSize || 0;
 
@@ -140,20 +155,20 @@ export function renderMoveGameModalFrame(): void {
                   <div class="move-drive-letter">
                     ${icon("hard-drive", 16)} ${d.letter}:
                   </div>
-                  <span class="move-drive-tag">${isCur ? "Mevcut" : isSel ? "Seçili" : (d.label || "Yerel Disk")}</span>
+                  <span class="move-drive-tag">${isCur ? t("move.current") : isSel ? t("move.selected") : (d.label || t("move.localDisk"))}</span>
                 </div>
                 <div class="move-drive-meter-track">
                   <div class="move-drive-meter-fill" style="width:${usedPct}%; background:${barColor}"></div>
                 </div>
                 <div class="move-drive-space-text">
-                  <span>Boş: <strong>${fmtBytes(d.available_bytes)}</strong></span>
-                  <span>%${usedPct} Dolu</span>
+                  <span>${t("move.free")} <strong>${fmtBytes(d.available_bytes)}</strong></span>
+                  <span>${t("move.usedPct", { pct: usedPct })}</span>
                 </div>
               </button>
             `;
           })
           .join("")
-      : `<div style="grid-column: 1/-1; padding: 12px; color: #94a3b8; font-size: 12px;">Sürücü bilgisi yüklenemedi. Aşağıdan doğrudan klasör seçebilirsiniz.</div>`;
+      : `<div style="grid-column: 1/-1; padding: 12px; color: #94a3b8; font-size: 12px;">${t("move.drivesFailed")}</div>`;
 
   const targetDrive = S.moveSystemDrives.find(
     (d) => d.letter.toUpperCase() === S.selectedMoveDriveLetter.toUpperCase()
@@ -166,22 +181,22 @@ export function renderMoveGameModalFrame(): void {
   let badgeHtml = "";
   let canStart = true;
   if (!S.selectedMoveTargetPath.trim()) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Lütfen geçerli bir hedef klasör yolu belirtin.</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.invalidPath")}</span></div>`;
     canStart = false;
   } else if (
     S.selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
     curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
   ) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>Hedef klasör mevcut kurulum konumu ile aynı! Lütfen farklı bir konum seçin.</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.samePath")}</span></div>`;
     canStart = false;
   } else if (!hasEnoughSpace) {
-    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>Yetersiz Disk Alanı:</strong> Gerekli ${fmtBytes(installSize)} • Seçilen Sürücüde Boş: ${fmtBytes(availableBytes)}</span></div>`;
+    badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span><strong>${t("move.insufficientTitle")}</strong> ${t("move.insufficientBody", { required: fmtBytes(installSize), available: fmtBytes(availableBytes) })}</span></div>`;
     canStart = false;
   } else if (isSameDrive) {
-    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>Aynı Sürücü:</strong> Dosyalar anında (&lt;1 saniyede) taşınacaktır. Yeniden indirme gerekmez.</span></div>`;
+    badgeHtml = `<div class="move-space-badge ok">${icon("zap", 15)} <span><strong>${t("move.sameDriveTitle")}</strong> ${t("move.sameDriveBody")}</span></div>`;
   } else {
     const remaining = Math.max(0, availableBytes - installSize);
-    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>Disk Alanı Yeterli:</strong> Gerekli ${fmtBytes(installSize)} • Aktarım sonrası boş kalacak: ${fmtBytes(remaining)}</span></div>`;
+    badgeHtml = `<div class="move-space-badge ok">${icon("check-circle", 15)} <span><strong>${t("move.enoughTitle")}</strong> ${t("move.enoughBody", { required: fmtBytes(installSize), remaining: fmtBytes(remaining) })}</span></div>`;
   }
 
   let progressHtml = "";
@@ -192,19 +207,14 @@ export function renderMoveGameModalFrame(): void {
       percent: 0,
       copied_bytes: 0,
       total_bytes: installSize,
-      speed: "Başlatılıyor…",
-      eta: "Hesaplanıyor…",
+      speed: t("dl.starting"),
+      eta: t("common.calculating"),
       current_file: "",
       files_copied: 0,
       total_files: 0,
     };
     const pct = Math.min(100, Math.max(0, Math.round(p.percent)));
-    let stageText = "Hazırlanıyor…";
-    if (p.stage === "moving") stageText = "Dosyalar Taşınıyor…";
-    else if (p.stage === "verifying") stageText = "Bütünlük Doğrulanıyor…";
-    else if (p.stage === "cleaning") stageText = "Eski Konum Temizleniyor…";
-    else if (p.stage === "complete") stageText = "Taşıma Tamamlandı!";
-    else if (p.stage === "failed") stageText = "İşlem Başarısız Oldu";
+    const stageText = moveStageLabel(p.stage);
 
     const filename = p.current_file ? p.current_file.split(/[\\/]/).pop() || p.current_file : "";
 
@@ -221,8 +231,8 @@ export function renderMoveGameModalFrame(): void {
           <div id="move-progress-bar-fill-el" class="move-progress-bar-fill" style="width:${pct}%"></div>
         </div>
         <div class="move-progress-meta-row">
-          <span id="move-progress-speed-eta">${p.speed ? `Hız: ${p.speed}` : ""} • ${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}</span>
-          <span id="move-progress-file-count">${p.eta ? `Kalan: ${p.eta}` : ""} • ${p.files_copied} / ${p.total_files} Dosya</span>
+          <span id="move-progress-speed-eta">${p.speed ? t("move.speed", { speed: p.speed }) : ""} • ${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}</span>
+          <span id="move-progress-file-count">${p.eta ? t("move.eta", { eta: p.eta }) : ""} • ${t("move.fileCount", { done: p.files_copied, total: p.total_files })}</span>
         </div>
         <div id="move-progress-cur-file" class="move-progress-file" title="${esc(p.current_file)}">
           ${esc(filename)}
@@ -238,11 +248,11 @@ export function renderMoveGameModalFrame(): void {
           <div class="move-modal-title-group">
             <div class="move-modal-icon">${icon("hard-drive", 20)}</div>
             <div>
-              <h2 class="move-modal-title">Oyun Dosyalarını Taşı</h2>
+              <h2 class="move-modal-title">${t("move.title")}</h2>
               <div class="move-modal-subtitle">${esc(title)}</div>
             </div>
           </div>
-          <button class="move-modal-close" data-act="close-move-modal" title="Kapat" ${S.isMovingGame ? "disabled" : ""}>
+          <button class="move-modal-close" data-act="close-move-modal" title="${t("common.close")}" ${S.isMovingGame ? "disabled" : ""}>
             ${icon("x", 16)}
           </button>
         </div>
@@ -251,19 +261,19 @@ export function renderMoveGameModalFrame(): void {
           <!-- 1. Current location & size -->
           <div class="move-current-box">
             <div class="move-current-info">
-              <div class="move-current-label">Mevcut Kurulum Konumu</div>
+              <div class="move-current-label">${t("move.currentLocation")}</div>
               <div class="move-current-path" title="${esc(curPath)}">${esc(curPath)}</div>
             </div>
             <div class="move-current-size">
               <span class="move-size-val">${fmtBytes(installSize)}</span>
-              <span class="move-size-label">Gerekli Boyut</span>
+              <span class="move-size-label">${t("move.requiredSize")}</span>
             </div>
           </div>
 
           <!-- 2. Target drive selection -->
           <div>
             <div class="move-section-label">
-              ${icon("hard-drive", 14)} Hedef Disk Sürücüsü Seçin
+              ${icon("hard-drive", 14)} ${t("move.selectDrive")}
             </div>
             <div class="move-drive-grid">
               ${driveCardsHtml}
@@ -273,7 +283,7 @@ export function renderMoveGameModalFrame(): void {
           <!-- 3. Target folder path & browse -->
           <div>
             <div class="move-section-label">
-              ${icon("folder", 14)} Hedef Klasör
+              ${icon("folder", 14)} ${t("move.targetFolder")}
             </div>
             <div class="move-path-input-group">
               <input
@@ -281,7 +291,7 @@ export function renderMoveGameModalFrame(): void {
                 class="move-path-input"
                 type="text"
                 value="${esc(S.selectedMoveTargetPath)}"
-                placeholder="Örn: D:\\Games"
+                placeholder="${t("move.pathPlaceholder")}"
                 spellcheck="false"
                 autocomplete="off"
                 ${S.isMovingGame ? "disabled" : ""}
@@ -291,13 +301,13 @@ export function renderMoveGameModalFrame(): void {
                 class="btn ghost move-browse-btn"
                 data-act="browse-move-target"
                 ${S.isMovingGame ? "disabled" : ""}
-                title="Sistem Klasör Gezginini Aç"
+                title="${t("move.browseTip")}"
               >
-                ${icon("folder", 14)} Gözat…
+                ${icon("folder", 14)} ${t("move.browse")}
               </button>
             </div>
             <div class="move-path-preview" id="move-path-preview">
-              ${icon("info", 13)} <span>Oyun hedef konumu: <strong title="${esc(
+              ${icon("info", 13)} <span>${t("move.targetPreview", { path: `<strong title="${esc(
                 S.selectedMoveTargetPath.trim()
                   ? `${S.selectedMoveTargetPath.trim().replace(/[\\/]+$/, "")}\\${curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || S.activeMoveModalAppName}`
                   : "—"
@@ -305,7 +315,7 @@ export function renderMoveGameModalFrame(): void {
                 S.selectedMoveTargetPath.trim()
                   ? `${S.selectedMoveTargetPath.trim().replace(/[\\/]+$/, "")}\\${curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || S.activeMoveModalAppName}`
                   : "—"
-              )}</strong></span>
+              )}</strong>` })}</span>
             </div>
           </div>
 
@@ -325,18 +335,18 @@ export function renderMoveGameModalFrame(): void {
             S.isMovingGame
               ? `
             <button class="btn danger" data-act="cancel-move-game" data-id="${s.appName}">
-              ${icon("x", 14)} İptal Et
+              ${icon("x", 14)} ${t("move.cancel")}
             </button>
           `
               : `
-            <button class="btn ghost" data-act="close-move-modal">Vazgeç</button>
+            <button class="btn ghost" data-act="close-move-modal">${t("move.discard")}</button>
             <button
               class="btn primary"
               data-act="start-move-game"
               data-id="${s.appName}"
               ${!canStart ? "disabled" : ""}
             >
-              ${icon("hard-drive", 14)} Taşımayı Başlat
+              ${icon("hard-drive", 14)} ${t("move.start")}
             </button>
           `
           }

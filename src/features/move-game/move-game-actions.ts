@@ -11,7 +11,7 @@ import { epicDlProgress } from "../../core/game-view";
 import { openEpicModal } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-
+import { t } from "../../i18n";
 
 import {
   epicCancelMoveGame,
@@ -25,24 +25,24 @@ import { renderMoveGameModalFrame } from "./move-game-view";
 export function applyMovedGamePath(appName: string, newPath: string): void {
   if (!appName || !newPath) return;
 
-  // 1. epicSummaries listesindeki oyunun installPath değerini hemen güncelle
+  // 1. Update the game's installPath in the epicSummaries list immediately.
   const s = S.epicSummaries.find((x) => x.appName === appName);
   if (s) {
     s.installPath = newPath;
   }
 
-  // 2. Aktif yönetim ayarları açıksa (drawer veya modal) oradaki yolu güncelle
+  // 2. If the manage panel is open, update the path there too.
   if (S.activeManageSettings && S.activeManageSettings.appName === appName) {
     S.activeManageSettings.installPath = newPath;
   }
 
-  // 3. Ekranda açık olan tüm "Kurulum Konumu" DOM metinlerini anında (0ms) güncelle
+  // 3. Update every visible "install location" DOM text instantly (0ms).
   const pathEls = document.querySelectorAll("#manage-install-path");
   pathEls.forEach((el) => {
     el.textContent = newPath;
   });
 
-  // 4. Quick manage modal açıksa inputları da yerinde senkronize et
+  // 4. Keep the manage panel inputs in sync in place.
   if (S.activeManageSettings && S.activeManageSettings.appName === appName) {
     updateManageModalInputsInPlace(S.activeManageSettings);
   }
@@ -50,7 +50,7 @@ export function applyMovedGamePath(appName: string, newPath: string): void {
 
 export function closeMoveGameModal(): void {
   if (S.isMovingGame) {
-    toast("Taşıma işlemi devam ediyor, lütfen önce iptal edin!", "");
+    toast(t("move.inProgress"), "");
     return;
   }
   S.activeMoveModalAppName = null;
@@ -62,12 +62,12 @@ export function closeMoveGameModal(): void {
 
 export async function openMoveGameModal(appName: string): Promise<void> {
   if (S.isMovingGame) {
-    toast("Başka bir taşıma işlemi devam ediyor!", "");
+    toast(t("move.busy"), "");
     return;
   }
   const s = S.epicSummaries.find((x) => x.appName === appName);
   if (!s || !s.installed) {
-    toast("Bu oyun kurulu değil veya bulunamadı!", "err");
+    toast(t("move.notInstalled"), "err");
     return;
   }
 
@@ -77,7 +77,7 @@ export async function openMoveGameModal(appName: string): Promise<void> {
   try {
     S.moveSystemDrives = await epicGetSystemDrives();
   } catch (err) {
-    console.warn("Sürücüler tespit edilemedi:", err);
+    console.warn("System drives could not be detected:", err);
     S.moveSystemDrives = [];
   }
 
@@ -85,7 +85,7 @@ export async function openMoveGameModal(appName: string): Promise<void> {
   const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
   const installSize = s.installSize || 0;
 
-  // Varsayılan hedef sürücü: Mevcut sürücü dışındaki ilk yeterli alana sahip sürücü
+  // Default target drive: the first other drive with enough free space.
   const otherDriveWithSpace = S.moveSystemDrives.find(
     (d) => d.letter.toUpperCase() !== curDrive && d.available_bytes >= installSize
   );
@@ -103,7 +103,7 @@ export async function openMoveGameModal(appName: string): Promise<void> {
     S.selectedMoveDriveLetter = "D";
   }
 
-  // Varsayılan hedef klasör: seçilen sürücüde \Games
+  // Default target folder: \Games on the selected drive.
   S.selectedMoveTargetPath = `${S.selectedMoveDriveLetter}:\\Games`;
 
   renderMoveGameModalFrame();
@@ -155,8 +155,8 @@ export async function startMoveGame(appName: string): Promise<void> {
     percent: 0,
     copied_bytes: 0,
     total_bytes: s.installSize || 0,
-    speed: "Başlatılıyor…",
-    eta: "Hesaplanıyor…",
+    speed: t("dl.starting"),
+    eta: t("common.calculating"),
     current_file: "",
     files_copied: 0,
     total_files: 0,
@@ -170,14 +170,14 @@ export async function startMoveGame(appName: string): Promise<void> {
       if (newPath) {
         applyMovedGamePath(appName, newPath);
       }
-      toast(res.message || "Oyun dosyaları başarıyla yeni konuma taşındı!", "ok");
+      toast(res.message || t("move.success"), "ok");
       S.isMovingGame = false;
       closeMoveGameModal();
 
-      // Diskten güncel kurulu oyunlar listesini tazele
+      // Refresh the installed-games list from disk.
       await refreshEpicInstalled();
 
-      // Arka planda taze ayarları çek ve state'i senkronize tut
+      // Fetch fresh settings in the background and keep state in sync.
       try {
         const freshSettings = await epicGetGameSettings(appName);
         if (S.activeManageSettings && S.activeManageSettings.appName === appName) {
@@ -186,22 +186,22 @@ export async function startMoveGame(appName: string): Promise<void> {
         }
       } catch {}
 
-      // refreshEpicInstalled sonrası hafıza nesnesi yenilendiyse tekrar garantiye al
+      // Re-apply the moved path in case refreshEpicInstalled replaced the summary.
       if (newPath) {
         applyMovedGamePath(appName, newPath);
       }
 
-      // Game Hub drawer açık ise arayüzü pürüzsüzce yeniden çiz
+      // If the game detail drawer is open, repaint it smoothly.
       if (S.currentModalAppName === appName) {
         openEpicModal(appName, false);
       }
     } else {
-      toast(`Taşıma işlemi tamamlanamadı: ${res.message}`, "err");
+      toast(t("move.failed", { msg: res.message }), "err");
       S.isMovingGame = false;
       renderMoveGameModalFrame();
     }
   } catch (err) {
-    toast(`Taşıma hatası: ${String(err)}`, "err");
+    toast(t("move.error", { msg: String(err) }), "err");
     S.isMovingGame = false;
     renderMoveGameModalFrame();
   }
@@ -210,12 +210,12 @@ export async function startMoveGame(appName: string): Promise<void> {
 export async function cancelMoveGame(appName: string): Promise<void> {
   try {
     await epicCancelMoveGame(appName);
-    toast("Taşıma iptal ediliyor… Kaynak dosyalar güvende.", "");
+    toast(t("move.cancelling"), "");
   } catch (err) {
-    toast(`İptal isteği gönderilemedi: ${String(err)}`, "err");
+    toast(t("move.cancelFailed", { msg: String(err) }), "err");
   }
 }
 
-/* ---------- Epic indirme ---------- */
+/* ---------- Epic download ---------- */
 
 
