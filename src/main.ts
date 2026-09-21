@@ -162,6 +162,20 @@ import {
   mockInstalled,
   saveMockInstalled,
 } from "./core/constants";
+import {
+  collectionRoot,
+  ctxRoot,
+  dlBadge,
+  manageRoot,
+  modalRoot,
+  moveModalRoot,
+  playtimeRoot,
+  selectiveRoot,
+  viewEl,
+} from "./core/dom";
+import { rawOf, setEpicGamesRaw, setEpicSummaries, summaryOf } from "./core/selectors";
+import { initContextMenu } from "./features/context-menu/context-menu";
+import { toast } from "./core/toast";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime, fmtPrice, fmtSize } from "./core/utils";
 import { epicPlatinumIcon, icon, type IconName } from "./core/icons";
 import type { CatalogMeta, Game, View } from "./core/types";
@@ -212,20 +226,6 @@ let epicCardSize: CardSize = (localStorage.getItem("efxlve-card-size") as CardSi
 
 
 
-
-function setEpicGamesRaw(games: EpicGame[]): void {
-  S.epicGamesRaw = games;
-  S.epicGamesRawMap = new Map(games.map((g) => [g.app_name, g]));
-}
-
-function setEpicSummaries(sums: EpicSummary[]): void {
-  S.epicSummaries = sums;
-  S.epicSummariesMap = new Map(sums.map((s) => [s.appName, s]));
-}
-
-function summaryOf(appName: string): EpicSummary | undefined {
-  return S.epicSummariesMap.get(appName);
-}
 
 const sortOptions: { id: EpicSort; label: string; icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh" }[] = [
   { id: "recent", label: "Son oynanan", icon: "clock" },
@@ -487,10 +487,6 @@ function pushRecent(appName: string): void {
   updateChrome();
 }
 
-function rawOf(appName: string): EpicGame | undefined {
-  return S.epicGamesRawMap.get(appName);
-}
-
 /** Geniş yatay kapak (Hero banner ve Drawer için) */
 function epicWideArt(s: EpicSummary): string | null {
   const customHero = S.customHeroes[s.appName];
@@ -666,102 +662,8 @@ function setView(next: View): void {
 
 
 
-const viewEl = document.getElementById("view") as HTMLElement;
-const modalRoot = document.getElementById("modal-root") as HTMLElement;
-const manageRoot = document.getElementById("manage-root") as HTMLElement;
-const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
-const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
-const moveModalRoot = document.getElementById("move-modal-root") as HTMLElement;
-const toastsEl = document.getElementById("toasts") as HTMLElement;
-const dlBadge = document.getElementById("dl-badge") as HTMLElement;
-const ctxRoot = document.getElementById("ctx-root") as HTMLElement | null;
-
-/* ---------- PS5 / Steam Tarzı Özel Sağ Tık Menüsü (Context Menu) ---------- */
 
 
-
-function hideContextMenu(): void {
-  if (S.ctxMenuEl) {
-    S.ctxMenuEl.remove();
-    S.ctxMenuEl = null;
-  }
-}
-
-function showContextMenu(x: number, y: number, appName: string): void {
-  hideContextMenu();
-  const s = summaryOf(appName);
-  if (!s) return;
-  const installed = !!s.installed;
-  const faved = S.epicFav.has(appName);
-
-  const item = (
-    act: string,
-    label: string,
-    iconName: Parameters<typeof icon>[0],
-    danger = false,
-  ): string =>
-    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}">${icon(iconName, 15)}<span>${label}</span></button>`;
-
-  const menu = document.createElement("div");
-  menu.className = "ps5-context-menu";
-  menu.setAttribute("role", "menu");
-  menu.innerHTML = `
-    <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
-    ${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
-    ${item("manage-game", t("common.manage"), "settings")}
-    <div class="ps5-context-sep"></div>
-    ${item("manage-create-shortcut", t("ctx.shortcut"), "external")}
-    ${installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
-    ${installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
-    ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
-    ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", t("common.uninstall"), "trash", true)}` : ""}
-  `;
-
-  const root = ctxRoot || document.body;
-  root.appendChild(menu);
-  S.ctxMenuEl = menu;
-
-  // Ekran dışına taşmayı önle (ölçüm yalnızca bir kez, layout thrashing yok).
-  const rect = menu.getBoundingClientRect();
-  const px = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
-  const py = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
-  menu.style.left = `${px}px`;
-  menu.style.top = `${py}px`;
-  menu.querySelector<HTMLElement>(".ps5-context-item")?.focus();
-}
-
-document.addEventListener(
-  "contextmenu",
-  (e) => {
-    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
-    if (!target) {
-      hideContextMenu();
-      return;
-    }
-    e.preventDefault();
-    const id = target.dataset.id;
-    if (id) showContextMenu(e.clientX, e.clientY, id);
-  },
-  true,
-);
-
-// Menü dışına tıklama veya kaydırma menüyü kapatır; menü öğesine tıklamada
-// önce global data-act yönlendirmesi çalışır, ardından menü kapanır.
-document.addEventListener(
-  "click",
-  (e) => {
-    const t = e.target as HTMLElement;
-    if (t.closest(".ps5-context-menu")) {
-      window.setTimeout(hideContextMenu, 0);
-      return;
-    }
-    hideContextMenu();
-  },
-  true,
-);
-
-window.addEventListener("scroll", hideContextMenu, true);
-window.addEventListener("resize", hideContextMenu, { passive: true });
 
 
 
@@ -943,28 +845,6 @@ function startSpeedChartTimer(): void {
 }
 
 /* ---------- Yardımcılar ---------- */
-
-function toast(msg: string, kind: "ok" | "err" | "" = ""): void {
-  const el = document.createElement("div");
-  el.className = `toast ${kind}`;
-  el.textContent = msg;
-  if (kind === "err") {
-    el.title = "Kopyalamak için tıkla";
-    el.style.cursor = "pointer";
-    el.addEventListener("click", () => {
-      const text = el.textContent ?? "";
-      const done = (): void => el.remove();
-      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done);
-      else done();
-    });
-    toastsEl.appendChild(el);
-    const errs = toastsEl.querySelectorAll(".toast.err");
-    while (errs.length > 3) errs[0]?.remove();
-    return;
-  }
-  toastsEl.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
 
 async function epicPlay(appName: string): Promise<void> {
   pushRecent(appName);
@@ -8136,7 +8016,7 @@ async function loadSettingsView(): Promise<void> {
 
 /* ---------- Koleksiyon Yönetimi (UI & Modallar) ---------- */
 
-const collectionRoot = document.getElementById("collection-root");
+
 
 
 
@@ -10403,6 +10283,7 @@ async function init(): Promise<void> {
   await setLanguage(S.appLanguage);
   applyStaticTranslations();
   updateOfflineModeUi();
+  initContextMenu();
   if (isTauri) {
     try {
       S.libraryPath = await invoke<string>("library_dir");

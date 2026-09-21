@@ -112,8 +112,8 @@ adıma geçilmez. Yerel değişken gölgelemesi (shadowing) her adımda elle kon
 | **F1** | CSS'i 24 modüle böl (`src/styles/`). | ✅ Tamamlandı |
 | **F2** | `core/types.ts`, `core/constants.ts`, `core/utils.ts`, `core/icons.ts` çıkar. | ✅ Tamamlandı |
 | **F3a** | `core/state.ts` (tek `S` nesnesi); `main.ts` referanslarını `S.*`'e taşı (TS dil servisi ile, tsc doğrulamalı). | ✅ Tamamlandı |
-| **F3b** | `core/dom.ts` (DOM referansları) + `core/toast.ts` + `core/ipc.ts` (olay kayıtları). | 🚧 Planlandı |
-| **F4** | `features/context-menu`, `features/gamepad`, `features/screenshots` çıkar (durum sahipliği ile). | 🚧 Planlandı |
+| **F3b** | `core/dom.ts` ✅ + `core/toast.ts` ✅ + `core/selectors.ts` ✅; `core/ipc.ts` (olay kayıtları) 🚧. | 🟡 Kısmi |
+| **F4** | `features/context-menu` ✅, `features/gamepad` 🚧, `features/screenshots` 🚧, `features/dlc` 🚧, `features/move-game` 🚧, `features/collections` 🚧. | 🟡 Devam ediyor |
 | **F5** | `features/library`, `features/drawer`, `features/downloads`, `features/profile`, `features/settings` çıkar. | 🚧 Planlandı |
 | **F6** | `features/collections`, `features/move-game`, `features/dlc`, `features/store` çıkar; `main.ts` yalnızca bootstrap kalır. | 🚧 Planlandı |
 
