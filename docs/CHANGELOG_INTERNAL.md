@@ -1664,3 +1664,8 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `main.ts` ~3.592 → ~3.495 satır. `tsc`/`vite build` yeşil.
 - **Ders (satır kayması):** Toplu kesim öncesi satır numaraları HER ZAMAN yeniden alınmalı; import eklemeleri numaraları kaydırır. `git checkout -- src/main.ts` ile geri dönüp tekrar denendi.
 
+## 103. Modülerleştirme Faz 5 (devam): Oyun Taşıma Aksiyonları
+
+- `applyMovedGamePath`, `closeMoveGameModal`, `openMoveGameModal`, `browseMoveTarget`, `startMoveGame`, `cancelMoveGame` → `src/features/move-game/move-game-actions.ts` (~223 satır). Saf görünüm `move-game-view.ts`'te kaldı.
+- `main.ts` ~3.495 → ~3.309 satır. `tsc`/`vite build` yeşil.
+
