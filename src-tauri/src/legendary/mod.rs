@@ -1,7 +1,7 @@
-//! Epic Games (Legendary CLI) entegrasyonu.
+//! Epic Games (Legendary CLI) integration.
 //!
-//! Faz 0 kapsamı: binary çözümleme + oto-indirme, auth (kod/aktarım),
-//! oturum durumu ve kütüphane listeleme. İndirme/oynatma Faz 1-2'de.
+//! Phase 0 scope: binary resolution + auto-download, auth (code/import),
+//! session status and library listing. Downloads/play are phases 1-2.
 
 pub mod client;
 pub mod cache;
@@ -23,30 +23,30 @@ pub mod move_game;
 
 use thiserror::Error;
 
-/// Frontend'in "giriş gerekli" durumunu tanıdığı sabit hata kodu.
-/// Komutlar `LegendaryError::NotAuthenticated` yerine bunu döndürür.
+/// Stable error code the frontend recognises as the "login required" state.
+/// Commands return this instead of `LegendaryError::NotAuthenticated`.
 pub const NOT_AUTHENTICATED: &str = "NOT_AUTHENTICATED";
 
 #[derive(Debug, Error)]
 pub enum LegendaryError {
-    #[error("Epic hesabına giriş yapılmamış")]
+    #[error("@t:err.notAuthenticated")]
     NotAuthenticated,
-    #[error("legendary komutu başarısız oldu (çıkış kodu {exit}): {stderr_tail}")]
+    #[error("@t:err.commandFailed\u{1f}{exit}\u{1f}{stderr_tail}")]
     CommandFailed {
         exit: i32,
         stderr_tail: String,
-        /// Tanı için tam çıktı (arayüze gönderilmez, dosyaya yazılır).
+        /// Full output for diagnostics (not sent to the UI, written to a file).
         stderr_full: String,
     },
-    #[error("legendary çıktısı okunamadı: {0}")]
+    #[error("@t:err.parse\u{1f}{0}")]
     ParseError(String),
-    #[error("legendary bulunamadı, önce indirin")]
+    #[error("@t:err.binaryMissing")]
     BinaryMissing,
-    #[error("legendary indirilemedi: {0}")]
+    #[error("@t:err.downloadFailed\u{1f}{0}")]
     DownloadFailed(String),
-    #[error("komut zaman aşımına uğradı")]
+    #[error("@t:err.timeout")]
     Timeout,
-    #[error("G/Ç hatası: {0}")]
+    #[error("@t:err.io\u{1f}{0}")]
     Io(String),
 }
 
@@ -60,15 +60,15 @@ impl From<std::io::Error> for LegendaryError {
     }
 }
 
-/// Geçici hata izleri: tekrar denemeye değer durumlar.
-/// Her deneme yeni bir `legendary` süreci + taze login ile çalışır,
-/// ayrıca kısmi metadata diske yazıldığı için kalan iş her turda azalır.
+/// Transient error fingerprints: states worth retrying.
+/// Each attempt runs a fresh `legendary` process with a fresh login, and partial
+/// metadata is written to disk, so the remaining work shrinks every round.
 pub(crate) fn transient_reason(text: &str) -> Option<&'static str> {
     if text.contains("429") || text.contains("Too Many Requests") {
-        Some("Epic hız limiti (429)")
+        Some("rate_limit")
     } else if text.contains("401 Client Error") || text.contains("Unauthorized") {
-        // Uzun senkronlarda token ortada eskiyebilir; yeni süreç taze giriş yapar.
-        Some("Epic oturum hatası (401)")
+        // The token can expire mid-sync on long runs; a new process logs in fresh.
+        Some("session")
     } else if [
         "Max retries",
         "Failed to establish",
@@ -82,47 +82,29 @@ pub(crate) fn transient_reason(text: &str) -> Option<&'static str> {
     .iter()
     .any(|m| text.contains(m))
     {
-        Some("Geçici ağ hatası")
+        Some("network")
     } else {
         None
     }
 }
 
 impl LegendaryError {
-    /// Kullanıcıya gösterilecek Türkçe mesaj (teknik detay korunur).
+    /// User-facing message descriptor (technical detail preserved as an argument).
     pub fn friendly(self) -> String {
         match &self {
-            LegendaryError::CommandFailed { stderr_tail, .. } => {
-                match transient_reason(stderr_tail) {
-                    Some("Epic hız limiti (429)") => {
-                        "Epic API hız limitine takıldı (429) — tekrar denemeler tükendi. \
-                         Birkaç dakika bekleyip Tekrar dene'ye bas. \
-                         (Not: ilk senkron kaldığı yerden devam eder, baştan başlamaz.)"
-                            .to_string()
-                    }
-                    Some("Epic oturum hatası (401)") => {
-                        "Epic oturumu tazelenemedi (401) — tekrar denemeler tükendi. \
-                         Önce Tekrar dene'ye bas (her deneme taze giriş yapar); \
-                         düzelmezse Epic'ten çıkış yapıp tekrar giriş yap."
-                            .to_string()
-                    }
-                    Some(_) => {
-                        format!("Geçici ağ hatası — denemeler tükendi. İnterneti kontrol edip Tekrar dene'ye bas.\nDetay: {stderr_tail}")
-                    }
-                    None if stderr_tail.contains("Login failed") => {
-                        "Epic girişi başarısız. İnterneti kontrol edip tekrar dene; \
-                         olmazsa çıkış yapıp tekrar giriş yap."
-                            .to_string()
-                    }
-                    None => self.to_string(),
-                }
-            }
+            LegendaryError::CommandFailed { stderr_tail, .. } => match transient_reason(stderr_tail) {
+                Some("rate_limit") => "@t:err.rateLimited".to_string(),
+                Some("session") => "@t:err.sessionExpired".to_string(),
+                Some(_) => format!("@t:err.network\u{1f}{stderr_tail}"),
+                None if stderr_tail.contains("Login failed") => "@t:err.loginFailed".to_string(),
+                None => self.to_string(),
+            },
             _ => self.to_string(),
         }
     }
 }
 
-/// Tauri komutları için hata eşleme.
+/// Error mapping for Tauri commands.
 pub fn cmd_error(e: LegendaryError) -> String {
     match e {
         LegendaryError::NotAuthenticated => NOT_AUTHENTICATED.to_string(),

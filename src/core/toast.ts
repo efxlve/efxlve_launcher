@@ -6,13 +6,14 @@
  * burst of failures cannot flood the screen.
  */
 
+import { localizeMessage } from "../i18n";
 import { toastsEl } from "./dom";
 
 /** Show a toast. `kind` selects the visual state (ok/err/neutral). */
 export function toast(msg: string, kind: "ok" | "err" | "" = ""): void {
   const el = document.createElement("div");
   el.className = `toast ${kind}`;
-  el.textContent = msg;
+  el.textContent = localizeMessage(msg);
   if (kind === "err") {
     el.title = "Click to copy";
     el.style.cursor = "pointer";

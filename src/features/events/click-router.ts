@@ -203,7 +203,7 @@ document.addEventListener("click", (e) => {
     localStorage.removeItem(MOCK_KEY);
     S.downloads.clear();
     updateBadge();
-    toast("Demo verisi sıfırlandı", "ok");
+    toast(i18nT("demo.reset"), "ok");
     void refreshGames();
   } else if (act === "epic-download") {
     void epicDownload();
@@ -238,7 +238,7 @@ document.addEventListener("click", (e) => {
     const val = t.dataset.val;
     if (val) {
       navigator.clipboard.writeText(val).then(() => {
-        toast("Hesap ID panoya kopyalandı", "ok");
+        toast(i18nT("profile.accountIdCopied"), "ok");
       }).catch(() => {
         toast(val, "");
       });
@@ -444,13 +444,13 @@ document.addEventListener("click", (e) => {
     const input = document.getElementById("modal-sgdb-key-input") as HTMLInputElement | null;
     const key = input?.value.trim() || "";
     if (!key) {
-      toast("Lütfen geçerli bir SteamGridDB API anahtarı girin", "err");
+      toast(i18nT("cover.needKey"), "err");
       return;
     }
     epicSetSteamGridKey(key)
       .then(() => {
         S.steamGridApiKey = key;
-        toast("SteamGridDB API anahtarı kaydedildi", "ok");
+        toast(i18nT("cover.keySaved"), "ok");
         renderCustomCoverModalContent(id);
         void searchAndLoadSteamGrid(id, S.sgdbSearchQuery);
       })
@@ -461,7 +461,7 @@ document.addEventListener("click", (e) => {
     epicSetSteamGridKey(key)
       .then(() => {
         S.steamGridApiKey = key || null;
-        toast(key ? "SteamGridDB API anahtarı kaydedildi" : "SteamGridDB API anahtarı kaldırıldı", "ok");
+        toast(key ? i18nT("cover.keySaved") : i18nT("cover.keyRemoved"), "ok");
         render();
       })
       .catch((err) => toast(String(err), "err"));
@@ -469,13 +469,13 @@ document.addEventListener("click", (e) => {
     const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
     const key = input?.value.trim() || S.steamGridApiKey || "";
     if (!key) {
-      toast("Lütfen test edilecek API anahtarını girin", "err");
+      toast(i18nT("cover.enterTestKey"), "err");
       return;
     }
-    toast("SteamGridDB bağlantısı test ediliyor…", "");
+    toast(i18nT("cover.testing"), "");
     epicTestSteamGridKey(key)
-      .then(() => toast("SteamGridDB bağlantısı başarılı!", "ok"))
-      .catch((err) => toast(`Bağlantı hatası: ${String(err)}`, "err"));
+      .then(() => toast(i18nT("cover.testOk"), "ok"))
+      .catch((err) => toast(i18nT("cover.testFailed", { msg: String(err) }), "err"));
   } else if (act === "toggle-sgdb-key-visibility") {
     const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
     if (input) {
@@ -514,22 +514,22 @@ document.addEventListener("click", (e) => {
     if (val) {
       if (S.activeCoverTarget === "hero") {
         saveCustomHero(id, val);
-        toast("Özel yatay afiş (Hero) kaydedildi", "ok");
+        toast(i18nT("cover.heroSaved"), "ok");
       } else {
         saveCustomCover(id, val);
-        toast("Özel dikey kapak (2:3) kaydedildi", "ok");
+        toast(i18nT("cover.portraitSaved"), "ok");
       }
       closeCustomCoverModal();
     } else {
-      toast("Lütfen SteamGridDB'den bir görsel seçin, URL girin veya dosya yükleyin", "err");
+      toast(i18nT("cover.pickFirst"), "err");
     }
   } else if (act === "reset-active-target" && id) {
     if (S.activeCoverTarget === "hero") {
       resetCustomHero(id);
-      toast("Yatay afiş orijinal haline döndürüldü", "ok");
+      toast(i18nT("cover.heroReset"), "ok");
     } else {
       resetCustomCover(id);
-      toast("Dikey kapak orijinal haline döndürüldü", "ok");
+      toast(i18nT("cover.portraitReset"), "ok");
     }
     S.sgdbSelectedCoverUrl = "";
     renderCustomCoverModalFrame(id);
@@ -538,13 +538,13 @@ document.addEventListener("click", (e) => {
     resetCustomCover(id);
     resetCustomHero(id);
     S.sgdbSelectedCoverUrl = "";
-    toast("Tüm özel görseller orijinal haline döndürüldü", "ok");
+    toast(i18nT("cover.allReset"), "ok");
     renderCustomCoverModalFrame(id);
     renderCustomCoverModalContent(id);
   } else if (act === "reset-custom-cover" && id) {
     resetCustomCover(id);
     closeCustomCoverModal();
-    toast("Orijinal kapak görseline dönüldü", "ok");
+    toast(i18nT("cover.originalRestored"), "ok");
   } else if (act === "epic-fav" && id) {
     toggleFav(id, t);
   } else if (act === "epic-detail" && id) {
@@ -677,15 +677,15 @@ document.addEventListener("click", (e) => {
   } else if (act === "save-game-col-btn") {
     void saveGameCollectionsFromModal();
   } else if (act === "import-egl-collections") {
-    toast("Epic Games Launcher kütüphanesi taranıyor...", "");
+    toast(i18nT("col.scanningEgl"), "");
     void epicImportEglCollections()
       .then((cols) => {
-        toast(`${cols.length} koleksiyon başarıyla içe aktarıldı`, "ok");
+        toast(i18nT("col.importedCount", { count: cols.length }), "ok");
         void loadEpicCollections();
         if (S.view === "settings") void loadSettingsView();
       })
       .catch((err) => {
-        toast(`İçe aktarma hatası: ${String(err)}`, "err");
+        toast(i18nT("col.importFailed", { msg: String(err) }), "err");
       });
   } else if (act === "epic-play" && id) {
     void epicPlay(id);
@@ -764,7 +764,7 @@ document.addEventListener("click", (e) => {
     epicSetInstallDir(v ? v : null)
       .then((st: EpicSettings) => {
         S.epicSettingsCache = st;
-        toast("Kurulum klasörü kaydedildi", "ok");
+        toast(i18nT("dl.installDirSaved"), "ok");
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
@@ -774,7 +774,7 @@ document.addEventListener("click", (e) => {
     epicSetInstallDir(v ? v : null)
       .then((st: EpicSettings) => {
         S.epicSettingsCache = st;
-        toast("Kurulum klasörü kaydedildi", "ok");
+        toast(i18nT("dl.installDirSaved"), "ok");
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
@@ -782,13 +782,13 @@ document.addEventListener("click", (e) => {
     void (async () => {
       const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
       const current = input?.value?.trim() || S.epicDefaultDir || null;
-      const chosen = await epicSelectFolderDialog(current).catch(() => null);
+      const chosen = await epicSelectFolderDialog(current, i18nT("move.pickerTitle")).catch(() => null);
       if (!chosen) return;
       if (input) input.value = chosen;
       try {
         const st = await epicSetInstallDir(chosen);
         S.epicSettingsCache = st;
-        toast("Kurulum klasörü kaydedildi", "ok");
+        toast(i18nT("dl.installDirSaved"), "ok");
         render();
       } catch (e) {
         toast(String(e), "err");
@@ -802,9 +802,9 @@ document.addEventListener("click", (e) => {
       .then(async (synced) => {
         await refreshEpicInstalled();
         S.eglDetectedList = await epicDetectEglGames().catch(() => []);
-        toast(synced > 0 ? `${synced} oyun eşitlendi ve kütüphaneye eklendi!` : "Tüm oyunlar zaten eşitlenmiş durumda.", "ok");
+        toast(synced > 0 ? i18nT("dl.syncedCount", { count: synced }) : i18nT("dl.allSynced"), "ok");
       })
-      .catch((e: unknown) => toast(`Eşitleme hatası: ${String(e)}`, "err"))
+      .catch((e: unknown) => toast(i18nT("dl.syncFailed", { msg: String(e) }), "err"))
       .finally(() => {
         S.eglSyncing = false;
         render();
@@ -878,21 +878,21 @@ document.addEventListener("click", (e) => {
   } else if (act === "manage-create-shortcut" && id) {
     epicCreateDesktopShortcut(id)
       .then((msg) => toast(msg, "ok"))
-      .catch((err) => toast(`Kısayol oluşturulamadı: ${String(err)}`, "err"));
+      .catch((err) => toast(i18nT("manage.shortcutFailed", { msg: String(err) }), "err"));
   } else if (act === "manage-create-backup" && id && !S.isBackingUp) {
     S.isBackingUp = true;
     const createBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
     if (createBtn) { createBtn.disabled = true; createBtn.textContent = "Yedekleniyor…"; }
-    toast("Kayıtlar yerel olarak yedekleniyor…", "");
+    toast(i18nT("backup.backingUp"), "");
     epicBackupSave(id)
       .then((b) => {
-        toast(`Yedek alındı: ${fmtBytes(b.size_bytes)} (${b.file_count} dosya)`, "ok");
+        toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
         const cur = S.gameBackupsMap.get(id) || [];
         S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
         const listEl = document.getElementById("manage-backup-list");
         if (listEl) listEl.innerHTML = renderBackupListHtml(id);
       })
-      .catch((err) => toast(`Yedekleme hatası: ${String(err)}`, "err"))
+      .catch((err) => toast(i18nT("backup.failed", { msg: String(err) }), "err"))
       .finally(() => {
         S.isBackingUp = false;
         const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
@@ -901,10 +901,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "manage-restore-backup" && id) {
     const bid = t.dataset.bid;
     if (bid) {
-      toast("Yedek geri yükleniyor…", "");
+      toast(i18nT("backup.restoring"), "");
       epicRestoreBackup(id, bid)
         .then((msg) => toast(msg, "ok"))
-        .catch((err) => toast(`Geri yükleme hatası: ${String(err)}`, "err"));
+        .catch((err) => toast(i18nT("backup.restoreFailed", { msg: String(err) }), "err"));
     }
   } else if (act === "manage-delete-backup" && id) {
     const bid = t.dataset.bid;
@@ -917,7 +917,7 @@ document.addEventListener("click", (e) => {
           const listEl = document.getElementById("manage-backup-list");
           if (listEl) listEl.innerHTML = renderBackupListHtml(id);
         })
-        .catch((err) => toast(`Silme hatası: ${String(err)}`, "err"));
+        .catch((err) => toast(i18nT("backup.deleteFailed", { msg: String(err) }), "err"));
     }
   } else if (act === "manage-open-backup-folder" && id) {
     epicOpenBackupFolder(id)
@@ -945,7 +945,7 @@ document.addEventListener("click", (e) => {
       localStorage.setItem(LANG_KEY, lang);
       void setLanguage(lang).then(() => {
         updateOfflineModeUi();
-        toast(lang === "tr" ? "Dil Türkçe olarak ayarlandı" : "Language updated", "ok");
+        toast(i18nT("settings.langSet"), "ok");
         render();
       });
     }
@@ -954,8 +954,8 @@ document.addEventListener("click", (e) => {
     const val = input?.value?.trim() ?? "";
     S.activeManageSettings.launchParameters = val;
     epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast("Başlatma parametreleri kaydedildi", "ok"))
-      .catch((err) => toast(`Kayıt hatası: ${String(err)}`, "err"));
+      .then(() => toast(i18nT("manage.argsSaved"), "ok"))
+      .catch((err) => toast(i18nT("manage.argsSaveFailed", { msg: String(err) }), "err"));
   } else if (act === "dl-pause" && id) {
     epicPauseDownload(id)
       .then((msg) => {
@@ -997,7 +997,7 @@ document.addEventListener("click", (e) => {
     epicReorderQueue(id, "remove")
       .then((q) => {
         S.dlQueueStatus = q;
-        toast("Kuyruktan kaldırıldı", "");
+        toast(i18nT("dl.removedFromQueue"), "");
         if (S.view === "downloads") render();
       })
       .catch((err) => toast(String(err), "err"));
@@ -1116,10 +1116,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-demo-platinum" && id) {
     if (S.demoPlatinumApps.has(id)) {
       S.demoPlatinumApps.delete(id);
-      toast("Platin efekti kaldırıldı", "");
+      toast(i18nT("platinum.removed"), "");
     } else {
       S.demoPlatinumApps.add(id);
-      toast("Platin Kupa parıltısı açıldı!", "ok");
+      toast(i18nT("platinum.added"), "ok");
     }
     localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...S.demoPlatinumApps]));
     if (S.view === "library") render();
@@ -1130,10 +1130,10 @@ document.addEventListener("click", (e) => {
     const s = S.epicSummaries.find((x) => x.appName === id);
     const title = t.dataset.title || (s ? s.title : id);
     playScreenshotShutterSound();
-    toast("Ekran görüntüsü alınıyor…", "");
+    toast(i18nT("ss.capturing"), "");
     epicCaptureGameScreenshot(id, title)
       .then((item) => {
-        toast(`Ekran görüntüsü kaydedildi: ${item.file_name}`, "ok");
+        toast(i18nT("ss.saved", { file: item.file_name }), "ok");
         void fetchAndRenderScreenshots(id, title, true);
       })
       .catch((err) => toast(String(err), "err"));
@@ -1245,18 +1245,18 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;
     localStorage.setItem(SS_COMPRESS_KEY, String(S.screenshotCompressionEnabled));
-    toast(S.screenshotCompressionEnabled ? "Görsel sıkıştırma etkinleştirildi" : "Görsel sıkıştırma kapatıldı (Ham PNG)", "ok");
+    toast(i18nT(S.screenshotCompressionEnabled ? "ss.compressionOn" : "ss.compressionOff"), "ok");
     render();
   } else if (act === "set-ss-format" && t.dataset.format) {
     const fmt = t.dataset.format as "avif" | "webp" | "jpg";
     S.screenshotCompressionFormat = fmt;
     localStorage.setItem(SS_FORMAT_KEY, fmt);
-    toast(`Sıkıştırma formatı: ${fmt.toUpperCase()}`, "ok");
+    toast(i18nT("ss.formatSet", { format: fmt.toUpperCase() }), "ok");
     render();
   } else if (act === "record-screenshot-hotkey") {
     S.isRecordingScreenshotHotkey = !S.isRecordingScreenshotHotkey;
     if (S.isRecordingScreenshotHotkey) {
-      toast("Klavyeden istediğiniz tuşa basın…", "");
+      toast(i18nT("settings.pressKeyToast"), "");
     }
     render();
   } else if (act === "win-minimize") {

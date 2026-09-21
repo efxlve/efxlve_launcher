@@ -1,16 +1,16 @@
-//! Oyun indirme/kurma: `legendary install` sarmalayıcı + kuyruk + iptal.
+//! Game download/install: `legendary install` wrapper + queue + cancel.
 //!
-//! Sözleşme: ilerleme mevcut `download-progress` event'iyle akar
+//! Contract: progress flows through the existing `download-progress` event
 //! (`{id, progress, done}`), hata `download-failed`, iptal
-//! `download-cancelled` ile bildirilir. Aynı anda tek aktif indirme olur.
+//! and cancellation is reported via `download-cancelled`. Only one active download at a time.
 //!
-//! Heroic'ten alınan desenler: `-y --skip-dlcs --skip-sdl`, MemoryError'da
+//! Patterns borrowed from Heroic: `-y --skip-dlcs --skip-sdl`, and on MemoryError
 //! `--max-shared-memory 5000` ile tekrar, stdout regex parse, indirme
-//! başına yeni süreç (kısmi dosyalar bir sonrakinde resume edilir).
+//! a fresh process per attempt (partial files resume on the next run).
 //!
-//! Eşzamanlılık notu: child process monitor görevine aittir; paylaşılan
-//! state'te yalnızca kısa kritik bölümler tutulur (asla await altında kilit
-//! tutulmaz). İptal, PID üzerinden işletim sistemine yaptırılır.
+//! Concurrency note: the child process belongs to the monitor task; shared
+//! state is held only across short critical sections (never hold a lock
+//! across an await). Cancellation is enforced by the OS via the PID.
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -153,7 +153,7 @@ fn emit_cancelled(app: &AppHandle, id: &str) {
     );
 }
 
-/// Varsayılan kurulum kökü: `<home>/Games` (legendary ile aynı).
+/// Default install root: `<home>/Games` (same as legendary).
 pub fn default_install_dir() -> PathBuf {
     let home = std::env::var("USERPROFILE")
         .or_else(|_| std::env::var("HOME"))
@@ -180,7 +180,7 @@ fn resolve_bin(app: &AppHandle) -> Result<PathBuf, String> {
     paths::resolve_binary(app, settings.alt_legendary_bin.as_deref()).map_err(cmd_error)
 }
 
-/// "00:01:22" veya "01:22" satırından saniyeyi ve string'i çıkarır.
+/// Extracts seconds and the raw string from a "00:01:22" or "01:22" line.
 pub fn parse_eta(line: &str) -> Option<(String, u64)> {
     let idx = line.find("ETA:")? + "ETA:".len();
     let rest = line[idx..].trim_start();
@@ -209,7 +209,7 @@ pub fn parse_eta(line: &str) -> Option<(String, u64)> {
     Some((raw_eta, secs))
 }
 
-/// "Download: 15.40 MiB/s" veya "Speed: 12.5 MB/s" satırından hız çıkarır.
+/// Extracts the speed from a "Download: 15.40 MiB/s" or "Speed: 12.5 MB/s" line.
 pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
     for key in keys {
         if let Some(idx) = line.find(key) {
@@ -241,7 +241,7 @@ pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
     None
 }
 
-/// `Downloaded: 123.45 MiB` / `Download size: 123.45 MiB` satırlarından MiB.
+/// MiB value from `Downloaded: 123.45 MiB` / `Download size: 123.45 MiB` lines.
 fn parse_mib_after(line: &str, key: &str) -> Option<f64> {
     let rest = line.find(key).map(|i| &line[i + key.len()..])?.trim_start();
     let num_end = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))?;
@@ -286,7 +286,7 @@ fn spawn_install_with_tags(
     install_tags: &[String],
 ) -> std::io::Result<tokio::process::Child> {
     let mut cmd = tokio::process::Command::new(bin);
-    // Not: global bayraklar (-y) alt komuttan ÖNCE gelir.
+    // Note: global flags (-y) come BEFORE the subcommand.
     cmd.arg("-y")
         .arg("install")
         .arg(app_name)
@@ -316,8 +316,8 @@ fn spawn_install_with_tags(
     cmd.spawn()
 }
 
-/// stdout borusunu arka planda tüketir (dolu boru süreci kitler!).
-/// Not: ilerleme STDOUT'ta değil STDERR'dedir; burası sadece tıkanmayı önler.
+/// Drains the stdout pipe in the background (a full pipe would deadlock the process!).
+/// Note: progress is on STDERR, not STDOUT; this only prevents a stall.
 fn spawn_drain(stdout: Option<tokio::process::ChildStdout>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         if let Some(o) = stdout {
@@ -327,10 +327,10 @@ fn spawn_drain(stdout: Option<tokio::process::ChildStdout>) -> tokio::task::Join
     })
 }
 
-/// Legendary indirme ilerlemesini tek satırda `\r` (carriage return) ile ezer.
-/// Standart `BufReader::lines()` yalnızca `\n` beklediği için hız/ETA verileri
-/// arayüze zamanında ulaşmaz. Bu okuyucu hem `\n` hem `\r` sınırlarını satır
-/// sonu kabul eder; böylece canlı hız akışı kesintisiz olur.
+/// Legendary overwrites download progress on a single line with `\r` (carriage return).
+/// The standard `BufReader::lines()` only waits for `\n`, so speed/ETA data
+/// does not reach the UI in time. This reader treats both `\n` and `\r`
+/// boundaries as line ends, keeping the live speed stream uninterrupted.
 struct CrlfLines<R> {
     reader: R,
     buf: Vec<u8>,
@@ -375,8 +375,8 @@ impl<R: AsyncRead + Unpin> CrlfLines<R> {
     }
 }
 
-/// `= Progress: 50.46% (1156/2291)` satırından yüzde.
-/// legendary'nin kendi hesabı en doğrusudur; MiB hesabı yedektir.
+/// Percentage from the `= Progress: 50.46% (1156/2291)` line.
+/// Legendary's own figure is the most accurate; the MiB-based one is a fallback.
 fn parse_progress_percent(line: &str) -> Option<i32> {
     let idx = line.find("Progress:")? + "Progress:".len();
     let rest = line[idx..].trim_start();
@@ -411,7 +411,7 @@ fn short_error(err_text: &str) -> String {
     }
 }
 
-/// İndirmeyi başlatır (kilit altında çağrılmaz!). Başarıda izleme görevi kurulur.
+/// Starts the download (must NOT be called while holding a lock!). Sets up the monitor task on success.
 fn start_download(app: &AppHandle, app_name: String, override_dir: Option<String>) -> Result<String, String> {
     start_download_with_tags(app, app_name, Vec::new(), override_dir)
 }
@@ -426,7 +426,7 @@ fn start_download_with_tags(
     let base = resolve_base(app, override_dir);
     let mut child =
         spawn_install_with_tags(app, &bin, &app_name, &base, false, &install_tags)
-            .map_err(|e| format!("başlatılamadı: {e}"))?;
+            .map_err(|e| format!("@t:dl.startFailed\u{1f}{e}"))?;
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
     let pid = child.id();
@@ -434,10 +434,10 @@ fn start_download_with_tags(
         let state = app.state::<AppState>();
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.active.is_some() {
-            // Araya başkası girdi: yetim bırakmamak için öldür (kill_on_drop yedeği).
+            // Someone else stepped in: kill it to avoid an orphan (kill_on_drop backup).
             drop(s);
             drop(child);
-            return Err("başka indirme başladı".into());
+            return Err("@t:dl.anotherStarted".into());
         }
         s.active = Some(app_name.clone());
         s.pid = pid;
@@ -449,7 +449,7 @@ fn start_download_with_tags(
     tauri::async_runtime::spawn(async move {
         monitor_download(app2, bin, app_name, base, child, stdout, stderr).await;
     });
-    Ok("İndirme başlatıldı".into())
+    Ok("@t:dl.started".into())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -476,7 +476,7 @@ async fn monitor_download(
     let mut tail: VecDeque<String> = VecDeque::with_capacity(60);
 
     let result: Result<(), String> = loop {
-        // stdout ilerleme TAŞIMAZ ama boru dolmasın diye tüketilir.
+        // stdout carries no progress but is drained so the pipe does not fill.
         let out_task = spawn_drain(stdout.take());
         if let Some(e) = stderr.take() {
             let mut r = CrlfLines::new(e);
@@ -554,9 +554,9 @@ async fn monitor_download(
         if status.is_some_and(|s| s.success()) {
             break Ok(());
         }
-        // Heroic deseni: bellek hatasında limiti artırıp bir kez daha dene.
+        // Heroic pattern: on a memory error, raise the limit and retry once.
         if !high_mem && err_text.contains("MemoryError") {
-            // İptal edildiyse tekrar başlatma.
+            // Do not restart if it was cancelled.
             let cancelled = app
                 .state::<AppState>()
                 .epic_dl
@@ -564,7 +564,7 @@ async fn monitor_download(
                 .map(|s| s.cancelled)
                 .unwrap_or(false);
             if cancelled {
-                break Err("İndirme iptal edildi".into());
+                break Err("@t:dl.cancelled".into());
             }
             high_mem = true;
             total_mib = 0.0;
@@ -575,14 +575,14 @@ async fn monitor_download(
                     child = c;
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
-                    // pid'i güncelle (iptal komutu güncel süreci bulsun)
+                    // Update the pid (so the cancel command finds the current process)
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
                         s.pid = child.id();
                     }
                     continue;
                 }
                 Err(e) => {
-                    break Err(format!("tekrar başlatılamadı: {e}"));
+                    break Err(format!("@t:dl.restartFailed\u{1f}{e}"));
                 }
             }
         }
@@ -629,7 +629,7 @@ async fn monitor_download(
     }
 }
 
-/// Sıradaki indirmeyi başlatır (boşta ise).
+/// Starts the next download in the queue (when idle).
 fn pump_queue(app: &AppHandle) {
     let next = {
         let state = app.state::<AppState>();
@@ -659,7 +659,7 @@ pub async fn epic_install_game(
 ) -> Result<String, String> {
     let app_name = app_name.trim().to_string();
     if app_name.is_empty() {
-        return Err("oyun adı boş".into());
+        return Err("@t:dl.nameEmpty".into());
     }
     {
         let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
@@ -674,7 +674,7 @@ pub async fn epic_install_game(
             s.queue.push_back(app_name.clone());
             drop(s);
             emit_progress(&app, &app_name, 0, false);
-            return Ok("Aktif indirme var — kuyruğa alındı".into());
+            return Ok("@t:dl.queued".into());
         }
     }
     start_download(&app, app_name, install_dir)
@@ -691,7 +691,7 @@ pub async fn epic_install_with_options(
 ) -> Result<String, String> {
     let app_name = app_name.trim().to_string();
     if app_name.is_empty() {
-        return Err("oyun adı boş".into());
+        return Err("@t:dl.nameEmpty".into());
     }
 
     // Enqueue all selected DLCs first
@@ -715,7 +715,7 @@ pub async fn epic_install_with_options(
         if s.active.is_some() {
             s.queue.push_back(app_name.clone());
             emit_progress(&app, &app_name, 0, false);
-            return Ok("Aktif indirme var — oyun ve eklentiler kuyruğa alındı".into());
+            return Ok("@t:dl.queuedWithDlc".into());
         }
     }
 
@@ -736,12 +736,12 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
             s.queue.retain(|q| q != &app_name);
             drop(s);
             emit_cancelled(&app, &app_name);
-            return Ok("Kuyruktan çıkarıldı".into());
+            return Ok("@t:dl.removedFromQueue".into());
         } else {
-            return Err("Aktif indirme bulunamadı".into());
+            return Err("@t:dl.noActive".into());
         }
     };
-    // Pid üzerinden sonlandır (monitor görevi çıkışı iptal olarak işler).
+    // Terminate via the pid (the monitor task treats the exit as a cancellation).
     if let Some(pid) = pid {
         #[cfg(windows)]
         {
@@ -759,7 +759,7 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
         }
     }
     pump_queue(&app);
-    Ok("İndirme iptal edildi".into())
+    Ok("@t:dl.cancelled".into())
 }
 
 #[tauri::command]
@@ -794,7 +794,7 @@ pub async fn epic_pause_download(
         }
     }
     emit_paused(&app, &app_name);
-    Ok("İndirme duraklatıldı".into())
+    Ok("@t:dl.paused".into())
 }
 
 #[tauri::command]
@@ -810,7 +810,7 @@ pub async fn epic_resume_download(
         } else if s.active.is_none() {
             // Serbest
         } else {
-            return Err("Şu an başka bir aktif indirme var".into());
+            return Err("@t:dl.anotherActive".into());
         }
     }
     start_download(&app, app_name, None)
@@ -907,7 +907,7 @@ pub async fn epic_reorder_queue(
                 });
             }
         }
-        _ => return Err("Geçersiz eylem".into()),
+        _ => return Err("@t:dl.invalidAction".into()),
     }
 
     Ok(DlQueueStatus {
@@ -946,7 +946,7 @@ pub async fn epic_uninstall_game(
         .stderr(Stdio::piped());
     let out = cmd.output().await.map_err(|e| e.to_string())?;
     if out.status.success() {
-        Ok(format!("{title} kaldırıldı"))
+        Ok(format!("@t:dl.uninstalled\u{1f}{title}"))
     } else {
         let err = String::from_utf8_lossy(&out.stderr);
         Err(short_error(&err))
@@ -976,10 +976,10 @@ pub fn epic_set_install_dir(
     Ok(s)
 }
 
-/// Oyunu başlatır: önce online (sahiplik biletiyle), olmazsa ve oyun
-/// offline çalışabiliyorsa `--offline` ile tekrar dener.
-/// Oyun süreci ayrık başlatılır (handle düşünce oyun yaşamaya devam eder).
-/// İlk saniyelerde çökerse hata döndürür, yoksa "başlatıldı" sayar.
+/// Launches the game: online first (with an ownership ticket), then, if the game
+/// can run offline, retries with `--offline`.
+/// The game process is spawned detached (it keeps running after the handle drops).
+/// Returns an error if it crashes in the first seconds, otherwise counts it as "launched".
 #[tauri::command]
 pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String, String> {
     let bin = resolve_bin(&app)?;
@@ -1020,18 +1020,18 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
             offline_args.extend(custom_refs.iter().copied());
             return spawn_launched(&app, &bin, &app_name, &offline_args)
                 .await
-                .map(|_| format!("{title} başlatıldı (çevrimdışı)"));
+                .map(|_| format!("@t:dl.launchedOffline\u{1f}{title}"));
         }
 
         match spawn_launched(&app, &bin, &app_name, &custom_refs).await {
-            Ok(()) => Ok(format!("{title} başlatıldı")),
+            Ok(()) => Ok(format!("@t:dl.launched\u{1f}{title}")),
             Err(first) => {
                 if entry.can_run_offline {
                     let mut offline_args = vec!["--offline"];
                     offline_args.extend(custom_refs.iter().copied());
                     spawn_launched(&app, &bin, &app_name, &offline_args)
                         .await
-                        .map(|_| format!("{title} başlatıldı (çevrimdışı)"))
+                        .map(|_| format!("@t:dl.launchedOffline\u{1f}{title}"))
                         .map_err(|e| format!("{first}\n{e}"))
                 } else {
                     Err(first)
@@ -1039,7 +1039,7 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
             }
         }
     } else {
-        // Kurulu değil: 3. parti başlatıcı (EA App / Origin veya Ubisoft) kontrolü
+        // Not installed: check for a third-party launcher (EA App / Origin or Ubisoft)
         let config = super::skip::default_config_dir();
         let meta_path = config.join("metadata").join(format!("{app_name}.json"));
         if let Ok(text) = std::fs::read_to_string(&meta_path) {
@@ -1057,20 +1057,20 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
                 {
                     return spawn_launched(&app, &bin, &app_name, &["--origin"])
                         .await
-                        .map(|_| format!("{title} EA App üzerinden başlatıldı"));
+                        .map(|_| format!("@t:dl.launchedEa\u{1f}{title}"));
                 } else if lower.contains("ubisoftconnect") || lower.contains("ubisoft") {
                     return spawn_launched(&app, &bin, &app_name, &["--ubisoft"])
                         .await
-                        .map(|_| format!("{title} Ubisoft Connect üzerinden başlatıldı"));
+                        .map(|_| format!("@t:dl.launchedUbisoft\u{1f}{title}"));
                 }
             }
         }
-        Err("Oyun kurulu değil".to_string())
+        Err("@t:dl.notInstalled".to_string())
     }
 }
 
-/// Oyun dizinindeki çalıştırılabilir (.exe) dosyaları tespit eder.
-/// Genel kütüphane ve hata raporlayıcı ikili dosyaları elenir.
+/// Detects executable (.exe) files in the game directory.
+/// Shared-library and crash-reporter binaries are filtered out.
 pub fn discover_game_executables(install_path: &Path, main_executable: Option<&str>) -> Vec<String> {
     let mut exes = Vec::new();
     if let Some(main) = main_executable {
@@ -1209,7 +1209,7 @@ mod win_process {
             let mut found = false;
 
             loop {
-                // 1. Process dosya adını al (sz_exe_file)
+                // 1. Get the process file name (sz_exe_file)
                 let len = entry
                     .sz_exe_file
                     .iter()
@@ -1217,13 +1217,13 @@ mod win_process {
                     .unwrap_or(entry.sz_exe_file.len());
                 let exe_name = String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase();
 
-                // 2. Candidate exelerle doğrudan eşleştirme (0ms, sıfır izin, EAC tarafından engellenemez)
+                // 2. Direct match against candidate exes (0ms, zero permissions, cannot be blocked by EAC)
                 if !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name) {
                     found = true;
                     break;
                 }
 
-                // 3. install_path kontrolü (QueryFullProcessImageNameW)
+                // 3. install_path check (QueryFullProcessImageNameW)
                 if let Some(ref inst) = norm_install_path {
                     let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
                     if !h_proc.is_null() {
@@ -1326,11 +1326,11 @@ async fn spawn_launched(
 
     super::screenshots::set_active_running_game(app_name, &game_title);
 
-    // İlk 2.5 saniyede ani çökme kontrolü (yalnızca non-zero hata ve çalışan süreç yoksa hata fırlatılır)
+    // Early-crash check in the first 2.5 seconds (only errors on a non-zero exit with no running process)
     let early_failure = match tokio::time::timeout(std::time::Duration::from_millis(2500), child.wait()).await {
         Ok(Ok(st)) if !st.success() => {
             if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
-                Some(format!("Oyun başlatılamadı (hata kodu: {:?})", st.code()))
+                Some(format!("@t:dl.launchFailedCode\u{1f}{:?}", st.code()))
             } else {
                 None
             }
@@ -1357,7 +1357,7 @@ async fn spawn_launched(
         return Err(err);
     }
 
-    // Oyun başlatıldı! UI'ı "Oynanıyor..." durumuna geçir
+    // Game launched! Move the UI into the "Playing..." state
     let _ = app.emit(
         "game-status",
         serde_json::json!({
@@ -1403,17 +1403,17 @@ async fn spawn_launched(
                 continue;
             }
 
-            // Ne child ne de oyun süreci görünmüyor
+            // Neither the child nor the game process is visible
             if !game_detected {
-                // Tolerans süresi: açılışta EAC/splash ekranı veya motorun yüklenmesi için 20 sn tanı
+                // Grace period: allow 20s for the EAC/splash screen or engine loading at startup
                 if start_time.elapsed() < std::time::Duration::from_secs(20) {
                     continue;
                 }
-                // 20 sn içinde hiçbir süreç yakalanamadı ve child kapandı
+                // No process was caught within 20s and the child has exited
                 break;
             } else {
-                // Oyun daha önce aktifti; geçiş anlarında yanlış alarm vermemek için
-                // ardışık 3 kontrol (~4.5 sn) boyunca süreç bulunamamasını bekle
+                // The game was active before; to avoid false alarms during transitions,
+                // wait for 3 consecutive checks (~4.5s) with no process found
                 consecutive_not_found += 1;
                 if consecutive_not_found >= 3 {
                     break;
@@ -1430,7 +1430,7 @@ async fn spawn_launched(
             super::playtime::get_game_playtime(&app_name_bg)
         };
 
-        // Oyun sırasında alınan yeni ekran görüntülerini otomatik tara ve düzenle
+        // Automatically scan and organize new screenshots taken during play
         let clean_t = super::screenshots::clean_folder_name(&app_name_bg);
         let new_shots = super::screenshots::scan_new_captures_for_game(&clean_t, start_system_time);
         if !new_shots.is_empty() {
@@ -1456,7 +1456,7 @@ async fn spawn_launched(
             }),
         );
 
-        // Eğer bulut eşitlemesi açıksa, otomatik sync-saves çalıştır
+        // If cloud sync is enabled, run sync-saves automatically
         let settings_path = super::skip::default_config_dir()
             .join("game_settings")
             .join(format!("{app_name_bg}.json"));
@@ -1538,7 +1538,7 @@ mod tests {
 
     #[tokio::test]
     async fn crlf_lines_splits_on_carriage_return() {
-        // Legendary ilerlemeyi `\r` ile ezer; okuyucu hem \r hem \n'de bölmeli.
+        // Legendary overwrites progress with `\r`; the reader must split on both \r and \n.
         let data = b"first line\nDownload: 5.0 MiB/s\rDownload: 6.0 MiB/s\r\nlast";
         let mut r = CrlfLines::new(&data[..]);
         assert_eq!(r.next_line().await.as_deref(), Some("first line"));

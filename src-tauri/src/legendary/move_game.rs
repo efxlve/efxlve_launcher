@@ -126,10 +126,14 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
     drives
 }
 
-/// Windows yerel modern klasör seçim diyaloğunu ("Klasör Seç") açar
-pub async fn select_folder_dialog(default_path: Option<String>) -> Result<Option<String>, String> {
+/// Opens the native Windows modern folder picker dialog.
+/// `title` is supplied by the frontend so the dialog follows the selected language.
+pub async fn select_folder_dialog(default_path: Option<String>, title: Option<String>) -> Result<Option<String>, String> {
     #[cfg(windows)]
     {
+        let picker_title = title
+            .unwrap_or_else(|| "Select Folder".to_string())
+            .replace('\'', "''");
         tokio::task::spawn_blocking(move || {
             let clean_default_path = if let Some(p) = default_path {
                 p.replace('\'', "''")
@@ -251,13 +255,13 @@ public class NativeFolderPicker {{
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue;
 $chosen = $null;
 try {{
-    $chosen = [NativeFolderPicker]::SelectFolder('Oyun Dosyalarının Taşınacağı Klasörü Seçin', '{def_path}');
+    $chosen = [NativeFolderPicker]::SelectFolder('{picker_title}', '{def_path}');
 }} catch {{}}
 if (-not $chosen) {{
-    # İkincil güvence: Nadir durumlarda Forms diyaloğu
+    # Secondary fallback: the Forms dialog in rare cases
     [System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms') | Out-Null;
     $f = New-Object System.Windows.Forms.FolderBrowserDialog;
-    $f.Description = 'Oyunun taşınacağı yeni ana klasörü seçin';
+    $f.Description = '{picker_title}';
     $f.ShowNewFolderButton = $true;
     if (Test-Path '{def_path}') {{ $f.SelectedPath = '{def_path}' }};
     if ($f.ShowDialog() -eq 'OK') {{ $chosen = $f.SelectedPath }};
@@ -266,7 +270,8 @@ if ($chosen) {{
     [Console]::WriteLine($chosen);
 }}
 "#,
-                def_path = clean_default_path
+                def_path = clean_default_path,
+                picker_title = picker_title
             );
 
             let utf16_bytes: Vec<u8> = script.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
