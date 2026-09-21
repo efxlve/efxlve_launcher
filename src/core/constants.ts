@@ -117,6 +117,10 @@ export const SS_COMPRESS_KEY = "efxlve-ss-compression";
 export const SS_FORMAT_KEY = "efxlve-ss-format";
 /** Screenshot compression quality. */
 export const SS_QUALITY_KEY = "efxlve-ss-quality";
+/** Custom portrait cover URLs keyed by app name. */
+export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
+/** Custom hero/landscape URLs keyed by app name. */
+export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
 /** Recently launched game ids. */

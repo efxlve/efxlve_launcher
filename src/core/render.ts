@@ -26,6 +26,21 @@ export function updateGamepadHud(active?: boolean): void {
   gamepadHudImpl(active);
 }
 
+let openEpicModalImpl: (appName: string, isInitialOpen?: boolean, animateTabContent?: boolean) => void =
+  () => {};
+
+/** Called once by main.ts to wire the game detail drawer opener. */
+export function registerOpenEpicModal(
+  fn: (appName: string, isInitialOpen?: boolean, animateTabContent?: boolean) => void,
+): void {
+  openEpicModalImpl = fn;
+}
+
+/** Open (or refresh) the game detail drawer. No-op until registered. */
+export function openEpicModal(appName: string, isInitialOpen = true, animateTabContent = true): void {
+  openEpicModalImpl(appName, isInitialOpen, animateTabContent);
+}
+
 /** Request a synchronous full re-render of the active view. */
 export function render(): void {
   renderImpl();
