@@ -10,18 +10,10 @@ import { icon } from "../../core/icons";
 import { openEpicModal, render } from "../../core/render";
 import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { toast } from "../../core/toast";
+
 import { esc } from "../../core/utils";
-import { t } from "../../i18n";
-import {
-  epicGetSteamGridCovers,
-  epicGetSteamGridKey,
-  epicSearchSteamGrid,
-  epicSetSteamGridKey,
-  epicTestSteamGridKey,
-  type SteamGridGame,
-  type SteamGridImage,
-} from "../../epic";
+
+import { epicGetSteamGridCovers, epicSearchSteamGrid } from "../../epic";
 export function saveCustomCover(appName: string, url: string): void {
   S.customCovers[appName] = url.trim();
   localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(S.customCovers));

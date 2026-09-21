@@ -13,7 +13,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { t } from "../../i18n";
+
 import { getThirdPartyLauncher, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { renderOnboarding } from "../onboarding/onboarding-view";
@@ -616,8 +616,6 @@ export function renderEpic(): string {
         : S.epicSummaries;
 
   const totalColCount = visibleColSummaries.length;
-  const installedCount = visibleColSummaries.filter((s) => s.installed).length;
-  const updateCount = visibleColSummaries.filter((s) => s.updateAvailable || S.availableUpdates.has(s.appName)).length;
   const allUpdatesCount = S.epicSummaries.filter((s) => s.updateAvailable || S.availableUpdates.has(s.appName)).length;
   const platCount = visibleColSummaries.filter((s) => isAppPlatinum(s.appName)).length;
 

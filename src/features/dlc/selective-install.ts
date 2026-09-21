@@ -14,12 +14,7 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
-import {
-  epicGetInstallOptions,
-  epicInstallWithOptions,
-  type GameInstallOptions,
-} from "../../epic";
+import { epicGetInstallOptions, epicInstallWithOptions } from "../../epic";
 export async function openSelectiveModal(appName: string): Promise<void> {
   const s = S.epicSummaries.find((x) => x.appName === appName);
   if (s?.installed) {

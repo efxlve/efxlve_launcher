@@ -11,8 +11,8 @@ import { epicDlProgress } from "../../core/game-view";
 import { openEpicModal } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc } from "../../core/utils";
-import { t } from "../../i18n";
+
+
 import {
   epicCancelMoveGame,
   epicGetGameSettings,
@@ -21,11 +21,7 @@ import {
   epicSelectFolderDialog,
 } from "../../epic";
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
-import {
-  renderMoveGameModalFrame,
-  updateMoveProgressInPlace,
-  updateMoveSpaceBadgeInPlace,
-} from "./move-game-view";
+import { renderMoveGameModalFrame } from "./move-game-view";
 export function applyMovedGamePath(appName: string, newPath: string): void {
   if (!appName || !newPath) return;
 

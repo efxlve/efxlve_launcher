@@ -8,58 +8,20 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../../core/constants";
-import { closeModal, modalRoot } from "../../core/dom";
-import { epicPlay } from "../../core/epic-actions";
-import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum } from "../../core/game-view";
+import { modalRoot } from "../../core/dom";
+
+import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { updateGamepadHud } from "../../core/render";
-import { epicWideArt, isTurkishUser, rawOf, summaryOf } from "../../core/selectors";
+import { epicWideArt, isTurkishUser, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { t } from "../../i18n";
-import {
-  epicGetAchievements,
-  epicGetCritic,
-  epicGetGameDlcs,
-  epicGetGameSettings,
-  epicGetHltb,
-  epicGetSystemRequirements,
-  epicPortrait,
-  getAntiCheat,
-  getThirdPartyLauncher,
-  type CriticData,
-  type EpicAchievementItem,
-  type EpicAchievementsData,
-  type EpicGame,
-  type EpicSummary,
-  type GameRequirementsResponse,
-  type HltbData,
-  type SystemDetailItem,
-  type ThirdPartyLauncherInfo,
-} from "../../epic";
-import { updateDrawerCollectionsBoxInPlace } from "../collections/collections-view";
+import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
-import {
-  cleanStoreDescription,
-  detectControllerSupport,
-  fmtTierName,
-  getAchTier,
-  getHardwareIcon,
-  getHardwareLabel,
-  isMacSys,
-  isOnlineOnlyGame,
-  isWinSys,
-  renderAchievementCard,
-  renderAchievementSections,
-  renderBackupListHtml,
-  renderCriticCard,
-  renderGameFeatures,
-  renderHltbCard,
-  renderOverviewMediaSpotlight,
-  renderOverviewTrophySpotlight,
-} from "./drawer-widgets";
+import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, isMacSys, isWinSys, renderAchievementSections, renderBackupListHtml, renderCriticCard, renderGameFeatures, renderHltbCard, renderOverviewMediaSpotlight, renderOverviewTrophySpotlight } from "./drawer-widgets";
 export function updateDrawerTabArrows(): void {
   const wrapper = modalRoot.querySelector(".drawer-tabs-wrapper") as HTMLElement | null;
   const container = document.getElementById("drawer-tabs-scrollable");
@@ -178,13 +140,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   const descHtml = hasRealDesc
     ? `<div class="drawer-desc">${esc(rawDesc)}</div>`
     : "";
-
-  const achPill = isPlat
-    ? `<span class="status-pill plat" style="background:linear-gradient(135deg,rgba(168,85,247,0.22),rgba(126,34,206,0.38));color:#f3e8ff;border:1px solid rgba(192,132,252,0.4);font-weight:700">${epicPlatinumIcon(13)} Platin Kupa</span>`
-    : achSum && achSum.total_achievements > 0
-      ? `<span class="status-pill ach" style="color:#c084fc;border-color:rgba(192,132,252,0.35);background:rgba(168,85,247,0.12)">${icon("trophy", 12)} ${achSum.user_unlocked}/${achSum.total_achievements} Başarım</span>`
-      : "";
-
 
   const dlcRes = S.dlcCache.get(s.appName);
   const currentDlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
@@ -1036,7 +991,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   // Katalog metadatasıyla anında zenginleştir (gizli başarımlar ve ana oyun bayrakları)
   enrichAchievementsData(s.appName, data);
 
-  const baseItems = data.achievements.filter((a) => a.is_base);
   const dlcItems = data.achievements.filter((a) => !a.is_base);
   const hasDlc = dlcItems.length > 0;
 
@@ -1044,11 +998,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
 
-  const baseTotal = baseItems.length;
-  const baseUnlocked = isDemo ? baseTotal : baseItems.filter((a) => a.unlocked).length;
-
-  const dlcTotal = dlcItems.length;
-  const dlcUnlocked = isDemo ? dlcTotal : dlcItems.filter((a) => a.unlocked).length;
 
   // Filtreleme (Arama sorgusu, Durum)
   const query = S.achSearchQuery.trim().toLowerCase();

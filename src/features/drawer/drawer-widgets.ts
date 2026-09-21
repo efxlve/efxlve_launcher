@@ -11,21 +11,8 @@ import { isAppPlatinum } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime, formatScreenshotDate } from "../../core/utils";
-import { t } from "../../i18n";
-import {
-  getAntiCheat,
-  getThirdPartyLauncher,
-  type CriticData,
-  type EpicAchievementItem,
-  type EpicAchievementSummary,
-  type EpicGame,
-  type EpicSummary,
-  type GameRequirementsResponse,
-  type HltbData,
-  type SystemDetailItem,
-  type ThirdPartyLauncherInfo,
-} from "../../epic";
+import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, formatScreenshotDate } from "../../core/utils";
+import { type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
 export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {

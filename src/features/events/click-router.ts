@@ -9,64 +9,21 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import {
-  DEMO_PLAT_KEY,
-  LANG_KEY,
-  MOCK_KEY,
-  SS_COMPRESS_KEY,
-  SS_FORMAT_KEY,
-  SS_HOTKEY_KEY,
-  SS_HOTKEY_NAME_KEY,
-  isTauri,
-} from "../../core/constants";
-import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
-import { gameById, installGame, launchGame, refreshGames, uninstallGame } from "../../core/demo";
-import { epicCancel, epicInstall, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
+import { DEMO_PLAT_KEY, LANG_KEY, MOCK_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { closeModal, viewEl } from "../../core/dom";
+import { installGame, launchGame, refreshGames, uninstallGame } from "../../core/demo";
+import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
-import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
+import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { setLanguage } from "../../i18n";
-import {
-  EPIC_LOGIN_URL,
-  epicAchievementsUrl,
-  epicBackupSave,
-  epicCaptureGameScreenshot,
-  epicCreateDesktopShortcut,
-  epicDeleteBackup,
-  epicDeleteGameScreenshot,
-  epicDetectEglGames,
-  epicGetGameDlcs,
-  epicGetQueue,
-  epicImportEglCollections,
-  epicListBackups,
-  epicSetInstallDir,
-  epicSyncEglInstalled,
-  epicOpenBackupFolder,
-  epicOpenGameScreenshotsFolder,
-  epicPauseDownload,
-  epicReorderQueue,
-  epicRestoreBackup,
-  epicResumeDownload,
-  epicSaveGameSettings,
-  epicSelectFolderDialog,
-  epicSetNetworkProfile,
-  epicSetOfflineMode,
-  epicSetScreenshotHotkey,
-  epicSetSteamGridKey,
-  epicStorePageUrl,
-  epicSyncSaves,
-  epicTestSteamGridKey,
-  epicThirdPartyLaunchers,
-  epicUninstallGame,
-  epicVerifyGame,
-  type EpicSettings,
-} from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicSetInstallDir, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
 import {
   bootEpic,
   epicDoImport,
@@ -100,33 +57,12 @@ import {
   saveCustomHero,
   searchAndLoadSteamGrid,
 } from "../cover/cover-view";
-import {
-  enrichAchievementsData,
-  epicOpenFolder,
-  fetchAndRenderAchievements,
-  fetchAndRenderRequirements,
-  renderDrawerDlcs,
-  updateDrawerTabArrows,
-} from "../drawer/drawer-view";
-import { renderAchievementSections, renderBackupListHtml } from "../drawer/drawer-widgets";
-import { renderDlcRows } from "../dlc/dlc-manager";
-import {
-  applySelectiveInstall,
-  closeSelectiveModal,
-  openSelectiveModal,
-  renderSelectiveModal,
-} from "../dlc/selective-install";
-import {
-  resetCardChunk,
-  setupLibScrollObserver,
-  updateLibraryFilterInPlace,
-} from "../library/library-view";
-import {
-  closeManageModal,
-  openManageModal,
-  resetVerifyInPlace,
-  updateVerifyProgressInPlace,
-} from "../manage/manage-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, updateDrawerTabArrows } from "../drawer/drawer-view";
+import { renderBackupListHtml } from "../drawer/drawer-widgets";
+
+import { applySelectiveInstall, closeSelectiveModal, openSelectiveModal } from "../dlc/selective-install";
+import { updateLibraryFilterInPlace } from "../library/library-view";
+import { closeManageModal, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import {
   browseMoveTarget,
   cancelMoveGame,
@@ -140,7 +76,7 @@ import {
   openEditPlaytimeModal,
   saveEditedPlaytime,
 } from "../playtime/playtime-view";
-import { renderProfileGameCards } from "../profile/profile-view";
+
 import {
   closeScreenshotLightbox,
   closeShareModal,

@@ -7,12 +7,12 @@
 
 import { playtimeRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { render } from "../../core/render";
+
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtPlaytime } from "../../core/utils";
-import { t } from "../../i18n";
-import { epicSetPlaytime, type EpicSummary } from "../../epic";
+
+import { epicSetPlaytime } from "../../epic";
 export function closeEditPlaytimeModal(): void {
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }
