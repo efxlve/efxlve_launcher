@@ -1628,3 +1628,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `main.ts` ~6.904 → ~6.389 satır. `tsc`/`vite build` yeşil.
 - **Backlog notu:** Kullanıcı talebiyle `docs/REFACTOR_PLAN.md` §6.6 eklendi — (1) kalan Türkçe metinlerin `src/locales/*.json`'a taşınması, (2) ölü/optimize olmayan kod temizliği.
 
+## 98. Modülerleştirme Faz 5 (devam): Yönetim & Oynama Süresi Modalları
+
+- **Oynama süresi** (`openEditPlaytimeModal`, `closeEditPlaytimeModal`, `saveEditedPlaytime`) → `src/features/playtime/playtime-view.ts` (~193 satır).
+- **Yönetim modalı** (`openManageModal`, `closeManageModal`, `updateManageModalInputsInPlace`, `updateVerifyProgressInPlace`, `resetVerifyInPlace`, `renderManageModal`) → `src/features/manage/manage-view.ts` (~407 satır).
+- `main.ts` ~6.389 → ~5.837 satır (başlangıç 11.422'den toplam ~5.585 satır azaldı). `tsc`/`vite build` yeşil.
+
