@@ -61,7 +61,7 @@ efxlve_launcher/
 | **Drawer Tabs** | `renderDrawerOverview()`, `renderDrawerAchievements()`, `renderDrawerDlcs()`, `renderDrawerScreenshots()`, `renderDrawerSpecs()` | Lines 3220–4750 |
 | **Downloads Hub** | `renderDownloads()`, `drawSpeedCanvas()`, `pushSpeedData()`, `activeDlMetrics` | Lines 900–1450 |
 | **PS5 Trophy Profile** | `renderProfile()`, `renderProfileGameCards()`, `playerProfileData` | Lines 1910–2290 |
-| **Settings & Manage** | `renderSettings()`, `renderManageModal()`, `loadSettingsView()` | Lines 7100–7800 |
+| **Settings & Manage** | `renderSettings()`, `updateManageModalInputsInPlace()`, `loadSettingsView()` | `src/features/settings`, `src/features/manage` |
 | **Global Click Delegation** | `document.addEventListener("click", ...)` (data-act router) | Lines 8500–9750 |
 | **Global Input & Search** | `document.addEventListener("input", ...)` (`libSearchTimer` 120ms debounce) | Lines 9900–10050 |
 | **Tauri IPC Listeners** | `listen("download-progress")`, `listen("game-status")`, `listen("screenshot-captured")` | Lines 10250–10500 |
