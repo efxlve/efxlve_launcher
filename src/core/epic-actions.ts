@@ -19,6 +19,7 @@ import {
 } from "../epic";
 import { isTauri } from "./constants";
 import { closeModal } from "./dom";
+import { t } from "../i18n";
 import { epicDlProgress } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -30,7 +31,7 @@ import { toast } from "./toast";
 /** Launch a game and record it in the recent list. */
 export async function epicPlay(appName: string): Promise<void> {
   pushRecent(appName);
-  toast("Oyun başlatılıyor…", "");
+  toast(t("dl.launching"), "");
   try {
     const msg = await epicLaunchGame(appName);
     toast(msg, "ok");
@@ -56,11 +57,11 @@ export async function epicInstall(appName: string): Promise<void> {
       title: s.title,
       progress: 0,
       done: false,
-      speed: "Başlatılıyor…",
+      speed: t("dl.starting"),
       speedBytes: 0,
       diskSpeed: "—",
       diskBytes: 0,
-      eta: "Hesaplanıyor…",
+      eta: t("common.calculating"),
       downloadedBytes: 0,
       totalBytes: s.installSize || 0,
     };
@@ -134,6 +135,6 @@ export async function refreshUpdates(): Promise<void> {
       scheduleRender();
     }
   } catch (e) {
-    console.warn("Güncelleme denetimi yapılamadı:", e);
+    console.warn("Update check could not be performed:", e);
   }
 }

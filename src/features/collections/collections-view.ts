@@ -14,6 +14,7 @@ import { render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
+import { t } from "../../i18n";
 
 import { epicDeleteCollection, epicGetCollections, epicSaveCollection, epicSetGameCollections } from "../../epic";
 export function openCollectionModal(colId?: string | null): void {
@@ -107,30 +108,30 @@ export function renderCollectionModal(): void {
             </div>
             <div>
               <h2>
-                <span>${isEditing ? "Koleksiyonu Düzenle" : "Yeni Koleksiyon Oluştur"}</span>
-                <span class="col-header-count" id="col-header-selected-badge">${selectedCount} Seçildi</span>
+                <span>${isEditing ? t("col.editTitle") : t("col.newTitle")}</span>
+                <span class="col-header-count" id="col-header-selected-badge">${t("col.selectedCount", { count: selectedCount })}</span>
               </h2>
-              <div class="col-modal-subtitle">${isEditing ? `"${esc(colName)}" kategorisini özelleştirin` : "Oyunlarınızı kategorilere ayırarak düzenleyin"}</div>
+              <div class="col-modal-subtitle">${isEditing ? t("col.editSubtitle", { name: esc(colName) }) : t("col.newSubtitle")}</div>
             </div>
           </div>
-          <button class="col-modal-close" data-act="close-col-modal" title="Kapat">
+          <button class="col-modal-close" data-act="close-col-modal" title="${t("common.close")}">
             ${icon("x", 16)}
           </button>
         </div>
 
         <div class="col-modal-body">
           <div class="col-input-group">
-            <label for="col-name-input" class="col-label">Koleksiyon Simgesi & Adı</label>
+            <label for="col-name-input" class="col-label">${t("col.markerLabel")}</label>
             <div class="col-name-row">
               <div class="col-marker-picker-container">
-                <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="Simge Seç">
+                <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="${t("col.pickIcon")}">
                   <span id="col-marker-display">${collectionMarker(S.colModalMarker, 22)}</span>
                   <span class="col-marker-edit-badge">${icon("edit", 10)}</span>
                 </button>
                 <div id="col-marker-palette" class="col-marker-palette ${S.isMarkerPaletteOpen ? "open" : ""}">
                   <div class="col-marker-palette-header">
-                    <span>Bir Simge Seçin</span>
-                    ${S.colModalMarker ? `<button type="button" class="col-marker-clear-btn" data-act="clear-col-marker">${icon("trash", 11)} Kaldır</button>` : ""}
+                    <span>${t("col.pickIconHeader")}</span>
+                    ${S.colModalMarker ? `<button type="button" class="col-marker-clear-btn" data-act="clear-col-marker">${icon("trash", 11)} ${t("col.remove")}</button>` : ""}
                   </div>
                   <div class="col-marker-grid">
                     ${COLLECTION_ICONS.map((name) => `
@@ -139,36 +140,36 @@ export function renderCollectionModal(): void {
                   </div>
                 </div>
               </div>
-              <input id="col-name-input" class="text-input col-name-input" placeholder="Örn: Hikaye, Online, Co-op, Bitirdiklerim..." value="${esc(colName)}" autocomplete="off" spellcheck="false" />
+              <input id="col-name-input" class="text-input col-name-input" placeholder="${t("col.namePlaceholder")}" value="${esc(colName)}" autocomplete="off" spellcheck="false" />
             </div>
 
-            <!-- Detay Sayfası Tarzı Kaydırılabilir Hızlı Şablonlar -->
+            <!-- Detail-page style scrollable quick presets -->
             <div class="col-presets-wrapper">
-              <span class="col-quick-label">Hızlı Şablonlar:</span>
+              <span class="col-quick-label">${t("col.quickPresets")}</span>
               <div class="col-presets-track-wrapper">
                 <div class="col-presets-fade left">
-                  <button type="button" class="col-presets-arrow left" data-act="col-presets-scroll" data-dir="left" title="Sola kaydır">
+                  <button type="button" class="col-presets-arrow left" data-act="col-presets-scroll" data-dir="left" title="${t("lib.scrollLeft")}">
                     ${icon("chevron-left", 12)}
                   </button>
                 </div>
                 <div class="col-quick-presets" id="col-presets-scrollable">
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="list" data-name="Hikaye">${icon("list", 13)} <span>Hikaye</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="globe" data-name="Online">${icon("globe", 13)} <span>Online</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="trophy" data-name="Platin Hedef">${icon("trophy", 13)} <span>Platin Hedef</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="shield" data-name="RPG">${icon("shield", 13)} <span>RPG</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="Yarış">${icon("zap", 13)} <span>Yarış</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="eye" data-name="Korku">${icon("eye", 13)} <span>Korku</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="heart" data-name="Favoriler">${icon("heart", 13)} <span>Favoriler</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="Aksiyon">${icon("zap", 13)} <span>Aksiyon</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="layers" data-name="Bulmaca">${icon("layers", 13)} <span>Bulmaca</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="rocket" data-name="Bilim Kurgu">${icon("rocket", 13)} <span>Bilim Kurgu</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="gamepad-2" data-name="Retro / Klasik">${icon("gamepad-2", 13)} <span>Retro / Klasik</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="cpu" data-name="Strateji">${icon("cpu", 13)} <span>Strateji</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="crown" data-name="VIP / Özel">${icon("crown", 13)} <span>VIP / Özel</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="check-circle" data-name="Bitirdiklerim">${icon("check-circle", 13)} <span>Bitirdiklerim</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="list" data-name="${t("col.presetStory")}">${icon("list", 13)} <span>${t("col.presetStory")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="globe" data-name="${t("col.presetOnline")}">${icon("globe", 13)} <span>${t("col.presetOnline")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="trophy" data-name="${t("col.presetPlatinum")}">${icon("trophy", 13)} <span>${t("col.presetPlatinum")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="shield" data-name="${t("col.presetRpg")}">${icon("shield", 13)} <span>${t("col.presetRpg")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="${t("col.presetRacing")}">${icon("zap", 13)} <span>${t("col.presetRacing")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="eye" data-name="${t("col.presetHorror")}">${icon("eye", 13)} <span>${t("col.presetHorror")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="heart" data-name="${t("col.presetFavorites")}">${icon("heart", 13)} <span>${t("col.presetFavorites")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="${t("col.presetAction")}">${icon("zap", 13)} <span>${t("col.presetAction")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="layers" data-name="${t("col.presetPuzzle")}">${icon("layers", 13)} <span>${t("col.presetPuzzle")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="rocket" data-name="${t("col.presetSciFi")}">${icon("rocket", 13)} <span>${t("col.presetSciFi")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="gamepad-2" data-name="${t("col.presetRetro")}">${icon("gamepad-2", 13)} <span>${t("col.presetRetro")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="cpu" data-name="${t("col.presetStrategy")}">${icon("cpu", 13)} <span>${t("col.presetStrategy")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="crown" data-name="${t("col.presetVip")}">${icon("crown", 13)} <span>${t("col.presetVip")}</span></button>
+                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="check-circle" data-name="${t("col.presetCompleted")}">${icon("check-circle", 13)} <span>${t("col.presetCompleted")}</span></button>
                 </div>
                 <div class="col-presets-fade right">
-                  <button type="button" class="col-presets-arrow right" data-act="col-presets-scroll" data-dir="right" title="Sağa kaydır">
+                  <button type="button" class="col-presets-arrow right" data-act="col-presets-scroll" data-dir="right" title="${t("lib.scrollRight")}">
                     ${icon("chevron-right", 12)}
                   </button>
                 </div>
@@ -180,26 +181,26 @@ export function renderCollectionModal(): void {
             <div class="col-picker-head">
               <div class="col-filter-tabs">
                 <button type="button" class="col-filter-tab ${S.colModalTabFilter === "all" ? "active" : ""}" data-act="col-tab-filter" data-filter="all">
-                  Tümü <span class="col-tab-cnt">${S.epicSummaries.length}</span>
+                  ${t("library.all")} <span class="col-tab-cnt">${S.epicSummaries.length}</span>
                 </button>
                 <button type="button" class="col-filter-tab ${S.colModalTabFilter === "selected" ? "active" : ""}" data-act="col-tab-filter" data-filter="selected">
-                  Seçilenler <span class="col-tab-cnt" id="col-tab-selected-cnt">${selectedCount}</span>
+                  ${t("col.filterSelected")} <span class="col-tab-cnt" id="col-tab-selected-cnt">${selectedCount}</span>
                 </button>
                 <button type="button" class="col-filter-tab ${S.colModalTabFilter === "installed" ? "active" : ""}" data-act="col-tab-filter" data-filter="installed">
-                  Yüklü <span class="col-tab-cnt">${installedCount}</span>
+                  ${t("library.installed")} <span class="col-tab-cnt">${installedCount}</span>
                 </button>
               </div>
 
               <div class="col-quick-btns">
-                <button type="button" class="col-quick-btn" data-act="col-select-all">Tümünü Seç</button>
-                <button type="button" class="col-quick-btn" data-act="col-deselect-all">Temizle</button>
+                <button type="button" class="col-quick-btn" data-act="col-select-all">${t("col.selectAll")}</button>
+                <button type="button" class="col-quick-btn" data-act="col-deselect-all">${t("col.clear")}</button>
               </div>
             </div>
 
             <div class="col-search-wrap">
               <span>${icon("search", 13)}</span>
-              <input id="col-search-input" class="text-input" placeholder="Kütüphanedeki ${S.epicSummaries.length} oyun arasında ara..." value="${esc(S.colModalSearchQuery)}" autocomplete="off" />
-              ${S.colModalSearchQuery ? `<button type="button" class="col-search-clear" data-act="col-search-clear" title="Temizle">${icon("x", 12)}</button>` : ""}
+              <input id="col-search-input" class="text-input" placeholder="${t("col.searchPlaceholder", { count: S.epicSummaries.length })}" value="${esc(S.colModalSearchQuery)}" autocomplete="off" />
+              ${S.colModalSearchQuery ? `<button type="button" class="col-search-clear" data-act="col-search-clear" title="${t("col.clear")}">${icon("x", 12)}</button>` : ""}
             </div>
 
             <div class="col-games-list">
@@ -213,22 +214,22 @@ export function renderCollectionModal(): void {
                     ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
                     <div class="col-game-info">
                       <div class="col-game-title">${esc(s.title)}</div>
-                      <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} Yüklü</span>` : "Yüklü Değil"}</div>
+                      <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} ${t("common.installed")}</span>` : t("common.notInstalled")}</div>
                     </div>
                   </div>
                 `;
-              }).join("") : `<div class="col-empty-msg">Eşleşen oyun bulunamadı.</div>`}
+              }).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`}
             </div>
           </div>
         </div>
 
         <div class="col-modal-footer">
           <div>
-            ${isEditing ? `<button class="btn danger small" data-act="col-delete-btn" data-col-id="${col!.id}">${icon("trash", 13)} Koleksiyonu Sil</button>` : `<div class="col-footer-summary"><span id="col-footer-count">${selectedCount}</span> / ${S.epicSummaries.length} oyun seçildi</div>`}
+            ${isEditing ? `<button class="btn danger small" data-act="col-delete-btn" data-col-id="${col!.id}">${icon("trash", 13)} ${t("col.delete")}</button>` : `<div class="col-footer-summary">${t("col.footerSummary", { selected: `<span id="col-footer-count">${selectedCount}</span>`, total: S.epicSummaries.length })}</div>`}
           </div>
           <div style="display:flex;gap:10px;align-items:center;">
-            <button class="btn ghost small" data-act="close-col-modal">İptal</button>
-            <button class="btn primary small" data-act="col-save-btn">${isEditing ? "Değişiklikleri Kaydet" : "Koleksiyon Oluştur"}</button>
+            <button class="btn ghost small" data-act="close-col-modal">${t("common.cancelShort")}</button>
+            <button class="btn primary small" data-act="col-save-btn">${isEditing ? t("col.saveChanges") : t("col.create")}</button>
           </div>
         </div>
       </div>
@@ -274,17 +275,17 @@ export function updateColGamesListInPlace(): void {
         ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
         <div class="col-game-info">
           <div class="col-game-title">${esc(s.title)}</div>
-          <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} Yüklü</span>` : "Yüklü Değil"}</div>
+          <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} ${t("common.installed")}</span>` : t("common.notInstalled")}</div>
         </div>
       </div>
     `;
-  }).join("") : `<div class="col-empty-msg">Eşleşen oyun bulunamadı.</div>`;
+  }).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`;
 
   const selCountEl = document.getElementById("col-tab-selected-cnt");
   if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
 
   const headerBadge = document.getElementById("col-header-selected-badge");
-  if (headerBadge) headerBadge.textContent = `${S.colModalSelectedApps.size} Seçildi`;
+  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
 
   const footerCnt = document.getElementById("col-footer-count");
   if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
@@ -294,7 +295,7 @@ export async function saveCollectionFromModal(): Promise<void> {
   const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
   const name = nameInput?.value.trim() || "";
   if (!name) {
-    toast("Lütfen koleksiyon adı girin.", "err");
+    toast(t("col.needName"), "err");
     return;
   }
   try {
@@ -304,34 +305,34 @@ export async function saveCollectionFromModal(): Promise<void> {
       S.activeEditingColId,
       S.colModalMarker || null,
     );
-    toast(`"${saved.name}" koleksiyonu kaydedildi`, "ok");
+    toast(t("col.saved", { name: saved.name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
     render();
   } catch (e) {
-    toast(`Koleksiyon kaydedilemedi: ${String(e)}`, "err");
+    toast(t("col.saveFailed", { msg: String(e) }), "err");
   }
 }
 
 export async function deleteCollectionFromModal(colId: string): Promise<void> {
   const col = S.epicCollections.find((c) => c.id === colId);
-  const name = col ? col.name : "Koleksiyon";
-  if (!confirm(`"${name}" koleksiyonunu silmek istediğinize emin misiniz?\n(Oyunlar silinmez, yalnızca kategori kaldırılır)`)) {
+  const name = col ? col.name : t("col.defaultName");
+  if (!confirm(t("col.deleteConfirm", { name }))) {
     return;
   }
   try {
     await epicDeleteCollection(colId);
     if (S.activeCollectionId === colId) S.activeCollectionId = null;
-    toast(`"${name}" koleksiyonu silindi`, "ok");
+    toast(t("col.deleted", { name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
     render();
   } catch (e) {
-    toast(`Koleksiyon silinemedi: ${String(e)}`, "err");
+    toast(t("col.deleteFailed", { msg: String(e) }), "err");
   }
 }
 
-/* ---------- Oyun Koleksiyonları Seçim Modalı (Detay Çekmecesinden) ---------- */
+/* ---------- Per-game collection picker (opened from the detail drawer) ---------- */
 
 
 
@@ -357,11 +358,11 @@ export function openGameCollectionsModal(appName: string): void {
               ${icon("folder", 20)}
             </div>
             <div>
-              <h2>Koleksiyonlar</h2>
-              <div class="col-modal-subtitle">${esc(title)} oyununun dahil olacağı kategoriler</div>
+              <h2>${t("lib.collections")}</h2>
+              <div class="col-modal-subtitle">${t("col.chooseCategories", { name: esc(title) })}</div>
             </div>
           </div>
-          <button class="col-modal-close" data-act="close-col-modal" title="Kapat">
+          <button class="col-modal-close" data-act="close-col-modal" title="${t("common.close")}">
             ${icon("x", 16)}
           </button>
         </div>
@@ -378,23 +379,23 @@ export function openGameCollectionsModal(appName: string): void {
                     <div class="col-game-title">
                       ${isCollectionIcon(c.emoji) ? `<span class="col-item-marker">${collectionMarker(c.emoji, 14)}</span> ` : ""}${esc(c.name)}
                     </div>
-                    <div class="col-game-sub">${c.app_names.length} oyun</div>
+                    <div class="col-game-sub">${t("col.gameCount", { count: c.app_names.length })}</div>
                   </div>
                 </div>
               `;
             }).join("") : `
               <div class="col-empty-msg">
-                Henüz hiç koleksiyon oluşturulmamış.<br/>
-                <button class="btn ghost small" data-act="open-new-collection-modal" style="margin-top:8px">+ Yeni Koleksiyon Oluştur</button>
+                ${t("col.noCollectionsLong")}<br/>
+                <button class="btn ghost small" data-act="open-new-collection-modal" style="margin-top:8px">${t("col.newCollectionBtn")}</button>
               </div>
             `}
           </div>
         </div>
         <div class="col-modal-footer">
-          <button class="btn ghost small" data-act="open-new-collection-modal">+ Yeni Koleksiyon</button>
+          <button class="btn ghost small" data-act="open-new-collection-modal">${t("lib.newCollection")}</button>
           <div style="display:flex;gap:10px">
-            <button class="btn ghost small" data-act="close-col-modal">İptal</button>
-            <button class="btn primary small" data-act="save-game-col-btn">Kaydet</button>
+            <button class="btn ghost small" data-act="close-col-modal">${t("common.cancelShort")}</button>
+            <button class="btn primary small" data-act="save-game-col-btn">${t("common.save")}</button>
           </div>
         </div>
       </div>
@@ -408,7 +409,7 @@ export async function saveGameCollectionsFromModal(): Promise<void> {
   const colIds = Array.from(S.gameColModalSelectedCols);
   try {
     await epicSetGameCollections(appName, colIds);
-    toast("Oyun koleksiyonları güncellendi", "ok");
+    toast(t("col.updated"), "ok");
     closeCollectionModal();
     await loadEpicCollections();
     if (S.currentModalAppName === appName) {
@@ -416,7 +417,7 @@ export async function saveGameCollectionsFromModal(): Promise<void> {
     }
     render();
   } catch (e) {
-    toast(`Koleksiyonlar güncellenemedi: ${String(e)}`, "err");
+    toast(t("col.updateFailed", { msg: String(e) }), "err");
   }
 }
 
@@ -429,17 +430,17 @@ export function updateDrawerCollectionsBoxInPlace(appName: string): void {
     c.app_names.some((name) => name.toLowerCase() === appName.toLowerCase()),
   );
   if (subEl) {
-    subEl.textContent = gameCols.length > 0 ? `${gameCols.length} kategoride ekli` : "Kategori atanmadı";
+    subEl.textContent = gameCols.length > 0 ? t("col.categoryCount", { count: gameCols.length }) : t("col.noCategory");
   }
   if (editBtn) {
-    editBtn.textContent = gameCols.length > 0 ? "Düzenle" : "+ Ekle";
+    editBtn.textContent = gameCols.length > 0 ? t("col.edit") : t("col.add");
   }
   container.innerHTML =
     gameCols.length > 0
       ? gameCols
           .map(
             (c) => `
-          <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu kütüphanede göster">
+          <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${t("col.showInLibrary", { name: esc(c.name) })}">
             ${isCollectionIcon(c.emoji) ? `<span class="col-pill-marker">${collectionMarker(c.emoji, 13)}</span>` : `<span class="col-pill-dot"></span>`}
             <span class="col-pill-text">${esc(c.name)}</span>
           </button>
@@ -448,7 +449,7 @@ export function updateDrawerCollectionsBoxInPlace(appName: string): void {
           .join("")
       : `
           <button class="bento-empty-col" data-act="manage-game-collections" data-id="${appName}">
-            <span>Kategori atanmadı</span>
+            <span>${t("col.noCategory")}</span>
           </button>
         `;
 }
@@ -460,6 +461,6 @@ export async function loadEpicCollections(): Promise<void> {
     S.epicCollections = await epicGetCollections();
     if (S.view === "library") scheduleRender();
   } catch (e) {
-    console.warn("Koleksiyonlar alınamadı:", e);
+    console.warn("Collections could not be fetched:", e);
   }
 }
