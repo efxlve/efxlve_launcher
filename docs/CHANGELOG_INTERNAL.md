@@ -1971,3 +1971,14 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Güncelleme kontrolü tüm oyun butonlarına yayıldı: `drawer-view` (detay), `game-view.epicActionButtons` (kartlar/satırlar), `library-view` hero vitrini ve raf hero kartı. Güncelleme varsa artık hepsi amber "Güncelle" gösterir.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 142. Üst Bar Navigasyonu: Rail Segment + LED Gösterge
+
+- Kullanıcı kararıyla üst barın "kutusuz" dili **"rail + LED"** diline çevrildi (önceki "kutu YOK / tam genişlik çizgi" kararı geri alındı):
+  - `.nav-seg` artık bir **inset rail** (hafif koyu track, 12px radius, inset gölge).
+  - `.nav-tab.active` **mor-tint dolgu** alıyor (hesap avatarıyla aynı idiom) — eski `::before` radyal parıltı kaldırıldı.
+  - `.nav-underline` tam genişlik çizgi yerine **14px LED tick**, aktif ikonun altında ortalanıyor.
+- `index.html`: `#nav-indicator` `#titlebar`'dan `#nav-seg` içine taşındı (seg'e göre konumlanıyor).
+- `core/nav.ts`: `updateNavIndicator` artık `#nav-seg`'i referans alıp sabit 14px LED'i `left` ile ortalar (eski `width + translateX` tam-genişlik mantığı kaldırıldı). Resize'da zaten `handleWindowResize` üzerinden çağrılıyor; ayrı bir observer eklenmedi (performans kuralı).
+- `base.css` üst bar yorumu ve hareket notu yeni dile göre güncellendi.
+- `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
