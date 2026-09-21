@@ -9,7 +9,7 @@
 import { icon } from "../../core/icons";
 import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtBytes } from "../../core/utils";
+import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
@@ -228,15 +228,23 @@ export function renderDownloads(): string {
               <div class="dl-stat-icon-box speed">${icon("download", 18)}</div>
               <div class="dl-stat-info">
                 <div class="dl-stat-label">${t("dl.speed")}</div>
-                <div class="dl-stat-value highlight-cyan" id="dl-stat-speed">${activeDl.speed || "0 B/s"}</div>
+                <div class="dl-stat-value highlight-cyan" id="dl-stat-speed">${fmtSpeed(activeDl.speedBytes, S.speedInBits)}</div>
                 <div class="dl-stat-sub">${t("dl.speedSub")}</div>
+              </div>
+            </div>
+            <div class="dl-stat-tile">
+              <div class="dl-stat-icon-box peak">${icon("zap", 18)}</div>
+              <div class="dl-stat-info">
+                <div class="dl-stat-label">${t("dl.peak")}</div>
+                <div class="dl-stat-value highlight-cyan" id="dl-stat-peak">${fmtSpeed(S.peakNetSpeedBytes, S.speedInBits)}</div>
+                <div class="dl-stat-sub">${t("dl.peakSub")}</div>
               </div>
             </div>
             <div class="dl-stat-tile">
               <div class="dl-stat-icon-box disk">${icon("hard-drive", 18)}</div>
               <div class="dl-stat-info">
                 <div class="dl-stat-label">${t("dl.disk")}</div>
-                <div class="dl-stat-value highlight-green" id="dl-stat-disk">${activeDl.diskSpeed || "0 B/s"}</div>
+                <div class="dl-stat-value highlight-green" id="dl-stat-disk">${fmtSpeed(activeDl.diskBytes, S.speedInBits)}</div>
                 <div class="dl-stat-sub">${t("dl.diskSub")}</div>
               </div>
             </div>
@@ -276,8 +284,10 @@ export function renderDownloads(): string {
   }
 
   // Steam-style Speed Chart
-  const netLegendVal = activeDl?.speed || (S.speedHistory[S.speedHistory.length - 1] > 0 ? `${fmtBytes(S.speedHistory[S.speedHistory.length - 1])}/s` : "0 B/s");
-  const diskLegendVal = activeDl?.diskSpeed || (S.diskHistory[S.diskHistory.length - 1] > 0 ? `${fmtBytes(S.diskHistory[S.diskHistory.length - 1])}/s` : "0 B/s");
+  const lastNet = S.speedHistory[S.speedHistory.length - 1] || 0;
+  const lastDisk = S.diskHistory[S.diskHistory.length - 1] || 0;
+  const netLegendVal = fmtSpeed(activeDl?.speedBytes || lastNet, S.speedInBits);
+  const diskLegendVal = fmtSpeed(activeDl?.diskBytes || lastDisk, S.speedInBits);
 
   const chartMarkup = `
     <div class="dl-chart-card">
@@ -369,7 +379,7 @@ export function renderDownloads(): string {
             </div>
           </div>
           <div class="dl-queue-right">
-            <button class="btn primary small" data-act="play" data-id="${appId}">
+            <button class="btn primary small" data-act="epic-play" data-id="${appId}">
               ${icon("play", 12)} ${t("common.play")}
             </button>
             <button class="btn ghost small" data-act="manage-game" data-id="${appId}">
@@ -410,6 +420,13 @@ export function renderDownloads(): string {
               ${icon("clock", 13)} ${t("downloads.profileLow")}
             </button>
           </div>
+        </div>
+        <div class="dl-settings-field">
+          <div class="dl-settings-label">${t("downloads.speedBits")}</div>
+          <label class="toggle-switch">
+            <input type="checkbox" data-act="toggle-speed-bits" ${S.speedInBits ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
         </div>
         <div class="dl-settings-field">
           <div class="dl-settings-label">${t("downloads.installDir")}</div>

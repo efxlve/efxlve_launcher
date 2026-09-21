@@ -34,6 +34,8 @@ export const SS_COMPRESS_KEY = "efxlve-ss-compression";
 export const SS_FORMAT_KEY = "efxlve-ss-format";
 /** Screenshot compression quality. */
 export const SS_QUALITY_KEY = "efxlve-ss-quality";
+/** Show download speed in bits per second instead of bytes. */
+export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Custom portrait cover URLs keyed by app name. */
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */

@@ -45,7 +45,7 @@ import {
 } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { fmtBytes, fmtPlaytime } from "../../core/utils";
+import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
 import { initContextMenu } from "../context-menu/context-menu";
@@ -157,10 +157,14 @@ export async function initApp(hooks: {
           if (pctEl) pctEl.textContent = `%${Math.round(progress)}`;
           const fillEl = document.getElementById("dl-hero-fill");
           if (fillEl) fillEl.style.width = `${progress}%`;
-          const netEl = document.getElementById("dl-stat-net");
-          if (netEl && speed) netEl.textContent = speed;
+          const netText = fmtSpeed(speedBytes ?? 0, S.speedInBits);
+          const diskText = fmtSpeed(diskBytes ?? 0, S.speedInBits);
+          const netEl = document.getElementById("dl-stat-speed");
+          if (netEl) netEl.textContent = netText;
+          const peakEl = document.getElementById("dl-stat-peak");
+          if (peakEl) peakEl.textContent = fmtSpeed(S.peakNetSpeedBytes, S.speedInBits);
           const diskEl = document.getElementById("dl-stat-disk");
-          if (diskEl && diskSpeed) diskEl.textContent = diskSpeed;
+          if (diskEl) diskEl.textContent = diskText;
           const etaEl = document.getElementById("dl-stat-eta");
           if (etaEl && eta) etaEl.textContent = localizeMessage(eta);
           const bytesEl = document.getElementById("dl-stat-bytes");
@@ -168,9 +172,9 @@ export async function initApp(hooks: {
             bytesEl.textContent = `${fmtBytes(downloadedBytes)} / ${fmtBytes(totalBytes || 0)}`;
           }
           const curNetLegend = document.getElementById("dl-legend-net-val");
-          if (curNetLegend && speed) curNetLegend.textContent = speed;
+          if (curNetLegend) curNetLegend.textContent = netText;
           const curDiskLegend = document.getElementById("dl-legend-disk-val");
-          if (curDiskLegend && diskSpeed) curDiskLegend.textContent = diskSpeed;
+          if (curDiskLegend) curDiskLegend.textContent = diskText;
           drawSpeedCanvas();
         }
         return;
