@@ -752,7 +752,7 @@ export function renderOverviewTrophySpotlight(
         </button>
       </div>
 
-      <!-- Kupa İlerleme Kutusu -->
+      <!-- Trophy progress box -->
       <div class="hub-trophy-progress-box ${isPlat ? "plat" : ""}">
         <div class="hub-trophy-progress-top">
           <div class="hub-trophy-percent-badge">
@@ -945,7 +945,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
     <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
          ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? i18nT("ach.hideTitle") : i18nT("ach.revealTitle")}"` : ""}>
       
-      <!-- Sol: 52px İkon -->
+      <!-- Left: 52px icon -->
       <div class="ach-icon-wrapper">
         ${
           isSecretMasked && !isRevealed
@@ -957,7 +957,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
         ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
       </div>
 
-      <!-- Orta: Başlık & Açıklama & Meta -->
+      <!-- Middle: title, description & meta -->
       <div class="ach-content">
         <div class="ach-title-row">
           <span class="ach-name">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
@@ -985,7 +985,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
         </div>
       </div>
 
-      <!-- Sağ: XP & Durum -->
+      <!-- Right: XP & status -->
       <div class="ach-aside">
         <div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
         ${isUnlocked
