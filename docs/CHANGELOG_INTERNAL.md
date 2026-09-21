@@ -1817,5 +1817,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Metin ok karakterleri SVG ikonlarla değiştirildi: `▾` → `chevron-down`, `▲` → `chevron-up`, `●` → `check`.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
-**Kalan i18n yüzeyi (geniş):** `library-view.ts` (raflar, hero, boş durumlar), `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `collections-view.ts` (koleksiyon modalı), `game-view.ts`/`nav.ts`/`epic-actions.ts` (durum butonları ve ağ çipleri), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `store-view.ts` (yükleme ekranı), `profile-view.ts` yorumları.
+## 122. i18n: Ana Kütüphane Ekranı (library-view) + Nav/Game-View
+
+- `library-view.ts` tamamen `t()`'e taşındı: sıralama seçenekleri, hero vitrini, portre/row kartları, raf başlıkları, filtre çipleri, koleksiyon açılır menüsü, arama/araç çubuğu, platin banner ve hata/boş durumlar (`lib.*`, ~65 yeni anahtar). Türkçe kod yorumları İngilizce'ye çevrildi.
+- `nav.ts` (ağ çipi + hesap çipi tooltip'leri, `nav.*Tip`) ve `game-view.ts` (paylaşılan oyun butonları, `common.*`) migre edildi.
+- `tr.json`/`en.json` artık **647 anahtar** (duplicate yok).
+
+**Kalan i18n yüzeyi:** `cover-view.ts` (SteamGridDB modalı), `move-game-view.ts` (taşıma modalı + uyarı rozetleri), `screenshots-view.ts` (galeri/lightbox/paylaşım), `collections-view.ts` (koleksiyon modalı), `epic-actions.ts` (indirme durumu), `click-router.ts`/`input-listeners.ts`/`ipc-listeners.ts` (toast'lar), `store-view.ts` (yükleme ekranı), `profile-view.ts` yorumları.
 
