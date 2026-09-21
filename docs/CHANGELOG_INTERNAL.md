@@ -1755,3 +1755,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Kalan i18n işi:** drawer içerik bölümleri, yönetim modalı, seçici kurulum, kapak/SteamGrid, DLC yöneticisi, gamepad HUD, toast/hata mesajları.
 
+## 115. i18n Metin Taşıma (devam): DLC Yöneticisi, Seçici Kurulum & Yönetim Modalı
+
+- **`dlc-manager.ts`** (`dlc.*`): boş durum, satır etiketleri, promo banner, tablo başlıkları, geri dön/keşfet.
+- **`selective-install.ts`** (`selective.*`, `dl.starting`): denetleme/başlatma/hata toast'ları, bölüm başlıkları, boyut özeti, uygula. Yerel `t` değişkenleri `tag`/`d` olarak yeniden adlandırıldı (i18n `t` çakışması önlendi).
+- **`manage-view.ts`** (`manage.*`, ~40 anahtar): oynama istatistikleri, doğrulama, otomatik güncelleme, öncelik, bulut kayıtları, yedekleme, kısayol, yükleme/taşıma/kaldırma, DLC, gelişmiş başlatma. Ölü yorum temizlendi.
+- `tr.json`/`en.json`'a ~60 yeni anahtar eklendi. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+
+**Kalan:** drawer içerikleri (`drawer-widgets`/`drawer-view`), kapak/SteamGrid, gamepad HUD, oynama süresi modalı, ekran görüntüsü paylaşımı, toast/hata mesajları.
+

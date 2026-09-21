@@ -11,6 +11,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { t } from "../../i18n";
 
 import {
   epicGetGameSettings,
@@ -25,7 +26,7 @@ export function closeManageModal(): void {
 
 export async function openManageModal(appName: string): Promise<void> {
   if (!isTauri) {
-    toast("Oyun yönetimi yalnızca masaüstü uygulamasında kullanılabilir.", "err");
+    toast(t("manage.desktopOnly"), "err");
     return;
   }
   const sum = S.epicSummaries.find((x) => x.appName === appName);
@@ -59,7 +60,7 @@ export async function openManageModal(appName: string): Promise<void> {
       updateManageModalInputsInPlace(st);
     }
   } catch (e) {
-    toast(`Oyun ayarları alınamadı: ${String(e)}`, "err");
+    toast(t("manage.settingsFailed", { msg: String(e) }), "err");
   }
 
   // Arka planda yedekleri çek ve listeyi güncelle
@@ -87,8 +88,8 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   const cloudSub = document.getElementById("manage-cloud-subtitle");
   if (cloudSub) {
     cloudSub.textContent = st.lastCloudSync
-      ? `En son eşitleme: ${st.lastCloudSync}`
-      : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet";
+      ? t("manage.lastSync", { time: st.lastCloudSync })
+      : t("manage.cloudDesc");
   }
 
   const hasArgs = Boolean(st.launchParameters && st.launchParameters.trim().length > 0);
@@ -103,15 +104,15 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   if (argsInput) argsInput.value = st.launchParameters || "";
 
   const installTitle = document.getElementById("manage-install-title");
-  if (installTitle) installTitle.textContent = `Yükleme • ${fmtBytes(st.installSize)}`;
+  if (installTitle) installTitle.textContent = `${t("manage.installTitle")} • ${fmtBytes(st.installSize)}`;
 
   const installPaths = document.querySelectorAll("#manage-install-path");
   installPaths.forEach((el) => {
-    el.textContent = st.installPath || "Belirtilmemiş";
+    el.textContent = st.installPath || t("manage.unspecified");
   });
 
   const headSub = document.getElementById("manage-head-sub");
-  if (headSub) headSub.textContent = `Yönet & Özellikler • v${st.version}`;
+  if (headSub) headSub.textContent = `${t("manage.headSub")} • v${st.version}`;
 }
 
 export function updateVerifyProgressInPlace(
@@ -134,7 +135,7 @@ export function updateVerifyProgressInPlace(
 
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "Doğrulanıyor…";
+    btn.textContent = t("manage.verifying");
   }
 
   if (fill && count && spd) {
@@ -166,7 +167,7 @@ export function resetVerifyInPlace(id: string): void {
   const btn = document.getElementById("manage-verify-btn") as HTMLButtonElement | null;
   if (btn) {
     btn.disabled = false;
-    btn.textContent = "Doğrula";
+    btn.textContent = t("manage.verify");
   }
 }
 
@@ -183,9 +184,9 @@ export function renderManageModal(): void {
         <div class="manage-head">
           <div class="manage-head-title-group">
             <div id="manage-head-title" class="manage-head-title">${esc(st.title)}</div>
-            <div id="manage-head-sub" class="manage-head-sub">Yönet &amp; Özellikler • v${esc(st.version)}</div>
+            <div id="manage-head-sub" class="manage-head-sub">${t("manage.headSub")} • v${esc(st.version)}</div>
           </div>
-          <button class="manage-head-close" data-act="manage-close" title="Kapat">${icon("x", 16)}</button>
+          <button class="manage-head-close" data-act="manage-close" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
         <div class="manage-body">
           <!-- 0. Oynama İstatistikleri -->
@@ -193,9 +194,9 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#38bdf8">${icon("clock", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Oynama İstatistikleri</div>
+                <div class="manage-title">${t("manage.playStats")}</div>
                 <div class="manage-subtitle">
-                  Toplam Süre: <strong style="color:#fff">${fmtPlaytime(pt?.total_seconds || 0)}</strong> • Oturum Sayısı: <strong style="color:#fff">${pt?.session_count || 0}</strong> • Son: <strong style="color:#fff">${pt?.last_played || "Henüz oynanmadı"}</strong>
+                  ${t("manage.totalTime")}: <strong style="color:#fff">${fmtPlaytime(pt?.total_seconds || 0)}</strong> • ${t("manage.sessionCount")}: <strong style="color:#fff">${pt?.session_count || 0}</strong> • ${t("manage.last")}: <strong style="color:#fff">${pt?.last_played || t("manage.neverPlayed")}</strong>
                 </div>
               </div>
             </div>
@@ -206,8 +207,8 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#60a5fa">${icon("shield", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Dosyaları Doğrula</div>
-                <div class="manage-subtitle">Oyun dosyalarının bütünlüğünü kontrol et ve eksik/hasarlı parçaları onar</div>
+                <div class="manage-title">${t("manage.verifyTitle")}</div>
+                <div class="manage-subtitle">${t("manage.verifyDesc")}</div>
                 <div id="manage-verify-box-container">
                   ${
                     isVerifying && v
@@ -228,7 +229,7 @@ export function renderManageModal(): void {
             </div>
             <div class="manage-right">
               <button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${st.appName}" ${isVerifying ? "disabled" : ""}>
-                ${isVerifying ? "Doğrulanıyor…" : "Doğrula"}
+                ${isVerifying ? t("manage.verifying") : t("manage.verify")}
               </button>
             </div>
           </div>
@@ -238,8 +239,8 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#34d399">${icon("refresh", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Otomatik Güncelleme</div>
-                <div class="manage-subtitle">Oyun için yeni bir güncelleme yayınlandığında otomatik indir</div>
+                <div class="manage-title">${t("manage.autoUpdateTitle")}</div>
+                <div class="manage-subtitle">${t("manage.autoUpdateDesc")}</div>
               </div>
             </div>
             <div class="manage-right">
@@ -255,8 +256,8 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#f59e0b">${icon("zap", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Öncelikli İndirmeler</div>
-                <div class="manage-subtitle">Bu oyunun güncellemelerini ve indirmelerini kuyrukta en öne al</div>
+                <div class="manage-title">${t("manage.priorityTitle")}</div>
+                <div class="manage-subtitle">${t("manage.priorityDesc")}</div>
               </div>
             </div>
             <div class="manage-right">
@@ -272,21 +273,21 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#38bdf8">${icon("cloud", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Bulut Kayıtları (Cloud Saves)</div>
+                <div class="manage-title">${t("manage.cloudTitle")}</div>
                 <div id="manage-cloud-subtitle" class="manage-subtitle">
                   ${
                     S.manageSyncingSaves
-                      ? "Bulut ile eşitleniyor…"
+                      ? t("manage.syncing")
                       : st.lastCloudSync
-                        ? `En son eşitleme: ${esc(st.lastCloudSync)}`
-                        : "Oyun ilerlemelerini Epic Online Services (EOS) bulutuna kaydet"
+                        ? t("manage.lastSync", { time: esc(st.lastCloudSync) })
+                        : t("manage.cloudDesc")
                   }
                 </div>
               </div>
             </div>
             <div class="manage-right">
-              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="Şimdi Eşitle" ${S.manageSyncingSaves ? "disabled" : ""}>
-                ${icon("refresh", 13)} Eşitle
+              <button class="btn ghost small" data-act="manage-sync-saves" data-id="${st.appName}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>
+                ${icon("refresh", 13)} ${t("manage.sync")}
               </button>
               <label class="toggle-switch">
                 <input type="checkbox" data-act="manage-toggle-cloud" ${st.cloudSavesEnabled ? "checked" : ""} />
@@ -301,16 +302,16 @@ export function renderManageModal(): void {
               <div class="manage-left">
                 <div class="manage-icon" style="color:#a855f7">${icon("hard-drive", 20)}</div>
                 <div class="manage-info">
-                  <div class="manage-title">Kayıt Dosyaları &amp; Yerel Yedekleme</div>
-                  <div class="manage-subtitle">İlerlemenizi korumak için oyun kayıtlarını (save) yerel olarak arşivleyin ve geri yükleyin</div>
+                  <div class="manage-title">${t("manage.backupTitle")}</div>
+                  <div class="manage-subtitle">${t("manage.backupDesc")}</div>
                 </div>
               </div>
               <div class="manage-right" style="display:flex;gap:6px;align-items:center">
-                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="Yedek Klasörünü Aç">
-                  ${icon("folder", 13)} Klasör
+                <button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${st.appName}" title="${t("manage.openBackupFolder")}">
+                  ${icon("folder", 13)} ${t("manage.folder")}
                 </button>
                 <button class="btn primary small" data-act="manage-create-backup" data-id="${st.appName}" ${S.isBackingUp ? "disabled" : ""}>
-                  ${S.isBackingUp ? "Yedekleniyor…" : "Yedek Al"}
+                  ${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}
                 </button>
               </div>
             </div>
@@ -324,13 +325,13 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#a78bfa">${icon("monitor", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Masaüstü Kısayolu Oluştur</div>
-                <div class="manage-subtitle">Oyunu masaüstünden tek tıkla doğrudan başlatmak için kısayol simgesi ekle</div>
+                <div class="manage-title">${t("manage.shortcutTitle")}</div>
+                <div class="manage-subtitle">${t("manage.shortcutDesc")}</div>
               </div>
             </div>
             <div class="manage-right">
               <button class="btn ghost small" data-act="manage-create-shortcut" data-id="${st.appName}">
-                Oluştur
+                ${t("manage.create")}
               </button>
             </div>
           </div>
@@ -340,19 +341,19 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#e2e8f0">${icon("hard-drive", 20)}</div>
               <div class="manage-info">
-                <div id="manage-install-title" class="manage-title">Yükleme • ${fmtBytes(st.installSize)}</div>
+                <div id="manage-install-title" class="manage-title">${t("manage.installTitle")} • ${fmtBytes(st.installSize)}</div>
                 <div id="manage-install-path" class="manage-subtitle" style="word-break:break-all;opacity:0.8">${esc(st.installPath)}</div>
               </div>
             </div>
             <div class="manage-right">
-              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="Oyun Dosyalarını Başka Bir Diske veya Klasöre Taşı">
-                ${icon("hard-drive", 13)} Taşı
+              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="${t("manage.moveTitle")}">
+                ${icon("hard-drive", 13)} ${t("manage.move")}
               </button>
-              <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}" title="Kurulum Klasörünü Aç">
-                ${icon("folder", 13)} Klasör
+              <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}" title="${t("manage.openInstallFolder")}">
+                ${icon("folder", 13)} ${t("manage.folder")}
               </button>
-              <button class="btn danger small" data-act="epic-uninstall" data-id="${st.appName}" title="Oyunu Kaldır">
-                ${icon("trash", 13)} Kaldır
+              <button class="btn danger small" data-act="epic-uninstall" data-id="${st.appName}" title="${t("manage.uninstallTitle")}">
+                ${icon("trash", 13)} ${t("common.uninstall")}
               </button>
             </div>
           </div>
@@ -362,13 +363,13 @@ export function renderManageModal(): void {
             <div class="manage-left">
               <div class="manage-icon" style="color:#00e5ff">${icon("layers", 20)}</div>
               <div class="manage-info">
-                <div class="manage-title">Eklentiler &amp; DLC</div>
-                <div class="manage-subtitle">Oyun eklentilerini ve ek içerik paketlerini yönet</div>
+                <div class="manage-title">${t("manage.dlcTitle")}</div>
+                <div class="manage-subtitle">${t("manage.dlcDesc")}</div>
               </div>
             </div>
             <div class="manage-right">
               <button class="btn ghost small" data-act="open-dlc-manager" data-id="${st.appName}">
-                Eklentileri Yönet
+                ${t("manage.manageDlc")}
               </button>
             </div>
           </div>
@@ -379,8 +380,8 @@ export function renderManageModal(): void {
               <div class="manage-left">
                 <div class="manage-icon" style="color:#fb7185">${icon("terminal", 20)}</div>
                 <div class="manage-info">
-                  <div class="manage-title">Gelişmiş Başlatma Seçenekleri</div>
-                  <div class="manage-subtitle">Oyuna özel başlatma parametreleri ekleyin (-dx11, -novid, -high vb.)</div>
+                  <div class="manage-title">${t("manage.advancedTitle")}</div>
+                  <div class="manage-subtitle">${t("manage.advancedDesc")}</div>
                 </div>
               </div>
               <div class="manage-right">
@@ -394,7 +395,7 @@ export function renderManageModal(): void {
               <div class="args-panel">
                 <input id="manage-args-input" class="args-input" value="${esc(st.launchParameters || "")}" placeholder="-dx11 -windowed -novid" spellcheck="false" autocomplete="off" />
                 <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">
-                  Kaydet
+                  ${t("common.save")}
                 </button>
               </div>
             </div>
@@ -403,6 +404,4 @@ export function renderManageModal(): void {
       </div>
     </div>`;
 }
-
-/* ---------- Oyun Dosyalarını Taşıma (Move Game Files) ---------- */
 
