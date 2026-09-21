@@ -1786,3 +1786,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Not:** Drawer grubu (~1.700 Türkçe satır) kademeli migre ediliyor. Kalan drawer bölümleri (oyun özellikleri, kupa vitrini, medya, başarım listeleri, sistem gereksinimleri, çekmece yönetimi) sonraki adımda.
 
+## 119. i18n Metin Taşıma (devam): Drawer Widget'ları & Genel Bakış/DLC Sekmeleri
+
+- `drawer-widgets.ts` tamamlandı: oyun özellikleri (`feat.*`), kupa vitrini (`trophy.*`), medya galerisi (`media.*`), başarım listeleri/kartları (`ach.*`), donanım etiketleri (`hw.*`), yedek listesi. Türkçe HTML yorumları İngilizce'ye çevrildi.
+- `drawer-view.ts`: `openEpicModal` meta/aksiyon/stat kapsülü, `renderDrawerOverview` ve `renderDrawerDlcs` (`drawer.*`) migre edildi.
+- `tr.json`/`en.json`'a ~65 yeni anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+- **Not:** Locale dosyaları büyüdükçe ana JS paketi ~36 kB arttı (tr/en statik import ediliyor; kabul edilebilir).
+
+**Kalan:** `drawer-view.ts` içindeki `renderDrawerManage`, `renderDrawerAchievements`, `renderDrawerSystemRequirements`, `fetchAndRender*` toast'ları; kapak/SteamGrid, ekran görüntüsü paylaşımı, kalan toast/hata mesajları.
+

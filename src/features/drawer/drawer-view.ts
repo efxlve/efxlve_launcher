@@ -297,42 +297,42 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
               <div class="hub-meta-subline">
                 ${dev ? `<span class="meta-item dev">${esc(dev)}</span><span class="meta-dot">•</span>` : ""}
                 <span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? "Kurulu" : "Kurulu Değil"}</span>
-                ${partner ? `<span class="meta-dot">•</span><span class="meta-item partner" title="${esc(partner.name)} başlatıcısı gereklidir">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
-                ${antiCheat ? `<span class="meta-dot">•</span><span class="meta-item anticheat" title="Hile Koruması: ${esc(antiCheat)}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-                ${s.updateAvailable ? `<span class="meta-dot">•</span><span class="meta-item warn">${icon("zap", 11)} Güncelleme Mevcut</span>` : ""}
+                ${partner ? `<span class="meta-dot">•</span><span class="meta-item partner" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
+                ${antiCheat ? `<span class="meta-dot">•</span><span class="meta-item anticheat" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
+                ${s.updateAvailable ? `<span class="meta-dot">•</span><span class="meta-item warn">${icon("zap", 11)} ${t("drawer.updateAvailable")}</span>` : ""}
               </div>
 
               <div class="hub-actions-bar">
                 ${primary}
-                <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="Favorilere Ekle / Çıkar">
-                  ${icon("heart", 15)} <span>${faved ? "Favorilerde" : "Favori"}</span>
+                <button class="btn ghost ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">
+                  ${icon("heart", 15)} <span>${faved ? t("drawer.favorited") : t("drawer.favorite")}</span>
                 </button>
-                <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="Epic Games Store Sayfasını Aç">
-                  ${icon("external", 15)} <span>Mağaza</span>
+                <button class="btn ghost" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitle")}">
+                  ${icon("external", 15)} <span>${t("drawer.store")}</span>
                 </button>
-                ${p !== null ? `<button class="btn ghost danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 15)} <span>İptal</span></button>` : ""}
+                ${p !== null ? `<button class="btn ghost danger" data-act="epic-cancel" data-id="${s.appName}">${icon("x", 15)} <span>${t("common.cancel")}</span></button>` : ""}
               </div>
             </div>
 
-            <!-- Sağ Taraf: Hızlı Stat Kapsülü (PS5 Glass Capsule) -->
+            <!-- Right: quick stat capsule (PS5 glass capsule) -->
             <div class="hub-stat-capsule">
-              <div class="hub-stat-col clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="Oynama süresini düzenle">
-                <span class="hub-stat-label">${icon("clock", 11)} SÜRE</span>
+              <div class="hub-stat-col clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="${t("drawer.editPlaytime")}">
+                <span class="hub-stat-label">${icon("clock", 11)} ${t("drawer.statTime")}</span>
                 <span class="hub-stat-val" id="drawer-stat-playtime">${esc(playtimeStr)}</span>
               </div>
               <div class="hub-stat-divider"></div>
-              <div class="hub-stat-col ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""} title="Başarımları Gör">
-                <span class="hub-stat-label ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(11) : icon("trophy", 11)} ${isPlat ? "PLATİN" : "KUPA"}</span>
+              <div class="hub-stat-col ${achSum && achSum.total_achievements > 0 ? "clickable" : ""}" ${achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}"` : ""} title="${t("drawer.viewAchievements")}">
+                <span class="hub-stat-label ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(11) : icon("trophy", 11)} ${isPlat ? t("drawer.statPlat") : t("drawer.statTrophy")}</span>
                 <span class="hub-stat-val ${isPlat ? "plat" : ""}">${achStatVal}</span>
               </div>
               <div class="hub-stat-divider"></div>
-              <div class="hub-stat-col" title="HowLongToBeat Hikaye Süresi">
-                <span class="hub-stat-label">${icon("timer", 11)} HİKAYE</span>
+              <div class="hub-stat-col" title="${t("drawer.hltbStory")}">
+                <span class="hub-stat-label">${icon("timer", 11)} ${t("drawer.statStory")}</span>
                 <span class="hub-stat-val" id="hub-stat-hltb-val">${hltbLoading ? `<span class="hltb-spinner"></span>` : hltbVal}</span>
               </div>
               <div class="hub-stat-divider"></div>
-              <div class="hub-stat-col ${criticUrl ? "clickable" : ""}" id="hub-stat-critic-col" ${criticUrl ? `data-act="open-critic-url" data-url="${esc(criticUrl)}"` : ""} title="Eleştirmen İnceleme Skoru">
-                <span class="hub-stat-label">${icon("star", 11)} İNCELEME</span>
+              <div class="hub-stat-col ${criticUrl ? "clickable" : ""}" id="hub-stat-critic-col" ${criticUrl ? `data-act="open-critic-url" data-url="${esc(criticUrl)}"` : ""} title="${t("drawer.criticScore")}">
+                <span class="hub-stat-label">${icon("star", 11)} ${t("drawer.statReview")}</span>
                 <span class="hub-stat-val ${criticTierClass}" id="hub-stat-critic-val">${criticLoading ? `<span class="hltb-spinner"></span>` : criticVal}</span>
               </div>
             </div>
@@ -341,7 +341,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
           <!-- Sekme Başlıkları -->
           <div class="drawer-tabs-wrapper">
             <div class="drawer-tabs-fade left">
-              <button class="drawer-tabs-arrow left" data-act="drawer-tabs-scroll" data-dir="left" title="Sola kaydır">
+              <button class="drawer-tabs-arrow left" data-act="drawer-tabs-scroll" data-dir="left" title="${t("drawer.scrollLeft")}">
                 ${icon("chevron-left", 13)}
               </button>
             </div>
@@ -367,13 +367,13 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
               </button>
             </div>
             <div class="drawer-tabs-fade right">
-              <button class="drawer-tabs-arrow right" data-act="drawer-tabs-scroll" data-dir="right" title="Sağa kaydır">
+              <button class="drawer-tabs-arrow right" data-act="drawer-tabs-scroll" data-dir="right" title="${t("drawer.scrollRight")}">
                 ${icon("chevron-right", 13)}
               </button>
             </div>
           </div>
 
-          <!-- Sekme İçeriği -->
+          <!-- Tab content -->
           <div id="drawer-tab-content" class="${animateTabContent ? "tab-content-enter" : ""}">
             ${
               S.activeDrawerTab === "overview"
@@ -455,7 +455,7 @@ export function updateCriticUI(appName: string, data: CriticData): void {
       capValEl.textContent = `${data.goygoy_review.score} • Goygoy`;
       capValEl.className = "hub-stat-val tier-goygoy";
     } else if (showGoygoy && data.goygoy_review) {
-      capValEl.textContent = "Goygoy İnceleme";
+      capValEl.textContent = t("drawer.goygoyReview");
       capValEl.className = "hub-stat-val tier-goygoy";
     } else {
       capValEl.textContent = "—";
@@ -500,14 +500,14 @@ export function renderDrawerOverview(
   let tagsHtml = "";
   if (gameCols.length > 0) {
     const pills = gameCols.map((c) => `
-      <button class="drawer-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(c.name)} koleksiyonunu göster">
+      <button class="drawer-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(t("drawer.collectionShow", { name: c.name }))}">
         ${isCollectionIcon(c.emoji) ? `<span>${collectionMarker(c.emoji, 13)}</span>` : ""}<span>${esc(c.name)}</span>
       </button>
     `).join("");
-    const addBtn = `<button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon</button>`;
+    const addBtn = `<button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} ${t("drawer.collection")}</button>`;
     tagsHtml = `<div class="drawer-tags-row">${pills}${addBtn}</div>`;
   } else {
-    tagsHtml = `<div class="drawer-tags-row"><button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} Koleksiyon Ekle</button></div>`;
+    tagsHtml = `<div class="drawer-tags-row"><button class="drawer-tag-add" data-act="manage-game-collections" data-id="${s.appName}">${icon("plus", 10)} ${t("drawer.addCollection")}</button></div>`;
   }
 
   const rawDesc = s.description?.trim();
@@ -518,22 +518,22 @@ export function renderDrawerOverview(
     rawDesc.length > 25;
   const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : null);
   const effectiveDesc = hasRealDesc ? rawDesc : (storeDesc || null);
-  const descText = effectiveDesc ? esc(effectiveDesc) : "Bu oyun için katalog açıklaması henüz eklenmemiş.";
+  const descText = effectiveDesc ? esc(effectiveDesc) : t("drawer.noDescription");
 
   return `
     <div class="hub-overview-layout">
-      <!-- Sol / Ana Alan: Açıklama, Etiketler, Kupa & Medya Vitrini -->
+      <!-- Left / main column: description, tags, trophy & media -->
       <div class="hub-overview-main">
         <div class="hub-card hub-desc-card">
           <div class="hub-card-header">
-            <h3 class="hub-card-title">${icon("info", 14)} <span>Oyun Hakkında</span></h3>
+            <h3 class="hub-card-title">${icon("info", 14)} <span>${t("drawer.aboutGame")}</span></h3>
           </div>
           <div class="hub-desc-text" id="hub-desc-text">${descText}</div>
         </div>
 
         <div class="hub-card hub-tags-card">
           <div class="hub-card-header">
-            <h3 class="hub-card-title">${icon("folder", 14)} <span>Koleksiyonlar & Etiketler</span></h3>
+            <h3 class="hub-card-title">${icon("folder", 14)} <span>${t("drawer.collectionsTags")}</span></h3>
           </div>
           ${tagsHtml}
         </div>
@@ -545,7 +545,7 @@ export function renderDrawerOverview(
         </div>
       </div>
 
-      <!-- Sağ / Kenar Çubuğu: İncelemeler, HowLongToBeat & Özellikler -->
+      <!-- Right / sidebar: reviews, HowLongToBeat & features -->
       <div class="hub-overview-sidebar">
         <div id="drawer-critic-container">
           ${renderCriticCard(critic, criticLoading)}
@@ -557,7 +557,7 @@ export function renderDrawerOverview(
 
         <div class="hub-card hub-features-card">
           <div class="hub-card-header">
-            <h3 class="hub-card-title">${icon("layers", 14)} <span>Oyun Özellikleri & Destek</span></h3>
+            <h3 class="hub-card-title">${icon("layers", 14)} <span>${t("drawer.featuresSupport")}</span></h3>
           </div>
           <div class="hub-features-list" id="hub-features-list">
             ${renderGameFeatures(s, g, partner, antiCheat, reqData)}
@@ -574,7 +574,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
     return `
       <div style="text-align:center;padding:50px 0;">
         <div class="spinner" style="margin:0 auto 16px"></div>
-        <div class="muted">Eklentiler taranıyor…</div>
+        <div class="muted">${t("dlc.scanning")}</div>
       </div>
     `;
   }
@@ -589,10 +589,10 @@ export function renderDrawerDlcs(s: EpicSummary): string {
       <div class="dlc-drawer-tab">
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:36px 20px;text-align:center;">
           <div style="color:var(--muted);margin-bottom:10px">${icon("package", 32)}</div>
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">Kayıtlı Eklenti Bulunmuyor</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Bu oyun için kütüphanenizde eklenti veya ek içerik kaydı yok.</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">${t("drawer.noDlc")}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:18px">${t("drawer.noDlcDesc")}</div>
           <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">
-            ${icon("external", 13)} Mağazada Eklentileri Keşfet
+            ${icon("external", 13)} ${t("drawer.discoverDlc")}
           </button>
         </div>
       </div>
@@ -603,27 +603,27 @@ export function renderDrawerDlcs(s: EpicSummary): string {
     <div class="dlc-drawer-tab">
       <div class="dlc-drawer-search-bar">
         ${icon("search", 15)}
-        <input id="dlc-drawer-search" placeholder="Eklentiler arasında ara…" value="${esc(S.dlcSearchQuery)}" spellcheck="false" autocomplete="off" />
+        <input id="dlc-drawer-search" placeholder="${t("drawer.searchDlc")}" value="${esc(S.dlcSearchQuery)}" spellcheck="false" autocomplete="off" />
       </div>
 
       <div class="dlc-drawer-list">
         ${filteredDlcs.map((dlc) => {
           const isDownloadable = dlc.downloadable !== false;
-          const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : (isDownloadable ? "—" : "Oyuna Dahil");
+          const sizeStr = dlc.size > 0 ? fmtBytes(dlc.size) : (isDownloadable ? "—" : t("dlc.included"));
           const thumbHtml = dlc.image
             ? `<img class="dlc-drawer-thumb" src="${esc(dlc.image)}" alt="" />`
             : `<div class="dlc-drawer-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">${icon("layers", 14)}</div>`;
 
           const actionHtml = isDownloadable
             ? `
-              <label class="toggle-switch" style="flex-shrink:0" title="${dlc.installed ? "Kaldır" : "Yükle"}">
+              <label class="toggle-switch" style="flex-shrink:0" title="${dlc.installed ? t("common.uninstall") : t("common.install")}">
                 <input type="checkbox" data-act="dlc-toggle-install" data-app="${esc(s.appName)}" data-dlc="${esc(dlc.appId)}" ${dlc.installed ? "checked" : ""} />
                 <span class="toggle-slider"></span>
               </label>
             `
             : `
-              <span class="dlc-badge-active" title="Bu içerik ana oyuna entegredir ve Epic hesabınızda etkindir.">
-                ${icon("check", 12)} Hesapta Aktif
+              <span class="dlc-badge-active" title="${t("drawer.dlcActiveTip")}">
+                ${icon("check", 12)} ${t("dlc.activeBadge")}
               </span>
             `;
 
@@ -643,9 +643,9 @@ export function renderDrawerDlcs(s: EpicSummary): string {
       </div>
 
       <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:6px">
-        <div style="font-size:12px;color:var(--muted)">Daha fazla eklenti ve genişletme keşfet</div>
+        <div style="font-size:12px;color:var(--muted)">${t("drawer.discoverMoreDlc")}</div>
         <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">
-          ${icon("external", 12)} Mağaza
+          ${icon("external", 12)} ${t("drawer.store")}
         </button>
       </div>
     </div>
