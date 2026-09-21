@@ -176,6 +176,7 @@ export const S = {
   presenceEnabled: false,
   presenceClientId: "",
   preferredCdn: "",
+  downloadsSettingsOpen: false,
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
