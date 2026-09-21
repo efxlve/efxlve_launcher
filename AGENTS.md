@@ -2,6 +2,8 @@
 
 > Bu dosya, bu projede çalışacak AI ajanları (ve insan geliştiriciler) için **ana operasyonel rehberdir**.
 > Kısa tut, güncel tut: kritik kuralları net koru, geçmiş sürüm detayları için `docs/CHANGELOG_INTERNAL.md` dosyasına başvur.
+>
+> **GÜNCEL DURUM / DEVAM EDEN İŞ:** Modülerleştirme (Faz 4, kısmi) sürüyor. `main.ts` ~9.837 satır; hedef yalnızca `init()` + bootstrap. Kaldığı yerden devam etmek için **`docs/REFACTOR_PLAN.md` §6.5 (Handoff / Current Status)** bölümünü oku. Son çalışma günlüğü: `docs/CHANGELOG_INTERNAL.md` §79–92.
 
 ---
 
