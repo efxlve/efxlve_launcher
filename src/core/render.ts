@@ -41,6 +41,18 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   openEpicModalImpl(appName, isInitialOpen, animateTabContent);
 }
 
+let closeAllModalsImpl: () => void = () => {};
+
+/** Called once by main.ts to wire the "close every modal" routine. */
+export function registerCloseAllModals(fn: () => void): void {
+  closeAllModalsImpl = fn;
+}
+
+/** Close every open modal/drawer. No-op until registered. */
+export function closeAllModals(): void {
+  closeAllModalsImpl();
+}
+
 /** Request a synchronous full re-render of the active view. */
 export function render(): void {
   renderImpl();

@@ -1657,3 +1657,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Saf sunum widget'ları ayrı dosyada kaldı (`drawer-widgets.ts`); `openEpicModal` render bus'a (`registerOpenEpicModal`) kaydedilir, böylece diğer modüller onu çağırabilir.
 - `main.ts` ~4.962 → ~3.592 satır (başlangıç 11.422'den toplam ~7.830 satır azaldı, ~%68.5). `tsc`/`vite build` yeşil.
 
+## 102. Modülerleştirme Faz 5 (devam): Mağaza & Görünüm Durum Makinesi Modülü
+
+- **`core/render.ts`**'e `registerCloseAllModals`/`closeAllModals` kancası eklendi; `main.ts` kaydeder.
+- **Mağaza & görünüm durum makinesi** (`storeRect`, `syncStoreViewSize`, `renderStoreLoadingScreen`, `openStore`, `openStoreUrl`, `loadPlayerProfile`, `openProfile`, `hideStore`, `setView`) → `src/features/store/store-view.ts` (~135 satır).
+- `main.ts` ~3.592 → ~3.495 satır. `tsc`/`vite build` yeşil.
+- **Ders (satır kayması):** Toplu kesim öncesi satır numaraları HER ZAMAN yeniden alınmalı; import eklemeleri numaraları kaydırır. `git checkout -- src/main.ts` ile geri dönüp tekrar denendi.
+
