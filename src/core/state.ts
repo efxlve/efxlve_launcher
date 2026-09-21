@@ -22,7 +22,7 @@ import {
   SS_QUALITY_KEY,
   loadStrSet,
 } from "./constants";
-import type { CardSize, DlMetrics, EpicFilter, EpicPhase, EpicSort, EpicViewMode, Game, View } from "./types";
+import type { CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, Game, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
@@ -31,6 +31,7 @@ export const S = {
   lastNonStoreView: ("library") as Exclude<View, "store">,
   storeShown: false,
   epicPhase: "checking" as EpicPhase,
+  activeDrawerTab: "overview" as DrawerTab,
   epicBooted: false,
   epicAccount: "",
   epicAccountId: (null) as string | null,

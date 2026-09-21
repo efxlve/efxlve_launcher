@@ -187,6 +187,15 @@ src/
 
 ---
 
+## 6.6. Ek Backlog (Kullanıcı Talebi — Sonra Yapılacak)
+
+Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/sonrasında ele alınacak:
+
+1. **Türkçe metinlerin i18n'e taşınması (Localization):** Modüller çıkarılırken ve sonrasında, kod içine gömülü tüm Türkçe arayüz metinleri (`render*` fonksiyonları, toast mesajları, etiketler, boş durumlar, `renderDrawer*`, `renderManageModal`, `renderSelectiveModal`, `renderCustomCover*`, gamepad HUD, IPC hata mesajları) `src/locales/*.json` anahtarlarına taşınmalı ve `t("...")` kullanılmalı. Zaten `t()` motoru ve 15 dil dosyası hazır (bkz. §84). Çekirdek yüzeyler (nav, indirmeler, sağ tık, onboarding, ayarlar, profil başlıkları) migre edildi; kalanı kapsam genişletilecek.
+2. **Gereksiz / optimize olmayan kod temizliği:** Modül taşımaları sırasında fark edilen ölü kod, kullanılmayan import/değişken, tekrar eden mantık, gereksiz DOM sorguları ve performanssız döngüler düzeltilmeli (AGENTS.md §4.2 ölü kod sıfır tolerans + §6 altın kurallar). Örnek bilinen borç: `POPULAR_COL_EMOJIS` (emoji paleti) sıfır-emoji politikasına aykırı — koleksiyon emoji özelliği yeniden tasarlanmalı veya kaldırılmalı.
+
+---
+
 ## 7. Bilinen Riskler / Known Risks
 
 - **Gölgeleme (shadowing):** `view`, `query`, `games`, `downloads` gibi isimler

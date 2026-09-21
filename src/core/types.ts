@@ -31,6 +31,9 @@ export type View = "library" | "downloads" | "settings" | "dlc-manager" | "profi
 /** Account/setup lifecycle phase. */
 export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
 
+/** Game detail drawer tabs. */
+export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
+
 /** Library filter modes. */
 export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum";
 /** Library sort modes. */
