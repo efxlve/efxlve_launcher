@@ -1651,3 +1651,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Kapak/SteamGrid** (`saveCustomCover`, `resetCustomCover`, `saveCustomHero`, `resetCustomHero`, `cleanSteamGridSearchTerm`, `closeCustomCoverModal`, `openCustomCoverModal`, `renderCustomCoverModalFrame`, `renderCustomCoverModalContent`, `searchAndLoadSteamGrid`, `loadSteamGridCovers`) → `src/features/cover/cover-view.ts` (~520 satır).
 - `main.ts` ~5.455 → ~4.962 satır (başlangıç 11.422'den toplam ~6.460 satır azaldı, ~%57). `tsc`/`vite build` yeşil.
 
+## 101. Modülerleştirme Faz 5: Detay Çekmecesi Orkestrasyonu (openEpicModal + render/fetch)
+
+- `updateDrawerTabArrows`, `ensureTabVisible`, `openEpicModal`, `updateCriticUI`, `renderDrawerOverview`, `renderDrawerDlcs`, `renderDrawerManage`, `renderDrawerAchievements`, `fetchAndRenderAchievements`, `renderDrawerSystemRequirements`, `fetchAndRenderRequirements`, `enrichAchievementsData`, `epicOpenFolder` → `src/features/drawer/drawer-view.ts` (~1.442 satır).
+- Saf sunum widget'ları ayrı dosyada kaldı (`drawer-widgets.ts`); `openEpicModal` render bus'a (`registerOpenEpicModal`) kaydedilir, böylece diğer modüller onu çağırabilir.
+- `main.ts` ~4.962 → ~3.592 satır (başlangıç 11.422'den toplam ~7.830 satır azaldı, ~%68.5). `tsc`/`vite build` yeşil.
+
