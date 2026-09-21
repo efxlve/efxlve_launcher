@@ -245,7 +245,12 @@ async function fetchGames(): Promise<Game[]> {
 /* ---------- Durum ---------- */
 
 let games: Game[] = [];
-let view: "library" | "downloads" | "settings" | "dlc-manager" | "profile" = "library";
+type View = "library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store";
+let view: View = "library";
+/** Mağaza dışına çıkıldığında geri dönülecek görünüm (tek durum makinesi). */
+let lastNonStoreView: Exclude<View, "store"> = "library";
+/** Native gömülü mağaza webview'i şu anda gerçekten gösteriliyor mu? */
+let storeShown = false;
 
 /* ---------- Epic (Legendary) durumu ---------- */
 
@@ -660,7 +665,6 @@ function updateChrome(): void {
 
 /* ---------- Gömülü mağaza (ana pencere içi webview) ---------- */
 
-let storeVisible = false;
 let storeMode: "store" | "profile" = "store";
 let storeResizeTimer = 0;
 
@@ -676,7 +680,7 @@ function storeRect(): { x: number; y: number; width: number; height: number } {
 }
 
 function syncStoreViewSize(): void {
-  if (!storeVisible || !isTauri) return;
+  if (view !== "store" || !storeShown || !isTauri) return;
   invoke<void>("resize_store_view", storeRect()).catch(() => undefined);
 }
 
@@ -720,19 +724,21 @@ async function openStore(): Promise<void> {
 
 async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeAllModals();
-  if (storeVisible && lastStoreUrl === url && storeMode === mode) return;
+  if (view === "store" && storeShown && lastStoreUrl === url && storeMode === mode) return;
   lastStoreUrl = url;
-  storeVisible = true;
   storeMode = mode;
+  view = "store";
   // Mağaza açılırken modern ve şık yükleme animasyonunu göster
   viewEl.innerHTML = renderStoreLoadingScreen();
   render();
   try {
     await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false });
+    storeShown = true;
     window.setTimeout(syncStoreViewSize, 50);
     window.setTimeout(syncStoreViewSize, 200);
   } catch (e) {
-    storeVisible = false;
+    storeShown = false;
+    view = lastNonStoreView;
     render();
     toast(String(e), "err");
   }
@@ -754,19 +760,30 @@ async function loadPlayerProfile(forceRefresh = false): Promise<void> {
 }
 
 async function openProfile(): Promise<void> {
-  closeStore();
+  setView("profile");
   closeAllModals();
-  view = "profile";
   if (!playerProfileData && !profileLoading) {
     void loadPlayerProfile();
   }
   render();
 }
 
-function closeStore(): void {
-  if (!storeVisible) return;
-  storeVisible = false;
-  invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
+/** Gömülü mağaza webview'ini atomik olarak gizler; mağazada kalındıysa son mağaza dışı görünüme döner. */
+function hideStore(): void {
+  if (storeShown) {
+    storeShown = false;
+    if (isTauri) invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
+  }
+  if (view === "store") view = lastNonStoreView;
+}
+
+/** Görünüm değişimlerinin tek giriş noktası: mağaza durumu her zaman atomik güncellenir. */
+function setView(next: View): void {
+  if (next !== "store") {
+    hideStore();
+    lastNonStoreView = next;
+  }
+  view = next;
 }
 
 let query = "";
@@ -2325,15 +2342,17 @@ function scheduleRender(): void {
 }
 
 function render(): void {
+  // Mağaza dışı bir görünüm çizilirken native webview'i kesin olarak gizle (üst üste binme yok).
+  if (view !== "store" && storeShown) hideStore();
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;
-    const active = storeVisible
+    const active = view === "store"
       ? el.dataset.act === "open-store"
       : el.dataset.view === view;
     el.classList.toggle("active", active);
   });
   updateNavIndicator();
-  if (storeVisible) {
+  if (view === "store") {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
     return;
@@ -8593,9 +8612,8 @@ document.addEventListener("click", (e) => {
   if (!t) return;
 
   if (t.dataset.view) {
-    closeStore();
     closeAllModals();
-    view = t.dataset.view as typeof view;
+    setView(t.dataset.view as View);
     if (view === "library") void bootEpic();
     if (view === "profile") {
       if (!playerProfileData && !profileLoading) void loadPlayerProfile();
@@ -8626,7 +8644,7 @@ document.addEventListener("click", (e) => {
     if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
   } else if (act === "goto-library") {
     closeAllModals();
-    view = "library";
+    setView("library");
     render();
   } else if (act === "reset-demo") {
     localStorage.removeItem(MOCK_KEY);
@@ -9147,7 +9165,7 @@ document.addEventListener("click", (e) => {
     }
     openEpicModal(id, false);
   } else if (act === "dlc-back") {
-    view = "library";
+    setView("library");
     render();
   } else if (act === "dlc-discover-store" && id) {
     const s = epicSummaries.find((x) => x.appName === id);
@@ -10207,7 +10225,7 @@ function handleWindowResize(): void {
   if (view === "downloads" && typeof drawSpeedCanvas === "function") {
     drawSpeedCanvas();
   }
-  if (storeVisible) {
+  if (view === "store") {
     syncStoreViewSize();
     window.clearTimeout(storeResizeTimer);
     storeResizeTimer = window.setTimeout(() => {
@@ -10451,8 +10469,7 @@ async function init(): Promise<void> {
       "efxlve-open-game-from-store",
       (event) => {
         const { appName, title, slug } = event.payload;
-        closeStore();
-        view = "library";
+        setView("library");
         render();
 
         let targetApp = appName;
@@ -10649,7 +10666,7 @@ function updateGamepadHud(active = true): void {
       <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Kupaları İncele</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Profili Yenile</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Filtreler</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
     `;
   } else {
@@ -10657,7 +10674,7 @@ function updateGamepadHud(active = true): void {
       <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>Detay</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>Favori</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>Ara</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Filtreler</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>Sekmeler</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>Gezin</span></div>
     `;
   }
@@ -10736,6 +10753,9 @@ function gamepadLoop(): void {
         closeScreenshotLightbox();
       } else if (currentModalAppName) {
         closeModal();
+      } else if (view === "store") {
+        setView(lastNonStoreView);
+        render();
       }
     } else if (btnA) {
       // A / Çarpı (✕): Seç / Tıkla
@@ -10859,6 +10879,14 @@ function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): vo
   }
 }
 
+/** LB/RB: üst seviye konsol sekmeleri (Mağaza → Kütüphane → İndirmeler) arasında döner. */
+function cycleTopView(step: number): void {
+  const order = ['[data-act="open-store"]', '[data-view="library"]', '[data-view="downloads"]'];
+  const current = view === "store" ? 0 : view === "downloads" ? 2 : 1;
+  const next = (current + step + order.length) % order.length;
+  document.querySelector<HTMLElement>(`#nav ${order[next]}`)?.click();
+}
+
 function handleGamepadTabSwitch(step: number): void {
   if (currentModalAppName) {
     const tabs: DrawerTab[] = ["overview", "achievements", "dlcs", "screenshots"];
@@ -10870,14 +10898,8 @@ function handleGamepadTabSwitch(step: number): void {
     const nextIdx = (curIdx + step + tabs.length) % tabs.length;
     activeDrawerTab = tabs[nextIdx];
     openEpicModal(currentModalAppName, false, true);
-  } else if (view === "library") {
-    const pills = Array.from(document.querySelectorAll<HTMLElement>('.unified-pill[data-act="quick-tab"]'));
-    if (pills.length > 0) {
-      const activeIdx = pills.findIndex((p) => p.classList.contains("active"));
-      const nextIdx = activeIdx === -1 ? 0 : (activeIdx + step + pills.length) % pills.length;
-      pills[nextIdx].click();
-      pills[nextIdx].focus();
-    }
+  } else {
+    cycleTopView(step);
   }
   updateGamepadHud(gamepadPolling);
 }

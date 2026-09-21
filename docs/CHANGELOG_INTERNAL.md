@@ -1383,3 +1383,28 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 8. **Rust F12 Dinleyicisi Boşta Bekleme Optimizasyonu:**
    - `screenshots.rs` içinde hiçbir oyun açık değilken bekleme süresi 20ms'den 250ms'ye çıkarılarak arka plan CPU uyanışları %92 azaltıldı.
 
+## 79. Birleşik Görünüm Durum Makinesi, Kesin Mağaza Gizleme Garantisi & Üst Bar Konsol Rafinasyonu (Milestone 1)
+
+**Sorun:** Gömülü Epic mağaza native child webview'i (`HWND`) ile Kütüphane/çekmece bazen üst üste biniyor, "Kütüphane"/"İndirmeler"e geçişte mağaza kapanmıyor/asılı kalıyordu. `storeVisible: boolean` ve `view: string` iki ayrı değişken olduğu için nav aktif sekme ışığı tutarsızlaşabiliyordu.
+
+**Çözüm 1 — Tek Durum Makinesi (`src/main.ts`):**
+- `View` tipi `"library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store"` olarak birleştirildi; ayrı `storeVisible` bayrağı tamamen kaldırıldı.
+- `storeShown` (native webview'in gerçek görünürlüğü) + `lastNonStoreView` (mağaza dışına dönüş hedefi) eklendi.
+- `setView(next)` tüm görünüm geçişlerinin TEK giriş noktası oldu; mağaza dışı her geçişte `hideStore()` atomik çağrılır.
+- `render()` başında `view !== "store" && storeShown` ise `hideStore()` zorlanır — böylece herhangi bir render'da native pencere kesin gizlenir.
+- Nav aktiflik mantığı `view === "store" ? data-act === "open-store" : data-view === view` olarak tek kaynaktan beslendi.
+- Ölü `closeStore()` sarmalayıcısı kaldırıldı (yerine `hideStore`/`setView`).
+
+**Çözüm 2 — Rust Kesin Gizleme Garantisi (`src-tauri/src/main.rs`):**
+- `hide_store_view` artık yalnızca `hide()` çağırmıyor; child webview önce `(-10000, -10000)` konumuna taşınıp `1x1`'e küçültülüyor. Asenkron IPC gecikmesinde bile ekranda piksel kalıntısı/üst üste binme oluşamaz.
+
+**Çözüm 3 — Üst Bar (Titlebar/Nav) Konsol Rafinasyonu (`src/styles.css`):**
+- Yükseklik `54px → 56px` (ARCHITECTURE.md ile hizalı).
+- Odak halkaları AGENTS.md §7.9'a uygun tek biçime getirildi: global `:focus-visible` mavi glow yerine **2px lavanta (`#8b5cf6`) + 3px offset**. `.pcard`, `.ach-card`, `.hub-media-item`, `.hub-trophy-target-card`, `.ps5-profile-game-card` odaklarındaki `translateY/scale` layout-shift efektleri KALDIRILDI (yalnızca halka + kenarlık).
+- Kayan sekme göstergesi (`.nav-underline`) `will-change: transform, width` ile compositor'a alındı; süre `0.34s → 0.18s` (120 FPS konsol akıcılığı).
+- Sekme tipografisi dengelendi (`11.5px`, `letter-spacing: 1.2px`), `:active` dokunsal basılma (`scale(0.98)`) ve 0.14s geçişler eklendi; aktif ikon ölçekleme süsü kaldırıldı.
+
+**Çözüm 4 — Kontrolcü Sekme Geçişi (Milestone 1 gamepad):**
+- LB/RB artık modal kapalıyken üst seviye konsol sekmelerini (Mağaza → Kütüphane → İndirmeler) `cycleTopView()` ile döndürür (modal açıkken çekmece sekmeleri korunur).
+- B/Daire mağaza görünümündeyken `lastNonStoreView`'e geri döner. HUD etiketi "Filtreler" → "Sekmeler" olarak güncellendi.
+
