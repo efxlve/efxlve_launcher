@@ -209,6 +209,7 @@ import {
   refreshUpdates,
 } from "./core/epic-actions";
 import { updateBadge, updateChrome, updateNavIndicator, updateOfflineModeUi } from "./core/nav";
+import { handleWindowResize, updateMaxIcon } from "./core/window";
 import { pruneRecent, pushRecent } from "./core/recent";
 import {
   registerCloseAllModals,
@@ -2325,105 +2326,6 @@ viewEl.addEventListener("scroll", () => {
   if (totop) totop.classList.toggle("show", viewEl.scrollTop > 600);
 }, { passive: true });
 
-function updateMaxIcon(isMax?: boolean): void {
-  const iconEl = document.getElementById("win-max-icon");
-  if (!iconEl) return;
-  const setIcon = (max: boolean) => {
-    if (max) {
-      iconEl.innerHTML = `<rect width="7" height="7" x="2.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/><path d="M0.5 2.5v7h7v-7h-7z" fill="none" stroke="currentColor" stroke-width="1"/>`;
-    } else {
-      iconEl.innerHTML = `<rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/>`;
-    }
-  };
-  if (typeof isMax === "boolean") {
-    setIcon(isMax);
-  } else if (isTauri) {
-    invoke<boolean>("app_is_maximized").then(setIcon).catch(() => {});
-  }
-}
-
-function handleWindowResize(): void {
-  updateMaxIcon();
-  updateNavIndicator();
-  if (typeof updateDrawerTabArrows === "function") {
-    updateDrawerTabArrows();
-  }
-  if (typeof updateColPresetArrows === "function") {
-    updateColPresetArrows();
-  }
-  if (S.view === "downloads" && typeof drawSpeedCanvas === "function") {
-    drawSpeedCanvas();
-  }
-  if (S.view === "store") {
-    syncStoreViewSize();
-    window.clearTimeout(S.storeResizeTimer);
-    S.storeResizeTimer = window.setTimeout(() => {
-      syncStoreViewSize();
-      window.setTimeout(syncStoreViewSize, 80);
-      window.setTimeout(syncStoreViewSize, 200);
-      window.setTimeout(syncStoreViewSize, 450);
-    }, 40);
-  }
-}
-
-document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
-  const target = e.target as HTMLElement;
-  if (target.closest("#nav button, .win-btn, input, a")) return;
-  if (isTauri) {
-    void invoke<boolean>("app_toggle_maximize").then((isMax) => {
-      updateMaxIcon(isMax);
-      handleWindowResize();
-      window.setTimeout(handleWindowResize, 100);
-      window.setTimeout(handleWindowResize, 250);
-      window.setTimeout(handleWindowResize, 500);
-    });
-  }
-});
-
-
-function throttledWindowResize(): void {
-  if (S.resizeRaf !== null) return;
-  S.resizeRaf = window.requestAnimationFrame(() => {
-    S.resizeRaf = null;
-    handleWindowResize();
-  });
-}
-
-window.addEventListener("resize", throttledWindowResize, { passive: true });
-
-/* ---------- Üst bar klavye kısayolları ----------
-   Ctrl+1 Mağaza · Ctrl+2 Kütüphane · Ctrl+3 İndirmeler · Ctrl+, Ayarlar */
-document.addEventListener("keydown", (e) => {
-  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-  const t = e.target as HTMLElement | null;
-  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-  const targets: Record<string, string> = {
-    "1": '[data-act="open-store"]',
-    "2": '[data-view="library"]',
-    "3": '[data-view="downloads"]',
-    ",": '[data-view="settings"]',
-  };
-  const sel = targets[e.key];
-  if (!sel) return;
-  e.preventDefault();
-  document.querySelector<HTMLElement>(`#nav ${sel}`)?.click();
-});
-
-/* ---------- Webview Zırhlama: kazara yenileme ve ölçek bozulmasını engelle ----------
-   F5 / Ctrl+R (reload) ve Ctrl +/-/0 (zoom) tarayıcı davranışı konsol deneyimini bozar. */
-document.addEventListener(
-  "keydown",
-  (e) => {
-    const k = e.key.toLowerCase();
-    const ctrl = e.ctrlKey || e.metaKey;
-    if (k === "f5" || (ctrl && (k === "r" || k === "+" || k === "-" || k === "=" || k === "0"))) {
-      e.preventDefault();
-    }
-  },
-  { capture: true },
-);
-
-/* ---------- Başlat ---------- */
 
 async function init(): Promise<void> {
   updateMaxIcon();

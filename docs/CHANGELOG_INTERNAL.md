@@ -1685,3 +1685,8 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `ensureGamepadHud`, `updateGamepadHud`, `initGamepadSupport`, `gamepadLoop`, `handleGamepadDirectionalMove`, `cycleTopView`, `handleGamepadTabSwitch` → `src/features/gamepad/gamepad.ts` (~297 satır).
 - `main.ts` ~2.960 → ~2.775 satır (başlangıç 11.422'den toplam ~8.647 satır azaldı, ~%75.7). `tsc`/`vite build` yeşil.
 
+## 107. Modülerleştirme Faz 5 (devam): Pencere & Kısayol Modülü
+
+- `updateMaxIcon`, `handleWindowResize`, `throttledWindowResize` ve `resize`/`keydown` (Ctrl+1/2/3, F5/zoom engelleme) dinleyicileri → `src/core/window.ts` (~115 satır).
+- `main.ts` ~2.775 → ~2.684 satır. `tsc`/`vite build` yeşil.
+
