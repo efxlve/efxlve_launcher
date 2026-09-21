@@ -1680,3 +1680,8 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Demo aksiyonları** (`gameById`, `refreshGames`, `installGame`, `launchGame`, `uninstallGame`) → `core/demo.ts` (Tauri'siz tarayıcı modu için).
 - `main.ts` ~3.143 → ~2.960 satır civarı. `tsc`/`vite build` yeşil.
 
+## 106. Modülerleştirme Faz 5 (devam): Gamepad (Kontrolcü) Modülü
+
+- `ensureGamepadHud`, `updateGamepadHud`, `initGamepadSupport`, `gamepadLoop`, `handleGamepadDirectionalMove`, `cycleTopView`, `handleGamepadTabSwitch` → `src/features/gamepad/gamepad.ts` (~297 satır).
+- `main.ts` ~2.960 → ~2.775 satır (başlangıç 11.422'den toplam ~8.647 satır azaldı, ~%75.7). `tsc`/`vite build` yeşil.
+
