@@ -1541,3 +1541,17 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 **Sıradaki faz (F3):** `core/state.ts` (tek `S` nesnesi), `core/dom.ts`, `core/toast.ts`, `core/ipc.ts`; ardından `features/*` modülleri. Bkz. `docs/REFACTOR_PLAN.md`.
 
+## 88. Modülerleştirme Faz 3a: Merkezî `S` Durum Nesnesi (State Centralization)
+
+**Sorun:** `main.ts`'in bölünememesinin tek nedeni, ~150 modül-düzeyi `let`/`const` durum değişkeninin tek lexical scope'ta yaşamasıydı. Özellik modülleri bu duruma erişemediği için hiçbir şey dışarı taşınamıyordu.
+
+**Çözüm — `src/core/state.ts` (tek `S` nesnesi):**
+- **144 durum alanı** `S` nesnesine taşındı: `S.view`, `S.epicSummaries`, `S.downloads`, `S.profileFilter`, `S.activeDrawerTab` vb.
+- Taşıma **TypeScript dil servisi** ile yapıldı: her değişkenin gerçek sembol referansları (`findReferences`) bulunup `S.<ad>`'e dönüştürüldü; böylece yerel değişken gölgelemesi (shadowing) kaynaklı sessiz bug'lar engellendi. Toplam **1455 referans** güvenle yeniden yazıldı.
+- Taşınamayanlar (main.ts'e özel tipler: `DrawerTab`, `EpicFilter`, DOM referansları `viewEl`/`modalRoot`, `sortOptions` sabiti) bilinçli olarak yerinde bırakıldı.
+- Sabitler ve hidrasyon yardımcıları (`LANG_KEY`, `FAV_KEY`, `RECENT_KEY`, `DEMO_PLAT_KEY`, `SS_*`, `INITIAL_CARD_CHUNK`, `MORE_CARD_CHUNK`, `loadStrSet`) `core/constants.ts`'e taşındı; hem `state.ts` hem `main.ts` oradan import eder.
+- ES modül kısıtı nedeniyle import edilen binding yeniden atanamaz; bu yüzden **nesne** (`S`) kullanıldı — her modül `S.x = ...` yapabilir.
+- `tsc --noEmit` + `vite build` yeşil. Davranış değişmedi; `S` nesnesi artık `features/*` modüllerinin paylaştığı tek durum kaynağıdır.
+
+**Not:** Bu faz satır sayısını düşürmez; amacı **özellik modüllerinin çıkarılabilmesini mümkün kılmaktır** (F4–F6).
+
