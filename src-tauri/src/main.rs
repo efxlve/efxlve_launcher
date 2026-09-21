@@ -1171,12 +1171,18 @@ fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64) ->
 }
 
 /// Gömülü mağaza görünümünü gizler (durumu korunur).
+/// Kesin gizleme garantisi: `hide()`'a ek olarak native pencere ekran dışına
+/// taşınır ve 1x1'e küçültülür; böylece asenkron IPC gecikmesinde bile ekranda
+/// piksel kalıntısı veya üst üste binme oluşamaz.
 #[tauri::command]
 fn hide_store_view(app: AppHandle) -> Result<String, String> {
+    use tauri::{LogicalPosition, LogicalSize, Position, Size};
     let window = app
         .get_window("main")
         .ok_or_else(|| "ana pencere bulunamadı".to_string())?;
     for v in store_views(&window) {
+        let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
+        let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
         v.hide().map_err(|e| e.to_string())?;
     }
     Ok("gizlendi".into())

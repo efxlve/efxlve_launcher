@@ -114,7 +114,7 @@ body {
 #titlebar {
   position: relative;
   display: flex; align-items: center; gap: 16px;
-  padding: 0 0 0 16px; height: 54px; flex-shrink: 0; z-index: 10;
+  padding: 0 0 0 18px; height: 56px; flex-shrink: 0; z-index: 10;
   background: #08090d;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 30px -22px rgba(0, 0, 0, 1);
@@ -132,9 +132,10 @@ body {
   opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
   background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
   box-shadow: 0 -1px 8px -1px rgba(167, 139, 250, 0.45);
-  transition: transform 0.34s cubic-bezier(0.34, 1.25, 0.64, 1),
-              width 0.34s cubic-bezier(0.34, 1.25, 0.64, 1),
-              opacity 0.18s linear;
+  will-change: transform, width;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+              width 0.18s cubic-bezier(0.2, 0, 0, 1),
+              opacity 0.14s linear;
 }
 
 /* Marka */
@@ -165,12 +166,17 @@ body {
 }
 #nav .nav-tab {
   position: relative; display: flex; align-items: center; gap: 9px;
-  padding: 8px 6px; border-radius: 10px; border: none; background: none;
-  color: #7c8094; font-size: 11px; font-weight: 700; letter-spacing: 1.1px;
+  padding: 9px 6px; border-radius: 10px; border: none; background: none;
+  color: #7c8094; font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px;
   text-transform: uppercase;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.2s ease;
+  transition: color 0.14s ease, transform 0.14s ease;
+}
+#nav .nav-tab:active { transform: scale(0.98); }
+#nav .nav-tab:focus-visible {
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
 }
 /* Odak ışığı: dolgu kutusu değil, öğenin ardında yumuşak bir parıltı (PS5 seçim dili).
    Hover'da nötr beyaz, aktifte sıcak lavanta — seçili öğe mor kimlikle konuşur. */
@@ -178,7 +184,7 @@ body {
   content: ""; position: absolute; inset: 2px -12px; border-radius: 12px;
   pointer-events: none; opacity: 0;
   background: radial-gradient(64% 110% at 50% 50%, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 74%);
-  transition: opacity 0.28s ease, background 0.28s ease;
+  transition: opacity 0.14s ease, background 0.14s ease;
 }
 #nav .nav-tab:hover { color: #d6d3e2; }
 #nav .nav-tab:hover::before { opacity: 0.75; }
@@ -189,11 +195,11 @@ body {
 }
 #nav .nav-tab svg {
   width: 18px; height: 18px; stroke-width: 1.7;
-  transition: transform 0.32s cubic-bezier(0.34, 1.25, 0.64, 1), opacity 0.2s ease, color 0.2s ease;
+  transition: opacity 0.14s ease, color 0.14s ease;
   opacity: 0.85;
 }
 #nav .nav-tab:hover svg { opacity: 1; }
-#nav .nav-tab.active svg { transform: scale(1.12); opacity: 1; color: #c4b5fd; }
+#nav .nav-tab.active svg { opacity: 1; color: #c4b5fd; }
 
 /* Sağ küme (durum + hesap + ayarlar) */
 .nav-right {
@@ -1401,9 +1407,10 @@ button { font-family: inherit; }
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 .hub-trophy-target-card:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(96, 165, 250, 0.6) !important;
-  transform: translateY(-2px);
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
 }
 .hub-trophy-target-icon {
   width: 38px;
@@ -1519,9 +1526,10 @@ button { font-family: inherit; }
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 58, 237, 0.25);
 }
 .hub-media-item:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(96, 165, 250, 0.6) !important;
-  transform: translateY(-3px) scale(1.02);
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
 }
 .hub-media-item:hover img {
   transform: scale(1.05);
@@ -8504,9 +8512,10 @@ select option {
 }
 
 .ps5-profile-game-card:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2.5px #a78bfa, 0 0 26px rgba(167, 139, 250, 0.55) !important;
-  transform: translateY(-3px);
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
 }
 
 .ps5-profile-game-card.platinum {
@@ -8924,16 +8933,19 @@ select option {
   50% { opacity: 1; color: #a5b4fc; }
 }
 
-/* --- PlayStation Konsol & Gamepad Odak Halkası (Console Focus Halo Ring) --- */
+/* --- PlayStation Konsol & Gamepad Odak Halkası (Console Focus Ring) ---
+   AGENTS.md §7.9: 2px lavanta (#8b5cf6) halka, 3px offset. Neon glow ve odakta
+   ölçekleme/kaydırma (layout shift) YASAK — yalnızca halka ve kenarlık konuşur. */
 :focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px #3b82f6, 0 0 16px rgba(59, 130, 246, 0.45) !important;
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
 }
 
 .pcard:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2.5px #60a5fa, 0 0 24px rgba(96, 165, 250, 0.6) !important;
-  transform: translateY(-4px) scale(1.02);
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
   z-index: 10;
 }
 
@@ -8947,14 +8959,20 @@ select option {
 .hub-back-btn:focus-visible,
 .hub-tool-btn:focus-visible,
 .unified-pill:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px #60a5fa, 0 0 16px rgba(96, 165, 250, 0.5) !important;
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
 }
 
 .ach-card:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px #3b82f6, 0 0 18px rgba(59, 130, 246, 0.4) !important;
-  transform: translateY(-2px);
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 3px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: none !important;
+}
+
+.screenshot-card:focus-visible {
+  transform: none !important;
 }
 
 /* ==========================================================================
