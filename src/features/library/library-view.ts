@@ -17,6 +17,7 @@ import { cleanDisplayVersion, esc, fmtBytes, fmtPlaytime } from "../../core/util
 
 import { getThirdPartyLauncher, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
+import { t } from "../../i18n";
 import { renderOnboarding } from "../onboarding/onboarding-view";
 
 /** Sort options shown in the library sort dropdown. */
@@ -660,28 +661,28 @@ export function renderEpic(): string {
     <div class="lib-unified-toolbar">
       <div class="unified-toolbar-left">
         <button class="unified-pill ${S.activeCollectionId === null && S.epicFilter === "all" ? "active" : ""}" data-act="quick-tab" data-tab="all">
-          <span>Tümü</span>
+          <span>${t("library.all")}</span>
           <span class="pill-cnt">${S.epicSummaries.length}</span>
         </button>
         <button class="unified-pill ${S.epicFilter === "installed" ? "active" : ""}" data-act="quick-tab" data-tab="installed">
           <span class="pill-dot installed"></span>
-          <span>Yüklü</span>
+          <span>${t("library.installed")}</span>
           <span class="pill-cnt">${allInstalledCount}</span>
         </button>
         <button class="unified-pill ${S.activeCollectionId === "fav" || S.epicFilter === "fav" ? "active" : ""}" data-act="quick-tab" data-tab="fav">
           <span class="pill-icon">${icon("heart", 13)}</span>
-          <span>Favoriler</span>
+          <span>${t("library.favorites")}</span>
           <span class="pill-cnt">${favTotalCount}</span>
         </button>
         <button class="unified-pill ${S.epicFilter === "platinum" ? "active" : ""}" data-act="quick-tab" data-tab="platinum">
           <span class="pill-icon">${epicPlatinumIcon(13)}</span>
-          <span>Platin</span>
+          <span>${t("library.platinum")}</span>
           <span class="pill-cnt">${platCount}</span>
         </button>
         ${allUpdatesCount > 0 ? `
         <button class="unified-pill ${isUpdateNewlyAdded ? "pill-dynamic" : ""} ${S.epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
           <span class="pill-icon">${icon("zap", 13)}</span>
-          <span>Güncelleme</span>
+          <span>${t("library.updates")}</span>
           <span class="pill-cnt">${allUpdatesCount}</span>
         </button>` : ""}
 

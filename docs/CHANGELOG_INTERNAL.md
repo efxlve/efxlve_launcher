@@ -1732,3 +1732,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 `tsc` + `vite build` + `cargo test` (54/54) yeşil. **Kalan iş:** i18n metin taşıma (bkz. §6.6).
 
+## 112. i18n Metin Taşıma (Başlangıç): Çekmece Sekmeleri & Kütüphane Filtreleri
+
+- `tr.json` / `en.json`'a anahtarlar eklendi: `drawer.overview/achievements/dlcs/screenshots/manage/specs`, `library.all/installed/favorites/updates/platinum`, `common.playing/update/cancelShort`.
+- `drawer-view.ts`: çekmece sekme etiketleri (statik + dinamik güncelleme) artık `t("drawer.*")`.
+- `library-view.ts`: kütüphane filtre pilleri (`Tümü`, `Yüklü`, `Favoriler`, `Platin`, `Güncelleme`) artık `t("library.*")`.
+- Diğer 13 dil, eksik anahtarlar için İngilizce'ye düşer (fallback).
+- **Kalan i18n işi** (kademeli): drawer içerikleri, downloads, settings, profile, manage, screenshots, toasts/hata mesajları. Bkz. §6.6.
+
