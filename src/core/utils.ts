@@ -49,6 +49,30 @@ export function fmtAchDate(iso: string | null): string {
 }
 
 /**
+ * Format a screenshot epoch timestamp (seconds) as `DD.MM.YYYY HH:MM:SS`.
+ * Falls back to the provided string when the timestamp is missing/invalid.
+ */
+export function formatScreenshotDate(ts: number, fallbackStr?: string): string {
+  if (ts && ts > 0) {
+    try {
+      const d = new Date(ts * 1000);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, "0");
+        const mins = String(d.getMinutes()).padStart(2, "0");
+        const secs = String(d.getSeconds()).padStart(2, "0");
+        return `${day}.${month}.${year} ${hours}:${mins}:${secs}`;
+      }
+    } catch {
+      // Fall through to the fallback string.
+    }
+  }
+  return fallbackStr || "";
+}
+
+/**
  * Extract a clean, display-friendly version from Legendary's messy version strings.
  */
 export function cleanDisplayVersion(rawVersion?: string | null): { display: string; full: string } {
