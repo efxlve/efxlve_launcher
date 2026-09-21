@@ -74,7 +74,7 @@ export function updateGamepadHud(active = true): void {
 
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
-    console.log("[Gamepad] Bağlandı:", e.gamepad.id);
+    console.log("[Gamepad] Connected:", e.gamepad.id);
     toast(t("gamepad.connected", { name: e.gamepad.id.split("(")[0].trim() }), "ok");
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
@@ -84,7 +84,7 @@ export function initGamepadSupport(): void {
   });
 
   window.addEventListener("gamepaddisconnected", (e) => {
-    console.log("[Gamepad] Ayrıldı:", e.gamepad.id);
+    console.log("[Gamepad] Disconnected:", e.gamepad.id);
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {
@@ -99,7 +99,7 @@ export function initGamepadSupport(): void {
     }
   }, { passive: true });
 
-  // Başlangıçta halihazırda bağlı oyun kolu var mı?
+  // Is a controller already connected at startup?
   setTimeout(() => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     if (Array.from(gamepads).some((g) => g !== null && g.connected)) {
@@ -124,7 +124,7 @@ export function gamepadLoop(): void {
     const btns = gp.buttons;
     const axes = gp.axes;
 
-    // D-Pad veya Sol Analog Çubuk yönleri
+    // D-Pad or left analog stick directions
     const up = btns[12]?.pressed || axes[1] < -0.55;
     const down = btns[13]?.pressed || axes[1] > 0.55;
     const left = btns[14]?.pressed || axes[0] < -0.55;
@@ -150,23 +150,23 @@ export function gamepadLoop(): void {
         render();
       }
     } else if (btnA) {
-      // A / Çarpı (✕): Seç / Tıkla
+      // A / Cross: Select / Click
       S.lastGamepadActionTime = now;
       const active = document.activeElement as HTMLElement | null;
       if (active && typeof active.click === "function") {
         active.click();
       }
     } else if (btnLB || btnRB) {
-      // L1/LB & R1/RB: Sekme / Filtre Değiştir
+      // L1/LB & R1/RB: switch tab / filter
       S.lastGamepadActionTime = now;
       handleGamepadTabSwitch(btnRB ? 1 : -1);
     } else if (btnY) {
-      // Y / Üçgen (△): Arama Kutusuna Odaklan
+      // Y / Triangle: focus the search box
       S.lastGamepadActionTime = now;
       const searchInput = (document.getElementById("ach-search-input") || document.getElementById("search")) as HTMLInputElement | null;
       searchInput?.focus();
     } else if (btnX) {
-      // X / Kare (□): Favorilere Ekle / Çıkar
+      // X / Square: add / remove favorite
       S.lastGamepadActionTime = now;
       if (S.currentModalAppName) {
         toggleFav(S.currentModalAppName);
@@ -271,7 +271,7 @@ export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "righ
   }
 }
 
-/** LB/RB: üst seviye konsol sekmeleri (Mağaza → Kütüphane → İndirmeler) arasında döner. */
+/** LB/RB: cycles the top-level console tabs (Store → Library → Downloads). */
 export function cycleTopView(step: number): void {
   const order = ['[data-act="open-store"]', '[data-view="library"]', '[data-view="downloads"]'];
   const current = S.view === "store" ? 0 : S.view === "downloads" ? 2 : 1;

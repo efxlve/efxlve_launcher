@@ -142,7 +142,7 @@ export function renderProfile(): string {
 
   const allGames = prof?.games || [];
 
-  // PlayStation 4-Seviyeli Kupa Hiyerarşisi Sayaçları (Tam Eşitlik Garantisi)
+  // PlayStation four-tier trophy hierarchy counters (exact parity guaranteed).
   const goldTrophies = Math.max(platCount * 4, Math.floor(totalUnlocked * 0.08));
   const silverTrophies = Math.max(platCount * 8, Math.floor(totalUnlocked * 0.22));
   const bronzeTrophies = Math.max(0, totalUnlocked - platCount - goldTrophies - silverTrophies);
@@ -153,7 +153,7 @@ export function renderProfile(): string {
   const levelPct = Math.round((levelXp / 1000) * 100);
   const xpToNextLevel = 1000 - levelXp;
 
-  // PS5 Hero Sinematik Arka Plan Afişi (Tamamlanan en üst oyundan veya ilk oyundan)
+  // PS5 hero cinematic backdrop (from the highest completed game or the first game).
   const topGame = allGames.find((g) => g.is_platinum) || allGames[0];
   const topSummary = topGame ? S.epicSummaries.find((x) => x.appName === topGame.app_name) : null;
   const heroBackdrop = topSummary ? (epicWideArt(topSummary) || topSummary.cover) : "";
@@ -265,7 +265,7 @@ export function renderProfile(): string {
             </div>
           </div>
 
-          <!-- Sağ: PlayStation 4-Seviyeli Kupa Vitrini & Aksiyonlar -->
+          <!-- Right: PlayStation four-tier trophy showcase & actions -->
           <div class="ps5-hero-right">
             <div class="ps5-trophy-tier-showcase">
               <div class="ps5-tier-col plat" title="${t("profile.platLabel")}">
@@ -309,7 +309,7 @@ export function renderProfile(): string {
         </div>
       </div>
 
-      <!-- 2. PlayStation Kupa Vitrini ve Oyun İlerlemesi -->
+      <!-- 2. PlayStation trophy showcase and game progress -->
       <div class="profile-games-section">
         <div class="profile-games-header">
           <div class="profile-games-title-group">
