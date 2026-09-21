@@ -14,7 +14,7 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import { epicGetInstallOptions, epicInstallWithOptions } from "../../epic";
 export async function openSelectiveModal(appName: string): Promise<void> {
   const s = S.epicSummaries.find((x) => x.appName === appName);
@@ -124,7 +124,7 @@ export function renderSelectiveModal(): void {
               return `
                 <div class="selective-row">
                   <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(tag.label)}</span>
+                    <span class="selective-row-label">${esc(localizeMessage(tag.label))}</span>
                   </div>
                   <div class="selective-row-right">
                     <span class="selective-row-size">${fmtBytes(tag.size)}</span>
@@ -153,7 +153,7 @@ export function renderSelectiveModal(): void {
               return `
                 <div class="selective-row">
                   <div class="selective-row-info">
-                    <span class="selective-row-label">${esc(tag.label)}</span>
+                    <span class="selective-row-label">${esc(localizeMessage(tag.label))}</span>
                   </div>
                   <div class="selective-row-right">
                     <span class="selective-row-size">${fmtBytes(tag.size)}</span>

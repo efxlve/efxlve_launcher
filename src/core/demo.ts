@@ -69,7 +69,7 @@ export async function launchGame(id: string): Promise<void> {
       const msg = await invoke<string>("launch_game", { id });
       toast(msg, "ok");
     } else {
-      toast(t("demo.launching", { title: gameById(id)?.title ?? id }), "ok");
+      toast(t("demo.launching", { a1: gameById(id)?.title ?? id }), "ok");
     }
   } catch (e) {
     toast(String(e), "err");

@@ -1,4 +1,4 @@
-//! Frontend'e açılan Epic/Legendary Tauri komutları.
+//! Epic/Legendary Tauri commands exposed to the frontend.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -24,8 +24,8 @@ fn resolve_or_err(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     paths::resolve_binary(app, settings.alt_legendary_bin.as_deref()).map_err(cmd_error)
 }
 
-/// Tam hata çıktısını dosyaya yazıp kullanıcı dostu metni döndürür.
-/// Dosya: `<app_data>/logs/legendary-error.log` (tanı için okunur).
+/// Writes the full error output to a file and returns a user-friendly message.
+/// File: `<app_data>/logs/legendary-error.log` (read for diagnostics).
 fn fail(app: &AppHandle, e: LegendaryError) -> String {
     if let LegendaryError::CommandFailed { stderr_full, .. } = &e {
         let path = app
@@ -69,9 +69,9 @@ pub async fn epic_ensure_binary(app: AppHandle) -> Result<String, String> {
         .map_err(|e| fail(&app, e))
 }
 
-/// legendary config dizini: varsayılan konumda varlık veritabanı varsa
-/// `status` koşturmaya gerek yok — çünkü `status --offline` bile eksik
-/// metadataları tek tek çekip 401 yiyebilir, hem de yavaş!
+/// Legendary config dir: when the entitlement database exists at the default location
+/// there is no need to run `status`, because even `status --offline` fetches
+/// missing metadata one by one, can hit 401, and is slow!
 async fn config_dir_for(bin: &Path) -> PathBuf {
     let def = skip::default_config_dir();
     if def.join("assets.json").is_file() {
@@ -83,12 +83,12 @@ async fn config_dir_for(bin: &Path) -> PathBuf {
         .unwrap_or(def)
 }
 
-/// Kurtarmalı komut koşturucu: 401 katalog hatasında öğeyi otomatik atlar,
-/// geçici hatalarda (429/ağ) bekleyip dener.
+/// Resilient command runner: on a 401 catalog error it skips the item automatically,
+/// and on transient errors (429/network) it waits and retries.
 ///
-/// ÖNEMLİ: `status --offline` dahil sync yapan her komut buradan geçmelidir —
-/// legendary eksik metadatası olan oyunları `--offline` modda bile tek tek
-/// çekmeye kalkar (core.py'deki retry yolu) ve bozuk öğede çöker.
+/// IMPORTANT: every command that syncs (including `status --offline`) must go through here,
+/// because legendary tries to fetch games with missing metadata one by one even in
+/// `--offline` mode (the retry path in core.py) and crashes on a broken item.
 async fn run_with_recovery<T: DeserializeOwned>(
     app: &AppHandle,
     bin: &Path,
@@ -103,8 +103,8 @@ async fn run_with_recovery<T: DeserializeOwned>(
         match client::run_json_timeout(bin, args, client::LIST_TIMEOUT_SECS).await {
             Ok(v) => return Ok(v),
             Err(e) => {
-                // 401 katalog hatası + URL varsa → öğeyi otomatik atla ve devam et.
-                // Sabit bütçe yok: her atlama ilerlemedir; takılma korumasıyla durur.
+                // 401 catalog error + URL present -> skip the item automatically and continue.
+                // No fixed budget: each skip is progress; it stops via the stall guard.
                 if let LegendaryError::CommandFailed { stderr_tail, .. } = &e {
                     if let Some((ns, item)) = skip::parse_401_item(stderr_tail) {
                         let key = format!("{ns}:{item}");
@@ -148,7 +148,7 @@ async fn run_with_recovery<T: DeserializeOwned>(
                         }
                     }
                 }
-                // Geçici hata (429/ağ) → bekleyip tekrar dene (en fazla 3).
+                // Transient error (429/network) -> wait and retry (up to 3 times).
                 let reason = match &e {
                     LegendaryError::CommandFailed { stderr_tail, .. } => {
                         transient_reason(stderr_tail)
@@ -211,8 +211,8 @@ pub fn epic_list_skipped(app: AppHandle) -> Vec<String> {
         .collect()
 }
 
-/// Diskteki önbellekten anlık kütüphane (ağ yok, subprocess yok).
-/// Arayüz önce bunu gösterir; `epic_list_games` senkronu arka planda koşar.
+/// Instant library from the disk cache (no network, no subprocess).
+/// The UI shows this first; the `epic_list_games` sync runs in the background.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CachedLibrary {
@@ -248,13 +248,13 @@ pub async fn epic_list_installed(_app: AppHandle) -> Result<Vec<InstalledGame>, 
     Ok(cache::read_installed(&config))
 }
 
-/// legendary'nin kabul ettiği gibi ham kod veya `authorizationCode`
-/// içeren JSON gövdesini kabul eder.
+/// Accepts a raw code or a JSON body containing `authorizationCode`,
+/// exactly as legendary does.
 fn extract_auth_code(input: &str) -> Result<String, super::LegendaryError> {
     use super::LegendaryError;
     let t = input.trim();
     if t.is_empty() {
-        return Err(LegendaryError::ParseError("kod boş".into()));
+        return Err(LegendaryError::ParseError("@t:auth.codeEmpty".into()));
     }
     if t.starts_with('{') {
         let v: serde_json::Value =
@@ -263,7 +263,7 @@ fn extract_auth_code(input: &str) -> Result<String, super::LegendaryError> {
             .get("authorizationCode")
             .and_then(|c| c.as_str())
             .map(|s| s.to_string())
-            .ok_or_else(|| LegendaryError::ParseError("JSON içinde authorizationCode yok".into()));
+            .ok_or_else(|| LegendaryError::ParseError("@t:auth.noAuthCode".into()));
     }
     Ok(t.trim_matches('"').trim().to_string())
 }
@@ -299,7 +299,7 @@ pub async fn epic_logout(app: AppHandle) -> Result<String, String> {
     client::run_unit(&bin, &["-y", "auth", "--delete"])
         .await
         .map_err(|e| fail(&app, e))?;
-    Ok("Epic oturumu kapatıldı".into())
+    Ok("@t:auth.loggedOut".into())
 }
 
 #[tauri::command]
@@ -322,8 +322,8 @@ pub fn epic_set_alt_bin(app: AppHandle, path: Option<String>) -> Result<crate::E
     Ok(s)
 }
 
-/// Metadata dosyasından başarımların gizlilik (hidden) ve ana oyun (is_base)
-/// bilgilerini tamamlar; boş kalan açıklama/isim/ikonları doldurur.
+/// Fills in achievement hidden/is_base flags from the metadata file and fills
+/// in any missing description/name/icons.
 pub fn enrich_achievements_from_metadata(resp: &mut GameAchievementsResponse, app_name: &str) {
     let config = skip::default_config_dir();
     let meta_path = config.join("metadata").join(format!("{app_name}.json"));
@@ -424,8 +424,8 @@ pub async fn epic_get_achievements(
         }
         Err(e) => {
             let s = e.to_string();
-            // Legendary başarımı olmayan oyunlar için boş çıktı, "No achievements" veya NoneType AttributeError verir.
-            if s.contains("boş çıktı")
+            // For games without achievements, legendary returns empty output, "No achievements" or a NoneType AttributeError.
+            if s.contains("@t:err.emptyOutput")
                 || s.contains("No achievements")
                 || s.contains("AttributeError")
                 || s.contains("NoneType")
@@ -468,9 +468,9 @@ pub fn scan_achievements_summary(
 
     let mut out: HashMap<String, GameAchievementSummary> = HashMap::new();
 
-    // 1. Önce legendary'nin kendi önbelleğindeki achievements.json dosyasını tara
-    // (namespace bazlı saklanır: örn. "carnation", "2e92a78949e2474aa89271b8b893f3b0")
-    // Değerler: (total_unlocked, total_xp, has_plat, base_unlocked, base_user_xp)
+    // 1. First scan legendary's own cached achievements.json file
+    // (stored per namespace: e.g. "carnation", "2e92a78949e2474aa89271b8b893f3b0")
+    // Values: (total_unlocked, total_xp, has_plat, base_unlocked, base_user_xp)
     let mut user_ach_map: HashMap<String, (u32, u32, bool, u32, u32)> = HashMap::new();
     let leg_ach_file = config.join("achievements.json");
     if leg_ach_file.is_file() {
@@ -554,7 +554,7 @@ pub fn scan_achievements_summary(
         }
     }
 
-    // 2. Metadata klasöründen oyunların toplam başarım ve XP sayılarını eşleştir
+    // 2. Match each game's total achievement and XP counts from the metadata folder
     let metadata_dir = config.join("metadata");
     if metadata_dir.is_dir() {
         if let Ok(entries) = std::fs::read_dir(metadata_dir) {
@@ -647,7 +647,7 @@ pub fn scan_achievements_summary(
         }
     }
 
-    // 3. Detay çekmecesinden on-demand kaydedilen önbellek dosyalarını da birleştir
+    // 3. Also merge cache files saved on demand from the detail drawer
     if cache_dir.is_dir() {
         if let Ok(entries) = std::fs::read_dir(cache_dir) {
             for entry in entries.flatten() {
@@ -699,7 +699,7 @@ pub fn scan_achievements_summary(
     out
 }
 
-/// Epic Games Store başlığından ve yerel metadatadan olası URL slug adaylarını türetir.
+/// Derives possible URL slug candidates from the Epic Games Store title and local metadata.
 pub fn generate_slug_candidates(
     title: &str,
     folder_name: Option<&str>,
@@ -715,7 +715,7 @@ pub fn generate_slug_candidates(
                 'ö' | 'Ö' => 'o',
                 'ş' | 'Ş' => 's',
                 'ü' | 'Ü' => 'u',
-                // Unicode tırnaklar, apostroflar, tireler, özel semboller
+                // Unicode quotes, apostrophes, dashes, special symbols
                 '’' | '‘' | '“' | '”' | '\'' | '"' | '`' | '™' | '®' | '©' | ':' | '!' | '?'
                 | '.' | ',' | '-' | '–' | '—' | '_' | '(' | ')' | '[' | ']' | '{' | '}'
                 | '/' | '\\' | '|' | '+' | '&' | '\u{00a0}' => ' ',
@@ -765,7 +765,7 @@ pub fn generate_slug_candidates(
         add(&split_camel_or_case(fn_str));
     }
 
-    // 1. İki nokta (alt başlık) ve tire temizleme: "The Dungeon of Naheulbeuk: The Amulet of Chaos" -> "the-dungeon-of-naheulbeuk"
+    // 1. Strip the colon (subtitle) and dashes: "The Dungeon of Naheulbeuk: The Amulet of Chaos" -> "the-dungeon-of-naheulbeuk"
     if let Some(pos) = title.find(':') {
         add(&title[..pos]);
     }
@@ -776,7 +776,7 @@ pub fn generate_slug_candidates(
         add(&title[..pos]);
     }
 
-    // 2. Bilinen yayıncı ve seri ön eklerini ayıklayarak alternatif üret
+    // 2. Produce an alternative by stripping known publisher and series prefixes
     let lower = title.to_lowercase();
     let prefixes = [
         "tom clancy's ",
@@ -819,7 +819,7 @@ pub fn generate_slug_candidates(
         }
     }
 
-    // 3. Bilinen edisyon takılarını temizleyerek alternatif üret
+    // 3. Produce an alternative by stripping known edition suffixes
     let suffixes = [
         "standard edition",
         "definitive edition",
@@ -850,7 +850,7 @@ pub fn generate_slug_candidates(
     list
 }
 
-/// HowLongToBeat verilerini çeker ve döndürür.
+/// Fetches and returns HowLongToBeat data.
 #[tauri::command]
 pub async fn epic_get_hltb(
     title: String,
@@ -861,7 +861,7 @@ pub async fn epic_get_hltb(
     Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force).await)
 }
 
-/// Eleştirmen ve inceleme verilerini (OpenCritic, Metacritic, IGDB) çeker ve döndürür.
+/// Fetches and returns critic and review data (OpenCritic, Metacritic, IGDB).
 #[tauri::command]
 pub async fn epic_get_critic(
     title: String,
@@ -872,7 +872,7 @@ pub async fn epic_get_critic(
     Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force).await)
 }
 
-/// Epic Games Store genel içerik API'sinden sistem gereksinimlerini çeker ve diske önbelleğe alır.
+/// Fetches system requirements from the Epic Games Store content API and caches them to disk.
 #[tauri::command]
 pub async fn epic_get_system_requirements(
     _app: AppHandle,
@@ -885,7 +885,7 @@ pub async fn epic_get_system_requirements(
     let cache_file = specs_dir.join(format!("{}.json", app_name));
     let force = force_refresh.unwrap_or(false);
 
-    // 1. Önce disk önbelleğine bak (sadece desteklenen, taze ve yeni şemaya sahip olanlar)
+    // 1. Check the disk cache first (only supported, fresh entries with the new schema)
     if !force && cache_file.is_file() {
         if let Ok(content) = std::fs::read_to_string(&cache_file) {
             if let Ok(cached) = serde_json::from_str::<GameRequirementsResponse>(&content) {
@@ -896,7 +896,7 @@ pub async fn epic_get_system_requirements(
         }
     }
 
-    // 2. Yerel metadata dosyasından FolderName ve custom slug tara
+    // 2. Scan FolderName and custom slug from the local metadata file
     let meta_file = config_dir.join("metadata").join(format!("{}.json", app_name));
     let mut folder_name: Option<String> = None;
     let mut custom_slug: Option<String> = None;
@@ -924,7 +924,7 @@ pub async fn epic_get_system_requirements(
         }
     }
 
-    // 3. Slug adaylarını hazırla
+    // 3. Prepare slug candidates
     let slugs = generate_slug_candidates(&title, folder_name.as_deref(), custom_slug.as_deref());
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(8))
@@ -1061,7 +1061,7 @@ pub async fn epic_get_system_requirements(
         }
     }
 
-    // Bulunamadıysa supported: false olarak zarifçe dön (başarısız durumları kalıcı diske kilitleme)
+    // If not found, return supported: false gracefully (do not lock failures to disk permanently)
     let fallback = GameRequirementsResponse {
         supported: false,
         systems: vec![],
@@ -1075,13 +1075,13 @@ pub async fn epic_get_system_requirements(
     Ok(fallback)
 }
 
-/// Epic Games Launcher üzerinde kurulu oyunları tespit eder.
+/// Detects games installed through the Epic Games Launcher.
 #[tauri::command]
 pub async fn epic_detect_egl_games(_app: AppHandle) -> Result<Vec<cache::EglDetectedGame>, String> {
     Ok(cache::read_egl_installed_games())
 }
 
-/// Epic Games Launcher'da algılanan oyunları kalıcı olarak installed.json'a eşitler.
+/// Persistently syncs games detected in the Epic Games Launcher into installed.json.
 #[tauri::command]
 pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
     let config = skip::default_config_dir();
@@ -1133,7 +1133,7 @@ pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
     Ok(imported_count)
 }
 
-/* ---------- 3. Parti Başlatıcılar (EA App, Ubisoft Connect, Rockstar) ---------- */
+/* ---------- Third-party launchers (EA App, Ubisoft Connect, Rockstar) ---------- */
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1146,8 +1146,8 @@ pub struct ThirdPartyLauncher {
     pub download_url: String,
 }
 
-/// Windows kayıt defterindeki `Uninstall` anahtarlarını tarayıp
-/// (DisplayName, DisplayVersion, InstallLocation) üçlülerini döndürür.
+/// Scans the `Uninstall` keys in the Windows registry and returns
+/// (DisplayName, DisplayVersion, InstallLocation) triples.
 fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
     fn reg_value(rest: &str) -> Option<String> {
         for marker in ["REG_EXPAND_SZ", "REG_SZ"] {
@@ -1203,8 +1203,8 @@ fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
     result
 }
 
-/// Sistemde kurulu 3. parti oyun başlatıcılarını (EA App, Ubisoft Connect,
-/// Rockstar Games Launcher) algılar; sürüm ve kurulum yolu ile birlikte döndürür.
+/// Detects installed third-party game launchers (EA App, Ubisoft Connect,
+/// Rockstar Games Launcher) and returns them with version and install path.
 #[tauri::command]
 pub fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
     let entries = scan_uninstall_registry();
@@ -1247,7 +1247,7 @@ pub fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
         .collect()
 }
 
-/* ---------- Oyun Yönetimi & Doğrulama (Game Management) ---------- */
+/* ---------- Game management & verification ---------- */
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1305,7 +1305,7 @@ pub fn parse_verify_progress(line: &str) -> Option<ParsedVerifyProgress> {
         });
     }
 
-    // 2. Büyük dosya doğrulama ilerlemesi: => Verifying large file "path/file.ext": 58% (4873.0/8419.3 MiB) [536.4 MiB/s]
+    // 2. Large-file verify progress: => Verifying large file "path/file.ext": 58% (4873.0/8419.3 MiB) [536.4 MiB/s]
     if let Some(idx) = clean.find("Verifying large file") {
         let sub = clean[idx + "Verifying large file".len()..].trim();
         let mut filename = String::new();
@@ -1466,14 +1466,14 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
     let _ = stdout_task.await;
     let _ = stderr_task.await;
 
-    // Kritik hata kontrolü (örn. eksik manifest)
+    // Critical error check (e.g. missing manifest)
     let mut critical_error: Option<String> = None;
     while let Ok(msg) = err_rx.try_recv() {
         critical_error = Some(msg);
     }
 
     if status.success() && critical_error.is_none() {
-        let msg = "Dosyalar başarıyla doğrulandı. Tüm dosyalar sağlam.".to_string();
+        let msg = "@t:verify.successDetail".to_string();
         let _ = app.emit("verify-complete", VerifyCompletePayload {
             id: app_name.clone(),
             success: true,
@@ -1481,9 +1481,9 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
         });
         Ok(msg)
     } else {
-        let raw_err = critical_error.unwrap_or_else(|| "Dosya doğrulama sırasında bir sorun oluştu veya eksik dosyalar var.".to_string());
+        let raw_err = critical_error.unwrap_or_else(|| "@t:verify.problem".to_string());
         let msg = if raw_err.contains("Manifest appears to be missing") {
-            "Oyun manifest dosyası bulunamadı. Lütfen oyunu kontrol edin veya yeniden bağlayın.".to_string()
+            "@t:verify.manifestMissing".to_string()
         } else {
             raw_err
         };
@@ -1611,7 +1611,7 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
     let config = skip::default_config_dir();
     let installed_file = config.join("installed.json");
 
-    // 1. installed.json içindeki launch_parameters'ı güncelle
+    // 1. Update launch_parameters in installed.json
     if let Ok(text) = std::fs::read_to_string(&installed_file) {
         if let Ok(mut map) = serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text) {
             if let Some(entry) = map.get_mut(&settings.app_name) {
@@ -1623,7 +1623,7 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
         }
     }
 
-    // 2. efxlve_game_settings.json içindeki ayarları güncelle
+    // 2. Update the settings in efxlve_game_settings.json
     let mut cfgs = load_all_game_custom_configs();
     cfgs.insert(
         settings.app_name,
@@ -1650,18 +1650,18 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
     let combined = format!("{stdout}\n{stderr}");
 
     if out.status.success() {
-        // Son eşitleme zamanını kaydet
+        // Record the last sync time
         let now = {
             let local_now = std::time::SystemTime::now();
             let since_epoch = local_now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
             let rem_secs = since_epoch % 86400;
             let hours = (rem_secs / 3600) + 3; // TR UTC+3
             let minutes = (rem_secs % 3600) / 60;
-            format!("Bugün {:02}:{:02}", hours % 24, minutes)
+            format!("@t:manage.todayAt\u{1f}{:02}:{:02}", hours % 24, minutes)
         };
         update_game_last_cloud_sync(&app_name, &now);
 
-        Ok("Bulut kayıtları başarıyla eşitlendi.".to_string())
+        Ok("@t:manage.cloudSyncedOk".to_string())
     } else {
         Err(transient_reason(&combined).unwrap_or(&combined).to_string())
     }
@@ -1684,7 +1684,7 @@ pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> 
         entry = installed.into_iter().find(|g| g.app_name == app_name);
     }
 
-    let entry = entry.ok_or_else(|| "Oyun kurulu değil veya bulunamadı.".to_string())?;
+    let entry = entry.ok_or_else(|| "@t:manage.notInstalled".to_string())?;
 
     #[cfg(windows)]
     {
@@ -1722,15 +1722,15 @@ pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> 
             .map_err(|e| e.to_string())?;
 
         if output.status.success() {
-            Ok(format!("{} için masaüstü kısayolu oluşturuldu.", entry.title))
+            Ok(format!("@t:manage.shortcutCreated\u{1f}{}", entry.title))
         } else {
             let err = String::from_utf8_lossy(&output.stderr);
-            Err(format!("Kısayol oluşturulamadı: {}", err))
+            Err(format!("@t:manage.shortcutCreateFailed\u{1f}{}", err))
         }
     }
     #[cfg(not(windows))]
     {
-        Err("Masaüstü kısayolu yalnızca Windows üzerinde desteklenmektedir.".to_string())
+        Err("@t:manage.shortcutWindowsOnly".to_string())
     }
 }
 
@@ -1824,7 +1824,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         }
     }
 
-    // 3. Read entitlements.json (Kullanıcının satın aldığı/sahip olduğu lisanslar)
+    // 3. Read entitlements.json (licenses the user bought/owns)
     let entitlements_path = config.join("entitlements.json");
     let mut owned_catalog_item_ids = std::collections::HashSet::new();
     let mut owned_entitlement_names = std::collections::HashSet::new();
@@ -1856,7 +1856,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         }
     }
 
-    // 4. Read assets.json (İndirilebilir paketler ve CDN assetleri)
+    // 4. Read assets.json (downloadable packages and CDN assets)
     let assets_path = config.join("assets.json");
     let mut asset_app_names = std::collections::HashSet::new();
     let mut asset_catalog_item_ids = std::collections::HashSet::new();
@@ -1900,7 +1900,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 continue;
             }
             let title_lower = title.to_lowercase();
-            // Dahili test / placeholder audience kayıtlarını atla (anlamlı paket isimleri hariç)
+            // Skip internal test / placeholder audience entries (except meaningful package names)
             if (title_lower.ends_with("audience") || title_lower.starts_with("audience "))
                 && !title_lower.contains("chapter")
                 && !title_lower.contains("pack")
@@ -1935,7 +1935,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 continue;
             }
 
-            // Mükerrer kayıtları engelle
+            // Prevent duplicate entries
             let dedup_key = format!("{}:{}", title.to_lowercase(), app_id.to_lowercase());
             if !seen_keys.insert(dedup_key) {
                 continue;
@@ -1952,7 +1952,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
             });
             let is_installed = is_in_legendary || matching_egl.is_some();
 
-            // Sahiplik kontrolü: SADECE KULLANICIDA OLANLAR!
+            // Ownership check: ONLY what the user owns!
             let is_entitled = (!item_id.is_empty() && (owned_catalog_item_ids.contains(item_id) || owned_entitlement_names.contains(item_id)))
                 || (!ent_name.is_empty() && (owned_catalog_item_ids.contains(ent_name) || owned_entitlement_names.contains(ent_name)))
                 || (!rel_app_id.is_empty() && (owned_catalog_item_ids.contains(rel_app_id) || owned_entitlement_names.contains(rel_app_id)));
@@ -1972,9 +1972,9 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 continue;
             }
 
-            // İndirilebilirlik durumu: Legendary CLI'nin bağımsız indirebileceği paket mi?
-            // Assets listesinde kaydı olan, diske manifesti inmiş veya halihazırda kurulu olanlar indirilebilir;
-            // Hesaba tanımlı in-game paketler (örn. DBD bölümleri) "Hesapta Aktif" olarak gösterilir.
+            // Downloadable state: can the Legendary CLI download this package independently?
+            // Those with an entry in the assets list, a manifest on disk or already installed are downloadable;
+            // account-bound in-game packs (e.g. DBD chapters) are shown as "Active on account".
             let is_downloadable = is_asset || has_manifest || is_installed;
 
             // Boyut hesaplama
@@ -1999,7 +1999,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
                 }
             }
 
-            // Kapak görseli
+            // Cover image
             let mut image = None;
             if let Some(imgs) = item.get("keyImages").and_then(|v| v.as_array()) {
                 for preferred in &["DieselGameBox", "OfferImageWide", "DieselGameBoxTall", "Thumbnail"] {
@@ -2026,7 +2026,7 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         }
     }
 
-    // dlcItemList içinde yer almayıp EGL ile veya manuel kurulmuş DLC'leri de ekle
+    // Also add DLCs that are not in dlcItemList but installed via EGL or manually
     for e in &egl_items {
         if e.main_game_app_name.as_deref() == Some(&app_name) {
             let e_app = e.app_name.as_deref().unwrap_or("");
@@ -2091,13 +2091,13 @@ fn map_tag_label(tag: &str) -> (&'static str, &'static str) {
         "voice_zh_cn" => ("简体中文", "languages"),
         "voice_zh_tw" => ("繁體中文", "languages"),
         "voice_en_us" => ("English (US)", "languages"),
-        "hires_textures" | "hi_res_textures" => ("Yüksek Çözünürlüklü Dokular", "extras"),
-        "bonus_content" => ("Bonus İçerikler", "extras"),
+        "hires_textures" | "hi_res_textures" => ("@t:dlc.catHires", "extras"),
+        "bonus_content" => ("@t:dlc.catBonus", "extras"),
         _ => {
             if tag.starts_with("voice_") || tag.contains("lang") {
-                ("Ek Dil Paketi", "languages")
+                ("@t:dlc.catExtraLanguage", "languages")
             } else {
-                ("Ek Paket", "extras")
+                ("@t:dlc.catExtraPack", "extras")
             }
         }
     }
@@ -2218,13 +2218,13 @@ pub async fn epic_check_updates() -> Result<Vec<GameUpdateInfo>, String> {
     Ok(updates)
 }
 
-/// Tüm oyunların oynama sürelerini döner.
+/// Returns the playtime of all games.
 #[tauri::command]
 pub fn epic_get_playtimes() -> std::collections::HashMap<String, super::playtime::PlaytimeRecord> {
     super::playtime::get_playtimes()
 }
 
-/// Bir oyunun oynama süresini ve son aktivitesini günceller/düzenler.
+/// Updates/edits a game's playtime and last activity.
 #[tauri::command]
 pub fn epic_set_playtime(
     app_name: String,
@@ -2234,14 +2234,14 @@ pub fn epic_set_playtime(
     super::playtime::set_game_playtime(&app_name, total_seconds, last_played)
 }
 
-/// İndirme ağ profilini döner ("max", "balanced", "low").
+/// Returns the download network profile ("max", "balanced", "low").
 #[tauri::command]
 pub fn epic_get_network_profile(app: AppHandle) -> String {
     let s = crate::load_settings(&app);
     s.network_profile.unwrap_or_else(|| "balanced".to_string())
 }
 
-/// İndirme ağ profilini kaydeder ("max", "balanced", "low").
+/// Saves the download network profile ("max", "balanced", "low").
 #[tauri::command]
 pub fn epic_set_network_profile(app: AppHandle, profile: String) -> Result<(), String> {
     let mut s = crate::load_settings(&app);
@@ -2250,14 +2250,14 @@ pub fn epic_set_network_profile(app: AppHandle, profile: String) -> Result<(), S
     Ok(())
 }
 
-/// Çevrimdışı mod durumunu döner.
+/// Returns the offline mode state.
 #[tauri::command]
 pub fn epic_get_offline_mode(app: AppHandle) -> bool {
     let s = crate::load_settings(&app);
     s.offline_mode.unwrap_or(false)
 }
 
-/// Çevrimdışı mod durumunu kaydeder.
+/// Saves the offline mode state.
 #[tauri::command]
 pub fn epic_set_offline_mode(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut s = crate::load_settings(&app);
@@ -2266,7 +2266,7 @@ pub fn epic_set_offline_mode(app: AppHandle, enabled: bool) -> Result<(), String
     Ok(())
 }
 
-/// Bir oyunun kayıtlarını (saves) yedekler.
+/// Backs up a game's saves.
 #[tauri::command]
 pub fn epic_backup_save(app_name: String) -> Result<super::backup::SaveBackupInfo, String> {
     super::backup::create_backup(&app_name, None)
@@ -2278,19 +2278,19 @@ pub fn epic_list_backups(app_name: String) -> Vec<super::backup::SaveBackupInfo>
     super::backup::list_backups(&app_name)
 }
 
-/// Bir yedeği oyuna geri yükler.
+/// Restores a backup to the game.
 #[tauri::command]
 pub fn epic_restore_backup(app_name: String, backup_id: String) -> Result<String, String> {
     super::backup::restore_backup(&app_name, &backup_id)
 }
 
-/// Bir yedeği siler.
+/// Deletes a backup.
 #[tauri::command]
 pub fn epic_delete_backup(app_name: String, backup_id: String) -> Result<(), String> {
     super::backup::delete_backup(&app_name, &backup_id)
 }
 
-/// Yedek klasörünü Windows Gezgini'nde açar.
+/// Opens the backup folder in Windows Explorer.
 #[tauri::command]
 pub fn epic_open_backup_folder(app_name: String) -> Result<String, String> {
     let dir = super::backup::app_backup_dir(&app_name);
@@ -2300,21 +2300,21 @@ pub fn epic_open_backup_folder(app_name: String) -> Result<String, String> {
     std::process::Command::new("explorer")
         .arg(&dir)
         .spawn()
-        .map_err(|e| format!("Klasör açılamadı: {e}"))?;
-    Ok("Yedek klasörü açıldı".to_string())
+        .map_err(|e| format!("@t:manage.folderOpenFailed\u{1f}{e}"))?;
+    Ok("@t:manage.backupFolderOpened".to_string())
 }
 
 // -------------------------------------------------------------
-// KOLEKSİYON (KATEGORİ) YÖNETİMİ
+// COLLECTION (CATEGORY) MANAGEMENT
 // -------------------------------------------------------------
 
-/// Tüm koleksiyonları listeler
+/// Lists all collections
 #[tauri::command]
 pub fn epic_get_collections() -> Result<Vec<super::collections::GameCollection>, String> {
     super::collections::read_collections()
 }
 
-/// Yeni koleksiyon oluşturur veya mevcut koleksiyonu günceller
+/// Creates a new collection or updates an existing one
 #[tauri::command]
 pub fn epic_save_collection(
     id: Option<String>,
@@ -2331,7 +2331,7 @@ pub fn epic_delete_collection(id: String) -> Result<(), String> {
     super::collections::delete_collection(&id)
 }
 
-/// Belirli bir oyunun dahil olduğu koleksiyonları günceller
+/// Updates the collections a specific game belongs to
 #[tauri::command]
 pub fn epic_set_game_collections(
     app_name: String,
@@ -2340,17 +2340,17 @@ pub fn epic_set_game_collections(
     super::collections::set_game_collections(&app_name, &collection_ids)
 }
 
-/// Epic Games Launcher LevelDB kütüğünden koleksiyonları içe aktarır
+/// Imports collections from the Epic Games Launcher LevelDB log
 #[tauri::command]
 pub fn epic_import_egl_collections() -> Result<Vec<super::collections::GameCollection>, String> {
     super::collections::import_egl_collections()
 }
 
 // -------------------------------------------------------------
-// OYUNCU PROFİLİ (NATIVE PROFILE VIEW)
+// PLAYER PROFILE (NATIVE PROFILE VIEW)
 // -------------------------------------------------------------
 
-/// Epic Games resmi GraphQL API'sinden kullanıcı profilini ve başarımlarını çeker
+/// Fetches the user profile and achievements from the official Epic Games GraphQL API
 #[tauri::command]
 pub async fn epic_get_player_profile(
     force_refresh: Option<bool>,
@@ -2360,16 +2360,16 @@ pub async fn epic_get_player_profile(
 }
 
 // -------------------------------------------------------------
-// OYUN DOSYALARI TAŞIMA (MOVE GAME FILES)
+// MOVE GAME FILES
 // -------------------------------------------------------------
 
-/// Sistemdeki tüm yerel disk sürücülerini (C:, D: vb.) ve boş alanlarını listeler
+/// Lists all local disk drives (C:, D:, ...) and their free space
 #[tauri::command]
 pub fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> {
     super::move_game::get_system_drives()
 }
 
-/// Windows yerel klasör seçim diyaloğunu ("Gözat") açar
+/// Opens the native Windows folder picker ("Browse")
 #[tauri::command]
 pub async fn epic_select_folder_dialog(
     default_path: Option<String>,
@@ -2378,7 +2378,7 @@ pub async fn epic_select_folder_dialog(
     super::move_game::select_folder_dialog(default_path, title).await
 }
 
-/// Bir oyunu başka bir klasöre/sürücüye taşır
+/// Moves a game to another folder/drive
 #[tauri::command]
 pub async fn epic_move_game(
     app: AppHandle,
@@ -2389,7 +2389,7 @@ pub async fn epic_move_game(
     super::move_game::move_game_folder(app, &config, app_name, target_base_path).await
 }
 
-/// Devam eden bir oyun taşıma işlemini iptal eder
+/// Cancels an in-progress game move
 #[tauri::command]
 pub async fn epic_cancel_move_game(app_name: String) -> bool {
     super::move_game::cancel_move_game(&app_name).await
@@ -2461,13 +2461,13 @@ mod tests {
         };
         enrich_achievements_from_metadata(&mut resp, "Ginger");
         let b = resp.achievements.iter().find(|a| a.name == "BornToBeWild").unwrap();
-        assert!(b.hidden, "BornToBeWild gizli başarım olarak işaretlenmeli");
-        assert!(!b.display_name.is_empty(), "İsim metadata'dan doldurulmalı");
+        assert!(b.hidden, "BornToBeWild must be marked as a hidden achievement");
+        assert!(!b.display_name.is_empty(), "The name must be filled from metadata");
 
         let t = resp.achievements.iter().find(|a| a.name == "TheTower").unwrap();
-        assert!(t.hidden, "TheTower gizli olmalı");
+        assert!(t.hidden, "TheTower must be hidden");
         assert!(!t.is_base, "TheTower Phantom Liberty DLC'sine aittir (is_base: false)");
-        assert!(!t.display_name.is_empty(), "TheTower başlığı boş kalmamalı");
+        assert!(!t.display_name.is_empty(), "TheTower title must not be empty");
     }
 
     #[test]
@@ -2484,7 +2484,7 @@ mod tests {
         assert_eq!(slugs3[0], "mortal-shell");
 
         let slugs4 = generate_slug_candidates("Tom Clancy’s Rainbow Six Siege", Some("RainbowSixSiege"), None);
-        assert!(slugs4.contains(&"rainbow-six-siege".to_string()), "Rainbow Six Siege slug adayı 'rainbow-six-siege' içermeli");
+        assert!(slugs4.contains(&"rainbow-six-siege".to_string()), "Rainbow Six Siege slug candidates must include 'rainbow-six-siege'");
 
         let slugs5 = generate_slug_candidates("The Dungeon Of Naheulbeuk: The Amulet Of Chaos", Some("DungeonOfNaheulbeuk"), None);
         assert!(slugs5.contains(&"the-dungeon-of-naheulbeuk".to_string()));
@@ -2531,7 +2531,7 @@ mod tests {
         assert_eq!(cat_fr, "languages");
 
         let (label_tex, cat_tex) = map_tag_label("hires_textures");
-        assert_eq!(label_tex, "Yüksek Çözünürlüklü Dokular");
+        assert_eq!(label_tex, "@t:dlc.catHires");
         assert_eq!(cat_tex, "extras");
     }
 
@@ -2542,10 +2542,10 @@ mod tests {
             let res = epic_get_game_dlcs("Ginger".to_string()).await.unwrap();
             assert_eq!(res.game_title, "Cyberpunk 2077");
             let phantom = res.dlcs.iter().find(|d| d.title.contains("Phantom Liberty"));
-            assert!(phantom.is_some(), "Phantom Liberty DLC bulunmalı");
-            assert!(phantom.unwrap().installed, "Phantom Liberty kurulu olmalı");
-            assert!(phantom.unwrap().size > 0, "Phantom Liberty boyutu 0'dan büyük olmalı");
-            assert!(phantom.unwrap().downloadable, "Phantom Liberty indirilebilir olmalı");
+            assert!(phantom.is_some(), "Phantom Liberty DLC must be found");
+            assert!(phantom.unwrap().installed, "Phantom Liberty must be installed");
+            assert!(phantom.unwrap().size > 0, "Phantom Liberty size must be greater than 0");
+            assert!(phantom.unwrap().downloadable, "Phantom Liberty must be downloadable");
         });
     }
 
@@ -2555,21 +2555,21 @@ mod tests {
         rt.block_on(async {
             let res = epic_get_game_dlcs("Brill".to_string()).await.unwrap();
             assert_eq!(res.game_title, "Dead by Daylight");
-            // Sadece kullanıcının sahip olduğu 4 DLC gelmeli (74 katalog DLC'si değil!)
-            assert!(res.dlcs.len() <= 6, "Yalnızca sahip olunan DLC'ler dönmeli, bulunan: {}", res.dlcs.len());
-            // Sahip olunmayan DLC'ler (örn. Castlevania veya Doomed Course veya unreleased) ASLA dönmemeli!
+            // Only the 4 DLCs the user owns must be returned (not the 74 catalog DLCs!)
+            assert!(res.dlcs.len() <= 6, "Only owned DLCs must be returned, found: {}", res.dlcs.len());
+            // Unowned DLCs (e.g. Castlevania or Doomed Course or unreleased) must NEVER be returned!
             let unowned = res.dlcs.iter().find(|d| {
                 d.title.contains("Castlevania")
                     || d.title.contains("Doomed Course")
                     || d.app_id == "a2a562015e724c0ea4ba052c62c9cdee"
             });
-            assert!(unowned.is_none(), "Sahip olunmayan mağaza DLC'leri kesinlikle filtrelenmeli!");
-            // Sahip olunan DLC'lerden biri (örn. Halloween Chapter veya Silent Hill) bulunmalı
+            assert!(unowned.is_none(), "Unowned store DLCs must absolutely be filtered out!");
+            // One of the owned DLCs (e.g. Halloween Chapter or Silent Hill) must be found
             let halloween = res.dlcs.iter().find(|d| d.title.contains("Halloween") || d.title.contains("Silent Hill"));
-            assert!(halloween.is_some(), "Kullanıcının sahip olduğu DLC listelenmeli");
-            // Dead by Daylight DLC'leri hesap lisansı olduğu için downloadable false olmalı
+            assert!(halloween.is_some(), "A DLC owned by the user must be listed");
+            // Dead by Daylight DLCs are account licenses, so downloadable must be false
             if let Some(h) = halloween {
-                assert!(!h.downloadable, "DBD hesap lisansı olan DLC'ler downloadable: false olmalı");
+                assert!(!h.downloadable, "DBD account-license DLCs must have downloadable: false");
             }
         });
     }

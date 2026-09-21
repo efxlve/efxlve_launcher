@@ -21,12 +21,12 @@ pub struct CollectionsData {
     pub collections: Vec<GameCollection>,
 }
 
-/// Koleksiyonların saklandığı dosya: %USERPROFILE%\.config\legendary\collections.json
+/// File where collections are stored: %USERPROFILE%\.config\legendary\collections.json
 pub fn get_collections_path() -> PathBuf {
     super::skip::default_config_dir().join("collections.json")
 }
 
-/// Diskten collections.json dosyasını doğrudan okur (fallback çağırmaz).
+/// Reads collections.json directly from disk (does not call the fallback).
 pub fn read_collections_raw() -> Vec<GameCollection> {
     let path = get_collections_path();
     if path.exists() {
@@ -39,14 +39,14 @@ pub fn read_collections_raw() -> Vec<GameCollection> {
     Vec::new()
 }
 
-/// Diskten koleksiyonları okur. collections.json yoksa ilk seferlik EGL'den aktarır.
+/// Reads collections from disk. Imports from EGL once if collections.json is missing.
 pub fn read_collections() -> Result<Vec<GameCollection>, String> {
     let raw = read_collections_raw();
     if !raw.is_empty() {
         return Ok(raw);
     }
 
-    // collections.json hiç yoksa veya boşsa ilk seferlik EGL'den içe aktar
+    // If collections.json is missing or empty, import from EGL once
     if let Ok(imported) = import_egl_collections() {
         if !imported.is_empty() {
             return Ok(imported);
@@ -56,7 +56,7 @@ pub fn read_collections() -> Result<Vec<GameCollection>, String> {
     Ok(Vec::new())
 }
 
-/// Koleksiyonları diske kaydeder.
+/// Saves collections to disk.
 pub fn save_collections(collections: &[GameCollection]) -> Result<(), String> {
     let path = get_collections_path();
     if let Some(parent) = path.parent() {
@@ -70,7 +70,7 @@ pub fn save_collections(collections: &[GameCollection]) -> Result<(), String> {
     Ok(())
 }
 
-/// Tek bir koleksiyonu oluşturur veya günceller
+/// Creates or updates a single collection
 pub fn save_collection(
     id: Option<String>,
     name: String,
@@ -79,7 +79,7 @@ pub fn save_collection(
 ) -> Result<GameCollection, String> {
     let clean_name = name.trim().to_string();
     if clean_name.is_empty() {
-        return Err("Koleksiyon adı boş olamaz".to_string());
+        return Err("@t:col.nameEmpty".to_string());
     }
 
     let clean_emoji = emoji.and_then(|e| {
@@ -129,7 +129,7 @@ pub fn delete_collection(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Belirli bir oyunun hangi koleksiyonlarda olduğunu günceller
+/// Updates which collections a given game belongs to
 pub fn set_game_collections(app_name: &str, collection_ids: &[String]) -> Result<(), String> {
     let mut list = read_collections().unwrap_or_default();
     let id_set: HashSet<&str> = collection_ids.iter().map(|s| s.as_str()).collect();
@@ -191,7 +191,7 @@ fn chrono_now_iso() -> String {
 // EPIC GAMES LAUNCHER LEVELDB IMPORTER
 // -------------------------------------------------------------
 
-/// EGL LevelDB kütüklerini tarayarak koleksiyonları ve oyun eşleşmelerini çıkarır
+/// Scans the EGL LevelDB logs to extract collections and game matches
 pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
     let local_app_data = std::env::var("LOCALAPPDATA")
         .map(PathBuf::from)
@@ -209,10 +209,10 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
         return Ok(Vec::new());
     }
 
-    // metadata klasöründeki oyunları tara
+    // Scan the games in the metadata folder
     let meta_map = build_metadata_lookup();
 
-    // webcache* klasörlerini ara
+    // Search the webcache* folders
     let mut leveldb_dirs = Vec::new();
     if let Ok(entries) = fs::read_dir(&egl_saved) {
         for entry in entries.flatten() {
@@ -399,7 +399,7 @@ fn parse_leveldb_buffer(
     }
 
     for (col_id, (_name, app_names)) in found.iter_mut() {
-        // Her koleksiyonun veritabanındaki son "\u{0004}dataa" kaydını bul
+        // Find the last "\u{0004}dataa" record for each collection in the database
         let mut last_data_pos = None;
         let mut pos = 0;
         while let Some(idx) = latin1_str[pos..].find(col_id.as_str()) {

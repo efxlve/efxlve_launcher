@@ -1,6 +1,6 @@
-//! legendary oto-indirme: yoksa GitHub releases'ten indir, `-V` ile doğrula.
+//! legendary auto-download: fetch from GitHub releases if missing, verify with `-V`.
 //!
-//! İlerleme `legendary-setup` event'iyle frontend'e akıtılır:
+//! Progress is streamed to the frontend via the `legendary-setup` event:
 //! `{ state: "downloading" | "ready" | "error", progress, message }`.
 
 use std::path::{Path, PathBuf};
@@ -29,7 +29,7 @@ fn emit(app: &AppHandle, state: &str, progress: Option<u8>, message: String) {
     );
 }
 
-/// `legendary -V` çıktısından sürümü çözer (`legendary version "0.21.1", ...`).
+/// Resolves the version from `legendary -V` output (`legendary version "0.21.1", ...`).
 pub async fn binary_version(bin: &Path) -> Result<String, LegendaryError> {
     let out = tokio::process::Command::new(bin)
         .arg("-V")
@@ -37,7 +37,7 @@ pub async fn binary_version(bin: &Path) -> Result<String, LegendaryError> {
         .output()
         .await?;
     if !out.status.success() {
-        return Err(LegendaryError::DownloadFailed("binary çalışmıyor".into()));
+        return Err(LegendaryError::DownloadFailed("@t:dl.binaryNotWorking".into()));
     }
     let text = format!(
         "{}\n{}",
@@ -50,10 +50,10 @@ pub async fn binary_version(bin: &Path) -> Result<String, LegendaryError> {
         .next()
         .map(|s| s.to_string())
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| LegendaryError::ParseError("sürüm okunamadı".into()))
+        .ok_or_else(|| LegendaryError::ParseError("@t:dl.versionReadFailed".into()))
 }
 
-/// `/releases/latest` yönlendirmesini takip edip etiket adını döndürür.
+/// Follows the `/releases/latest` redirect and returns the tag name.
 async fn latest_tag() -> Result<String, LegendaryError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
@@ -68,10 +68,10 @@ async fn latest_tag() -> Result<String, LegendaryError> {
     url.path_segments()
         .and_then(|mut s| s.next_back())
         .map(|s| s.to_string())
-        .ok_or_else(|| LegendaryError::DownloadFailed("sürüm bulunamadı".into()))
+        .ok_or_else(|| LegendaryError::DownloadFailed("@t:dl.versionNotFound".into()))
 }
 
-/// Binary hazırsa yolunu döndürür, yoksa indirir. Uzun sürebilir.
+/// Returns the binary path if ready, otherwise downloads it. Can take a while.
 pub async fn ensure_binary(
     app: &AppHandle,
     override_path: Option<String>,
@@ -81,7 +81,7 @@ pub async fn ensure_binary(
         if p.is_file() {
             binary_version(&p)
                 .await
-                .map_err(|_| LegendaryError::DownloadFailed("alternatif legendary çalıştırılamadı".into()))?;
+                .map_err(|_| LegendaryError::DownloadFailed("@t:dl.altBinaryFailed".into()))?;
             return Ok(p);
         }
     }
@@ -95,7 +95,7 @@ pub async fn ensure_binary(
         let _ = tokio::fs::remove_file(&target).await;
     }
 
-    emit(app, "downloading", Some(0), "Sürüm bilgisi alınıyor...".into());
+    emit(app, "downloading", Some(0), "@t:dl.fetchingVersion".into());
     let tag = latest_tag().await?;
     let url = paths::download_url_for_tag(&tag);
     let dir = paths::bin_dir(app);
@@ -148,6 +148,6 @@ pub async fn ensure_binary(
     tokio::fs::rename(&part, &target).await?;
     binary_version(&target).await?;
 
-    emit(app, "ready", Some(100), "legendary hazır".into());
+    emit(app, "ready", Some(100), "@t:auth.legendaryReady".into());
     Ok(target)
 }

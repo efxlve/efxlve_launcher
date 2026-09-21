@@ -38,7 +38,7 @@ pub struct MoveGameResult {
     pub message: String,
 }
 
-// Devam eden taşımaları iptal edebilmek için global iptal bayrakları
+// Global cancel flags so in-progress moves can be cancelled
 static ACTIVE_MOVES: std::sync::OnceLock<RwLock<HashMap<String, Arc<AtomicBool>>>> =
     std::sync::OnceLock::new();
 
@@ -86,7 +86,7 @@ mod win_disk {
     }
 }
 
-/// Sistemdeki tüm yerel sürücüleri (C:, D:, E: vb.) ve boş alanlarını listeler
+/// Lists all local drives (C:, D:, E:, ...) and their free space
 pub fn get_system_drives() -> Vec<SystemDriveInfo> {
     let mut drives = Vec::new();
 
@@ -100,7 +100,7 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
                     let label = if letter_char == b'C' {
                         format!("Yerel Disk ({}:)", letter_char as char)
                     } else {
-                        format!("Sürücü ({}:)", letter_char as char)
+                        format!("@t:move.driveLabel\u{1f}{}", letter_char as char)
                     };
                     drives.push(SystemDriveInfo {
                         letter: drive_str,
@@ -117,7 +117,7 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
     {
         drives.push(SystemDriveInfo {
             letter: "/".to_string(),
-            label: "Kök Dizin (/)".to_string(),
+            label: "@t:move.rootDir".to_string(),
             total_bytes: 500_000_000_000,
             available_bytes: 250_000_000_000,
         });
@@ -280,7 +280,7 @@ if ($chosen) {{
             let output = std::process::Command::new("powershell.exe")
                 .args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded_cmd])
                 .output()
-                .map_err(|e| format!("Klasör seçici açılamadı: {}", e))?;
+                .map_err(|e| format!("@t:move.pickerFailed\u{1f}{}", e))?;
 
             if output.status.success() {
                 let chosen = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -294,7 +294,7 @@ if ($chosen) {{
             }
         })
         .await
-        .map_err(|e| format!("Görev hatası: {}", e))?
+        .map_err(|e| format!("@t:move.taskError\u{1f}{}", e))?
     }
 
     #[cfg(not(windows))]
@@ -303,7 +303,7 @@ if ($chosen) {{
     }
 }
 
-/// Aktif bir taşımayı iptal eder
+/// Cancels an active move
 pub async fn cancel_move_game(app_name: &str) -> bool {
     let map = get_active_moves().read().await;
     if let Some(flag) = map.get(app_name) {
@@ -314,7 +314,7 @@ pub async fn cancel_move_game(app_name: &str) -> bool {
     }
 }
 
-/// Verilen yoldaki toplam dosya sayısı ve bayt miktarını hesaplar
+/// Computes the total file count and byte size at the given path
 fn scan_dir_recursive(path: &Path) -> (usize, u64) {
     let mut files = 0;
     let mut bytes = 0;
@@ -362,7 +362,7 @@ fn fmt_eta(seconds: u64) -> String {
     }
 }
 
-/// Sürücü harfini çıkarır (örn. "C:\Games" -> "C:")
+/// Extracts the drive letter (e.g. "C:\Games" -> "C:")
 fn get_drive_prefix(path: &Path) -> Option<String> {
     let s = path.to_string_lossy();
     if s.len() >= 2 && s.as_bytes()[1] == b':' {
@@ -372,14 +372,14 @@ fn get_drive_prefix(path: &Path) -> Option<String> {
     }
 }
 
-/// Bir oyunu yeni bir ana klasöre taşır
+/// Moves a game to a new root folder
 pub async fn move_game_folder(
     app: AppHandle,
     config_dir: &Path,
     app_name: String,
     target_base_dir: String,
 ) -> Result<MoveGameResult, String> {
-    // 1. İptal bayrağını kaydet
+    // 1. Register the cancel flag
     let cancel_flag = Arc::new(AtomicBool::new(false));
     {
         let mut map = get_active_moves().write().await;
@@ -441,7 +441,7 @@ async fn move_game_folder_internal(
     let mut installed_map = if installed_file.exists() {
         let text = tokio::fs::read_to_string(&installed_file)
             .await
-            .map_err(|e| format!("installed.json okunamadı: {}", e))?;
+            .map_err(|e| format!("@t:move.installedReadFailed\u{1f}{}", e))?;
         serde_json::from_str::<HashMap<String, serde_json::Value>>(&text).unwrap_or_default()
     } else {
         HashMap::new()
@@ -449,25 +449,25 @@ async fn move_game_folder_internal(
 
     let game_entry = installed_map
         .get_mut(app_name)
-        .ok_or_else(|| format!("'{app_name}' için yüklü oyun kaydı bulunamadı."))?;
+        .ok_or_else(|| format!("@t:move.noInstallRecord\u{1f}{app_name}"))?;
 
     let cur_install_path_str = game_entry
         .get("install_path")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| "Oyunun mevcut kurulum yolu bulunamadı.".to_string())?
+        .ok_or_else(|| "@t:move.noCurrentPath".to_string())?
         .to_string();
 
     let cur_path = PathBuf::from(&cur_install_path_str);
     if !cur_path.is_dir() {
         return Err(format!(
-            "Mevcut oyun klasörü diskte bulunamadı: {}",
+            "@t:move.folderMissing\u{1f}{}",
             cur_path.display()
         ));
     }
 
     let folder_name = cur_path
         .file_name()
-        .ok_or_else(|| "Klasör adı çözümlenemedi.".to_string())?
+        .ok_or_else(|| "@t:move.folderNameFailed".to_string())?
         .to_string_lossy()
         .to_string();
 
@@ -475,22 +475,22 @@ async fn move_game_folder_internal(
     let new_game_path = target_base.join(&folder_name);
 
     if cur_path == new_game_path {
-        return Err("Oyun zaten seçilen hedef klasörde bulunuyor.".to_string());
+        return Err("@t:move.alreadyThere".to_string());
     }
 
-    // Hedef klasör zaten varsa ve boş değilse çakışmayı önle
+    // Avoid conflicts if the target folder already exists and is not empty
     if new_game_path.exists() {
         if let Ok(mut rd) = tokio::fs::read_dir(&new_game_path).await {
             if rd.next_entry().await.ok().flatten().is_some() {
                 return Err(format!(
-                    "Hedef klasör zaten mevcut ve boş değil: {}. Lütfen farklı bir klasör seçin.",
+                    "@t:move.targetNotEmpty\u{1f}{}",
                     new_game_path.display()
                 ));
             }
         }
     }
 
-    // 2. Boyut ve disk alanı kontrolü
+    // 2. Size and disk-space check
     let _ = app.emit(
         "move-progress",
         MoveGameProgress {
@@ -500,8 +500,8 @@ async fn move_game_folder_internal(
             copied_bytes: 0,
             total_bytes: 0,
             speed: String::new(),
-            eta: "Hesaplanıyor…".to_string(),
-            current_file: "Dosyalar taranıyor…".to_string(),
+            eta: "@t:common.calculating".to_string(),
+            current_file: "@t:move.scanningFiles".to_string(),
             files_copied: 0,
             total_files: 0,
         },
@@ -511,9 +511,9 @@ async fn move_game_folder_internal(
     let (total_files, total_bytes) =
         tokio::task::spawn_blocking(move || scan_dir_recursive(&cur_path_clone))
             .await
-            .map_err(|e| format!("Tarama hatası: {}", e))?;
+            .map_err(|e| format!("@t:move.scanFailed\u{1f}{}", e))?;
 
-    // Hedef sürücü boş alan kontrolü
+    // Target drive free-space check
     #[cfg(windows)]
     {
         let check_path = if target_base.exists() {
@@ -526,10 +526,10 @@ async fn move_game_folder_internal(
         };
 
         if let Some((free_bytes, _)) = win_disk::get_disk_space(&check_path) {
-            let required_bytes = total_bytes + 500_000_000; // 500 MB güvenlik tamponu
+            let required_bytes = total_bytes + 500_000_000; // 500 MB safety buffer
             if free_bytes < required_bytes {
                 return Err(format!(
-                    "Hedef sürücüde yeterli boş alan yok. Gerekli: {:.1} GB, Boş: {:.1} GB",
+                    "@t:move.notEnoughSpace\u{1f}{:.1}\u{1f}{:.1}",
                     required_bytes as f64 / (1024.0 * 1024.0 * 1024.0),
                     free_bytes as f64 / (1024.0 * 1024.0 * 1024.0)
                 ));
@@ -537,7 +537,7 @@ async fn move_game_folder_internal(
         }
     }
 
-    // 3. Aynı sürücü mü yoksa farklı sürücü mü?
+    // 3. Same drive or different drive?
     let cur_drive = get_drive_prefix(&cur_path);
     let target_drive = get_drive_prefix(&target_base);
     let is_same_drive = match (&cur_drive, &target_drive) {
@@ -547,10 +547,10 @@ async fn move_game_folder_internal(
 
     tokio::fs::create_dir_all(&target_base)
         .await
-        .map_err(|e| format!("Hedef ana dizin oluşturulamadı: {}", e))?;
+        .map_err(|e| format!("@t:move.parentDirFailed\u{1f}{}", e))?;
 
     if is_same_drive {
-        // --- AYNI SÜRÜCÜ: Anında Rename (0.05 saniye) ---
+        // --- SAME DRIVE: instant rename (~0.05s) ---
         let _ = app.emit(
             "move-progress",
             MoveGameProgress {
@@ -559,9 +559,9 @@ async fn move_game_folder_internal(
                 percent: 50.0,
                 copied_bytes: total_bytes / 2,
                 total_bytes,
-                speed: "Anında".to_string(),
+                speed: "@t:move.instant".to_string(),
                 eta: "~1 sn".to_string(),
-                current_file: "Klasör taşınıyor…".to_string(),
+                current_file: "@t:move.movingFolder".to_string(),
                 files_copied: total_files,
                 total_files,
             },
@@ -569,16 +569,16 @@ async fn move_game_folder_internal(
 
         tokio::fs::rename(&cur_path, &new_game_path)
             .await
-            .map_err(|e| format!("Yeniden adlandırma / taşıma başarısız: {}", e))?;
+            .map_err(|e| format!("@t:move.renameFailed\u{1f}{}", e))?;
     } else {
-        // --- FARKLI SÜRÜCÜ: Akışlı Kopyalama + İlerleme + İptal ---
+        // --- DIFFERENT DRIVE: streamed copy + progress + cancel ---
         let start_time = Instant::now();
         let mut copied_bytes: u64 = 0;
         let mut files_copied: usize = 0;
 
         tokio::fs::create_dir_all(&new_game_path)
             .await
-            .map_err(|e| format!("Hedef klasör oluşturulamadı: {}", e))?;
+            .map_err(|e| format!("@t:move.targetDirFailed\u{1f}{}", e))?;
 
         let copy_res = copy_dir_with_progress(
             app,
@@ -596,12 +596,12 @@ async fn move_game_folder_internal(
         .await;
 
         if let Err(e) = copy_res {
-            // İptal veya hata durumunda hedefteki tamamlanmamış dosyaları temizle
+            // On cancel or error, clean up incomplete files at the target
             let _ = tokio::fs::remove_dir_all(&new_game_path).await;
             return Err(e);
         }
 
-        // Kopyalama tamamlandı: Kaynak klasörü güvenle sil
+        // Copy complete: safely delete the source folder
         let _ = app.emit(
             "move-progress",
             MoveGameProgress {
@@ -611,7 +611,7 @@ async fn move_game_folder_internal(
                 copied_bytes: total_bytes,
                 total_bytes,
                 speed: String::new(),
-                eta: "Tamamlanıyor…".to_string(),
+                eta: "@t:move.finishing".to_string(),
                 current_file: "Eski konum temizleniyor…".to_string(),
                 files_copied: total_files,
                 total_files,
@@ -621,7 +621,7 @@ async fn move_game_folder_internal(
         let _ = tokio::fs::remove_dir_all(&cur_path).await;
     }
 
-    // 4. Veritabanlarını güncelle
+    // 4. Update the databases
     let new_path_str = new_game_path.to_string_lossy().to_string();
 
     // A) installed.json
@@ -652,10 +652,10 @@ async fn move_game_folder_internal(
         .output()
         .await;
 
-    // C) Epic Games Launcher manifest (.item) güncellemesi
+    // C) Epic Games Launcher manifest (.item) update
     update_egl_manifest(app_name, &cur_path, &new_game_path).await;
 
-    // 5. Tamamlandı ilerlemesi yay
+    // 5. Emit the completed progress
     let _ = app.emit(
         "move-progress",
         MoveGameProgress {
@@ -665,8 +665,8 @@ async fn move_game_folder_internal(
             copied_bytes: total_bytes,
             total_bytes,
             speed: String::new(),
-            eta: "Tamamlandı".to_string(),
-            current_file: "Taşıma başarıyla tamamlandı".to_string(),
+            eta: "@t:move.done".to_string(),
+            current_file: "@t:move.successDetail".to_string(),
             files_copied: total_files,
             total_files,
         },
@@ -676,13 +676,13 @@ async fn move_game_folder_internal(
         success: true,
         new_path: new_path_str,
         message: format!(
-            "Oyun dosyaları başarıyla taşındı:\n{}",
+            "@t:move.successPath\u{1f}{}",
             new_game_path.display()
         ),
     })
 }
 
-/// Akışlı (1MB tamponlu) dosya kopyalama ve ilerleme yayma fonksiyonu
+/// Streamed (1 MB buffer) file copy that emits progress
 fn copy_dir_with_progress<'a>(
     app: &'a AppHandle,
     app_name: &'a str,
@@ -699,17 +699,17 @@ fn copy_dir_with_progress<'a>(
     Box::pin(async move {
         let mut entries = tokio::fs::read_dir(src_dir)
             .await
-            .map_err(|e| format!("Klasör okunamadı: {}", e))?;
+            .map_err(|e| format!("@t:move.readDirFailed\u{1f}{}", e))?;
 
         let mut last_emit = Instant::now();
 
         while let Some(entry) = entries
             .next_entry()
             .await
-            .map_err(|e| format!("Girdi okunamadı: {}", e))?
+            .map_err(|e| format!("@t:move.readInputFailed\u{1f}{}", e))?
         {
             if cancel_flag.load(Ordering::Relaxed) {
-                return Err("Taşıma işlemi kullanıcı tarafından iptal edildi.".to_string());
+                return Err("@t:move.cancelledByUser".to_string());
             }
 
             let entry_path = entry.path();
@@ -721,7 +721,7 @@ fn copy_dir_with_progress<'a>(
             if entry_path.is_dir() {
                 tokio::fs::create_dir_all(&target_item_path)
                     .await
-                    .map_err(|e| format!("Dizin oluşturulamadı: {}", e))?;
+                    .map_err(|e| format!("@t:move.mkdirFailed\u{1f}{}", e))?;
                 copy_dir_with_progress(
                     app,
                     app_name,
@@ -748,25 +748,25 @@ fn copy_dir_with_progress<'a>(
 
                 let mut src_file = tokio::fs::File::open(&entry_path)
                     .await
-                    .map_err(|e| format!("Dosya açılamadı ({}): {}", entry_path.display(), e))?;
+                    .map_err(|e| format!("@t:move.openSrcFailed\u{1f}{}\u{1f}{}", entry_path.display(), e))?;
 
                 let mut dst_file = tokio::fs::File::create(&target_item_path)
                     .await
                     .map_err(|e| {
-                        format!("Hedef dosya açılamadı ({}): {}", target_item_path.display(), e)
+                        format!("@t:move.openDstFailed\u{1f}{}\u{1f}{}", target_item_path.display(), e)
                     })?;
 
                 let mut buf = vec![0u8; 1024 * 1024]; // 1 MB buffer
 
                 loop {
                     if cancel_flag.load(Ordering::Relaxed) {
-                        return Err("Taşıma işlemi kullanıcı tarafından iptal edildi.".to_string());
+                        return Err("@t:move.cancelledByUser".to_string());
                     }
 
                     let n = src_file
                         .read(&mut buf)
                         .await
-                        .map_err(|e| format!("Okuma hatası: {}", e))?;
+                        .map_err(|e| format!("@t:move.readFailed\u{1f}{}", e))?;
                     if n == 0 {
                         break;
                     }
@@ -774,11 +774,11 @@ fn copy_dir_with_progress<'a>(
                     dst_file
                         .write_all(&buf[..n])
                         .await
-                        .map_err(|e| format!("Yazma hatası: {}", e))?;
+                        .map_err(|e| format!("@t:move.writeFailed\u{1f}{}", e))?;
 
                     *copied_bytes += n as u64;
 
-                    // İlerlemeyi saniyede en fazla 10 kez (100ms) yay
+                    // Emit progress at most 10 times per second (100ms)
                     if last_emit.elapsed().as_millis() > 100 {
                         let elapsed = start_time.elapsed().as_secs_f64();
                         let speed_bps = if elapsed > 0.0 {
@@ -828,7 +828,7 @@ fn copy_dir_with_progress<'a>(
     })
 }
 
-/// Epic Games Launcher .item manifest dosyalarındaki yolu günceller
+/// Updates the path inside Epic Games Launcher .item manifest files
 async fn update_egl_manifest(app_name: &str, old_path: &Path, new_path: &Path) {
     let manifests_dir = Path::new(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests");
     if !manifests_dir.is_dir() {
@@ -867,7 +867,7 @@ async fn update_egl_manifest(app_name: &str, old_path: &Path, new_path: &Path) {
                                 serde_json::Value::String(new_path_str.clone()),
                             );
 
-                            // ManifestLocation ve CompleteManifestPath varsa güncelle
+                            // Update ManifestLocation and CompleteManifestPath if present
                             if let Some(ml) = obj.get("ManifestLocation").and_then(|v| v.as_str()) {
                                 let updated_ml = ml.replace(&old_path_str, &new_path_str);
                                 obj.insert(
@@ -927,7 +927,7 @@ mod tests {
     #[test]
     fn test_system_drives_detection() {
         let drives = get_system_drives();
-        // Windows ortamında en az C: bulunmalıdır
+        // On Windows there must be at least C:
         #[cfg(windows)]
         {
             assert!(!drives.is_empty());

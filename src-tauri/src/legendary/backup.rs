@@ -1,6 +1,6 @@
-//! Oyun save kayıtlarını yerel yedekleme ve geri yükleme yöneticisi.
+//! Local save backup and restore manager.
 //!
-//! Yedekler `%USERPROFILE%\.config\legendary\backups\<app_name>\<backup_id>\` altında tutulur.
+//! Backups are kept under `%USERPROFILE%\.config\legendary\backups\<app_name>\<backup_id>\`.
 
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -69,12 +69,12 @@ pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result
             .into_iter()
             .find(|g| g.app_name == app_name)
             .and_then(|g| g.save_path)
-            .ok_or_else(|| "Oyun için tanımlı yerel kayıt (save) dizini bulunamadı".to_string())?
+            .ok_or_else(|| "@t:backup.noSaveDir".to_string())?
     };
 
     let source = PathBuf::from(&save_path_str);
     if !source.exists() {
-        return Err(format!("Kayıt klasörü diskte mevcut değil: {save_path_str}"));
+        return Err(format!("@t:backup.saveDirMissing\u{1f}{save_path_str}"));
     }
 
     let now_ts = SystemTime::now()
@@ -87,7 +87,7 @@ pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result
     std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
 
     let (size_bytes, file_count) = copy_dir_all(&source, &target.join("data"))
-        .map_err(|e| format!("Kayıtlar kopyalanırken hata oluştu: {e}"))?;
+        .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"))?;
 
     let days = now_ts / 86400;
     let rem = now_ts % 86400;
@@ -139,7 +139,7 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
     let backup_dir = app_backup_dir(app_name).join(backup_id);
     let info_path = backup_dir.join("backup_info.json");
     if !info_path.exists() {
-        return Err("Yedek bilgisi bulunamadı".to_string());
+        return Err("@t:backup.infoNotFound".to_string());
     }
 
     let content = std::fs::read_to_string(&info_path).map_err(|e| e.to_string())?;
@@ -147,14 +147,14 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
 
     let data_src = backup_dir.join("data");
     if !data_src.exists() {
-        return Err("Yedek veri klasörü bulunamadı".to_string());
+        return Err("@t:backup.dataFolderNotFound".to_string());
     }
 
     let dest = PathBuf::from(&info.save_path);
     copy_dir_all(&data_src, &dest)
-        .map_err(|e| format!("Yedek geri yüklenirken hata oluştu: {e}"))?;
+        .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
 
-    Ok(format!("{} adet dosya ({}) başarıyla geri yüklendi", info.file_count, info.formatted_date))
+    Ok(format!("@t:backup.restored\u{1f}{}\u{1f}{}", info.file_count, info.formatted_date))
 }
 
 pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {

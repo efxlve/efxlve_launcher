@@ -54,13 +54,13 @@ pub struct GoygoyRawItem {
     pub tags: Vec<String>,
 }
 
-/// Arama terimini PCGamingWiki & eleştirmen aramaları için optimize eder.
+/// Optimizes the search term for PCGamingWiki & critic searches.
 pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
         .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
         .replace(['™', '®', '\u{00A0}'], " ");
 
-    // Yaygın seri / yayıncı ön ekleri
+    // Common series / publisher prefixes
     let prefixes = [
         "Tom Clancy's ",
         "Marvel's ",
@@ -78,7 +78,7 @@ pub fn clean_critic_search_term(title: &str) -> String {
         }
     }
 
-    // İki nokta veya tire sonrası edisyonları temizle
+    // Strip editions after a colon or dash
     if let Some(pos) = s.find(" - ") {
         let sub = &s[pos + 3..];
         let sub_low = sub.to_lowercase();
@@ -91,7 +91,7 @@ pub fn clean_critic_search_term(title: &str) -> String {
         }
     }
 
-    // Yaygın sürüm ekleri
+    // Common version suffixes
     let edition_suffixes = [
         " Standard Edition",
         " Enhanced Edition",
@@ -140,7 +140,7 @@ pub fn calculate_tier(score: u32) -> &'static str {
     }
 }
 
-/// PCGamingWiki MediaWiki içerik metnindeki `{{Infobox game/row/reception|...}}` satırlarını ayrıştırır.
+/// Parses `{{Infobox game/row/reception|...}}` lines in the PCGamingWiki MediaWiki content.
 pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Option<u32>, Option<String>, Option<f64>) {
     let mut oc_score: Option<u32> = None;
     let mut oc_url: Option<String> = None;
@@ -155,8 +155,8 @@ pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Opti
             continue;
         }
 
-        // Örnek: {{Infobox game/row/reception|Opencritic|2844/dead-by-daylight|70}}
-        // Örnek: {{Infobox game/row/reception|Metacritic|dead-by-daylight|71}}
+        // Example: {{Infobox game/row/reception|Opencritic|2844/dead-by-daylight|70}}
+        // Example: {{Infobox game/row/reception|Metacritic|dead-by-daylight|71}}
         if let Some(start) = line.find("{{") {
             let inner = &line[start + 2..];
             let inner = if let Some(end) = inner.find("}}") {
@@ -230,7 +230,7 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
         return None;
     }
 
-    // 1. Aşama: Tam normalize edilmiş ad veya etiket eşleşmesi
+    // Stage 1: exact normalized name or label match
     for item in items {
         if let Some(ref gn) = item.game_name {
             if normalize_for_match(gn) == norm_title {
@@ -249,7 +249,7 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
         }
     }
 
-    // 2. Aşama: Alt dize eşleşmesi (en az 5 karakterli oyun adları için)
+    // Stage 2: substring match (for game names of at least 5 characters)
     if norm_title.len() >= 5 {
         for item in items {
             if let Some(ref gn) = item.game_name {
@@ -282,7 +282,7 @@ fn make_goygoy_review(item: &GoygoyRawItem) -> Option<GoygoyReview> {
     };
 
     Some(GoygoyReview {
-        title: item.title.clone().unwrap_or_else(|| "Goygoy Engine İncelemesi".to_string()),
+        title: item.title.clone().unwrap_or_else(|| "@t:critic.reviewTitle".to_string()),
         score: item.score,
         writer: item.writer.clone(),
         summary: item.summary.clone(),
@@ -310,7 +310,7 @@ async fn fetch_goygoy_reviews(client: &reqwest::Client) -> Vec<GoygoyRawItem> {
         }
     }
 
-    // Ağdan çek
+    // Fetch from the network
     let url = "https://goygoyengine.com/incelemeler-data.json";
     let ua = "EfxlveLauncher/1.0 (https://github.com/efxlve/launcher)";
     if let Ok(resp) = client.get(url).header("User-Agent", ua).send().await {
@@ -323,7 +323,7 @@ async fn fetch_goygoy_reviews(client: &reqwest::Client) -> Vec<GoygoyRawItem> {
         }
     }
 
-    // Ağ hatasında eski önbellek varsa onu kullan
+    // On a network error, use the old cache if present
     if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
         if let Ok(items) = serde_json::from_str::<Vec<GoygoyRawItem>>(&content) {
             return items;
@@ -360,12 +360,12 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
         }
     };
 
-    // 1. Önbellek kontrolü
+    // 1. Cache check
     if !force_refresh && cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(mut data) = serde_json::from_str::<CriticData>(&content) {
                 if data.supported {
-                    // Eğer önbellekte goygoy_review henüz yoksa hızlıca kontrol edip zenginleştir
+                    // If goygoy_review is not in the cache yet, quickly check and enrich it
                     if data.goygoy_review.is_none() {
                         let goygoy_items = fetch_goygoy_reviews(&client).await;
                         if let Some(g_rev) = find_goygoy_review_match(title, &goygoy_items) {
@@ -397,7 +397,7 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
         };
     }
 
-    // 2. PCGamingWiki opensearch ile sayfa başlığını doğrula
+    // 2. Verify the page title via PCGamingWiki opensearch
     let mut target_page = search_term.clone();
     let search_url = format!(
         "https://www.pcgamingwiki.com/w/api.php?action=opensearch&search={}&limit=1&format=json",
@@ -416,7 +416,7 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
         }
     }
 
-    // 3. PCGamingWiki sayfa revizyon içeriğini sorgula
+    // 3. Query the PCGamingWiki page revision content
     let query_url = format!(
         "https://www.pcgamingwiki.com/w/api.php?action=query&titles={}&prop=revisions&rvprop=content&format=json&redirects=1",
         url::form_urlencoded::byte_serialize(target_page.as_bytes()).collect::<String>()

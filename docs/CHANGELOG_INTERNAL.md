@@ -1884,3 +1884,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Yerel klasör seçici artık başlığı frontend'ten alıyor (`epic_select_folder_dialog(default_path, title)`), böylece diyalog seçili dili izliyor.
 - `tr.json`/`en.json` ~980 anahtar. `tsc` + `vite build` + `noUnusedLocals` (0) + `cargo check` yeşil.
 
+## 131. Rust Tarafı Tam Yerelleştirme: Tüm Yorumlar İngilizce, Mesajlar `@t:`
+
+- **Rust yorumları:** 19 dosyadaki ~405 Türkçe yorum İngilizce'ye çevrildi (Kural §4.9). Kalan Türkçe dizeler yalnızca veri/sentinel (demo katalog, EGL koleksiyon adı temizliği, `last_played`/`Belirtilmemiş` sentinel'leri, Türkçe→ASCII harf eşlemesi, test fixture'ları) ve mağaza köprüsünün kasıtlı tr/de/en sözlüğü.
+- **Kullanıcı mesajları `@t:`'ye taşındı:** `client`, `backup`, `collections`, `downloader`, `profile`, `screenshots`, `steamgrid`, `critic`, `commands`, `main`, `transfers`, `move_game`, `mod`. Yerel klasör seçici başlığı frontend'ten geliyor.
+- **Gösterim noktaları yerelleştirildi:** `setupMessage`, indirme `eta`, taşıma `speed/eta/current_file`, DLC etiketleri (`@t:dlc.*`), `epicError`.
+- **Anahtar hijyeni:** `dl.queued` çakışması `dl.queuedActive` olarak ayrıldı; `lib.updates` eklendi. Doğrulama scripti: kullanılan 1059 anahtarın tümü tr/en'de mevcut; **1100 anahtar**, duplicate yok, tam eşlik.
+- `cargo check` + `cargo test` (54) + `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
+

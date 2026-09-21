@@ -94,7 +94,7 @@ export async function initApp(hooks: {
     }
     await listen<SetupEvent>("legendary-setup", (event) => {
       S.setupProgress = event.payload.progress ?? null;
-      S.setupMessage = event.payload.message;
+      S.setupMessage = localizeMessage(event.payload.message);
       if (event.payload.state === "error") toast(S.setupMessage, "err");
       if (S.view === "library") render();
     });
@@ -158,7 +158,7 @@ export async function initApp(hooks: {
           const diskEl = document.getElementById("dl-stat-disk");
           if (diskEl && diskSpeed) diskEl.textContent = diskSpeed;
           const etaEl = document.getElementById("dl-stat-eta");
-          if (etaEl && eta) etaEl.textContent = eta;
+          if (etaEl && eta) etaEl.textContent = localizeMessage(eta);
           const bytesEl = document.getElementById("dl-stat-bytes");
           if (bytesEl && downloadedBytes) {
             bytesEl.textContent = `${fmtBytes(downloadedBytes)} / ${fmtBytes(totalBytes || 0)}`;

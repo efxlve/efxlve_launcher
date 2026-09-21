@@ -1,6 +1,6 @@
-//! Oyun oynama süresi (playtime) takibi ve canlı durum yönetimi.
+//! Playtime tracking and live game status management.
 //!
-//! Kayıtlar `%USERPROFILE%\.config\legendary\playtime.json` içinde saklanır.
+//! Records are stored in `%USERPROFILE%\.config\legendary\playtime.json`.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -74,7 +74,7 @@ pub fn record_session(app_name: &str, session_seconds: u64) -> Result<PlaytimeRe
     rec.session_count = rec.session_count.saturating_add(1);
     rec.last_played_timestamp = Some(now_ts);
     
-    // Basit UTC/ISO formatı
+    // Simple UTC/ISO format
     let days = now_ts / 86400;
     let rem = now_ts % 86400;
     let hours = rem / 3600;

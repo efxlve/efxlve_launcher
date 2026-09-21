@@ -10,7 +10,7 @@ import { moveModalRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import type { MoveGameProgress } from "../../epic";
 
 /** Localized label for a move stage. */
@@ -107,14 +107,14 @@ export function updateMoveProgressInPlace(p: MoveGameProgress): void {
 
   const speedEtaEl = document.getElementById("move-progress-speed-eta");
   if (speedEtaEl) {
-    const speedPart = p.speed ? t("move.speed", { speed: p.speed }) : "";
+    const speedPart = p.speed ? t("move.speed", { speed: localizeMessage(p.speed) }) : "";
     const sizePart = `${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}`;
     speedEtaEl.textContent = speedPart ? `${speedPart} • ${sizePart}` : sizePart;
   }
 
   const fileCountEl = document.getElementById("move-progress-file-count");
   if (fileCountEl) {
-    const etaPart = p.eta ? t("move.eta", { eta: p.eta }) : "";
+    const etaPart = p.eta ? t("move.eta", { eta: localizeMessage(p.eta) }) : "";
     const countPart = p.total_files > 0 ? t("move.fileCount", { done: p.files_copied, total: p.total_files }) : "";
     fileCountEl.textContent = etaPart && countPart ? `${etaPart} • ${countPart}` : etaPart || countPart;
   }
@@ -122,7 +122,7 @@ export function updateMoveProgressInPlace(p: MoveGameProgress): void {
   const curFileEl = document.getElementById("move-progress-cur-file");
   if (curFileEl) {
     const filename = p.current_file ? p.current_file.split(/[\\/]/).pop() || p.current_file : "";
-    curFileEl.textContent = filename;
+    curFileEl.textContent = localizeMessage(filename);
     curFileEl.title = p.current_file || "";
   }
 }
@@ -231,8 +231,8 @@ export function renderMoveGameModalFrame(): void {
           <div id="move-progress-bar-fill-el" class="move-progress-bar-fill" style="width:${pct}%"></div>
         </div>
         <div class="move-progress-meta-row">
-          <span id="move-progress-speed-eta">${p.speed ? t("move.speed", { speed: p.speed }) : ""} • ${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}</span>
-          <span id="move-progress-file-count">${p.eta ? t("move.eta", { eta: p.eta }) : ""} • ${t("move.fileCount", { done: p.files_copied, total: p.total_files })}</span>
+          <span id="move-progress-speed-eta">${p.speed ? t("move.speed", { speed: localizeMessage(p.speed) }) : ""} • ${fmtBytes(p.copied_bytes)} / ${fmtBytes(p.total_bytes)}</span>
+          <span id="move-progress-file-count">${p.eta ? t("move.eta", { eta: localizeMessage(p.eta) }) : ""} • ${t("move.fileCount", { done: p.files_copied, total: p.total_files })}</span>
         </div>
         <div id="move-progress-cur-file" class="move-progress-file" title="${esc(p.current_file)}">
           ${esc(filename)}

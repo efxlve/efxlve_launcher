@@ -11,13 +11,13 @@ pub struct HltbData {
     pub completionist: Option<f64>,
 }
 
-/// Arama terimini HLTB için optimize eder (edisyon ve yayıncı takılarını temizler).
+/// Optimizes the search term for HLTB (strips edition and publisher suffixes).
 pub fn clean_hltb_search_term(title: &str) -> String {
     let mut s = title
         .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
         .replace(['™', '®', '\u{00A0}'], " ");
 
-    // Yaygın seri / yayıncı ön ekleri
+    // Common series / publisher prefixes
     let prefixes = [
         "Tom Clancy's ",
         "Marvel's ",
@@ -35,7 +35,7 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         }
     }
 
-    // İki nokta veya tire sonrası edisyonları temizle
+    // Strip editions after a colon or dash
     if let Some(pos) = s.find(" - ") {
         let sub = &s[pos + 3..];
         if sub.to_lowercase().contains("edition")
@@ -46,7 +46,7 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         }
     }
 
-    // Yaygın sürüm ekleri
+    // Common version suffixes
     let edition_suffixes = [
         " Standard Edition",
         " Enhanced Edition",
@@ -127,7 +127,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         }
     };
 
-    // 1. Arama endpoint'ini dinamik tespit et (varsayılan: /api/search/site)
+    // 1. Dynamically detect the search endpoint (default: /api/search/site)
     let mut search_endpoint = "/api/search/site".to_string();
     if let Ok(home_resp) = client
         .get("https://howlongtobeat.com/")
@@ -204,7 +204,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         }
     }
 
-    // 3. Arama isteğini hazırla
+    // 3. Prepare the search request
     let mut payload = serde_json::json!({
         "searchType": "games",
         "searchTerms": terms,
@@ -293,7 +293,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         },
     };
 
-    // Sadece geçerli süre verisi içeren sonuçları önbelleğe kaydet
+    // Cache only results that contain valid duration data
     if result_data.supported {
         if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
             if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {

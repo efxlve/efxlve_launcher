@@ -10,7 +10,7 @@ import { icon } from "../../core/icons";
 import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -244,7 +244,7 @@ export function renderDownloads(): string {
               <div class="dl-stat-icon-box eta">${icon("clock", 18)}</div>
               <div class="dl-stat-info">
                 <div class="dl-stat-label">${t("dl.eta")}</div>
-                <div class="dl-stat-value" id="dl-stat-eta">${activeDl.eta || t("dl.calculating")}</div>
+                <div class="dl-stat-value" id="dl-stat-eta">${localizeMessage(activeDl.eta) || t("dl.calculating")}</div>
                 <div class="dl-stat-sub">${t("dl.etaSub")}</div>
               </div>
             </div>

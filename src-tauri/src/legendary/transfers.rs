@@ -674,7 +674,7 @@ pub async fn epic_install_game(
             s.queue.push_back(app_name.clone());
             drop(s);
             emit_progress(&app, &app_name, 0, false);
-            return Ok("@t:dl.queued".into());
+            return Ok("@t:dl.queuedActive".into());
         }
     }
     start_download(&app, app_name, install_dir)

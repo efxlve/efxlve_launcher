@@ -1,12 +1,12 @@
-//! legendary subprocess çalıştırma katmanı.
+//! legendary subprocess execution layer.
 //!
-//! Sözleşme (kaynak koddan doğrulandı):
-//! - JSON çıktılar **stdout**'a yazılır (`--json`).
-//! - Loglar **stderr**'e gider; stderr içeriği hata göstergesi değildir.
-//! - Başarı = çıkış kodu 0 + parse edilebilir stdout.
-//! - Girişsiz `list` → çıkış kodu 1, stdout boş, stderr'de "No saved credentials".
-//! - Büyük kütüphanelerde achievements/metadata akışı HTTP 429 yiyebilir;
-//!   legendary kısmi sonucu diske yazdığı için tekrar denemek ilerler.
+//! Contract (verified from the source code):
+//! - JSON output is written to **stdout** (`--json`).
+//! - Logs go to **stderr**; stderr content is not an error indicator.
+//! - Success = exit code 0 + parseable stdout.
+//! - Unauthenticated `list` -> exit code 1, empty stdout, "No saved credentials" on stderr.
+//! - On large libraries the achievements/metadata stream can hit HTTP 429;
+//!   legendary writes partial results to disk, so retrying makes progress.
 
 use std::path::Path;
 use std::process::Stdio;
@@ -17,11 +17,11 @@ use serde::de::DeserializeOwned;
 use super::LegendaryError;
 
 const CMD_TIMEOUT_SECS: u64 = 180;
-/// İlk kütüphane senkronu (yüzlerce oyun) dakikalar sürebilir.
+/// The first library sync (hundreds of games) can take minutes.
 pub const LIST_TIMEOUT_SECS: u64 = 600;
 
-/// stderr'den gösterilebilir özet: "Error" içeren satırları tercih eder,
-/// yoksa son satırlara düşer (ham traceback yerine anlamlı kısım).
+/// Displayable summary from stderr: prefers lines containing "Error",
+/// otherwise falls back to the last lines (the meaningful part instead of a raw traceback).
 fn stderr_tail(stderr: &[u8]) -> String {
     let text = String::from_utf8_lossy(stderr);
     let lines: Vec<&str> = text.lines().collect();
@@ -46,7 +46,7 @@ fn stderr_tail(stderr: &[u8]) -> String {
     }
 }
 
-/// JSON çıktı veren komutları koşturup parse eder.
+/// Runs and parses commands that produce JSON output.
 pub async fn run_json<T: DeserializeOwned>(
     bin: &Path,
     args: &[&str],
@@ -54,7 +54,7 @@ pub async fn run_json<T: DeserializeOwned>(
     run_json_timeout(bin, args, CMD_TIMEOUT_SECS).await
 }
 
-/// Özel zaman aşımlı JSON komut koşturma (örn. ilk kütüphane senkronu).
+/// JSON command execution with a custom timeout (e.g. the first library sync).
 pub async fn run_json_timeout<T: DeserializeOwned>(
     bin: &Path,
     args: &[&str],
@@ -64,12 +64,12 @@ pub async fn run_json_timeout<T: DeserializeOwned>(
     let text = String::from_utf8_lossy(&output.stdout);
     let text = text.trim();
     if text.is_empty() {
-        return Err(LegendaryError::ParseError("komut boş çıktı verdi".into()));
+        return Err(LegendaryError::ParseError("@t:err.emptyOutput".into()));
     }
     serde_json::from_str(text).map_err(|e| LegendaryError::ParseError(e.to_string()))
 }
 
-/// JSON döndürmeyen komutlar (auth, import, logout...) için.
+/// For commands that do not return JSON (auth, import, logout...).
 pub async fn run_unit(bin: &Path, args: &[&str]) -> Result<(), LegendaryError> {
     run_with_timeout(bin, args, CMD_TIMEOUT_SECS)
         .await
