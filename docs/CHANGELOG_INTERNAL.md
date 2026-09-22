@@ -1992,3 +1992,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Test düzeltmesi:** `test_system_drives_detection`, `letter` alanının artık `"C"` (kolonsuz) döndüğüne göre güncellendi (önceki `"C:"` beklentisi bayattı).
 - `cargo test` (54 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1122/1122) yeşil.
 
+## 144. Faz C: Oyun Oynarken İndirmeleri Duraklat (Opsiyonel)
+
+- İndirmeler ayar paneline **"Oyun oynarken indirmeleri duraklat"** anahtarı eklendi (varsayılan kapalı, `localStorage` anahtarı `PAUSE_ON_PLAY_KEY`).
+- `ipc-listeners.ts` `game-status` olayı: oyun başlarken (`running=true`) ve ayar açıkken aktif indirme `epicPauseDownload` ile duraklatılır; `S.autoPausedDl` ile bizim duraklattığımız takip edilir. Oyun kapanınca ve **hiç oyun kalmadıysa** ve kuyruk hâlâ duraklıysa `epicResumeDownload` ile devam ettirilir. Kullanıcı elle devam ettirirse (`dl-resume`) bayrak temizlenir; böylece çift başlatma/yanlış devam engellenir.
+- `state.ts`: `pauseOnPlay`, `autoPausedDl` eklendi. `click-router.ts`: `toggle-pause-on-play` eylemi.
+- Ek düzeltme: `game-status` sonrası "Oyna" butonu metni sabit Türkçe yerine `common.play` anahtarına bağlandı (i18n kaçağı).
+- 2 yeni i18n anahtarı (tr/en eşlikli). `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1124/1124) yeşil.
+

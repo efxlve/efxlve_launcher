@@ -233,6 +233,8 @@
   "downloads.cacheClear": "Önbelleği temizle",
   "downloads.cacheClearing": "Önbellek temizleniyor…",
   "downloads.speedBits": "İndirme hızını bit cinsinden göster",
+  "downloads.pauseOnPlay": "Oyun oynarken indirmeleri duraklat",
+  "downloads.pauseOnPlayDesc": "Bir oyun çalışırken aktif indirme otomatik duraklatılır, oyun kapanınca kaldığı yerden devam eder.",
   "storage.open": "Depolama Yöneticisi",
   "storage.title": "Depolama Yöneticisi",
   "storage.subtitle": "{count} kurulu oyun • {size}",
