@@ -9,9 +9,7 @@
 import { getThirdPartyLauncher, epicPortrait, type EpicSummary } from "../epic";
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
-import { modalRoot } from "./dom";
 import { icon } from "./icons";
-import { render } from "./render";
 import { rawOf } from "./selectors";
 import { S } from "./state";
 import { esc } from "./utils";
@@ -37,30 +35,30 @@ export function epicArt(s: EpicSummary): string {
   return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52);color:#94a3b8">${icon("gamepad-2", 40)}</div>`;
 }
 
-/** Toggle a game's favorite state, persist it and update any visible button. */
+/**
+ * Toggle a game's favorite state, persist it and update every visible favorite
+ * button in place. Deliberately does NOT re-render the view: rebuilding a
+ * 500-game library just to flip a heart is the single most expensive
+ * interaction in the app.
+ */
 export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
   const isNowFaved = !S.epicFav.has(appName);
   if (isNowFaved) S.epicFav.add(appName);
   else S.epicFav.delete(appName);
   localStorage.setItem(FAV_KEY, JSON.stringify([...S.epicFav]));
-  render();
+
+  document
+    .querySelectorAll<HTMLElement>(`button[data-act="epic-fav"][data-id="${appName}"]`)
+    .forEach((btn) => {
+      btn.classList.toggle("faved", isNowFaved);
+      if (btn.classList.contains("btn")) {
+        btn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? t("common.favorited") : t("common.favorite")}`;
+      }
+    });
 
   if (triggerBtn) {
-    triggerBtn.classList.toggle("faved", isNowFaved);
     triggerBtn.classList.add("heart-burst");
     setTimeout(() => triggerBtn.classList.remove("heart-burst"), 600);
-  }
-
-  if (S.currentModalAppName === appName) {
-    const favBtn = modalRoot.querySelector(`button[data-act="epic-fav"][data-id="${appName}"]`) as HTMLElement | null;
-    if (favBtn) {
-      favBtn.classList.toggle("faved", isNowFaved);
-      favBtn.classList.add("heart-burst");
-      setTimeout(() => favBtn.classList.remove("heart-burst"), 600);
-      if (favBtn.classList.contains("btn")) {
-        favBtn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? t("common.favorited") : t("common.favorite")}`;
-      }
-    }
   }
 }
 

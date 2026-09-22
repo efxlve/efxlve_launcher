@@ -196,14 +196,9 @@ export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "righ
       const visible = epicVisibleSummaries();
       if (S.renderedCardCount < visible.length) {
         const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
-        const startIdx = S.renderedCardCount;
         S.renderedCardCount += nextSlice.length;
         const newCardsHtml = nextSlice
-          .map((s, idx) =>
-            S.epicViewMode === "grid"
-              ? epicCardPortrait(s, startIdx + idx)
-              : epicRowHtml(s)
-          )
+          .map((s) => (S.epicViewMode === "grid" ? epicCardPortrait(s) : epicRowHtml(s)))
           .join("");
         sentinel.insertAdjacentHTML("beforebegin", newCardsHtml);
         if (S.renderedCardCount >= visible.length) {

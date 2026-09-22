@@ -46,8 +46,9 @@ pub fn read_cached_games(config: &Path) -> Vec<LegendaryGame> {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
-            if let Ok(g) = serde_json::from_str::<LegendaryGame>(&text) {
+            if let Ok(mut g) = serde_json::from_str::<LegendaryGame>(&text) {
                 if !g.app_name.is_empty() {
+                    super::models::slim_game(&mut g);
                     out.push(g);
                 }
             }

@@ -122,6 +122,7 @@ export async function initApp(hooks: {
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       const title = S.epicSummaries.find((s) => s.appName === id)?.title ?? id;
+      if (!done) startSpeedChartTimer();
 
       if (!done) {
         const cur = S.downloads.get(id);
