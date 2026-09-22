@@ -126,5 +126,6 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Rockstar oyunlarında üçüncü parti launcher bilgisi gösterilmeye devam eder.
 - Rockstar oyunlarının kurulum ve başlatma eylemleri Epic akışında tutulur; EA/Ubisoft gibi gerçek harici akışlar değişmez.
 - Ortak kütüphane, drawer ve kurulum eylemi kararları `requiresThirdPartyLauncher` ile tek kurala bağlandı.
-
+- Aktif indirme butonları yüzde durumunu gösterir, tıklanınca İndirmeler görünümüne geçer.
+- Duraklatılan indirme süreci temizlendikten sonra devam ettirilir; eski süreç aktifken yeniden başlatma yarışı engellendi.
 

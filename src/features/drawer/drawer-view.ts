@@ -139,7 +139,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
   const primary =
     p !== null
-      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
+       ? `<button class="btn primary" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
       : isRunning
         ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed

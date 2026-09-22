@@ -621,6 +621,11 @@ async fn monitor_download(
         let was_paused = s.paused;
 
         if was_paused {
+            // Release the active slot only after the monitor has observed the
+            // child exit, so resume cannot race the old process cleanup.
+            if s.active.as_ref().is_some_and(|a| a == &app_name) {
+                s.active = None;
+            }
             s.pid = None;
             emit_paused(&app, &app_name);
             return;
@@ -824,15 +829,25 @@ pub async fn epic_resume_download(
     state: tauri::State<'_, AppState>,
     app_name: String,
 ) -> Result<String, String> {
+    // Pause terminates the child asynchronously. Wait for its monitor to
+    // release the active slot before starting the replacement process.
+    for _ in 0..40 {
+        let waiting = {
+            let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+            s.active.as_deref() == Some(app_name.as_str()) && s.paused
+        };
+        if !waiting {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+
     {
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-        if s.active.as_ref().is_some_and(|a| a == &app_name) {
-            s.paused = false;
-        } else if s.active.is_none() {
-            // Serbest
-        } else {
+        if s.active.is_some() {
             return Err("@t:dl.anotherActive".into());
         }
+        s.paused = false;
     }
     start_download(&app, app_name, None)
 }
