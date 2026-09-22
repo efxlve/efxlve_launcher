@@ -55,7 +55,7 @@ import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
 import { initContextMenu } from "../context-menu/context-menu";
-import { drawSpeedCanvas, pushSpeedData, startSpeedChartTimer } from "../downloads/downloads-view";
+import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -189,7 +189,7 @@ export async function initApp(hooks: {
           if (curNetLegend) curNetLegend.textContent = netText;
           const curDiskLegend = document.getElementById("dl-legend-disk-val");
           if (curDiskLegend) curDiskLegend.textContent = diskText;
-          drawSpeedCanvas();
+          scheduleDrawSpeedCanvas();
         }
         return;
       }
