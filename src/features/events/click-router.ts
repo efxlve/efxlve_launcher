@@ -9,7 +9,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { DEMO_PLAT_KEY, LANG_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -1019,6 +1019,9 @@ document.addEventListener("click", (e) => {
       localStorage.setItem(LANG_KEY, lang);
       void setLanguage(lang).then(() => {
         updateOfflineModeUi();
+        if (isTauri) {
+          void invoke("app_set_tray_labels", { show: i18nT("tray.show"), quit: i18nT("tray.quit") }).catch(() => {});
+        }
         toast(i18nT("settings.langSet"), "ok");
         render();
       });
@@ -1344,6 +1347,13 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-speed-bits") {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));
+    render();
+  } else if (act === "toggle-minimize-tray") {
+    S.minimizeToTray = !S.minimizeToTray;
+    localStorage.setItem(MINIMIZE_TRAY_KEY, String(S.minimizeToTray));
+    if (isTauri) {
+      void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
+    }
     render();
   } else if (act === "toggle-pause-on-play") {
     S.pauseOnPlay = !S.pauseOnPlay;
