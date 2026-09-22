@@ -28,7 +28,7 @@ import {
   SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, View } from "./types";
+import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SettingsSection, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
@@ -193,6 +193,7 @@ export const S = {
   freeGames: (null) as FreeGamesData | null,
   freeGamesLoading: false,
   studioFilter: "",
+  settingsSection: ("account") as SettingsSection,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
   autoBackupOnExit: (localStorage.getItem(AUTO_BACKUP_KEY) === "true") as boolean,
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
