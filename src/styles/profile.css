@@ -1126,3 +1126,56 @@
   margin: 0;
 }
 
+
+/* Top played games */
+.profile-top-played { display: flex; flex-direction: column; gap: 14px; }
+
+.top-played-list { display: flex; flex-direction: column; gap: 6px; }
+
+.top-played-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--ps5-surface-2, var(--panel));
+  border: 1px solid var(--ps5-border-default, var(--border));
+  border-radius: var(--ps5-radius-md, var(--radius));
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.top-played-row:hover { border-color: rgba(139, 92, 246, 0.4); }
+.top-played-row:active { transform: scale(0.99); }
+
+.top-played-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #08080a;
+  flex-shrink: 0;
+}
+.top-played-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.top-played-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.top-played-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-played-bar { height: 5px; background: rgba(255, 255, 255, 0.06); border-radius: 3px; overflow: hidden; }
+.top-played-bar span { display: block; height: 100%; background: #8b5cf6; border-radius: 3px; }
+
+.top-played-time {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #c4b5fd;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
