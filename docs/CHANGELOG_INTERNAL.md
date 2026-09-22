@@ -2083,3 +2083,29 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Tutarlılık:** Tüm satır-içi (`style="..."`) stiller sınıflara taşındı (`.settings-status`, `.settings-range`, `.settings-field-sm`, `.settings-select`, `.settings-note-warn`, `.settings-recording`, `.settings-row-control.between/.column/.tight`, `.settings-list` …). Kalan `settings-view.ts` içinde 0 inline style.
 - `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1174/1174), 0 kullanılmayan anahtar yeşil.
 
+## 159. Derin Performans Optimizasyonu (RAM / render / LCP)
+
+**1. RAM (en büyük kazanç) — hafif kütüphane verisi**
+- `metadata.dlcItemList` tek bir oyunda **733 KB**, dosya 2.1 MB'a kadar çıkabiliyordu ve tamamı IPC ile ön yüze taşınıp bellekte tutuluyordu. `models.rs::slim_game` eklendi: ön yüzün hiç okumadığı ağır metadata anahtarları (`dlcItemList`, `longDescription`, `releaseInfo`, `ageGatings`, `eulaIds`, `entitlementName`, `categories`, `namespace`, `title`, …) ve `sidecar` blob'u atılıyor. Disk dosyaları **dokunulmuyor** (DLC yönetimi oradan okuyor). `epic_cached_library` ve `epic_list_games` bu süzülmüş veriyi döner. Birim testi eklendi.
+- 908 oyunluk kütüphanede tipik 30 MB ham metadata → belirgin şekilde küçüldü.
+
+**2. Kütüphane DOM patlaması**
+- Raflar (`renderEpicShelves`) **tüm** oyunları basıyordu (kurulu 500 oyun → 500+ kart, artı tekrarlar). Artık raf başına **18 önizleme** + "Tümünü Gör (N)" (ilgili filtreye/koleksiyona geçip grid açar). Kart sayısı ve bellek birkaç kat azaldı.
+
+**3. Gereksiz tam render'lar**
+- Bildirim paneli artık **hiçbir zaman** tüm görünümü yeniden çizmiyor: aç/kapat/okundu/temizle/sil yalnızca `#notif-root`'u günceller. Dışına tıklama da sadece paneli kapatır (eskiden her tıklamada kütüphane/profil yeniden çiziliyordu — kullanıcı bildirimi).
+- `toggleFav` artık `render()` çağırmıyor; tüm görünür favori butonlarını yerinde günceller (500 oyunluk kütüphaneyi bir kalp için yeniden kurmak en pahalı etkileşimdi).
+- `loadFreeGames` `scheduleRender()`'a alındı; boot'taki async yüklemeler rAF'ta birleşiyor.
+- Mağaza görünümündeyken `render()` artık yükleme ekranını yeniden basmıyor (animasyon sıfırlanması/flaş bitti).
+
+**4. LCP (15.20 s → hedef)**
+- Hero görselleri `fetchpriority="high" decoding="async"` aldı; `preloadLibraryHero()` render dizesi kurulmadan **önce** LCP görselini indirmeye başlatır (indirme, DOM kurulumuyla örtüşür).
+- Kart/kapak görselleri `loading="lazy" decoding="async"`; `pcard` giriş animasyonu (24 kart × 16 ms stagger, 384 ms) ve ona bağlı inline stiller kaldırıldı (hem kural ihlali hem her render'da animasyon yükü).
+
+**5. Boşta sıfır yük**
+- İndirme hız grafiği zamanlayıcısı (`setInterval`) artık **kendini durduruyor**: aktif indirme yoksa ve indirmeler sayfası veri göstermiyorsa `stopSpeedChartTimer()` ile temizlenir; indirme başlayınca/sayfa açılınca yeniden başlar.
+- `epicStudios()` sonuçları `S.epicSummaries` referansına göre memoize edildi.
+- `updateNavIndicator` artık (aktif sekme + indirme sayısı) değişmedikçe `getBoundingClientRect` okumuyor; resize/rozet değişiminde `force` ile ölçüyor.
+
+- `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1175/1175) yeşil.
+
