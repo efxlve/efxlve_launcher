@@ -963,7 +963,7 @@
   "settings.eglSync": "Oyunları Eşitle ve İçe Aktar",
   "settings.eglNone": "Epic Games Launcher üzerinde kurulu ek oyun bulunamadı veya EGL klasörü tespit edilemedi.",
   "settings.rescan": "Yeniden Tara",
-  "settings.thirdPartyTitle": "3. Parti Başlatıcılar (EA, Ubisoft, Rockstar)",
+  "settings.thirdPartyTitle": "3. Parti Başlatıcılar (EA, Ubisoft)",
   "settings.thirdPartyDesc": "Bazı Epic oyunları harici bir başlatıcı gerektirir. Sistemde kurulu olup olmadıklarını buradan kontrol edebilirsin.",
   "settings.scanning": "Tarama yapılıyor…",
   "settings.installed": "Kurulu",

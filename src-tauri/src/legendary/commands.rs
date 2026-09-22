@@ -1259,7 +1259,7 @@ pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
     Ok(imported_count)
 }
 
-/* ---------- Third-party launchers (EA App, Ubisoft Connect, Rockstar) ---------- */
+/* ---------- Third-party launchers (EA App, Ubisoft Connect) ---------- */
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1329,8 +1329,8 @@ fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
     result
 }
 
-/// Detects installed third-party game launchers (EA App, Ubisoft Connect,
-/// Rockstar Games Launcher) and returns them with version and install path.
+/// Detects installed third-party game launchers (EA App, Ubisoft Connect)
+/// and returns them with version and install path.
 #[tauri::command]
 pub async fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
     // `reg query /s` walks every uninstall entry, which is slow. Run it on a
@@ -1342,7 +1342,9 @@ pub async fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
 
 fn epic_third_party_launchers_blocking() -> Vec<ThirdPartyLauncher> {
     let entries = scan_uninstall_registry();
-    let defs: [(&str, &str, &[&str], &str); 3] = [
+    // Rockstar Games Launcher is intentionally NOT listed: Rockstar titles are
+    // downloaded and launched through Epic, so there is nothing to check here.
+    let defs: [(&str, &str, &[&str], &str); 2] = [
         (
             "ea",
             "EA App",
@@ -1354,12 +1356,6 @@ fn epic_third_party_launchers_blocking() -> Vec<ThirdPartyLauncher> {
             "Ubisoft Connect",
             &["ubisoft connect", "uplay"],
             "https://ubisoftconnect.com/",
-        ),
-        (
-            "rockstar",
-            "Rockstar Games Launcher",
-            &["rockstar games launcher"],
-            "https://socialclub.rockstargames.com/rockstar-games-launcher",
         ),
     ];
 
