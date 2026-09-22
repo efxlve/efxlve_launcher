@@ -44,6 +44,9 @@ export const NOTIF_KEY = "efxlve-notifications";
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 /** Automatically back up local saves when a game closes. */
 export const AUTO_BACKUP_KEY = "efxlve-auto-backup";
+/** Scheduled automatic update: enabled flag and HH:MM time. */
+export const AUTO_UPDATE_KEY = "efxlve-auto-update";
+export const AUTO_UPDATE_TIME_KEY = "efxlve-auto-update-time";
 /** Custom portrait cover URLs keyed by app name. */
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */

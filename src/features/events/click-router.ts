@@ -9,7 +9,8 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -1358,6 +1359,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-auto-backup") {
     S.autoBackupOnExit = !S.autoBackupOnExit;
     localStorage.setItem(AUTO_BACKUP_KEY, String(S.autoBackupOnExit));
+    render();
+  } else if (act === "toggle-auto-update") {
+    S.autoUpdateEnabled = !S.autoUpdateEnabled;
+    localStorage.setItem(AUTO_UPDATE_KEY, String(S.autoUpdateEnabled));
+    scheduleAutoUpdate();
     render();
   } else if (act === "toggle-pause-on-play") {
     S.pauseOnPlay = !S.pauseOnPlay;

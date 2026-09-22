@@ -328,6 +328,19 @@ export function renderSettings(): string {
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#fff">${t("settings.autoUpdate")}</label>
+          <p class="muted" style="font-size:12px;margin:4px 0 0">${t("settings.autoUpdateDesc")}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input id="auto-update-time" class="text-input" style="width:74px;text-align:center;font-variant-numeric:tabular-nums" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" />
+          <label class="toggle-switch">
+            <input type="checkbox" data-act="toggle-auto-update" ${S.autoUpdateEnabled ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
       <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</p>
       <p><strong>${t("settings.libraryFolder")}:</strong><br /><code>${esc(S.libraryPath)}</code></p>
       <p><strong>${t("settings.version")}:</strong> 0.1.0</p>
