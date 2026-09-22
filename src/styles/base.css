@@ -81,9 +81,9 @@ body {
 /* --- Titlebar (PlayStation 5-inspired console bar — single violet identity) ---
    Design decision: the color does NOT change between tabs. The bar light is always violet.
      · single-source fixed violet ambient light (NO per-section color layer)
-     · rail-grouped nav segment: tabs sit inside one shallow inset track
-     · violet-tint fill on the active tab (same idiom as the account avatar)
-     · thin violet LED tick centered under the active icon (NOT a full-width underline)
+     · flat typographic nav (Steam/Xbox language): no rail, no boxes — labels carry it
+     · active = white label + violet icon + a sliding highlight on the bar's bottom hairline
+     · box-free right cluster: the status dot and avatar carry the meaning
      · slim icons, wide-tracked uppercase typography
    FORBIDDEN (AGENTS.md §3): decorative multicolor gradient, neon glow, capsule, ornamental animation.
    EXCEPTION (§3): single-source, low-alpha ambient light is allowed. */
@@ -103,76 +103,65 @@ body {
   background: radial-gradient(96% 380% at 0% -140%, rgba(139, 92, 246, 0.17) 0%, rgba(139, 92, 246, 0) 72%);
 }
 
-/* LED tick sliding under the active item's icon — speaks the launcher's violet identity.
-   Positioned by JS (see core/nav.ts updateNavIndicator): fixed 14px width, centered under the active tab. */
+/* Sliding highlight sitting on the bar's bottom hairline, under the active tab.
+   Sized to the tab by JS (see core/nav.ts updateNavIndicator). */
 .nav-underline {
-  position: absolute; bottom: 3px; left: 0; width: 14px; height: 2px; z-index: 2;
-  opacity: 0; pointer-events: none; border-radius: 2px;
-  background: #c4b5fd;
-  will-change: left;
-  transition: left 0.16s cubic-bezier(0.2, 0, 0, 1),
-              width 0.16s cubic-bezier(0.2, 0, 0, 1),
+  position: absolute; bottom: -1px; left: 0; width: 0; height: 2px; z-index: 2;
+  opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
+  background: #8b5cf6;
+  will-change: transform, width;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+              width 0.18s cubic-bezier(0.2, 0, 0, 1),
               opacity 0.14s linear;
 }
 
 /* Marka */
 .logo {
-  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 9px; flex-shrink: 0;
   white-space: nowrap; -webkit-app-region: drag; cursor: default;
 }
+/* Flat mark: just the violet glyph, no surrounding box. */
 .logo-mark {
-  width: 28px; height: 28px; border-radius: 9px;
   display: grid; place-items: center;
-  color: #b9a7f9;
-  background: rgba(139, 92, 246, 0.16);
-  border: 1px solid rgba(167, 139, 250, 0.30);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 2px 10px -4px rgba(124, 92, 246, 0.55);
+  color: #a78bfa;
 }
-.logo-mark svg { width: 16px; height: 16px; stroke-width: 1.8; }
+.logo-mark svg { width: 19px; height: 19px; stroke-width: 1.9; }
 .logo-text {
-  font-size: 12px; font-weight: 800; letter-spacing: 2.8px; color: #eceef4;
+  font-size: 12.5px; font-weight: 800; letter-spacing: 2.4px; color: #eceef4;
 }
 
 #nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
-/* Segment (Store / Library / Downloads)
-   Rail language: tabs sit inside one shallow inset track, not floating loose text. */
+/* Flat, typographic nav (Steam/Xbox language): no rail, no boxes — labels carry it. */
 .nav-seg {
   position: relative;
-  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-  padding: 4px; border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 #nav .nav-tab {
-  position: relative; display: flex; align-items: center; gap: 9px;
-  padding: 8px 12px 9px; border-radius: 9px; border: none; background: none;
-  color: #7c8094; font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px;
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 8px;
+  border: none; background: none;
+  color: #83879a; font-size: 12px; font-weight: 700; letter-spacing: 0.9px;
   text-transform: uppercase;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 #nav .nav-tab:active { transform: scale(0.98); }
 #nav .nav-tab:focus-visible {
   outline: 2px solid #8b5cf6 !important;
-  outline-offset: 3px !important;
+  outline-offset: 2px !important;
 }
-#nav .nav-tab:hover { color: #d6d3e2; }
-/* Violet-tint fill on the active tab (same idiom as the account avatar). */
-#nav .nav-tab.active {
-  color: #f4f1ff;
-  background: rgba(139, 92, 246, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
+#nav .nav-tab:hover { color: #c9ccda; background: rgba(255, 255, 255, 0.035); }
+#nav .nav-tab.active { color: #ffffff; }
 #nav .nav-tab svg {
-  width: 18px; height: 18px; stroke-width: 1.7;
-  transition: opacity 0.14s ease, color 0.14s ease;
-  opacity: 0.85;
+  width: 17px; height: 17px; stroke-width: 1.75;
+  transition: color 0.15s ease, opacity 0.15s ease;
+  opacity: 0.9;
 }
 #nav .nav-tab:hover svg { opacity: 1; }
-#nav .nav-tab.active svg { opacity: 1; color: #c4b5fd; }
+#nav .nav-tab.active svg { opacity: 1; color: #b9a7f9; }
 
 /* Right cluster (status + account + settings) */
 .nav-right {
@@ -180,46 +169,35 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Connection status — PS5 control-center tile (translucent, softly lit) */
+/* Right cluster: flat, box-free — the status dot and avatar carry the meaning. */
 #nav .net-chip {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: 10px; cursor: pointer;
+  padding: 7px 11px; border-radius: 8px; cursor: pointer;
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.25px; font-family: inherit;
-  color: #b4b8c6; background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  color: #9a9eae; background: none; border: none;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-#nav .net-chip:hover { background: rgba(255, 255, 255, 0.10); color: #f2f3f7; }
+#nav .net-chip:hover { background: rgba(255, 255, 255, 0.06); color: #e6e8f0; }
 .net-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #6b6e7a; flex-shrink: 0;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
-#nav .net-chip.online { border-color: rgba(63, 185, 80, 0.22); }
-#nav .net-chip.online:hover { border-color: rgba(63, 185, 80, 0.42); }
 /* Status light: a steady halo, not a neon glow */
 #nav .net-chip.online .net-dot { background: #3fb950; box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.14); }
-#nav .net-chip.offline { border-color: rgba(210, 153, 34, 0.24); }
-#nav .net-chip.offline:hover { border-color: rgba(210, 153, 34, 0.44); }
 #nav .net-chip.offline .net-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210, 153, 34, 0.14); }
 
-/* Account — same PS5 tile language */
+/* Account — avatar + name, box-free */
 #nav .account-chip {
   display: inline-flex; align-items: center; gap: 9px;
-  padding: 4px 13px 4px 4px; border-radius: 10px; cursor: pointer;
-  font-size: 12px; font-weight: 600; font-family: inherit; color: #b4b8c6;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
+  padding: 4px 11px 4px 4px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: inherit; color: #9a9eae;
+  background: none; border: none;
   max-width: 150px;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-#nav .account-chip:hover { background: rgba(255, 255, 255, 0.10); color: #f2f3f7; }
-#nav .account-chip.active {
-  color: #ffffff; background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.14);
-}
+#nav .account-chip:hover { background: rgba(255, 255, 255, 0.06); color: #e6e8f0; }
+#nav .account-chip.active { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
 #nav .account-avatar {
   width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
   display: grid; place-items: center; color: #9aa0b0;
@@ -228,7 +206,7 @@ body {
 }
 #nav .account-avatar svg { width: 14px; height: 14px; stroke-width: 1.8; }
 #nav .avatar-initial { font-size: 11px; font-weight: 700; color: #e2e4ea; letter-spacing: 0; }
-#nav .account-chip.logged { color: #e2e4ea; }
+#nav .account-chip.logged { color: #d7dae4; }
 /* When signed in the initial takes the accent color — a single flat color, not a gradient */
 #nav .account-chip.logged .account-avatar {
   background: rgba(139, 92, 246, 0.24);
@@ -237,22 +215,17 @@ body {
 #nav .account-chip.logged .avatar-initial { color: #d3c6ff; }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Settings — same PS5 tile language */
+/* Settings — flat icon button */
 #nav .nav-icon-btn {
-  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
   display: grid; place-items: center; cursor: pointer;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.9);
-  color: #b4b8c6;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  background: none; border: none;
+  color: #9a9eae;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-#nav .nav-icon-btn svg { width: 16px; height: 16px; stroke-width: 1.8; }
-#nav .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.10); color: #ffffff; }
-#nav .nav-icon-btn.active {
-  background: rgba(255, 255, 255, 0.13); color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.16);
-}
+#nav .nav-icon-btn svg { width: 17px; height: 17px; stroke-width: 1.8; }
+#nav .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.06); color: #ffffff; }
+#nav .nav-icon-btn.active { background: rgba(255, 255, 255, 0.09); color: #ffffff; }
 
 /* Window control buttons (Windows title bar) */
 .win-controls {
