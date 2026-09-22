@@ -218,7 +218,7 @@ pub fn epic_list_skipped(app: AppHandle) -> Vec<String> {
 
 /// Instant library from the disk cache (no network, no subprocess).
 /// The UI shows this first; the `epic_list_games` sync runs in the background.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CachedLibrary {
     pub account: Option<String>,
@@ -229,22 +229,28 @@ pub struct CachedLibrary {
 }
 
 #[tauri::command]
-pub fn epic_cached_library(app: AppHandle) -> CachedLibrary {
-    let config = skip::default_config_dir();
-    let (account, account_id) = match cache::read_user(&config) {
-        Some((name, id)) => (Some(name), id),
-        None => (None, None),
-    };
-    CachedLibrary {
-        account,
-        account_id,
-        games: cache::read_cached_games(&config),
-        installed: cache::read_installed(&config),
-        skipped: skip::load_skipped(&app)
-            .into_iter()
-            .map(|s| s.app_name)
-            .collect(),
-    }
+pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
+    // Reads and parses ~900 metadata files: run on a blocking thread so the
+    // main thread / UI never stalls on a slow HDD.
+    tauri::async_runtime::spawn_blocking(move || {
+        let config = skip::default_config_dir();
+        let (account, account_id) = match cache::read_user(&config) {
+            Some((name, id)) => (Some(name), id),
+            None => (None, None),
+        };
+        CachedLibrary {
+            account,
+            account_id,
+            games: cache::read_cached_games(&config),
+            installed: cache::read_installed(&config),
+            skipped: skip::load_skipped(&app)
+                .into_iter()
+                .map(|s| s.app_name)
+                .collect(),
+        }
+    })
+    .await
+    .unwrap_or_default()
 }
 
 #[tauri::command]
@@ -547,16 +553,21 @@ pub async fn epic_get_achievements(
 }
 
 #[tauri::command]
-pub fn epic_get_achievements_summary(
+pub async fn epic_get_achievements_summary(
     app: AppHandle,
 ) -> Result<std::collections::HashMap<String, GameAchievementSummary>, String> {
-    let config = skip::default_config_dir();
-    let cache_dir = app
-        .path()
-        .app_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("achievements");
-    Ok(scan_achievements_summary(&config, &cache_dir))
+    // Scans the achievements cache + every metadata file: keep it off the UI thread.
+    tauri::async_runtime::spawn_blocking(move || {
+        let config = skip::default_config_dir();
+        let cache_dir = app
+            .path()
+            .app_data_dir()
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("achievements");
+        scan_achievements_summary(&config, &cache_dir)
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 pub fn scan_achievements_summary(
@@ -2387,8 +2398,10 @@ pub fn epic_set_offline_mode(app: AppHandle, enabled: bool) -> Result<(), String
 
 /// Backs up a game's saves.
 #[tauri::command]
-pub fn epic_backup_save(app_name: String) -> Result<super::backup::SaveBackupInfo, String> {
-    super::backup::create_backup(&app_name, None)
+pub async fn epic_backup_save(app_name: String) -> Result<super::backup::SaveBackupInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || super::backup::create_backup(&app_name, None))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Bir oyunun mevcut yedeklerini listeler.
@@ -2399,8 +2412,10 @@ pub fn epic_list_backups(app_name: String) -> Vec<super::backup::SaveBackupInfo>
 
 /// Restores a backup to the game.
 #[tauri::command]
-pub fn epic_restore_backup(app_name: String, backup_id: String) -> Result<String, String> {
-    super::backup::restore_backup(&app_name, &backup_id)
+pub async fn epic_restore_backup(app_name: String, backup_id: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || super::backup::restore_backup(&app_name, &backup_id))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Deletes a backup.
@@ -2461,8 +2476,11 @@ pub fn epic_set_game_collections(
 
 /// Imports collections from the Epic Games Launcher LevelDB log
 #[tauri::command]
-pub fn epic_import_egl_collections() -> Result<Vec<super::collections::GameCollection>, String> {
-    super::collections::import_egl_collections()
+pub async fn epic_import_egl_collections() -> Result<Vec<super::collections::GameCollection>, String> {
+    // Reads the Epic Games Launcher manifests: off the UI thread.
+    tauri::async_runtime::spawn_blocking(super::collections::import_egl_collections)
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 // -------------------------------------------------------------
@@ -2484,8 +2502,11 @@ pub async fn epic_get_player_profile(
 
 /// Lists all local disk drives (C:, D:, ...) and their free space
 #[tauri::command]
-pub fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> {
-    super::move_game::get_system_drives()
+pub async fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> {
+    // Queries disk space for every drive letter: off the UI thread.
+    tauri::async_runtime::spawn_blocking(super::move_game::get_system_drives)
+        .await
+        .unwrap_or_default()
 }
 
 /// Opens the native Windows folder picker ("Browse")

@@ -18,7 +18,6 @@
 }
 .tab-content-enter {
   animation: tabContentEnter 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
 }
 
 /* --- Stats strip (balanced two-column cards) --- */
