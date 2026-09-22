@@ -128,8 +128,6 @@
 .hero-showcase-btn {
   display: inline-flex; align-items: center; gap: 5px;
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
   font-size: 11px;
@@ -311,10 +309,8 @@
 .pbadge.update .dot {
   width: 5px; height: 5px; border-radius: 50%;
   background: #f59e0b;
-  animation: dot-blink 1.4s infinite;
   box-shadow: 0 0 6px #f59e0b;
 }
-@keyframes dot-blink { 50% { opacity: 0.3; } }
 
 /* Card hover layer - BADGE OVERLAP FIXED */
 .pcard .shade {

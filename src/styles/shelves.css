@@ -316,8 +316,6 @@
 #cover-modal-root:empty { display: none; }
 .cover-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center; z-index: 100;
   animation: coverOverlayFade 0.22s ease-out;
 }
@@ -487,7 +485,6 @@
   font-weight: 700;
   text-align: center;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(6px);
   padding: 2.5px 6px;
   border-radius: 5px;
   color: #fff;

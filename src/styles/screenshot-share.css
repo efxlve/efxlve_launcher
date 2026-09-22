@@ -20,8 +20,6 @@
   gap: 5px;
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .ss-share-btn:hover,
@@ -87,8 +85,6 @@
   position: fixed;
   inset: 0;
   background: rgba(4, 6, 11, 0.78);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;

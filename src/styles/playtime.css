@@ -6,20 +6,11 @@
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
 /* ---------- Live game status & playing button ---------- */
-@keyframes pulse-green {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5), inset 0 0 6px rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.85), inset 0 0 10px rgba(16, 185, 129, 0.5);
-  }
-}
-
 .btn.running, .btn-running {
   background: #059669 !important;
   color: #fff !important;
   border: 1px solid #34d399 !important;
-  animation: pulse-green 2s infinite ease-in-out;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.55), inset 0 0 8px rgba(16, 185, 129, 0.35);
   cursor: default;
   pointer-events: none;
 }
@@ -42,7 +33,7 @@
   height: 6px;
   border-radius: 50%;
   background: #34d399;
-  animation: pulse-green 1.5s infinite;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
 }
 
 /* Playtime badge */
@@ -294,7 +285,6 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;

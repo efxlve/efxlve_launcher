@@ -173,8 +173,6 @@
   z-index: 100;
   min-width: 230px;
   background: rgba(15, 17, 26, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 6px;
@@ -413,8 +411,6 @@ select option {
   z-index: 100;
   min-width: 195px;
   background: rgba(15, 17, 26, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 6px;
@@ -504,7 +500,6 @@ select option {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -887,7 +882,6 @@ select option {
   height: 26px;
   border-radius: 50%;
   background: rgba(28, 30, 40, 0.95);
-  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #cbd5e1;
   display: flex;

@@ -105,7 +105,6 @@
 }
 .hub-back-btn {
   background: rgba(18, 20, 28, 0.85);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #f1f5f9;
   border-radius: 999px;
@@ -141,7 +140,6 @@
 }
 .hub-tool-btn {
   background: rgba(18, 20, 28, 0.85);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #cbd5e1;
   border-radius: 50%;
@@ -274,7 +272,6 @@
   font-weight: 600;
   border-radius: 12px;
   background: rgba(18, 20, 28, 0.8);
-  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
   display: inline-flex;
@@ -313,7 +310,6 @@
   align-items: center;
   gap: 16px;
   background: rgba(18, 20, 28, 0.75);
-  backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 12px 20px;

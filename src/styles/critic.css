@@ -252,20 +252,7 @@
   border-radius: 50%;
   background: #a3e635;
   box-shadow: 0 0 8px #a3e635;
-  animation: goygoyPulse 2s infinite ease-in-out;
   flex-shrink: 0;
-}
-
-@keyframes goygoyPulse {
-  0%, 100% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.25);
-    opacity: 1;
-    box-shadow: 0 0 12px #a3e635;
-  }
 }
 
 .goygoy-brand {
