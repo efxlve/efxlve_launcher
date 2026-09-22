@@ -89,7 +89,7 @@ function applyDlDomUpdate(id: string): void {
   const progress = dl ? dl.progress : 100;
   updateBadge();
   document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
-    b.textContent = `%${progress}`;
+    b.textContent = t("common.downloading", { p: Math.round(progress) });
   });
   document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
     (b as HTMLElement).style.width = `${progress}%`;

@@ -242,7 +242,7 @@ export function renderHeroSpotlight(): string {
   const pt = S.playtimeMap.get(s.appName);
   const primaryBtn =
     p !== null
-      ? `<button class="btn primary" disabled data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
+       ? `<button class="btn primary" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
       : isRunning
         ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
@@ -396,7 +396,7 @@ export function renderShelfHeroCard(s: EpicSummary): string {
 
   const primaryBtn =
     p !== null
-      ? `<button class="btn primary small" disabled data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
+       ? `<button class="btn primary small" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
       : isRunning
         ? `<button class="btn primary small running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed

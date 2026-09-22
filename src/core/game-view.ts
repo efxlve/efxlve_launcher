@@ -67,7 +67,7 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   const btn = size ? ` ${size}` : "";
   const p = epicDlProgress(s.appName);
   if (p !== null) {
-    return `<button class="btn primary${btn}" disabled data-dlbtn="${s.appName}">%${p}</button>
+    return `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancelShort")}</button>`;
   }
   const isRunning = S.runningGames.has(s.appName);
