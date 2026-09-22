@@ -1188,7 +1188,10 @@ pub async fn epic_get_system_requirements(
 /// Detects games installed through the Epic Games Launcher.
 #[tauri::command]
 pub async fn epic_detect_egl_games(_app: AppHandle) -> Result<Vec<cache::EglDetectedGame>, String> {
-    Ok(cache::read_egl_installed_games())
+    // Reads EGL manifests + registry: keep it off the UI thread.
+    tauri::async_runtime::spawn_blocking(cache::read_egl_installed_games)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Persistently syncs games detected in the Epic Games Launcher into installed.json.

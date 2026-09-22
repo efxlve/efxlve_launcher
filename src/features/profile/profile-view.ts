@@ -26,7 +26,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   }
 
   return cardGames
-    .map((g, idx) => {
+    .map((g) => {
       const isPlat = g.is_platinum || g.unlocked_percent >= 100;
       const pt = S.playtimeMap.get(g.app_name);
       const playtimeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : null;
@@ -39,7 +39,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       const fillPercent = Math.min(100, Math.max(0, g.unlocked_percent));
 
       return `
-        <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - ${t("profile.detailsTitle")}" style="--pci:${Math.min(idx, 20)}">
+        <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - ${t("profile.detailsTitle")}">
           ${bannerUrl ? `<img class="ps5-card-backdrop" src="${esc(bannerUrl)}" alt="" loading="lazy" decoding="async" />` : ""}
           <div class="ps5-card-backdrop-overlay"></div>
 

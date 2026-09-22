@@ -69,6 +69,59 @@ import {
   renderDrawerScreenshots,
 } from "../screenshots/screenshots-view";
 import { setView } from "../store/store-view";
+
+let dlDomRaf = 0;
+let dlDomId = "";
+
+/** Batches bursty download DOM updates into a single animation frame. */
+function scheduleDlDomUpdate(id: string): void {
+  dlDomId = id;
+  if (dlDomRaf) return;
+  dlDomRaf = requestAnimationFrame(() => {
+    dlDomRaf = 0;
+    applyDlDomUpdate(dlDomId);
+  });
+}
+
+/** In-place download UI update (Rule 15): never re-renders the whole view. */
+function applyDlDomUpdate(id: string): void {
+  const dl = S.downloads.get(id);
+  const progress = dl ? dl.progress : 100;
+  updateBadge();
+  document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
+    b.textContent = `%${progress}`;
+  });
+  document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
+    (b as HTMLElement).style.width = `${progress}%`;
+  });
+
+  if (S.view !== "downloads") return;
+  const pctEl = document.getElementById("dl-hero-pct");
+  if (pctEl) pctEl.textContent = `%${Math.round(progress)}`;
+  const fillEl = document.getElementById("dl-hero-fill");
+  if (fillEl) fillEl.style.width = `${progress}%`;
+
+  const m = S.activeDlMetrics;
+  if (!m) return;
+  const netText = fmtSpeed(m.speedBytes, S.speedInBits);
+  const diskText = fmtSpeed(m.diskBytes, S.speedInBits);
+  const netEl = document.getElementById("dl-stat-speed");
+  if (netEl) netEl.textContent = netText;
+  const peakEl = document.getElementById("dl-stat-peak");
+  if (peakEl) peakEl.textContent = fmtSpeed(S.peakNetSpeedBytes, S.speedInBits);
+  const diskEl = document.getElementById("dl-stat-disk");
+  if (diskEl) diskEl.textContent = diskText;
+  const etaEl = document.getElementById("dl-stat-eta");
+  if (etaEl && m.eta) etaEl.textContent = localizeMessage(m.eta);
+  const bytesEl = document.getElementById("dl-stat-bytes");
+  if (bytesEl && m.downloadedBytes) bytesEl.textContent = `${fmtBytes(m.downloadedBytes)} / ${fmtBytes(m.totalBytes)}`;
+  const netLegend = document.getElementById("dl-legend-net-val");
+  if (netLegend) netLegend.textContent = netText;
+  const diskLegend = document.getElementById("dl-legend-disk-val");
+  if (diskLegend) diskLegend.textContent = diskText;
+  scheduleDrawSpeedCanvas();
+}
+
 export async function initApp(hooks: {
   render: () => void;
   scheduleRender: () => void;
@@ -121,7 +174,7 @@ export async function initApp(hooks: {
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
-      const title = S.epicSummaries.find((s) => s.appName === id)?.title ?? id;
+      const title = S.epicSummariesMap.get(id)?.title ?? id;
       if (!done) startSpeedChartTimer();
 
       if (!done) {
@@ -155,42 +208,9 @@ export async function initApp(hooks: {
         }
         pushSpeedData(speedBytes ?? 0, diskBytes ?? 0);
 
-        updateBadge();
-
-        // In-place library button/bar updates (Rule 15)
-        document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
-          b.textContent = `%${progress}`;
-        });
-        document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
-          (b as HTMLElement).style.width = `${progress}%`;
-        });
-
-        // In-place download hub updates (Rule 15)
-        if (S.view === "downloads") {
-          const pctEl = document.getElementById("dl-hero-pct");
-          if (pctEl) pctEl.textContent = `%${Math.round(progress)}`;
-          const fillEl = document.getElementById("dl-hero-fill");
-          if (fillEl) fillEl.style.width = `${progress}%`;
-          const netText = fmtSpeed(speedBytes ?? 0, S.speedInBits);
-          const diskText = fmtSpeed(diskBytes ?? 0, S.speedInBits);
-          const netEl = document.getElementById("dl-stat-speed");
-          if (netEl) netEl.textContent = netText;
-          const peakEl = document.getElementById("dl-stat-peak");
-          if (peakEl) peakEl.textContent = fmtSpeed(S.peakNetSpeedBytes, S.speedInBits);
-          const diskEl = document.getElementById("dl-stat-disk");
-          if (diskEl) diskEl.textContent = diskText;
-          const etaEl = document.getElementById("dl-stat-eta");
-          if (etaEl && eta) etaEl.textContent = localizeMessage(eta);
-          const bytesEl = document.getElementById("dl-stat-bytes");
-          if (bytesEl && downloadedBytes) {
-            bytesEl.textContent = `${fmtBytes(downloadedBytes)} / ${fmtBytes(totalBytes || 0)}`;
-          }
-          const curNetLegend = document.getElementById("dl-legend-net-val");
-          if (curNetLegend) curNetLegend.textContent = netText;
-          const curDiskLegend = document.getElementById("dl-legend-disk-val");
-          if (curDiskLegend) curDiskLegend.textContent = diskText;
-          scheduleDrawSpeedCanvas();
-        }
+        // All DOM writes are batched to one rAF so bursty progress events never
+        // cause repeated layout reads (updateBadge measures the nav indicator).
+        scheduleDlDomUpdate(id);
         return;
       }
 
