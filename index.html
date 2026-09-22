@@ -9,9 +9,36 @@
     <style>
       /* Anti-FOUC: paint pure obsidian on the first frame before the CSS loads. */
       html, body { margin: 0; background-color: #07080d; color-scheme: dark; }
+
+      /* Temporary Liquid Glass preview, intentionally scoped to the shell. */
+      .liquid-glass-preview #titlebar {
+        background: rgba(10, 11, 17, 0.76);
+        border-bottom-color: rgba(255, 255, 255, 0.12);
+        -webkit-backdrop-filter: blur(18px) saturate(135%);
+        backdrop-filter: blur(18px) saturate(135%);
+      }
+      .liquid-glass-preview #nav .nav-seg {
+        padding: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+      .liquid-glass-preview #nav .nav-tab.active {
+        border-radius: 10px;
+        background: rgba(139, 92, 246, 0.18);
+      }
+      .liquid-glass-preview #nav .nav-right {
+        padding: 3px 5px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.045);
+      }
+      @supports not ((backdrop-filter: blur(1px))) {
+        .liquid-glass-preview #titlebar { background: #11131c; }
+      }
     </style>
   </head>
-  <body style="background-color: #07080d;">
+  <body class="liquid-glass-preview" style="background-color: #07080d;">
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
         <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
