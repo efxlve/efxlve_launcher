@@ -790,7 +790,6 @@
   font: inherit;
   width: 100%;
   box-sizing: border-box;
-  animation: cardFilterEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--pci, 0) * 16ms) backwards;
 }
 
 /* Cinematic horizontal backdrop art */

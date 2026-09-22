@@ -709,27 +709,32 @@ export function renderEpic(): string {
 
   preloadLibraryHero();
 
-  const favTotalCount = S.epicSummaries.filter((s) => S.epicFav.has(s.appName)).length;
-  const allInstalledCount = S.epicSummaries.filter((s) => s.installed).length;
-  const totalInstalledSize = S.epicSummaries.reduce((acc, x) => acc + (x.installSize || 0), 0);
-
+  // One pass over the library instead of six separate filter/reduce passes.
   const selectedCol =
     S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav"
       ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
       : null;
+  const colSet = selectedCol ? new Set(selectedCol.app_names.map((n) => n.toLowerCase())) : null;
+  const favOnly = S.activeCollectionId === "fav";
 
-  const visibleColSummaries =
-    selectedCol
-      ? S.epicSummaries.filter((s) =>
-          selectedCol.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-        )
-      : S.activeCollectionId === "fav"
-        ? S.epicSummaries.filter((s) => S.epicFav.has(s.appName))
-        : S.epicSummaries;
-
-  const totalColCount = visibleColSummaries.length;
-  const allUpdatesCount = S.epicSummaries.filter((s) => s.updateAvailable || S.availableUpdates.has(s.appName)).length;
-  const platCount = visibleColSummaries.filter((s) => isAppPlatinum(s.appName)).length;
+  let favTotalCount = 0;
+  let allInstalledCount = 0;
+  let totalInstalledSize = 0;
+  let allUpdatesCount = 0;
+  let totalColCount = 0;
+  let platCount = 0;
+  for (const s of S.epicSummaries) {
+    if (S.epicFav.has(s.appName)) favTotalCount++;
+    if (s.installed) {
+      allInstalledCount++;
+      totalInstalledSize += s.installSize || 0;
+    }
+    if (s.updateAvailable || S.availableUpdates.has(s.appName)) allUpdatesCount++;
+    if (colSet ? colSet.has(s.appName.toLowerCase()) : favOnly ? S.epicFav.has(s.appName) : true) {
+      totalColCount++;
+      if (isAppPlatinum(s.appName)) platCount++;
+    }
+  }
 
   const isUpdateNewlyAdded = S.prevRenderedUpdatesCount === 0 && allUpdatesCount > 0;
   const isColNewlyChanged = S.prevRenderedColId !== undefined && S.prevRenderedColId !== S.activeCollectionId;

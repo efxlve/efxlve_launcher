@@ -313,6 +313,7 @@ document.addEventListener("click", (e) => {
     S.isSortDropdownOpen = false;
     const hasCustomCol = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     if (hadCustomCol !== hasCustomCol || !updateLibraryFilterInPlace()) {
+      resetCardChunk();
       render();
     }
   } else if (act === "toggle-col-dropdown") {
@@ -349,12 +350,14 @@ document.addEventListener("click", (e) => {
     if (sortVal && sortVal !== S.epicSort) {
       S.epicSort = sortVal;
       localStorage.setItem("efxlve-sort", S.epicSort);
+      resetCardChunk();
       render();
     }
   } else if (act === "clear-collection") {
     S.activeCollectionId = null;
     S.isColDropdownOpen = false;
     S.isSortDropdownOpen = false;
+    resetCardChunk();
     render();
   } else if (act === "toggle-hero-spotlight") {
     S.isHeroCollapsed = !S.isHeroCollapsed;
@@ -367,14 +370,17 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-view-grid") {
     S.epicViewMode = "grid";
     localStorage.setItem("efxlve-view-mode", "grid");
+    resetCardChunk();
     render();
   } else if (act === "epic-view-shelves") {
     S.epicViewMode = "shelves";
     localStorage.setItem("efxlve-view-mode", "shelves");
+    resetCardChunk();
     render();
   } else if (act === "epic-view-list") {
     S.epicViewMode = "list";
     localStorage.setItem("efxlve-view-mode", "list");
+    resetCardChunk();
     render();
   } else if (act === "shelf-scroll") {
     const dir = t.dataset.dir;
@@ -614,6 +620,7 @@ document.addEventListener("click", (e) => {
     }
     S.isColDropdownOpen = false;
     if (S.currentModalAppName) closeModal();
+    resetCardChunk();
     render();
   } else if (act === "open-new-collection-modal") {
     S.isColDropdownOpen = false;

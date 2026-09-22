@@ -207,34 +207,11 @@
 .card-size-toggle button.active, .view-mode-toggle button.active { background: rgba(255,255,255,0.12); color: #fff; }
 
 /* --- GAME GRID & LARGE PORTRAIT CARDS --- */
-@keyframes filterGridEnter {
-  0% {
-    opacity: 0.15;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes cardFilterEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Default: normal size (220px) - cramped layout fixed! */
 .pgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
-  animation: filterGridEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 /* Large poster mode */
 .pgrid.size-large {
@@ -245,10 +222,6 @@
 .pgrid.size-compact {
   grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
   gap: 16px;
-}
-
-.shelves-container {
-  animation: filterGridEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .pcard {
