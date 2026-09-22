@@ -33,6 +33,8 @@ export function ensureGamepadHud(): HTMLElement {
   return S.gamepadHudEl;
 }
 
+let lastHudKey = "";
+
 export function updateGamepadHud(active = true): void {
   const hud = ensureGamepadHud();
   if (!active || !S.gamepadPolling) {
@@ -44,6 +46,11 @@ export function updateGamepadHud(active = true): void {
   hud.classList.remove("dimmed");
 
   const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(S.currentModalAppName);
+
+  // Skip rebuilding the HUD markup when nothing that affects it changed.
+  const hudKey = `${modalOpen ? "modal" : S.view}|${S.appLanguage}`;
+  if (hudKey === lastHudKey) return;
+  lastHudKey = hudKey;
 
   if (modalOpen) {
     hud.innerHTML = `

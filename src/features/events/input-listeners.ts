@@ -67,9 +67,14 @@ document.addEventListener("wheel", (e) => {
   }
 }, { passive: false });
 
+let arrowsResizeRaf = 0;
 window.addEventListener("resize", () => {
-  updateDrawerTabArrows();
-  updateColPresetArrows();
+  if (arrowsResizeRaf) return;
+  arrowsResizeRaf = requestAnimationFrame(() => {
+    arrowsResizeRaf = 0;
+    updateDrawerTabArrows();
+    updateColPresetArrows();
+  });
 });
 
 document.addEventListener("keydown", (e) => {
@@ -557,7 +562,12 @@ document.addEventListener("change", (e) => {
   }
 });
 
+let totopRaf = 0;
 viewEl.addEventListener("scroll", () => {
-  const totop = document.getElementById("totop");
-  if (totop) totop.classList.toggle("show", viewEl.scrollTop > 600);
+  if (totopRaf) return;
+  totopRaf = requestAnimationFrame(() => {
+    totopRaf = 0;
+    const totop = document.getElementById("totop");
+    if (totop) totop.classList.toggle("show", viewEl.scrollTop > 600);
+  });
 }, { passive: true });
