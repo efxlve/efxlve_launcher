@@ -216,11 +216,11 @@ export function isNonGameContent(g: EpicGame): boolean {
 
 export interface ThirdPartyLauncherInfo {
   name: string;
-  type: "ea" | "ubisoft" | "gog" | "other";
+  type: "ea" | "ubisoft" | "rockstar" | "gog" | "other";
   shortName: string;
 }
 
-/** Third-party launcher detection (EA App, Ubisoft Connect, GOG, etc.). */
+/** Third-party launcher detection (EA App, Ubisoft Connect, Rockstar Games, etc.). */
 export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPartyLauncherInfo | null {
   if (!g?.metadata) return null;
   const attrs = (g.metadata.customAttributes as Record<string, { value?: string }>) || {};
@@ -229,6 +229,7 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
   const pType = attrs.partnerLinkType?.value?.toLowerCase() || "";
   const reg = attrs.RegistryPath?.value?.toLowerCase() || "";
   const dev = String(g.metadata.developer || "").toLowerCase();
+  const title = String(g.app_title || "").toLowerCase();
   const folder = attrs.FolderName?.value?.toLowerCase() || "";
 
   if (
@@ -251,30 +252,7 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
   ) {
     return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
   }
-  if (folder.includes("goggalaxy") || tpApp.includes("gog")) {
-    return { name: "GOG GALAXY", type: "gog", shortName: "GOG" };
-  }
-  if (attrs.ThirdPartyManagedApp?.value) {
-    const val = attrs.ThirdPartyManagedApp.value;
-    return { name: val, type: "other", shortName: val };
-  }
-  return null;
-}
-
-/**
- * Rockstar titles are downloaded and launched through Epic (like any other
- * game), so they are NOT treated as third-party-managed. This is informational
- * only: it drives the "Rockstar Games Launcher required" note in the detail view.
- */
-export function isRockstarGame(g: EpicGame | undefined | null): boolean {
-  if (!g?.metadata) return false;
-  const attrs = (g.metadata.customAttributes as Record<string, { value?: string }>) || {};
-  const tpApp = attrs.ThirdPartyManagedApp?.value?.toLowerCase() || "";
-  const reg = attrs.RegistryPath?.value?.toLowerCase() || "";
-  const dev = String(g.metadata.developer || "").toLowerCase();
-  const title = String(g.app_title || "").toLowerCase();
-  const folder = attrs.FolderName?.value?.toLowerCase() || "";
-  return (
+  if (
     reg.includes("rockstar") ||
     tpApp.includes("rockstar") ||
     dev.includes("rockstar") ||
@@ -283,7 +261,17 @@ export function isRockstarGame(g: EpicGame | undefined | null): boolean {
     title.includes("red dead") ||
     folder.includes("gtav") ||
     folder.includes("rdr")
-  );
+  ) {
+    return { name: "Rockstar Games Launcher", type: "rockstar", shortName: "Rockstar" };
+  }
+  if (folder.includes("goggalaxy") || tpApp.includes("gog")) {
+    return { name: "GOG GALAXY", type: "gog", shortName: "GOG" };
+  }
+  if (attrs.ThirdPartyManagedApp?.value) {
+    const val = attrs.ThirdPartyManagedApp.value;
+    return { name: val, type: "other", shortName: val };
+  }
+  return null;
 }
 
 /** Hile koruma sistemi (Anti-Cheat) tespiti */
