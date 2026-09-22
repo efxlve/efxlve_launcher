@@ -33,6 +33,7 @@ import {
 } from "../../epic";
 import { applyStaticTranslations, localizeMessage, setLanguage, t } from "../../i18n";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
+import { initAutoUpdate } from "../downloads/auto-update";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
@@ -81,6 +82,7 @@ export async function initApp(hooks: {
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell },
   });
   loadNotifications();
+  initAutoUpdate();
   // Load the selected language, apply its direction (LTR/RTL) and translate the static top bar.
   await setLanguage(S.appLanguage);
   applyStaticTranslations();

@@ -3,7 +3,8 @@
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
+import { AUTO_UPDATE_TIME_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
+import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
@@ -246,6 +247,20 @@ document.addEventListener("change", (e) => {
   if (target && target.id === "studio-filter") {
     S.studioFilter = (target as unknown as HTMLSelectElement).value;
     render();
+    return;
+  }
+  if (target && target.id === "auto-update-time") {
+    const v = target.value.trim();
+    if (/^\d{1,2}:\d{2}$/.test(v)) {
+      const [h, m] = v.split(":");
+      const norm = `${h.padStart(2, "0")}:${m}`;
+      S.autoUpdateTime = norm;
+      localStorage.setItem(AUTO_UPDATE_TIME_KEY, norm);
+      target.value = norm;
+      scheduleAutoUpdate();
+    } else {
+      target.value = S.autoUpdateTime;
+    }
     return;
   }
   if (target && (target as HTMLElement).id === "ach-sort-select") {
