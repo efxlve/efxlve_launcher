@@ -200,6 +200,7 @@
   "common.search": "Search",
   "common.delete": "Delete",
   "downloads.title": "Downloads",
+  "downloads.recentTitle": "Recently Played",
   "downloads.subtitle": "Active installs, download queue and live disk write performance.",
   "downloads.pause": "Pause",
   "downloads.resume": "Resume",

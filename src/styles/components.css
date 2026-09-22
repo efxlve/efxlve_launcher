@@ -91,6 +91,16 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 .ps5-btn.danger:hover { background: rgba(239, 68, 68, 0.2); }
+.ps5-btn.ghost {
+  background: transparent;
+  color: var(--ps5-text-secondary);
+  border: 1px solid var(--ps5-border-default);
+}
+.ps5-btn.ghost:hover { background: var(--ps5-surface-2); color: var(--text); border-color: rgba(255, 255, 255, 0.18); }
+.ps5-btn.ghost.active { background: var(--ps5-surface-2); color: #ffffff; border-color: rgba(255, 255, 255, 0.2); }
+.ps5-btn.ghost.danger { color: var(--ps5-status-err); border-color: rgba(239, 68, 68, 0.3); }
+.ps5-btn.ghost.danger:hover { background: rgba(239, 68, 68, 0.12); color: var(--ps5-status-err); }
+.ps5-btn.small { height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--ps5-radius-sm); }
 .ps5-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .ps5-btn-icon {

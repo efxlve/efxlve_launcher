@@ -200,6 +200,7 @@
   "common.search": "Ara",
   "common.delete": "Sil",
   "downloads.title": "İndirmeler",
+  "downloads.recentTitle": "Son Oynananlar",
   "downloads.subtitle": "Aktif kurulumlar, indirme kuyruğu ve anlık disk yazma performansı.",
   "downloads.pause": "Duraklat",
   "downloads.resume": "Devam Et",
