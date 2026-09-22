@@ -19,7 +19,7 @@ import { epicWideArt, isTurkishUser, lastPlayedLabel, rawOf } from "../../core/s
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
@@ -146,8 +146,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
           ? hasUpdate
             ? `<button class="btn update" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`
             : `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
-          : partner
-            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner.name) })}</button>`
+          : requiresThirdPartyLauncher(partner)
+            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner!.name) })}</button>`
             : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
 
   const rawDesc = s.description?.trim();
@@ -1025,7 +1025,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 14px">${t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` })}</div>
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
             <button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 12)} ${t("ach.retry")}</button>
-            <button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("ach.openPartner", { name: esc(partner.name) })}</button>
+            ${requiresThirdPartyLauncher(partner) ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("ach.openPartner", { name: esc(partner.name) })}</button>` : ""}
           </div>
         </div>`;
     }

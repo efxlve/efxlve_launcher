@@ -220,6 +220,13 @@ export interface ThirdPartyLauncherInfo {
   shortName: string;
 }
 
+/** Whether Epic should hand installation and launch control to another client. */
+export function requiresThirdPartyLauncher(info: ThirdPartyLauncherInfo | null): boolean {
+  // Rockstar metadata identifies the companion client, but Epic still owns the
+  // download and launch flow for these catalog entries.
+  return info !== null && info.type !== "rockstar";
+}
+
 /** Third-party launcher detection (EA App, Ubisoft Connect, Rockstar Games, etc.). */
 export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPartyLauncherInfo | null {
   if (!g?.metadata) return null;

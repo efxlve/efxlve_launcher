@@ -121,5 +121,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **AI Geliştirici & Mental Model Rehberi:** [`docs/AI_DEVELOPER_GUIDE.md`](./docs/AI_DEVELOPER_GUIDE.md)
 - **Tarihçe & Geçmiş Sürüm Günlükleri (Bölüm 1–78):** [`docs/CHANGELOG_INTERNAL.md`](./docs/CHANGELOG_INTERNAL.md)
 
+## 9. Son Çalışma Özeti
+
+- Rockstar oyunlarında üçüncü parti launcher bilgisi gösterilmeye devam eder.
+- Rockstar oyunlarının kurulum ve başlatma eylemleri Epic akışında tutulur; EA/Ubisoft gibi gerçek harici akışlar değişmez.
+- Ortak kütüphane, drawer ve kurulum eylemi kararları `requiresThirdPartyLauncher` ile tek kurala bağlandı.
 
 
