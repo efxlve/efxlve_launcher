@@ -2109,3 +2109,9 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1175/1175) yeşil.
 
+## 160. Ek Bellek Optimizasyonları (Profil + Mağaza)
+
+- **Profil kupa ızgarası ilerlemeli:** `renderProfileGrid` ilk **36** kartı basar, "Daha Fazla Göster (N)" ile 36'şar artar (`S.profileCardCount`, filtre/sıralama/arama değişince sıfırlanır). Eskiden profildeki tüm kupa oyunları (100–500 kart) tek seferde DOM'a giriyordu. Arama kutusu da aynı şekilde parçalı çiziyor (yerinde güncelleme korunarak).
+- **Mağaza webview'i boşta yok ediliyor:** gizli WebView2 tam bir Chromium renderer süreci tutuyor. Mağazadan çıktıktan sonra **3 dakika** kullanılmazsa `destroy_store_view` ile kapatılır (tek zamanlı `setTimeout`, polling yok); mağaza tekrar açılınca şeffaf şekilde yeniden oluşturulur. Yeniden açma gecikmesi yükleme ekranıyla gizlenir.
+- `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177), 0 kullanılmayan anahtar yeşil.
+
