@@ -1179,3 +1179,10 @@
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
+
+/* Progressive profile grid footer */
+.profile-grid-more {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 4px;
+}

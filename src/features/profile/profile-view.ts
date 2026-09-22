@@ -6,6 +6,7 @@
  * and refresh actions are routed through the global data-act delegation.
  */
 
+import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -13,7 +14,7 @@ import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 
 import type { ProfileGameRecord } from "../../epic";
-export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
+function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     return `
       <div class="profile-empty-games">
@@ -98,6 +99,26 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       `;
     })
     .join("");
+}
+
+/** Resets the profile grid back to the first chunk (on filter/sort/search change). */
+export function resetProfileCards(): void {
+  S.profileCardCount = PROFILE_CARD_CHUNK;
+}
+
+/**
+ * Trophy grid with progressive rendering: only the first chunk is built so a
+ * large profile never turns into thousands of DOM nodes at once.
+ */
+export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
+  const shown = cardGames.slice(0, S.profileCardCount);
+  const more =
+    cardGames.length > shown.length
+      ? `<div class="profile-grid-more">
+           <button class="btn ghost" data-act="profile-show-more">${t("profile.showMore")} (${cardGames.length - shown.length})</button>
+         </div>`
+      : "";
+  return renderProfileGameCards(shown) + more;
 }
 
 /** Human label for an Epic external auth provider key. */
@@ -470,7 +491,7 @@ export function renderProfile(): string {
         </div>
 
         <div id="profile-games-grid" class="profile-games-grid">
-          ${renderProfileGameCards(filteredGames)}
+          ${renderProfileGrid(filteredGames)}
         </div>
       </div>
     </div>
