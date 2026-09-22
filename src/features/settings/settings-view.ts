@@ -105,7 +105,7 @@ function renderDownloads(): string {
             <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("settings.netLow")}</button>
           </div>
         </div>
-        <div class="settings-row-desc" style="margin-top:8px">${netDesc}</div>
+        <div class="settings-row-desc spaced">${netDesc}</div>
       </div>`,
       t("settings.secDownloads"),
     ) +
@@ -113,7 +113,7 @@ function renderDownloads(): string {
       row(
         t("settings.offlineTitle"),
         t("settings.offlineDesc"),
-        `<span class="settings-row-desc" style="color:${S.offlineMode ? "#fbbf24" : "var(--muted)"};font-weight:600">${S.offlineMode ? t("settings.offlineActive") : t("settings.onlineStandard")}</span>${toggle("toggle-offline-mode", S.offlineMode)}`,
+        `<span class="settings-status ${S.offlineMode ? "on" : ""}">${S.offlineMode ? t("settings.offlineActive") : t("settings.onlineStandard")}</span>${toggle("toggle-offline-mode", S.offlineMode)}`,
       ),
     )
   );
@@ -132,7 +132,7 @@ function renderIntegrations(): string {
   const eglGroup =
     `<div class="settings-row stacked">
       <div class="settings-row-text"><div class="settings-row-desc">${t("settings.eglDesc")}</div></div>
-      <div class="settings-row-control" style="justify-content:space-between">
+      <div class="settings-row-control between">
         <span class="settings-value">${egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone")}</span>
         ${eglSync}
       </div>
@@ -164,7 +164,7 @@ function renderIntegrations(): string {
       ? row(t("settings.thirdPartyDesc"), t("settings.scanning"), "")
       : `<div class="settings-row stacked">
           <div class="settings-row-text"><div class="settings-row-desc">${t("settings.thirdPartyDesc")}</div></div>
-          <div class="settings-row-control" style="flex-direction:column;align-items:stretch;gap:10px">
+          <div class="settings-row-control column">
             <div class="tpl-grid">
               ${S.thirdPartyLaunchers
                 .map(
@@ -186,7 +186,7 @@ function renderIntegrations(): string {
                 )
                 .join("")}
             </div>
-            <button class="ps5-btn ghost small" data-act="third-party-refresh" style="align-self:flex-start">${icon("refresh", 12)} ${t("settings.rescan")}</button>
+            <button class="ps5-btn ghost small start" data-act="third-party-refresh">${icon("refresh", 12)} ${t("settings.rescan")}</button>
           </div>
         </div>`;
 
@@ -198,7 +198,7 @@ function renderIntegrations(): string {
         <button class="ps5-btn primary small" data-act="save-sgdb-key">${t("common.save")}</button>
         <button class="ps5-btn ghost small" data-act="test-sgdb-key">${t("settings.test")}</button>
       </div>
-      <div class="settings-row-control" style="margin-top:8px">
+      <div class="settings-row-control tight">
         <span class="sgdb-status-badge ${S.steamGridApiKey ? "connected" : "disconnected"}">${S.steamGridApiKey ? `${icon("check", 12)} ${t("settings.connected")}` : t("settings.keyMissing")}</span>
         <button class="ps5-btn ghost small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api">${icon("external", 11)} ${t("settings.getFreeKey")}</button>
       </div>
@@ -208,9 +208,9 @@ function renderIntegrations(): string {
       <div class="settings-row-text">
         <div class="settings-row-title">${icon("users", 13)} ${t("settings.eosTitle")}${S.eosOverlay?.installed && S.eosOverlay.version ? ` <span class="eos-version">${esc(S.eosOverlay.version)}</span>` : ""}</div>
         <div class="settings-row-desc">
-          <span class="eos-dot ${S.eosOverlay?.installed ? "on" : "off"}" style="display:inline-block;margin-right:6px"></span>${S.eosOverlay?.installed ? t("settings.eosInstalled") : t("settings.eosMissing")} — ${S.eosOverlay?.installed ? t("settings.eosInstalledDesc") : t("settings.eosMissingDesc")}
+          <span class="eos-dot inline ${S.eosOverlay?.installed ? "on" : "off"}"></span>${S.eosOverlay?.installed ? t("settings.eosInstalled") : t("settings.eosMissing")} — ${S.eosOverlay?.installed ? t("settings.eosInstalledDesc") : t("settings.eosMissingDesc")}
         </div>
-        ${S.eosOverlay?.installed && !S.eosOverlay.overlaySupported ? `<div class="settings-row-desc" style="color:#f59e0b">${t("settings.eosNotSupported")}</div>` : ""}
+        ${S.eosOverlay?.installed && !S.eosOverlay.overlaySupported ? `<div class="settings-row-desc settings-note-warn">${t("settings.eosNotSupported")}</div>` : ""}
         ${S.eosOverlay?.installed && S.eosOverlay.path ? `<div class="settings-row-desc"><code>${esc(S.eosOverlay.path)}</code></div>` : ""}
       </div>
       <div class="settings-row-control">
@@ -246,7 +246,7 @@ function renderAppearance(): string {
   const languages = LANGUAGES.map(
     (l) => `
       <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
-        <span class="lang-flag" style="font-size:12px;font-weight:700;letter-spacing:0.04em">${esc(l.code.toUpperCase())}</span>
+        <span class="lang-flag">${esc(l.code.toUpperCase())}</span>
         <span class="lang-name">${esc(l.label)}</span>
         ${l.code === "tr" ? `<span class="lang-tag">${t("settings.defaultTag")}</span>` : ""}
       </button>`,
@@ -265,13 +265,13 @@ function renderScreenshots(): string {
         <div class="settings-row-desc">${t("settings.activeKey")}: <strong>${esc(S.screenshotHotkeyName)}</strong></div>
       </div>
       <div class="settings-row-control">
-        <select id="ss-hotkey-select" class="text-input" style="width:auto;min-width:190px" data-act="change-ss-hotkey">
+        <select id="ss-hotkey-select" class="text-input settings-select" data-act="change-ss-hotkey">
           ${S.PRESET_HOTKEYS.map(
             (k) => `<option value="${k.code}" ${k.code === S.screenshotHotkey ? "selected" : ""}>${k.name}${k.code === 0x7b ? ` (${t("settings.defaultKey")})` : ""}</option>`,
           ).join("")}
           ${!S.PRESET_HOTKEYS.some((k) => k.code === S.screenshotHotkey) ? `<option value="${S.screenshotHotkey}" selected>${t("settings.customKey")}: ${esc(S.screenshotHotkeyName)} (${S.screenshotHotkey})</option>` : ""}
         </select>
-        <button type="button" class="ps5-btn ghost small ${S.isRecordingScreenshotHotkey ? "active" : ""}" data-act="record-screenshot-hotkey" style="${S.isRecordingScreenshotHotkey ? "background:rgba(239,68,68,0.2);border-color:#ef4444;color:#fca5a5" : ""}">
+        <button type="button" class="ps5-btn ghost small ${S.isRecordingScreenshotHotkey ? "settings-recording" : ""}" data-act="record-screenshot-hotkey">
           ${S.isRecordingScreenshotHotkey ? `${icon("keyboard", 12)} ${t("settings.pressKey")}` : `${icon("edit", 12)} ${t("settings.assignKey")}`}
         </button>
       </div>
@@ -280,17 +280,17 @@ function renderScreenshots(): string {
   const compressionOpts = S.screenshotCompressionEnabled
     ? `<div class="settings-row stacked">
         <div class="settings-row-control">
-          <span class="settings-row-desc" style="font-weight:600">${t("settings.format")}:</span>
+          <span class="settings-row-desc settings-label-inline">${t("settings.format")}:</span>
           <div class="ss-format-pills">
             <button type="button" class="ss-format-btn ${S.screenshotCompressionFormat === "avif" ? "active" : ""}" data-act="set-ss-format" data-format="avif">${t("settings.avifBest")}</button>
             <button type="button" class="ss-format-btn ${S.screenshotCompressionFormat === "webp" ? "active" : ""}" data-act="set-ss-format" data-format="webp">${t("settings.webpBalanced")}</button>
             <button type="button" class="ss-format-btn ${S.screenshotCompressionFormat === "jpg" ? "active" : ""}" data-act="set-ss-format" data-format="jpg">${t("settings.jpegUniversal")}</button>
           </div>
         </div>
-        <div class="settings-row-control" style="margin-top:12px">
-          <span class="settings-row-desc" style="font-weight:600">${t("settings.quality")}:</span>
-          <input type="range" min="0.70" max="0.95" step="0.05" value="${S.screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" style="width:140px;accent-color:var(--accent)" />
-          <span id="ss-quality-val" style="font-size:12px;font-weight:600;color:#fff">%${Math.round(S.screenshotCompressionQuality * 100)}</span>
+        <div class="settings-row-control tight">
+          <span class="settings-row-desc settings-label-inline">${t("settings.quality")}:</span>
+          <input type="range" min="0.70" max="0.95" step="0.05" value="${S.screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" class="settings-range" />
+          <span id="ss-quality-val" class="settings-range-val">%${Math.round(S.screenshotCompressionQuality * 100)}</span>
         </div>
         <div class="settings-inline-note">${icon("info", 13)}<span>${t("settings.avifInfo")}</span></div>
       </div>`
@@ -306,7 +306,7 @@ function renderScreenshots(): string {
 }
 
 function renderSystem(): string {
-  const autoUpdateControl = `<input id="auto-update-time" class="text-input" style="width:76px;text-align:center;font-variant-numeric:tabular-nums" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" />${toggle("toggle-auto-update", S.autoUpdateEnabled)}`;
+  const autoUpdateControl = `<input id="auto-update-time" class="text-input settings-field-sm" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" />${toggle("toggle-auto-update", S.autoUpdateEnabled)}`;
   return (
     group(
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
