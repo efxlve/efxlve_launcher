@@ -495,6 +495,25 @@ export interface EpicFriendsData {
 }
 export const epicFriends = () => invoke<EpicFriendsData>("epic_friends");
 
+/** Weekly Epic free games (public store backend, no auth). */
+export interface FreeGame {
+  title: string;
+  id: string;
+  namespace: string;
+  cover: string;
+  slug: string;
+  description: string;
+  upcoming: boolean;
+  start: string;
+  end: string;
+}
+export interface FreeGamesData {
+  current: FreeGame[];
+  upcoming: FreeGame[];
+}
+export const epicFreeGames = (locale: string, country: string) =>
+  invoke<FreeGamesData>("epic_free_games", { locale, country });
+
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");

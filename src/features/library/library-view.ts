@@ -18,6 +18,7 @@ import { cleanDisplayVersion, esc, fmtBytes, fmtPlaytime } from "../../core/util
 import { getThirdPartyLauncher, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
+import { renderFreeGamesShelf } from "../freegames/freegames";
 import { renderOnboarding } from "../onboarding/onboarding-view";
 
 /** Sort options shown in the library sort dropdown. */
@@ -412,6 +413,10 @@ export function renderEpicShelves(): string {
 
   // Steam-Style Standard Shelves
   const sections: string[] = [];
+
+  // 0. Weekly Epic free games
+  const freeShelf = renderFreeGamesShelf();
+  if (freeShelf) sections.push(freeShelf);
 
   // 1. Recent shelf
   const recentGames = S.epicRecent
