@@ -84,6 +84,32 @@ fn clear_pending_download() {
     let _ = std::fs::remove_file(pending_download_path());
 }
 
+fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
+    let Some(pending) = std::fs::read_to_string(pending_download_path())
+        .ok()
+        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
+    else {
+        return;
+    };
+    if pending.app_name != app_name {
+        return;
+    }
+
+    let config = super::skip::default_config_dir();
+    let was_installed = super::cache::read_installed(&config)
+        .iter()
+        .any(|game| game.app_name == app_name);
+    if was_installed {
+        return;
+    }
+
+    let base = resolve_base(app, pending.install_dir);
+    let partial_dir = base.join(app_name);
+    if partial_dir.is_dir() {
+        let _ = std::fs::remove_dir_all(partial_dir);
+    }
+}
+
 impl Default for EpicDlState {
     fn default() -> Self {
         Self {
@@ -914,6 +940,7 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
         } else if pending_download_path().is_file() {
             // The launcher may have been restarted before the restore command
             // recreated the in-memory process state.
+            cleanup_partial_install(&app, &app_name);
             clear_pending_download();
             drop(s);
             emit_cancelled(&app, &app_name);
@@ -939,6 +966,7 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
                 .await;
         }
     }
+    cleanup_partial_install(&app, &app_name);
     clear_pending_download();
     Ok("@t:dl.cancelled".into())
 }
