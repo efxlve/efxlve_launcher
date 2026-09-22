@@ -196,6 +196,16 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 4. **Discord RPC ek bağlamlar:** İsteğe bağlı olarak kupa/başarım ilerlemesi gibi daha zengin durum metinleri.
 5. **EOS Social Overlay — uygulandı (tespit + rozet):** Epic'in EOS Overlay'i **oyun sürecine enjekte edilir** (Shift+F3) ve sistem geneline Epic Games Launcher tarafından kurulur; launcher webview'ine gömülemez. Ayarlar'da **tespit + sürüm + overlay desteği** kartı (`eos_overlay_status`), oyun detayında **"EOS Desteği" rozeti** (`epic_detect_eos`, sınırlı derinlikte tarama + oyun başına önbellek) eklendi. Otomatik kurulum, Epic'in redistributable'ı bir `productId` gerektirdiği ve uygulama-başına yapıldığı için kapsam dışıdır.
 6. **Epic arkadaş listesi — uygulandı (salt-okunur, resmi olmayan API):** Profil sayfasında arkadaş ızgarası (`epic_friends`); görünen ad + platform rozetleri (Steam/PSN/Xbox). legendary `user.json` token'ı kullanılır. Çevrimiçi durum bu token ile alınamıyor (presence servisi 403); ileride EOS SDK gerekir.
-7. **İndirme davranışları (Faz C):** ✅ "Oyun oynarken indirmeleri duraklat" uygulandı (opsiyonel, varsayılan kapalı; `game-status` ile aktif indirme otomatik duraklatılıp oyun kapanınca devam ettirilir). Kalan: **zamanlanmış otomatik güncelleme** (arka plan zamanlayıcı + kuyruk kontrolü gerekir).
+7. **İndirme davranışları (Faz C):** ✅ Tamamlandı — "oyun oynarken indirmeleri duraklat" ve **zamanlanmış otomatik güncelleme** (tek zamanlı `setTimeout`, idle polling yok) uygulandı.
+
+### Tamamlanan ek özellikler (kullanıcı talebiyle bu turda eklendi)
+
+- **Bildirim merkezi** (`src/features/notifications/`): zil + okunmamış rozeti, kalıcı geçmiş, indirme/güncelleme/yedek olayları.
+- **Ücretsiz haftalık oyunlar** rafı (`legendary/freegames.rs`).
+- **Oyun başına başlatma seçenekleri**: wrapper + ortam değişkenleri (yönetim sekmesi).
+- **Stüdyo filtresi + gelişmiş arama** (`dev:`, `is:`).
+- **Sistem tepsisi + kapatınca tepsiye küçültme** (arka planda indirme).
+- **Oyun kapanınca otomatik save yedekleme**.
+- **"En Çok Oynadıklarınız"** (profil, oyun süresi istatistikleri).
 
 

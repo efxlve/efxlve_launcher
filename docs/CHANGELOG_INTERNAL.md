@@ -2022,3 +2022,46 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Ağ hatası/oturum hatası `@t:friends.*` anahtarlarıyla yerelleştirilir. Saf `merge_friends` fonksiyonu için 2 Rust birim testi eklendi (favori sıralaması, platform sıralaması, eksik hesap).
 - 15 yeni i18n anahtarı (tr/en eşlikli). `cargo test` (56 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1140/1140) yeşil.
 
+## 148. Kütüphane Araması: Stüdyo/Yayıncı Desteği
+
+- `epicVisibleSummaries` araması artık yalnızca başlığa değil, `metadata.developer` alanına da bakar; "Ubisoft" yazınca o stüdyonun oyunları listelenir. Arama placeholder'ı güncellendi.
+
+## 149. Bildirim Merkezi
+
+- Yeni `src/features/notifications/notifications.ts`: sınırlı (50) ve `localStorage`'a kalıcı bildirim geçmişi; aynı olay 10 dk içinde tekrar ederse güncellenir (duplicate yok).
+- Üst bara zil butonu + okunmamış sayacı rozeti; sabit dropdown panel (`#notif-root`), "Tümünü okundu işaretle"/"Temizle", göreli zaman, tür bazlı ikon/renk. Öğeler gerçek `<button>` (gamepad odak hijyeni). Dışına tıklayınca kapanır.
+- Olay kaynakları: indirme tamamlandı/başarısız, yeni güncelleme mevcut (ilk taramada bildirim yok). Çekirdekten bildirim için `core/render.ts`'e `registerNotify`/`notify` bus eklendi (core→feature import yasağı korunur).
+- Yeni ikonlar: `bell`, `alert-triangle`, `check-check`.
+
+## 150. Ücretsiz Haftalık Oyunlar
+
+- Yeni `legendary/freegames.rs` + `epic_free_games(locale, country)`: Epic'in public `freeGamesPromotions` uç noktasından (auth yok) şu an ücretsiz ve yakında ücretsiz olacak oyunlar ayrıştırılır (fiyat 0 + aktif/gelecek promosyon penceresi).
+- `src/features/freegames/freegames.ts`: dil→locale/ülke eşlemesi, kütüphane sayfasında "Ücretsiz Oyunlar" rafı (kapak, "Ücretsiz/Yakında" etiketi, tarih, mağazada aç). İki Rust birim testi (`parse_free_games`).
+
+## 151. Oyun Başına Başlatma Seçenekleri (Wrapper + Env)
+
+- `GameLocalSettings`/`GameCustomConfig`'e `wrapper` ve `envVars` eklendi; `spawn_launched` `legendary launch --wrapper` uygular ve ortam değişkenlerini legendary sürecine aktarır (oyun miras alır).
+- Yönetim sekmesine wrapper input'u + `ANAHTAR=DEĞER` satırları için textarea ve kaydet butonu; `parseEnvText` (core/utils) yardımcı fonksiyonu.
+
+## 152. Stüdyo Filtresi + Gelişmiş Arama
+
+- Kütüphane araç çubuğuna stüdyo seçici (`epicStudios`, oyun sayılarıyla); arama operatörleri: `dev:<stüdyo>` ve `is:installed|notinstalled|fav|update`. (Not: legendary metadata'sında tür/etiket yok, bu yüzden stüdyo bazlı filtre uygulandı.)
+
+## 153. Sistem Tepsisi + Arka Planda İndirme
+
+- `tauri` `tray-icon` özelliği; `build_tray` (Göster/Çıkış menüsü, sol tık geri getirir). "Kapatınca tepsiye küçült" ayarı (`TrayPref`, `app_set_minimize_to_tray`); pencere `CloseRequested`'da gizlenir, indirmeler arka planda sürer. Menü etiketleri `app_set_tray_labels` ile ön yüzden yerelleştirilir.
+
+## 154. Oyun Kapanınca Otomatik Kayıt Yedekleme
+
+- "Oyun kapanınca kayıtları yedekle" ayarı (varsayılan kapalı). `game-status` (running=false) olayında `epic_backup_save` çağrılır; sonuç bildirim merkezine düşer.
+
+## 155. Zamanlanmış Otomatik Güncelleme
+
+- `src/features/downloads/auto-update.ts`: tek ve kesin zamanlı `setTimeout` (idle polling yok). Belirtilen saatte bekleyen güncellemeler `epicInstall` ile kuyruğa alınır, sonra ertesi güne yeniden zamanlanır. Aktif indirme varsa atlanır. Ayarlar'da saat input'u (HH:MM) + anahtar.
+
+## 156. Oyun Süresi İstatistikleri
+
+- Profil sayfasına "En Çok Oynadıklarınız" bölümü: `S.playtimeMap`'ten ilk 6 oyun, oransal bar + süre; karta tıklayınca detay açılır.
+
+- **Doğrulama (148–156):** `cargo test` (58 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
+

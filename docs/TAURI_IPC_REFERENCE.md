@@ -35,6 +35,8 @@
 | `hide_store_view` | `() => Promise<void>` | `src-tauri/src/main.rs` | Hides the embedded store webview. |
 | `resize_store_view` | `(x: number, y: number, width: number, height: number) => Promise<void>` | `src-tauri/src/main.rs` | Synchronizes embedded store webview bounds with launcher container. |
 | `open_folder` | `(path: string) => Promise<void>` | `src-tauri/src/main.rs` | Opens Windows File Explorer at the specified folder path. |
+| `app_set_minimize_to_tray` | `(enabled: boolean) => Promise<void>` | `src-tauri/src/main.rs` | When enabled, closing the window hides it to the tray (downloads keep running). |
+| `app_set_tray_labels` | `(show: string, quit: string) => Promise<void>` | `src-tauri/src/main.rs` | Sets the localized tray menu labels from the frontend. |
 
 ---
 
@@ -193,6 +195,14 @@
 | `epic_friends` | `() => Promise<EpicFriendsData>` | `legendary/friends.rs` | Signed-in account's friends with resolved display names and linked platforms. |
 
 > Uses the access token legendary already stores in `user.json`. The friends summary endpoint only returns account ids, so display names are resolved in batched account lookups. These are **unofficial** Epic Web APIs and may change or be revoked; failures surface as `@t:friends.*` messages. Presence/online status is **not** available with this token (the presence service returns 403).
+
+### 2.15. Weekly Free Games
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_free_games` | `(locale: string, country: string) => Promise<FreeGamesData>` | `legendary/freegames.rs` | Currently free and upcoming weekly Epic games (public store backend, no auth). |
+
+> Reads `freeGamesPromotions`; an entry is "free now" when its current price is 0 with a live promotion, and "upcoming" when a future promotion window exists. The frontend maps the UI language to an Epic locale/country pair.
 
 ---
 
