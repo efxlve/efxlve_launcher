@@ -2171,3 +2171,7 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Ayarlar > Entegrasyonlar'daki "3. Parti Başlatıcılar" listesinden **Rockstar Games Launcher** çıkarıldı (Epic üzerinden indirilip başlatıldığı için burada kontrol edilecek bir şey yok). Rust `epic_third_party_launchers` artık yalnızca EA App + Ubisoft Connect döner; bölüm başlığı `(EA, Ubisoft)` olarak güncellendi.
 - **Kütüphane tarafı:** `getThirdPartyLauncher`'dan Rockstar dalı kaldırıldı; GTA/RDR artık **normal Epic akışıyla** (Oyna/Kur) gösterilir, "harici başlatıcı" buton/etiketi çıkmaz. Bilgi kaybolmasın diye yeni `isRockstarGame(g)` ile detay görünümünün "Özellikler" kartına **"Rockstar Games Launcher · Gerekli"** bilgi satırı eklendi (tr/en anahtarları). Ölü kalan `partner.name === "Rockstar Games Launcher"` özel durumu ve `ThirdPartyLauncherInfo.type`'tan `"rockstar"` kaldırıldı.
 
+### 165.1. Hile Koruması Yanlış Tespiti (GTA)
+
+- `getAntiCheat` içindeki `title.includes("grand theft auto")` koşulu **GTA III / Vice City / San Andreas / IV** için de BattlEye döndürüyordu (bu oyunlarda hile koruması yok). Koşul yalnızca **GTA V / GTA 5 / GTA Online**'ı yakalayacak şekilde daraltıldı (`\bgta ?(v|5)\b` / `grand theft auto (v|5)\b`). Doğrulama: III/VC/SA/IV → yok, V/5 → BattlEye.
+
