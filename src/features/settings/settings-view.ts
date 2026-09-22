@@ -318,6 +318,16 @@ export function renderSettings(): string {
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#fff">${t("settings.autoBackup")}</label>
+          <p class="muted" style="font-size:12px;margin:4px 0 0">${t("settings.autoBackupDesc")}</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" data-act="toggle-auto-backup" ${S.autoBackupOnExit ? "checked" : ""} />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</p>
       <p><strong>${t("settings.libraryFolder")}:</strong><br /><code>${esc(S.libraryPath)}</code></p>
       <p><strong>${t("settings.version")}:</strong> 0.1.0</p>
