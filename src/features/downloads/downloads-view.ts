@@ -398,10 +398,10 @@ export function renderDownloads(): string {
   }
 
   const recentSection =
-    recentInstalled.length > 0 && !activeDl && queueApps.length === 0 && completedEntries.length === 0
+    recentInstalled.length > 0
       ? `
     <div class="dl-section-title">
-      <span>${t("downloads.recentTitle")}</span>
+       <span>${t("lib.installedGames")}</span>
       <button class="dl-section-link" data-act="goto-library">${t("downloads.goLibrary")}</button>
     </div>
     <div class="dl-queue-container">

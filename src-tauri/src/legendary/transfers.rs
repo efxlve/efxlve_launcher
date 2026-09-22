@@ -834,6 +834,13 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
             s.paused = false;
             s.active = None;
             s.pid.take()
+        } else if pending_download_path().is_file() {
+            // The launcher may have been restarted before the restore command
+            // recreated the in-memory process state.
+            clear_pending_download();
+            drop(s);
+            emit_cancelled(&app, &app_name);
+            return Ok("@t:dl.cancelled".into());
         } else {
             return Err("@t:dl.noActive".into());
         }
