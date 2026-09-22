@@ -16,8 +16,7 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
-use serde::Serialize;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 
@@ -29,10 +28,12 @@ pub struct EpicDlState {
     pub pid: Option<u32>,
     pub cancelled: bool,
     pub paused: bool,
-    pub queue: VecDeque<String>,
+    queue: VecDeque<PendingDownload>,
+    active_generation: Option<u64>,
+    next_generation: u64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct PendingDownload {
     app_name: String,
     install_tags: Vec<String>,
@@ -41,6 +42,27 @@ struct PendingDownload {
 
 fn pending_download_path() -> PathBuf {
     super::skip::default_config_dir().join("efxlve-pending-download.json")
+}
+
+fn queued_downloads_path() -> PathBuf {
+    super::skip::default_config_dir().join("efxlve-download-queue.json")
+}
+
+fn write_queue_snapshot(queue: &VecDeque<PendingDownload>) {
+    let path = queued_downloads_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(text) = serde_json::to_string_pretty(queue) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+fn read_queue_snapshot() -> VecDeque<PendingDownload> {
+    std::fs::read_to_string(queued_downloads_path())
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
 }
 
 fn write_pending_download(app_name: &str, install_tags: &[String], install_dir: Option<&str>) {
@@ -70,8 +92,70 @@ impl Default for EpicDlState {
             cancelled: false,
             paused: false,
             queue: VecDeque::new(),
+            active_generation: None,
+            next_generation: 0,
         }
     }
+}
+
+fn queue_names(queue: &VecDeque<PendingDownload>) -> Vec<String> {
+    queue.iter().map(|item| item.app_name.clone()).collect()
+}
+
+fn start_download_request(app: &AppHandle, request: PendingDownload) -> Result<String, String> {
+    let bin = resolve_bin(app)?;
+    let base = resolve_base(app, request.install_dir.clone());
+    let mut child = spawn_install_with_tags(
+        app,
+        &bin,
+        &request.app_name,
+        &base,
+        false,
+        &request.install_tags,
+    )
+    .map_err(|e| format!("@t:dl.startFailed\u{1f}{e}"))?;
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+    let pid = child.id();
+    let generation = {
+        let state = app.state::<AppState>();
+        let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+        if s.active.is_some() {
+            drop(s);
+            drop(child);
+            return Err("@t:dl.anotherStarted".into());
+        }
+        s.next_generation = s.next_generation.wrapping_add(1);
+        let generation = s.next_generation;
+        s.active = Some(request.app_name.clone());
+        s.active_generation = Some(generation);
+        s.pid = pid;
+        s.cancelled = false;
+        s.paused = false;
+        generation
+    };
+    write_pending_download(
+        &request.app_name,
+        &request.install_tags,
+        request.install_dir.as_deref(),
+    );
+    emit_progress(app, &request.app_name, 0, false);
+    let app2 = app.clone();
+    tauri::async_runtime::spawn(async move {
+        monitor_download(
+            app2,
+            bin,
+            request.app_name,
+            base,
+            request.install_tags,
+            generation,
+            child,
+            stdout,
+            stderr,
+        )
+        .await;
+    });
+    Ok("@t:dl.started".into())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -312,16 +396,6 @@ fn get_max_memory_arg(app: &AppHandle) -> Option<&'static str> {
     }
 }
 
-fn spawn_install(
-    app: &AppHandle,
-    bin: &PathBuf,
-    app_name: &str,
-    base: &PathBuf,
-    high_mem: bool,
-) -> std::io::Result<tokio::process::Child> {
-    spawn_install_with_tags(app, bin, app_name, base, high_mem, &[])
-}
-
 fn spawn_install_with_tags(
     app: &AppHandle,
     bin: &PathBuf,
@@ -474,35 +548,14 @@ fn start_download_with_tags(
     install_tags: Vec<String>,
     override_dir: Option<String>,
 ) -> Result<String, String> {
-    let bin = resolve_bin(app)?;
-    let base = resolve_base(app, override_dir.clone());
-    let mut child =
-        spawn_install_with_tags(app, &bin, &app_name, &base, false, &install_tags)
-            .map_err(|e| format!("@t:dl.startFailed\u{1f}{e}"))?;
-    let stdout = child.stdout.take();
-    let stderr = child.stderr.take();
-    let pid = child.id();
-    {
-        let state = app.state::<AppState>();
-        let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-        if s.active.is_some() {
-            // Someone else stepped in: kill it to avoid an orphan (kill_on_drop backup).
-            drop(s);
-            drop(child);
-            return Err("@t:dl.anotherStarted".into());
-        }
-        s.active = Some(app_name.clone());
-        s.pid = pid;
-        s.cancelled = false;
-        s.paused = false;
-    }
-    write_pending_download(&app_name, &install_tags, override_dir.as_deref());
-    emit_progress(app, &app_name, 0, false);
-    let app2 = app.clone();
-    tauri::async_runtime::spawn(async move {
-        monitor_download(app2, bin, app_name, base, child, stdout, stderr).await;
-    });
-    Ok("@t:dl.started".into())
+    start_download_request(
+        app,
+        PendingDownload {
+            app_name,
+            install_tags,
+            install_dir: override_dir,
+        },
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -511,6 +564,8 @@ async fn monitor_download(
     bin: PathBuf,
     app_name: String,
     base: PathBuf,
+    install_tags: Vec<String>,
+    generation: u64,
     mut child: tokio::process::Child,
     mut stdout: Option<tokio::process::ChildStdout>,
     mut stderr: Option<tokio::process::ChildStderr>,
@@ -623,7 +678,7 @@ async fn monitor_download(
             total_mib = 0.0;
             downloaded_mib = 0.0;
             last_pct = -1;
-            match spawn_install(&app, &bin, &app_name, &base, true) {
+            match spawn_install_with_tags(&app, &bin, &app_name, &base, true, &install_tags) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -651,6 +706,13 @@ async fn monitor_download(
         };
         let was_cancelled = s.cancelled;
         let was_paused = s.paused;
+        let owns_active = s.active.as_deref() == Some(app_name.as_str())
+            && s.active_generation == Some(generation);
+
+        // An older monitor must never clean up a newer transfer.
+        if !owns_active {
+            return;
+        }
 
         if was_paused {
             // Release the active slot only after the monitor has observed the
@@ -658,6 +720,7 @@ async fn monitor_download(
             if s.active.as_ref().is_some_and(|a| a == &app_name) {
                 s.active = None;
             }
+            s.active_generation = None;
             s.pid = None;
             emit_paused(&app, &app_name);
             return;
@@ -667,6 +730,7 @@ async fn monitor_download(
 
         if s.active.as_ref().is_some_and(|a| a == &app_name) {
             s.active = None;
+            s.active_generation = None;
             s.pid = None;
         }
         if was_cancelled {
@@ -679,11 +743,14 @@ async fn monitor_download(
                 Err(msg) => emit_failed(&app, &app_name, msg.clone()),
             }
         }
-        s.queue.pop_front()
+        let next = s.queue.pop_front();
+        write_queue_snapshot(&s.queue);
+        next
     };
     if let Some(n) = next {
-        if let Err(msg) = start_download(&app, n.clone(), None) {
-            emit_failed(&app, &n, msg);
+        let next_id = n.app_name.clone();
+        if let Err(msg) = start_download_request(&app, n) {
+            emit_failed(&app, &next_id, msg);
             pump_queue(&app);
         }
     }
@@ -700,11 +767,14 @@ fn pump_queue(app: &AppHandle) {
         if s.active.is_some() {
             return;
         }
-        s.queue.pop_front()
+        let next = s.queue.pop_front();
+        write_queue_snapshot(&s.queue);
+        next
     };
     if let Some(q) = next {
-        if let Err(msg) = start_download(app, q.clone(), None) {
-            emit_failed(app, &q, msg);
+        let q_id = q.app_name.clone();
+        if let Err(msg) = start_download_request(app, q) {
+            emit_failed(app, &q_id, msg);
             pump_queue(app);
         }
     }
@@ -724,14 +794,19 @@ pub async fn epic_install_game(
     {
         let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.active.as_ref().is_some_and(|a| a == &app_name)
-            || s.queue.iter().any(|q| q == &app_name)
+            || s.queue.iter().any(|q| q.app_name == app_name)
         {
             return Err("@t:dl.alreadyQueued".into());
         }
         if s.active.is_some() {
             drop(s);
             let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-            s.queue.push_back(app_name.clone());
+            s.queue.push_back(PendingDownload {
+                app_name: app_name.clone(),
+                install_tags: Vec::new(),
+                install_dir: install_dir.clone(),
+            });
+            write_queue_snapshot(&s.queue);
             drop(s);
             emit_progress(&app, &app_name, 0, false);
             return Ok("@t:dl.queuedActive".into());
@@ -757,23 +832,33 @@ pub async fn epic_install_with_options(
     // Enqueue all selected DLCs first
     {
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-        for dlc_id in dlc_app_ids {
-            let dlc_trimmed = dlc_id.trim().to_string();
-            if !dlc_trimmed.is_empty()
-                && !s.queue.contains(&dlc_trimmed)
-                && s.active.as_deref() != Some(&dlc_trimmed)
-            {
-                s.queue.push_back(dlc_trimmed);
-            }
-        }
-
         if s.active.as_ref().is_some_and(|a| a == &app_name)
-            || s.queue.iter().any(|q| q == &app_name)
+            || s.queue.iter().any(|q| q.app_name == app_name)
         {
             return Err("@t:dl.alreadyQueued".into());
         }
+        for dlc_id in dlc_app_ids {
+            let dlc_trimmed = dlc_id.trim().to_string();
+            if !dlc_trimmed.is_empty()
+                && !s.queue.iter().any(|q| q.app_name == dlc_trimmed)
+                && s.active.as_deref() != Some(&dlc_trimmed)
+            {
+                s.queue.push_back(PendingDownload {
+                    app_name: dlc_trimmed,
+                    install_tags: Vec::new(),
+                    install_dir: install_dir.clone(),
+                });
+            }
+        }
+        write_queue_snapshot(&s.queue);
+
         if s.active.is_some() {
-            s.queue.push_back(app_name.clone());
+            s.queue.push_back(PendingDownload {
+                app_name: app_name.clone(),
+                install_tags,
+                install_dir: install_dir.clone(),
+            });
+            write_queue_snapshot(&s.queue);
             emit_progress(&app, &app_name, 0, false);
             return Ok("@t:dl.queuedWithDlc".into());
         }
@@ -786,30 +871,29 @@ pub async fn epic_install_with_options(
 #[tauri::command]
 pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {
     let path = pending_download_path();
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(_) => return Ok("@t:dl.noPending".into()),
-    };
-    let pending: PendingDownload = match serde_json::from_str(&text) {
-        Ok(value) => value,
-        Err(_) => {
-            clear_pending_download();
-            return Ok("@t:dl.noPending".into());
-        }
-    };
+    let pending = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok());
     {
         let state = app.state::<AppState>();
-        let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+        let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+        if s.queue.is_empty() {
+            s.queue = read_queue_snapshot();
+        }
         if s.active.is_some() {
             return Ok("@t:dl.alreadyQueued".into());
         }
+        if pending.is_none() {
+            let next = s.queue.pop_front();
+            write_queue_snapshot(&s.queue);
+            drop(s);
+            return match next {
+                Some(request) => start_download_request(&app, request),
+                None => Ok("@t:dl.noPending".into()),
+            };
+        }
     }
-    start_download_with_tags(
-        &app,
-        pending.app_name,
-        pending.install_tags,
-        pending.install_dir,
-    )
+    start_download_request(&app, pending.unwrap())
 }
 
 #[tauri::command]
@@ -820,20 +904,13 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
         if s.active.as_ref().is_some_and(|a| a == &app_name) {
             s.cancelled = true;
             s.paused = false;
-            s.active = None;
             s.pid.take()
-        } else if s.queue.iter().any(|q| q == &app_name) {
-            s.queue.retain(|q| q != &app_name);
+        } else if s.queue.iter().any(|q| q.app_name == app_name) {
+            s.queue.retain(|q| q.app_name != app_name);
+            write_queue_snapshot(&s.queue);
             drop(s);
             emit_cancelled(&app, &app_name);
             return Ok("@t:dl.removedFromQueue".into());
-        } else if s.active.is_some() {
-            // The UI can briefly hold an older id after a queue transition.
-            // Cancel the only active process instead of reporting a false miss.
-            s.cancelled = true;
-            s.paused = false;
-            s.active = None;
-            s.pid.take()
         } else if pending_download_path().is_file() {
             // The launcher may have been restarted before the restore command
             // recreated the in-memory process state.
@@ -863,13 +940,11 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
         }
     }
     clear_pending_download();
-    pump_queue(&app);
     Ok("@t:dl.cancelled".into())
 }
 
 #[tauri::command]
 pub async fn epic_pause_download(
-    app: AppHandle,
     state: tauri::State<'_, AppState>,
     app_name: String,
 ) -> Result<String, String> {
@@ -898,7 +973,6 @@ pub async fn epic_pause_download(
                 .await;
         }
     }
-    emit_paused(&app, &app_name);
     Ok("@t:dl.paused".into())
 }
 
@@ -908,6 +982,15 @@ pub async fn epic_resume_download(
     state: tauri::State<'_, AppState>,
     app_name: String,
 ) -> Result<String, String> {
+    let request = std::fs::read_to_string(pending_download_path())
+        .ok()
+        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
+        .filter(|pending| pending.app_name == app_name)
+        .unwrap_or(PendingDownload {
+            app_name: app_name.clone(),
+            install_tags: Vec::new(),
+            install_dir: None,
+        });
     // Pause terminates the child asynchronously. Wait for its monitor to
     // release the active slot before starting the replacement process.
     for _ in 0..40 {
@@ -928,7 +1011,7 @@ pub async fn epic_resume_download(
         }
         s.paused = false;
     }
-    start_download(&app, app_name, None)
+    start_download_request(&app, request)
 }
 
 #[tauri::command]
@@ -941,14 +1024,22 @@ pub async fn epic_reorder_queue(
     if action == "now" {
         let (item, prev_pid) = {
             let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-            let idx_opt = s.queue.iter().position(|q| q == &app_name);
+            let idx_opt = s.queue.iter().position(|q| q.app_name == app_name);
             if let Some(idx) = idx_opt {
                 let item = s.queue.remove(idx).unwrap();
-                let prev_pid = if let Some(curr_active) = s.active.take() {
+                let prev_pid = if let Some(curr_active) = s.active.clone() {
                     let pid = s.pid.take();
                     s.paused = true;
-                    s.queue.push_front(curr_active.clone());
-                    emit_paused(&app, &curr_active);
+                    let active_request = std::fs::read_to_string(pending_download_path())
+                        .ok()
+                        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
+                        .unwrap_or(PendingDownload {
+                            app_name: curr_active,
+                            install_tags: Vec::new(),
+                            install_dir: None,
+                        });
+                    s.queue.push_front(active_request);
+                    write_queue_snapshot(&s.queue);
                     pid
                 } else {
                     None
@@ -974,19 +1065,35 @@ pub async fn epic_reorder_queue(
                     .await;
             }
         }
+        write_queue_snapshot(&state.epic_dl.lock().map_err(|e| e.to_string())?.queue);
         if let Some(item) = item {
-            start_download(&app, item, None)?;
+            for _ in 0..40 {
+                let waiting = state
+                    .epic_dl
+                    .lock()
+                    .map(|s| s.active.is_some())
+                    .unwrap_or(false);
+                if !waiting {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+            if let Err(error) = start_download_request(&app, item.clone()) {
+                let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+                s.queue.push_front(item);
+                return Err(error);
+            }
         }
         let s2 = state.epic_dl.lock().map_err(|e| e.to_string())?;
         return Ok(DlQueueStatus {
             active: s2.active.clone(),
             is_paused: s2.paused,
-            queue: s2.queue.iter().cloned().collect(),
+            queue: queue_names(&s2.queue),
         });
     }
 
     let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-    let idx_opt = s.queue.iter().position(|q| q == &app_name);
+    let idx_opt = s.queue.iter().position(|q| q.app_name == app_name);
 
     match action.as_str() {
         "up" => {
@@ -1018,17 +1125,19 @@ pub async fn epic_reorder_queue(
                 return Ok(DlQueueStatus {
                     active: s2.active.clone(),
                     is_paused: s2.paused,
-                    queue: s2.queue.iter().cloned().collect(),
+                    queue: queue_names(&s2.queue),
                 });
             }
         }
         _ => return Err("@t:dl.invalidAction".into()),
     }
 
+    write_queue_snapshot(&s.queue);
+
     Ok(DlQueueStatus {
         active: s.active.clone(),
         is_paused: s.paused,
-        queue: s.queue.iter().cloned().collect(),
+        queue: queue_names(&s.queue),
     })
 }
 
@@ -1038,7 +1147,7 @@ pub fn epic_get_queue(state: tauri::State<'_, AppState>) -> Result<DlQueueStatus
     Ok(DlQueueStatus {
         active: s.active.clone(),
         is_paused: s.paused,
-        queue: s.queue.iter().cloned().collect(),
+        queue: queue_names(&s.queue),
     })
 }
 

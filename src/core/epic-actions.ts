@@ -77,6 +77,8 @@ export async function epicInstall(appName: string): Promise<void> {
   try {
     const msg = await epicInstallGame(appName);
     toast(msg, "ok");
+    S.dlQueueStatus = await epicGetQueue();
+    if (S.view === "library" || S.view === "downloads") render();
   } catch (e) {
     S.downloads.delete(appName);
     if (S.activeDlMetrics?.id === appName) S.activeDlMetrics = null;
