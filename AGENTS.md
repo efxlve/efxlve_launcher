@@ -132,3 +132,4 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Aktif indirme varken pencere kapatma ve tepsi çıkışı uygulamayı sonlandırmaz; launcher tepsiye gizlenerek indirmeyi canlı tutar.
 - Güncelleme eylemi, ana mor yerine dengeli amber/sarı ton kullanır.
 - İndirme hızındaki kısa örnek sıçramaları minimum örnek aralığıyla bastırılır; UI/backend kimlik ayrışmasında iptal gerçek aktif sürece uygulanır.
+- Aktif indirme isteği disk üzerinde saklanır; launcher yeniden açıldığında Legendary parçalı indirmeden otomatik devam eder.

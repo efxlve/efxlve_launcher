@@ -13,7 +13,7 @@ import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { localizeMessage, t } from "../../i18n";
-import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
+import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicResumePendingDownload, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 import { loadFreeGames } from "../freegames/freegames";
 export async function bootEpic(): Promise<void> {
@@ -61,6 +61,7 @@ export async function refreshEpic(): Promise<void> {
     void loadFreeGames();
     void refreshUpdates();
     void syncEpicLibrary(false);
+    void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     S.epicPhase = "error";
     S.epicError = localizeMessage(String(e));
