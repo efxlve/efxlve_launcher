@@ -955,6 +955,7 @@
   "settings.installDirTitle": "Oyun kurulum klasörü",
   "settings.installDirHint": "Boş bırakırsan varsayılan kullanılır:",
   "settings.eglTitle": "Epic Games Launcher Entegrasyonu",
+  "settings.eglDesc": "Resmi Epic Games Launcher tarafından yüklenmiş oyunları algılar ve kütüphanenize eşitler.",
   "settings.eglDetected": "Oyun Algılandı",
   "settings.eglSyncing": "Eşitleniyor…",
   "settings.eglSync": "Oyunları Eşitle ve İçe Aktar",

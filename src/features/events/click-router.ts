@@ -92,7 +92,7 @@ import {
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel } from "../notifications/notifications";
-import { loadSettingsView } from "../settings/settings-view";
+import { loadIntegrationsView, loadSettingsView } from "../settings/settings-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
   if (S.isSortDropdownOpen) {
@@ -188,13 +188,17 @@ document.addEventListener("click", (e) => {
       return;
     }
     if (S.view === "downloads") {
+      render();
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
         render();
-      }).catch(() => render());
+      }).catch(() => {});
       return;
     }
     if (S.view === "settings") {
+      // Paint the page shell immediately, then hydrate in the background so a
+      // slow integration scan can never make the launcher look frozen.
+      render();
       void loadSettingsView();
       return;
     }
@@ -885,7 +889,7 @@ document.addEventListener("click", (e) => {
         render();
       });
   } else if (act === "epic-refresh-egl") {
-    void loadSettingsView();
+    void loadIntegrationsView(true);
   } else if (act === "third-party-refresh") {
     epicThirdPartyLaunchers()
       .then((list) => {
@@ -1352,6 +1356,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "settings-section" && t.dataset.section) {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     render();
+    if (S.settingsSection === "integrations") void loadIntegrationsView();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;
     localStorage.setItem(MINIMIZE_TRAY_KEY, String(S.minimizeToTray));
