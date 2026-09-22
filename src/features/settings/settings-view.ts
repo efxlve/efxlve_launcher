@@ -292,9 +292,11 @@ export function renderSettings(): string {
         <span class="eos-dot ${S.eosOverlay?.installed ? "on" : "off"}"></span>
         <div style="flex:1;min-width:0">
           <strong style="font-size:13px;color:#fff">${S.eosOverlay?.installed ? t("settings.eosInstalled") : t("settings.eosMissing")}</strong>
+          ${S.eosOverlay?.installed && S.eosOverlay.version ? `<span class="eos-version">${esc(S.eosOverlay.version)}</span>` : ""}
           <p class="muted" style="font-size:12px;margin:4px 0 0;line-height:1.45">
             ${S.eosOverlay?.installed ? t("settings.eosInstalledDesc") : t("settings.eosMissingDesc")}
           </p>
+          ${S.eosOverlay?.installed && !S.eosOverlay.overlaySupported ? `<p class="muted" style="font-size:11px;margin:6px 0 0;color:var(--warn,#f59e0b)">${t("settings.eosNotSupported")}</p>` : ""}
           ${S.eosOverlay?.installed && S.eosOverlay.path ? `<code style="display:block;margin-top:6px;font-size:11px">${esc(S.eosOverlay.path)}</code>` : ""}
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">

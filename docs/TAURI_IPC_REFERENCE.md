@@ -181,9 +181,18 @@
 
 | Command Name | TypeScript Signature | Rust Handler Location | Description |
 |---|---|---|---|
-| `eos_overlay_status` | `() => Promise<EosOverlayStatus>` | `main.rs` | Reports whether the EOS Overlay is installed system-wide (`{ installed, path }`). |
+| `eos_overlay_status` | `() => Promise<EosOverlayStatus>` | `main.rs` | Reports the system-wide EOS Overlay state (`{ installed, path, version, overlaySupported }`); version/support flags are read from the EOS service registry key. |
+| `epic_detect_eos` | `(installPath: string) => Promise<boolean>` | `main.rs` | Bounded scan of a game's install directory for the EOS SDK runtime (`EOSSDK-*.dll` / `EpicOnlineServices`). Runs on a blocking thread; the frontend caches the result per game. |
 
 > The EOS Social Overlay is an Epic service injected into **game** processes (Shift+F3), not into our webview. It is installed system-wide by the Epic Games Launcher, so the launcher only detects its presence and links to the folder — it cannot host Epic's social UI itself.
+
+### 2.14. Epic Friends (Read-Only, Unofficial)
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_friends` | `() => Promise<EpicFriendsData>` | `legendary/friends.rs` | Signed-in account's friends with resolved display names and linked platforms. |
+
+> Uses the access token legendary already stores in `user.json`. The friends summary endpoint only returns account ids, so display names are resolved in batched account lookups. These are **unofficial** Epic Web APIs and may change or be revoked; failures surface as `@t:friends.*` messages. Presence/online status is **not** available with this token (the presence service returns 403).
 
 ---
 

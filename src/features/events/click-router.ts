@@ -89,7 +89,7 @@ import {
   openShareModal,
   playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
-import { loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
+import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { loadSettingsView } from "../settings/settings-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
@@ -226,6 +226,9 @@ document.addEventListener("click", (e) => {
     openProfile();
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
+    void loadFriends(true);
+  } else if (act === "refresh-friends") {
+    void loadFriends(true);
   } else if (act === "copy-account-id") {
     const val = t.dataset.val;
     if (val) {

@@ -19,7 +19,7 @@ import { epicWideArt, isTurkishUser, lastPlayedLabel, rawOf } from "../../core/s
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
@@ -60,6 +60,20 @@ export function ensureTabVisible(el: HTMLElement, container: HTMLElement): void 
     const diff = containerRect.left - elRect.left + 16;
     container.scrollBy({ left: -diff, behavior: "smooth" });
   }
+}
+
+/// Detects whether the game bundles the EOS SDK, once per game (result cached).
+/// The filesystem scan runs only when a detail view opens, never per library card.
+function ensureEosSupport(appName: string): void {
+  const s = S.epicSummariesMap.get(appName);
+  if (!isTauri || !s?.installed || !s.installPath || S.eosSupportMap.has(appName)) return;
+  S.eosSupportMap.set(appName, false);
+  void epicDetectEos(s.installPath)
+    .then((has) => {
+      S.eosSupportMap.set(appName, has);
+      if (has && S.currentModalAppName === appName) openEpicModal(appName, false);
+    })
+    .catch(() => {});
 }
 
 export function openEpicModal(appName: string, isInitialOpen = true, animateTabContent = true): void {
@@ -199,6 +213,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
   if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) {
     void fetchAndRenderScreenshots(appName, s.title);
   }
+
+  ensureEosSupport(appName);
 
   if (!isInitialOpen) {
     const existingHub = modalRoot.querySelector(".game-hub, .drawer") as HTMLElement | null;

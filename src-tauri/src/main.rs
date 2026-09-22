@@ -1196,29 +1196,130 @@ fn open_folder(path: String) -> Result<String, String> {
 pub struct EosOverlayStatus {
     pub installed: bool,
     pub path: String,
+    pub version: String,
+    pub overlay_supported: bool,
 }
 
 /// Checks the standard EOS Overlay install locations. The overlay is injected into
 /// games (Shift+F3) by Epic's service; our launcher only reports its presence.
+/// Version and overlay-support flags come from the EOS service registry key.
 #[tauri::command]
 fn eos_overlay_status() -> EosOverlayStatus {
+    let mut path = String::new();
     for var in ["ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"] {
         if let Ok(base) = std::env::var(var) {
             let root = std::path::Path::new(&base)
                 .join("Epic Games")
                 .join("Epic Online Services");
             if root.is_dir() {
-                return EosOverlayStatus {
-                    installed: true,
-                    path: root.to_string_lossy().to_string(),
-                };
+                path = root.to_string_lossy().to_string();
+                break;
             }
         }
     }
-    EosOverlayStatus {
-        installed: false,
-        path: String::new(),
+    let installed = !path.is_empty();
+
+    let mut version = String::new();
+    let mut overlay_supported = false;
+    #[cfg(windows)]
+    {
+        for key in [
+            r"HKLM\SOFTWARE\WOW6432Node\Epic Games\EOS\MainService",
+            r"HKLM\SOFTWARE\Epic Games\EOS\MainService",
+        ] {
+            let Ok(out) = std::process::Command::new("reg")
+                .args(["query", key])
+                .output()
+            else {
+                continue;
+            };
+            let text = String::from_utf8_lossy(&out.stdout);
+            for line in text.lines() {
+                let line = line.trim();
+                if let Some(v) = line.strip_prefix("Version") {
+                    if let Some(val) = v.split_whitespace().last() {
+                        if !val.is_empty() && val != "REG_SZ" {
+                            version = val.to_string();
+                        }
+                    }
+                } else if let Some(v) = line.strip_prefix("OverlayInstallSupported") {
+                    overlay_supported = v.split_whitespace().last() == Some("1");
+                }
+            }
+            if !version.is_empty() {
+                break;
+            }
+        }
     }
+
+    EosOverlayStatus {
+        installed,
+        path,
+        version,
+        overlay_supported,
+    }
+}
+
+/// Best-effort scan of a game's install directory for the EOS SDK runtime.
+/// Only called when a game detail view opens; the frontend caches the result.
+/// Runs on a blocking thread so a slow HDD walk never stalls the UI.
+#[tauri::command]
+async fn epic_detect_eos(install_path: String) -> bool {
+    tauri::async_runtime::spawn_blocking(move || detect_eos_blocking(&install_path))
+        .await
+        .unwrap_or(false)
+}
+
+fn detect_eos_blocking(install_path: &str) -> bool {
+    fn scan(dir: &std::path::Path, depth: u32, budget: &mut u32) -> bool {
+        if depth == 0 || *budget == 0 {
+            return false;
+        }
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return false;
+        };
+        let mut subdirs = Vec::new();
+        for entry in entries.flatten() {
+            *budget = budget.saturating_sub(1);
+            if *budget == 0 {
+                return false;
+            }
+            let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
+            let Ok(ft) = entry.file_type() else {
+                continue;
+            };
+            if ft.is_dir() {
+                if name == "epiconlineservices" {
+                    return true;
+                }
+                subdirs.push(entry.path());
+            } else if name.starts_with("eossdk") && name.ends_with(".dll") {
+                return true;
+            }
+        }
+        for d in subdirs {
+            if scan(&d, depth - 1, budget) {
+                return true;
+            }
+        }
+        false
+    }
+
+    let root = std::path::Path::new(install_path.trim());
+    if !root.is_dir() {
+        return false;
+    }
+    // Fast path for the common Unreal layouts before the bounded walk.
+    for rel in [
+        "Engine/Binaries/ThirdParty/EOSSDK/Win64/EOSSDK-Win64-Shipping.dll",
+        "Engine/Binaries/ThirdParty/EOSSDK/Win32/EOSSDK-Win32-Shipping.dll",
+    ] {
+        if root.join(rel).is_file() {
+            return true;
+        }
+    }
+    let mut budget = 6000u32;
+    scan(root, 5, &mut budget)
 }
 
 #[tauri::command]
@@ -1370,6 +1471,8 @@ fn main() {
             hide_store_view,
             open_folder,
             eos_overlay_status,
+            epic_detect_eos,
+            legendary::friends::epic_friends,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
             legendary::steamgrid::epic_test_steamgrid_key,

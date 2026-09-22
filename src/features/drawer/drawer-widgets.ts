@@ -566,6 +566,19 @@ export function renderGameFeatures(
         : ""
     }
 
+    ${
+      S.eosSupportMap.get(s.appName) === true
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.eosTip"))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("users", 12)}</div>
+        <span>${i18nT("feat.eos")}</span>
+      </div>
+      <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
+    </div>`
+        : ""
+    }
+
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("monitor", 12)}</div>

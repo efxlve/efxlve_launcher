@@ -100,6 +100,74 @@ export function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     .join("");
 }
 
+/** Human label for an Epic external auth provider key. */
+function platformLabel(key: string): string {
+  const map: Record<string, string> = {
+    steam: "Steam",
+    psn: "PSN",
+    xbl: "Xbox",
+    nintendo: "Switch",
+    epic: "Epic",
+  };
+  return map[key] || key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+/** Read-only Epic friends section (unofficial API; may fail silently). */
+function renderFriendsSection(): string {
+  let body: string;
+  if (S.friendsLoading && S.friends.length === 0) {
+    body = `<div class="friends-state">${t("friends.loading")}</div>`;
+  } else if (S.friendsError) {
+    body = `
+      <div class="friends-state friends-state-error">
+        <div class="friends-state-icon">${icon("users", 32)}</div>
+        <p>${esc(S.friendsError)}</p>
+      </div>`;
+  } else if (S.friends.length === 0) {
+    body = `
+      <div class="friends-state">
+        <div class="friends-state-icon">${icon("users", 32)}</div>
+        <p>${t("friends.empty")}</p>
+      </div>`;
+  } else {
+    body = `<div class="friends-grid">${S.friends
+      .map((f) => {
+        const name = f.displayName || f.alias || f.accountId.slice(0, 8);
+        const initial = (name.trim().charAt(0) || "?").toUpperCase();
+        const plats = f.platforms
+          .map((p) => `<span class="friend-plat">${esc(platformLabel(p))}</span>`)
+          .join("");
+        return `
+          <div class="friend-card${f.favorite ? " fav" : ""}">
+            <div class="friend-avatar">
+              <span>${esc(initial)}</span>
+              ${f.favorite ? `<span class="friend-star">${icon("star", 10)}</span>` : ""}
+            </div>
+            <div class="friend-info">
+              <div class="friend-name" title="${esc(name)}">${esc(name)}</div>
+              ${f.alias && f.displayName ? `<div class="friend-alias" title="${esc(f.alias)}">${esc(f.alias)}</div>` : ""}
+              ${plats ? `<div class="friend-plats">${plats}</div>` : ""}
+            </div>
+          </div>`;
+      })
+      .join("")}</div>`;
+  }
+
+  return `
+    <div class="profile-friends-section">
+      <div class="profile-friends-header">
+        <div class="profile-games-title-group">
+          <h2 class="profile-section-title">${t("friends.title")}</h2>
+          ${S.friends.length > 0 ? `<span class="profile-section-badge">${S.friends.length}</span>` : ""}
+        </div>
+        <button class="btn ghost small" data-act="refresh-friends" title="${t("friends.refresh")}">
+          ${icon("refresh", 13)} <span>${t("friends.refresh")}</span>
+        </button>
+      </div>
+      ${body}
+    </div>`;
+}
+
 export function renderProfile(): string {
   if (S.profileLoading && !S.playerProfileData) {
     return `
@@ -308,6 +376,8 @@ export function renderProfile(): string {
           </div>
         </div>
       </div>
+
+      ${renderFriendsSection()}
 
       <!-- 2. PlayStation trophy showcase and game progress -->
       <div class="profile-games-section">
