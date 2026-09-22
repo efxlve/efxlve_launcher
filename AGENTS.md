@@ -136,6 +136,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Aktif indirme kimliği yeniden bağlanmadan iptal istenirse bekleyen kayıt da temizlenir; İndirmeler görünümünde kurulu oyunlar rafı gösterilir.
 - Ağ hızı satırı eksik olduğunda progress ve toplam byte farkından hız hesaplanır; disk hızındaki kısa örnek sıçramaları bastırılır.
 - İptal edilen ve henüz kurulmamış oyunların partial kurulum klasörü temizlenir; mevcut kurulu oyun güncellemeleri korunur.
+- Gelecek iş: hesap profili için `account switcher` desteği ekle.
 - Aktif indirme kimliği, generation ile izlenir; eski monitor yeni sürecin kuyruğunu/persistence kaydını bozamaz.
 - Kuyruk öğeleri install tag ve install klasörünü korur; öncelikli indirme ve restart sonrası sıra metadata ile sürdürülür.
 - DLC/otomatik güncelleme kuyruğa eklendikten sonra UI kuyruk durumu ve indirme badge'i backend ile yenilenir.
