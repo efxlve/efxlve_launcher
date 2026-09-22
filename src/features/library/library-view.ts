@@ -541,11 +541,10 @@ export function renderEpicShelves(): string {
     sections.push(renderShelfSection("trophy", t("lib.platinumGames"), platGames, { filter: "platinum" }));
   }
 
-  // 5. User collections
+  // 5. User collections (Set lookup instead of O(N×M) per collection)
   for (const col of S.epicCollections) {
-    const colGames = S.epicSummaries.filter((s) =>
-      col.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-    );
+    const colSet = new Set(col.app_names.map((n) => n.toLowerCase()));
+    const colGames = S.epicSummaries.filter((s) => colSet.has(s.appName.toLowerCase()));
     if (colGames.length > 0) {
       sections.push(
         renderShelfSection(isCollectionIcon(col.emoji) ? col.emoji : "folder", col.name, colGames, {
@@ -818,7 +817,8 @@ export function renderEpic(): string {
             <div class="col-menu-list">
               ${S.epicCollections.length === 0 ? `<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">${t("lib.noCollections")}</div>` : ""}
               ${S.epicCollections.map((col) => {
-                const count = S.epicSummaries.filter((s) => col.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase())).length;
+                const colSet = new Set(col.app_names.map((n) => n.toLowerCase()));
+                const count = S.epicSummaries.reduce((n, s) => n + (colSet.has(s.appName.toLowerCase()) ? 1 : 0), 0);
                 const isAct = S.activeCollectionId === col.id;
                 return `
                 <div class="col-menu-item-row ${isAct ? "selected" : ""}">

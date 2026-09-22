@@ -30,7 +30,8 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       const isPlat = g.is_platinum || g.unlocked_percent >= 100;
       const pt = S.playtimeMap.get(g.app_name);
       const playtimeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : null;
-      const s = S.epicSummaries.find((x) => x.appName === g.app_name);
+      // O(1) map lookup instead of a linear scan per card.
+      const s = S.epicSummariesMap.get(g.app_name);
       const isInstalled = s?.installed ?? false;
 
       const coverUrl = S.customCovers[g.app_name] || g.cover || s?.cover || "";
@@ -39,7 +40,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
 
       return `
         <div class="ps5-profile-game-card ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)} - ${t("profile.detailsTitle")}" style="--pci:${Math.min(idx, 20)}">
-          ${bannerUrl ? `<div class="ps5-card-backdrop" style="background-image: url('${esc(bannerUrl)}')"></div>` : ""}
+          ${bannerUrl ? `<img class="ps5-card-backdrop" src="${esc(bannerUrl)}" alt="" loading="lazy" decoding="async" />` : ""}
           <div class="ps5-card-backdrop-overlay"></div>
 
           <div class="ps5-card-inner">

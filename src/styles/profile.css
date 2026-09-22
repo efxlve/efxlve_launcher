@@ -797,8 +797,10 @@
 .ps5-card-backdrop {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center right;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
   opacity: 0.16;
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
