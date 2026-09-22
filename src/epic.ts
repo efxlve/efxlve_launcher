@@ -649,6 +649,8 @@ export interface GameLocalSettings {
   installSize: number;
   installPath: string;
   version: string;
+  wrapper: string;
+  envVars: Record<string, string>;
 }
 
 export interface VerifyProgressEvent {

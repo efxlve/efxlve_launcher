@@ -118,3 +118,17 @@ export function cleanDisplayVersion(rawVersion?: string | null): { display: stri
   const display = trimmed.startsWith("v") || trimmed.startsWith("V") ? trimmed : `v${trimmed}`;
   return { display, full: trimmed };
 }
+
+/** Parses "KEY=VALUE" lines into an env var map (blank lines and # comments ignored). */
+export function parseEnvText(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    if (key) out[key] = line.slice(eq + 1).trim();
+  }
+  return out;
+}

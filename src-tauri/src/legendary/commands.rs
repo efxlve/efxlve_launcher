@@ -1603,6 +1603,12 @@ pub struct GameLocalSettings {
     pub install_size: u64,
     pub install_path: String,
     pub version: String,
+    /// Optional wrapper command passed to `legendary launch --wrapper`.
+    #[serde(default)]
+    pub wrapper: String,
+    /// Extra environment variables exported to the game process.
+    #[serde(default)]
+    pub env_vars: std::collections::HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -1612,9 +1618,11 @@ pub struct GameCustomConfig {
     pub high_priority: Option<bool>,
     pub cloud_saves_enabled: Option<bool>,
     pub last_cloud_sync: Option<String>,
+    pub wrapper: Option<String>,
+    pub env_vars: Option<std::collections::HashMap<String, String>>,
 }
 
-fn load_all_game_custom_configs() -> std::collections::HashMap<String, GameCustomConfig> {
+pub fn load_all_game_custom_configs() -> std::collections::HashMap<String, GameCustomConfig> {
     let config = skip::default_config_dir();
     let p = config.join("efxlve_game_settings.json");
     if let Ok(text) = std::fs::read_to_string(&p) {
@@ -1697,6 +1705,8 @@ pub fn epic_get_game_settings(app_name: String) -> Result<GameLocalSettings, Str
         install_size: entry.as_ref().map(|e| e.install_size).unwrap_or(0),
         install_path: entry.as_ref().map(|e| e.install_path.clone()).unwrap_or_default(),
         version: entry.as_ref().map(|e| e.version.clone()).unwrap_or_default(),
+        wrapper: cfg.and_then(|c| c.wrapper.clone()).unwrap_or_default(),
+        env_vars: cfg.and_then(|c| c.env_vars.clone()).unwrap_or_default(),
     })
 }
 
@@ -1726,6 +1736,8 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
             high_priority: Some(settings.high_priority),
             cloud_saves_enabled: Some(settings.cloud_saves_enabled),
             last_cloud_sync: settings.last_cloud_sync,
+            wrapper: Some(settings.wrapper.trim().to_string()),
+            env_vars: Some(settings.env_vars),
         },
     );
     save_all_game_custom_configs(&cfgs);
