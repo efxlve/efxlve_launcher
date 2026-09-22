@@ -11,8 +11,14 @@ import { S } from "./state";
 import { esc } from "./utils";
 import { t } from "../i18n";
 
-/** Slide the bottom highlight under the active nav tab. */
-export function updateNavIndicator(): void {
+/** Last (active tab + download count) the indicator was measured for. */
+let navIndicatorKey = "";
+
+/**
+ * Slide the bottom highlight under the active nav tab. Skips the forced layout
+ * read when nothing that affects the position changed (pass `force` on resize).
+ */
+export function updateNavIndicator(force = false): void {
   const bar = document.getElementById("titlebar");
   const seg = document.getElementById("nav-seg");
   const ind = document.getElementById("nav-indicator");
@@ -22,6 +28,9 @@ export function updateNavIndicator(): void {
     ind.style.opacity = "0";
     return;
   }
+  const key = `${active.dataset.view ?? active.dataset.act ?? ""}|${S.downloads.size}`;
+  if (!force && S.navIndicatorReady && key === navIndicatorKey) return;
+  navIndicatorKey = key;
   if (!S.navIndicatorReady) {
     // Skip the slide animation on first placement (avoid sliding from width 0).
     ind.style.transition = "none";
@@ -40,8 +49,8 @@ export function updateBadge(): void {
   const active = [...S.downloads.values()].filter((d) => !d.done).length;
   dlBadge.textContent = active > 0 ? String(active) : "";
   dlBadge.classList.toggle("hidden", active === 0);
-  // The badge is inline, so the tab width changes; re-align the sliding indicator.
-  updateNavIndicator();
+  // The badge is inline, so the tab width changes; force a re-measure.
+  updateNavIndicator(true);
 }
 
 /** Reflect the offline-mode state on the top-bar network chip. */

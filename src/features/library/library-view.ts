@@ -41,15 +41,20 @@ export function studioOf(s: EpicSummary): string {
 }
 
 /** Unique studios with game counts, sorted for the filter dropdown. */
+let studiosCache: { key: EpicSummary[]; value: { name: string; count: number }[] } | null = null;
 export function epicStudios(): { name: string; count: number }[] {
+  // `setEpicSummaries` swaps the array reference, so this invalidates naturally.
+  if (studiosCache && studiosCache.key === S.epicSummaries) return studiosCache.value;
   const counts = new Map<string, number>();
   for (const s of S.epicSummaries) {
     const d = studioOf(s);
     if (d) counts.set(d, (counts.get(d) || 0) + 1);
   }
-  return [...counts.entries()]
+  const value = [...counts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => S.trCollator.compare(a.name, b.name));
+  studiosCache = { key: S.epicSummaries, value };
+  return value;
 }
 
 /**
