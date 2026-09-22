@@ -2145,3 +2145,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
 
+## 163. Üçüncü Tur Optimizasyon (memoizasyon / paint / gereksiz render)
+
+- **Kapak & hero URL memoizasyonu**: `epicCover`/`epicPortrait` (epic.ts) ve `epicWideArt` (selectors.ts) artık `app_name` bazında önbellekli; eskiden her kart her render'da `keyImages` dizisini baştan tarıyordu. `setEpicGamesRaw` önbellekleri temizler.
+- **`content-visibility: auto` + `contain-intrinsic-size`**: `.pgrid .pcard` ve `.ps5-profile-game-card` için ekran dışı kartların layout/paint'i atlanır (uzun kütüphanede büyük kazanç). Boyut CSS ile (grid track + aspect-ratio) belirlendiği için kaydırma sıçraması yok. (`.prow`'da zaten vardı.)
+- **Rust**: `epic_check_updates` (kurulu oyunların metadata taraması) da `spawn_blocking`'e alındı.
+- **Gereksiz tam render'lar**: koleksiyon kaydet/sil/atama sonrası `loadEpicCollections()` zaten `scheduleRender()` çağırırken yapılan ekstra `render()` kaldırıldı (3 yer). `epicInstall` `epicSummariesMap.get` (O(1)).
+
+- `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
+
