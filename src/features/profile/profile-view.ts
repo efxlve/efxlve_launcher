@@ -112,6 +112,45 @@ function platformLabel(key: string): string {
   return map[key] || key.charAt(0).toUpperCase() + key.slice(1);
 }
 
+/** Top-played games by tracked playtime, rendered as a compact bar list. */
+function renderTopPlayedSection(): string {
+  const entries = [...S.playtimeMap.entries()]
+    .map(([appName, rec]) => {
+      const s = S.epicSummariesMap.get(appName);
+      return { appName, title: s?.title ?? appName, cover: s?.cover ?? null, seconds: rec.total_seconds || 0 };
+    })
+    .filter((e) => e.seconds > 0)
+    .sort((a, b) => b.seconds - a.seconds)
+    .slice(0, 6);
+  if (entries.length === 0) return "";
+
+  const max = entries[0].seconds || 1;
+  const rows = entries
+    .map((e) => {
+      const pct = Math.max(4, Math.round((e.seconds / max) * 100));
+      return `
+        <button class="top-played-row" data-act="epic-detail" data-id="${esc(e.appName)}" title="${esc(e.title)}">
+          <div class="top-played-thumb">${e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy" />` : ""}</div>
+          <div class="top-played-info">
+            <div class="top-played-name">${esc(e.title)}</div>
+            <div class="top-played-bar"><span style="width:${pct}%"></span></div>
+          </div>
+          <div class="top-played-time">${esc(fmtPlaytime(e.seconds))}</div>
+        </button>`;
+    })
+    .join("");
+
+  return `
+    <div class="profile-top-played">
+      <div class="profile-friends-header">
+        <div class="profile-games-title-group">
+          <h2 class="profile-section-title">${t("profile.topPlayed")}</h2>
+        </div>
+      </div>
+      <div class="top-played-list">${rows}</div>
+    </div>`;
+}
+
 /** Read-only Epic friends section (unofficial API; may fail silently). */
 function renderFriendsSection(): string {
   let body: string;
@@ -378,6 +417,8 @@ export function renderProfile(): string {
       </div>
 
       ${renderFriendsSection()}
+
+      ${renderTopPlayedSection()}
 
       <!-- 2. PlayStation trophy showcase and game progress -->
       <div class="profile-games-section">
