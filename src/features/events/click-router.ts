@@ -1349,6 +1349,9 @@ document.addEventListener("click", (e) => {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));
     render();
+  } else if (act === "settings-section" && t.dataset.section) {
+    S.settingsSection = t.dataset.section as typeof S.settingsSection;
+    render();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;
     localStorage.setItem(MINIMIZE_TRAY_KEY, String(S.minimizeToTray));

@@ -23,6 +23,9 @@ export type EpicViewMode = "grid" | "shelves" | "list";
 /** Poster card size. */
 export type CardSize = "compact" | "normal" | "large";
 
+/** Category selected in the settings page left rail. */
+export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system";
+
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";
 
