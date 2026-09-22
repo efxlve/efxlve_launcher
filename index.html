@@ -53,7 +53,16 @@
         </div>
       </header>
       <main id="content">
-        <section id="view"></section>
+        <section id="view">
+          <!-- Inline-styled boot splash: paints instantly, before the JS bundle and
+               the CSS bundle load. render() replaces it with the real view. -->
+          <div id="boot-splash" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:70vh;gap:16px;">
+            <span style="width:46px;height:46px;border-radius:13px;background:rgba(139,92,246,0.14);display:flex;align-items:center;justify-content:center;">
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/></svg>
+            </span>
+            <span style="font-size:11px;letter-spacing:0.22em;font-weight:700;color:#565b6b;">EFXLVE</span>
+          </div>
+        </section>
       </main>
     </div>
   <div id="modal-root"></div>
