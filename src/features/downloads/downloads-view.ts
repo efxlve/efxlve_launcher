@@ -11,6 +11,7 @@ import { epicWideArt } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
+import type { EpicSummary } from "../../epic";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -327,10 +328,10 @@ export function renderDownloads(): string {
             </div>
           </div>
           <div class="dl-queue-right">
-            <button class="btn primary small" data-act="epic-play" data-id="${appId}">
+            <button class="ps5-btn primary small" data-act="epic-play" data-id="${appId}">
               ${icon("play", 12)} ${t("common.play")}
             </button>
-            <button class="btn ghost small" data-act="manage-game" data-id="${appId}">
+            <button class="ps5-btn secondary small" data-act="manage-game" data-id="${appId}">
               ${icon("settings", 12)} ${t("common.manage")}
             </button>
           </div>
@@ -347,6 +348,59 @@ export function renderDownloads(): string {
       </div>
     `;
   }
+
+  // Recently played installed games: fills the idle page with something useful.
+  const recentInstalled: EpicSummary[] = [];
+  {
+    const seen = new Set<string>();
+    for (const id of S.epicRecent) {
+      const s = S.epicSummariesMap.get(id);
+      if (s?.installed && !seen.has(id)) {
+        seen.add(id);
+        recentInstalled.push(s);
+      }
+      if (recentInstalled.length >= 8) break;
+    }
+    if (recentInstalled.length < 8) {
+      for (const s of S.epicSummaries) {
+        if (s.installed && !seen.has(s.appName)) {
+          seen.add(s.appName);
+          recentInstalled.push(s);
+          if (recentInstalled.length >= 8) break;
+        }
+      }
+    }
+  }
+
+  const recentSection =
+    recentInstalled.length > 0 && !activeDl && queueApps.length === 0 && completedEntries.length === 0
+      ? `
+    <div class="dl-section-title">
+      <span>${t("downloads.recentTitle")}</span>
+      <button class="dl-section-link" data-act="goto-library">${t("downloads.goLibrary")}</button>
+    </div>
+    <div class="dl-queue-container">
+      ${recentInstalled
+        .map(
+          (s) => `
+        <div class="dl-queue-row">
+          <div class="dl-queue-left">
+            ${s.cover ? `<img class="dl-queue-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="dl-queue-thumb"></div>`}
+            <div class="dl-queue-info">
+              <div class="dl-queue-name">${esc(s.title)}</div>
+              <div class="dl-queue-meta">${fmtBytes(s.installSize || 0)}</div>
+            </div>
+          </div>
+          <div class="dl-queue-right">
+            <button class="ps5-btn primary small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>
+            <button class="ps5-btn secondary small" data-act="manage-game" data-id="${s.appName}">${icon("settings", 12)} ${t("common.manage")}</button>
+          </div>
+        </div>`,
+        )
+        .join("")}
+    </div>
+  `
+      : "";
 
   const settingsPanel = `
     <div class="dl-settings-panel">
@@ -397,7 +451,7 @@ export function renderDownloads(): string {
           </div>
           <div class="dl-settings-row-control">
             <span class="dl-cdn-current" id="dl-cdn-current" title="${S.preferredCdn ? esc(S.preferredCdn) : ""}">${S.preferredCdn ? esc(S.preferredCdn) : t("downloads.cdnAuto")}</span>
-            <button class="ps5-btn" data-act="dl-find-fastest-cdn">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
+            <button class="ps5-btn secondary" data-act="dl-find-fastest-cdn">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
             ${S.preferredCdn ? `<button class="ps5-btn ghost" data-act="dl-reset-cdn">${t("downloads.cdnReset")}</button>` : ""}
           </div>
         </div>
@@ -442,6 +496,7 @@ export function renderDownloads(): string {
           ${S.downloadsSettingsOpen ? settingsPanel : ""}
           ${queueSection}
           ${completedSection}
+          ${recentSection}
         </div>
       </main>
     </div>

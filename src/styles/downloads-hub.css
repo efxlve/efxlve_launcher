@@ -312,6 +312,14 @@
   justify-content: space-between;
 }
 
+.dl-section-link {
+  background: none; border: none; font-family: inherit;
+  font-size: 12px; font-weight: 600; color: var(--ps5-accent);
+  cursor: pointer; padding: 4px 8px; border-radius: 7px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.dl-section-link:hover { background: rgba(139, 92, 246, 0.12); color: var(--ps5-accent-hover); }
+
 .dl-queue-container {
   display: flex;
   flex-direction: column;
