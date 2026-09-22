@@ -53,7 +53,13 @@ export function epicVisibleSummaries(): EpicSummary[] {
     if (S.epicFilter === "fav" && !S.epicFav.has(s.appName)) return false;
     if (S.epicFilter === "updates" && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
     if (S.epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
-    if (q && !s.title.toLocaleLowerCase("tr").includes(q)) return false;
+    if (q) {
+      // Match the title or the studio/publisher so "Ubisoft" finds its games.
+      if (s.title.toLocaleLowerCase("tr").includes(q)) return true;
+      const g = rawOf(s.appName);
+      const studio = String(g?.metadata?.developer || "").toLocaleLowerCase("tr");
+      if (!studio.includes(q)) return false;
+    }
     return true;
   });
 

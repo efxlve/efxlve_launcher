@@ -1065,7 +1065,7 @@
   "lib.noCollections": "No collections created yet",
   "lib.editCollection": "Edit {name} collection",
   "lib.newCollection": "+ New Collection",
-  "lib.searchPlaceholder": "Search library...",
+  "lib.searchPlaceholder": "Search game, studio or publisher...",
   "lib.sortTip": "Sort: {label}",
   "lib.sort": "Sort",
   "lib.cardSize": "Card size",

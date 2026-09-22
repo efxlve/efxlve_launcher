@@ -1065,7 +1065,7 @@
   "lib.noCollections": "Henüz koleksiyon oluşturulmadı",
   "lib.editCollection": "{name} koleksiyonunu düzenle",
   "lib.newCollection": "+ Yeni Koleksiyon",
-  "lib.searchPlaceholder": "Kütüphanede ara...",
+  "lib.searchPlaceholder": "Oyun, stüdyo veya yayıncı ara...",
   "lib.sortTip": "Sıralama: {label}",
   "lib.sort": "Sırala",
   "lib.cardSize": "Kart boyutu",
