@@ -2065,3 +2065,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - **Doğrulama (148–156):** `cargo test` (58 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
 
+## 157. Ayarlar Sayfası Yeniden Tasarımı (İki Panelli Konsol Düzeni)
+
+- Uzun tek-kolon yığın yerine **sol kategori rayı + sağ içerik paneli** düzeni: `S.settingsSection` (account/downloads/integrations/appearance/screenshots/system). Aynı anda yalnızca seçili kategori gösterilir → karmaşa büyük ölçüde azaldı.
+- Yeni `src/styles/settings.css`: `.settings-layout` (sticky ray), `.settings-nav-item` (lavanta sol şerit aktif durum), `.settings-row` (başlık/açıklama + sağda kontrol, ince ayraç), `.settings-group`, `.settings-list`, `.settings-inline-note`. Gradyan/parlama yok; tek vurgu rengi. 900px altında ray yatay sekmelere döner.
+- `settings-view.ts` küçük yardımcılarla (`row`/`toggle`/`group`) yeniden yazıldı; tüm `data-act` kimlikleri korundu, bölümler gruplandı (Hesap, İndirmeler, Entegrasyonlar, Görünüm ve Dil, Ekran Görüntüleri, Sistem).
+- `click-router.ts`: `settings-section` eylemi. `core/types.ts`: `SettingsSection` tipi.
+- **Ölü i18n temizliği:** artık kullanılmayan 12 anahtar kaldırıldı (`nav.settings`, `settings.presenceLabel`, `settings.presenceClientIdLabel`, `settings.eglDesc`, `settings.screenshotsDesc`, `settings.qualityHint`, `dl.*Sub` ×5); `settings.secSocial` eklendi. Denetim: 0 kullanılmayan / 0 eksik anahtar.
+- `tsc --noUnusedLocals` (0), `vite build` (bundle ~4 kB küçüldü), i18n eşlik (1173/1173) yeşil.
+
