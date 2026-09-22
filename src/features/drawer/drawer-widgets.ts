@@ -584,7 +584,7 @@ export function renderGameFeatures(
     <div class="hub-feature-row" title="${esc(i18nT("feat.rockstarTip"))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("external", 12)}</div>
-        <span>${i18nT("feat.rockstarLauncher")}</span>
+        <span>${i18nT("feat.externalLauncher")}</span>
       </div>
       <div class="hub-feature-val accent">${i18nT("feat.rockstarRequired")}</div>
     </div>`
