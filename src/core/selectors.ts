@@ -6,9 +6,12 @@
  * `S`, and `summaryOf` / `rawOf` read them in constant time.
  */
 
-import type { EpicGame, EpicSummary } from "../epic";
+import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
 import { t } from "../i18n";
 import { S } from "./state";
+
+/** Wide-art URL cache (key art lookup was repeated for every card render). */
+const wideArtCache = new Map<string, string | null>();
 
 /**
  * Maps the canonical stored "last played" values to translation keys. The stored
@@ -37,6 +40,9 @@ export function lastPlayedLabel(value: string | null | undefined): string {
 export function setEpicGamesRaw(games: EpicGame[]): void {
   S.epicGamesRaw = games;
   S.epicGamesRawMap = new Map(games.map((g) => [g.app_name, g]));
+  // Cover/key-art URLs may have changed with the new metadata.
+  wideArtCache.clear();
+  clearCoverCaches();
 }
 
 /** Replace the parsed summary list and rebuild its lookup map. */
@@ -74,8 +80,10 @@ export function isTurkishUser(): boolean {
 export function epicWideArt(s: EpicSummary): string | null {
   const customHero = S.customHeroes[s.appName];
   if (customHero) return customHero;
-  const g = rawOf(s.appName);
-  const imgs = g?.metadata?.keyImages;
+  const cached = wideArtCache.get(s.appName);
+  if (cached !== undefined) return cached;
+  let url: string | null = s.cover;
+  const imgs = rawOf(s.appName)?.metadata?.keyImages;
   if (Array.isArray(imgs)) {
     for (const t of [
       "OfferImageWide",
@@ -85,8 +93,12 @@ export function epicWideArt(s: EpicSummary): string | null {
       "OfferImageTall",
     ]) {
       const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
-      if (found) return found.url;
+      if (found) {
+        url = found.url;
+        break;
+      }
     }
   }
-  return s.cover;
+  wideArtCache.set(s.appName, url);
+  return url;
 }

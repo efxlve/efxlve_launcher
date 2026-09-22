@@ -233,6 +233,13 @@
               box-shadow 0.22s ease;
   contain: layout paint;
 }
+
+/* Skip layout/paint of off-screen grid cards: huge win on long libraries.
+   Scoped to the vertical grid (shelf tracks size themselves from their cards). */
+.pgrid .pcard {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 293px;
+}
 .pcard:hover {
   transform: translateY(-6px) scale(1.02);
   border-color: rgba(99, 102, 241, 0.45);
