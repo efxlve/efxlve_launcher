@@ -9,7 +9,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
@@ -93,6 +93,7 @@ import {
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
 import { loadIntegrationsView, loadSettingsView } from "../settings/settings-view";
+import { resetProfileCards } from "../profile/profile-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
   if (S.isSortDropdownOpen) {
@@ -272,9 +273,14 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
+    resetProfileCards();
+    render();
+  } else if (act === "profile-show-more") {
+    S.profileCardCount += PROFILE_CARD_CHUNK;
     render();
   } else if (act === "profile-search-clear") {
     S.profileSearchQuery = "";
+    resetProfileCards();
     render();
   } else if (act === "open-game-from-profile") {
     const appId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;

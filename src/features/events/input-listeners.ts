@@ -41,7 +41,7 @@ import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
-import { renderProfileGameCards } from "../profile/profile-view";
+import { renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotLightbox,
   closeShareModal,
@@ -439,7 +439,8 @@ document.addEventListener("input", (e) => {
         if (S.profileSort === "alpha") return a.app_title.localeCompare(b.app_title, "tr");
         return 0;
       });
-      grid.innerHTML = renderProfileGameCards(filtered);
+      resetProfileCards();
+      grid.innerHTML = renderProfileGrid(filtered);
     }
     return;
   }
@@ -471,6 +472,7 @@ document.addEventListener("change", (e) => {
   const t = e.target as HTMLElement;
   if (t.id === "profile-sort-select") {
     S.profileSort = (t as HTMLSelectElement).value as typeof S.profileSort;
+    resetProfileCards();
     render();
     return;
   }
