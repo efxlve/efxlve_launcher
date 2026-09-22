@@ -141,6 +141,7 @@ export const S = {
   epicRecent: ([...loadStrSet(RECENT_KEY)].slice(0, 8)) as string[],
   storeMode: ("store") as "store" | "profile",
   storeResizeTimer: 0,
+  storeDestroyTimer: (null) as number | null,
   query: "",
   libSearchTimer: (null) as number | null,
   downloads: new Map<string, { progress: number; done: boolean; title: string }>(),

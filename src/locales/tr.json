@@ -718,6 +718,7 @@
   "store.viewCreateFailed": "mağaza görünümü oluşturulamadı",
   "store.viewTimeout": "mağaza görünümü 20 sn içinde açılamadı",
   "store.opened": "açıldı",
+  "store.closed": "kapatıldı",
   "auth.legendaryReady": "legendary hazır",
   "auth.downloadFailed": "İndirme başarısız: {msg}",
   "auth.signedIn": "{name} olarak giriş yapıldı",
