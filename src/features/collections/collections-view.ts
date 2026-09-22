@@ -10,7 +10,7 @@ import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { render, scheduleRender } from "../../core/render";
+import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -308,7 +308,6 @@ export async function saveCollectionFromModal(): Promise<void> {
     toast(t("col.saved", { name: saved.name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
-    render();
   } catch (e) {
     toast(t("col.saveFailed", { msg: String(e) }), "err");
   }
@@ -326,7 +325,6 @@ export async function deleteCollectionFromModal(colId: string): Promise<void> {
     toast(t("col.deleted", { name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
-    render();
   } catch (e) {
     toast(t("col.deleteFailed", { msg: String(e) }), "err");
   }
@@ -415,7 +413,6 @@ export async function saveGameCollectionsFromModal(): Promise<void> {
     if (S.currentModalAppName === appName) {
       updateDrawerCollectionsBoxInPlace(appName);
     }
-    render();
   } catch (e) {
     toast(t("col.updateFailed", { msg: String(e) }), "err");
   }
