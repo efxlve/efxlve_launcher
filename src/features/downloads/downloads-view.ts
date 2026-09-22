@@ -22,6 +22,16 @@ export function pushSpeedData(netBytes: number, diskBytes: number): void {
   }
 }
 
+/** Coalesces chart redraws to at most one per animation frame. */
+let speedCanvasRaf = 0;
+export function scheduleDrawSpeedCanvas(): void {
+  if (speedCanvasRaf) return;
+  speedCanvasRaf = requestAnimationFrame(() => {
+    speedCanvasRaf = 0;
+    drawSpeedCanvas();
+  });
+}
+
 export function drawSpeedCanvas(): void {
   const canvas = document.getElementById("dl-speed-canvas") as HTMLCanvasElement | null;
   if (!canvas) return;
