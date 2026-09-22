@@ -258,7 +258,7 @@ export function renderDownloads(): string {
   `
     : "";
 
-  // Queue Markup
+  // Queue markup (only built when there are queued games).
   let queueItemsMarkup = "";
   if (queueApps.length > 0) {
     queueItemsMarkup = queueApps.map((appId, idx) => {
@@ -295,18 +295,20 @@ export function renderDownloads(): string {
         </div>
       `;
     }).join("");
-  } else {
-    queueItemsMarkup = `<div class="muted" style="padding: 16px; background: #14161a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; font-size: 13px;">${t("downloads.queueEmpty")}</div>`;
   }
 
-  const queueSection = `
+  // Only surface the queue when it actually has items (an empty section is noise).
+  const queueSection =
+    queueApps.length > 0
+      ? `
     <div class="dl-section-title">
       <span>${t("dl.queueTitle")} (${queueApps.length})</span>
     </div>
     <div class="dl-queue-container">
       ${queueItemsMarkup}
     </div>
-  `;
+  `
+      : "";
 
   // Completed items
   let completedSection = "";
@@ -428,7 +430,6 @@ export function renderDownloads(): string {
     <div class="ps5-page ps5-downloads-page">
       <header class="ps5-page-header">
         <div class="ps5-header-main">
-          <div class="ps5-header-kicker">${icon("download", 14)} <span>${t("downloads.kicker")}</span></div>
           <h1 class="ps5-header-title">${t("downloads.title")}</h1>
           <p class="ps5-header-subtitle">${t("downloads.subtitle")}</p>
         </div>
