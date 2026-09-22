@@ -317,7 +317,10 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
   if (appName === "carnation" || title.includes("rainbow six siege")) {
     return "BattlEye";
   }
-  if (title.includes("grand theft auto") || title.includes("gta v") || title.includes("gta 5")) {
+  // Only GTA V / GTA Online ship BattlEye. The older and Definitive Edition
+  // titles (III, Vice City, San Andreas, IV) have no anti-cheat, so match
+  // "V"/"5" exactly instead of any "grand theft auto" title.
+  if (/\bgta ?(v|5)\b/.test(title) || /grand theft auto (v|5)\b/.test(title)) {
     return "BattlEye";
   }
   if (appName === "babyblue" || title.includes("battlefield 2042")) {
