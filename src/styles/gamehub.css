@@ -243,7 +243,7 @@
   box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
   transform: translateY(-2px);
 }
-/* Update uses the same solid action language as install and play. */
+/* Update uses a restrained amber status color without the old orange gradient. */
 .hub-actions-bar .btn.update {
   height: 46px;
   padding: 0 28px;
@@ -253,16 +253,16 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--primary);
+  background: #c79a2b;
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.28);
+  box-shadow: 0 4px 20px rgba(199, 154, 43, 0.28);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.update:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 6px 28px rgba(99, 102, 241, 0.42);
+  background: #d8ac35;
+  box-shadow: 0 6px 28px rgba(199, 154, 43, 0.42);
   transform: translateY(-2px);
 }
 .hub-actions-bar .btn.ghost {
