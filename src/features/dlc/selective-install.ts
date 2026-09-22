@@ -15,7 +15,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
-import { epicGetInstallOptions, epicInstallWithOptions } from "../../epic";
+import { epicGetInstallOptions, epicGetQueue, epicInstallWithOptions } from "../../epic";
 export async function openSelectiveModal(appName: string): Promise<void> {
   const s = S.epicSummaries.find((x) => x.appName === appName);
   if (s?.installed) {
@@ -65,6 +65,8 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
   try {
     const msg = await epicInstallWithOptions(appName, tags, dlcs, null);
     toast(msg, "ok");
+    S.dlQueueStatus = await epicGetQueue();
+    render();
     void refreshEpicInstalled();
   } catch (e) {
     S.downloads.delete(appName);

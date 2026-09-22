@@ -47,8 +47,10 @@ export function updateNavIndicator(force = false): void {
 /** Refresh the download counter badge and re-align the nav indicator. */
 export function updateBadge(): void {
   const active = [...S.downloads.values()].filter((d) => !d.done).length;
-  dlBadge.textContent = active > 0 ? String(active) : "";
-  dlBadge.classList.toggle("hidden", active === 0);
+  const queued = S.dlQueueStatus.queue.length;
+  const count = active + queued;
+  dlBadge.textContent = count > 0 ? String(count) : "";
+  dlBadge.classList.toggle("hidden", count === 0);
   // The badge is inline, so the tab width changes; force a re-measure.
   updateNavIndicator(true);
 }

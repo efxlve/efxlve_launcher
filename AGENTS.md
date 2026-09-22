@@ -134,3 +134,6 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - İndirme hızındaki kısa örnek sıçramaları minimum örnek aralığıyla bastırılır; UI/backend kimlik ayrışmasında iptal gerçek aktif sürece uygulanır.
 - Aktif indirme isteği disk üzerinde saklanır; launcher yeniden açıldığında Legendary parçalı indirmeden otomatik devam eder.
 - Aktif indirme kimliği yeniden bağlanmadan iptal istenirse bekleyen kayıt da temizlenir; İndirmeler görünümünde kurulu oyunlar rafı gösterilir.
+- Aktif indirme kimliği, generation ile izlenir; eski monitor yeni sürecin kuyruğunu/persistence kaydını bozamaz.
+- Kuyruk öğeleri install tag ve install klasörünü korur; öncelikli indirme ve restart sonrası sıra metadata ile sürdürülür.
+- DLC/otomatik güncelleme kuyruğa eklendikten sonra UI kuyruk durumu ve indirme badge'i backend ile yenilenir.
