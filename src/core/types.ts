@@ -23,6 +23,20 @@ export type EpicViewMode = "grid" | "shelves" | "list";
 /** Poster card size. */
 export type CardSize = "compact" | "normal" | "large";
 
+/** Kind of an in-app notification (drives the icon and accent color). */
+export type NotifKind = "download" | "update" | "error" | "info" | "social";
+
+/** A single entry in the notification center history. */
+export interface AppNotification {
+  id: string;
+  kind: NotifKind;
+  title: string;
+  body: string;
+  appName?: string;
+  ts: number;
+  read: boolean;
+}
+
 /** Live metrics for the currently active download (speed, disk, ETA). */
 export interface DlMetrics {
   id: string;

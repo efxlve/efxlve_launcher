@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
 import {
   epicGetNetworkProfile,
   epicGetSettings,
@@ -31,6 +31,7 @@ import {
   type VerifyProgressEvent,
 } from "../../epic";
 import { applyStaticTranslations, localizeMessage, setLanguage, t } from "../../i18n";
+import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
@@ -40,6 +41,7 @@ import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import {
   registerCloseAllModals,
   registerGamepadHud,
+  registerNotify,
   registerOpenEpicModal,
   registerPresenceSync,
   registerRender,
@@ -75,8 +77,9 @@ export async function initApp(hooks: {
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});
   }
   createIcons({
-    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2 },
+    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell },
   });
+  loadNotifications();
   // Load the selected language, apply its direction (LTR/RTL) and translate the static top bar.
   await setLanguage(S.appLanguage);
   applyStaticTranslations();
@@ -87,6 +90,7 @@ export async function initApp(hooks: {
   registerGamepadHud(updateGamepadHud);
   registerOpenEpicModal(openEpicModal);
   registerPresenceSync(syncPresence);
+  registerNotify((input) => pushNotification(input));
   void initPresence();
   if (isTauri) {
     try {
@@ -184,6 +188,7 @@ export async function initApp(hooks: {
 
       // Download completed
       S.downloads.set(id, { progress: 100, done: true, title });
+      pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
       if (S.activeDlMetrics?.id === id) {
         S.activeDlMetrics = null;
       }
@@ -203,6 +208,13 @@ export async function initApp(hooks: {
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       updateBadge();
+      const failTitle = S.epicSummaries.find((s) => s.appName === event.payload.id)?.title ?? event.payload.id;
+      pushNotification({
+        kind: "error",
+        title: t("notif.downloadFailed", { title: failTitle }),
+        body: localizeMessage(event.payload.message),
+        appName: event.payload.id,
+      });
       toast(t("dl.downloadFailed", { msg: localizeMessage(event.payload.message) }), "err");
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
