@@ -953,7 +953,7 @@ document.addEventListener("click", (e) => {
     if (bid) {
       epicDeleteBackup(id, bid)
         .then(() => {
-          toast("Yedek silindi", "");
+          toast(i18nT("backup.deleted"), "");
           const cur = S.gameBackupsMap.get(id) || [];
           S.gameBackupsMap.set(id, cur.filter((x) => x.id !== bid));
           const listEl = document.getElementById("manage-backup-list");

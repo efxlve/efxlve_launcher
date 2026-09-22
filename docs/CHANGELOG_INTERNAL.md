@@ -2007,3 +2007,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - 3 yeni i18n anahtarı (tr/en eşlikli). `cargo test` (54 passed / 1 ignored), `tsc --noUnusedLocals` (0), i18n eşlik (1127/1127) yeşil.
 - Not: `screenshots.rs` içindeki GDI/Gdiplus hata metinleri düşük seviyeli teşhis mesajı olarak İngilizce bırakıldı.
 
+## 146. i18n Kaçak Temizliği (2. Tur)
+
+- `click-router.ts`: yedek silme toast'u `backup.deleted` anahtarına bağlandı.
+- `input-listeners.ts`: eklenti kurulum toast'u `dlc.installing` anahtarına bağlandı.
+- 2 yeni i18n anahtarı (tr/en eşlikli). `tsc --noUnusedLocals` (0), i18n eşlik (1129/1129) yeşil.
+- Tarama: Rust ve TS genelinde kalan Türkçe karakterli literal'ler (test verisi, `last_played` depolama uyumluluğu, bozuk koleksiyon adı onarımı, dil etiketleri) kasıtlı olarak korundu.
+

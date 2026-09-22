@@ -501,7 +501,7 @@ document.addEventListener("change", (e) => {
     const isChecked = (t as HTMLInputElement).checked;
     if (app && dlcId) {
       if (isChecked) {
-        toast("Eklenti kuruluyor…", "");
+        toast(i18nT("dlc.installing"), "");
         epicInstallGame(dlcId)
           .then(() => {
             toast(i18nT("dl.dlcQueued"), "ok");
