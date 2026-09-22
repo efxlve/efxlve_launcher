@@ -6,7 +6,7 @@
  * feature.
  */
 
-import { getThirdPartyLauncher, epicPortrait, type EpicSummary } from "../epic";
+import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../epic";
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
@@ -83,8 +83,8 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   }
   const g = rawOf(s.appName);
   const partner = getThirdPartyLauncher(g);
-  if (partner) {
-    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.launchWith", { name: esc(partner.name) })}">${icon("external", 14)} ${esc(partner.shortName)}</button>`;
+  if (requiresThirdPartyLauncher(partner)) {
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.launchWith", { name: esc(partner!.name) })}">${icon("external", 14)} ${esc(partner!.shortName)}</button>`;
   }
   return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} ${t("common.install")}</button>`;
 }

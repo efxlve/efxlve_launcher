@@ -15,7 +15,7 @@ import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
-import { getThirdPartyLauncher, type EpicSummary } from "../../epic";
+import { getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../../epic";
 import type { EpicFilter, EpicSort } from "../../core/types";
 import { t } from "../../i18n";
 import { renderFreeGamesShelf } from "../freegames/freegames";
@@ -249,8 +249,8 @@ export function renderHeroSpotlight(): string {
           ? s.updateAvailable || S.availableUpdates.has(s.appName)
             ? `<button class="btn update" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} ${t("common.update")}</button>`
             : `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 15)} ${t("common.playNow")}</button>`
-          : partner
-            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${t("common.launchWith", { name: esc(partner.name) })}</button>`
+          : requiresThirdPartyLauncher(partner)
+            ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 15)} ${t("common.launchWith", { name: esc(partner!.name) })}</button>`
             : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 15)} ${t("common.install")}</button>`;
 
   const heroBadge = isRecent
@@ -403,7 +403,7 @@ export function renderShelfHeroCard(s: EpicSummary): string {
           ? s.updateAvailable || S.availableUpdates.has(s.appName)
             ? `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`
             : `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 13)} ${t("common.play")}</button>`
-          : partner
+          : requiresThirdPartyLauncher(partner)
             ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("lib.launch")}</button>`
             : `<button class="btn primary small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.install")}</button>`;
 

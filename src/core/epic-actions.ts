@@ -15,6 +15,7 @@ import {
   epicListSkipped,
   epicUninstallGame,
   getThirdPartyLauncher,
+  requiresThirdPartyLauncher,
   summarize,
 } from "../epic";
 import { isTauri } from "./constants";
@@ -46,7 +47,7 @@ export async function epicInstall(appName: string): Promise<void> {
   if (!s || epicDlProgress(appName) !== null) return;
   const g = rawOf(appName);
   const partner = getThirdPartyLauncher(g);
-  if (partner) {
+  if (requiresThirdPartyLauncher(partner)) {
     void epicPlay(appName);
     return;
   }
