@@ -96,9 +96,9 @@ const HEAVY_METADATA_KEYS: &[&str] = &[
     "effectiveDate",
     "expiryDate",
     "isCodeRedemptionOnly",
-    "categories",
-    "namespace",
     "title",
+    // NOTE: `namespace` and `categories` are intentionally kept — the frontend
+    // uses them (`isNonGameContent`) to hide Unreal Engine content and mods.
 ];
 
 /// Strips heavy, unused payload from a game before it crosses the IPC boundary.
@@ -493,6 +493,8 @@ mod tests {
                 "longDescription": "a very long text",
                 "developer": "Studio X",
                 "description": "Short text",
+                "namespace": "ue",
+                "categories": [{"path": "mods"}],
                 "keyImages": [{"type": "OfferImageTall", "url": "https://cdn/x.jpg"}],
                 "customAttributes": {"CanRunOffline": {"value": "true"}}
             },
@@ -507,6 +509,9 @@ mod tests {
         assert!(g.metadata.contains_key("developer"));
         assert!(g.metadata.contains_key("keyImages"));
         assert!(g.metadata.contains_key("customAttributes"));
+        // Kept: the frontend uses these to hide Unreal content / mods.
+        assert!(g.metadata.contains_key("namespace"));
+        assert!(g.metadata.contains_key("categories"));
         assert!(g.sidecar.is_none());
         // DLC list at the top level is still needed for the DLC count.
         assert_eq!(g.dlcs.len(), 1);
