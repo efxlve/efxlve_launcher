@@ -40,6 +40,8 @@ export const SPEED_BITS_KEY = "efxlve-speed-bits";
 export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
 /** Persisted in-app notification history. */
 export const NOTIF_KEY = "efxlve-notifications";
+/** Hide to the system tray on close instead of quitting. */
+export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 /** Custom portrait cover URLs keyed by app name. */
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */

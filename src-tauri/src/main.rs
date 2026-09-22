@@ -13,6 +13,20 @@ pub struct AppState {
     pub epic_dl: Mutex<legendary::transfers::EpicDlState>,
 }
 
+/// When set, closing the window hides it to the system tray instead of quitting
+/// so downloads keep running in the background.
+#[derive(Default)]
+pub struct TrayPref {
+    pub minimize_to_tray: std::sync::atomic::AtomicBool,
+}
+
+#[tauri::command]
+fn app_set_minimize_to_tray(enabled: bool, state: tauri::State<'_, TrayPref>) {
+    state
+        .minimize_to_tray
+        .store(enabled, std::sync::atomic::Ordering::Relaxed);
+}
+
 /// Epic/Legendary settings (`<app_data>/settings.json`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EpicSettings {
@@ -1369,20 +1383,97 @@ fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> 
     window.set_decorations(decorations).map_err(|e| e.to_string())
 }
 
+/// Tray menu item handles so the frontend can localize their labels.
+pub struct TrayItems {
+    pub show: tauri::menu::MenuItem<tauri::Wry>,
+    pub quit: tauri::menu::MenuItem<tauri::Wry>,
+}
+
+/// Sets the tray menu labels from the frontend (translated strings).
+#[tauri::command]
+fn app_set_tray_labels(
+    show: String,
+    quit: String,
+    items: tauri::State<'_, TrayItems>,
+) -> Result<(), String> {
+    items.show.set_text(show).map_err(|e| e.to_string())?;
+    items.quit.set_text(quit).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Builds the system tray icon with a Show / Quit menu. Left click restores the
+/// window; the tray keeps the app (and its downloads) alive while hidden.
+fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::menu::{Menu, MenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+
+    let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show, &quit])?;
+    app.manage(TrayItems {
+        show: show.clone(),
+        quit: quit.clone(),
+    });
+
+    TrayIconBuilder::new()
+        .icon(app.default_window_icon().cloned().ok_or("no window icon")?)
+        .tooltip("Efxlve Launcher")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "show" => {
+                if let Some(w) = app.get_window("main") {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                }
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(w) = app.get_window("main") {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                }
+            }
+        })
+        .build(app)?;
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             epic_dl: Mutex::new(legendary::transfers::EpicDlState::default()),
         })
+        .manage(TrayPref::default())
         .setup(|app| {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
             }
             legendary::screenshots::start_f12_listener(app.handle().clone());
+            build_tray(app)?;
             Ok(())
         })
         .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let pref = window.app_handle().state::<TrayPref>();
+                if pref
+                    .minimize_to_tray
+                    .load(std::sync::atomic::Ordering::Relaxed)
+                {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
             if let tauri::WindowEvent::Resized(physical_size) = event {
                 if let Ok(scale_factor) = window.scale_factor() {
                     let logical_size = physical_size.to_logical::<f64>(scale_factor);
@@ -1405,6 +1496,8 @@ fn main() {
             app_is_maximized,
             app_close,
             app_set_decorations,
+            app_set_minimize_to_tray,
+            app_set_tray_labels,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
             legendary::commands::epic_status,

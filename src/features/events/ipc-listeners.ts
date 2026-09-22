@@ -83,6 +83,10 @@ export async function initApp(hooks: {
   // Load the selected language, apply its direction (LTR/RTL) and translate the static top bar.
   await setLanguage(S.appLanguage);
   applyStaticTranslations();
+  if (isTauri) {
+    void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
+    void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
+  }
   updateOfflineModeUi();
   initContextMenu();
   registerRender(hooks.render, hooks.scheduleRender);
