@@ -10,6 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
 import {
+  epicBackupSave,
   epicGetNetworkProfile,
   epicGetSettings,
   epicGetOfflineMode,
@@ -353,6 +354,12 @@ export async function initApp(hooks: {
           const resumeId = S.autoPausedDl;
           S.autoPausedDl = null;
           void epicResumeDownload(resumeId).catch(() => {});
+        }
+        // Opt-in: back up local saves when the game closes.
+        if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
+          void epicBackupSave(id)
+            .then(() => pushNotification({ kind: "info", title: t("notif.backupDone", { title }), appName: id }))
+            .catch(() => pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), appName: id }));
         }
       }
 

@@ -12,6 +12,7 @@ import { EPIC_STORE_URL } from "../epic";
 import {
   DEMO_PLAT_KEY,
   FAV_KEY,
+  AUTO_BACKUP_KEY,
   INITIAL_CARD_CHUNK,
   LANG_KEY,
   MINIMIZE_TRAY_KEY,
@@ -191,6 +192,7 @@ export const S = {
   freeGamesLoading: false,
   studioFilter: "",
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
+  autoBackupOnExit: (localStorage.getItem(AUTO_BACKUP_KEY) === "true") as boolean,
   downloadsSettingsOpen: false,
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
