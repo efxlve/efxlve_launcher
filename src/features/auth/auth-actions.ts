@@ -15,6 +15,7 @@ import { toast } from "../../core/toast";
 import { localizeMessage, t } from "../../i18n";
 import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
+import { loadFreeGames } from "../freegames/freegames";
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
   S.epicBooted = true;
@@ -57,6 +58,7 @@ export async function refreshEpic(): Promise<void> {
     render();
     void loadEpicAchSummaries();
     void loadEpicCollections();
+    void loadFreeGames();
     void refreshUpdates();
     void syncEpicLibrary(false);
   } catch (e) {

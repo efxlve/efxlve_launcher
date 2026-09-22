@@ -1473,6 +1473,7 @@ fn main() {
             eos_overlay_status,
             epic_detect_eos,
             legendary::friends::epic_friends,
+            legendary::freegames::epic_free_games,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
             legendary::steamgrid::epic_test_steamgrid_key,
