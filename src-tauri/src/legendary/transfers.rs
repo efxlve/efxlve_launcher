@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use serde::Serialize;
+use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 
@@ -29,6 +30,36 @@ pub struct EpicDlState {
     pub cancelled: bool,
     pub paused: bool,
     pub queue: VecDeque<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PendingDownload {
+    app_name: String,
+    install_tags: Vec<String>,
+    install_dir: Option<String>,
+}
+
+fn pending_download_path() -> PathBuf {
+    super::skip::default_config_dir().join("efxlve-pending-download.json")
+}
+
+fn write_pending_download(app_name: &str, install_tags: &[String], install_dir: Option<&str>) {
+    let path = pending_download_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let pending = PendingDownload {
+        app_name: app_name.to_string(),
+        install_tags: install_tags.to_vec(),
+        install_dir: install_dir.map(str::to_string),
+    };
+    if let Ok(text) = serde_json::to_string_pretty(&pending) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+fn clear_pending_download() {
+    let _ = std::fs::remove_file(pending_download_path());
 }
 
 impl Default for EpicDlState {
@@ -444,7 +475,7 @@ fn start_download_with_tags(
     override_dir: Option<String>,
 ) -> Result<String, String> {
     let bin = resolve_bin(app)?;
-    let base = resolve_base(app, override_dir);
+    let base = resolve_base(app, override_dir.clone());
     let mut child =
         spawn_install_with_tags(app, &bin, &app_name, &base, false, &install_tags)
             .map_err(|e| format!("@t:dl.startFailed\u{1f}{e}"))?;
@@ -465,6 +496,7 @@ fn start_download_with_tags(
         s.cancelled = false;
         s.paused = false;
     }
+    write_pending_download(&app_name, &install_tags, override_dir.as_deref());
     emit_progress(app, &app_name, 0, false);
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -631,6 +663,8 @@ async fn monitor_download(
             return;
         }
 
+        clear_pending_download();
+
         if s.active.as_ref().is_some_and(|a| a == &app_name) {
             s.active = None;
             s.pid = None;
@@ -748,6 +782,36 @@ pub async fn epic_install_with_options(
     start_download_with_tags(&app, app_name, install_tags, install_dir)
 }
 
+/// Restores the last active download after the launcher process was restarted.
+#[tauri::command]
+pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {
+    let path = pending_download_path();
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(_) => return Ok("@t:dl.noPending".into()),
+    };
+    let pending: PendingDownload = match serde_json::from_str(&text) {
+        Ok(value) => value,
+        Err(_) => {
+            clear_pending_download();
+            return Ok("@t:dl.noPending".into());
+        }
+    };
+    {
+        let state = app.state::<AppState>();
+        let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+        if s.active.is_some() {
+            return Ok("@t:dl.alreadyQueued".into());
+        }
+    }
+    start_download_with_tags(
+        &app,
+        pending.app_name,
+        pending.install_tags,
+        pending.install_dir,
+    )
+}
+
 #[tauri::command]
 pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<String, String> {
     let pid = {
@@ -791,6 +855,7 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
                 .await;
         }
     }
+    clear_pending_download();
     pump_queue(&app);
     Ok("@t:dl.cancelled".into())
 }

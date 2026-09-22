@@ -22,7 +22,9 @@ export function isAppPlatinum(appName: string): boolean {
 /** Active download progress for a game, or null when not downloading. */
 export function epicDlProgress(appName: string): number | null {
   const dl = S.downloads.get(appName);
-  return dl && !dl.done ? dl.progress : null;
+  if (dl && !dl.done) return dl.progress;
+  if (S.dlQueueStatus.active === appName || S.dlQueueStatus.queue.includes(appName)) return 0;
+  return null;
 }
 
 /** Portrait cover markup with custom cover -> Epic key art -> fallback. */
