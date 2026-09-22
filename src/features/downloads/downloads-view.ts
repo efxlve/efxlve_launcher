@@ -170,6 +170,29 @@ export function renderDownloads(): string {
   const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
+  // Recently played installed games: fills the idle page with something useful.
+  const recentInstalled: EpicSummary[] = [];
+  {
+    const seen = new Set<string>();
+    for (const id of S.epicRecent) {
+      const s = S.epicSummariesMap.get(id);
+      if (s?.installed && !seen.has(id)) {
+        seen.add(id);
+        recentInstalled.push(s);
+      }
+      if (recentInstalled.length >= 8) break;
+    }
+    if (recentInstalled.length < 8) {
+      for (const s of S.epicSummaries) {
+        if (s.installed && !seen.has(s.appName)) {
+          seen.add(s.appName);
+          recentInstalled.push(s);
+          if (recentInstalled.length >= 8) break;
+        }
+      }
+    }
+  }
+
   // Active download card (compact) or a small idle card.
   let heroMarkup = "";
   if (activeDl) {
@@ -213,7 +236,7 @@ export function renderDownloads(): string {
         </div>
       </div>
     `;
-  } else if (queueApps.length === 0 && completedEntries.length === 0) {
+  } else if (queueApps.length === 0 && completedEntries.length === 0 && recentInstalled.length === 0) {
     heroMarkup = `
       <div class="dl-empty-card">
         <div class="dl-empty-icon">${icon("download", 26)}</div>
@@ -347,29 +370,6 @@ export function renderDownloads(): string {
         ${items}
       </div>
     `;
-  }
-
-  // Recently played installed games: fills the idle page with something useful.
-  const recentInstalled: EpicSummary[] = [];
-  {
-    const seen = new Set<string>();
-    for (const id of S.epicRecent) {
-      const s = S.epicSummariesMap.get(id);
-      if (s?.installed && !seen.has(id)) {
-        seen.add(id);
-        recentInstalled.push(s);
-      }
-      if (recentInstalled.length >= 8) break;
-    }
-    if (recentInstalled.length < 8) {
-      for (const s of S.epicSummaries) {
-        if (s.installed && !seen.has(s.appName)) {
-          seen.add(s.appName);
-          recentInstalled.push(s);
-          if (recentInstalled.length >= 8) break;
-        }
-      }
-    }
   }
 
   const recentSection =

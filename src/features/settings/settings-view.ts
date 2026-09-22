@@ -14,6 +14,7 @@ import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
 import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
 import {
+  eosOverlayStatus,
   epicDefaultInstallDir,
   epicDetectEglGames,
   epicGetSettings,
@@ -284,6 +285,25 @@ export function renderSettings(): string {
       ` : ""}
     </div>
 
+    <!-- EOS Overlay: installed system-wide by the Epic Games Launcher, injected into games. -->
+    <div class="settings-box">
+      <h3>${icon("users", 15)} ${t("settings.eosTitle")}</h3>
+      <div class="eos-row">
+        <span class="eos-dot ${S.eosOverlay?.installed ? "on" : "off"}"></span>
+        <div style="flex:1;min-width:0">
+          <strong style="font-size:13px;color:#fff">${S.eosOverlay?.installed ? t("settings.eosInstalled") : t("settings.eosMissing")}</strong>
+          <p class="muted" style="font-size:12px;margin:4px 0 0;line-height:1.45">
+            ${S.eosOverlay?.installed ? t("settings.eosInstalledDesc") : t("settings.eosMissingDesc")}
+          </p>
+          ${S.eosOverlay?.installed && S.eosOverlay.path ? `<code style="display:block;margin-top:6px;font-size:11px">${esc(S.eosOverlay.path)}</code>` : ""}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          ${S.eosOverlay?.installed ? `<button class="ps5-btn ghost small" data-act="open-eos-folder">${t("settings.eosOpenFolder")}</button>` : ""}
+          <button class="ps5-btn ghost small" data-act="refresh-eos">${t("settings.eosRefresh")}</button>
+        </div>
+      </div>
+    </div>
+
     <div class="settings-box">
       <h3>${t("settings.systemTitle")}</h3>
       <p><strong>${t("settings.backend")}:</strong> ${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</p>
@@ -296,18 +316,20 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, eglList, sgdbKey, thirdParty] = await Promise.all([
+      const [st, dir, eglList, sgdbKey, thirdParty, eos] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
         epicGetSteamGridKey().catch(() => null),
         epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
+        eosOverlayStatus().catch(() => null),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
       S.eglDetectedList = eglList;
       S.steamGridApiKey = sgdbKey;
       S.thirdPartyLaunchers = thirdParty;
+      S.eosOverlay = eos;
     } catch {
       // Silent: keep the last cached values.
     }

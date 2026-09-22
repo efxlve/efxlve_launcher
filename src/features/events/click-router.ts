@@ -22,7 +22,7 @@ import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, type EpicSettings } from "../../epic";
 import {
   bootEpic,
   epicDoImport,
@@ -1288,6 +1288,15 @@ document.addEventListener("click", (e) => {
     S.presenceEnabled = !S.presenceEnabled;
     applyPresenceSettings();
     render();
+  } else if (act === "refresh-eos") {
+    void (async () => {
+      S.eosOverlay = await eosOverlayStatus().catch(() => null);
+      render();
+    })();
+  } else if (act === "open-eos-folder") {
+    if (S.eosOverlay?.installed && S.eosOverlay.path) {
+      void epicOpenFolderPath(S.eosOverlay.path).catch((e: unknown) => toast(String(e), "err"));
+    }
   } else if (act === "toggle-downloads-settings") {
     S.downloadsSettingsOpen = !S.downloadsSettingsOpen;
     render();

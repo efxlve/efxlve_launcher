@@ -928,7 +928,7 @@ mod tests {
         #[cfg(windows)]
         {
             assert!(!drives.is_empty());
-            assert!(drives.iter().any(|d| d.letter.starts_with("C:")));
+            assert!(drives.iter().any(|d| d.letter == "C"));
         }
     }
 }

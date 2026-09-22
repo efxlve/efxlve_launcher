@@ -465,6 +465,16 @@ export const epicSetPreferredCdn = (host: string | null) =>
   invoke<void>("epic_set_preferred_cdn", { host });
 /** Removes legendary's temporary/metadata/manifest files. */
 export const epicCleanupCache = () => invoke<string>("epic_cleanup_cache");
+
+/** EOS Overlay presence (installed system-wide by the Epic Games Launcher). */
+export interface EosOverlayStatus {
+  installed: boolean;
+  path: string;
+}
+export const eosOverlayStatus = () => invoke<EosOverlayStatus>("eos_overlay_status");
+
+/** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
+export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");
 export const epicSetInstallDir = (dir: string | null) =>
   invoke<EpicSettings>("epic_set_install_dir", { dir });
