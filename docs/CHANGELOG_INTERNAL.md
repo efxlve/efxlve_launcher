@@ -2115,3 +2115,23 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Mağaza webview'i boşta yok ediliyor:** gizli WebView2 tam bir Chromium renderer süreci tutuyor. Mağazadan çıktıktan sonra **3 dakika** kullanılmazsa `destroy_store_view` ile kapatılır (tek zamanlı `setTimeout`, polling yok); mağaza tekrar açılınca şeffaf şekilde yeniden oluşturulur. Yeniden açma gecikmesi yükleme ekranıyla gizlenir.
 - `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177), 0 kullanılmayan anahtar yeşil.
 
+## 161. Baştan Sona Donanım Optimizasyonu (CPU/GPU/RAM)
+
+**GPU / compositing (en büyük görsel kazanç)**
+- **39 `backdrop-filter` kaldırıldı** (tüm `src/styles`). Çoğu zaten opak (0.8–0.96) zemin üzerindeydi; blur görsel olarak fark etmiyordu ama her karede GPU'da katman rasterize ediyordu. Özellikle tekrar eden `.platinum-badge`, `.ps5-card-plat-badge`, tam ekran modal overlay'leri ve açılır menüler.
+- Sonsuz **dekoratif** animasyonlar durduruldu: `.goygoy-pulse-dot`, `.pbadge.update .dot` (her güncelleme kartında!), `.btn.running` ve `.running-dot` artık statik (pulse kaldırıldı; `pulse-green`/`dot-blink`/`goygoyPulse` keyframe'leri silindi).
+- `.tab-content-enter` üzerindeki kalıcı `will-change` kaldırıldı (tüm sekme içeriğini sürekli compositor katmanında tutuyordu). Profil hero blur'u 28→16px.
+- `.platinum-badge svg` `drop-shadow` (tekrar eden kartlarda filtre) kaldırıldı.
+
+**CPU / boşta yük**
+- `epic_cached_library` (908 dosya parse), `epic_get_achievements_summary` (tüm metadata + kupa taraması), `epic_get_system_drives` (24 sürücü sorgusu), `epic_import_egl_collections`, `epic_backup_save/restore` artık **async + `spawn_blocking`** → ana iş parçacığı asla bloklanmaz.
+- Hız grafiği çizimi `scheduleDrawSpeedCanvas` ile **rAF'ta tek çizime** indirildi (indirme sırasında saniyede ~5 `getBoundingClientRect` yerine ≤1).
+- `#totop` scroll ve drawer/collection ok resize işleyicileri rAF ile throttle edildi.
+- Gamepad HUD'u artık her render'da yeniden kurulmuyor (modal/görünüm/dil anahtarına göre memoize).
+- Profil kartlarında kart başına `epicSummaries.find` (O(N)) → `epicSummariesMap.get` (O(1)); koleksiyon sayımları `Set` ile O(N×M) → O(N).
+
+**RAM / ağ**
+- Profil kartı arka planı `background-image` (lazy olamaz) → `loading="lazy" decoding="async"` `<img>`; her kart artık geniş sanatı hemen indirmiyor.
+
+- `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177), 0 kullanılmayan anahtar yeşil.
+
