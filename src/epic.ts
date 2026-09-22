@@ -99,26 +99,59 @@ const COVER_PRIORITY = [
   "DieselGameBoxLogo",
 ];
 
+/**
+ * Cover URL resolution is deterministic per game but was recomputed for every
+ * card on every render. These caches are cleared when the raw library changes.
+ */
+const coverCache = new Map<string, string | null>();
+const portraitCache = new Map<string, string | null>();
+
+/** Invalidates cached cover URLs (call when the raw game list is replaced). */
+export function clearCoverCaches(): void {
+  coverCache.clear();
+  portraitCache.clear();
+}
+
 export function epicCover(g: EpicGame): string | null {
+  const cached = coverCache.get(g.app_name);
+  if (cached !== undefined) return cached;
+  let url: string | null = null;
   const imgs = g.metadata?.keyImages;
-  if (!Array.isArray(imgs)) return null;
-  for (const t of COVER_PRIORITY) {
-    const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
-    if (found) return found.url;
+  if (Array.isArray(imgs)) {
+    for (const t of COVER_PRIORITY) {
+      const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
+      if (found) {
+        url = found.url;
+        break;
+      }
+    }
+    if (url === null) {
+      const any = imgs.find((i) => typeof i?.url === "string");
+      url = any ? (any.url as string) : null;
+    }
   }
-  const any = imgs.find((i) => typeof i?.url === "string");
-  return any ? (any.url as string) : null;
+  coverCache.set(g.app_name, url);
+  return url;
 }
 
 /** Portrait cover for cards: Tall → wide art → first available. */
 export function epicPortrait(g: EpicGame): string | null {
+  const cached = portraitCache.get(g.app_name);
+  if (cached !== undefined) return cached;
+  let url: string | null = null;
   const imgs = g.metadata?.keyImages;
-  if (!Array.isArray(imgs)) return epicCover(g);
-  for (const t of ["DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"]) {
-    const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
-    if (found) return found.url;
+  if (Array.isArray(imgs)) {
+    for (const t of ["DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"]) {
+      const found = imgs.find((i) => i?.type === t && typeof i?.url === "string");
+      if (found) {
+        url = found.url;
+        break;
+      }
+    }
   }
-  return epicCover(g);
+  if (url === null) url = epicCover(g);
+  portraitCache.set(g.app_name, url);
+  return url;
 }
 
 export const EPIC_STORE_URL = "https://store.epicgames.com/";

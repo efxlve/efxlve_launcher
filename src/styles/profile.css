@@ -790,6 +790,9 @@
   font: inherit;
   width: 100%;
   box-sizing: border-box;
+  /* Off-screen trophy cards skip layout/paint. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 118px;
 }
 
 /* Cinematic horizontal backdrop art */
