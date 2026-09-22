@@ -243,6 +243,11 @@ document.addEventListener("change", (e) => {
     applyPresenceSettings();
     return;
   }
+  if (target && target.id === "studio-filter") {
+    S.studioFilter = (target as unknown as HTMLSelectElement).value;
+    render();
+    return;
+  }
   if (target && (target as HTMLElement).id === "ach-sort-select") {
     S.achSortOrder = (target as unknown as HTMLSelectElement).value as any;
     if (S.currentModalAppName) {

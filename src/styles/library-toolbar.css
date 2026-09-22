@@ -115,3 +115,36 @@
   color: #c7d2fe;
 }
 
+
+/* Studio filter dropdown */
+.studio-filter-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ps5-surface-2, var(--panel));
+  border: 1px solid var(--ps5-border-default, var(--border));
+  border-radius: 10px;
+  padding: 0 8px;
+  height: 34px;
+  max-width: 220px;
+}
+
+.studio-filter-icon { color: var(--muted); display: inline-flex; }
+
+.studio-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 4px;
+  height: 100%;
+  max-width: 180px;
+  cursor: pointer;
+  outline: none;
+  text-overflow: ellipsis;
+}
+.studio-filter-select:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; border-radius: 8px; }
+.studio-filter-select option { background: #0b0d14; color: #e2e8f0; }

@@ -33,8 +33,53 @@ const sortOptions: {
   { id: "platinum", label: t("lib.sortPlatinum"), icon: "trophy" },
   { id: "updates", label: t("lib.sortUpdates"), icon: "refresh" },
 ];
+/** Studio/publisher name for a game (empty when unknown). */
+export function studioOf(s: EpicSummary): string {
+  const g = rawOf(s.appName);
+  const d = g?.metadata?.developer;
+  return typeof d === "string" ? d.trim() : "";
+}
+
+/** Unique studios with game counts, sorted for the filter dropdown. */
+export function epicStudios(): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const s of S.epicSummaries) {
+    const d = studioOf(s);
+    if (d) counts.set(d, (counts.get(d) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => S.trCollator.compare(a.name, b.name));
+}
+
+/**
+ * Parses the search box into plain terms plus `key:value` operators:
+ * `dev:<studio>` and `is:installed|notinstalled|fav|update`.
+ */
+function parseQuery(q: string): {
+  terms: string[];
+  dev: string;
+  installed: boolean;
+  notInstalled: boolean;
+  fav: boolean;
+  update: boolean;
+} {
+  const out = { terms: [] as string[], dev: "", installed: false, notInstalled: false, fav: false, update: false };
+  for (const tk of q.split(/\s+/)) {
+    if (!tk) continue;
+    if (tk.startsWith("dev:") || tk.startsWith("studio:")) out.dev = tk.slice(tk.indexOf(":") + 1);
+    else if (tk === "is:installed") out.installed = true;
+    else if (tk === "is:notinstalled") out.notInstalled = true;
+    else if (tk === "is:fav" || tk === "is:favorite") out.fav = true;
+    else if (tk === "is:update" || tk === "is:updates") out.update = true;
+    else out.terms.push(tk);
+  }
+  return out;
+}
+
 export function epicVisibleSummaries(): EpicSummary[] {
   const q = S.query.trim().toLocaleLowerCase("tr");
+  const query = parseQuery(q);
   const activeCol =
     S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav"
       ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
@@ -54,12 +99,18 @@ export function epicVisibleSummaries(): EpicSummary[] {
     if (S.epicFilter === "fav" && !S.epicFav.has(s.appName)) return false;
     if (S.epicFilter === "updates" && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
     if (S.epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
-    if (q) {
-      // Match the title or the studio/publisher so "Ubisoft" finds its games.
-      if (s.title.toLocaleLowerCase("tr").includes(q)) return true;
-      const g = rawOf(s.appName);
-      const studio = String(g?.metadata?.developer || "").toLocaleLowerCase("tr");
-      if (!studio.includes(q)) return false;
+
+    const studio = studioOf(s).toLocaleLowerCase("tr");
+    if (S.studioFilter && studio !== S.studioFilter.toLocaleLowerCase("tr")) return false;
+    if (query.installed && !s.installed) return false;
+    if (query.notInstalled && s.installed) return false;
+    if (query.fav && !S.epicFav.has(s.appName)) return false;
+    if (query.update && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
+    if (query.dev && !studio.includes(query.dev)) return false;
+    // Plain terms match the title or the studio/publisher.
+    const title = s.title.toLocaleLowerCase("tr");
+    for (const term of query.terms) {
+      if (!title.includes(term) && !studio.includes(term)) return false;
     }
     return true;
   });
@@ -747,6 +798,23 @@ export function renderEpic(): string {
       </div>
 
       <div class="unified-toolbar-right">
+        ${(() => {
+          const studios = epicStudios();
+          if (studios.length === 0) return "";
+          return `
+        <div class="studio-filter-wrap" title="${t("lib.studioFilterTip")}">
+          <span class="studio-filter-icon">${icon("users", 13)}</span>
+          <select id="studio-filter" class="studio-filter-select">
+            <option value="">${t("lib.allStudios")}</option>
+            ${studios
+              .map(
+                (st) =>
+                  `<option value="${esc(st.name)}" ${S.studioFilter === st.name ? "selected" : ""}>${esc(st.name)} (${st.count})</option>`,
+              )
+              .join("")}
+          </select>
+        </div>`;
+        })()}
         <label class="unified-search-box">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="search" type="search" placeholder="${t("lib.searchPlaceholder")}" value="${esc(S.query)}" autocomplete="off" spellcheck="false" />

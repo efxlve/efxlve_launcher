@@ -1089,6 +1089,8 @@
   "lib.editCollection": "{name} koleksiyonunu düzenle",
   "lib.newCollection": "+ Yeni Koleksiyon",
   "lib.searchPlaceholder": "Oyun, stüdyo veya yayıncı ara...",
+  "lib.allStudios": "Tüm Stüdyolar",
+  "lib.studioFilterTip": "Stüdyoya göre filtrele. İpucu: dev:ubisoft veya is:installed yazabilirsiniz.",
   "lib.sortTip": "Sıralama: {label}",
   "lib.sort": "Sırala",
   "lib.cardSize": "Kart boyutu",
