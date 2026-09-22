@@ -2174,4 +2174,5 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 ### 165.1. Hile Koruması Yanlış Tespiti (GTA)
 
 - `getAntiCheat` içindeki `title.includes("grand theft auto")` koşulu **GTA III / Vice City / San Andreas / IV** için de BattlEye döndürüyordu (bu oyunlarda hile koruması yok). Koşul yalnızca **GTA V / GTA 5 / GTA Online**'ı yakalayacak şekilde daraltıldı (`\bgta ?(v|5)\b` / `grand theft auto (v|5)\b`). Doğrulama: III/VC/SA/IV → yok, V/5 → BattlEye.
+- **Rockstar satırı netleştirildi:** satır artık "Harici Başlatıcı · **Rockstar Games Launcher gerektirir**" yazıyor (eskiden yalnızca "Gerekli" idi). `feat.rockstarLauncher` anahtarı kaldırıldı.
 
