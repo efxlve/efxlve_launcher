@@ -13,7 +13,7 @@ import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, formatScreenshotDate } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
-import { type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
+import { isRockstarGame, type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
 export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {
@@ -369,8 +369,7 @@ export function renderGameFeatures(
     cloudClass = "supported";
     cloudTooltip = i18nT("feat.epicCloudTip");
   } else if (partner) {
-    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
-    cloudVal = i18nT("feat.partnerCloud", { name: pName });
+    cloudVal = i18nT("feat.partnerCloud", { name: partner.name });
     cloudClass = "accent";
     cloudTooltip = i18nT("feat.partnerCloudTip", { name: partner.name });
   }
@@ -575,6 +574,19 @@ export function renderGameFeatures(
         <span>${i18nT("feat.eos")}</span>
       </div>
       <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
+    </div>`
+        : ""
+    }
+
+    ${
+      isRockstarGame(g)
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.rockstarTip"))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("external", 12)}</div>
+        <span>${i18nT("feat.rockstarLauncher")}</span>
+      </div>
+      <div class="hub-feature-val accent">${i18nT("feat.rockstarRequired")}</div>
     </div>`
         : ""
     }
