@@ -253,16 +253,16 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: #c79a2b;
-  color: #fff;
+  background: #b68a2c;
+  color: #0b0d14;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(199, 154, 43, 0.28);
+  box-shadow: 0 4px 20px rgba(182, 138, 44, 0.24);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.update:hover {
-  background: #d8ac35;
-  box-shadow: 0 6px 28px rgba(199, 154, 43, 0.42);
+  background: #c79b3e;
+  box-shadow: 0 6px 28px rgba(182, 138, 44, 0.38);
   transform: translateY(-2px);
 }
 .hub-actions-bar .btn.ghost {

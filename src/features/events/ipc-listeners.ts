@@ -185,7 +185,9 @@ export async function initApp(hooks: {
         if (lastDlSample?.id === id) {
           const elapsed = (now - lastDlSample.at) / 1000;
           const delta = downloadedBytes - lastDlSample.bytes;
-          if (elapsed > 0 && delta > 0) {
+          // Progress output can arrive in a burst; tiny intervals create fake
+          // multi-gigabyte speeds when the same byte block is reported twice.
+          if (elapsed >= 0.25 && delta > 0) {
             measuredSpeedBytes = Math.round(delta / elapsed);
           }
         }
@@ -199,6 +201,9 @@ export async function initApp(hooks: {
         else S.downloads.set(id, { progress, done: false, title });
 
         if (!S.activeDlMetrics || S.activeDlMetrics.id !== id) {
+          S.peakNetSpeedBytes = 0;
+          S.speedHistory.fill(0);
+          S.diskHistory.fill(0);
           S.activeDlMetrics = {
             id,
             title,

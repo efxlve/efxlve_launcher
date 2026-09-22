@@ -131,3 +131,4 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Ağ hızı satırı eksik olduğunda indirilen byte farkından hız hesaplanır; güncelleme eylemi ana lavanta buton stilini kullanır.
 - Aktif indirme varken pencere kapatma ve tepsi çıkışı uygulamayı sonlandırmaz; launcher tepsiye gizlenerek indirmeyi canlı tutar.
 - Güncelleme eylemi, ana mor yerine dengeli amber/sarı ton kullanır.
+- İndirme hızındaki kısa örnek sıçramaları minimum örnek aralığıyla bastırılır; UI/backend kimlik ayrışmasında iptal gerçek aktif sürece uygulanır.
