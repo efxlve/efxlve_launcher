@@ -718,6 +718,7 @@
   "store.viewCreateFailed": "could not create the store view",
   "store.viewTimeout": "store view could not be opened within 20s",
   "store.opened": "opened",
+  "store.closed": "closed",
   "auth.legendaryReady": "legendary ready",
   "auth.downloadFailed": "Download failed: {msg}",
   "auth.signedIn": "Signed in as {name}",

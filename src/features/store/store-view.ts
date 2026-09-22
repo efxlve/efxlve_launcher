@@ -69,8 +69,31 @@ export async function openStore(): Promise<void> {
   await openStoreUrl(EPIC_STORE_URL, "store");
 }
 
+/** After this long away from the store, its webview is destroyed to free RAM. */
+const STORE_IDLE_DESTROY_MS = 3 * 60 * 1000;
+
+/** Cancels a pending idle destroy (the store is being used again). */
+function cancelStoreDestroy(): void {
+  if (S.storeDestroyTimer !== null) {
+    window.clearTimeout(S.storeDestroyTimer);
+    S.storeDestroyTimer = null;
+  }
+}
+
+/** Schedules destroying the store webview after a period of inactivity. */
+function scheduleStoreDestroy(): void {
+  cancelStoreDestroy();
+  S.storeDestroyTimer = window.setTimeout(() => {
+    S.storeDestroyTimer = null;
+    if (!S.storeShown && isTauri) {
+      invoke<string>("destroy_store_view").catch(() => {});
+    }
+  }, STORE_IDLE_DESTROY_MS);
+}
+
 export async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeAllModals();
+  cancelStoreDestroy();
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   S.lastStoreUrl = url;
   S.storeMode = mode;
@@ -139,6 +162,8 @@ export function hideStore(): void {
   if (S.storeShown) {
     S.storeShown = false;
     if (isTauri) invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
+    // Release the hidden Chromium renderer after a while to save memory.
+    scheduleStoreDestroy();
   }
   if (S.view === "store") S.view = S.lastNonStoreView;
 }

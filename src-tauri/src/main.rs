@@ -1185,6 +1185,20 @@ fn hide_store_view(app: AppHandle) -> Result<String, String> {
     Ok("gizlendi".into())
 }
 
+/// Destroys the embedded store webview to release its renderer process memory
+/// (a hidden WebView2 keeps a full Chromium renderer alive). It is recreated on
+/// demand the next time the store is opened.
+#[tauri::command]
+fn destroy_store_view(app: AppHandle) -> Result<String, String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    for v in store_views(&window) {
+        let _ = v.close();
+    }
+    Ok("@t:store.closed".into())
+}
+
 /// Opens a folder in the file manager.
 /// Note: Rust is used directly instead of the opener plugin, so no capability
 /// scope issues occur and every drive is supported.
@@ -1568,6 +1582,7 @@ fn main() {
             show_store_view,
             resize_store_view,
             hide_store_view,
+            destroy_store_view,
             open_folder,
             eos_overlay_status,
             epic_detect_eos,
