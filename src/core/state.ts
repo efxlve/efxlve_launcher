@@ -24,7 +24,7 @@ import {
   SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
-import type { CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, View } from "./types";
+import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
@@ -184,6 +184,8 @@ export const S = {
   friends: ([]) as EpicFriend[],
   friendsLoading: false,
   friendsError: "",
+  notifications: ([]) as AppNotification[],
+  notifOpen: false,
   downloadsSettingsOpen: false,
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],

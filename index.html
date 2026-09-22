@@ -26,6 +26,10 @@
             <button class="nav-tab" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads &amp; Queue (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="badge hidden"></span></button>
           </div>
           <div class="nav-right">
+            <button id="notif-btn" class="nav-icon-btn notif-btn" data-act="toggle-notifications" data-i18n-title="notif.title" title="Notifications">
+              <i data-lucide="bell"></i>
+              <span id="notif-badge" class="badge notif-badge hidden"></span>
+            </button>
             <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online Mode Active">
               <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Çevrimiçi</span>
             </button>
@@ -61,6 +65,7 @@
     <div id="move-modal-root"></div>
     <div id="storage-root"></div>
   <div id="ctx-root"></div>
+  <div id="notif-root"></div>
     <div id="toasts"></div>
     <button id="totop" data-act="to-top" data-i18n-title="common.toTop" title="Back to top">↑</button>
     <script type="module" src="/src/main.ts"></script>

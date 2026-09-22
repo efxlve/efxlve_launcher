@@ -6,6 +6,8 @@
  * request a re-render without importing `main.ts` (which would create a cycle).
  */
 
+import type { NotifKind } from "./types";
+
 let renderImpl: () => void = () => {};
 let scheduleImpl: () => void = () => {};
 let gamepadHudImpl: (active?: boolean) => void = () => {};
@@ -51,6 +53,21 @@ export function registerPresenceSync(fn: () => void): void {
 /** Refresh the Discord presence from the current view/game. No-op until registered. */
 export function presenceSync(): void {
   presenceSyncImpl();
+}
+
+let notifyImpl: (input: { kind: NotifKind; title: string; body?: string; appName?: string }) => void =
+  () => {};
+
+/** Called once by main.ts to wire the notification center (feature module). */
+export function registerNotify(
+  fn: (input: { kind: NotifKind; title: string; body?: string; appName?: string }) => void,
+): void {
+  notifyImpl = fn;
+}
+
+/** Push an in-app notification. No-op until registered. */
+export function notify(input: { kind: NotifKind; title: string; body?: string; appName?: string }): void {
+  notifyImpl(input);
 }
 
 let closeAllModalsImpl: () => void = () => {};

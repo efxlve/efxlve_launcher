@@ -20,6 +20,7 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
+import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
 import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
@@ -52,6 +53,7 @@ function render(): void {
   if (S.view === "store") {
     viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
+    renderNotificationPanel();
     presenceSync();
     return;
   }
@@ -72,6 +74,7 @@ function render(): void {
   }
   updateChrome();
   updateGamepadHud(S.gamepadPolling);
+  renderNotificationPanel();
   presenceSync();
 }
 
@@ -83,6 +86,7 @@ function closeAllModals(): void {
   closeCustomCoverModal();
   closeCollectionModal();
   closeStorageManager();
+  closeNotifPanel();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

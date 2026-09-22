@@ -90,6 +90,7 @@ import {
   playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
+import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel } from "../notifications/notifications";
 import { loadSettingsView } from "../settings/settings-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
@@ -162,7 +163,18 @@ document.addEventListener("click", (e) => {
     }
   }
 
+  // Capture the target before any re-render detaches it from the DOM.
   const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-view]");
+
+  // Close the notification dropdown when clicking anywhere outside it.
+  if (S.notifOpen) {
+    const el = e.target as HTMLElement;
+    if (!el.closest("#notif-root") && !el.closest('[data-act="toggle-notifications"]')) {
+      closeNotifPanel();
+      render();
+    }
+  }
+
   if (!t) return;
 
   if (t.dataset.view) {
@@ -224,6 +236,23 @@ document.addEventListener("click", (e) => {
     void openStore();
   } else if (act === "open-profile") {
     openProfile();
+  } else if (act === "toggle-notifications") {
+    if (S.notifOpen) closeNotifPanel();
+    else openNotifPanel();
+    render();
+  } else if (act === "notif-clear") {
+    clearNotifications();
+    render();
+  } else if (act === "notif-read-all") {
+    markAllRead();
+    render();
+  } else if (act === "notif-dismiss" && id) {
+    dismissNotification(id);
+    render();
+  } else if (act === "notif-open" && id) {
+    S.notifOpen = false;
+    openEpicModal(id);
+    render();
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
     void loadFriends(true);

@@ -23,7 +23,7 @@ import { t } from "../i18n";
 import { epicDlProgress } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
-import { render, scheduleRender } from "./render";
+import { notify, render, scheduleRender } from "./render";
 import { rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
 import { toast } from "./toast";
@@ -122,14 +122,24 @@ export async function refreshEpicInstalled(): Promise<void> {
   }
 }
 
+/** Whether the first update sweep already ran (skip notifications for it). */
+let updatesCheckedOnce = false;
+
 /** Check for pending updates across all installed games. */
 export async function refreshUpdates(): Promise<void> {
   if (!isTauri) return;
   try {
     const updates = await epicCheckUpdates();
+    const firstRun = !updatesCheckedOnce;
+    updatesCheckedOnce = true;
+    const prev = new Set(S.availableUpdates.keys());
     S.availableUpdates.clear();
     for (const u of updates) {
       S.availableUpdates.set(u.appName, u);
+      if (!firstRun && !prev.has(u.appName)) {
+        const title = S.epicSummariesMap.get(u.appName)?.title ?? u.appName;
+        notify({ kind: "update", title: t("notif.updateAvailable", { title }), appName: u.appName });
+      }
     }
     if (S.availableUpdates.size > 0 && S.view === "library") {
       scheduleRender();
