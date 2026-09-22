@@ -2154,3 +2154,15 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
 
+## 164. Hızlı Açılış (Startup) Optimizasyonu
+
+**Kök neden:** İlk boyama, `initApp` içindeki ~24 **sıralı IPC** çağrısı (18 `await listen` + ayar okumaları) ve `epic_cached_library`'nin **908 metadata dosyasını** parse etmesi bittikten sonra yapılıyordu → pencere saniyelerce boş/donuk görünüyordu.
+
+- **İlk boyama en başa alındı:** Hook'lar senkron kaydedilir, dil yüklenir ve `render()` **hemen** çağrılır (iskelet kütüphane). Dil yüklemesi tr/en için zaten paket içinde (await gereksiz).
+- **Boot işleri artık ilk boyamayı bloklamıyor:** `bootEpic()`, pencere-chrome IPC'leri (decorations/tray), `library_dir`, `epicListSkipped`, IPC dinleyici kayıtları ve ayar okumaları ilk boyamadan **sonra** çalışır; `bootEpic()` hemen başlatılır.
+- **Tek dosyalık kütüphane anlık görüntüsü (snapshot):** `efxlve_library_snapshot.json` — 908 dosya yerine **1 dosya** okunur. `epic_cached_library` snapshot'ı tercih eder, yoksa 908 dosyayı okuyup snapshot yazar. `epic_list_games` (arka plan senkronu) ve mağazanın `get_owned_games_json`'u da snapshot kullanır. Böylece ikinci açılış anında olur; HDD'de saniyeler kazanılır. Birim testi eklendi.
+- **Statik açılış ekranı:** `index.html` içine inline-stilli (CSS paketine bağımlı olmayan) bir splash eklendi; JS paketi yüklenmeden önce bile görünür, `render()` ile değiştirilir.
+- **`backgroundThrottling: "disabled"` kaldırıldı:** tepsiye küçültülünce webview tam hızda çalışıp CPU yakıyordu; artık varsayılan (throttle) — arka planda boşta yük yok.
+
+- `cargo test` (60 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
+
