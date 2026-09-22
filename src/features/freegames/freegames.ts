@@ -7,7 +7,7 @@
 
 import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
-import { render } from "../../core/render";
+import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { epicFreeGames, type FreeGame } from "../../epic";
@@ -48,7 +48,7 @@ export async function loadFreeGames(force = false): Promise<void> {
     S.freeGames = { current: [], upcoming: [] };
   } finally {
     S.freeGamesLoading = false;
-    if (S.view === "library") render();
+    if (S.view === "library") scheduleRender();
   }
 }
 
