@@ -118,7 +118,7 @@ export async function refreshEpicInstalled(): Promise<void> {
     if (S.view === "library") scheduleRender();
     void refreshUpdates();
   } catch (e) {
-    toast(`Kurulu listesi tazelenemedi: ${String(e)}`, "err");
+    toast(t("lib.installedRefreshFailed", { msg: String(e) }), "err");
   }
 }
 

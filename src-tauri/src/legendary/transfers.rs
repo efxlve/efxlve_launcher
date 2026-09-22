@@ -687,7 +687,7 @@ pub async fn epic_install_game(
         if s.active.as_ref().is_some_and(|a| a == &app_name)
             || s.queue.iter().any(|q| q == &app_name)
         {
-            return Err("Bu oyun zaten indiriliyor veya kuyrukta".into());
+            return Err("@t:dl.alreadyQueued".into());
         }
         if s.active.is_some() {
             drop(s);
@@ -731,7 +731,7 @@ pub async fn epic_install_with_options(
         if s.active.as_ref().is_some_and(|a| a == &app_name)
             || s.queue.iter().any(|q| q == &app_name)
         {
-            return Err("Bu oyun zaten indiriliyor veya kuyrukta".into());
+            return Err("@t:dl.alreadyQueued".into());
         }
         if s.active.is_some() {
             s.queue.push_back(app_name.clone());
@@ -795,7 +795,7 @@ pub async fn epic_pause_download(
             s.paused = true;
             s.pid.take()
         } else {
-            return Err("Bu oyun aktif indirilmiyor".into());
+            return Err("@t:dl.notActive".into());
         }
     };
     if let Some(p) = pid {

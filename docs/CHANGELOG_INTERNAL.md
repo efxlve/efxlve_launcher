@@ -2000,3 +2000,10 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - Ek düzeltme: `game-status` sonrası "Oyna" butonu metni sabit Türkçe yerine `common.play` anahtarına bağlandı (i18n kaçağı).
 - 2 yeni i18n anahtarı (tr/en eşlikli). `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1124/1124) yeşil.
 
+## 145. i18n Kaçak Temizliği (Kalan Sabit Türkçe Metinler)
+
+- `core/epic-actions.ts`: `refreshEpicInstalled` hata toast'u sabit Türkçe yerine `lib.installedRefreshFailed` anahtarına bağlandı.
+- `legendary/transfers.rs`: 3 kullanıcı-görünür hata mesajı `@t:` anahtarlarına çevrildi — `dl.alreadyQueued` (2 yerde) ve `dl.notActive`.
+- 3 yeni i18n anahtarı (tr/en eşlikli). `cargo test` (54 passed / 1 ignored), `tsc --noUnusedLocals` (0), i18n eşlik (1127/1127) yeşil.
+- Not: `screenshots.rs` içindeki GDI/Gdiplus hata metinleri düşük seviyeli teşhis mesajı olarak İngilizce bırakıldı.
+
