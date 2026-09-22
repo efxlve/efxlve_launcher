@@ -2168,5 +2168,6 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 ## 165. 3. Parti Başlatıcılar: Rockstar Kaldırıldı
 
-- Ayarlar > Entegrasyonlar'daki "3. Parti Başlatıcılar" listesinden **Rockstar Games Launcher** çıkarıldı (Epic üzerinden indirilip başlatıldığı için burada kontrol edilecek bir şey yok). Rust `epic_third_party_launchers` artık yalnızca EA App + Ubisoft Connect döner; bölüm başlığı `(EA, Ubisoft)` olarak güncellendi. (Kütüphanedeki oyun bazlı Rockstar algılaması etkilenmedi.)
+- Ayarlar > Entegrasyonlar'daki "3. Parti Başlatıcılar" listesinden **Rockstar Games Launcher** çıkarıldı (Epic üzerinden indirilip başlatıldığı için burada kontrol edilecek bir şey yok). Rust `epic_third_party_launchers` artık yalnızca EA App + Ubisoft Connect döner; bölüm başlığı `(EA, Ubisoft)` olarak güncellendi.
+- **Kütüphane tarafı:** `getThirdPartyLauncher`'dan Rockstar dalı kaldırıldı; GTA/RDR artık **normal Epic akışıyla** (Oyna/Kur) gösterilir, "harici başlatıcı" buton/etiketi çıkmaz. Bilgi kaybolmasın diye yeni `isRockstarGame(g)` ile detay görünümünün "Özellikler" kartına **"Rockstar Games Launcher · Gerekli"** bilgi satırı eklendi (tr/en anahtarları). Ölü kalan `partner.name === "Rockstar Games Launcher"` özel durumu ve `ThirdPartyLauncherInfo.type`'tan `"rockstar"` kaldırıldı.
 
