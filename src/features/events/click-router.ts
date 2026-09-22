@@ -9,7 +9,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { DEMO_PLAT_KEY, LANG_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { DEMO_PLAT_KEY, LANG_KEY, PAUSE_ON_PLAY_KEY, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -1007,6 +1007,7 @@ document.addEventListener("click", (e) => {
       })
       .catch((err) => toast(String(err), "err"));
   } else if (act === "dl-resume" && id) {
+    if (S.autoPausedDl === id) S.autoPausedDl = null;
     epicResumeDownload(id)
       .then((msg) => {
         S.dlQueueStatus.isPaused = false;
@@ -1303,6 +1304,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-speed-bits") {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));
+    render();
+  } else if (act === "toggle-pause-on-play") {
+    S.pauseOnPlay = !S.pauseOnPlay;
+    localStorage.setItem(PAUSE_ON_PLAY_KEY, String(S.pauseOnPlay));
     render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;

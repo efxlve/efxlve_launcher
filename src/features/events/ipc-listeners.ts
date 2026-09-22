@@ -16,6 +16,8 @@ import {
   epicGetPlaytimes,
   epicGetQueue,
   epicListSkipped,
+  epicPauseDownload,
+  epicResumeDownload,
   toEpicSlug,
   type DlProgressEvent,
   type DownloadCancelledEvent,
@@ -300,6 +302,19 @@ export async function initApp(hooks: {
       if (running) {
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
+        // Opt-in: pause the active download while a game is running so it does not
+        // steal bandwidth/disk from gameplay. Only pause what we did not already pause.
+        if (S.pauseOnPlay && !S.dlQueueStatus.isPaused) {
+          const active = [...S.downloads.entries()].find(([, d]) => !d.done);
+          if (active) {
+            const activeId = active[0];
+            void epicPauseDownload(activeId)
+              .then(() => {
+                S.autoPausedDl = activeId;
+              })
+              .catch(() => {});
+          }
+        }
       } else {
         S.runningGames.delete(id);
         if (totalSeconds !== undefined) {
@@ -316,6 +331,13 @@ export async function initApp(hooks: {
             : t("status.closed", { title }),
           "",
         );
+        // Resume a download we auto-paused, once no game is running anymore and the
+        // user has not resumed it manually in the meantime.
+        if (S.autoPausedDl && S.runningGames.size === 0 && S.dlQueueStatus.isPaused) {
+          const resumeId = S.autoPausedDl;
+          S.autoPausedDl = null;
+          void epicResumeDownload(resumeId).catch(() => {});
+        }
       }
 
       // Update buttons and badges.
@@ -326,7 +348,7 @@ export async function initApp(hooks: {
             el.innerHTML = `<span class="running-dot"></span> ${t("common.playing")}`;
           } else {
             el.classList.remove("running");
-            el.innerHTML = `${icon("play", 14)} Oyna`;
+            el.innerHTML = `${icon("play", 14)} ${t("common.play")}`;
           }
         }
       });

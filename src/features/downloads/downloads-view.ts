@@ -435,6 +435,19 @@ export function renderDownloads(): string {
 
         <div class="dl-settings-row">
           <div class="dl-settings-row-text">
+            <div class="dl-settings-row-title">${t("downloads.pauseOnPlay")}</div>
+            <div class="dl-settings-row-desc">${t("downloads.pauseOnPlayDesc")}</div>
+          </div>
+          <div class="dl-settings-row-control">
+            <label class="toggle-switch">
+              <input type="checkbox" data-act="toggle-pause-on-play" ${S.pauseOnPlay ? "checked" : ""} />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="dl-settings-row">
+          <div class="dl-settings-row-text">
             <div class="dl-settings-row-title">${t("downloads.installDir")}</div>
           </div>
           <div class="dl-settings-row-control">
