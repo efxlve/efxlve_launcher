@@ -2135,3 +2135,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177), 0 kullanılmayan anahtar yeşil.
 
+## 162. İkinci Tur Optimizasyon (render / CPU / paint)
+
+- **İndirme ilerleme DOM yazımları tek rAF'ta birleştirildi** (`scheduleDlDomUpdate`/`applyDlDomUpdate`): eskiden her progress olayında `updateBadge()` → `updateNavIndicator(true)` iki kez `getBoundingClientRect` okuyup zorunlu reflow yapıyordu. Artık kare başına en fazla bir kez; değerler güncel state'ten okunuyor. `epicSummaries.find` → `epicSummariesMap.get` (O(1)).
+- **Kütüphane grid giriş animasyonu kaldırıldı**: `.pgrid`/`.shelves-container` her render'da `filterGridEnter` oynatıyordu (tüm ızgarada opacity/transform + görsel titreme). Profil kartlarındaki stagger'lı `cardFilterEnter` (20 karta kadar × 16 ms) ve kullanılmayan `--pci` de kaldırıldı. `.unified-pill.pill-dynamic` `pillSlideIn` de her render'da tekrar oynuyordu → kaldırıldı. Kullanılmayan keyframe'ler silindi.
+- **Chunk tutarlılığı**: `epic-view-grid/shelves/list`, `select-sort`, `select-collection`, `clear-collection`, `quick-tab` (render yolu) artık `resetCardChunk()` çağırıyor; eskiden birikmiş `renderedCardCount` (500'e kadar) ile tüm oyunlar tek seferde DOM'a basılabiliyordu.
+- **Kütüphane başlığı tek geçişte**: `renderEpic` 6 ayrı `filter/reduce` geçişi yerine tek döngüde fav/kurulu/boyut/güncelleme/koleksiyon/platinum sayaçlarını hesaplıyor; seçili koleksiyon için `Set` ile O(N).
+- **Rust**: `epic_detect_egl_games` (EGL manifest + registry) da `spawn_blocking`'e alındı.
+
+- `cargo test` (59 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
+
