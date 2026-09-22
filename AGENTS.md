@@ -129,3 +129,5 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Aktif indirme butonları yüzde durumunu gösterir, tıklanınca İndirmeler görünümüne geçer.
 - Duraklatılan indirme süreci temizlendikten sonra devam ettirilir; eski süreç aktifken yeniden başlatma yarışı engellendi.
 - Ağ hızı satırı eksik olduğunda indirilen byte farkından hız hesaplanır; güncelleme eylemi ana lavanta buton stilini kullanır.
+- Aktif indirme varken pencere kapatma ve tepsi çıkışı uygulamayı sonlandırmaz; launcher tepsiye gizlenerek indirmeyi canlı tutar.
+- Güncelleme eylemi, ana mor yerine dengeli amber/sarı ton kullanır.

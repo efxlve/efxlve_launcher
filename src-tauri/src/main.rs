@@ -1399,6 +1399,14 @@ fn app_close(app: AppHandle) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
 }
 
+fn has_active_download(app: &AppHandle) -> bool {
+    app.state::<AppState>()
+        .epic_dl
+        .lock()
+        .map(|state| state.active.is_some())
+        .unwrap_or(false)
+}
+
 #[tauri::command]
 fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> {
     let window = app
@@ -1451,7 +1459,16 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     let _ = w.set_focus();
                 }
             }
-            "quit" => app.exit(0),
+            "quit" => {
+                if has_active_download(app) {
+                    // Keep the backend monitor and download process alive while hidden.
+                    if let Some(w) = app.get_window("main") {
+                        let _ = w.hide();
+                    }
+                } else {
+                    app.exit(0);
+                }
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -1493,6 +1510,7 @@ fn main() {
                 if pref
                     .minimize_to_tray
                     .load(std::sync::atomic::Ordering::Relaxed)
+                    || has_active_download(&window.app_handle())
                 {
                     api.prevent_close();
                     let _ = window.hide();
