@@ -963,7 +963,7 @@
   "settings.eglSync": "Sync & Import Games",
   "settings.eglNone": "No extra games installed via Epic Games Launcher were found, or the EGL folder could not be located.",
   "settings.rescan": "Rescan",
-  "settings.thirdPartyTitle": "Third-Party Launchers (EA, Ubisoft, Rockstar)",
+  "settings.thirdPartyTitle": "Third-Party Launchers (EA, Ubisoft)",
   "settings.thirdPartyDesc": "Some Epic games require an external launcher. You can check whether they are installed here.",
   "settings.scanning": "Scanning…",
   "settings.installed": "Installed",
