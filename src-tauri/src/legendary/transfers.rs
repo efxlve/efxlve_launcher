@@ -763,6 +763,13 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
             drop(s);
             emit_cancelled(&app, &app_name);
             return Ok("@t:dl.removedFromQueue".into());
+        } else if s.active.is_some() {
+            // The UI can briefly hold an older id after a queue transition.
+            // Cancel the only active process instead of reporting a false miss.
+            s.cancelled = true;
+            s.paused = false;
+            s.active = None;
+            s.pid.take()
         } else {
             return Err("@t:dl.noActive".into());
         }
