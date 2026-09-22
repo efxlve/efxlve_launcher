@@ -13,7 +13,7 @@ import { updateChrome, updateNavIndicator } from "./core/nav";
 import { S } from "./core/state";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
-import { drawSpeedCanvas, renderDownloads } from "./features/downloads/downloads-view";
+import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import { renderDlcManager } from "./features/dlc/dlc-manager";
 import "./features/events/click-router";
 import "./features/events/input-listeners";
@@ -51,7 +51,9 @@ function render(): void {
   updateNavIndicator();
 
   if (S.view === "store") {
-    viewEl.innerHTML = renderStoreLoadingScreen();
+    // Only paint the loading screen until the native store webview is shown; a
+    // re-render afterwards would restart the animation for nothing.
+    if (!S.storeShown) viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
     renderNotificationPanel();
     presenceSync();
@@ -70,6 +72,7 @@ function render(): void {
     setupLibScrollObserver();
   }
   if (S.view === "downloads") {
+    startSpeedChartTimer();
     drawSpeedCanvas();
   }
   updateChrome();

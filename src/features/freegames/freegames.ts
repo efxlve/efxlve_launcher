@@ -71,7 +71,7 @@ function freeGameCard(g: FreeGame): string {
   return `
     <button class="free-card" data-act="open-external-url" data-url="${esc(freeGameUrl(g))}" title="${esc(g.title)}">
       <div class="free-card-media">
-        ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="free-card-ph"></div>`}
+        ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
         <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
       </div>
       <div class="free-card-body">

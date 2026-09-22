@@ -109,6 +109,24 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.shelf-see-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.shelf-see-all:hover { color: #fff; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.08); }
+.shelf-see-all:active { transform: scale(0.98); }
+
 .shelf-row-track {
   display: flex;
   gap: 16px;

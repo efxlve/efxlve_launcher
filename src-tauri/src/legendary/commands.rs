@@ -200,7 +200,12 @@ struct LibraryEvent {
 pub async fn epic_list_games(app: AppHandle) -> Result<Vec<LegendaryGame>, String> {
     let bin = resolve_or_err(&app)?;
     let config_dir = config_dir_for(&bin).await;
-    run_with_recovery(&app, &bin, &config_dir, &["list", "-T", "--json"]).await
+    let mut games: Vec<LegendaryGame> =
+        run_with_recovery(&app, &bin, &config_dir, &["list", "-T", "--json"]).await?;
+    for g in &mut games {
+        slim_game(g);
+    }
+    Ok(games)
 }
 
 #[tauri::command]

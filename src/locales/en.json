@@ -1099,6 +1099,7 @@
   "lib.newCollection": "+ New Collection",
   "lib.searchPlaceholder": "Search game, studio or publisher...",
   "lib.allStudios": "All Studios",
+  "lib.seeAll": "See All",
   "lib.studioFilterTip": "Filter by studio. Tip: try dev:ubisoft or is:installed.",
   "lib.sortTip": "Sort: {label}",
   "lib.sort": "Sort",

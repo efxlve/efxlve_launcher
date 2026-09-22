@@ -136,7 +136,7 @@ export function renderNotificationPanel(): void {
   updateNotifBadge();
   if (!root) return;
   if (!S.notifOpen) {
-    root.innerHTML = "";
+    if (root.firstChild) root.innerHTML = "";
     return;
   }
 

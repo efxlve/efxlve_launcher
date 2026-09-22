@@ -128,16 +128,31 @@ export function drawSpeedCanvas(): void {
   drawSeries(S.speedHistory, "#00e5ff", "rgba(0, 229, 255, 0.5)", "rgba(0, 229, 255, 0.18)");
 }
 
+/** Stops the speed chart sampler (called when it is no longer needed). */
+export function stopSpeedChartTimer(): void {
+  if (S.speedChartTimer !== null) {
+    window.clearInterval(S.speedChartTimer);
+    S.speedChartTimer = null;
+  }
+}
+
+/**
+ * Samples download speed once per second while it is useful (active download, or
+ * the downloads page showing history) and then stops itself entirely so the
+ * launcher has zero idle background load.
+ */
 export function startSpeedChartTimer(): void {
   if (S.speedChartTimer !== null) return;
   S.speedChartTimer = window.setInterval(() => {
-    if (S.activeDlMetrics && !S.activeDlMetrics.done && !S.dlQueueStatus.isPaused) {
-      pushSpeedData(S.activeDlMetrics.speedBytes || 0, S.activeDlMetrics.diskBytes || 0);
-      if (S.view === "downloads") drawSpeedCanvas();
-    } else if (S.speedHistory.some((v) => v > 0) || S.diskHistory.some((v) => v > 0)) {
-      pushSpeedData(0, 0);
-      if (S.view === "downloads") drawSpeedCanvas();
+    const active = !!S.activeDlMetrics && !S.activeDlMetrics.done && !S.dlQueueStatus.isPaused;
+    const onDownloads = S.view === "downloads";
+    const hasData = S.speedHistory.some((v) => v > 0) || S.diskHistory.some((v) => v > 0);
+    if (!active && !(onDownloads && hasData)) {
+      stopSpeedChartTimer();
+      return;
     }
+    pushSpeedData(active ? S.activeDlMetrics!.speedBytes || 0 : 0, active ? S.activeDlMetrics!.diskBytes || 0 : 0);
+    if (onDownloads) drawSpeedCanvas();
   }, 1000);
 }
 

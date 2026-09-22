@@ -61,7 +61,7 @@ import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements,
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal, openSelectiveModal } from "../dlc/selective-install";
-import { updateLibraryFilterInPlace } from "../library/library-view";
+import { resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import {
   browseMoveTarget,
@@ -91,7 +91,7 @@ import {
   playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
-import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel } from "../notifications/notifications";
+import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
 import { loadIntegrationsView, loadSettingsView } from "../settings/settings-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
@@ -167,12 +167,12 @@ document.addEventListener("click", (e) => {
   // Capture the target before any re-render detaches it from the DOM.
   const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-view]");
 
-  // Close the notification dropdown when clicking anywhere outside it.
+  // Close the notification dropdown when clicking anywhere outside it. This only
+  // repaints the small panel — never the whole view.
   if (S.notifOpen) {
     const el = e.target as HTMLElement;
     if (!el.closest("#notif-root") && !el.closest('[data-act="toggle-notifications"]')) {
       closeNotifPanel();
-      render();
     }
   }
 
@@ -244,20 +244,18 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-notifications") {
     if (S.notifOpen) closeNotifPanel();
     else openNotifPanel();
-    render();
   } else if (act === "notif-clear") {
     clearNotifications();
-    render();
+    renderNotificationPanel();
   } else if (act === "notif-read-all") {
     markAllRead();
-    render();
+    renderNotificationPanel();
   } else if (act === "notif-dismiss" && id) {
     dismissNotification(id);
-    render();
+    renderNotificationPanel();
   } else if (act === "notif-open" && id) {
-    S.notifOpen = false;
+    closeNotifPanel();
     openEpicModal(id);
-    render();
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
     void loadFriends(true);
@@ -379,6 +377,24 @@ document.addEventListener("click", (e) => {
     if (track) {
       track.scrollBy({ left: dir === "left" ? -420 : 420, behavior: "smooth" });
     }
+  } else if (act === "shelf-see-all") {
+    // Expand a capped shelf into the full grid (or collection) view.
+    const filter = t.dataset.filter as typeof S.epicFilter | undefined;
+    const colId = t.dataset.colId;
+    if (colId) {
+      S.activeCollectionId = colId;
+      S.epicFilter = "all";
+    } else if (filter) {
+      S.epicFilter = filter;
+      S.activeCollectionId = "all";
+    } else {
+      S.epicFilter = "all";
+      S.activeCollectionId = "all";
+      S.epicSort = "recent";
+    }
+    S.epicViewMode = "grid";
+    resetCardChunk();
+    render();
   } else if (act === "open-custom-cover" && id) {
     const target = (t.dataset.target as "cover" | "hero") || "cover";
     openCustomCoverModal(id, target);

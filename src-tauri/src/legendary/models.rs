@@ -72,6 +72,44 @@ pub struct LegendaryGame {
     pub dlcs: Vec<Value>,
 }
 
+/// Catalog metadata keys that are large but never read by the frontend. A single
+/// `dlcItemList` can be hundreds of KB, so dropping them keeps the in-memory
+/// library (and the IPC payload) small. The on-disk metadata files stay intact,
+/// so DLC management (which re-reads them) is unaffected.
+const HEAVY_METADATA_KEYS: &[&str] = &[
+    "dlcItemList",
+    "longDescription",
+    "releaseInfo",
+    "ageGatings",
+    "eulaIds",
+    "entitlementName",
+    "developerId",
+    "applicationId",
+    "itemType",
+    "creationDate",
+    "lastModifiedDate",
+    "unsearchable",
+    "endOfSupport",
+    "requiresSecureAccount",
+    "viewableDate",
+    "offerType",
+    "effectiveDate",
+    "expiryDate",
+    "isCodeRedemptionOnly",
+    "categories",
+    "namespace",
+    "title",
+];
+
+/// Strips heavy, unused payload from a game before it crosses the IPC boundary.
+pub fn slim_game(g: &mut LegendaryGame) {
+    for key in HEAVY_METADATA_KEYS {
+        g.metadata.remove(*key);
+    }
+    // The Epic sidecar blob is never read by the UI either.
+    g.sidecar = None;
+}
+
 /// One element of the `legendary list-installed --json` array.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct InstalledGame {
@@ -443,5 +481,34 @@ mod tests {
         assert_eq!(res.achievements[0].tier.as_ref().unwrap().hex_color, "#CA512B");
         assert_eq!(res.achievements[0].rarity.as_ref().unwrap().percent, Some(73.0));
         assert_eq!(res.is_platinum, true);
+    }
+
+    #[test]
+    fn slim_game_drops_heavy_metadata_and_keeps_used_fields() {
+        let json = r##"{
+            "app_name": "game1",
+            "app_title": "Game One",
+            "metadata": {
+                "dlcItemList": [{"title": "Big DLC"}],
+                "longDescription": "a very long text",
+                "developer": "Studio X",
+                "description": "Short text",
+                "keyImages": [{"type": "OfferImageTall", "url": "https://cdn/x.jpg"}],
+                "customAttributes": {"CanRunOffline": {"value": "true"}}
+            },
+            "sidecar": {"huge": "blob"},
+            "dlcs": [{"id": "d1"}]
+        }"##;
+        let mut g: LegendaryGame = serde_json::from_str(json).expect("parse");
+        slim_game(&mut g);
+
+        assert!(!g.metadata.contains_key("dlcItemList"));
+        assert!(!g.metadata.contains_key("longDescription"));
+        assert!(g.metadata.contains_key("developer"));
+        assert!(g.metadata.contains_key("keyImages"));
+        assert!(g.metadata.contains_key("customAttributes"));
+        assert!(g.sidecar.is_none());
+        // DLC list at the top level is still needed for the DLC count.
+        assert_eq!(g.dlcs.len(), 1);
     }
 }
