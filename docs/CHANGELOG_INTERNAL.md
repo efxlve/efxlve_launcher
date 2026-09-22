@@ -2086,7 +2086,7 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 ## 159. Derin Performans Optimizasyonu (RAM / render / LCP)
 
 **1. RAM (en büyük kazanç) — hafif kütüphane verisi**
-- `metadata.dlcItemList` tek bir oyunda **733 KB**, dosya 2.1 MB'a kadar çıkabiliyordu ve tamamı IPC ile ön yüze taşınıp bellekte tutuluyordu. `models.rs::slim_game` eklendi: ön yüzün hiç okumadığı ağır metadata anahtarları (`dlcItemList`, `longDescription`, `releaseInfo`, `ageGatings`, `eulaIds`, `entitlementName`, `categories`, `namespace`, `title`, …) ve `sidecar` blob'u atılıyor. Disk dosyaları **dokunulmuyor** (DLC yönetimi oradan okuyor). `epic_cached_library` ve `epic_list_games` bu süzülmüş veriyi döner. Birim testi eklendi.
+- `metadata.dlcItemList` tek bir oyunda **733 KB**, dosya 2.1 MB'a kadar çıkabiliyordu ve tamamı IPC ile ön yüze taşınıp bellekte tutuluyordu. `models.rs::slim_game` eklendi: ön yüzün hiç okumadığı ağır metadata anahtarları (`dlcItemList`, `longDescription`, `releaseInfo`, `ageGatings`, `eulaIds`, `entitlementName`, `title`, …) ve `sidecar` blob'u atılıyor. **`namespace` ve `categories` korunuyor** (ön yüz `isNonGameContent` ile UE içeriğini/modları gizlemek için kullanıyor). Disk dosyaları **dokunulmuyor** (DLC yönetimi oradan okuyor). `epic_cached_library` ve `epic_list_games` bu süzülmüş veriyi döner. Birim testi eklendi.
 - 908 oyunluk kütüphanede tipik 30 MB ham metadata → belirgin şekilde küçüldü.
 
 **2. Kütüphane DOM patlaması**
