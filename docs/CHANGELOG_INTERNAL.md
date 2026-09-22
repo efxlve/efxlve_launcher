@@ -2014,3 +2014,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - 2 yeni i18n anahtarı (tr/en eşlikli). `tsc --noUnusedLocals` (0), i18n eşlik (1129/1129) yeşil.
 - Tarama: Rust ve TS genelinde kalan Türkçe karakterli literal'ler (test verisi, `last_played` depolama uyumluluğu, bozuk koleksiyon adı onarımı, dil etiketleri) kasıtlı olarak korundu.
 
+## 147. EOS Kapsamı: Sürüm Tespiti, Oyun Bazında Rozet ve Epic Arkadaş Paneli
+
+- **Overlay tespiti güçlendirildi:** `eos_overlay_status` artık `{ installed, path, version, overlaySupported }` döner. Sürüm ve overlay desteği, EOS servis kayıt defteri anahtarından (`HKLM\...\Epic Games\EOS\MainService`) `reg query` ile okunur (yeni bağımlılık yok). Ayarlar kartı sürümü ve gerekirse "overlay desteklenmiyor" uyarısını gösterir.
+- **Oyun bazında EOS rozeti:** Yeni `epic_detect_eos(installPath)` komutu, oyun klasörünü sınırlı derinlikte (5) ve bütçeyle (6000 girdi) tarayarak `EOSSDK-*.dll` veya `EpicOnlineServices` arar; Unreal'ın bilinen yolları için hızlı yol var. `tauri::async_runtime::spawn_blocking` ile çalışır (UI bloklanmaz). Sonuç `S.eosSupportMap` ile oyun başına önbelleklenir; tarama yalnızca detay görünümü açılınca, asla kütüphane kartı başına yapılmaz. Detay "Özellikler" kartında "EOS Desteği" satırı gösterilir.
+- **Epic arkadaş paneli (salt-okunur):** Yeni `legendary/friends.rs` + `epic_friends` komutu; legendary `user.json` içindeki `account_id` + `access_token` ile Epic friends özet API'sinden arkadaşlar alınır, görünen adlar toplu hesap sorgusuyla çözülür. Profil sayfasında `friends-grid` (avatar, ad, alias, platform rozetleri, favori yıldızı) + "Yenile" butonu. Çevrimiçi durum bu token'la alınamıyor (presence servisi 403) — dokümante edildi.
+- Ağ hatası/oturum hatası `@t:friends.*` anahtarlarıyla yerelleştirilir. Saf `merge_friends` fonksiyonu için 2 Rust birim testi eklendi (favori sıralaması, platform sıralaması, eksik hesap).
+- 15 yeni i18n anahtarı (tr/en eşlikli). `cargo test` (56 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1140/1140) yeşil.
+

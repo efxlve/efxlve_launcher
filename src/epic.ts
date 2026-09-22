@@ -470,8 +470,30 @@ export const epicCleanupCache = () => invoke<string>("epic_cleanup_cache");
 export interface EosOverlayStatus {
   installed: boolean;
   path: string;
+  version: string;
+  overlaySupported: boolean;
 }
 export const eosOverlayStatus = () => invoke<EosOverlayStatus>("eos_overlay_status");
+
+/** Whether a game's install directory bundles the EOS SDK runtime. */
+export const epicDetectEos = (installPath: string) =>
+  invoke<boolean>("epic_detect_eos", { installPath });
+
+/** Read-only Epic friends list (unofficial Web APIs). */
+export interface EpicFriend {
+  accountId: string;
+  displayName: string;
+  alias: string;
+  favorite: boolean;
+  mutual: number;
+  platforms: string[];
+}
+export interface EpicFriendsData {
+  accountId: string;
+  displayName: string;
+  friends: EpicFriend[];
+}
+export const epicFriends = () => invoke<EpicFriendsData>("epic_friends");
 
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });

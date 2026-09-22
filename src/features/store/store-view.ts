@@ -12,8 +12,8 @@ import { viewEl } from "../../core/dom";
 import { closeAllModals, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
-import { t } from "../../i18n";
+import { EPIC_STORE_URL, epicFriends, epicGetPlayerProfile } from "../../epic";
+import { localizeMessage, t } from "../../i18n";
 import type { View } from "../../core/types";
 export function storeRect(): { x: number; y: number; width: number; height: number } {
   const titlebar = document.getElementById("titlebar");
@@ -106,12 +106,31 @@ export async function loadPlayerProfile(forceRefresh = false): Promise<void> {
   }
 }
 
+/** Loads the Epic friends list (read-only, unofficial API). */
+export async function loadFriends(force = false): Promise<void> {
+  if (!isTauri || S.friendsLoading) return;
+  if (!force && (S.friends.length > 0 || S.friendsError)) return;
+  S.friendsLoading = true;
+  S.friendsError = "";
+  render();
+  try {
+    const data = await epicFriends();
+    S.friends = data.friends;
+  } catch (e) {
+    S.friendsError = localizeMessage(String(e));
+  } finally {
+    S.friendsLoading = false;
+    render();
+  }
+}
+
 export async function openProfile(): Promise<void> {
   setView("profile");
   closeAllModals();
   if (!S.playerProfileData && !S.profileLoading) {
     void loadPlayerProfile();
   }
+  void loadFriends();
   render();
 }
 
