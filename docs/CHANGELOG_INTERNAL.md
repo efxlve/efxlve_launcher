@@ -2074,3 +2074,12 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Ölü i18n temizliği:** artık kullanılmayan 12 anahtar kaldırıldı (`nav.settings`, `settings.presenceLabel`, `settings.presenceClientIdLabel`, `settings.eglDesc`, `settings.screenshotsDesc`, `settings.qualityHint`, `dl.*Sub` ×5); `settings.secSocial` eklendi. Denetim: 0 kullanılmayan / 0 eksik anahtar.
 - `tsc --noUnusedLocals` (0), `vite build` (bundle ~4 kB küçüldü), i18n eşlik (1173/1173) yeşil.
 
+## 158. Ayarlar Donma Düzeltmesi + Estetik Cila
+
+- **Donma kök nedeni:** `epic_third_party_launchers` **senkron** komuttu ve `reg query ... /s` ile üç kök altındaki tüm kaldırma kayıtlarını tarıyordu → ana iş parçacığını bloke ediyordu. Artık `async` + `tauri::async_runtime::spawn_blocking` (UI asla bloklanmaz).
+- **Anlık render:** Ayarlar'a geçişte ve İndirmeler'e geçişte `render()` derhal çağrılıyor; veri arka planda yüklenip geldiğinde güncelleniyor (boş ekran/donma hissi yok).
+- **Tembel yükleme + önbellek:** Ağır taramalar (EGL, 3. parti kayıt taraması, EOS) yalnızca **Entegrasyonlar** bölümü açılınca `loadIntegrationsView()` ile çalışır ve `S.settingsIntegrationsLoaded` ile önbelleklenir; bölüm içinde yükleniyor durumu gösterilir. `epic-refresh-egl` artık `force` ile yeniler.
+- **Estetik:** Gruplar artık kart (`background + border + radius`), sol ray sağ çizgiyle ayrıldı, panel başlığına ikon eklendi, ray öğelerinden gereksiz chevron kaldırıldı, entegrasyonlar anlamlı alt başlıklara ayrıldı (Epic Games Launcher / 3. Parti / Kapaklar / Sosyal).
+- **Tutarlılık:** Tüm satır-içi (`style="..."`) stiller sınıflara taşındı (`.settings-status`, `.settings-range`, `.settings-field-sm`, `.settings-select`, `.settings-note-warn`, `.settings-recording`, `.settings-row-control.between/.column/.tight`, `.settings-list` …). Kalan `settings-view.ts` içinde 0 inline style.
+- `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1174/1174), 0 kullanılmayan anahtar yeşil.
+
