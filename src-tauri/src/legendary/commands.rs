@@ -1300,7 +1300,15 @@ fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
 /// Detects installed third-party game launchers (EA App, Ubisoft Connect,
 /// Rockstar Games Launcher) and returns them with version and install path.
 #[tauri::command]
-pub fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
+pub async fn epic_third_party_launchers() -> Vec<ThirdPartyLauncher> {
+    // `reg query /s` walks every uninstall entry, which is slow. Run it on a
+    // blocking thread so it never stalls the main thread / UI.
+    tauri::async_runtime::spawn_blocking(epic_third_party_launchers_blocking)
+        .await
+        .unwrap_or_default()
+}
+
+fn epic_third_party_launchers_blocking() -> Vec<ThirdPartyLauncher> {
     let entries = scan_uninstall_registry();
     let defs: [(&str, &str, &[&str], &str); 3] = [
         (

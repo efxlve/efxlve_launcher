@@ -955,6 +955,7 @@
   "settings.installDirTitle": "Game install folder",
   "settings.installDirHint": "If left empty, the default is used:",
   "settings.eglTitle": "Epic Games Launcher Integration",
+  "settings.eglDesc": "Detects games installed by the official Epic Games Launcher and syncs them into your library.",
   "settings.eglDetected": "games detected",
   "settings.eglSyncing": "Syncing…",
   "settings.eglSync": "Sync & Import Games",

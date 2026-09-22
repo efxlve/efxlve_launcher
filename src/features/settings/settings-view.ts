@@ -120,40 +120,50 @@ function renderDownloads(): string {
 }
 
 function renderIntegrations(): string {
+  if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
+    return `<div class="settings-loading">${icon("refresh", 16)}<span>${t("settings.scanning")}</span></div>`;
+  }
   const egl = S.eglDetectedList;
-  const eglRows =
+  const eglSync =
     egl.length > 0
-      ? row(
-          t("settings.eglTitle"),
-          `${icon("check", 13)} ${egl.length} ${t("settings.eglDetected")}`,
-          `<button class="ps5-btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`,
-        ) +
-        `<div class="settings-list">${egl
-          .map(
-            (g: EglDetectedGame) => `
-          <div class="settings-list-item">
-            <div class="li-main">
-              <span class="li-title">${esc(g.title)}</span>
-              <span class="li-sub" title="${esc(g.installPath)}">${esc(g.installPath)}</span>
-            </div>
-            <span class="li-size">${fmtBytes(g.installSize)}</span>
-          </div>`,
-          )
-          .join("")}</div>`
-      : row(
-          t("settings.eglTitle"),
-          t("settings.eglNone"),
-          `<button class="ps5-btn ghost small" data-act="epic-refresh-egl">${icon("refresh", 12)} ${t("settings.rescan")}</button>`,
-        );
+      ? `<button class="ps5-btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
+      : `<button class="ps5-btn ghost small" data-act="epic-refresh-egl">${icon("refresh", 12)} ${t("settings.rescan")}</button>`;
+
+  const eglGroup =
+    `<div class="settings-row stacked">
+      <div class="settings-row-text"><div class="settings-row-desc">${t("settings.eglDesc")}</div></div>
+      <div class="settings-row-control" style="justify-content:space-between">
+        <span class="settings-value">${egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone")}</span>
+        ${eglSync}
+      </div>
+      ${
+        egl.length > 0
+          ? `<div class="settings-list">${egl
+              .map(
+                (g: EglDetectedGame) => `
+        <div class="settings-list-item">
+          <div class="li-main">
+            <span class="li-title">${esc(g.title)}</span>
+            <span class="li-sub" title="${esc(g.installPath)}">${esc(g.installPath)}</span>
+          </div>
+          <span class="li-size">${fmtBytes(g.installSize)}</span>
+        </div>`,
+              )
+              .join("")}</div>`
+          : ""
+      }
+    </div>` +
+    row(
+      t("settings.collectionsTitle"),
+      `${t("settings.collectionsDesc")} <strong>${S.epicCollections.length}</strong> ${t("settings.collectionsCount")}`,
+      `<button class="ps5-btn ghost small" data-act="import-egl-collections">${icon("download", 12)} ${t("settings.importEglCollections")}</button>`,
+    );
 
   const tpl =
     S.thirdPartyLaunchers.length === 0
-      ? row(t("settings.thirdPartyTitle"), t("settings.scanning"), "")
+      ? row(t("settings.thirdPartyDesc"), t("settings.scanning"), "")
       : `<div class="settings-row stacked">
-          <div class="settings-row-text">
-            <div class="settings-row-title">${t("settings.thirdPartyTitle")}</div>
-            <div class="settings-row-desc">${t("settings.thirdPartyDesc")}</div>
-          </div>
+          <div class="settings-row-text"><div class="settings-row-desc">${t("settings.thirdPartyDesc")}</div></div>
           <div class="settings-row-control" style="flex-direction:column;align-items:stretch;gap:10px">
             <div class="tpl-grid">
               ${S.thirdPartyLaunchers
@@ -181,10 +191,7 @@ function renderIntegrations(): string {
         </div>`;
 
   const sgdb = `<div class="settings-row stacked">
-      <div class="settings-row-text">
-        <div class="settings-row-title">${t("settings.sgdbTitle")}</div>
-        <div class="settings-row-desc">${t("settings.sgdbDesc")}</div>
-      </div>
+      <div class="settings-row-text"><div class="settings-row-desc">${t("settings.sgdbDesc")}</div></div>
       <div class="settings-row-control">
         <input id="settings-sgdb-key-input" type="${S.showSettingsSgdbKey ? "text" : "password"}" class="text-input" placeholder="${t("settings.sgdbPlaceholder")}" value="${esc(S.steamGridApiKey || "")}" spellcheck="false" autocomplete="off" />
         <button class="ps5-btn-icon" data-act="toggle-sgdb-key-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsSgdbKey ? "eye-off" : "eye", 14)}</button>
@@ -227,15 +234,10 @@ function renderIntegrations(): string {
       </div>`
     : "";
 
-  const collections = row(
-    t("settings.collectionsTitle"),
-    `${t("settings.collectionsDesc")} <strong>${S.epicCollections.length}</strong> ${t("settings.collectionsCount")}`,
-    `<button class="ps5-btn ghost small" data-act="import-egl-collections">${icon("download", 12)} ${t("settings.importEglCollections")}</button>`,
-  );
-
   return (
-    group(eglRows + tpl + collections) +
-    group(sgdb) +
+    group(eglGroup, t("settings.eglTitle")) +
+    group(tpl, t("settings.thirdPartyTitle")) +
+    group(sgdb, t("settings.sgdbTitle")) +
     group(presence + presenceExtra + eos, t("settings.secSocial"))
   );
 }
@@ -345,7 +347,6 @@ export function renderSettings(): string {
       <button class="settings-nav-item ${s.id === active.id ? "active" : ""}" data-act="settings-section" data-section="${s.id}">
         <span class="settings-nav-icon">${icon(s.icon, 16)}</span>
         <span class="settings-nav-label">${t(s.labelKey)}</span>
-        <span class="settings-nav-chevron">${icon("chevron-right", 13)}</span>
       </button>`,
   ).join("");
 
@@ -362,6 +363,7 @@ export function renderSettings(): string {
           <nav class="settings-nav">${nav}</nav>
           <div class="settings-panel">
             <div class="settings-panel-head">
+              <span class="settings-panel-icon">${icon(active.icon, 19)}</span>
               <h2 class="settings-panel-title">${t(active.labelKey)}</h2>
             </div>
             ${renderSection(active.id)}
@@ -371,27 +373,53 @@ export function renderSettings(): string {
     </div>`;
 }
 
-/** Load settings, default dir, EGL games, SteamGrid key and third-party launchers. */
+/**
+ * Loads the cheap settings data (settings.json, default dir, SteamGrid key).
+ * Heavy integration scans are deferred to {@link loadIntegrationsView} so the
+ * page paints instantly and the launcher never appears to freeze.
+ */
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, eglList, sgdbKey, thirdParty, eos] = await Promise.all([
+      const [st, dir, sgdbKey] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
-        epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
         epicGetSteamGridKey().catch(() => null),
-        epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
-        eosOverlayStatus().catch(() => null),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
-      S.eglDetectedList = eglList;
       S.steamGridApiKey = sgdbKey;
-      S.thirdPartyLaunchers = thirdParty;
-      S.eosOverlay = eos;
     } catch {
       // Silent: keep the last cached values.
     }
   }
   render();
+  if (S.settingsSection === "integrations") void loadIntegrationsView();
+}
+
+/**
+ * Loads the slow integration data (EGL scan, third-party registry scan, EOS).
+ * Runs only when the Integrations section is shown and is cached afterwards.
+ */
+export async function loadIntegrationsView(force = false): Promise<void> {
+  if (!isTauri || S.settingsIntegrationsLoading) return;
+  if (S.settingsIntegrationsLoaded && !force) return;
+  S.settingsIntegrationsLoading = true;
+  render();
+  try {
+    const [eglList, thirdParty, eos] = await Promise.all([
+      epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
+      epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
+      eosOverlayStatus().catch(() => null),
+    ]);
+    S.eglDetectedList = eglList;
+    S.thirdPartyLaunchers = thirdParty;
+    S.eosOverlay = eos;
+    S.settingsIntegrationsLoaded = true;
+  } catch {
+    // Silent: keep the last cached values.
+  } finally {
+    S.settingsIntegrationsLoading = false;
+    render();
+  }
 }

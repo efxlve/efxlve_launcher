@@ -194,6 +194,8 @@ export const S = {
   freeGamesLoading: false,
   studioFilter: "",
   settingsSection: ("account") as SettingsSection,
+  settingsIntegrationsLoaded: false,
+  settingsIntegrationsLoading: false,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
   autoBackupOnExit: (localStorage.getItem(AUTO_BACKUP_KEY) === "true") as boolean,
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
