@@ -2306,6 +2306,13 @@ pub struct GameUpdateInfo {
 
 #[tauri::command]
 pub async fn epic_check_updates() -> Result<Vec<GameUpdateInfo>, String> {
+    // Reads every installed game's metadata file: keep it off the UI thread.
+    tauri::async_runtime::spawn_blocking(check_updates_blocking)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
     let config = skip::default_config_dir();
     let installed_path = config.join("installed.json");
     if !installed_path.is_file() {
