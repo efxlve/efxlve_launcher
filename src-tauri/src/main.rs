@@ -1205,7 +1205,7 @@ fn open_folder(path: String) -> Result<String, String> {
 }
 
 /// Whether the EOS Overlay (installed system-wide by the Epic Games Launcher) is present.
-#[derive(serde::Serialize)]
+#[derive(Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EosOverlayStatus {
     pub installed: bool,
@@ -1218,7 +1218,13 @@ pub struct EosOverlayStatus {
 /// games (Shift+F3) by Epic's service; our launcher only reports its presence.
 /// Version and overlay-support flags come from the EOS service registry key.
 #[tauri::command]
-fn eos_overlay_status() -> EosOverlayStatus {
+async fn eos_overlay_status() -> EosOverlayStatus {
+    tauri::async_runtime::spawn_blocking(eos_overlay_status_blocking)
+        .await
+        .unwrap_or_default()
+}
+
+fn eos_overlay_status_blocking() -> EosOverlayStatus {
     let mut path = String::new();
     for var in ["ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"] {
         if let Ok(base) = std::env::var(var) {
