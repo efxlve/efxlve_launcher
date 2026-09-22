@@ -52,7 +52,7 @@ pub struct GameAsset {
 }
 
 /// One element of the `legendary list --json` array.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct LegendaryGame {
     #[serde(default, deserialize_with = "null_string")]
     pub app_name: String,

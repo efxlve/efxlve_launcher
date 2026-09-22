@@ -31,7 +31,7 @@ import {
   type VerifyCompleteEvent,
   type VerifyProgressEvent,
 } from "../../epic";
-import { applyStaticTranslations, localizeMessage, setLanguage, t } from "../../i18n";
+import { localizeMessage, setLanguage, t } from "../../i18n";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
 import { isTauri } from "../../core/constants";
@@ -128,21 +128,11 @@ export async function initApp(hooks: {
   closeAllModals: () => void;
 }): Promise<void> {
   updateMaxIcon();
-  if (isTauri) {
-    void invoke("app_set_decorations", { decorations: false }).catch(() => {});
-  }
   createIcons({
     icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell },
   });
   loadNotifications();
   initAutoUpdate();
-  // Load the selected language, apply its direction (LTR/RTL) and translate the static top bar.
-  await setLanguage(S.appLanguage);
-  applyStaticTranslations();
-  if (isTauri) {
-    void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
-    void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
-  }
   updateOfflineModeUi();
   initContextMenu();
   registerRender(hooks.render, hooks.scheduleRender);
@@ -151,18 +141,31 @@ export async function initApp(hooks: {
   registerOpenEpicModal(openEpicModal);
   registerPresenceSync(syncPresence);
   registerNotify((input) => pushNotification(input));
-  void initPresence();
+
+  // The selected language may lazy-load a small local chunk (non-bundled locales).
+  // tr/en are bundled, so this resolves without a real await for most users.
+  await setLanguage(S.appLanguage);
+
+  // FIRST PAINT: paint the shell (skeleton) before any slow IPC so the window is
+  // never blank on startup.
+  hooks.render();
+
+  // Kick off the library load immediately: it must not wait for listener
+  // registration, settings fetches or window-chrome IPC.
+  initGamepadSupport();
+  void bootEpic();
+
   if (isTauri) {
-    try {
-      S.libraryPath = await invoke<string>("library_dir");
-    } catch {
-      S.libraryPath = t("common.unavailable");
-    }
-    try {
-      S.epicSkippedCount = (await epicListSkipped()).length;
-    } catch {
-      S.epicSkippedCount = 0;
-    }
+    void invoke("app_set_decorations", { decorations: false }).catch(() => {});
+    void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
+    void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
+    void initPresence();
+    void invoke<string>("library_dir")
+      .then((p) => { S.libraryPath = p; })
+      .catch(() => { S.libraryPath = t("common.unavailable"); });
+    void epicListSkipped()
+      .then((s) => { S.epicSkippedCount = s.length; })
+      .catch(() => { S.epicSkippedCount = 0; });
     await listen<SetupEvent>("legendary-setup", (event) => {
       S.setupProgress = event.payload.progress ?? null;
       S.setupMessage = localizeMessage(event.payload.message);
@@ -491,6 +494,4 @@ export async function initApp(hooks: {
       // ignore
     }
   }
-  initGamepadSupport();
-  void bootEpic();
 }

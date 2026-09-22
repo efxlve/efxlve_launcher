@@ -34,6 +34,31 @@ pub fn read_user(config: &Path) -> Option<(String, Option<String>)> {
     Some((name, if id.is_empty() { None } else { Some(id) }))
 }
 
+/// Single-file snapshot of the (already slimmed) library.
+///
+/// Reading and parsing ~900 individual metadata files on a cold start can take
+/// seconds on an HDD. This consolidated file lets the UI paint the library
+/// almost instantly; the background sync refreshes it.
+fn snapshot_path(config: &Path) -> std::path::PathBuf {
+    config.join("efxlve_library_snapshot.json")
+}
+
+pub fn write_library_snapshot(config: &Path, games: &[LegendaryGame]) {
+    if let Ok(json) = serde_json::to_string(games) {
+        let _ = std::fs::write(snapshot_path(config), json);
+    }
+}
+
+pub fn read_library_snapshot(config: &Path) -> Option<Vec<LegendaryGame>> {
+    let text = std::fs::read_to_string(snapshot_path(config)).ok()?;
+    let games: Vec<LegendaryGame> = serde_json::from_str(&text).ok()?;
+    if games.is_empty() {
+        None
+    } else {
+        Some(games)
+    }
+}
+
 /// All game metadata in the cache (broken files are skipped).
 pub fn read_cached_games(config: &Path) -> Vec<LegendaryGame> {
     let mut out = Vec::new();
@@ -388,6 +413,22 @@ mod tests {
             let has_cyberpunk_or_rdr = games.iter().any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
             assert!(has_cyberpunk_or_rdr, "Cyberpunk or RDR2 must be detected");
         }
+    }
+
+    #[test]
+    fn library_snapshot_round_trips() {
+        let dir = std::env::temp_dir().join(format!("efxlve-snap-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let games = vec![LegendaryGame {
+            app_name: "snap-game".into(),
+            app_title: "Snap Game".into(),
+            ..Default::default()
+        }];
+        write_library_snapshot(&dir, &games);
+        let back = read_library_snapshot(&dir).expect("snapshot okunmalı");
+        assert_eq!(back.len(), 1);
+        assert_eq!(back[0].app_name, "snap-game");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

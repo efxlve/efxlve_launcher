@@ -120,7 +120,11 @@ fn to_epic_slug_rust(title: &str) -> String {
 
 fn get_owned_games_json() -> String {
     let config_dir = legendary::skip::default_config_dir();
-    let games = legendary::cache::read_cached_games(&config_dir);
+    // Prefer the consolidated snapshot (1 file) over ~900 metadata files.
+    let games = match legendary::cache::read_library_snapshot(&config_dir) {
+        Some(g) => g,
+        None => legendary::cache::read_cached_games(&config_dir),
+    };
     let installed = legendary::cache::read_installed(&config_dir);
     let installed_set: std::collections::HashSet<String> =
         installed.into_iter().map(|g| g.app_name).collect();

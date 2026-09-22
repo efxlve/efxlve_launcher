@@ -205,6 +205,10 @@ pub async fn epic_list_games(app: AppHandle) -> Result<Vec<LegendaryGame>, Strin
     for g in &mut games {
         slim_game(g);
     }
+    // Refresh the consolidated snapshot so the next cold start is instant.
+    if !games.is_empty() {
+        cache::write_library_snapshot(&skip::default_config_dir(), &games);
+    }
     Ok(games)
 }
 
@@ -238,10 +242,19 @@ pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
             Some((name, id)) => (Some(name), id),
             None => (None, None),
         };
+        // Prefer the consolidated snapshot (1 file) over parsing ~900 files.
+        let games = match cache::read_library_snapshot(&config) {
+            Some(g) => g,
+            None => {
+                let g = cache::read_cached_games(&config);
+                cache::write_library_snapshot(&config, &g);
+                g
+            }
+        };
         CachedLibrary {
             account,
             account_id,
-            games: cache::read_cached_games(&config),
+            games,
             installed: cache::read_installed(&config),
             skipped: skip::load_skipped(&app)
                 .into_iter()
