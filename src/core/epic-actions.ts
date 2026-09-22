@@ -42,7 +42,7 @@ export async function epicPlay(appName: string): Promise<void> {
 
 /** Start (or update) a game installation, wiring up the download metrics. */
 export async function epicInstall(appName: string): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = S.epicSummariesMap.get(appName);
   if (!s || epicDlProgress(appName) !== null) return;
   const g = rawOf(appName);
   const partner = getThirdPartyLauncher(g);
