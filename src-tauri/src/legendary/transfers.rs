@@ -1299,6 +1299,23 @@ async fn spawn_launched(
 ) -> Result<(), String> {
     let mut cmd = tokio::process::Command::new(bin);
     cmd.arg("launch").arg(app_name);
+
+    // Per-game wrapper + environment variables (applied to legendary so the
+    // launched game inherits them).
+    let cfgs = super::commands::load_all_game_custom_configs();
+    if let Some(cfg) = cfgs.get(app_name) {
+        if let Some(wrapper) = cfg.wrapper.as_deref().map(str::trim).filter(|w| !w.is_empty()) {
+            cmd.arg("--wrapper").arg(wrapper);
+        }
+        if let Some(envs) = cfg.env_vars.as_ref() {
+            for (key, value) in envs {
+                if !key.trim().is_empty() {
+                    cmd.env(key.trim(), value);
+                }
+            }
+        }
+    }
+
     for arg in extra_args {
         cmd.arg(arg);
     }

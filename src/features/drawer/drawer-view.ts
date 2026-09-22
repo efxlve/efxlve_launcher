@@ -672,6 +672,14 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   `;
 }
 
+/** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
+function envToText(env: Record<string, string> | undefined): string {
+  if (!env) return "";
+  return Object.entries(env)
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+}
+
 export function renderDrawerManage(s: EpicSummary): string {
   if (!S.activeManageSettings || S.activeManageSettings.appName !== s.appName) {
     S.activeManageSettings = {
@@ -685,6 +693,8 @@ export function renderDrawerManage(s: EpicSummary): string {
       installSize: s.installSize || 0,
       installPath: s.installPath || "",
       version: s.installedVersion || s.version || "1.0",
+      wrapper: "",
+      envVars: {},
     };
     epicGetGameSettings(s.appName).then((st) => {
       if (S.activeManageSettings?.appName === s.appName) {
@@ -877,6 +887,26 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div style="display:flex;gap:8px;margin-top:10px;width:100%">
               <input id="manage-args-input" class="text-input" style="flex:1" placeholder="-dx11 -novid" value="${esc(st.launchParameters || "")}" />
               <button class="btn primary small" data-act="manage-save-args" data-id="${st.appName}">${t("common.save")}</button>
+            </div>
+          </div>
+
+          <div class="manage-item-row" style="flex-direction:column;align-items:stretch">
+            <div class="manage-item-left">
+              <div class="manage-item-icon" style="color:#a78bfa">${icon("layers", 18)}</div>
+              <div class="manage-item-info">
+                <div class="manage-item-title">${t("manage.wrapperTitle")}</div>
+                <div class="manage-item-desc">${t("manage.wrapperDesc")}</div>
+              </div>
+            </div>
+            <input id="manage-wrapper-input" class="text-input" style="margin-top:10px" placeholder="mangohud" value="${esc(st.wrapper || "")}" spellcheck="false" autocomplete="off" />
+
+            <div class="manage-item-info" style="margin-top:14px">
+              <div class="manage-item-title">${t("manage.envTitle")}</div>
+              <div class="manage-item-desc">${t("manage.envDesc")}</div>
+            </div>
+            <textarea id="manage-env-input" class="text-input" style="margin-top:8px;min-height:64px;resize:vertical;font-family:monospace" spellcheck="false" placeholder="DXVK_HUD=1&#10;WINEDLLOVERRIDES=d3d11=n,b">${esc(envToText(st.envVars))}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="btn primary small" data-act="manage-save-launch-extras" data-id="${st.appName}">${t("common.save")}</button>
             </div>
           </div>
         </div>

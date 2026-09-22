@@ -33,6 +33,16 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   const argsInput = document.getElementById("manage-args-input") as HTMLInputElement | null;
   if (argsInput) argsInput.value = st.launchParameters || "";
 
+  const wrapperInput = document.getElementById("manage-wrapper-input") as HTMLInputElement | null;
+  if (wrapperInput) wrapperInput.value = st.wrapper || "";
+
+  const envInput = document.getElementById("manage-env-input") as HTMLTextAreaElement | null;
+  if (envInput) {
+    envInput.value = Object.entries(st.envVars || {})
+      .map(([k, v]) => `${k}=${v}`)
+      .join("\n");
+  }
+
   document.querySelectorAll("#manage-install-path").forEach((el) => {
     el.textContent = st.installPath || t("manage.unspecified");
   });

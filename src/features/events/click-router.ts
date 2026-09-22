@@ -19,7 +19,7 @@ import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
-import { esc, fmtBytes } from "../../core/utils";
+import { esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, type EpicSettings } from "../../epic";
@@ -1029,6 +1029,14 @@ document.addEventListener("click", (e) => {
     S.activeManageSettings.launchParameters = val;
     epicSaveGameSettings(S.activeManageSettings)
       .then(() => toast(i18nT("manage.argsSaved"), "ok"))
+      .catch((err) => toast(i18nT("manage.argsSaveFailed", { msg: String(err) }), "err"));
+  } else if (act === "manage-save-launch-extras" && id && S.activeManageSettings) {
+    const wrapperEl = document.getElementById("manage-wrapper-input") as HTMLInputElement | null;
+    const envEl = document.getElementById("manage-env-input") as HTMLTextAreaElement | null;
+    S.activeManageSettings.wrapper = wrapperEl?.value?.trim() ?? "";
+    S.activeManageSettings.envVars = parseEnvText(envEl?.value ?? "");
+    epicSaveGameSettings(S.activeManageSettings)
+      .then(() => toast(i18nT("manage.launchExtrasSaved"), "ok"))
       .catch((err) => toast(i18nT("manage.argsSaveFailed", { msg: String(err) }), "err"));
   } else if (act === "dl-pause" && id) {
     epicPauseDownload(id)
