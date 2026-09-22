@@ -32,7 +32,7 @@ export function updateMaxIcon(isMax?: boolean): void {
 
 export function handleWindowResize(): void {
   updateMaxIcon();
-  updateNavIndicator();
+  updateNavIndicator(true);
   if (typeof updateDrawerTabArrows === "function") {
     updateDrawerTabArrows();
   }
