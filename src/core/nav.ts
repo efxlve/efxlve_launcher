@@ -11,28 +11,27 @@ import { S } from "./state";
 import { esc } from "./utils";
 import { t } from "../i18n";
 
-/** Width of the LED tick under the active nav tab (must match `.nav-underline` in CSS). */
-const NAV_LED_WIDTH = 14;
-
-/** Center the fixed-width LED tick under the active nav tab's icon. */
+/** Slide the bottom highlight under the active nav tab. */
 export function updateNavIndicator(): void {
+  const bar = document.getElementById("titlebar");
   const seg = document.getElementById("nav-seg");
   const ind = document.getElementById("nav-indicator");
-  if (!seg || !ind) return;
+  if (!bar || !seg || !ind) return;
   const active = seg.querySelector<HTMLElement>(".nav-tab.active");
   if (!active) {
     ind.style.opacity = "0";
     return;
   }
   if (!S.navIndicatorReady) {
-    // Skip the slide animation on first placement.
+    // Skip the slide animation on first placement (avoid sliding from width 0).
     ind.style.transition = "none";
     S.navIndicatorReady = true;
     window.setTimeout(() => { ind.style.transition = ""; }, 80);
   }
-  const segRect = seg.getBoundingClientRect();
+  const barRect = bar.getBoundingClientRect();
   const tabRect = active.getBoundingClientRect();
-  ind.style.left = `${tabRect.left - segRect.left + tabRect.width / 2 - NAV_LED_WIDTH / 2}px`;
+  ind.style.width = `${tabRect.width}px`;
+  ind.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
   ind.style.opacity = "1";
 }
 

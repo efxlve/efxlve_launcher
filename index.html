@@ -14,13 +14,13 @@
   <body style="background-color: #07080d;">
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
+        <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
         <div class="logo" data-act="goto-library" data-tauri-drag-region>
           <span class="logo-mark"><i data-lucide="gamepad-2"></i></span>
           <span class="logo-text">EFXLVE</span>
         </div>
         <nav id="nav">
           <div class="nav-seg" id="nav-seg">
-            <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
             <button class="nav-tab" data-act="open-store" data-i18n-title="nav.storeTitle" title="Epic Games Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Store</span></button>
             <button class="nav-tab active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
             <button class="nav-tab" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads &amp; Queue (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="badge hidden"></span></button>
