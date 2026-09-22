@@ -72,6 +72,7 @@ import { setView } from "../store/store-view";
 
 let dlDomRaf = 0;
 let dlDomId = "";
+let lastDlSample: { id: string; bytes: number; at: number } | null = null;
 
 /** Batches bursty download DOM updates into a single animation frame. */
 function scheduleDlDomUpdate(id: string): void {
@@ -178,6 +179,18 @@ export async function initApp(hooks: {
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       const title = S.epicSummariesMap.get(id)?.title ?? id;
+      const now = performance.now();
+      let measuredSpeedBytes = speedBytes ?? 0;
+      if (downloadedBytes !== undefined && downloadedBytes !== null) {
+        if (lastDlSample?.id === id) {
+          const elapsed = (now - lastDlSample.at) / 1000;
+          const delta = downloadedBytes - lastDlSample.bytes;
+          if (elapsed > 0 && delta > 0) {
+            measuredSpeedBytes = Math.round(delta / elapsed);
+          }
+        }
+        lastDlSample = { id, bytes: downloadedBytes, at: now };
+      }
       if (!done) startSpeedChartTimer();
 
       if (!done) {
@@ -192,7 +205,7 @@ export async function initApp(hooks: {
             progress,
             done: false,
             speed: speed ?? "—",
-            speedBytes: speedBytes ?? 0,
+            speedBytes: measuredSpeedBytes,
             diskSpeed: diskSpeed ?? "—",
             diskBytes: diskBytes ?? 0,
             eta: eta ?? t("common.calculating"),
@@ -202,14 +215,14 @@ export async function initApp(hooks: {
         } else {
           S.activeDlMetrics.progress = progress;
           if (speed) S.activeDlMetrics.speed = speed;
-          if (speedBytes !== undefined && speedBytes !== null) S.activeDlMetrics.speedBytes = speedBytes;
+          if (downloadedBytes !== undefined && downloadedBytes !== null) S.activeDlMetrics.speedBytes = measuredSpeedBytes;
           if (diskSpeed) S.activeDlMetrics.diskSpeed = diskSpeed;
           if (diskBytes !== undefined && diskBytes !== null) S.activeDlMetrics.diskBytes = diskBytes;
           if (eta) S.activeDlMetrics.eta = eta;
           if (downloadedBytes) S.activeDlMetrics.downloadedBytes = downloadedBytes;
           if (totalBytes) S.activeDlMetrics.totalBytes = totalBytes;
         }
-        pushSpeedData(speedBytes ?? 0, diskBytes ?? 0);
+        pushSpeedData(measuredSpeedBytes, diskBytes ?? 0);
 
         // All DOM writes are batched to one rAF so bursty progress events never
         // cause repeated layout reads (updateBadge measures the nav indicator).
@@ -219,6 +232,7 @@ export async function initApp(hooks: {
 
       // Download completed
       S.downloads.set(id, { progress: 100, done: true, title });
+      lastDlSample = null;
       pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
       if (S.activeDlMetrics?.id === id) {
         S.activeDlMetrics = null;
@@ -233,6 +247,11 @@ export async function initApp(hooks: {
     });
     await listen<{ id: string }>("download-paused", (_event) => {
       S.dlQueueStatus.isPaused = true;
+      lastDlSample = null;
+      if (S.activeDlMetrics) {
+        S.activeDlMetrics.speedBytes = 0;
+        S.activeDlMetrics.diskBytes = 0;
+      }
       if (S.view === "downloads") render();
     });
     await listen<DownloadFailedEvent>("download-failed", (event) => {
