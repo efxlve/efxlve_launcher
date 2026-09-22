@@ -2166,3 +2166,7 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `cargo test` (60 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1177/1177) yeşil.
 
+## 165. 3. Parti Başlatıcılar: Rockstar Kaldırıldı
+
+- Ayarlar > Entegrasyonlar'daki "3. Parti Başlatıcılar" listesinden **Rockstar Games Launcher** çıkarıldı (Epic üzerinden indirilip başlatıldığı için burada kontrol edilecek bir şey yok). Rust `epic_third_party_launchers` artık yalnızca EA App + Ubisoft Connect döner; bölüm başlığı `(EA, Ubisoft)` olarak güncellendi. (Kütüphanedeki oyun bazlı Rockstar algılaması etkilenmedi.)
+
