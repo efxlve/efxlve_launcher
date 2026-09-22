@@ -1089,6 +1089,8 @@
   "lib.editCollection": "Edit {name} collection",
   "lib.newCollection": "+ New Collection",
   "lib.searchPlaceholder": "Search game, studio or publisher...",
+  "lib.allStudios": "All Studios",
+  "lib.studioFilterTip": "Filter by studio. Tip: try dev:ubisoft or is:installed.",
   "lib.sortTip": "Sort: {label}",
   "lib.sort": "Sort",
   "lib.cardSize": "Card size",

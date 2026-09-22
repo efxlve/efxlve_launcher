@@ -188,6 +188,7 @@ export const S = {
   notifOpen: false,
   freeGames: (null) as FreeGamesData | null,
   freeGamesLoading: false,
+  studioFilter: "",
   downloadsSettingsOpen: false,
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
