@@ -177,6 +177,14 @@
 
 > Presence is **off by default**. A single background worker thread owns the Discord IPC client, de-duplicates updates and backs off on failures; it exits when disabled, so idle cost is zero. The activity text is localized in the frontend and forwarded as plain strings.
 
+### 2.13. EOS Overlay (Detection Only)
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `eos_overlay_status` | `() => Promise<EosOverlayStatus>` | `main.rs` | Reports whether the EOS Overlay is installed system-wide (`{ installed, path }`). |
+
+> The EOS Social Overlay is an Epic service injected into **game** processes (Shift+F3), not into our webview. It is installed system-wide by the Epic Games Launcher, so the launcher only detects its presence and links to the folder — it cannot host Epic's social UI itself.
+
 ---
 
 ## 3. Background IPC Event Payloads

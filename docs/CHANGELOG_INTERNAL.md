@@ -1982,3 +1982,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - `base.css` üst bar yorumu ve hareket notu yeni dile göre güncellendi.
 - `tsc` + `vite build` + `noUnusedLocals` (0) yeşil.
 
+## 143. EOS Overlay Durumu + İndirmeler Boş Sayfa Sadeleştirmesi
+
+- **Araştırma sonucu:** EOS Social Overlay, Epic'in EOS SDK'sına ait olup **oyun sürecine** enjekte edilir (Shift+F3); launcher webview'ine gömülemez. Sistem geneline Epic Games Launcher tarafından kurulur. Bu yüzden yapılabilecek doğru şey **tespit + yönlendirme**dir.
+- **Rust:** `main.rs` içine `eos_overlay_status` komutu eklendi; `%ProgramFiles(x86)%`, `%ProgramFiles%`, `%ProgramW6432%` altındaki `Epic Games\Epic Online Services` klasörünü kontrol edip `{ installed, path }` döner (`EosOverlayStatus`, camelCase).
+- **Frontend:** `epic.ts` içine `eosOverlayStatus()` ve genel amaçlı `epicOpenFolderPath(path)` eklendi. `state.ts`'e `S.eosOverlay` eklendi, `loadSettingsView` içinde paralel yükleniyor.
+- **Ayarlar UI:** "EOS Social Overlay" kartı eklendi (durum noktası yeşil/amber, kuruluysa yol + "Klasörü Aç", her durumda "Yenile"). `click-router.ts`'e `refresh-eos` / `open-eos-folder` eylemleri eklendi. 7 yeni i18n anahtarı (tr/en eşlikli).
+- **İndirmeler boş sayfa:** "Aktif İndirme Bulunmuyor" kartı artık yalnızca hiç son oynanan oyun yokken gösterilir; son oynananlar listesi varken iki kez "Kütüphaneye Git" CTA'sı oluşmaz. `recentInstalled` hesabı hero bloğunun önüne taşındı.
+- **Test düzeltmesi:** `test_system_drives_detection`, `letter` alanının artık `"C"` (kolonsuz) döndüğüne göre güncellendi (önceki `"C:"` beklentisi bayattı).
+- `cargo test` (54 passed / 1 ignored), `tsc --noUnusedLocals` (0), `vite build`, i18n eşlik (1122/1122) yeşil.
+

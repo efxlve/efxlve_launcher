@@ -24,7 +24,7 @@ import {
   loadStrSet,
 } from "./constants";
 import type { CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, View } from "./types";
-import type { CriticData, DlQueueStatus, EglDetectedGame, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
+import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 export const S = {
   view: ("library") as View,
@@ -176,6 +176,7 @@ export const S = {
   presenceEnabled: false,
   presenceClientId: "",
   preferredCdn: "",
+  eosOverlay: (null) as EosOverlayStatus | null,
   downloadsSettingsOpen: false,
   epicDefaultDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],

@@ -194,5 +194,7 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 2. **Discord Rich Presence görseli:** Discord uygulamasına "large image" asset yükleyip `activity::Assets::new().large_image(...)` ile logo/kapak gösterimi eklemek (uygulama simgesi dışında).
 3. **Cross-platform (Linux/macOS Wine/Proton):** Yalnızca araştırma/araştırma dokümanı mevcut ([`CROSS_PLATFORM.md`](./CROSS_PLATFORM.md)); gerçek implementasyon ayrı bir proje büyüklüğünde (Proton/DXVK/VKD3D, GPTK, prefix yöneticisi).
 4. **Discord RPC ek bağlamlar:** İsteğe bağlı olarak kupa/başarım ilerlemesi gibi daha zengin durum metinleri.
+5. **EOS Social Overlay — araştırma tamamlandı (uygulandı: durum tespiti):** Epic'in EOS Overlay'i **oyun sürecine enjekte edilir** (Shift+F3) ve sistem geneline Epic Games Launcher tarafından kurulur; launcher webview'ine gömülemez (Epic'in sohbet UI'sını host etmek desteklenmez). Ayarlar'da yalnızca **tespit + yönlendirme** kartı eklendi (`eos_overlay_status`). Otomatik kurulum, Epic'in redistributable'ı bir `productId` gerektirdiği ve uygulama-başına yapıldığı için kapsam dışıdır; istenirse ileride oyun bazında "overlay'i etkinleştir" (Heroic modeli) olarak ele alınabilir.
+6. **İndirme davranışları (Faz C):** Zamanlanmış otomatik güncelleme ve oyun oynanırken indirmeleri duraklatma (process tespiti + kuyruk kontrolü gerekir).
 
 

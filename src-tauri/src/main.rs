@@ -1190,6 +1190,37 @@ fn open_folder(path: String) -> Result<String, String> {
         .map_err(|e| format!("@t:win.folderOpenFailed\u{1f}{e}"))
 }
 
+/// Whether the EOS Overlay (installed system-wide by the Epic Games Launcher) is present.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EosOverlayStatus {
+    pub installed: bool,
+    pub path: String,
+}
+
+/// Checks the standard EOS Overlay install locations. The overlay is injected into
+/// games (Shift+F3) by Epic's service; our launcher only reports its presence.
+#[tauri::command]
+fn eos_overlay_status() -> EosOverlayStatus {
+    for var in ["ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"] {
+        if let Ok(base) = std::env::var(var) {
+            let root = std::path::Path::new(&base)
+                .join("Epic Games")
+                .join("Epic Online Services");
+            if root.is_dir() {
+                return EosOverlayStatus {
+                    installed: true,
+                    path: root.to_string_lossy().to_string(),
+                };
+            }
+        }
+    }
+    EosOverlayStatus {
+        installed: false,
+        path: String::new(),
+    }
+}
+
 #[tauri::command]
 fn app_minimize(app: AppHandle) -> Result<(), String> {
     let window = app
@@ -1338,6 +1369,7 @@ fn main() {
             resize_store_view,
             hide_store_view,
             open_folder,
+            eos_overlay_status,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
             legendary::steamgrid::epic_test_steamgrid_key,
