@@ -52,10 +52,6 @@ export async function loadFreeGames(force = false): Promise<void> {
   }
 }
 
-function freeGameUrl(g: FreeGame): string {
-  return g.slug ? `https://store.epicgames.com/p/${g.slug}` : "https://store.epicgames.com/free-games";
-}
-
 /** Formats an ISO date as a short local date (empty when invalid). */
 function shortDate(iso: string): string {
   if (!iso) return "";
@@ -74,17 +70,17 @@ function freeGameCard(g: FreeGame): string {
   const dateLabel = g.upcoming
     ? `${shortDate(g.start)} – ${shortDate(g.end)} • ${t("free.soon")}`
     : t("free.ends", { date: shortDate(g.end) });
-  const action = owned
-    ? owned.installed ? "epic-play" : "epic-install"
-    : "open-external-url";
-  const actionAttrs = owned
-    ? `data-id="${esc(owned.appName)}"`
-    : `data-url="${esc(freeGameUrl(g))}"`;
   const status = owned
     ? owned.installed ? t("common.play") : t("common.install")
     : dateLabel;
+  const actions = owned
+    ? `<div class="free-card-actions">
+         <button class="ps5-btn primary small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${status}</button>
+         <button class="ps5-btn secondary small" data-act="epic-detail" data-id="${esc(owned.appName)}">${t("lib.details")}</button>
+       </div>`
+    : "";
   return `
-    <button class="free-card" data-act="${action}" ${actionAttrs} title="${esc(g.title)}">
+    <div class="free-card" data-act="open-free-game" data-title="${esc(g.title)}" title="${esc(g.title)}">
       <div class="free-card-media">
         ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
         <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
@@ -92,8 +88,9 @@ function freeGameCard(g: FreeGame): string {
       <div class="free-card-body">
         <div class="free-card-title">${esc(g.title)}</div>
         <div class="free-card-date">${esc(status)}</div>
+        ${actions}
       </div>
-    </button>`;
+    </div>`;
 }
 
 /** Renders the free-games shelf (empty string when there is nothing to show). */
