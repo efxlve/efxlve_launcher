@@ -230,17 +230,17 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: var(--btn-play-bg);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+  box-shadow: var(--btn-play-glow);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.play:hover,
 .hub-actions-bar .btn.primary:hover {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
+  background: var(--btn-play-hover);
+  box-shadow: 0 6px 28px rgba(16, 185, 129, 0.65);
   transform: translateY(-2px);
 }
 .hub-actions-bar .btn.install {
@@ -252,16 +252,17 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--btn-install-bg, rgba(255, 255, 255, 0.1));
+  background: var(--btn-install-bg);
   color: #ffffff;
-  border: 1px solid var(--btn-install-border, rgba(255, 255, 255, 0.18));
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: var(--btn-install-glow);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.install:hover {
-  background: var(--btn-install-hover, rgba(255, 255, 255, 0.18));
-  border-color: rgba(255, 255, 255, 0.28);
+  background: var(--btn-install-hover);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
   transform: translateY(-2px);
 }
 /* Update uses a restrained amber status color without the old orange gradient. */
@@ -274,16 +275,16 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: #b68a2c;
-  color: #0b0d14;
+  background: var(--btn-update-bg);
+  color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(182, 138, 44, 0.24);
+  box-shadow: var(--btn-update-glow);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hub-actions-bar .btn.update:hover {
-  background: #c79b3e;
-  box-shadow: 0 6px 28px rgba(182, 138, 44, 0.38);
+  background: var(--btn-update-hover);
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.65);
   transform: translateY(-2px);
 }
 .hub-actions-bar .btn.ghost {

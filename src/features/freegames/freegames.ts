@@ -68,7 +68,7 @@ function ownedSummary(g: FreeGame): EpicSummary | null {
 function freeGameCard(g: FreeGame): string {
   const owned = ownedSummary(g);
   const dateLabel = g.upcoming
-    ? `${shortDate(g.start)} – ${shortDate(g.end)} • ${t("free.soon")}`
+    ? `${shortDate(g.start)} – ${shortDate(g.end)}`
     : t("free.ends", { date: shortDate(g.end) });
   const actionLabel = owned
     ? (owned.installed ? t("common.play") : t("common.install"))

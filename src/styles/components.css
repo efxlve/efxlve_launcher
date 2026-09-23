@@ -87,30 +87,30 @@
 .ps5-btn.primary:hover,
 .ps5-btn.play:hover {
   background: var(--btn-play-hover);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55);
 }
 .ps5-btn.install {
-  background: var(--btn-install-bg, #ffffff);
-  color: var(--btn-install-color, #07080d);
+  background: var(--btn-install-bg);
+  color: var(--btn-install-color, #ffffff);
   font-weight: 700;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: var(--btn-install-glow);
 }
 .ps5-btn.install:hover {
-  background: var(--btn-install-hover, #e2e8f0);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
+  background: var(--btn-install-hover);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
   transform: translateY(-1px);
 }
 .ps5-btn.update {
   background: var(--btn-update-bg);
-  color: #07080d;
-  font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: var(--btn-update-glow);
 }
 .ps5-btn.update:hover {
   background: var(--btn-update-hover);
-  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
   transform: translateY(-1px);
 }
 .ps5-btn.secondary {

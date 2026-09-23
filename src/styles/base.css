@@ -322,46 +322,46 @@ button { font-family: inherit; }
 }
 .btn.play:hover {
   background: var(--btn-play-hover);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.6);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
   transform: translateY(-1px);
 }
 .btn.install {
-  background: var(--btn-install-bg, #ffffff);
-  color: var(--btn-install-color, #07080d);
+  background: var(--btn-install-bg);
+  color: var(--btn-install-color, #ffffff);
   font-weight: 700;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: var(--btn-install-glow);
 }
 .btn.install:hover {
-  background: var(--btn-install-hover, #e2e8f0);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
+  background: var(--btn-install-hover);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
   transform: translateY(-1px);
 }
 .btn.running {
-  background: rgba(37, 99, 235, 0.18);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.45);
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.45);
 }
 .btn.primary {
-  background: var(--btn-play-bg);
+  background: var(--btn-downloading-bg);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: var(--btn-play-glow);
+  box-shadow: var(--btn-downloading-glow);
 }
 .btn.primary:hover {
-  background: var(--btn-play-hover);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
+  background: var(--btn-downloading-hover);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
 }
 .btn.update {
   background: var(--btn-update-bg);
-  color: #07080d;
-  font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: var(--btn-update-glow);
 }
 .btn.update:hover {
   background: var(--btn-update-hover);
-  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
   transform: translateY(-1px);
 }
 .btn.danger { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--red); }
