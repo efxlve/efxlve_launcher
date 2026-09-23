@@ -77,8 +77,38 @@
   white-space: nowrap;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.ps5-btn.primary { background: var(--ps5-accent); color: #ffffff; border: none; }
-.ps5-btn.primary:hover { background: var(--ps5-accent-hover); }
+.ps5-btn.primary,
+.ps5-btn.play {
+  background: var(--btn-play-bg);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--btn-play-glow);
+}
+.ps5-btn.primary:hover,
+.ps5-btn.play:hover {
+  background: var(--btn-play-hover);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
+}
+.ps5-btn.install {
+  background: var(--btn-install-bg);
+  color: #ffffff;
+  border: 1px solid var(--btn-install-border);
+}
+.ps5-btn.install:hover {
+  background: var(--btn-install-hover);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.ps5-btn.update {
+  background: var(--btn-update-bg);
+  color: #0b0d14;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--btn-update-glow);
+}
+.ps5-btn.update:hover {
+  background: var(--btn-update-hover);
+  box-shadow: 0 6px 22px rgba(182, 138, 44, 0.4);
+}
 .ps5-btn.secondary {
   background: var(--ps5-surface-2);
   color: var(--text);

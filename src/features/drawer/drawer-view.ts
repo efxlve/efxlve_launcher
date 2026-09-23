@@ -141,14 +141,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
     p !== null
        ? `<button class="btn primary" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
       : isRunning
-        ? `<button class="btn primary running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
+        ? `<button class="btn running" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
         : s.installed
           ? hasUpdate
             ? `<button class="btn update" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`
             : `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
           : requiresThirdPartyLauncher(partner)
             ? `<button class="btn play" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner!.name) })}</button>`
-            : `<button class="btn primary" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
+            : `<button class="btn install" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
 
   const rawDesc = s.description?.trim();
   const hasRealDesc =

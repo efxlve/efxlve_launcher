@@ -75,8 +75,8 @@ function freeGameCard(g: FreeGame): string {
     : dateLabel;
   const actions = owned
     ? `<div class="free-card-actions">
-         <button class="ps5-btn primary small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${status}</button>
-         <button class="ps5-btn secondary small" data-act="epic-detail" data-id="${esc(owned.appName)}">${t("lib.details")}</button>
+         <button class="btn ${owned.installed ? "play" : "install"} small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${status}</button>
+         <button class="btn ghost small" data-act="epic-detail" data-id="${esc(owned.appName)}">${t("lib.details")}</button>
        </div>`
     : "";
   return `

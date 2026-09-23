@@ -314,12 +314,54 @@ button { font-family: inherit; }
 .heart-burst svg {
   animation: heartBurst 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.btn.play { background: var(--green); color: #fff; box-shadow: 0 4px 14px var(--green-glow); }
-.btn.play:hover { background: #059669; }
-.btn.primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); }
-.btn.primary:hover { background: var(--primary-hover); }
-.btn.update { background: #b68a2c; color: #0b0d14; box-shadow: 0 4px 14px rgba(182, 138, 44, 0.24); }
-.btn.update:hover { background: #c79b3e; }
+.btn.play {
+  background: var(--btn-play-bg);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: var(--btn-play-glow);
+}
+.btn.play:hover {
+  background: var(--btn-play-hover);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.6);
+  transform: translateY(-1px);
+}
+.btn.install {
+  background: var(--btn-install-bg);
+  color: #ffffff;
+  border: 1px solid var(--btn-install-border);
+}
+.btn.install:hover {
+  background: var(--btn-install-hover);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+.btn.running {
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.45);
+}
+.btn.primary {
+  background: var(--btn-play-bg);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--btn-play-glow);
+}
+.btn.primary:hover {
+  background: var(--btn-play-hover);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
+}
+.btn.update {
+  background: var(--btn-update-bg);
+  color: #0b0d14;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--btn-update-glow);
+}
+.btn.update:hover {
+  background: var(--btn-update-hover);
+  box-shadow: 0 6px 22px rgba(182, 138, 44, 0.4);
+  transform: translateY(-1px);
+}
 .btn.danger { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--red); }
 .btn.danger:hover { background: var(--red); color: #fff; }
 .btn.small { padding: 5px 11px; font-size: 12px; border-radius: 6px; }
