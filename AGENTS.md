@@ -147,3 +147,5 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Kuyruk öğeleri install tag ve install klasörünü korur; öncelikli indirme ve restart sonrası sıra metadata ile sürdürülür.
 - DLC/otomatik güncelleme kuyruğa eklendikten sonra UI kuyruk durumu ve indirme badge'i backend ile yenilenir.
 - Kod haritası (`docs/CODEBASE_MAP.md`) modüler mimariye (`src/core/`, `src/features/`, `src/styles/`, `src/locales/` ve yeni Rust backend modülleri) uygun şekilde senkronize edildi.
+- Launcher genelindeki aksiyon butonları Cyberpunk detay sayfasındaki PS5 safir mavisi Oyna, buzlu obsidyen Kur, rafine altın Güncelle ve koyu safir Oynanıyor token'larına bağlandı.
+- Kütüphane minimalist Konsol Hibriti (Grid + Shelves) olarak yeniden inşa edildi: Spotlight, List View, Studio filtresi ve görünüm değiştirici butonlar kaldırılarak ölü kodlar temizlendi; varsayılan görünümde üstte hızlı raflar (Ücretsiz Oyunlar + Son Oynananlar) ve hemen altında tam Kütüphane Izgarası birleştirildi; filtre/arama anında saf ızgaraya odaklanma sağlandı.

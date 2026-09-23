@@ -33,6 +33,17 @@
   --radius-lg: 16px;
   --glow-ambient: 0 14px 34px -4px rgba(0, 0, 0, 0.85), 0 0 26px -2px rgba(99, 102, 241, 0.32);
 
+  /* --- Canonical Action Button Tokens (PS5 Sapphire & Frost Identity) --- */
+  --btn-play-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --btn-play-hover: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --btn-play-glow: 0 4px 18px rgba(37, 99, 235, 0.42);
+  --btn-install-bg: rgba(255, 255, 255, 0.10);
+  --btn-install-hover: rgba(255, 255, 255, 0.18);
+  --btn-install-border: rgba(255, 255, 255, 0.18);
+  --btn-update-bg: #b68a2c;
+  --btn-update-hover: #c79b3e;
+  --btn-update-glow: 0 4px 18px rgba(182, 138, 44, 0.28);
+
   /* --- PS5 Console Design System Tokenleri (docs/DESIGN_SYSTEM.md §3) --- */
   --ps5-surface-1: #0e1017;
   --ps5-surface-2: #151822;

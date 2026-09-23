@@ -15,7 +15,6 @@ import { t } from "../../i18n";
 import type { DrawerTab } from "../../core/types";
 import {
   epicCardPortrait,
-  epicRowHtml,
   epicVisibleSummaries,
 } from "../library/library-view";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
@@ -205,7 +204,7 @@ export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "righ
         const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
         S.renderedCardCount += nextSlice.length;
         const newCardsHtml = nextSlice
-          .map((s) => (S.epicViewMode === "grid" ? epicCardPortrait(s) : epicRowHtml(s)))
+          .map((s) => epicCardPortrait(s))
           .join("");
         sentinel.insertAdjacentHTML("beforebegin", newCardsHtml);
         if (S.renderedCardCount >= visible.length) {

@@ -74,7 +74,7 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   }
   const isRunning = S.runningGames.has(s.appName);
   if (isRunning) {
-    return `<button class="btn primary${btn} running" data-act="epic-play" data-id="${s.appName}" title="${t("common.gameRunning")}"><span class="running-dot"></span> ${t("common.playing")}</button>`;
+    return `<button class="btn running${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.gameRunning")}"><span class="running-dot"></span> ${t("common.playing")}</button>`;
   }
   if (s.installed) {
     const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
@@ -88,5 +88,5 @@ export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): 
   if (requiresThirdPartyLauncher(partner)) {
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.launchWith", { name: esc(partner!.name) })}">${icon("external", 14)} ${esc(partner!.shortName)}</button>`;
   }
-  return `<button class="btn primary${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} ${t("common.install")}</button>`;
+  return `<button class="btn install${btn}" data-act="epic-install" data-id="${s.appName}">${icon("download", 14)} ${t("common.install")}</button>`;
 }

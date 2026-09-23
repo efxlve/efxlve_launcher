@@ -250,10 +250,12 @@ document.addEventListener("change", (e) => {
     return;
   }
   if (target && target.id === "studio-filter") {
-    S.studioFilter = (target as unknown as HTMLSelectElement).value;
-    render();
     return;
   }
+
+
+
+
   if (target && target.id === "auto-update-time") {
     const v = target.value.trim();
     if (/^\d{1,2}:\d{2}$/.test(v)) {

@@ -657,4 +657,5 @@
 
 .free-card-date { font-size: 11px; color: var(--muted); }
 .free-card-actions { display: flex; gap: 6px; margin-top: 7px; }
-.free-card-actions .ps5-btn { flex: 1; justify-content: center; }
+.free-card-actions .btn,
+.free-card-actions .ps5-btn { flex: 1; justify-content: center; height: 30px; font-size: 12px; }

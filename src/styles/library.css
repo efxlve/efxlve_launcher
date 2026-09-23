@@ -1,263 +1,161 @@
 /* ==========================================================================
-   Library Spotlight, Toolbar & Game Cards
-
-   Hero spotlight banner, floating cover, filter toolbar and portrait/row game cards.
-       Split from the former monolithic src/styles.css to keep every file
-       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   Library Layout, Grid & Game Cards (PS5 Console Dark Aesthetic)
    ========================================================================== */
-/* --- HERO SPOTLIGHT BANNER --- */
-.hero-spotlight {
-  position: relative;
-  height: 240px;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  background: #0d0f17;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.hero-bg {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: center 20%;
-  filter: brightness(0.62) saturate(1.18);
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.hero-spotlight:hover .hero-bg { transform: scale(1.03); }
-.hero-gradient {
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(90deg, rgba(11, 13, 20, 0.98) 0%, rgba(11, 13, 20, 0.92) 36%, rgba(11, 13, 20, 0.55) 70%, rgba(11, 13, 20, 0.8) 100%),
-    linear-gradient(0deg, rgba(11, 13, 20, 0.9) 0%, transparent 65%);
-  pointer-events: none;
-}
-.hero-content {
-  position: relative; z-index: 2; padding: 24px 32px;
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; height: 100%; gap: 28px;
-}
-.hero-main {
-  max-width: 68%;
+
+/* --- SECTION HEADINGS & HYBRID STAGES --- */
+.lib-content-wrap {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-}
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
-  background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(129, 140, 248, 0.4);
-  color: #c7d2fe; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px;
-  width: fit-content;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
-}
-.hero-title {
-  font-size: 28px; font-weight: 800; line-height: 1.22; margin: 0 0 8px;
-  color: #ffffff; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  letter-spacing: -0.5px;
-}
-.hero-meta {
-  display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #94a3b8; margin-bottom: 18px; flex-wrap: wrap;
-}
-.hero-meta-sep { color: rgba(255, 255, 255, 0.2); }
-.hero-dev { color: #e2e8f0; font-weight: 600; }
-.hero-ver { color: #94a3b8; }
-.hero-size { color: #94a3b8; }
-.hero-playtime {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28);
-  color: #38bdf8; padding: 1px 8px; border-radius: 6px; font-weight: 600; font-size: 11.5px;
-}
-.hero-actions { display: flex; align-items: center; gap: 10px; }
-.hero-actions .btn { padding: 8px 20px; font-size: 13.5px; font-weight: 700; border-radius: 9px; }
-.hero-actions .btn.play {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-color: #10b981; color: #ffffff;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
-}
-.hero-actions .btn.play:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
-}
-.hero-actions .btn.ghost {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #e2e8f0;
-}
-.hero-actions .btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
+  gap: 28px;
+  width: 100%;
 }
 
-/* Floating 3D cover card (showcase poster) */
-.hero-showcase-card {
-  position: relative;
-  flex: 0 0 135px;
-  height: 190px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  background: #11131d;
+.lib-shelves-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: 100%;
 }
-.hero-showcase-card:hover {
-  transform: translateY(-5px) scale(1.03);
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.9), 0 0 24px rgba(99, 102, 241, 0.35);
+
+.lib-grid-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
-.hero-showcase-poster {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  transition: transform 0.4s ease;
+
+.lib-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
 }
-.hero-showcase-card:hover .hero-showcase-poster { transform: scale(1.06); }
-.hero-showcase-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(11, 13, 20, 0.9) 0%, rgba(11, 13, 20, 0.3) 60%, transparent 100%);
-  display: flex; align-items: flex-end; justify-content: center;
-  padding-bottom: 12px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.hero-showcase-card:hover .hero-showcase-overlay { opacity: 1; }
-.hero-showcase-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  font-size: 11px;
+
+.lib-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  letter-spacing: 0.2px;
 }
 
-/* --- MODERN TOOLBAR & CHIP FILTERS --- */
-.lib-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 18px; flex-wrap: wrap; gap: 14px;
+.lib-section-title svg {
+  color: #3b82f6;
 }
-.filter-chips {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+
+/* Card size toggle (S | M | L) */
+.card-size-toggle {
+  display: flex;
+  background: var(--ps5-surface-2, #151822);
+  border: 1px solid var(--ps5-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 9px;
+  padding: 2px;
 }
-.chip {
-  background: var(--panel); border: 1px solid var(--border);
-  color: var(--muted); border-radius: 20px; padding: 6px 14px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: all 0.16s ease;
+
+.card-size-toggle button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 9px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: all 0.15s ease;
 }
-.chip:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
-.chip.active {
+
+.card-size-toggle button:hover {
+  color: #ffffff;
+}
+
+.card-size-toggle button.active {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-.chip .chip-cnt {
-  font-size: 11px; padding: 1px 6px; border-radius: 10px;
-  background: rgba(255,255,255,0.08); color: inherit;
-}
-.chip.active .chip-cnt {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-}
-
-.lib-tools {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-}
-.search-box {
-  display: flex; align-items: center; gap: 8px; background: var(--panel);
-  border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px;
-  color: var(--muted); width: 220px; transition: all 0.2s;
-}
-.search-box:focus-within { border-color: var(--primary); width: 250px; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-.search-box input {
-  background: none; border: none; outline: none; color: var(--text);
-  font-size: 13px; width: 100%; font-family: inherit;
-}
-.search-box input::placeholder { color: #6b6d80; }
-.search-shortcut {
-  font-size: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-  border-radius: 4px; padding: 1px 5px; color: var(--muted);
-}
-
-.select {
-  background: var(--panel); border: 1px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 7px 10px; font-size: 13px; outline: none; cursor: pointer;
-  transition: border-color 0.16s;
-}
-.select:focus { border-color: var(--primary); }
-
-.card-size-toggle, .view-mode-toggle {
-  display: flex; background: var(--panel); border: 1px solid var(--border);
-  border-radius: 8px; padding: 2px;
-}
-.card-size-toggle button, .view-mode-toggle button {
-  background: none; border: none; color: var(--muted); cursor: pointer;
-  padding: 5px 8px; border-radius: 6px; display: flex; align-items: center;
-  font-size: 12px; font-weight: 700; transition: all 0.15s;
-}
-.card-size-toggle button:hover, .view-mode-toggle button:hover { color: var(--text); }
-.card-size-toggle button.active, .view-mode-toggle button.active { background: rgba(255,255,255,0.12); color: #fff; }
 
 /* --- GAME GRID & LARGE PORTRAIT CARDS --- */
-/* Default: normal size (220px) - cramped layout fixed! */
+/* Default: normal size (220px) */
 .pgrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
   gap: 20px;
 }
+
 /* Large poster mode */
 .pgrid.size-large {
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
   gap: 24px;
 }
-/* Kompakt Mod */
+
+/* Compact mode */
 .pgrid.size-compact {
-  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 15px;
 }
 
 .pcard {
-  position: relative; aspect-ratio: 3/4; border-radius: var(--radius);
-  overflow: hidden; cursor: pointer; border: 1px solid var(--border);
-  background: var(--panel);
+  position: relative;
+  aspect-ratio: 3/4;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #0d1017;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.22s ease,
               box-shadow 0.22s ease;
   contain: layout paint;
 }
 
-/* Skip layout/paint of off-screen grid cards: huge win on long libraries.
-   Scoped to the vertical grid (shelf tracks size themselves from their cards). */
+/* Skip layout/paint of off-screen grid cards: huge win on long libraries. */
 .pgrid .pcard {
   content-visibility: auto;
   contain-intrinsic-size: auto 293px;
 }
+
 .pcard:hover {
-  transform: translateY(-6px) scale(1.02);
-  border-color: rgba(99, 102, 241, 0.45);
-  box-shadow: var(--glow-ambient);
+  transform: translateY(-5px);
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.9), 0 0 20px -2px rgba(37, 99, 235, 0.35);
   z-index: 5;
 }
-.pcard > img, .pgrid .pcover {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+
+.pcard > img,
+.pgrid .pcover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.pcard:hover > img { transform: scale(1.05); }
-.pgrid .pcover { display: flex; align-items: center; justify-content: center; font-size: 64px; }
+
+.pcard:hover > img {
+  transform: scale(1.04);
+}
+
+.pgrid .pcover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  background: #111420;
+}
 
 /* Card status badge (top-left) */
 .pbadge {
-  position: absolute; top: 8px; left: 8px; z-index: 3;
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(7, 9, 14, 0.94);
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(7, 9, 14, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
   height: 20px;
   padding: 0 7px;
@@ -269,86 +167,212 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+
 .pbadge.ready {
   color: #10b981;
   background: rgba(6, 9, 13, 0.92);
   border-color: rgba(16, 185, 129, 0.4);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 8px rgba(16, 185, 129, 0.25);
 }
+
 .pbadge.ready .dot {
-  width: 5px; height: 5px; border-radius: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 6px #10b981;
 }
+
 .pbadge.update {
   color: #f59e0b;
   background: rgba(6, 9, 13, 0.92);
   border-color: rgba(245, 158, 11, 0.4);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 8px rgba(245, 158, 11, 0.25);
 }
+
 .pbadge.update .dot {
-  width: 5px; height: 5px; border-radius: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: #f59e0b;
   box-shadow: 0 0 6px #f59e0b;
 }
 
-/* Card hover layer - BADGE OVERLAP FIXED */
-.pcard .shade {
-  position: absolute; inset: 0; opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
-  background: linear-gradient(to top, rgba(11,12,16,0.96) 20%, rgba(11,12,16,0.55) 65%, rgba(11,12,16,0.2) 100%);
-}
-.pcard:hover .shade, .pcard:hover .poverlay { opacity: 1; }
-.poverlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  justify-content: space-between; padding: 12px; opacity: 0; transition: opacity 0.2s ease;
-  pointer-events: none; z-index: 4;
-}
-.poverlay button { pointer-events: auto; }
-/* Buttons sit side by side at the TOP-RIGHT and NEVER overlap the top-left badge */
-.poverlay .top { display: flex; justify-content: flex-end; gap: 6px; }
-.iconbtn {
-  background: rgba(18, 20, 29, 0.94);
-  border: 1px solid rgba(255,255,255,0.2); color: #fff;
-  border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 14px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.16s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
-.iconbtn.faved svg { fill: #f43f5e; color: #f43f5e; }
-.iconbtn.faved:hover svg { fill: #ff4766; color: #ff4766; filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.45)); }
-.poverlay .bottom { display: flex; flex-direction: column; gap: 8px; }
-.ptitle {
-  font-size: 14px; font-weight: 700; line-height: 1.3;
-  color: #fff; text-shadow: 0 2px 6px #000;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+/* Platinum trophy badge */
+.platinum-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(15, 10, 28, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 10px rgba(168, 85, 247, 0.35);
+  pointer-events: none;
 }
 
-/* Live download bar (card base) */
-.card-dl-track {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
-  background: rgba(0,0,0,0.6); z-index: 6; overflow: hidden;
+/* Card hover layer */
+.pcard .shade {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(7, 9, 14, 0.96) 20%, rgba(7, 9, 14, 0.55) 65%, rgba(7, 9, 14, 0.2) 100%);
 }
+
+.pcard:hover .shade,
+.pcard:hover .poverlay {
+  opacity: 1;
+}
+
+.poverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.poverlay button {
+  pointer-events: auto;
+}
+
+.poverlay .top {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.iconbtn {
+  background: rgba(18, 20, 29, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.16s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.iconbtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.iconbtn.faved svg {
+  fill: #f43f5e;
+  color: #f43f5e;
+}
+
+.iconbtn.faved:hover svg {
+  fill: #ff4766;
+  color: #ff4766;
+  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.45));
+}
+
+.poverlay .bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ptitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fff;
+  text-shadow: 0 2px 6px #000;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Live download bar */
+.card-dl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 6;
+  overflow: hidden;
+}
+
 .card-dl-bar {
-  height: 100%; background: linear-gradient(90deg, var(--primary), #a855f7);
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.7);
   transition: width 0.2s ease;
 }
 
-/* --- LIST VIEW --- */
-.prow {
-  display: flex; gap: 14px; align-items: center; background: var(--panel);
-  border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px;
-  margin-bottom: 8px; cursor: pointer; transition: all 0.16s ease;
-  content-visibility: auto;
-  contain-intrinsic-size: 80px;
-  contain: layout paint;
+/* Platinum category banner */
+.plat-category-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(30, 20, 50, 0.85) 0%, rgba(15, 12, 25, 0.95) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 14px;
+  padding: 16px 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
 }
-.prow:hover {
-  border-color: rgba(99, 102, 241, 0.4); transform: translateX(4px);
-  background: var(--panel-hover);
-}
-.prow img, .prow .pcover { width: 52px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
-.prow .pcover { display: flex; align-items: center; justify-content: center; font-size: 28px; background: var(--bg2); }
-.prow .grow { flex: 1; min-width: 0; }
-.prow h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.prow .meta { color: var(--muted); font-size: 12px; margin: 0; }
 
+.plat-banner-icon {
+  color: #c084fc;
+}
+
+.plat-banner-info {
+  flex: 1;
+  margin: 0 18px;
+}
+
+.plat-banner-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.plat-banner-desc {
+  font-size: 12.5px;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.plat-banner-stat {
+  text-align: right;
+}
+
+.plat-banner-stat .val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #e9d5ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.plat-banner-stat .lbl {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

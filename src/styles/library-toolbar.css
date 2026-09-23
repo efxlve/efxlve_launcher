@@ -1,12 +1,5 @@
 /* ==========================================================================
    Modern Library Top Bar
-
-   Modern library top bar and integrated control center.
-       Split from the former monolithic src/styles.css to keep every file
-       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   ========================================================================== */
-/* ==========================================================================
-   Modern library top bar & unified control center
    ========================================================================== */
 
 .lib-top-bar {
@@ -41,14 +34,15 @@
   font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
 
 .lib-heading-stats .stat-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #6366f1;
-  box-shadow: 0 0 6px #6366f1;
+  background: #2563eb;
+  box-shadow: 0 0 6px #2563eb;
 }
 
 .lib-heading-stats .stat-sep {
@@ -85,66 +79,3 @@
   align-items: center;
   gap: 8px;
 }
-
-.lib-toggle-hero-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  border-radius: 10px;
-  padding: 0 12px;
-  height: 36px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.lib-toggle-hero-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: scale(1.03);
-}
-
-.lib-toggle-hero-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.35);
-  color: #c7d2fe;
-}
-
-
-/* Studio filter dropdown */
-.studio-filter-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--ps5-surface-2, var(--panel));
-  border: 1px solid var(--ps5-border-default, var(--border));
-  border-radius: 10px;
-  padding: 0 8px;
-  height: 34px;
-  max-width: 220px;
-}
-
-.studio-filter-icon { color: var(--muted); display: inline-flex; }
-
-.studio-filter-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-  padding: 0 4px;
-  height: 100%;
-  max-width: 180px;
-  cursor: pointer;
-  outline: none;
-  text-overflow: ellipsis;
-}
-.studio-filter-select:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; border-radius: 8px; }
-.studio-filter-select option { background: #0b0d14; color: #e2e8f0; }
