@@ -140,6 +140,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Yaklaşan ücretsiz oyun pencereleri tüm promosyon gruplarından en erken gerçek başlangıç tarihini seçer; hesapta bulunan ücretsiz oyunlarda `Kur`/`Oyna` eylemi gösterilir.
 - Yaklaşan ücretsiz oyunlarda `Kur`/`Oyna` ve `Detay` eylemleri, mağaza bağlantıları launcher içindeki Epic webview'a yönlendirilir.
 - Mağaza sayfaları için başlık tahmini yerine Epic katalogundaki gerçek `pageSlug` kullanılır; fallback yalnızca metadata eksikse devreye girer.
+- Mağaza sayfası slug eşleştirmesinde hem `catalogNs.mappings` hem doğrudan `offerMappings` biçimleri desteklenir; fallback yalnızca metadata eksikse arama sayfasına gider.
 - Gelecek iş: hesap profili için `account switcher` desteği ekle.
 - Gelecek iş: bildirim merkezini kapsamlı biçimde genişlet; oyun güncellemeleri, tamamlanan indirmeler, istek listesindeki indirimler ve ön siparişe açılan oyunlar için bildirimler ekle.
 - Aktif indirme kimliği, generation ile izlenir; eski monitor yeni sürecin kuyruğunu/persistence kaydını bozamaz.

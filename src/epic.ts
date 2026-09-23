@@ -223,9 +223,11 @@ export interface ThirdPartyLauncherInfo {
 /** Uses Epic's catalog slug when title-to-slug guessing would be ambiguous. */
 export function epicStorePageUrlForGame(g: EpicGame | undefined, title: string): string {
   const metadata = g?.metadata as Record<string, unknown> | undefined;
-  const mappingGroups = [metadata?.catalogNs, metadata?.offerMappings];
-  for (const group of mappingGroups) {
-    const mappings = (group as { mappings?: unknown } | undefined)?.mappings;
+  const mappingGroups = [
+    (metadata?.catalogNs as { mappings?: unknown } | undefined)?.mappings,
+    metadata?.offerMappings,
+  ];
+  for (const mappings of mappingGroups) {
     if (!Array.isArray(mappings)) continue;
     const slug = mappings.find((mapping) => {
       const value = (mapping as { pageSlug?: unknown } | null)?.pageSlug;
@@ -233,7 +235,7 @@ export function epicStorePageUrlForGame(g: EpicGame | undefined, title: string):
     }) as { pageSlug?: string } | undefined;
     if (slug?.pageSlug) return `https://store.epicgames.com/p/${slug.pageSlug}`;
   }
-  return epicStorePageUrl(title);
+  return epicStoreSearch(title);
 }
 
 /** Mobile-only catalog entries have no place in the Windows launcher library. */
