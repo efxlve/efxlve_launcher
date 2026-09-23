@@ -184,9 +184,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - İndirmeler görünümünden mükerrer "Son Tamamlananlar" bölümü kaldırıldı; indirilen veya güncellenen oyunlar doğrudan "SON YÜKLENENLER & GÜNCELLENENLER" rafının en üstüne eklenecek şekilde sadeleştirildi.
 - İndirmeler sayfası "SON YÜKLENENLER & GÜNCELLENENLER" rafında güncellemesi olan oyunlarda (örn. GTA V) "Oyna" yerine kehribar "Güncelle" butonu ve güncelleme etiketi bağlandı.
 - Profil görünümüne geçişte arkadaş listesinin boş kalması/yüklenmeme hatası giderildi: Router seviyesinde otomatik profil hidrasyonu (`loadFriends`) bağlandı ve önceki ağ hatalarında yeniden denemeyi engelleyen durum temizlendi.
-- Profil sayfası baştan sona Apple & PlayStation 5 konsol tasarım sistemine uyarlandı:
-  - PS5 Hero Sahnesi: Dairesel lüks obsidyen avatar, seviye rozeti, XP ilerleme çubuğu, 4 kademeli Kupa Vitrini (Platin, Altın, Gümüş, Bronz), Toplam XP kapsülü ve yenileme butonu.
-  - Sosyal Salon (Arkadaş Listesi): Buzlu cam kartlar, dairesel baş harf avatarları, platform rozetleri (Steam, PSN, Xbox, Switch), yıldızlı favoriler ve yükleme anında 6 kartlık zarif shimmer skeleton animasyonu.
-  - En Çok Oynananlar Rafı: Apple Gruplanmış Liste (Inset) formatında 38x50px posterler, orantılı lavanta oynama süresi çubuğu, `tabular-nums` süre göstergesi ve tıklayınca doğrudan oyun detay çekmecesini açma desteği.
-  - Kupa Galerisi & İlerleme Araç Çubuğu: Apple Segmented Rail (`[ Tümü | Platin | Devam Edenler | Başlanmayanlar ]`), Apple Spotlight tarzı 40px arama kapsülü ve Apple sıralama seçicisi.
+- Profil sayfası Xbox PC App ve Steam Profil mimarisi esas alınarak baştan sona yeniden tasarlandı (İki Kolonlu Gamer Profili):
+  - Sol Ana Kolon (~%68): Steam tarzı "Öne Çıkan Oyun Vitrini" (`.profile-featured-showcase`, arka plan afişi, oynama süresi, kupa ilerleme çubuğu, detay butonu) ve Xbox tarzı "Başarılar & Oyun İlerlemesi" (`.xbox-games-list`, kompakt posterler, kupa/XP dökümleri, yatay ilerleme çizgisi, Apple Segmented Rail ve arama/sıralama araçları).
+  - Sağ Kenar Çubuğu (~%32): Xbox tarzı 3x3 kare afişli "Son Oynananlar" (`.xbox-recent-grid`, büyüteç hover efekti, tek tıkla çekmece açma), kompakt kenar çubuğu "Arkadaşlar" salonu (`.profile-friends-card`, dairesel harf avatarları, favori yıldızları, platform rozetleri, kaydırılabilir liste ve skeleton shimmer) ve Steam tarzı "Kütüphane Özeti" (`.profile-stats-card`, toplam oyun, kupa seviyesi, platin sayısı ve ortalama tamamlama yüzdesi).
+
 

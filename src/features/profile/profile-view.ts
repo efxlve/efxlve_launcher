@@ -1,9 +1,12 @@
 /**
- * PS5 trophy profile page renderer.
+ * Gamer profile page renderer (inspired by Xbox PC App and Steam Profile).
  *
- * Renders the player level header, trophy counters and the per-game trophy card
- * grid. It only reads shared state (S) and presentational helpers; navigation
- * and refresh actions are routed through the global data-act delegation.
+ * Implements a 2-column master-detail layout:
+ * - Immersive Hero Banner (game backdrop, avatar, level crest, 4-tier trophy showcase).
+ * - Left Column: Featured Game Showcase (Steam style) + Achievements & Games Progress list (Xbox style).
+ * - Right Sidebar: 3x3 Recently Played grid (Xbox style) + Compact Friends Lounge + Library Stats card (Steam style).
+ *
+ * Follows zero-emoji policy, PS5 obsidian & lavender token rules, and tabular numbers.
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
@@ -14,6 +17,12 @@ import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 
 import type { ProfileGameRecord } from "../../epic";
+
+/**
+ * Xbox-style achievement game cards.
+ * Rendered as clean, horizontal rows with game poster, title, tags, trophy counts,
+ * XP progress bar, and percentage/platinum badges.
+ */
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     return `
@@ -108,7 +117,7 @@ export function resetProfileCards(): void {
 }
 
 /**
- * Trophy grid with progressive rendering: only the first chunk is built so a
+ * Trophy list with progressive rendering: only the first chunk is built so a
  * large profile never turns into thousands of DOM nodes at once.
  */
 export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
@@ -134,57 +143,181 @@ function platformLabel(key: string): string {
   return map[key] || key.charAt(0).toUpperCase() + key.slice(1);
 }
 
-/** Top-played games by tracked playtime, rendered as a compact bar list. */
-function renderTopPlayedSection(): string {
-  const entries = [...S.playtimeMap.entries()]
-    .map(([appName, rec]) => {
-      const s = S.epicSummariesMap.get(appName);
-      return { appName, title: s?.title ?? appName, cover: s?.cover ?? null, seconds: rec.total_seconds || 0 };
-    })
-    .filter((e) => e.seconds > 0)
-    .sort((a, b) => b.seconds - a.seconds)
-    .slice(0, 6);
-  if (entries.length === 0) return "";
+/**
+ * Steam-style "Favorite / Featured Game" showcase.
+ * Highlights the player's #1 most played or completed game.
+ */
+function renderFeaturedGameShowcase(): string {
+  let topAppName: string | null = null;
+  let topSeconds = 0;
+  for (const [appName, rec] of S.playtimeMap.entries()) {
+    if ((rec.total_seconds || 0) > topSeconds) {
+      topSeconds = rec.total_seconds;
+      topAppName = appName;
+    }
+  }
 
-  const max = entries[0].seconds || 1;
-  const rows = entries
-    .map((e) => {
-      const pct = Math.max(4, Math.round((e.seconds / max) * 100));
-      return `
-        <div class="top-played-row clickable" data-act="epic-detail" data-id="${esc(e.appName)}" title="${esc(e.title)}">
-          <div class="top-played-thumb">${e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy" />` : `<div class="top-played-thumb-fallback">${icon("gamepad-2", 14)}</div>`}</div>
-          <div class="top-played-info">
-            <div class="top-played-name">${esc(e.title)}</div>
-            <div class="top-played-bar-track"><div class="top-played-bar-fill" style="width:${pct}%"></div></div>
+  if (!topAppName && S.playerProfileData?.games?.length) {
+    const sorted = [...S.playerProfileData.games].sort((a, b) => b.unlocked_percent - a.unlocked_percent);
+    topAppName = sorted[0]?.app_name || null;
+  }
+
+  if (!topAppName && S.epicSummaries.length > 0) {
+    topAppName = S.epicSummaries[0].appName;
+  }
+
+  if (!topAppName) return "";
+
+  const s = S.epicSummariesMap.get(topAppName);
+  const title = s?.title || topAppName;
+  const coverUrl = S.customCovers[topAppName] || s?.cover || "";
+  const bannerUrl = s ? (epicWideArt(s) || s.cover) : coverUrl;
+  const gameRec = S.playerProfileData?.games.find((g) => g.app_name === topAppName);
+
+  const totalUnlocked = gameRec?.total_unlocked || 0;
+  const totalAch = gameRec?.total_achievements || 0;
+  const pct = gameRec ? Math.min(100, Math.max(0, gameRec.unlocked_percent)) : 0;
+  const isPlat = gameRec?.is_platinum || pct >= 100;
+  const playtimeStr = topSeconds > 0 ? fmtPlaytime(topSeconds) : null;
+  const isInstalled = s?.installed ?? false;
+
+  return `
+    <div class="profile-featured-showcase ${isPlat ? "platinum" : ""}" data-act="open-game-from-profile" data-id="${esc(topAppName)}" role="button" tabindex="0" title="${esc(title)} - ${t("profile.detailsTitle")}">
+      ${bannerUrl ? `<img class="featured-backdrop" src="${esc(bannerUrl)}" alt="" loading="lazy" />` : ""}
+      <div class="featured-backdrop-overlay"></div>
+
+      <div class="featured-content">
+        <div class="featured-badge-row">
+          <span class="featured-pill-badge">${icon("star", 11)} ${t("profile.favoriteGame")}</span>
+          ${isPlat ? `<span class="featured-plat-badge">${epicPlatinumIcon(12)} ${t("profile.platLabel")}</span>` : ""}
+          ${isInstalled ? `<span class="featured-installed-badge">${icon("check", 10)} ${t("profile.installed")}</span>` : ""}
+        </div>
+
+        <div class="featured-main-row">
+          <div class="featured-poster-wrap">
+            ${coverUrl ? `<img class="featured-poster" src="${esc(coverUrl)}" alt="${esc(title)}" />` : `<div class="featured-poster-fallback">${icon("gamepad-2", 24)}</div>`}
           </div>
-          <div class="top-played-time">${esc(fmtPlaytime(e.seconds))}</div>
-        </div>`;
+
+          <div class="featured-info-col">
+            <h3 class="featured-title">${esc(title)}</h3>
+
+            <div class="featured-stats-row">
+              ${playtimeStr ? `<span class="featured-stat-item">${icon("clock", 12)} <strong>${playtimeStr}</strong> ${t("profile.played")}</span>` : ""}
+              ${totalAch > 0 ? `<span class="featured-stat-item">${icon("trophy", 12)} <strong>${totalUnlocked} / ${totalAch}</strong> ${t("profile.trophies")}</span>` : ""}
+              ${gameRec?.total_xp ? `<span class="featured-stat-item">${icon("sparkles", 11)} <strong>${gameRec.total_xp.toLocaleString()}</strong> XP</span>` : ""}
+            </div>
+
+            ${
+              totalAch > 0
+                ? `
+              <div class="featured-progress-row">
+                <div class="featured-progress-track">
+                  <div class="featured-progress-fill ${isPlat ? "plat" : ""}" style="width: ${pct}%"></div>
+                </div>
+                <span class="featured-progress-pct ${isPlat ? "plat" : ""}">%${pct}</span>
+              </div>
+            `
+                : ""
+            }
+          </div>
+
+          <div class="featured-action-col">
+            <button class="apple-pill-btn secondary small" data-act="epic-detail" data-id="${esc(topAppName)}">
+              ${icon("info", 12)} <span>${t("common.details")}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Xbox-style 3x3 Recently Played games grid.
+ */
+function renderXboxRecentGrid(): string {
+  const recentAppNames: string[] = [];
+
+  // 1. From S.epicRecent (recent launched)
+  for (const name of S.epicRecent) {
+    if (!recentAppNames.includes(name) && S.epicSummariesMap.has(name)) {
+      recentAppNames.push(name);
+    }
+  }
+
+  // 2. From playtime map sorted by last_played_timestamp descending
+  const played = [...S.playtimeMap.entries()]
+    .filter(([name, r]) => (r.total_seconds || 0) > 0 && !recentAppNames.includes(name) && S.epicSummariesMap.has(name))
+    .sort((a, b) => (b[1].last_played_timestamp || 0) - (a[1].last_played_timestamp || 0));
+  for (const [name] of played) {
+    if (recentAppNames.length >= 9) break;
+    recentAppNames.push(name);
+  }
+
+  // 3. Fallback to installed games
+  if (recentAppNames.length < 9) {
+    for (const s of S.epicSummaries) {
+      if (recentAppNames.length >= 9) break;
+      if (s.installed && !recentAppNames.includes(s.appName)) {
+        recentAppNames.push(s.appName);
+      }
+    }
+  }
+
+  // 4. Fallback to any library games
+  if (recentAppNames.length < 9) {
+    for (const s of S.epicSummaries) {
+      if (recentAppNames.length >= 9) break;
+      if (!recentAppNames.includes(s.appName)) {
+        recentAppNames.push(s.appName);
+      }
+    }
+  }
+
+  const items = recentAppNames
+    .map((appName) => {
+      const s = S.epicSummariesMap.get(appName);
+      const title = s?.title || appName;
+      const cover = S.customCovers[appName] || s?.cover || "";
+      return `
+        <div class="xbox-recent-item clickable" data-act="epic-detail" data-id="${esc(appName)}" title="${esc(title)}">
+          ${cover ? `<img src="${esc(cover)}" alt="${esc(title)}" loading="lazy" />` : `<div class="xbox-recent-fallback">${icon("gamepad-2", 18)}</div>`}
+          <div class="xbox-recent-overlay">
+            <span class="xbox-recent-name">${esc(title)}</span>
+          </div>
+        </div>
+      `;
     })
     .join("");
 
   return `
-    <div class="profile-top-played">
-      <div class="profile-friends-header">
-        <div class="profile-games-title-group">
-          <h2 class="profile-section-title">${t("profile.topPlayed")}</h2>
+    <div class="profile-sidebar-card xbox-recent-card">
+      <div class="profile-sidebar-header">
+        <div class="profile-sidebar-title">
+          ${icon("clock", 13)}
+          <h3>${t("profile.recentGamesTitle")}</h3>
         </div>
+        <button class="profile-sidebar-link" data-view="library">${t("profile.showAll")}</button>
       </div>
-      <div class="apple-grouped-list top-played-list">${rows}</div>
-    </div>`;
+      <div class="xbox-recent-grid">
+        ${items || `<div class="sidebar-empty">${t("profile.noRecentGames")}</div>`}
+      </div>
+    </div>
+  `;
 }
 
-/** Read-only Epic friends section (unofficial API; may fail silently). */
+/** Read-only Epic friends compact sidebar lounge. */
 function renderFriendsSection(): string {
   let body: string;
   if (S.friendsLoading && S.friends.length === 0) {
     body = `
-      <div class="friends-skeleton-grid">
-        ${Array.from({ length: 6 })
+      <div class="friends-compact-list skeleton-wrap">
+        ${Array.from({ length: 4 })
           .map(
             () => `
-          <div class="friend-card skeleton">
-            <div class="friend-avatar skeleton-shimmer"></div>
-            <div class="friend-info">
+          <div class="friend-compact-row skeleton">
+            <div class="friend-avatar-compact skeleton-shimmer"></div>
+            <div class="friend-info-compact">
               <div class="friend-name-skeleton skeleton-shimmer"></div>
               <div class="friend-plat-skeleton skeleton-shimmer"></div>
             </div>
@@ -194,54 +327,113 @@ function renderFriendsSection(): string {
       </div>`;
   } else if (S.friendsError) {
     body = `
-      <div class="friends-state friends-state-error">
-        <div class="friends-state-icon">${icon("users", 32)}</div>
+      <div class="friends-state friends-state-error compact">
         <p>${esc(S.friendsError)}</p>
-        <button class="apple-pill-btn secondary small" data-act="refresh-friends">${icon("refresh", 12)} <span>${t("profile.retry")}</span></button>
+        <button class="apple-pill-btn secondary small" data-act="refresh-friends">${icon("refresh", 11)} <span>${t("profile.retry")}</span></button>
       </div>`;
   } else if (S.friends.length === 0) {
     body = `
-      <div class="friends-state">
-        <div class="friends-state-icon">${icon("users", 32)}</div>
+      <div class="friends-state compact">
+        <div class="friends-state-icon">${icon("users", 24)}</div>
         <p>${t("friends.empty")}</p>
       </div>`;
   } else {
-    body = `<div class="friends-grid">${S.friends
-      .map((f) => {
-        const name = f.displayName || f.alias || f.accountId.slice(0, 8);
-        const initial = (name.trim().charAt(0) || "?").toUpperCase();
-        const plats = f.platforms
-          .map((p) => `<span class="friend-plat ${esc(p)}">${esc(platformLabel(p))}</span>`)
-          .join("");
-        return `
-          <div class="friend-card${f.favorite ? " fav" : ""}">
-            <div class="friend-avatar">
-              <span class="friend-avatar-letter">${esc(initial)}</span>
-              ${f.favorite ? `<span class="friend-star">${icon("star", 10)}</span>` : ""}
-            </div>
-            <div class="friend-info">
-              <div class="friend-name" title="${esc(name)}">${esc(name)}</div>
-              ${f.alias && f.displayName ? `<div class="friend-alias" title="${esc(f.alias)}">${esc(f.alias)}</div>` : ""}
-              ${plats ? `<div class="friend-plats">${plats}</div>` : ""}
-            </div>
-          </div>`;
-      })
-      .join("")}</div>`;
+    // Sort favorites first
+    const sorted = [...S.friends].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+    body = `
+      <div class="friends-compact-list">
+        ${sorted
+          .map((f) => {
+            const name = f.displayName || f.alias || f.accountId.slice(0, 8);
+            const initial = (name.trim().charAt(0) || "?").toUpperCase();
+            const plats = f.platforms
+              .map((p) => `<span class="friend-plat ${esc(p)}">${esc(platformLabel(p))}</span>`)
+              .join("");
+            return `
+              <div class="friend-compact-row${f.favorite ? " fav" : ""}">
+                <div class="friend-avatar-compact">
+                  <span class="friend-avatar-letter">${esc(initial)}</span>
+                  ${f.favorite ? `<span class="friend-star-mini">${icon("star", 9)}</span>` : ""}
+                </div>
+                <div class="friend-info-compact">
+                  <span class="friend-name-compact" title="${esc(name)}">${esc(name)}</span>
+                  ${f.alias && f.displayName ? `<span class="friend-alias-compact" title="${esc(f.alias)}">${esc(f.alias)}</span>` : ""}
+                </div>
+                ${plats ? `<div class="friend-plat-badges">${plats}</div>` : ""}
+              </div>`;
+          })
+          .join("")}
+      </div>`;
   }
 
   return `
-    <div class="profile-friends-section">
-      <div class="profile-friends-header">
-        <div class="profile-games-title-group">
-          <h2 class="profile-section-title">${t("friends.title")}</h2>
-          ${S.friends.length > 0 ? `<span class="profile-section-badge">${S.friends.length}</span>` : ""}
+    <div class="profile-sidebar-card profile-friends-card">
+      <div class="profile-sidebar-header">
+        <div class="profile-sidebar-title">
+          ${icon("users", 13)}
+          <h3>${t("friends.title")}</h3>
+          ${S.friends.length > 0 ? `<span class="sidebar-badge">${S.friends.length}</span>` : ""}
         </div>
         <button class="apple-pill-btn secondary small ps5-friends-refresh ${S.friendsLoading ? "spinning" : ""}" data-act="refresh-friends" title="${t("friends.refresh")}">
-          ${icon("refresh", 12)} <span>${S.friendsLoading ? t("profile.refreshing") : t("friends.refresh")}</span>
+          ${icon("refresh", 11)} <span>${S.friendsLoading ? t("profile.refreshing") : t("friends.refresh")}</span>
         </button>
       </div>
       ${body}
     </div>`;
+}
+
+/**
+ * Steam-style gamer profile stats overview.
+ */
+function renderProfileStatsCard(
+  allGames: ProfileGameRecord[],
+  totalOwnedGames: number,
+  totalPlaytimeStr: string,
+  trophyLevel: number,
+  platCount: number,
+): string {
+  const gamesWithTrophies = allGames.filter((g) => g.total_achievements > 0);
+  const avgPct =
+    gamesWithTrophies.length > 0
+      ? Math.round(
+          gamesWithTrophies.reduce((acc, g) => acc + g.unlocked_percent, 0) / gamesWithTrophies.length,
+        )
+      : 0;
+
+  return `
+    <div class="profile-sidebar-card profile-stats-card">
+      <div class="profile-sidebar-header">
+        <div class="profile-sidebar-title">
+          ${icon("layers", 13)}
+          <h3>${t("profile.statsSummaryTitle")}</h3>
+        </div>
+      </div>
+      <div class="profile-stats-grid">
+        <div class="profile-stat-tile">
+          <span class="stat-tile-label">${icon("gamepad-2", 12)} ${t("profile.games")}</span>
+          <span class="stat-tile-val">${totalOwnedGames}</span>
+        </div>
+        <div class="profile-stat-tile">
+          <span class="stat-tile-label">${epicPlatinumIcon(12)} ${t("profile.level")}</span>
+          <span class="stat-tile-val">${trophyLevel}</span>
+        </div>
+        <div class="profile-stat-tile">
+          <span class="stat-tile-label">${icon("trophy", 12)} ${t("profile.platLabel")}</span>
+          <span class="stat-tile-val plat">${platCount}</span>
+        </div>
+        <div class="profile-stat-tile">
+          <span class="stat-tile-label">${icon("sparkles", 12)} ${t("profile.avgProgress")}</span>
+          <span class="stat-tile-val">%${avgPct}</span>
+        </div>
+      </div>
+      <div class="profile-stats-footer">
+        <div class="stats-footer-time">
+          ${icon("clock", 12)}
+          <span>${t("profile.played")}: <strong>${totalPlaytimeStr}</strong></span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 export function renderProfile(): string {
@@ -286,7 +478,7 @@ export function renderProfile(): string {
 
   const allGames = prof?.games || [];
 
-  // PlayStation four-tier trophy hierarchy counters (exact parity guaranteed).
+  // PlayStation four-tier trophy hierarchy counters.
   const goldTrophies = Math.max(platCount * 4, Math.floor(totalUnlocked * 0.08));
   const silverTrophies = Math.max(platCount * 8, Math.floor(totalUnlocked * 0.22));
   const bronzeTrophies = Math.max(0, totalUnlocked - platCount - goldTrophies - silverTrophies);
@@ -297,9 +489,10 @@ export function renderProfile(): string {
   const levelPct = Math.round((levelXp / 1000) * 100);
   const xpToNextLevel = 1000 - levelXp;
 
-  // PS5 hero cinematic backdrop (from the highest completed game or the first game).
-  const topGame = allGames.find((g) => g.is_platinum) || allGames[0];
-  const topSummary = topGame ? S.epicSummaries.find((x) => x.appName === topGame.app_name) : null;
+  // Cinematic gamer backdrop: top played or platinum game.
+  const topPlayed = [...S.playtimeMap.entries()].sort((a, b) => (b[1].total_seconds || 0) - (a[1].total_seconds || 0))[0];
+  const topApp = topPlayed?.[0] || allGames.find((g) => g.is_platinum)?.app_name || allGames[0]?.app_name;
+  const topSummary = topApp ? S.epicSummariesMap.get(topApp) : null;
   const heroBackdrop = topSummary ? (epicWideArt(topSummary) || topSummary.cover) : "";
 
   let filteredGames = allGames.filter((g) => {
@@ -353,7 +546,7 @@ export function renderProfile(): string {
 
   return `
     <div class="profile-container ps5-profile-page">
-      <!-- 1. PS5 Konsol Hero Profil Sahnesi -->
+      <!-- 1. Immersive Gamer Hero Header (Xbox & Steam Style) -->
       <div class="ps5-profile-hero">
         ${heroBackdrop ? `<div class="ps5-hero-backdrop" style="background-image: url('${esc(heroBackdrop)}')"></div>` : ""}
         <div class="ps5-hero-gradient"></div>
@@ -379,7 +572,7 @@ export function renderProfile(): string {
 
               <!-- PS5 Trophy Level Capsule -->
               <div class="ps5-level-capsule">
-                <div class="ps5-level-crest" title="PlayStation Trophy Seviyesi: ${trophyLevel}">
+                <div class="ps5-level-crest" title="Trophy Level: ${trophyLevel}">
                   ${epicPlatinumIcon(13)}
                   <span class="ps5-level-num">${t("profile.level")} ${trophyLevel}</span>
                 </div>
@@ -409,7 +602,7 @@ export function renderProfile(): string {
             </div>
           </div>
 
-          <!-- Right: PlayStation four-tier trophy showcase & actions -->
+          <!-- Right: 4-Tier Trophy Showcase & Actions -->
           <div class="ps5-hero-right">
             <div class="ps5-trophy-tier-showcase">
               <div class="ps5-tier-col plat" title="${t("profile.platLabel")}">
@@ -453,62 +646,80 @@ export function renderProfile(): string {
         </div>
       </div>
 
-      ${renderFriendsSection()}
+      <!-- 2. Two-Column Master Layout (Xbox & Steam Style) -->
+      <div class="profile-body-split">
+        <!-- Left Main Column (~68%) -->
+        <div class="profile-main-col">
+          ${renderFeaturedGameShowcase()}
 
-      ${renderTopPlayedSection()}
+          <!-- Xbox-style Achievements & Games Progress Section -->
+          <div class="profile-games-section">
+            <div class="profile-games-header">
+              <div class="profile-games-title-group">
+                <div class="profile-title-left">
+                  <h2 class="profile-section-title">${t("profile.sectionTitle")}</h2>
+                  <span class="profile-section-badge">${filteredGames.length} ${t("profile.games")}</span>
+                </div>
+                <div class="profile-title-stats">
+                  <span>${icon("trophy", 12)} <strong>${totalUnlocked.toLocaleString()}</strong> ${t("profile.trophies")}</span>
+                  <span class="stat-dot-sep">•</span>
+                  <span>${icon("sparkles", 12)} <strong>${totalXp.toLocaleString()}</strong> XP</span>
+                </div>
+              </div>
 
-      <!-- 2. PlayStation trophy showcase and game progress -->
-      <div class="profile-games-section">
-        <div class="profile-games-header">
-          <div class="profile-games-title-group">
-            <h2 class="profile-section-title">${t("profile.sectionTitle")}</h2>
-            <span class="profile-section-badge">${filteredGames.length} ${t("profile.games")}</span>
-          </div>
+              <div class="profile-toolbar">
+                <div class="apple-segmented-rail profile-seg-rail">
+                  <button class="apple-segment ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
+                    ${icon("trophy", 12)} <span>${t("profile.filterAll")}</span> <span class="segment-cnt">${countAll}</span>
+                  </button>
+                  <button class="apple-segment ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
+                    ${epicPlatinumIcon(12)} <span>${t("profile.filterPlatinum")}</span> <span class="segment-cnt">${countPlat}</span>
+                  </button>
+                  <button class="apple-segment ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
+                    ${icon("clock", 12)} <span>${t("profile.filterInProgress")}</span> <span class="segment-cnt">${countInProgress}</span>
+                  </button>
+                  <button class="apple-segment ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
+                    ${icon("gamepad-2", 12)} <span>${t("profile.filterNotStarted")}</span> <span class="segment-cnt">${countNotStarted}</span>
+                  </button>
+                </div>
 
-          <div class="profile-toolbar">
-            <div class="apple-segmented-rail profile-seg-rail">
-              <button class="apple-segment ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
-                ${icon("trophy", 12)} <span>${t("profile.filterAll")}</span> <span class="segment-cnt">${countAll}</span>
-              </button>
-              <button class="apple-segment ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
-                ${epicPlatinumIcon(12)} <span>${t("profile.filterPlatinum")}</span> <span class="segment-cnt">${countPlat}</span>
-              </button>
-              <button class="apple-segment ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                ${icon("clock", 12)} <span>${t("profile.filterInProgress")}</span> <span class="segment-cnt">${countInProgress}</span>
-              </button>
-              <button class="apple-segment ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
-                ${icon("gamepad-2", 12)} <span>${t("profile.filterNotStarted")}</span> <span class="segment-cnt">${countNotStarted}</span>
-              </button>
+                <div class="profile-toolbar-right">
+                  <div class="apple-search-box profile-search-box">
+                    <span class="profile-search-icon">${icon("search", 13)}</span>
+                    <input
+                      type="text"
+                      id="profile-search"
+                      class="profile-search-input"
+                      placeholder="${t("profile.searchPlaceholder")}"
+                      value="${esc(S.profileSearchQuery)}"
+                    />
+                    ${S.profileSearchQuery ? `<button class="apple-search-clear" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
+                  </div>
+
+                  <div class="profile-sort-capsule">
+                    <select id="profile-sort-select" class="apple-select" data-act="profile-sort-change">
+                      <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
+                      <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
+                      <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
+                      <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
+                    </select>
+                    <span class="profile-sort-arrow">${icon("chevron-down", 11)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="profile-toolbar-right">
-              <div class="apple-search-box profile-search-box">
-                <span class="profile-search-icon">${icon("search", 13)}</span>
-                <input
-                  type="text"
-                  id="profile-search"
-                  class="profile-search-input"
-                  placeholder="${t("profile.searchPlaceholder")}"
-                  value="${esc(S.profileSearchQuery)}"
-                />
-                ${S.profileSearchQuery ? `<button class="apple-search-clear" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
-              </div>
-
-              <div class="profile-sort-capsule">
-                <select id="profile-sort-select" class="apple-select" data-act="profile-sort-change">
-                  <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
-                  <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
-                  <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
-                  <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
-                </select>
-                <span class="profile-sort-arrow">${icon("chevron-down", 11)}</span>
-              </div>
+            <div id="profile-games-grid" class="profile-games-list xbox-games-list">
+              ${renderProfileGrid(filteredGames)}
             </div>
           </div>
         </div>
 
-        <div id="profile-games-grid" class="profile-games-grid">
-          ${renderProfileGrid(filteredGames)}
+        <!-- Right Sidebar Column (~32%) -->
+        <div class="profile-sidebar-col">
+          ${renderXboxRecentGrid()}
+          ${renderFriendsSection()}
+          ${renderProfileStatsCard(allGames, totalOwnedGames, totalPlaytimeStr, trophyLevel, platCount)}
         </div>
       </div>
     </div>
