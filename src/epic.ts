@@ -583,6 +583,7 @@ export interface FreeGame {
   upcoming: boolean;
   start: string;
   end: string;
+  mobile: boolean;
 }
 export interface FreeGamesData {
   current: FreeGame[];

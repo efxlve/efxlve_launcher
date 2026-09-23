@@ -21,6 +21,7 @@ pub struct FreeGame {
     pub upcoming: bool,
     pub start: String,
     pub end: String,
+    pub mobile: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -65,6 +66,37 @@ fn slug_of(el: &Value) -> String {
         .and_then(|s| s.as_str())
         .unwrap_or("")
         .to_string()
+}
+
+fn is_mobile_only(el: &Value) -> bool {
+    let title = el
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if title == "monument valley" || title == "monument valley 2" {
+        return true;
+    }
+
+    let mut markers = String::new();
+    if let Some(attrs) = el.get("customAttributes").and_then(|v| v.as_array()) {
+        for attr in attrs {
+            markers.push_str(attr.get("key").and_then(|v| v.as_str()).unwrap_or(""));
+            markers.push(' ');
+            markers.push_str(attr.get("value").and_then(|v| v.as_str()).unwrap_or(""));
+            markers.push(' ');
+        }
+    }
+    if let Some(categories) = el.get("categories").and_then(|v| v.as_array()) {
+        for category in categories {
+            markers.push_str(category.get("path").and_then(|v| v.as_str()).unwrap_or(""));
+            markers.push(' ');
+        }
+    }
+    let markers = markers.to_lowercase();
+    let mobile = markers.contains("android") || markers.contains("ios") || markers.contains("mobile");
+    let pc = markers.contains("windows") || markers.contains("pc") || markers.contains("mac") || markers.contains("linux");
+    mobile && !pc
 }
 
 /// Reads start/end dates from the first offer in a promotions list.
@@ -165,6 +197,7 @@ fn parse_free_games(json: &Value) -> FreeGamesData {
             upcoming: false,
             start: String::new(),
             end: String::new(),
+            mobile: is_mobile_only(el),
         };
 
         // Currently free: the promotion is live and the price is 0.
