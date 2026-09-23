@@ -2,9 +2,9 @@
  * Gamer profile page renderer (inspired by Xbox PC App and Steam Profile).
  *
  * Implements a 2-column master-detail layout:
- * - Immersive Hero Banner (game backdrop, avatar, level crest, 4-tier trophy showcase).
+ * - Minimalist Hero Banner: Avatar, gamer tag, level crest, 4-tier trophy showcase, refresh.
  * - Left Column: Featured Game Showcase (Steam style) + Achievements & Games Progress list (Xbox style).
- * - Right Sidebar: 3x3 Recently Played grid (Xbox style) + Compact Friends Lounge + Library Stats card (Steam style).
+ * - Right Sidebar: 3x3 Recently Played grid (Xbox style) + Compact Friends Lounge.
  *
  * Follows zero-emoji policy, PS5 obsidian & lavender token rules, and tabular numbers.
  */
@@ -382,60 +382,6 @@ function renderFriendsSection(): string {
     </div>`;
 }
 
-/**
- * Steam-style gamer profile stats overview.
- */
-function renderProfileStatsCard(
-  allGames: ProfileGameRecord[],
-  totalOwnedGames: number,
-  totalPlaytimeStr: string,
-  trophyLevel: number,
-  platCount: number,
-): string {
-  const gamesWithTrophies = allGames.filter((g) => g.total_achievements > 0);
-  const avgPct =
-    gamesWithTrophies.length > 0
-      ? Math.round(
-          gamesWithTrophies.reduce((acc, g) => acc + g.unlocked_percent, 0) / gamesWithTrophies.length,
-        )
-      : 0;
-
-  return `
-    <div class="profile-sidebar-card profile-stats-card">
-      <div class="profile-sidebar-header">
-        <div class="profile-sidebar-title">
-          ${icon("layers", 13)}
-          <h3>${t("profile.statsSummaryTitle")}</h3>
-        </div>
-      </div>
-      <div class="profile-stats-grid">
-        <div class="profile-stat-tile">
-          <span class="stat-tile-label">${icon("gamepad-2", 12)} ${t("profile.games")}</span>
-          <span class="stat-tile-val">${totalOwnedGames}</span>
-        </div>
-        <div class="profile-stat-tile">
-          <span class="stat-tile-label">${epicPlatinumIcon(12)} ${t("profile.level")}</span>
-          <span class="stat-tile-val">${trophyLevel}</span>
-        </div>
-        <div class="profile-stat-tile">
-          <span class="stat-tile-label">${icon("trophy", 12)} ${t("profile.platLabel")}</span>
-          <span class="stat-tile-val plat">${platCount}</span>
-        </div>
-        <div class="profile-stat-tile">
-          <span class="stat-tile-label">${icon("sparkles", 12)} ${t("profile.avgProgress")}</span>
-          <span class="stat-tile-val">%${avgPct}</span>
-        </div>
-      </div>
-      <div class="profile-stats-footer">
-        <div class="stats-footer-time">
-          ${icon("clock", 12)}
-          <span>${t("profile.played")}: <strong>${totalPlaytimeStr}</strong></span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 export function renderProfile(): string {
   if (S.profileLoading && !S.playerProfileData) {
     return `
@@ -487,7 +433,6 @@ export function renderProfile(): string {
   const trophyLevel = Math.max(1, Math.floor(totalXp / 1000) + 1);
   const levelXp = totalXp % 1000;
   const levelPct = Math.round((levelXp / 1000) * 100);
-  const xpToNextLevel = 1000 - levelXp;
 
   // Cinematic gamer backdrop: top played or platinum game.
   const topPlayed = [...S.playtimeMap.entries()].sort((a, b) => (b[1].total_seconds || 0) - (a[1].total_seconds || 0))[0];
@@ -546,19 +491,18 @@ export function renderProfile(): string {
 
   return `
     <div class="profile-container ps5-profile-page">
-      <!-- 1. Immersive Gamer Hero Header (Xbox & Steam Style) -->
+      <!-- 1. Minimalist PS5 Console Hero Stage -->
       <div class="ps5-profile-hero">
         ${heroBackdrop ? `<div class="ps5-hero-backdrop" style="background-image: url('${esc(heroBackdrop)}')"></div>` : ""}
         <div class="ps5-hero-gradient"></div>
-        <div class="ps5-hero-ambient-lights"></div>
 
         <div class="ps5-hero-content">
+          <!-- Left: Gamer Identity -->
           <div class="ps5-hero-left">
             <div class="ps5-avatar-wrap">
               <div class="ps5-avatar">
                 <span class="ps5-avatar-letter">${esc(initialLetter)}</span>
               </div>
-              <div class="ps5-avatar-ring"></div>
               <span class="ps5-avatar-pip ${S.offlineMode ? "offline" : "online"}" title="${S.offlineMode ? t("nav.offline") : t("profile.online")}"></span>
             </div>
 
@@ -570,78 +514,58 @@ export function renderProfile(): string {
                 </span>
               </div>
 
-              <!-- PS5 Trophy Level Capsule -->
-              <div class="ps5-level-capsule">
-                <div class="ps5-level-crest" title="Trophy Level: ${trophyLevel}">
-                  ${epicPlatinumIcon(13)}
-                  <span class="ps5-level-num">${t("profile.level")} ${trophyLevel}</span>
-                </div>
-                <div class="ps5-level-progress-col">
-                  <div class="ps5-level-labels">
-                    <span class="ps5-level-percent">%${levelPct}</span>
-                    <span class="ps5-level-remaining">${t("profile.xpToNext", { n: xpToNextLevel })}</span>
-                  </div>
-                  <div class="ps5-level-track">
-                    <div class="ps5-level-fill" style="width: ${levelPct}%"></div>
-                  </div>
-                </div>
-              </div>
-
               <div class="ps5-hero-sub-row">
                 <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} ${t("profile.games")}</span>
                 <span class="ps5-sub-dot">•</span>
                 <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr}</span>
                 <span class="ps5-sub-dot">•</span>
-                <span class="ps5-sub-item">${icon("trophy", 12)} ${totalUnlocked.toLocaleString()} ${t("profile.trophies")}</span>
-                <span class="ps5-sub-dot">•</span>
                 <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyIdTitle", { id: accountId })}">
-                  <span>${t("profile.copyId")}</span>
+                  <span>ID</span>
                   ${icon("copy", 11)}
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Right: 4-Tier Trophy Showcase & Actions -->
+          <!-- Center: Trophy Level Rail -->
+          <div class="ps5-hero-center">
+            <div class="ps5-level-crest" title="Trophy Level: ${trophyLevel}">
+              ${epicPlatinumIcon(13)}
+              <span class="ps5-level-num">${t("profile.level")} ${trophyLevel}</span>
+              <span class="ps5-level-percent">%${levelPct}</span>
+            </div>
+            <div class="ps5-level-track">
+              <div class="ps5-level-fill" style="width: ${levelPct}%"></div>
+            </div>
+          </div>
+
+          <!-- Right: 4-Tier Trophy Tiers & Minimal Action -->
           <div class="ps5-hero-right">
             <div class="ps5-trophy-tier-showcase">
               <div class="ps5-tier-col plat" title="${t("profile.platLabel")}">
-                <div class="ps5-tier-icon">${epicPlatinumIcon(16)}</div>
+                <div class="ps5-tier-icon">${epicPlatinumIcon(14)}</div>
                 <span class="ps5-tier-count">${platCount}</span>
-                <span class="ps5-tier-label">${t("profile.platLabel")}</span>
               </div>
-              <div class="ps5-tier-divider"></div>
 
               <div class="ps5-tier-col gold" title="${t("profile.goldLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
                 <span class="ps5-tier-count">${goldTrophies}</span>
-                <span class="ps5-tier-label">${t("profile.goldLabel")}</span>
               </div>
-              <div class="ps5-tier-divider"></div>
 
               <div class="ps5-tier-col silver" title="${t("profile.silverLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
                 <span class="ps5-tier-count">${silverTrophies}</span>
-                <span class="ps5-tier-label">${t("profile.silverLabel")}</span>
               </div>
-              <div class="ps5-tier-divider"></div>
 
               <div class="ps5-tier-col bronze" title="${t("profile.bronzeLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 16)}</div>
+                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
                 <span class="ps5-tier-count">${bronzeTrophies}</span>
-                <span class="ps5-tier-label">${t("profile.bronzeLabel")}</span>
               </div>
             </div>
 
-            <div class="ps5-hero-actions-row">
-              <div class="ps5-xp-capsule">
-                ${icon("sparkles", 13)}
-                <span><strong>${totalXp.toLocaleString()}</strong> ${t("profile.totalXp")}</span>
-              </div>
-              <button class="apple-pill-btn secondary ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
-                ${icon("refresh", 13)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
-              </button>
-            </div>
+            <button class="apple-pill-btn secondary small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
+              ${icon("refresh", 12)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -660,26 +584,21 @@ export function renderProfile(): string {
                   <h2 class="profile-section-title">${t("profile.sectionTitle")}</h2>
                   <span class="profile-section-badge">${filteredGames.length} ${t("profile.games")}</span>
                 </div>
-                <div class="profile-title-stats">
-                  <span>${icon("trophy", 12)} <strong>${totalUnlocked.toLocaleString()}</strong> ${t("profile.trophies")}</span>
-                  <span class="stat-dot-sep">•</span>
-                  <span>${icon("sparkles", 12)} <strong>${totalXp.toLocaleString()}</strong> XP</span>
-                </div>
               </div>
 
               <div class="profile-toolbar">
                 <div class="apple-segmented-rail profile-seg-rail">
                   <button class="apple-segment ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
-                    ${icon("trophy", 12)} <span>${t("profile.filterAll")}</span> <span class="segment-cnt">${countAll}</span>
+                    <span>${t("profile.filterAll")}</span> <span class="segment-cnt">${countAll}</span>
                   </button>
                   <button class="apple-segment ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
-                    ${epicPlatinumIcon(12)} <span>${t("profile.filterPlatinum")}</span> <span class="segment-cnt">${countPlat}</span>
+                    ${epicPlatinumIcon(11)} <span>${t("profile.filterPlatinum")}</span> <span class="segment-cnt">${countPlat}</span>
                   </button>
                   <button class="apple-segment ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                    ${icon("clock", 12)} <span>${t("profile.filterInProgress")}</span> <span class="segment-cnt">${countInProgress}</span>
+                    <span>${t("profile.filterInProgress")}</span> <span class="segment-cnt">${countInProgress}</span>
                   </button>
                   <button class="apple-segment ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
-                    ${icon("gamepad-2", 12)} <span>${t("profile.filterNotStarted")}</span> <span class="segment-cnt">${countNotStarted}</span>
+                    <span>${t("profile.filterNotStarted")}</span> <span class="segment-cnt">${countNotStarted}</span>
                   </button>
                 </div>
 
@@ -719,7 +638,6 @@ export function renderProfile(): string {
         <div class="profile-sidebar-col">
           ${renderXboxRecentGrid()}
           ${renderFriendsSection()}
-          ${renderProfileStatsCard(allGames, totalOwnedGames, totalPlaytimeStr, trophyLevel, platCount)}
         </div>
       </div>
     </div>
