@@ -42,6 +42,8 @@ export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
 export const NOTIF_KEY = "efxlve-notifications";
 /** Hide to the system tray on close instead of quitting. */
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
+/** Show optional back/forward navigation buttons in the top bar. */
+export const NAV_HISTORY_KEY = "efxlve-nav-history-buttons";
 /** How many profile trophy cards render before "show more". */
 export const PROFILE_CARD_CHUNK = 36;
 /** Automatically back up local saves when a game closes. */

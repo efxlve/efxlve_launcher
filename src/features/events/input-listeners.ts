@@ -6,6 +6,7 @@
 import { AUTO_UPDATE_TIME_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, playtimeRoot, viewEl } from "../../core/dom";
+import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -93,6 +94,17 @@ document.addEventListener("keydown", (e) => {
       toast(i18nT("ss.hotkeyAssigned", { key: keyName, code }), "ok");
       render();
     }
+    return;
+  }
+
+  if (e.altKey && e.key === "ArrowLeft") {
+    e.preventDefault();
+    navGoBack();
+    return;
+  }
+  if (e.altKey && e.key === "ArrowRight") {
+    e.preventDefault();
+    navGoForward();
     return;
   }
 
@@ -573,3 +585,14 @@ viewEl.addEventListener("scroll", () => {
     if (totop) totop.classList.toggle("show", viewEl.scrollTop > 600);
   });
 }, { passive: true });
+
+// Mouse navigation buttons (back: 3, forward: 4)
+window.addEventListener("mouseup", (e) => {
+  if (e.button === 3) {
+    e.preventDefault();
+    navGoBack();
+  } else if (e.button === 4) {
+    e.preventDefault();
+    navGoForward();
+  }
+});

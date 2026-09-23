@@ -15,19 +15,29 @@
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
         <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
-        <div class="logo" data-act="goto-library" data-tauri-drag-region>
+        <div class="nav-left" data-tauri-drag-region>
+          <div id="nav-history-group" class="nav-history-group hidden">
+            <button id="nav-back-btn" class="nav-history-btn nav-back-btn" data-act="nav-history-back" data-i18n-title="nav.historyBack" title="Back (Alt+Left)" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button id="nav-forward-btn" class="nav-history-btn nav-forward-btn" data-act="nav-history-forward" data-i18n-title="nav.historyForward" title="Forward (Alt+Right)" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+          <div class="logo" data-act="goto-library" data-tauri-drag-region>
           <span class="logo-mark"><i data-lucide="gamepad-2"></i></span>
           <span class="logo-text">EFXLVE</span>
+          </div>
         </div>
         <nav id="nav">
           <div class="nav-seg" id="nav-seg">
             <button class="nav-tab" data-act="open-store" data-i18n-title="nav.storeTitle" title="Epic Games Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Store</span></button>
             <button class="nav-tab active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
              <button class="nav-tab" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads &amp; Queue (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="badge hidden"></span></button>
-             <button id="account" class="nav-tab account-chip profile-nav-tab" data-view="profile" data-i18n-title="nav.profileTitle" title="Epic profile">
-               <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
-               <span class="account-name" data-i18n="nav.notLoggedIn">Giriş yapılmadı</span>
-             </button>
+
+
+
+
           </div>
           <div class="nav-right">
              <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online Mode Active">
@@ -37,6 +47,10 @@
                <i data-lucide="bell"></i>
                <span id="notif-badge" class="badge notif-badge hidden"></span>
              </button>
+            <button id="account" class="nav-tab account-chip profile-nav-tab" data-view="profile" data-i18n-title="nav.profileTitle" title="Epic profile">
+              <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
+              <span class="account-name" data-i18n="nav.notLoggedIn">Giriş yapılmadı</span>
+            </button>
             <button class="nav-icon-btn" data-view="settings" data-i18n-title="nav.settingsTitle" title="Settings (Ctrl+,)"><i data-lucide="settings"></i></button>
           </div>
         </nav>
