@@ -136,7 +136,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Aktif indirme kimliği yeniden bağlanmadan iptal istenirse bekleyen kayıt da temizlenir; İndirmeler görünümünde kurulu oyunlar rafı gösterilir.
 - Ağ hızı satırı eksik olduğunda progress ve toplam byte farkından hız hesaplanır; disk hızındaki kısa örnek sıçramaları bastırılır.
 - İptal edilen ve henüz kurulmamış oyunların partial kurulum klasörü temizlenir; mevcut kurulu oyun güncellemeleri korunur.
-- Ücretsiz oyun rafı yalnızca şu anda Epic'in resmi `freegames` promosyonlarını ve oyun offer'larını gösterir; mobil promosyonlar rafta kalır ancak PC kütüphanesine alınmaz, yaklaşan kampanyalar gösterilmez.
+- Ücretsiz oyun rafı Epic'in resmi mevcut ve yaklaşan `freegames` promosyonlarını gösterir; mobil promosyonlar ve mobil-only oyunlar PC kütüphanesine alınmaz.
 - Gelecek iş: hesap profili için `account switcher` desteği ekle.
 - Gelecek iş: bildirim merkezini kapsamlı biçimde genişlet; oyun güncellemeleri, tamamlanan indirmeler, istek listesindeki indirimler ve ön siparişe açılan oyunlar için bildirimler ekle.
 - Aktif indirme kimliği, generation ile izlenir; eski monitor yeni sürecin kuyruğunu/persistence kaydını bozamaz.
