@@ -284,8 +284,8 @@ export function renderDownloads(): string {
   const netLegendVal = fmtSpeed(activeDl?.speedBytes || lastNet, S.speedInBits);
   const diskLegendVal = fmtSpeed(activeDl?.diskBytes || lastDisk, S.speedInBits);
 
-  // The chart is only useful while there is traffic; keep it out of the idle page.
-  const hasChartData = !!activeDl || S.speedHistory.some((v) => v > 0) || S.diskHistory.some((v) => v > 0);
+  // The chart is only useful while an active download is running; hide completely when idle/finished.
+  const hasChartData = !!activeDl;
   const chartMarkup = hasChartData
     ? `
     <div class="dl-chart-card">
@@ -310,6 +310,58 @@ export function renderDownloads(): string {
     </div>
   `
     : "";
+
+  // Available updates section (e.g. installed games with new version ready)
+  let updatesSection = "";
+  const gamesWithUpdates = S.epicSummaries.filter(
+    (s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))
+  );
+  if (gamesWithUpdates.length > 0) {
+    const items = gamesWithUpdates
+      .map((s) => {
+        const cover = s.cover || "";
+        const updateInfo = S.availableUpdates.get(s.appName);
+        const verStr = updateInfo?.latestVersion
+          ? `${updateInfo.installedVersion ? updateInfo.installedVersion + " → " : ""}${updateInfo.latestVersion}`
+          : "";
+        return `
+          <div class="apple-list-row">
+            <div class="apple-row-left">
+              ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
+              <div class="apple-row-info">
+                <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
+                <div class="apple-row-meta">
+                  <span class="apple-update-tag">${icon("sparkles", 11)} ${t("drawer.updateAvailable")}</span>
+                  ${verStr ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="apple-update-ver">${esc(verStr)}</span>` : ""}
+                  ${s.installSize ? `<span class="apple-row-dot" aria-hidden="true">•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
+                </div>
+              </div>
+            </div>
+            <div class="apple-row-right">
+              <button class="apple-pill-btn update" data-act="epic-install" data-id="${s.appName}">
+                ${icon("download", 12)}
+                <span>${t("common.update")}</span>
+              </button>
+              <button class="apple-icon-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
+                ${icon("settings", 13)}
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    updatesSection = `
+      <div class="apple-section">
+        <div class="apple-section-header">
+          <span class="apple-section-title">${t("lib.updates")} (${gamesWithUpdates.length})</span>
+        </div>
+        <div class="apple-grouped-list">
+          ${items}
+        </div>
+      </div>
+    `;
+  }
 
   // Queue markup
   let queueSection = "";
@@ -528,13 +580,7 @@ export function renderDownloads(): string {
   const headerAction = `
     <button class="apple-header-btn ${S.downloadsSettingsOpen ? "active" : ""}" data-act="toggle-downloads-settings">${icon("settings", 14)} <span>${t("downloads.settingsTitle")}</span></button>
     <button class="apple-header-btn" data-act="open-storage-manager">${icon("hard-drive", 14)} <span>${t("storage.open")}</span></button>
-    ${
-      activeDl
-        ? S.dlQueueStatus.isPaused
-          ? `<button class="apple-pill-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 12)} ${t("downloads.resume")}</button>`
-          : `<button class="apple-pill-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 12)} ${t("downloads.pause")}</button>`
-        : ""
-    }`;
+  `;
 
   return `
     <div class="ps5-page ps5-downloads-page">
@@ -550,6 +596,7 @@ export function renderDownloads(): string {
           ${heroMarkup}
           ${chartMarkup}
           ${S.downloadsSettingsOpen ? settingsPanel : ""}
+          ${updatesSection}
           ${queueSection}
           ${completedSection}
           ${recentSection}

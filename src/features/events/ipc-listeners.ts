@@ -55,7 +55,7 @@ import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
 import { initContextMenu } from "../context-menu/context-menu";
-import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer } from "../downloads/downloads-view";
+import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -248,7 +248,9 @@ export async function initApp(hooks: {
       if (S.activeDlMetrics?.id === id) {
         S.activeDlMetrics = null;
       }
-      pushSpeedData(0, 0);
+      S.speedHistory.fill(0);
+      S.diskHistory.fill(0);
+      stopSpeedChartTimer();
       updateBadge();
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
@@ -268,6 +270,9 @@ export async function initApp(hooks: {
     await listen<DownloadFailedEvent>("download-failed", (event) => {
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
+      S.speedHistory.fill(0);
+      S.diskHistory.fill(0);
+      stopSpeedChartTimer();
       updateBadge();
       const failTitle = S.epicSummaries.find((s) => s.appName === event.payload.id)?.title ?? event.payload.id;
       pushNotification({
@@ -285,6 +290,9 @@ export async function initApp(hooks: {
     await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
+      S.speedHistory.fill(0);
+      S.diskHistory.fill(0);
+      stopSpeedChartTimer();
       updateBadge();
       toast(t("dl.cancelled"), "");
       void epicGetQueue().then((q) => {
@@ -292,7 +300,7 @@ export async function initApp(hooks: {
         if (S.view === "downloads" || S.view === "library") render();
       });
     });
-    startSpeedChartTimer();
+    // Speed chart timer runs on-demand only during active downloads
     window.addEventListener("resize", () => {
       if (S.view === "downloads") drawSpeedCanvas();
     });
