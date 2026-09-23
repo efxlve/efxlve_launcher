@@ -9,13 +9,13 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, NAV_HISTORY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { updateOfflineModeUi } from "../../core/nav";
+import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi } from "../../core/nav";
 import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -181,7 +181,9 @@ document.addEventListener("click", (e) => {
 
   if (t.dataset.view) {
     closeAllModals();
-    setView(t.dataset.view as View);
+    const targetView = t.dataset.view as View;
+    setView(targetView);
+    pushNavHistory({ view: targetView });
     if (S.view === "library") void bootEpic();
     if (S.view === "profile") {
       if (!S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
@@ -211,7 +213,14 @@ document.addEventListener("click", (e) => {
   if (act === "close") {
     const el = e.target as HTMLElement;
     if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
+  } else if (act === "nav-history-back") {
+    navGoBack();
+    return;
+  } else if (act === "nav-history-forward") {
+    navGoForward();
+    return;
   } else if (act === "goto-library") {
+    pushNavHistory({ view: "library" });
     closeAllModals();
     setView("library");
     render();
@@ -246,6 +255,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
+    pushNavHistory({ view: "store" });
     void openStore();
   } else if (act === "open-profile") {
     openProfile();
@@ -1408,6 +1418,11 @@ document.addEventListener("click", (e) => {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
+  } else if (act === "toggle-nav-history-buttons") {
+    S.showNavHistoryButtons = !S.showNavHistoryButtons;
+    localStorage.setItem(NAV_HISTORY_KEY, String(S.showNavHistoryButtons));
+    updateNavHistoryUi();
+    render();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;
     localStorage.setItem(MINIMIZE_TRAY_KEY, String(S.minimizeToTray));

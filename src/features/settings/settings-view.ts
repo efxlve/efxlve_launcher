@@ -251,10 +251,20 @@ function renderAppearance(): string {
         ${l.code === "tr" ? `<span class="lang-tag">${t("settings.defaultTag")}</span>` : ""}
       </button>`,
   ).join("");
-  return group(
+  return (
+    group(
+      row(
+        t("settings.navHistoryButtonsTitle"),
+        t("settings.navHistoryButtonsDesc"),
+        toggle("toggle-nav-history-buttons", S.showNavHistoryButtons),
+      ),
+      t("settings.secAppearance"),
+    ) +
+    group(
     row(t("settings.language"), t("settings.languageDesc"), "") +
       `<div class="lang-selection-group">${languages}</div>`,
     t("settings.secAppearance"),
+    )
   );
 }
 

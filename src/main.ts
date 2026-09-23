@@ -9,7 +9,7 @@
 
 import "./styles/index.css";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
-import { updateChrome, updateNavIndicator } from "./core/nav";
+import { updateChrome, updateNavHistoryUi, updateNavIndicator } from "./core/nav";
 import { S } from "./core/state";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
@@ -76,6 +76,7 @@ function render(): void {
     drawSpeedCanvas();
   }
   updateChrome();
+  updateNavHistoryUi();
   updateGamepadHud(S.gamepadPolling);
   renderNotificationPanel();
   presenceSync();

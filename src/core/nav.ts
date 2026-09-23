@@ -7,9 +7,12 @@
 
 import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge } from "./dom";
+import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { S } from "./state";
+import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { t } from "../i18n";
+import { openStoreUrl, setView } from "../features/store/store-view";
 
 /** Last (active tab + download count) the indicator was measured for. */
 let navIndicatorKey = "";
@@ -91,3 +94,122 @@ export function updateChrome(): void {
       : t("nav.loginTip");
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Navigation History Stack (Back / Forward)                          */
+/* ------------------------------------------------------------------ */
+
+export interface NavHistoryItem {
+  view: View;
+  appName?: string | null;
+  collectionId?: string | null;
+  filter?: EpicFilter;
+}
+
+let navHistory: NavHistoryItem[] = [{ view: "library" }];
+let navHistoryIdx = 0;
+let isNavigatingHistory = false;
+
+/** True if the user can navigate back in the launcher history. */
+export function canNavBack(): boolean {
+  return navHistoryIdx > 0;
+}
+
+/** True if the user can navigate forward in the launcher history. */
+export function canNavForward(): boolean {
+  return navHistoryIdx < navHistory.length - 1;
+}
+
+/** Push a new state into the navigation history. */
+export function pushNavHistory(item: NavHistoryItem): void {
+  if (isNavigatingHistory) return;
+  const current = navHistory[navHistoryIdx];
+  if (
+    current &&
+    current.view === item.view &&
+    (current.appName || null) === (item.appName || null) &&
+    (current.collectionId ?? null) === (item.collectionId ?? null) &&
+    (current.filter ?? null) === (item.filter ?? null)
+  ) {
+    return;
+  }
+  // Discard future history
+  navHistory = navHistory.slice(0, navHistoryIdx + 1);
+  navHistory.push({
+    view: item.view,
+    appName: item.appName || null,
+    collectionId: item.collectionId ?? null,
+    filter: item.filter,
+  });
+  navHistoryIdx = navHistory.length - 1;
+  updateNavHistoryUi();
+}
+
+registerNavHistoryPush(pushNavHistory);
+
+/** Step back one entry in the navigation history. */
+export function navGoBack(): void {
+  if (!canNavBack()) return;
+  navHistoryIdx--;
+  applyNavHistory(navHistory[navHistoryIdx]);
+}
+
+/** Step forward one entry in the navigation history. */
+export function navGoForward(): void {
+  if (!canNavForward()) return;
+  navHistoryIdx++;
+  applyNavHistory(navHistory[navHistoryIdx]);
+}
+
+function applyNavHistory(item: NavHistoryItem): void {
+  isNavigatingHistory = true;
+  try {
+    if (item.appName) {
+      if (item.view !== S.view) {
+        setView(item.view);
+      }
+      openEpicModal(item.appName, false);
+    } else {
+      closeAllModals();
+      if (item.view === "store") {
+        void openStoreUrl(S.lastStoreUrl, S.storeMode);
+      } else {
+        if (item.collectionId !== undefined) {
+          S.activeCollectionId = item.collectionId;
+        }
+        if (item.filter !== undefined) {
+          S.epicFilter = item.filter;
+        }
+        setView(item.view);
+        render();
+      }
+    }
+  } finally {
+    isNavigatingHistory = false;
+    updateNavHistoryUi();
+  }
+}
+
+/** Refresh the state and disabled attributes of the Back/Forward buttons. */
+export function updateNavHistoryUi(): void {
+  const grp = document.getElementById("nav-history-group");
+  const backBtn = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
+  const fwdBtn = document.getElementById("nav-forward-btn") as HTMLButtonElement | null;
+
+  if (grp) {
+    grp.classList.toggle("hidden", !S.showNavHistoryButtons);
+  }
+  if (backBtn) {
+    const hasBack = canNavBack();
+    backBtn.disabled = !hasBack;
+    backBtn.classList.toggle("disabled", !hasBack);
+    backBtn.setAttribute("aria-disabled", String(!hasBack));
+  }
+  if (fwdBtn) {
+    const hasFwd = canNavForward();
+    fwdBtn.disabled = !hasFwd;
+    fwdBtn.classList.toggle("disabled", !hasFwd);
+    fwdBtn.setAttribute("aria-disabled", String(!hasFwd));
+  }
+}
+
