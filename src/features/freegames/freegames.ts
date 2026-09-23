@@ -80,7 +80,7 @@ function freeGameCard(g: FreeGame): string {
        </div>`
     : "";
   return `
-    <div class="free-card" data-act="open-free-game" data-title="${esc(g.title)}" title="${esc(g.title)}">
+    <div class="free-card" data-act="open-free-game" data-title="${esc(g.title)}" data-slug="${esc(g.slug)}" title="${esc(g.title)}">
       <div class="free-card-media">
         ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
         <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
