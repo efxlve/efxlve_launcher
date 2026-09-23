@@ -177,7 +177,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - İndirmeler sayfasına "Güncellemeler" (`updatesSection`) bölümü eklendi: Güncellemesi mevcut kurulu oyunlar (örn. GTA V) sürüm bilgisi (`installedVersion → latestVersion`), boyut ve doğrudan indirmeyi başlatan kehribar "Güncelle" butonuyla Apple gruplanmış listesinde listelendi.
 - İndirmeler boş durumundaki (idle state) "Kütüphaneye Git" butonu aşırı parlak beyaz yerine PS5 konsol estetiğine uygun buzlu lavanta cam stiline dönüştürüldü.
 - Ubisoft ve EA App oyunları için (Watch Dogs vb.) Depolama Yöneticisi ve Oyun Çekmecesi "Yönet" sekmesinde dosya taşıma ("Taşı") özelliği devre dışı bırakıldı; taşımaların oyunun kendi başlatıcısı üzerinden yapılması gerektiğini açıklayan bilgilendirici uyarı ve bildirimler eklendi.
-- İndirmeler görünümündeki oyun afişleri/küçük resimleri 50x68px boyutuna büyütüldü ve 8px yuvarlatılmış köşelerle okunaklı hale getirildi.
-- İndirmeler görünümündeki alt bölüm "Son Yüklenenler ve Güncellenenler" olarak yeniden adlandırıldı; yeni kurulan ve güncellenen oyunlar listenin en başına alınacak şekilde `RECENT_INSTALLS_KEY` ve `pushRecentInstall` mekanizması bağlandı.
+- İndirmeler görünümündeki oyun afişleri/küçük resimleri 38x50px orijinal keskin boyutuna geri getirildi; düşük çözünürlüklü katalog ikonlarının bulanık/pikselli görünmesi engellendi.
+- Üst gezinme çubuğundaki bildirim zili rozetindeki kırmızı alarm rengi kaldırıldı; yerine zarif ve sakin safir mavisi bir nokta (`#3b82f6` mavi nokta) yerleştirildi.
 - İndirmeler listesindeki oyun satırlarına (afiş ve başlık) tıklanabilirlik kazandırılarak doğrudan oyun detay çekmecesini açması sağlandı.
 - Oyun detay çekmecesi başlığında güncellemesi olan oyunlarda aynı anda hem "Kurulu" hem "Güncelleme Mevcut" yazması engellendi; yalnızca "Güncelleme Mevcut" rozeti gösterilecek şekilde temizlendi ve şimşek (`zap`) ikonu yerine konsol güncelleme ikonu (`refresh`) getirildi.
+- İndirmeler görünümünden mükerrer "Son Tamamlananlar" bölümü kaldırıldı; indirilen veya güncellenen oyunlar doğrudan "SON YÜKLENENLER & GÜNCELLENENLER" rafının en üstüne eklenecek şekilde sadeleştirildi.

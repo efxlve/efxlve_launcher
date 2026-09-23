@@ -257,7 +257,7 @@
   "downloads.title": "İndirmeler",
   "downloads.idleBadge": "Kuyruk Boşta",
   "downloads.allUpToDate": "Tüm İndirmeler Güncel",
-  "downloads.recentTitle": "Son Yüklenenler ve Güncellenenler",
+  "downloads.recentTitle": "Son Yüklenenler & Güncellenenler",
   "downloads.subtitle": "Aktif kurulumlar, indirme kuyruğu ve anlık disk yazma performansı.",
   "downloads.pause": "Duraklat",
   "downloads.resume": "Devam Et",

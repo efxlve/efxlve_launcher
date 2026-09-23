@@ -300,7 +300,8 @@ position: relative;
 }
 #nav .nav-icon-btn .notif-badge {
   position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%;
-  background: #ef4444; box-shadow: 0 0 0 1.5px #0a0c12;
+  background: #3b82f6; box-shadow: 0 0 0 1.5px #0a0c12, 0 0 6px rgba(59, 130, 246, 0.4);
+  font-size: 0; color: transparent; line-height: 0; overflow: hidden; pointer-events: none;
 }
 
 /* Download counter — inline flat counter on the tab */

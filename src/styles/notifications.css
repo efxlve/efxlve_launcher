@@ -8,19 +8,18 @@
 
 .notif-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 15px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0 1.5px #0a0c12, 0 0 6px rgba(59, 130, 246, 0.4);
+  font-size: 0;
+  color: transparent;
+  line-height: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 .notif-badge.hidden { display: none; }
 
