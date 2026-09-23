@@ -215,6 +215,9 @@ document.addEventListener("click", (e) => {
     closeAllModals();
     setView("library");
     render();
+  } else if (act === "open-free-game") {
+    const title = t.dataset.title;
+    if (title) void openStoreUrl(epicStorePageUrl(title), "store");
   } else if (act === "epic-download") {
     void epicDownload();
   } else if (act === "epic-open-login") {
