@@ -158,3 +158,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Ücretsiz Oyunlar rafında tarihin yanındaki mükerrer "soon" ibaresi temizlendi.
 - Kütüphane "Tüm Oyunlar" başlık ikonu mavi renkten mor (`var(--primary, #8b5cf6)`) renge çevrildi.
 - Apple arama kapsülü 245px (odakta 290px) genişliğe çıkarılarak yer tutucu metnin kesilmesi engellendi.
+- Koleksiyon kartı hover durumundaki beyaz çizgi hatası düzeltildi: Asimetrik 2 satırlı ızgara yerine tüm kart kolajlarında dikey esnek poster şeritlerine geçildi, görsellerin yatayda kırpılması ve alttan beyaz taşması engellendi.
+- Koleksiyon galerisi başlığındaki mükerrer mavi "+ Yeni Koleksiyon Oluştur" butonu kaldırıldı (ızgaradaki kart zaten bu işlevi görüyor).
+- Kütüphane araç çubuğu Segmented Rail'de "Koleksiyonlar" sekmesi doğrudan "Tümü" sekmesinin sağına taşındı.
+- Kütüphane arama yer tutucu metni hem İngilizce hem Türkçe için sadeleştirildi ("Search..." / "Ara...").
+- Sıralama butonu ve açılır menüsü dinamik `getSortOptions()` fonksiyonuna bağlanarak dil değişimlerinde İngilizce/Türkçe senkronizasyonu sağlandı.
+- Üst gezinme çubuğu (Store, Library, Downloads, Profile ve sağ kontroller) Apple Precision Frosted Glass tasarım diline dönüştürüldü: `index.html` içindeki eski geçici stil kalıntıları temizlendi, `#titlebar`, `.nav-seg`, `.nav-tab`, `.net-chip`, `.nav-icon-btn` ve download badge ince cam kapsül estetiğine kavuşturuldu.
+

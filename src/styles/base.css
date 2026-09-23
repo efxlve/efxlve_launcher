@@ -92,8 +92,10 @@ body {
   position: relative;
   display: flex; align-items: center; gap: 16px;
   padding: 0 0 0 18px; height: var(--titlebar-h); flex-shrink: 0; z-index: 10;
-  background: #08090d;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 12, 18, 0.82);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 30px -22px rgba(0, 0, 0, 1);
   -webkit-app-region: drag;
 }
@@ -106,7 +108,7 @@ body {
 /* Sliding highlight sitting on the bar's bottom hairline, under the active tab.
    Sized to the tab by JS (see core/nav.ts updateNavIndicator). */
 .nav-underline {
-  position: absolute; bottom: -1px; left: 0; width: 0; height: 2px; z-index: 2;
+  display: none; position: absolute; bottom: -1px; left: 0; width: 0; height: 2px; z-index: 2;
   opacity: 0; pointer-events: none; border-radius: 2px 2px 0 0;
   background: #8b5cf6;
   will-change: transform, width;
@@ -123,109 +125,137 @@ body {
 /* Flat mark: just the violet glyph, no surrounding box. */
 .logo-mark {
   display: grid; place-items: center;
-  color: #a78bfa;
+  width: 28px; height: 28px; border-radius: 9px;
+  background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.25);
+  color: #a78bfa; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .logo-mark svg { width: 19px; height: 19px; stroke-width: 1.9; }
 .logo-text {
-  font-size: 12.5px; font-weight: 800; letter-spacing: 2.4px; color: #eceef4;
+  font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #ffffff;
 }
 
 #nav { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; -webkit-app-region: drag; }
 
 /* Flat, typographic nav (Steam/Xbox language): no rail, no boxes — labels carry it. */
 .nav-seg {
-  position: relative;
-  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+position: relative;
+  display: inline-flex; align-items: center; gap: 3px; height: 34px; padding: 3px;
+  background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   -webkit-app-region: no-drag;
 }
 #nav .nav-tab {
-  position: relative; display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 14px; border-radius: 8px;
-  border: none; background: none;
-  color: #83879a; font-size: 12px; font-weight: 700; letter-spacing: 0.9px;
-  text-transform: uppercase;
+  position: relative; display: inline-flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 13px; border-radius: 8px;
+  border: none; background: transparent;
+  color: rgba(255, 255, 255, 0.65); font-size: 12px; font-weight: 500; letter-spacing: 0.15px;
+  text-transform: none;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
-#nav .nav-tab:active { transform: scale(0.98); }
+#nav .nav-tab:active { transform: scale(0.97); }
 #nav .nav-tab:focus-visible {
   outline: 2px solid #8b5cf6 !important;
   outline-offset: 2px !important;
 }
-#nav .nav-tab:hover { color: #c9ccda; background: rgba(255, 255, 255, 0.035); }
-#nav .nav-tab.active { color: #ffffff; }
+#nav .nav-tab:hover { color: #ffffff; background: rgba(255, 255, 255, 0.06); }
+#nav .nav-tab.active {
+  color: #ffffff; font-weight: 600;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
 #nav .nav-tab svg {
-  width: 17px; height: 17px; stroke-width: 1.75;
+  width: 14.5px; height: 14.5px; stroke-width: 1.85;
   transition: color 0.15s ease, opacity 0.15s ease;
-  opacity: 0.9;
+  opacity: 0.75;
 }
 #nav .nav-tab:hover svg { opacity: 1; }
-#nav .nav-tab.active svg { opacity: 1; color: #b9a7f9; }
+#nav .nav-tab.active svg { opacity: 1; color: #ffffff; }
 
 /* Right cluster (status + account + settings) */
 .nav-right {
-  display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 
-/* Right cluster: flat, box-free — the status dot and avatar carry the meaning. */
+/* Right cluster: Apple precision frosted controls */
 #nav .net-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 11px; border-radius: 8px; cursor: pointer;
-  font-size: 11.5px; font-weight: 600; letter-spacing: 0.25px; font-family: inherit;
-  color: #9a9eae; background: none; border: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+  font-size: 11px; font-weight: 500; font-family: inherit;
+  color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-#nav .net-chip:hover { background: rgba(255, 255, 255, 0.06); color: #e6e8f0; }
+#nav .net-chip:hover {
+  background: rgba(255, 255, 255, 0.08); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
 .net-dot {
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
   background: #6b6e7a; flex-shrink: 0;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 /* Status light: a steady halo, not a neon glow */
-#nav .net-chip.online .net-dot { background: #3fb950; box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.14); }
-#nav .net-chip.offline .net-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210, 153, 34, 0.14); }
+#nav .net-chip.online .net-dot { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+#nav .net-chip.offline .net-dot { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
 
-/* Account — avatar + name, box-free */
+/* Account chip inside the segmented rail */
 #nav .account-chip {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 4px 11px 4px 4px; border-radius: 8px; cursor: pointer;
-  font-size: 12px; font-weight: 600; font-family: inherit; color: #9a9eae;
-  background: none; border: none;
-  max-width: 150px;
-  transition: background 0.15s ease, color 0.15s ease;
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 10px 0 6px; border-radius: 8px; cursor: pointer;
+  font-size: 11.5px; font-weight: 500; font-family: inherit;
+  color: rgba(255, 255, 255, 0.65); background: transparent; border: none;
+  max-width: 140px;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
-#nav .account-chip:hover { background: rgba(255, 255, 255, 0.06); color: #e6e8f0; }
-#nav .account-chip.active { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
+#nav .account-chip:hover { color: #ffffff; background: rgba(255, 255, 255, 0.06); }
+#nav .account-chip.active {
+  color: #ffffff; font-weight: 600;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
 #nav .account-avatar {
-  width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
-  display: grid; place-items: center; color: #9aa0b0;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-#nav .account-avatar svg { width: 14px; height: 14px; stroke-width: 1.8; }
-#nav .avatar-initial { font-size: 11px; font-weight: 700; color: #e2e4ea; letter-spacing: 0; }
-#nav .account-chip.logged { color: #d7dae4; }
-/* When signed in the initial takes the accent color — a single flat color, not a gradient */
+#nav .account-avatar svg { width: 12px; height: 12px; stroke-width: 1.8; }
+#nav .avatar-initial { font-size: 10px; font-weight: 700; color: #f8fafc; letter-spacing: 0; line-height: 1; }
+#nav .account-chip.logged { color: rgba(255, 255, 255, 0.85); }
 #nav .account-chip.logged .account-avatar {
-  background: rgba(139, 92, 246, 0.24);
-  border-color: rgba(167, 139, 250, 0.48);
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #c4b5fd;
 }
-#nav .account-chip.logged .avatar-initial { color: #d3c6ff; }
+#nav .account-chip.logged .avatar-initial { color: #f3e8ff; }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Settings — flat icon button */
+/* Settings / Notifications — Apple precision icon button */
 #nav .nav-icon-btn {
-  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  position: relative;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
   display: grid; place-items: center; cursor: pointer;
-  background: none; border: none;
-  color: #9a9eae;
-  transition: background 0.15s ease, color 0.15s ease;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.75);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-#nav .nav-icon-btn svg { width: 17px; height: 17px; stroke-width: 1.8; }
-#nav .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.06); color: #ffffff; }
-#nav .nav-icon-btn.active { background: rgba(255, 255, 255, 0.09); color: #ffffff; }
+#nav .nav-icon-btn svg { width: 15px; height: 15px; stroke-width: 1.8; }
+#nav .nav-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+#nav .nav-icon-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.12); }
+#nav .nav-icon-btn.active {
+  background: rgba(255, 255, 255, 0.14); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+#nav .nav-icon-btn .notif-badge {
+  position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%;
+  background: #ef4444; box-shadow: 0 0 0 1.5px #0a0c12;
+}
 
 /* Window control buttons (Windows title bar) */
 .win-controls {
@@ -246,11 +276,12 @@ body {
 
 /* Download counter — inline flat counter on the tab (never overlaps the text) */
 #nav .nav-tab .badge {
-  margin: 0 0 0 1px; flex-shrink: 0;
-  min-width: 15px; height: 15px; padding: 0 4px; line-height: 15px;
-  font-size: 9px; font-weight: 700; text-align: center; border-radius: 5px;
-  letter-spacing: 0; color: #fff; background: #e5484d;
-  box-shadow: 0 0 0 2px rgba(8, 9, 13, 0.85);
+  margin: 0 0 0 3px; flex-shrink: 0;
+  min-width: 16px; height: 16px; padding: 0 4px; line-height: 16px;
+  font-size: 10px; font-weight: 700; text-align: center; border-radius: 8px;
+  letter-spacing: 0; color: #fff; background: #8b5cf6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-variant-numeric: tabular-nums;
 }
 #nav .nav-tab .badge.hidden { display: none; }
 

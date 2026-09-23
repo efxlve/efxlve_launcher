@@ -21,18 +21,20 @@ import { t } from "../../i18n";
 import { renderFreeGamesShelf } from "../freegames/freegames";
 import { renderOnboarding } from "../onboarding/onboarding-view";
 
-/** Sort options shown in the library sort dropdown. */
-const sortOptions: {
+/** Sort options shown in the library sort dropdown, evaluated dynamically with current language. */
+export function getSortOptions(): {
   id: EpicSort;
   label: string;
   icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh";
-}[] = [
-  { id: "recent", label: t("lib.sortRecent"), icon: "clock" },
-  { id: "alpha", label: t("lib.sortAlpha"), icon: "arrow-down-a-z" },
-  { id: "installed", label: t("lib.sortInstalled"), icon: "check-circle" },
-  { id: "platinum", label: t("lib.sortPlatinum"), icon: "trophy" },
-  { id: "updates", label: t("lib.sortUpdates"), icon: "refresh" },
-];
+}[] {
+  return [
+    { id: "recent", label: t("lib.sortRecent"), icon: "clock" },
+    { id: "alpha", label: t("lib.sortAlpha"), icon: "arrow-down-a-z" },
+    { id: "installed", label: t("lib.sortInstalled"), icon: "check-circle" },
+    { id: "platinum", label: t("lib.sortPlatinum"), icon: "trophy" },
+    { id: "updates", label: t("lib.sortUpdates"), icon: "refresh" },
+  ];
+}
 
 /** Studio/publisher name for a game (empty when unknown). */
 export function studioOf(s: EpicSummary): string {
@@ -399,12 +401,7 @@ function renderCollectionsGallery(): string {
             <span>${t("lib.collections")}</span>
             <span class="shelf-badge">${S.epicCollections.length}</span>
           </h2>
-          <p class="col-gallery-header-desc">${t("col.newSubtitle")}</p>
         </div>
-        <button class="col-gallery-new-btn" data-act="open-new-collection-modal">
-          ${icon("plus", 14)}
-          <span>${t("col.newTitle")}</span>
-        </button>
       </div>
       <div class="col-folders-grid">
         ${newColCard}
@@ -691,7 +688,7 @@ export function renderEpic(): string {
   S.prevRenderedUpdatesCount = allUpdatesCount;
   S.prevRenderedColId = S.activeCollectionId;
 
-  const currentSortOpt = sortOptions.find((o) => o.id === S.epicSort) || sortOptions[0];
+  const currentSortOpt = getSortOptions().find((o) => o.id === S.epicSort) || getSortOptions()[0];
 
   return `
     <div class="lib-top-bar">
@@ -725,6 +722,11 @@ export function renderEpic(): string {
             <span>${t("library.all")}</span>
             <span class="segment-cnt">${S.epicSummaries.length}</span>
           </button>
+          <button class="apple-segment ${S.epicFilter === "collections" ? "active" : ""}" data-act="quick-tab" data-tab="collections">
+            <span class="segment-icon">${icon("folder", 12)}</span>
+            <span>${t("lib.collections")}</span>
+            ${S.epicCollections.length > 0 ? `<span class="segment-cnt">${S.epicCollections.length}</span>` : ""}
+          </button>
           <button class="apple-segment ${S.epicFilter === "installed" ? "active" : ""}" data-act="quick-tab" data-tab="installed">
             <span class="segment-dot installed"></span>
             <span>${t("library.installed")}</span>
@@ -746,11 +748,6 @@ export function renderEpic(): string {
             <span>${t("library.updates")}</span>
             <span class="segment-cnt">${allUpdatesCount}</span>
           </button>` : ""}
-          <button class="apple-segment ${S.epicFilter === "collections" ? "active" : ""}" data-act="quick-tab" data-tab="collections">
-            <span class="segment-icon">${icon("folder", 12)}</span>
-            <span>${t("lib.collections")}</span>
-            ${S.epicCollections.length > 0 ? `<span class="segment-cnt">${S.epicCollections.length}</span>` : ""}
-          </button>
         </div>
 
         ${selectedCol && S.epicFilter !== "collections" ? `
@@ -778,7 +775,7 @@ export function renderEpic(): string {
           <div id="sort-dropdown-menu" class="sort-dropdown-menu ${S.isSortDropdownOpen ? "show" : ""}">
             <div class="sort-menu-header">${t("lib.sort")}</div>
             <div class="sort-menu-list">
-              ${sortOptions.map((opt) => {
+              ${getSortOptions().map((opt) => {
                 const isSelected = S.epicSort === opt.id;
                 return `
                   <button class="sort-menu-item-btn ${isSelected ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">

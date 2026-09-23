@@ -1099,7 +1099,7 @@
   "lib.noCollections": "Henüz koleksiyon oluşturulmadı",
   "lib.editCollection": "{name} koleksiyonunu düzenle",
   "lib.newCollection": "+ Yeni Koleksiyon",
-  "lib.searchPlaceholder": "Oyun, stüdyo veya yayıncı ara...",
+  "lib.searchPlaceholder": "Ara...",
   "lib.allStudios": "Tüm Stüdyolar",
   "lib.seeAll": "Tümünü Gör",
   "lib.studioFilterTip": "Stüdyoya göre filtrele. İpucu: dev:ubisoft veya is:installed yazabilirsiniz.",

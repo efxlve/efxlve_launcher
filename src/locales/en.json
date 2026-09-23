@@ -1099,7 +1099,7 @@
   "lib.noCollections": "No collections created yet",
   "lib.editCollection": "Edit {name} collection",
   "lib.newCollection": "+ New Collection",
-  "lib.searchPlaceholder": "Search game, studio or publisher...",
+  "lib.searchPlaceholder": "Search...",
   "lib.allStudios": "All Studios",
   "lib.seeAll": "See All",
   "lib.studioFilterTip": "Filter by studio. Tip: try dev:ubisoft or is:installed.",
