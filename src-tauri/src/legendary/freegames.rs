@@ -99,28 +99,27 @@ fn is_mobile_only(el: &Value) -> bool {
     mobile && !pc
 }
 
-/// Reads start/end dates from the first offer in a promotions list.
+/// Reads the earliest start/end window from all promotion groups.
 fn first_offer_window(offers: &Value) -> (String, String) {
-    let group = offers
-        .as_array()
-        .and_then(|a| a.first())
-        .and_then(|g| g.get("promotionalOffers"))
-        .and_then(|v| v.as_array())
-        .and_then(|a| a.first());
-    let Some(o) = group else {
-        return (String::new(), String::new());
-    };
-    let start = o
-        .get("startDate")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let end = o
-        .get("endDate")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    (start, end)
+    let mut selected: Option<(String, String)> = None;
+    if let Some(groups) = offers.as_array() {
+        for group in groups {
+            let Some(promotions) = group.get("promotionalOffers").and_then(|v| v.as_array()) else {
+                continue;
+            };
+            for offer in promotions {
+                let start = offer.get("startDate").and_then(|v| v.as_str()).unwrap_or("");
+                let end = offer.get("endDate").and_then(|v| v.as_str()).unwrap_or("");
+                if start.is_empty() {
+                    continue;
+                }
+                if selected.as_ref().map_or(true, |(current, _)| start < current.as_str()) {
+                    selected = Some((start.to_string(), end.to_string()));
+                }
+            }
+        }
+    }
+    selected.unwrap_or_default()
 }
 
 /// Parses the store response into current and upcoming free games.
