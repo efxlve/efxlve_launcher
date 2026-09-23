@@ -233,8 +233,20 @@ export function isMobileOnlyGame(g: EpicGame): boolean {
   if (hasMobileAsset && !hasPcAsset) return true;
 
   const attrs = g.metadata.customAttributes as Record<string, { value?: unknown }> | undefined;
-  if (!attrs || hasPcAsset) return false;
-  return Object.entries(attrs).some(([key, entry]) => {
+  const attributeText = attrs
+    ? Object.entries(attrs).map(([key, entry]) => `${key} ${String(entry?.value ?? "")}`).join(" ")
+    : "";
+  const platformFields = [
+    g.metadata.platform,
+    g.metadata.platforms,
+    g.metadata.supportedPlatforms,
+  ]
+    .flatMap((value) => Array.isArray(value) ? value : [value])
+    .map((value) => String(value ?? ""))
+    .join(" ");
+  const platformText = `${attributeText} ${platformFields}`.toLowerCase();
+  if (hasPcAsset || /windows|win32|win64|mac|linux/.test(platformText)) return false;
+  return /android|ios|iphone|ipad|mobile/.test(platformText) || Object.entries(attrs || {}).some(([key, entry]) => {
     const text = `${key} ${String(entry?.value ?? "")}`.toLowerCase();
     return text.includes("android") || text.includes("ios") || text.includes("mobile");
   });
