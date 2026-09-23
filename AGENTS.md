@@ -146,3 +146,4 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Aktif indirme kimliği, generation ile izlenir; eski monitor yeni sürecin kuyruğunu/persistence kaydını bozamaz.
 - Kuyruk öğeleri install tag ve install klasörünü korur; öncelikli indirme ve restart sonrası sıra metadata ile sürdürülür.
 - DLC/otomatik güncelleme kuyruğa eklendikten sonra UI kuyruk durumu ve indirme badge'i backend ile yenilenir.
+- Kod haritası (`docs/CODEBASE_MAP.md`) modüler mimariye (`src/core/`, `src/features/`, `src/styles/`, `src/locales/` ve yeni Rust backend modülleri) uygun şekilde senkronize edildi.
