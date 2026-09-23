@@ -255,6 +255,8 @@
   "common.search": "Search",
   "common.delete": "Delete",
   "downloads.title": "Downloads",
+  "downloads.idleBadge": "Queue Idle",
+  "downloads.allUpToDate": "All Downloads Up to Date",
   "downloads.recentTitle": "Recently Played",
   "downloads.subtitle": "Active installs, download queue and live disk write performance.",
   "downloads.pause": "Pause",
