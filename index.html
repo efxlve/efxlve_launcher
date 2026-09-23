@@ -9,64 +9,9 @@
     <style>
       /* Anti-FOUC: paint pure obsidian on the first frame before the CSS loads. */
       html, body { margin: 0; background-color: #07080d; color-scheme: dark; }
-
-      /* Temporary Liquid Glass preview, intentionally scoped to the shell. */
-      .liquid-glass-preview #titlebar {
-        background: rgba(10, 11, 17, 0.76);
-        border-bottom-color: rgba(255, 255, 255, 0.12);
-        -webkit-backdrop-filter: blur(18px) saturate(135%);
-        backdrop-filter: blur(18px) saturate(135%);
-      }
-      .liquid-glass-preview #nav .nav-seg {
-        padding: 3px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.055);
-      }
-      .liquid-glass-preview #nav .nav-tab.active {
-        border-radius: 10px;
-        background: rgba(139, 92, 246, 0.18);
-      }
-      .liquid-glass-preview #nav .nav-right {
-        padding: 3px 5px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.045);
-      }
-      .liquid-glass-preview #nav .profile-nav-tab {
-        padding: 8px 14px;
-        gap: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.9px;
-      }
-      .liquid-glass-preview #nav .profile-nav-tab .account-avatar {
-        width: 17px;
-        height: 17px;
-        border-radius: 50%;
-      }
-      .liquid-glass-preview #nav .profile-nav-tab .account-avatar svg {
-        width: 14px;
-        height: 14px;
-      }
-      .liquid-glass-preview #nav .profile-nav-tab.logged {
-        color: #83879a;
-      }
-      .liquid-glass-preview #nav .profile-nav-tab.logged.active {
-        color: #ffffff;
-      }
-      .liquid-glass-preview #nav .profile-nav-tab .avatar-initial {
-        line-height: 1;
-        position: relative;
-        top: -1px;
-      }
-      @supports not ((backdrop-filter: blur(1px))) {
-        .liquid-glass-preview #titlebar { background: #11131c; }
-      }
     </style>
   </head>
-  <body class="liquid-glass-preview" style="background-color: #07080d;">
+  <body style="background-color: #07080d;">
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
         <span class="nav-underline" id="nav-indicator" aria-hidden="true"></span>
