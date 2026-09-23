@@ -317,7 +317,7 @@ document.addEventListener("click", (e) => {
       S.epicFilter = S.epicFilter === "updates" ? "all" : "updates";
     } else if (tab === "collections") {
       S.activeCollectionId = null;
-      S.epicFilter = S.epicFilter === "collections" ? "all" : "collections";
+      if (S.epicFilter === "collections" && S.activeCollectionId !== null) { S.activeCollectionId = null; } else { S.activeCollectionId = null; S.epicFilter = S.epicFilter === "collections" ? "all" : "collections"; }
     }
     S.isColDropdownOpen = false;
     S.isSortDropdownOpen = false;
@@ -363,6 +363,18 @@ document.addEventListener("click", (e) => {
       resetCardChunk();
       render();
     }
+  } else if (act === "open-collection") {
+    const colId = t.dataset.colId;
+    if (colId) {
+      S.activeCollectionId = colId;
+      S.epicFilter = "collections";
+      resetCardChunk();
+      render();
+    }
+  } else if (act === "back-to-collections") {
+    S.activeCollectionId = null;
+    resetCardChunk();
+    render();
   } else if (act === "clear-collection") {
     S.activeCollectionId = null;
     S.isColDropdownOpen = false;

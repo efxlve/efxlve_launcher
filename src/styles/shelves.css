@@ -274,30 +274,33 @@
   padding: 20px;
 }
 
-/* Steam-style Categorized Collections view */
-.collections-steam-view {
+/* ==========================================================================
+   Apple & Steam Collections Gallery Grid & Detail View
+   ========================================================================== */
+
+.collections-gallery-view {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
   width: 100%;
 }
 
-.col-steam-header {
+.col-gallery-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 4px 16px 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.col-steam-header-info {
+.col-gallery-header-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.col-steam-header-title {
+.col-gallery-header-title {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -308,62 +311,348 @@
   margin: 0;
 }
 
-.col-steam-header-desc {
+.col-gallery-header-desc {
   font-size: 12.5px;
   color: #94a3b8;
   margin: 0;
 }
 
-.col-steam-new-btn {
+.col-gallery-new-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: 38px;
   padding: 0 16px;
-  background: var(--btn-install-bg, #ffffff);
-  color: var(--btn-install-color, #07080d);
-  font-size: 12.5px;
+  background: var(--btn-install-bg, #2563eb);
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 700;
-  border-radius: 9px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.col-steam-new-btn:hover {
-  background: var(--btn-install-hover, #e2e8f0);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
+.col-gallery-new-btn:hover {
+  background: var(--btn-install-hover, #1d4ed8);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
   transform: translateY(-1px);
 }
-.col-steam-new-btn:active {
+.col-gallery-new-btn:active {
   transform: scale(0.98);
 }
 
-.shelf-empty-hint {
-  padding: 24px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  font-size: 13px;
+/* Folders Grid */
+.col-folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.col-folder-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #131722 0%, #0c0e14 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 220px;
+}
+
+.col-folder-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(139, 92, 246, 0.2);
+}
+
+.col-folder-preview {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  background: #08090d;
+}
+
+/* Poster Collages */
+.col-card-collage {
+  width: 100%;
+  height: 100%;
+}
+
+.col-card-collage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.85);
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.col-folder-card:hover .col-card-collage img {
+  filter: brightness(0.95);
+  transform: scale(1.04);
+}
+
+.col-card-collage.count-1 {
+  display: block;
+}
+
+.col-card-collage.count-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.col-card-collage.count-3 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+}
+.col-card-collage.count-3 img:first-child {
+  grid-row: 1 / span 2;
+}
+
+.col-card-collage.count-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+}
+
+.col-collage-empty {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.col-folder-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 14, 20, 0.98) 0%, rgba(12, 14, 20, 0.5) 45%, rgba(0, 0, 0, 0.15) 100%);
+  pointer-events: none;
+}
+
+.col-folder-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 14px;
+  gap: 10px;
+  margin-top: -18px;
+}
+
+.col-folder-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.col-folder-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.col-folder-icon {
+  color: var(--primary, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.col-folder-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-folder-count {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.col-folder-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.col-folder-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+/* Quick New Collection Card */
+.new-col-card {
+  border: 2px dashed rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 20px;
+}
+
+.new-col-card:hover {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.05);
+  transform: translateY(-4px);
+}
+
+.new-col-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
 }
 
-.shelf-empty-hint button {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+.new-col-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  color: var(--primary, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.new-col-card:hover .new-col-icon-wrap {
+  transform: scale(1.1);
+  background: rgba(139, 92, 246, 0.22);
+  border-color: var(--primary, #8b5cf6);
+}
+
+.new-col-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.new-col-desc {
   font-size: 12px;
+  color: #64748b;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Breadcrumb Navigation when viewing an active collection */
+.col-detail-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.col-breadcrumb-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 2px 18px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.col-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.col-back-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  transform: translateX(-2px);
+}
+
+.col-breadcrumb-sep {
+  color: #475569;
+  font-size: 14px;
   font-weight: 600;
 }
-.shelf-empty-hint button:hover {
-  background: rgba(255, 255, 255, 0.15);
+
+.col-breadcrumb-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.col-breadcrumb-icon {
+  color: var(--primary, #8b5cf6);
+  display: flex;
+  align-items: center;
+}
+
+.col-breadcrumb-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.col-breadcrumb-edit-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.col-breadcrumb-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* --- HOWLONGTOBEAT (HLTB) KARTI --- */

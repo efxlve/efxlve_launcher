@@ -42,7 +42,7 @@
 }
 
 .lib-section-title svg {
-  color: #3b82f6;
+  color: var(--primary, #8b5cf6);
 }
 
 /* Card size toggle (S | M | L) */

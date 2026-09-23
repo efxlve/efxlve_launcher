@@ -15,7 +15,7 @@ import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
-import { getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../../epic";
+import { getThirdPartyLauncher, requiresThirdPartyLauncher, epicPortrait, type EpicSummary } from "../../epic";
 import type { EpicFilter, EpicSort } from "../../core/types";
 import { t } from "../../i18n";
 import { renderFreeGamesShelf } from "../freegames/freegames";
@@ -70,16 +70,28 @@ export function epicVisibleSummaries(): EpicSummary[] {
   const q = S.query.trim().toLocaleLowerCase("tr");
   const query = parseQuery(q);
   const activeCol =
-    S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav"
+    S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav" && S.activeCollectionId !== "uncategorized"
       ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
       : null;
   const colSet = activeCol
     ? new Set(activeCol.app_names.map((n) => n.toLowerCase()))
     : null;
 
+  let uncatSet: Set<string> | null = null;
+  if (S.activeCollectionId === "uncategorized") {
+    uncatSet = new Set();
+    for (const c of S.epicCollections) {
+      for (const name of c.app_names) {
+        uncatSet.add(name.toLowerCase());
+      }
+    }
+  }
+
   const list = S.epicSummaries.filter((s) => {
     if (S.activeCollectionId === "fav") {
       if (!S.epicFav.has(s.appName)) return false;
+    } else if (S.activeCollectionId === "uncategorized" && uncatSet) {
+      if (uncatSet.has(s.appName.toLowerCase())) return false;
     } else if (colSet) {
       if (!colSet.has(s.appName.toLowerCase())) return false;
     }
@@ -285,104 +297,127 @@ export function resetCardChunk(): void {
   S.renderedCardCount = INITIAL_CARD_CHUNK;
 }
 
-/**
- * Renders all user collections as Steam-style categorized shelves.
- * Each collection gets its own horizontal track, count badge, and edit action.
- */
-function renderSteamCollectionsView(): string {
-  if (S.epicCollections.length === 0) {
-    return `
-      <div class="empty">
-        <div style="font-size:36px;margin-bottom:12px;opacity:0.5">${icon("folder", 40)}</div>
-        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">${t("lib.noCollections")}</div>
-        <div style="font-size:13px;color:#94a3b8;max-width:380px;margin-bottom:16px">${t("col.noCollectionsLong")}</div>
-        <button class="btn install" data-act="open-new-collection-modal">${t("col.newCollectionBtn")}</button>
-      </div>`;
-  }
+/** Helper to retrieve cover artwork URL for collage previews. */
+function coverUrlOf(s: EpicSummary): string | null {
+  const custom = S.customCovers[s.appName];
+  if (custom) return custom;
+  const g = rawOf(s.appName);
+  return (g ? epicPortrait(g) : null) || s.cover || null;
+}
 
+/**
+ * Renders the Collections Gallery Grid (Apple & Steam inspired folder gallery).
+ * Displays rich interactive collection folder cards with 2x2 artwork collages,
+ * count badge, and instant opening into the full library grid.
+ */
+function renderCollectionsGallery(): string {
   const allCategorizedApps = new Set<string>();
-  const collectionShelves = S.epicCollections.map((col) => {
-    const cSet = new Set(col.app_names.map((n) => n.toLowerCase()));
+  for (const col of S.epicCollections) {
     for (const name of col.app_names) {
       allCategorizedApps.add(name.toLowerCase());
     }
-    const colGames = S.epicSummaries.filter((s) => cSet.has(s.appName.toLowerCase()));
-    const marker = isCollectionIcon(col.emoji) ? col.emoji : "folder";
-    const editBtn = `
-      <button class="shelf-nav-btn" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${t("lib.editCollection", { name: esc(col.name) })}">
-        ${icon("edit", 13)}
-      </button>`;
-    const scrollBtns = colGames.length > 5 ? `
-      <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="left" title="${t("lib.scrollLeft")}">${icon("chevron-left", 14)}</button>
-      <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="right" title="${t("lib.scrollRight")}">${icon("chevron-right", 14)}</button>
-    ` : "";
+  }
+
+  const uncategorized = S.epicSummaries.filter((s) => !allCategorizedApps.has(s.appName.toLowerCase()));
+
+  const renderCollage = (games: EpicSummary[]): string => {
+    const validCovers: string[] = [];
+    for (const g of games) {
+      const url = coverUrlOf(g);
+      if (url) validCovers.push(url);
+      if (validCovers.length === 4) break;
+    }
+
+    if (validCovers.length === 0) {
+      return `<div class="col-collage-empty">${icon("folder", 40)}</div>`;
+    }
 
     return `
-      <div class="shelf-section size-${S.epicCardSize}">
-        <div class="shelf-header">
-          <div class="shelf-title-group">
-            <span class="shelf-icon">${icon(marker, 16)}</span>
-            <h3 class="shelf-title">${esc(col.name)}</h3>
-            <span class="shelf-badge">${colGames.length}</span>
-          </div>
-          <div class="shelf-nav">
-            ${editBtn}
-            ${scrollBtns}
-          </div>
+      <div class="col-card-collage count-${validCovers.length}">
+        ${validCovers.map((url) => `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`).join("")}
+      </div>`;
+  };
+
+  const folderCards = S.epicCollections.map((col) => {
+    const cSet = new Set(col.app_names.map((n) => n.toLowerCase()));
+    const colGames = S.epicSummaries.filter((s) => cSet.has(s.appName.toLowerCase()));
+    const marker = isCollectionIcon(col.emoji) ? col.emoji : "folder";
+
+    return `
+      <div class="col-folder-card" data-act="open-collection" data-col-id="${esc(col.id)}">
+        <div class="col-folder-preview">
+          ${renderCollage(colGames)}
+          <div class="col-folder-overlay"></div>
         </div>
-        ${colGames.length > 0
-          ? `<div class="shelf-row-track">${colGames.map((s) => epicCardPortrait(s)).join("")}</div>`
-          : `<div class="shelf-empty-hint">
-               <span>${t("col.noCategory")}</span>
-               <button data-act="edit-collection" data-col-id="${esc(col.id)}">${t("col.edit")}</button>
-             </div>`
-        }
+        <div class="col-folder-footer">
+          <div class="col-folder-info">
+            <div class="col-folder-title-row">
+              <span class="col-folder-icon">${icon(marker, 16)}</span>
+              <h3 class="col-folder-title" title="${esc(col.name)}">${esc(col.name)}</h3>
+            </div>
+            <span class="col-folder-count">${t("col.gameCount", { count: colGames.length })}</span>
+          </div>
+          <button class="col-folder-edit-btn" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${t("lib.editCollection", { name: esc(col.name) })}">
+            ${icon("edit", 13)}
+          </button>
+        </div>
       </div>`;
   }).join("");
 
-  const uncategorized = S.epicSummaries.filter((s) => !allCategorizedApps.has(s.appName.toLowerCase()));
-  const uncatShelf = uncategorized.length > 0 ? `
-    <div class="shelf-section size-${S.epicCardSize}">
-      <div class="shelf-header">
-        <div class="shelf-title-group">
-          <span class="shelf-icon">${icon("layers", 16)}</span>
-          <h3 class="shelf-title">${t("col.noCategory")}</h3>
-          <span class="shelf-badge">${uncategorized.length}</span>
-        </div>
-        <div class="shelf-nav">
-          ${uncategorized.length > 5 ? `
-            <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="left" title="${t("lib.scrollLeft")}">${icon("chevron-left", 14)}</button>
-            <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="right" title="${t("lib.scrollRight")}">${icon("chevron-right", 14)}</button>
-          ` : ""}
+  const newColCard = `
+    <div class="col-folder-card new-col-card" data-act="open-new-collection-modal">
+      <div class="new-col-content">
+        <div class="new-col-icon-wrap">${icon("plus", 22)}</div>
+        <span class="new-col-title">${t("col.newTitle")}</span>
+        <span class="new-col-desc">${t("col.newSubtitle")}</span>
+      </div>
+    </div>`;
+
+  const uncatCard = uncategorized.length > 0 ? `
+    <div class="col-folder-card uncat-card" data-act="open-collection" data-col-id="uncategorized">
+      <div class="col-folder-preview">
+        ${renderCollage(uncategorized)}
+        <div class="col-folder-overlay"></div>
+      </div>
+      <div class="col-folder-footer">
+        <div class="col-folder-info">
+          <div class="col-folder-title-row">
+            <span class="col-folder-icon">${icon("layers", 16)}</span>
+            <h3 class="col-folder-title">${t("col.noCategory")}</h3>
+          </div>
+          <span class="col-folder-count">${t("col.gameCount", { count: uncategorized.length })}</span>
         </div>
       </div>
-      <div class="shelf-row-track">${uncategorized.map((s) => epicCardPortrait(s)).join("")}</div>
     </div>` : "";
 
   return `
-    <div class="collections-steam-view">
-      <div class="col-steam-header">
-        <div class="col-steam-header-info">
-          <h2 class="col-steam-header-title">
+    <div class="collections-gallery-view">
+      <div class="col-gallery-header">
+        <div class="col-gallery-header-info">
+          <h2 class="col-gallery-header-title">
             ${icon("folder", 18)}
             <span>${t("lib.collections")}</span>
             <span class="shelf-badge">${S.epicCollections.length}</span>
           </h2>
-          <p class="col-steam-header-desc">${t("col.noCollectionsLong")}</p>
+          <p class="col-gallery-header-desc">${t("col.newSubtitle")}</p>
         </div>
-        <button class="col-steam-new-btn" data-act="open-new-collection-modal">
-          ${icon("folder", 14)}
-          <span>${t("lib.newCollection")}</span>
+        <button class="col-gallery-new-btn" data-act="open-new-collection-modal">
+          ${icon("plus", 14)}
+          <span>${t("col.newTitle")}</span>
         </button>
       </div>
-      ${collectionShelves}
-      ${uncatShelf}
+      <div class="col-folders-grid">
+        ${newColCard}
+        ${folderCards}
+        ${uncatCard}
+      </div>
     </div>`;
 }
 
 /**
  * Renders the library content area using the Hybrid Console Architecture:
  * - Default View (All / no search query): Top shelves (Free Games + Recent Games) + full grid.
+ * - Collections View: Apple / Steam collection folders gallery grid, or active collection detail grid.
  * - Filtered / Search View: Clean, pure, focused Grid of matching games.
  */
 export function renderEpicItems(): string {
@@ -391,7 +426,7 @@ export function renderEpicItems(): string {
     S.query.trim().length === 0 &&
     (S.activeCollectionId === null || S.activeCollectionId === "all")
   ) {
-    return renderSteamCollectionsView();
+    return renderCollectionsGallery();
   }
 
   const visible = epicVisibleSummaries();
@@ -401,6 +436,32 @@ export function renderEpicItems(): string {
     (S.activeCollectionId !== null && S.activeCollectionId !== "all");
 
   if (visible.length === 0) {
+    if (S.epicFilter === "collections" && S.activeCollectionId !== null) {
+      const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
+      const isUncat = S.activeCollectionId === "uncategorized";
+      const colName = activeCol ? activeCol.name : isUncat ? t("col.noCategory") : t("lib.collections");
+      const marker = activeCol && isCollectionIcon(activeCol.emoji) ? activeCol.emoji : isUncat ? "layers" : "folder";
+      return `
+        <div class="col-detail-stage">
+          <div class="col-breadcrumb-header">
+            <button class="col-back-btn" data-act="back-to-collections">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>${t("lib.collections")}</span>
+            </button>
+            <span class="col-breadcrumb-sep">/</span>
+            <div class="col-breadcrumb-meta">
+              <span class="col-breadcrumb-icon">${icon(marker, 16)}</span>
+              <h2 class="col-breadcrumb-title">${esc(colName)}</h2>
+              <span class="shelf-badge">0</span>
+            </div>
+          </div>
+          <div class="empty">
+            <div style="font-size:32px;margin-bottom:12px;opacity:0.5">${icon(marker, 36)}</div>
+            <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">${t("col.noMatch")}</div>
+            ${activeCol ? `<button class="btn install" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${t("col.edit")}</button>` : ""}
+          </div>
+        </div>`;
+    }
     return `<div class="empty">${t("lib.noGames")}</div>`;
   }
 
@@ -411,6 +472,38 @@ export function renderEpicItems(): string {
   const sentinelHtml = hasMore
     ? `<div id="lib-scroll-sentinel" style="height:24px;grid-column:1/-1;width:100%;pointer-events:none;"></div>`
     : "";
+
+  // When viewing an active collection, render breadcrumb header + responsive grid
+  if (S.epicFilter === "collections" && S.activeCollectionId !== null) {
+    const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
+    const isUncat = S.activeCollectionId === "uncategorized";
+    const colName = activeCol ? activeCol.name : isUncat ? t("col.noCategory") : t("lib.collections");
+    const marker = activeCol && isCollectionIcon(activeCol.emoji) ? activeCol.emoji : isUncat ? "layers" : "folder";
+    return `
+      <div class="col-detail-stage">
+        <div class="col-breadcrumb-header">
+          <button class="col-back-btn" data-act="back-to-collections">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>${t("lib.collections")}</span>
+          </button>
+          <span class="col-breadcrumb-sep">/</span>
+          <div class="col-breadcrumb-meta">
+            <span class="col-breadcrumb-icon">${icon(marker, 16)}</span>
+            <h2 class="col-breadcrumb-title">${esc(colName)}</h2>
+            <span class="shelf-badge">${visible.length}</span>
+          </div>
+          ${activeCol ? `
+            <button class="col-breadcrumb-edit-btn" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">
+              ${icon("edit", 13)}
+              <span>${t("col.edit")}</span>
+            </button>` : ""}
+        </div>
+        <div class="pgrid size-${S.epicCardSize}">
+          ${cardsHtml}
+          ${sentinelHtml}
+        </div>
+      </div>`;
+  }
 
   // When searching or applying a specific filter, render purely the focused grid.
   if (isFilteringOrSearching) {
@@ -660,7 +753,7 @@ export function renderEpic(): string {
           </button>
         </div>
 
-        ${selectedCol ? `
+        ${selectedCol && S.epicFilter !== "collections" ? `
         <div class="apple-active-col-chip">
           ${isCollectionIcon(selectedCol.emoji) ? `<span class="col-pill-marker">${collectionMarker(selectedCol.emoji, 13)}</span>` : icon("folder", 13)}
           <span>${esc(selectedCol.name)}</span>
@@ -726,6 +819,7 @@ export function renderEpic(): string {
 
 export function updateLibraryFilterInPlace(): boolean {
   if (S.view !== "library") return false;
+  if (S.epicFilter === "collections") return false;
   const toolbar = document.querySelector(".lib-unified-toolbar");
   const resultsEl = document.getElementById("lib-results");
   if (!toolbar || !resultsEl) return false;
