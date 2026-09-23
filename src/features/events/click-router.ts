@@ -188,6 +188,7 @@ document.addEventListener("click", (e) => {
     if (S.view === "library") void bootEpic();
     if (S.view === "profile") {
       if (!S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
+      if (S.friends.length === 0 && !S.friendsLoading) void loadFriends();
       render();
       return;
     }

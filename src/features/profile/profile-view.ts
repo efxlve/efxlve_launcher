@@ -151,14 +151,14 @@ function renderTopPlayedSection(): string {
     .map((e) => {
       const pct = Math.max(4, Math.round((e.seconds / max) * 100));
       return `
-        <button class="top-played-row" data-act="epic-detail" data-id="${esc(e.appName)}" title="${esc(e.title)}">
-          <div class="top-played-thumb">${e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy" />` : ""}</div>
+        <div class="top-played-row clickable" data-act="epic-detail" data-id="${esc(e.appName)}" title="${esc(e.title)}">
+          <div class="top-played-thumb">${e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy" />` : `<div class="top-played-thumb-fallback">${icon("gamepad-2", 14)}</div>`}</div>
           <div class="top-played-info">
             <div class="top-played-name">${esc(e.title)}</div>
-            <div class="top-played-bar"><span style="width:${pct}%"></span></div>
+            <div class="top-played-bar-track"><div class="top-played-bar-fill" style="width:${pct}%"></div></div>
           </div>
           <div class="top-played-time">${esc(fmtPlaytime(e.seconds))}</div>
-        </button>`;
+        </div>`;
     })
     .join("");
 
@@ -169,7 +169,7 @@ function renderTopPlayedSection(): string {
           <h2 class="profile-section-title">${t("profile.topPlayed")}</h2>
         </div>
       </div>
-      <div class="top-played-list">${rows}</div>
+      <div class="apple-grouped-list top-played-list">${rows}</div>
     </div>`;
 }
 
@@ -177,12 +177,27 @@ function renderTopPlayedSection(): string {
 function renderFriendsSection(): string {
   let body: string;
   if (S.friendsLoading && S.friends.length === 0) {
-    body = `<div class="friends-state">${t("friends.loading")}</div>`;
+    body = `
+      <div class="friends-skeleton-grid">
+        ${Array.from({ length: 6 })
+          .map(
+            () => `
+          <div class="friend-card skeleton">
+            <div class="friend-avatar skeleton-shimmer"></div>
+            <div class="friend-info">
+              <div class="friend-name-skeleton skeleton-shimmer"></div>
+              <div class="friend-plat-skeleton skeleton-shimmer"></div>
+            </div>
+          </div>`,
+          )
+          .join("")}
+      </div>`;
   } else if (S.friendsError) {
     body = `
       <div class="friends-state friends-state-error">
         <div class="friends-state-icon">${icon("users", 32)}</div>
         <p>${esc(S.friendsError)}</p>
+        <button class="apple-pill-btn secondary small" data-act="refresh-friends">${icon("refresh", 12)} <span>${t("profile.retry")}</span></button>
       </div>`;
   } else if (S.friends.length === 0) {
     body = `
@@ -196,12 +211,12 @@ function renderFriendsSection(): string {
         const name = f.displayName || f.alias || f.accountId.slice(0, 8);
         const initial = (name.trim().charAt(0) || "?").toUpperCase();
         const plats = f.platforms
-          .map((p) => `<span class="friend-plat">${esc(platformLabel(p))}</span>`)
+          .map((p) => `<span class="friend-plat ${esc(p)}">${esc(platformLabel(p))}</span>`)
           .join("");
         return `
           <div class="friend-card${f.favorite ? " fav" : ""}">
             <div class="friend-avatar">
-              <span>${esc(initial)}</span>
+              <span class="friend-avatar-letter">${esc(initial)}</span>
               ${f.favorite ? `<span class="friend-star">${icon("star", 10)}</span>` : ""}
             </div>
             <div class="friend-info">
@@ -221,8 +236,8 @@ function renderFriendsSection(): string {
           <h2 class="profile-section-title">${t("friends.title")}</h2>
           ${S.friends.length > 0 ? `<span class="profile-section-badge">${S.friends.length}</span>` : ""}
         </div>
-        <button class="btn ghost small" data-act="refresh-friends" title="${t("friends.refresh")}">
-          ${icon("refresh", 13)} <span>${t("friends.refresh")}</span>
+        <button class="apple-pill-btn secondary small ps5-friends-refresh ${S.friendsLoading ? "spinning" : ""}" data-act="refresh-friends" title="${t("friends.refresh")}">
+          ${icon("refresh", 12)} <span>${S.friendsLoading ? t("profile.refreshing") : t("friends.refresh")}</span>
         </button>
       </div>
       ${body}
@@ -324,7 +339,7 @@ export function renderProfile(): string {
       return ptB - ptA;
     }
     if (S.profileSort === "alpha") {
-      return a.app_title.localeCompare(b.app_title, "tr");
+      return S.trCollator.compare(a.app_title, b.app_title);
     }
     return 0;
   });
@@ -430,7 +445,7 @@ export function renderProfile(): string {
                 ${icon("sparkles", 13)}
                 <span><strong>${totalXp.toLocaleString()}</strong> ${t("profile.totalXp")}</span>
               </div>
-              <button class="btn ghost small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
+              <button class="apple-pill-btn secondary ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
                 ${icon("refresh", 13)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
               </button>
             </div>
@@ -451,23 +466,23 @@ export function renderProfile(): string {
           </div>
 
           <div class="profile-toolbar">
-            <div class="profile-filter-pills">
-              <button class="profile-pill ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
-                ${icon("trophy", 12)} ${t("profile.filterAll")} (${countAll})
+            <div class="apple-segmented-rail profile-seg-rail">
+              <button class="apple-segment ${S.profileFilter === "all" ? "active" : ""}" data-act="profile-filter" data-val="all">
+                ${icon("trophy", 12)} <span>${t("profile.filterAll")}</span> <span class="segment-cnt">${countAll}</span>
               </button>
-              <button class="profile-pill ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
-                ${epicPlatinumIcon(12)} ${t("profile.filterPlatinum")} (${countPlat})
+              <button class="apple-segment ${S.profileFilter === "platinum" ? "active plat" : ""}" data-act="profile-filter" data-val="platinum">
+                ${epicPlatinumIcon(12)} <span>${t("profile.filterPlatinum")}</span> <span class="segment-cnt">${countPlat}</span>
               </button>
-              <button class="profile-pill ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
-                ${icon("clock", 12)} ${t("profile.filterInProgress")} (${countInProgress})
+              <button class="apple-segment ${S.profileFilter === "in_progress" ? "active" : ""}" data-act="profile-filter" data-val="in_progress">
+                ${icon("clock", 12)} <span>${t("profile.filterInProgress")}</span> <span class="segment-cnt">${countInProgress}</span>
               </button>
-              <button class="profile-pill ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
-                ${icon("gamepad-2", 12)} ${t("profile.filterNotStarted")} (${countNotStarted})
+              <button class="apple-segment ${S.profileFilter === "not_started" ? "active" : ""}" data-act="profile-filter" data-val="not_started">
+                ${icon("gamepad-2", 12)} <span>${t("profile.filterNotStarted")}</span> <span class="segment-cnt">${countNotStarted}</span>
               </button>
             </div>
 
             <div class="profile-toolbar-right">
-              <div class="profile-search-wrap">
+              <div class="apple-search-box profile-search-box">
                 <span class="profile-search-icon">${icon("search", 13)}</span>
                 <input
                   type="text"
@@ -476,16 +491,17 @@ export function renderProfile(): string {
                   placeholder="${t("profile.searchPlaceholder")}"
                   value="${esc(S.profileSearchQuery)}"
                 />
-                ${S.profileSearchQuery ? `<button class="profile-search-clear" data-act="profile-search-clear">×</button>` : ""}
+                ${S.profileSearchQuery ? `<button class="apple-search-clear" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
               </div>
 
-              <div class="profile-sort-select-wrap">
-                <select id="profile-sort-select" class="profile-sort-select" data-act="profile-sort-change">
+              <div class="profile-sort-capsule">
+                <select id="profile-sort-select" class="apple-select" data-act="profile-sort-change">
                   <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
                   <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
                   <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
                   <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
                 </select>
+                <span class="profile-sort-arrow">${icon("chevron-down", 11)}</span>
               </div>
             </div>
           </div>

@@ -441,31 +441,44 @@ export function renderDownloads(): string {
       </div>
       <div class="apple-grouped-list">
         ${recentInstalled
-          .map(
-            (s) => `
+          .map((s) => {
+            const hasUpdate = Boolean(s.updateAvailable || S.availableUpdates.has(s.appName));
+            const cover = s.cover || "";
+            return `
           <div class="apple-list-row">
             <div class="apple-row-left clickable" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)}">
-              ${s.cover ? `<img class="apple-row-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
+              ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
               <div class="apple-row-info">
                 <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
                 <div class="apple-row-meta">
                   <span>${fmtBytes(s.installSize || 0)}</span>
                   <span class="apple-row-dot" aria-hidden="true">•</span>
-                  <span class="apple-row-status">${icon("check", 10)} ${t("settings.eosInstalled")}</span>
+                  ${
+                    hasUpdate
+                      ? `<span class="apple-update-tag">${icon("refresh", 11)} ${t("drawer.updateAvailable")}</span>`
+                      : `<span class="apple-row-status">${icon("check", 10)} ${t("settings.eosInstalled")}</span>`
+                  }
                 </div>
               </div>
             </div>
             <div class="apple-row-right">
-              <button class="apple-pill-btn play" data-act="epic-play" data-id="${s.appName}">
-                ${icon("play", 11)}
-                <span>${t("common.play")}</span>
-              </button>
+              ${
+                hasUpdate
+                  ? `<button class="apple-pill-btn update" data-act="epic-install" data-id="${s.appName}">
+                      ${icon("download", 12)}
+                      <span>${t("common.update")}</span>
+                    </button>`
+                  : `<button class="apple-pill-btn play" data-act="epic-play" data-id="${s.appName}">
+                      ${icon("play", 11)}
+                      <span>${t("common.play")}</span>
+                    </button>`
+              }
               <button class="apple-icon-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
                 ${icon("settings", 13)}
               </button>
             </div>
-          </div>`,
-          )
+          </div>`;
+          })
           .join("")}
       </div>
     </div>

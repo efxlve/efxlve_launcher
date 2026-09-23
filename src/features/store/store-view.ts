@@ -132,7 +132,7 @@ export async function loadPlayerProfile(forceRefresh = false): Promise<void> {
 /** Loads the Epic friends list (read-only, unofficial API). */
 export async function loadFriends(force = false): Promise<void> {
   if (!isTauri || S.friendsLoading) return;
-  if (!force && (S.friends.length > 0 || S.friendsError)) return;
+  if (!force && S.friends.length > 0) return;
   S.friendsLoading = true;
   S.friendsError = "";
   render();
