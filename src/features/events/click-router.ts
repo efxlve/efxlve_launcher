@@ -315,6 +315,9 @@ document.addEventListener("click", (e) => {
     } else if (tab === "updates") {
       S.activeCollectionId = null;
       S.epicFilter = S.epicFilter === "updates" ? "all" : "updates";
+    } else if (tab === "collections") {
+      S.activeCollectionId = null;
+      S.epicFilter = S.epicFilter === "collections" ? "all" : "collections";
     }
     S.isColDropdownOpen = false;
     S.isSortDropdownOpen = false;

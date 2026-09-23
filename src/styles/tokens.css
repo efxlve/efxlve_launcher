@@ -33,16 +33,17 @@
   --radius-lg: 16px;
   --glow-ambient: 0 14px 34px -4px rgba(0, 0, 0, 0.85), 0 0 26px -2px rgba(99, 102, 241, 0.32);
 
-  /* --- Canonical Action Button Tokens (PS5 Sapphire & Frost Identity) --- */
+  /* --- Canonical Action Button Tokens (PS5 Sapphire & Apple Porcelain Identity) --- */
   --btn-play-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   --btn-play-hover: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   --btn-play-glow: 0 4px 18px rgba(37, 99, 235, 0.42);
-  --btn-install-bg: rgba(255, 255, 255, 0.10);
-  --btn-install-hover: rgba(255, 255, 255, 0.18);
-  --btn-install-border: rgba(255, 255, 255, 0.18);
-  --btn-update-bg: #b68a2c;
-  --btn-update-hover: #c79b3e;
-  --btn-update-glow: 0 4px 18px rgba(182, 138, 44, 0.28);
+  --btn-install-bg: #ffffff;
+  --btn-install-color: #07080d;
+  --btn-install-hover: #e2e8f0;
+  --btn-install-glow: 0 4px 16px rgba(255, 255, 255, 0.28);
+  --btn-update-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --btn-update-hover: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  --btn-update-glow: 0 4px 18px rgba(245, 158, 11, 0.45);
 
   /* --- PS5 Console Design System Tokenleri (docs/DESIGN_SYSTEM.md §3) --- */
   --ps5-surface-1: #0e1017;
