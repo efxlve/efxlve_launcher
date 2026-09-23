@@ -85,28 +85,73 @@ fn clear_pending_download() {
 }
 
 fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
-    let Some(pending) = std::fs::read_to_string(pending_download_path())
-        .ok()
-        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
-    else {
-        return;
-    };
-    if pending.app_name != app_name {
-        return;
-    }
-
     let config = super::skip::default_config_dir();
     let was_installed = super::cache::read_installed(&config)
         .iter()
         .any(|game| game.app_name == app_name);
     if was_installed {
+        // Do not delete game directories for games that were already installed (e.g. game updates).
         return;
     }
 
-    let base = resolve_base(app, pending.install_dir);
-    let partial_dir = base.join(app_name);
-    if partial_dir.is_dir() {
-        let _ = std::fs::remove_dir_all(partial_dir);
+    let pending_install_dir = std::fs::read_to_string(pending_download_path())
+        .ok()
+        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
+        .filter(|pending| pending.app_name == app_name)
+        .and_then(|pending| pending.install_dir);
+
+    let base = resolve_base(app, pending_install_dir);
+
+    // Identify candidate folder names created by Legendary:
+    // 1. From metadata: customAttributes.FolderName.value
+    // 2. From metadata: title (with path-invalid characters stripped)
+    // 3. app_name itself
+    let mut candidate_names: Vec<String> = Vec::new();
+
+    let meta_file = config.join("metadata").join(format!("{}.json", app_name));
+    if meta_file.is_file() {
+        if let Ok(content) = std::fs::read_to_string(&meta_file) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
+                let meta = v.get("metadata").unwrap_or(&v);
+                if let Some(cattr) = meta.get("customAttributes") {
+                    if let Some(fn_val) = cattr.get("FolderName").and_then(|x| x.get("value")).and_then(|x| x.as_str()) {
+                        let trimmed = fn_val.trim();
+                        if !trimmed.is_empty() {
+                            candidate_names.push(trimmed.to_string());
+                        }
+                    }
+                }
+                if let Some(title) = meta.get("title").and_then(|x| x.as_str()) {
+                    let cleaned: String = title.chars().filter(|c| !matches!(*c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|')).collect();
+                    let trimmed = cleaned.trim();
+                    if !trimmed.is_empty() && !candidate_names.contains(&trimmed.to_string()) {
+                        candidate_names.push(trimmed.to_string());
+                    }
+                }
+            }
+        }
+    }
+    if !candidate_names.contains(&app_name.to_string()) {
+        candidate_names.push(app_name.to_string());
+    }
+
+    for name in candidate_names {
+        let partial_dir = base.join(&name);
+        if partial_dir.is_dir() {
+            // Retry removal up to 5 times in case Windows process termination file locks take a brief moment to release
+            for _ in 0..5 {
+                if std::fs::remove_dir_all(&partial_dir).is_ok() || !partial_dir.exists() {
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(150));
+            }
+        }
+    }
+
+    // Also check and clean legendary config tmp folder if any partial pieces remained
+    let tmp_dir = config.join("tmp");
+    if tmp_dir.is_dir() {
+        let _ = std::fs::remove_dir_all(&tmp_dir);
     }
 }
 
