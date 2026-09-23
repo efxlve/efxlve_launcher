@@ -10,7 +10,7 @@ import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
-import { epicFreeGames, type FreeGame } from "../../epic";
+import { epicFreeGames, type EpicSummary, type FreeGame } from "../../epic";
 import { currentLanguage, t } from "../../i18n";
 
 /** Maps the UI language to an Epic store locale + country pair. */
@@ -64,19 +64,34 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString(currentLanguage(), { day: "numeric", month: "short" });
 }
 
+function ownedSummary(g: FreeGame): EpicSummary | null {
+  const raw = S.epicGamesRaw.find((game) => game.metadata.namespace === g.namespace);
+  return raw ? S.epicSummariesMap.get(raw.app_name) ?? null : null;
+}
+
 function freeGameCard(g: FreeGame): string {
+  const owned = ownedSummary(g);
   const dateLabel = g.upcoming
-    ? t("free.starts", { date: shortDate(g.start) })
+    ? `${shortDate(g.start)} – ${shortDate(g.end)} • ${t("free.soon")}`
     : t("free.ends", { date: shortDate(g.end) });
+  const action = owned
+    ? owned.installed ? "epic-play" : "epic-install"
+    : "open-external-url";
+  const actionAttrs = owned
+    ? `data-id="${esc(owned.appName)}"`
+    : `data-url="${esc(freeGameUrl(g))}"`;
+  const status = owned
+    ? owned.installed ? t("common.play") : t("common.install")
+    : dateLabel;
   return `
-    <button class="free-card" data-act="open-external-url" data-url="${esc(freeGameUrl(g))}" title="${esc(g.title)}">
+    <button class="free-card" data-act="${action}" ${actionAttrs} title="${esc(g.title)}">
       <div class="free-card-media">
         ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
         <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
       </div>
       <div class="free-card-body">
         <div class="free-card-title">${esc(g.title)}</div>
-        <div class="free-card-date">${esc(dateLabel)}</div>
+        <div class="free-card-date">${esc(status)}</div>
       </div>
     </button>`;
 }
