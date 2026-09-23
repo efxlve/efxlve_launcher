@@ -193,7 +193,6 @@ export function renderDownloads(): string {
   const activeWide = activeSummary ? (epicWideArt(activeSummary) || activeCover) : "";
   const activeTitle = activeSummary?.title || activeDl?.title || activeDl?.id || "";
 
-  const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
   // Recently installed & updated games (clean 6-item list, prioritizing latest installs and updates)
@@ -204,7 +203,7 @@ export function renderDownloads(): string {
     // 1. First prioritize games recorded as recently installed or updated
     for (const id of trackedInstalls) {
       const s = S.epicSummariesMap.get(id);
-      if (s?.installed && !seen.has(id)) {
+      if (s && (s.installed || S.downloads.get(id)?.done) && !seen.has(id)) {
         seen.add(id);
         recentInstalled.push(s);
       }
@@ -428,45 +427,6 @@ export function renderDownloads(): string {
     `;
   }
 
-  // Completed items
-  let completedSection = "";
-  if (completedEntries.length > 0) {
-    const items = completedEntries.map(([appId, d]) => {
-      const s = S.epicSummaries.find((x) => x.appName === appId);
-      const cover = s?.cover || "";
-      return `
-        <div class="apple-list-row">
-          <div class="apple-row-left">
-            <span class="apple-row-check">${icon("check", 12)}</span>
-            ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
-            <div class="apple-row-info">
-              <div class="apple-row-title">${esc(d.title)}</div>
-              <div class="apple-row-meta" style="color:#10b981">${t("dl.completedReady")}</div>
-            </div>
-          </div>
-          <div class="apple-row-right">
-            <button class="apple-pill-btn play" data-act="epic-play" data-id="${appId}">
-              ${icon("play", 11)} ${t("common.play")}
-            </button>
-            <button class="apple-icon-btn" data-act="manage-game" data-id="${appId}" title="${t("common.manage")}">
-              ${icon("settings", 13)}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    completedSection = `
-      <div class="apple-section">
-        <div class="apple-section-header">
-          <span class="apple-section-title">${t("dl.recentCompleted")} (${completedEntries.length})</span>
-        </div>
-        <div class="apple-grouped-list">
-          ${items}
-        </div>
-      </div>
-    `;
-  }
 
   const recentSection =
     recentInstalled.length > 0
@@ -613,7 +573,6 @@ export function renderDownloads(): string {
           ${S.downloadsSettingsOpen ? settingsPanel : ""}
           ${updatesSection}
           ${queueSection}
-          ${completedSection}
           ${recentSection}
         </div>
       </main>
