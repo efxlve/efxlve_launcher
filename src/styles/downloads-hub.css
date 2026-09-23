@@ -1,15 +1,11 @@
 /* ==========================================================================
    Downloads Hub, DLC Manager & Selective Install
 
-   Steam-style download hub, active hero, speed chart, queue rows, DLC manager and selective install modal.
-       Split from the former monolithic src/styles.css to keep every file
-       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   ========================================================================== */
-/* ==========================================================================
-   STEAM-STYLE ADVANCED DOWNLOAD HUB
+   Apple & PlayStation precision downloads hub, active card, speed chart,
+   macOS grouped list queue and recent updates.
    ========================================================================== */
 
-.dl-hub {
+.dl-hub.apple-hub {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -17,29 +13,137 @@
   padding-bottom: 40px;
 }
 
-.dl-header-group {
+/* Apple Downloads Header */
+.apple-downloads-header .ps5-header-main {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.apple-header-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 16px;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dl-header-group h2 {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #fff;
-  margin: 0;
+.apple-header-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
-/* Active download card (compact) */
+.apple-header-btn.active {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Apple Pure Minimalist Idle State (Clean, Roomy, Content-First)
+   ========================================================================== */
+
+.apple-idle-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px 44px;
+  margin: 0 auto;
+  max-width: 480px;
+  animation: appleFadeIn 0.25s ease-out;
+}
+
+@keyframes appleFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.apple-idle-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.38);
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.apple-idle-hero:hover .apple-idle-icon-wrap {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.apple-idle-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+}
+
+.apple-idle-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.48);
+  margin: 0 0 20px 0;
+}
+
+.apple-btn-primary {
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #0b0d14;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  transition: all 0.15s ease;
+}
+
+.apple-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.92);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+}
+
+.apple-btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   Active Download Card (Apple Precision & High-Contrast)
+   ========================================================================== */
+
 .dl-active-card {
   position: relative;
-  background: #14161a;
+  background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .dl-active-bg {
@@ -47,9 +151,9 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 46%;
+  width: 48%;
   object-fit: cover;
-  opacity: 0.14;
+  opacity: 0.12;
   mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 15%, transparent 100%);
   -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 15%, transparent 100%);
   pointer-events: none;
@@ -58,13 +162,17 @@
 .dl-active-inner {
   position: relative;
   z-index: 1;
-  padding: 20px 22px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-.dl-active-head { display: flex; align-items: center; gap: 14px; }
+.dl-active-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
 .dl-active-thumb {
   width: 52px;
@@ -72,7 +180,7 @@
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #1e2025;
+  background: #191b22;
   flex-shrink: 0;
 }
 
@@ -81,12 +189,12 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   align-items: flex-start;
 }
 
 .dl-active-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.2px;
@@ -96,251 +204,33 @@
   text-overflow: ellipsis;
 }
 
-.dl-active-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Page Header Status Indicators */
-.dl-page-header .ps5-header-main {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dl-header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dl-header-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 11px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  user-select: none;
-}
-
-.dl-header-pill.downloading {
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  color: #00e5ff;
-}
-
-.dl-header-pill.idle {
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  color: #34d399;
-}
-
-.dl-pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #00e5ff;
-  box-shadow: 0 0 8px #00e5ff;
-  animation: dlPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes dlPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
-}
-
-.dl-idle-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-}
-
-/* PlayStation 5 / Apple Idle Showcase Hero */
-.dl-idle-hero {
-  position: relative;
-  overflow: hidden;
-  background: radial-gradient(ellipse at 15% 25%, rgba(139, 92, 246, 0.08) 0%, transparent 60%), #111318;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 28px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
-}
-
-.dl-idle-glow {
-  position: absolute;
-  top: -60px;
-  left: -20px;
-  width: 320px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.14) 0%, transparent 70%);
-  pointer-events: none;
-  filter: blur(40px);
-}
-
-.dl-idle-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-}
-
-.dl-idle-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  color: #34d399;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  width: fit-content;
-  margin-bottom: 12px;
-}
-
-.dl-idle-title {
-  font-size: 24px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.5px;
-  margin: 0 0 8px 0;
-}
-
-.dl-idle-desc {
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.62);
-  margin: 0 0 22px 0;
-  max-width: 600px;
-}
-
-.dl-idle-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.dl-idle-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 250px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.dl-idle-stat-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 12px 16px;
-  transition: all 0.15s ease;
-}
-
-.dl-idle-stat-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.13);
-  transform: translateX(2px);
-}
-
-.dl-idle-stat-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: rgba(139, 92, 246, 0.14);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  color: #c4b5fd;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.dl-idle-stat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.dl-idle-stat-label {
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
-
-.dl-idle-stat-value {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: #ffffff;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 860px) {
-  .dl-idle-hero {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .dl-idle-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .dl-idle-stat-card {
-    flex: 1;
-    min-width: 140px;
-  }
-}
-
 .dl-status-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 20px;
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .dl-status-tag.active {
   background: rgba(0, 229, 255, 0.12);
   color: #00e5ff;
-  border-color: rgba(0, 229, 255, 0.3);
+  border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
 .dl-status-tag.paused {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.dl-active-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Progress bar */
@@ -352,47 +242,47 @@
 
 .dl-progress-track {
   flex: 1;
-  height: 8px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .dl-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
-  border-radius: 4px;
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #a855f7);
+  border-radius: 3px;
   transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dl-progress-pct {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #e5e7eb;
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  min-width: 44px;
+  min-width: 40px;
   text-align: right;
 }
 
 /* Inline metric row */
 .dl-metrics-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  padding-top: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dl-metric {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .dl-metric-label {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -400,27 +290,27 @@
 }
 
 .dl-metric-value {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #fff;
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.dl-metric-value.accent { color: #a78bfa; }
+
+.dl-metric-value.accent { color: #c4b5fd; }
 .dl-metric-value.green { color: #34d399; }
 
-/* Steam live speed chart */
+/* Live speed chart */
 .dl-chart-card {
-  background: #14161a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  gap: 12px;
 }
 
 .dl-chart-head {
@@ -428,23 +318,23 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dl-chart-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .dl-chart-legend {
   display: flex;
   align-items: center;
-  gap: 18px;
-  font-size: 12px;
+  gap: 16px;
+  font-size: 11.5px;
   font-weight: 600;
 }
 
@@ -455,27 +345,20 @@
 }
 
 .dl-legend-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 
-.dl-legend-dot.net {
-  background: #00e5ff;
-  box-shadow: 0 0 8px #00e5ff;
-}
-
-.dl-legend-dot.disk {
-  background: #00d26a;
-  box-shadow: 0 0 8px #00d26a;
-}
+.dl-legend-dot.net { background: #00e5ff; }
+.dl-legend-dot.disk { background: #00d26a; }
 
 .dl-canvas-container {
   position: relative;
   width: 100%;
-  height: 140px;
-  background: #0d0e11;
-  border-radius: 10px;
+  height: 120px;
+  background: #0d0f14;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -486,314 +369,250 @@
   display: block;
 }
 
-/* Queue section */
-.dl-section-title,
-.dl-section-header {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.2px;
-  margin: 22px 0 12px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+/* ==========================================================================
+   macOS & iOS Style Grouped List (Clean, Unified, Hairline Dividers)
+   ========================================================================== */
 
-.dl-section-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dl-section-icon {
-  color: var(--ps5-accent, #8b5cf6);
-  display: grid;
-  place-items: center;
-}
-
-.dl-section-heading {
-  font-size: 16px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.2px;
-  margin: 0;
-}
-
-.dl-section-pill {
-  font-size: 11.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #d4d4d8;
-}
-
-.dl-section-size-pill {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(139, 92, 246, 0.14);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  color: #c4b5fd;
-}
-
-/* Installed Games Responsive Bento Grid */
-.dl-installed-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 12px;
-  width: 100%;
-}
-
-.dl-installed-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  padding: 12px 14px;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-}
-
-.dl-installed-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.dl-installed-thumb-wrap {
-  width: 52px;
-  height: 70px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: #171920;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dl-installed-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.dl-thumb-fallback {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.dl-installed-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.dl-installed-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dl-installed-meta {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.dl-installed-size {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: #a1a1aa;
-}
-
-.dl-installed-dot {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.dl-installed-status-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #10b981;
-}
-
-.dl-installed-actions {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
-}
-
-.dl-play-btn {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  color: #ffffff !important;
-  border: none !important;
-  height: 32px !important;
-  padding: 0 14px !important;
-  border-radius: 8px !important;
-  font-size: 12.5px !important;
-  font-weight: 700 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
-  transition: all 0.15s ease !important;
-}
-
-.dl-play-btn:hover {
-  filter: brightness(1.08) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45) !important;
-}
-
-.dl-play-btn:active {
-  transform: scale(0.98) !important;
-}
-
-.dl-manage-btn {
-  width: 32px !important;
-  height: 32px !important;
-  padding: 0 !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-  color: rgba(255, 255, 255, 0.75) !important;
-  display: grid !important;
-  place-items: center !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-}
-
-.dl-manage-btn:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
-}
-
-.dl-section-link {
-  background: none; border: none; font-family: inherit;
-  font-size: 12px; font-weight: 600; color: var(--ps5-accent);
-  cursor: pointer; padding: 4px 8px; border-radius: 7px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.dl-section-link:hover { background: rgba(139, 92, 246, 0.12); color: var(--ps5-accent-hover); }
-
-.dl-queue-container {
+.apple-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 6px;
 }
 
-.dl-queue-row {
-  background: #181a1f;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 12px 16px;
+.apple-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.apple-section-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.apple-section-link {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ps5-accent, #8b5cf6);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+}
+
+.apple-section-link:hover {
+  opacity: 0.8;
+}
+
+.apple-grouped-list {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+}
+
+.apple-list-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  transition: all 0.15s ease;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s ease;
 }
 
-.dl-queue-row:hover {
-  background: #1f2127;
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: translateX(2px);
+.apple-list-row:last-child {
+  border-bottom: none;
 }
 
-.dl-queue-left {
+.apple-list-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.apple-row-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   flex: 1;
 }
 
-.dl-queue-order-badge {
+.apple-row-order {
   font-size: 12px;
-  font-weight: 800;
-  color: #71717a;
-  width: 24px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  width: 22px;
   text-align: center;
-}
-
-.dl-queue-thumb {
-  width: 44px;
-  height: 58px;
-  border-radius: 6px;
-  object-fit: cover;
-  background: #252830;
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
-.dl-queue-info {
+.apple-row-check {
+  width: 22px;
+  text-align: center;
+  color: #10b981;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.apple-row-thumb {
+  width: 38px;
+  height: 50px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #171920;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.apple-row-thumb-fallback {
+  width: 38px;
+  height: 50px;
+  border-radius: 6px;
+  background: #171920;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.apple-row-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.dl-queue-name {
-  font-size: 14px;
+.apple-row-title {
+  font-size: 13.5px;
   font-weight: 600;
-  color: #fff;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dl-queue-meta {
+.apple-row-meta {
   font-size: 11.5px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dl-queue-right {
+  color: rgba(255, 255, 255, 0.42);
   display: flex;
   align-items: center;
   gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.apple-row-dot {
+  opacity: 0.3;
+}
+
+.apple-row-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.apple-row-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   flex-shrink: 0;
 }
 
-.dl-reorder-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  border-radius: 6px;
-  width: 28px;
+/* Apple Pill & Icon Buttons */
+.apple-pill-btn {
   height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dl-reorder-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+.apple-pill-btn.play {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #34d399;
+}
+
+.apple-pill-btn.play:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+.apple-pill-btn.play:active {
+  transform: scale(0.97);
+}
+
+.apple-pill-btn.primary {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.apple-pill-btn.primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.apple-pill-btn.secondary {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.apple-pill-btn.secondary:hover {
+  filter: brightness(1.1);
+}
+
+.apple-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.apple-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.apple-icon-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 /* ==========================================================================

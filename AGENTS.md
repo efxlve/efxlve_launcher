@@ -167,7 +167,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Üst gezinme çubuğuna opsiyonel İleri/Geri (Back/Forward) geçmiş gezinmesi eklendi: Varsayılan olarak kapalıdır (`false`), Ayarlar > Görünüm sekmesinden açılabilir. Görünümler (Store, Library, Downloads, Profile, Settings), oyun detay modalları, klavye (`Alt+Sol Ok` / `Alt+Sağ Ok`) ve fare yan butonları (3 ve 4) ile tam senkronize çalışır.
 - Üst gezinme çubuğu Apple Tripartite (Üç Parçalı) mimariye dönüştürüldü: 56px başlık çubuğu yüksekliğine uygun 40px/32px segmented rail, 36px kontrol butonları, 13.5px yüksek kontrastlı tipografi ve 17px SVG ikonlarla okuma zorlukları giderildi. Sol tarafta logo ve opsiyonel ileri/geri butonları, merkezde yalnızca ana görünümler (`[ Mağaza | Kütüphane | İndirmeler ]`), sağ tarafta ise ağ durumu, bildirim merkezi, hesap profil kapsülü (`#account`), ayarlar ve pencere kontrolleri konumlandırıldı.
 - Üst bar sağ kümesinde profil hapı (`#account`) doğrudan Çevrimiçi rozetinin sağına taşındı; Bildirim Zili ile Ayarlar butonu yan yana konumlandırıldı.
-- İndirmeler sayfası PlayStation 5 & Apple estetiğinde baştan inşa edildi:
-  - Aktif indirme olmadığında boş veya kaba duran yapı yerine, sistem durumunu, toplam kurulu oyun sayısını, kullanılan depolama alanını ve ağ profilini özetleyen cam Konsol Durum Paneli (`.dl-idle-hero`) eklendi.
-  - Sayfa başlığına anlık indirme durum rozeti (`.dl-header-pill`, `%XX İndiriliyor` veya `Kuyruk Boşta`) eklendi.
-  - 1920px boyunca uzanan tekil gri satırlar yerine, duyarlı 2-3 sütunlu Bento Kart Izgarasına (`.dl-installed-grid`, `.dl-installed-card`) geçildi; her kartta 3:4 afiş görseli, boyut rozeti, "Kurulu" göstergesi, Zümrüt Yeşili "Oyna" ve yönetim butonları konumlandırıldı.
+- İndirmeler sayfası otantik Apple (macOS App Store) tasarım diline dönüştürüldü:
+  - Yapay zeka klişesi olan sahte istatistik kutuları, mükerrer butonlar ve neon ışıltılar tamamen kaldırıldı.
+  - İndirme olmadığında ferah, merkezlenmiş, sakin Apple Boş Durum (`.apple-idle-hero`, 60px cam indirme ikonu, net tipografi ve saf porselen "Kütüphaneyi Aç" butonu) uygulandı.
+  - Alttaki kaba kart ızgarası yerine, macOS App Store Güncellemeler standardında tek parça zarif Apple Gruplanmış Liste (`.apple-grouped-list`, saç teli inceliğinde ayraçlar, 38x50px posterler, kompakt Apple hap "Oyna" butonu) ile güncel/kurulu oyunlar listelendi.
+  - Aktif indirmeler için 6px Apple likit cam ilerleme çubuğu, anlık hız/ETA sayaçları ve kompakt kontrol butonları korundu.

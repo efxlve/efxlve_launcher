@@ -195,11 +195,7 @@ export function renderDownloads(): string {
   const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
-  const allInstalled = S.epicSummaries.filter((s) => s.installed);
-  const totalInstalledCount = allInstalled.length;
-  const totalInstalledSize = allInstalled.reduce((acc, g) => acc + (g.installSize || 0), 0);
-
-  // Recently played installed games: fills the idle page with a responsive launchpad.
+  // Recently played / installed games (clean 6-item updates list)
   const recentInstalled: EpicSummary[] = [];
   {
     const seen = new Set<string>();
@@ -209,20 +205,20 @@ export function renderDownloads(): string {
         seen.add(id);
         recentInstalled.push(s);
       }
-      if (recentInstalled.length >= 12) break;
+      if (recentInstalled.length >= 6) break;
     }
-    if (recentInstalled.length < 12) {
+    if (recentInstalled.length < 6) {
       for (const s of S.epicSummaries) {
         if (s.installed && !seen.has(s.appName)) {
           seen.add(s.appName);
           recentInstalled.push(s);
-          if (recentInstalled.length >= 12) break;
+          if (recentInstalled.length >= 6) break;
         }
       }
     }
   }
 
-  // Active download card (compact) or a small idle card.
+  // Active download card OR Apple minimalist idle state
   let heroMarkup = "";
   if (activeDl) {
     const isPaused = S.dlQueueStatus.isPaused;
@@ -244,11 +240,11 @@ export function renderDownloads(): string {
             <div class="dl-active-actions">
               ${
                 isPaused
-                  ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
-                  : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`
+                  ? `<button class="apple-pill-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 12)} ${t("downloads.resume")}</button>`
+                  : `<button class="apple-pill-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 12)} ${t("downloads.pause")}</button>`
               }
-              <button class="ps5-btn ghost" data-act="manage-game" data-id="${activeDl.id}">${icon("settings", 13)} ${t("common.manage")}</button>
-              <button class="ps5-btn ghost danger" data-act="epic-cancel" data-id="${activeDl.id}">${t("common.cancel")}</button>
+              <button class="apple-icon-btn" data-act="manage-game" data-id="${activeDl.id}" title="${t("common.manage")}">${icon("settings", 13)}</button>
+              <button class="apple-icon-btn danger" data-act="epic-cancel" data-id="${activeDl.id}" title="${t("common.cancel")}">${icon("x", 13)}</button>
             </div>
           </div>
           <div class="dl-active-progress">
@@ -266,59 +262,18 @@ export function renderDownloads(): string {
       </div>
     `;
   } else {
-    const netProfileText =
-      S.networkProfile === "max" ? t("downloads.profileMax") :
-      S.networkProfile === "low" ? t("downloads.profileLow") :
-      t("downloads.profileBalanced");
-
+    // Pure Apple Minimalist Idle State
     heroMarkup = `
-      <div class="dl-idle-hero">
-        <div class="dl-idle-glow" aria-hidden="true"></div>
-        <div class="dl-idle-body">
-          <div class="dl-idle-status-badge">
-            <span class="dl-idle-dot"></span>
-            <span>${t("downloads.idleBadge")}</span>
-          </div>
-          <h2 class="dl-idle-title">${t("downloads.allUpToDate")}</h2>
-          <p class="dl-idle-desc">${t("downloads.emptyDesc")}</p>
-          <div class="dl-idle-actions">
-            <button class="ps5-btn primary" data-act="goto-library">
-              ${icon("layout-grid", 14)}
-              <span>${t("downloads.goLibrary")}</span>
-            </button>
-            <button class="ps5-btn secondary" data-act="open-storage-manager">
-              ${icon("hard-drive", 14)}
-              <span>${t("storage.open")}</span>
-            </button>
-            <button class="ps5-btn ghost" data-act="toggle-downloads-settings">
-              ${icon("settings", 14)}
-              <span>${t("downloads.settingsTitle")}</span>
-            </button>
-          </div>
+      <div class="apple-idle-hero">
+        <div class="apple-idle-icon-wrap">
+          ${icon("download", 28)}
         </div>
-        <div class="dl-idle-stats">
-          <div class="dl-idle-stat-card">
-            <div class="dl-idle-stat-icon">${icon("gamepad-2", 18)}</div>
-            <div class="dl-idle-stat-info">
-              <span class="dl-idle-stat-label">${t("lib.installedGames")}</span>
-              <span class="dl-idle-stat-value">${totalInstalledCount}</span>
-            </div>
-          </div>
-          <div class="dl-idle-stat-card">
-            <div class="dl-idle-stat-icon">${icon("hard-drive", 18)}</div>
-            <div class="dl-idle-stat-info">
-              <span class="dl-idle-stat-label">${t("storage.title")}</span>
-              <span class="dl-idle-stat-value">${fmtBytes(totalInstalledSize)}</span>
-            </div>
-          </div>
-          <div class="dl-idle-stat-card">
-            <div class="dl-idle-stat-icon">${icon("zap", 18)}</div>
-            <div class="dl-idle-stat-info">
-              <span class="dl-idle-stat-label">${t("downloads.netProfile")}</span>
-              <span class="dl-idle-stat-value">${esc(netProfileText)}</span>
-            </div>
-          </div>
-        </div>
+        <h2 class="apple-idle-title">${t("downloads.emptyTitle")}</h2>
+        <p class="apple-idle-desc">${t("downloads.emptyDesc")}</p>
+        <button class="apple-btn-primary" data-act="goto-library">
+          ${icon("layout-grid", 14)}
+          <span>${t("downloads.goLibrary")}</span>
+        </button>
       </div>
     `;
   }
@@ -356,61 +311,55 @@ export function renderDownloads(): string {
   `
     : "";
 
-  // Queue markup (only built when there are queued games).
-  let queueItemsMarkup = "";
+  // Queue markup
+  let queueSection = "";
   if (queueApps.length > 0) {
-    queueItemsMarkup = queueApps.map((appId, idx) => {
+    const items = queueApps.map((appId, idx) => {
       const s = S.epicSummaries.find((x) => x.appName === appId);
       const title = s?.title || appId;
       const cover = s?.cover || "";
-      const sizeStr = s?.installSize ? `${t("dl.sizeLabel")}: ${fmtBytes(s.installSize)}` : t("dl.queued");
+      const sizeStr = s?.installSize ? fmtBytes(s.installSize) : t("dl.queued");
       const isFirst = idx === 0;
       const isLast = idx === queueApps.length - 1;
       return `
-        <div class="dl-queue-row">
-          <div class="dl-queue-left">
-            <div class="dl-queue-order-badge">#${idx + 1}</div>
-            ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(title)}" />` : `<div class="dl-queue-thumb"></div>`}
-            <div class="dl-queue-info">
-              <div class="dl-queue-name">${esc(title)}</div>
-              <div class="dl-queue-meta">${esc(sizeStr)}</div>
+        <div class="apple-list-row">
+          <div class="apple-row-left">
+            <span class="apple-row-order">#${idx + 1}</span>
+            ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
+            <div class="apple-row-info">
+              <div class="apple-row-title">${esc(title)}</div>
+              <div class="apple-row-meta">${esc(sizeStr)}</div>
             </div>
           </div>
-          <div class="dl-queue-right">
-            <button class="dl-reorder-btn" data-act="dl-reorder-up" data-id="${appId}" title="${t("dl.moveUp")}" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
-              ${icon("chevron-up", 14)}
+          <div class="apple-row-right">
+            <button class="apple-icon-btn" data-act="dl-reorder-up" data-id="${appId}" title="${t("dl.moveUp")}" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+              ${icon("chevron-up", 13)}
             </button>
-            <button class="dl-reorder-btn" data-act="dl-reorder-down" data-id="${appId}" title="${t("dl.moveDown")}" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
-              ${icon("chevron-down", 14)}
+            <button class="apple-icon-btn" data-act="dl-reorder-down" data-id="${appId}" title="${t("dl.moveDown")}" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
+              ${icon("chevron-down", 13)}
             </button>
-            <button class="btn primary small" data-act="dl-reorder-now" data-id="${appId}" title="${t("dl.downloadNow")}">
+            <button class="apple-pill-btn primary" data-act="dl-reorder-now" data-id="${appId}">
               ${icon("play", 11)} ${t("dl.downloadNow")}
             </button>
-            <button class="dl-reorder-btn" data-act="dl-reorder-remove" data-id="${appId}" title="${t("dl.removeFromQueue")}">
-              ${icon("x", 14)}
+            <button class="apple-icon-btn danger" data-act="dl-reorder-remove" data-id="${appId}" title="${t("dl.removeFromQueue")}">
+              ${icon("x", 13)}
             </button>
           </div>
         </div>
       `;
     }).join("");
-  }
 
-  // Only surface the queue when it actually has items (an empty section is noise).
-  const queueSection =
-    queueApps.length > 0
-      ? `
-    <div class="dl-section-header">
-      <div class="dl-section-header-left">
-        <span class="dl-section-icon">${icon("download", 15)}</span>
-        <h3 class="dl-section-heading">${t("dl.queueTitle")}</h3>
-        <span class="dl-section-pill">${queueApps.length}</span>
+    queueSection = `
+      <div class="apple-section">
+        <div class="apple-section-header">
+          <span class="apple-section-title">${t("dl.queueTitle")} (${queueApps.length})</span>
+        </div>
+        <div class="apple-grouped-list">
+          ${items}
+        </div>
       </div>
-    </div>
-    <div class="dl-queue-container">
-      ${queueItemsMarkup}
-    </div>
-  `
-      : "";
+    `;
+  }
 
   // Completed items
   let completedSection = "";
@@ -419,21 +368,21 @@ export function renderDownloads(): string {
       const s = S.epicSummaries.find((x) => x.appName === appId);
       const cover = s?.cover || "";
       return `
-        <div class="dl-queue-row" style="border-left: 3px solid #00d26a;">
-          <div class="dl-queue-left">
-            <div class="dl-queue-order-badge" style="color:#00d26a">${icon("check", 12)}</div>
-            ${cover ? `<img class="dl-queue-thumb" src="${esc(cover)}" alt="${esc(d.title)}" />` : `<div class="dl-queue-thumb"></div>`}
-            <div class="dl-queue-info">
-              <div class="dl-queue-name">${esc(d.title)}</div>
-              <div class="dl-queue-meta" style="color:#00d26a">${t("dl.completedReady")}</div>
+        <div class="apple-list-row">
+          <div class="apple-row-left">
+            <span class="apple-row-check">${icon("check", 12)}</span>
+            ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
+            <div class="apple-row-info">
+              <div class="apple-row-title">${esc(d.title)}</div>
+              <div class="apple-row-meta" style="color:#10b981">${t("dl.completedReady")}</div>
             </div>
           </div>
-          <div class="dl-queue-right">
-            <button class="ps5-btn primary small" data-act="epic-play" data-id="${appId}">
-              ${icon("play", 12)} ${t("common.play")}
+          <div class="apple-row-right">
+            <button class="apple-pill-btn play" data-act="epic-play" data-id="${appId}">
+              ${icon("play", 11)} ${t("common.play")}
             </button>
-            <button class="ps5-btn secondary small" data-act="manage-game" data-id="${appId}">
-              ${icon("settings", 12)} ${t("common.manage")}
+            <button class="apple-icon-btn" data-act="manage-game" data-id="${appId}" title="${t("common.manage")}">
+              ${icon("settings", 13)}
             </button>
           </div>
         </div>
@@ -441,15 +390,13 @@ export function renderDownloads(): string {
     }).join("");
 
     completedSection = `
-      <div class="dl-section-header" style="margin-top: 24px;">
-        <div class="dl-section-header-left">
-          <span class="dl-section-icon" style="color:#00d26a">${icon("check", 15)}</span>
-          <h3 class="dl-section-heading">${t("dl.recentCompleted")}</h3>
-          <span class="dl-section-pill">${completedEntries.length}</span>
+      <div class="apple-section">
+        <div class="apple-section-header">
+          <span class="apple-section-title">${t("dl.recentCompleted")} (${completedEntries.length})</span>
         </div>
-      </div>
-      <div class="dl-queue-container">
-        ${items}
+        <div class="apple-grouped-list">
+          ${items}
+        </div>
       </div>
     `;
   }
@@ -457,46 +404,43 @@ export function renderDownloads(): string {
   const recentSection =
     recentInstalled.length > 0
       ? `
-    <div class="dl-section-header">
-      <div class="dl-section-header-left">
-        <span class="dl-section-icon">${icon("hard-drive", 15)}</span>
-        <h3 class="dl-section-heading">${t("lib.installedGames")}</h3>
-        <span class="dl-section-pill">${recentInstalled.length}</span>
-        <span class="dl-section-size-pill">${fmtBytes(totalInstalledSize)}</span>
+    <div class="apple-section">
+      <div class="apple-section-header">
+        <span class="apple-section-title">${t("downloads.recentTitle")}</span>
+        <button class="apple-section-link" data-act="goto-library">
+          <span>${t("downloads.goLibrary")}</span>
+          ${icon("chevron-right", 12)}
+        </button>
       </div>
-      <button class="dl-section-link" data-act="goto-library">
-        <span>${t("downloads.goLibrary")}</span>
-        ${icon("chevron-right", 14)}
-      </button>
-    </div>
-    <div class="dl-installed-grid">
-      ${recentInstalled
-        .map(
-          (s) => `
-        <div class="dl-installed-card">
-          <div class="dl-installed-thumb-wrap">
-            ${s.cover ? `<img class="dl-installed-thumb" src="${esc(s.cover)}" alt="${esc(s.title)}" loading="lazy" />` : `<div class="dl-installed-thumb dl-thumb-fallback">${icon("gamepad-2", 20)}</div>`}
-          </div>
-          <div class="dl-installed-info">
-            <div class="dl-installed-title" title="${esc(s.title)}">${esc(s.title)}</div>
-            <div class="dl-installed-meta">
-              <span class="dl-installed-size">${fmtBytes(s.installSize || 0)}</span>
-              <span class="dl-installed-dot" aria-hidden="true">•</span>
-              <span class="dl-installed-status-tag">${icon("check", 11)} ${t("settings.eosInstalled")}</span>
+      <div class="apple-grouped-list">
+        ${recentInstalled
+          .map(
+            (s) => `
+          <div class="apple-list-row">
+            <div class="apple-row-left">
+              ${s.cover ? `<img class="apple-row-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
+              <div class="apple-row-info">
+                <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
+                <div class="apple-row-meta">
+                  <span>${fmtBytes(s.installSize || 0)}</span>
+                  <span class="apple-row-dot" aria-hidden="true">•</span>
+                  <span class="apple-row-status">${icon("check", 10)} ${t("settings.eosInstalled")}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="dl-installed-actions">
-            <button class="ps5-btn primary small dl-play-btn" data-act="epic-play" data-id="${s.appName}">
-              ${icon("play", 13)}
-              <span>${t("common.play")}</span>
-            </button>
-            <button class="ps5-btn ghost small dl-manage-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
-              ${icon("settings", 13)}
-            </button>
-          </div>
-        </div>`,
-        )
-        .join("")}
+            <div class="apple-row-right">
+              <button class="apple-pill-btn play" data-act="epic-play" data-id="${s.appName}">
+                ${icon("play", 11)}
+                <span>${t("common.play")}</span>
+              </button>
+              <button class="apple-icon-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
+                ${icon("settings", 13)}
+              </button>
+            </div>
+          </div>`,
+          )
+          .join("")}
+      </div>
     </div>
   `
       : "";
@@ -582,40 +526,27 @@ export function renderDownloads(): string {
   `;
 
   const headerAction = `
-    <button class="ps5-btn ghost ${S.downloadsSettingsOpen ? "active" : ""}" data-act="toggle-downloads-settings">${icon("settings", 14)} ${t("downloads.settingsTitle")}</button>
-    <button class="ps5-btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>
+    <button class="apple-header-btn ${S.downloadsSettingsOpen ? "active" : ""}" data-act="toggle-downloads-settings">${icon("settings", 14)} <span>${t("downloads.settingsTitle")}</span></button>
+    <button class="apple-header-btn" data-act="open-storage-manager">${icon("hard-drive", 14)} <span>${t("storage.open")}</span></button>
     ${
       activeDl
         ? S.dlQueueStatus.isPaused
-          ? `<button class="ps5-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 14)} ${t("downloads.resume")}</button>`
-          : `<button class="ps5-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 14)} ${t("downloads.pause")}</button>`
+          ? `<button class="apple-pill-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 12)} ${t("downloads.resume")}</button>`
+          : `<button class="apple-pill-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 12)} ${t("downloads.pause")}</button>`
         : ""
     }`;
 
-  const statusPill = activeDl
-    ? `<span class="dl-header-pill downloading">
-         <span class="dl-pulse-dot"></span>
-         <span>%${Math.round(activeDl.progress)} ${t("dl.statusActive")}</span>
-       </span>`
-    : `<span class="dl-header-pill idle">
-         <span class="dl-idle-dot"></span>
-         <span>${t("downloads.idleBadge")}</span>
-       </span>`;
-
   return `
     <div class="ps5-page ps5-downloads-page">
-      <header class="ps5-page-header dl-page-header">
+      <header class="ps5-page-header apple-downloads-header">
         <div class="ps5-header-main">
-          <div class="dl-header-title-row">
-            <h1 class="ps5-header-title">${t("downloads.title")}</h1>
-            ${statusPill}
-          </div>
+          <h1 class="ps5-header-title">${t("downloads.title")}</h1>
           <p class="ps5-header-subtitle">${t("downloads.subtitle")}</p>
         </div>
         <div class="ps5-header-actions">${headerAction}</div>
       </header>
       <main class="ps5-page-body">
-        <div class="dl-hub">
+        <div class="dl-hub apple-hub">
           ${heroMarkup}
           ${chartMarkup}
           ${S.downloadsSettingsOpen ? settingsPanel : ""}
