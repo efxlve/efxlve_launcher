@@ -5,7 +5,7 @@
  * detail modal is opened.
  */
 
-import { RECENT_KEY } from "./constants";
+import { RECENT_INSTALLS_KEY, RECENT_KEY } from "./constants";
 import { updateChrome } from "./nav";
 import { summaryOf } from "./selectors";
 import { S } from "./state";
@@ -25,4 +25,25 @@ export function pushRecent(appName: string): void {
   S.epicRecent = [appName, ...S.epicRecent.filter((x) => x !== appName)].slice(0, 8);
   localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
   updateChrome();
+}
+
+/** Record a newly installed or updated game id to the front of the recent installs list. */
+export function pushRecentInstall(appName: string): void {
+  try {
+    const list = getRecentInstalls();
+    const next = [appName, ...list.filter((x) => x !== appName)].slice(0, 12);
+    localStorage.setItem(RECENT_INSTALLS_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage quota or parsing errors
+  }
+}
+
+/** Read recent install and update game ids from storage. */
+export function getRecentInstalls(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_INSTALLS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
 }

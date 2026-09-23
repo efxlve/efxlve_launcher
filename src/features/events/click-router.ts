@@ -23,7 +23,8 @@ import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
+import { rawOf } from "../../core/selectors";
 import {
   bootEpic,
   epicDoImport,
@@ -928,7 +929,16 @@ document.addEventListener("click", (e) => {
     closeStorageManager();
   } else if (act === "storage-overlay-close") {
     if (e.target === t) closeStorageManager();
+  } else if (act === "blocked-move-tp") {
+    const partner = t.dataset.partner || "Ubisoft Connect / EA App";
+    toast(i18nT("manage.moveThirdPartyAlert", { name: partner }), "");
   } else if (act === "storage-move-game" && id) {
+    const raw = rawOf(id);
+    const partner = getThirdPartyLauncher(raw);
+    if (requiresThirdPartyLauncher(partner)) {
+      toast(i18nT("manage.moveThirdPartyAlert", { name: partner!.name }), "");
+      return;
+    }
     closeStorageManager();
     void openMoveGameModal(id);
   } else if (act === "storage-uninstall" && id) {
@@ -962,6 +972,12 @@ document.addEventListener("click", (e) => {
     S.activeDrawerTab = "manage";
     openEpicModal(id, false);
   } else if (act === "open-move-game-modal" && id) {
+    const raw = rawOf(id);
+    const partner = getThirdPartyLauncher(raw);
+    if (requiresThirdPartyLauncher(partner)) {
+      toast(i18nT("manage.moveThirdPartyAlert", { name: partner!.name }), "");
+      return;
+    }
     void openMoveGameModal(id);
   } else if (act === "close-move-modal") {
     closeMoveGameModal();

@@ -471,25 +471,46 @@
 }
 
 .apple-row-thumb {
-  width: 38px;
-  height: 50px;
-  border-radius: 6px;
+  width: 50px;
+  height: 68px;
+  border-radius: 8px;
   object-fit: cover;
   background: #171920;
   border: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .apple-row-thumb-fallback {
-  width: 38px;
-  height: 50px;
-  border-radius: 6px;
+  width: 50px;
+  height: 68px;
+  border-radius: 8px;
   background: #171920;
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: grid;
   place-items: center;
   color: rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
+}
+
+.apple-row-left.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.apple-row-left.clickable:hover .apple-row-title {
+  color: #c4b5fd;
+}
+
+.apple-row-left.clickable:hover .apple-row-thumb {
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: scale(1.02);
+}
+
+.tp-badge-text {
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .apple-row-info {

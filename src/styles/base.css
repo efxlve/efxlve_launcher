@@ -364,6 +364,8 @@ button { font-family: inherit; }
 .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: default; transform: none; filter: none; }
+.btn.disabled-hint { opacity: 0.5; cursor: help; border-color: rgba(255, 255, 255, 0.08); }
+.btn.disabled-hint:hover { opacity: 0.75; border-color: rgba(245, 158, 11, 0.4); }
 .btn.ghost { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); }
 .btn.ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
 .btn.ghost.faved svg {

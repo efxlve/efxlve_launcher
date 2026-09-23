@@ -59,6 +59,8 @@ export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 export const FAV_KEY = "efxlve-favorites";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
+/** Recently installed and updated game ids. */
+export const RECENT_INSTALLS_KEY = "efxlve-recent-installs";
 /** Initial number of library cards rendered before progressive chunking kicks in. */
 export const INITIAL_CARD_CHUNK = 48;
 /** Number of extra library cards appended per scroll sentinel hit. */

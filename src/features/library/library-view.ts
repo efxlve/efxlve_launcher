@@ -744,7 +744,7 @@ export function renderEpic(): string {
           </button>
           ${allUpdatesCount > 0 ? `
           <button class="apple-segment ${isUpdateNewlyAdded ? "segment-dynamic" : ""} ${S.epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
-            <span class="segment-icon">${icon("zap", 12)}</span>
+            <span class="segment-icon">${icon("refresh", 12)}</span>
             <span>${t("library.updates")}</span>
             <span class="segment-cnt">${allUpdatesCount}</span>
           </button>` : ""}

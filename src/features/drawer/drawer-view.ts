@@ -315,10 +315,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, animateTabC
                     <h1 class="hub-title">${esc(s.title)}</h1>
                     <div class="hub-meta-subline">
                       ${dev ? `<span class="meta-item dev">${esc(dev)}</span><span class="meta-dot"></span>` : ""}
-                      <span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? t("common.installed") : t("common.notInstalled")}</span>
+                      ${hasUpdate ? `<span class="meta-item warn">${icon("refresh", 12)} ${t("drawer.updateAvailable")}</span>` : `<span class="meta-item status ${s.installed ? "installed" : ""}">${s.installed ? t("common.installed") : t("common.notInstalled")}</span>`}
                 ${partner ? `<span class="meta-dot">•</span><span class="meta-item partner" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 12)} ${esc(partner.name)}</span>` : ""}
                 ${antiCheat ? `<span class="meta-dot">•</span><span class="meta-item anticheat" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 12)} ${esc(antiCheat)}</span>` : ""}
-                ${s.updateAvailable ? `<span class="meta-dot">•</span><span class="meta-item warn">${icon("zap", 11)} ${t("drawer.updateAvailable")}</span>` : ""}
+
               </div>
 
               <div class="hub-actions-bar">
@@ -706,6 +706,8 @@ export function renderDrawerManage(s: EpicSummary): string {
     S.activeManageSettings.installPath = s.installPath;
   }
   const st = S.activeManageSettings;
+  const raw = rawOf(s.appName);
+  const partner = getThirdPartyLauncher(raw);
   const v = S.verifyingMap.get(st.appName);
   const isVerifying = Boolean(v);
   const pt = S.playtimeMap.get(st.appName);
@@ -755,10 +757,13 @@ export function renderDrawerManage(s: EpicSummary): string {
               <div class="manage-item-info">
                 <div class="manage-item-title">${t("manage.installLocation")}</div>
                 <div id="manage-install-path" class="manage-item-desc" style="word-break:break-all">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</div>
+                ${requiresThirdPartyLauncher(partner) ? `<div class="manage-tp-note" style="color:#f59e0b;font-size:11.5px;display:flex;align-items:center;gap:5px;margin-top:4px">${icon("info", 12)} <span>${t("manage.moveThirdPartyWarning", { name: partner!.name })}</span></div>` : ""}
               </div>
             </div>
             <div class="manage-item-right">
-              <button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="${t("manage.moveTitle")}">
+              ${requiresThirdPartyLauncher(partner)
+                ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${st.appName}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">`
+                : `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${st.appName}" title="${t("manage.moveTitle")}">`}
                 ${icon("hard-drive", 13)} ${t("manage.move")}
               </button>
               <button class="btn ghost small" data-act="epic-open-folder" data-id="${st.appName}">
@@ -842,7 +847,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
       <!-- 3. Launch & updates -->
       <div class="manage-card-group">
-        <div class="manage-group-title">${icon("zap", 14)} ${t("manage.groupLaunch")}</div>
+        <div class="manage-group-title">${icon("rocket", 14)} ${t("manage.groupLaunch")}</div>
         <div class="manage-group-card">
           <div class="manage-item-row">
             <div class="manage-item-left">
@@ -862,7 +867,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
           <div class="manage-item-row">
             <div class="manage-item-left">
-              <div class="manage-item-icon" style="color:#f59e0b">${icon("zap", 18)}</div>
+              <div class="manage-item-icon" style="color:#f59e0b">${icon("timer", 18)}</div>
               <div class="manage-item-info">
                 <div class="manage-item-title">${t("manage.priorityTitle")}</div>
                 <div class="manage-item-desc">${t("manage.priorityDesc")}</div>
