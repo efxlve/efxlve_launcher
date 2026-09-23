@@ -23,7 +23,7 @@ import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
 import { esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, type EpicSettings } from "../../epic";
 import {
   bootEpic,
   epicDoImport,
@@ -217,7 +217,11 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "open-free-game") {
     const title = t.dataset.title;
-    if (title) void openStoreUrl(epicStorePageUrl(title), "store");
+    const slug = t.dataset.slug;
+    if (title) {
+      const url = slug ? `https://store.epicgames.com/p/${slug}` : epicStorePageUrl(title);
+      void openStoreUrl(url, "store");
+    }
   } else if (act === "epic-download") {
     void epicDownload();
   } else if (act === "epic-open-login") {
@@ -1129,7 +1133,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-store-page" && id) {
     const s = S.epicSummaries.find((x) => x.appName === id);
     const title = s ? s.title : id;
-    void openStoreUrl(epicStorePageUrl(title), "store");
+    void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
   } else if (act === "drawer-tab") {
     const tab = t.dataset.tab as DrawerTab;
     if (tab && S.currentModalAppName) {
