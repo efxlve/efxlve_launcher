@@ -220,6 +220,26 @@ export interface ThirdPartyLauncherInfo {
   shortName: string;
 }
 
+/** Mobile-only catalog entries have no place in the Windows launcher library. */
+export function isMobileOnlyGame(g: EpicGame): boolean {
+  const assetPlatforms = Object.keys(g.asset_infos || {}).map((key) => key.toLowerCase());
+  const hasMobileAsset = assetPlatforms.some((key) =>
+    key.includes("android") || key.includes("ios") || key.includes("mobile"),
+  );
+  const hasPcAsset = assetPlatforms.some((key) =>
+    key.includes("windows") || key.includes("win32") || key.includes("win64") ||
+    key.includes("mac") || key.includes("linux"),
+  );
+  if (hasMobileAsset && !hasPcAsset) return true;
+
+  const attrs = g.metadata.customAttributes as Record<string, { value?: unknown }> | undefined;
+  if (!attrs || hasPcAsset) return false;
+  return Object.entries(attrs).some(([key, entry]) => {
+    const text = `${key} ${String(entry?.value ?? "")}`.toLowerCase();
+    return text.includes("android") || text.includes("ios") || text.includes("mobile");
+  });
+}
+
 /** Whether Epic should hand installation and launch control to another client. */
 export function requiresThirdPartyLauncher(info: ThirdPartyLauncherInfo | null): boolean {
   // Rockstar metadata identifies the companion client, but Epic still owns the
@@ -418,7 +438,7 @@ export function summarize(
   const byId = new Map(installed.map((i) => [i.app_name, i]));
   const skipSet = new Set(skipped);
   return games
-    .filter((g) => !isDlc(g) && !isNonGameContent(g) && !skipSet.has(g.app_name))
+    .filter((g) => !isDlc(g) && !isNonGameContent(g) && !isMobileOnlyGame(g) && !skipSet.has(g.app_name))
     .map((g) => {
       const ins = byId.get(g.app_name);
       const ver = epicVersion(g);

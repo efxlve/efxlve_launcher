@@ -109,6 +109,27 @@ fn parse_free_games(json: &Value) -> FreeGamesData {
         if title.is_empty() {
             continue;
         }
+        let is_official_freegame = el
+            .get("categories")
+            .and_then(|v| v.as_array())
+            .is_some_and(|categories| {
+                categories.iter().any(|category| {
+                    category.get("path").and_then(|path| path.as_str()) == Some("freegames")
+                })
+            });
+        let offer_type = el.get("offerType").and_then(|v| v.as_str()).unwrap_or("");
+        let is_add_on = offer_type.eq_ignore_ascii_case("ADD_ON")
+            || el.get("categories").and_then(|v| v.as_array()).is_some_and(|categories| {
+                categories.iter().any(|category| {
+                    category
+                        .get("path")
+                        .and_then(|path| path.as_str())
+                        .is_some_and(|path| path == "addons" || path.starts_with("addons/"))
+                })
+            });
+        if !is_official_freegame || is_add_on {
+            continue;
+        }
         let promotions = el.get("promotions");
         let current_offers = promotions
             .and_then(|p| p.get("promotionalOffers"))
@@ -225,6 +246,7 @@ mod tests {
         };
         json!({
             "title": title,
+            "offerType": "BASE_GAME",
             "id": "id-1",
             "namespace": "ns-1",
             "description": "desc",
@@ -235,6 +257,7 @@ mod tests {
             "offerMappings": [{ "pageSlug": "some-slug" }],
             "price": { "totalPrice": { "discountPrice": discount_price } },
             "promotions": { "promotionalOffers": current, "upcomingPromotionalOffers": upcoming }
+            ,"categories": [{ "path": "freegames" }, { "path": "games/edition/base" }]
         })
     }
 
