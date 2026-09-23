@@ -11,7 +11,8 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
-import { epicGetSystemDrives, type EpicSummary } from "../../epic";
+import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../../epic";
+import { rawOf } from "../../core/selectors";
 
 export function closeStorageManager(): void {
   if (storageRoot) storageRoot.innerHTML = "";
@@ -36,15 +37,26 @@ export async function openStorageManager(): Promise<void> {
 }
 
 function gameRow(g: EpicSummary): string {
+  const raw = rawOf(g.appName);
+  const partner = getThirdPartyLauncher(raw);
+  const isTp = requiresThirdPartyLauncher(partner);
+
+  const moveBtn = isTp
+    ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${g.appName}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 12)} ${t("manage.move")}</button>`
+    : `<button class="btn ghost small" data-act="storage-move-game" data-id="${g.appName}">${icon("hard-drive", 12)} ${t("manage.move")}</button>`;
+
   return `
     <div class="storage-game-row">
       ${g.cover ? `<img class="storage-game-thumb" src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb"></div>`}
       <div class="storage-game-info">
         <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
-        <div class="storage-game-meta">${fmtBytes(g.installSize || 0)}</div>
+        <div class="storage-game-meta">
+          <span>${fmtBytes(g.installSize || 0)}</span>
+          ${isTp && partner ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="tp-badge-text" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
+        </div>
       </div>
       <div class="storage-game-actions">
-        <button class="btn ghost small" data-act="storage-move-game" data-id="${g.appName}">${icon("hard-drive", 12)} ${t("manage.move")}</button>
+        ${moveBtn}
         <button class="btn danger small" data-act="storage-uninstall" data-id="${g.appName}">${icon("trash", 12)} ${t("common.uninstall")}</button>
       </div>
     </div>`;

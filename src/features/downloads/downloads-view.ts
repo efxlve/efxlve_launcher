@@ -12,6 +12,7 @@ import { S } from "../../core/state";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
+import { getRecentInstalls } from "../../core/recent";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -195,11 +196,13 @@ export function renderDownloads(): string {
   const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
-  // Recently played / installed games (clean 6-item updates list)
+  // Recently installed & updated games (clean 6-item list, prioritizing latest installs and updates)
   const recentInstalled: EpicSummary[] = [];
   {
     const seen = new Set<string>();
-    for (const id of S.epicRecent) {
+    const trackedInstalls = getRecentInstalls();
+    // 1. First prioritize games recorded as recently installed or updated
+    for (const id of trackedInstalls) {
       const s = S.epicSummariesMap.get(id);
       if (s?.installed && !seen.has(id)) {
         seen.add(id);
@@ -207,6 +210,18 @@ export function renderDownloads(): string {
       }
       if (recentInstalled.length >= 6) break;
     }
+    // 2. Then fill remaining slots from recently played games
+    if (recentInstalled.length < 6) {
+      for (const id of S.epicRecent) {
+        const s = S.epicSummariesMap.get(id);
+        if (s?.installed && !seen.has(id)) {
+          seen.add(id);
+          recentInstalled.push(s);
+        }
+        if (recentInstalled.length >= 6) break;
+      }
+    }
+    // 3. Finally fill from installed library games
     if (recentInstalled.length < 6) {
       for (const s of S.epicSummaries) {
         if (s.installed && !seen.has(s.appName)) {
@@ -326,12 +341,12 @@ export function renderDownloads(): string {
           : "";
         return `
           <div class="apple-list-row">
-            <div class="apple-row-left">
+            <div class="apple-row-left clickable" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)}">
               ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
               <div class="apple-row-info">
                 <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
                 <div class="apple-row-meta">
-                  <span class="apple-update-tag">${icon("sparkles", 11)} ${t("drawer.updateAvailable")}</span>
+                  <span class="apple-update-tag">${icon("refresh", 11)} ${t("drawer.updateAvailable")}</span>
                   ${verStr ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="apple-update-ver">${esc(verStr)}</span>` : ""}
                   ${s.installSize ? `<span class="apple-row-dot" aria-hidden="true">•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
                 </div>
@@ -469,7 +484,7 @@ export function renderDownloads(): string {
           .map(
             (s) => `
           <div class="apple-list-row">
-            <div class="apple-row-left">
+            <div class="apple-row-left clickable" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)}">
               ${s.cover ? `<img class="apple-row-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
               <div class="apple-row-info">
                 <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>

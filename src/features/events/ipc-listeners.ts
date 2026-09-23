@@ -40,6 +40,7 @@ import { modalRoot } from "../../core/dom";
 import { refreshEpicInstalled } from "../../core/epic-actions";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
+import { pushRecentInstall } from "../../core/recent";
 import {
   registerCloseAllModals,
   registerGamepadHud,
@@ -243,6 +244,7 @@ export async function initApp(hooks: {
 
       // Download completed
       S.downloads.set(id, { progress: 100, done: true, title });
+      pushRecentInstall(id);
       lastDlSample = null;
       pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
       if (S.activeDlMetrics?.id === id) {
