@@ -70,24 +70,27 @@ function freeGameCard(g: FreeGame): string {
   const dateLabel = g.upcoming
     ? `${shortDate(g.start)} – ${shortDate(g.end)} • ${t("free.soon")}`
     : t("free.ends", { date: shortDate(g.end) });
-  const status = owned
-    ? owned.installed ? t("common.play") : t("common.install")
-    : dateLabel;
+  const actionLabel = owned
+    ? (owned.installed ? t("common.play") : t("common.install"))
+    : "";
   const actions = owned
     ? `<div class="free-card-actions">
-         <button class="btn ${owned.installed ? "play" : "install"} small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${status}</button>
-         <button class="btn ghost small" data-act="epic-detail" data-id="${esc(owned.appName)}">${t("lib.details")}</button>
+         <button class="btn ${owned.installed ? "play" : "install"} small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${actionLabel}</button>
+         <button class="btn ghost small icon-only" data-act="epic-detail" data-id="${esc(owned.appName)}" title="${t("lib.details")}">${icon("info", 13)}</button>
        </div>`
     : "";
   return `
     <div class="free-card" data-act="open-free-game" data-title="${esc(g.title)}" data-slug="${esc(g.slug)}" title="${esc(g.title)}">
       <div class="free-card-media">
         ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
+        <div class="free-card-gradient"></div>
         <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
       </div>
-      <div class="free-card-body">
-        <div class="free-card-title">${esc(g.title)}</div>
-        <div class="free-card-date">${esc(status)}</div>
+      <div class="free-card-overlay">
+        <div class="free-card-info">
+          <div class="free-card-title">${esc(g.title)}</div>
+          <div class="free-card-date">${esc(dateLabel)}</div>
+        </div>
         ${actions}
       </div>
     </div>`;

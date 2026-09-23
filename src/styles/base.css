@@ -326,13 +326,15 @@ button { font-family: inherit; }
   transform: translateY(-1px);
 }
 .btn.install {
-  background: var(--btn-install-bg);
-  color: #ffffff;
-  border: 1px solid var(--btn-install-border);
+  background: var(--btn-install-bg, #ffffff);
+  color: var(--btn-install-color, #07080d);
+  font-weight: 700;
+  border: none;
+  box-shadow: var(--btn-install-glow);
 }
 .btn.install:hover {
-  background: var(--btn-install-hover);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: var(--btn-install-hover, #e2e8f0);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
 }
 .btn.running {
@@ -352,14 +354,14 @@ button { font-family: inherit; }
 }
 .btn.update {
   background: var(--btn-update-bg);
-  color: #0b0d14;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #07080d;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: var(--btn-update-glow);
 }
 .btn.update:hover {
   background: var(--btn-update-hover);
-  box-shadow: 0 6px 22px rgba(182, 138, 44, 0.4);
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55);
   transform: translateY(-1px);
 }
 .btn.danger { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--red); }
