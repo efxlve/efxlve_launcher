@@ -85,7 +85,9 @@ function freeGameCard(g: FreeGame): string {
 export function renderFreeGamesShelf(): string {
   const data = S.freeGames;
   if (!data) return "";
-  const items = [...data.current, ...data.upcoming];
+  // Keep the library shelf focused on games that are free right now. Future
+  // promotions are valid Epic data, but they are not currently free to claim.
+  const items = data.current;
   if (items.length === 0) return "";
 
   return `
