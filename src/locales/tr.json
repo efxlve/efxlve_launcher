@@ -255,6 +255,8 @@
   "common.search": "Ara",
   "common.delete": "Sil",
   "downloads.title": "İndirmeler",
+  "downloads.idleBadge": "Kuyruk Boşta",
+  "downloads.allUpToDate": "Tüm İndirmeler Güncel",
   "downloads.recentTitle": "Son Oynananlar",
   "downloads.subtitle": "Aktif kurulumlar, indirme kuyruğu ve anlık disk yazma performansı.",
   "downloads.pause": "Duraklat",

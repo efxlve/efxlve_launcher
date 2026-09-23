@@ -195,7 +195,11 @@ export function renderDownloads(): string {
   const completedEntries = [...S.downloads.entries()].filter(([_, d]) => d.done);
   const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
 
-  // Recently played installed games: fills the idle page with something useful.
+  const allInstalled = S.epicSummaries.filter((s) => s.installed);
+  const totalInstalledCount = allInstalled.length;
+  const totalInstalledSize = allInstalled.reduce((acc, g) => acc + (g.installSize || 0), 0);
+
+  // Recently played installed games: fills the idle page with a responsive launchpad.
   const recentInstalled: EpicSummary[] = [];
   {
     const seen = new Set<string>();
@@ -205,14 +209,14 @@ export function renderDownloads(): string {
         seen.add(id);
         recentInstalled.push(s);
       }
-      if (recentInstalled.length >= 8) break;
+      if (recentInstalled.length >= 12) break;
     }
-    if (recentInstalled.length < 8) {
+    if (recentInstalled.length < 12) {
       for (const s of S.epicSummaries) {
         if (s.installed && !seen.has(s.appName)) {
           seen.add(s.appName);
           recentInstalled.push(s);
-          if (recentInstalled.length >= 8) break;
+          if (recentInstalled.length >= 12) break;
         }
       }
     }
@@ -261,15 +265,60 @@ export function renderDownloads(): string {
         </div>
       </div>
     `;
-  } else if (queueApps.length === 0 && completedEntries.length === 0 && recentInstalled.length === 0) {
+  } else {
+    const netProfileText =
+      S.networkProfile === "max" ? t("downloads.profileMax") :
+      S.networkProfile === "low" ? t("downloads.profileLow") :
+      t("downloads.profileBalanced");
+
     heroMarkup = `
-      <div class="dl-empty-card">
-        <div class="dl-empty-icon">${icon("download", 26)}</div>
-        <div class="dl-empty-text">
-          <div class="dl-empty-title">${t("downloads.emptyTitle")}</div>
-          <div class="dl-empty-desc">${t("downloads.emptyDesc")}</div>
+      <div class="dl-idle-hero">
+        <div class="dl-idle-glow" aria-hidden="true"></div>
+        <div class="dl-idle-body">
+          <div class="dl-idle-status-badge">
+            <span class="dl-idle-dot"></span>
+            <span>${t("downloads.idleBadge")}</span>
+          </div>
+          <h2 class="dl-idle-title">${t("downloads.allUpToDate")}</h2>
+          <p class="dl-idle-desc">${t("downloads.emptyDesc")}</p>
+          <div class="dl-idle-actions">
+            <button class="ps5-btn primary" data-act="goto-library">
+              ${icon("layout-grid", 14)}
+              <span>${t("downloads.goLibrary")}</span>
+            </button>
+            <button class="ps5-btn secondary" data-act="open-storage-manager">
+              ${icon("hard-drive", 14)}
+              <span>${t("storage.open")}</span>
+            </button>
+            <button class="ps5-btn ghost" data-act="toggle-downloads-settings">
+              ${icon("settings", 14)}
+              <span>${t("downloads.settingsTitle")}</span>
+            </button>
+          </div>
         </div>
-        <button class="ps5-btn primary" data-act="goto-library">${t("downloads.goLibrary")}</button>
+        <div class="dl-idle-stats">
+          <div class="dl-idle-stat-card">
+            <div class="dl-idle-stat-icon">${icon("gamepad-2", 18)}</div>
+            <div class="dl-idle-stat-info">
+              <span class="dl-idle-stat-label">${t("lib.installedGames")}</span>
+              <span class="dl-idle-stat-value">${totalInstalledCount}</span>
+            </div>
+          </div>
+          <div class="dl-idle-stat-card">
+            <div class="dl-idle-stat-icon">${icon("hard-drive", 18)}</div>
+            <div class="dl-idle-stat-info">
+              <span class="dl-idle-stat-label">${t("storage.title")}</span>
+              <span class="dl-idle-stat-value">${fmtBytes(totalInstalledSize)}</span>
+            </div>
+          </div>
+          <div class="dl-idle-stat-card">
+            <div class="dl-idle-stat-icon">${icon("zap", 18)}</div>
+            <div class="dl-idle-stat-info">
+              <span class="dl-idle-stat-label">${t("downloads.netProfile")}</span>
+              <span class="dl-idle-stat-value">${esc(netProfileText)}</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -350,8 +399,12 @@ export function renderDownloads(): string {
   const queueSection =
     queueApps.length > 0
       ? `
-    <div class="dl-section-title">
-      <span>${t("dl.queueTitle")} (${queueApps.length})</span>
+    <div class="dl-section-header">
+      <div class="dl-section-header-left">
+        <span class="dl-section-icon">${icon("download", 15)}</span>
+        <h3 class="dl-section-heading">${t("dl.queueTitle")}</h3>
+        <span class="dl-section-pill">${queueApps.length}</span>
+      </div>
     </div>
     <div class="dl-queue-container">
       ${queueItemsMarkup}
@@ -388,8 +441,12 @@ export function renderDownloads(): string {
     }).join("");
 
     completedSection = `
-      <div class="dl-section-title" style="margin-top: 24px;">
-        <span>${t("dl.recentCompleted")} (${completedEntries.length})</span>
+      <div class="dl-section-header" style="margin-top: 24px;">
+        <div class="dl-section-header-left">
+          <span class="dl-section-icon" style="color:#00d26a">${icon("check", 15)}</span>
+          <h3 class="dl-section-heading">${t("dl.recentCompleted")}</h3>
+          <span class="dl-section-pill">${completedEntries.length}</span>
+        </div>
       </div>
       <div class="dl-queue-container">
         ${items}
@@ -400,25 +457,42 @@ export function renderDownloads(): string {
   const recentSection =
     recentInstalled.length > 0
       ? `
-    <div class="dl-section-title">
-       <span>${t("lib.installedGames")}</span>
-      <button class="dl-section-link" data-act="goto-library">${t("downloads.goLibrary")}</button>
+    <div class="dl-section-header">
+      <div class="dl-section-header-left">
+        <span class="dl-section-icon">${icon("hard-drive", 15)}</span>
+        <h3 class="dl-section-heading">${t("lib.installedGames")}</h3>
+        <span class="dl-section-pill">${recentInstalled.length}</span>
+        <span class="dl-section-size-pill">${fmtBytes(totalInstalledSize)}</span>
+      </div>
+      <button class="dl-section-link" data-act="goto-library">
+        <span>${t("downloads.goLibrary")}</span>
+        ${icon("chevron-right", 14)}
+      </button>
     </div>
-    <div class="dl-queue-container">
+    <div class="dl-installed-grid">
       ${recentInstalled
         .map(
           (s) => `
-        <div class="dl-queue-row">
-          <div class="dl-queue-left">
-            ${s.cover ? `<img class="dl-queue-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="dl-queue-thumb"></div>`}
-            <div class="dl-queue-info">
-              <div class="dl-queue-name">${esc(s.title)}</div>
-              <div class="dl-queue-meta">${fmtBytes(s.installSize || 0)}</div>
+        <div class="dl-installed-card">
+          <div class="dl-installed-thumb-wrap">
+            ${s.cover ? `<img class="dl-installed-thumb" src="${esc(s.cover)}" alt="${esc(s.title)}" loading="lazy" />` : `<div class="dl-installed-thumb dl-thumb-fallback">${icon("gamepad-2", 20)}</div>`}
+          </div>
+          <div class="dl-installed-info">
+            <div class="dl-installed-title" title="${esc(s.title)}">${esc(s.title)}</div>
+            <div class="dl-installed-meta">
+              <span class="dl-installed-size">${fmtBytes(s.installSize || 0)}</span>
+              <span class="dl-installed-dot" aria-hidden="true">•</span>
+              <span class="dl-installed-status-tag">${icon("check", 11)} ${t("settings.eosInstalled")}</span>
             </div>
           </div>
-          <div class="dl-queue-right">
-            <button class="ps5-btn primary small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>
-            <button class="ps5-btn secondary small" data-act="manage-game" data-id="${s.appName}">${icon("settings", 12)} ${t("common.manage")}</button>
+          <div class="dl-installed-actions">
+            <button class="ps5-btn primary small dl-play-btn" data-act="epic-play" data-id="${s.appName}">
+              ${icon("play", 13)}
+              <span>${t("common.play")}</span>
+            </button>
+            <button class="ps5-btn ghost small dl-manage-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
+              ${icon("settings", 13)}
+            </button>
           </div>
         </div>`,
         )
@@ -518,11 +592,24 @@ export function renderDownloads(): string {
         : ""
     }`;
 
+  const statusPill = activeDl
+    ? `<span class="dl-header-pill downloading">
+         <span class="dl-pulse-dot"></span>
+         <span>%${Math.round(activeDl.progress)} ${t("dl.statusActive")}</span>
+       </span>`
+    : `<span class="dl-header-pill idle">
+         <span class="dl-idle-dot"></span>
+         <span>${t("downloads.idleBadge")}</span>
+       </span>`;
+
   return `
     <div class="ps5-page ps5-downloads-page">
-      <header class="ps5-page-header">
+      <header class="ps5-page-header dl-page-header">
         <div class="ps5-header-main">
-          <h1 class="ps5-header-title">${t("downloads.title")}</h1>
+          <div class="dl-header-title-row">
+            <h1 class="ps5-header-title">${t("downloads.title")}</h1>
+            ${statusPill}
+          </div>
           <p class="ps5-header-subtitle">${t("downloads.subtitle")}</p>
         </div>
         <div class="ps5-header-actions">${headerAction}</div>
