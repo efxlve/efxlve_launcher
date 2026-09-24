@@ -1258,3 +1258,82 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* --- EOS Overlay status --- */
+.eos-row { display: flex; align-items: flex-start; gap: 12px; }
+.eos-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.eos-dot.on { background: var(--ok, #22c55e); }
+.eos-dot.off { background: var(--warn, #f59e0b); }
+.eos-version { font-size: 11px; color: var(--muted); margin-left: 8px; font-variant-numeric: tabular-nums; }
+
+/* --- Language settings --- */
+.lang-selection-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.lang-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ps5-surface-2);
+  border: 1px solid var(--ps5-border-default);
+  border-radius: var(--ps5-radius-md);
+  padding: 10px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  transition: background 0.14s ease, border-color 0.14s ease;
+  outline: none;
+  user-select: none;
+  text-align: left;
+}
+
+.lang-option-btn:hover {
+  background: var(--ps5-surface-3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lang-option-btn.active {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #fff;
+}
+
+.lang-option-btn:focus-visible {
+  outline: 2px solid var(--ps5-accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+.lang-flag {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
+  line-height: 1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lang-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.lang-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--ps5-radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  margin-left: auto;
+}
+

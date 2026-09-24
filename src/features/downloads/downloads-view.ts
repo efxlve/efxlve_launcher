@@ -1,17 +1,19 @@
 /**
  * Downloads page renderer and live speed chart.
  *
- * Renders the PS5 downloads hub (active hero, stat tiles, settings panel and
- * queue) and paints the canvas speed graph. It reads shared state (S) and
- * never re-renders the whole page from progress events.
+ * Renders the active download card (with the speed chart), the queue, pending
+ * updates and recent installs as plain list rows. It reads shared state (S)
+ * and never re-renders the whole page from progress events; live values are
+ * patched by id from the IPC listener.
  */
 
-import { icon } from "../../core/icons";
-import { epicWideArt } from "../../core/selectors";
+import { emptyState, icon } from "../../core/icons";
+import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
-import type { EpicSummary } from "../../epic";
+import { epicPortrait, type EpicSummary } from "../../epic";
 import { getRecentInstalls } from "../../core/recent";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
@@ -42,7 +44,7 @@ export function drawSpeedCanvas(): void {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const width = rect.width || canvas.clientWidth || 600;
-  const height = rect.height || canvas.clientHeight || 140;
+  const height = rect.height || canvas.clientHeight || 120;
 
   if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
     canvas.width = Math.round(width * dpr);
@@ -52,13 +54,6 @@ export function drawSpeedCanvas(): void {
   ctx.scale(dpr, dpr);
 
   ctx.clearRect(0, 0, width, height);
-
-  // Background subtle gradient
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-  bgGrad.addColorStop(0, "#0e1014");
-  bgGrad.addColorStop(1, "#090a0d");
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, width, height);
 
   // Determine scale (max speed in bytes)
   const maxData = Math.max(...S.speedHistory, ...S.diskHistory, 1024 * 1024);
@@ -87,12 +82,7 @@ export function drawSpeedCanvas(): void {
   const len = S.speedHistory.length;
   const step = width / (len - 1);
 
-  const drawSeries = (
-    data: number[],
-    strokeColor: string,
-    glowColor: string,
-    gradStart: string,
-  ) => {
+  const drawSeries = (data: number[], strokeColor: string, fillColor: string) => {
     if (data.length < 2) return;
 
     const points: { x: number; y: number }[] = [];
@@ -114,29 +104,20 @@ export function drawSpeedCanvas(): void {
     const lastP = points[points.length - 1];
     ctx.lineTo(lastP.x, lastP.y);
 
-    ctx.save();
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 8;
     ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.restore();
 
     ctx.lineTo(width, height);
     ctx.lineTo(0, height);
     ctx.closePath();
-    const areaGrad = ctx.createLinearGradient(0, 0, 0, height);
-    areaGrad.addColorStop(0, gradStart);
-    areaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = areaGrad;
+    ctx.fillStyle = fillColor;
     ctx.fill();
   };
 
-  // Disk speed (green)
-  drawSeries(S.diskHistory, "#00d26a", "rgba(0, 210, 106, 0.4)", "rgba(0, 210, 106, 0.12)");
-
-  // Network speed (cyan)
-  drawSeries(S.speedHistory, "#00e5ff", "rgba(0, 229, 255, 0.5)", "rgba(0, 229, 255, 0.18)");
+  // Colors mirror --ok (disk) and --accent (network) in tokens.css.
+  drawSeries(S.diskHistory, "#2fb36d", "rgba(47, 179, 109, 0.08)");
+  drawSeries(S.speedHistory, "#3d8bfd", "rgba(61, 139, 253, 0.14)");
 }
 
 /** Stops the speed chart sampler (called when it is no longer needed). */
@@ -167,432 +148,162 @@ export function startSpeedChartTimer(): void {
   }, 1000);
 }
 
+function thumbOf(s: EpicSummary | undefined): string {
+  if (!s) return `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;
+  const raw = rawOf(s.appName);
+  const url = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
+  return url
+    ? `<img class="row-thumb" src="${esc(url)}" alt="" loading="lazy" decoding="async" />`
+    : `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;
+}
+
+function section(title: string, count: number | null, body: string, action = ""): string {
+  return `
+    <section class="dl-section">
+      <div class="dl-section-head"><h2 class="section-title">${title}${count !== null ? ` <span class="count">${count}</span>` : ""}</h2>${action}</div>
+      <div class="list">${body}</div>
+    </section>`;
+}
+
+function gameRow(s: EpicSummary | undefined, id: string, meta: string, actions: string, lead = ""): string {
+  const title = esc(s?.title || id);
+  return `
+    <div class="row">
+      ${lead}
+      <div class="dl-row-open" data-act="epic-detail" data-id="${esc(id)}" title="${title}">
+        ${thumbOf(s)}
+        <div class="row-main"><div class="row-title">${title}</div><div class="row-meta">${meta}</div></div>
+      </div>
+      <div class="row-actions">${actions}</div>
+    </div>`;
+}
+
+/** The currently downloading item: resolves live metrics, falling back to the progress map. */
+function activeDownload(): DlMetrics | null {
+  if (S.activeDlMetrics && !S.activeDlMetrics.done) return S.activeDlMetrics;
+  for (const [id, d] of S.downloads) {
+    if (!d.done) {
+      return { id, title: d.title, progress: d.progress, done: false, speed: "—", speedBytes: 0, diskSpeed: "—", diskBytes: 0, eta: t("common.calculating"), downloadedBytes: 0, totalBytes: 0 };
+    }
+  }
+  return null;
+}
+
+/** Recently installed/updated games first, then recently played, then any installed (max 6). */
+function recentInstalledGames(): EpicSummary[] {
+  const out: EpicSummary[] = [];
+  const seen = new Set<string>();
+  const add = (s: EpicSummary | undefined): boolean => {
+    if (s && s.installed && !seen.has(s.appName)) {
+      seen.add(s.appName);
+      out.push(s);
+    }
+    return out.length >= 6;
+  };
+  for (const id of getRecentInstalls()) if (add(S.epicSummariesMap.get(id))) return out;
+  for (const id of S.epicRecent) if (add(S.epicSummariesMap.get(id))) return out;
+  for (const s of S.epicSummaries) if (add(s)) return out;
+  return out;
+}
+
+function renderActiveCard(dl: DlMetrics): string {
+  const s = S.epicSummariesMap.get(dl.id);
+  const title = esc(s?.title || dl.title || dl.id);
+  const art = s ? epicWideArt(s) || s.cover : null;
+  const paused = S.dlQueueStatus.isPaused;
+  const pct = Math.round(dl.progress);
+  const metric = (label: string, id: string, value: string): string =>
+    `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
+  return `
+    <section class="card dl-active">
+      <div class="dl-active-art">${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-body">
+        <div class="dl-active-head">
+          <div class="dl-active-text">
+            <div class="dl-active-title" title="${title}">${title}</div>
+            <span class="chip ${paused ? "warn" : "accent"}">${paused ? t("dl.statusPaused") : t("dl.statusActive")}</span>
+          </div>
+          <div class="row-actions">
+            ${paused
+              ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
+              : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}
+            <button class="icon-btn" data-act="manage-game" data-id="${dl.id}" title="${t("common.manage")}">${icon("settings", 16)}</button>
+            <button class="icon-btn danger" data-act="epic-cancel" data-id="${dl.id}" title="${t("common.cancel")}">${icon("x", 16)}</button>
+          </div>
+        </div>
+        <div class="dl-active-progress">
+          <div class="progress${paused ? " warn" : ""}"><span id="dl-hero-fill" style="width:${pct}%"></span></div>
+          <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
+        </div>
+        <div class="dl-metrics-row">
+          ${metric(t("dl.speed"), "dl-stat-speed", fmtSpeed(dl.speedBytes, S.speedInBits))}
+          ${metric(t("dl.peak"), "dl-stat-peak", fmtSpeed(S.peakNetSpeedBytes, S.speedInBits))}
+          ${metric(t("dl.disk"), "dl-stat-disk", fmtSpeed(dl.diskBytes, S.speedInBits))}
+          ${metric(t("dl.eta"), "dl-stat-eta", localizeMessage(dl.eta) || t("dl.calculating"))}
+          ${metric(t("dl.totalSize"), "dl-stat-bytes", `${fmtBytes(dl.downloadedBytes)} / ${fmtBytes(dl.totalBytes)}`)}
+        </div>
+        <div class="dl-chart">
+          <div class="dl-chart-legend">
+            <span class="dl-legend-item"><span class="dl-legend-dot net"></span>${t("dl.legendNet")} <strong id="dl-legend-net-val">${esc(fmtSpeed(dl.speedBytes, S.speedInBits))}</strong></span>
+            <span class="dl-legend-item"><span class="dl-legend-dot disk"></span>${t("dl.legendDisk")} <strong id="dl-legend-disk-val">${esc(fmtSpeed(dl.diskBytes, S.speedInBits))}</strong></span>
+          </div>
+          <canvas id="dl-speed-canvas"></canvas>
+        </div>
+      </div>
+    </section>`;
+}
+
 export function renderDownloads(): string {
-  let activeDl = S.activeDlMetrics && !S.activeDlMetrics.done ? S.activeDlMetrics : null;
-  if (!activeDl) {
-    const activeFromMap = [...S.downloads.entries()].find(([_, d]) => !d.done);
-    if (activeFromMap) {
-      activeDl = {
-        id: activeFromMap[0],
-        title: activeFromMap[1].title,
-        progress: activeFromMap[1].progress,
-        done: false,
-        speed: "—",
-        speedBytes: 0,
-        diskSpeed: "—",
-        diskBytes: 0,
-        eta: t("common.calculating"),
-        downloadedBytes: 0,
-        totalBytes: 0,
-      };
-    }
-  }
+  const active = activeDownload();
+  const queueApps = S.dlQueueStatus.queue.filter((id) => !active || id !== active.id);
 
-  const activeSummary = activeDl ? S.epicSummaries.find((s) => s.appName === activeDl?.id) : null;
-  const activeCover = activeSummary?.cover || "";
-  const activeWide = activeSummary ? (epicWideArt(activeSummary) || activeCover) : "";
-  const activeTitle = activeSummary?.title || activeDl?.title || activeDl?.id || "";
+  const updates = S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName)));
+  const manageBtn = (id: string): string => `<button class="icon-btn" data-act="manage-game" data-id="${id}" title="${t("common.manage")}">${icon("settings", 16)}</button>`;
 
-  const queueApps = S.dlQueueStatus.queue.filter((appId) => !activeDl || appId !== activeDl.id);
+  const queueRows = queueApps.map((id, idx) => {
+    const s = S.epicSummariesMap.get(id);
+    return gameRow(s, id, s?.installSize ? fmtBytes(s.installSize) : t("dl.queued"), `
+      <button class="icon-btn" data-act="dl-reorder-up" data-id="${id}" title="${t("dl.moveUp")}" ${idx === 0 ? "disabled" : ""}>${icon("chevron-up", 16)}</button>
+      <button class="icon-btn" data-act="dl-reorder-down" data-id="${id}" title="${t("dl.moveDown")}" ${idx === queueApps.length - 1 ? "disabled" : ""}>${icon("chevron-down", 16)}</button>
+      <button class="btn small" data-act="dl-reorder-now" data-id="${id}">${t("dl.downloadNow")}</button>
+      <button class="icon-btn danger" data-act="dl-reorder-remove" data-id="${id}" title="${t("dl.removeFromQueue")}">${icon("x", 16)}</button>`,
+      `<span class="dl-order">${idx + 1}</span>`);
+  }).join("");
 
-  // Recently installed & updated games (clean 6-item list, prioritizing latest installs and updates)
-  const recentInstalled: EpicSummary[] = [];
-  {
-    const seen = new Set<string>();
-    const trackedInstalls = getRecentInstalls();
-    // 1. First prioritize games recorded as recently installed or updated
-    for (const id of trackedInstalls) {
-      const s = S.epicSummariesMap.get(id);
-      if (s && (s.installed || S.downloads.get(id)?.done) && !seen.has(id)) {
-        seen.add(id);
-        recentInstalled.push(s);
-      }
-      if (recentInstalled.length >= 6) break;
-    }
-    // 2. Then fill remaining slots from recently played games
-    if (recentInstalled.length < 6) {
-      for (const id of S.epicRecent) {
-        const s = S.epicSummariesMap.get(id);
-        if (s?.installed && !seen.has(id)) {
-          seen.add(id);
-          recentInstalled.push(s);
-        }
-        if (recentInstalled.length >= 6) break;
-      }
-    }
-    // 3. Finally fill from installed library games
-    if (recentInstalled.length < 6) {
-      for (const s of S.epicSummaries) {
-        if (s.installed && !seen.has(s.appName)) {
-          seen.add(s.appName);
-          recentInstalled.push(s);
-          if (recentInstalled.length >= 6) break;
-        }
-      }
-    }
-  }
+  const updateRows = updates.map((s) => {
+    const info = S.availableUpdates.get(s.appName);
+    const ver = info?.latestVersion ? `${info.installedVersion ? `${esc(info.installedVersion)} → ` : ""}${esc(info.latestVersion)}` : "";
+    const meta = [ver, s.installSize ? fmtBytes(s.installSize) : ""].filter(Boolean).join(" · ");
+    return gameRow(s, s.appName, meta || t("drawer.updateAvailable"),
+      `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>${manageBtn(s.appName)}`);
+  }).join("");
 
-  // Active download card OR Apple minimalist idle state
-  let heroMarkup = "";
-  if (activeDl) {
-    const isPaused = S.dlQueueStatus.isPaused;
-    const pct = Math.round(activeDl.progress);
-    heroMarkup = `
-      <div class="dl-active-card">
-        ${activeWide ? `<img class="dl-active-bg" src="${esc(activeWide)}" alt="" />` : ""}
-        <div class="dl-active-inner">
-          <div class="dl-active-head">
-            ${activeCover ? `<img class="dl-active-thumb" src="${esc(activeCover)}" alt="${esc(activeTitle)}" />` : `<div class="dl-active-thumb"></div>`}
-            <div class="dl-active-text">
-              <div class="dl-active-title" title="${esc(activeTitle)}">${esc(activeTitle)}</div>
-              ${
-                isPaused
-                  ? `<span class="dl-status-tag paused">${icon("pause", 11)} ${t("dl.statusPaused")}</span>`
-                  : `<span class="dl-status-tag active">${icon("zap", 11)} ${t("dl.statusActive")}</span>`
-              }
-            </div>
-            <div class="dl-active-actions">
-              ${
-                isPaused
-                  ? `<button class="apple-pill-btn primary" data-act="dl-resume" data-id="${activeDl.id}">${icon("play", 12)} ${t("downloads.resume")}</button>`
-                  : `<button class="apple-pill-btn secondary" data-act="dl-pause" data-id="${activeDl.id}">${icon("pause", 12)} ${t("downloads.pause")}</button>`
-              }
-              <button class="apple-icon-btn" data-act="manage-game" data-id="${activeDl.id}" title="${t("common.manage")}">${icon("settings", 13)}</button>
-              <button class="apple-icon-btn danger" data-act="epic-cancel" data-id="${activeDl.id}" title="${t("common.cancel")}">${icon("x", 13)}</button>
-            </div>
-          </div>
-          <div class="dl-active-progress">
-            <div class="dl-progress-track"><div class="dl-progress-fill" id="dl-hero-fill" style="width:${pct}%"></div></div>
-            <span class="dl-progress-pct" id="dl-hero-pct">%${pct}</span>
-          </div>
-          <div class="dl-metrics-row">
-            <div class="dl-metric"><span class="dl-metric-label">${t("dl.speed")}</span><span class="dl-metric-value accent" id="dl-stat-speed">${fmtSpeed(activeDl.speedBytes, S.speedInBits)}</span></div>
-            <div class="dl-metric"><span class="dl-metric-label">${t("dl.peak")}</span><span class="dl-metric-value accent" id="dl-stat-peak">${fmtSpeed(S.peakNetSpeedBytes, S.speedInBits)}</span></div>
-            <div class="dl-metric"><span class="dl-metric-label">${t("dl.disk")}</span><span class="dl-metric-value green" id="dl-stat-disk">${fmtSpeed(activeDl.diskBytes, S.speedInBits)}</span></div>
-            <div class="dl-metric"><span class="dl-metric-label">${t("dl.eta")}</span><span class="dl-metric-value" id="dl-stat-eta">${localizeMessage(activeDl.eta) || t("dl.calculating")}</span></div>
-            <div class="dl-metric"><span class="dl-metric-label">${t("dl.totalSize")}</span><span class="dl-metric-value" id="dl-stat-bytes">${fmtBytes(activeDl.downloadedBytes)} / ${fmtBytes(activeDl.totalBytes)}</span></div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    // Pure Apple Minimalist Idle State
-    heroMarkup = `
-      <div class="apple-idle-hero">
-        <div class="apple-idle-icon-wrap">
-          ${icon("download", 28)}
-        </div>
-        <h2 class="apple-idle-title">${t("downloads.emptyTitle")}</h2>
-        <p class="apple-idle-desc">${t("downloads.emptyDesc")}</p>
-        <button class="apple-btn-primary" data-act="goto-library">
-          ${icon("layout-grid", 14)}
-          <span>${t("downloads.goLibrary")}</span>
-        </button>
-      </div>
-    `;
-  }
+  const recent = recentInstalledGames();
+  const recentRows = recent.map((s) => {
+    const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
+    const action = hasUpdate
+      ? `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`
+      : `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>`;
+    return gameRow(s, s.appName, fmtBytes(s.installSize || 0), action + manageBtn(s.appName));
+  }).join("");
 
-  // Steam-style Speed Chart
-  const lastNet = S.speedHistory[S.speedHistory.length - 1] || 0;
-  const lastDisk = S.diskHistory[S.diskHistory.length - 1] || 0;
-  const netLegendVal = fmtSpeed(activeDl?.speedBytes || lastNet, S.speedInBits);
-  const diskLegendVal = fmtSpeed(activeDl?.diskBytes || lastDisk, S.speedInBits);
-
-  // The chart is only useful while an active download is running; hide completely when idle/finished.
-  const hasChartData = !!activeDl;
-  const chartMarkup = hasChartData
-    ? `
-    <div class="dl-chart-card">
-      <div class="dl-chart-head">
-        <div class="dl-chart-title">
-          ${icon("zap", 16)} ${t("dl.chartTitle")}
-        </div>
-        <div class="dl-chart-legend">
-          <div class="dl-legend-item">
-            <span class="dl-legend-dot net"></span>
-            <span>${t("dl.legendNet")}: <strong id="dl-legend-net-val" style="color:#00e5ff">${esc(netLegendVal)}</strong></span>
-          </div>
-          <div class="dl-legend-item">
-            <span class="dl-legend-dot disk"></span>
-            <span>${t("dl.legendDisk")}: <strong id="dl-legend-disk-val" style="color:#00d26a">${esc(diskLegendVal)}</strong></span>
-          </div>
-        </div>
-      </div>
-      <div class="dl-canvas-container">
-        <canvas id="dl-speed-canvas"></canvas>
-      </div>
-    </div>
-  `
+  const idle = !active && queueApps.length === 0
+    ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
-  // Available updates section (e.g. installed games with new version ready)
-  let updatesSection = "";
-  const gamesWithUpdates = S.epicSummaries.filter(
-    (s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))
-  );
-  if (gamesWithUpdates.length > 0) {
-    const items = gamesWithUpdates
-      .map((s) => {
-        const cover = s.cover || "";
-        const updateInfo = S.availableUpdates.get(s.appName);
-        const verStr = updateInfo?.latestVersion
-          ? `${updateInfo.installedVersion ? updateInfo.installedVersion + " → " : ""}${updateInfo.latestVersion}`
-          : "";
-        return `
-          <div class="apple-list-row">
-            <div class="apple-row-left clickable" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)}">
-              ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
-              <div class="apple-row-info">
-                <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
-                <div class="apple-row-meta">
-                  <span class="apple-update-tag">${icon("refresh", 11)} ${t("drawer.updateAvailable")}</span>
-                  ${verStr ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="apple-update-ver">${esc(verStr)}</span>` : ""}
-                  ${s.installSize ? `<span class="apple-row-dot" aria-hidden="true">•</span><span>${fmtBytes(s.installSize)}</span>` : ""}
-                </div>
-              </div>
-            </div>
-            <div class="apple-row-right">
-              <button class="apple-pill-btn update" data-act="epic-install" data-id="${s.appName}">
-                ${icon("download", 12)}
-                <span>${t("common.update")}</span>
-              </button>
-              <button class="apple-icon-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
-                ${icon("settings", 13)}
-              </button>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-
-    updatesSection = `
-      <div class="apple-section">
-        <div class="apple-section-header">
-          <span class="apple-section-title">${t("lib.updates")} (${gamesWithUpdates.length})</span>
-        </div>
-        <div class="apple-grouped-list">
-          ${items}
-        </div>
-      </div>
-    `;
-  }
-
-  // Queue markup
-  let queueSection = "";
-  if (queueApps.length > 0) {
-    const items = queueApps.map((appId, idx) => {
-      const s = S.epicSummaries.find((x) => x.appName === appId);
-      const title = s?.title || appId;
-      const cover = s?.cover || "";
-      const sizeStr = s?.installSize ? fmtBytes(s.installSize) : t("dl.queued");
-      const isFirst = idx === 0;
-      const isLast = idx === queueApps.length - 1;
-      return `
-        <div class="apple-list-row">
-          <div class="apple-row-left">
-            <span class="apple-row-order">#${idx + 1}</span>
-            ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
-            <div class="apple-row-info">
-              <div class="apple-row-title">${esc(title)}</div>
-              <div class="apple-row-meta">${esc(sizeStr)}</div>
-            </div>
-          </div>
-          <div class="apple-row-right">
-            <button class="apple-icon-btn" data-act="dl-reorder-up" data-id="${appId}" title="${t("dl.moveUp")}" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
-              ${icon("chevron-up", 13)}
-            </button>
-            <button class="apple-icon-btn" data-act="dl-reorder-down" data-id="${appId}" title="${t("dl.moveDown")}" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed'" : ""}>
-              ${icon("chevron-down", 13)}
-            </button>
-            <button class="apple-pill-btn primary" data-act="dl-reorder-now" data-id="${appId}">
-              ${icon("play", 11)} ${t("dl.downloadNow")}
-            </button>
-            <button class="apple-icon-btn danger" data-act="dl-reorder-remove" data-id="${appId}" title="${t("dl.removeFromQueue")}">
-              ${icon("x", 13)}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    queueSection = `
-      <div class="apple-section">
-        <div class="apple-section-header">
-          <span class="apple-section-title">${t("dl.queueTitle")} (${queueApps.length})</span>
-        </div>
-        <div class="apple-grouped-list">
-          ${items}
-        </div>
-      </div>
-    `;
-  }
-
-
-  const recentSection =
-    recentInstalled.length > 0
-      ? `
-    <div class="apple-section">
-      <div class="apple-section-header">
-        <span class="apple-section-title">${t("downloads.recentTitle")}</span>
-        <button class="apple-section-link" data-act="goto-library">
-          <span>${t("downloads.goLibrary")}</span>
-          ${icon("chevron-right", 12)}
-        </button>
-      </div>
-      <div class="apple-grouped-list">
-        ${recentInstalled
-          .map((s) => {
-            const hasUpdate = Boolean(s.updateAvailable || S.availableUpdates.has(s.appName));
-            const cover = s.cover || "";
-            return `
-          <div class="apple-list-row">
-            <div class="apple-row-left clickable" data-act="epic-detail" data-id="${s.appName}" title="${esc(s.title)}">
-              ${cover ? `<img class="apple-row-thumb" src="${esc(cover)}" alt="" loading="lazy" />` : `<div class="apple-row-thumb-fallback">${icon("gamepad-2", 16)}</div>`}
-              <div class="apple-row-info">
-                <div class="apple-row-title" title="${esc(s.title)}">${esc(s.title)}</div>
-                <div class="apple-row-meta">
-                  <span>${fmtBytes(s.installSize || 0)}</span>
-                  <span class="apple-row-dot" aria-hidden="true">•</span>
-                  ${
-                    hasUpdate
-                      ? `<span class="apple-update-tag">${icon("refresh", 11)} ${t("drawer.updateAvailable")}</span>`
-                      : `<span class="apple-row-status">${icon("check", 10)} ${t("settings.eosInstalled")}</span>`
-                  }
-                </div>
-              </div>
-            </div>
-            <div class="apple-row-right">
-              ${
-                hasUpdate
-                  ? `<button class="apple-pill-btn update" data-act="epic-install" data-id="${s.appName}">
-                      ${icon("download", 12)}
-                      <span>${t("common.update")}</span>
-                    </button>`
-                  : `<button class="apple-pill-btn play" data-act="epic-play" data-id="${s.appName}">
-                      ${icon("play", 11)}
-                      <span>${t("common.play")}</span>
-                    </button>`
-              }
-              <button class="apple-icon-btn" data-act="manage-game" data-id="${s.appName}" title="${t("common.manage")}">
-                ${icon("settings", 13)}
-              </button>
-            </div>
-          </div>`;
-          })
-          .join("")}
-      </div>
-    </div>
-  `
-      : "";
-
-  const settingsPanel = `
-    <div class="dl-settings-panel">
-      <div class="dl-settings-head">
-        <div class="dl-settings-title">${icon("settings", 16)} ${t("downloads.settingsTitle")}</div>
-        <span class="dl-settings-hint">${t("downloads.settingsHint")}</span>
-      </div>
-      <div class="dl-settings-rows">
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.netProfile")}</div>
-            <div class="dl-settings-row-desc">${t("downloads.netProfileDesc")}</div>
-          </div>
-          <div class="dl-settings-row-control net-profile-pills">
-            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">${icon("zap", 13)} ${t("settings.netMax")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">${icon("shield-check", 13)} ${t("settings.netBalanced")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("settings.netLow")}</button>
-          </div>
-        </div>
-
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.speedBits")}</div>
-          </div>
-          <div class="dl-settings-row-control">
-            <label class="toggle-switch">
-              <input type="checkbox" data-act="toggle-speed-bits" ${S.speedInBits ? "checked" : ""} />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.pauseOnPlay")}</div>
-            <div class="dl-settings-row-desc">${t("downloads.pauseOnPlayDesc")}</div>
-          </div>
-          <div class="dl-settings-row-control">
-            <label class="toggle-switch">
-              <input type="checkbox" data-act="toggle-pause-on-play" ${S.pauseOnPlay ? "checked" : ""} />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.installDir")}</div>
-          </div>
-          <div class="dl-settings-row-control">
-            <input id="dl-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
-            <button class="ps5-btn-icon" data-act="dl-pick-install-dir" title="${t("downloads.pickFolder")}">${icon("folder", 15)}</button>
-            <button class="ps5-btn primary" data-act="dl-save-install-dir">${t("common.save")}</button>
-          </div>
-        </div>
-
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.cdnLabel")}</div>
-            <div class="dl-settings-row-desc">${t("downloads.cdnHint")}</div>
-          </div>
-          <div class="dl-settings-row-control">
-            <div class="cdn-pills" role="radiogroup" aria-label="${t("downloads.cdnLabel")}">
-              <button type="button" class="cdn-pill-btn ${!S.preferredCdn ? "active" : ""}" data-act="dl-set-cdn" data-cdn="">${t("downloads.cdnAutoShort")}</button>
-              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "epicgames-download1.akamaized.net" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="epicgames-download1.akamaized.net">Akamai</button>
-              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egdownload.fastly-edge.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egdownload.fastly-edge.com">Fastly</button>
-              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egs-cloudfront-chunks.epicgamescdn.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egs-cloudfront-chunks.epicgamescdn.com">CloudFront</button>
-            </div>
-            <button class="ps5-btn secondary" data-act="dl-find-fastest-cdn" title="${t("downloads.cdnFindHint")}">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
-          </div>
-        </div>
-
-        <div class="dl-settings-row">
-          <div class="dl-settings-row-text">
-            <div class="dl-settings-row-title">${t("downloads.cacheLabel")}</div>
-            <div class="dl-settings-row-desc">${t("downloads.cacheDesc")}</div>
-          </div>
-          <div class="dl-settings-row-control">
-            <button class="ps5-btn ghost" data-act="dl-cleanup-cache">${icon("trash", 13)} ${t("downloads.cacheClear")}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const headerAction = `
-    <button class="apple-header-btn ${S.downloadsSettingsOpen ? "active" : ""}" data-act="toggle-downloads-settings">${icon("settings", 14)} <span>${t("downloads.settingsTitle")}</span></button>
-    <button class="apple-header-btn" data-act="open-storage-manager">${icon("hard-drive", 14)} <span>${t("storage.open")}</span></button>
-  `;
-
   return `
-    <div class="ps5-page ps5-downloads-page">
-      <header class="ps5-page-header apple-downloads-header">
-        <div class="ps5-header-main">
-          <h1 class="ps5-header-title">${t("downloads.title")}</h1>
-          <p class="ps5-header-subtitle">${t("downloads.subtitle")}</p>
+    <div class="page dl-page">
+      <div class="page-head">
+        <div><h1 class="page-title">${t("downloads.title")}</h1></div>
+        <div class="page-actions">
+          <button class="btn ghost" data-act="open-download-settings">${icon("settings", 14)} ${t("downloads.settingsTitle")}</button>
+          <button class="btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>
         </div>
-        <div class="ps5-header-actions">${headerAction}</div>
-      </header>
-      <main class="ps5-page-body">
-        <div class="dl-hub apple-hub">
-          ${heroMarkup}
-          ${chartMarkup}
-          ${S.downloadsSettingsOpen ? settingsPanel : ""}
-          ${updatesSection}
-          ${queueSection}
-          ${recentSection}
-        </div>
-      </main>
-    </div>
-  `;
+      </div>
+      ${active ? renderActiveCard(active) : idle}
+      ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
+      ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
+      ${recentRows ? section(t("downloads.recentTitle"), null, recentRows, `<button class="btn ghost small" data-act="goto-library">${t("downloads.goLibrary")} ${icon("chevron-right", 13)}</button>`) : ""}
+    </div>`;
 }
+

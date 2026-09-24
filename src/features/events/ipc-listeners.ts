@@ -244,7 +244,7 @@ export async function initApp(hooks: {
         pushSpeedData(measuredSpeedBytes, measuredDiskBytes);
 
         // All DOM writes are batched to one rAF so bursty progress events never
-        // cause repeated layout reads (updateBadge measures the nav indicator).
+        // cause repeated DOM writes to the sidebar counter and download bars.
         scheduleDlDomUpdate(id);
         return;
       }

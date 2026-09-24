@@ -34,7 +34,6 @@ import {
   renderDrawerDlcs,
 } from "../drawer/drawer-view";
 import { renderAchievementSections } from "../drawer/drawer-widgets";
-import { renderDlcRows } from "../dlc/dlc-manager";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { updateInstallFinalPath } from "../install/install-dialog";
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
@@ -384,20 +383,6 @@ document.addEventListener("input", (e) => {
         setupLibScrollObserver();
       }
     }, 120);
-    return;
-  }
-  if (t.id === "dlc-search") {
-    S.dlcSearchQuery = (t as HTMLInputElement).value;
-    const bodyEl = document.getElementById("dlc-table-body");
-    if (bodyEl && S.activeDlcAppName) {
-      const dlcRes = S.dlcCache.get(S.activeDlcAppName);
-      const allDlcs = dlcRes?.dlcs || [];
-      const q = S.dlcSearchQuery.trim().toLowerCase();
-      const filtered = q
-        ? allDlcs.filter((d) => d.title.toLowerCase().includes(q))
-        : allDlcs;
-      bodyEl.innerHTML = renderDlcRows(filtered);
-    }
     return;
   }
   if (t.id === "dlc-drawer-search" && S.currentModalAppName) {

@@ -15,7 +15,6 @@ import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
-import { renderDlcManager } from "./features/dlc/dlc-manager";
 import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
@@ -73,7 +72,6 @@ function render(): void {
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()
     : S.view === "downloads" ? renderDownloads()
-    : S.view === "dlc-manager" ? renderDlcManager()
     : S.view === "profile" ? renderProfile()
     : renderSettings();
   if (S.view === "library") {
