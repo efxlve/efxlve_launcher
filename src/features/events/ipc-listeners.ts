@@ -34,6 +34,7 @@ import {
 import { localizeMessage, setLanguage, t } from "../../i18n";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
+import { initAppUpdater } from "../updates/update-manager";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
@@ -160,6 +161,7 @@ export async function initApp(hooks: {
   void loadSavedAccounts();
 
   if (isTauri) {
+    void initAppUpdater();
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});
     void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
     void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});

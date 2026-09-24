@@ -1244,3 +1244,26 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Launcher self-update card --- */
+.app-update-status {
+  color: #c4b5fd;
+  font-weight: 600;
+}
+.app-update-progress {
+  height: 4px;
+  margin: 0 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.app-update-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%);
+  transition: width 0.25s ease;
+}
+.app-update-group .apple-pill-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

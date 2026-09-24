@@ -51,6 +51,8 @@ export const AUTO_BACKUP_KEY = "efxlve-auto-backup";
 /** Scheduled automatic update: enabled flag and HH:MM time. */
 export const AUTO_UPDATE_KEY = "efxlve-auto-update";
 export const AUTO_UPDATE_TIME_KEY = "efxlve-auto-update-time";
+/** Launcher self-update: automatically download new releases in the background. */
+export const APP_AUTO_UPDATE_KEY = "efxlve-app-auto-update";
 /** Custom portrait cover URLs keyed by app name. */
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */

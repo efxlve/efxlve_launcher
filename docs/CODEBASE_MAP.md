@@ -30,7 +30,7 @@ efxlve_launcher/
 │   │   ├── utils.ts                   # Formatting helpers (bytes, time, string escaping)
 │   │   ├── constants.ts               # Default configurations, thresholds, limits
 │   │   └── types.ts                   # Core frontend type definitions
-│   ├── features/                      # Modular Feature Domains (22 subsystems)
+│   ├── features/                      # Modular Feature Domains (23 subsystems)
 │   │   ├── auth/                      # Login, EGL import, progressive sync, account switcher
 │   │   │   ├── auth-actions.ts        # Boot, progressive login, logout, library sync
 │   │   │   └── account-switcher.ts    # Saved-account vault: switch / add / remove / cancel
@@ -81,11 +81,16 @@ efxlve_launcher/
 │   │   │   └── settings-view.ts
 │   │   ├── storage/                   # Drive storage breakdown & disk visualization
 │   │   │   └── storage-view.ts
-│   │   └── store/                     # Embedded Epic Games Store child webview manager
-│   │       └── store-view.ts
+│   │   ├── store/                     # Embedded Epic Games Store child webview manager
+│   │   │   └── store-view.ts
+│   │   └── updates/                   # Launcher self-update (check/download/install gating)
+│   │       └── update-manager.ts
+├── .github/
+│   └── workflows/
+│       └── release.yml                # Tag-driven signed build + GitHub Release + latest.json
 │   ├── locales/                       # 15 Language Localization Dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (Primary, 1.208 keys)
-│   │   ├── en.json                    # English (Primary, 1.208 keys, full parity)
+│   │   ├── tr.json                    # Turkish (Primary, 1.233 keys)
+│   │   ├── en.json                    # English (Primary, 1.233 keys, full parity)
 │   │   └── ...                        # ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant (core keys, fall back to en)
 │   └── styles/                        # 29 Modular PS5 Console Dark Stylesheets + index.css
 │       ├── index.css                  # Master CSS entry point (imports all modules)
@@ -210,6 +215,7 @@ efxlve_launcher/
 | `presence/` | `presence.ts` | Discord Rich Presence state synchronization and game title broadcasting. |
 | `storage/` | `storage-view.ts` | Storage management dashboard showing per-drive installation sizes and capacity bars. |
 | `onboarding/` | `onboarding-view.ts` | Login screen, progressive loading sequence and first-run Legendary binary setup. |
+| `updates/` | `update-manager.ts` | Launcher self-update: startup/focus/manual checks, silent background download, notification action and install gating (never while a game download or session runs). |
 
 ---
 

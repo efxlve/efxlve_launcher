@@ -1,0 +1,74 @@
+# Builds and publishes Efxlve Launcher on every version tag.
+#
+# Flow: bump the version in `src-tauri/tauri.conf.json` (and `Cargo.toml`),
+# commit, then push a matching tag (e.g. `v0.1.1`). The action builds the app,
+# creates/updates the GitHub Release for that tag, uploads the installers and
+# `.sig` files, and publishes `latest.json` — the static endpoint the in-app
+# updater polls (`https://github.com/efxlve/efxlve_launcher/releases/latest/download/latest.json`).
+#
+# Required repository secrets:
+# - TAURI_SIGNING_PRIVATE_KEY          (content of ~/.tauri/efxlve.key)
+# - TAURI_SIGNING_PRIVATE_KEY_PASSWORD (empty string when the key has no password)
+#
+# The platform matrix is ready for the future Linux/macOS support: uncomment the
+# extra entries once the codebase builds on those targets.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+          # - platform: ubuntu-22.04
+          #   args: ""
+          # - platform: macos-latest
+          #   args: "--target aarch64-apple-darwin"
+          # - platform: macos-latest
+          #   args: "--target x86_64-apple-darwin"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "Efxlve Launcher v__VERSION__"
+          releaseBody: "Kurulum dosyaları ve otomatik güncelleme paketleri aşağıdaki varlıklarda."
+          releaseDraft: false
+          prerelease: false
+          updaterJsonPreferNsis: true
+          args: ${{ matrix.args }}
