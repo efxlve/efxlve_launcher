@@ -167,23 +167,49 @@ export async function epicDownload(): Promise<void> {
   }
 }
 
-/** Extract authorizationCode value from raw string, quotes or JSON response. */
+/** Extract authorizationCode value from raw string, quotes, full JSON response, or redirect URL. */
 export function extractAuthCode(raw: string): string {
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
   if (!trimmed) return "";
+
+  // Strip leading/trailing wrapping quotes
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+
+  // 1. If user pasted the whole JSON response from the browser
   try {
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed.authorizationCode === "string") {
-      return parsed.authorizationCode.trim();
+    if (parsed) {
+      if (typeof parsed.authorizationCode === "string" && parsed.authorizationCode.trim()) {
+        return parsed.authorizationCode.trim();
+      }
+      if (typeof parsed.redirectUrl === "string") {
+        const urlMatch = parsed.redirectUrl.match(/[?&]code=([a-zA-Z0-9_-]+)/);
+        if (urlMatch && urlMatch[1]) return urlMatch[1].trim();
+      }
     }
   } catch {
-    // Not valid JSON
+    // Not valid JSON, continue to regex extractors
   }
-  const match = trimmed.match(/"?authorizationCode"?\s*[:=]\s*"([^"]+)"/i);
-  if (match && match[1]) {
-    return match[1].trim();
+
+  // 2. If user pasted the full redirectUrl or address bar with ?code= or &code=
+  const urlParamMatch = trimmed.match(/[?&]code=([a-zA-Z0-9_-]+)/i);
+  if (urlParamMatch && urlParamMatch[1]) {
+    return urlParamMatch[1].trim();
   }
-  return trimmed;
+
+  // 3. Regex matching for "authorizationCode": "..." inside partial JSON copy-pastes
+  const jsonCodeMatch = trimmed.match(/"?authorizationCode"?\s*[:=]\s*"?([a-zA-Z0-9_-]+)"?/i);
+  if (jsonCodeMatch && jsonCodeMatch[1]) {
+    return jsonCodeMatch[1].trim();
+  }
+
+  // 4. Return clean plain code without formatting quotes or commas
+  return trimmed.replace(/[",;]/g, "").trim();
 }
 
 /**
