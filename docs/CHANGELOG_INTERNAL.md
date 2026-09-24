@@ -2211,3 +2211,11 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Build düzeltmesi:** `ipc-listeners.ts` içindeki eksik `epicGetAutoDesktopShortcut` importu (önceki commit'ten kalan `TS2552`) eklendi.
 - `npm.cmd run build`, `cargo check`, `cargo test` (63/63), i18n eşlik (1249/1249) yeşil.
 
+## 169. Ağ Profili Değerleri Tekilleştirildi (32/8/2)
+
+**Kök neden:** Backend `get_worker_count_arg` (`transfers.rs`) gerçek worker sayılarını **max=32, balanced=8, low=2** olarak uygularken, Ayarlar sayfasındaki hız kartları ayrı ve yanlış bir anahtar seti (`settings.netMax/Balanced/Low`) üzerinden **16/4/1** gösteriyordu. İndirmeler sayfası ve profil toast'ı ise doğru değerleri (`downloads.profile*`, `net.profile*`) gösteriyordu → aynı ayar iki sayfada farklı görünüyordu.
+
+- **Tek kaynak:** `settings.netMax/Balanced/Low` değerleri gerçek değerlere çekildi (**Maksimum Hız 32 Worker / Dengeli 8 Worker / Eko-Düşük 2 Worker**) ve İndirmeler sayfasındaki segment hapları ile profil değiştirme bildirimi de bu anahtarlara bağlandı.
+- **Ölü anahtar temizliği:** Kopya `downloads.profileMax/Balanced/Low` ve `net.profileMax/Balanced/Low` (6) ile kullanılmayan `settings.netFindCdnDesc` ve `downloads.cdnNoData` silindi; anahtar sayısı 1249 → **1241** (tr/en tam eşlik, kullanılmayan 0).
+- `npm.cmd run build` yeşil.
+
