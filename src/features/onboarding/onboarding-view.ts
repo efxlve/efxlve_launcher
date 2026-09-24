@@ -10,55 +10,11 @@ import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
-/** Curated high-res official game posters for the animated 3D background marquee. */
-const SHOWCASE_POSTERS: string[] = [
-  "https://cdn1.epicgames.com/offer/77f2b98e2cef40c8a74375189e50b446/EGS_Cyberpunk2077_CDPROJEKTRED_S2_1200x1600-b3848b59d57a224f80168d6f30f55737",
-  "https://cdn1.epicgames.com/0584dacc38d34984ae4e093ac1f1f397/offer/GTAV_EGS_Artwork_1200x1600_Portrait%20Store%20Display-1200x1600-e7f09315b6320a061a9bc38615024fa8.jpg",
-  "https://cdn1.epicgames.com/offer/c4763f236d08423bb47b4a3021be0464/EGS_AlanWake2_RemedyEntertainment_S2_1200x1600-683170632598b965c6c06a38618683ec",
-  "https://cdn1.epicgames.com/offer/006095d253234177b966144e057a6221/EGS_DEATHSTRANDINGDIRECTORSCUT_KOJIMAPRODUCTIONS_S2_1200x1600-a292864b4c73043813ff3eb8466b0ca8",
-  "https://cdn1.epicgames.com/epic/offer/RDR2PC_1200x1600-1200x1600-e51c8e1a123f8cb123e421e90ef8ab86.jpg",
-  "https://cdn1.epicgames.com/offer/e97659b501e64e39b7d7eb0150e645f1/EGS_HogwartsLegacy_AvalancheSoftware_S2_1200x1600-60a6ae56ff6d24a0d92cf0952d7e0d30",
-  "https://cdn1.epicgames.com/offer/3ddd6a590da64e3686042d10203a004b/EGS_GodofWar_SantaMonicaStudio_S2_1200x1600-fb50a13346d0a7a3b3a98eb53e9a59cf",
-  "https://cdn1.epicgames.com/min/offer/1200x1600-1200x1600-e0da0f2a9694e9f3b7ab4f2c0500a12e.jpg",
-  "https://cdn1.epicgames.com/offer/24b99e49a46a4e378c2e646738980862/EGS_Control_RemedyEntertainment_S2_1200x1600-fb7ff76380c557fc99aa9c417e27e849",
-  "https://cdn1.epicgames.com/2a9707e4be4249a0b9432655e542d99d/offer/EGS_HorizonZeroDawnCompleteEdition_Guerrilla_S2-1200x1600-098553259837df6d0537025816912389.jpg",
-  "https://cdn1.epicgames.com/offer/47b850a490e64a858546b5a3e144a7f0/EGS_Ghostrunner_OneMoreLevel3DRealmsSlipgateIronworks_S2_1200x1600-cf7f0ecba985efaa71ea2315a6bfa9e2",
-  "https://cdn1.epicgames.com/offer/581561f384ef46a99268ff9231f868ad/EGS_DeadCells_MotionTwin_S2_1200x1600-a6198f26df8c2fc2b289c8fa7cb137f8",
-  "https://cdn1.epicgames.com/offer/401416e0e0a442759e0a05a41bf97f8c/EGS_AssassinsCreedValhalla_UbisoftMontreal_S2_1200x1600-4740263309a632b49877b07044cc1a08",
-  "https://cdn1.epicgames.com/offer/14ee004dad8342398941c5baa44141d4/EGS_TheWitcher3WildHuntCompleteEdition_CDPROJEKTRED_S2_1200x1600-53a8242e20f185c7247734293fef61cf",
-  "https://cdn1.epicgames.com/offer/4c112ad9463d45b888b5030286430038/EGS_MarvelsSpiderManRemastered_InsomniacGamesNixxesSoftware_S2_1200x1600-756193fe4c2b9a7852f5c767425176b6",
-  "https://cdn1.epicgames.com/offer/0c2394cfde5d4e138a0c4f8d55a2979e/EGS_DyingLight2StayHuman_Techland_S2_1200x1600-4eb63e46efc58ef7fb3efc023d515f40",
-];
-
-/** Build the HTML for the 3D animated game marquee wall. */
-function renderGameMarqueeWall(): string {
-  const colSize = 4;
-  const cols = [
-    SHOWCASE_POSTERS.slice(0, colSize),
-    SHOWCASE_POSTERS.slice(colSize, colSize * 2),
-    SHOWCASE_POSTERS.slice(colSize * 2, colSize * 3),
-    SHOWCASE_POSTERS.slice(colSize * 3, colSize * 4),
-  ];
-
-  const colHtml = cols
-    .map((posters, idx) => {
-      // Duplicate to ensure infinite seamless CSS translation
-      const loop = [...posters, ...posters];
-      const cards = loop
-        .map(
-          (url) =>
-            `<div class="auth-poster-card"><img class="auth-poster-img" src="${url}" alt="" loading="lazy" /></div>`,
-        )
-        .join("");
-      return `<div class="auth-wall-col auth-col-${idx + 1}">${cards}</div>`;
-    })
-    .join("");
-
+/** Build the atmospheric backdrop using the authentic Epic Games background image. */
+function renderAuthBackdrop(): string {
   return `
     <div class="auth-ambient-backdrop" aria-hidden="true">
-      <div class="auth-game-wall">
-        ${colHtml}
-      </div>
+      <div class="auth-bg-backdrop-art"></div>
       <div class="auth-vignette-overlay"></div>
       <div class="auth-aurora-blob auth-aurora-1"></div>
       <div class="auth-aurora-blob auth-aurora-2"></div>
@@ -94,7 +50,7 @@ export function updateAuthProgressUi(): void {
 
 /** Render the standalone login / progressive loading / setup view. */
 export function renderOnboarding(): string {
-  const backgroundWall = renderGameMarqueeWall();
+  const backgroundWall = renderAuthBackdrop();
 
   // 1. Initial Legendary binary setup phase (if required)
   if (S.epicPhase === "setup") {
