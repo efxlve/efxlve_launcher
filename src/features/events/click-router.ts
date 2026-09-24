@@ -1152,7 +1152,7 @@ document.addEventListener("click", (e) => {
     if (prof) {
       S.networkProfile = prof;
       void epicSetNetworkProfile(prof);
-      const label = prof === "max" ? i18nT("net.profileMax") : prof === "low" ? i18nT("net.profileLow") : i18nT("net.profileBalanced");
+      const label = prof === "max" ? i18nT("settings.netMax") : prof === "low" ? i18nT("settings.netLow") : i18nT("settings.netBalanced");
       toast(i18nT("net.profileToast", { label }), "ok");
       render();
     }

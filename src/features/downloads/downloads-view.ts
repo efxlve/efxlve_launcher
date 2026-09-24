@@ -498,9 +498,9 @@ export function renderDownloads(): string {
             <div class="dl-settings-row-desc">${t("downloads.netProfileDesc")}</div>
           </div>
           <div class="dl-settings-row-control net-profile-pills">
-            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">${icon("zap", 13)} ${t("downloads.profileMax")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">${icon("shield-check", 13)} ${t("downloads.profileBalanced")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("downloads.profileLow")}</button>
+            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">${icon("zap", 13)} ${t("settings.netMax")}</button>
+            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">${icon("shield-check", 13)} ${t("settings.netBalanced")}</button>
+            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("settings.netLow")}</button>
           </div>
         </div>
 
