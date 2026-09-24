@@ -18,14 +18,9 @@
   "common.search": "Suchen",
   "downloads.kicker": "NETZWERK & TRANSFERZENTRUM",
   "downloads.title": "Downloads",
-  "downloads.subtitle": "Aktive Installationen, Warteschlange und Live-Datenträgerleistung.",
   "downloads.pause": "Pausieren",
   "downloads.resume": "Fortsetzen",
   "downloads.settingsTitle": "Download-Einstellungen",
-  "downloads.settingsHint": "Diese Einstellungen gelten für alle Downloads",
-  "downloads.netProfile": "Netzwerkprofil (Bandbreite & Worker)",
-  "downloads.installDir": "Installationsordner",
-  "downloads.pickFolder": "Ordner wählen",
   "downloads.queueEmpty": "Keine Spiele in der Warteschlange.",
   "downloads.emptyTitle": "Kein aktiver Download",
   "downloads.emptyDesc": "Wähle ein Spiel aus deiner Bibliothek, um den Download zu starten, und verfolge Geschwindigkeit und Datenträger live.",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "Installation erforderlich",
   "ob.setupDownload": "legendary herunterladen",
   "settings.language": "Sprachauswahl",
-  "settings.languageDesc": "Wähle die Sprache für die Launcher-Oberfläche und lokale Inhalte.",
-  "settings.defaultTag": "Standard"
+  "settings.languageDesc": "Wähle die Sprache für die Launcher-Oberfläche und lokale Inhalte."
 }

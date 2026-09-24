@@ -18,7 +18,7 @@ efxlve_launcher/
 │   │   ├── state.ts                   # Central reactive state 'S' & O(1) accessor helpers
 │   │   ├── render.ts                  # Render bus (main.ts registers render/scheduleRender/notify)
 │   │   ├── dom.ts                     # DOM caching and safe query selectors
-│   │   ├── nav.ts                     # Top titlebar navigation, views & LB/RB switching
+│   │   ├── nav.ts                     # Sidebar shell: active item, download counter, installed-games list, history
 │   │   ├── toast.ts                   # PlayStation 5 toast notification system
 │   │   ├── selectors.ts               # Filter, sort, collection & advanced search logic
 │   │   ├── epic-actions.ts            # Core game action dispatchers (play, install, cancel)
@@ -40,13 +40,12 @@ efxlve_launcher/
 │   │   │   └── context-menu.ts
 │   │   ├── cover/                     # Custom cover selector & SteamGridDB browser
 │   │   │   └── cover-view.ts
-│   │   ├── dlc/                       # DLC inspection & selective install tags
-│   │   │   ├── dlc-manager.ts
+│   │   ├── dlc/                       # Selective install tags (languages, packs, DLCs)
 │   │   │   └── selective-install.ts
 │   │   ├── downloads/                 # Downloads hub, speed canvas & auto-update scheduler
 │   │   │   ├── downloads-view.ts
 │   │   │   └── auto-update.ts
-│   │   ├── drawer/                    # Game detail drawer (Overview, Trophy, DLC, Specs)
+│   │   ├── drawer/                    # Full-page game page (hero, tabs: Overview, Trophy, DLC, Specs)
 │   │   │   ├── drawer-view.ts
 │   │   │   └── drawer-widgets.ts
 │   │   ├── events/                    # Central event bus (click-router, inputs, IPC)
@@ -55,8 +54,9 @@ efxlve_launcher/
 │   │   │   └── ipc-listeners.ts       # Tauri event listeners & app bootstrap (initApp)
 │   │   ├── freegames/                 # Weekly free games shelf & claim navigation
 │   │   │   └── freegames.ts
-│   │   ├── gamepad/                   # 10-foot gamepad navigation loop & controller HUD
-│   │   │   └── gamepad.ts
+│   │   ├── gamepad/                   # Controller polling/HUD + separate TV Mode view
+│   │   │   ├── gamepad.ts
+│   │   │   └── tv-mode.ts             # Full-screen controller-first view (hero + cover rows)
 │   │   ├── install/                   # Epic-style install location dialog
 │   │   │   └── install-dialog.ts
 │   │   ├── library/                   # Main library grid, shelves & progressive chunking
@@ -70,6 +70,8 @@ efxlve_launcher/
 │   │   │   └── notifications.ts
 │   │   ├── onboarding/                # Auth screen, progressive loading & setup wizard
 │   │   │   └── onboarding-view.ts
+│   │   ├── palette/                   # Ctrl+K command palette (games, pages, actions)
+│   │   │   └── palette.ts
 │   │   ├── playtime/                  # Playtime tracking, history & manual editing
 │   │   │   └── playtime-view.ts
 │   │   ├── presence/                  # Discord Rich Presence toggle & status sync
@@ -91,40 +93,22 @@ efxlve_launcher/
 │   └── workflows/
 │       └── release.yml                # Tag-driven signed build + GitHub Release + latest.json
 │   ├── locales/                       # 15 Language Localization Dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (Primary, 1.249 keys)
-│   │   ├── en.json                    # English (Primary, 1.249 keys, full parity)
+│   │   ├── tr.json                    # Turkish (Primary, 1.173 keys)
+│   │   ├── en.json                    # English (Primary, 1.173 keys, full parity)
 │   │   └── ...                        # ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant (core keys, fall back to en)
-│   └── styles/                        # 29 Modular PS5 Console Dark Stylesheets + index.css
+│   └── styles/                        # 11 stylesheets + index.css (docs/DESIGN_SYSTEM.md)
 │       ├── index.css                  # Master CSS entry point (imports all modules)
-│       ├── tokens.css                 # Obsidian palette, lavender accents & radii
-│       ├── base.css                   # Global reset, typography, zero-emoji rules
-│       ├── components.css             # Shared buttons, pills & segmented rails
-│       ├── aero-toolbar.css           # Frosted top bar & tab navigation
-│       ├── library.css                # Game cards, portrait grid & infinite scroll
-│       ├── library-toolbar.css        # Quiet Library chrome: text filters, search, sort
-│       ├── shelves.css                # Horizontal game shelves & category rows
-│       ├── gamehub.css                # Game detail hub layout
-│       ├── drawer.css                 # Slide-over game detail drawer
-│       ├── achievements.css           # Achievement/trophy lists
-│       ├── trophies.css               # Trophy tiers & prestige card
-│       ├── downloads.css              # Download rows & legacy tiles
-│       ├── downloads-hub.css          # Downloads dashboard & speed chart canvas
-│       ├── profile.css                # Trophy showcase, rank badges & player cards
-│       ├── friends.css                # Friends sidebar list
-│       ├── settings.css               # Settings sidebar & grouped cards
-│       ├── auth.css                   # Login screen, marquee backdrop & loading sequence
-│       ├── gamepad.css                # Focus rings, controller hints & 10-ft layout
-│       ├── focus.css                  # Global :focus-visible rings
-│       ├── screenshots.css            # Gallery grid & lightbox
-│       ├── screenshot-share.css       # Share modal
-│       ├── steamgrid.css              # SteamGridDB cover picker
-│       ├── critic.css                 # Critic score widgets
-│       ├── manage.css                 # Manage modal
-│       ├── move-game.css              # Move-game wizard
-│       ├── storage.css                # Storage manager
-│       ├── playtime.css               # Playtime editor
-│       ├── notifications.css          # Notification center
-│       └── store-loading.css          # Store loading placeholder
+│       ├── tokens.css                 # Flat palette, single accent, radii, reset
+│       ├── components.css             # Buttons, inputs, tabs, chips, rows, modal, empty state, toasts
+│       ├── shell.css                  # Sidebar, window bar, notification panel, command palette
+│       ├── library.css                # Cover grid, list view, toolbar, collections gallery
+│       ├── game-page.css              # Game page hero, tabs, overview, achievements, manage, screenshots
+│       ├── downloads.css              # Active download card, speed chart, list sections
+│       ├── settings.css               # Settings sub-nav and list-row panels
+│       ├── profile.css                # Profile header, progress list, friends
+│       ├── modals.css                 # Shared modal frame + every dialog layout
+│       ├── auth.css                   # Sign-in split layout and loading steps
+│       └── tv-mode.css                # TV Mode and controller hint bar
 ├── src-tauri/                         # Rust Backend (Tauri v2 + Tokio)
 │   ├── Cargo.toml                     # Rust dependencies (serde, tokio, reqwest, tauri 2.x)
 │   ├── tauri.conf.json                # Tauri v2 configuration & window permissions
@@ -157,7 +141,7 @@ efxlve_launcher/
 │   ├── AGENTS.md                      # Core operational rules, invariants & recent log
 │   ├── ARCHITECTURE.md                # System architecture diagrams & data flow
 │   ├── CODEBASE_MAP.md                # Symbol & file index (this file)
-│   ├── DESIGN_SYSTEM.md               # PlayStation 5 Console Dark Design System
+│   ├── DESIGN_SYSTEM.md               # Single desktop design language (sidebar, one accent) + TV Mode
 │   ├── TAURI_IPC_REFERENCE.md         # Tauri IPC command dictionary & signatures (98 commands)
 │   ├── AI_DEVELOPER_GUIDE.md          # Onboarding guide & mental models for AI/devs
 │   ├── REFACTOR_PLAN.md               # Completed modularization plan & design history
@@ -176,18 +160,18 @@ efxlve_launcher/
 |---|---|---|
 | `state.ts` | Single reactive state store `S` and deterministic O(1) lookup helpers. | `S`, `getCustomAvatar()`, `setEpicGamesRaw(list)`, `setEpicSummaries(list)` |
 | `render.ts` | Render bus: `main.ts` registers the real implementations at startup. | `registerRender()`, `render()`, `scheduleRender()`, `notify()`, `openEpicModal()`, `closeAllModals()` |
-| `nav.ts` | Top navigation bar, view state router, and LB/RB controller switching. | `updateNavIndicator()`, `updateChrome()`, `updateBadge()`, `navGoBack()`, `navGoForward()` |
+| `nav.ts` | Sidebar shell: active item, download counter, installed-games list (signature-gated repaint), history. | `updateChrome()`, `updateSidebarActive()`, `updateSidebarGames()`, `updateBadge()`, `navGoBack()`, `navGoForward()` |
 | `selectors.ts` | Filter state, sort algorithms (`trCollator`), collection and advanced search queries (`dev:`, `is:`). | `epicVisibleSummaries()`, `trCollator`, `summaryOf()`, `rawOf()`, `lastPlayedLabel()` |
 | `epic-actions.ts` | Dispatching high-level game actions to Tauri backend with optimistic UI updates. | `epicPlay()`, `epicInstall()`, `epicCancel()`, `refreshUpdates()` |
 | `toast.ts` | PlayStation 5 console toast notification banner dispatch. | `toast(message, type, duration)` |
 | `dom.ts` | Safe DOM lookup and cached query selectors. | `viewEl`, `modalRoot`, `$id(id)`, `closeModal()` |
-| `icons.ts` | Zero-emoji vector SVG generator adhering to PS5 console aesthetic. | `icon(name, size, className)`, `IconName` |
+| `icons.ts` | Zero-emoji vector SVG generator plus shared empty/loading states. | `icon(name, size)`, `emptyState()`, `loadingState()`, `IconName` |
 | `collection-icons.ts` | Vector icon mapper for user and system collections. | `collectionMarker()`, `isCollectionIcon()` |
 | `recent.ts` | Recently played games persistent stack (max 8 entries). | `pushRecent(appName)`, `getRecentApps()`, `pruneRecent()` |
 | `window.ts` | Native window operations and system tray minimize integration. | `handleWindowResize()`, `updateMaxIcon()` |
 | `utils.ts` | Pure formatting utilities for bytes, playtimes, dates, and HTML sanitization. | `fmtBytes(bytes)`, `fmtPlaytime(mins)`, `esc(string)`, `parseEnvText()` |
 | `constants.ts` | Static configuration values, thresholds, localStorage keys and chunking parameters. | `isTauri`, `NO_DESC`, `INITIAL_CARD_CHUNK` (48), `MORE_CARD_CHUNK` (36), `SEARCH_DEBOUNCE_MS` (120) |
-| `types.ts` | Shared TypeScript interfaces and union declarations. | `View`, `DrawerTab`, `EpicSort`, `EpicFilter`, `CardSize`, `SavedAccount` |
+| `types.ts` | Shared TypeScript interfaces and union declarations. | `View` (incl. `"tv"`), `DrawerTab`, `EpicSort`, `EpicFilter`, `EpicViewMode` (`grid`/`list`), `SavedAccount` |
 
 ---
 
@@ -196,23 +180,24 @@ efxlve_launcher/
 | Feature Directory | Module Files | Responsibilities |
 |---|---|---|
 | `auth/` | `auth-actions.ts`, `account-switcher.ts` | Legendary boot, instant cache hydration, progressive login/import sequence, logout, saved-account vault (switch/add/cancel/remove). |
-| `library/` | `library-view.ts` | Quiet cover-wall grid, text filters, progressive chunking via `#lib-scroll-sentinel`. In-place card patches; no default shelves. |
-| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Slide-out game detail drawer, trophy listing, DLC checklist, hardware specs, critic/HLTB widgets. |
-| `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download hero, real-time speed chart canvas, queue controls, scheduled auto-update timer. |
-| `profile/` | `profile-view.ts`, `profile-avatar.ts` | PS5 trophy level, prestige card, most-played showcase, friends sidebar, local account avatar crop/upload. |
-| `gamepad/` | `gamepad.ts` | 10-foot controller input loop, spatial focus navigation and HUD button legend. |
+| `library/` | `library-view.ts` | Cover grid (caption, dimmed uninstalled) or dense list view, text filters, progressive chunking via `#lib-scroll-sentinel`. In-place patches via `data-lib-item`. |
+| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Full-page game page next to the sidebar: hero, primary action, stats, tabs (overview, achievements, DLC, screenshots, manage, specs). |
+| `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download card with speed chart, queue/updates/recent list rows, scheduled auto-update timer. |
+| `profile/` | `profile-view.ts`, `profile-avatar.ts` | Identity header with real totals, achievement progress list, recent grid, friends, local avatar crop/upload. |
+| `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) and hint bar; TV Mode view with hero + cover rows. |
+| `palette/` | `palette.ts` | Ctrl+K command palette routed through the global click router. |
 | `events/` | `click-router.ts`, `input-listeners.ts`, `ipc-listeners.ts` | Central `[data-act]` delegation, keyboard/search/mouse shortcuts, Tauri IPC listeners and `initApp()` bootstrap. |
 | `store/` | `store-view.ts` | Embedded Epic Games Store native child webview lifecycle, resizing and idle cleanup. |
 | `settings/` | `settings-view.ts` | Settings sidebar (Account, Downloads, Integrations, Appearance, Screenshots, System, About), language switch, account switcher UI. |
 | `notifications/` | `notifications.ts` | Slide-in notification center, unread badge and historical activity alerts. |
 | `freegames/` | `freegames.ts` | Epic Weekly Free Games as a Library filter grid (current and upcoming, mobile filtered). |
 | `context-menu/` | `context-menu.ts` | Custom PS5 desktop right-click menu (Play, Properties, Move, Favorite, Uninstall). |
-| `manage/` | `manage-view.ts` | Game configuration modal (custom executable, launch flags, wrapper commands, environment variables). |
+| `manage/` | `manage-view.ts` | Game page Manage tab (verify, location, saves, launch flags, wrapper/env, playtime, uninstall) and its in-place updates. |
 | `move-game/` | `move-game-view.ts`, `move-game-actions.ts` | Multi-drive installation mover dialog with real-time transfer progress and drive free-space checks. |
 | `screenshots/` | `screenshots-view.ts` | In-game F12 screenshot gallery, fullscreen lightbox, format conversion, clipboard copy and share modal. |
 | `collections/` | `collections-view.ts` | Custom user categories, tags, EGL collection importer and shelf filters. |
 | `cover/` | `cover-view.ts` | Custom game artwork manager and SteamGridDB high-resolution cover art picker. |
-| `dlc/` | `dlc-manager.ts`, `selective-install.ts` | Add-on/DLC checklist and selective install-tag picker with install/uninstall actions. |
+| `dlc/` | `selective-install.ts` | Selective install-tag picker (languages, packs, DLCs). DLC toggles live on the game page DLC tab. |
 | `install/` | `install-dialog.ts` | Epic-style install location dialog: base folder picker, sizes, auto-update and shortcut preferences; chains into the selective modal. |
 | `playtime/` | `playtime-view.ts` | Game session duration display, playtime synchronization and manual time editor. |
 | `presence/` | `presence.ts` | Discord Rich Presence state synchronization and game title broadcasting. |
