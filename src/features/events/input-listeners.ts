@@ -37,6 +37,7 @@ import {
 import { renderAchievementSections } from "../drawer/drawer-widgets";
 import { renderDlcRows } from "../dlc/dlc-manager";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
+import { updateInstallFinalPath } from "../install/install-dialog";
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
@@ -309,6 +310,11 @@ document.addEventListener("change", (e) => {
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t && t.id === "install-dir-input") {
+    S.installDialogDir = (t as HTMLInputElement).value;
+    updateInstallFinalPath();
+    return;
+  }
   if (t && t.id === "ss-quality-slider") {
     const val = parseFloat((t as HTMLInputElement).value);
     S.screenshotCompressionQuality = val;
@@ -517,6 +523,10 @@ document.addEventListener("change", (e) => {
     epicSaveGameSettings(S.activeManageSettings)
       .then(() => toast(i18nT(S.activeManageSettings?.cloudSavesEnabled ? "manage.cloudOn" : "manage.cloudOff"), ""))
       .catch((err) => toast(String(err), "err"));
+  } else if (act === "install-toggle-autoupdate") {
+    S.installDialogAutoUpdate = (t as HTMLInputElement).checked;
+  } else if (act === "install-toggle-shortcut") {
+    S.installDialogShortcut = (t as HTMLInputElement).checked;
   } else if (act === "selective-toggle-tag") {
     const tag = t.dataset.tag;
     if (tag) {

@@ -2199,3 +2199,15 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **CI:** `.github/workflows/release.yml` — `v*` tag'inde `tauri-apps/tauri-action@v1` ile imzalı build + yayın + `latest.json` (`releaseDraft: false`, `updaterJsonPreferNsis: true`); matrix Linux/macOS satırları yorumlu hazır bekliyor.
 - **Doğrulama:** `npm.cmd run tauri build` → MSI + NSIS `.exe` ve `.sig` üretimi (EXIT 0), `cargo test` (61/61), `npm.cmd run build`, i18n eşlik (1233/1233).
 
+## 168. Anında "İndiriliyor" Butonu + "Yükleme Konumunu Seç" Diyaloğu
+
+**Kök neden (buton):** `epicInstall` yalnızca `S.downloads`'u güncelliyor ve kütüphane/indirmeler görünümünü yeniden çiziyordu; açık oyun çekmecesi (`modalRoot`) ayrı bir kök olduğu için içindeki "Yükle" butonu ilk `download-progress` olayına kadar eski kalıyordu.
+
+- **Anında geri bildirim:** Yeni `refreshGameActionUi(appName)` (`core/game-view.ts`) indirme durumu değiştiği anda kütüphane ızgarasını `render()` ile, açık çekmeceyi `openEpicModal(appName, false)` ile (sekme/scroll korunarak) yeniler. `epicInstall` ve `applySelectiveInstall` artık bunu çağırıyor.
+- **Yükleme Konumunu Seç diyaloğu:** Yeni `src/features/install/install-dialog.ts` + `#install-root`. "Yükle" artık doğrudan indirmeye başlamak yerine Epic tarzı diyaloğu açar: kapak/başlık, indirme ve gerekli depolama boyutu (`epic_get_install_options`), klasör yolu + "Göz At" (`epic_select_folder_dialog`), canlı "Dosya yolu" önizlemesi (`customAttributes.FolderName` → temizlenmiş başlık), "otomatik güncelle" (`epic_save_game_settings.autoUpdate`) ve "kısayol oluştur" onay kutuları.
+- **Akış:** Kurulu oyunlarda (güncelleme/onarım) diyalog atlanır; üçüncü parti (EA/Ubisoft) oyunlarda doğrudan başlatma akışı korunur. Opsiyonel dil/DLC varsa diyalogdan sonra seçici kurulum modalı seçilen klasörle zincirlenir (`S.selectiveInstallDir`); `applySelectiveInstall` bu klasörü kullanır.
+- **Kısayol isteği:** Onay kutusu işaretliyse oyun `S.pendingShortcutApps`'e eklenir; indirme tamamlandığında (`download-progress done`) `epic_create_desktop_shortcut` çağrılır ve bildirim gösterilir.
+- **Ayarlar cilası:** Kenar çubuğundaki mor "aktif bölüm" noktası (`.settings-nav-indicator`) işaretleme ve CSS'ten kaldırıldı.
+- **Build düzeltmesi:** `ipc-listeners.ts` içindeki eksik `epicGetAutoDesktopShortcut` importu (önceki commit'ten kalan `TS2552`) eklendi.
+- `npm.cmd run build`, `cargo check`, `cargo test` (63/63), i18n eşlik (1249/1249) yeşil.
+

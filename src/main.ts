@@ -13,6 +13,7 @@ import { updateChrome, updateNavHistoryUi, updateNavIndicator } from "./core/nav
 import { S } from "./core/state";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
+import { closeInstallDialog } from "./features/install/install-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import { renderDlcManager } from "./features/dlc/dlc-manager";
 import "./features/events/click-router";
@@ -106,6 +107,7 @@ function closeAllModals(): void {
   closeStorageManager();
   closeNotifPanel();
   closeAvatarModal();
+  closeInstallDialog();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

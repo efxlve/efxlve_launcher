@@ -11,6 +11,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
+  epicCreateDesktopShortcut,
   epicGetAutoDesktopShortcut,
   epicGetNetworkProfile,
   epicGetSettings,
@@ -252,6 +253,14 @@ export async function initApp(hooks: {
       pushRecentInstall(id);
       lastDlSample = null;
       pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
+      // Per-install shortcut request from the install dialog (deferred until the
+      // game files actually exist).
+      if (S.pendingShortcutApps.has(id)) {
+        S.pendingShortcutApps.delete(id);
+        void epicCreateDesktopShortcut(id)
+          .then(() => pushNotification({ kind: "info", title: t("manage.shortcutCreated", { a1: title }), appName: id }))
+          .catch(() => pushNotification({ kind: "error", title: t("manage.shortcutFailed", { msg: title }) }));
+      }
       if (S.activeDlMetrics?.id === id) {
         S.activeDlMetrics = null;
       }

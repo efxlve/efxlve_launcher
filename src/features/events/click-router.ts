@@ -55,7 +55,8 @@ import {
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, updateDrawerTabArrows } from "../drawer/drawer-view";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
-import { applySelectiveInstall, closeSelectiveModal, openSelectiveModal } from "../dlc/selective-install";
+import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
+import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
 import { resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
@@ -816,7 +817,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-play" && id) {
     void epicPlay(id);
   } else if (act === "epic-install" && id) {
-    void openSelectiveModal(id);
+    void openInstallDialog(id);
+  } else if (act === "install-browse") {
+    void browseInstallDir();
+  } else if (act === "install-confirm" && id) {
+    void confirmInstall();
+  } else if (act === "install-cancel") {
+    closeInstallDialog();
+  } else if (act === "install-overlay-close") {
+    const el = e.target as HTMLElement;
+    if (el === t) closeInstallDialog();
   } else if (act === "epic-cancel" && id) {
     void epicCancel(id);
   } else if (act === "epic-uninstall" && id) {

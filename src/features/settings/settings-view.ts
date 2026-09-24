@@ -702,7 +702,6 @@ export function renderSettings(): string {
           <span class="settings-nav-label">${t(s.labelKey)}</span>
           <span class="settings-nav-sub">${t(s.subKey)}</span>
         </div>
-        ${s.id === active.id ? `<span class="settings-nav-indicator"></span>` : ""}
       </button>`,
   ).join("");
 

@@ -1086,3 +1086,218 @@
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+
+/* ==========================================================================
+   Install location dialog
+   ========================================================================== */
+
+.install-dialog {
+  max-width: 560px;
+}
+
+.install-body {
+  padding: 18px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.install-game-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.install-cover {
+  width: 54px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.install-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.install-game-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-game-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.install-game-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.install-game-stats strong {
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+.install-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.install-path-row {
+  display: flex;
+  gap: 10px;
+}
+
+.install-path-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  color: #94a3b8;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.install-path-input-wrap:focus-within {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+.install-path-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+}
+
+.install-browse-btn {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.install-browse-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.install-browse-btn:active {
+  transform: scale(0.98);
+}
+
+.install-final-path {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.install-final-path span {
+  color: #cbd5e1;
+}
+
+.install-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+  font-size: 13.5px;
+  color: #e2e8f0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.install-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.install-cancel-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.install-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.install-cancel-btn:active {
+  transform: scale(0.98);
+}
+
+.install-confirm-btn {
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 10px;
+  background: #2563eb;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 25px -8px rgba(37, 99, 235, 0.6);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.install-confirm-btn:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
+.install-confirm-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.install-confirm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

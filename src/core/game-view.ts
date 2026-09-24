@@ -10,9 +10,20 @@ import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type E
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
+import { openEpicModal, render } from "./render";
 import { rawOf } from "./selectors";
 import { S } from "./state";
 import { esc } from "./utils";
+
+/**
+ * Repaints the action buttons for a game right after its download state changes
+ * (e.g. "Install" -> "Downloading"). The library grid re-renders and the open
+ * drawer is refreshed in place so the label never stays stale.
+ */
+export function refreshGameActionUi(appName: string): void {
+  if (S.view === "library" || S.view === "downloads") render();
+  if (S.currentModalAppName === appName) openEpicModal(appName, false);
+}
 
 /** True when the game has the platinum trophy (100% achievements). */
 export function isAppPlatinum(appName: string): boolean {

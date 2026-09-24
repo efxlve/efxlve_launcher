@@ -15,6 +15,8 @@ export const viewEl = document.getElementById("view") as HTMLElement;
 export const modalRoot = document.getElementById("modal-root") as HTMLElement;
 /** Selective install modal root. */
 export const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
+/** Install location dialog root. */
+export const installRoot = document.getElementById("install-root") as HTMLElement;
 /** Playtime editor modal root. */
 export const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
 /** Cross-drive move modal root. */
