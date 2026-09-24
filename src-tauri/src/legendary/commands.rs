@@ -302,6 +302,8 @@ pub async fn epic_login_with_code(app: AppHandle, code: String) -> Result<String
     let st: LegendaryStatus = client::run_json(&bin, &["status", "--offline", "--json"])
         .await
         .map_err(|e| fail(&app, e))?;
+    let config_dir = super::skip::default_config_dir();
+    super::accounts::ensure_current_account_saved(&config_dir);
     Ok(st.account)
 }
 
@@ -337,6 +339,8 @@ pub async fn epic_import_egl(app: AppHandle) -> Result<String, String> {
     let st: LegendaryStatus = client::run_json(&bin, &["status", "--offline", "--json"])
         .await
         .map_err(|e| fail(&app, e))?;
+    let config_dir = super::skip::default_config_dir();
+    super::accounts::ensure_current_account_saved(&config_dir);
     Ok(st.account)
 }
 
@@ -347,6 +351,24 @@ pub async fn epic_logout(app: AppHandle) -> Result<String, String> {
         .await
         .map_err(|e| fail(&app, e))?;
     Ok("@t:auth.loggedOut".into())
+}
+
+#[tauri::command]
+pub fn epic_get_saved_accounts(_app: AppHandle) -> Result<Vec<super::accounts::SavedAccount>, String> {
+    let config_dir = super::skip::default_config_dir();
+    Ok(super::accounts::list_saved_accounts(&config_dir))
+}
+
+#[tauri::command]
+pub fn epic_switch_account(_app: AppHandle, account_id: String) -> Result<super::accounts::SavedAccount, String> {
+    let config_dir = super::skip::default_config_dir();
+    super::accounts::switch_account(&config_dir, &account_id)
+}
+
+#[tauri::command]
+pub fn epic_remove_saved_account(_app: AppHandle, account_id: String) -> Result<(), String> {
+    let config_dir = super::skip::default_config_dir();
+    super::accounts::remove_saved_account(&config_dir, &account_id)
 }
 
 #[tauri::command]

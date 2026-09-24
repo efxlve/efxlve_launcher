@@ -15,6 +15,7 @@ import type { SettingsSection } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
 import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
+import { loadSavedAccounts } from "../auth/account-switcher";
 import {
   eosOverlayStatus,
   epicDefaultInstallDir,
@@ -131,7 +132,72 @@ function renderAccount(): string {
   `
     : "";
 
-  return identityCard + statsCard + dangerCard;
+  const accounts = S.savedAccounts || [];
+  const accountsListHtml = accounts.length > 0
+    ? accounts
+        .map((acc) => {
+          const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === displayName;
+          const accAvatar = S.customAvatars[acc.account_id] || (isCurrent ? customAvatar : null);
+          const init = (acc.display_name.trim()[0] || "?").toUpperCase();
+          return `
+            <div class="account-switcher-row ${isCurrent ? "active-account" : ""}">
+              <div class="account-switcher-left">
+                <div class="account-switcher-avatar ${accAvatar ? "has-img" : ""}">
+                  ${accAvatar ? `<img src="${esc(accAvatar)}" alt="" />` : `<span>${esc(init)}</span>`}
+                  ${isCurrent ? `<span class="account-switcher-pip online"></span>` : ""}
+                </div>
+                <div class="account-switcher-meta">
+                  <div class="account-switcher-name-row">
+                    <span class="account-switcher-name">${esc(acc.display_name)}</span>
+                    ${isCurrent ? `<span class="account-switcher-active-tag">${icon("check", 11)} ${t("settings.accountActiveBadge")}</span>` : ""}
+                  </div>
+                  <div class="account-switcher-sub-row">
+                    <span class="account-switcher-id">ID: ${esc(acc.account_id.slice(0, 12))}…</span>
+                  </div>
+                </div>
+              </div>
+              <div class="account-switcher-actions">
+                ${isCurrent
+                  ? `<span class="account-current-badge">${t("settings.accountCurrent")}</span>`
+                  : `
+                    <button type="button" class="apple-pill-btn primary small" data-act="account-switch" data-id="${esc(acc.account_id)}">
+                      ${icon("refresh", 12)}
+                      <span>${t("settings.accountSwitchBtn")}</span>
+                    </button>
+                    <button type="button" class="apple-pill-btn secondary small icon-only" data-act="account-remove" data-id="${esc(acc.account_id)}" title="${t("settings.accountRemove")}">
+                      ${icon("trash", 12)}
+                    </button>
+                  `}
+              </div>
+            </div>
+          `;
+        })
+        .join("")
+    : `
+      <div class="account-switcher-empty">
+        <p>${t("settings.accountSwitcherEmpty")}</p>
+      </div>
+    `;
+
+  const switcherCard = `
+    <div class="settings-group account-switcher-group">
+      <div class="settings-group-title-row">
+        <div>
+          <div class="settings-group-title">${t("settings.accountSwitcherTitle")}</div>
+          <div class="settings-group-desc">${t("settings.accountSwitcherDesc")}</div>
+        </div>
+        <button type="button" class="apple-pill-btn secondary small" data-act="account-add">
+          ${icon("plus", 12)}
+          <span>${t("settings.accountAdd")}</span>
+        </button>
+      </div>
+      <div class="account-switcher-list">
+        ${accountsListHtml}
+      </div>
+    </div>
+  `;
+
+  return identityCard + switcherCard + statsCard + dangerCard;
 }
 
 function renderDownloads(): string {
@@ -632,6 +698,7 @@ export async function loadSettingsView(): Promise<void> {
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
+        loadSavedAccounts().catch(() => []),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;

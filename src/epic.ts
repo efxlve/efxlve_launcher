@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { NO_DESC } from "./core/constants";
+import type { SavedAccount } from "./core/types";
+export type { SavedAccount };
 
 /* ---------- Types (match the Rust models, snake_case) ---------- */
 
@@ -500,6 +502,11 @@ export const epicLoginWithCode = (code: string) =>
   invoke<string>("epic_login_with_code", { code });
 export const epicImportEgl = () => invoke<string>("epic_import_egl");
 export const epicLogout = () => invoke<string>("epic_logout");
+export const epicGetSavedAccounts = () => invoke<SavedAccount[]>("epic_get_saved_accounts");
+export const epicSwitchAccount = (accountId: string) =>
+  invoke<SavedAccount>("epic_switch_account", { accountId });
+export const epicRemoveSavedAccount = (accountId: string) =>
+  invoke<void>("epic_remove_saved_account", { accountId });
 export const epicListSkipped = () => invoke<string[]>("epic_list_skipped");
 export const epicCachedLibrary = () => invoke<CachedLibrary>("epic_cached_library");
 

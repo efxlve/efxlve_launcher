@@ -140,7 +140,7 @@ export function renderOnboarding(): string {
               ${icon("gamepad-2", 30)}
             </div>
             <div class="auth-tagline-chip">${t("auth.tagline")}</div>
-            <h1 class="auth-title">EFXLVE</h1>
+            <h1 class="auth-title">Efxlve Launcher</h1>
             <p class="auth-subtitle">${t("auth.subtitle")}</p>
           </div>
 
