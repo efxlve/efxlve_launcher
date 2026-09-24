@@ -1,7 +1,7 @@
 # DESIGN_SYSTEM.md — PlayStation 5 Console Dark Design System
 
 > **Primary Audience:** AI Agents, UI Engineers & Designers.  
-> **Mission:** Transform Efxlve Launcher from an inconsistent, fragmented multi-page UI into a world-class, **PlayStation 5 Console Dark** desktop gaming interface that feels cohesive, tactile, and uncompromisingly professional.
+> **Library (closed-beta lock):** The Library default is a **quiet Steam / Epic cover wall** — portrait covers, text filters, one count, no glass rails, no glow, no Installed badges, no Free Games / Recent shelves above All. Do not restack Apple + PS5 + Steam chrome on this page. Other surfaces may still follow the console-dark notes below.
 
 ---
 

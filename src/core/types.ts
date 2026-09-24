@@ -15,7 +15,7 @@ export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
 export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
 
 /** Library filter modes. */
-export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections";
+export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections" | "freegames";
 /** Library sort modes. */
 export type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
 /** Library layout mode. */

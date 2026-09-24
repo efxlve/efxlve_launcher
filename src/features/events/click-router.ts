@@ -359,6 +359,9 @@ document.addEventListener("click", (e) => {
     } else if (tab === "platinum") {
       S.activeCollectionId = null;
       S.epicFilter = S.epicFilter === "platinum" ? "all" : "platinum";
+    } else if (tab === "freegames") {
+      S.activeCollectionId = null;
+      S.epicFilter = S.epicFilter === "freegames" ? "all" : "freegames";
     } else if (tab === "updates") {
       S.activeCollectionId = null;
       S.epicFilter = S.epicFilter === "updates" ? "all" : "updates";

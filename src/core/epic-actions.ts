@@ -21,13 +21,14 @@ import {
 import { isTauri } from "./constants";
 import { closeModal } from "./dom";
 import { t } from "../i18n";
-import { epicDlProgress, refreshGameActionUi } from "./game-view";
+import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
-import { notify, render, scheduleRender } from "./render";
+import { notify, render } from "./render";
 import { rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
 import { toast } from "./toast";
+import { syncLibraryHeadingCount, syncLibraryUpdatesTab } from "../features/library/library-view";
 
 /** Launch a game and record it in the recent list. */
 export async function epicPlay(appName: string): Promise<void> {
@@ -71,21 +72,25 @@ export async function epicInstall(appName: string, installDir?: string | null): 
   refreshGameActionUi(appName);
   void epicGetQueue().then((q) => {
     S.dlQueueStatus = q;
-    if (S.view === "library" || S.view === "downloads") render();
+    if (S.view === "downloads") render();
+    else if (S.view === "library") refreshGameActionUi(appName);
   }).catch(() => {
-    if (S.view === "library" || S.view === "downloads") render();
+    if (S.view === "downloads") render();
+    else if (S.view === "library") refreshGameActionUi(appName);
   });
   try {
     const msg = await epicInstallGame(appName, installDir ?? undefined);
     toast(msg, "ok");
     S.dlQueueStatus = await epicGetQueue();
-    if (S.view === "library" || S.view === "downloads") render();
+    if (S.view === "downloads") render();
+    else if (S.view === "library") refreshGameActionUi(appName);
   } catch (e) {
     S.downloads.delete(appName);
     if (S.activeDlMetrics?.id === appName) S.activeDlMetrics = null;
     updateBadge();
     toast(String(e), "err");
-    if (S.view === "library" || S.view === "downloads") render();
+    if (S.view === "downloads") render();
+    else if (S.view === "library") refreshGameActionUi(appName);
   }
 }
 
@@ -109,6 +114,7 @@ export async function epicUninstall(appName: string): Promise<void> {
   }
   closeModal();
   await refreshEpicInstalled();
+  if (S.view === "library") patchLibraryCardDom(appName);
 }
 
 /** Re-read the installed list from Legendary and refresh the UI. */
@@ -119,7 +125,10 @@ export async function refreshEpicInstalled(): Promise<void> {
     setEpicSummaries(summarize(S.epicGamesRaw, einstalled, eskipped));
     pruneRecent();
     S.epicSkippedCount = eskipped.length;
-    if (S.view === "library") scheduleRender();
+    if (S.view === "library") {
+      syncLibraryHeadingCount();
+      syncLibraryUpdatesTab();
+    }
     void refreshUpdates();
   } catch (e) {
     toast(t("lib.installedRefreshFailed", { msg: String(e) }), "err");
@@ -145,8 +154,16 @@ export async function refreshUpdates(): Promise<void> {
         notify({ kind: "update", title: t("notif.updateAvailable", { title }), appName: u.appName });
       }
     }
-    if (S.availableUpdates.size > 0 && S.view === "library") {
-      scheduleRender();
+    S.libraryDataRev++;
+    if (S.view === "library") {
+      syncLibraryUpdatesTab();
+      document.querySelectorAll<HTMLElement>(".pcard[data-id]").forEach((card) => {
+        const id = card.dataset.id;
+        if (!id) return;
+        const should = S.availableUpdates.has(id) || Boolean(S.epicSummariesMap.get(id)?.updateAvailable);
+        const hasBadge = Boolean(card.querySelector(".pbadge.update"));
+        if (should !== hasBadge) patchLibraryCardDom(id);
+      });
     }
   } catch (e) {
     console.warn("Update check could not be performed:", e);

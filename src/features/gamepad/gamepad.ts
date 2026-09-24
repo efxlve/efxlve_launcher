@@ -118,14 +118,42 @@ export function initGamepadSupport(): void {
   }, 1000);
 }
 
+function gamepadHasActivity(gp: Gamepad): boolean {
+  for (const b of gp.buttons) {
+    if (b.pressed) return true;
+  }
+  return Math.abs(gp.axes[0] ?? 0) > 0.55 || Math.abs(gp.axes[1] ?? 0) > 0.55;
+}
+
+function scheduleGamepadLoop(idle: boolean): void {
+  if (!S.gamepadPolling) return;
+  if (idle) {
+    window.setTimeout(() => {
+      if (S.gamepadPolling) requestAnimationFrame(gamepadLoop);
+    }, 80);
+    return;
+  }
+  requestAnimationFrame(gamepadLoop);
+}
+
 export function gamepadLoop(): void {
   if (!S.gamepadPolling) return;
 
   const now = performance.now();
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = Array.from(gamepads).find((g) => g !== null && g.connected);
+  if (!gp) {
+    scheduleGamepadLoop(true);
+    return;
+  }
 
-  if (gp && now - S.lastGamepadActionTime > 170) {
+  const idle = !gamepadHasActivity(gp);
+  if (idle) {
+    scheduleGamepadLoop(true);
+    return;
+  }
+
+  if (now - S.lastGamepadActionTime > 170) {
     if (S.gamepadHudEl) S.gamepadHudEl.classList.remove("dimmed");
     const btns = gp.buttons;
     const axes = gp.axes;
@@ -136,7 +164,7 @@ export function gamepadLoop(): void {
     const left = btns[14]?.pressed || axes[0] < -0.55;
     const right = btns[15]?.pressed || axes[0] > 0.55;
 
-    // Standart Butonlar: 0: A (✕), 1: B (○), 2: X (□), 3: Y (△), 4: L1/LB, 5: R1/RB
+    // Face buttons: 0: A, 1: B, 2: X, 3: Y, 4: LB, 5: RB
     const btnA = btns[0]?.pressed;
     const btnB = btns[1]?.pressed;
     const btnX = btns[2]?.pressed;
@@ -188,7 +216,58 @@ export function gamepadLoop(): void {
     }
   }
 
-  requestAnimationFrame(gamepadLoop);
+  scheduleGamepadLoop(false);
+}
+
+function libraryGridColumns(grid: HTMLElement): number {
+  const card = grid.querySelector<HTMLElement>(":scope > .pcard");
+  if (!card) return 1;
+  const gap = 20;
+  const w = card.offsetWidth;
+  if (w <= 0) return 1;
+  return Math.max(1, Math.round((grid.clientWidth + gap) / (w + gap)));
+}
+
+function moveLibraryGridFocus(dir: "up" | "down" | "left" | "right"): boolean {
+  const grid = document.querySelector<HTMLElement>(".pgrid");
+  if (!grid) return false;
+  const cards = Array.from(grid.querySelectorAll<HTMLElement>(":scope > .pcard"));
+  if (cards.length === 0) return false;
+
+  const current = document.activeElement as HTMLElement | null;
+  const onCard = current && current.classList.contains("pcard") && grid.contains(current);
+  const filters = Array.from(document.querySelectorAll<HTMLElement>(".lib-filter, .lib-sort-btn, .lib-search input, .lib-refresh-btn"));
+
+  if (!onCard) {
+    if (dir === "down" || dir === "right") {
+      cards[0].focus();
+      cards[0].scrollIntoView({ block: "nearest", inline: "nearest" });
+      return true;
+    }
+    return false;
+  }
+
+  const idx = cards.indexOf(current);
+  if (idx < 0) return false;
+  const cols = libraryGridColumns(grid);
+  let next = idx;
+  if (dir === "left") next = idx - 1;
+  else if (dir === "right") next = idx + 1;
+  else if (dir === "up") next = idx - cols;
+  else next = idx + cols;
+
+  if (dir === "up" && next < 0) {
+    const lastFilter = filters[filters.length - 1];
+    if (lastFilter) {
+      lastFilter.focus();
+      return true;
+    }
+    return true;
+  }
+  if (next < 0 || next >= cards.length) return true;
+  cards[next].focus();
+  cards[next].scrollIntoView({ block: "nearest", inline: "nearest" });
+  return true;
 }
 
 export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): void {
@@ -197,23 +276,37 @@ export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "righ
     ? document.getElementById("modal-root")!
     : (document.getElementById("view") || document.body);
 
-  if (dir === "down" && S.view === "library" && !modalOpen) {
-    const sentinel = document.getElementById("lib-scroll-sentinel");
-    if (sentinel) {
-      const visible = epicVisibleSummaries();
-      if (S.renderedCardCount < visible.length) {
-        const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
-        S.renderedCardCount += nextSlice.length;
-        const newCardsHtml = nextSlice
-          .map((s) => epicCardPortrait(s))
-          .join("");
-        sentinel.insertAdjacentHTML("beforebegin", newCardsHtml);
-        if (S.renderedCardCount >= visible.length) {
-          sentinel.remove();
-          S.libScrollObserver?.disconnect();
-          S.libScrollObserver = null;
+  if (S.view === "library" && !modalOpen) {
+    if (moveLibraryGridFocus(dir)) {
+      if (dir === "down") {
+        const sentinel = document.getElementById("lib-scroll-sentinel");
+        if (sentinel) {
+          const visible = epicVisibleSummaries();
+          if (S.renderedCardCount < visible.length) {
+            const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
+            S.renderedCardCount += nextSlice.length;
+            sentinel.insertAdjacentHTML("beforebegin", nextSlice.map((s) => epicCardPortrait(s)).join(""));
+            if (S.renderedCardCount >= visible.length) {
+              sentinel.remove();
+              S.libScrollObserver?.disconnect();
+              S.libScrollObserver = null;
+            }
+          }
         }
       }
+      return;
+    }
+    const chrome = Array.from(
+      document.querySelectorAll<HTMLElement>(".lib-filter, .lib-sort-btn, .lib-search input, .lib-refresh-btn"),
+    ).filter((el) => el.offsetParent !== null);
+    if (chrome.length > 0) {
+      const current = document.activeElement as HTMLElement | null;
+      const idx = current ? chrome.indexOf(current) : -1;
+      const next = dir === "left" || dir === "up"
+        ? (idx <= 0 ? chrome.length - 1 : idx - 1)
+        : (idx < 0 || idx >= chrome.length - 1 ? 0 : idx + 1);
+      chrome[next].focus();
+      return;
     }
   }
 

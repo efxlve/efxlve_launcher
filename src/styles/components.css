@@ -303,3 +303,71 @@ img, a {
 }
 .tpl-actions { margin-top: auto; }
 
+/* Segmented rail + search box still used by Profile (Library no longer uses these). */
+.apple-segmented-rail {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 40px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.apple-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.apple-segment:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.apple-segment.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.apple-search-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 40px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #64748b;
+  width: 245px;
+}
+
+.apple-search-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+}
+
+.apple-search-box input {
+  background: none;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 12.5px;
+  width: 100%;
+  font-family: inherit;
+}
+

@@ -1,24 +1,24 @@
 /**
- * Library view: Minimalist PS5 Console Hybrid Architecture (Shelves + Unified Grid).
+ * Library view: quiet Steam / Epic cover wall.
  *
- * Renders the main library page, horizontal dynamic shelves (Recently Played & Free Games),
- * and the progressive chunking game grid. Reads shared state (S); all actions are
- * routed through the global data-act delegation in click-router.ts.
+ * Default All is a portrait grid only. Filters are plain text. Cards rest as
+ * covers; hover shows title + one action. Exception badges are Update / Running
+ * only. Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
-import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
+import { isCollectionIcon } from "../../core/collection-icons";
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum } from "../../core/game-view";
-import { epicPlatinumIcon, icon } from "../../core/icons";
-import { epicWideArt, rawOf } from "../../core/selectors";
+import { icon } from "../../core/icons";
+import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { esc } from "../../core/utils";
 
-import { getThirdPartyLauncher, requiresThirdPartyLauncher, epicPortrait, type EpicSummary } from "../../epic";
-import type { EpicFilter, EpicSort } from "../../core/types";
+import { epicPortrait, type EpicSummary } from "../../epic";
+import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
-import { renderFreeGamesShelf } from "../freegames/freegames";
+import { renderFreeGamesGrid } from "../freegames/freegames";
 import { renderOnboarding } from "../onboarding/onboarding-view";
 
 /** Sort options shown in the library sort dropdown, evaluated dynamically with current language. */
@@ -68,16 +68,48 @@ function parseQuery(q: string): {
   return out;
 }
 
+let cachedCollatorLang = "";
+let cachedCollator: Intl.Collator | null = null;
+
 function getCollator(): Intl.Collator {
   const lang = S.appLanguage || "en";
+  if (cachedCollator && cachedCollatorLang === lang) return cachedCollator;
   try {
-    return new Intl.Collator(lang, { sensitivity: "base", numeric: true });
+    cachedCollator = new Intl.Collator(lang, { sensitivity: "base", numeric: true });
   } catch {
-    return new Intl.Collator("en", { sensitivity: "base", numeric: true });
+    cachedCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
   }
+  cachedCollatorLang = lang;
+  S.trCollator = cachedCollator;
+  return cachedCollator;
+}
+
+let visibleCache: EpicSummary[] | null = null;
+let visibleCacheSig = "";
+
+function visibleSignature(): string {
+  return [
+    S.query,
+    S.epicFilter,
+    S.epicSort,
+    S.activeCollectionId ?? "",
+    String(S.libraryDataRev),
+    S.appLanguage,
+    String(S.epicFav.size),
+    String(S.availableUpdates.size),
+    S.epicRecent.join(","),
+  ].join("\x1f");
+}
+
+export function invalidateLibraryVisibleCache(): void {
+  visibleCache = null;
+  visibleCacheSig = "";
 }
 
 export function epicVisibleSummaries(): EpicSummary[] {
+  const sig = visibleSignature();
+  if (visibleCache && visibleCacheSig === sig) return visibleCache;
+
   const q = S.query.trim().toLowerCase();
   const query = parseQuery(q);
   const activeCol =
@@ -119,7 +151,6 @@ export function epicVisibleSummaries(): EpicSummary[] {
     if (query.update && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
     if (query.dev && !studio.includes(query.dev)) return false;
 
-    // Plain terms match the title or the studio/publisher.
     const title = s.title.toLowerCase();
     for (const term of query.terms) {
       if (!title.includes(term) && !studio.includes(term)) return false;
@@ -127,30 +158,36 @@ export function epicVisibleSummaries(): EpicSummary[] {
     return true;
   });
 
-  const byTitle = (a: EpicSummary, b: EpicSummary) => getCollator().compare(a.title, b.title);
+  const collator = getCollator();
+  const byTitle = (a: EpicSummary, b: EpicSummary) => collator.compare(a.title, b.title);
 
+  let result: EpicSummary[];
   switch (S.epicSort) {
     case "alpha":
-      return [...list].sort(byTitle);
+      result = [...list].sort(byTitle);
+      break;
     case "installed":
-      return [...list].sort((a, b) => Number(b.installed) - Number(a.installed) || byTitle(a, b));
+      result = [...list].sort((a, b) => Number(b.installed) - Number(a.installed) || byTitle(a, b));
+      break;
     case "updates":
-      return [...list].sort(
+      result = [...list].sort(
         (a, b) =>
           Number(b.updateAvailable || S.availableUpdates.has(b.appName)) -
             Number(a.updateAvailable || S.availableUpdates.has(a.appName)) ||
           byTitle(a, b),
       );
+      break;
     case "platinum":
-      return [...list].sort(
+      result = [...list].sort(
         (a, b) => Number(isAppPlatinum(b.appName)) - Number(isAppPlatinum(a.appName)) || byTitle(a, b),
       );
+      break;
     default: {
       const recentIdxMap = new Map<string, number>();
       for (let i = 0; i < S.epicRecent.length; i++) {
         recentIdxMap.set(S.epicRecent[i], i);
       }
-      return [...list].sort((a, b) => {
+      result = [...list].sort((a, b) => {
         const inRecentA = recentIdxMap.has(a.appName);
         const inRecentB = recentIdxMap.has(b.appName);
         if (inRecentA && inRecentB) {
@@ -181,151 +218,39 @@ export function epicVisibleSummaries(): EpicSummary[] {
       });
     }
   }
+
+  visibleCache = result;
+  visibleCacheSig = sig;
+  return result;
 }
 
-/** Portrait game card adhering strictly to PS5 Console Dark design standards. */
+/** Cover-only tile. Hover overlay is title + one primary action. */
 export function epicCardPortrait(s: EpicSummary): string {
-  const faved = S.epicFav.has(s.appName);
   const p = epicDlProgress(s.appName);
-  const isPlat = isAppPlatinum(s.appName);
   const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
   const isRunning = S.runningGames.has(s.appName);
-  const pt = S.playtimeMap.get(s.appName);
   const badge = isRunning
-    ? `<span class="pbadge ready" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:rgba(16,185,129,0.5)"><span class="running-dot"></span>${t("lib.running")}</span>`
+    ? `<span class="pbadge running">${t("lib.running")}</span>`
     : hasUpdate
-      ? `<span class="pbadge update"><span class="dot"></span>${t("lib.updateBadge")}</span>`
-      : s.installed
-        ? `<span class="pbadge ready"><span class="dot"></span>${t("common.installed")}</span>`
-        : "";
-  const ribbon = isPlat
-    ? `<div class="platinum-badge" title="${t("lib.platinumTitle", { name: esc(s.title) })}">${epicPlatinumIcon(16)}</div>`
-    : "";
+      ? `<span class="pbadge update">${t("lib.updateBadge")}</span>`
+      : "";
   const dlBar =
     p !== null
       ? `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${s.appName}" style="width:${p}%"></div></div>`
       : "";
 
-  const microChips: string[] = [];
-  if (pt && pt.total_seconds > 0) {
-    microChips.push(`<span class="micro-chip playtime">${icon("clock", 10)} ${fmtPlaytime(pt.total_seconds)}</span>`);
-  }
-  const achSum = S.epicAchSummaries[s.appName];
-  if (isPlat) {
-    microChips.push(`<span class="micro-chip plat">${epicPlatinumIcon(11)} ${t("lib.platinum")}</span>`);
-  } else if (achSum && achSum.total_achievements > 0) {
-    const pct = Math.round((achSum.user_unlocked / achSum.total_achievements) * 100);
-    microChips.push(`<span class="micro-chip ach">${icon("trophy", 10)} %${pct}</span>`);
-  }
-
   return `
-    <div class="pcard ${isPlat ? "platinum" : ""}" data-act="epic-detail" data-id="${s.appName}" tabindex="0" role="button">
+    <div class="pcard" data-act="epic-detail" data-id="${s.appName}" data-app="${s.appName}" tabindex="0" role="button">
       ${epicArt(s)}
       ${badge}
-      ${ribbon}
-      <div class="shade"></div>
       <div class="poverlay">
-        <div class="top">
-          <button class="iconbtn ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("lib.favorite")}">${icon("heart", 14)}</button>
-          <button class="iconbtn" data-act="open-custom-cover" data-id="${s.appName}" title="${t("lib.customizeCover")}">${icon("image", 14)}</button>
-          <button class="iconbtn" data-act="epic-detail" data-id="${s.appName}" title="${t("lib.detail")}">${icon("dots", 14)}</button>
-        </div>
         <div class="bottom">
           <div class="ptitle">${esc(s.title)}</div>
-          ${microChips.length > 0 ? `<div class="pcard-micro-hud">${microChips.join("")}</div>` : ""}
-          ${epicActionButtons(s, "full")}
+          ${epicActionButtons(s, "full", { primaryOnly: true })}
         </div>
       </div>
       ${dlBar}
     </div>`;
-}
-
-/** Featured wide card for the primary game in a horizontal shelf. */
-export function renderShelfHeroCard(s: EpicSummary): string {
-  const wideImg = epicWideArt(s) || s.cover;
-  const g = rawOf(s.appName);
-  const devRaw = g?.metadata?.developer;
-  const dev = typeof devRaw === "string" ? devRaw : "Epic Games";
-  const p = epicDlProgress(s.appName);
-  const partner = getThirdPartyLauncher(g);
-  const isRunning = S.runningGames.has(s.appName);
-  const pt = S.playtimeMap.get(s.appName);
-
-  const primaryBtn =
-    p !== null
-       ? `<button class="btn primary small" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`
-      : isRunning
-        ? `<button class="btn running small" data-id="${s.appName}"><span class="running-dot"></span> ${t("common.playing")}</button>`
-        : s.installed
-          ? s.updateAvailable || S.availableUpdates.has(s.appName)
-            ? `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`
-            : `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 13)} ${t("common.play")}</button>`
-          : requiresThirdPartyLauncher(partner)
-            ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("lib.launch")}</button>`
-            : `<button class="btn install small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.install")}</button>`;
-
-  return `
-    <div class="shelf-hero-card" data-act="epic-detail" data-id="${s.appName}">
-      ${wideImg ? `<img class="shelf-hero-bg" src="${esc(wideImg)}" alt="" decoding="async" fetchpriority="high" />` : ""}
-      <div class="shelf-hero-gradient"></div>
-      <div class="shelf-hero-body">
-        <div class="shelf-hero-tag">${icon("play", 10)} ${t("lib.recent")}</div>
-        <div class="shelf-hero-title">${esc(s.title)}</div>
-        <div class="shelf-hero-meta">
-          <span>${esc(dev)}</span>
-          ${pt && pt.total_seconds > 0 ? `<span>•</span><span style="color:#38bdf8">${icon("clock", 10)} ${fmtPlaytime(pt.total_seconds)}</span>` : ""}
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-          ${primaryBtn}
-          <button class="btn ghost small" data-act="epic-detail" data-id="${s.appName}">${icon("dots", 13)} ${t("lib.details")}</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/** How many cards a shelf renders before offering "see all". */
-const SHELF_PREVIEW = 18;
-
-export function renderShelfSection(
-  markerIcon: string,
-  title: string,
-  items: EpicSummary[],
-  opts: { featuredFirst?: boolean; filter?: EpicFilter; collectionId?: string } = {},
-): string {
-  if (items.length === 0) return "";
-  const total = items.length;
-  const preview = total > SHELF_PREVIEW ? items.slice(0, SHELF_PREVIEW) : items;
-  const firstItem = opts.featuredFirst ? preview[0] : null;
-  const restItems = opts.featuredFirst ? preview.slice(1) : preview;
-
-  const seeAll =
-    total > SHELF_PREVIEW
-      ? `<button class="shelf-see-all" data-act="shelf-see-all" ${opts.filter ? `data-filter="${opts.filter}"` : ""} ${opts.collectionId ? `data-col-id="${esc(opts.collectionId)}"` : ""}>${t("lib.seeAll")} (${total}) ${icon("chevron-right", 12)}</button>`
-      : "";
-
-  return `
-    <div class="shelf-section size-${S.epicCardSize}">
-      <div class="shelf-header">
-        <div class="shelf-title-group">
-          <span class="shelf-icon">${icon(isCollectionIcon(markerIcon) ? markerIcon : "folder", 15)}</span>
-          <h3 class="shelf-title">${esc(title)}</h3>
-          <span class="shelf-badge">${total}</span>
-        </div>
-        <div class="shelf-nav">
-          ${seeAll}
-          <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="left" title="${t("lib.scrollLeft")}">${icon("chevron-left", 14)}</button>
-          <button class="shelf-nav-btn" data-act="shelf-scroll" data-dir="right" title="${t("lib.scrollRight")}">${icon("chevron-right", 14)}</button>
-        </div>
-      </div>
-      <div class="shelf-featured-wrap">
-        ${firstItem ? renderShelfHeroCard(firstItem) : ""}
-        <div class="shelf-row-track">
-          ${restItems.map((s) => epicCardPortrait(s)).join("")}
-        </div>
-      </div>
-    </div>
-  `;
 }
 
 export function resetCardChunk(): void {
@@ -341,9 +266,7 @@ function coverUrlOf(s: EpicSummary): string | null {
 }
 
 /**
- * Renders the Collections Gallery Grid (Apple & Steam inspired folder gallery).
- * Displays rich interactive collection folder cards with 2x2 artwork collages,
- * count badge, and instant opening into the full library grid.
+ * Collections folder gallery. Kept as a separate mode from the default cover wall.
  */
 function renderCollectionsGallery(): string {
   const allCategorizedApps = new Set<string>();
@@ -444,13 +367,23 @@ function renderCollectionsGallery(): string {
     </div>`;
 }
 
+function renderGrid(cardsHtml: string, sentinelHtml: string): string {
+  return `
+    <div class="pgrid size-${S.epicCardSize}">
+      ${cardsHtml}
+      ${sentinelHtml}
+    </div>`;
+}
+
 /**
- * Renders the library content area using the Hybrid Console Architecture:
- * - Default View (All / no search query): Top shelves (Free Games + Recent Games) + full grid.
- * - Collections View: Apple / Steam collection folders gallery grid, or active collection detail grid.
- * - Filtered / Search View: Clean, pure, focused Grid of matching games.
+ * Renders the library content area. Default All is a cover grid.
+ * Collections and Free Games are separate filter modes.
  */
 export function renderEpicItems(): string {
+  if (S.epicFilter === "freegames") {
+    return renderFreeGamesGrid();
+  }
+
   if (
     S.epicFilter === "collections" &&
     S.query.trim().length === 0 &&
@@ -460,10 +393,6 @@ export function renderEpicItems(): string {
   }
 
   const visible = epicVisibleSummaries();
-  const isFilteringOrSearching =
-    S.query.trim().length > 0 ||
-    S.epicFilter !== "all" ||
-    (S.activeCollectionId !== null && S.activeCollectionId !== "all");
 
   if (visible.length === 0) {
     if (S.epicFilter === "collections" && S.activeCollectionId !== null) {
@@ -482,7 +411,6 @@ export function renderEpicItems(): string {
             <div class="col-breadcrumb-meta">
               <span class="col-breadcrumb-icon">${icon(marker, 16)}</span>
               <h2 class="col-breadcrumb-title">${esc(colName)}</h2>
-              <span class="shelf-badge">0</span>
             </div>
           </div>
           <div class="empty">
@@ -503,7 +431,6 @@ export function renderEpicItems(): string {
     ? `<div id="lib-scroll-sentinel" style="height:24px;grid-column:1/-1;width:100%;pointer-events:none;"></div>`
     : "";
 
-  // When viewing an active collection, render breadcrumb header + responsive grid
   if (S.epicFilter === "collections" && S.activeCollectionId !== null) {
     const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
     const isUncat = S.activeCollectionId === "uncategorized";
@@ -528,58 +455,11 @@ export function renderEpicItems(): string {
               <span>${t("col.edit")}</span>
             </button>` : ""}
         </div>
-        <div class="pgrid size-${S.epicCardSize}">
-          ${cardsHtml}
-          ${sentinelHtml}
-        </div>
+        ${renderGrid(cardsHtml, sentinelHtml)}
       </div>`;
   }
 
-  // When searching or applying a specific filter, render purely the focused grid.
-  if (isFilteringOrSearching) {
-    return `
-      <div class="pgrid size-${S.epicCardSize}">
-        ${cardsHtml}
-        ${sentinelHtml}
-      </div>`;
-  }
-
-  // Default Console Hybrid View: Upper shelves (Free Games & Recent Games) + Full Library Grid below
-  const shelves: string[] = [];
-  const freeShelf = renderFreeGamesShelf();
-  if (freeShelf) {
-    shelves.push(freeShelf);
-  }
-
-  const recentGames = S.epicRecent
-    .map((id) => S.epicSummariesMap.get(id))
-    .filter((s): s is EpicSummary => !!s);
-
-  if (recentGames.length > 0) {
-    shelves.push(renderShelfSection("clock", t("lib.recentGames"), recentGames, { featuredFirst: true }));
-  }
-
-  const shelvesMarkup = shelves.length > 0
-    ? `<div class="lib-shelves-stage">${shelves.join("")}</div>`
-    : "";
-
-  return `
-    <div class="lib-content-wrap">
-      ${shelvesMarkup}
-      <div class="lib-grid-stage">
-        <div class="lib-section-heading">
-          <div class="lib-section-title">
-            ${icon("layout-grid", 15)}
-            <span>${t("lib.allGames")}</span>
-            <span class="shelf-badge">${visible.length}</span>
-          </div>
-        </div>
-        <div class="pgrid size-${S.epicCardSize}">
-          ${cardsHtml}
-          ${sentinelHtml}
-        </div>
-      </div>
-    </div>`;
+  return renderGrid(cardsHtml, sentinelHtml);
 }
 
 export function setupLibScrollObserver(): void {
@@ -631,11 +511,6 @@ export function renderSkeletonLibrary(): string {
       () => `
       <div class="pcard skeleton-card">
         <div class="skeleton-cover"></div>
-        <div class="skeleton-badge"></div>
-        <div class="skeleton-overlay">
-          <div class="skeleton-line skeleton-title"></div>
-          <div class="skeleton-line skeleton-sub"></div>
-        </div>
       </div>`
     )
     .join("");
@@ -644,26 +519,70 @@ export function renderSkeletonLibrary(): string {
     <div class="lib-top-bar">
       <div class="lib-title-group">
         <h1 class="lib-heading">${t("nav.library")}</h1>
-        <div class="skeleton-pill" style="width:120px;height:24px;border-radius:20px;"></div>
-      </div>
-      <div class="lib-top-actions">
-        <div class="skeleton-circle" style="width:36px;height:36px;border-radius:10px;"></div>
       </div>
     </div>
-    <div class="lib-unified-toolbar" style="margin-bottom:18px;">
+    <div class="lib-unified-toolbar">
       <div class="unified-toolbar-left">
-        <div class="skeleton-pill" style="width:75px;height:32px;border-radius:9px;"></div>
-        <div class="skeleton-pill" style="width:85px;height:32px;border-radius:9px;"></div>
-        <div class="skeleton-pill" style="width:95px;height:32px;border-radius:9px;"></div>
-        <div class="skeleton-pill" style="width:80px;height:32px;border-radius:9px;"></div>
-        <div class="skeleton-pill" style="width:110px;height:32px;border-radius:9px;"></div>
+        <div class="lib-filters">
+          <div class="skeleton-pill" style="width:48px;height:20px;border-radius:4px;"></div>
+          <div class="skeleton-pill" style="width:64px;height:20px;border-radius:4px;"></div>
+          <div class="skeleton-pill" style="width:72px;height:20px;border-radius:4px;"></div>
+        </div>
       </div>
       <div class="unified-toolbar-right">
-        <div class="skeleton-pill" style="width:180px;height:32px;border-radius:9px;"></div>
-        <div class="skeleton-pill" style="width:105px;height:32px;border-radius:9px;"></div>
+        <div class="skeleton-pill" style="width:180px;height:32px;border-radius:8px;"></div>
       </div>
     </div>
     <div class="pgrid size-${S.epicCardSize}">${skelCards}</div>`;
+}
+
+function countUpdates(): number {
+  let n = 0;
+  for (const s of S.epicSummaries) {
+    if (s.updateAvailable || S.availableUpdates.has(s.appName)) n++;
+  }
+  return n;
+}
+
+function updatesFilterBtn(count: number): string {
+  return `<button class="lib-filter ${S.epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
+    <span>${t("library.updates")}</span>
+    <span class="lib-filter-count">${count}</span>
+  </button>`;
+}
+
+export function syncLibraryHeadingCount(): void {
+  const el = document.getElementById("lib-heading-count");
+  if (el) el.textContent = t("lib.gameCount", { count: S.epicSummaries.length });
+}
+
+export function syncLibraryUpdatesTab(): void {
+  const rail = document.querySelector(".lib-filters");
+  if (!rail) return;
+  const count = countUpdates();
+  const existing = rail.querySelector<HTMLElement>(".lib-filter[data-tab='updates']");
+  if (count === 0) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    const n = existing.querySelector(".lib-filter-count");
+    if (n) n.textContent = String(count);
+    existing.classList.toggle("active", S.epicFilter === "updates");
+    return;
+  }
+  rail.insertAdjacentHTML("beforeend", updatesFilterBtn(count));
+}
+
+export function refreshLibraryResultsInPlace(): boolean {
+  if (S.view !== "library") return false;
+  const resultsEl = document.getElementById("lib-results");
+  if (!resultsEl) return false;
+  resetCardChunk();
+  invalidateLibraryVisibleCache();
+  resultsEl.innerHTML = renderEpicItems();
+  setupLibScrollObserver();
+  return true;
 }
 
 export function renderEpic(): string {
@@ -689,52 +608,17 @@ export function renderEpic(): string {
       </div>`;
   }
 
-  // Pre-calculate filter and update metrics in a single pass.
-  const selectedCol =
-    S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav"
-      ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
-      : null;
-  const colSet = selectedCol ? new Set(selectedCol.app_names.map((n) => n.toLowerCase())) : null;
-  const favOnly = S.activeCollectionId === "fav";
+  // A full page rebuild must not replay a grown 200–520 card chunk.
+  resetCardChunk();
 
-  let favTotalCount = 0;
-  let allInstalledCount = 0;
-  let totalInstalledSize = 0;
-  let allUpdatesCount = 0;
-  let totalColCount = 0;
-  let platCount = 0;
-  for (const s of S.epicSummaries) {
-    if (S.epicFav.has(s.appName)) favTotalCount++;
-    if (s.installed) {
-      allInstalledCount++;
-      totalInstalledSize += s.installSize || 0;
-    }
-    if (s.updateAvailable || S.availableUpdates.has(s.appName)) allUpdatesCount++;
-    if (colSet ? colSet.has(s.appName.toLowerCase()) : favOnly ? S.epicFav.has(s.appName) : true) {
-      totalColCount++;
-      if (isAppPlatinum(s.appName)) platCount++;
-    }
-  }
-
-  const isUpdateNewlyAdded = S.prevRenderedUpdatesCount === 0 && allUpdatesCount > 0;
-  const isColNewlyChanged = S.prevRenderedColId !== undefined && S.prevRenderedColId !== S.activeCollectionId;
-  S.prevRenderedUpdatesCount = allUpdatesCount;
-  S.prevRenderedColId = S.activeCollectionId;
-
+  const allUpdatesCount = countUpdates();
   const currentSortOpt = getSortOptions().find((o) => o.id === S.epicSort) || getSortOptions()[0];
 
   return `
     <div class="lib-top-bar">
       <div class="lib-title-group">
         <h1 class="lib-heading">${t("nav.library")}</h1>
-        <div class="lib-heading-stats">
-          <span class="stat-dot"></span>
-          <span>${t("lib.gameCount", { count: S.epicSummaries.length })}</span>
-          <span class="stat-sep">•</span>
-          <span style="color:#10b981;font-weight:700">${t("lib.installedCount", { count: allInstalledCount })}</span>
-          <span class="stat-sep">•</span>
-          <span>${fmtBytes(totalInstalledSize)}</span>
-        </div>
+        <span id="lib-heading-count" class="lib-heading-count">${t("lib.gameCount", { count: S.epicSummaries.length })}</span>
       </div>
       <div class="lib-top-actions">
         <button class="lib-refresh-btn ${S.epicSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">
@@ -750,57 +634,24 @@ export function renderEpic(): string {
 
     <div class="lib-unified-toolbar">
       <div class="unified-toolbar-left">
-        <div class="apple-segmented-rail">
-          <button class="apple-segment ${S.activeCollectionId === null && S.epicFilter === "all" ? "active" : ""}" data-act="quick-tab" data-tab="all">
-            <span>${t("library.all")}</span>
-            <span class="segment-cnt">${S.epicSummaries.length}</span>
-          </button>
-          <button class="apple-segment ${S.epicFilter === "collections" ? "active" : ""}" data-act="quick-tab" data-tab="collections">
-            <span class="segment-icon">${icon("folder", 12)}</span>
-            <span>${t("lib.collections")}</span>
-            ${S.epicCollections.length > 0 ? `<span class="segment-cnt">${S.epicCollections.length}</span>` : ""}
-          </button>
-          <button class="apple-segment ${S.epicFilter === "installed" ? "active" : ""}" data-act="quick-tab" data-tab="installed">
-            <span class="segment-dot installed"></span>
-            <span>${t("library.installed")}</span>
-            <span class="segment-cnt">${allInstalledCount}</span>
-          </button>
-          <button class="apple-segment ${S.activeCollectionId === "fav" || S.epicFilter === "fav" ? "active" : ""}" data-act="quick-tab" data-tab="fav">
-            <span class="segment-icon">${icon("heart", 12)}</span>
-            <span>${t("library.favorites")}</span>
-            <span class="segment-cnt">${favTotalCount}</span>
-          </button>
-          <button class="apple-segment ${S.epicFilter === "platinum" ? "active" : ""}" data-act="quick-tab" data-tab="platinum">
-            <span class="segment-icon">${epicPlatinumIcon(12)}</span>
-            <span>${t("library.platinum")}</span>
-            <span class="segment-cnt">${platCount}</span>
-          </button>
-          ${allUpdatesCount > 0 ? `
-          <button class="apple-segment ${isUpdateNewlyAdded ? "segment-dynamic" : ""} ${S.epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">
-            <span class="segment-icon">${icon("refresh", 12)}</span>
-            <span>${t("library.updates")}</span>
-            <span class="segment-cnt">${allUpdatesCount}</span>
-          </button>` : ""}
+        <div class="lib-filters">
+          <button class="lib-filter ${S.activeCollectionId === null && S.epicFilter === "all" ? "active" : ""}" data-act="quick-tab" data-tab="all">${t("library.all")}</button>
+          <button class="lib-filter ${S.epicFilter === "installed" ? "active" : ""}" data-act="quick-tab" data-tab="installed">${t("library.installed")}</button>
+          <button class="lib-filter ${S.activeCollectionId === "fav" || S.epicFilter === "fav" ? "active" : ""}" data-act="quick-tab" data-tab="fav">${t("library.favorites")}</button>
+          <button class="lib-filter ${S.epicFilter === "collections" ? "active" : ""}" data-act="quick-tab" data-tab="collections">${t("lib.collections")}</button>
+          <button class="lib-filter ${S.epicFilter === "freegames" ? "active" : ""}" data-act="quick-tab" data-tab="freegames">${t("free.title")}</button>
+          ${allUpdatesCount > 0 ? updatesFilterBtn(allUpdatesCount) : ""}
         </div>
-
-        ${selectedCol && S.epicFilter !== "collections" ? `
-        <div class="apple-active-col-chip">
-          ${isCollectionIcon(selectedCol.emoji) ? `<span class="col-pill-marker">${collectionMarker(selectedCol.emoji, 13)}</span>` : icon("folder", 13)}
-          <span>${esc(selectedCol.name)}</span>
-          <span class="segment-cnt">${totalColCount}</span>
-          <button class="col-clear-btn" data-act="clear-collection" title="${t("lib.clearCollection")}">${icon("x", 11)}</button>
-        </div>` : ""}
       </div>
 
       <div class="unified-toolbar-right">
-        <label class="apple-search-box">
+        <label class="lib-search">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="search" type="search" placeholder="${t("lib.searchPlaceholder")}" value="${esc(S.query)}" autocomplete="off" spellcheck="false" />
-          <span class="search-shortcut">Ctrl+F</span>
         </label>
 
         <div class="sort-dropdown-container">
-          <button class="apple-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSortOpt.label) })}">
+          <button class="lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSortOpt.label) })}">
             ${icon(currentSortOpt.icon, 13)}
             <span class="sort-btn-label">${esc(currentSortOpt.label)}</span>
             <span class="dropdown-chevron">${icon("chevron-down", 12)}</span>
@@ -821,41 +672,21 @@ export function renderEpic(): string {
             </div>
           </div>
         </div>
-
-        <div class="card-size-toggle" title="${t("lib.cardSize")}">
-          <button class="${S.epicCardSize === "compact" ? "active" : ""}" data-act="epic-size" data-val="compact" title="${t("lib.sizeSmall")}">S</button>
-          <button class="${S.epicCardSize === "normal" ? "active" : ""}" data-act="epic-size" data-val="normal" title="${t("lib.sizeNormal")}">M</button>
-          <button class="${S.epicCardSize === "large" ? "active" : ""}" data-act="epic-size" data-val="large" title="${t("lib.sizeLarge")}">L</button>
-        </div>
       </div>
     </div>
 
     ${S.epicSyncNote ? `<p class="subtitle">${esc(S.epicSyncNote)}</p>` : ""}
-    ${S.epicFilter === "platinum" ? `
-    <div class="plat-category-banner">
-      <div class="plat-banner-glow"></div>
-      <div class="plat-banner-icon">${epicPlatinumIcon(32)}</div>
-      <div class="plat-banner-info">
-        <div class="plat-banner-title">${t("lib.platCollection")}</div>
-        <div class="plat-banner-desc">${t("lib.platBannerDesc")}</div>
-      </div>
-      <div class="plat-banner-stat">
-        <div class="val">${platCount}</div>
-        <div class="lbl">${t("lib.completed")}</div>
-      </div>
-    </div>` : ""}
-    <div id="lib-results" class="lib-content-wrap">${renderEpicItems()}</div>`;
+    <div id="lib-results">${renderEpicItems()}</div>`;
 }
 
 export function updateLibraryFilterInPlace(): boolean {
   if (S.view !== "library") return false;
-  if (S.epicFilter === "collections") return false;
   const toolbar = document.querySelector(".lib-unified-toolbar");
   const resultsEl = document.getElementById("lib-results");
   if (!toolbar || !resultsEl) return false;
 
-  toolbar.querySelectorAll<HTMLElement>(".apple-segment[data-act='quick-tab'], .unified-pill[data-act='quick-tab']").forEach((pill) => {
-    const tab = pill.dataset.tab;
+  toolbar.querySelectorAll<HTMLElement>(".lib-filter[data-act='quick-tab']").forEach((tabEl) => {
+    const tab = tabEl.dataset.tab;
     const isAct =
       tab === "all"
         ? S.activeCollectionId === null && S.epicFilter === "all"
@@ -863,43 +694,23 @@ export function updateLibraryFilterInPlace(): boolean {
           ? S.activeCollectionId === "fav" || S.epicFilter === "fav"
           : tab === "installed"
             ? S.epicFilter === "installed"
-            : tab === "platinum"
-              ? S.epicFilter === "platinum"
-              : tab === "updates"
-                ? S.epicFilter === "updates"
-                : tab === "collections"
-                  ? S.epicFilter === "collections"
+            : tab === "updates"
+              ? S.epicFilter === "updates"
+              : tab === "collections"
+                ? S.epicFilter === "collections"
+                : tab === "freegames"
+                  ? S.epicFilter === "freegames"
                   : false;
-    pill.classList.toggle("active", isAct);
+    tabEl.classList.toggle("active", isAct);
   });
 
-  const platBanner = document.querySelector(".plat-category-banner") as HTMLElement | null;
-  if (S.epicFilter === "platinum") {
-    if (!platBanner) {
-      const platCount = S.epicSummaries.filter((s) => isAppPlatinum(s.appName)).length;
-      const bannerHtml = `
-        <div class="plat-category-banner">
-          <div class="plat-banner-glow"></div>
-          <div class="plat-banner-icon">${epicPlatinumIcon(28)}</div>
-          <div class="plat-banner-info">
-            <div class="plat-banner-title">${t("lib.platCollection")}</div>
-            <div class="plat-banner-desc">${t("lib.platBannerDesc")}</div>
-          </div>
-          <div class="plat-banner-stat">
-            <div class="val">${platCount}</div>
-            <div class="lbl">${t("lib.completed")}</div>
-          </div>
-        </div>`;
-      resultsEl.insertAdjacentHTML("beforebegin", bannerHtml);
-    }
-  } else if (platBanner) {
-    platBanner.remove();
-  }
+  document.querySelector(".plat-category-banner")?.remove();
 
-  resultsEl.className = "lib-content-wrap";
   resetCardChunk();
+  invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
+  syncLibraryUpdatesTab();
 
   return true;
 }
