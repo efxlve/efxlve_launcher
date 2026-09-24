@@ -1265,7 +1265,9 @@ fn eos_overlay_status_blocking() -> EosOverlayStatus {
             r"HKLM\SOFTWARE\WOW6432Node\Epic Games\EOS\MainService",
             r"HKLM\SOFTWARE\Epic Games\EOS\MainService",
         ] {
+            use std::os::windows::process::CommandExt;
             let Ok(out) = std::process::Command::new("reg")
+                .creation_flags(0x08000000)
                 .args(["query", key])
                 .output()
             else {

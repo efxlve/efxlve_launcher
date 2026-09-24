@@ -23,6 +23,9 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 use super::{cmd_error, paths};
 use crate::{load_settings, AppState};
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 pub struct EpicDlState {
     pub active: Option<String>,
     pub pid: Option<u32>,
@@ -510,6 +513,8 @@ fn spawn_install_with_tags(
     } else if let Some(m) = get_max_memory_arg(app) {
         cmd.arg("--max-shared-memory").arg(m);
     }
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     cmd.spawn()
 }
 
@@ -998,10 +1003,10 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
     if let Some(pid) = pid {
         #[cfg(windows)]
         {
-            let _ = tokio::process::Command::new("taskkill")
-                .args(["/PID", &pid.to_string(), "/T", "/F"])
-                .output()
-                .await;
+            let mut cmd = tokio::process::Command::new("taskkill");
+            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output().await;
         }
         #[cfg(not(windows))]
         {
@@ -1033,10 +1038,10 @@ pub async fn epic_pause_download(
     if let Some(p) = pid {
         #[cfg(windows)]
         {
-            let _ = tokio::process::Command::new("taskkill")
-                .args(["/PID", &p.to_string(), "/T", "/F"])
-                .output()
-                .await;
+            let mut cmd = tokio::process::Command::new("taskkill");
+            cmd.args(["/PID", &p.to_string(), "/T", "/F"]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output().await;
         }
         #[cfg(not(windows))]
         {
@@ -1125,10 +1130,10 @@ pub async fn epic_reorder_queue(
         if let Some(p) = prev_pid {
             #[cfg(windows)]
             {
-                let _ = tokio::process::Command::new("taskkill")
-                    .args(["/PID", &p.to_string(), "/T", "/F"])
-                    .output()
-                    .await;
+                let mut cmd = tokio::process::Command::new("taskkill");
+                cmd.args(["/PID", &p.to_string(), "/T", "/F"]);
+                cmd.creation_flags(CREATE_NO_WINDOW);
+                let _ = cmd.output().await;
             }
             #[cfg(not(windows))]
             {
@@ -1241,6 +1246,8 @@ pub async fn epic_uninstall_game(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     let out = cmd.output().await.map_err(|e| e.to_string())?;
     if out.status.success() {
         Ok(format!("@t:dl.uninstalled\u{1f}{title}"))
@@ -1598,6 +1605,8 @@ async fn spawn_launched(
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
 
     let config = super::skip::default_config_dir();
@@ -1784,6 +1793,8 @@ async fn spawn_launched(
             let mut sync_cmd = tokio::process::Command::new(&bin_bg);
             sync_cmd.arg("sync-saves").arg(&app_name_bg);
             sync_cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+            #[cfg(windows)]
+            sync_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = sync_cmd.status().await;
             let _ = app_bg.emit(
                 "cloud-sync-complete",

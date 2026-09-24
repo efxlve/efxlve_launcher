@@ -233,6 +233,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - **Akış:** Açılışta 12 sn sonra tek seferlik kontrol + pencere odağa geldiğinde saatte en fazla 1 kontrol (boşta polling yok) + Ayarlar'dan elle kontrol; yeni sürüm varsa arka planda sessizce indirilir; **kurulum yalnızca kullanıcı onayıyla** ("Yeniden Başlat ve Güncelle" veya hazır bildirimine tıklayarak) yapılır ve **aktif oyun indirmesi / oyun oturumu sürerken ertelenir** (launcher yeniden başlarken indirmeyi öldürmemek için).
   - **UI:** Ayarlar > Sistem'te "Uygulama Güncellemeleri" kartı (mevcut sürüm, durum, ilerleme çubuğu, Kontrol Et / İndir / Yeniden Başlat ve Güncelle, otomatik güncelleme anahtarı); hazır bildirimi tıklanınca kurulum başlar; sürüm bilgisi artık `getVersion()` ile dinamik.
   - **İmzalama:** `~/.tauri/efxlve.key` (parolalı) + public key `tauri.conf.json`'da; parola `~/.tauri/efxlve.key.password.txt` (repoda değil). İlk üretimde parolasız anahtarın CLI'yı interaktif parola isteminde kilitlediği tespit edildi → parolalı anahtara geçildi. Doğrulama: `npm.cmd run tauri build` → MSI + NSIS `.sig` üretimi, `cargo test` (61/61), i18n eşlik (1233/1233).
+- **Windows Konsol / CMD Penceresi Yanıp Sönmesi Kalıcı Olarak Engellendi (`CREATE_NO_WINDOW`):**
+  - Launcher kullanılırken arka planda çalışan `legendary`, `powershell`, `reg` veya `taskkill` komutlarının Windows üzerinde siyah CMD pencereleri açarak kullanıcı deneyimini bozması teşhis edildi.
+  - Rust backend'de süreç başlatan tüm noktalara (`client.rs::run_with_timeout`, `transfers.rs` indirme/doğrulama/kuyruk/başlatma/bulut senkronizasyonu, `commands.rs` kayıt defteri/doğrulama/sync-saves, `downloader.rs` sürüm sorgusu, `move_game.rs` klasör seçici/taşıma, `screenshots.rs` ekran görüntüsü ve `main.rs` EOS overlay kontrolü) Windows `CREATE_NO_WINDOW (0x08000000)` oluşturma bayrağı entegre edildi.
+  - Artık launcher arka planında çalışan hiçbir süreç CMD/konsol penceresi tetiklemez; tamamen sessiz, pencerisiz ve akıcı bir konsol masaüstü deneyimi sağlandı. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız.
 
 ---
 

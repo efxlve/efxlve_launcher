@@ -274,8 +274,11 @@ if ($chosen) {{
             let utf16_bytes: Vec<u8> = script.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
             let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
 
-            let output = std::process::Command::new("powershell.exe")
-                .args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded_cmd])
+            use std::os::windows::process::CommandExt;
+            let mut cmd = std::process::Command::new("powershell.exe");
+            cmd.args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded_cmd]);
+            cmd.creation_flags(0x08000000);
+            let output = cmd
                 .output()
                 .map_err(|e| format!("@t:move.pickerFailed\u{1f}{}", e))?;
 
@@ -639,15 +642,16 @@ async fn move_game_folder_internal(
     let bin_path = crate::legendary::paths::resolve_binary(app, settings.alt_legendary_bin.as_deref())
         .unwrap_or_else(|_| PathBuf::from("legendary"));
 
-    let _ = tokio::process::Command::new(bin_path)
-        .args([
-            "move",
-            app_name,
-            &target_base.to_string_lossy(),
-            "--skip-move",
-        ])
-        .output()
-        .await;
+    let mut move_cmd = tokio::process::Command::new(bin_path);
+    move_cmd.args([
+        "move",
+        app_name,
+        &target_base.to_string_lossy(),
+        "--skip-move",
+    ]);
+    #[cfg(windows)]
+    move_cmd.creation_flags(0x08000000);
+    let _ = move_cmd.output().await;
 
     // C) Epic Games Launcher manifest (.item) update
     update_egl_manifest(app_name, &cur_path, &new_game_path).await;

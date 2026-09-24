@@ -655,12 +655,14 @@ $bmp.Dispose()
         let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
         let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
 
-        let _ = std::process::Command::new("powershell.exe")
-            .arg("-NoProfile")
+        use std::os::windows::process::CommandExt;
+        let mut cmd = std::process::Command::new("powershell.exe");
+        cmd.arg("-NoProfile")
             .arg("-NonInteractive")
             .arg("-EncodedCommand")
-            .arg(&encoded_cmd)
-            .status();
+            .arg(&encoded_cmd);
+        cmd.creation_flags(0x08000000);
+        let _ = cmd.status();
 
         if !target_file.exists() {
             return Err(format!(

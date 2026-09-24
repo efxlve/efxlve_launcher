@@ -31,11 +31,12 @@ fn emit(app: &AppHandle, state: &str, progress: Option<u8>, message: String) {
 
 /// Resolves the version from `legendary -V` output (`legendary version "0.21.1", ...`).
 pub async fn binary_version(bin: &Path) -> Result<String, LegendaryError> {
-    let out = tokio::process::Command::new(bin)
-        .arg("-V")
-        .stdin(std::process::Stdio::null())
-        .output()
-        .await?;
+    let mut cmd = tokio::process::Command::new(bin);
+    cmd.arg("-V")
+        .stdin(std::process::Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+    let out = cmd.output().await?;
     if !out.status.success() {
         return Err(LegendaryError::DownloadFailed("@t:dl.binaryNotWorking".into()));
     }
