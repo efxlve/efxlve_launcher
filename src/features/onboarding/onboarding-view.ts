@@ -146,14 +146,30 @@ export function renderOnboarding(): string {
 
           <!-- Focused Action Stack -->
           <div class="auth-action-stack">
-            <!-- 1. Epic Games Web Sign-in Button -->
+            <!-- 1. Primary Action: Instant 1-Click EGL Import (Passwordless) -->
+            <button class="auth-hero-import-btn" data-act="epic-import">
+              <div class="auth-import-btn-icon">${icon("download", 20)}</div>
+              <div class="auth-import-btn-body">
+                <span class="auth-import-btn-title">${t("auth.importTitle")}</span>
+                <span class="auth-import-btn-subtitle">${t("auth.importSubtitle")}</span>
+              </div>
+              <div class="auth-import-btn-arrow">${icon("arrow-right", 16)}</div>
+            </button>
+
+            <!-- Subtle Elegant Divider -->
+            <div class="auth-section-divider">
+              <span class="auth-divider-line"></span>
+              <span class="auth-divider-pill">${t("auth.orDivider")}</span>
+              <span class="auth-divider-line"></span>
+            </div>
+
+            <!-- 2. Web Sign-in Flow -->
             <button class="auth-hero-login-btn" data-act="epic-open-login">
               ${icon("external", 18)}
               <span>${t("auth.epicWebLogin")}</span>
             </button>
-            <div class="auth-hero-hint">${t("auth.webHint")}</div>
 
-            <!-- 2. Single Unified Code Pill Input -->
+            <!-- Single Unified Code Pill Input -->
             <div class="auth-input-pill">
               <input
                 id="epic-code"
@@ -171,12 +187,34 @@ export function renderOnboarding(): string {
               </button>
             </div>
 
-            <!-- 3. Discreet EGL Import Link -->
-            <div class="auth-alt-footer">
-              <button class="auth-alt-link" data-act="epic-import">
-                ${icon("download", 13)}
-                <span>${t("auth.importShort")}</span>
-              </button>
+            <!-- 3. First-Time User 3-Step Guide Box -->
+            <div class="auth-guide-box">
+              <div class="auth-guide-header">
+                <div class="auth-guide-chip">
+                  ${icon("info", 12)}
+                  <span>${t("auth.guideBadge")}</span>
+                </div>
+              </div>
+              <div class="auth-guide-steps">
+                <div class="auth-guide-step">
+                  <span class="auth-guide-num">1</span>
+                  <div class="auth-guide-text">
+                    <strong>${t("auth.guideStep1Title")}</strong> ${t("auth.guideStep1Desc")}
+                  </div>
+                </div>
+                <div class="auth-guide-step">
+                  <span class="auth-guide-num">2</span>
+                  <div class="auth-guide-text">
+                    <strong>${t("auth.guideStep2Title")}</strong> ${t("auth.guideStep2Desc")}
+                  </div>
+                </div>
+                <div class="auth-guide-step">
+                  <span class="auth-guide-num">3</span>
+                  <div class="auth-guide-text">
+                    <strong>${t("auth.guideStep3Title")}</strong> ${t("auth.guideStep3Desc")}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

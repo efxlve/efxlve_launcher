@@ -308,6 +308,29 @@ pub async fn epic_login_with_code(app: AppHandle, code: String) -> Result<String
 #[tauri::command]
 pub async fn epic_import_egl(app: AppHandle) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;
+    // Ensure EGL Saved\Config\Windows path exists for Legendary CLI on Windows.
+    // Modern Epic Games Launcher often places GameUserSettings.ini in WindowsEditor instead of Windows,
+    // which causes legendary to fail with "ValueError('EGS AppData path does not exist')".
+    // We bridge this automatically so import works smoothly.
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+            let base = std::path::Path::new(&local_appdata)
+                .join("EpicGamesLauncher")
+                .join("Saved")
+                .join("Config");
+            let win_path = base.join("Windows");
+            let win_editor_path = base.join("WindowsEditor");
+            if win_editor_path.exists() {
+                let src_ini = win_editor_path.join("GameUserSettings.ini");
+                if src_ini.exists() {
+                    let _ = std::fs::create_dir_all(&win_path);
+                    let dst_ini = win_path.join("GameUserSettings.ini");
+                    let _ = std::fs::copy(&src_ini, &dst_ini);
+                }
+            }
+        }
+    }
     client::run_unit(&bin, &["-y", "auth", "--import"])
         .await
         .map_err(|e| fail(&app, e))?;
