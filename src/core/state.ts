@@ -213,7 +213,6 @@ export const S = {
   diskHistory: (new Array(60).fill(0)) as number[],
   dlQueueStatus: ({ isPaused: false, queue: [] }) as DlQueueStatus,
   speedChartTimer: (null) as number | null,
-  navIndicatorReady: false,
   renderScheduled: false,
   trCollator: new Intl.Collator(localStorage.getItem(LANG_KEY) || "tr", { sensitivity: "base", numeric: true }),
   renderedCardCount: INITIAL_CARD_CHUNK,

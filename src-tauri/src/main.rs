@@ -97,6 +97,28 @@ fn library_dir(app: AppHandle) -> String {
 /// (a label counter prevents collisions; old ones close in the background).
 static STORE_VIEW_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Left/top insets (logical px) of the store area, reported by the frontend
+/// shell (sidebar width + window bar height). Stored as f64 bits so the native
+/// resize hook can re-apply them without an IPC round trip.
+static STORE_INSET_LEFT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static STORE_INSET_TOP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// Whether the store webview is currently shown; a hidden view must stay off-screen on resize.
+static STORE_VISIBLE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn remember_store_insets(left: f64, top: f64) {
+    use std::sync::atomic::Ordering::Relaxed;
+    STORE_INSET_LEFT.store(left.max(0.0).to_bits(), Relaxed);
+    STORE_INSET_TOP.store(top.max(0.0).to_bits(), Relaxed);
+}
+
+/// Computes the store webview bounds `(x, y, width, height)` for a window of the
+/// given logical size, filling everything right of / below the insets.
+fn store_bounds(win_w: f64, win_h: f64, left: f64, top: f64) -> (f64, f64, f64, f64) {
+    let left = left.max(0.0);
+    let top = top.max(0.0);
+    (left, top, (win_w - left).max(100.0), (win_h - top).max(100.0))
+}
+
 fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
     window
         .webviews()
@@ -1076,6 +1098,8 @@ async fn show_store_view(
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
+    remember_store_insets(x, y);
+    STORE_VISIBLE.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let owned_games = get_owned_games_json();
 
@@ -1118,7 +1142,7 @@ async fn show_store_view(
         WebviewUrl::External(parsed),
     )
     // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
-    .background_color(tauri::webview::Color(7, 8, 13, 255))
+    .background_color(tauri::webview::Color(14, 15, 18, 255))
     .initialization_script(&init_script)
     .on_navigation(move |url| {
         if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
@@ -1171,6 +1195,7 @@ fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64) ->
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
+    remember_store_insets(x, y);
     for v in store_views(&window) {
         let _ = v.set_position(pos);
         let _ = v.set_size(size);
@@ -1188,6 +1213,7 @@ fn hide_store_view(app: AppHandle) -> Result<String, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
     for v in store_views(&window) {
         let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
         let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
@@ -1204,6 +1230,7 @@ fn destroy_store_view(app: AppHandle) -> Result<String, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
     for v in store_views(&window) {
         let _ = v.close();
     }
@@ -1528,13 +1555,20 @@ fn main() {
                 }
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
+                use std::sync::atomic::Ordering::Relaxed;
+                if !STORE_VISIBLE.load(Relaxed) {
+                    return;
+                }
                 if let Ok(scale_factor) = window.scale_factor() {
                     let logical_size = physical_size.to_logical::<f64>(scale_factor);
-                    let top = 40.0;
-                    let bottom = 28.0;
-                    let h = (logical_size.height - top - bottom).max(100.0);
-                    let pos = tauri::Position::Logical(tauri::LogicalPosition::new(0.0, top));
-                    let size = tauri::Size::Logical(tauri::LogicalSize::new(logical_size.width.max(100.0), h));
+                    let (x, y, w, h) = store_bounds(
+                        logical_size.width,
+                        logical_size.height,
+                        f64::from_bits(STORE_INSET_LEFT.load(Relaxed)),
+                        f64::from_bits(STORE_INSET_TOP.load(Relaxed)),
+                    );
+                    let pos = tauri::Position::Logical(tauri::LogicalPosition::new(x, y));
+                    let size = tauri::Size::Logical(tauri::LogicalSize::new(w, h));
                     for v in store_views(window) {
                         let _ = v.set_position(pos);
                         let _ = v.set_size(size);
@@ -1647,4 +1681,20 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::store_bounds;
+
+    #[test]
+    fn store_bounds_fill_area_right_of_sidebar_and_below_window_bar() {
+        assert_eq!(store_bounds(1600.0, 900.0, 232.0, 36.0), (232.0, 36.0, 1368.0, 864.0));
+    }
+
+    #[test]
+    fn store_bounds_clamp_to_minimum_size_and_non_negative_insets() {
+        assert_eq!(store_bounds(200.0, 120.0, 232.0, 36.0), (232.0, 36.0, 100.0, 100.0));
+        assert_eq!(store_bounds(800.0, 600.0, -5.0, -1.0), (0.0, 0.0, 800.0, 600.0));
+    }
 }

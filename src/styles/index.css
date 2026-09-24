@@ -1,12 +1,9 @@
 /* ==========================================================================
-   Stylesheet Entry Point
-
-   Aggregates all modular stylesheets in cascade order. src/main.ts
-       imports only this file; Vite inlines the imports at build time.
+   Stylesheet entry point (cascade order). src/main.ts imports only this file.
    ========================================================================== */
 @import "./tokens.css";
 @import "./components.css";
-@import "./base.css";
+@import "./shell.css";
 @import "./library.css";
 @import "./gamehub.css";
 @import "./downloads.css";
@@ -22,14 +19,11 @@
 @import "./steamgrid.css";
 @import "./profile.css";
 @import "./friends.css";
-@import "./store-loading.css";
-@import "./focus.css";
 @import "./critic.css";
 @import "./gamepad.css";
 @import "./screenshots.css";
 @import "./screenshot-share.css";
 @import "./move-game.css";
 @import "./storage.css";
-@import "./notifications.css";
 @import "./settings.css";
 @import "./auth.css";

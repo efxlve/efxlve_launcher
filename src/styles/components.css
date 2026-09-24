@@ -1,373 +1,297 @@
 /* ==========================================================================
-   PS5 Page Shell, Buttons, Context Menu & Overlays
-
-   Shared PS5 component library (page header, buttons, inputs), context menu, webview hardening, onboarding wizard and third-party launcher cards.
-       Split from the former monolithic src/styles.css to keep every file
-       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
-   ========================================================================== */
-/* ==========================================================================
-   PS5 standard page shell & component library (docs/DESIGN_SYSTEM.md §4-5)
+   Shared components (docs/DESIGN_SYSTEM.md §4). Every screen reuses these;
+   screen stylesheets only handle layout.
    ========================================================================== */
 
-.ps5-page {
-  max-width: 1680px;
-  margin: 0 auto;
-  width: 100%;
+/* --- Page shell --- */
+.page { max-width: 1600px; margin: 0 auto; width: 100%; }
+.page-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-bottom: 20px; min-height: 36px;
+}
+.page-title { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.page-sub { font-size: 13px; color: var(--text-2); margin: 2px 0 0; }
+.page-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.section-title {
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 28px 0 10px;
 }
 
-.ps5-page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--ps5-border-subtle);
-  gap: 24px;
-}
-
-.ps5-header-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ps5-accent);
-  margin-bottom: 6px;
-}
-
-.ps5-header-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-  margin: 0 0 4px 0;
-  letter-spacing: -0.02em;
-}
-
-.ps5-header-subtitle {
-  font-size: 13px;
-  color: var(--ps5-text-secondary);
-  margin: 0;
-  max-width: 640px;
-}
-
-.ps5-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.ps5-page-body { display: block; }
-
-/* Buton sistemi */
-.ps5-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--ps5-radius-md);
+/* --- Buttons --- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 32px; padding: 0 14px;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text);
+  font-size: 13px; font-weight: 500; font-family: inherit; white-space: nowrap;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
 }
-.ps5-btn.primary,
-.ps5-btn.play {
-  background: var(--btn-play-bg);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: var(--btn-play-glow);
-}
-.ps5-btn.primary:hover,
-.ps5-btn.play:hover {
-  background: var(--btn-play-hover);
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55);
-}
-.ps5-btn.install {
-  background: var(--btn-install-bg);
-  color: var(--btn-install-color, #ffffff);
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: var(--btn-install-glow);
-}
-.ps5-btn.install:hover {
-  background: var(--btn-install-hover);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
-  transform: translateY(-1px);
-}
-.ps5-btn.update {
-  background: var(--btn-update-bg);
-  color: #ffffff;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: var(--btn-update-glow);
-}
-.ps5-btn.update:hover {
-  background: var(--btn-update-hover);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
-  transform: translateY(-1px);
-}
-.ps5-btn.secondary {
-  background: var(--ps5-surface-2);
-  color: var(--text);
-  border: 1px solid var(--ps5-border-default);
-}
-.ps5-btn.secondary:hover { background: var(--ps5-surface-3); border-color: rgba(255, 255, 255, 0.18); }
-.ps5-btn.danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--ps5-status-err);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-.ps5-btn.danger:hover { background: rgba(239, 68, 68, 0.2); }
-.ps5-btn.ghost {
-  background: transparent;
-  color: var(--ps5-text-secondary);
-  border: 1px solid var(--ps5-border-default);
-}
-.ps5-btn.ghost:hover { background: var(--ps5-surface-2); color: var(--text); border-color: rgba(255, 255, 255, 0.18); }
-.ps5-btn.ghost.active { background: var(--ps5-surface-2); color: #ffffff; border-color: rgba(255, 255, 255, 0.2); }
-.ps5-btn.ghost.danger { color: var(--ps5-status-err); border-color: rgba(239, 68, 68, 0.3); }
-.ps5-btn.ghost.danger:hover { background: rgba(239, 68, 68, 0.12); color: var(--ps5-status-err); }
-.ps5-btn.small { height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--ps5-radius-sm); }
-.ps5-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:hover { background: var(--surface-3); }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled, .btn.disabled { opacity: 0.45; cursor: not-allowed; }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn.primary, .btn.install { background: var(--accent); color: #fff; }
+.btn.primary:hover, .btn.install:hover { background: var(--accent-hover); }
+.btn.play { background: var(--ok); color: #fff; }
+.btn.play:hover { background: var(--ok-hover); }
+.btn.update { background: var(--warn-tint); color: var(--warn); border-color: rgba(224, 163, 46, 0.35); }
+.btn.update:hover { background: rgba(224, 163, 46, 0.22); }
+.btn.running { background: var(--ok-tint); color: var(--ok); border-color: rgba(47, 179, 109, 0.35); }
+.btn.danger { background: var(--err-tint); color: var(--err); }
+.btn.danger:hover { background: rgba(229, 72, 77, 0.24); }
+.btn.ghost { background: transparent; border-color: var(--line-strong); color: var(--text); }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.ghost.danger { color: var(--err); border-color: rgba(229, 72, 77, 0.35); }
+.btn.ghost.active { background: var(--surface-3); }
+.btn.ghost.faved svg { fill: var(--err); color: var(--err); }
+.btn.disabled-hint { opacity: 0.5; cursor: help; }
+.btn.small { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn.lg { height: 44px; padding: 0 22px; font-size: 14px; font-weight: 600; }
+.btn.full { width: 100%; }
+.btn.icon-only { width: 32px; padding: 0; }
+.btn.small.icon-only { width: 28px; }
 
-.ps5-btn-icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ps5-radius-md);
-  background: var(--ps5-surface-2);
-  border: 1px solid var(--ps5-border-default);
-  color: var(--ps5-text-secondary);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+.icon-btn {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2);
+  cursor: pointer; transition: background-color var(--ease), color var(--ease);
 }
-.ps5-btn-icon:hover { background: var(--ps5-surface-3); color: var(--text); }
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn.danger:hover { background: var(--err-tint); color: var(--err); }
+.icon-btn svg { width: 16px; height: 16px; }
 
-.ps5-input {
-  height: 38px;
-  background: var(--ps5-surface-2);
-  border: 1px solid var(--ps5-border-default);
-  border-radius: var(--ps5-radius-md);
-  color: var(--text);
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s ease;
+/* Migration aliases: older markup still emits these names. They render with
+   the canonical button styles above; new code must use .btn / .icon-btn. */
+.ps5-btn, .apple-pill-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 32px; padding: 0 14px; border: 1px solid transparent; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 500;
+  font-family: inherit; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
 }
-.ps5-input:focus { border-color: var(--ps5-accent); }
+.ps5-btn:hover, .apple-pill-btn:hover { background: var(--surface-3); }
+.ps5-btn:disabled, .apple-pill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ps5-btn svg, .apple-pill-btn svg { width: 15px; height: 15px; }
+.ps5-btn.primary, .apple-pill-btn.primary, .ps5-btn.install { background: var(--accent); color: #fff; }
+.ps5-btn.primary:hover, .apple-pill-btn.primary:hover, .ps5-btn.install:hover { background: var(--accent-hover); }
+.ps5-btn.play { background: var(--ok); color: #fff; }
+.ps5-btn.update, .apple-pill-btn.update { background: var(--warn-tint); color: var(--warn); }
+.ps5-btn.danger, .apple-pill-btn.danger { background: var(--err-tint); color: var(--err); }
+.ps5-btn.ghost, .ps5-btn.secondary, .apple-pill-btn.secondary { background: transparent; border-color: var(--line-strong); }
+.ps5-btn.ghost:hover, .ps5-btn.secondary:hover, .apple-pill-btn.secondary:hover { background: var(--surface-2); }
+.ps5-btn.small, .apple-pill-btn.small { height: 28px; padding: 0 10px; font-size: 12px; }
+.apple-pill-btn.icon-only { width: 28px; padding: 0; }
+.ps5-btn-icon, .apple-icon-btn {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
+}
+.ps5-btn-icon:hover, .apple-icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.apple-icon-btn.danger:hover { background: var(--err-tint); color: var(--err); }
+.ps5-page { max-width: 1600px; margin: 0 auto; width: 100%; }
+.ps5-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.ps5-header-kicker { display: none; }
+.ps5-header-title { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.ps5-header-subtitle { font-size: 13px; color: var(--text-2); margin: 2px 0 0; }
+.ps5-header-actions { display: flex; gap: 8px; }
 
-/* --- PS5 / Steam-style custom context menu --- */
-.ps5-context-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 10000;
-  min-width: 248px;
-  max-width: 320px;
-  padding: 6px;
-  background: var(--ps5-surface-1);
-  border: 1px solid var(--ps5-border-default);
-  border-radius: var(--ps5-radius-md);
-  box-shadow: 0 20px 46px -14px rgba(0, 0, 0, 0.9);
-  animation: ctxMenuIn 0.12s cubic-bezier(0.2, 0, 0, 1);
+/* --- Inputs --- */
+.input, .ps5-input, .text-input {
+  height: 32px; padding: 0 10px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
+  color: var(--text); font-size: 13px; font-family: inherit;
+  transition: border-color var(--ease);
 }
+.input:focus, .ps5-input:focus, .text-input:focus { outline: none; border-color: var(--accent); }
+.input::placeholder { color: var(--text-3); }
+.search {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
+  color: var(--text-3);
+}
+.search:focus-within { border-color: var(--accent); color: var(--text-2); }
+.search input {
+  flex: 1; min-width: 0; height: 100%; border: none; background: none; outline: none;
+  color: var(--text); font-size: 13px; font-family: inherit;
+}
+.search svg { width: 15px; height: 15px; flex-shrink: 0; }
+.kbd {
+  font-size: 11px; color: var(--text-3); border: 1px solid var(--line-strong);
+  border-radius: 4px; padding: 0 5px; line-height: 16px;
+}
+select { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); height: 32px; padding: 0 8px; font-family: inherit; }
+select option { background: var(--surface-1); color: var(--text); }
 
-@keyframes ctxMenuIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* --- Toggle switch (both historic markups) --- */
+.switch, .toggle-switch { position: relative; display: inline-block; width: 34px; height: 20px; flex-shrink: 0; }
+.switch input, .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .track, .toggle-slider {
+  position: absolute; inset: 0; cursor: pointer; border-radius: 10px;
+  background: var(--surface-3); transition: background-color var(--ease);
 }
+.switch .track::before, .toggle-slider::before {
+  content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px;
+  border-radius: 50%; background: #fff; transition: transform var(--ease);
+}
+.switch input:checked + .track, .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+.switch input:checked + .track::before, .toggle-switch input:checked + .toggle-slider::before { transform: translateX(14px); }
 
-.ps5-context-head {
-  padding: 8px 10px 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ps5-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* --- Tabs: text tabs with an accent underline --- */
+.tabs { display: flex; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); }
+.tab {
+  position: relative; height: 38px; padding: 0; border: none; background: none;
+  color: var(--text-2); font-size: 13px; font-weight: 500; font-family: inherit;
+  cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+  transition: color var(--ease);
 }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); }
+.tab.active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent);
+}
+.tab .count { color: var(--text-3); font-variant-numeric: tabular-nums; }
 
-.ps5-context-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  text-align: left;
-  border-radius: var(--ps5-radius-sm);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+/* Segmented control (kept for small binary choices: list/grid, CDN) */
+.seg, .apple-segmented-rail {
+  display: inline-flex; gap: 2px; padding: 2px; height: 32px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
 }
-.ps5-context-item svg { flex-shrink: 0; color: var(--ps5-text-secondary); }
-.ps5-context-item:hover,
-.ps5-context-item:focus-visible { background: var(--ps5-surface-3); }
-.ps5-context-item:active { transform: scale(0.99); }
-.ps5-context-item.danger { color: var(--ps5-status-err); }
-.ps5-context-item.danger svg { color: var(--ps5-status-err); }
-.ps5-context-item.danger:hover { background: rgba(239, 68, 68, 0.12); }
-
-.ps5-context-sep {
-  height: 1px;
-  margin: 5px 6px;
-  background: var(--ps5-border-subtle);
+.seg > button, .apple-segment {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  border: none; border-radius: 4px; background: transparent; color: var(--text-2);
+  font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; white-space: nowrap;
 }
-
-/* --- Webview hardening --- */
-/* Text is selectable only in input fields; images cannot be dragged. */
-input, textarea, [contenteditable="true"] {
-  user-select: text;
-  -webkit-user-select: text;
-}
-img, a {
-  -webkit-user-drag: none;
-  user-drag: none;
-}
-/* Onboarding & authentication styles have been modularized to src/styles/auth.css */
-
-/* ==========================================================================
-   Third-party launchers hub (EA App / Ubisoft Connect / Rockstar)
-   ========================================================================== */
-
-.tpl-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.tpl-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: var(--ps5-surface-2);
-  border: 1px solid var(--ps5-border-default);
-  border-radius: var(--ps5-radius-md);
-}
-.tpl-card.installed { border-color: rgba(16, 185, 129, 0.3); }
-
-.tpl-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.tpl-name { font-size: 13px; font-weight: 700; color: var(--text); }
-.tpl-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: var(--ps5-radius-sm);
-  white-space: nowrap;
-}
-.tpl-status.on {
-  color: var(--ps5-status-online);
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-}
-.tpl-status.off {
-  color: var(--ps5-text-muted);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--ps5-border-subtle);
-}
-.tpl-path {
-  font-size: 11.5px;
-  color: var(--ps5-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tpl-actions { margin-top: auto; }
-
-/* Segmented rail + search box still used by Profile (Library no longer uses these). */
-.apple-segmented-rail {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 40px;
-  padding: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-}
-
-.apple-segment {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 13px;
-  border-radius: 9px;
-  border: none;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.apple-segment:hover {
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.apple-segment.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  font-weight: 700;
-}
-
+.seg > button:hover, .apple-segment:hover { color: var(--text); }
+.seg > button.active, .apple-segment.active { background: var(--surface-3); color: var(--text); }
+.seg > button svg { width: 14px; height: 14px; }
 .apple-search-box {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  height: 40px;
-  padding: 0 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: #64748b;
-  width: 245px;
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; width: 240px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text-3);
 }
+.apple-search-box:focus-within { border-color: var(--accent); }
+.apple-search-box input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; }
 
-.apple-search-box:focus-within {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #cbd5e1;
+/* --- Chips & badges --- */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px;
+  border-radius: 4px; background: var(--surface-2); color: var(--text-2);
+  font-size: 11px; font-weight: 600; white-space: nowrap;
 }
+.chip.ok { background: var(--ok-tint); color: var(--ok); }
+.chip.warn { background: var(--warn-tint); color: var(--warn); }
+.chip.err { background: var(--err-tint); color: var(--err); }
+.chip.accent { background: var(--accent-tint); color: var(--accent); }
+.chip svg { width: 12px; height: 12px; }
 
-.apple-search-box input {
-  background: none;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-size: 12.5px;
-  width: 100%;
-  font-family: inherit;
+/* --- Cards & rows --- */
+.card {
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;
 }
+.card-title { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+.card-sub { font-size: 12px; color: var(--text-2); margin: 0; }
+.list {
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden;
+}
+.row {
+  display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+.row:first-child { border-top: none; }
+.row:hover { background: var(--surface-2); }
+.row-thumb { width: 36px; height: 48px; border-radius: 4px; object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+.row-main { flex: 1; min-width: 0; }
+.row-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-meta { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
+/* --- Progress --- */
+.progress { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.progress.ok > span { background: var(--ok); }
+.progress.warn > span { background: var(--warn); }
+
+/* --- Empty state --- */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  gap: 8px; padding: 64px 24px; color: var(--text-2);
+}
+.empty-state svg { width: 36px; height: 36px; color: var(--text-3); }
+.empty-state h3 { margin: 6px 0 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.empty-state p { margin: 0 0 8px; font-size: 13px; max-width: 360px; }
+.empty { color: var(--text-2); text-align: center; padding: 56px 0; font-size: 13px; }
+
+/* --- Spinner (only animation allowed; it stops when removed) --- */
+.spinner, .spin {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--surface-3); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Skeleton placeholder: static tint, no shimmer loop. */
+.skeleton, .skel { background: var(--surface-2); border-radius: var(--r-sm); }
+
+/* --- Modal --- */
+.modal-backdrop, .modal-overlay {
+  position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.6); padding: 24px;
+}
+.modal {
+  width: min(520px, 100%); max-height: 86vh; overflow: auto;
+  background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop); padding: 20px;
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.modal-title { font-size: 16px; font-weight: 600; margin: 0; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+/* --- Context menu --- */
+.ps5-context-menu, .ctx-menu {
+  position: fixed; top: 0; left: 0; z-index: 10000; min-width: 220px; max-width: 320px; padding: 4px;
+  background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+}
+.ps5-context-head {
+  padding: 8px 10px 6px; font-size: 11px; font-weight: 600; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ps5-context-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; padding: 0 10px;
+  border: none; background: none; color: var(--text); font-size: 13px; font-family: inherit;
+  text-align: left; border-radius: 4px; cursor: pointer;
+}
+.ps5-context-item svg { width: 15px; height: 15px; color: var(--text-2); flex-shrink: 0; }
+.ps5-context-item:hover, .ps5-context-item:focus-visible { background: var(--surface-2); }
+.ps5-context-item.danger, .ps5-context-item.danger svg { color: var(--err); }
+.ps5-context-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+
+/* --- Toasts --- */
+#toasts { position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10001; }
+.toast {
+  min-width: 260px; max-width: 380px; padding: 10px 14px;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm); box-shadow: var(--shadow-pop); font-size: 13px; color: var(--text);
+}
+.toast.ok { border-left-color: var(--ok); }
+.toast.err { border-left-color: var(--err); }
+.toast.warn { border-left-color: var(--warn); }
+
+#totop {
+  position: fixed; right: 20px; bottom: 20px; z-index: 50; display: none;
+  width: 36px; height: 36px; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  color: var(--text-2); cursor: pointer;
+}
+#totop.show { display: flex; }
+#totop:hover { color: var(--text); background: var(--surface-3); }
+
+/* --- Third-party launcher cards (EA / Ubisoft / Rockstar) --- */
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
+.tpl-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }
+.tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tpl-name { font-size: 13px; font-weight: 600; }
+.tpl-status { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.tpl-status.on { color: var(--ok); background: var(--ok-tint); }
+.tpl-status.off { color: var(--text-3); background: var(--surface-2); }
+.tpl-path { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tpl-actions { margin-top: auto; }

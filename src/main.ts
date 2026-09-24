@@ -9,7 +9,7 @@
 
 import "./styles/index.css";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
-import { updateChrome, updateNavHistoryUi, updateNavIndicator } from "./core/nav";
+import { updateChrome, updateNavHistoryUi } from "./core/nav";
 import { S } from "./core/state";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
@@ -57,13 +57,6 @@ function render(): void {
     presenceSync();
     return;
   }
-
-  document.querySelectorAll("#nav button").forEach((b) => {
-    const el = b as HTMLElement;
-    const active = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
-    el.classList.toggle("active", active);
-  });
-  updateNavIndicator();
 
   if (S.view === "store") {
     // Only paint the loading screen until the native store webview is shown; a

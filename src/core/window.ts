@@ -7,7 +7,6 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./constants";
-import { updateNavIndicator } from "./nav";
 import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
 import { updateDrawerTabArrows } from "../features/drawer/drawer-view";
@@ -32,7 +31,6 @@ export function updateMaxIcon(isMax?: boolean): void {
 
 export function handleWindowResize(): void {
   updateMaxIcon();
-  updateNavIndicator(true);
   if (typeof updateDrawerTabArrows === "function") {
     updateDrawerTabArrows();
   }
@@ -54,9 +52,9 @@ export function handleWindowResize(): void {
   }
 }
 
-document.getElementById("titlebar")?.addEventListener("dblclick", (e) => {
+document.getElementById("winbar")?.addEventListener("dblclick", (e) => {
   const target = e.target as HTMLElement;
-  if (target.closest("#nav button, .win-btn, input, a")) return;
+  if (target.closest("button, input, a")) return;
   if (isTauri) {
     void invoke<boolean>("app_toggle_maximize").then((isMax) => {
       updateMaxIcon(isMax);
@@ -79,7 +77,7 @@ export function throttledWindowResize(): void {
 
 window.addEventListener("resize", throttledWindowResize, { passive: true });
 
-/* ---------- Top bar keyboard shortcuts ----------
+/* ---------- Sidebar keyboard shortcuts ----------
    Ctrl+1 Store · Ctrl+2 Library · Ctrl+3 Downloads · Ctrl+, Settings */
 document.addEventListener("keydown", (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
@@ -95,7 +93,7 @@ document.addEventListener("keydown", (e) => {
   const sel = targets[e.key];
   if (!sel) return;
   e.preventDefault();
-  document.querySelector<HTMLElement>(`#nav ${sel}`)?.click();
+  document.querySelector<HTMLElement>(`#sidebar ${sel}`)?.click();
 });
 
 /* ---------- Webview hardening: block accidental reload and zoom ----------

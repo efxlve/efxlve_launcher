@@ -1,76 +1,118 @@
 /* ==========================================================================
-   Design Tokens & Global Reset
-
-   Root CSS variables (legacy + PS5 design system tokens), box-sizing and scrollbar defaults.
-       Split from the former monolithic src/styles.css to keep every file
-       small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
+   Design tokens (docs/DESIGN_SYSTEM.md §3) and global reset.
    ========================================================================== */
 :root {
   color-scheme: dark;
-  /* Single source of truth for the top-bar height; overlays that should sit
-     below the bar (e.g. the game detail drawer) reference this so they never
-     overlap the navigation. */
-  --titlebar-h: 56px;
-  --bg: #07080d;
-  --bg2: #12131a;
-  --panel: #171821;
-  --panel-hover: #1f202c;
-  --border: #252634;
-  --border-focus: #4b4d66;
-  --text: #f5f5f7;
-  --muted: #9596a3;
-  --accent: #f5f5f7;
-  --accent2: #a855f7;
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --on-accent: #0b0c10;
-  --green: #10b981;
-  --green-glow: rgba(16, 185, 129, 0.35);
-  --yellow: #f59e0b;
-  --yellow-glow: rgba(245, 158, 11, 0.35);
-  --red: #ef4444;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --glow-ambient: 0 14px 34px -4px rgba(0, 0, 0, 0.85), 0 0 26px -2px rgba(99, 102, 241, 0.32);
 
-  /* --- Canonical Action Button Tokens (PS5 Sapphire & Apple Porcelain Identity) --- */
-  --btn-play-bg: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --btn-play-hover: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-  --btn-play-glow: 0 4px 18px rgba(16, 185, 129, 0.45);
-  --btn-install-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  --btn-install-color: #ffffff;
-  --btn-install-hover: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  --btn-install-glow: 0 4px 18px rgba(37, 99, 235, 0.45);
-  --btn-update-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  --btn-update-hover: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  --btn-update-glow: 0 4px 18px rgba(37, 99, 235, 0.45);
-  --btn-update-color: #ffffff;
-  --btn-downloading-bg: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  --btn-downloading-hover: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-  --btn-downloading-glow: 0 4px 18px rgba(99, 102, 241, 0.45);
+  /* Shell geometry. main.rs positions the store webview from the same values. */
+  --sidebar-w: 232px;
+  --winbar-h: 36px;
 
-  /* --- PS5 Console Design System Tokenleri (docs/DESIGN_SYSTEM.md §3) --- */
-  --ps5-surface-1: #0e1017;
-  --ps5-surface-2: #151822;
-  --ps5-surface-3: #1c202d;
-  --ps5-border-subtle: rgba(255, 255, 255, 0.06);
-  --ps5-border-default: rgba(255, 255, 255, 0.10);
-  --ps5-accent: #8b5cf6;
-  --ps5-accent-hover: #9d75f7;
-  --ps5-text-secondary: #94a3b8;
-  --ps5-text-muted: #64748b;
-  --ps5-radius-sm: 6px;
-  --ps5-radius-md: 10px;
-  --ps5-radius-lg: 14px;
-  --ps5-radius-xl: 20px;
-  --ps5-status-online: #10b981;
-  --ps5-status-warn: #f59e0b;
-  --ps5-status-err: #ef4444;
+  /* Surfaces */
+  --bg: #0e0f12;
+  --surface-1: #15161a;
+  --surface-2: #1c1d22;
+  --surface-3: #25262c;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --text: #ececef;
+  --text-2: #a3a4ad;
+  --text-3: #6c6d77;
+
+  /* The single interactive accent + state colors */
+  --accent: #3d8bfd;
+  --accent-hover: #5a9cff;
+  --accent-tint: rgba(61, 139, 253, 0.14);
+  --ok: #2fb36d;
+  --ok-hover: #38c27a;
+  --ok-tint: rgba(47, 179, 109, 0.14);
+  --warn: #e0a32e;
+  --warn-tint: rgba(224, 163, 46, 0.14);
+  --err: #e5484d;
+  --err-tint: rgba(229, 72, 77, 0.14);
+
+  /* Geometry */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --ease: 120ms ease-out;
+
+  /* Legacy names still referenced by not-yet-migrated rules; they resolve to
+     the flat palette so no gradient or glow can leak back in. */
+  --bg2: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-hover: var(--surface-2);
+  --border: var(--line-strong);
+  --border-focus: var(--accent);
+  --muted: var(--text-2);
+  --accent2: var(--accent);
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --on-accent: #ffffff;
+  --green: var(--ok);
+  --green-glow: transparent;
+  --yellow: var(--warn);
+  --yellow-glow: transparent;
+  --red: var(--err);
+  --radius: var(--r-md);
+  --radius-lg: var(--r-md);
+  --glow-ambient: none;
+  --ps5-surface-1: var(--surface-1);
+  --ps5-surface-2: var(--surface-2);
+  --ps5-surface-3: var(--surface-3);
+  --ps5-border-subtle: var(--line);
+  --ps5-border-default: var(--line-strong);
+  --ps5-accent: var(--accent);
+  --ps5-accent-hover: var(--accent-hover);
+  --ps5-text-secondary: var(--text-2);
+  --ps5-text-muted: var(--text-3);
+  --ps5-radius-sm: var(--r-sm);
+  --ps5-radius-md: var(--r-md);
+  --ps5-radius-lg: var(--r-md);
+  --ps5-radius-xl: var(--r-md);
+  --ps5-status-online: var(--ok);
+  --ps5-status-warn: var(--warn);
+  --ps5-status-err: var(--err);
 }
 
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+
+input, textarea, [contenteditable="true"] { user-select: text; -webkit-user-select: text; }
+img, a { -webkit-user-drag: none; }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.hidden { display: none !important; }
