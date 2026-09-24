@@ -23,6 +23,7 @@ import { renderEpic, setupLibScrollObserver } from "./features/library/library-v
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
+import { closeAvatarModal } from "./features/profile/profile-avatar";
 import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
 import { closeStorageManager } from "./features/storage/storage-view";
@@ -91,6 +92,7 @@ function closeAllModals(): void {
   closeCollectionModal();
   closeStorageManager();
   closeNotifPanel();
+  closeAvatarModal();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

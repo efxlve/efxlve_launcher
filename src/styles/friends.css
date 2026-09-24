@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Epic Friends Lounge (Sidebar & Compact List)
+   ========================================================================== */
+
+/* Friends Lounge (Sidebar) */
+.friends-compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 380px;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.friend-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.friend-compact-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.friend-compact-row.fav {
+  border-left: 2px solid #8b5cf6;
+}
+
+.friend-avatar-compact {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.friend-avatar-compact .friend-avatar-letter {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d8ccff;
+}
+
+.friend-star-mini {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #0b0d14;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c4b5fd;
+}
+
+.friend-info-compact {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.friend-name-compact {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-alias-compact {
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-plat-badges {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.friend-plat {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+  border: 1px solid transparent;
+}
+
+.friend-plat.steam { color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); }
+.friend-plat.psn { color: #60a5fa; background: rgba(37, 99, 235, 0.14); border-color: rgba(59, 130, 246, 0.25); }
+.friend-plat.xbl { color: #4ade80; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.25); }
+.friend-plat.nintendo { color: #f87171; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.25); }
+
+.friend-compact-row.skeleton {
+  pointer-events: none;
+}
+
+.friend-name-skeleton {
+  width: 80px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.friend-plat-skeleton {
+  width: 40px;
+  height: 9px;
+  border-radius: 4px;
+  margin-top: 3px;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.04) 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ps5-friends-refresh.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+.friends-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.friends-state-error {
+  color: #f87171;
+}
+
+.friends-state-icon {
+  color: rgba(255, 255, 255, 0.16);
+}
+
+.sidebar-empty {
+  padding: 18px 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+}

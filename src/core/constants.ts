@@ -55,6 +55,8 @@ export const AUTO_UPDATE_TIME_KEY = "efxlve-auto-update-time";
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */
 export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
+/** Custom profile avatars keyed by Epic account ID. */
+export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
 /** Recently launched game ids. */

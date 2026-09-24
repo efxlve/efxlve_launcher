@@ -10,6 +10,9 @@
  */
 import { EPIC_STORE_URL } from "../epic";
 import {
+  CUSTOM_AVATARS_KEY,
+  CUSTOM_COVERS_KEY,
+  CUSTOM_HEROES_KEY,
   DEMO_PLAT_KEY,
   FAV_KEY,
   AUTO_BACKUP_KEY,
@@ -32,6 +35,16 @@ import {
 } from "./constants";
 import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SettingsSection, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
+
+
+function loadJsonRecord(key: string): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
 
 export const S = {
   view: ("library") as View,
@@ -57,8 +70,9 @@ export const S = {
   epicGamesRaw: ([]) as EpicGame[],
   epicGamesRawMap: (new Map()) as Map<string, EpicGame>,
   epicSummariesMap: (new Map()) as Map<string, EpicSummary>,
-  customCovers: ({}) as Record<string, string>,
-  customHeroes: ({}) as Record<string, string>,
+  customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
+  customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
+  customAvatars: loadJsonRecord(CUSTOM_AVATARS_KEY),
   steamGridApiKey: (null) as string | null,
   customCoverActiveTab: ("steamgrid") as "steamgrid" | "url" | "file",
   activeCoverTarget: ("cover") as "cover" | "hero",

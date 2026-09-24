@@ -1,3 +1,4 @@
+import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
 /**
  * Global click delegation router.
  *
@@ -25,15 +26,7 @@ import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { rawOf } from "../../core/selectors";
-import {
-  bootEpic,
-  epicDoImport,
-  epicDoLogin,
-  epicDoLogout,
-  epicDownload,
-  refreshEpic,
-  syncEpicLibrary,
-} from "../auth/auth-actions";
+import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -64,21 +57,11 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { applySelectiveInstall, closeSelectiveModal, openSelectiveModal } from "../dlc/selective-install";
 import { resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
-import {
-  browseMoveTarget,
-  cancelMoveGame,
-  closeMoveGameModal,
-  openMoveGameModal,
-  startMoveGame,
-} from "../move-game/move-game-actions";
+import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { closeStorageManager, openStorageManager } from "../storage/storage-view";
-import {
-  closeEditPlaytimeModal,
-  openEditPlaytimeModal,
-  saveEditedPlaytime,
-} from "../playtime/playtime-view";
+import { closeEditPlaytimeModal, openEditPlaytimeModal, saveEditedPlaytime, } from "../playtime/playtime-view";
 
 import {
   closeScreenshotLightbox,
@@ -276,6 +259,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "notif-open" && id) {
     closeNotifPanel();
     openEpicModal(id);
+  } else if (act === "profile-change-avatar") {
+    promptAvatarAction();
+  } else if (act === "avatar-modal-close") { closeAvatarModal();
+  } else if (act === "avatar-modal-remove" && id) { removeCustomAvatar(id);
+  } else if (act === "avatar-modal-upload" && id) { openAvatarFilePicker(id);
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
     void loadFriends(true);
