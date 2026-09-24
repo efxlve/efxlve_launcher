@@ -33,7 +33,7 @@ import {
   SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SettingsSection, View } from "./types";
+import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
@@ -55,6 +55,7 @@ export const S = {
   epicBooted: false,
   epicAccount: "",
   epicAccountId: (null) as string | null,
+  savedAccounts: ([]) as SavedAccount[],
   lastStoreUrl: EPIC_STORE_URL,
   epicSummaries: ([]) as EpicSummary[],
   epicSkippedCount: 0,

@@ -22,6 +22,7 @@ pub mod screenshots;
 pub mod move_game;
 pub mod friends;
 pub mod freegames;
+pub mod accounts;
 
 use thiserror::Error;
 

@@ -54,3 +54,13 @@ export interface DlMetrics {
   downloadedBytes: number;
   totalBytes: number;
 }
+
+/** Saved Epic Games account for fast switching. */
+export interface SavedAccount {
+  account_id: string;
+  display_name: string;
+  last_used: number;
+  is_active: boolean;
+  game_count?: number;
+}
+
