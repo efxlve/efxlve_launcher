@@ -57,6 +57,7 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
 import { refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
+import { openPalette } from "../palette/palette";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
@@ -395,6 +396,8 @@ document.addEventListener("click", (e) => {
     S.activeCollectionId = null;
     resetCardChunk();
     render();
+  } else if (act === "open-palette") {
+    openPalette();
   } else if (act === "lib-clear-search") {
     S.query = "";
     const input = document.getElementById("search") as HTMLInputElement | null;
