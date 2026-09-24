@@ -21,7 +21,7 @@ import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
-import { esc, fmtBytes, parseEnvText } from "../../core/utils";
+import { esc, fmtBytes, fmtCdnName, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
@@ -920,13 +920,25 @@ document.addEventListener("click", (e) => {
         toast(String(e), "err");
       }
     })();
+  } else if (act === "dl-set-cdn") {
+    const host = (t.getAttribute("data-cdn") || "").trim();
+    void (async () => {
+      try {
+        await epicSetPreferredCdn(host || null);
+        S.preferredCdn = host;
+        if (host) {
+          toast(i18nT("downloads.cdnSet", { host: fmtCdnName(host) }), "ok");
+        } else {
+          toast(i18nT("downloads.cdnResetDone"), "ok");
+        }
+        render();
+      } catch (e) {
+        toast(String(e), "err");
+      }
+    })();
   } else if (act === "dl-find-fastest-cdn") {
     void (async () => {
       const urls = S.epicGamesRaw.flatMap((g) => g.base_urls || []).filter(Boolean);
-      if (urls.length === 0) {
-        toast(i18nT("downloads.cdnNoData"), "err");
-        return;
-      }
       toast(i18nT("downloads.cdnTesting"), "");
       try {
         const probes = await epicMeasureCdns(urls);
@@ -937,7 +949,7 @@ document.addEventListener("click", (e) => {
         const best = probes[0];
         await epicSetPreferredCdn(best.host);
         S.preferredCdn = best.host;
-        toast(i18nT("downloads.cdnPicked", { host: best.host, ms: best.ms }), "ok");
+        toast(i18nT("downloads.cdnPicked", { host: fmtCdnName(best.host), ms: best.ms }), "ok");
         render();
       } catch (e) {
         toast(String(e), "err");
