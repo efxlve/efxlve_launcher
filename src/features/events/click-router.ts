@@ -52,7 +52,7 @@ import {
   saveCustomHero,
   searchAndLoadSteamGrid,
 } from "../cover/cover-view";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, updateDrawerTabArrows } from "../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../drawer/drawer-view";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
@@ -209,7 +209,7 @@ document.addEventListener("click", (e) => {
   const id = t.dataset.id;
   if (act === "close") {
     const el = e.target as HTMLElement;
-    if (el === t || t.matches(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .hub-tool-btn, .drawer-close, .mclose")) closeModal();
+    if (el === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .drawer-close, .mclose")) closeModal();
   } else if (act === "nav-history-back") {
     navGoBack();
     return;
@@ -607,7 +607,7 @@ document.addEventListener("click", (e) => {
     closeCustomCoverModal();
     toast(i18nT("cover.originalRestored"), "ok");
   } else if (act === "epic-fav" && id) {
-    toggleFav(id, t);
+    toggleFav(id);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
   } else if (act === "select-collection") {
@@ -1221,14 +1221,6 @@ document.addEventListener("click", (e) => {
         }
       }
       openEpicModal(S.currentModalAppName, false, true);
-    }
-  } else if (act === "drawer-tabs-scroll") {
-    const dir = t.dataset.dir;
-    const container = document.getElementById("drawer-tabs-scrollable");
-    if (container) {
-      container.scrollBy({ left: dir === "left" ? -140 : 140, behavior: "smooth" });
-      setTimeout(updateDrawerTabArrows, 180);
-      setTimeout(updateDrawerTabArrows, 360);
     }
   } else if (act === "sys-plat") {
     const val = t.dataset.val;

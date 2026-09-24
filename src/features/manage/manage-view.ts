@@ -1,16 +1,155 @@
 /**
- * In-drawer game management helpers.
- *
- * The manage panel markup itself is rendered by `features/drawer/drawer-view.ts`;
- * this module only exposes the in-place DOM updates used while it is open
- * (settings sync, verify progress and reset). State lives in S.
+ * Game page "Manage" tab: markup plus the in-place DOM updates used while it is
+ * open (settings sync, verify progress and reset). State lives in S.
  */
 
+import { icon } from "../../core/icons";
+import { lastPlayedLabel, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc } from "../../core/utils";
+import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 
-import type { GameLocalSettings } from "../../epic";
+import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
+import { renderBackupListHtml } from "../drawer/drawer-widgets";
+
+/** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
+function envToText(env: Record<string, string> | undefined): string {
+  if (!env) return "";
+  return Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n");
+}
+
+function row(title: string, desc: string, actions: string, extra = "", descId = ""): string {
+  return `
+    <div class="row mg-row">
+      <div class="row-main">
+        <div class="mg-title">${title}</div>
+        <div class="mg-desc"${descId ? ` id="${descId}"` : ""}>${desc}</div>
+        ${extra}
+      </div>
+      <div class="row-actions">${actions}</div>
+    </div>`;
+}
+
+function toggle(act: string, checked: boolean): string {
+  return `<label class="switch"><input type="checkbox" data-act="${act}" ${checked ? "checked" : ""} /><span class="track"></span></label>`;
+}
+
+function verifyBox(percent: number, detail: string, speed: string): string {
+  return `
+    <div class="verify-box">
+      <div class="progress"><span id="manage-verify-fill" style="width:${percent}%"></span></div>
+      <div class="verify-meta"><span id="manage-verify-count">${esc(detail)}</span><span id="manage-verify-speed">${esc(speed)}</span></div>
+    </div>`;
+}
+
+/** Renders the Manage tab for an installed game. */
+export function renderDrawerManage(s: EpicSummary): string {
+  if (!S.activeManageSettings || S.activeManageSettings.appName !== s.appName) {
+    S.activeManageSettings = {
+      appName: s.appName,
+      title: s.title,
+      launchParameters: "",
+      autoUpdate: true,
+      highPriority: false,
+      cloudSavesEnabled: true,
+      lastCloudSync: null,
+      installSize: s.installSize || 0,
+      installPath: s.installPath || "",
+      version: s.installedVersion || s.version || "1.0",
+      wrapper: "",
+      envVars: {},
+    };
+    epicGetGameSettings(s.appName).then((st) => {
+      if (S.activeManageSettings?.appName === s.appName) {
+        S.activeManageSettings = st;
+        updateManageModalInputsInPlace(st);
+      }
+    }).catch(() => {});
+  } else if (s.installPath && s.installPath !== S.activeManageSettings.installPath) {
+    S.activeManageSettings.installPath = s.installPath;
+  }
+  const st = S.activeManageSettings;
+  const id = st.appName;
+  const partner = getThirdPartyLauncher(rawOf(s.appName));
+  const blockedMove = requiresThirdPartyLauncher(partner);
+  const v = S.verifyingMap.get(id);
+  const pt = S.playtimeMap.get(id);
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const cloudDesc = S.manageSyncingSaves
+    ? t("manage.syncing")
+    : st.lastCloudSync ? t("manage.lastSync", { time: esc(st.lastCloudSync) }) : t("manage.cloudDesc");
+
+  const moveBtn = blockedMove
+    ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${id}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`
+    : `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${id}" title="${t("manage.moveTitle")}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`;
+
+  return `
+    <div class="manage-tab-content">
+      <div class="section-title">${t("manage.groupFiles")}</div>
+      <div class="list">
+        ${row(t("manage.verifyTitle"), t("manage.verifyDesc"),
+          `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>`,
+          `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
+        ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
+          `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
+          blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
+        ${row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
+          `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
+      </div>
+
+      <div class="section-title">${t("manage.groupSaves")}</div>
+      <div class="list">
+        ${row(t("manage.eosCloudTitle"), cloudDesc,
+          `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
+          "", "manage-cloud-subtitle")}
+        ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
+          `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
+           <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
+          `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
+      </div>
+
+      <div class="section-title">${t("manage.groupLaunch")}</div>
+      <div class="list">
+        ${row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate))}
+        ${row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority))}
+        <div class="row mg-row stack">
+          <div class="mg-title">${t("manage.argsTitle")}</div>
+          <div class="mg-desc">${t("manage.argsDesc")}</div>
+          <div class="mg-inline">
+            <input id="manage-args-input" class="input" placeholder="-dx11 -novid" value="${esc(st.launchParameters || "")}" />
+            <button class="btn primary small" data-act="manage-save-args" data-id="${id}">${t("common.save")}</button>
+          </div>
+        </div>
+        <div class="row mg-row stack">
+          <div class="mg-title">${t("manage.wrapperTitle")}</div>
+          <div class="mg-desc">${t("manage.wrapperDesc")}</div>
+          <input id="manage-wrapper-input" class="input" placeholder="mangohud" value="${esc(st.wrapper || "")}" spellcheck="false" autocomplete="off" />
+          <div class="mg-title mg-gap">${t("manage.envTitle")}</div>
+          <div class="mg-desc">${t("manage.envDesc")}</div>
+          <textarea id="manage-env-input" class="input mg-env" spellcheck="false" placeholder="DXVK_HUD=1&#10;WINEDLLOVERRIDES=d3d11=n,b">${esc(envToText(st.envVars))}</textarea>
+          <div class="mg-inline end"><button class="btn primary small" data-act="manage-save-launch-extras" data-id="${id}">${t("common.save")}</button></div>
+        </div>
+      </div>
+
+      <div class="section-title">${t("manage.groupPlaytime")}</div>
+      <div class="list">
+        ${row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtimeStr)}</span>`,
+          pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
+          `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${id}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
+          "", "manage-playtime-meta")}
+        <div class="row mg-row stack mg-callout">
+          <div class="mg-title">${t("manage.epicDataTitle")}</div>
+          <div class="mg-desc">${t("manage.epicDataP1")}</div>
+          <div class="mg-desc">${t("manage.epicDataP2")}</div>
+        </div>
+      </div>
+
+      <div class="list mg-danger">
+        ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
+          `<button class="btn danger small" data-act="epic-uninstall" data-id="${id}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)}
+      </div>
+    </div>`;
+}
 
 /** Sync the manage panel inputs after fresh settings arrive from the backend. */
 export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
@@ -77,17 +216,7 @@ export function updateVerifyProgressInPlace(
     count.textContent = displayDetail;
     spd.textContent = speed;
   } else if (container) {
-    container.innerHTML = `
-      <div class="verify-box">
-        <div class="verify-bar">
-          <div id="manage-verify-fill" class="verify-fill" style="width:${percent}%"></div>
-        </div>
-        <div class="verify-meta">
-          <span id="manage-verify-count">${displayDetail}</span>
-          <span id="manage-verify-speed">${esc(speed)}</span>
-        </div>
-      </div>
-    `;
+    container.innerHTML = verifyBox(percent, displayDetail, speed);
   }
 }
 

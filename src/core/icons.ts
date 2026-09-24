@@ -208,6 +208,20 @@ export function icon(name: IconName, size = 15): string {
 }
 
 /**
+ * Standard empty state (docs/DESIGN_SYSTEM.md §4): muted icon, one title, an
+ * optional sentence and optional action markup. `title`/`desc` must already be
+ * escaped or trusted translation strings.
+ */
+export function emptyState(name: IconName, title: string, desc = "", actions = ""): string {
+  return `<div class="empty-state">${icon(name, 36)}<h3>${title}</h3>${desc ? `<p>${desc}</p>` : ""}${actions ? `<div class="page-actions">${actions}</div>` : ""}</div>`;
+}
+
+/** Centered spinner with a short status label for lazily loaded panels. */
+export function loadingState(label: string): string {
+  return `<div class="empty-state"><span class="spinner"></span><p>${label}</p></div>`;
+}
+
+/**
  * Custom PlayStation-inspired platinum trophy artwork (purple flame + gems).
  * Not a copy of any Sony trademark; an original vector in the launcher identity.
  */

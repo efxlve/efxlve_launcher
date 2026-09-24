@@ -10,7 +10,7 @@ import { isCollectionIcon } from "../../core/collection-icons";
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryDlBar } from "../../core/game-view";
-import { icon, type IconName } from "../../core/icons";
+import { emptyState, icon, type IconName } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -335,10 +335,6 @@ function collectionHeader(count: number | null): string {
       ${count !== null ? `<span class="lib-count">${t("lib.gameCount", { count })}</span>` : ""}
       ${activeCol ? `<button class="btn ghost small col-breadcrumb-edit" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${icon("edit", 13)} ${t("col.edit")}</button>` : ""}
     </div>`;
-}
-
-function emptyState(iconName: IconName, title: string, desc: string, action = ""): string {
-  return `<div class="empty-state">${icon(iconName, 36)}<h3>${esc(title)}</h3>${desc ? `<p>${esc(desc)}</p>` : ""}${action}</div>`;
 }
 
 function renderResults(itemsHtml: string, sentinelHtml: string): string {

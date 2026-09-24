@@ -244,6 +244,11 @@ select option { background: var(--surface-1); color: var(--text); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .modal-title { font-size: 16px; font-weight: 600; margin: 0; }
 .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.manage-head-close {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0;
+  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
+}
+.manage-head-close:hover { background: var(--surface-2); color: var(--text); }
 
 /* --- Context menu --- */
 .ps5-context-menu, .ctx-menu {

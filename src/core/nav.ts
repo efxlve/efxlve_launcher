@@ -7,7 +7,7 @@
  */
 
 import { CircleUserRound, createIcons } from "lucide";
-import { dlBadge } from "./dom";
+import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf } from "./selectors";
 import { getCustomAvatar, S } from "./state";
@@ -25,9 +25,7 @@ export function updateSidebarActive(): void {
     const active = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
     el.classList.toggle("active", active);
   });
-  sidebar.querySelectorAll<HTMLElement>(".sb-game").forEach((el) => {
-    el.classList.toggle("active", el.dataset.id === S.currentModalAppName);
-  });
+  syncSidebarGameActive();
 }
 
 /** Refresh the download counter next to the Downloads sidebar entry. */
@@ -67,7 +65,7 @@ export function updateSidebarGames(): void {
 
   const sig = installed
     .map((s) => `${s.appName}:${stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName))}`)
-    .join("|") + `|${S.currentModalAppName ?? ""}|${S.appLanguage}`;
+    .join("|") + `|${S.appLanguage}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 
