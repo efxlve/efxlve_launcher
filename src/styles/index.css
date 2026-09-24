@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Stylesheet entry point (cascade order). src/main.ts imports only this file.
    ========================================================================== */
 @import "./tokens.css";
@@ -11,4 +11,4 @@
 @import "./profile.css";
 @import "./modals.css";
 @import "./auth.css";
-@import "./gamepad.css";
+@import "./tv-mode.css";
