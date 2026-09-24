@@ -18,14 +18,9 @@
   "common.search": "Pesquisar",
   "downloads.kicker": "CENTRAL DE REDE E TRANSFERÊNCIA",
   "downloads.title": "Downloads",
-  "downloads.subtitle": "Instalações ativas, fila de downloads e desempenho de gravação em disco ao vivo.",
   "downloads.pause": "Pausar",
   "downloads.resume": "Retomar",
   "downloads.settingsTitle": "Configurações de download",
-  "downloads.settingsHint": "Estas preferências se aplicam a todos os downloads",
-  "downloads.netProfile": "Perfil de rede (largura de banda e workers)",
-  "downloads.installDir": "Pasta de instalação",
-  "downloads.pickFolder": "Escolher pasta",
   "downloads.queueEmpty": "Nenhum jogo na fila.",
   "downloads.emptyTitle": "Nenhum download ativo",
   "downloads.emptyDesc": "Escolha um jogo da sua biblioteca para iniciar o download e acompanhe a velocidade e o disco ao vivo.",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "Instalação necessária",
   "ob.setupDownload": "Baixar legendary",
   "settings.language": "Seleção de idioma",
-  "settings.languageDesc": "Escolha o idioma da interface do launcher e dos conteúdos locais.",
-  "settings.defaultTag": "Padrão"
+  "settings.languageDesc": "Escolha o idioma da interface do launcher e dos conteúdos locais."
 }

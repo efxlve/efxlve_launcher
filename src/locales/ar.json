@@ -18,14 +18,9 @@
   "common.search": "بحث",
   "downloads.kicker": "مركز الشبكة والنقل",
   "downloads.title": "التنزيلات",
-  "downloads.subtitle": "عمليات التثبيت النشطة وقائمة التنزيل وأداء الكتابة على القرص المباشر.",
   "downloads.pause": "إيقاف مؤقت",
   "downloads.resume": "استئناف",
   "downloads.settingsTitle": "إعدادات التنزيل",
-  "downloads.settingsHint": "تُطبق هذه التفضيلات على جميع التنزيلات",
-  "downloads.netProfile": "ملف الشبكة (النطاق الترددي والعمال)",
-  "downloads.installDir": "مجلد التثبيت",
-  "downloads.pickFolder": "اختيار مجلد",
   "downloads.queueEmpty": "لا توجد ألعاب في قائمة الانتظار.",
   "downloads.emptyTitle": "لا توجد تنزيلات نشطة",
   "downloads.emptyDesc": "اختر لعبة من مكتبتك لبدء التنزيل وتابع السرعة والقرص مباشرة.",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "التثبيت مطلوب",
   "ob.setupDownload": "تنزيل legendary",
   "settings.language": "اختيار اللغة",
-  "settings.languageDesc": "اختر لغة واجهة المشغل والمحتوى المحلي.",
-  "settings.defaultTag": "افتراضي"
+  "settings.languageDesc": "اختر لغة واجهة المشغل والمحتوى المحلي."
 }

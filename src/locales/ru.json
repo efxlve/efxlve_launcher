@@ -18,14 +18,9 @@
   "common.search": "Поиск",
   "downloads.kicker": "ЦЕНТР СЕТИ И ПЕРЕДАЧИ",
   "downloads.title": "Загрузки",
-  "downloads.subtitle": "Активные установки, очередь загрузок и скорость записи на диск в реальном времени.",
   "downloads.pause": "Пауза",
   "downloads.resume": "Продолжить",
   "downloads.settingsTitle": "Настройки загрузки",
-  "downloads.settingsHint": "Эти параметры применяются ко всем загрузкам",
-  "downloads.netProfile": "Сетевой профиль (пропускная способность и потоки)",
-  "downloads.installDir": "Папка установки",
-  "downloads.pickFolder": "Выбрать папку",
   "downloads.queueEmpty": "В очереди нет игр.",
   "downloads.emptyTitle": "Нет активных загрузок",
   "downloads.emptyDesc": "Выберите игру из библиотеки, чтобы начать загрузку, и следите за скоростью и диском в реальном времени.",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "Требуется установка",
   "ob.setupDownload": "Скачать legendary",
   "settings.language": "Выбор языка",
-  "settings.languageDesc": "Выберите язык интерфейса лаунчера и локального контента.",
-  "settings.defaultTag": "По умолчанию"
+  "settings.languageDesc": "Выберите язык интерфейса лаунчера и локального контента."
 }

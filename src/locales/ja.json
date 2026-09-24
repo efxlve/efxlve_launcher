@@ -18,14 +18,9 @@
   "common.search": "検索",
   "downloads.kicker": "ネットワーク＆転送センター",
   "downloads.title": "ダウンロード",
-  "downloads.subtitle": "進行中のインストール、ダウンロードキュー、リアルタイムのディスク書き込み性能。",
   "downloads.pause": "一時停止",
   "downloads.resume": "再開",
   "downloads.settingsTitle": "ダウンロード設定",
-  "downloads.settingsHint": "この設定はすべてのダウンロードに適用されます",
-  "downloads.netProfile": "ネットワークプロファイル（帯域幅とワーカー）",
-  "downloads.installDir": "インストール先フォルダ",
-  "downloads.pickFolder": "フォルダを選択",
   "downloads.queueEmpty": "キューにゲームはありません。",
   "downloads.emptyTitle": "アクティブなダウンロードはありません",
   "downloads.emptyDesc": "ライブラリからゲームを選んでダウンロードを開始し、速度とディスクをリアルタイムで確認できます。",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "インストールが必要です",
   "ob.setupDownload": "legendaryをダウンロード",
   "settings.language": "言語の選択",
-  "settings.languageDesc": "ランチャーUIとローカルコンテンツの言語を選択します。",
-  "settings.defaultTag": "デフォルト"
+  "settings.languageDesc": "ランチャーUIとローカルコンテンツの言語を選択します。"
 }

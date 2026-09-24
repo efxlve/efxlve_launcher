@@ -18,14 +18,9 @@
   "common.search": "搜索",
   "downloads.kicker": "网络与传输中心",
   "downloads.title": "下载",
-  "downloads.subtitle": "活动安装、下载队列和实时磁盘写入性能。",
   "downloads.pause": "暂停",
   "downloads.resume": "继续",
   "downloads.settingsTitle": "下载设置",
-  "downloads.settingsHint": "这些偏好适用于所有下载",
-  "downloads.netProfile": "网络配置（带宽与工作线程）",
-  "downloads.installDir": "安装文件夹",
-  "downloads.pickFolder": "选择文件夹",
   "downloads.queueEmpty": "队列中没有游戏。",
   "downloads.emptyTitle": "没有活动的下载",
   "downloads.emptyDesc": "从库中选择游戏即可开始下载，并实时查看速度和磁盘状态。",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "需要安装",
   "ob.setupDownload": "下载 legendary",
   "settings.language": "语言选择",
-  "settings.languageDesc": "选择启动器界面和本地内容的语言。",
-  "settings.defaultTag": "默认"
+  "settings.languageDesc": "选择启动器界面和本地内容的语言。"
 }

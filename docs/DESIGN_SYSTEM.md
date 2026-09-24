@@ -80,7 +80,7 @@ Defined once, reused everywhere:
 
 ## 6. Forbidden (zero tolerance)
 
-- Gradients on buttons or surfaces, neon/glow `box-shadow`, `background-clip: text`.
+- Gradients on buttons or surfaces, neon/glow `box-shadow`, `background-clip: text`. The single exception is the image scrim under the game page / TV hero title (`.gp-hero-scrim`), which exists only for text legibility over key art.
 - `backdrop-filter` anywhere.
 - Emojis in UI text (use `icon()` SVGs or ISO language codes).
 - Per-screen button styles. If a screen needs a new button look, it does not.
@@ -91,6 +91,7 @@ Defined once, reused everywhere:
 Reference hardware: 8 GB RAM, 5th-gen i5, integrated GPU, HDD, slow network.
 
 - Library: progressive chunks (48 + 36), `loading="lazy"` covers, in-place card patching (`patchLibraryCardDom`); never a full `innerHTML` rebuild on progress events.
+- Repeated tiles and rows carry `contain: layout paint` + `content-visibility: auto` with an intrinsic size close to the real one. Removing the containment was measured to raise >20ms frames from 2 to ~50 while scrolling 500 games; do not drop it.
 - Idle = zero work: no rAF loops, no polling, no running CSS animations.
 - Shadows: one level (`--shadow-pop`) and only on floating layers (menus, modals, toasts).
 

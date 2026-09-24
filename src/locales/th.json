@@ -18,14 +18,9 @@
   "common.search": "ค้นหา",
   "downloads.kicker": "ศูนย์เครือข่ายและการถ่ายโอน",
   "downloads.title": "ดาวน์โหลด",
-  "downloads.subtitle": "การติดตั้งที่ใช้งานอยู่ คิวการดาวน์โหลด และประสิทธิภาพการเขียนดิสก์แบบเรียลไทม์",
   "downloads.pause": "หยุดชั่วคราว",
   "downloads.resume": "ดำเนินการต่อ",
   "downloads.settingsTitle": "การตั้งค่าการดาวน์โหลด",
-  "downloads.settingsHint": "การตั้งค่าเหล่านี้ใช้กับการดาวน์โหลดทั้งหมด",
-  "downloads.netProfile": "โปรไฟล์เครือข่าย (แบนด์วิดท์และเวิร์กเกอร์)",
-  "downloads.installDir": "โฟลเดอร์ติดตั้ง",
-  "downloads.pickFolder": "เลือกโฟลเดอร์",
   "downloads.queueEmpty": "ไม่มีเกมในคิว",
   "downloads.emptyTitle": "ไม่มีการดาวน์โหลดที่ใช้งานอยู่",
   "downloads.emptyDesc": "เลือกเกมจากคลังของคุณเพื่อเริ่มดาวน์โหลด และติดตามความเร็วและดิสก์แบบเรียลไทม์",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "ต้องติดตั้งก่อน",
   "ob.setupDownload": "ดาวน์โหลด legendary",
   "settings.language": "เลือกภาษา",
-  "settings.languageDesc": "เลือกภาษาของอินเทอร์เฟซตัวเรียกเกมและเนื้อหาท้องถิ่น",
-  "settings.defaultTag": "ค่าเริ่มต้น"
+  "settings.languageDesc": "เลือกภาษาของอินเทอร์เฟซตัวเรียกเกมและเนื้อหาท้องถิ่น"
 }

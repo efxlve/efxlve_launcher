@@ -18,14 +18,9 @@
   "common.search": "검색",
   "downloads.kicker": "네트워크 및 전송 센터",
   "downloads.title": "다운로드",
-  "downloads.subtitle": "진행 중인 설치, 다운로드 대기열 및 실시간 디스크 쓰기 성능.",
   "downloads.pause": "일시정지",
   "downloads.resume": "계속",
   "downloads.settingsTitle": "다운로드 설정",
-  "downloads.settingsHint": "이 설정은 모든 다운로드에 적용됩니다",
-  "downloads.netProfile": "네트워크 프로필 (대역폭 및 워커)",
-  "downloads.installDir": "설치 폴더",
-  "downloads.pickFolder": "폴더 선택",
   "downloads.queueEmpty": "대기열에 게임이 없습니다.",
   "downloads.emptyTitle": "활성 다운로드 없음",
   "downloads.emptyDesc": "라이브러리에서 게임을 선택해 다운로드를 시작하고 속도와 디스크를 실시간으로 확인하세요.",
@@ -38,6 +33,5 @@
   "ob.setupTitle": "설치 필요",
   "ob.setupDownload": "legendary 다운로드",
   "settings.language": "언어 선택",
-  "settings.languageDesc": "런처 UI 및 로컬 콘텐츠 언어를 선택하세요.",
-  "settings.defaultTag": "기본"
+  "settings.languageDesc": "런처 UI 및 로컬 콘텐츠 언어를 선택하세요."
 }
