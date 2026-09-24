@@ -8,6 +8,7 @@
 
 import { epicInstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { selectiveRoot } from "../../core/dom";
+import { refreshGameActionUi } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
 import { render } from "../../core/render";
@@ -27,7 +28,7 @@ export async function openSelectiveModal(appName: string): Promise<void> {
   try {
     const opts = await epicGetInstallOptions(appName);
     if (!opts.hasOptions) {
-      void epicInstall(appName);
+      void epicInstall(appName, S.selectiveInstallDir);
       return;
     }
     S.selectiveInstallOptions = opts;
@@ -42,6 +43,7 @@ export async function openSelectiveModal(appName: string): Promise<void> {
 export async function applySelectiveInstall(appName: string, tags: string[], dlcs: string[]): Promise<void> {
   const s = S.epicSummaries.find((x) => x.appName === appName);
   const title = s ? s.title : appName;
+  const installDir = S.selectiveInstallDir;
   closeSelectiveModal();
   S.downloads.set(appName, { progress: 0, done: false, title });
   if (!S.activeDlMetrics || S.activeDlMetrics.done) {
@@ -60,10 +62,10 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
     };
   }
   updateBadge();
-  render();
+  refreshGameActionUi(appName);
   toast(t("selective.starting"), "");
   try {
-    const msg = await epicInstallWithOptions(appName, tags, dlcs, null);
+    const msg = await epicInstallWithOptions(appName, tags, dlcs, installDir);
     toast(msg, "ok");
     S.dlQueueStatus = await epicGetQueue();
     render();
@@ -79,6 +81,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
 
 export function closeSelectiveModal(): void {
   S.selectiveInstallOptions = null;
+  S.selectiveInstallDir = null;
   S.selectedInstallTags.clear();
   S.selectedDlcAppIds.clear();
   if (selectiveRoot) selectiveRoot.innerHTML = "";

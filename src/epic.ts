@@ -195,6 +195,20 @@ export function epicDescription(g: EpicGame): string {
   return typeof d === "string" && d ? d : NO_DESC;
 }
 
+/**
+ * Folder name legendary creates under the install base path.
+ * Mirrors the backend cleanup logic: `customAttributes.FolderName` first,
+ * then the title with path-invalid characters stripped, then the app name.
+ */
+export function epicInstallFolderName(g: EpicGame | undefined | null): string {
+  if (!g) return "";
+  const attrs = (g.metadata?.customAttributes as Record<string, { value?: string }>) || {};
+  const folder = attrs.FolderName?.value?.trim();
+  if (folder) return folder;
+  const title = String(g.app_title || g.app_name || "").replace(/[/\\:*?"<>|]/g, "").trim();
+  return title || g.app_name;
+}
+
 export function isDlc(g: EpicGame): boolean {
   return g.metadata != null && "mainGameItem" in g.metadata;
 }

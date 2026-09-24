@@ -21,7 +21,7 @@ import {
 import { isTauri } from "./constants";
 import { closeModal } from "./dom";
 import { t } from "../i18n";
-import { epicDlProgress } from "./game-view";
+import { epicDlProgress, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
 import { notify, render, scheduleRender } from "./render";
@@ -42,7 +42,7 @@ export async function epicPlay(appName: string): Promise<void> {
 }
 
 /** Start (or update) a game installation, wiring up the download metrics. */
-export async function epicInstall(appName: string): Promise<void> {
+export async function epicInstall(appName: string, installDir?: string | null): Promise<void> {
   const s = S.epicSummariesMap.get(appName);
   if (!s || epicDlProgress(appName) !== null) return;
   const g = rawOf(appName);
@@ -68,6 +68,7 @@ export async function epicInstall(appName: string): Promise<void> {
     };
   }
   updateBadge();
+  refreshGameActionUi(appName);
   void epicGetQueue().then((q) => {
     S.dlQueueStatus = q;
     if (S.view === "library" || S.view === "downloads") render();
@@ -75,7 +76,7 @@ export async function epicInstall(appName: string): Promise<void> {
     if (S.view === "library" || S.view === "downloads") render();
   });
   try {
-    const msg = await epicInstallGame(appName);
+    const msg = await epicInstallGame(appName, installDir ?? undefined);
     toast(msg, "ok");
     S.dlQueueStatus = await epicGetQueue();
     if (S.view === "library" || S.view === "downloads") render();

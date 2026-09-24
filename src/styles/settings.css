@@ -187,16 +187,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.settings-nav-indicator {
-  position: absolute;
-  right: 10px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #a78bfa;
-  box-shadow: 0 0 6px rgba(167, 139, 250, 0.8);
-}
-
 /* Right content panel */
 .settings-panel {
   display: flex;
@@ -1236,9 +1226,6 @@
   .settings-nav-item {
     width: auto;
     border-radius: 8px;
-  }
-  .settings-nav-indicator {
-    display: none;
   }
   .settings-stats-grid,
   .settings-net-cards {

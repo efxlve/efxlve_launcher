@@ -30,7 +30,7 @@ efxlve_launcher/
 │   │   ├── utils.ts                   # Formatting helpers (bytes, time, string escaping)
 │   │   ├── constants.ts               # Default configurations, thresholds, limits
 │   │   └── types.ts                   # Core frontend type definitions
-│   ├── features/                      # Modular Feature Domains (23 subsystems)
+│   ├── features/                      # Modular Feature Domains (24 subsystems)
 │   │   ├── auth/                      # Login, EGL import, progressive sync, account switcher
 │   │   │   ├── auth-actions.ts        # Boot, progressive login, logout, library sync
 │   │   │   └── account-switcher.ts    # Saved-account vault: switch / add / remove / cancel
@@ -57,6 +57,8 @@ efxlve_launcher/
 │   │   │   └── freegames.ts
 │   │   ├── gamepad/                   # 10-foot gamepad navigation loop & controller HUD
 │   │   │   └── gamepad.ts
+│   │   ├── install/                   # Epic-style install location dialog
+│   │   │   └── install-dialog.ts
 │   │   ├── library/                   # Main library grid, shelves & progressive chunking
 │   │   │   └── library-view.ts
 │   │   ├── manage/                    # Game properties, executable paths & env/wrappers
@@ -89,8 +91,8 @@ efxlve_launcher/
 │   └── workflows/
 │       └── release.yml                # Tag-driven signed build + GitHub Release + latest.json
 │   ├── locales/                       # 15 Language Localization Dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (Primary, 1.233 keys)
-│   │   ├── en.json                    # English (Primary, 1.233 keys, full parity)
+│   │   ├── tr.json                    # Turkish (Primary, 1.249 keys)
+│   │   ├── en.json                    # English (Primary, 1.249 keys, full parity)
 │   │   └── ...                        # ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant (core keys, fall back to en)
 │   └── styles/                        # 29 Modular PS5 Console Dark Stylesheets + index.css
 │       ├── index.css                  # Master CSS entry point (imports all modules)
@@ -211,6 +213,7 @@ efxlve_launcher/
 | `collections/` | `collections-view.ts` | Custom user categories, tags, EGL collection importer and shelf filters. |
 | `cover/` | `cover-view.ts` | Custom game artwork manager and SteamGridDB high-resolution cover art picker. |
 | `dlc/` | `dlc-manager.ts`, `selective-install.ts` | Add-on/DLC checklist and selective install-tag picker with install/uninstall actions. |
+| `install/` | `install-dialog.ts` | Epic-style install location dialog: base folder picker, sizes, auto-update and shortcut preferences; chains into the selective modal. |
 | `playtime/` | `playtime-view.ts` | Game session duration display, playtime synchronization and manual time editor. |
 | `presence/` | `presence.ts` | Discord Rich Presence state synchronization and game title broadcasting. |
 | `storage/` | `storage-view.ts` | Storage management dashboard showing per-drive installation sizes and capacity bars. |
