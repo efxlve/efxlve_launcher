@@ -793,6 +793,7 @@
   "dl.diskFull": "Insufficient disk space. Please free up space on the target drive.",
   "dl.itemNotFound": "Package or game metadata could not be found on Epic Games servers.",
   "dl.networkError": "Could not connect to Epic Games servers. Please check your internet connection.",
+  "dl.timeoutError": "Epic Games server did not respond in time (Read timeout). Please check your internet connection and try again.",
   "dl.permissionDenied": "Write permission denied for the installation folder.",
   "dl.sessionExpired": "Epic Games session has expired. Please sign in again from Settings.",
   "manage.shortcutFailed": "Could not create shortcut: {msg}",
