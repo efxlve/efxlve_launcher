@@ -8,9 +8,11 @@
  */
 
 import "./styles/index.css";
+document.documentElement.classList.add("ready");
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi } from "./core/nav";
 import { S } from "./core/state";
+import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
@@ -19,9 +21,8 @@ import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
-import { renderTvMode } from "./features/gamepad/tv-mode";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
-import { renderOnboarding } from "./features/onboarding/onboarding-view";
+import { renderAccounts } from "./features/accounts/accounts-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
@@ -30,6 +31,11 @@ import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots
 import { renderSettings } from "./features/settings/settings-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
+
+let lastRenderedView: View | null = null;
+viewEl.addEventListener("animationend", (e) => {
+  if (e.target instanceof HTMLElement && e.target.parentElement === viewEl) viewEl.classList.remove("view-enter");
+});
 
 /** Batch the next render onto the animation frame. */
 function scheduleRender(): void {
@@ -46,17 +52,12 @@ function render(): void {
   // When leaving the store, hard-hide the native webview to avoid overlap.
   if (S.view !== "store" && S.storeShown) hideStore();
 
-  const isAuthed = Boolean(S.epicAccount) && S.epicPhase === "library" && !S.authLoading;
-  document.body.classList.toggle("auth-mode", !isAuthed);
-  document.body.classList.toggle("tv-mode", isAuthed && S.view === "tv");
-
-  if (!isAuthed) {
-    if (S.storeShown) hideStore();
-    closeAllModals();
-    viewEl.innerHTML = renderOnboarding();
-    updateChrome();
-    presenceSync();
-    return;
+  // Page-enter animation only when the view actually changes; regular
+  // re-renders of the same view must not replay it.
+  if (S.view !== lastRenderedView) {
+    lastRenderedView = S.view;
+    viewEl.classList.add("view-enter");
+    viewEl.scrollTop = 0;
   }
 
   if (S.view === "store") {
@@ -73,9 +74,9 @@ function render(): void {
   }
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()
-    : S.view === "tv" ? renderTvMode()
     : S.view === "downloads" ? renderDownloads()
     : S.view === "profile" ? renderProfile()
+    : S.view === "accounts" ? renderAccounts()
     : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();

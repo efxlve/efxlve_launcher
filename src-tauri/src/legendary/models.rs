@@ -86,7 +86,7 @@ const HEAVY_METADATA_KEYS: &[&str] = &[
     "developerId",
     "applicationId",
     "itemType",
-    "creationDate",
+    // creationDate is kept — the game page shows "Released on {date}".
     "lastModifiedDate",
     "unsearchable",
     "endOfSupport",

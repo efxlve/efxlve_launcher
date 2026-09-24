@@ -1515,6 +1515,55 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
     }
 }
 
+/// Ends the running game the way Steam's Stop does: kill the processes that
+/// belong to this install, then tell the UI the session is over.
+#[tauri::command]
+pub async fn epic_stop_game(app: AppHandle, app_name: String) -> Result<String, String> {
+    let config = super::skip::default_config_dir();
+    let installed_games = super::cache::read_installed(&config);
+    let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
+    let install_path = installed_entry
+        .map(|g| std::path::PathBuf::from(&g.install_path))
+        .filter(|p| p.exists());
+    let main_executable = installed_entry.map(|g| g.executable.as_str());
+    let candidate_exes = if let Some(ref ip) = install_path {
+        discover_game_executables(ip, main_executable)
+    } else {
+        Vec::new()
+    };
+    let pids = game_process_pids(install_path.as_deref(), &candidate_exes);
+    if pids.is_empty() {
+        super::screenshots::clear_active_running_game(&app_name);
+        let _ = app.emit(
+            "game-status",
+            serde_json::json!({ "id": app_name, "running": false }),
+        );
+        return Err("@t:dl.notRunning".to_string());
+    }
+    for pid in &pids {
+        #[cfg(windows)]
+        {
+            let mut cmd = tokio::process::Command::new("taskkill");
+            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output().await;
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = tokio::process::Command::new("kill")
+                .args(["-9", &pid.to_string()])
+                .output()
+                .await;
+        }
+    }
+    super::screenshots::clear_active_running_game(&app_name);
+    let _ = app.emit(
+        "game-status",
+        serde_json::json!({ "id": app_name, "running": false }),
+    );
+    Ok("@t:dl.stopped".to_string())
+}
+
 /// Detects executable (.exe) files in the game directory.
 /// Shared-library and crash-reporter binaries are filtered out.
 pub fn discover_game_executables(install_path: &Path, main_executable: Option<&str>) -> Vec<String> {
@@ -1627,8 +1676,15 @@ mod win_process {
     }
 
     pub fn is_game_process_running(install_path: Option<&Path>, candidate_exes: &[String]) -> bool {
+        !game_process_pids(install_path, candidate_exes).is_empty()
+    }
+
+    /// PIDs whose image name matches a candidate exe, or whose full path sits
+    /// inside the install folder. Used both to detect a running game and to
+    /// stop it (Steam-style) without killing unrelated processes.
+    pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
         if candidate_exes.is_empty() && install_path.is_none() {
-            return false;
+            return Vec::new();
         }
 
         let norm_install_path = install_path.map(|p| {
@@ -1641,7 +1697,7 @@ mod win_process {
         unsafe {
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
             if snapshot == INVALID_HANDLE_VALUE {
-                return false;
+                return Vec::new();
             }
 
             let mut entry = std::mem::zeroed::<PROCESSENTRY32W>();
@@ -1649,50 +1705,47 @@ mod win_process {
 
             if Process32FirstW(snapshot, &mut entry) == 0 {
                 CloseHandle(snapshot);
-                return false;
+                return Vec::new();
             }
 
-            let mut found = false;
+            let mut pids = Vec::new();
 
             loop {
-                // 1. Get the process file name (sz_exe_file)
                 let len = entry
                     .sz_exe_file
                     .iter()
                     .position(|&c| c == 0)
                     .unwrap_or(entry.sz_exe_file.len());
                 let exe_name = String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase();
+                let mut matched = !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name);
 
-                // 2. Direct match against candidate exes (0ms, zero permissions, cannot be blocked by EAC)
-                if !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name) {
-                    found = true;
-                    break;
-                }
-
-                // 3. install_path check (QueryFullProcessImageNameW)
-                if let Some(ref inst) = norm_install_path {
-                    let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
-                    if !h_proc.is_null() {
-                        let mut buf = [0u16; 1024];
-                        let mut size = buf.len() as DWORD;
-                        if QueryFullProcessImageNameW(h_proc, 0, buf.as_mut_ptr(), &mut size) != 0 {
-                            let full_path = String::from_utf16_lossy(&buf[..size as usize])
-                                .replace('/', "\\")
-                                .to_lowercase();
-                            if full_path.starts_with(inst) {
-                                let is_ignored = full_path.contains("crashreportclient")
-                                    || full_path.contains("vc_redist")
-                                    || full_path.contains("vcredist")
-                                    || full_path.contains("dxsetup");
-                                if !is_ignored {
-                                    found = true;
-                                    CloseHandle(h_proc);
-                                    break;
+                if !matched {
+                    if let Some(ref inst) = norm_install_path {
+                        let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
+                        if !h_proc.is_null() {
+                            let mut buf = [0u16; 1024];
+                            let mut size = buf.len() as DWORD;
+                            if QueryFullProcessImageNameW(h_proc, 0, buf.as_mut_ptr(), &mut size) != 0 {
+                                let full_path = String::from_utf16_lossy(&buf[..size as usize])
+                                    .replace('/', "\\")
+                                    .to_lowercase();
+                                if full_path.starts_with(inst) {
+                                    let is_ignored = full_path.contains("crashreportclient")
+                                        || full_path.contains("vc_redist")
+                                        || full_path.contains("vcredist")
+                                        || full_path.contains("dxsetup");
+                                    if !is_ignored {
+                                        matched = true;
+                                    }
                                 }
                             }
+                            CloseHandle(h_proc);
                         }
-                        CloseHandle(h_proc);
                     }
+                }
+
+                if matched {
+                    pids.push(entry.th32_process_id);
                 }
 
                 if Process32NextW(snapshot, &mut entry) == 0 {
@@ -1701,7 +1754,7 @@ mod win_process {
             }
 
             CloseHandle(snapshot);
-            found
+            pids
         }
     }
 }
@@ -1712,9 +1765,13 @@ mod win_process {
     pub fn is_game_process_running(_install_path: Option<&Path>, _candidate_exes: &[String]) -> bool {
         false
     }
+
+    pub fn game_process_pids(_install_path: Option<&Path>, _candidate_exes: &[String]) -> Vec<u32> {
+        Vec::new()
+    }
 }
 
-pub use win_process::is_game_process_running;
+pub use win_process::{game_process_pids, is_game_process_running};
 
 async fn spawn_launched(
     app: &AppHandle,

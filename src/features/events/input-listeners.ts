@@ -533,7 +533,6 @@ viewEl.addEventListener("scroll", () => {
 
 // Mouse navigation buttons (back: 3, forward: 4)
 window.addEventListener("mouseup", (e) => {
-  if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
   if (e.button === 3) {
     e.preventDefault();
     navGoBack();

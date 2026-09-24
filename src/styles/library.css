@@ -5,14 +5,20 @@
    ========================================================================== */
 
 /* --- Header --- */
-.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 8px; min-height: 44px; }
-.lib-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.lib-count { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.lib-tools { display: flex; align-items: center; gap: 8px; }
-.lib-search { width: 240px; }
-.lib-search input::-webkit-search-cancel-button { display: none; }
+.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; min-height: 48px; }
+.lib-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.lib-tools .btn { height: 40px; font-size: 14px; }
+.lib-tools .seg { height: 40px; }
+.lib-tools .seg > button { height: 34px; }
+.lib-filters .tab { height: 48px; font-size: 16px; }
+.lib-filters.tabs { gap: 28px; }
 .lib-refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
-.lib-filters { margin-bottom: 20px; }
+.lib-filters { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.lib-filters::-webkit-scrollbar { height: 0; display: none; }
+.lib-col-tab { cursor: grab; flex-shrink: 0; }
+.lib-col-tab.dragging { opacity: 0.45; }
+.lib-col-tab.drop-before { box-shadow: inset 2px 0 0 var(--accent); }
+.lib-col-add { width: 32px; height: 32px; flex-shrink: 0; align-self: center; margin-left: 4px; }
 .lib-error-code {
   font-family: Consolas, monospace; font-size: 12px; color: var(--text-2);
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-width: 560px;
@@ -94,28 +100,4 @@
 .lrow-col { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lrow-action { display: flex; justify-content: flex-end; }
 
-/* --- Collections gallery --- */
-.col-folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
-.col-folder-card {
-  display: flex; flex-direction: column; cursor: pointer; overflow: hidden;
-  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
-  transition: border-color var(--ease);
-}
-.col-folder-card:hover { border-color: var(--line-strong); }
-.col-folder-preview { aspect-ratio: 16 / 10; background: var(--surface-2); overflow: hidden; }
-.col-card-collage { display: grid; grid-template-columns: repeat(4, 1fr); height: 100%; gap: 2px; }
-.col-card-collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.col-collage-empty { height: 100%; display: grid; place-items: center; color: var(--text-3); }
-.col-folder-footer { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
-.col-folder-icon { color: var(--text-2); display: grid; place-items: center; }
-.col-folder-info { flex: 1; min-width: 0; }
-.col-folder-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.col-folder-count { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.new-col-card { border-style: dashed; justify-content: center; min-height: 180px; }
-.new-col-content { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px; text-align: center; color: var(--text-2); }
-.new-col-title { font-size: 13px; font-weight: 500; color: var(--text); }
-.new-col-desc { font-size: 12px; color: var(--text-3); }
-.col-breadcrumb-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-.col-breadcrumb-icon { color: var(--text-2); display: grid; place-items: center; }
-.col-breadcrumb-title { font-size: 18px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.col-breadcrumb-edit { margin-left: auto; }
+/* Collection tabs live in the filter row. The folder gallery is gone. */

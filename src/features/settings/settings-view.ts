@@ -9,7 +9,7 @@
 import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
-import { getCustomAvatar, S } from "../../core/state";
+import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { esc, fmtBytes, fmtCdnName } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
@@ -28,7 +28,6 @@ import {
 } from "../../epic";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
-  { id: "account", labelKey: "settings.secAccount" },
   { id: "downloads", labelKey: "settings.secDownloads" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
   { id: "appearance", labelKey: "settings.secAppearance" },
@@ -65,69 +64,10 @@ function group(rows: string, title = ""): string {
   return `${title ? `<h3 class="section-title">${title}</h3>` : ""}<div class="list settings-group">${rows}</div>`;
 }
 
-function avatar(url: string | null, name: string, cls = "settings-avatar"): string {
-  const initial = (name.trim()[0] || "?").toUpperCase();
-  return `<span class="${cls}">${url ? `<img src="${esc(url)}" alt="" />` : esc(initial)}</span>`;
-}
-
-/* ---------- Sections ---------- */
-
-function renderAccount(): string {
-  const accountId = S.playerProfileData?.account_id || S.epicAccountId || S.epicAccount || "—";
-  const customAvatar = S.epicAccount ? getCustomAvatar() : null;
-  const displayName = S.playerProfileData?.display_name || S.epicAccount || t("settings.notLoggedIn");
-
-  const identity = `
-    <div class="card settings-identity">
-      <button class="settings-avatar-btn" data-act="profile-change-avatar" title="${t("profile.changeAvatarTitle")}">${avatar(customAvatar, displayName, "settings-avatar lg")}</button>
-      <div class="row-main">
-        <div class="settings-identity-name">${esc(displayName)}</div>
-        <div class="settings-row-desc">Epic Account ID <code>${esc(accountId)}</code>
-          <button type="button" class="icon-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyId")}">${icon("copy", 14)}</button>
-        </div>
-      </div>
-      <div class="settings-identity-stats">
-        <span><strong class="tabular-nums">${S.epicSummaries.length}</strong> ${t("settings.accountTotalGames")}</span>
-        <span><strong class="tabular-nums">${S.epicSkippedCount}</strong> ${t("settings.skippedItems")}</span>
-      </div>
-    </div>`;
-
-  const accounts = S.savedAccounts || [];
-  const accountRows = accounts.length > 0
-    ? accounts.map((acc) => {
-        const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === displayName;
-        const accAvatar = S.customAvatars[acc.account_id] || (isCurrent ? customAvatar : null);
-        const actions = isCurrent
-          ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
-          : `<button type="button" class="btn small" data-act="account-switch" data-id="${esc(acc.account_id)}">${t("settings.accountSwitchBtn")}</button>
-             <button type="button" class="icon-btn danger" data-act="account-remove" data-id="${esc(acc.account_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
-        return `
-          <div class="row">
-            ${avatar(accAvatar, acc.display_name)}
-            <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div><div class="row-meta">ID ${esc(acc.account_id.slice(0, 12))}…</div></div>
-            <div class="row-actions">${actions}</div>
-          </div>`;
-      }).join("")
-    : `<div class="row"><div class="row-meta">${t("settings.accountSwitcherEmpty")}</div></div>`;
-
-  const switcher = `
-    <div class="settings-section-head">
-      <h3 class="section-title">${t("settings.accountSwitcherTitle")}</h3>
-      <button type="button" class="btn ghost small" data-act="account-add">${icon("plus", 13)} ${t("settings.accountAdd")}</button>
-    </div>
-    <div class="list settings-group">${accountRows}</div>`;
-
-  const danger = S.epicAccount
-    ? `<div class="list settings-group settings-danger">${row(t("settings.logout"), t("settings.accountDangerDesc"), `<button type="button" class="btn danger small" data-act="epic-logout">${t("settings.logout")}</button>`)}</div>`
-    : "";
-
-  return identity + switcher + danger;
-}
-
 function renderDownloads(): string {
   const dir = row(
     t("settings.installDirTitle"),
-    `${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "—")}</code>`,
+    `${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "â€”")}</code>`,
     `<input id="epic-install-dir" class="input settings-path-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
      <button type="button" class="btn ghost small" data-act="dl-pick-install-dir">${t("common.browse")}</button>
      <button type="button" class="btn primary small" data-act="epic-save-install-dir">${t("common.save")}</button>`,
@@ -191,7 +131,7 @@ function renderIntegrations(): string {
     : S.thirdPartyLaunchers.map((l: ThirdPartyLauncher) => row(
         esc(l.name),
         l.installed ? esc(l.installPath || t("settings.pathUnknown")) : t("settings.thirdPartyRecommended"),
-        `${l.installed ? `<span class="chip ok">${t("settings.installed")}${l.version ? ` · v${esc(l.version)}` : ""}</span>` : `<span class="chip">${t("settings.notInstalled")}</span>`}
+        `${l.installed ? `<span class="chip ok">${t("settings.installed")}${l.version ? ` Â· v${esc(l.version)}` : ""}</span>` : `<span class="chip">${t("settings.notInstalled")}</span>`}
          <button class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("settings.officialDownload")}</button>`,
       )).join("") +
       row(t("settings.thirdPartyDesc"), null, `<button class="btn ghost small" data-act="third-party-refresh">${t("settings.rescan")}</button>`);
@@ -340,13 +280,12 @@ function renderAbout(): string {
 
 function renderSection(section: SettingsSection): string {
   switch (section) {
-    case "downloads": return renderDownloads();
     case "integrations": return renderIntegrations();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
     case "system": return renderSystem();
     case "about": return renderAbout();
-    default: return renderAccount();
+    default: return renderDownloads();
   }
 }
 
@@ -356,7 +295,6 @@ export function renderSettings(): string {
     <button class="settings-nav-item ${s.id === active.id ? "active" : ""}" data-act="settings-section" data-section="${s.id}">${t(s.labelKey)}</button>`).join("");
   return `
     <div class="page settings-page">
-      <div class="page-head"><h1 class="page-title">${t("settings.title")}</h1></div>
       <div class="settings-layout">
         <nav class="settings-nav">${nav}</nav>
         <div class="settings-panel">${renderSection(active.id)}</div>

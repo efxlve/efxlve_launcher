@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Search, Settings, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Settings, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -61,6 +61,7 @@ import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initContextMenu } from "../context-menu/context-menu";
+import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
@@ -136,12 +137,13 @@ export async function initApp(hooks: {
 }): Promise<void> {
   updateMaxIcon();
   createIcons({
-    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell, Search },
+    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor },
   });
   loadNotifications();
   initAutoUpdate();
   updateOfflineModeUi();
   initContextMenu();
+  initCollectionTabs();
   registerRender(hooks.render, hooks.scheduleRender);
   registerCloseAllModals(hooks.closeAllModals);
   registerGamepadHud(updateGamepadHud);

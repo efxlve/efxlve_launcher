@@ -76,12 +76,14 @@ export type IconName =
   | "twitter"
   | "mail"
   | "arrow-right"
+  | "square"
   | "clipboard";
 
 /** SVG path bodies keyed by icon name. */
 const ICON_PATHS: Record<string, string> = {
   "arrow-right":
     '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  square: '<rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" stroke="none"/>',
   clipboard:
     '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   mail:

@@ -5,26 +5,29 @@
   color-scheme: dark;
 
   /* Shell geometry. main.rs positions the store webview from the same values. */
-  --sidebar-w: 232px;
-  --winbar-h: 36px;
+  --sidebar-w: 252px;
+  --winbar-h: 34px;
+  --header-h: 60px;
+  --statusbar-h: 24px;
 
-  /* Surfaces */
-  --bg: #0e0f12;
-  --surface-1: #15161a;
-  --surface-2: #1c1d22;
-  --surface-3: #25262c;
-  --line: rgba(255, 255, 255, 0.07);
+  /* Surfaces: true black like Hydra. Sidebar and content share one void. */
+  --bg: #000000;
+  --surface-1: #0a0a0a;
+  --surface-2: #141414;
+  --surface-3: #1e1e1e;
+  --line: rgba(255, 255, 255, 0.06);
   --line-strong: rgba(255, 255, 255, 0.12);
 
   /* Text */
-  --text: #ececef;
-  --text-2: #a3a4ad;
-  --text-3: #6c6d77;
+  --text: #ffffff;
+  --text-2: #9a9a9a;
+  --text-3: #5c5c5c;
 
-  /* The single interactive accent + state colors */
-  --accent: #3d8bfd;
-  --accent-hover: #5a9cff;
-  --accent-tint: rgba(61, 139, 253, 0.14);
+  /* The single interactive accent is white; text on it is black. */
+  --accent: #ffffff;
+  --accent-hover: #ffffff;
+  --accent-tint: rgba(255, 255, 255, 0.08);
+  --on-accent: #000000;
   --ok: #2fb36d;
   --ok-hover: #38c27a;
   --ok-tint: rgba(47, 179, 109, 0.14);
@@ -37,7 +40,8 @@
   --r-sm: 6px;
   --r-md: 10px;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --ease: 120ms ease-out;
+  --ease: 140ms ease-out;
+  --ease-in: 180ms ease-out;
 
   /* Legacy names still referenced by not-yet-migrated rules; they resolve to
      the flat palette so no gradient or glow can leak back in. */
@@ -50,7 +54,6 @@
   --accent2: var(--accent);
   --primary: var(--accent);
   --primary-hover: var(--accent-hover);
-  --on-accent: #ffffff;
   --green: var(--ok);
   --green-glow: transparent;
   --yellow: var(--warn);
@@ -116,3 +119,21 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .hidden { display: none !important; }
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-enter > *,
+  .overlay,
+  .gp-hero-img,
+  .store-loading-screen {
+    animation: none !important;
+  }
+}

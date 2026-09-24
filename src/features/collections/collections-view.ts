@@ -64,6 +64,20 @@ export function updateMarkerUi(): void {
   }
 }
 
+function colGameRow(s: { appName: string; title: string; cover?: string | null; installed: boolean }): string {
+  const checked = S.colModalSelectedApps.has(s.appName);
+  const thumb = s.cover
+    ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />`
+    : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 14)}</div>`;
+  return `
+    <button type="button" class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${esc(s.appName)}">
+      <span class="col-custom-cb ${checked ? "checked" : ""}">${icon("check", 12)}</span>
+      ${thumb}
+      <span class="col-game-title">${esc(s.title)}</span>
+      ${s.installed ? `<span class="col-inst-badge">${t("common.installed")}</span>` : ""}
+    </button>`;
+}
+
 export function renderCollectionModal(): void {
   if (!collectionRoot) return;
   const col = S.activeEditingColId ? S.epicCollections.find((c) => c.id === S.activeEditingColId) : null;
@@ -78,129 +92,67 @@ export function renderCollectionModal(): void {
     filtered = filtered.filter((s) => s.installed);
   }
 
-  const installedCount = S.epicSummaries.filter((s) => s.installed).length;
   const selectedCount = S.colModalSelectedApps.size;
 
   collectionRoot.innerHTML = `
     <div class="col-modal-backdrop" data-act="col-modal-backdrop">
-      <div class="col-modal-card" role="dialog" aria-modal="true">
+      <div class="col-modal-card ced" role="dialog" aria-modal="true">
         <div class="col-modal-header">
-          <div class="col-modal-title">
-            <div class="col-modal-header-avatar" id="col-header-avatar">
-              ${collectionMarker(S.colModalMarker, 20)}
-            </div>
-            <div>
-              <h2>
-                <span>${isEditing ? t("col.editTitle") : t("col.newTitle")}</span>
-                <span class="col-header-count" id="col-header-selected-badge">${t("col.selectedCount", { count: selectedCount })}</span>
-              </h2>
-              <div class="col-modal-subtitle">${isEditing ? t("col.editSubtitle", { name: esc(colName) }) : t("col.newSubtitle")}</div>
-            </div>
-          </div>
-          <button class="col-modal-close" data-act="close-col-modal" title="${t("common.close")}">
-            ${icon("x", 16)}
-          </button>
+          <h2>${isEditing ? t("col.editTitle") : t("col.newTitle")}</h2>
+          <button class="col-modal-close" data-act="close-col-modal" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
 
         <div class="col-modal-body">
-          <div class="col-input-group">
-            <label for="col-name-input" class="col-label">${t("col.markerLabel")}</label>
-            <div class="col-name-row">
-              <div class="col-marker-picker-container">
-                <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="${t("col.pickIcon")}">
-                  <span id="col-marker-display">${collectionMarker(S.colModalMarker, 22)}</span>
-                  <span class="col-marker-edit-badge">${icon("edit", 10)}</span>
-                </button>
-                <div id="col-marker-palette" class="col-marker-palette ${S.isMarkerPaletteOpen ? "open" : ""}">
-                  <div class="col-marker-palette-header">
-                    <span>${t("col.pickIconHeader")}</span>
-                    ${S.colModalMarker ? `<button type="button" class="col-marker-clear-btn" data-act="clear-col-marker">${icon("trash", 11)} ${t("col.remove")}</button>` : ""}
-                  </div>
-                  <div class="col-marker-grid">
-                    ${COLLECTION_ICONS.map((name) => `
-                      <button type="button" class="col-marker-item ${S.colModalMarker === name ? "active" : ""}" data-act="pick-col-marker" data-icon="${name}" title="${name}">${icon(name, 18)}</button>
-                    `).join("")}
-                  </div>
+          <div class="col-name-row">
+            <div class="col-marker-picker-container">
+              <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="${t("col.pickIcon")}">
+                <span id="col-marker-display">${collectionMarker(S.colModalMarker, 18)}</span>
+              </button>
+              <div id="col-marker-palette" class="col-marker-palette ${S.isMarkerPaletteOpen ? "open" : ""}">
+                <div class="col-marker-grid">
+                  ${COLLECTION_ICONS.map((name) => `
+                    <button type="button" class="col-marker-item ${S.colModalMarker === name ? "active" : ""}" data-act="pick-col-marker" data-icon="${name}" title="${name}">${icon(name, 16)}</button>
+                  `).join("")}
+                  ${S.colModalMarker ? `<button type="button" class="col-marker-item" data-act="clear-col-marker" title="${t("col.remove")}">${icon("x", 14)}</button>` : ""}
                 </div>
               </div>
-              <input id="col-name-input" class="text-input col-name-input" placeholder="${t("col.namePlaceholder")}" value="${esc(colName)}" autocomplete="off" spellcheck="false" />
             </div>
+            <input id="col-name-input" class="text-input col-name-input" placeholder="${t("col.namePlaceholder")}" value="${esc(colName)}" autocomplete="off" spellcheck="false" />
+          </div>
 
-            <!-- Detail-page style scrollable quick presets -->
-            <div class="col-presets-wrapper">
-              <span class="col-quick-label">${t("col.quickPresets")}</span>
-                <div class="col-quick-presets">
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="list" data-name="${t("col.presetStory")}">${icon("list", 13)} <span>${t("col.presetStory")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="globe" data-name="${t("col.presetOnline")}">${icon("globe", 13)} <span>${t("col.presetOnline")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="trophy" data-name="${t("col.presetPlatinum")}">${icon("trophy", 13)} <span>${t("col.presetPlatinum")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="shield" data-name="${t("col.presetRpg")}">${icon("shield", 13)} <span>${t("col.presetRpg")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="${t("col.presetRacing")}">${icon("zap", 13)} <span>${t("col.presetRacing")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="eye" data-name="${t("col.presetHorror")}">${icon("eye", 13)} <span>${t("col.presetHorror")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="heart" data-name="${t("col.presetFavorites")}">${icon("heart", 13)} <span>${t("col.presetFavorites")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="zap" data-name="${t("col.presetAction")}">${icon("zap", 13)} <span>${t("col.presetAction")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="layers" data-name="${t("col.presetPuzzle")}">${icon("layers", 13)} <span>${t("col.presetPuzzle")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="rocket" data-name="${t("col.presetSciFi")}">${icon("rocket", 13)} <span>${t("col.presetSciFi")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="gamepad-2" data-name="${t("col.presetRetro")}">${icon("gamepad-2", 13)} <span>${t("col.presetRetro")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="cpu" data-name="${t("col.presetStrategy")}">${icon("cpu", 13)} <span>${t("col.presetStrategy")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="crown" data-name="${t("col.presetVip")}">${icon("crown", 13)} <span>${t("col.presetVip")}</span></button>
-                  <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="check-circle" data-name="${t("col.presetCompleted")}">${icon("check-circle", 13)} <span>${t("col.presetCompleted")}</span></button>
-                </div>
+          <div class="col-toolbar">
+            <div class="col-search-wrap">
+              <span>${icon("search", 14)}</span>
+              <input id="col-search-input" class="text-input" placeholder="${t("lib.searchPlaceholder")}" value="${esc(S.colModalSearchQuery)}" autocomplete="off" />
+              ${S.colModalSearchQuery ? `<button type="button" class="col-search-clear" data-act="col-search-clear" title="${t("col.clear")}">${icon("x", 12)}</button>` : ""}
+            </div>
+            <div class="col-toolbar-row">
+              <div class="col-filter-tabs">
+                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "all" ? "active" : ""}" data-act="col-tab-filter" data-filter="all">${t("library.all")}</button>
+                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "selected" ? "active" : ""}" data-act="col-tab-filter" data-filter="selected">${t("col.filterSelected")} <span class="col-tab-cnt" id="col-tab-selected-cnt">${selectedCount}</span></button>
+                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "installed" ? "active" : ""}" data-act="col-tab-filter" data-filter="installed">${t("library.installed")}</button>
+              </div>
+              <button type="button" class="col-text-btn" data-act="col-select-all">${t("col.selectAll")}</button>
+              <button type="button" class="col-text-btn" data-act="col-deselect-all">${t("col.clear")}</button>
             </div>
           </div>
 
-          <div class="col-picker-box">
-            <div class="col-picker-head">
-              <div class="col-filter-tabs">
-                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "all" ? "active" : ""}" data-act="col-tab-filter" data-filter="all">
-                  ${t("library.all")} <span class="col-tab-cnt">${S.epicSummaries.length}</span>
-                </button>
-                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "selected" ? "active" : ""}" data-act="col-tab-filter" data-filter="selected">
-                  ${t("col.filterSelected")} <span class="col-tab-cnt" id="col-tab-selected-cnt">${selectedCount}</span>
-                </button>
-                <button type="button" class="col-filter-tab ${S.colModalTabFilter === "installed" ? "active" : ""}" data-act="col-tab-filter" data-filter="installed">
-                  ${t("library.installed")} <span class="col-tab-cnt">${installedCount}</span>
-                </button>
-              </div>
-
-              <div class="col-quick-btns">
-                <button type="button" class="col-quick-btn" data-act="col-select-all">${t("col.selectAll")}</button>
-                <button type="button" class="col-quick-btn" data-act="col-deselect-all">${t("col.clear")}</button>
-              </div>
-            </div>
-
-            <div class="col-search-wrap">
-              <span>${icon("search", 13)}</span>
-              <input id="col-search-input" class="text-input" placeholder="${t("col.searchPlaceholder", { count: S.epicSummaries.length })}" value="${esc(S.colModalSearchQuery)}" autocomplete="off" />
-              ${S.colModalSearchQuery ? `<button type="button" class="col-search-clear" data-act="col-search-clear" title="${t("col.clear")}">${icon("x", 12)}</button>` : ""}
-            </div>
-
-            <div class="col-games-list">
-              ${filtered.length > 0 ? filtered.map((s) => {
-                const checked = S.colModalSelectedApps.has(s.appName);
-                return `
-                  <div class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${s.appName}">
-                    <div class="col-custom-cb ${checked ? "checked" : ""}">
-                      ${icon("check", 12)}
-                    </div>
-                    ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
-                    <div class="col-game-info">
-                      <div class="col-game-title">${esc(s.title)}</div>
-                      <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} ${t("common.installed")}</span>` : t("common.notInstalled")}</div>
-                    </div>
-                  </div>
-                `;
-              }).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`}
-            </div>
+          <div class="col-games-list">
+            ${filtered.length > 0 ? filtered.map((s) => colGameRow(s)).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`}
           </div>
         </div>
 
         <div class="col-modal-footer">
-          <div>
-            ${isEditing ? `<button class="btn danger small" data-act="col-delete-btn" data-col-id="${col!.id}">${icon("trash", 13)} ${t("col.delete")}</button>` : `<div class="col-footer-summary">${t("col.footerSummary", { selected: `<span id="col-footer-count">${selectedCount}</span>`, total: S.epicSummaries.length })}</div>`}
+          <div id="col-delete-confirm" class="col-delete-bar" hidden>
+            <span>${t("col.deleteHint")}</span>
+            <button class="btn ghost" data-act="col-delete-cancel">${t("common.cancelShort")}</button>
+            <button class="btn danger" data-act="col-delete-confirm" data-col-id="${isEditing ? esc(col!.id) : ""}">${t("col.delete")}</button>
           </div>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <button class="btn ghost small" data-act="close-col-modal">${t("common.cancelShort")}</button>
-            <button class="btn primary small" data-act="col-save-btn">${isEditing ? t("col.saveChanges") : t("col.create")}</button>
+          <div class="col-footer-actions">
+            ${isEditing ? `<button class="btn ghost danger" data-act="col-delete-ask">${t("col.delete")}</button>` : `<span class="col-footer-summary" id="col-footer-count">${selectedCount}</span>`}
+            <span class="col-footer-spacer"></span>
+            <button class="btn ghost" data-act="close-col-modal">${t("common.cancelShort")}</button>
+            <button class="btn primary" data-act="col-save-btn">${isEditing ? t("col.saveChanges") : t("col.create")}</button>
           </div>
         </div>
       </div>
@@ -230,21 +182,9 @@ export function updateColGamesListInPlace(): void {
     filtered = filtered.filter((s) => s.installed);
   }
 
-  container.innerHTML = filtered.length > 0 ? filtered.map((s) => {
-    const checked = S.colModalSelectedApps.has(s.appName);
-    return `
-      <div class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${s.appName}">
-        <div class="col-custom-cb ${checked ? "checked" : ""}">
-          ${icon("check", 12)}
-        </div>
-        ${s.cover ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />` : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
-        <div class="col-game-info">
-          <div class="col-game-title">${esc(s.title)}</div>
-          <div class="col-game-sub">${s.installed ? `<span class="col-inst-badge">${icon("check", 10)} ${t("common.installed")}</span>` : t("common.notInstalled")}</div>
-        </div>
-      </div>
-    `;
-  }).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`;
+  container.innerHTML = filtered.length > 0
+    ? filtered.map((s) => colGameRow(s)).join("")
+    : `<div class="col-empty-msg">${t("col.noMatch")}</div>`;
 
   const selCountEl = document.getElementById("col-tab-selected-cnt");
   if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
@@ -281,9 +221,6 @@ export async function saveCollectionFromModal(): Promise<void> {
 export async function deleteCollectionFromModal(colId: string): Promise<void> {
   const col = S.epicCollections.find((c) => c.id === colId);
   const name = col ? col.name : t("col.defaultName");
-  if (!confirm(t("col.deleteConfirm", { name }))) {
-    return;
-  }
   try {
     await epicDeleteCollection(colId);
     if (S.activeCollectionId === colId) S.activeCollectionId = null;

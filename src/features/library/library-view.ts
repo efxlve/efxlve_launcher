@@ -6,21 +6,18 @@
  * only. Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
-import { isCollectionIcon } from "../../core/collection-icons";
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryDlBar } from "../../core/game-view";
-import { emptyState, icon, type IconName } from "../../core/icons";
+import { emptyState, icon } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
-import { epicPortrait, type EpicSummary } from "../../epic";
+import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
-import { renderFreeGamesGrid } from "../freegames/freegames";
-import { renderOnboarding } from "../onboarding/onboarding-view";
-
 /** Sort options shown in the library sort dropdown, evaluated dynamically with current language. */
 export function getSortOptions(): {
   id: EpicSort;
@@ -268,75 +265,6 @@ export function resetCardChunk(): void {
   S.renderedCardCount = INITIAL_CARD_CHUNK;
 }
 
-/** Helper to retrieve cover artwork URL for collage previews. */
-function coverUrlOf(s: EpicSummary): string | null {
-  const custom = S.customCovers[s.appName];
-  if (custom) return custom;
-  const g = rawOf(s.appName);
-  return (g ? epicPortrait(g) : null) || s.cover || null;
-}
-
-function collage(games: EpicSummary[], fallbackIcon: IconName): string {
-  const covers: string[] = [];
-  for (const g of games) {
-    const url = coverUrlOf(g);
-    if (url) covers.push(url);
-    if (covers.length === 4) break;
-  }
-  if (covers.length === 0) return `<div class="col-collage-empty">${icon(fallbackIcon, 32)}</div>`;
-  return `<div class="col-card-collage">${covers.map((url) => `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`).join("")}</div>`;
-}
-
-function folderCard(id: string, name: string, marker: IconName, games: EpicSummary[], editable: boolean): string {
-  return `
-    <div class="col-folder-card" data-act="open-collection" data-col-id="${esc(id)}" tabindex="0" role="button">
-      <div class="col-folder-preview">${collage(games, marker)}</div>
-      <div class="col-folder-footer">
-        <span class="col-folder-icon">${icon(marker, 15)}</span>
-        <div class="col-folder-info">
-          <div class="col-folder-title" title="${esc(name)}">${esc(name)}</div>
-          <div class="col-folder-count">${t("col.gameCount", { count: games.length })}</div>
-        </div>
-        ${editable ? `<button class="icon-btn" data-act="edit-collection" data-col-id="${esc(id)}" title="${t("lib.editCollection", { name: esc(name) })}">${icon("edit", 14)}</button>` : ""}
-      </div>
-    </div>`;
-}
-
-/** Collections folder gallery (separate filter mode, not a shelf on the cover wall). */
-function renderCollectionsGallery(): string {
-  const categorized = new Set<string>();
-  for (const col of S.epicCollections) for (const name of col.app_names) categorized.add(name.toLowerCase());
-  const uncategorized = S.epicSummaries.filter((s) => !categorized.has(s.appName.toLowerCase()));
-
-  const folders = S.epicCollections.map((col) => {
-    const set = new Set(col.app_names.map((n) => n.toLowerCase()));
-    const games = S.epicSummaries.filter((s) => set.has(s.appName.toLowerCase()));
-    return folderCard(col.id, col.name, isCollectionIcon(col.emoji) ? col.emoji : "folder", games, true);
-  }).join("");
-
-  const newCard = `
-    <div class="col-folder-card new-col-card" data-act="open-new-collection-modal" tabindex="0" role="button">
-      <div class="new-col-content">${icon("plus", 22)}<span class="new-col-title">${t("col.newTitle")}</span><span class="new-col-desc">${t("col.newSubtitle")}</span></div>
-    </div>`;
-  const uncat = uncategorized.length > 0 ? folderCard("uncategorized", t("col.noCategory"), "layers", uncategorized, false) : "";
-  return `<div class="col-folders-grid">${newCard}${folders}${uncat}</div>`;
-}
-
-function collectionHeader(count: number | null): string {
-  const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
-  const isUncat = S.activeCollectionId === "uncategorized";
-  const colName = activeCol ? activeCol.name : isUncat ? t("col.noCategory") : t("lib.collections");
-  const marker = activeCol && isCollectionIcon(activeCol.emoji) ? activeCol.emoji : isUncat ? "layers" : "folder";
-  return `
-    <div class="col-breadcrumb-header">
-      <button class="btn ghost small" data-act="back-to-collections">${icon("chevron-left", 14)} ${t("lib.collections")}</button>
-      <span class="col-breadcrumb-icon">${icon(marker, 16)}</span>
-      <h2 class="col-breadcrumb-title">${esc(colName)}</h2>
-      ${count !== null ? `<span class="lib-count">${t("lib.gameCount", { count })}</span>` : ""}
-      ${activeCol ? `<button class="btn ghost small col-breadcrumb-edit" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${icon("edit", 13)} ${t("col.edit")}</button>` : ""}
-    </div>`;
-}
-
 function renderResults(itemsHtml: string, sentinelHtml: string): string {
   if (S.epicViewMode === "list") {
     return `
@@ -353,22 +281,14 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
  * Collections and Free Games are separate filter modes.
  */
 export function renderEpicItems(): string {
-  if (S.epicFilter === "freegames") {
-    return renderFreeGamesGrid();
-  }
-
-  const inCollection = S.epicFilter === "collections" && S.activeCollectionId !== null;
-  if (S.epicFilter === "collections" && S.query.trim().length === 0 && (S.activeCollectionId === null || S.activeCollectionId === "all")) {
-    return renderCollectionsGallery();
-  }
-
+  const inCollection = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const visible = epicVisibleSummaries();
 
   if (visible.length === 0) {
     if (inCollection) {
       const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
       const action = activeCol ? `<button class="btn primary" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${t("col.edit")}</button>` : "";
-      return `${collectionHeader(0)}${emptyState("folder", t("col.noMatch"), "", action)}`;
+      return emptyState("folder", t("col.noMatch"), "", action);
     }
     if (S.query.trim()) {
       return emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>`);
@@ -380,7 +300,7 @@ export function renderEpicItems(): string {
   const itemsHtml = chunk.map(renderItem).join("");
   const sentinelHtml = S.renderedCardCount < visible.length ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>` : "";
 
-  return `${inCollection ? collectionHeader(visible.length) : ""}${renderResults(itemsHtml, sentinelHtml)}`;
+  return renderResults(itemsHtml, sentinelHtml);
 }
 
 export function setupLibScrollObserver(): void {
@@ -417,53 +337,25 @@ export function setupLibScrollObserver(): void {
   S.libScrollObserver.observe(sentinel);
 }
 
-function libraryHeader(countLabel: string, tools: string, filters: string): string {
+function libraryHeader(tools: string, filters: string): string {
   return `
     <div class="lib-head">
-      <div class="lib-title"><h1 class="page-title">${t("nav.library")}</h1><span id="lib-heading-count" class="lib-count">${countLabel}</span></div>
+      <div class="tabs lib-filters">${filters}</div>
       <div class="lib-tools">${tools}</div>
-    </div>
-    <div class="tabs lib-filters">${filters}</div>`;
+    </div>`;
 }
 
 export function renderSkeletonLibrary(): string {
   const cards = Array.from({ length: 12 }, () => `<div class="pcard"><div class="pcard-art skeleton"></div><div class="pcard-title"><span class="skeleton" style="display:block;width:70%;height:12px"></span></div></div>`).join("");
-  return `${libraryHeader("", "", "")}<div class="pgrid">${cards}</div>`;
-}
-
-function countUpdates(): number {
-  let n = 0;
-  for (const s of S.epicSummaries) {
-    if (s.updateAvailable || S.availableUpdates.has(s.appName)) n++;
-  }
-  return n;
-}
-
-function updatesFilterBtn(count: number): string {
-  return `<button class="tab lib-filter ${S.epicFilter === "updates" ? "active" : ""}" data-act="quick-tab" data-tab="updates">${t("library.updates")}<span class="count lib-filter-count">${count}</span></button>`;
+  return `${libraryHeader("", "")}<div class="pgrid">${cards}</div>`;
 }
 
 export function syncLibraryHeadingCount(): void {
   const el = document.getElementById("lib-heading-count");
-  if (el) el.textContent = t("lib.gameCount", { count: S.epicSummaries.length });
-}
-
-export function syncLibraryUpdatesTab(): void {
-  const rail = document.querySelector(".lib-filters");
-  if (!rail) return;
-  const count = countUpdates();
-  const existing = rail.querySelector<HTMLElement>(".lib-filter[data-tab='updates']");
-  if (count === 0) {
-    existing?.remove();
-    return;
-  }
-  if (existing) {
-    const n = existing.querySelector(".lib-filter-count");
-    if (n) n.textContent = String(count);
-    existing.classList.toggle("active", S.epicFilter === "updates");
-    return;
-  }
-  rail.insertAdjacentHTML("beforeend", updatesFilterBtn(count));
+  if (!el) return;
+  const show = S.view === "library" && !S.currentModalAppName && S.epicSummaries.length > 0;
+  el.textContent = t("lib.gameCount", { count: S.epicSummaries.length });
+  el.hidden = !show;
 }
 
 export function refreshLibraryResultsInPlace(): boolean {
@@ -477,14 +369,13 @@ export function refreshLibraryResultsInPlace(): boolean {
   return true;
 }
 
-function isFilterActive(tab: string | undefined): boolean {
+function isFilterActive(tab: string | undefined, colId?: string): boolean {
+  if (tab === "collection") return !!colId && S.activeCollectionId === colId;
   switch (tab) {
     case "all": return S.activeCollectionId === null && S.epicFilter === "all";
-    case "fav": return S.activeCollectionId === "fav" || S.epicFilter === "fav";
+    case "fav": return S.activeCollectionId === "fav";
     case "installed": return S.epicFilter === "installed";
     case "updates": return S.epicFilter === "updates";
-    case "collections": return S.epicFilter === "collections";
-    case "freegames": return S.epicFilter === "freegames";
     default: return false;
   }
 }
@@ -501,7 +392,7 @@ export function renderEpic(): string {
     return renderSkeletonLibrary();
   }
   if (S.epicPhase === "setup" || S.epicPhase === "login") {
-    return renderOnboarding();
+    return emptyState("layers", t("lib.connectTitle"), t("lib.connectDesc"), `<button class="btn primary" data-view="accounts">${t("accounts.connectCta")}</button>`);
   }
   if (S.epicPhase === "error") {
     return `
@@ -520,15 +411,11 @@ export function renderEpic(): string {
   // A full page rebuild must not replay a grown 200–520 card chunk.
   resetCardChunk();
 
-  const updates = countUpdates();
+  if (S.epicFilter === "updates" || S.epicFilter === "installed" || S.epicFilter === "collections") S.epicFilter = "all";
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
   const tools = `
-    <label class="search lib-search">
-      ${icon("search", 15)}
-      <input id="search" type="search" placeholder="${t("lib.searchPlaceholder")}" value="${esc(S.query)}" autocomplete="off" spellcheck="false" />
-    </label>
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
         ${icon(currentSort.icon, 14)}<span class="sort-btn-label">${esc(currentSort.label)}</span>${icon("chevron-down", 12)}
@@ -548,16 +435,16 @@ export function renderEpic(): string {
 
   const filters = [
     filterTab("all", t("library.all")),
-    filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    filterTab("collections", t("lib.collections")),
-    filterTab("freegames", t("free.title")),
-    updates > 0 ? updatesFilterBtn(updates) : "",
+    ...S.epicCollections.map((col) =>
+      `<button class="tab lib-filter lib-col-tab ${S.activeCollectionId === col.id ? "active" : ""}" draggable="true" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}">${esc(col.name)}</button>`,
+    ),
+    `<button class="icon-btn lib-col-add" data-act="open-new-collection-modal" title="${esc(t("col.newTitle"))}">${icon("plus", 16)}</button>`,
   ].join("");
 
   return `
     <div class="page lib-page">
-      ${libraryHeader(t("lib.gameCount", { count: S.epicSummaries.length }), tools, filters)}
+      ${libraryHeader(tools, filters)}
       ${S.epicSyncNote ? `<p class="page-sub">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
     </div>`;
@@ -570,14 +457,93 @@ export function updateLibraryFilterInPlace(): boolean {
   if (!filters || !resultsEl) return false;
 
   filters.querySelectorAll<HTMLElement>(".lib-filter[data-act='quick-tab']").forEach((tabEl) => {
-    tabEl.classList.toggle("active", isFilterActive(tabEl.dataset.tab));
+    tabEl.classList.toggle("active", isFilterActive(tabEl.dataset.tab, tabEl.dataset.colId));
   });
 
   resetCardChunk();
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
-  syncLibraryUpdatesTab();
-
   return true;
+}
+
+/** Set while a collection tab is dragged so the following click does not also select it. */
+let collectionDragged = false;
+
+export function consumeCollectionDragClick(): boolean {
+  if (!collectionDragged) return false;
+  collectionDragged = false;
+  return true;
+}
+
+/** Drag-reorder collection tabs. All and Favorites are not draggable. */
+export function initCollectionTabs(): void {
+  let dragId: string | null = null;
+
+  const clearMarks = (): void => {
+    document.querySelectorAll(".lib-col-tab.dragging, .lib-col-tab.drop-before").forEach((el) => {
+      el.classList.remove("dragging", "drop-before");
+    });
+  };
+
+  document.addEventListener("dragstart", (e) => {
+    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+    if (!tab?.dataset.colId) return;
+    dragId = tab.dataset.colId;
+    collectionDragged = true;
+    tab.classList.add("dragging");
+    e.dataTransfer?.setData("text/plain", dragId);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  });
+
+  document.addEventListener("dragover", (e) => {
+    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+    if (!tab || !dragId || tab.dataset.colId === dragId) return;
+    e.preventDefault();
+    document.querySelectorAll(".lib-col-tab.drop-before").forEach((el) => el.classList.remove("drop-before"));
+    tab.classList.add("drop-before");
+  });
+
+  document.addEventListener("drop", (e) => {
+    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+    const from = dragId;
+    dragId = null;
+    clearMarks();
+    if (!tab?.dataset.colId || !from || tab.dataset.colId === from) return;
+    e.preventDefault();
+    const rect = tab.getBoundingClientRect();
+    const after = e.clientX > rect.left + rect.width / 2;
+    void moveCollectionTab(from, tab.dataset.colId, after);
+  });
+
+  document.addEventListener("dragend", () => {
+    dragId = null;
+    clearMarks();
+  });
+}
+
+async function moveCollectionTab(fromId: string, toId: string, after: boolean): Promise<void> {
+  const ids = S.epicCollections.map((c) => c.id).filter((id) => id !== fromId);
+  let insert = ids.indexOf(toId);
+  if (insert < 0) return;
+  if (after) insert += 1;
+  ids.splice(insert, 0, fromId);
+  const byId = new Map(S.epicCollections.map((c) => [c.id, c]));
+  S.epicCollections = ids.flatMap((id) => {
+    const col = byId.get(id);
+    return col ? [col] : [];
+  });
+  const bar = document.querySelector(".lib-filters");
+  const add = bar?.querySelector(".lib-col-add");
+  if (bar && add) {
+    for (const id of ids) {
+      const el = bar.querySelector(`[data-col-id="${CSS.escape(id)}"]`);
+      if (el) bar.insertBefore(el, add);
+    }
+  }
+  try {
+    await epicReorderCollections(ids);
+  } catch (err) {
+    toast(String(err));
+  }
 }

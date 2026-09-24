@@ -10,21 +10,22 @@
 import { invoke } from "@tauri-apps/api/core";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri, NO_DESC } from "../../core/constants";
-import { t } from "../../i18n";
+import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
 import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
-import { emptyState, epicPlatinumIcon, icon, loadingState } from "../../core/icons";
+import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
+import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { epicWideArt, isTurkishUser, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSteamAbout, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SteamAbout, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
-import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, isMacSys, isWinSys, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderOverviewMediaSpotlight, renderOverviewTrophySpotlight } from "./drawer-widgets";
+import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, isMacSys, isWinSys, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard } from "./drawer-widgets";
 
 /** Scrolls a tab into view only when it is clipped (narrow windows). */
 export function ensureTabVisible(el: HTMLElement, container: HTMLElement): void {
@@ -71,7 +72,7 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
-    return `<button class="btn running lg" data-id="${s.appName}">${t("common.playing")}</button>`;
+    return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 14)} ${t("common.stop")}</button>`;
   }
   if (s.installed) {
     return s.updateAvailable || S.availableUpdates.has(s.appName)
@@ -89,6 +90,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   const faved = S.epicFav.has(s.appName);
   return `
     ${primaryAction(s, p, partner)}
+    ${s.installed ? `<button class="btn ghost lg ${S.activeDrawerTab === "manage" ? "active" : ""}" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>` : ""}
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitle")}">${icon("external", 16)}</button>
     ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}`;
@@ -105,11 +107,53 @@ function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null,
   }
 }
 
+const TAB_ICON: Record<string, IconName> = {
+  overview: "layout-grid",
+  achievements: "trophy",
+  dlcs: "package",
+  screenshots: "camera",
+  manage: "settings",
+  specs: "cpu",
+};
+
 function tabButton(tab: string, label: string, count = 0, extraClass = ""): string {
-  return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${label}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
+  const glyph = TAB_ICON[tab] ? icon(TAB_ICON[tab], 14) : "";
+  return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
 }
 
-/** Kicks off the lazy overview fetches (HLTB, critic) once per game. */
+/** Steam about text plus store facts, keyed by app and launcher language. */
+const steamAboutCache = new Map<string, SteamAbout>();
+
+function steamAboutKey(appName: string): string {
+  return `${appName}|${currentLanguage()}`;
+}
+
+function steamMetaLine(data: SteamAbout): string {
+  return [data.developers, data.release_date, data.genres].filter((part) => part && part.trim()).join(" · ");
+}
+
+/** Split a store/wiki blurb into readable paragraphs. */
+function aboutMarkup(text: string): string {
+  const parts = text.split(/\n+/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return "";
+  return parts.map((part) => `<p>${esc(part)}</p>`).join("");
+}
+
+function applySteamAbout(appName: string, data: SteamAbout): void {
+  if (!data.description) return;
+  steamAboutCache.set(steamAboutKey(appName), data);
+  if (S.currentModalAppName !== appName) return;
+  const descEl = document.getElementById("hub-desc-text");
+  if (descEl) descEl.innerHTML = aboutMarkup(data.description);
+  const metaEl = document.getElementById("hub-desc-meta");
+  const meta = steamMetaLine(data);
+  if (metaEl) {
+    metaEl.textContent = meta;
+    metaEl.hidden = !meta;
+  }
+}
+
+/** Kicks off the lazy overview fetches (HLTB, critic, Steam about) once per game and language. */
 function ensureOverviewData(s: EpicSummary): void {
   const appName = s.appName;
   if (S.activeDrawerTab !== "overview") return;
@@ -136,6 +180,18 @@ function ensureOverviewData(s: EpicSummary): void {
       })
       .catch(() => {})
       .finally(() => { S.loadingCriticFor = null; });
+  }
+  const aboutKey = steamAboutKey(appName);
+  if (!steamAboutCache.has(aboutKey) && S.loadingSteamAboutFor !== aboutKey) {
+    S.loadingSteamAboutFor = aboutKey;
+    epicGetSteamAbout(s.title, appName, currentLanguage())
+      .then((data) => {
+        if (data.supported && data.description) applySteamAbout(appName, data);
+      })
+      .catch((err) => console.warn("Steam about text could not be loaded:", err))
+      .finally(() => {
+        if (S.loadingSteamAboutFor === aboutKey) S.loadingSteamAboutFor = null;
+      });
   }
 }
 
@@ -198,12 +254,11 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`
     : "—";
 
-  const status = hasUpdate
-    ? `<span class="chip warn">${t("drawer.updateAvailable")}</span>`
-    : s.installed ? `<span class="chip ok">${t("common.installed")}</span>` : `<span class="chip">${t("common.notInstalled")}</span>`;
+  const status = hasUpdate ? `<span class="chip warn">${t("drawer.updateAvailable")}</span>` : "";
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
     status,
+    `<span id="drawer-col-chips-container" class="gp-tags">${renderCollectionTags(appName)}</span>`,
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
@@ -219,7 +274,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           ${art ? `<img class="gp-hero-img" src="${esc(art)}" alt="" decoding="async" />` : ""}
           <div class="gp-hero-scrim"></div>
           <div class="gp-hero-top">
-            <button class="btn ghost small hub-back-btn gp-back" data-act="close" title="${t("drawer.backToLibrary")}">${icon("arrow-left", 14)} ${t("drawer.library")}<span class="kbd">Esc</span></button>
+            <div class="gp-hero-nav">
+              <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
+              <button class="icon-btn gp-hero-tool" id="gp-nav-forward" data-act="nav-history-forward" data-i18n-title="nav.historyForward" title="${t("nav.historyForward")}">${icon("arrow-right", 16)}</button>
+            </div>
             <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
           </div>
           <div class="gp-hero-bottom">
@@ -244,10 +302,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="gp-body">
           <div class="tabs gp-tabs" id="drawer-tabs-scrollable">
             ${tabButton("overview", t("drawer.overview"))}
-            ${tabButton("achievements", `${isPlat ? epicPlatinumIcon(13) : ""}${t("drawer.achievements")}`, 0, isPlat ? "plat" : "")}
+            ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
             ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
             ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
-            ${s.installed ? tabButton("manage", t("drawer.manage")) : ""}
             ${tabButton("specs", t("drawer.specs"))}
           </div>
           <div id="drawer-tab-content">${renderActiveTab(s, partner, antiCheat)}</div>
@@ -270,6 +327,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   syncSidebarGameActive();
   updateGamepadHud(S.gamepadPolling);
   presenceSync();
+  updateNavHistoryUi();
 }
 
 export function updateCriticUI(appName: string, data: CriticData): void {
@@ -309,35 +367,44 @@ export function renderDrawerOverview(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
-  const g = rawOf(s.appName);
   const reqData = S.loadedRequirements.get(s.appName);
-  const achSum = S.epicAchSummaries[s.appName];
 
   const rawDesc = s.description?.trim();
   const hasRealDesc = rawDesc && rawDesc !== NO_DESC && rawDesc !== s.title && rawDesc.length > 25;
   const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : null);
-  const effectiveDesc = hasRealDesc ? rawDesc : storeDesc || null;
+  const steamAbout = steamAboutCache.get(steamAboutKey(s.appName));
+  const effectiveDesc = steamAbout?.description || (hasRealDesc ? rawDesc : storeDesc || null);
+  const steamMeta = steamAbout ? steamMetaLine(steamAbout) : "";
 
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
         <section class="gp-section">
           <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
-          <p class="hub-desc-text" id="hub-desc-text">${effectiveDesc ? esc(effectiveDesc) : t("drawer.noDescription")}</p>
-          <div class="gp-tags" id="drawer-col-chips-container">${renderCollectionTags(s.appName)}</div>
+          <div class="hub-desc-text" id="hub-desc-text">${effectiveDesc ? aboutMarkup(effectiveDesc) : `<p>${t("drawer.noDescription")}</p>`}</div>
+          <p class="hub-desc-meta" id="hub-desc-meta"${steamMeta ? "" : " hidden"}>${esc(steamMeta)}</p>
         </section>
-        ${renderOverviewTrophySpotlight(s, g, achSum, partner)}
-        <div id="overview-media-container">${renderOverviewMediaSpotlight(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName)}</div>
         <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
-        <section class="card gp-side-card">
-          <h3 class="gp-section-title">${t("drawer.featuresSupport")}</h3>
-          <div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData)}</div>
-        </section>
+        <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName)}</div>
+        ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>
     </div>`;
+}
+
+function renderDrawerFeatures(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null,
+  antiCheat: string | null,
+): string {
+  const g = rawOf(s.appName);
+  const reqData = S.loadedRequirements.get(s.appName);
+  return `
+    <section class="card gp-side-card gp-features-card">
+      <h3 class="gp-section-title">${t("drawer.featuresSupport")}</h3>
+      <div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData)}</div>
+    </section>`;
 }
 
 export function renderDrawerDlcs(s: EpicSummary): string {
@@ -615,10 +682,14 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       }
     }
 
-    if (cur && S.currentModalAppName === appName && S.activeDrawerTab === "overview") {
-      const descEl = document.getElementById("hub-desc-text");
-      if (descEl && (data.shortDescription || data.description)) {
-        descEl.textContent = data.shortDescription || cleanStoreDescription(data.description || "");
+    if (cur && S.currentModalAppName === appName) {
+      if (S.activeDrawerTab === "overview") {
+        const descEl = document.getElementById("hub-desc-text");
+        const steamAbout = steamAboutCache.get(steamAboutKey(appName));
+        if (descEl && !steamAbout?.description && (data.shortDescription || data.description)) {
+          const text = data.shortDescription || cleanStoreDescription(data.description || "");
+          descEl.innerHTML = aboutMarkup(text);
+        }
       }
       const featuresEl = document.getElementById("hub-features-list");
       if (featuresEl) {

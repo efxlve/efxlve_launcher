@@ -1,84 +1,88 @@
 <!doctype html>
-<html lang="tr" style="background-color: #0e0f12; color-scheme: dark;">
+<html lang="tr" style="background-color: #000000; color-scheme: dark;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0e0f12" />
+    <meta name="theme-color" content="#000000" />
     <title>Efxlve Launcher</title>
     <style>
-      /* Anti-FOUC: paint the window background on the first frame before the CSS loads. */
-      html, body { margin: 0; background-color: #0e0f12; color-scheme: dark; }
+      /* Hold the shell until the stylesheet is applied. Otherwise the first frame is raw browser buttons. */
+      html, body { margin: 0; height: 100%; background-color: #000000; color-scheme: dark; overflow: hidden; }
+      html:not(.ready) body > * { visibility: hidden; }
     </style>
   </head>
-  <body style="background-color: #0e0f12;">
+  <body style="background-color: #000000;">
     <div id="app">
-      <aside id="sidebar">
-        <div class="sb-brand" data-act="goto-library" data-tauri-drag-region>
-          <span class="sb-logo"><i data-lucide="gamepad-2"></i></span>
-          <span class="sb-name">Efxlve</span>
-        </div>
-        <button class="sb-search" data-act="open-palette" data-i18n-title="palette.open" title="Search (Ctrl+K)">
-          <i data-lucide="search"></i>
-          <span data-i18n="palette.placeholderShort">Search</span>
-          <span class="kbd">Ctrl K</span>
+      <header id="winbar" data-tauri-drag-region>
+        <span class="winbar-title" data-tauri-drag-region>Efxlve Launcher</span>
+        <span class="winbar-beta" data-tauri-drag-region>Beta</span>
+        <div class="winbar-spacer" data-tauri-drag-region></div>
+        <button id="btn-offline-mode" class="winbar-btn net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online">
+          <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Online</span>
         </button>
-        <nav id="nav" class="sb-nav">
-          <button class="sb-item active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
-          <button class="sb-item" data-act="open-store" data-i18n-title="nav.storeTitle" title="Epic Games Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Store</span></button>
-          <button class="sb-item" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="sb-count hidden"></span></button>
-        </nav>
-        <div class="sb-label" data-i18n="sidebar.installed">Installed</div>
-        <div id="sb-games" class="sb-games"></div>
-        <div class="sb-foot">
-          <button id="account" class="sb-account" data-view="profile" data-i18n-title="nav.profileTitle" title="Profile">
-            <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
-            <span class="account-name" data-i18n="nav.notLoggedIn">Not signed in</span>
+        <div class="win-controls">
+          <button class="win-btn" data-act="win-minimize" data-i18n-title="win.minimize" title="Minimize">
+            <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
           </button>
-          <button id="notif-btn" class="icon-btn notif-btn" data-act="toggle-notifications" data-i18n-title="notif.title" title="Notifications">
-            <i data-lucide="bell"></i>
-            <span id="notif-badge" class="notif-badge hidden"></span>
+          <button class="win-btn" data-act="win-maximize" data-i18n-title="win.maximize" title="Maximize">
+            <svg id="win-max-icon" width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
           </button>
-          <button class="icon-btn" data-view="settings" data-i18n-title="nav.settingsTitle" title="Settings (Ctrl+,)"><i data-lucide="settings"></i></button>
+          <button class="win-btn win-close" data-act="win-close" data-i18n-title="common.close" title="Close">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M1 1l8 8M9 1L1 9"/></svg>
+          </button>
         </div>
-      </aside>
-      <div id="main-col">
-        <header id="winbar" data-tauri-drag-region>
-          <div id="nav-history-group" class="nav-history-group hidden">
-            <button id="nav-back-btn" class="icon-btn" data-act="nav-history-back" data-i18n-title="nav.historyBack" title="Back (Alt+Left)" disabled>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </header>
+      <div id="body">
+        <aside id="sidebar">
+          <div class="sb-profile">
+            <button id="account" class="sb-account" data-view="accounts" data-i18n-title="nav.accountsTitle" title="Accounts">
+              <span class="account-avatar"><i data-lucide="circle-user-round"></i></span>
+              <span class="account-name" data-i18n="nav.signIn">Sign in</span>
             </button>
-            <button id="nav-forward-btn" class="icon-btn" data-act="nav-history-forward" data-i18n-title="nav.historyForward" title="Forward (Alt+Right)" disabled>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-          </div>
-          <div class="winbar-spacer" data-tauri-drag-region></div>
-          <button id="btn-offline-mode" class="net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online">
-            <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Online</span>
-          </button>
-          <div class="win-controls">
-            <button class="win-btn" data-act="win-minimize" data-i18n-title="win.minimize" title="Minimize">
-              <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
-            </button>
-            <button class="win-btn" data-act="win-maximize" data-i18n-title="win.maximize" title="Maximize">
-              <svg id="win-max-icon" width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
-            </button>
-            <button class="win-btn win-close" data-act="win-close" data-i18n-title="common.close" title="Close">
-              <svg width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M1 1l8 8M9 1L1 9"/></svg>
+            <button id="notif-btn" class="icon-btn sb-notif" data-act="toggle-notifications" data-i18n-title="notif.title" title="Notifications">
+              <i data-lucide="bell"></i>
+              <span id="notif-badge" class="notif-badge hidden"></span>
             </button>
           </div>
-        </header>
-        <main id="content">
-          <section id="view">
-            <div id="boot-splash" style="display:flex;align-items:center;justify-content:center;height:70vh;">
-              <span style="width:18px;height:18px;border-radius:50%;border:2px solid #25262c;border-top-color:#3d8bfd;animation:bootspin .8s linear infinite;"></span>
-              <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
+          <nav id="nav" class="sb-nav">
+            <button class="sb-item" data-act="open-store" data-i18n-title="nav.storeTitle" title="Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Store</span></button>
+            <button class="sb-item active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
+            <button class="sb-item" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="sb-count hidden"></span></button>
+            <button class="sb-item" data-view="settings" data-i18n-title="nav.settingsTitle" title="Settings (Ctrl+,)"><i data-lucide="settings"></i><span data-i18n="nav.settings">Settings</span></button>
+          </nav>
+          <div id="sb-games" class="sb-games"></div>
+        </aside>
+        <div id="main-col">
+          <header id="page-header">
+            <button class="icon-btn" data-act="page-back" id="nav-back-btn" data-i18n-title="nav.historyBack" title="Back (Alt+Left)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            </button>
+            <div id="nav-history-group" class="nav-history-group">
+              <button id="nav-forward-btn" class="icon-btn" data-act="nav-history-forward" data-i18n-title="nav.historyForward" title="Forward (Alt+Right)" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
             </div>
-          </section>
-        </main>
+            <h1 id="page-title" class="page-header-title"></h1>
+            <span id="lib-heading-count" class="page-header-count" hidden></span>
+            <button class="page-search" data-act="open-palette" data-i18n-title="palette.open" title="Search (Ctrl+K)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span data-i18n="palette.searchGames">Search games</span>
+              <span class="kbd">Ctrl K</span>
+            </button>
+          </header>
+          <main id="content">
+            <section id="view"></section>
+          </main>
+        </div>
       </div>
+      <footer id="statusbar">
+        <button id="statusbar-dl" class="statusbar-dl" data-view="downloads"><span id="statusbar-dl-text" data-i18n="statusbar.idle">No active downloads</span></button>
+        <span id="statusbar-version" class="statusbar-version tabular-nums"></span>
+      </footer>
     </div>
     <div id="modal-root"></div>
+    <div id="options-root"></div>
     <div id="selective-root"></div>
     <div id="install-root"></div>
     <div id="playtime-root"></div>

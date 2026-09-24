@@ -103,6 +103,10 @@ export function applyStaticTranslations(): void {
     const key = el.dataset.i18nTitle;
     if (key) el.title = t(key);
   });
+  document.querySelectorAll<HTMLInputElement>("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.dataset.i18nPlaceholder;
+    if (key) el.placeholder = t(key);
+  });
 }
 
 /** Loads a language, applies its direction and refreshes static translations. */

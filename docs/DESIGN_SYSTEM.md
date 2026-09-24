@@ -18,10 +18,10 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 ```
 +------------+---------------------------------------------+
 | sidebar    | window bar (drag region, 36px)          _ □ x|
-| 232px      +---------------------------------------------+
+| 252px      +---------------------------------------------+
 |  search    |                                             |
-|  Library   |   #view (page content, max 1600px)          |
-|  Store     |                                             |
+|  Store     |   #view (page content, max 1600px)          |
+|  Library   |                                             |
 |  Downloads |                                             |
 |  --------  |                                             |
 |  games...  |                                             |
@@ -31,7 +31,7 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 +------------+---------------------------------------------+
 ```
 
-- `--sidebar-w: 232px`, `--winbar-h: 36px`. The embedded store webview is positioned from these two values (`store_insets` in `main.rs`); change them together.
+- `--sidebar-w: 252px`, `--winbar-h: 34px`. The embedded store webview is positioned from the live content box, not a hardcoded inset. The active sidebar row is a 2px left rule, not a filled pill.
 - Pages use `.page` (padding 24px 32px) with an optional `.page-head` (title + actions on one line).
 - The game page replaces the view area (it is not a side drawer).
 
@@ -39,15 +39,15 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#0e0f12` | window background |
-| `--surface-1` | `#15161a` | sidebar, cards |
-| `--surface-2` | `#1c1d22` | inputs, hovered rows |
-| `--surface-3` | `#25262c` | pressed / selected |
-| `--line` | `rgba(255,255,255,0.07)` | dividers, borders |
-| `--text` | `#ececef` | primary text |
-| `--text-2` | `#a3a4ad` | secondary text |
-| `--text-3` | `#6c6d77` | hints, meta |
-| `--accent` | `#3d8bfd` | the single interactive accent (selection, focus, links, progress) |
+| `--bg` | `#000000` | window background (true black, Hydra) |
+| `--surface-1` | `#0a0a0a` | sidebar, cards |
+| `--surface-2` | `#141414` | inputs, hovered rows |
+| `--surface-3` | `#1e1e1e` | pressed / selected |
+| `--line` | `rgba(255,255,255,0.06)` | dividers, borders |
+| `--text` | `#ffffff` | primary text |
+| `--text-2` | `#9a9a9a` | secondary text |
+| `--text-3` | `#5c5c5c` | hints, meta |
+| `--accent` | `#ffffff` | the single interactive accent (selection, focus, links, progress) |
 | `--ok` | `#2fb36d` | Play, online, success |
 | `--warn` | `#e0a32e` | update available, offline, paused |
 | `--err` | `#e5484d` | errors, destructive |
@@ -74,8 +74,9 @@ Defined once, reused everywhere:
 
 ## 5. Motion
 
-- Transitions: `opacity`, `color`, `background-color`, `border-color` only, 120ms ease-out.
-- No transform zoom/lift on hover, no infinite animations, no Ken-Burns, no pulses. The only allowed keyframe is the loading spinner, which must stop when loading ends.
+- Transitions: `opacity`, `color`, `background-color`, `border-color` at 140ms ease-out.
+- Allowed one-shot keyframes (must stop): `page-in` (view change), `fade-in` (game hero, store loading, overlay). Never loop except the loading spinner.
+- No transform zoom/lift on hover, no Ken-Burns, no pulses. `prefers-reduced-motion` disables the one-shot keyframes.
 - `:active` press feedback: `transform: scale(0.98)` on buttons only.
 
 ## 6. Forbidden (zero tolerance)

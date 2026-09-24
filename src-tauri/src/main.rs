@@ -102,21 +102,27 @@ static STORE_VIEW_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU
 /// resize hook can re-apply them without an IPC round trip.
 static STORE_INSET_LEFT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static STORE_INSET_TOP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static STORE_INSET_BOTTOM: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 /// Whether the store webview is currently shown; a hidden view must stay off-screen on resize.
 static STORE_VISIBLE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Bumped every time the store is hidden. A show that started earlier must not
+/// paint the webview back on top of another page.
+static STORE_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-fn remember_store_insets(left: f64, top: f64) {
+fn remember_store_insets(left: f64, top: f64, bottom: f64) {
     use std::sync::atomic::Ordering::Relaxed;
     STORE_INSET_LEFT.store(left.max(0.0).to_bits(), Relaxed);
     STORE_INSET_TOP.store(top.max(0.0).to_bits(), Relaxed);
+    STORE_INSET_BOTTOM.store(bottom.max(0.0).to_bits(), Relaxed);
 }
 
 /// Computes the store webview bounds `(x, y, width, height)` for a window of the
-/// given logical size, filling everything right of / below the insets.
-fn store_bounds(win_w: f64, win_h: f64, left: f64, top: f64) -> (f64, f64, f64, f64) {
+/// given logical size, filling the area between the left/top/bottom insets.
+fn store_bounds(win_w: f64, win_h: f64, left: f64, top: f64, bottom: f64) -> (f64, f64, f64, f64) {
     let left = left.max(0.0);
     let top = top.max(0.0);
-    (left, top, (win_w - left).max(100.0), (win_h - top).max(100.0))
+    let bottom = bottom.max(0.0);
+    (left, top, (win_w - left).max(100.0), (win_h - top - bottom).max(100.0))
 }
 
 fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
@@ -1087,6 +1093,7 @@ async fn show_store_view(
     y: f64,
     width: f64,
     height: f64,
+    bottom: Option<f64>,
     url: String,
     recreate: bool,
 ) -> Result<String, String> {
@@ -1098,7 +1105,8 @@ async fn show_store_view(
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
-    remember_store_insets(x, y);
+    remember_store_insets(x, y, bottom.unwrap_or(0.0));
+    let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed);
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let owned_games = get_owned_games_json();
@@ -1109,6 +1117,13 @@ async fn show_store_view(
             let _ = v.set_position(pos);
             let _ = v.set_size(size);
             v.show().map_err(|e| e.to_string())?;
+            if STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed) != epoch {
+                let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
+                let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
+                let _ = v.hide();
+                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
+                return Ok("@t:win.focused".into());
+            }
             let _ = v.eval(&format!("window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
@@ -1169,6 +1184,17 @@ async fn show_store_view(
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {
             eprintln!("[store-view] child created");
+            if STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed) != epoch {
+                let window = app
+                    .get_window("main")
+                    .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
+                for v in store_views(&window) {
+                    let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
+                    let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
+                    let _ = v.hide();
+                }
+            }
             Ok("@t:store.opened".into())
         }
         Ok(Ok(Err(e))) => {
@@ -1188,14 +1214,17 @@ async fn show_store_view(
 
 /// Resizes the embedded store view (does not reload the page).
 #[tauri::command]
-fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64, bottom: Option<f64>) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size};
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
-    remember_store_insets(x, y);
+    remember_store_insets(x, y, bottom.unwrap_or(0.0));
+    if !STORE_VISIBLE.load(std::sync::atomic::Ordering::Relaxed) {
+        return Ok(());
+    }
     for v in store_views(&window) {
         let _ = v.set_position(pos);
         let _ = v.set_size(size);
@@ -1213,6 +1242,7 @@ fn hide_store_view(app: AppHandle) -> Result<String, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    STORE_EPOCH.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
     for v in store_views(&window) {
         let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
@@ -1566,6 +1596,7 @@ fn main() {
                         logical_size.height,
                         f64::from_bits(STORE_INSET_LEFT.load(Relaxed)),
                         f64::from_bits(STORE_INSET_TOP.load(Relaxed)),
+                        f64::from_bits(STORE_INSET_BOTTOM.load(Relaxed)),
                     );
                     let pos = tauri::Position::Logical(tauri::LogicalPosition::new(x, y));
                     let size = tauri::Size::Logical(tauri::LogicalSize::new(w, h));
@@ -1597,6 +1628,7 @@ fn main() {
             legendary::commands::epic_get_system_requirements,
             legendary::commands::epic_get_hltb,
             legendary::commands::epic_get_critic,
+            legendary::steam_store::epic_get_steam_about,
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
             legendary::commands::epic_third_party_launchers,
@@ -1623,6 +1655,7 @@ fn main() {
             legendary::commands::epic_open_backup_folder,
             legendary::commands::epic_get_collections,
             legendary::commands::epic_save_collection,
+            legendary::commands::epic_reorder_collections,
             legendary::commands::epic_delete_collection,
             legendary::commands::epic_set_game_collections,
             legendary::commands::epic_import_egl_collections,
@@ -1652,6 +1685,7 @@ fn main() {
             legendary::transfers::epic_default_install_dir,
             legendary::transfers::epic_set_install_dir,
             legendary::transfers::epic_launch_game,
+            legendary::transfers::epic_stop_game,
             show_store_view,
             resize_store_view,
             hide_store_view,
@@ -1660,7 +1694,6 @@ fn main() {
             eos_overlay_status,
             epic_detect_eos,
             legendary::friends::epic_friends,
-            legendary::freegames::epic_free_games,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
             legendary::steamgrid::epic_test_steamgrid_key,
@@ -1688,13 +1721,13 @@ mod tests {
     use super::store_bounds;
 
     #[test]
-    fn store_bounds_fill_area_right_of_sidebar_and_below_window_bar() {
-        assert_eq!(store_bounds(1600.0, 900.0, 232.0, 36.0), (232.0, 36.0, 1368.0, 864.0));
+    fn store_bounds_fill_content_area_between_header_and_status_bar() {
+        assert_eq!(store_bounds(1600.0, 900.0, 225.0, 86.0, 24.0), (225.0, 86.0, 1375.0, 790.0));
     }
 
     #[test]
     fn store_bounds_clamp_to_minimum_size_and_non_negative_insets() {
-        assert_eq!(store_bounds(200.0, 120.0, 232.0, 36.0), (232.0, 36.0, 100.0, 100.0));
-        assert_eq!(store_bounds(800.0, 600.0, -5.0, -1.0), (0.0, 0.0, 800.0, 600.0));
+        assert_eq!(store_bounds(200.0, 120.0, 232.0, 36.0, 24.0), (232.0, 36.0, 100.0, 100.0));
+        assert_eq!(store_bounds(800.0, 600.0, -5.0, -1.0, -3.0), (0.0, 0.0, 800.0, 600.0));
     }
 }

@@ -28,23 +28,99 @@ export function updateSidebarActive(): void {
   syncSidebarGameActive();
 }
 
-/** Refresh the download counter next to the Downloads sidebar entry. */
+/** Installed games that have a newer build waiting. */
+function pendingUpdateCount(): number {
+  let n = 0;
+  for (const s of S.epicSummaries) {
+    if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) n++;
+  }
+  return n;
+}
+
+/** Game count sits in the page header, and only on the library itself. */
+function syncPageGameCount(): void {
+  const el = document.getElementById("lib-heading-count");
+  if (!el) return;
+  const show = S.view === "library" && !S.currentModalAppName && S.epicSummaries.length > 0;
+  const label = t("lib.gameCount", { count: S.epicSummaries.length });
+  if (el.textContent !== label) el.textContent = label;
+  el.hidden = !show;
+}
+
+/** Refresh the download counter next to the Downloads sidebar entry and the status bar. */
 export function updateBadge(): void {
   let active = 0;
   for (const d of S.downloads.values()) if (!d.done) active++;
-  const count = active + S.dlQueueStatus.queue.length;
+  const count = active + S.dlQueueStatus.queue.length + pendingUpdateCount();
   dlBadge.textContent = count > 0 ? String(count) : "";
   dlBadge.classList.toggle("hidden", count === 0);
   updateSidebarGames();
+  updateStatusBar();
 }
 
-/** Signature of the last painted sidebar game list; repaint only when it changes. */
+/** Bottom status bar: the active download (title, percent, speed) or an idle note, plus the version. */
+export function updateStatusBar(): void {
+  const text = document.getElementById("statusbar-dl-text");
+  const btn = document.getElementById("statusbar-dl");
+  if (text) {
+    let label = t("statusbar.idle");
+    let busy = false;
+    for (const [id, d] of S.downloads) {
+      if (d.done) continue;
+      busy = true;
+      const m = S.activeDlMetrics && S.activeDlMetrics.id === id ? S.activeDlMetrics : null;
+      const title = S.epicSummariesMap.get(id)?.title ?? d.title;
+      label = t("statusbar.downloading", { title, p: Math.round(d.progress) }) + (m && m.speed && m.speed !== "—" ? ` · ${m.speed}` : "");
+      break;
+    }
+    const queued = S.dlQueueStatus.queue.length;
+    if (!busy && queued > 0) label = t("statusbar.queued", { n: queued });
+    if (text.textContent !== label) text.textContent = label;
+    btn?.classList.toggle("active", busy);
+  }
+  const ver = document.getElementById("statusbar-version");
+  if (ver && S.appVersion && !ver.textContent) ver.textContent = `v${S.appVersion}`;
+}
+
+/** Page header: back button state and a title for the current view or open game page. */
+export function updatePageHeader(): void {
+  const title = document.getElementById("page-title");
+  if (title) {
+    const game = S.currentModalAppName ? S.epicSummariesMap.get(S.currentModalAppName)?.title : null;
+    const titles: Partial<Record<View, string>> = {
+      library: t("nav.library"),
+      store: t("nav.store"),
+      downloads: t("nav.downloads"),
+      settings: t("nav.settings"),
+      profile: t("palette.cmdProfile"),
+      accounts: t("accounts.title"),
+    };
+    const next = game ?? titles[S.view] ?? "";
+    if (title.textContent !== next) title.textContent = next;
+  }
+  syncPageGameCount();
+  const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
+  if (back) back.disabled = !S.currentModalAppName && !canNavBack();
+}
+
 let sidebarGamesSig = "";
 
+const SIDEBAR_RECENT_LIMIT = 7;
+const sidebarFillRank = new Map<string, number>();
+
+function fillRank(id: string): number {
+  let rank = sidebarFillRank.get(id);
+  if (rank === undefined) {
+    rank = Math.random();
+    sidebarFillRank.set(id, rank);
+  }
+  return rank;
+}
+
 /**
- * Installed games in the sidebar (Hydra/Heroic pattern): recent first, then
- * alphabetical. Rebuilt only when membership or a status marker changes, so
- * progress events never touch this list.
+ * Up to seven sidebar games: recently played first, then random installed
+ * titles so the list stays full. Rebuilt only when membership or a status
+ * marker changes.
  */
 export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
@@ -52,28 +128,28 @@ export function updateSidebarGames(): void {
   const recentIdx = new Map<string, number>();
   S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
   const installed = S.epicSummaries.filter((s) => s.installed);
-  const collator = S.trCollator ?? new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
-  installed.sort((a, b) => {
-    const ra = recentIdx.get(a.appName);
-    const rb = recentIdx.get(b.appName);
-    if (ra !== undefined || rb !== undefined) return (ra ?? 999) - (rb ?? 999);
-    return collator.compare(a.title, b.title);
-  });
+  const played = installed
+    .filter((s) => recentIdx.has(s.appName))
+    .sort((a, b) => (recentIdx.get(a.appName) ?? 0) - (recentIdx.get(b.appName) ?? 0));
+  const fillers = installed
+    .filter((s) => !recentIdx.has(s.appName))
+    .sort((a, b) => fillRank(a.appName) - fillRank(b.appName));
+  const shown = played.concat(fillers).slice(0, SIDEBAR_RECENT_LIMIT);
 
   const stateOf = (app: string, update: boolean): string =>
     S.runningGames.has(app) ? "running" : S.downloads.has(app) && !S.downloads.get(app)?.done ? "dl" : update ? "update" : "";
 
-  const sig = installed
+  const sig = shown
     .map((s) => `${s.appName}:${stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName))}`)
     .join("|") + `|${S.appLanguage}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 
-  if (installed.length === 0) {
-    host.innerHTML = `<div class="sb-games-empty">${t("sidebar.noInstalled")}</div>`;
+  if (shown.length === 0) {
+    host.innerHTML = "";
     return;
   }
-  host.innerHTML = installed
+  const rows = shown
     .map((s) => {
       const raw = rawOf(s.appName);
       const cover = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
@@ -85,6 +161,7 @@ export function updateSidebarGames(): void {
       return `<button class="sb-game ${s.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(s.appName)}" title="${esc(s.title)}">${thumb}<span class="sb-game-title">${esc(s.title)}</span>${marker}</button>`;
     })
     .join("");
+  host.innerHTML = `<div class="sb-games-label">${t("sidebar.recent")}</div>${rows}`;
 }
 
 /** Reflect the offline-mode state on the top-bar network chip. */
@@ -102,9 +179,14 @@ export function updateOfflineModeUi(): void {
 export function updateChrome(): void {
   updateSidebarActive();
   updateSidebarGames();
+  updatePageHeader();
+  updateStatusBar();
   const acc = document.getElementById("account");
   if (acc) {
-    const name = S.epicAccount || t("nav.notLoggedIn");
+    // Signed in: the account chip opens the profile; signed out: the store accounts page.
+    acc.dataset.view = S.epicAccount ? "profile" : "accounts";
+    acc.classList.toggle("active", S.view === "profile" || S.view === "accounts");
+    const name = S.epicAccount || t("nav.signIn");
     const customAvatar = S.epicAccount ? getCustomAvatar() : null;
     const avatarToken = customAvatar ? `${customAvatar.length}:${customAvatar.slice(0, 32)}` : "none";
     const acctState = `${S.epicAccount || ""}:${avatarToken}`;
@@ -121,7 +203,7 @@ export function updateChrome(): void {
       } else {
         acc.innerHTML =
           `<span class="account-avatar"><i data-lucide="circle-user-round"></i></span>` +
-          `<span class="account-name">${t("nav.notLoggedIn")}</span>`;
+          `<span class="account-name">${t("nav.signIn")}</span>`;
         createIcons({ icons: { CircleUserRound } });
       }
     }
@@ -233,13 +315,11 @@ export function updateNavHistoryUi(): void {
   const backBtn = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   const fwdBtn = document.getElementById("nav-forward-btn") as HTMLButtonElement | null;
 
-  if (grp) {
-    grp.classList.toggle("hidden", !S.showNavHistoryButtons);
-  }
+  if (grp) grp.classList.remove("hidden");
   if (backBtn) {
-    const hasBack = canNavBack();
+    // The back arrow also closes an open game page (Hydra behavior).
+    const hasBack = Boolean(S.currentModalAppName) || canNavBack();
     backBtn.disabled = !hasBack;
-    backBtn.classList.toggle("disabled", !hasBack);
     backBtn.setAttribute("aria-disabled", String(!hasBack));
   }
   if (fwdBtn) {
@@ -247,6 +327,15 @@ export function updateNavHistoryUi(): void {
     fwdBtn.disabled = !hasFwd;
     fwdBtn.classList.toggle("disabled", !hasFwd);
     fwdBtn.setAttribute("aria-disabled", String(!hasFwd));
+  }
+  const heroBack = document.getElementById("gp-nav-back") as HTMLButtonElement | null;
+  const heroFwd = document.getElementById("gp-nav-forward") as HTMLButtonElement | null;
+  if (heroBack) {
+    const hasBack = Boolean(S.currentModalAppName) || canNavBack();
+    heroBack.disabled = !hasBack;
+  }
+  if (heroFwd) {
+    heroFwd.disabled = !canNavForward();
   }
 }
 

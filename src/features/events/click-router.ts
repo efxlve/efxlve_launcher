@@ -13,7 +13,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, NAV_HISTORY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
-import { epicCancel, epicPlay, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
+import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi } from "../../core/nav";
@@ -56,9 +56,8 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
-import { refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
+import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { openPalette } from "../palette/palette";
-import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
@@ -157,25 +156,6 @@ document.addEventListener("click", (e) => {
 
   if (!t) return;
 
-  const isAuthed = Boolean(S.epicAccount) && S.epicPhase === "library" && !S.authLoading;
-  if (!isAuthed) {
-    if (t.dataset.view) return;
-    const allowedAuthActs = new Set([
-      "epic-open-login",
-      "epic-do-login",
-      "epic-import",
-      "auth-paste",
-      "auth-cancel",
-      "epic-download",
-      "win-minimize",
-      "win-maximize",
-      "win-close",
-    ]);
-    if (t.dataset.act && !allowedAuthActs.has(t.dataset.act)) {
-      return;
-    }
-  }
-
   if (t.dataset.view) {
     closeAllModals();
     const targetView = t.dataset.view as View;
@@ -211,8 +191,13 @@ document.addEventListener("click", (e) => {
   if (act === "close") {
     const el = e.target as HTMLElement;
     if (el === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .drawer-close, .mclose")) closeModal();
-  } else if (act === "nav-history-back") {
-    navGoBack();
+  } else if (act === "nav-history-back" || act === "page-back") {
+    if (act === "page-back" && S.currentModalAppName) {
+      closeModal();
+      updateNavHistoryUi();
+    } else {
+      navGoBack();
+    }
     return;
   } else if (act === "nav-history-forward") {
     navGoForward();
@@ -257,12 +242,6 @@ document.addEventListener("click", (e) => {
     })();
   } else if (act === "auth-cancel") {
     cancelAddAccount();
-  } else if (act === "onboarding-goto") {
-    const step = parseInt(t.dataset.step || "1", 10);
-    if (step >= 1 && step <= 3) {
-      S.onboardingStep = step;
-      render();
-    }
   } else if (act === "epic-logout") {
     void epicDoLogout();
   } else if (act === "epic-refresh") {
@@ -350,15 +329,12 @@ document.addEventListener("click", (e) => {
     } else if (tab === "platinum") {
       S.activeCollectionId = null;
       S.epicFilter = S.epicFilter === "platinum" ? "all" : "platinum";
-    } else if (tab === "freegames") {
-      S.activeCollectionId = null;
-      S.epicFilter = S.epicFilter === "freegames" ? "all" : "freegames";
-    } else if (tab === "updates") {
-      S.activeCollectionId = null;
-      S.epicFilter = S.epicFilter === "updates" ? "all" : "updates";
-    } else if (tab === "collections") {
-      S.activeCollectionId = null;
-      if (S.epicFilter === "collections" && S.activeCollectionId !== null) { S.activeCollectionId = null; } else { S.activeCollectionId = null; S.epicFilter = S.epicFilter === "collections" ? "all" : "collections"; }
+    } else if (tab === "collection") {
+      if (consumeCollectionDragClick()) return;
+      const colId = t.dataset.colId;
+      if (!colId) return;
+      S.activeCollectionId = colId;
+      S.epicFilter = "all";
     }
     S.isSortDropdownOpen = false;
     const hasCustomCol = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
@@ -399,11 +375,6 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "open-palette") {
     openPalette();
-  } else if (act === "open-tv-mode") {
-    closeAllModals();
-    openTvMode();
-  } else if (act === "close-tv-mode") {
-    closeTvMode();
   } else if (act === "lib-clear-search") {
     S.query = "";
     const input = document.getElementById("search") as HTMLInputElement | null;
@@ -657,18 +628,12 @@ document.addEventListener("click", (e) => {
     S.colModalMarker = "";
     S.isMarkerPaletteOpen = false;
     updateMarkerUi();
-  } else if (act === "quick-col-preset") {
-    const presetMarker = t.dataset.icon;
-    const presetName = t.dataset.name;
-    if (presetMarker) {
-      S.colModalMarker = presetMarker;
-      updateMarkerUi();
-    }
-    const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
-    if (nameInput && presetName) {
-      nameInput.value = presetName;
-      nameInput.focus();
-    }
+  } else if (act === "col-delete-ask") {
+    document.getElementById("col-delete-confirm")?.removeAttribute("hidden");
+    document.querySelector(".col-footer-actions")?.setAttribute("hidden", "");
+  } else if (act === "col-delete-cancel") {
+    document.getElementById("col-delete-confirm")?.setAttribute("hidden", "");
+    document.querySelector(".col-footer-actions")?.removeAttribute("hidden");
   } else if (act === "col-tab-filter") {
     const filter = t.dataset.filter as "all" | "selected" | "installed";
     if (filter) {
@@ -729,7 +694,7 @@ document.addEventListener("click", (e) => {
     updateColGamesListInPlace();
   } else if (act === "col-save-btn") {
     void saveCollectionFromModal();
-  } else if (act === "col-delete-btn") {
+  } else if (act === "col-delete-confirm") {
     const colId = t.dataset.colId;
     if (colId) void deleteCollectionFromModal(colId);
   } else if (act === "manage-game-collections" && id) {
@@ -749,6 +714,8 @@ document.addEventListener("click", (e) => {
       });
   } else if (act === "epic-play" && id) {
     void epicPlay(id);
+  } else if (act === "epic-stop" && id) {
+    void epicStop(id);
   } else if (act === "epic-install" && id) {
     void openInstallDialog(id);
   } else if (act === "install-browse") {
@@ -1094,6 +1061,7 @@ document.addEventListener("click", (e) => {
         }
         toast(i18nT("settings.langSet"), "ok");
         render();
+        if (S.currentModalAppName) openEpicModal(S.currentModalAppName, false);
       });
     }
   } else if (act === "manage-save-args" && id && S.activeManageSettings) {

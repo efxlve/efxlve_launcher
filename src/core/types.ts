@@ -6,7 +6,7 @@
  */
 
 /** Top-level application view/route. */
-export type View = "library" | "downloads" | "settings" | "profile" | "store" | "tv";
+export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts";
 
 /** Account/setup lifecycle phase. */
 export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
@@ -15,14 +15,14 @@ export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
 export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
 
 /** Library filter modes. */
-export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections" | "freegames";
+export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections";
 /** Library sort modes. */
 export type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
 /** Library layout mode: cover grid or dense list. */
 export type EpicViewMode = "grid" | "list";
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "about";
+export type SettingsSection = "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "about";
 
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";

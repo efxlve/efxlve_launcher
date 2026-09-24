@@ -5,7 +5,6 @@
   "nav.settings": "Настройки",
   "nav.online": "В сети",
   "nav.offline": "Не в сети",
-  "nav.notLoggedIn": "Вы не вошли",
   "common.play": "Играть",
   "common.install": "Установить",
   "common.manage": "Свойства и управление",
@@ -30,7 +29,6 @@
   "ctx.backup": "Резервная копия сохранений",
   "ctx.favAdd": "Добавить в избранное",
   "ctx.favRemove": "Убрать из избранного",
-  "ob.setupTitle": "Требуется установка",
   "ob.setupDownload": "Скачать legendary",
   "settings.language": "Выбор языка",
   "settings.languageDesc": "Выберите язык интерфейса лаунчера и локального контента."

@@ -5,7 +5,6 @@
   "nav.settings": "Ustawienia",
   "nav.online": "Online",
   "nav.offline": "Offline",
-  "nav.notLoggedIn": "Nie zalogowano",
   "common.play": "Graj",
   "common.install": "Zainstaluj",
   "common.manage": "Właściwości i zarządzanie",
@@ -30,7 +29,6 @@
   "ctx.backup": "Kopia zapasowa zapisów",
   "ctx.favAdd": "Dodaj do ulubionych",
   "ctx.favRemove": "Usuń z ulubionych",
-  "ob.setupTitle": "Wymagana instalacja",
   "ob.setupDownload": "Pobierz legendary",
   "settings.language": "Wybór języka",
   "settings.languageDesc": "Wybierz język interfejsu launchera i treści lokalnych."
