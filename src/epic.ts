@@ -84,6 +84,7 @@ export interface CachedLibrary {
   games: EpicGame[];
   installed: EpicInstalled[];
   skipped: string[];
+  collections?: GameCollection[];
 }
 
 export const NOT_AUTH = "NOT_AUTHENTICATED";
@@ -939,6 +940,12 @@ export const epicGetOfflineMode = () =>
 
 export const epicSetOfflineMode = (enabled: boolean) =>
   invoke<void>("epic_set_offline_mode", { enabled });
+
+export const epicGetAutoDesktopShortcut = () =>
+  invoke<boolean>("epic_get_auto_desktop_shortcut");
+
+export const epicSetAutoDesktopShortcut = (enabled: boolean) =>
+  invoke<void>("epic_set_auto_desktop_shortcut", { enabled });
 
 /* ---------- Save backup manager ---------- */
 

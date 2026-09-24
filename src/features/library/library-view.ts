@@ -68,8 +68,17 @@ function parseQuery(q: string): {
   return out;
 }
 
+function getCollator(): Intl.Collator {
+  const lang = S.appLanguage || "en";
+  try {
+    return new Intl.Collator(lang, { sensitivity: "base", numeric: true });
+  } catch {
+    return new Intl.Collator("en", { sensitivity: "base", numeric: true });
+  }
+}
+
 export function epicVisibleSummaries(): EpicSummary[] {
-  const q = S.query.trim().toLocaleLowerCase("tr");
+  const q = S.query.trim().toLowerCase();
   const query = parseQuery(q);
   const activeCol =
     S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav" && S.activeCollectionId !== "uncategorized"
@@ -103,7 +112,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
     if (S.epicFilter === "updates" && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
     if (S.epicFilter === "platinum" && !isAppPlatinum(s.appName)) return false;
 
-    const studio = studioOf(s).toLocaleLowerCase("tr");
+    const studio = studioOf(s).toLowerCase();
     if (query.installed && !s.installed) return false;
     if (query.notInstalled && s.installed) return false;
     if (query.fav && !S.epicFav.has(s.appName)) return false;
@@ -111,14 +120,14 @@ export function epicVisibleSummaries(): EpicSummary[] {
     if (query.dev && !studio.includes(query.dev)) return false;
 
     // Plain terms match the title or the studio/publisher.
-    const title = s.title.toLocaleLowerCase("tr");
+    const title = s.title.toLowerCase();
     for (const term of query.terms) {
       if (!title.includes(term) && !studio.includes(term)) return false;
     }
     return true;
   });
 
-  const byTitle = (a: EpicSummary, b: EpicSummary) => S.trCollator.compare(a.title, b.title);
+  const byTitle = (a: EpicSummary, b: EpicSummary) => getCollator().compare(a.title, b.title);
 
   switch (S.epicSort) {
     case "alpha":
@@ -141,11 +150,35 @@ export function epicVisibleSummaries(): EpicSummary[] {
       for (let i = 0; i < S.epicRecent.length; i++) {
         recentIdxMap.set(S.epicRecent[i], i);
       }
-      const rank = (s: EpicSummary): number => {
-        if (!s.installed) return 999999;
-        return recentIdxMap.get(s.appName) ?? 999999;
-      };
-      return [...list].sort((a, b) => rank(a) - rank(b) || byTitle(a, b));
+      return [...list].sort((a, b) => {
+        const inRecentA = recentIdxMap.has(a.appName);
+        const inRecentB = recentIdxMap.has(b.appName);
+        if (inRecentA && inRecentB) {
+          return recentIdxMap.get(a.appName)! - recentIdxMap.get(b.appName)!;
+        }
+        if (inRecentA) return -1;
+        if (inRecentB) return 1;
+
+        const ptA = S.playtimeMap.get(a.appName);
+        const ptB = S.playtimeMap.get(b.appName);
+        const tsA = ptA?.last_played_timestamp ?? 0;
+        const tsB = ptB?.last_played_timestamp ?? 0;
+        if (tsA > 0 || tsB > 0) {
+          if (tsA !== tsB) return tsB - tsA;
+        }
+
+        const secA = ptA?.total_seconds ?? 0;
+        const secB = ptB?.total_seconds ?? 0;
+        if (secA > 0 || secB > 0) {
+          if (secA !== secB) return secB - secA;
+        }
+
+        if (a.installed !== b.installed) {
+          return Number(b.installed) - Number(a.installed);
+        }
+
+        return byTitle(a, b);
+      });
     }
   }
 }

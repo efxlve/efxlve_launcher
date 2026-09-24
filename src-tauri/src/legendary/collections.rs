@@ -30,7 +30,8 @@ pub fn get_collections_path() -> PathBuf {
 pub fn read_collections_raw() -> Vec<GameCollection> {
     let path = get_collections_path();
     if path.exists() {
-        if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(bytes) = fs::read(&path) {
+            let content = String::from_utf8_lossy(&bytes);
             if let Ok(data) = serde_json::from_str::<CollectionsData>(&content) {
                 return data.collections;
             }

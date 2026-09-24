@@ -230,6 +230,7 @@ pub struct CachedLibrary {
     pub games: Vec<LegendaryGame>,
     pub installed: Vec<InstalledGame>,
     pub skipped: Vec<String>,
+    pub collections: Vec<super::collections::GameCollection>,
 }
 
 #[tauri::command]
@@ -260,6 +261,7 @@ pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
                 .into_iter()
                 .map(|s| s.app_name)
                 .collect(),
+            collections: super::collections::read_collections().unwrap_or_default(),
         }
     })
     .await
@@ -2484,6 +2486,22 @@ pub fn epic_get_offline_mode(app: AppHandle) -> bool {
 pub fn epic_set_offline_mode(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut s = crate::load_settings(&app);
     s.offline_mode = Some(enabled);
+    crate::save_settings(&app, &s);
+    Ok(())
+}
+
+/// Returns the auto-create-desktop-shortcut setting state.
+#[tauri::command]
+pub fn epic_get_auto_desktop_shortcut(app: AppHandle) -> bool {
+    let s = crate::load_settings(&app);
+    s.auto_desktop_shortcut
+}
+
+/// Saves the auto-create-desktop-shortcut setting state.
+#[tauri::command]
+pub fn epic_set_auto_desktop_shortcut(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut s = crate::load_settings(&app);
+    s.auto_desktop_shortcut = enabled;
     crate::save_settings(&app, &s);
     Ok(())
 }

@@ -283,6 +283,11 @@ function renderDownloads(): string {
         </div>
       </div>
       ${row(
+        t("settings.autoDesktopShortcut"),
+        t("settings.autoDesktopShortcutDesc"),
+        toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut),
+      )}
+      ${row(
         t("settings.offlineTitle"),
         t("settings.offlineDesc"),
         `<span class="settings-status ${S.offlineMode ? "on" : ""}">${S.offlineMode ? t("settings.offlineActive") : t("settings.onlineStandard")}</span>${toggle("toggle-offline-mode", S.offlineMode)}`,

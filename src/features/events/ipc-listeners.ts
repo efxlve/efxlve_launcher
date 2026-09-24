@@ -11,6 +11,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
+  epicGetAutoDesktopShortcut,
   epicGetNetworkProfile,
   epicGetSettings,
   epicGetOfflineMode,
@@ -534,6 +535,7 @@ export async function initApp(hooks: {
     }
     try {
       S.preferredCdn = (await epicGetSettings()).preferred_cdn ?? "";
+      S.autoDesktopShortcut = await epicGetAutoDesktopShortcut();
     } catch {
       // ignore
     }

@@ -946,7 +946,18 @@ async fn monitor_download(
         } else {
             let tot_bytes = if total_mib > 0.0 { Some((total_mib * 1024.0 * 1024.0) as u64) } else { None };
             match &result {
-                Ok(()) => emit_progress_full(&app, &app_name, 100, true, None, None, None, None, None, None, tot_bytes, tot_bytes),
+                Ok(()) => {
+                    emit_progress_full(&app, &app_name, 100, true, None, None, None, None, None, None, tot_bytes, tot_bytes);
+                    let settings = crate::load_settings(&app);
+                    if settings.auto_desktop_shortcut {
+                        let app_clone = app.clone();
+                        let app_name_clone = app_name.clone();
+                        tauri::async_runtime::spawn(async move {
+                            tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+                            let _ = super::commands::epic_create_desktop_shortcut(app_clone, app_name_clone).await;
+                        });
+                    }
+                }
                 Err(msg) => emit_failed(&app, &app_name, msg.clone()),
             }
         }

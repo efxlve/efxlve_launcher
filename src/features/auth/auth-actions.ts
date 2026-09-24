@@ -74,6 +74,9 @@ export async function refreshEpic(): Promise<void> {
       return;
     }
     S.epicAccount = cached.account;
+    if (cached.collections && Array.isArray(cached.collections)) {
+      S.epicCollections = cached.collections;
+    }
     setEpicSummaries(summarize(cached.games, cached.installed, cached.skipped));
     pruneRecent();
     setEpicGamesRaw(cached.games);

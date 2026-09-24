@@ -59,6 +59,8 @@
   "settings.netAdvTitle": "Ağ Teşhisi & Önbellek",
   "settings.netFindCdnDesc": "Epic Games sunucularını test eder ve en düşük gecikmeli olanı seçer.",
   "settings.netCacheDesc": "Geçici indirme ve önbellek dosyalarını temizler.",
+  "settings.autoDesktopShortcut": "Otomatik Masaüstü Kısayolu",
+  "settings.autoDesktopShortcutDesc": "Oyun indirildiğinde masaüstüne otomatik olarak başlatma kısayolu oluştur.",
   "settings.secSocial": "Sosyal",
   "settings.eosTitle": "EOS Social Overlay",
   "settings.eosInstalled": "Kurulu",
