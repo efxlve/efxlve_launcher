@@ -6,6 +6,7 @@
  * keeps hot paths free of repeated `getElementById` calls.
  */
 
+import { updatePageHeader } from "./nav";
 import { presenceSync, updateGamepadHud } from "./render";
 import { S } from "./state";
 
@@ -44,6 +45,7 @@ export function closeModal(): void {
   modalRoot.innerHTML = "";
   S.currentModalAppName = null;
   syncSidebarGameActive();
+  updatePageHeader();
   // Drop per-game manage state along with the drawer that owns the manage tab.
   S.activeManageSettings = null;
   updateGamepadHud(S.gamepadPolling);

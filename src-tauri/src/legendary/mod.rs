@@ -16,12 +16,12 @@ pub mod skip;
 pub mod transfers;
 pub mod hltb;
 pub mod steamgrid;
+pub mod steam_store;
 pub mod profile;
 pub mod critic;
 pub mod screenshots;
 pub mod move_game;
 pub mod friends;
-pub mod freegames;
 pub mod accounts;
 
 use thiserror::Error;

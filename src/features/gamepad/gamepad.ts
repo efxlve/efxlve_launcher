@@ -2,8 +2,7 @@
  * Game controller (gamepad) polling, HUD and navigation.
  *
  * Polls the Gamepad API only while a controller is connected (80ms when idle).
- * In TV Mode input is routed to tv-mode.ts; on the desktop UI it falls back
- * to spatial D-pad navigation. State lives in S.
+ * On the desktop UI it uses spatial D-pad navigation. State lives in S.
  */
 
 import { MORE_CARD_CHUNK } from "../../core/constants";
@@ -20,7 +19,6 @@ import {
 } from "../library/library-view";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
 import { setView } from "../store/store-view";
-import { closeTvMode, showTvPrompt, tvActivate, tvMove, tvOpenDetails, tvRowJump } from "./tv-mode";
 export function ensureGamepadHud(): HTMLElement {
   if (!S.gamepadHudEl) {
     S.gamepadHudEl = document.getElementById("gamepad-hud-bar");
@@ -38,7 +36,7 @@ let lastHudKey = "";
 
 export function updateGamepadHud(active = true): void {
   const hud = ensureGamepadHud();
-  if (!active || !S.gamepadPolling || !S.epicAccount || S.epicPhase !== "library" || S.authLoading) {
+  if (!active || !S.gamepadPolling) {
     hud.classList.add("hidden");
     return;
   }
@@ -53,14 +51,7 @@ export function updateGamepadHud(active = true): void {
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
-  if (S.view === "tv" && !modalOpen) {
-    hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph">A</span> <span>${t("gamepad.select")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph">X</span> <span>${t("gamepad.detail")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("tv.hudRows")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph">B</span> <span>${t("tv.exit")}</span></div>
-    `;
-  } else if (modalOpen) {
+  if (modalOpen) {
     hud.innerHTML = `
       <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.select")}</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>${t("common.back")}</span></div>
@@ -90,8 +81,7 @@ export function updateGamepadHud(active = true): void {
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
     const name = e.gamepad.id.split("(")[0].trim();
-    if (S.view === "tv") toast(t("gamepad.connected", { name }), "ok");
-    else showTvPrompt(name);
+    toast(t("gamepad.connected", { name }), "ok");
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
@@ -181,17 +171,6 @@ export function gamepadLoop(): void {
     const btnLB = btns[4]?.pressed;
     const btnRB = btns[5]?.pressed;
 
-    if (S.view === "tv" && !S.currentModalAppName && !S.activeLightboxScreenshot) {
-      if (btnA || btnB || btnX || btnLB || btnRB || up || down || left || right) S.lastGamepadActionTime = now;
-      if (btnB) closeTvMode();
-      else if (btnA) tvActivate();
-      else if (btnX) tvOpenDetails();
-      else if (btnLB || btnRB) tvRowJump(btnRB ? 1 : -1);
-      else if (up || down || left || right) tvMove(up ? "up" : down ? "down" : left ? "left" : "right");
-      scheduleGamepadLoop(false);
-      return;
-    }
-
     if (btnB) {
       // B / Daire (○): Geri / Kapat
       S.lastGamepadActionTime = now;
@@ -212,8 +191,7 @@ export function gamepadLoop(): void {
       }
     } else if (btnLB || btnRB) {
       // L1/LB & R1/RB: switch tab / filter
-      if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
-      S.lastGamepadActionTime = now;
+          S.lastGamepadActionTime = now;
       handleGamepadTabSwitch(btnRB ? 1 : -1);
     } else if (btnY) {
       // Y / Triangle: focus the search box

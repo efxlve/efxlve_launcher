@@ -14,7 +14,6 @@ import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import { epicPortrait, type EpicSummary } from "../../epic";
-import { getRecentInstalls } from "../../core/recent";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -117,7 +116,7 @@ export function drawSpeedCanvas(): void {
 
   // Colors mirror --ok (disk) and --accent (network) in tokens.css.
   drawSeries(S.diskHistory, "#2fb36d", "rgba(47, 179, 109, 0.08)");
-  drawSeries(S.speedHistory, "#3d8bfd", "rgba(61, 139, 253, 0.14)");
+  drawSeries(S.speedHistory, "#f2f2f2", "rgba(255, 255, 255, 0.08)");
 }
 
 /** Stops the speed chart sampler (called when it is no longer needed). */
@@ -189,21 +188,19 @@ function activeDownload(): DlMetrics | null {
   return null;
 }
 
-/** Recently installed/updated games first, then recently played, then any installed (max 6). */
-function recentInstalledGames(): EpicSummary[] {
-  const out: EpicSummary[] = [];
-  const seen = new Set<string>();
-  const add = (s: EpicSummary | undefined): boolean => {
-    if (s && s.installed && !seen.has(s.appName)) {
-      seen.add(s.appName);
-      out.push(s);
-    }
-    return out.length >= 6;
-  };
-  for (const id of getRecentInstalls()) if (add(S.epicSummariesMap.get(id))) return out;
-  for (const id of S.epicRecent) if (add(S.epicSummariesMap.get(id))) return out;
-  for (const s of S.epicSummaries) if (add(s)) return out;
-  return out;
+/** Installed games that are not already listed under Updates. Recent first. */
+function installedGames(): EpicSummary[] {
+  const recentIdx = new Map<string, number>();
+  S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
+  const collator = S.trCollator ?? new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
+  return S.epicSummaries
+    .filter((s) => s.installed && !(s.updateAvailable || S.availableUpdates.has(s.appName)))
+    .sort((a, b) => {
+      const ra = recentIdx.get(a.appName);
+      const rb = recentIdx.get(b.appName);
+      if (ra !== undefined || rb !== undefined) return (ra ?? 9999) - (rb ?? 9999);
+      return collator.compare(a.title, b.title);
+    });
 }
 
 function renderActiveCard(dl: DlMetrics): string {
@@ -278,23 +275,20 @@ export function renderDownloads(): string {
       `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>${manageBtn(s.appName)}`);
   }).join("");
 
-  const recent = recentInstalledGames();
-  const recentRows = recent.map((s) => {
-    const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
-    const action = hasUpdate
-      ? `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`
-      : `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>`;
+  const installed = installedGames();
+  const installedBytes = installed.reduce((sum, s) => sum + (s.installSize || 0), 0);
+  const installedRows = installed.map((s) => {
+    const action = `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>`;
     return gameRow(s, s.appName, fmtBytes(s.installSize || 0), action + manageBtn(s.appName));
   }).join("");
 
-  const idle = !active && queueApps.length === 0
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && installed.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
   return `
     <div class="page dl-page">
-      <div class="page-head">
-        <div><h1 class="page-title">${t("downloads.title")}</h1></div>
+      <div class="page-head dl-head">
         <div class="page-actions">
           <button class="btn ghost" data-act="open-download-settings">${icon("settings", 14)} ${t("downloads.settingsTitle")}</button>
           <button class="btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>
@@ -303,7 +297,7 @@ export function renderDownloads(): string {
       ${active ? renderActiveCard(active) : idle}
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
-      ${recentRows ? section(t("downloads.recentTitle"), null, recentRows, `<button class="btn ghost small" data-act="goto-library">${t("downloads.goLibrary")} ${icon("chevron-right", 13)}</button>`) : ""}
+      ${installedRows ? section(t("downloads.installedTitle"), installed.length, installedRows, `<span class="dl-installed-total">${fmtBytes(installedBytes)}</span>`) : ""}
     </div>`;
 }
 

@@ -5,7 +5,6 @@
   "nav.settings": "设置",
   "nav.online": "在线",
   "nav.offline": "离线",
-  "nav.notLoggedIn": "未登录",
   "common.play": "开始游戏",
   "common.install": "安装",
   "common.manage": "属性与管理",
@@ -30,7 +29,6 @@
   "ctx.backup": "备份存档",
   "ctx.favAdd": "添加到收藏夹",
   "ctx.favRemove": "从收藏夹移除",
-  "ob.setupTitle": "需要安装",
   "ob.setupDownload": "下载 legendary",
   "settings.language": "语言选择",
   "settings.languageDesc": "选择启动器界面和本地内容的语言。"

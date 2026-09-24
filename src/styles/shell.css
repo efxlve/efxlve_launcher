@@ -1,125 +1,33 @@
 /* ==========================================================================
-   App shell: sidebar, window bar, content area, notification panel and the
-   store loading placeholder (docs/DESIGN_SYSTEM.md §2).
+   App shell (Hydra layout): full-width window bar, sidebar with account +
+   nav + filtered game list, page header, content and a bottom status bar.
    ========================================================================== */
-#app { display: flex; height: 100vh; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+#body { flex: 1; min-height: 0; display: flex; }
 
-/* --- Sidebar --- */
-#sidebar {
-  width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column;
-  background: var(--surface-1); border-right: 1px solid var(--line);
-  padding: 0 10px 10px; min-height: 0;
-}
-.sb-brand {
-  display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 6px;
-  cursor: pointer; -webkit-app-region: drag; flex-shrink: 0;
-}
-.sb-logo {
-  display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-sm);
-  background: var(--accent); color: #fff; -webkit-app-region: no-drag;
-}
-.sb-logo svg { width: 17px; height: 17px; }
-.sb-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; -webkit-app-region: no-drag; }
-
-.sb-search {
-  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 12px;
-  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
-  color: var(--text-3); font-size: 13px; font-family: inherit; cursor: pointer; flex-shrink: 0;
-  transition: border-color var(--ease), color var(--ease);
-}
-.sb-search:hover { border-color: var(--line-strong); color: var(--text-2); }
-.sb-search svg { width: 15px; height: 15px; }
-.sb-search span:not(.kbd) { flex: 1; text-align: left; }
-
-.sb-nav { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-.sb-item {
-  display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px;
-  border: none; border-radius: var(--r-sm); background: transparent;
-  color: var(--text-2); font-size: 13px; font-weight: 500; font-family: inherit;
-  cursor: pointer; text-align: left;
-  transition: background-color var(--ease), color var(--ease);
-}
-.sb-item svg { width: 17px; height: 17px; flex-shrink: 0; }
-.sb-item span:first-of-type { flex: 1; }
-.sb-item:hover { background: var(--surface-2); color: var(--text); }
-.sb-item.active { background: var(--surface-3); color: var(--text); }
-.sb-item.active svg { color: var(--accent); }
-.sb-count {
-  min-width: 20px; height: 18px; padding: 0 6px; border-radius: 4px;
-  background: var(--accent); color: #fff; font-size: 11px; font-weight: 600;
-  line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
-}
-
-.sb-label {
-  margin: 18px 10px 6px; font-size: 11px; font-weight: 600; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0;
-}
-.sb-games { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; margin: 0 -4px; padding: 0 4px; }
-.sb-game {
-  display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 8px; flex-shrink: 0;
-  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2);
-  font-size: 13px; font-family: inherit; cursor: pointer; text-align: left;
-  transition: background-color var(--ease), color var(--ease);
-}
-.sb-game:hover { background: var(--surface-2); color: var(--text); }
-.sb-game.active { background: var(--surface-3); color: var(--text); }
-.sb-game img, .sb-game-ph {
-  width: 22px; height: 22px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: var(--surface-3);
-}
-.sb-game-ph { display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--text-3); }
-.sb-game-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sb-game-state { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.sb-game-state.running { background: var(--ok); }
-.sb-game-state.update { background: var(--warn); }
-.sb-game-state.dl { background: var(--accent); }
-.sb-games-empty { padding: 6px 10px; font-size: 12px; color: var(--text-3); }
-
-.sb-foot {
-  display: flex; align-items: center; gap: 2px; padding-top: 10px; margin-top: 8px;
-  border-top: 1px solid var(--line); flex-shrink: 0;
-}
-.sb-account {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 6px;
-  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text);
-  font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; text-align: left;
-}
-.sb-account:hover, .sb-account.active { background: var(--surface-2); }
-.account-avatar {
-  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-  display: grid; place-items: center; background: var(--surface-3); color: var(--text-2);
-}
-.account-avatar svg { width: 16px; height: 16px; }
-.account-avatar .avatar-img, .account-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.avatar-initial { font-size: 12px; font-weight: 600; color: var(--text); }
-.account-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sb-foot .icon-btn.active { background: var(--surface-3); color: var(--text); }
-.notif-btn { position: relative; }
-.notif-badge {
-  position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--accent); font-size: 0; pointer-events: none;
-}
-
-/* --- Main column + window bar --- */
-#main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* --- Window bar --- */
 #winbar {
-  height: var(--winbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
-  padding-left: 10px; -webkit-app-region: drag; position: relative; z-index: 20;
+  height: var(--winbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 2px;
+  padding-left: 14px; background: var(--bg); -webkit-app-region: drag; position: relative; z-index: 20;
 }
+.winbar-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
+.winbar-beta { margin-left: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-3); }
 .winbar-spacer { flex: 1; align-self: stretch; }
-.nav-history-group { display: flex; gap: 2px; -webkit-app-region: no-drag; }
-.nav-history-group .icon-btn { width: 28px; height: 28px; }
-.nav-history-group .icon-btn:disabled { opacity: 0.3; cursor: default; }
-.net-chip {
-  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px;
-  border: none; border-radius: 4px; background: transparent; color: var(--text-3);
+.winbar-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px;
+  border: none; border-radius: 4px; background: transparent; color: var(--text-2);
   font-size: 12px; font-family: inherit; cursor: pointer; -webkit-app-region: no-drag;
+  transition: background-color var(--ease), color var(--ease);
 }
-.net-chip:hover { background: var(--surface-2); color: var(--text-2); }
+.winbar-btn:hover { background: var(--surface-2); color: var(--text); }
+.winbar-btn.active { background: var(--surface-3); color: var(--text); }
+.winbar-btn svg { width: 14px; height: 14px; }
 .net-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
 .net-chip.online .net-dot { background: var(--ok); }
 .net-chip.offline { color: var(--warn); }
 .net-chip.offline .net-dot { background: var(--warn); }
-.win-controls { display: flex; align-self: stretch; -webkit-app-region: no-drag; }
+.notif-badge { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); font-size: 0; pointer-events: none; }
+.win-controls { display: flex; align-self: stretch; margin-left: 6px; -webkit-app-region: no-drag; }
 .win-btn {
   width: 46px; border: none; background: none; color: var(--text-2); cursor: pointer;
   display: grid; place-items: center; transition: background-color var(--ease), color var(--ease);
@@ -127,19 +35,106 @@
 .win-btn:hover { background: var(--surface-2); color: var(--text); }
 .win-btn.win-close:hover { background: #c42b1c; color: #fff; }
 
+/* --- Sidebar --- */
+#sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
+  padding: 12px 0 8px; background: var(--bg); border-right: 1px solid var(--line);
+}
+.sb-profile { display: flex; align-items: center; gap: 2px; margin: 0 8px 10px; }
+.sb-account {
+  display: flex; align-items: center; gap: 10px; height: 48px; flex: 1; min-width: 0; padding: 0 8px;
+  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text);
+  font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; text-align: left;
+  transition: background-color var(--ease);
+}
+.sb-notif { position: relative; width: 36px; height: 36px; flex-shrink: 0; color: var(--text-2); }
+.sb-notif .notif-badge { top: 6px; right: 6px; }
+.sb-account:hover, .sb-account.active { background: var(--surface-2); }
+.account-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  display: grid; place-items: center; background: var(--surface-3); color: var(--text-2);
+}
+.account-avatar svg { width: 18px; height: 18px; }
+.account-avatar .avatar-img, .account-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-initial { font-size: 13px; font-weight: 600; color: var(--text); }
+.account-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sb-nav { display: flex; flex-direction: column; gap: 0; flex-shrink: 0; }
+.sb-item {
+  position: relative; display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 18px;
+  border: none; border-radius: 0; background: transparent;
+  color: var(--text-2); font-size: 15px; font-weight: 500; font-family: inherit;
+  cursor: pointer; text-align: left;
+  transition: color var(--ease), background-color var(--ease);
+}
+.sb-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.sb-item span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sb-item:hover { background: transparent; color: var(--text); }
+.sb-item.active { background: transparent; color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+.sb-count {
+  min-width: 20px; height: 18px; padding: 0 6px; border-radius: 4px; margin-right: 6px;
+  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600;
+  line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+.sb-games { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+.sb-games-label {
+  margin: 6px 16px 8px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 15px; font-weight: 600; color: var(--text-2);
+}
+.sb-game {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; flex-shrink: 0;
+  border: none; border-radius: 0; background: transparent; color: var(--text-2);
+  font-size: 14px; font-family: inherit; cursor: pointer; text-align: left;
+  transition: background-color var(--ease), color var(--ease);
+}
+.sb-game:hover { background: var(--surface-1); color: var(--text); }
+.sb-game.active { background: transparent; color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+.sb-game img, .sb-game-ph { width: 26px; height: 26px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: var(--surface-3); }
+.sb-game-ph { display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--text-3); }
+.sb-game-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-game-state { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sb-game-state.running { background: var(--ok); }
+.sb-game-state.update { background: var(--warn); }
+.sb-game-state.dl { background: var(--accent); }
+.sb-games-empty { padding: 8px 16px; font-size: 13px; color: var(--text-3); }
+
+/* --- Page header + content --- */
+#main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
+#page-header {
+  height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+  padding: 0 20px 0 14px; border-bottom: 1px solid var(--line);
+}
+#page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
+.page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#page-header:not(:has(.page-header-count:not([hidden]))) .page-header-title { flex: 1; }
+.page-header-count[hidden] { display: none; }
+.page-search {
+  display: flex; align-items: center; gap: 8px; width: 260px; height: 36px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);
+  color: var(--text-3); font-size: 14px; font-family: inherit; cursor: pointer;
+  transition: border-color var(--ease), color var(--ease);
+}
+.page-search span:not(.kbd) { flex: 1; text-align: left; }
+.page-search:hover { border-color: var(--line-strong); color: var(--text-2); }
+.nav-history-group { display: flex; }
 #content { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
-#view { flex: 1; overflow-y: auto; padding: 8px 32px 40px; }
+#view { flex: 1; overflow-y: auto; padding: 20px 28px 40px; }
+#view.view-enter > * { animation: page-in var(--ease-in) both; }
 
-/* Signed-out: only the window bar and the login view remain. */
-body.auth-mode #sidebar,
-body.auth-mode .nav-history-group,
-body.auth-mode #btn-offline-mode { display: none !important; }
-body.auth-mode #view { padding: 0; }
+/* --- Status bar --- */
+#statusbar {
+  height: var(--statusbar-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; background: var(--bg); border-top: 1px solid var(--line); font-size: 11px; color: var(--text-3);
+}
+.statusbar-dl { border: none; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
+.statusbar-dl:hover, .statusbar-dl.active { color: var(--text); }
 
-/* --- Notification panel (anchored above the sidebar footer) --- */
+/* Notification panel opens beside the profile bell, clear of the sidebar. */
 #notif-root { position: relative; z-index: 400; }
 .notif-panel {
-  position: fixed; left: calc(var(--sidebar-w) + 8px); bottom: 10px;
+  position: fixed; left: calc(var(--sidebar-w) + 8px); top: calc(var(--winbar-h) + 8px);
   width: 360px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -197,4 +192,9 @@ body.auth-mode #view { padding: 0; }
 .palette .empty-state { padding: 32px 0; }
 
 /* --- Store placeholder (shown until the native webview paints) --- */
-.store-loading-screen { height: 100%; min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--text-2); }
+.store-loading-screen {
+  height: 100%; min-height: 60vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; color: var(--text-2);
+  animation: fade-in var(--ease-in) both;
+}
+.store-loading-title { font-size: 13px; color: var(--text-3); }

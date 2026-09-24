@@ -36,7 +36,7 @@ import {
   loadStrSet,
 } from "./constants";
 import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
-import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
+import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
 function loadJsonRecord(key: string): Record<string, string> {
@@ -51,7 +51,8 @@ function loadJsonRecord(key: string): Record<string, string> {
 export const S = {
   view: ("library") as View,
   lastNonStoreView: ("library") as Exclude<View, "store">,
-  lastNonAuthView: ("settings") as View,
+  /** Accounts page: show the sign-in form under an already connected Epic account. */
+  accountsAddMode: false,
   storeShown: false,
   epicPhase: "checking" as EpicPhase,
   activeDrawerTab: "overview" as DrawerTab,
@@ -73,7 +74,6 @@ export const S = {
   setupMessage: "",
   epicBusyMsg: "",
   epicSyncing: false,
-  onboardingStep: 1,
   epicSyncNote: "",
   epicGamesRaw: ([]) as EpicGame[],
   epicGamesRawMap: (new Map()) as Map<string, EpicGame>,
@@ -101,6 +101,7 @@ export const S = {
   loadingHltbFor: (null) as string | null,
   loadedCritic: (new Map()) as Map<string, CriticData>,
   loadingCriticFor: (null) as string | null,
+  loadingSteamAboutFor: (null) as string | null,
   appLanguage: (localStorage.getItem(LANG_KEY) || "tr") as string,
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
@@ -224,10 +225,8 @@ export const S = {
   friendsError: "",
   notifications: ([]) as AppNotification[],
   notifOpen: false,
-  freeGames: (null) as FreeGamesData | null,
-  freeGamesLoading: false,
   studioFilter: "",
-  settingsSection: ("account") as SettingsSection,
+  settingsSection: ("downloads") as SettingsSection,
   profileCardCount: PROFILE_CARD_CHUNK as number,
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,

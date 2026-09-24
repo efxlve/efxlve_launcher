@@ -65,6 +65,23 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   menu.querySelector<HTMLElement>(".ps5-context-item")?.focus();
 }
 
+/** Right-click a collection tab to edit it. All and Favorites have no menu. */
+function showCollectionTabMenu(x: number, y: number, colId: string): void {
+  hideContextMenu();
+  const col = S.epicCollections.find((c) => c.id === colId);
+  if (!col) return;
+  const menu = document.createElement("div");
+  menu.className = "ps5-context-menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = `<button class="ps5-context-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>`;
+  const root = ctxRoot || document.body;
+  root.appendChild(menu);
+  S.ctxMenuEl = menu;
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - rect.width - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - rect.height - 8))}px`;
+}
+
 /** Register the global listeners that open and dismiss the context menu. */
 export function initContextMenu(): void {
   document.addEventListener(
@@ -72,6 +89,11 @@ export function initContextMenu(): void {
     (e) => {
       // Disables default Chromium/Edge context menu across the desktop app.
       e.preventDefault();
+      const colTab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+      if (colTab?.dataset.colId) {
+        showCollectionTabMenu(e.clientX, e.clientY, colTab.dataset.colId);
+        return;
+      }
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
       if (!target) {
         hideContextMenu();

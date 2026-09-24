@@ -5,7 +5,6 @@
   "nav.settings": "ตั้งค่า",
   "nav.online": "ออนไลน์",
   "nav.offline": "ออฟไลน์",
-  "nav.notLoggedIn": "ยังไม่ได้เข้าสู่ระบบ",
   "common.play": "เล่น",
   "common.install": "ติดตั้ง",
   "common.manage": "คุณสมบัติและจัดการ",
@@ -30,7 +29,6 @@
   "ctx.backup": "สำรองข้อมูลเซฟ",
   "ctx.favAdd": "เพิ่มในรายการโปรด",
   "ctx.favRemove": "ลบออกจากรายการโปรด",
-  "ob.setupTitle": "ต้องติดตั้งก่อน",
   "ob.setupDownload": "ดาวน์โหลด legendary",
   "settings.language": "เลือกภาษา",
   "settings.languageDesc": "เลือกภาษาของอินเทอร์เฟซตัวเรียกเกมและเนื้อหาท้องถิ่น"

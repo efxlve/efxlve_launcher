@@ -206,7 +206,7 @@
 
 | Command Name | TypeScript Signature | Rust Handler Location | Description |
 |---|---|---|---|
-| `epic_free_games` | `(locale: string, country: string) => Promise<FreeGamesData>` | `legendary/freegames.rs` | Currently free and upcoming weekly Epic games (public store backend, no auth). |
+| `epic_reorder_collections` | `(ids: string[]) => Promise<GameCollection[]>` | `legendary/commands.rs` | Saves the collection tab order. All and Favorites are not part of this list. |
 
 > Reads `freeGamesPromotions`; an entry is "free now" when its current price is 0 with a live promotion, and "upcoming" when a future promotion window exists. The frontend maps the UI language to an Epic locale/country pair.
 

@@ -33,8 +33,7 @@ import {
   type CachedLibrary,
 } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
-import { loadFreeGames } from "../freegames/freegames";
-import { updateAuthProgressUi } from "../onboarding/onboarding-view";
+import { updateAuthProgressUi } from "../accounts/accounts-view";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -60,7 +59,6 @@ export async function refreshEpic(): Promise<void> {
     S.setupInfo = await epicSetupStatus();
     if (S.setupInfo.needsDownload) {
       S.epicPhase = "setup";
-      document.body.classList.add("auth-mode");
       render();
       return;
     }
@@ -69,7 +67,6 @@ export async function refreshEpic(): Promise<void> {
     if (!cached.account) {
       S.epicAccount = "";
       S.epicPhase = "login";
-      document.body.classList.add("auth-mode");
       render();
       return;
     }
@@ -81,11 +78,9 @@ export async function refreshEpic(): Promise<void> {
     pruneRecent();
     setEpicGamesRaw(cached.games);
     S.epicPhase = "library";
-    document.body.classList.remove("auth-mode");
     render();
     void loadEpicAchSummaries();
     void loadEpicCollections();
-    void loadFreeGames();
     void refreshUpdates();
     void syncEpicLibrary(false);
     void epicResumePendingDownload().catch(() => {});
@@ -141,7 +136,6 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
   } catch (e) {
     if (isNotAuth(e)) {
       S.epicPhase = "login";
-      document.body.classList.add("auth-mode");
     } else {
       S.epicSyncNote = t("lib.offlineCache");
     }
@@ -229,7 +223,6 @@ export async function runProgressiveAuth(
   S.authStage = "authenticating";
   S.authProgress = 15;
   S.authStageText = t("auth.stageAuth");
-  document.body.classList.add("auth-mode");
   render();
 
   let timer: number | null = null;
@@ -275,7 +268,6 @@ export async function runProgressiveAuth(
 
     void loadEpicAchSummaries();
     void loadEpicCollections();
-    void loadFreeGames();
     void refreshUpdates();
 
     await new Promise((r) => setTimeout(r, 450));
@@ -292,8 +284,8 @@ export async function runProgressiveAuth(
     S.authLoading = false;
     S.epicBusy = "";
     S.epicPhase = "library";
+    S.accountsAddMode = false;
     S.view = "library";
-    document.body.classList.remove("auth-mode");
     render();
 
     toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
@@ -305,7 +297,6 @@ export async function runProgressiveAuth(
     S.epicBusy = "";
     S.authProgress = 0;
     S.epicPhase = "login";
-    document.body.classList.add("auth-mode");
     render();
     toast(
       t(actionName === "login" ? "auth.signInFailed" : "auth.importFailed", {
@@ -365,6 +356,5 @@ export async function epicDoLogout(): Promise<void> {
   S.view = "library";
   S.epicPhase = "login";
   closeAllModals();
-  document.body.classList.add("auth-mode");
   render();
 }

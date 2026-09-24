@@ -141,7 +141,7 @@ export function epicActionButtons(
   }
   const isRunning = S.runningGames.has(s.appName);
   if (isRunning) {
-    return `<button class="btn running${btn}" data-act="epic-play" data-id="${s.appName}" title="${t("common.gameRunning")}"><span class="running-dot"></span> ${t("common.playing")}</button>`;
+    return `<button class="btn play${btn}" data-act="epic-stop" data-id="${s.appName}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
   }
   if (s.installed) {
     const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);

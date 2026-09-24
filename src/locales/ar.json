@@ -5,7 +5,6 @@
   "nav.settings": "الإعدادات",
   "nav.online": "متصل",
   "nav.offline": "غير متصل",
-  "nav.notLoggedIn": "لم تسجل الدخول",
   "common.play": "تشغيل",
   "common.install": "تثبيت",
   "common.manage": "الخصائص والإدارة",
@@ -30,7 +29,6 @@
   "ctx.backup": "نسخ احتياطي لحفظ اللعبة",
   "ctx.favAdd": "إضافة إلى المفضلة",
   "ctx.favRemove": "إزالة من المفضلة",
-  "ob.setupTitle": "التثبيت مطلوب",
   "ob.setupDownload": "تنزيل legendary",
   "settings.language": "اختيار اللغة",
   "settings.languageDesc": "اختر لغة واجهة المشغل والمحتوى المحلي."

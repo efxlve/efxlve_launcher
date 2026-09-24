@@ -2569,6 +2569,12 @@ pub fn epic_save_collection(
     super::collections::save_collection(id, name, app_names, emoji)
 }
 
+/// Persists the library tab order. All and Favorites are not collections.
+#[tauri::command]
+pub fn epic_reorder_collections(ids: Vec<String>) -> Result<Vec<super::collections::GameCollection>, String> {
+    super::collections::reorder_collections(&ids)
+}
+
 /// Koleksiyonu siler
 #[tauri::command]
 pub fn epic_delete_collection(id: String) -> Result<(), String> {

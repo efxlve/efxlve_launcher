@@ -43,7 +43,6 @@ function commands(): Command[] {
     { label: t("palette.cmdRefresh"), iconName: "refresh", attrs: `data-act="epic-refresh"`, keywords: "refresh sync yenile" },
     { label: t("palette.cmdStorage"), iconName: "hard-drive", attrs: `data-act="open-storage-manager"`, keywords: "storage disk depolama" },
     { label: t("palette.cmdOffline"), iconName: S.offlineMode ? "wifi" : "wifi-off", attrs: `data-act="toggle-offline-mode"`, keywords: "offline online cevrimdisi" },
-    { label: t("palette.cmdTv"), iconName: "monitor", attrs: `data-act="open-tv-mode"`, keywords: "tv big picture controller gamepad kumanda" },
   ];
   return list;
 }
@@ -129,7 +128,6 @@ function run(el: HTMLElement): void {
 export function openPalette(): void {
   const r = root();
   if (!r) return;
-  if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
   r.innerHTML = `
     <div class="palette-backdrop" data-palette-close>
       <div class="palette" role="dialog" aria-label="${esc(t("palette.open"))}">

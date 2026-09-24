@@ -75,7 +75,6 @@ document.addEventListener("keydown", (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
   const t = e.target as HTMLElement | null;
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-  if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
   const targets: Record<string, string> = {
     "1": '[data-act="open-store"]',
     "2": '[data-view="library"]',

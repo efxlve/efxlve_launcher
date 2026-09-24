@@ -3,6 +3,7 @@
    pending updates and recent installs as plain list rows.
    ========================================================================== */
 .dl-page .empty-state { background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }
+.dl-head { justify-content: flex-end; }
 
 /* --- Active download --- */
 .dl-active { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 16px; }
@@ -36,7 +37,8 @@
 /* --- Lists --- */
 .dl-section { margin-top: 8px; }
 .dl-section-head { display: flex; align-items: center; justify-content: space-between; }
-.dl-section-head .count { color: var(--text-3); margin-left: 4px; }
+.dl-section-head .count { color: var(--text-3); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.dl-installed-total { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .dl-row-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
 .dl-row-open:hover .row-title { color: var(--accent); }
 .dl-thumb-ph { display: grid; place-items: center; color: var(--text-3); }

@@ -11,6 +11,7 @@ import {
   epicGetQueue,
   epicInstallGame,
   epicLaunchGame,
+  epicStopGame,
   epicListInstalled,
   epicListSkipped,
   epicUninstallGame,
@@ -28,9 +29,20 @@ import { notify, render } from "./render";
 import { rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
 import { toast } from "./toast";
-import { syncLibraryHeadingCount, syncLibraryUpdatesTab } from "../features/library/library-view";
+import { syncLibraryHeadingCount } from "../features/library/library-view";
 
 /** Launch a game and record it in the recent list. */
+export async function epicStop(appName: string): Promise<void> {
+  try {
+    const msg = await epicStopGame(appName);
+    S.runningGames.delete(appName);
+    toast(msg, "ok");
+    refreshGameActionUi(appName);
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
 export async function epicPlay(appName: string): Promise<void> {
   pushRecent(appName);
   toast(t("dl.launching"), "");
@@ -127,7 +139,7 @@ export async function refreshEpicInstalled(): Promise<void> {
     S.epicSkippedCount = eskipped.length;
     if (S.view === "library") {
       syncLibraryHeadingCount();
-      syncLibraryUpdatesTab();
+      updateBadge();
     }
     void refreshUpdates();
   } catch (e) {
@@ -155,8 +167,9 @@ export async function refreshUpdates(): Promise<void> {
       }
     }
     S.libraryDataRev++;
+    updateBadge();
+    if (S.view === "downloads") render();
     if (S.view === "library") {
-      syncLibraryUpdatesTab();
       document.querySelectorAll<HTMLElement>("[data-lib-item]").forEach((card) => {
         const id = card.dataset.libItem;
         if (!id) return;

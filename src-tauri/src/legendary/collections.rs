@@ -119,6 +119,30 @@ pub fn save_collection(
     Ok(updated)
 }
 
+/// Reorders collections to match `ids`. Unknown ids are ignored. Collections
+/// the client did not list stay at the end, in their previous order.
+pub fn order_collections(list: Vec<GameCollection>, ids: &[String]) -> Vec<GameCollection> {
+    let rank: HashMap<&str, usize> = ids.iter().enumerate().map(|(i, id)| (id.as_str(), i)).collect();
+    let mut known = Vec::new();
+    let mut unknown = Vec::new();
+    for col in list {
+        if rank.contains_key(col.id.as_str()) {
+            known.push(col);
+        } else {
+            unknown.push(col);
+        }
+    }
+    known.sort_by_key(|c| rank[c.id.as_str()]);
+    known.extend(unknown);
+    known
+}
+
+pub fn reorder_collections(ids: &[String]) -> Result<Vec<GameCollection>, String> {
+    let ordered = order_collections(read_collections().unwrap_or_default(), ids);
+    save_collections(&ordered)?;
+    Ok(ordered)
+}
+
 /// Koleksiyonu siler
 pub fn delete_collection(id: &str) -> Result<(), String> {
     let mut list = read_collections().unwrap_or_default();
@@ -524,6 +548,25 @@ fn extract_identifier(slice: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sample(id: &str) -> GameCollection {
+        GameCollection {
+            id: id.to_string(),
+            name: id.to_string(),
+            app_names: Vec::new(),
+            created_at: None,
+            emoji: None,
+        }
+    }
+
+    #[test]
+    fn test_order_collections_keeps_pinned_tail() {
+        let list = vec![sample("a"), sample("b"), sample("c"), sample("d")];
+        let ids = vec!["c".to_string(), "a".to_string()];
+        let ordered = order_collections(list, &ids);
+        let got: Vec<&str> = ordered.iter().map(|c| c.id.as_str()).collect();
+        assert_eq!(got, vec!["c", "a", "b", "d"]);
+    }
 
     #[test]
     fn test_deduplicate() {

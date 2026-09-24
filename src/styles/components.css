@@ -31,10 +31,8 @@
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled, .btn.disabled { opacity: 0.45; cursor: not-allowed; }
 .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-.btn.primary, .btn.install { background: var(--accent); color: #fff; }
-.btn.primary:hover, .btn.install:hover { background: var(--accent-hover); }
-.btn.play { background: var(--ok); color: #fff; }
-.btn.play:hover { background: var(--ok-hover); }
+.btn.primary, .btn.install, .btn.play { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn.primary:hover, .btn.install:hover, .btn.play:hover { background: var(--accent-hover); }
 .btn.update { background: var(--warn-tint); color: var(--warn); border-color: rgba(224, 163, 46, 0.35); }
 .btn.update:hover { background: rgba(224, 163, 46, 0.22); }
 .btn.running { background: var(--ok-tint); color: var(--ok); border-color: rgba(47, 179, 109, 0.35); }
@@ -73,9 +71,8 @@
 .ps5-btn:hover, .apple-pill-btn:hover { background: var(--surface-3); }
 .ps5-btn:disabled, .apple-pill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .ps5-btn svg, .apple-pill-btn svg { width: 15px; height: 15px; }
-.ps5-btn.primary, .apple-pill-btn.primary, .ps5-btn.install { background: var(--accent); color: #fff; }
+.ps5-btn.primary, .apple-pill-btn.primary, .ps5-btn.install, .ps5-btn.play { background: var(--accent); color: var(--on-accent); }
 .ps5-btn.primary:hover, .apple-pill-btn.primary:hover, .ps5-btn.install:hover { background: var(--accent-hover); }
-.ps5-btn.play { background: var(--ok); color: #fff; }
 .ps5-btn.update, .apple-pill-btn.update { background: var(--warn-tint); color: var(--warn); }
 .ps5-btn.danger, .apple-pill-btn.danger { background: var(--err-tint); color: var(--err); }
 .ps5-btn.ghost, .ps5-btn.secondary, .apple-pill-btn.secondary { background: transparent; border-color: var(--line-strong); }
@@ -134,6 +131,7 @@ select option { background: var(--surface-1); color: var(--text); }
   border-radius: 50%; background: #fff; transition: transform var(--ease);
 }
 .switch input:checked + .track, .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+.switch input:checked + .track::before, .toggle-switch input:checked + .toggle-slider::before { background: var(--on-accent); }
 .switch input:checked + .track::before, .toggle-switch input:checked + .toggle-slider::before { transform: translateX(14px); }
 
 /* --- Tabs: text tabs with an accent underline --- */

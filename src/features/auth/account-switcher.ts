@@ -16,6 +16,7 @@ import {
   type SavedAccount,
 } from "../../epic";
 import { refreshEpic } from "./auth-actions";
+import { setView } from "../store/store-view";
 
 /** Load all archived accounts and update state. */
 export async function loadSavedAccounts(): Promise<SavedAccount[]> {
@@ -73,26 +74,15 @@ export async function removeSavedAccount(accountId: string): Promise<void> {
   }
 }
 
-/** Transition to login screen to link another Epic account without losing the current one. */
+/** Show the sign-in form on the Accounts page to link another Epic account (the current one stays archived). */
 export function promptAddAccount(): void {
-  // Current account is already safely archived on disk.
-  // Save return view and switch view to onboarding login screen.
-  S.lastNonAuthView = S.view;
-  S.epicPhase = "login";
-  document.body.classList.add("auth-mode");
+  S.accountsAddMode = true;
+  setView("accounts");
   render();
 }
 
-/** Cancel adding account and seamlessly return to the active account session. */
+/** Hide the add-account form and keep the active session. */
 export function cancelAddAccount(): void {
-  if (S.epicAccount) {
-    S.epicPhase = "library";
-    document.body.classList.remove("auth-mode");
-    S.view = S.lastNonAuthView || "settings";
-    toast(t("auth.returnToAccount", { name: S.epicAccount }), "ok");
-    render();
-  } else if (S.savedAccounts && S.savedAccounts.length > 0) {
-    const target = S.savedAccounts.find((a) => a.is_active) || S.savedAccounts[0];
-    void switchAccount(target.account_id);
-  }
+  S.accountsAddMode = false;
+  render();
 }

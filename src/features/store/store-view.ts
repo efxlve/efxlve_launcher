@@ -15,15 +15,18 @@ import { toast } from "../../core/toast";
 import { EPIC_STORE_URL, epicFriends, epicGetPlayerProfile } from "../../epic";
 import { localizeMessage, t } from "../../i18n";
 import type { View } from "../../core/types";
-/** Store webview bounds: everything right of the sidebar and below the window bar. */
-export function storeRect(): { x: number; y: number; width: number; height: number } {
-  const left = document.getElementById("sidebar")?.offsetWidth ?? 0;
-  const top = document.getElementById("winbar")?.offsetHeight ?? 0;
+/** Store webview bounds: the #content area (right of the sidebar, between the header and the status bar). */
+export function storeRect(): { x: number; y: number; width: number; height: number; bottom: number } {
+  const r = document.getElementById("content")?.getBoundingClientRect();
+  const x = r ? r.left : 0;
+  const y = r ? r.top : 0;
+  const height = r ? r.height : window.innerHeight;
   return {
-    x: left,
-    y: top,
-    width: Math.max(100, window.innerWidth - left),
-    height: Math.max(100, window.innerHeight - top),
+    x,
+    y,
+    width: Math.max(100, window.innerWidth - x),
+    height: Math.max(100, height),
+    bottom: Math.max(0, window.innerHeight - y - height),
   };
 }
 
@@ -33,7 +36,7 @@ export function syncStoreViewSize(): void {
 }
 
 export function renderStoreLoadingScreen(): string {
-  return `<div class="store-loading-screen"><span class="spinner"></span><span>${t("store.starting")}</span></div>`;
+  return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${t("store.starting")}</span></div>`;
 }
 
 export async function openStore(): Promise<void> {
@@ -42,6 +45,8 @@ export async function openStore(): Promise<void> {
 
 /** After this long away from the store, its webview is destroyed to free RAM. */
 const STORE_IDLE_DESTROY_MS = 3 * 60 * 1000;
+/** Invalidates an in-flight show once the user has left the store. */
+let storeOpenEpoch = 0;
 
 /** Cancels a pending idle destroy (the store is being used again). */
 function cancelStoreDestroy(): void {
@@ -66,18 +71,24 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   closeAllModals();
   cancelStoreDestroy();
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
+  const epoch = ++storeOpenEpoch;
   S.lastStoreUrl = url;
   S.storeMode = mode;
   S.view = "store";
-  // Show the modern loading animation while the store opens.
   viewEl.innerHTML = renderStoreLoadingScreen();
   render();
   try {
     await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false });
+    if (epoch !== storeOpenEpoch || S.view !== "store") {
+      S.storeShown = false;
+      if (isTauri) invoke<string>("hide_store_view").catch(() => {});
+      return;
+    }
     S.storeShown = true;
     window.setTimeout(syncStoreViewSize, 50);
     window.setTimeout(syncStoreViewSize, 200);
   } catch (e) {
+    if (epoch !== storeOpenEpoch) return;
     S.storeShown = false;
     S.view = S.lastNonStoreView;
     render();
@@ -130,12 +141,13 @@ export async function openProfile(): Promise<void> {
 
 /** Atomically hides the embedded store webview; falls back to the last non-store view. */
 export function hideStore(): void {
-  if (S.storeShown) {
-    S.storeShown = false;
-    if (isTauri) invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
-    // Release the hidden Chromium renderer after a while to save memory.
-    scheduleStoreDestroy();
+  storeOpenEpoch += 1;
+  const wasShown = S.storeShown;
+  S.storeShown = false;
+  if (isTauri && (wasShown || S.view === "store")) {
+    invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
   }
+  if (wasShown) scheduleStoreDestroy();
   if (S.view === "store") S.view = S.lastNonStoreView;
 }
 

@@ -556,6 +556,8 @@ export const epicUninstallGame = (appName: string, keepFiles = false) =>
   invoke<string>("epic_uninstall_game", { appName, keepFiles });
 export const epicLaunchGame = (appName: string) =>
   invoke<string>("epic_launch_game", { appName });
+export const epicStopGame = (appName: string) =>
+  invoke<string>("epic_stop_game", { appName });
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */
@@ -611,26 +613,6 @@ export interface EpicFriendsData {
   friends: EpicFriend[];
 }
 export const epicFriends = () => invoke<EpicFriendsData>("epic_friends");
-
-/** Weekly Epic free games (public store backend, no auth). */
-export interface FreeGame {
-  title: string;
-  id: string;
-  namespace: string;
-  cover: string;
-  slug: string;
-  description: string;
-  upcoming: boolean;
-  start: string;
-  end: string;
-  mobile: boolean;
-}
-export interface FreeGamesData {
-  current: FreeGame[];
-  upcoming: FreeGame[];
-}
-export const epicFreeGames = (locale: string, country: string) =>
-  invoke<FreeGamesData>("epic_free_games", { locale, country });
 
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });
@@ -1001,6 +983,9 @@ export interface GameCollection {
 export const epicGetCollections = () =>
   invoke<GameCollection[]>("epic_get_collections");
 
+export const epicReorderCollections = (ids: string[]) =>
+  invoke<GameCollection[]>("epic_reorder_collections", { ids });
+
 export const epicSaveCollection = (
   name: string,
   appNames: string[],
@@ -1070,6 +1055,18 @@ export interface CriticData {
 
 export const epicGetCritic = (title: string, appName: string, forceRefresh = false) =>
   invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh });
+
+export interface SteamAbout {
+  supported: boolean;
+  description: string;
+  developers?: string;
+  release_date?: string;
+  genres?: string;
+}
+
+/** Localized about text from the Steam store. `lang` is the launcher locale. */
+export const epicGetSteamAbout = (title: string, appName: string, lang: string, forceRefresh = false) =>
+  invoke<SteamAbout>("epic_get_steam_about", { title, appName, lang, forceRefresh });
 
 /* ---------- SteamGridDB API v2 ---------- */
 

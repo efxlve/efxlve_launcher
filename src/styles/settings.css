@@ -37,19 +37,7 @@
 .app-update-status { color: var(--text-2); }
 .app-update-progress { flex: 1; }
 
-/* Account */
-.settings-identity { display: flex; align-items: center; gap: 14px; }
 .settings-identity-name { font-size: 16px; font-weight: 600; }
-.settings-identity-stats { display: flex; gap: 18px; font-size: 12px; color: var(--text-3); }
-.settings-identity-stats strong { color: var(--text); font-weight: 600; margin-right: 2px; }
-.settings-identity .icon-btn { width: 24px; height: 24px; vertical-align: middle; }
-.settings-avatar-btn { padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; }
-.settings-avatar {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-  display: grid; place-items: center; background: var(--surface-3); font-size: 13px; font-weight: 600;
-}
-.settings-avatar.lg { width: 52px; height: 52px; font-size: 18px; }
-.settings-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Language grid */
 .settings-lang-desc { margin: -4px 0 12px; }
