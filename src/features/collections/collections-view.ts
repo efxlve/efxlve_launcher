@@ -17,6 +17,7 @@ import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicDeleteCollection, epicGetCollections, epicSaveCollection, epicSetGameCollections } from "../../epic";
+import { renderCollectionTags } from "../drawer/drawer-view";
 export function openCollectionModal(colId?: string | null): void {
   S.activeEditingColId = colId ?? null;
   S.colModalSearchQuery = "";
@@ -420,35 +421,7 @@ export async function saveGameCollectionsFromModal(): Promise<void> {
 
 export function updateDrawerCollectionsBoxInPlace(appName: string): void {
   const container = document.getElementById("drawer-col-chips-container");
-  const subEl = document.getElementById("drawer-col-subtitle");
-  const editBtn = document.querySelector<HTMLElement>(".drawer-col-edit-btn span");
-  if (!container) return;
-  const gameCols = S.epicCollections.filter((c) =>
-    c.app_names.some((name) => name.toLowerCase() === appName.toLowerCase()),
-  );
-  if (subEl) {
-    subEl.textContent = gameCols.length > 0 ? t("col.categoryCount", { count: gameCols.length }) : t("col.noCategory");
-  }
-  if (editBtn) {
-    editBtn.textContent = gameCols.length > 0 ? t("col.edit") : t("col.add");
-  }
-  container.innerHTML =
-    gameCols.length > 0
-      ? gameCols
-          .map(
-            (c) => `
-          <button class="bento-col-pill drawer-col-pill" data-act="select-collection" data-col-id="${esc(c.id)}" title="${t("col.showInLibrary", { name: esc(c.name) })}">
-            ${isCollectionIcon(c.emoji) ? `<span class="col-pill-marker">${collectionMarker(c.emoji, 13)}</span>` : `<span class="col-pill-dot"></span>`}
-            <span class="col-pill-text">${esc(c.name)}</span>
-          </button>
-        `,
-          )
-          .join("")
-      : `
-          <button class="bento-empty-col" data-act="manage-game-collections" data-id="${appName}">
-            <span>${t("col.noCategory")}</span>
-          </button>
-        `;
+  if (container) container.innerHTML = renderCollectionTags(appName);
 }
 
 /** Load the user's collections from Epic and refresh the library if visible. */

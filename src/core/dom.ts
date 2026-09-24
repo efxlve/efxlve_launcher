@@ -32,10 +32,18 @@ export const collectionRoot = document.getElementById("collection-root");
 /** Storage manager modal root. */
 export const storageRoot = document.getElementById("storage-root");
 
-/** Close the game detail drawer and refresh the gamepad HUD. */
+/** Mark the sidebar game entry that matches the open game page. */
+export function syncSidebarGameActive(): void {
+  document.querySelectorAll<HTMLElement>("#sb-games .sb-game").forEach((el) => {
+    el.classList.toggle("active", el.dataset.id === S.currentModalAppName);
+  });
+}
+
+/** Close the game page and refresh the gamepad HUD. */
 export function closeModal(): void {
   modalRoot.innerHTML = "";
   S.currentModalAppName = null;
+  syncSidebarGameActive();
   // Drop per-game manage state along with the drawer that owns the manage tab.
   S.activeManageSettings = null;
   updateGamepadHud(S.gamepadPolling);

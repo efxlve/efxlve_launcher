@@ -5,12 +5,8 @@
 @import "./components.css";
 @import "./shell.css";
 @import "./library.css";
-@import "./gamehub.css";
+@import "./game-page.css";
 @import "./downloads.css";
-@import "./trophies.css";
-@import "./drawer.css";
-@import "./achievements.css";
-@import "./manage.css";
 @import "./downloads-hub.css";
 @import "./playtime.css";
 @import "./aero-toolbar.css";
@@ -18,7 +14,6 @@
 @import "./steamgrid.css";
 @import "./profile.css";
 @import "./friends.css";
-@import "./critic.css";
 @import "./gamepad.css";
 @import "./screenshots.css";
 @import "./screenshot-share.css";

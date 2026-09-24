@@ -32,7 +32,6 @@ import {
 import {
   enrichAchievementsData,
   renderDrawerDlcs,
-  updateDrawerTabArrows,
 } from "../drawer/drawer-view";
 import { renderAchievementSections } from "../drawer/drawer-widgets";
 import { renderDlcRows } from "../dlc/dlc-manager";
@@ -53,32 +52,16 @@ import {
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
 document.addEventListener("wheel", (e) => {
-  const scrollableBar = (e.target as HTMLElement)?.closest(".drawer-tabs, .drawer-tabs-wrapper, .ach-scope-segment, .col-quick-presets, .col-presets-track-wrapper") as HTMLElement | null;
-  const targetBar = scrollableBar?.classList.contains("drawer-tabs-wrapper")
-    ? (scrollableBar.querySelector(".drawer-tabs") as HTMLElement | null)
-    : scrollableBar?.classList.contains("col-presets-track-wrapper")
-      ? (scrollableBar.querySelector(".col-quick-presets") as HTMLElement | null)
-      : scrollableBar;
+  const scrollableBar = (e.target as HTMLElement)?.closest(".gp-tabs, .col-quick-presets, .col-presets-track-wrapper") as HTMLElement | null;
+  const targetBar = scrollableBar?.classList.contains("col-presets-track-wrapper")
+    ? (scrollableBar.querySelector(".col-quick-presets") as HTMLElement | null)
+    : scrollableBar;
   if (targetBar && e.deltaY !== 0 && targetBar.scrollWidth > targetBar.clientWidth) {
     e.preventDefault();
     targetBar.scrollLeft += e.deltaY;
-    if (targetBar.id === "col-presets-scrollable") {
-      updateColPresetArrows();
-    } else {
-      updateDrawerTabArrows();
-    }
+    if (targetBar.id === "col-presets-scrollable") updateColPresetArrows();
   }
 }, { passive: false });
-
-let arrowsResizeRaf = 0;
-window.addEventListener("resize", () => {
-  if (arrowsResizeRaf) return;
-  arrowsResizeRaf = requestAnimationFrame(() => {
-    arrowsResizeRaf = 0;
-    updateDrawerTabArrows();
-    updateColPresetArrows();
-  });
-});
 
 document.addEventListener("keydown", (e) => {
   if (S.isRecordingScreenshotHotkey) {

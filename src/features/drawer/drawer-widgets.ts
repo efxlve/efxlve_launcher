@@ -151,7 +151,6 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
       <div class="hub-goygoy-box clickable" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="${i18nT("critic.readOnGoygoy")}">
         <div class="goygoy-box-top">
           <div class="goygoy-badge-top">
-            <span class="goygoy-pulse-dot"></span>
             <span class="goygoy-brand"><strong>Goygoy</strong> Engine</span>
             <span class="goygoy-chip">${i18nT("critic.specialReview")}</span>
           </div>
@@ -794,8 +793,8 @@ export function renderOverviewMediaSpotlight(s: EpicSummary): string {
   const recent = screenshots.slice(0, 3);
 
   const headerRight = `
-    <div style="display:flex;align-items:center;gap:6px">
-      <span class="hub-card-hotkey" title="${i18nT("media.hotkeyTitle")}">${esc(S.screenshotHotkeyName)}</span>
+    <div class="hub-card-tools">
+      <span class="kbd" title="${i18nT("media.hotkeyTitle")}">${esc(S.screenshotHotkeyName)}</span>
       <button class="hub-card-link" data-act="drawer-tab" data-tab="screenshots" data-id="${s.appName}">
         <span>${i18nT("media.all")}</span> ${icon("chevron-right", 12)}
       </button>
@@ -1058,7 +1057,7 @@ export function isMacSys(type: string): boolean {
 export function renderBackupListHtml(appName: string): string {
   const list = S.gameBackupsMap.get(appName) || [];
   if (list.length === 0) {
-    return `<div style="color:#64748b;font-size:12px;padding:6px 0">${i18nT("ach.noBackup")}</div>`;
+    return `<div class="backup-empty">${i18nT("ach.noBackup")}</div>`;
   }
   return list
     .map(
@@ -1072,8 +1071,8 @@ export function renderBackupListHtml(appName: string): string {
         <button class="btn ghost small" data-act="manage-restore-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.restoreTitle")}">
           ${i18nT("ach.restore")}
         </button>
-        <button class="btn ghost small" data-act="manage-delete-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.deleteTitle")}" style="color:#ef4444">
-          ${icon("trash", 12)}
+        <button class="icon-btn danger" data-act="manage-delete-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.deleteTitle")}">
+          ${icon("trash", 14)}
         </button>
       </div>
     </div>

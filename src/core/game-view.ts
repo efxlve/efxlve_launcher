@@ -109,7 +109,7 @@ export function epicArt(s: EpicSummary): string {
  * 500-game library just to flip a heart is the single most expensive
  * interaction in the app.
  */
-export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): void {
+export function toggleFav(appName: string): void {
   const isNowFaved = !S.epicFav.has(appName);
   if (isNowFaved) S.epicFav.add(appName);
   else S.epicFav.delete(appName);
@@ -119,15 +119,10 @@ export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): voi
     .querySelectorAll<HTMLElement>(`button[data-act="epic-fav"][data-id="${appName}"]`)
     .forEach((btn) => {
       btn.classList.toggle("faved", isNowFaved);
-      if (btn.classList.contains("btn")) {
+      if (btn.classList.contains("btn") && !btn.classList.contains("icon-only")) {
         btn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? t("common.favorited") : t("common.favorite")}`;
       }
     });
-
-  if (triggerBtn) {
-    triggerBtn.classList.add("heart-burst");
-    setTimeout(() => triggerBtn.classList.remove("heart-burst"), 600);
-  }
 }
 
 /** Primary action buttons (play/install/update/cancel) for a game card. */
