@@ -7,6 +7,7 @@
 
 import { isTauri } from "../../core/constants";
 import { epicActionButtons, epicArt } from "../../core/game-view";
+import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { epicFreeGames, type EpicSummary, type FreeGame } from "../../epic";
@@ -94,15 +95,13 @@ function freeGameCard(g: FreeGame, owned: EpicSummary | null): string {
 
   return `
     <div class="pcard" ${act} tabindex="0" role="button" title="${esc(g.title)}">
-      ${cover}
-      ${badge}
-      <div class="poverlay">
-        <div class="bottom">
-          <div class="ptitle">${esc(g.title)}</div>
-          <div class="ptitle" style="font-size:12px;font-weight:500;color:#c4c5ce">${esc(dateLabel)}</div>
-          ${action}
-        </div>
+      <div class="pcard-art">
+        ${cover}
+        ${badge}
+        ${action ? `<div class="poverlay"><div class="bottom">${action}</div></div>` : ""}
       </div>
+      <div class="pcard-title">${esc(g.title)}</div>
+      <div class="pcard-meta">${esc(dateLabel)}</div>
     </div>`;
 }
 
@@ -110,13 +109,13 @@ function freeGameCard(g: FreeGame, owned: EpicSummary | null): string {
 export function renderFreeGamesGrid(): string {
   const data = S.freeGames;
   if (!data) {
-    return `<div class="empty">${t("lib.noGames")}</div>`;
+    return `<div class="empty-state"><span class="spinner"></span></div>`;
   }
   const items = [...data.current, ...data.upcoming].filter((game) => !game.mobile);
   if (items.length === 0) {
-    return `<div class="empty">${t("lib.noGames")}</div>`;
+    return `<div class="empty-state">${icon("sparkles", 36)}<h3>${t("lib.noGames")}</h3></div>`;
   }
   const ownedMap = ownedByNamespace();
   const cards = items.map((g) => freeGameCard(g, ownedMap.get(g.namespace) ?? null)).join("");
-  return `<div class="pgrid size-${S.epicCardSize}">${cards}</div>`;
+  return `<div class="pgrid">${cards}</div>`;
 }

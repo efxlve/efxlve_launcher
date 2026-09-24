@@ -157,8 +157,8 @@ export async function refreshUpdates(): Promise<void> {
     S.libraryDataRev++;
     if (S.view === "library") {
       syncLibraryUpdatesTab();
-      document.querySelectorAll<HTMLElement>(".pcard[data-id]").forEach((card) => {
-        const id = card.dataset.id;
+      document.querySelectorAll<HTMLElement>("[data-lib-item]").forEach((card) => {
+        const id = card.dataset.libItem;
         if (!id) return;
         const should = S.availableUpdates.has(id) || Boolean(S.epicSummariesMap.get(id)?.updateAvailable);
         const hasBadge = Boolean(card.querySelector(".pbadge.update"));

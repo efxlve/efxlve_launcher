@@ -16,7 +16,7 @@ import { S } from "./state";
 import { esc } from "./utils";
 
 /** Exception badge for a library tile (update / running only — never "Installed"). */
-function libraryCardBadge(s: EpicSummary): string {
+export function libraryCardBadge(s: EpicSummary): string {
   if (S.runningGames.has(s.appName)) {
     return `<span class="pbadge running">${t("lib.running")}</span>`;
   }
@@ -26,41 +26,43 @@ function libraryCardBadge(s: EpicSummary): string {
   return "";
 }
 
+/** Thin download bar shown on a library cover / list thumbnail. */
+export function libraryDlBar(appName: string, p: number | null): string {
+  return p !== null
+    ? `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${appName}" style="width:${p}%"></div></div>`
+    : "";
+}
+
 /**
- * Patch a visible library card in place (badge, hover action, download bar).
- * Never rebuilds the grid — a full library innerHTML is treated as a bug.
+ * Patch visible library items (grid cards and list rows) in place: badge,
+ * installed dimming, primary action and download bar. Never rebuilds the
+ * grid — a full library innerHTML is treated as a bug.
  */
 export function patchLibraryCardDom(appName: string): boolean {
   const s = S.epicSummariesMap.get(appName);
-  const cards = document.querySelectorAll<HTMLElement>(`.pcard[data-id="${appName}"]`);
-  if (!s || cards.length === 0) return false;
+  const items = document.querySelectorAll<HTMLElement>(`[data-lib-item="${appName}"]`);
+  if (!s || items.length === 0) return false;
   const p = epicDlProgress(appName);
   const badgeHtml = libraryCardBadge(s);
   const actions = epicActionButtons(s, "full", { primaryOnly: true });
-  cards.forEach((card) => {
-    const badge = card.querySelector(".pbadge");
+  items.forEach((item) => {
+    item.classList.toggle("not-installed", !s.installed);
+    const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
+    const badge = badgeHost?.querySelector(".pbadge");
     if (badgeHtml) {
       if (badge) badge.outerHTML = badgeHtml;
-      else card.insertAdjacentHTML("beforeend", badgeHtml);
+      else badgeHost?.insertAdjacentHTML("beforeend", badgeHtml);
     } else if (badge) {
       badge.remove();
     }
-    const bottom = card.querySelector(".poverlay .bottom");
-    if (bottom) {
-      const title = bottom.querySelector(".ptitle");
-      bottom.innerHTML = `${title ? title.outerHTML : ""}${actions}`;
-    }
-    const track = card.querySelector(".card-dl-track");
+    const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
+    if (actionHost) actionHost.innerHTML = actions;
+    const art = item.querySelector<HTMLElement>("[data-card-art]");
+    const track = art?.querySelector(".card-dl-track");
     if (p !== null) {
-      if (track) {
-        const bar = track.querySelector<HTMLElement>(".card-dl-bar");
-        if (bar) bar.style.width = `${p}%`;
-      } else {
-        card.insertAdjacentHTML(
-          "beforeend",
-          `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${appName}" style="width:${p}%"></div></div>`,
-        );
-      }
+      const bar = track?.querySelector<HTMLElement>(".card-dl-bar");
+      if (bar) bar.style.width = `${p}%`;
+      else art?.insertAdjacentHTML("beforeend", libraryDlBar(appName, p));
     } else if (track) {
       track.remove();
     }
@@ -98,7 +100,7 @@ export function epicArt(s: EpicSummary): string {
   const g = rawOf(s.appName);
   const url = g ? epicPortrait(g) : s.cover;
   if (url) return `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`;
-  return `<div class="pcover" style="background:linear-gradient(135deg,#1f202c,#3b3d52);color:#94a3b8">${icon("gamepad-2", 40)}</div>`;
+  return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
 }
 
 /**

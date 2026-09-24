@@ -35,7 +35,7 @@ import {
   SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
+import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
@@ -106,10 +106,7 @@ export const S = {
   activeCollectionId: (null) as string | null,
   epicFilter: "all" as EpicFilter,
   epicSort: ((localStorage.getItem("efxlve-sort") as EpicSort) || "recent") as EpicSort,
-  epicViewMode: ((localStorage.getItem("efxlve-view-mode") as EpicViewMode) || "grid") as EpicViewMode,
-  epicCardSize: ((localStorage.getItem("efxlve-card-size") as CardSize) || "normal") as CardSize,
-  isHeroCollapsed: localStorage.getItem("efxlve-hero-collapsed") === "1",
-  isColDropdownOpen: false,
+  epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   demoPlatinumApps: (loadStrSet(DEMO_PLAT_KEY)) as Set<string>,
   loadedAchievements: (new Map()) as Map<string, EpicAchievementsData>,
