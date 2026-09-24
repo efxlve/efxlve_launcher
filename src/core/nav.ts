@@ -1,5 +1,6 @@
 /**
- * Top navigation helpers: active-tab indicator, download badge and account chip.
+ * Sidebar shell helpers: active item, download counter, account chip, the
+ * installed-games list and back/forward history.
  *
  * These are shared by several features (downloads, collections, library) and by
  * `main.ts`, so they live in `core`.
@@ -8,54 +9,84 @@
 import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
+import { rawOf } from "./selectors";
 import { getCustomAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { t } from "../i18n";
+import { epicPortrait } from "../epic";
 import { openStoreUrl, setView } from "../features/store/store-view";
 
-/** Last (active tab + download count) the indicator was measured for. */
-let navIndicatorKey = "";
-
-/**
- * Slide the bottom highlight under the active nav tab. Skips the forced layout
- * read when nothing that affects the position changed (pass `force` on resize).
- */
-export function updateNavIndicator(force = false): void {
-  const bar = document.getElementById("titlebar");
-  const seg = document.getElementById("nav-seg");
-  const ind = document.getElementById("nav-indicator");
-  if (!bar || !seg || !ind) return;
-  const active = seg.querySelector<HTMLElement>(".nav-tab.active");
-  if (!active) {
-    ind.style.opacity = "0";
-    return;
-  }
-  const key = `${active.dataset.view ?? active.dataset.act ?? ""}|${S.downloads.size}`;
-  if (!force && S.navIndicatorReady && key === navIndicatorKey) return;
-  navIndicatorKey = key;
-  if (!S.navIndicatorReady) {
-    // Skip the slide animation on first placement (avoid sliding from width 0).
-    ind.style.transition = "none";
-    S.navIndicatorReady = true;
-    window.setTimeout(() => { ind.style.transition = ""; }, 80);
-  }
-  const barRect = bar.getBoundingClientRect();
-  const tabRect = active.getBoundingClientRect();
-  ind.style.width = `${tabRect.width}px`;
-  ind.style.transform = `translateX(${tabRect.left - barRect.left}px)`;
-  ind.style.opacity = "1";
+/** Highlight the sidebar entry that matches the current view (or open game). */
+export function updateSidebarActive(): void {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+  sidebar.querySelectorAll<HTMLElement>("[data-view], [data-act='open-store']").forEach((el) => {
+    const active = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
+    el.classList.toggle("active", active);
+  });
+  sidebar.querySelectorAll<HTMLElement>(".sb-game").forEach((el) => {
+    el.classList.toggle("active", el.dataset.id === S.currentModalAppName);
+  });
 }
 
-/** Refresh the download counter badge and re-align the nav indicator. */
+/** Refresh the download counter next to the Downloads sidebar entry. */
 export function updateBadge(): void {
-  const active = [...S.downloads.values()].filter((d) => !d.done).length;
-  const queued = S.dlQueueStatus.queue.length;
-  const count = active + queued;
+  let active = 0;
+  for (const d of S.downloads.values()) if (!d.done) active++;
+  const count = active + S.dlQueueStatus.queue.length;
   dlBadge.textContent = count > 0 ? String(count) : "";
   dlBadge.classList.toggle("hidden", count === 0);
-  // The badge is inline, so the tab width changes; force a re-measure.
-  updateNavIndicator(true);
+  updateSidebarGames();
+}
+
+/** Signature of the last painted sidebar game list; repaint only when it changes. */
+let sidebarGamesSig = "";
+
+/**
+ * Installed games in the sidebar (Hydra/Heroic pattern): recent first, then
+ * alphabetical. Rebuilt only when membership or a status marker changes, so
+ * progress events never touch this list.
+ */
+export function updateSidebarGames(): void {
+  const host = document.getElementById("sb-games");
+  if (!host) return;
+  const recentIdx = new Map<string, number>();
+  S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
+  const installed = S.epicSummaries.filter((s) => s.installed);
+  const collator = S.trCollator ?? new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
+  installed.sort((a, b) => {
+    const ra = recentIdx.get(a.appName);
+    const rb = recentIdx.get(b.appName);
+    if (ra !== undefined || rb !== undefined) return (ra ?? 999) - (rb ?? 999);
+    return collator.compare(a.title, b.title);
+  });
+
+  const stateOf = (app: string, update: boolean): string =>
+    S.runningGames.has(app) ? "running" : S.downloads.has(app) && !S.downloads.get(app)?.done ? "dl" : update ? "update" : "";
+
+  const sig = installed
+    .map((s) => `${s.appName}:${stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName))}`)
+    .join("|") + `|${S.currentModalAppName ?? ""}|${S.appLanguage}`;
+  if (sig === sidebarGamesSig) return;
+  sidebarGamesSig = sig;
+
+  if (installed.length === 0) {
+    host.innerHTML = `<div class="sb-games-empty">${t("sidebar.noInstalled")}</div>`;
+    return;
+  }
+  host.innerHTML = installed
+    .map((s) => {
+      const raw = rawOf(s.appName);
+      const cover = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
+      const state = stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName));
+      const thumb = cover
+        ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
+        : `<span class="sb-game-ph">${esc((s.title[0] || "?").toUpperCase())}</span>`;
+      const marker = state ? `<span class="sb-game-state ${state}"></span>` : "";
+      return `<button class="sb-game ${s.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(s.appName)}" title="${esc(s.title)}">${thumb}<span class="sb-game-title">${esc(s.title)}</span>${marker}</button>`;
+    })
+    .join("");
 }
 
 /** Reflect the offline-mode state on the top-bar network chip. */
@@ -69,8 +100,10 @@ export function updateOfflineModeUi(): void {
   btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
 }
 
-/** Refresh the account chip in the top bar. */
+/** Refresh the account chip, the active sidebar item and the installed-games list. */
 export function updateChrome(): void {
+  updateSidebarActive();
+  updateSidebarGames();
   const acc = document.getElementById("account");
   if (acc) {
     const name = S.epicAccount || t("nav.notLoggedIn");

@@ -15,13 +15,14 @@ import { toast } from "../../core/toast";
 import { EPIC_STORE_URL, epicFriends, epicGetPlayerProfile } from "../../epic";
 import { localizeMessage, t } from "../../i18n";
 import type { View } from "../../core/types";
+/** Store webview bounds: everything right of the sidebar and below the window bar. */
 export function storeRect(): { x: number; y: number; width: number; height: number } {
-  const titlebar = document.getElementById("titlebar");
-  const top = titlebar ? titlebar.offsetHeight : 0;
+  const left = document.getElementById("sidebar")?.offsetWidth ?? 0;
+  const top = document.getElementById("winbar")?.offsetHeight ?? 0;
   return {
-    x: 0,
+    x: left,
     y: top,
-    width: window.innerWidth,
+    width: Math.max(100, window.innerWidth - left),
     height: Math.max(100, window.innerHeight - top),
   };
 }
@@ -32,37 +33,7 @@ export function syncStoreViewSize(): void {
 }
 
 export function renderStoreLoadingScreen(): string {
-  return `
-    <div class="store-loading-screen">
-      <div class="store-loading-canvas">
-        <div class="store-loading-brand">
-          <div class="store-loading-mark">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-              <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
-              <path d="M2 7h20"/>
-            </svg>
-          </div>
-          <div class="store-loading-logotype">
-            <span class="store-loading-brand-main">EPIC GAMES STORE</span>
-            <span class="store-loading-brand-sub">${t("store.embedded")}</span>
-          </div>
-        </div>
-
-        <div class="store-loading-track-wrap">
-          <div class="store-loading-track">
-            <div class="store-loading-laser"></div>
-          </div>
-        </div>
-
-        <div class="store-loading-status-wrap">
-          <span class="store-loading-status-text">${t("store.starting")}</span>
-          <span class="store-loading-status-dots"><span>.</span><span>.</span><span>.</span></span>
-        </div>
-      </div>
-    </div>
-  `;
+  return `<div class="store-loading-screen"><span class="spinner"></span><span>${t("store.starting")}</span></div>`;
 }
 
 export async function openStore(): Promise<void> {

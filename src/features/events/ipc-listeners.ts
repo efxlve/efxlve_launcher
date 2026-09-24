@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Settings, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, Gamepad2, LayoutGrid, Search, Settings, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -136,7 +136,7 @@ export async function initApp(hooks: {
 }): Promise<void> {
   updateMaxIcon();
   createIcons({
-    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell },
+    icons: { Store, LayoutGrid, Download, CircleUserRound, Settings, Gamepad2, Bell, Search },
   });
   loadNotifications();
   initAutoUpdate();
