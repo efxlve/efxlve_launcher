@@ -783,13 +783,6 @@ document.addEventListener("click", (e) => {
         });
     }
     openEpicModal(id, false);
-  } else if (act === "dlc-back") {
-    setView("library");
-    render();
-  } else if (act === "dlc-discover-store" && id) {
-    const s = S.epicSummaries.find((x) => x.appName === id);
-    const title = s ? s.title : id;
-    void openStoreUrl(epicStorePageUrl(title), "store");
   } else if (act === "selective-close") {
     closeSelectiveModal();
   } else if (act === "selective-overlay-close") {
@@ -1409,9 +1402,13 @@ document.addEventListener("click", (e) => {
     if (S.eosOverlay?.installed && S.eosOverlay.path) {
       void epicOpenFolderPath(S.eosOverlay.path).catch((e: unknown) => toast(String(e), "err"));
     }
-  } else if (act === "toggle-downloads-settings") {
-    S.downloadsSettingsOpen = !S.downloadsSettingsOpen;
+  } else if (act === "open-download-settings") {
+    closeAllModals();
+    S.settingsSection = "downloads";
+    setView("settings");
+    pushNavHistory({ view: "settings" });
     render();
+    void loadSettingsView();
   } else if (act === "toggle-speed-bits") {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));

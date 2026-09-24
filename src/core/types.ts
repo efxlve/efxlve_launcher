@@ -6,7 +6,7 @@
  */
 
 /** Top-level application view/route. */
-export type View = "library" | "downloads" | "settings" | "dlc-manager" | "profile" | "store";
+export type View = "library" | "downloads" | "settings" | "profile" | "store" | "tv";
 
 /** Account/setup lifecycle phase. */
 export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
