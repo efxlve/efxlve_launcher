@@ -36,7 +36,7 @@ let lastHudKey = "";
 
 export function updateGamepadHud(active = true): void {
   const hud = ensureGamepadHud();
-  if (!active || !S.gamepadPolling) {
+  if (!active || !S.gamepadPolling || !S.epicAccount || S.epicPhase !== "library" || S.authLoading) {
     hud.classList.add("hidden");
     return;
   }
@@ -164,6 +164,7 @@ export function gamepadLoop(): void {
       }
     } else if (btnLB || btnRB) {
       // L1/LB & R1/RB: switch tab / filter
+      if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
       S.lastGamepadActionTime = now;
       handleGamepadTabSwitch(btnRB ? 1 : -1);
     } else if (btnY) {

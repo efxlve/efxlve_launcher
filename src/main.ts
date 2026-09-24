@@ -20,6 +20,7 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
+import { renderOnboarding } from "./features/onboarding/onboarding-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
@@ -43,6 +44,18 @@ function scheduleRender(): void {
 function render(): void {
   // When leaving the store, hard-hide the native webview to avoid overlap.
   if (S.view !== "store" && S.storeShown) hideStore();
+
+  const isAuthed = Boolean(S.epicAccount) && S.epicPhase === "library" && !S.authLoading;
+  document.body.classList.toggle("auth-mode", !isAuthed);
+
+  if (!isAuthed) {
+    if (S.storeShown) hideStore();
+    closeAllModals();
+    viewEl.innerHTML = renderOnboarding();
+    updateChrome();
+    presenceSync();
+    return;
+  }
 
   document.querySelectorAll("#nav button").forEach((b) => {
     const el = b as HTMLElement;

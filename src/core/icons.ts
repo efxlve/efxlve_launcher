@@ -74,10 +74,16 @@ export type IconName =
   | "check-check"
   | "github"
   | "twitter"
-  | "mail";
+  | "mail"
+  | "arrow-right"
+  | "clipboard";
 
 /** SVG path bodies keyed by icon name. */
 const ICON_PATHS: Record<string, string> = {
+  "arrow-right":
+    '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  clipboard:
+    '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   mail:
     '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
   github:
