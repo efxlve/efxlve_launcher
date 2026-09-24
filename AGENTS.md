@@ -246,6 +246,9 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 3. GitHub Actions imzalı build alır, release'i yayınlar (`releaseDraft: false`) ve `latest.json` üretir. Kurulu istemciler bir sonraki açılışta/odaklanmada güncellemeyi görür.
 
 **Kurallar & tuzaklar:**
+- **Repo ve release'ler public kalmalıdır:** updater `latest.json` ve paketleri kimlik doğrulamasız indirir; private repoda release asset'leri 404 döner (ilk kurulumda repo private olduğu için tespit edildi, public yapıldı).
+- tauri-action, `latest.json` içinde `api.github.com/.../releases/assets/<id>` URL'leri üretir; Tauri updater indirme isteğinde `Accept: application/octet-stream` gönderdiği için bu URL'ler gerçek paketi indirir (kaynak koduyla doğrulandı). Elle müdahale gerekmez.
+- Kurulumlar **NSIS `setup.exe`** ile yapılmalıdır; varsayılan `windows-x86_64` anahtarı NSIS paketine işaret eder (`updaterJsonPreferNsis: true`). MSI ile kurulan bir uygulamayı updater NSIS ile güncellemeye çalışırsa kurulum kaydı karışabilir.
 - `tauri dev` ve elle taşınan exe **kendini güncellemez**; yalnızca kurulum paketiyle (NSIS/MSI) kurulmuş uygulama güncellenir. İlk updater'lı sürüm "bootstrap"tır.
 - Release taslak (draft) kalırsa `/releases/latest/download/latest.json` görünmez; yayınlanmalıdır.
 - Yerel imzalı build için: `$env:TAURI_SIGNING_PRIVATE_KEY` + `$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD` ortam değişkenleri şart (parolasız anahtar CLI'yı interaktif istemde kilitler; anahtar mutlaka parolalı üretilir).
