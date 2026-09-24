@@ -74,12 +74,18 @@ export function updateChrome(): void {
   const acc = document.getElementById("account");
   if (acc) {
     const name = S.epicAccount || t("nav.notLoggedIn");
-    if (acc.dataset.acct !== (S.epicAccount || "")) {
-      acc.dataset.acct = S.epicAccount || "";
+    const accountId = S.epicAccountId || S.epicAccount || "";
+    const customAvatar = accountId ? S.customAvatars[accountId] : null;
+    const acctState = (S.epicAccount || "") + ":" + (customAvatar ? "custom" : "none");
+
+    if (acc.dataset.acctState !== acctState) {
+      acc.dataset.acctState = acctState;
       if (S.epicAccount) {
         const initial = (S.epicAccount.trim()[0] || "?").toUpperCase();
         acc.innerHTML =
-          `<span class="account-avatar"><span class="avatar-initial">${esc(initial)}</span></span>` +
+          (customAvatar
+            ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(customAvatar)}" alt="" /></span>`
+            : `<span class="account-avatar"><span class="avatar-initial">${esc(initial)}</span></span>`) +
           `<span class="account-name">${esc(name)}</span>`;
       } else {
         acc.innerHTML =

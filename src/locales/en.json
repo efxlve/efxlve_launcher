@@ -1192,5 +1192,16 @@
   "common.cancelShort": "Cancel",
   "settings.language": "Language",
   "settings.languageDesc": "Choose the language for the launcher interface and local content.",
-  "settings.defaultTag": "Default"
+  "settings.defaultTag": "Default",
+  "profile.avatarUpdated": "Profile photo updated",
+  "profile.avatarRemoved": "Profile photo removed",
+  "profile.avatarTitle": "Profile Photo",
+  "profile.avatarDesc": "This photo is stored locally on your PC and is private to this Epic Games account.",
+  "profile.choosePhoto": "Choose New Photo",
+  "profile.removePhoto": "Remove Photo",
+  "profile.changeAvatarTitle": "Change profile photo (Local)",
+  "profile.uploadAvatarTitle": "Add profile photo (Local)",
+  "profile.editPhoto": "Change",
+  "profile.avatarInvalidFile": "Please select a valid image file.",
+  "profile.avatarLoadError": "An error occurred while loading the image."
 }

@@ -595,13 +595,16 @@
 }
 
 .apple-pill-btn.secondary {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
 }
 
 .apple-pill-btn.secondary:hover {
-  filter: brightness(1.1);
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
 }
 
 .apple-pill-btn.update {

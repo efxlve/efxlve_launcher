@@ -125,6 +125,7 @@
   width: 82px;
   height: 82px;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .ps5-avatar {
@@ -137,6 +138,15 @@
   justify-content: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   border: 2.5px solid rgba(139, 92, 246, 0.45);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ps5-avatar-wrap:hover .ps5-avatar {
+  border-color: rgba(192, 132, 252, 0.7);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.45);
+  transform: scale(1.02);
 }
 
 .ps5-avatar-letter {
@@ -144,6 +154,32 @@
   font-weight: 800;
   color: #ffffff;
   user-select: none;
+}
+
+.ps5-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.ps5-avatar-edit-badge {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(9, 12, 20, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.ps5-avatar-wrap:hover .ps5-avatar-edit-badge {
+  opacity: 1;
 }
 
 .ps5-avatar-pip {
@@ -156,6 +192,7 @@
   border: 2.5px solid #090c14;
   background: #22c55e;
   box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+  z-index: 2;
 }
 
 .ps5-avatar-pip.offline {
@@ -263,140 +300,177 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Right Section: Level Rail + 4-Tier Trophy Showcase */
-.ps5-hero-right {
+/* Right Section: Unified Gamer Prestige Card (Steam Level & PS5 Trophies) */
+.ps5-gamer-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
+  background: rgba(13, 16, 25, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px 20px;
+  width: 440px;
+  max-width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
 }
 
-.ps5-hero-right-top {
+.ps5-gamer-card-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
 }
 
-.ps5-level-box {
+.ps5-level-crest-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 4px 12px 4px 6px;
+  gap: 12px;
+  min-width: 0;
 }
 
-.ps5-level-crest {
-  display: inline-flex;
+.ps5-level-emblem {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(99, 102, 241, 0.16));
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(99, 102, 241, 0.2));
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  border-radius: 14px;
-  padding: 2px 8px;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.ps5-level-crest-icon {
+.ps5-emblem-icon {
   display: flex;
   align-items: center;
   color: #c084fc;
+  line-height: 1;
+  margin-bottom: -1px;
 }
 
-.ps5-level-crest-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  color: #d8ccff;
-}
-
-.ps5-level-crest-val {
+.ps5-emblem-num {
   font-size: 13px;
   font-weight: 800;
   color: #ffffff;
+  font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-.ps5-level-rail-wrap {
+.ps5-level-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ps5-level-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.ps5-level-rail-track {
-  width: 100px;
+.ps5-level-badge-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ps5-level-pct-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.12);
+  border: 1px solid rgba(192, 132, 252, 0.25);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps5-level-xp-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps5-level-sub-dot { color: #475569; }
+.ps5-xp-next-tip { color: #a78bfa; font-weight: 600; }
+
+.ps5-level-progress-bar {
+  width: 100%;
   height: 5px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 99px;
   overflow: hidden;
+  margin: 12px 0 14px;
 }
 
-.ps5-level-rail-fill {
+.ps5-level-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #8b5cf6, #c084fc);
   border-radius: 99px;
-  transition: width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ps5-level-rail-pct {
-  font-size: 11px;
-  font-weight: 700;
-  color: #cbd5e1;
-  font-variant-numeric: tabular-nums;
-}
-
-.ps5-trophy-tier-showcase {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.075);
-  border-radius: 14px;
-  padding: 8px 18px;
-}
-
-.ps5-tier-col {
-  display: inline-flex;
+.ps5-gamer-card-trophies {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
   align-items: center;
   gap: 8px;
+  padding-top: 2px;
 }
 
-.ps5-tier-icon {
+.ps5-tier-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ps5-tier-cell .ps5-tier-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.ps5-tier-data {
+.ps5-tier-cell .ps5-tier-info {
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.ps5-tier-count {
+.ps5-tier-cell .ps5-tier-count {
   font-size: 15px;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.1;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
 
-.ps5-tier-label {
-  font-size: 9.5px;
+.ps5-tier-cell .ps5-tier-label {
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.75;
   line-height: 1;
 }
 
-.ps5-tier-col.plat .ps5-tier-icon, .ps5-tier-col.plat .ps5-tier-count { color: #c084fc; }
-.ps5-tier-col.gold .ps5-tier-icon, .ps5-tier-col.gold .ps5-tier-count { color: #fbbf24; }
-.ps5-tier-col.silver .ps5-tier-icon, .ps5-tier-col.silver .ps5-tier-count { color: #cbd5e1; }
-.ps5-tier-col.bronze .ps5-tier-icon, .ps5-tier-col.bronze .ps5-tier-count { color: #fb923c; }
+.ps5-tier-cell.plat .ps5-tier-icon, .ps5-tier-cell.plat .ps5-tier-count { color: #c084fc; }
+.ps5-tier-cell.gold .ps5-tier-icon, .ps5-tier-cell.gold .ps5-tier-count { color: #fbbf24; }
+.ps5-tier-cell.silver .ps5-tier-icon, .ps5-tier-cell.silver .ps5-tier-count { color: #cbd5e1; }
+.ps5-tier-cell.bronze .ps5-tier-icon, .ps5-tier-cell.bronze .ps5-tier-count { color: #fb923c; }
 
-.ps5-tier-divider {
+.ps5-tier-sep {
   width: 1px;
   height: 22px;
   background: rgba(255, 255, 255, 0.08);
@@ -409,19 +483,8 @@
     padding: 22px 20px;
     gap: 20px;
   }
-  .ps5-hero-right {
-    align-items: flex-start;
+  .ps5-gamer-card {
     width: 100%;
-    gap: 12px;
-  }
-  .ps5-hero-right-top {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .ps5-trophy-tier-showcase {
-    width: 100%;
-    justify-content: space-between;
-    box-sizing: border-box;
   }
 }
 
@@ -1313,179 +1376,84 @@
   transform: scale(1.08);
 }
 
-/* Friends Lounge (Sidebar) */
-.friends-compact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-height: 380px;
-  max-height: 520px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 2px;
-}
-
-.friend-compact-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background: transparent;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-}
-
-.friend-compact-row:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-.friend-compact-row.fav {
-  border-left: 2px solid #8b5cf6;
-}
-
-.friend-avatar-compact {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.18));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.friend-avatar-compact .friend-avatar-letter {
-  font-size: 13px;
-  font-weight: 700;
-  color: #d8ccff;
-}
-
-.friend-star-mini {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: #0b0d14;
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #c4b5fd;
-}
-
-.friend-info-compact {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.friend-name-compact {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.friend-alias-compact {
-  font-size: 10px;
-  color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.friend-plat-badges {
-  display: flex;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-.friend-plat {
-  font-size: 9.5px;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  padding: 1px 5px;
-  border: 1px solid transparent;
-}
-
-.friend-plat.steam { color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); }
-.friend-plat.psn { color: #60a5fa; background: rgba(37, 99, 235, 0.14); border-color: rgba(59, 130, 246, 0.25); }
-.friend-plat.xbl { color: #4ade80; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.25); }
-.friend-plat.nintendo { color: #f87171; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.25); }
-
-.friend-compact-row.skeleton {
-  pointer-events: none;
-}
-
-.friend-name-skeleton {
-  width: 80px;
-  height: 10px;
-  border-radius: 5px;
-}
-
-.friend-plat-skeleton {
-  width: 40px;
-  height: 9px;
-  border-radius: 4px;
-  margin-top: 3px;
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.04) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.5s infinite linear;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.ps5-friends-refresh.spinning svg {
-  animation: spin 1s linear infinite;
-}
-
-.friends-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 0;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-}
-
-.friends-state-error {
-  color: #f87171;
-}
-
-.friends-state-icon {
-  color: rgba(255, 255, 255, 0.16);
-}
-
-.sidebar-empty {
-  padding: 18px 0;
-  text-align: center;
-  color: #64748b;
-  font-size: 12px;
-}
-
 /* Progressive profile grid footer */
 .profile-grid-more {
   display: flex;
   justify-content: center;
   padding: 18px 0 4px;
+}
+
+/* Custom Avatar Management Modal */
+.ps5-avatar-modal {
+  max-width: 360px;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #0d1019;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+}
+
+.ps5-avatar-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ps5-avatar-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.ps5-avatar-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.ps5-avatar-preview-wrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid rgba(139, 92, 246, 0.55);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+}
+
+.ps5-avatar-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ps5-avatar-modal-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.ps5-avatar-modal-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.ps5-avatar-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
 }

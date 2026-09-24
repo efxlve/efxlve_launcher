@@ -1,3 +1,4 @@
+import { getCustomAvatar } from "./profile-avatar";
 /**
  * Gamer profile page renderer (inspired by Xbox PC App and Steam Profile).
  *
@@ -430,6 +431,7 @@ export function renderProfile(): string {
   const bronzeTrophies = Math.max(0, totalUnlocked - platCount - goldTrophies - silverTrophies);
 
   const initialLetter = displayName.trim().charAt(0).toUpperCase() || "E";
+  const customAvatar = getCustomAvatar(accountId);
   const trophyLevel = Math.max(1, Math.floor(totalXp / 1000) + 1);
   const levelXp = totalXp % 1000;
   const levelPct = Math.round((levelXp / 1000) * 100);
@@ -497,11 +499,16 @@ export function renderProfile(): string {
         <div class="ps5-hero-gradient"></div>
 
         <div class="ps5-hero-content">
-          <!-- Left: Gamer Identity -->
+          <!-- Left: Gamer Identity & Custom Avatar -->
           <div class="ps5-hero-left">
-            <div class="ps5-avatar-wrap">
-              <div class="ps5-avatar">
-                <span class="ps5-avatar-letter">${esc(initialLetter)}</span>
+            <div class="ps5-avatar-wrap clickable" data-act="profile-change-avatar" title="${customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle")}">
+              <div class="ps5-avatar ${customAvatar ? "has-img" : ""}">
+                ${customAvatar
+                  ? `<img class="ps5-avatar-img" src="${esc(customAvatar)}" alt="${esc(displayName)}" />`
+                  : `<span class="ps5-avatar-letter">${esc(initialLetter)}</span>`}
+                <div class="ps5-avatar-edit-badge" title="${customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle")}">
+                  ${icon("camera", 13)}
+                </div>
               </div>
               <span class="ps5-avatar-pip ${S.offlineMode ? "offline" : "online"}" title="${S.offlineMode ? t("nav.offline") : t("profile.online")}"></span>
             </div>
@@ -529,20 +536,25 @@ export function renderProfile(): string {
             </div>
           </div>
 
-          <!-- Right: Level Rail & 4-Tier Trophy Showcase -->
-          <div class="ps5-hero-right">
-            <div class="ps5-hero-right-top">
-              <div class="ps5-level-box" title="${t("profile.xpToNext", { n: (1000 - levelXp).toLocaleString() })}">
-                <div class="ps5-level-crest">
-                  <span class="ps5-level-crest-icon">${epicPlatinumIcon(13)}</span>
-                  <span class="ps5-level-crest-label">${t("profile.level")}</span>
-                  <span class="ps5-level-crest-val">${trophyLevel}</span>
+          <!-- Right: Unified Gamer Prestige Card (Steam Level & PS5 Trophy Showcase) -->
+          <div class="ps5-gamer-card">
+            <!-- Card Top: Level Crest + XP Stats + Refresh Button -->
+            <div class="ps5-gamer-card-top">
+              <div class="ps5-level-crest-wrap">
+                <div class="ps5-level-emblem" title="${t("profile.level")} ${trophyLevel}">
+                  <span class="ps5-emblem-icon">${epicPlatinumIcon(11)}</span>
+                  <span class="ps5-emblem-num">${trophyLevel}</span>
                 </div>
-                <div class="ps5-level-rail-wrap">
-                  <div class="ps5-level-rail-track">
-                    <div class="ps5-level-rail-fill" style="width: ${levelPct}%"></div>
+                <div class="ps5-level-text-col">
+                  <div class="ps5-level-title-row">
+                    <span class="ps5-level-badge-label">${t("profile.level")} ${trophyLevel}</span>
+                    <span class="ps5-level-pct-badge">%${levelPct}</span>
                   </div>
-                  <span class="ps5-level-rail-pct">%${levelPct}</span>
+                  <div class="ps5-level-xp-sub">
+                    <span>${levelXp.toLocaleString()} / 1.000 XP</span>
+                    <span class="ps5-level-sub-dot">•</span>
+                    <span class="ps5-xp-next-tip">${t("profile.xpToNext", { n: (1000 - levelXp).toLocaleString() })}</span>
+                  </div>
                 </div>
               </div>
 
@@ -551,37 +563,43 @@ export function renderProfile(): string {
               </button>
             </div>
 
-            <div class="ps5-trophy-tier-showcase">
-              <div class="ps5-tier-col plat" title="${t("profile.platLabel")}: ${platCount}">
+            <!-- Card Middle: Smooth XP Progress Rail -->
+            <div class="ps5-level-progress-bar">
+              <div class="ps5-level-progress-fill" style="width: ${levelPct}%"></div>
+            </div>
+
+            <!-- Card Bottom: 4-Tier Trophy Pillars (Platin, Altın, Gümüş, Bronz) -->
+            <div class="ps5-gamer-card-trophies">
+              <div class="ps5-tier-cell plat" title="${t("profile.platLabel")}: ${platCount}">
                 <div class="ps5-tier-icon">${epicPlatinumIcon(15)}</div>
-                <div class="ps5-tier-data">
+                <div class="ps5-tier-info">
                   <span class="ps5-tier-count">${platCount}</span>
                   <span class="ps5-tier-label">${t("profile.platLabel")}</span>
                 </div>
               </div>
-              <div class="ps5-tier-divider"></div>
+              <div class="ps5-tier-sep"></div>
 
-              <div class="ps5-tier-col gold" title="${t("profile.goldLabel")}: ${goldTrophies}">
+              <div class="ps5-tier-cell gold" title="${t("profile.goldLabel")}: ${goldTrophies}">
                 <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
-                <div class="ps5-tier-data">
+                <div class="ps5-tier-info">
                   <span class="ps5-tier-count">${goldTrophies}</span>
                   <span class="ps5-tier-label">${t("profile.goldLabel")}</span>
                 </div>
               </div>
-              <div class="ps5-tier-divider"></div>
+              <div class="ps5-tier-sep"></div>
 
-              <div class="ps5-tier-col silver" title="${t("profile.silverLabel")}: ${silverTrophies}">
+              <div class="ps5-tier-cell silver" title="${t("profile.silverLabel")}: ${silverTrophies}">
                 <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
-                <div class="ps5-tier-data">
+                <div class="ps5-tier-info">
                   <span class="ps5-tier-count">${silverTrophies}</span>
                   <span class="ps5-tier-label">${t("profile.silverLabel")}</span>
                 </div>
               </div>
-              <div class="ps5-tier-divider"></div>
+              <div class="ps5-tier-sep"></div>
 
-              <div class="ps5-tier-col bronze" title="${t("profile.bronzeLabel")}: ${bronzeTrophies}">
+              <div class="ps5-tier-cell bronze" title="${t("profile.bronzeLabel")}: ${bronzeTrophies}">
                 <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
-                <div class="ps5-tier-data">
+                <div class="ps5-tier-info">
                   <span class="ps5-tier-count">${bronzeTrophies}</span>
                   <span class="ps5-tier-label">${t("profile.bronzeLabel")}</span>
                 </div>
