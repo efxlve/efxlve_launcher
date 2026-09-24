@@ -81,13 +81,15 @@ async fn run_with_timeout(
     args: &[&str],
     timeout_secs: u64,
 ) -> Result<std::process::Output, LegendaryError> {
-    let fut = tokio::process::Command::new(bin)
-        .args(args)
+    let mut cmd = tokio::process::Command::new(bin);
+    cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .output();
+        .kill_on_drop(true);
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+    let fut = cmd.output();
     let output = tokio::time::timeout(Duration::from_secs(timeout_secs), fut)
         .await
         .map_err(|_| LegendaryError::Timeout)?

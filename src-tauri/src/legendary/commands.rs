@@ -1335,12 +1335,16 @@ fn scan_uninstall_registry() -> Vec<(String, Option<String>, Option<String>)> {
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
     ];
 
+    #[cfg(windows)]
+    use std::os::windows::process::CommandExt;
+
     let mut result = Vec::new();
     for root in roots {
-        let output = match std::process::Command::new("reg")
-            .args(["query", root, "/s"])
-            .output()
-        {
+        let mut cmd = std::process::Command::new("reg");
+        cmd.args(["query", root, "/s"]);
+        #[cfg(windows)]
+        cmd.creation_flags(0x08000000);
+        let output = match cmd.output() {
             Ok(o) if o.status.success() => o,
             _ => continue,
         };
@@ -1551,6 +1555,8 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
 
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
     let stdout = child.stdout.take();
@@ -1830,6 +1836,8 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
     let bin = resolve_or_err(&app)?;
     let mut cmd = tokio::process::Command::new(&bin);
     cmd.args(["sync-saves", &app_name]);
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
     let out = cmd.output().await.map_err(|e| e.to_string())?;
 
     let stdout = String::from_utf8_lossy(&out.stdout);
