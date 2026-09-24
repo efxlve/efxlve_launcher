@@ -2219,3 +2219,13 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Ölü anahtar temizliği:** Kopya `downloads.profileMax/Balanced/Low` ve `net.profileMax/Balanced/Low` (6) ile kullanılmayan `settings.netFindCdnDesc` ve `downloads.cdnNoData` silindi; anahtar sayısı 1249 → **1241** (tr/en tam eşlik, kullanılmayan 0).
 - `npm.cmd run build` yeşil.
 
+## 170. Quiet Steam/Epic Library + Real Performance
+
+Closed-beta testers called the Library "AI", busy, and unoptimized. The default view was a stacked dashboard (Apple glass rail + count chips + cinematic Free Games + Recent hero + Installed badge on every cover) and `render()` rebuilt hundreds of fat cards.
+
+- **Quiet cover wall:** Default All is a portrait grid only. Text filters (All / Installed / Favorites / Collections / Free Games; Updates only when count > 0). Header is title + one game count. Search is fixed-width with no Ctrl+F chip. Sort is one control. S/M/L rail, stats capsule, platinum banner, and Apple segmented rail are gone.
+- **Cards:** Resting DOM is cover + exception badge (Update / Running) + optional download bar. Hover is title + one primary action. No Installed badges, micro-chips, overlay icon cluster, card lift, or glow.
+- **Free Games** is a filter grid (`EpicFilter: "freegames"`), not a 16:9 shelf above All. Recently Played is sort-only.
+- **Performance:** Cached `epicVisibleSummaries` + one `Intl.Collator` per sort; `patchLibraryCardDom` for game-status / download done-fail-cancel / action UI / update badges; full `renderEpic()` resets the card chunk to 48; gamepad uses grid index + idle 80ms poll; titlebar is opaque (no `backdrop-filter`).
+- **Guardrail:** AGENTS.md Library rule — restacking glass/glow/Installed badges/shelves on All is a bug.
+

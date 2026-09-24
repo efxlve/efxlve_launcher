@@ -5,23 +5,7 @@
        Split from the former monolithic src/styles.css to keep every file
        small, cohesive and easy to review (see docs/REFACTOR_PLAN.md).
    ========================================================================== */
-/* --- Aero Unified Single-Row Toolbar --- */
-.lib-unified-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.unified-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  transition: all 0.25s ease;
-}
+/* Legacy Aero pills (unused on the quiet library toolbar; kept for leftover dropdowns). */
 
 .unified-pill {
   display: inline-flex;

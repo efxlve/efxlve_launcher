@@ -1,82 +1,6 @@
 /* ==========================================================================
-   Library Layout, Grid & Game Cards (PS5 Console Dark Aesthetic)
+   Library Layout, Grid & Game Cards (quiet cover wall)
    ========================================================================== */
-
-/* --- SECTION HEADINGS & HYBRID STAGES --- */
-.lib-content-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  width: 100%;
-}
-
-.lib-shelves-stage {
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
-  width: 100%;
-}
-
-.lib-grid-stage {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.lib-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2px;
-}
-
-.lib-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 0.2px;
-}
-
-.lib-section-title svg {
-  color: var(--primary, #8b5cf6);
-}
-
-/* Card size toggle (S | M | L) */
-.card-size-toggle {
-  display: flex;
-  background: var(--ps5-surface-2, #151822);
-  border: 1px solid var(--ps5-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 9px;
-  padding: 2px;
-}
-
-.card-size-toggle button {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 5px 9px;
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  font-size: 11.5px;
-  font-weight: 700;
-  transition: all 0.15s ease;
-}
-
-.card-size-toggle button:hover {
-  color: #ffffff;
-}
-
-.card-size-toggle button.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
 
 /* --- GAME GRID & LARGE PORTRAIT CARDS --- */
 /* Default: normal size (220px) */
@@ -101,14 +25,12 @@
 .pcard {
   position: relative;
   aspect-ratio: 3/4;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: #0d1017;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.22s ease,
-              box-shadow 0.22s ease;
+  transition: border-color 0.12s ease;
   contain: layout paint;
 }
 
@@ -118,10 +40,9 @@
   contain-intrinsic-size: auto 293px;
 }
 
-.pcard:hover {
-  transform: translateY(-5px);
-  border-color: rgba(37, 99, 235, 0.55);
-  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.9), 0 0 20px -2px rgba(37, 99, 235, 0.35);
+.pcard:hover,
+.pcard:focus-visible {
+  border-color: rgba(255, 255, 255, 0.22);
   z-index: 5;
 }
 
@@ -131,11 +52,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.pcard:hover > img {
-  transform: scale(1.04);
 }
 
 .pgrid .pcover {
@@ -154,137 +70,53 @@
   z-index: 3;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(7, 9, 14, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
   height: 20px;
   padding: 0 7px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  background: rgba(7, 9, 14, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   pointer-events: none;
 }
 
-.pbadge.ready {
-  color: #10b981;
-  background: rgba(6, 9, 13, 0.92);
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 8px rgba(16, 185, 129, 0.25);
-}
-
-.pbadge.ready .dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+.pbadge.running {
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .pbadge.update {
-  color: #f59e0b;
-  background: rgba(6, 9, 13, 0.92);
-  border-color: rgba(245, 158, 11, 0.4);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 0 8px rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
-.pbadge.update .dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 6px #f59e0b;
+.pbadge.soon,
+.pbadge.now {
+  color: #d8d9e0;
 }
 
-/* Platinum trophy badge */
-.platinum-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 3;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: rgba(15, 10, 28, 0.9);
-  border: 1px solid rgba(168, 85, 247, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 10px rgba(168, 85, 247, 0.35);
-  pointer-events: none;
-}
-
-/* Card hover layer */
-.pcard .shade {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  background: linear-gradient(to top, rgba(7, 9, 14, 0.96) 20%, rgba(7, 9, 14, 0.55) 65%, rgba(7, 9, 14, 0.2) 100%);
-}
-
-.pcard:hover .shade,
-.pcard:hover .poverlay {
-  opacity: 1;
-}
-
-.poverlay {
+.pcard .poverlay {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 12px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.12s ease;
   pointer-events: none;
   z-index: 4;
+  background: linear-gradient(to top, rgba(7, 9, 14, 0.92) 0%, rgba(7, 9, 14, 0.35) 55%, transparent 100%);
+}
+
+.pcard:hover .poverlay,
+.pcard:focus-visible .poverlay {
+  opacity: 1;
 }
 
 .poverlay button {
   pointer-events: auto;
-}
-
-.poverlay .top {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.iconbtn {
-  background: rgba(18, 20, 29, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.16s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-
-.iconbtn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-.iconbtn.faved svg {
-  fill: #f43f5e;
-  color: #f43f5e;
-}
-
-.iconbtn.faved:hover svg {
-  fill: #ff4766;
-  color: #ff4766;
-  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.45));
 }
 
 .poverlay .bottom {
@@ -319,60 +151,37 @@
 
 .card-dl-bar {
   height: 100%;
-  background: linear-gradient(90deg, #2563eb, #3b82f6);
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.7);
+  background: #3b82f6;
   transition: width 0.2s ease;
 }
 
-/* Platinum category banner */
-.plat-category-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(135deg, rgba(30, 20, 50, 0.85) 0%, rgba(15, 12, 25, 0.95) 100%);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  border-radius: 14px;
-  padding: 16px 24px;
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
+/* Library hover actions: solid fills, no glow. */
+.pgrid .btn.play,
+.pgrid .btn.install,
+.pgrid .btn.update,
+.pgrid .btn.primary,
+.pgrid .btn.running {
+  box-shadow: none;
+  background-image: none;
 }
 
-.plat-banner-icon {
-  color: #c084fc;
+.pgrid .btn.play {
+  background: #059669;
 }
 
-.plat-banner-info {
-  flex: 1;
-  margin: 0 18px;
+.pgrid .btn.install,
+.pgrid .btn.update {
+  background: #2563eb;
 }
 
-.plat-banner-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #fff;
+.pgrid .btn.primary {
+  background: #4f46e5;
 }
 
-.plat-banner-desc {
-  font-size: 12.5px;
-  color: #cbd5e1;
-  margin-top: 2px;
-}
-
-.plat-banner-stat {
-  text-align: right;
-}
-
-.plat-banner-stat .val {
-  font-size: 24px;
-  font-weight: 800;
-  color: #e9d5ff;
-  font-variant-numeric: tabular-nums;
-}
-
-.plat-banner-stat .lbl {
-  font-size: 11px;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.pgrid .btn.play:hover,
+.pgrid .btn.install:hover,
+.pgrid .btn.update:hover,
+.pgrid .btn.primary:hover {
+  box-shadow: none;
+  transform: none;
 }

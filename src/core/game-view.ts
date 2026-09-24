@@ -1,5 +1,5 @@
 /**
- * Shared game presentation helpers used by library cards, shelves and the hero.
+ * Shared game presentation helpers used by library cards and the detail drawer.
  *
  * These read shared state (S) and return HTML fragments. They are used by more
  * than one feature module, so they live in `core` rather than inside a single
@@ -15,13 +15,66 @@ import { rawOf } from "./selectors";
 import { S } from "./state";
 import { esc } from "./utils";
 
+/** Exception badge for a library tile (update / running only — never "Installed"). */
+function libraryCardBadge(s: EpicSummary): string {
+  if (S.runningGames.has(s.appName)) {
+    return `<span class="pbadge running">${t("lib.running")}</span>`;
+  }
+  if (s.updateAvailable || S.availableUpdates.has(s.appName)) {
+    return `<span class="pbadge update">${t("lib.updateBadge")}</span>`;
+  }
+  return "";
+}
+
 /**
- * Repaints the action buttons for a game right after its download state changes
- * (e.g. "Install" -> "Downloading"). The library grid re-renders and the open
- * drawer is refreshed in place so the label never stays stale.
+ * Patch a visible library card in place (badge, hover action, download bar).
+ * Never rebuilds the grid — a full library innerHTML is treated as a bug.
+ */
+export function patchLibraryCardDom(appName: string): boolean {
+  const s = S.epicSummariesMap.get(appName);
+  const cards = document.querySelectorAll<HTMLElement>(`.pcard[data-id="${appName}"]`);
+  if (!s || cards.length === 0) return false;
+  const p = epicDlProgress(appName);
+  const badgeHtml = libraryCardBadge(s);
+  const actions = epicActionButtons(s, "full", { primaryOnly: true });
+  cards.forEach((card) => {
+    const badge = card.querySelector(".pbadge");
+    if (badgeHtml) {
+      if (badge) badge.outerHTML = badgeHtml;
+      else card.insertAdjacentHTML("beforeend", badgeHtml);
+    } else if (badge) {
+      badge.remove();
+    }
+    const bottom = card.querySelector(".poverlay .bottom");
+    if (bottom) {
+      const title = bottom.querySelector(".ptitle");
+      bottom.innerHTML = `${title ? title.outerHTML : ""}${actions}`;
+    }
+    const track = card.querySelector(".card-dl-track");
+    if (p !== null) {
+      if (track) {
+        const bar = track.querySelector<HTMLElement>(".card-dl-bar");
+        if (bar) bar.style.width = `${p}%`;
+      } else {
+        card.insertAdjacentHTML(
+          "beforeend",
+          `<div class="card-dl-track"><div class="card-dl-bar" data-dlbar="${appName}" style="width:${p}%"></div></div>`,
+        );
+      }
+    } else if (track) {
+      track.remove();
+    }
+  });
+  return true;
+}
+
+/**
+ * Repaints the action for a game after its download / running state changes.
+ * Library cards are patched in place; the downloads view still needs a full paint.
  */
 export function refreshGameActionUi(appName: string): void {
-  if (S.view === "library" || S.view === "downloads") render();
+  if (S.view === "library") patchLibraryCardDom(appName);
+  else if (S.view === "downloads") render();
   if (S.currentModalAppName === appName) openEpicModal(appName, false);
 }
 
@@ -76,11 +129,17 @@ export function toggleFav(appName: string, triggerBtn?: HTMLElement | null): voi
 }
 
 /** Primary action buttons (play/install/update/cancel) for a game card. */
-export function epicActionButtons(s: EpicSummary, size: "full" | "small" | ""): string {
+export function epicActionButtons(
+  s: EpicSummary,
+  size: "full" | "small" | "",
+  opts: { primaryOnly?: boolean } = {},
+): string {
   const btn = size ? ` ${size}` : "";
   const p = epicDlProgress(s.appName);
   if (p !== null) {
-    return `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>
+    const main = `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
+    if (opts.primaryOnly) return main;
+    return `${main}
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancelShort")}</button>`;
   }
   const isRunning = S.runningGames.has(s.appName);

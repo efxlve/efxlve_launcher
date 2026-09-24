@@ -101,7 +101,7 @@ efxlve_launcher/
 │       ├── components.css             # Shared buttons, pills & segmented rails
 │       ├── aero-toolbar.css           # Frosted top bar & tab navigation
 │       ├── library.css                # Game cards, portrait grid & infinite scroll
-│       ├── library-toolbar.css        # Apple Precision segmented rail & search capsule
+│       ├── library-toolbar.css        # Quiet Library chrome: text filters, search, sort
 │       ├── shelves.css                # Horizontal game shelves & category rows
 │       ├── gamehub.css                # Game detail hub layout
 │       ├── drawer.css                 # Slide-over game detail drawer
@@ -196,7 +196,7 @@ efxlve_launcher/
 | Feature Directory | Module Files | Responsibilities |
 |---|---|---|
 | `auth/` | `auth-actions.ts`, `account-switcher.ts` | Legendary boot, instant cache hydration, progressive login/import sequence, logout, saved-account vault (switch/add/cancel/remove). |
-| `library/` | `library-view.ts` | Main game view, shelves (free games + recently played), portrait grid, progressive chunking via `#lib-scroll-sentinel`. |
+| `library/` | `library-view.ts` | Quiet cover-wall grid, text filters, progressive chunking via `#lib-scroll-sentinel`. In-place card patches; no default shelves. |
 | `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Slide-out game detail drawer, trophy listing, DLC checklist, hardware specs, critic/HLTB widgets. |
 | `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download hero, real-time speed chart canvas, queue controls, scheduled auto-update timer. |
 | `profile/` | `profile-view.ts`, `profile-avatar.ts` | PS5 trophy level, prestige card, most-played showcase, friends sidebar, local account avatar crop/upload. |
@@ -205,7 +205,7 @@ efxlve_launcher/
 | `store/` | `store-view.ts` | Embedded Epic Games Store native child webview lifecycle, resizing and idle cleanup. |
 | `settings/` | `settings-view.ts` | Settings sidebar (Account, Downloads, Integrations, Appearance, Screenshots, System, About), language switch, account switcher UI. |
 | `notifications/` | `notifications.ts` | Slide-in notification center, unread badge and historical activity alerts. |
-| `freegames/` | `freegames.ts` | Epic Weekly Free Games shelf (current and upcoming promotions with mobile filtering). |
+| `freegames/` | `freegames.ts` | Epic Weekly Free Games as a Library filter grid (current and upcoming, mobile filtered). |
 | `context-menu/` | `context-menu.ts` | Custom PS5 desktop right-click menu (Play, Properties, Move, Favorite, Uninstall). |
 | `manage/` | `manage-view.ts` | Game configuration modal (custom executable, launch flags, wrapper commands, environment variables). |
 | `move-game/` | `move-game-view.ts`, `move-game-actions.ts` | Multi-drive installation mover dialog with real-time transfer progress and drive free-space checks. |

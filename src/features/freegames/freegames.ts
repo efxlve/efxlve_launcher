@@ -1,13 +1,12 @@
 /**
  * Weekly Epic free games.
  *
- * Fetched from the public store backend (no auth) and shown as a shelf on the
- * library page. Only loaded once per session, lazily on library boot.
+ * Fetched from the public store backend (no auth). Shown as a quiet library
+ * filter grid — not a cinematic shelf on the default cover wall.
  */
 
 import { isTauri } from "../../core/constants";
-import { icon } from "../../core/icons";
-import { scheduleRender } from "../../core/render";
+import { epicActionButtons, epicArt } from "../../core/game-view";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { epicFreeGames, type EpicSummary, type FreeGame } from "../../epic";
@@ -36,7 +35,7 @@ function epicLocale(): { locale: string; country: string } {
   return { locale, country };
 }
 
-/** Loads the free-games list once (re-renders the library when it arrives). */
+/** Loads the free-games list once. Only refreshes UI when that filter is open. */
 export async function loadFreeGames(force = false): Promise<void> {
   if (!isTauri || S.freeGamesLoading) return;
   if (!force && S.freeGames) return;
@@ -48,7 +47,10 @@ export async function loadFreeGames(force = false): Promise<void> {
     S.freeGames = { current: [], upcoming: [] };
   } finally {
     S.freeGamesLoading = false;
-    if (S.view === "library") scheduleRender();
+    if (S.view === "library" && S.epicFilter === "freegames") {
+      const box = document.getElementById("lib-results");
+      if (box) box.innerHTML = renderFreeGamesGrid();
+    }
   }
 }
 
@@ -60,61 +62,61 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString(currentLanguage(), { day: "numeric", month: "short" });
 }
 
-function ownedSummary(g: FreeGame): EpicSummary | null {
-  const raw = S.epicGamesRaw.find((game) => game.metadata.namespace === g.namespace);
-  return raw ? S.epicSummariesMap.get(raw.app_name) ?? null : null;
+function ownedByNamespace(): Map<string, EpicSummary> {
+  const map = new Map<string, EpicSummary>();
+  for (const game of S.epicGamesRaw) {
+    const ns = game.metadata?.namespace;
+    if (typeof ns !== "string" || !ns) continue;
+    const s = S.epicSummariesMap.get(game.app_name);
+    if (s) map.set(ns, s);
+  }
+  return map;
 }
 
-function freeGameCard(g: FreeGame): string {
-  const owned = ownedSummary(g);
+function freeGameCard(g: FreeGame, owned: EpicSummary | null): string {
+  const badge = g.upcoming
+    ? `<span class="pbadge soon">${t("free.soon")}</span>`
+    : `<span class="pbadge now">${t("free.now")}</span>`;
   const dateLabel = g.upcoming
     ? `${shortDate(g.start)} – ${shortDate(g.end)}`
     : t("free.ends", { date: shortDate(g.end) });
-  const actionLabel = owned
-    ? (owned.installed ? t("common.play") : t("common.install"))
+  const action = owned
+    ? epicActionButtons(owned, "full", { primaryOnly: true })
     : "";
-  const actions = owned
-    ? `<div class="free-card-actions">
-         <button class="btn ${owned.installed ? "play" : "install"} small" data-act="${owned.installed ? "epic-play" : "epic-install"}" data-id="${esc(owned.appName)}">${actionLabel}</button>
-         <button class="btn ghost small icon-only" data-act="epic-detail" data-id="${esc(owned.appName)}" title="${t("lib.details")}">${icon("info", 13)}</button>
-       </div>`
-    : "";
+  const cover = owned
+    ? epicArt(owned)
+    : g.cover
+      ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />`
+      : `<div class="pcover"></div>`;
+  const act = owned
+    ? `data-act="epic-detail" data-id="${esc(owned.appName)}"`
+    : `data-act="open-free-game" data-title="${esc(g.title)}" data-slug="${esc(g.slug)}"`;
+
   return `
-    <div class="free-card" data-act="open-free-game" data-title="${esc(g.title)}" data-slug="${esc(g.slug)}" title="${esc(g.title)}">
-      <div class="free-card-media">
-        ${g.cover ? `<img src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="free-card-ph"></div>`}
-        <div class="free-card-gradient"></div>
-        <span class="free-card-tag ${g.upcoming ? "soon" : "now"}">${g.upcoming ? t("free.soon") : t("free.now")}</span>
-      </div>
-      <div class="free-card-overlay">
-        <div class="free-card-info">
-          <div class="free-card-title">${esc(g.title)}</div>
-          <div class="free-card-date">${esc(dateLabel)}</div>
+    <div class="pcard" ${act} tabindex="0" role="button" title="${esc(g.title)}">
+      ${cover}
+      ${badge}
+      <div class="poverlay">
+        <div class="bottom">
+          <div class="ptitle">${esc(g.title)}</div>
+          <div class="ptitle" style="font-size:12px;font-weight:500;color:#c4c5ce">${esc(dateLabel)}</div>
+          ${action}
         </div>
-        ${actions}
       </div>
     </div>`;
 }
 
-/** Renders the free-games shelf (empty string when there is nothing to show). */
-export function renderFreeGamesShelf(): string {
+/** Quiet cover grid for the Free Games filter (empty string never — shows empty state). */
+export function renderFreeGamesGrid(): string {
   const data = S.freeGames;
-  if (!data) return "";
+  if (!data) {
+    return `<div class="empty">${t("lib.noGames")}</div>`;
+  }
   const items = [...data.current, ...data.upcoming].filter((game) => !game.mobile);
-  if (items.length === 0) return "";
-
-  return `
-    <div class="shelf-section free-shelf">
-      <div class="shelf-header">
-        <div class="shelf-title-group">
-          <span class="shelf-icon">${icon("sparkles", 15)}</span>
-          <h3 class="shelf-title">${t("free.title")}</h3>
-          ${data.current.length > 0 ? `<span class="shelf-badge">${data.current.length}</span>` : ""}
-        </div>
-        <button class="shelf-nav-btn" data-act="open-external-url" data-url="https://store.epicgames.com/free-games" title="${t("free.openStore")}">
-          ${icon("external", 14)}
-        </button>
-      </div>
-      <div class="free-row">${items.map(freeGameCard).join("")}</div>
-    </div>`;
+  if (items.length === 0) {
+    return `<div class="empty">${t("lib.noGames")}</div>`;
+  }
+  const ownedMap = ownedByNamespace();
+  const cards = items.map((g) => freeGameCard(g, ownedMap.get(g.namespace) ?? null)).join("");
+  return `<div class="pgrid size-${S.epicCardSize}">${cards}</div>`;
 }

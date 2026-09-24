@@ -49,6 +49,7 @@ export function setEpicGamesRaw(games: EpicGame[]): void {
 export function setEpicSummaries(sums: EpicSummary[]): void {
   S.epicSummaries = sums;
   S.epicSummariesMap = new Map(sums.map((s) => [s.appName, s]));
+  S.libraryDataRev++;
 }
 
 /** O(1) summary lookup by app name. */

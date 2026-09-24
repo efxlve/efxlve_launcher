@@ -41,6 +41,7 @@ import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled } from "../../core/epic-actions";
+import { patchLibraryCardDom } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall } from "../../core/recent";
@@ -270,9 +271,17 @@ export async function initApp(hooks: {
       updateBadge();
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
-        render();
-      }).catch(() => render());
-      if (S.epicSummaries.some((s) => s.appName === id)) void refreshEpicInstalled();
+        if (S.view === "downloads") render();
+        else if (S.view === "library") patchLibraryCardDom(id);
+      }).catch(() => {
+        if (S.view === "downloads") render();
+        else if (S.view === "library") patchLibraryCardDom(id);
+      });
+      if (S.epicSummaries.some((s) => s.appName === id)) {
+        void refreshEpicInstalled().then(() => {
+          if (S.view === "library") patchLibraryCardDom(id);
+        });
+      }
     });
     await listen<{ id: string }>("download-paused", (_event) => {
       S.dlQueueStatus.isPaused = true;
@@ -300,7 +309,8 @@ export async function initApp(hooks: {
       toast(t("dl.downloadFailed", { msg: localizeMessage(event.payload.message) }), "err");
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
-        if (S.view === "downloads" || S.view === "library") render();
+        if (S.view === "downloads") render();
+        else if (S.view === "library") patchLibraryCardDom(event.payload.id);
       });
     });
     await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
@@ -313,7 +323,8 @@ export async function initApp(hooks: {
       toast(t("dl.cancelled"), "");
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
-        if (S.view === "downloads" || S.view === "library") render();
+        if (S.view === "downloads") render();
+        else if (S.view === "library") patchLibraryCardDom(event.payload.id);
       });
     });
     // Speed chart timer runs on-demand only during active downloads
@@ -457,7 +468,7 @@ export async function initApp(hooks: {
       });
 
       if (S.view === "library") {
-        render();
+        patchLibraryCardDom(id);
       }
 
       if (S.currentModalAppName === id && (S.activeDrawerTab === "overview" || S.activeDrawerTab === "manage")) {

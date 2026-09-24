@@ -195,6 +195,8 @@ export const S = {
   selectedInstallTags: new Set<string>(),
   selectedDlcAppIds: new Set<string>(),
   availableUpdates: new Map<string, GameUpdateInfo>(),
+  /** Bumped when summaries / updates change so the library filter cache misses. */
+  libraryDataRev: 0,
   prevRenderedUpdatesCount: (-1) as number,
   prevRenderedColId: (undefined) as string | null | undefined,
   isSortDropdownOpen: false,
