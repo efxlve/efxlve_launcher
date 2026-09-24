@@ -50,6 +50,7 @@ import {
   navigateScreenshotLightbox,
   playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
+import { epicDoLogin } from "../auth/auth-actions";
 document.addEventListener("wheel", (e) => {
   const scrollableBar = (e.target as HTMLElement)?.closest(".drawer-tabs, .drawer-tabs-wrapper, .ach-scope-segment, .col-quick-presets, .col-presets-track-wrapper") as HTMLElement | null;
   const targetBar = scrollableBar?.classList.contains("drawer-tabs-wrapper")
@@ -588,11 +589,24 @@ viewEl.addEventListener("scroll", () => {
 
 // Mouse navigation buttons (back: 3, forward: 4)
 window.addEventListener("mouseup", (e) => {
+  if (!S.epicAccount || S.epicPhase !== "library" || S.authLoading) return;
   if (e.button === 3) {
     e.preventDefault();
     navGoBack();
   } else if (e.button === 4) {
     e.preventDefault();
     navGoForward();
+  }
+});
+
+// Enter key shortcut on authentication code input
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const t = e.target as HTMLElement | null;
+    if (t && t.id === "epic-code") {
+      e.preventDefault();
+      const input = t as HTMLInputElement;
+      void epicDoLogin(input.value);
+    }
   }
 });

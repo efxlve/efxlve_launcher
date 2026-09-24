@@ -2,20 +2,40 @@
  * Epic account lifecycle and library synchronization.
  *
  * Boots the Legendary binary, hydrates the library from the instant disk cache,
- * runs background sync, and handles login/import/logout.
+ * runs background sync, and handles progressive login, import, and logout.
  */
 
 import { isTauri } from "../../core/constants";
 import { refreshUpdates } from "../../core/epic-actions";
 import { pruneRecent } from "../../core/recent";
-import { render, scheduleRender } from "../../core/render";
+import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { localizeMessage, t } from "../../i18n";
-import { epicCachedLibrary, epicEnsureBinary, epicGetAchievementsSummary, epicGetSteamGridKey, epicImportEgl, epicImportEglCollections, epicListGames, epicListInstalled, epicListSkipped, epicLoginWithCode, epicLogout, epicResumePendingDownload, epicSetScreenshotHotkey, epicSetupStatus, isNotAuth, summarize, type CachedLibrary } from "../../epic";
+import {
+  epicCachedLibrary,
+  epicEnsureBinary,
+  epicGetAchievementsSummary,
+  epicGetSteamGridKey,
+  epicImportEgl,
+  epicImportEglCollections,
+  epicListGames,
+  epicListInstalled,
+  epicListSkipped,
+  epicLoginWithCode,
+  epicLogout,
+  epicResumePendingDownload,
+  epicSetScreenshotHotkey,
+  epicSetupStatus,
+  isNotAuth,
+  summarize,
+  type CachedLibrary,
+} from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 import { loadFreeGames } from "../freegames/freegames";
+import { updateAuthProgressUi } from "../onboarding/onboarding-view";
+
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
   S.epicBooted = true;
@@ -40,13 +60,16 @@ export async function refreshEpic(): Promise<void> {
     S.setupInfo = await epicSetupStatus();
     if (S.setupInfo.needsDownload) {
       S.epicPhase = "setup";
+      document.body.classList.add("auth-mode");
       render();
       return;
     }
     const cached: CachedLibrary = await epicCachedLibrary();
     S.epicSkippedCount = cached.skipped.length;
     if (!cached.account) {
+      S.epicAccount = "";
       S.epicPhase = "login";
+      document.body.classList.add("auth-mode");
       render();
       return;
     }
@@ -55,6 +78,7 @@ export async function refreshEpic(): Promise<void> {
     pruneRecent();
     setEpicGamesRaw(cached.games);
     S.epicPhase = "library";
+    document.body.classList.remove("auth-mode");
     render();
     void loadEpicAchSummaries();
     void loadEpicCollections();
@@ -114,6 +138,7 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
   } catch (e) {
     if (isNotAuth(e)) {
       S.epicPhase = "login";
+      document.body.classList.add("auth-mode");
     } else {
       S.epicSyncNote = t("lib.offlineCache");
     }
@@ -142,38 +167,137 @@ export async function epicDownload(): Promise<void> {
   }
 }
 
-export async function epicDoLogin(code: string): Promise<void> {
-  if (!code.trim() || S.epicBusy) return;
-  S.epicBusy = "login";
-  render();
+/** Extract authorizationCode value from raw string, quotes or JSON response. */
+export function extractAuthCode(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
   try {
-    S.epicAccount = await epicLoginWithCode(code);
-    S.onboardingStep = 1;
-    toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
-    await refreshEpic();
-  } catch (e) {
-    toast(t("auth.signInFailed", { msg: localizeMessage(String(e)) }), "err");
-  } finally {
+    const parsed = JSON.parse(trimmed);
+    if (parsed && typeof parsed.authorizationCode === "string") {
+      return parsed.authorizationCode.trim();
+    }
+  } catch {
+    // Not valid JSON
+  }
+  const match = trimmed.match(/"?authorizationCode"?\s*[:=]\s*"([^"]+)"/i);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Execute a cinematic, progressive login sequence ("yavaş yavaş loading olmalı").
+ * Runs through 4 discrete stages: Auth -> Sync Catalog -> Trophies/Assets -> Console Ready.
+ */
+export async function runProgressiveAuth(
+  actionName: "login" | "import",
+  authCall: () => Promise<string>,
+): Promise<void> {
+  if (S.authLoading || S.epicBusy) return;
+  S.authLoading = true;
+  S.epicBusy = actionName;
+  S.authStage = "authenticating";
+  S.authProgress = 15;
+  S.authStageText = t("auth.stageAuth");
+  document.body.classList.add("auth-mode");
+  render();
+
+  let timer: number | null = null;
+  try {
+    // Stage 1: Auth call in flight — smooth progress up to 38%
+    timer = window.setInterval(() => {
+      if (S.authProgress < 38) {
+        S.authProgress += 3;
+        updateAuthProgressUi();
+      }
+    }, 120);
+
+    const account = await authCall();
+    if (timer) clearInterval(timer);
+    S.epicAccount = account;
+    S.authProgress = 42;
+    updateAuthProgressUi();
+
+    // Stage 2: Syncing library & catalog
+    S.authStage = "syncing";
+    S.authStageText = t("auth.stageSync");
+    S.authProgress = 52;
+    updateAuthProgressUi();
+
+    // Human perception delay
+    await new Promise((r) => setTimeout(r, 450));
+
+    const cached: CachedLibrary = await epicCachedLibrary();
+    S.epicSkippedCount = cached.skipped.length;
+    setEpicSummaries(summarize(cached.games, cached.installed, cached.skipped));
+    pruneRecent();
+    setEpicGamesRaw(cached.games);
+
+    S.authProgress = 72;
+    updateAuthProgressUi();
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Stage 3: Achievements, trophies and collections
+    S.authStage = "trophies";
+    S.authStageText = t("auth.stageTrophies");
+    S.authProgress = 88;
+    updateAuthProgressUi();
+
+    void loadEpicAchSummaries();
+    void loadEpicCollections();
+    void loadFreeGames();
+    void refreshUpdates();
+
+    await new Promise((r) => setTimeout(r, 450));
+
+    // Stage 4: Console launch ready
+    S.authStage = "ready";
+    S.authStageText = t("auth.stageReady");
+    S.authProgress = 100;
+    updateAuthProgressUi();
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Complete & smooth reveal of the main library view
+    S.authLoading = false;
     S.epicBusy = "";
-    if (S.view === "library") render();
+    S.epicPhase = "library";
+    S.view = "library";
+    document.body.classList.remove("auth-mode");
+    render();
+
+    toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
+    void syncEpicLibrary(false);
+    void epicResumePendingDownload().catch(() => {});
+  } catch (e) {
+    if (timer) clearInterval(timer);
+    S.authLoading = false;
+    S.epicBusy = "";
+    S.authProgress = 0;
+    S.epicPhase = "login";
+    document.body.classList.add("auth-mode");
+    render();
+    toast(
+      t(actionName === "login" ? "auth.signInFailed" : "auth.importFailed", {
+        msg: localizeMessage(String(e)),
+      }),
+      "err",
+    );
   }
 }
 
-export async function epicDoImport(): Promise<void> {
-  if (S.epicBusy) return;
-  S.epicBusy = "import";
-  render();
-  try {
-    S.epicAccount = await epicImportEgl();
-    S.onboardingStep = 1;
-    toast(t("auth.imported", { name: S.epicAccount ?? "" }), "ok");
-    await refreshEpic();
-  } catch (e) {
-    toast(t("auth.importFailed", { msg: localizeMessage(String(e)) }), "err");
-  } finally {
-    S.epicBusy = "";
-    if (S.view === "library") render();
+export async function epicDoLogin(code: string): Promise<void> {
+  const cleanCode = extractAuthCode(code);
+  if (!cleanCode) {
+    toast(t("auth.pasteFailed"), "err");
+    return;
   }
+  await runProgressiveAuth("login", () => epicLoginWithCode(cleanCode));
+}
+
+export async function epicDoImport(): Promise<void> {
+  await runProgressiveAuth("import", () => epicImportEgl());
 }
 
 export async function epicDoLogout(): Promise<void> {
@@ -187,8 +311,9 @@ export async function epicDoLogout(): Promise<void> {
   setEpicSummaries([]);
   setEpicGamesRaw([]);
   S.epicSkippedCount = 0;
-  await refreshEpic();
+  S.view = "library";
+  S.epicPhase = "login";
+  closeAllModals();
+  document.body.classList.add("auth-mode");
+  render();
 }
-
-
-

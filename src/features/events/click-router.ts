@@ -26,7 +26,7 @@ import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { rawOf } from "../../core/selectors";
-import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
+import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -163,6 +163,24 @@ document.addEventListener("click", (e) => {
 
   if (!t) return;
 
+  const isAuthed = Boolean(S.epicAccount) && S.epicPhase === "library" && !S.authLoading;
+  if (!isAuthed) {
+    if (t.dataset.view) return;
+    const allowedAuthActs = new Set([
+      "epic-open-login",
+      "epic-do-login",
+      "epic-import",
+      "auth-paste",
+      "epic-download",
+      "win-minimize",
+      "win-maximize",
+      "win-close",
+    ]);
+    if (t.dataset.act && !allowedAuthActs.has(t.dataset.act)) {
+      return;
+    }
+  }
+
   if (t.dataset.view) {
     closeAllModals();
     const targetView = t.dataset.view as View;
@@ -225,6 +243,23 @@ document.addEventListener("click", (e) => {
     void epicDoLogin(input?.value ?? "");
   } else if (act === "epic-import") {
     void epicDoImport();
+  } else if (act === "auth-paste") {
+    void (async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const code = extractAuthCode(text);
+        const input = document.getElementById("epic-code") as HTMLInputElement | null;
+        if (input && code) {
+          input.value = code;
+          input.focus();
+          toast(i18nT("auth.codePasted"), "ok");
+        } else {
+          toast(i18nT("auth.pasteFailed"), "err");
+        }
+      } catch {
+        toast(i18nT("auth.pasteFailed"), "err");
+      }
+    })();
   } else if (act === "onboarding-goto") {
     const step = parseInt(t.dataset.step || "1", 10);
     if (step >= 1 && step <= 3) {
