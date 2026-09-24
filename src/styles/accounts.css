@@ -1,0 +1,51 @@
+/* ==========================================================================
+   Accounts page: one connector card per store. No blocking sign-in screen.
+   ========================================================================== */
+.acc-page { max-width: 760px; display: flex; flex-direction: column; gap: 14px; }
+.acc-intro { margin: 0 0 4px; color: var(--text-2); font-size: 13px; }
+
+.acc-card { padding: 0; overflow: hidden; }
+.acc-card-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.acc-card-body {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 16px 16px; border-top: 1px solid var(--line);
+}
+.acc-card-soon { opacity: 0.6; }
+.acc-store-mark {
+  width: 34px; height: 34px; border-radius: var(--r-sm); flex-shrink: 0;
+  display: grid; place-items: center; background: var(--surface-3);
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.acc-store-name { font-size: 14px; font-weight: 600; }
+.acc-lead { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.acc-hint { margin: 0; font-size: 12px; color: var(--text-3); }
+.acc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.acc-spacer { flex: 1; }
+.acc-signin { display: flex; flex-direction: column; gap: 12px; }
+.acc-accounts .row { padding: 10px 12px; }
+
+.settings-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  display: grid; place-items: center; background: var(--surface-3); font-size: 13px; font-weight: 600;
+}
+.settings-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.auth-code { display: flex; gap: 6px; max-width: 520px; }
+.auth-code .input { flex: 1; min-width: 0; height: 34px; }
+.auth-code .btn { height: 34px; }
+.auth-code .btn.icon-only { width: 34px; }
+.auth-guide { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-3); line-height: 1.5; }
+.auth-guide strong { color: var(--text-2); font-weight: 500; }
+
+.auth-progress-row { display: flex; align-items: center; gap: 10px; }
+.auth-progress { flex: 1; height: 4px; border-radius: 2px; }
+.auth-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.auth-step-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-3); transition: color var(--ease); }
+.auth-step-row.active { color: var(--text); }
+.auth-step-row.done { color: var(--text-2); }
+.auth-step-pip {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-3); color: transparent; transition: background-color var(--ease), color var(--ease);
+}
+.auth-step-row.active .auth-step-pip { box-shadow: inset 0 0 0 1px var(--accent); }
+.auth-step-row.done .auth-step-pip { background: var(--accent); color: var(--on-accent); }
