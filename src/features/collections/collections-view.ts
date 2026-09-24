@@ -87,8 +87,8 @@ export function renderCollectionModal(): void {
   const colName = col ? col.name : "";
   const isEditing = Boolean(S.activeEditingColId);
 
-  const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-  let filtered = S.epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+  const q = S.colModalSearchQuery.toLowerCase();
+  let filtered = S.epicSummaries.filter((s) => s.title.toLowerCase().includes(q));
   if (S.colModalTabFilter === "selected") {
     filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
   } else if (S.colModalTabFilter === "installed") {
@@ -257,8 +257,8 @@ export function renderCollectionModal(): void {
 export function updateColGamesListInPlace(): void {
   const container = document.querySelector(".col-games-list");
   if (!container) return;
-  const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-  let filtered = S.epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+  const q = S.colModalSearchQuery.toLowerCase();
+  let filtered = S.epicSummaries.filter((s) => s.title.toLowerCase().includes(q));
   if (S.colModalTabFilter === "selected") {
     filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
   } else if (S.colModalTabFilter === "installed") {

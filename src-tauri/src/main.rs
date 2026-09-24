@@ -46,6 +46,12 @@ pub struct EpicSettings {
     /// Preferred Epic CDN hostname for downloads (`--preferred-cdn`).
     #[serde(default)]
     pub preferred_cdn: Option<String>,
+    #[serde(default = "default_true")]
+    pub auto_desktop_shortcut: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -150,6 +156,7 @@ fn get_owned_games_json() -> String {
 const STORE_EXTENSION_SCRIPT: &str = r#"
 (function() {
     'use strict';
+    document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, true);
 
     // 1. Text normalization (perfectly cleans Turkish 'İ', 'ı', accents and whitespace)
     function normalizeText(str) {
@@ -1573,6 +1580,8 @@ fn main() {
             legendary::commands::epic_set_network_profile,
             legendary::commands::epic_get_offline_mode,
             legendary::commands::epic_set_offline_mode,
+            legendary::commands::epic_get_auto_desktop_shortcut,
+            legendary::commands::epic_set_auto_desktop_shortcut,
             legendary::commands::epic_backup_save,
             legendary::commands::epic_list_backups,
             legendary::commands::epic_restore_backup,

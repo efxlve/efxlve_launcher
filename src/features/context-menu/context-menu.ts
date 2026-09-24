@@ -70,12 +70,13 @@ export function initContextMenu(): void {
   document.addEventListener(
     "contextmenu",
     (e) => {
+      // Disables default Chromium/Edge context menu across the desktop app.
+      e.preventDefault();
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
       if (!target) {
         hideContextMenu();
         return;
       }
-      e.preventDefault();
       const id = target.dataset.id;
       if (id) showContextMenu(e.clientX, e.clientY, id);
     },

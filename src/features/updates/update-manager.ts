@@ -83,7 +83,10 @@ export async function checkForAppUpdate(manual = false): Promise<void> {
       S.appUpdateStatus = "idle";
       S.appUpdateVersion = "";
       S.appUpdateNotes = "";
-      if (manual) toast(t("appUpdate.upToDate", { version: S.appVersion }), "ok");
+      if (manual) {
+        toast(t("appUpdate.upToDate", { version: S.appVersion }), "ok");
+        scheduleRender();
+      }
       return;
     }
     pendingUpdate = update;

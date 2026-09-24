@@ -59,6 +59,8 @@
   "settings.netAdvTitle": "Network Diagnostics & Cache",
   "settings.netFindCdnDesc": "Probes Epic Games CDN hosts and selects the lowest-latency endpoint.",
   "settings.netCacheDesc": "Safely purges temporary download segments and cached chunks.",
+  "settings.autoDesktopShortcut": "Automatic Desktop Shortcut",
+  "settings.autoDesktopShortcutDesc": "Automatically create a desktop shortcut when a game is downloaded and installed.",
   "settings.secSocial": "Social",
   "settings.eosTitle": "EOS Social Overlay",
   "settings.eosInstalled": "Installed",
