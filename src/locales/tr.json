@@ -793,6 +793,7 @@
   "dl.diskFull": "Yetersiz disk alanı. Lütfen hedef sürücüde yer açın.",
   "dl.itemNotFound": "Paket veya oyun bilgisi Epic Games sunucularında bulunamadı.",
   "dl.networkError": "Epic Games sunucularına bağlanılamadı. İnternet bağlantınızı kontrol edin.",
+  "dl.timeoutError": "Epic Games sunucusu yanıt vermedi (Zaman aşımı). Lütfen internet bağlantınızı kontrol edip tekrar deneyin.",
   "dl.permissionDenied": "Kurulum klasörüne dosya yazma izni reddedildi.",
   "dl.sessionExpired": "Epic Games oturum süresi doldu. Lütfen Ayarlar'dan tekrar giriş yapın.",
   "manage.shortcutFailed": "Kısayol oluşturulamadı: {msg}",

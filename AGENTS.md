@@ -240,7 +240,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - Kullanıcının karşılaştığı `HTTPError: 429 Client Error: Too Many Requests` ve `PYI-*:ERROR` gibi ham Python traceback yığınlarının doğrudan UI'ye yansıması sorunu çözüldü (`transfers.rs`, `tr.json`, `en.json`).
   - `short_error` ayrıştırıcısı akıllı hale getirildi: HTTP 429 rate limit, yetersiz disk alanı, paket/metaveri bulunamaması, ağ kopması ve oturum zaman aşımı gibi durumlar tespit edilerek konsol disiplinine uygun kibar ve net yerelleştirilmiş bildirimlere dönüştürüldü (`@t:dl.rateLimited`, `@t:dl.diskFull`, `@t:dl.itemNotFound` vb.).
   - PyInstaller iç çökme satırları ve Python dosya yolu artıkları temizlendi.
-  - İndirme izleyicisine (`monitor_download`) Epic Games Store'un geçici GraphQL 429 kota aşımlarına karşı 8 saniyelik geri çekilme (backoff) ve otomatik yeniden deneme (auto-retry) mantığı eklendi. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız.
+- **İndirme Zaman Aşımı (ReadTimeoutError) & Zincirleme İstisna Temizliği:**
+  - Kullanıcının karşılaştığı `TimeoutError: The read operation timed out ... urllib3.exceptions.ReadTimeoutError` ve zincirleme Python istisnaları (`The above exception was the direct cause...`) ele alındı (`transfers.rs`, `tr.json`, `en.json`).
+  - Epic Games sunucularındaki geçici ağ gecikmeleri veya yoğunluktan kaynaklanan okuma zaman aşımları (`timeout`, `timed out`, `readtimeouterror`) otomatik olarak yakalanıp 3 saniyelik beklemenin ardından tek seferlik otomatik yeniden deneme (auto-retry) döngüsüne bağlandı.
+  - Hatanın kalıcı olması durumunda ham Python ve `urllib3` hata dökümleri yerine konsol disiplinine uygun temiz bildirim (`@t:dl.timeoutError` — "Epic Games sunucusu yanıt vermedi (Zaman aşımı). Lütfen internet bağlantınızı kontrol edip tekrar deneyin.") gösterilmesi sağlandı. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız tamamlandı.
 
 ---
 

@@ -614,6 +614,9 @@ fn short_error(err_text: &str) -> String {
     {
         return "@t:dl.networkError".to_string();
     }
+    if low.contains("timeout") || low.contains("timed out") || low.contains("readtimeouterror") {
+        return "@t:dl.timeoutError".to_string();
+    }
     if low.contains("permissionerror") || low.contains("access is denied") {
         return "@t:dl.permissionDenied".to_string();
     }
@@ -633,6 +636,10 @@ fn short_error(err_text: &str) -> String {
                 || l_trim.starts_with("Traceback")
                 || l_trim.starts_with("File \"")
                 || l_trim.starts_with("[Core] WARNING:")
+                || l_trim.starts_with("The above exception")
+                || l_trim.starts_with("During handling of")
+                || l_trim.starts_with("urllib3.")
+                || l_trim.starts_with("requests.exceptions.")
             {
                 return false;
             }
@@ -652,6 +659,10 @@ fn short_error(err_text: &str) -> String {
                     && !l_trim.starts_with("Traceback")
                     && !l_trim.starts_with("File \"")
                     && !l_trim.starts_with("[Core] WARNING:")
+                    && !l_trim.starts_with("The above exception")
+                    && !l_trim.starts_with("During handling of")
+                    && !l_trim.starts_with("urllib3.")
+                    && !l_trim.starts_with("requests.exceptions.")
                     && !l_trim.is_empty()
             })
             .rev()
@@ -714,6 +725,7 @@ async fn monitor_download(
     let mut last_emit = std::time::Instant::now();
     let mut high_mem = false;
     let mut rate_limit_retried = false;
+    let mut timeout_retried = false;
     let mut tail: VecDeque<String> = VecDeque::with_capacity(60);
 
     let result: Result<(), String> = loop {
@@ -840,6 +852,37 @@ async fn monitor_download(
             }
             rate_limit_retried = true;
             tokio::time::sleep(std::time::Duration::from_secs(8)).await;
+            total_mib = 0.0;
+            downloaded_mib = 0.0;
+            last_pct = -1;
+            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+                Ok(c) => {
+                    child = c;
+                    stdout = child.stdout.take();
+                    stderr = child.stderr.take();
+                    if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        s.pid = child.id();
+                    }
+                    continue;
+                }
+                Err(e) => {
+                    break Err(format!("@t:dl.restartFailed\u{1f}{e}"));
+                }
+            }
+        }
+        // If Epic service timed out (TimeoutError / ReadTimeoutError), wait 3 seconds and retry once.
+        if !timeout_retried && (err_text.contains("timed out") || err_text.contains("Timeout") || err_text.contains("ReadTimeoutError")) {
+            let cancelled = app
+                .state::<AppState>()
+                .epic_dl
+                .lock()
+                .map(|s| s.cancelled)
+                .unwrap_or(false);
+            if cancelled {
+                break Err("@t:dl.cancelled".into());
+            }
+            timeout_retried = true;
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             total_mib = 0.0;
             downloaded_mib = 0.0;
             last_pct = -1;
