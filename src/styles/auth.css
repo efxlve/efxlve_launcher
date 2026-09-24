@@ -42,64 +42,39 @@ body.auth-mode .logo {
   z-index: 0;
 }
 
-/* --- Animated 3D Floating Game Wall Marquee --- */
-.auth-game-wall {
+/* --- High-Res Atmospheric Wallpaper with Slow Ken-Burns Breathing --- */
+.auth-bg-backdrop-art {
   position: absolute;
-  inset: -160px -80px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  transform: rotate(-10deg) skewX(2deg) scale(1.15);
-  opacity: 0.16;
-  pointer-events: none;
-  user-select: none;
-  overflow: hidden;
-  filter: saturate(120%) brightness(0.85);
+  inset: -30px;
+  background-image: url("../assets/login_background.webp");
+  background-size: cover;
+  background-position: center 38%;
+  background-repeat: no-repeat;
+  filter: saturate(115%) contrast(108%) brightness(0.62);
+  transform: scale(1.02);
+  animation: authBgBreathe 26s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+  will-change: transform;
 }
 
-.auth-wall-col {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.auth-col-1 { animation: authMarqueeUp 52s linear infinite; }
-.auth-col-2 { animation: authMarqueeDown 62s linear infinite; }
-.auth-col-3 { animation: authMarqueeUp 58s linear infinite; }
-.auth-col-4 { animation: authMarqueeDown 48s linear infinite; }
-
-@keyframes authMarqueeUp {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
-}
-
-@keyframes authMarqueeDown {
-  0% { transform: translateY(-50%); }
-  100% { transform: translateY(0); }
-}
-
-.auth-poster-card {
-  width: 100%;
-  aspect-ratio: 3 / 4.2;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #111420;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
-}
-
-.auth-poster-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+@keyframes authBgBreathe {
+  0% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.055) translate3d(-10px, -8px, 0);
+  }
+  100% {
+    transform: scale(1.02) translate3d(8px, 6px, 0);
+  }
 }
 
 /* --- Atmospheric Overlay Vignette & Soft Aurora --- */
 .auth-vignette-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(7, 8, 13, 0.60) 0%, rgba(7, 8, 13, 0.93) 72%, #07080d 100%);
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(7, 8, 13, 0.45) 0%, rgba(7, 8, 13, 0.85) 65%, #07080d 100%),
+    linear-gradient(180deg, rgba(7, 8, 13, 0.65) 0%, rgba(7, 8, 13, 0.15) 35%, rgba(7, 8, 13, 0.25) 65%, rgba(7, 8, 13, 0.88) 100%);
   pointer-events: none;
   z-index: 1;
 }
