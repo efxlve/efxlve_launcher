@@ -265,7 +265,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
 
         <div class="ss-share-actions">
           <button class="ss-share-btn primary" data-act="do-copy-image">
-            <div class="ss-share-btn-icon" style="color:#60a5fa">${icon("copy", 18)}</div>
+            <div class="ss-share-btn-icon">${icon("copy", 18)}</div>
             <div class="ss-share-btn-text">
               <span class="ss-btn-main">${t("ss.copyImage")}</span>
               <span class="ss-btn-hint">${t("ss.copyHint")}</span>
@@ -274,7 +274,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
           </button>
 
           <button class="ss-share-btn" data-act="do-copy-path">
-            <div class="ss-share-btn-icon" style="color:#a78bfa">${icon("link", 18)}</div>
+            <div class="ss-share-btn-icon">${icon("link", 18)}</div>
             <div class="ss-share-btn-text">
               <span class="ss-btn-main">${t("ss.copyPath")}</span>
               <span class="ss-btn-hint" title="${esc(item.file_path)}">${esc(item.file_path)}</span>
@@ -282,7 +282,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
           </button>
 
           <button class="ss-share-btn" data-act="do-open-folder">
-            <div class="ss-share-btn-icon" style="color:#fbbf24">${icon("folder", 18)}</div>
+            <div class="ss-share-btn-icon">${icon("folder", 18)}</div>
             <div class="ss-share-btn-text">
               <span class="ss-btn-main">${t("ss.showInFolder")}</span>
               <span class="ss-btn-hint">${t("ss.showInFolderHint")}</span>
@@ -291,7 +291,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
 
           ${!isAvifOrWebp ? `
             <button class="ss-share-btn" data-act="do-compress-from-share">
-              <div class="ss-share-btn-icon" style="color:#34d399">${icon("minimize-2", 18)}</div>
+              <div class="ss-share-btn-icon">${icon("minimize-2", 18)}</div>
               <div class="ss-share-btn-text">
                 <span class="ss-btn-main">${t("ss.compressImage")}</span>
                 <span class="ss-btn-hint">${t("ss.compressHint")}</span>
@@ -301,7 +301,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
 
           ${typeof navigator.share === "function" ? `
             <button class="ss-share-btn" data-act="do-native-share">
-              <div class="ss-share-btn-icon" style="color:#f472b6">${icon("share-2", 18)}</div>
+              <div class="ss-share-btn-icon">${icon("share-2", 18)}</div>
               <div class="ss-share-btn-text">
                 <span class="ss-btn-main">${t("ss.winShare")}</span>
                 <span class="ss-btn-hint">${t("ss.winShareHint")}</span>

@@ -64,24 +64,6 @@ export function updateMarkerUi(): void {
   }
 }
 
-export function updateColPresetArrows(): void {
-  const container = document.getElementById("col-presets-scrollable");
-  const wrapper = container?.closest(".col-presets-track-wrapper");
-  if (!container || !wrapper) return;
-
-  const leftFade = wrapper.querySelector(".col-presets-fade.left") as HTMLElement | null;
-  const rightFade = wrapper.querySelector(".col-presets-fade.right") as HTMLElement | null;
-
-  const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
-  const hasOverflow = maxScroll > 4;
-
-  const canScrollLeft = hasOverflow && container.scrollLeft > 4;
-  const canScrollRight = hasOverflow && container.scrollLeft < maxScroll - 4;
-
-  if (leftFade) leftFade.classList.toggle("visible", canScrollLeft);
-  if (rightFade) rightFade.classList.toggle("visible", canScrollRight);
-}
-
 export function renderCollectionModal(): void {
   if (!collectionRoot) return;
   const col = S.activeEditingColId ? S.epicCollections.find((c) => c.id === S.activeEditingColId) : null;
@@ -147,13 +129,7 @@ export function renderCollectionModal(): void {
             <!-- Detail-page style scrollable quick presets -->
             <div class="col-presets-wrapper">
               <span class="col-quick-label">${t("col.quickPresets")}</span>
-              <div class="col-presets-track-wrapper">
-                <div class="col-presets-fade left">
-                  <button type="button" class="col-presets-arrow left" data-act="col-presets-scroll" data-dir="left" title="${t("lib.scrollLeft")}">
-                    ${icon("chevron-left", 12)}
-                  </button>
-                </div>
-                <div class="col-quick-presets" id="col-presets-scrollable">
+                <div class="col-quick-presets">
                   <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="list" data-name="${t("col.presetStory")}">${icon("list", 13)} <span>${t("col.presetStory")}</span></button>
                   <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="globe" data-name="${t("col.presetOnline")}">${icon("globe", 13)} <span>${t("col.presetOnline")}</span></button>
                   <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="trophy" data-name="${t("col.presetPlatinum")}">${icon("trophy", 13)} <span>${t("col.presetPlatinum")}</span></button>
@@ -169,12 +145,6 @@ export function renderCollectionModal(): void {
                   <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="crown" data-name="${t("col.presetVip")}">${icon("crown", 13)} <span>${t("col.presetVip")}</span></button>
                   <button type="button" class="col-preset-chip" data-act="quick-col-preset" data-icon="check-circle" data-name="${t("col.presetCompleted")}">${icon("check-circle", 13)} <span>${t("col.presetCompleted")}</span></button>
                 </div>
-                <div class="col-presets-fade right">
-                  <button type="button" class="col-presets-arrow right" data-act="col-presets-scroll" data-dir="right" title="${t("lib.scrollRight")}">
-                    ${icon("chevron-right", 12)}
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -246,12 +216,6 @@ export function renderCollectionModal(): void {
       S.colModalSearchQuery = (e.target as HTMLInputElement).value;
       updateColGamesListInPlace();
     });
-  }
-
-  const presetsScrollable = document.getElementById("col-presets-scrollable");
-  if (presetsScrollable) {
-    presetsScrollable.addEventListener("scroll", updateColPresetArrows, { passive: true });
-    requestAnimationFrame(() => updateColPresetArrows());
   }
 }
 

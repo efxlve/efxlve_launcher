@@ -9,7 +9,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./constants";
 import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
-import { updateColPresetArrows } from "../features/collections/collections-view";
 import { syncStoreViewSize } from "../features/store/store-view";
 export function updateMaxIcon(isMax?: boolean): void {
   const iconEl = document.getElementById("win-max-icon");
@@ -30,9 +29,6 @@ export function updateMaxIcon(isMax?: boolean): void {
 
 export function handleWindowResize(): void {
   updateMaxIcon();
-  if (typeof updateColPresetArrows === "function") {
-    updateColPresetArrows();
-  }
   if (S.view === "downloads" && typeof drawSpeedCanvas === "function") {
     drawSpeedCanvas();
   }
