@@ -193,6 +193,14 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - İkincil butonların (`apple-pill-btn.secondary`) istenmeyen kehribar/altın sarısı rengi PS5 buzlu lavanta/obsidyen cam stiline dönüştürüldü; "Profili Yenile", "Detaylar" ve "Arkadaş Yenile" butonları sakinleştirildi.
 - Profil Hero seviye ve kupa alanı tek parça, mimari olarak simetrik ve düzenli **Gamer Prestij Kartı** (`.ps5-gamer-card`) olarak baştan inşa edildi: 38px seviye amblemi, tok seviye başlığı, anlık XP dökümü (`765 / 1.000 XP`), tam genişlikte pürüzsüz XP ilerleme rayı, üst köşede sabit yenileme butonu ve alt bölümde dikey ayraçlarla eşit dağıtılmış 4 kademeli (Platin, Altın, Gümüş, Bronz) kupa sütunları birleştirilerek dağınık/uyumsuz yerleşim tamamen giderildi.
 - Hesap bazlı **Yerel Profil Fotoğrafı (Avatar)** desteği eklendi (`src/features/profile/profile-avatar.ts`): Kullanıcı avatara tıkladığında yerel dosya seçici açılır, seçilen görsel hafif ve hızlı 256x256 WebP formatına kırpılarak optimize edilir; sadece o anki Epic Games hesabına özel olarak (`S.customAvatars[accountId]`) yerel diskte saklanır, profil sahnesinde ve üst başlık çubuğu hesap çipinde (`#account`) anında gösterilir; mevcut fotoğrafı değiştirme veya varsayılana sıfırlama modalı eklendi.
+- Üst başlık çubuğu (`#account`) butonundaki profil fotoğrafı senkronizasyonu tamamlandı (`src/core/nav.ts`, `src/core/state.ts`, `src/styles/base.css`): Çoklu hesap kimlikleri (`account_id`, `epicAccountId`, `epicAccount`) ile uyumlu `getCustomAvatar()` çözücüsü eklendi; dairesel 24px taşma koruması ve `object-fit: cover` ile piksellenme/sığmama hataları giderildi.
+- Ayarlar (Settings) sekmesi baştan aşağı **Apple / PS5 Console Dark** estetiğiyle yenilendi (`src/features/settings/settings-view.ts`, `src/styles/settings.css`): Sol kategori gezinme rayı (`settings-nav`), obsidyen cam kart grupları (`settings-group`), saç çizgisi satır ayrımı, Apple-style pürüzsüz yeşil zümrüt toggle switch, segmented network profilleri ve rafine form butonları uygulandı.
+- Ayarlar sekmesine kapsamlı **"Hakkında" (About)** paneli eklendi (`settings.secAbout`):
+  - Vitrin Başlığı: v0.1.0 sürüm rozeti, Tauri v2 / 64-bit derleme künyesi ve PS5 estetiği vurgulu slogan.
+  - Yasal Bildirim & Feragatname: Efxlve Launcher'ın bağımsız bir açık kaynak projesi olduğu ve **Epic Games ile hiçbir resmi bağı/ortaklığı olmadığı** net şekilde bildirildi.
+  - Amaç & Mimari: Ağır istemci yerine düşük donanımlarda bile 120 FPS akıcılık, minimum bellek ve Rust + vanilla TypeScript gücü açıklandı.
+  - Resmi Bağlantılar: Kullanıcının talep ettiği X (`https://x.com/efxlve`), GitHub (`https://github.com/efxlve/efxlve_launcher`) ve Web Sitesi (`https://efxlve.com/efxlve_launcher`) Apple link kapsülleriyle entegre edildi.
+
 
 
 

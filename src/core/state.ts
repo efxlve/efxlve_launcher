@@ -237,3 +237,24 @@ export const S = {
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
 };
+
+/**
+ * Resolves the custom avatar for the given account or the current logged-in account.
+ * Checks accountId, playerProfileData.account_id, epicAccountId, and epicAccount.
+ */
+export function getCustomAvatar(accountId?: string | null): string | null {
+  if (accountId && S.customAvatars[accountId]) {
+    return S.customAvatars[accountId];
+  }
+  if (S.playerProfileData?.account_id && S.customAvatars[S.playerProfileData.account_id]) {
+    return S.customAvatars[S.playerProfileData.account_id];
+  }
+  if (S.epicAccountId && S.customAvatars[S.epicAccountId]) {
+    return S.customAvatars[S.epicAccountId];
+  }
+  if (S.epicAccount && S.customAvatars[S.epicAccount]) {
+    return S.customAvatars[S.epicAccount];
+  }
+  return S.customAvatars["default"] || null;
+}
+

@@ -33,6 +33,7 @@ const SECTIONS: { id: SettingsSection; icon: IconName; labelKey: string }[] = [
   { id: "appearance", icon: "globe", labelKey: "settings.secAppearance" },
   { id: "screenshots", icon: "camera", labelKey: "settings.secScreenshots" },
   { id: "system", icon: "settings", labelKey: "settings.secSystem" },
+  { id: "about", icon: "info", labelKey: "settings.secAbout" },
 ];
 
 /** A single setting line: title/description on the left, a control on the right. */
@@ -60,7 +61,7 @@ function group(rows: string, title = ""): string {
 
 function renderAccount(): string {
   const accountControl = S.epicAccount
-    ? `<button class="ps5-btn ghost small" data-act="epic-logout">${t("settings.logout")}</button>`
+    ? `<button class="apple-pill-btn secondary danger small" data-act="epic-logout">${icon("trash", 12)} ${t("settings.logout")}</button>`
     : "";
   const accountDesc = S.epicAccount
     ? `${t("settings.connectedAccount")}: <strong>${esc(S.epicAccount)}</strong>`
@@ -87,7 +88,8 @@ function renderDownloads(): string {
         </div>
         <div class="settings-row-control">
           <input id="epic-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
-          <button class="ps5-btn primary small" data-act="epic-save-install-dir">${t("common.save")}</button>
+          <button class="apple-pill-btn secondary small" data-act="dl-pick-install-dir" title="${t("common.browse") || "Gözat"}">${icon("folder", 12)}</button>
+          <button class="apple-pill-btn primary small" data-act="epic-save-install-dir">${icon("check", 12)} ${t("common.save")}</button>
         </div>
       </div>`,
       t("settings.secDownloads"),
@@ -126,8 +128,8 @@ function renderIntegrations(): string {
   const egl = S.eglDetectedList;
   const eglSync =
     egl.length > 0
-      ? `<button class="ps5-btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
-      : `<button class="ps5-btn ghost small" data-act="epic-refresh-egl">${icon("refresh", 12)} ${t("settings.rescan")}</button>`;
+      ? `<button class="apple-pill-btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
+      : `<button class="apple-pill-btn secondary small" data-act="epic-refresh-egl">${icon("refresh", 12)} ${t("settings.rescan")}</button>`;
 
   const eglGroup =
     `<div class="settings-row stacked">
@@ -156,7 +158,7 @@ function renderIntegrations(): string {
     row(
       t("settings.collectionsTitle"),
       `${t("settings.collectionsDesc")} <strong>${S.epicCollections.length}</strong> ${t("settings.collectionsCount")}`,
-      `<button class="ps5-btn ghost small" data-act="import-egl-collections">${icon("download", 12)} ${t("settings.importEglCollections")}</button>`,
+      `<button class="apple-pill-btn secondary small" data-act="import-egl-collections">${icon("download", 12)} ${t("settings.importEglCollections")}</button>`,
     );
 
   const tpl =
@@ -180,13 +182,13 @@ function renderIntegrations(): string {
                     ${l.installed ? esc(l.installPath || t("settings.pathUnknown")) : t("settings.thirdPartyRecommended")}
                   </div>
                   <div class="tpl-actions">
-                    <button class="ps5-btn secondary" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${icon("external", 13)} ${t("settings.officialDownload")}</button>
+                    <button class="apple-pill-btn secondary small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${icon("external", 12)} ${t("settings.officialDownload")}</button>
                   </div>
                 </div>`,
                 )
                 .join("")}
             </div>
-            <button class="ps5-btn ghost small start" data-act="third-party-refresh">${icon("refresh", 12)} ${t("settings.rescan")}</button>
+            <button class="apple-pill-btn secondary small start" data-act="third-party-refresh">${icon("refresh", 12)} ${t("settings.rescan")}</button>
           </div>
         </div>`;
 
@@ -194,13 +196,13 @@ function renderIntegrations(): string {
       <div class="settings-row-text"><div class="settings-row-desc">${t("settings.sgdbDesc")}</div></div>
       <div class="settings-row-control">
         <input id="settings-sgdb-key-input" type="${S.showSettingsSgdbKey ? "text" : "password"}" class="text-input" placeholder="${t("settings.sgdbPlaceholder")}" value="${esc(S.steamGridApiKey || "")}" spellcheck="false" autocomplete="off" />
-        <button class="ps5-btn-icon" data-act="toggle-sgdb-key-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsSgdbKey ? "eye-off" : "eye", 14)}</button>
-        <button class="ps5-btn primary small" data-act="save-sgdb-key">${t("common.save")}</button>
-        <button class="ps5-btn ghost small" data-act="test-sgdb-key">${t("settings.test")}</button>
+        <button class="apple-pill-btn secondary small icon-only" data-act="toggle-sgdb-key-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsSgdbKey ? "eye-off" : "eye", 13)}</button>
+        <button class="apple-pill-btn primary small" data-act="save-sgdb-key">${icon("check", 12)} ${t("common.save")}</button>
+        <button class="apple-pill-btn secondary small" data-act="test-sgdb-key">${t("settings.test")}</button>
       </div>
       <div class="settings-row-control tight">
         <span class="sgdb-status-badge ${S.steamGridApiKey ? "connected" : "disconnected"}">${S.steamGridApiKey ? `${icon("check", 12)} ${t("settings.connected")}` : t("settings.keyMissing")}</span>
-        <button class="ps5-btn ghost small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api">${icon("external", 11)} ${t("settings.getFreeKey")}</button>
+        <button class="apple-pill-btn secondary small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api">${icon("external", 11)} ${t("settings.getFreeKey")}</button>
       </div>
     </div>`;
 
@@ -214,8 +216,8 @@ function renderIntegrations(): string {
         ${S.eosOverlay?.installed && S.eosOverlay.path ? `<div class="settings-row-desc"><code>${esc(S.eosOverlay.path)}</code></div>` : ""}
       </div>
       <div class="settings-row-control">
-        ${S.eosOverlay?.installed ? `<button class="ps5-btn ghost small" data-act="open-eos-folder">${t("settings.eosOpenFolder")}</button>` : ""}
-        <button class="ps5-btn ghost small" data-act="refresh-eos">${t("settings.eosRefresh")}</button>
+        ${S.eosOverlay?.installed ? `<button class="apple-pill-btn secondary small" data-act="open-eos-folder">${icon("folder", 12)} ${t("settings.eosOpenFolder")}</button>` : ""}
+        <button class="apple-pill-btn secondary small" data-act="refresh-eos">${icon("refresh", 12)} ${t("settings.eosRefresh")}</button>
       </div>
     </div>`;
 
@@ -281,7 +283,7 @@ function renderScreenshots(): string {
           ).join("")}
           ${!S.PRESET_HOTKEYS.some((k) => k.code === S.screenshotHotkey) ? `<option value="${S.screenshotHotkey}" selected>${t("settings.customKey")}: ${esc(S.screenshotHotkeyName)} (${S.screenshotHotkey})</option>` : ""}
         </select>
-        <button type="button" class="ps5-btn ghost small ${S.isRecordingScreenshotHotkey ? "settings-recording" : ""}" data-act="record-screenshot-hotkey">
+        <button type="button" class="apple-pill-btn secondary small ${S.isRecordingScreenshotHotkey ? "settings-recording" : ""}" data-act="record-screenshot-hotkey">
           ${S.isRecordingScreenshotHotkey ? `${icon("keyboard", 12)} ${t("settings.pressKey")}` : `${icon("edit", 12)} ${t("settings.assignKey")}`}
         </button>
       </div>
@@ -333,6 +335,100 @@ function renderSystem(): string {
   );
 }
 
+function renderAbout(): string {
+  const version = "0.1.0";
+  const buildInfo = isTauri ? "Tauri v2 · MSVC · 64-bit" : "Web Preview";
+
+  const heroCard = `
+    <div class="settings-about-hero ps5-glass-card">
+      <div class="about-hero-badge">
+        <span class="about-logo-mark">${icon("gamepad-2", 24)}</span>
+      </div>
+      <div class="about-hero-info">
+        <div class="about-hero-title-row">
+          <h2 class="about-hero-title">Efxlve Launcher</h2>
+          <span class="about-version-badge">v${version}</span>
+          <span class="about-build-badge">${buildInfo}</span>
+        </div>
+        <p class="about-hero-tagline">${t("settings.aboutTagline")}</p>
+      </div>
+    </div>
+  `;
+
+  const disclaimerCard = `
+    <div class="settings-about-card ps5-glass-card disclaimer">
+      <div class="about-card-header">
+        <span class="about-card-icon warn">${icon("alert-triangle", 16)}</span>
+        <h3 class="about-card-title">${t("settings.aboutDisclaimerTitle")}</h3>
+      </div>
+      <p class="about-card-text">${t("settings.aboutDisclaimer")}</p>
+    </div>
+  `;
+
+  const missionCard = `
+    <div class="settings-about-card ps5-glass-card">
+      <div class="about-card-header">
+        <span class="about-card-icon zap">${icon("zap", 16)}</span>
+        <h3 class="about-card-title">${t("settings.aboutMissionTitle")}</h3>
+      </div>
+      <p class="about-card-text">${t("settings.aboutMission")}</p>
+      <div class="about-tech-stack">
+        <span class="tech-pill">${icon("cpu", 12)} Rust (Tauri v2)</span>
+        <span class="tech-pill">${icon("terminal", 12)} Legendary CLI</span>
+        <span class="tech-pill">${icon("sparkles", 12)} Vanilla TS + Vite</span>
+        <span class="tech-pill">${icon("shield-check", 12)} 120 FPS Zero-Bloat</span>
+      </div>
+    </div>
+  `;
+
+  const linksCard = `
+    <div class="settings-about-card ps5-glass-card">
+      <div class="about-card-header">
+        <span class="about-card-icon link">${icon("share-2", 16)}</span>
+        <h3 class="about-card-title">${t("settings.aboutLinksTitle")}</h3>
+      </div>
+      <p class="about-card-text">${t("settings.aboutOpenSource")}</p>
+      <div class="about-links-grid">
+        <button type="button" class="about-link-pill" data-act="open-external-url" data-url="https://x.com/efxlve">
+          <span class="link-icon twitter">${icon("twitter", 15)}</span>
+          <div class="link-text">
+            <span class="link-label">${t("settings.aboutTwitter")}</span>
+            <span class="link-url">x.com/efxlve</span>
+          </div>
+          <span class="link-ext">${icon("external", 13)}</span>
+        </button>
+
+        <button type="button" class="about-link-pill" data-act="open-external-url" data-url="https://github.com/efxlve/efxlve_launcher">
+          <span class="link-icon github">${icon("github", 15)}</span>
+          <div class="link-text">
+            <span class="link-label">${t("settings.aboutGithub")}</span>
+            <span class="link-url">github.com/efxlve/efxlve_launcher</span>
+          </div>
+          <span class="link-ext">${icon("external", 13)}</span>
+        </button>
+
+        <button type="button" class="about-link-pill" data-act="open-external-url" data-url="https://efxlve.com/efxlve_launcher">
+          <span class="link-icon web">${icon("globe", 15)}</span>
+          <div class="link-text">
+            <span class="link-label">${t("settings.aboutWebsite")}</span>
+            <span class="link-url">efxlve.com/efxlve_launcher</span>
+          </div>
+          <span class="link-ext">${icon("external", 13)}</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="settings-about-container">
+      ${heroCard}
+      ${disclaimerCard}
+      ${missionCard}
+      ${linksCard}
+    </div>
+  `;
+}
+
 function renderSection(section: SettingsSection): string {
   switch (section) {
     case "downloads":
@@ -345,6 +441,8 @@ function renderSection(section: SettingsSection): string {
       return renderScreenshots();
     case "system":
       return renderSystem();
+    case "about":
+      return renderAbout();
     default:
       return renderAccount();
   }
