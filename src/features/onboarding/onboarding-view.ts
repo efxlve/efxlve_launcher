@@ -61,7 +61,7 @@ export function renderOnboarding(): string {
         <div class="auth-card-wrapper">
           <div class="auth-card auth-setup-card">
             <div class="auth-emblem-halo">${icon("download", 28)}</div>
-            <div class="auth-tagline-chip">BAŞLANGIÇ KURULUMU</div>
+            <div class="auth-tagline-chip">${t("auth.setupChip")}</div>
             <h1 class="auth-title">${t("ob.setupTitle")}</h1>
             <p class="auth-subtitle">${t("ob.setupLead")}</p>
             ${S.epicBusy === "download" ? `
@@ -74,7 +74,7 @@ export function renderOnboarding(): string {
                 <span>${S.epicBusy ? t("ob.downloading") : t("ob.setupDownload")}</span>
               </button>
             </div>
-            <p class="auth-hero-hint">Kaynak: github.com/legendary-gl/legendary (GPL-3.0)</p>
+            <p class="auth-hero-hint">${t("auth.sourceNote")}</p>
           </div>
         </div>
       </div>`;
@@ -95,7 +95,7 @@ export function renderOnboarding(): string {
               </div>
             </div>
 
-            <div class="auth-tagline-chip">BAŞLATILIYOR</div>
+            <div class="auth-tagline-chip">${t("auth.launchingChip")}</div>
             <h2 class="auth-loading-title">${t("auth.syncingTitle")}</h2>
             <p class="auth-loading-stage" id="auth-stage-text">${esc(S.authStageText || t("auth.stageAuth"))}</p>
 
@@ -134,6 +134,13 @@ export function renderOnboarding(): string {
 
       <div class="auth-card-wrapper">
         <div class="auth-card">
+          <!-- Account-add mode: offer a safe escape back to the active session. -->
+          ${S.epicAccount ? `
+            <button class="auth-back-btn" data-act="auth-cancel" ${S.epicBusy || S.authLoading ? "disabled" : ""}>
+              ${icon("arrow-left", 14)}
+              <span>${t("auth.backToAccount")}</span>
+            </button>` : ""}
+
           <!-- Brand Header -->
           <div class="auth-brand-header">
             <div class="auth-emblem-halo">

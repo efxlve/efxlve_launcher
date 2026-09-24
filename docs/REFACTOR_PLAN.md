@@ -13,7 +13,7 @@ Eski yapı "her şey tek dosyada" idi:
 
 | Dosya | Eski satır | Durum |
 |---|---|---|
-| `src/styles.css` | ~10.100 | ✅ 24 modüle bölündü (`src/styles/`) |
+| `src/styles.css` | ~10.100 | ✅ 29 modüle bölündü (`src/styles/`) |
 | `src/main.ts` | ~11.400 | 🚧 Faz 3'te bölünüyor |
 | `src/epic.ts` | ~1.030 | ✅ Kabul edilebilir (barrel olarak korunuyor) |
 
@@ -72,7 +72,7 @@ src/
 │   ├── move-game/              # Sürücüler arası taşıma
 │   ├── dlc/                    # DLC yöneticisi + seçici kurulum
 │   └── context-menu/           # Sağ tık menüsü
-└── styles/                     # ✅ 24 modüler CSS dosyası + index.css
+└── styles/                     # ✅ 29 modüler CSS dosyası + index.css
 ```
 
 ---
@@ -109,7 +109,7 @@ adıma geçilmez. Yerel değişken gölgelemesi (shadowing) her adımda elle kon
 
 | Faz | Kapsam | Durum |
 |---|---|---|
-| **F1** | CSS'i 24 modüle böl (`src/styles/`). | ✅ Tamamlandı |
+| **F1** | CSS'i 29 modüle böl (`src/styles/`). | ✅ Tamamlandı |
 | **F2** | `core/types.ts`, `core/constants.ts`, `core/utils.ts`, `core/icons.ts` çıkar. | ✅ Tamamlandı |
 | **F3a** | `core/state.ts` (tek `S` nesnesi); `main.ts` referanslarını `S.*`'e taşı (TS dil servisi ile, tsc doğrulamalı). | ✅ Tamamlandı |
 | **F3b** | `core/dom.ts` ✅ + `core/toast.ts` ✅ + `core/selectors.ts` ✅; `core/ipc.ts` (olay kayıtları) 🚧. | 🟡 Kısmi |
@@ -136,12 +136,12 @@ cargo test            # Rust tarafı bozulmadı mı
 > Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
 > devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
 
-**Son güncelleme:** Modülerleştirme TAMAMLANDI (Faz 6 final). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. **`main.ts` 11.422 → 86 satır.**
+**Son güncelleme:** Modülerleştirme TAMAMLANDI (Faz 6 final). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. **`main.ts` 11.422 → 113 satır.**
 
 **Tamamlanan yapı:**
 ```
 src/
-├── main.ts                 86 satır  (render/scheduleRender/closeAllModals + bootstrap)
+├── main.ts                 113 satır (render/scheduleRender/closeAllModals + bootstrap)
 ├── i18n.ts                 15 dilli çeviri motoru
 ├── core/
 │   ├── types.ts, constants.ts, utils.ts, icons.ts
@@ -157,14 +157,15 @@ src/
 │   ├── events (click-router, input-listeners, ipc-listeners),
 │   ├── gamepad, library, manage, move-game, onboarding, playtime,
 │   ├── profile, screenshots, settings, store
-├── styles/                 24 modül CSS + index.css
+├── styles/                 29 modül CSS + index.css
 └── locales/                15 dil JSON
 ```
 
 **Kalan işler (opsiyonel, backlog):**
-1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 86 satır kabul edilebilir.
-2. **Olay router'ı** (`click-router.ts`, ~1.356 satır) `act → handler` kayıt defterine bölünebilir (opsiyonel; şu an sınırın altında).
-3. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması, (b) optimizasyon/ölü kod temizliği.
+1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 113 satır kabul edilebilir.
+2. **Olay router'ı** (`click-router.ts`, ~1.509 satır) `act → handler` kayıt defterine bölünmelidir (kural sınırı ~1.500'ün hemen üzerinde).
+3. **Rust dosya boyutları:** `legendary/commands.rs` (~2.500 satır), `legendary/transfers.rs` (~1.750), `main.rs` (~1.600) kural sınırının üzerinde; sorumluluk bazlı modüllere bölünmesi planlanıyor.
+4. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması ✅, (b) optimizasyon/ölü kod temizliği ✅ (77 ölü anahtar + eski onboarding anahtarları silindi).
 
 **Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()`/`openEpicModal()`/`closeAllModals()`/`updateGamepadHud()` gerektiren modüller `core/render.ts` bus'ından import eder; `main.ts`/`ipc-listeners.ts` gerçek implementasyonları kaydeder.
 
@@ -181,7 +182,7 @@ Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/so
 1. **Türkçe metinlerin i18n'e taşınması (Localization) — TAMAMLANDI:**
    - ✅ Tüm kullanıcıya dönük metinler `t()` üzerinden geliyor: nav, sağ tık menüsü, onboarding, çekmece (tüm sekmeler + widget'lar), kütüphane, indirmeler, ayarlar, profil, koleksiyonlar, taşıma modalı, ekran görüntüleri, kapak/SteamGridDB modalı, olay yöneticileri, auth, mağaza yükleme, toast/hata mesajları ve boş durumlar.
    - ✅ Tüm kod yorumları İngilizce (Kural §4.9). Kalan Türkçe dizeler yalnızca veri sabitleri (demo katalog, sentinel'ler, anahtar kelime tespiti) ve dil adları.
-   - `src/locales/tr.json` + `en.json`: **879 anahtar**, tam eşlikli. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84).
+   - `src/locales/tr.json` + `en.json`: **1.208 anahtar**, tam eşlikli. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84). Kaldırılan özelliklerin ölü anahtarları temizlendi (bkz. §166).
 2. **Gereksiz / optimize olmayan kod temizliği — TAMAMLANDI (temel):**
    - ✅ Kullanılmayan importlar ve ölü yerel değişkenler temizlendi (`noUnusedLocals` 0 hata).
    - ✅ Sıfır-emoji politikası ihlali giderildi: `POPULAR_COL_EMOJIS` kaldırıldı, `core/collection-icons.ts` (24 SVG ikon) ile değiştirildi.

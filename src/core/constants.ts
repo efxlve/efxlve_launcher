@@ -18,7 +18,7 @@ export const isTauri =
  * no description. It is never rendered raw (UI guards against it) and is kept
  * language-neutral in code so cache identity checks stay stable.
  */
-export const NO_DESC = "Açıklama yok.";
+export const NO_DESC = "__no_description__";
 
 /** Selected UI language. */
 export const LANG_KEY = "efxlve-lang";

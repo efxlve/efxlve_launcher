@@ -2176,3 +2176,14 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 
 - `getAntiCheat` içindeki `title.includes("grand theft auto")` koşulu **GTA III / Vice City / San Andreas / IV** için de BattlEye döndürüyordu (bu oyunlarda hile koruması yok). Koşul yalnızca **GTA V / GTA 5 / GTA Online**'ı yakalayacak şekilde daraltıldı (`\bgta ?(v|5)\b` / `grand theft auto (v|5)\b`). Doğrulama: III/VC/SA/IV → yok, V/5 → BattlEye.
 
+## 166. Baştan Sona Tutarlılık Denetimi (Hesap Ekleme İptali + i18n + Doküman Senkronu)
+
+**Kök neden:** Bir önceki oturumda "hesap ekleme iptali" yarım kalmıştı: `cancelAddAccount()` ve `auth-cancel` router kaydı yazılmış, ancak giriş ekranında tetikleyici buton ve çeviri anahtarı eklenmemişti. Denetimde ayrıca 7 eksik TS + 1 eksik Rust i18n anahtarı, sabit Türkçe metinler, ölü çeviri anahtarları ve bayat dokümanlar tespit edildi.
+
+- **Hesap ekleme iptali tamamlandı:** Giriş kartının sol üstüne `data-act="auth-cancel"` ("Aktif Hesaba Dön" / `auth.backToAccount`) butonu eklendi (yalnızca aktif oturum varken görünür, `S.epicBusy || S.authLoading` iken kilitli); `auth.returnToAccount` bildirimi ve `.auth-back-btn` stili (`auth.css`) eklendi.
+- **Eksik i18n anahtarları:** `common.browse`, `profile.statusSynced` ve Rust `@t:dl.noPending` eklendi; Ayarlar'ın bayat referansları (`downloads.clearCache/findCdn/resetCdn`, `profile.copyAccountId`) mevcut doğru anahtarlara bağlandı (ekran artık ham anahtar göstermiyor).
+- **Sabit Türkçe temizliği:** `onboarding-view.ts`'teki "BAŞLANGIÇ KURULUMU"/"BAŞLATILIYOR"/"Kaynak:" metinleri `auth.setupChip`/`auth.launchingChip`/`auth.sourceNote`'a taşındı; `auth-actions.ts` + `profile-view.ts` Türkçe yorumları İngilizce'ye çevrildi; `NO_DESC` sentinel değeri dil-nötr yapıldı.
+- **Ölü anahtar temizliği:** Kaldırılan özelliklerden kalan 77 anahtar tr/en'den, 4 `ob.*` anahtarı 13 ikincil dilden silindi (1.277 → 1.208; tr/en tam eşlik).
+- **Doküman senkronu:** `CODEBASE_MAP.md` gerçek dosya yapısıyla yeniden yazıldı; `TAURI_IPC_REFERENCE.md` 20 eksik komutla tamamlandı (98/98); `REFACTOR_PLAN.md` sayaçları ve `AGENTS.md` GÜNCEL DURUM güncellendi.
+- `cargo test` (61 passed / 1 ignored), `npm.cmd run build` (tsc + vite), i18n eşlik (1208/1208) yeşil.
+

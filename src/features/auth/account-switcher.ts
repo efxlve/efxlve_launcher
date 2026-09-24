@@ -76,8 +76,23 @@ export async function removeSavedAccount(accountId: string): Promise<void> {
 /** Transition to login screen to link another Epic account without losing the current one. */
 export function promptAddAccount(): void {
   // Current account is already safely archived on disk.
-  // Switch view to onboarding login screen.
+  // Save return view and switch view to onboarding login screen.
+  S.lastNonAuthView = S.view;
   S.epicPhase = "login";
   document.body.classList.add("auth-mode");
   render();
+}
+
+/** Cancel adding account and seamlessly return to the active account session. */
+export function cancelAddAccount(): void {
+  if (S.epicAccount) {
+    S.epicPhase = "library";
+    document.body.classList.remove("auth-mode");
+    S.view = S.lastNonAuthView || "settings";
+    toast(t("auth.returnToAccount", { name: S.epicAccount }), "ok");
+    render();
+  } else if (S.savedAccounts && S.savedAccounts.length > 0) {
+    const target = S.savedAccounts.find((a) => a.is_active) || S.savedAccounts[0];
+    void switchAccount(target.account_id);
+  }
 }
