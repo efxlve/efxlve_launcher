@@ -58,6 +58,7 @@ import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-ins
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
 import { refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { openPalette } from "../palette/palette";
+import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
@@ -398,6 +399,11 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "open-palette") {
     openPalette();
+  } else if (act === "open-tv-mode") {
+    closeAllModals();
+    openTvMode();
+  } else if (act === "close-tv-mode") {
+    closeTvMode();
   } else if (act === "lib-clear-search") {
     S.query = "";
     const input = document.getElementById("search") as HTMLInputElement | null;

@@ -19,6 +19,7 @@ import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
+import { renderTvMode } from "./features/gamepad/tv-mode";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderOnboarding } from "./features/onboarding/onboarding-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
@@ -47,6 +48,7 @@ function render(): void {
 
   const isAuthed = Boolean(S.epicAccount) && S.epicPhase === "library" && !S.authLoading;
   document.body.classList.toggle("auth-mode", !isAuthed);
+  document.body.classList.toggle("tv-mode", isAuthed && S.view === "tv");
 
   if (!isAuthed) {
     if (S.storeShown) hideStore();
@@ -71,6 +73,7 @@ function render(): void {
   }
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()
+    : S.view === "tv" ? renderTvMode()
     : S.view === "downloads" ? renderDownloads()
     : S.view === "profile" ? renderProfile()
     : renderSettings();
