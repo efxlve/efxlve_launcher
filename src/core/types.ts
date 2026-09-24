@@ -24,7 +24,7 @@ export type EpicViewMode = "grid" | "shelves" | "list";
 export type CardSize = "compact" | "normal" | "large";
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system";
+export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "about";
 
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";

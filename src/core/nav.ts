@@ -8,7 +8,7 @@
 import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { S } from "./state";
+import { getCustomAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { t } from "../i18n";
@@ -74,9 +74,9 @@ export function updateChrome(): void {
   const acc = document.getElementById("account");
   if (acc) {
     const name = S.epicAccount || t("nav.notLoggedIn");
-    const accountId = S.epicAccountId || S.epicAccount || "";
-    const customAvatar = accountId ? S.customAvatars[accountId] : null;
-    const acctState = (S.epicAccount || "") + ":" + (customAvatar ? "custom" : "none");
+    const customAvatar = S.epicAccount ? getCustomAvatar() : null;
+    const avatarToken = customAvatar ? `${customAvatar.length}:${customAvatar.slice(0, 32)}` : "none";
+    const acctState = `${S.epicAccount || ""}:${avatarToken}`;
 
     if (acc.dataset.acctState !== acctState) {
       acc.dataset.acctState = acctState;

@@ -10,22 +10,28 @@ import { CUSTOM_AVATARS_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { updateChrome } from "../../core/nav";
 import { render } from "../../core/render";
-import { S } from "../../core/state";
-import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
+import { getCustomAvatar, S } from "../../core/state";
+import { toast } from "../../core/toast";
 import { t } from "../../i18n";
+
+export { getCustomAvatar };
 
 export function getCurrentAccountId(): string {
   return S.playerProfileData?.account_id || S.epicAccountId || S.epicAccount || "default";
 }
 
-export function getCustomAvatar(accountId?: string | null): string | null {
-  const id = accountId || getCurrentAccountId();
-  return S.customAvatars[id] || null;
-}
-
 export function saveCustomAvatar(accountId: string, dataUrl: string): void {
   S.customAvatars[accountId] = dataUrl;
+  if (S.playerProfileData?.account_id) {
+    S.customAvatars[S.playerProfileData.account_id] = dataUrl;
+  }
+  if (S.epicAccountId) {
+    S.customAvatars[S.epicAccountId] = dataUrl;
+  }
+  if (S.epicAccount) {
+    S.customAvatars[S.epicAccount] = dataUrl;
+  }
   try {
     localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(S.customAvatars));
   } catch (e) {
@@ -38,6 +44,10 @@ export function saveCustomAvatar(accountId: string, dataUrl: string): void {
 
 export function removeCustomAvatar(accountId: string): void {
   delete S.customAvatars[accountId];
+  if (S.playerProfileData?.account_id) delete S.customAvatars[S.playerProfileData.account_id];
+  if (S.epicAccountId) delete S.customAvatars[S.epicAccountId];
+  if (S.epicAccount) delete S.customAvatars[S.epicAccount];
+  delete S.customAvatars["default"];
   try {
     localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(S.customAvatars));
   } catch (e) {
