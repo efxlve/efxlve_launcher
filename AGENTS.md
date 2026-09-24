@@ -194,13 +194,12 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - Profil Hero seviye ve kupa alanı tek parça, mimari olarak simetrik ve düzenli **Gamer Prestij Kartı** (`.ps5-gamer-card`) olarak baştan inşa edildi: 38px seviye amblemi, tok seviye başlığı, anlık XP dökümü (`765 / 1.000 XP`), tam genişlikte pürüzsüz XP ilerleme rayı, üst köşede sabit yenileme butonu ve alt bölümde dikey ayraçlarla eşit dağıtılmış 4 kademeli (Platin, Altın, Gümüş, Bronz) kupa sütunları birleştirilerek dağınık/uyumsuz yerleşim tamamen giderildi.
 - Hesap bazlı **Yerel Profil Fotoğrafı (Avatar)** desteği eklendi (`src/features/profile/profile-avatar.ts`): Kullanıcı avatara tıkladığında yerel dosya seçici açılır, seçilen görsel hafif ve hızlı 256x256 WebP formatına kırpılarak optimize edilir; sadece o anki Epic Games hesabına özel olarak (`S.customAvatars[accountId]`) yerel diskte saklanır, profil sahnesinde ve üst başlık çubuğu hesap çipinde (`#account`) anında gösterilir; mevcut fotoğrafı değiştirme veya varsayılana sıfırlama modalı eklendi.
 - Üst başlık çubuğu (`#account`) butonundaki profil fotoğrafı senkronizasyonu tamamlandı (`src/core/nav.ts`, `src/core/state.ts`, `src/styles/base.css`): Çoklu hesap kimlikleri (`account_id`, `epicAccountId`, `epicAccount`) ile uyumlu `getCustomAvatar()` çözücüsü eklendi; dairesel 24px taşma koruması ve `object-fit: cover` ile piksellenme/sığmama hataları giderildi.
-- Ayarlar (Settings) sekmesi baştan aşağı **Apple / PS5 Console Dark** estetiğiyle yenilendi (`src/features/settings/settings-view.ts`, `src/styles/settings.css`): Sol kategori gezinme rayı (`settings-nav`), obsidyen cam kart grupları (`settings-group`), saç çizgisi satır ayrımı, Apple-style pürüzsüz yeşil zümrüt toggle switch, segmented network profilleri ve rafine form butonları uygulandı.
-- Ayarlar sekmesine kapsamlı **"Hakkında" (About)** paneli eklendi (`settings.secAbout`):
-  - Vitrin Başlığı: v0.1.0 sürüm rozeti, Tauri v2 / 64-bit derleme künyesi ve PS5 estetiği vurgulu slogan.
-  - Yasal Bildirim & Feragatname: Efxlve Launcher'ın bağımsız bir açık kaynak projesi olduğu ve **Epic Games ile hiçbir resmi bağı/ortaklığı olmadığı** net şekilde bildirildi.
-  - Amaç & Mimari: Ağır istemci yerine düşük donanımlarda bile 120 FPS akıcılık, minimum bellek ve Rust + vanilla TypeScript gücü açıklandı.
-  - Resmi Bağlantılar: Kullanıcının talep ettiği X (`https://x.com/efxlve`), GitHub (`https://github.com/efxlve/efxlve_launcher`) ve Web Sitesi (`https://efxlve.com/efxlve_launcher`) Apple link kapsülleriyle entegre edildi.
-
-
-
-
+- Ayarlar (Settings) sekmesi baştan aşağı **macOS Sequoia & PlayStation 5 Console Dark** mimarisine dönüştürüldü (`src/features/settings/settings-view.ts`, `src/styles/settings.css`):
+  - Sol kenar çubuğuna entegre **Mini Hesap Kartı** (`.settings-sidebar-account`): Kullanıcı profil avatarı, Epic Games kullanıcı adı ve canlı yeşil çevrimiçi noktasıyla zenginleştirildi.
+  - Kategori Gezinme Squircles (`.settings-nav-icon`): Her kategori için özel vurgu rengi (mor, mavi, yeşil, sarı, turuncu, kırmızı, safir) ve alt açıklama metinleri (`subKey`) eklendi.
+  - **Hesap (Account) Yönetim Kartı**: 60px dairesel avatar, yerel fotoğraf düzenleme overlay'i, tek tıkla kopyalanabilir Epic Hesap Kimliği çipi, 3 metrikli istatistik ızgarası (Kütüphane boyutu, Başarımlar, Toplam Oyun Süresi) ve ayrılmış kırmızı "Tehlikeli Bölge" oturum kapatma kartı.
+  - **İndirmeler & Ağ (Downloads) 3 Sütunlu PS5 Hız Kartları**: Düz haplar yerine Azami Hız (Limitsiz), Dengeli (15 MB/s) ve Düşük Bant Genişliği (5 MB/s) seçeneklerini içeren interaktif, gecikme ve bant genişliği detaylı konsol kartları; kurulum dizini seçici ve CDN/önbellek bakım araçları.
+- Ayarlar "Hakkında" (About) paneline resmi e-posta adresi eklendi (`mailto:hi@efxlve.com`):
+  - `src/core/icons.ts` modülüne yeni `mail` SVG vektör ikonu eklendi (sıfır emoji kuralı korundu).
+  - Vitrin kartı altına 4'lü Apple bağlantı kapsülleri yerleştirildi: E-posta (`hi@efxlve.com`), X (`https://x.com/efxlve`), GitHub (`https://github.com/efxlve/efxlve_launcher`) ve Resmi Web Sitesi (`https://efxlve.com/efxlve_launcher`).
+  - Türkçe ve İngilizce dil dosyalarına (`src/locales/tr.json`, `src/locales/en.json`) eksiksiz anahtar senkronizasyonu sağlandı.

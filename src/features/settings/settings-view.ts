@@ -10,7 +10,7 @@
 import { isTauri } from "../../core/constants";
 import { icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
-import { S } from "../../core/state";
+import { getCustomAvatar, S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
@@ -26,14 +26,14 @@ import {
   type ThirdPartyLauncher,
 } from "../../epic";
 
-const SECTIONS: { id: SettingsSection; icon: IconName; labelKey: string }[] = [
-  { id: "account", icon: "users", labelKey: "settings.secAccount" },
-  { id: "downloads", icon: "download", labelKey: "settings.secDownloads" },
-  { id: "integrations", icon: "layers", labelKey: "settings.secIntegrations" },
-  { id: "appearance", icon: "globe", labelKey: "settings.secAppearance" },
-  { id: "screenshots", icon: "camera", labelKey: "settings.secScreenshots" },
-  { id: "system", icon: "settings", labelKey: "settings.secSystem" },
-  { id: "about", icon: "info", labelKey: "settings.secAbout" },
+const SECTIONS: { id: SettingsSection; icon: IconName; labelKey: string; subKey: string; color: string }[] = [
+  { id: "account", icon: "users", labelKey: "settings.secAccount", subKey: "settings.secAccountSub", color: "#8b5cf6" },
+  { id: "downloads", icon: "download", labelKey: "settings.secDownloads", subKey: "settings.secDownloadsSub", color: "#3b82f6" },
+  { id: "integrations", icon: "layers", labelKey: "settings.secIntegrations", subKey: "settings.secIntegrationsSub", color: "#10b981" },
+  { id: "appearance", icon: "globe", labelKey: "settings.secAppearance", subKey: "settings.secAppearanceSub", color: "#ec4899" },
+  { id: "screenshots", icon: "camera", labelKey: "settings.secScreenshots", subKey: "settings.secScreenshotsSub", color: "#f59e0b" },
+  { id: "system", icon: "settings", labelKey: "settings.secSystem", subKey: "settings.secSystemSub", color: "#06b6d4" },
+  { id: "about", icon: "info", labelKey: "settings.secAbout", subKey: "settings.secAboutSub", color: "#a855f7" },
 ];
 
 /** A single setting line: title/description on the left, a control on the right. */
@@ -60,65 +60,165 @@ function group(rows: string, title = ""): string {
 /* ---------- Sections ---------- */
 
 function renderAccount(): string {
-  const accountControl = S.epicAccount
-    ? `<button class="apple-pill-btn secondary danger small" data-act="epic-logout">${icon("trash", 12)} ${t("settings.logout")}</button>`
+  const accountId = S.playerProfileData?.account_id || S.epicAccountId || S.epicAccount || "—";
+  const customAvatar = S.epicAccount ? getCustomAvatar() : null;
+  const initial = (S.epicAccount.trim()[0] || "?").toUpperCase();
+  const displayName = S.playerProfileData?.display_name || S.epicAccount || t("settings.notLoggedIn");
+
+  const identityCard = `
+    <div class="settings-group account-hero-card">
+      <div class="settings-account-hero">
+        <div class="settings-account-avatar-wrap" data-act="profile-change-avatar" title="${t("profile.changeAvatarTitle")}">
+          <div class="settings-account-avatar ${customAvatar ? "has-img" : ""}">
+            ${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : `<span>${esc(initial)}</span>`}
+            <div class="settings-account-avatar-badge">${icon("camera", 11)}</div>
+          </div>
+          <span class="settings-account-pip ${S.offlineMode ? "offline" : "online"}"></span>
+        </div>
+        <div class="settings-account-details">
+          <div class="settings-account-head-row">
+            <h3 class="settings-account-name">${esc(displayName)}</h3>
+            <span class="settings-account-badge">${icon("shield-check", 12)} ${t("settings.accountConnectedBadge")}</span>
+          </div>
+          <div class="settings-account-id-row">
+            <span class="settings-account-id-label">Epic Account ID:</span>
+            <code class="settings-account-id-val">${esc(accountId)}</code>
+            <button type="button" class="apple-pill-btn secondary small icon-only" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyAccountId")}">
+              ${icon("copy", 12)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const statsCard = `
+    <div class="settings-group">
+      <div class="settings-group-title">${t("settings.accountStatsTitle")}</div>
+      <div class="settings-stats-grid">
+        <div class="settings-stat-box">
+          <span class="stat-num">${S.epicSummaries.length}</span>
+          <span class="stat-lbl">${t("settings.accountTotalGames")}</span>
+        </div>
+        <div class="settings-stat-box">
+          <span class="stat-num">${S.epicSkippedCount}</span>
+          <span class="stat-lbl">${t("settings.skippedItems")}</span>
+        </div>
+        <div class="settings-stat-box">
+          <span class="stat-num sync ${S.epicSyncing ? "spinning" : ""}">${S.epicSyncing ? icon("refresh", 16) : icon("check-circle", 16)}</span>
+          <span class="stat-lbl">${S.epicSyncing ? t("settings.eglSyncing") : t("profile.statusSynced")}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const dangerCard = S.epicAccount
+    ? `
+    <div class="settings-group danger-zone">
+      <div class="settings-group-title">${t("settings.accountDangerZone")}</div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <div class="settings-row-title">${t("settings.logout")}</div>
+          <div class="settings-row-desc">${t("settings.accountDangerDesc")}</div>
+        </div>
+        <div class="settings-row-control">
+          <button type="button" class="apple-pill-btn secondary danger small" data-act="epic-logout">
+            ${icon("trash", 12)} <span>${t("settings.logout")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `
     : "";
-  const accountDesc = S.epicAccount
-    ? `${t("settings.connectedAccount")}: <strong>${esc(S.epicAccount)}</strong>`
-    : t("settings.notLoggedIn");
-  return group(
-    row(t("settings.accountTitle"), accountDesc, accountControl) +
-      row(t("settings.skippedItems"), null, `<span class="settings-value">${S.epicSkippedCount}</span>`),
-  );
+
+  return identityCard + statsCard + dangerCard;
 }
 
 function renderDownloads(): string {
-  const netDesc =
-    S.networkProfile === "max"
-      ? t("settings.netMaxDesc")
-      : S.networkProfile === "low"
-        ? t("settings.netLowDesc")
-        : t("settings.netBalancedDesc");
-  return (
-    group(
-      `<div class="settings-row stacked">
-        <div class="settings-row-text">
-          <div class="settings-row-title">${t("settings.installDirTitle")}</div>
-          <div class="settings-row-desc">${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "—")}</code></div>
-        </div>
-        <div class="settings-row-control">
-          <input id="epic-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
-          <button class="apple-pill-btn secondary small" data-act="dl-pick-install-dir" title="${t("common.browse") || "Gözat"}">${icon("folder", 12)}</button>
-          <button class="apple-pill-btn primary small" data-act="epic-save-install-dir">${icon("check", 12)} ${t("common.save")}</button>
-        </div>
-      </div>`,
-      t("settings.secDownloads"),
-    ) +
-    group(
-      `<div class="settings-row stacked">
-        <div class="settings-row-text">
-          <div class="settings-row-title">${t("settings.netTitle")}</div>
-          <div class="settings-row-desc">${t("settings.netDesc")}</div>
-        </div>
-        <div class="settings-row-control">
-          <div class="net-profile-pills">
-            <button class="net-profile-btn ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">${icon("rocket", 13)} ${t("settings.netMax")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">${icon("shield-check", 13)} ${t("settings.netBalanced")}</button>
-            <button class="net-profile-btn ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${icon("clock", 13)} ${t("settings.netLow")}</button>
+  const dirCard = group(
+    `<div class="settings-row stacked">
+      <div class="settings-row-text">
+        <div class="settings-row-title">${icon("folder", 14)} ${t("settings.installDirTitle")}</div>
+        <div class="settings-row-desc">${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "—")}</code></div>
+      </div>
+      <div class="settings-row-control">
+        <input id="epic-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+        <button type="button" class="apple-pill-btn secondary small" data-act="dl-pick-install-dir" title="${t("common.browse") || "Gözat"}">
+          ${icon("folder", 12)} <span>${t("common.browse") || "Gözat"}</span>
+        </button>
+        <button type="button" class="apple-pill-btn primary small" data-act="epic-save-install-dir">
+          ${icon("check", 12)} <span>${t("common.save")}</span>
+        </button>
+      </div>
+    </div>`,
+    t("settings.installDirTitle"),
+  );
+
+  const netCards = `
+    <div class="settings-group">
+      <div class="settings-group-title">${t("settings.netCardsTitle")}</div>
+      <div class="settings-net-cards">
+        <div class="settings-net-card ${S.networkProfile === "max" ? "active" : ""}" data-act="set-net-profile" data-profile="max">
+          <div class="net-card-head">
+            <span class="net-card-icon rocket">${icon("rocket", 18)}</span>
+            <span class="net-card-badge">${S.networkProfile === "max" ? icon("check", 12) : ""}</span>
           </div>
+          <div class="net-card-title">${t("settings.netMax")}</div>
+          <div class="net-card-sub">${t("settings.netMaxDesc")}</div>
         </div>
-        <div class="settings-row-desc spaced">${netDesc}</div>
-      </div>`,
-      t("settings.secDownloads"),
-    ) +
-    group(
-      row(
+
+        <div class="settings-net-card ${S.networkProfile === "balanced" ? "active" : ""}" data-act="set-net-profile" data-profile="balanced">
+          <div class="net-card-head">
+            <span class="net-card-icon shield">${icon("shield-check", 18)}</span>
+            <span class="net-card-badge">${S.networkProfile === "balanced" ? icon("check", 12) : ""}</span>
+          </div>
+          <div class="net-card-title">${t("settings.netBalanced")}</div>
+          <div class="net-card-sub">${t("settings.netBalancedDesc")}</div>
+        </div>
+
+        <div class="settings-net-card ${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">
+          <div class="net-card-head">
+            <span class="net-card-icon clock">${icon("clock", 18)}</span>
+            <span class="net-card-badge">${S.networkProfile === "low" ? icon("check", 12) : ""}</span>
+          </div>
+          <div class="net-card-title">${t("settings.netLow")}</div>
+          <div class="net-card-sub">${t("settings.netLowDesc")}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const advCard = `
+    <div class="settings-group">
+      <div class="settings-group-title">${t("settings.netAdvTitle")}</div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <div class="settings-row-title">${icon("zap", 13)} ${t("downloads.findCdn")}</div>
+          <div class="settings-row-desc">${t("settings.netFindCdnDesc")}${S.preferredCdn ? ` <code class="cdn-badge">${esc(S.preferredCdn)}</code>` : ""}</div>
+        </div>
+        <div class="settings-row-control">
+          ${S.preferredCdn ? `<button type="button" class="apple-pill-btn secondary small" data-act="dl-reset-cdn">${icon("x", 12)} ${t("downloads.resetCdn")}</button>` : ""}
+          <button type="button" class="apple-pill-btn primary small" data-act="dl-find-fastest-cdn">${icon("zap", 12)} ${t("downloads.findCdn")}</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <div class="settings-row-title">${icon("trash", 13)} ${t("downloads.clearCache")}</div>
+          <div class="settings-row-desc">${t("settings.netCacheDesc")}</div>
+        </div>
+        <div class="settings-row-control">
+          <button type="button" class="apple-pill-btn secondary small" data-act="dl-cleanup-cache">${icon("trash", 12)} ${t("downloads.clearCache")}</button>
+        </div>
+      </div>
+      ${row(
         t("settings.offlineTitle"),
         t("settings.offlineDesc"),
         `<span class="settings-status ${S.offlineMode ? "on" : ""}">${S.offlineMode ? t("settings.offlineActive") : t("settings.onlineStandard")}</span>${toggle("toggle-offline-mode", S.offlineMode)}`,
-      ),
-    )
-  );
+      )}
+    </div>
+  `;
+
+  return dirCard + netCards + advCard;
 }
 
 function renderIntegrations(): string {
@@ -389,6 +489,15 @@ function renderAbout(): string {
       </div>
       <p class="about-card-text">${t("settings.aboutOpenSource")}</p>
       <div class="about-links-grid">
+        <button type="button" class="about-link-pill email" data-act="open-external-url" data-url="mailto:hi@efxlve.com">
+          <span class="link-icon email">${icon("mail", 15)}</span>
+          <div class="link-text">
+            <span class="link-label">${t("settings.aboutEmail")}</span>
+            <span class="link-url">hi@efxlve.com</span>
+          </div>
+          <span class="link-ext">${icon("external", 13)}</span>
+        </button>
+
         <button type="button" class="about-link-pill" data-act="open-external-url" data-url="https://x.com/efxlve">
           <span class="link-icon twitter">${icon("twitter", 15)}</span>
           <div class="link-text">
@@ -450,11 +559,32 @@ function renderSection(section: SettingsSection): string {
 
 export function renderSettings(): string {
   const active = SECTIONS.find((s) => s.id === S.settingsSection) ?? SECTIONS[0];
+  const customAvatar = S.epicAccount ? getCustomAvatar() : null;
+  const initial = (S.epicAccount.trim()[0] || "?").toUpperCase();
+
+  const accountMini = `
+    <div class="settings-sidebar-account ${S.settingsSection === "account" ? "active" : ""}" data-act="settings-section" data-section="account">
+      <div class="sidebar-avatar ${customAvatar ? "has-img" : ""}">
+        ${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : `<span>${esc(initial)}</span>`}
+        <span class="sidebar-status-pip ${S.offlineMode ? "offline" : "online"}"></span>
+      </div>
+      <div class="sidebar-account-info">
+        <span class="sidebar-account-name">${esc(S.epicAccount || t("nav.notLoggedIn"))}</span>
+        <span class="sidebar-account-sub">${S.epicAccount ? "Epic Games" : t("settings.notLoggedIn")}</span>
+      </div>
+      ${icon("chevron-right", 13)}
+    </div>
+  `;
+
   const nav = SECTIONS.map(
     (s) => `
       <button class="settings-nav-item ${s.id === active.id ? "active" : ""}" data-act="settings-section" data-section="${s.id}">
-        <span class="settings-nav-icon">${icon(s.icon, 16)}</span>
-        <span class="settings-nav-label">${t(s.labelKey)}</span>
+        <span class="settings-nav-icon" style="--nav-icon-color: ${s.color};">${icon(s.icon, 16)}</span>
+        <div class="settings-nav-text">
+          <span class="settings-nav-label">${t(s.labelKey)}</span>
+          <span class="settings-nav-sub">${t(s.subKey)}</span>
+        </div>
+        ${s.id === active.id ? `<span class="settings-nav-indicator"></span>` : ""}
       </button>`,
   ).join("");
 
@@ -468,11 +598,20 @@ export function renderSettings(): string {
       </header>
       <main class="ps5-page-body">
         <div class="settings-layout">
-          <nav class="settings-nav">${nav}</nav>
+          <nav class="settings-nav">
+            ${accountMini}
+            <div class="settings-nav-divider"></div>
+            <div class="settings-nav-list">${nav}</div>
+          </nav>
           <div class="settings-panel">
             <div class="settings-panel-head">
-              <span class="settings-panel-icon">${icon(active.icon, 19)}</span>
-              <h2 class="settings-panel-title">${t(active.labelKey)}</h2>
+              <div class="settings-panel-icon-wrap" style="--head-icon-color: ${active.color};">
+                ${icon(active.icon, 20)}
+              </div>
+              <div class="settings-panel-titles">
+                <h2 class="settings-panel-title">${t(active.labelKey)}</h2>
+                <p class="settings-panel-subtitle">${t(active.subKey)}</p>
+              </div>
             </div>
             ${renderSection(active.id)}
           </div>
