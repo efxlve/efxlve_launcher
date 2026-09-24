@@ -20,7 +20,7 @@ import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOffl
 import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import type { CardSize, DrawerTab, EpicSort, View } from "../../core/types";
+import type { DrawerTab, EpicSort, EpicViewMode, View } from "../../core/types";
 import { esc, fmtBytes, fmtCdnName, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
@@ -57,7 +57,7 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
-import { resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
+import { refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
@@ -88,16 +88,6 @@ document.addEventListener("click", (e) => {
     if (!targetEl.closest(".sort-dropdown-container")) {
       S.isSortDropdownOpen = false;
       const menu = document.getElementById("sort-dropdown-menu");
-      if (menu) menu.classList.remove("show");
-    }
-  }
-
-  // Close the collection dropdown when clicking outside it.
-  if (S.isColDropdownOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".col-dropdown-container")) {
-      S.isColDropdownOpen = false;
-      const menu = document.getElementById("col-dropdown-menu");
       if (menu) menu.classList.remove("show");
     }
   }
@@ -369,32 +359,13 @@ document.addEventListener("click", (e) => {
       S.activeCollectionId = null;
       if (S.epicFilter === "collections" && S.activeCollectionId !== null) { S.activeCollectionId = null; } else { S.activeCollectionId = null; S.epicFilter = S.epicFilter === "collections" ? "all" : "collections"; }
     }
-    S.isColDropdownOpen = false;
     S.isSortDropdownOpen = false;
     const hasCustomCol = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     if (hadCustomCol !== hasCustomCol || !updateLibraryFilterInPlace()) {
       resetCardChunk();
       render();
     }
-  } else if (act === "toggle-col-dropdown") {
-    if (S.isSortDropdownOpen) {
-      S.isSortDropdownOpen = false;
-      const smenu = document.getElementById("sort-dropdown-menu");
-      if (smenu) smenu.classList.remove("show");
-    }
-    S.isColDropdownOpen = !S.isColDropdownOpen;
-    const menu = document.getElementById("col-dropdown-menu");
-    if (menu) {
-      menu.classList.toggle("show", S.isColDropdownOpen);
-    } else {
-      render();
-    }
   } else if (act === "toggle-sort-dropdown") {
-    if (S.isColDropdownOpen) {
-      S.isColDropdownOpen = false;
-      const cmenu = document.getElementById("col-dropdown-menu");
-      if (cmenu) cmenu.classList.remove("show");
-    }
     S.isSortDropdownOpen = !S.isSortDropdownOpen;
     const menu = document.getElementById("sort-dropdown-menu");
     if (menu) {
@@ -425,60 +396,21 @@ document.addEventListener("click", (e) => {
     S.activeCollectionId = null;
     resetCardChunk();
     render();
-  } else if (act === "clear-collection") {
-    S.activeCollectionId = null;
-    S.isColDropdownOpen = false;
-    S.isSortDropdownOpen = false;
-    resetCardChunk();
-    render();
-  } else if (act === "toggle-hero-spotlight") {
-    S.isHeroCollapsed = !S.isHeroCollapsed;
-    localStorage.setItem("efxlve-hero-collapsed", S.isHeroCollapsed ? "1" : "0");
-    render();
-  } else if (act === "epic-size" && t.dataset.val) {
-    S.epicCardSize = t.dataset.val as CardSize;
-    localStorage.setItem("efxlve-card-size", S.epicCardSize);
-    render();
-  } else if (act === "epic-view-grid") {
-    S.epicViewMode = "grid";
-    localStorage.setItem("efxlve-view-mode", "grid");
-    resetCardChunk();
-    render();
-  } else if (act === "epic-view-shelves") {
-    S.epicViewMode = "shelves";
-    localStorage.setItem("efxlve-view-mode", "shelves");
-    resetCardChunk();
-    render();
-  } else if (act === "epic-view-list") {
-    S.epicViewMode = "list";
-    localStorage.setItem("efxlve-view-mode", "list");
-    resetCardChunk();
-    render();
-  } else if (act === "shelf-scroll") {
-    const dir = t.dataset.dir;
-    const shelf = t.closest(".shelf-section");
-    const track = shelf?.querySelector(".shelf-row-track");
-    if (track) {
-      track.scrollBy({ left: dir === "left" ? -420 : 420, behavior: "smooth" });
+  } else if (act === "lib-clear-search") {
+    S.query = "";
+    const input = document.getElementById("search") as HTMLInputElement | null;
+    if (input) input.value = "";
+    if (!refreshLibraryResultsInPlace()) render();
+  } else if (act === "lib-view-mode") {
+    const mode = t.dataset.val as EpicViewMode;
+    if ((mode === "grid" || mode === "list") && mode !== S.epicViewMode) {
+      S.epicViewMode = mode;
+      localStorage.setItem("efxlve-view-mode", mode);
+      document.querySelectorAll<HTMLElement>("[data-act='lib-view-mode']").forEach((b) => {
+        b.classList.toggle("active", b.dataset.val === mode);
+      });
+      if (!refreshLibraryResultsInPlace()) render();
     }
-  } else if (act === "shelf-see-all") {
-    // Expand a capped shelf into the full grid (or collection) view.
-    const filter = t.dataset.filter as typeof S.epicFilter | undefined;
-    const colId = t.dataset.colId;
-    if (colId) {
-      S.activeCollectionId = colId;
-      S.epicFilter = "all";
-    } else if (filter) {
-      S.epicFilter = filter;
-      S.activeCollectionId = "all";
-    } else {
-      S.epicFilter = "all";
-      S.activeCollectionId = "all";
-      S.epicSort = "recent";
-    }
-    S.epicViewMode = "grid";
-    resetCardChunk();
-    render();
   } else if (act === "open-custom-cover" && id) {
     const target = (t.dataset.target as "cover" | "hero") || "cover";
     openCustomCoverModal(id, target);
@@ -690,15 +622,12 @@ document.addEventListener("click", (e) => {
       S.activeCollectionId = colId;
       if (S.epicFilter === "fav") S.epicFilter = "all";
     }
-    S.isColDropdownOpen = false;
     if (S.currentModalAppName) closeModal();
     resetCardChunk();
     render();
   } else if (act === "open-new-collection-modal") {
-    S.isColDropdownOpen = false;
     openCollectionModal();
   } else if (act === "edit-collection") {
-    S.isColDropdownOpen = false;
     const colId = t.dataset.colId;
     if (colId) openCollectionModal(colId);
   } else if (act === "close-col-modal") {

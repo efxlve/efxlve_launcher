@@ -163,16 +163,9 @@ export async function saveEditedPlaytime(appName: string): Promise<void> {
         : t("playtime.noSession");
     }
 
-    // Update card/grid if visible
-    const cardBadge = document.querySelector(`.pcard[data-id="${appName}"] .playtime-badge`) as HTMLElement | null;
-    if (cardBadge) {
-      if (updated.total_seconds > 0) {
-        cardBadge.innerHTML = `${icon("clock", 11)} ${fmtPlaytime(updated.total_seconds)}`;
-        cardBadge.style.display = "";
-      } else {
-        cardBadge.style.display = "none";
-      }
-    }
+    document.querySelectorAll<HTMLElement>(`[data-lib-playtime="${appName}"]`).forEach((el) => {
+      el.textContent = updated.total_seconds > 0 ? fmtPlaytime(updated.total_seconds) : "—";
+    });
 
     toast(
       updated.total_seconds > 0

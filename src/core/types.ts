@@ -18,10 +18,8 @@ export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "
 export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections" | "freegames";
 /** Library sort modes. */
 export type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
-/** Library layout mode. */
-export type EpicViewMode = "grid" | "shelves" | "list";
-/** Poster card size. */
-export type CardSize = "compact" | "normal" | "large";
+/** Library layout mode: cover grid or dense list. */
+export type EpicViewMode = "grid" | "list";
 
 /** Category selected in the settings page left rail. */
 export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "about";
