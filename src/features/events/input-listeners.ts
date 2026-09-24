@@ -22,7 +22,6 @@ import {
 } from "../../epic";
 import {
   closeCollectionModal,
-  updateColPresetArrows,
 } from "../collections/collections-view";
 import {
   closeCustomCoverModal,
@@ -41,7 +40,7 @@ import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
-import { renderProfileGrid, resetProfileCards } from "../profile/profile-view";
+import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotLightbox,
   closeShareModal,
@@ -50,15 +49,12 @@ import {
   playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
+// Vertical wheel scrolls the game page tab strip horizontally when it overflows.
 document.addEventListener("wheel", (e) => {
-  const scrollableBar = (e.target as HTMLElement)?.closest(".gp-tabs, .col-quick-presets, .col-presets-track-wrapper") as HTMLElement | null;
-  const targetBar = scrollableBar?.classList.contains("col-presets-track-wrapper")
-    ? (scrollableBar.querySelector(".col-quick-presets") as HTMLElement | null)
-    : scrollableBar;
-  if (targetBar && e.deltaY !== 0 && targetBar.scrollWidth > targetBar.clientWidth) {
+  const bar = (e.target as HTMLElement)?.closest<HTMLElement>(".gp-tabs");
+  if (bar && e.deltaY !== 0 && bar.scrollWidth > bar.clientWidth) {
     e.preventDefault();
-    targetBar.scrollLeft += e.deltaY;
-    if (targetBar.id === "col-presets-scrollable") updateColPresetArrows();
+    bar.scrollLeft += e.deltaY;
   }
 }, { passive: false });
 
@@ -403,38 +399,8 @@ document.addEventListener("input", (e) => {
     S.profileSearchQuery = (t as HTMLInputElement).value;
     const grid = document.getElementById("profile-games-grid");
     if (grid && S.playerProfileData) {
-      const all = S.playerProfileData.games || [];
-      let filtered = all.filter((g) => {
-        if (S.profileFilter === "platinum") return g.is_platinum || g.unlocked_percent >= 100;
-        if (S.profileFilter === "in_progress") return g.unlocked_percent > 0 && g.unlocked_percent < 100 && !g.is_platinum;
-        if (S.profileFilter === "not_started") return g.unlocked_percent === 0;
-        return true;
-      });
-      if (S.profileSearchQuery.trim()) {
-        const q = S.profileSearchQuery.trim().toLowerCase();
-        filtered = filtered.filter(
-          (g) => g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q),
-        );
-      }
-      filtered.sort((a, b) => {
-        if (S.profileSort === "progress") {
-          return b.is_platinum !== a.is_platinum
-            ? (b.is_platinum ? 1 : -1)
-            : b.unlocked_percent !== a.unlocked_percent
-              ? b.unlocked_percent - a.unlocked_percent
-              : b.total_xp - a.total_xp;
-        }
-        if (S.profileSort === "xp") return b.total_xp - a.total_xp;
-        if (S.profileSort === "playtime") {
-          const ptA = S.playtimeMap.get(a.app_name)?.total_seconds || 0;
-          const ptB = S.playtimeMap.get(b.app_name)?.total_seconds || 0;
-          return ptB - ptA;
-        }
-        if (S.profileSort === "alpha") return a.app_title.localeCompare(b.app_title, "tr");
-        return 0;
-      });
       resetProfileCards();
-      grid.innerHTML = renderProfileGrid(filtered);
+      grid.innerHTML = renderProfileGrid(filteredProfileGames(S.playerProfileData.games || []));
     }
     return;
   }

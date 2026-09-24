@@ -1,8 +1,8 @@
 /**
- * Efxlve Launcher — Authentication & Progressive Loading View.
+ * Sign-in, first-run setup and post-login loading views.
  *
- * Renders the animated login screen with a 3D tilted game posters marquee,
- * unified input pill, and the progressive console synchronization sequence.
+ * Split layout: a focused form panel on the left and a static, dimmed key-art
+ * backdrop on the right. No looping animations run on this screen.
  */
 
 import { icon } from "../../core/icons";
@@ -10,18 +10,10 @@ import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
-/** Build the atmospheric backdrop using the authentic Epic Games background image. */
-function renderAuthBackdrop(): string {
-  return `
-    <div class="auth-ambient-backdrop" aria-hidden="true">
-      <div class="auth-bg-backdrop-art"></div>
-      <div class="auth-vignette-overlay"></div>
-      <div class="auth-aurora-blob auth-aurora-1"></div>
-      <div class="auth-aurora-blob auth-aurora-2"></div>
-    </div>`;
-}
+/** Progress thresholds for the four post-login steps. */
+const STEP_DONE_AT = [40, 72, 90, 100];
 
-/** In-place DOM update for the progressive authentication sequence. */
+/** In-place DOM update for the post-login loading sequence. */
 export function updateAuthProgressUi(): void {
   const bar = document.getElementById("auth-progress-bar");
   const pct = document.getElementById("auth-progress-percent");
@@ -29,202 +21,81 @@ export function updateAuthProgressUi(): void {
   if (bar) bar.style.width = `${S.authProgress}%`;
   if (pct) pct.textContent = `${S.authProgress}%`;
   if (stage) stage.textContent = S.authStageText || "";
-
-  const rows = document.querySelectorAll<HTMLElement>(".auth-step-row");
-  if (rows.length >= 4) {
-    const p = S.authProgress;
-    // Step 0: Auth
-    rows[0]?.classList.toggle("done", p >= 40);
-    rows[0]?.classList.toggle("active", p < 40);
-    // Step 1: Library & Catalog
-    rows[1]?.classList.toggle("done", p >= 72);
-    rows[1]?.classList.toggle("active", p >= 40 && p < 72);
-    // Step 2: Achievements & Trophies
-    rows[2]?.classList.toggle("done", p >= 90);
-    rows[2]?.classList.toggle("active", p >= 72 && p < 90);
-    // Step 3: Ready & Console Launch
-    rows[3]?.classList.toggle("done", p >= 100);
-    rows[3]?.classList.toggle("active", p >= 90 && p < 100);
-  }
+  const p = S.authProgress;
+  document.querySelectorAll<HTMLElement>(".auth-step-row").forEach((row, i) => {
+    const doneAt = STEP_DONE_AT[i] ?? 100;
+    const startAt = i === 0 ? 0 : STEP_DONE_AT[i - 1];
+    row.classList.toggle("done", p >= doneAt);
+    row.classList.toggle("active", p >= startAt && p < doneAt);
+  });
 }
 
-/** Render the standalone login / progressive loading / setup view. */
-export function renderOnboarding(): string {
-  const backgroundWall = renderAuthBackdrop();
-
-  // 1. Initial Legendary binary setup phase (if required)
-  if (S.epicPhase === "setup") {
-    const pct = S.setupProgress ?? 0;
-    return `
-      <div class="auth-screen">
-        ${backgroundWall}
-        <div class="auth-card-wrapper">
-          <div class="auth-card auth-setup-card">
-            <div class="auth-emblem-halo">${icon("download", 28)}</div>
-            <div class="auth-tagline-chip">${t("auth.setupChip")}</div>
-            <h1 class="auth-title">${t("ob.setupTitle")}</h1>
-            <p class="auth-subtitle">${t("ob.setupLead")}</p>
-            ${S.epicBusy === "download" ? `
-              <div class="auth-progress-track"><div class="auth-progress-bar" style="width:${pct}%"></div></div>
-              <p class="auth-loading-stage">${esc(S.setupMessage || t("ob.downloading"))}</p>
-            ` : ""}
-            <div style="margin-top: 6px;">
-              <button class="auth-hero-login-btn" data-act="epic-download" ${S.epicBusy ? "disabled" : ""}>
-                ${icon("download", 16)}
-                <span>${S.epicBusy ? t("ob.downloading") : t("ob.setupDownload")}</span>
-              </button>
-            </div>
-            <p class="auth-hero-hint">${t("auth.sourceNote")}</p>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  // 2. Cinematic Progressive Loading Sequence
-  if (S.authLoading) {
-    const p = S.authProgress;
-    return `
-      <div class="auth-screen">
-        ${backgroundWall}
-        <div class="auth-card-wrapper">
-          <div class="auth-card auth-loading-card">
-            <div class="auth-loading-halo">
-              <div class="auth-loading-spinner"></div>
-              <div class="auth-loading-emblem">
-                ${icon("gamepad-2", 30)}
-              </div>
-            </div>
-
-            <div class="auth-tagline-chip">${t("auth.launchingChip")}</div>
-            <h2 class="auth-loading-title">${t("auth.syncingTitle")}</h2>
-            <p class="auth-loading-stage" id="auth-stage-text">${esc(S.authStageText || t("auth.stageAuth"))}</p>
-
-            <div class="auth-progress-track">
-              <div class="auth-progress-bar" id="auth-progress-bar" style="width: ${p}%;"></div>
-            </div>
-            <div class="auth-progress-percent tabular-nums" id="auth-progress-percent">${p}%</div>
-
-            <div class="auth-steps-list">
-              <div class="auth-step-row ${p >= 40 ? "done" : "active"}">
-                <span class="auth-step-pip">${p >= 40 ? icon("check", 12) : '<span class="auth-step-dot"></span>'}</span>
-                <span>${t("auth.stepAuth")}</span>
-              </div>
-              <div class="auth-step-row ${p >= 72 ? "done" : p >= 40 ? "active" : ""}">
-                <span class="auth-step-pip">${p >= 72 ? icon("check", 12) : '<span class="auth-step-dot"></span>'}</span>
-                <span>${t("auth.stepCatalog")}</span>
-              </div>
-              <div class="auth-step-row ${p >= 90 ? "done" : p >= 72 ? "active" : ""}">
-                <span class="auth-step-pip">${p >= 90 ? icon("check", 12) : '<span class="auth-step-dot"></span>'}</span>
-                <span>${t("auth.stepTrophies")}</span>
-              </div>
-              <div class="auth-step-row ${p >= 100 ? "done" : p >= 90 ? "active" : ""}">
-                <span class="auth-step-pip">${p >= 100 ? icon("check", 12) : '<span class="auth-step-dot"></span>'}</span>
-                <span>${t("auth.stepReady")}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  // 3. Cinematic Standalone Console Login View
+function shell(panel: string): string {
   return `
     <div class="auth-screen">
-      ${backgroundWall}
-
-      <div class="auth-card-wrapper">
-        <div class="auth-card">
-          <!-- Account-add mode: offer a safe escape back to the active session. -->
-          ${S.epicAccount ? `
-            <button class="auth-back-btn" data-act="auth-cancel" ${S.epicBusy || S.authLoading ? "disabled" : ""}>
-              ${icon("arrow-left", 14)}
-              <span>${t("auth.backToAccount")}</span>
-            </button>` : ""}
-
-          <!-- Brand Header -->
-          <div class="auth-brand-header">
-            <div class="auth-emblem-halo">
-              ${icon("gamepad-2", 30)}
-            </div>
-            <div class="auth-tagline-chip">${t("auth.tagline")}</div>
-            <h1 class="auth-title">Efxlve Launcher</h1>
-            <p class="auth-subtitle">${t("auth.subtitle")}</p>
-          </div>
-
-          <!-- Focused Action Stack -->
-          <div class="auth-action-stack">
-            <!-- 1. Primary Action: Instant 1-Click EGL Import (Passwordless) -->
-            <button class="auth-hero-import-btn" data-act="epic-import">
-              <div class="auth-import-btn-icon">${icon("download", 20)}</div>
-              <div class="auth-import-btn-body">
-                <span class="auth-import-btn-title">${t("auth.importTitle")}</span>
-                <span class="auth-import-btn-subtitle">${t("auth.importSubtitle")}</span>
-              </div>
-              <div class="auth-import-btn-arrow">${icon("arrow-right", 16)}</div>
-            </button>
-
-            <!-- Subtle Elegant Divider -->
-            <div class="auth-section-divider">
-              <span class="auth-divider-line"></span>
-              <span class="auth-divider-pill">${t("auth.orDivider")}</span>
-              <span class="auth-divider-line"></span>
-            </div>
-
-            <!-- 2. Web Sign-in Flow -->
-            <button class="auth-hero-login-btn" data-act="epic-open-login">
-              ${icon("external", 18)}
-              <span>${t("auth.epicWebLogin")}</span>
-            </button>
-
-            <!-- Single Unified Code Pill Input -->
-            <div class="auth-input-pill">
-              <input
-                id="epic-code"
-                class="auth-pill-input"
-                placeholder="${t("auth.pastePlaceholder")}"
-                autocomplete="off"
-                spellcheck="false"
-              />
-              <button class="auth-pill-paste-btn" data-act="auth-paste" title="${t("auth.pasteBtn")}">
-                ${icon("copy", 13)}
-                <span>${t("auth.pasteBtn")}</span>
-              </button>
-              <button class="auth-pill-submit-btn" data-act="epic-do-login" title="${t("auth.submitCode")}">
-                ${icon("arrow-right", 15)}
-              </button>
-            </div>
-
-            <!-- 3. First-Time User 3-Step Guide Box -->
-            <div class="auth-guide-box">
-              <div class="auth-guide-header">
-                <div class="auth-guide-chip">
-                  ${icon("info", 12)}
-                  <span>${t("auth.guideBadge")}</span>
-                </div>
-              </div>
-              <div class="auth-guide-steps">
-                <div class="auth-guide-step">
-                  <span class="auth-guide-num">1</span>
-                  <div class="auth-guide-text">
-                    <strong>${t("auth.guideStep1Title")}</strong> ${t("auth.guideStep1Desc")}
-                  </div>
-                </div>
-                <div class="auth-guide-step">
-                  <span class="auth-guide-num">2</span>
-                  <div class="auth-guide-text">
-                    <strong>${t("auth.guideStep2Title")}</strong> ${t("auth.guideStep2Desc")}
-                  </div>
-                </div>
-                <div class="auth-guide-step">
-                  <span class="auth-guide-num">3</span>
-                  <div class="auth-guide-text">
-                    <strong>${t("auth.guideStep3Title")}</strong> ${t("auth.guideStep3Desc")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="auth-panel">
+        <div class="auth-brand"><span class="sb-logo">${icon("gamepad-2", 17)}</span><span>Efxlve Launcher</span></div>
+        ${panel}
       </div>
+      <div class="auth-art" aria-hidden="true"></div>
     </div>`;
+}
+
+/** Render the standalone login / loading / setup view. */
+export function renderOnboarding(): string {
+  if (S.epicPhase === "setup") {
+    const pct = S.setupProgress ?? 0;
+    return shell(`
+      <h1 class="auth-title">${t("ob.setupTitle")}</h1>
+      <p class="auth-lead">${t("ob.setupLead")}</p>
+      ${S.epicBusy === "download" ? `
+        <div class="progress auth-progress"><span style="width:${pct}%"></span></div>
+        <p class="auth-hint">${esc(S.setupMessage || t("ob.downloading"))}</p>` : ""}
+      <button class="btn primary lg full" data-act="epic-download" ${S.epicBusy ? "disabled" : ""}>${icon("download", 16)} ${S.epicBusy ? t("ob.downloading") : t("ob.setupDownload")}</button>
+      <p class="auth-hint">${t("auth.sourceNote")}</p>`);
+  }
+
+  if (S.authLoading) {
+    const p = S.authProgress;
+    const steps = [t("auth.stepAuth"), t("auth.stepCatalog"), t("auth.stepTrophies"), t("auth.stepReady")];
+    return shell(`
+      <h1 class="auth-title">${t("auth.syncingTitle")}</h1>
+      <p class="auth-lead" id="auth-stage-text">${esc(S.authStageText || t("auth.stageAuth"))}</p>
+      <div class="auth-progress-row">
+        <div class="progress auth-progress"><span id="auth-progress-bar" style="width:${p}%"></span></div>
+        <span class="tabular-nums auth-hint" id="auth-progress-percent">${p}%</span>
+      </div>
+      <ol class="auth-steps">
+        ${steps.map((label, i) => {
+          const doneAt = STEP_DONE_AT[i];
+          const startAt = i === 0 ? 0 : STEP_DONE_AT[i - 1];
+          return `<li class="auth-step-row ${p >= doneAt ? "done" : p >= startAt ? "active" : ""}"><span class="auth-step-pip">${icon("check", 12)}</span>${label}</li>`;
+        }).join("")}
+      </ol>`);
+  }
+
+  return shell(`
+    ${S.epicAccount ? `<button class="btn ghost small auth-back" data-act="auth-cancel" ${S.epicBusy || S.authLoading ? "disabled" : ""}>${icon("arrow-left", 14)} ${t("auth.backToAccount")}</button>` : ""}
+    <h1 class="auth-title">${t("auth.epicWebLogin")}</h1>
+    <p class="auth-lead">${t("auth.subtitle")}</p>
+
+    <button class="btn primary lg full" data-act="epic-open-login">${icon("external", 16)} ${t("auth.epicWebLogin")}</button>
+    <div class="auth-code">
+      <input id="epic-code" class="input" placeholder="${t("auth.pastePlaceholder")}" autocomplete="off" spellcheck="false" />
+      <button class="btn ghost" data-act="auth-paste" title="${t("auth.pasteBtn")}">${icon("copy", 14)} ${t("auth.pasteBtn")}</button>
+      <button class="btn primary icon-only" data-act="epic-do-login" title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
+    </div>
+
+    <ol class="auth-guide">
+      <li><strong>${t("auth.guideStep1Title")}</strong> ${t("auth.guideStep1Desc")}</li>
+      <li><strong>${t("auth.guideStep2Title")}</strong> ${t("auth.guideStep2Desc")}</li>
+      <li><strong>${t("auth.guideStep3Title")}</strong> ${t("auth.guideStep3Desc")}</li>
+    </ol>
+
+    <div class="auth-divider"><span>${t("auth.orDivider")}</span></div>
+    <button class="auth-import" data-act="epic-import">
+      ${icon("download", 18)}
+      <span class="auth-import-text"><strong>${t("auth.importTitle")}</strong><span>${t("auth.importSubtitle")}</span></span>
+      ${icon("arrow-right", 15)}
+    </button>`);
 }

@@ -37,7 +37,6 @@ import {
   saveCollectionFromModal,
   saveGameCollectionsFromModal,
   updateColGamesListInPlace,
-  updateColPresetArrows,
   updateMarkerUi,
 } from "../collections/collections-view";
 import {
@@ -660,13 +659,6 @@ document.addEventListener("click", (e) => {
     if (nameInput && presetName) {
       nameInput.value = presetName;
       nameInput.focus();
-    }
-  } else if (act === "col-presets-scroll") {
-    const dir = t.dataset.dir;
-    const container = document.getElementById("col-presets-scrollable");
-    if (container) {
-      container.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" });
-      setTimeout(updateColPresetArrows, 250);
     }
   } else if (act === "col-tab-filter") {
     const filter = t.dataset.filter as "all" | "selected" | "installed";

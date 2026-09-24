@@ -148,7 +148,7 @@ export function renderMoveGameModalFrame(): void {
             const usedBytes = Math.max(0, d.total_bytes - d.available_bytes);
             const usedPct =
               d.total_bytes > 0 ? Math.min(100, Math.round((usedBytes / d.total_bytes) * 100)) : 0;
-            const barColor = usedPct > 90 ? "#ef4444" : usedPct > 75 ? "#f59e0b" : "#3b82f6";
+            const barColor = usedPct > 90 ? "var(--err)" : usedPct > 75 ? "var(--warn)" : "var(--accent)";
             return `
               <button type="button" class="move-drive-card ${isSel ? "selected" : ""}" data-act="select-move-drive" data-drive="${d.letter}" ${S.isMovingGame ? "disabled" : ""}>
                 <div class="move-drive-top">
