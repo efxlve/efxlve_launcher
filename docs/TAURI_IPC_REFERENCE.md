@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md — Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 53+ Tauri backend commands, argument naming conventions, return types, and emitted background event payloads.
+> **Purpose:** Exhaustive catalog of all 98 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads.
 
 ---
 
@@ -34,6 +34,8 @@
 | `show_store_view` | `() => Promise<void>` | `src-tauri/src/main.rs` | Displays the native embedded child webview for Epic Games Store. |
 | `hide_store_view` | `() => Promise<void>` | `src-tauri/src/main.rs` | Hides the embedded store webview. |
 | `resize_store_view` | `(x: number, y: number, width: number, height: number) => Promise<void>` | `src-tauri/src/main.rs` | Synchronizes embedded store webview bounds with launcher container. |
+| `destroy_store_view` | `() => Promise<string>` | `src-tauri/src/main.rs` | Closes the store child webview to release its Chromium renderer memory; recreated on demand. |
+| `library_dir` | `() => Promise<string>` | `src-tauri/src/main.rs` | Returns the app data directory used for local caches and settings. |
 | `open_folder` | `(path: string) => Promise<void>` | `src-tauri/src/main.rs` | Opens Windows File Explorer at the specified folder path. |
 | `app_set_minimize_to_tray` | `(enabled: boolean) => Promise<void>` | `src-tauri/src/main.rs` | When enabled, closing the window hides it to the tray (downloads keep running). |
 | `app_set_tray_labels` | `(show: string, quit: string) => Promise<void>` | `src-tauri/src/main.rs` | Sets the localized tray menu labels from the frontend. |
@@ -50,6 +52,9 @@
 | `epic_login_with_code` | `(code: string) => Promise<string>` | `legendary/commands.rs` | Authenticates Epic account using authorization code from `https://legendary.gl/epiclogin`. |
 | `epic_import_egl` | `() => Promise<string>` | `legendary/commands.rs` | Imports session tokens directly from official Epic Games Launcher installation. |
 | `epic_logout` | `() => Promise<string>` | `legendary/commands.rs` | Clears credentials and invalidates active session. |
+| `epic_get_saved_accounts` | `() => Promise<SavedAccount[]>` | `legendary/commands.rs` + `accounts.rs` | Lists archived sessions in the account switcher vault. |
+| `epic_switch_account` | `(accountId: string) => Promise<SavedAccount>` | `legendary/commands.rs` + `accounts.rs` | Activates an archived session without re-authentication and restores its library snapshot. |
+| `epic_remove_saved_account` | `(accountId: string) => Promise<void>` | `legendary/commands.rs` + `accounts.rs` | Deletes an archived session from the vault (never the active one). |
 
 ---
 
@@ -70,6 +75,7 @@
 | Command Name | TypeScript Signature | Rust Handler Location | Description |
 |---|---|---|---|
 | `epic_install_game` | `(appName: string, installDir?: string \| null) => Promise<string>` | `legendary/transfers.rs` | Enqueues and starts game installation (`-y install <app> --base-path <dir> --skip-dlcs --skip-sdl`). |
+| `epic_resume_pending_download` | `() => Promise<string>` | `legendary/transfers.rs` | Resumes the download persisted on disk after the launcher restarted. |
 | `epic_install_with_options` | `(appName: string, installTags: string[], dlcAppIds: string[], installDir?: string \| null) => Promise<string>` | `legendary/transfers.rs` | Selective install with custom language/high-res tags and DLC app IDs. |
 | `epic_pause_download` | `(appName: string) => Promise<string>` | `legendary/transfers.rs` | Pauses active download worker process. |
 | `epic_resume_download` | `(appName: string) => Promise<string>` | `legendary/transfers.rs` | Resumes paused download queue item. |
@@ -203,6 +209,35 @@
 | `epic_free_games` | `(locale: string, country: string) => Promise<FreeGamesData>` | `legendary/freegames.rs` | Currently free and upcoming weekly Epic games (public store backend, no auth). |
 
 > Reads `freeGamesPromotions`; an entry is "free now" when its current price is 0 with a live promotion, and "upcoming" when a future promotion window exists. The frontend maps the UI language to an Epic locale/country pair.
+
+### 2.16. Settings, Network Profiles & Offline Mode
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_get_settings` | `() => Promise<EpicSettings>` | `legendary/commands.rs` | Reads persisted launcher settings (install dir, CDN, alternative binary, flags). |
+| `epic_set_alt_bin` | `(path: string \| null) => Promise<EpicSettings>` | `legendary/commands.rs` | Points legendary at a user-provided binary path (null restores the bundled one). |
+| `epic_get_network_profile` | `() => Promise<string>` | `legendary/commands.rs` | Returns the active download worker profile (`max` \| `balanced` \| `low`). |
+| `epic_set_network_profile` | `(profile: string) => Promise<void>` | `legendary/commands.rs` | Persists the worker profile used for new downloads. |
+| `epic_get_offline_mode` | `() => Promise<boolean>` | `legendary/commands.rs` | True when Epic network requests are suppressed. |
+| `epic_set_offline_mode` | `(enabled: boolean) => Promise<void>` | `legendary/commands.rs` | Toggles offline mode. |
+| `epic_measure_cdns` | `(baseUrls: string[]) => Promise<CdnProbe[]>` | `legendary/commands.rs` | Probes Epic CDN hosts (time-to-first-byte) and returns them fastest-first. |
+| `epic_set_preferred_cdn` | `(host: string \| null) => Promise<void>` | `legendary/commands.rs` | Pins the preferred CDN hostname (null reverts to automatic routing). |
+| `epic_cleanup_cache` | `() => Promise<string>` | `legendary/commands.rs` | Deletes legendary's temporary/metadata/manifest files. |
+
+### 2.17. EGL Integration & Third-Party Launchers
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_detect_egl_games` | `() => Promise<EglDetectedGame[]>` | `legendary/commands.rs` + `cache.rs` | Scans EGL manifests and the registry for games installed by the official launcher. |
+| `epic_sync_egl_installed` | `() => Promise<number>` | `legendary/commands.rs` + `cache.rs` | Imports detected EGL installations into legendary's installed list. |
+| `epic_third_party_launchers` | `() => Promise<ThirdPartyLauncher[]>` | `legendary/commands.rs` | Detects EA App and Ubisoft Connect installations and versions. |
+
+### 2.18. Playtime Tracking
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `epic_get_playtimes` | `() => Promise<Record<string, PlaytimeRecord>>` | `legendary/commands.rs` + `playtime.rs` | Returns the persisted per-game playtime database. |
+| `epic_set_playtime` | `(appName: string, totalSeconds: number, lastPlayed?: string \| null) => Promise<PlaytimeRecord>` | `legendary/commands.rs` + `playtime.rs` | Overwrites a game's playtime (manual editor) and returns the updated record. |
 
 ---
 

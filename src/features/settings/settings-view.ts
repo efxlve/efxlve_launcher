@@ -84,7 +84,7 @@ function renderAccount(): string {
           <div class="settings-account-id-row">
             <span class="settings-account-id-label">Epic Account ID:</span>
             <code class="settings-account-id-val">${esc(accountId)}</code>
-            <button type="button" class="apple-pill-btn secondary small icon-only" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyAccountId")}">
+            <button type="button" class="apple-pill-btn secondary small icon-only" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyId")}">
               ${icon("copy", 12)}
             </button>
           </div>
@@ -209,8 +209,8 @@ function renderDownloads(): string {
       </div>
       <div class="settings-row-control">
         <input id="epic-install-dir" class="text-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
-        <button type="button" class="apple-pill-btn secondary small" data-act="dl-pick-install-dir" title="${t("common.browse") || "Gözat"}">
-          ${icon("folder", 12)} <span>${t("common.browse") || "Gözat"}</span>
+        <button type="button" class="apple-pill-btn secondary small" data-act="dl-pick-install-dir" title="${t("common.browse")}">
+          ${icon("folder", 12)} <span>${t("common.browse")}</span>
         </button>
         <button type="button" class="apple-pill-btn primary small" data-act="epic-save-install-dir">
           ${icon("check", 12)} <span>${t("common.save")}</span>
@@ -259,21 +259,21 @@ function renderDownloads(): string {
       <div class="settings-group-title">${t("settings.netAdvTitle")}</div>
       <div class="settings-row">
         <div class="settings-row-text">
-          <div class="settings-row-title">${icon("zap", 13)} ${t("downloads.findCdn")}</div>
+          <div class="settings-row-title">${icon("zap", 13)} ${t("downloads.cdnFind")}</div>
           <div class="settings-row-desc">${t("settings.netFindCdnDesc")}${S.preferredCdn ? ` <code class="cdn-badge">${esc(S.preferredCdn)}</code>` : ""}</div>
         </div>
         <div class="settings-row-control">
-          ${S.preferredCdn ? `<button type="button" class="apple-pill-btn secondary small" data-act="dl-reset-cdn">${icon("x", 12)} ${t("downloads.resetCdn")}</button>` : ""}
-          <button type="button" class="apple-pill-btn primary small" data-act="dl-find-fastest-cdn">${icon("zap", 12)} ${t("downloads.findCdn")}</button>
+          ${S.preferredCdn ? `<button type="button" class="apple-pill-btn secondary small" data-act="dl-reset-cdn">${icon("x", 12)} ${t("downloads.cdnReset")}</button>` : ""}
+          <button type="button" class="apple-pill-btn primary small" data-act="dl-find-fastest-cdn">${icon("zap", 12)} ${t("downloads.cdnFind")}</button>
         </div>
       </div>
       <div class="settings-row">
         <div class="settings-row-text">
-          <div class="settings-row-title">${icon("trash", 13)} ${t("downloads.clearCache")}</div>
+          <div class="settings-row-title">${icon("trash", 13)} ${t("downloads.cacheClear")}</div>
           <div class="settings-row-desc">${t("settings.netCacheDesc")}</div>
         </div>
         <div class="settings-row-control">
-          <button type="button" class="apple-pill-btn secondary small" data-act="dl-cleanup-cache">${icon("trash", 12)} ${t("downloads.clearCache")}</button>
+          <button type="button" class="apple-pill-btn secondary small" data-act="dl-cleanup-cache">${icon("trash", 12)} ${t("downloads.cacheClear")}</button>
         </div>
       </div>
       ${row(

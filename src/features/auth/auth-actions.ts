@@ -213,7 +213,7 @@ export function extractAuthCode(raw: string): string {
 }
 
 /**
- * Execute a cinematic, progressive login sequence ("yavaş yavaş loading olmalı").
+ * Execute a cinematic, progressive login sequence.
  * Runs through 4 discrete stages: Auth -> Sync Catalog -> Trophies/Assets -> Console Ready.
  */
 export async function runProgressiveAuth(

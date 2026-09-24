@@ -27,7 +27,7 @@ import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { rawOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
-import { promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
+import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -172,6 +172,7 @@ document.addEventListener("click", (e) => {
       "epic-do-login",
       "epic-import",
       "auth-paste",
+      "auth-cancel",
       "epic-download",
       "win-minimize",
       "win-maximize",
@@ -261,6 +262,8 @@ document.addEventListener("click", (e) => {
         toast(i18nT("auth.pasteFailed"), "err");
       }
     })();
+  } else if (act === "auth-cancel") {
+    cancelAddAccount();
   } else if (act === "onboarding-goto") {
     const step = parseInt(t.dataset.step || "1", 10);
     if (step >= 1 && step <= 3) {

@@ -568,7 +568,7 @@ export function renderProfile(): string {
               <div class="ps5-level-progress-fill" style="width: ${levelPct}%"></div>
             </div>
 
-            <!-- Card Bottom: 4-Tier Trophy Pillars (Platin, Altın, Gümüş, Bronz) -->
+            <!-- Card bottom: four trophy tiers (Platinum, Gold, Silver, Bronze). -->
             <div class="ps5-gamer-card-trophies">
               <div class="ps5-tier-cell plat" title="${t("profile.platLabel")}: ${platCount}">
                 <div class="ps5-tier-icon">${epicPlatinumIcon(15)}</div>

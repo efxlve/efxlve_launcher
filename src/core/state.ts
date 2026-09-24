@@ -49,6 +49,7 @@ function loadJsonRecord(key: string): Record<string, string> {
 export const S = {
   view: ("library") as View,
   lastNonStoreView: ("library") as Exclude<View, "store">,
+  lastNonAuthView: ("settings") as View,
   storeShown: false,
   epicPhase: "checking" as EpicPhase,
   activeDrawerTab: "overview" as DrawerTab,
