@@ -16,6 +16,7 @@ import { esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
 import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
 import { loadSavedAccounts } from "../auth/account-switcher";
+import { appUpdateInstallBlocked } from "../updates/update-manager";
 import {
   eosOverlayStatus,
   epicDefaultInstallDir,
@@ -485,7 +486,48 @@ function renderScreenshots(): string {
 
 function renderSystem(): string {
   const autoUpdateControl = `<input id="auto-update-time" class="text-input settings-field-sm" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" />${toggle("toggle-auto-update", S.autoUpdateEnabled)}`;
+
+  const blocked = appUpdateInstallBlocked();
+  const statusText =
+    S.appUpdateStatus === "checking" ? t("appUpdate.checking")
+    : S.appUpdateStatus === "available" ? t("appUpdate.availableShort", { version: S.appUpdateVersion })
+    : S.appUpdateStatus === "downloading" ? t("appUpdate.downloading", { p: S.appUpdateProgress })
+    : S.appUpdateStatus === "ready" ? t("appUpdate.readyShort", { version: S.appUpdateVersion })
+    : S.appUpdateStatus === "error" ? t("appUpdate.errorShort")
+    : t("appUpdate.upToDateShort");
+
+  const updateControl =
+    S.appUpdateStatus === "ready"
+      ? `<button type="button" class="apple-pill-btn primary small" data-act="app-update-install" ${blocked ? "disabled" : ""}>${icon("refresh", 12)} <span>${t("appUpdate.installNow")}</span></button>`
+      : S.appUpdateStatus === "downloading"
+      ? `<span class="settings-value tabular-nums" id="app-update-pct">${S.appUpdateProgress}%</span>`
+      : S.appUpdateStatus === "available" && !S.appAutoUpdate
+      ? `<button type="button" class="apple-pill-btn primary small" data-act="app-update-download">${icon("download", 12)} <span>${t("appUpdate.downloadNow")}</span></button>`
+      : `<button type="button" class="apple-pill-btn secondary small" data-act="app-update-check" ${S.appUpdateStatus === "checking" ? "disabled" : ""}>${icon("refresh", 12)} <span>${t("appUpdate.checkBtn")}</span></button>`;
+
+  const updateDesc = [
+    t("appUpdate.desc"),
+    `<span class="app-update-status">${statusText}</span>`,
+    S.appUpdateStatus === "ready" && blocked ? t("appUpdate.blockedHint") : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const updateProgress =
+    S.appUpdateStatus === "downloading" || S.appUpdateStatus === "ready"
+      ? `<div class="app-update-progress"><div class="app-update-progress-bar" id="app-update-bar" style="width:${S.appUpdateProgress}%"></div></div>`
+      : "";
+
+  const updateCard = `
+    <section class="settings-group app-update-group">
+      <div class="settings-group-title">${icon("refresh", 13)} ${t("appUpdate.title")}</div>
+      ${row(`${t("appUpdate.current")} <code>v${esc(S.appVersion)}</code>`, updateDesc, updateControl)}
+      ${updateProgress}
+      ${row(t("appUpdate.auto"), t("appUpdate.autoDesc"), toggle("toggle-app-auto-update", S.appAutoUpdate))}
+    </section>`;
+
   return (
+    updateCard +
     group(
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
         row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)) +
@@ -495,14 +537,14 @@ function renderSystem(): string {
     group(
       row(t("settings.backend"), null, `<span class="settings-value">${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</span>`) +
         row(t("settings.libraryFolder"), `<code>${esc(S.libraryPath)}</code>`, "") +
-        row(t("settings.version"), null, `<span class="settings-value">0.1.0</span>`),
+        row(t("settings.version"), null, `<span class="settings-value">${esc(S.appVersion)}</span>`),
       t("settings.systemTitle"),
     )
   );
 }
 
 function renderAbout(): string {
-  const version = "0.1.0";
+  const version = S.appVersion;
   const buildInfo = isTauri ? "Tauri v2 · MSVC · 64-bit" : "Web Preview";
 
   const heroCard = `

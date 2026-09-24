@@ -61,6 +61,7 @@ import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manag
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
+import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageManager, openStorageManager } from "../storage/storage-view";
 import { closeEditPlaytimeModal, openEditPlaytimeModal, saveEditedPlaytime, } from "../playtime/playtime-view";
 
@@ -1488,6 +1489,15 @@ document.addEventListener("click", (e) => {
     S.autoUpdateEnabled = !S.autoUpdateEnabled;
     localStorage.setItem(AUTO_UPDATE_KEY, String(S.autoUpdateEnabled));
     scheduleAutoUpdate();
+    render();
+  } else if (act === "app-update-check") {
+    void checkForAppUpdate(true);
+  } else if (act === "app-update-download") {
+    void downloadAppUpdate();
+  } else if (act === "app-update-install") {
+    void installAppUpdate();
+  } else if (act === "toggle-app-auto-update") {
+    setAppAutoUpdate(!S.appAutoUpdate);
     render();
   } else if (act === "toggle-pause-on-play") {
     S.pauseOnPlay = !S.pauseOnPlay;

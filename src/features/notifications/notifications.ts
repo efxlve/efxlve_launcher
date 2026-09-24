@@ -53,6 +53,8 @@ export interface NotifInput {
   title: string;
   body?: string;
   appName?: string;
+  /** Optional `data-act` routed when the entry is clicked. */
+  action?: string;
   toast?: boolean;
 }
 
@@ -70,6 +72,7 @@ export function pushNotification(input: NotifInput): void {
     existing.ts = now;
     existing.read = false;
     existing.body = input.body ?? existing.body;
+    existing.action = input.action ?? existing.action;
   } else {
     S.notifications.unshift({
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -77,6 +80,7 @@ export function pushNotification(input: NotifInput): void {
       title: input.title,
       body: input.body ?? "",
       appName: input.appName,
+      action: input.action,
       ts: now,
       read: false,
     });
@@ -143,9 +147,11 @@ export function renderNotificationPanel(): void {
   const unread = unreadCount();
   const items = S.notifications
     .map((n) => {
-      const action = n.appName
-        ? `data-act="notif-open" data-id="${esc(n.appName)}"`
-        : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
+      const action = n.action
+        ? `data-act="${esc(n.action)}"`
+        : n.appName
+          ? `data-act="notif-open" data-id="${esc(n.appName)}"`
+          : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
       return `
         <button class="notif-item${n.read ? "" : " unread"}" ${action} data-nid="${esc(n.id)}">
           <span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>

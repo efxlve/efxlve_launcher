@@ -2187,3 +2187,15 @@ Kütüphanedeki 488+ oyunun sebep olduğu aşırı DOM yükü, O(N²) döngüler
 - **Doküman senkronu:** `CODEBASE_MAP.md` gerçek dosya yapısıyla yeniden yazıldı; `TAURI_IPC_REFERENCE.md` 20 eksik komutla tamamlandı (98/98); `REFACTOR_PLAN.md` sayaçları ve `AGENTS.md` GÜNCEL DURUM güncellendi.
 - `cargo test` (61 passed / 1 ignored), `npm.cmd run build` (tsc + vite), i18n eşlik (1208/1208) yeşil.
 
+## 167. Launcher Otomatik Güncelleme (Steam-like) + GitHub Releases Pipeline
+
+**Amaç:** Kullanıcıya yeni sürümü elle indirtmeden, imzalı paketlerle otomatik güncelleme; sunucu gerekmez, GitHub Releases CDN'i kullanılır.
+
+- **Backend:** `tauri-plugin-updater` + `tauri-plugin-process` eklendi ve `main.rs`'te kayıt edildi; `tauri.conf.json`'a `bundle.createUpdaterArtifacts: true`, `plugins.updater.pubkey` ve `https://github.com/efxlve/efxlve_launcher/releases/latest/download/latest.json` endpoint'i yazıldı; `capabilities/default.json`'a `updater:default` + `process:allow-restart` eklendi.
+- **Frontend (`src/features/updates/update-manager.ts`):** Açılıştan 12 sn sonra tek seferlik kontrol; pencere odağa geldiğinde saatte en fazla 1 kontrol (boşta polling yok); elle kontrol; yeni sürümde arka planda sessiz indirme (ilerleme hedefli DOM güncellemesi, Rule 15); hazır olunca bildirim merkezine aksiyonlu kayıt (`app-update-install`).
+- **Güvenlik/veri koruma:** Kurulum yalnızca kullanıcı onayıyla; **aktif oyun indirmesi veya oyun oturumu sürerken kurulum ertelenir** (launcher yeniden başlarken indirmeyi/oturumu öldürmemek için). Ayarlar > Sistem'te "Uygulama Güncellemeleri" kartı (sürüm, durum, ilerleme, Kontrol Et / İndir / Yeniden Başlat ve Güncelle, otomatik indirme anahtarı); sürüm artık `getVersion()` ile dinamik.
+- **Bildirim merkezi:** `AppNotification.action` alanı eklendi; hazır bildirimine tıklamak kurulumu başlatır.
+- **İmzalama:** Parolalı anahtar `~/.tauri/efxlve.key` (+ `.password.txt`, repoda değil). İlk üretimde parolasız anahtarın `tauri signer sign`/`build` adımını interaktif parola isteminde kilitlediği (anahtar "encrypted" işaretli) tespit edildi; anahtar parolayla yeniden üretilerek çözüldü.
+- **CI:** `.github/workflows/release.yml` — `v*` tag'inde `tauri-apps/tauri-action@v1` ile imzalı build + yayın + `latest.json` (`releaseDraft: false`, `updaterJsonPreferNsis: true`); matrix Linux/macOS satırları yorumlu hazır bekliyor.
+- **Doğrulama:** `npm.cmd run tauri build` → MSI + NSIS `.exe` ve `.sig` üretimi (EXIT 0), `cargo test` (61/61), `npm.cmd run build`, i18n eşlik (1233/1233).
+

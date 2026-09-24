@@ -10,6 +10,7 @@
  */
 import { EPIC_STORE_URL } from "../epic";
 import {
+  APP_AUTO_UPDATE_KEY,
   CUSTOM_AVATARS_KEY,
   CUSTOM_COVERS_KEY,
   CUSTOM_HEROES_KEY,
@@ -33,7 +34,7 @@ import {
   SPEED_BITS_KEY,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
+import type { AppNotification, AppUpdateStatus, CardSize, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, FreeGamesData, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
@@ -242,6 +243,16 @@ export const S = {
   gamepadPolling: false,
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
+  appVersion: "0.1.0",
+  appUpdateStatus: ("idle") as AppUpdateStatus,
+  appUpdateVersion: "",
+  appUpdateNotes: "",
+  appUpdateProgress: 0,
+  appUpdateDownloaded: 0,
+  appUpdateTotal: 0,
+  appUpdateError: "",
+  lastAppUpdateCheck: 0,
+  appAutoUpdate: (localStorage.getItem(APP_AUTO_UPDATE_KEY) !== "false") as boolean,
 };
 
 /**

@@ -36,9 +36,14 @@ export interface AppNotification {
   title: string;
   body: string;
   appName?: string;
+  /** Optional `data-act` routed when the entry is clicked (e.g. install an app update). */
+  action?: string;
   ts: number;
   read: boolean;
 }
+
+/** Lifecycle of the launcher self-update. */
+export type AppUpdateStatus = "idle" | "checking" | "available" | "downloading" | "ready" | "error";
 
 /** Live metrics for the currently active download (speed, disk, ETA). */
 export interface DlMetrics {
