@@ -236,7 +236,11 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Windows Konsol / CMD Penceresi Yanıp Sönmesi Kalıcı Olarak Engellendi (`CREATE_NO_WINDOW`):**
   - Launcher kullanılırken arka planda çalışan `legendary`, `powershell`, `reg` veya `taskkill` komutlarının Windows üzerinde siyah CMD pencereleri açarak kullanıcı deneyimini bozması teşhis edildi.
   - Rust backend'de süreç başlatan tüm noktalara (`client.rs::run_with_timeout`, `transfers.rs` indirme/doğrulama/kuyruk/başlatma/bulut senkronizasyonu, `commands.rs` kayıt defteri/doğrulama/sync-saves, `downloader.rs` sürüm sorgusu, `move_game.rs` klasör seçici/taşıma, `screenshots.rs` ekran görüntüsü ve `main.rs` EOS overlay kontrolü) Windows `CREATE_NO_WINDOW (0x08000000)` oluşturma bayrağı entegre edildi.
-  - Artık launcher arka planında çalışan hiçbir süreç CMD/konsol penceresi tetiklemez; tamamen sessiz, pencerisiz ve akıcı bir konsol masaüstü deneyimi sağlandı. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız.
+- **İndirme Hata Yönetimi & Epic GraphQL 429 İstek Sınırı İyileştirmesi:**
+  - Kullanıcının karşılaştığı `HTTPError: 429 Client Error: Too Many Requests` ve `PYI-*:ERROR` gibi ham Python traceback yığınlarının doğrudan UI'ye yansıması sorunu çözüldü (`transfers.rs`, `tr.json`, `en.json`).
+  - `short_error` ayrıştırıcısı akıllı hale getirildi: HTTP 429 rate limit, yetersiz disk alanı, paket/metaveri bulunamaması, ağ kopması ve oturum zaman aşımı gibi durumlar tespit edilerek konsol disiplinine uygun kibar ve net yerelleştirilmiş bildirimlere dönüştürüldü (`@t:dl.rateLimited`, `@t:dl.diskFull`, `@t:dl.itemNotFound` vb.).
+  - PyInstaller iç çökme satırları ve Python dosya yolu artıkları temizlendi.
+  - İndirme izleyicisine (`monitor_download`) Epic Games Store'un geçici GraphQL 429 kota aşımlarına karşı 8 saniyelik geri çekilme (backoff) ve otomatik yeniden deneme (auto-retry) mantığı eklendi. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız.
 
 ---
 

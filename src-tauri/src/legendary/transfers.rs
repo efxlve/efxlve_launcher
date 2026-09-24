@@ -591,23 +591,79 @@ fn parse_progress_percent(line: &str) -> Option<i32> {
 }
 
 fn short_error(err_text: &str) -> String {
+    let low = err_text.to_lowercase();
+    if low.contains("429") || low.contains("too many requests") {
+        return "@t:dl.rateLimited".to_string();
+    }
+    if low.contains("no space left")
+        || low.contains("disk full")
+        || low.contains("not enough space")
+        || low.contains("spaceerror")
+    {
+        return "@t:dl.diskFull".to_string();
+    }
+    if low.contains("no game information available")
+        || (low.contains("fetching metadata") && low.contains("failed"))
+    {
+        return "@t:dl.itemNotFound".to_string();
+    }
+    if low.contains("connectionerror")
+        || low.contains("getaddrinfo failed")
+        || low.contains("connection refused")
+        || low.contains("max retries exceeded")
+    {
+        return "@t:dl.networkError".to_string();
+    }
+    if low.contains("permissionerror") || low.contains("access is denied") {
+        return "@t:dl.permissionDenied".to_string();
+    }
+    if low.contains("no saved credentials")
+        || low.contains("token expired")
+        || low.contains("401 client error")
+    {
+        return "@t:dl.sessionExpired".to_string();
+    }
+
     let lines: Vec<&str> = err_text.lines().collect();
     let mut picked: Vec<&str> = lines
         .iter()
         .filter(|l| {
-            let low = l.to_lowercase();
-            low.contains("error") || low.contains("exception") || low.contains("failed")
+            let l_trim = l.trim();
+            if l_trim.starts_with("[PYI-")
+                || l_trim.starts_with("Traceback")
+                || l_trim.starts_with("File \"")
+                || l_trim.starts_with("[Core] WARNING:")
+            {
+                return false;
+            }
+            let l_low = l_trim.to_lowercase();
+            l_low.contains("error") || l_low.contains("exception") || l_low.contains("failed")
         })
-        .take(3)
+        .take(2)
         .copied()
         .collect();
+
     if picked.is_empty() {
-        picked = lines.iter().rev().take(3).copied().collect();
+        picked = lines
+            .iter()
+            .filter(|l| {
+                let l_trim = l.trim();
+                !l_trim.starts_with("[PYI-")
+                    && !l_trim.starts_with("Traceback")
+                    && !l_trim.starts_with("File \"")
+                    && !l_trim.starts_with("[Core] WARNING:")
+                    && !l_trim.is_empty()
+            })
+            .rev()
+            .take(2)
+            .copied()
+            .collect();
         picked.reverse();
     }
-    let out: String = picked.join("\n").chars().take(600).collect();
+
+    let out: String = picked.join(" — ").chars().take(200).collect();
     if out.trim().is_empty() {
-        "bilinmeyen hata".to_string()
+        "@t:common.unknownError".to_string()
     } else {
         out
     }
@@ -657,6 +713,7 @@ async fn monitor_download(
     let mut last_pct: i32 = -1;
     let mut last_emit = std::time::Instant::now();
     let mut high_mem = false;
+    let mut rate_limit_retried = false;
     let mut tail: VecDeque<String> = VecDeque::with_capacity(60);
 
     let result: Result<(), String> = loop {
@@ -760,6 +817,37 @@ async fn monitor_download(
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
                     // Update the pid (so the cancel command finds the current process)
+                    if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        s.pid = child.id();
+                    }
+                    continue;
+                }
+                Err(e) => {
+                    break Err(format!("@t:dl.restartFailed\u{1f}{e}"));
+                }
+            }
+        }
+        // If Epic rate-limited with HTTP 429, wait 8 seconds for the rate-limit window to clear and retry once.
+        if !rate_limit_retried && (err_text.contains("429") || err_text.contains("Too Many Requests")) {
+            let cancelled = app
+                .state::<AppState>()
+                .epic_dl
+                .lock()
+                .map(|s| s.cancelled)
+                .unwrap_or(false);
+            if cancelled {
+                break Err("@t:dl.cancelled".into());
+            }
+            rate_limit_retried = true;
+            tokio::time::sleep(std::time::Duration::from_secs(8)).await;
+            total_mib = 0.0;
+            downloaded_mib = 0.0;
+            last_pct = -1;
+            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+                Ok(c) => {
+                    child = c;
+                    stdout = child.stdout.take();
+                    stderr = child.stderr.take();
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
                         s.pid = child.id();
                     }
