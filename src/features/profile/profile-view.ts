@@ -312,7 +312,7 @@ function renderFriendsSection(): string {
   if (S.friendsLoading && S.friends.length === 0) {
     body = `
       <div class="friends-compact-list skeleton-wrap">
-        ${Array.from({ length: 4 })
+        ${Array.from({ length: 8 })
           .map(
             () => `
           <div class="friend-compact-row skeleton">
@@ -515,9 +515,11 @@ export function renderProfile(): string {
               </div>
 
               <div class="ps5-hero-sub-row">
-                <span class="ps5-sub-item">${icon("gamepad-2", 12)} ${totalOwnedGames} ${t("profile.games")}</span>
+                <span class="ps5-sub-item">${icon("gamepad-2", 13)} <strong>${totalOwnedGames}</strong> ${t("profile.games")}</span>
                 <span class="ps5-sub-dot">•</span>
-                <span class="ps5-sub-item">${icon("clock", 12)} ${totalPlaytimeStr}</span>
+                <span class="ps5-sub-item">${icon("clock", 13)} <strong>${totalPlaytimeStr}</strong> ${t("profile.played")}</span>
+                <span class="ps5-sub-dot">•</span>
+                <span class="ps5-sub-item">${icon("sparkles", 13)} <strong>${totalXp.toLocaleString()}</strong> XP</span>
                 <span class="ps5-sub-dot">•</span>
                 <button class="ps5-id-btn" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyIdTitle", { id: accountId })}">
                   <span>ID</span>
@@ -527,45 +529,64 @@ export function renderProfile(): string {
             </div>
           </div>
 
-          <!-- Center: Trophy Level Rail -->
-          <div class="ps5-hero-center">
-            <div class="ps5-level-crest" title="Trophy Level: ${trophyLevel}">
-              ${epicPlatinumIcon(13)}
-              <span class="ps5-level-num">${t("profile.level")} ${trophyLevel}</span>
-              <span class="ps5-level-percent">%${levelPct}</span>
-            </div>
-            <div class="ps5-level-track">
-              <div class="ps5-level-fill" style="width: ${levelPct}%"></div>
-            </div>
-          </div>
-
-          <!-- Right: 4-Tier Trophy Tiers & Minimal Action -->
+          <!-- Right: Level Rail & 4-Tier Trophy Showcase -->
           <div class="ps5-hero-right">
-            <div class="ps5-trophy-tier-showcase">
-              <div class="ps5-tier-col plat" title="${t("profile.platLabel")}">
-                <div class="ps5-tier-icon">${epicPlatinumIcon(14)}</div>
-                <span class="ps5-tier-count">${platCount}</span>
+            <div class="ps5-hero-right-top">
+              <div class="ps5-level-box" title="${t("profile.xpToNext", { n: (1000 - levelXp).toLocaleString() })}">
+                <div class="ps5-level-crest">
+                  <span class="ps5-level-crest-icon">${epicPlatinumIcon(13)}</span>
+                  <span class="ps5-level-crest-label">${t("profile.level")}</span>
+                  <span class="ps5-level-crest-val">${trophyLevel}</span>
+                </div>
+                <div class="ps5-level-rail-wrap">
+                  <div class="ps5-level-rail-track">
+                    <div class="ps5-level-rail-fill" style="width: ${levelPct}%"></div>
+                  </div>
+                  <span class="ps5-level-rail-pct">%${levelPct}</span>
+                </div>
               </div>
 
-              <div class="ps5-tier-col gold" title="${t("profile.goldLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
-                <span class="ps5-tier-count">${goldTrophies}</span>
-              </div>
-
-              <div class="ps5-tier-col silver" title="${t("profile.silverLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
-                <span class="ps5-tier-count">${silverTrophies}</span>
-              </div>
-
-              <div class="ps5-tier-col bronze" title="${t("profile.bronzeLabel")}">
-                <div class="ps5-tier-icon">${icon("trophy", 14)}</div>
-                <span class="ps5-tier-count">${bronzeTrophies}</span>
-              </div>
+              <button class="apple-pill-btn secondary small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
+                ${icon("refresh", 12)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
+              </button>
             </div>
 
-            <button class="apple-pill-btn secondary small ps5-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">
-              ${icon("refresh", 12)} <span>${S.profileLoading ? t("profile.refreshing") : t("profile.refresh")}</span>
-            </button>
+            <div class="ps5-trophy-tier-showcase">
+              <div class="ps5-tier-col plat" title="${t("profile.platLabel")}: ${platCount}">
+                <div class="ps5-tier-icon">${epicPlatinumIcon(15)}</div>
+                <div class="ps5-tier-data">
+                  <span class="ps5-tier-count">${platCount}</span>
+                  <span class="ps5-tier-label">${t("profile.platLabel")}</span>
+                </div>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col gold" title="${t("profile.goldLabel")}: ${goldTrophies}">
+                <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
+                <div class="ps5-tier-data">
+                  <span class="ps5-tier-count">${goldTrophies}</span>
+                  <span class="ps5-tier-label">${t("profile.goldLabel")}</span>
+                </div>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col silver" title="${t("profile.silverLabel")}: ${silverTrophies}">
+                <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
+                <div class="ps5-tier-data">
+                  <span class="ps5-tier-count">${silverTrophies}</span>
+                  <span class="ps5-tier-label">${t("profile.silverLabel")}</span>
+                </div>
+              </div>
+              <div class="ps5-tier-divider"></div>
+
+              <div class="ps5-tier-col bronze" title="${t("profile.bronzeLabel")}: ${bronzeTrophies}">
+                <div class="ps5-tier-icon">${icon("trophy", 15)}</div>
+                <div class="ps5-tier-data">
+                  <span class="ps5-tier-count">${bronzeTrophies}</span>
+                  <span class="ps5-tier-label">${t("profile.bronzeLabel")}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -71,14 +71,14 @@
 /* 1. PS5 Konsol Hero Profil Sahnesi (Cinematic Stage) */
 .ps5-profile-hero {
   position: relative;
-  min-height: 100px;
-  border-radius: 20px;
+  min-height: 200px;
+  border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #090c14;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   display: flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .ps5-hero-backdrop {
@@ -87,8 +87,8 @@
   background-size: cover;
   background-position: center 30%;
   opacity: 0.22;
-  filter: blur(14px) saturate(1.2);
-  transform: scale(1.06);
+  filter: blur(16px) saturate(1.25);
+  transform: scale(1.08);
   pointer-events: none;
   z-index: 0;
 }
@@ -96,8 +96,8 @@
 .ps5-hero-gradient {
   position: absolute;
   inset: 0;
-  background: radial-gradient(80% 250% at 8% -40%, rgba(139, 92, 246, 0.16) 0%, rgba(139, 92, 246, 0) 60%),
-              linear-gradient(135deg, rgba(8, 10, 17, 0.96) 0%, rgba(11, 14, 24, 0.92) 100%);
+  background: radial-gradient(80% 250% at 8% -40%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 60%),
+              linear-gradient(135deg, rgba(8, 10, 17, 0.94) 0%, rgba(11, 14, 24, 0.9) 100%);
   pointer-events: none;
   z-index: 1;
 }
@@ -109,22 +109,21 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 18px 26px;
-  gap: 20px;
-  flex-wrap: wrap;
+  padding: 28px 32px;
+  gap: 28px;
 }
 
 .ps5-hero-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 22px;
   min-width: 0;
 }
 
 .ps5-avatar-wrap {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 82px;
+  height: 82px;
   flex-shrink: 0;
 }
 
@@ -132,16 +131,16 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #1e1b2e 0%, #0d0f18 100%);
+  background: radial-gradient(circle at 35% 30%, #2a2444 0%, #0d0f18 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  border: 2.5px solid rgba(139, 92, 246, 0.45);
 }
 
 .ps5-avatar-letter {
-  font-size: 24px;
+  font-size: 34px;
   font-weight: 800;
   color: #ffffff;
   user-select: none;
@@ -149,14 +148,14 @@
 
 .ps5-avatar-pip {
   position: absolute;
-  bottom: 0px;
-  right: 0px;
-  width: 13px;
-  height: 13px;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid #080a11;
+  border: 2.5px solid #090c14;
   background: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
 }
 
 .ps5-avatar-pip.offline {
@@ -167,41 +166,42 @@
 .ps5-hero-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
 }
 
 .ps5-hero-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .ps5-display-name {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 800;
   color: #fff;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   margin: 0;
-  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .ps5-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #86efac;
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.25);
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 20px;
 }
 
 .ps5-status-badge .status-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #22c55e;
 }
@@ -219,16 +219,23 @@
 .ps5-hero-sub-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 13px;
   color: #94a3b8;
+  flex-wrap: wrap;
 }
 
 .ps5-sub-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   color: #cbd5e1;
+}
+
+.ps5-sub-item strong {
+  color: #ffffff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .ps5-sub-dot {
@@ -238,12 +245,12 @@
 .ps5-id-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   border-radius: 6px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   font-size: 11px;
   font-family: ui-monospace, monospace;
   cursor: pointer;
@@ -256,65 +263,103 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Minimalist Center Level Rail */
-.ps5-hero-center {
+/* Right Section: Level Rail + 4-Tier Trophy Showcase */
+.ps5-hero-right {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-width: 140px;
+  align-items: flex-end;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
-.ps5-hero-center .ps5-level-crest {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.ps5-hero-center .ps5-level-percent {
-  font-size: 11px;
-  color: #c4b5fd;
-  font-variant-numeric: tabular-nums;
-  margin-left: auto;
-}
-
-.ps5-hero-center .ps5-level-track {
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.ps5-hero-center .ps5-level-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #c084fc);
-  border-radius: 99px;
-}
-
-/* Minimalist Right: Horizontal Trophies & Refresh */
-.ps5-hero-right {
+.ps5-hero-right-top {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
+.ps5-level-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 4px 12px 4px 6px;
+}
+
+.ps5-level-crest {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(99, 102, 241, 0.2));
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 14px;
+  padding: 2px 8px;
+}
+
+.ps5-level-crest-icon {
+  display: flex;
+  align-items: center;
+  color: #c084fc;
+}
+
+.ps5-level-crest-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #d8ccff;
+}
+
+.ps5-level-crest-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps5-level-rail-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ps5-level-rail-track {
+  width: 100px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.ps5-level-rail-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #c084fc);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.ps5-level-rail-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
+}
+
 .ps5-trophy-tier-showcase {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 14px;
+  padding: 8px 18px;
 }
 
 .ps5-tier-col {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ps5-tier-icon {
@@ -323,23 +368,62 @@
   justify-content: center;
 }
 
-.ps5-tier-col.plat .ps5-tier-icon { color: #c084fc; }
-.ps5-tier-col.gold .ps5-tier-icon { color: #fbbf24; }
-.ps5-tier-col.silver .ps5-tier-icon { color: #cbd5e1; }
-.ps5-tier-col.bronze .ps5-tier-icon { color: #fb923c; }
-
-.ps5-tier-count {
-  font-size: 13.5px;
-  font-weight: 700;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-  color: #ffffff;
+.ps5-tier-data {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-.ps5-tier-col.plat .ps5-tier-count { color: #c084fc; }
-.ps5-tier-col.gold .ps5-tier-count { color: #fbbf24; }
-.ps5-tier-col.silver .ps5-tier-count { color: #cbd5e1; }
-.ps5-tier-col.bronze .ps5-tier-count { color: #fb923c; }
+.ps5-tier-count {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.ps5-tier-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.ps5-tier-col.plat .ps5-tier-icon, .ps5-tier-col.plat .ps5-tier-count { color: #c084fc; }
+.ps5-tier-col.gold .ps5-tier-icon, .ps5-tier-col.gold .ps5-tier-count { color: #fbbf24; }
+.ps5-tier-col.silver .ps5-tier-icon, .ps5-tier-col.silver .ps5-tier-count { color: #cbd5e1; }
+.ps5-tier-col.bronze .ps5-tier-icon, .ps5-tier-col.bronze .ps5-tier-count { color: #fb923c; }
+
+.ps5-tier-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 960px) {
+  .ps5-hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 20px;
+    gap: 20px;
+  }
+  .ps5-hero-right {
+    align-items: flex-start;
+    width: 100%;
+    gap: 12px;
+  }
+  .ps5-hero-right-top {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .ps5-trophy-tier-showcase {
+    width: 100%;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+}
 
 .profile-body-split {
   display: grid;
@@ -761,13 +845,6 @@
   contain-intrinsic-size: auto 96px;
 }
 
-.ps5-profile-game-card:hover {
-  background: rgba(19, 22, 34, 0.96);
-  border-color: rgba(139, 92, 246, 0.28);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-}
-
 /* Cinematic horizontal backdrop art */
 .ps5-card-backdrop {
   position: absolute;
@@ -1100,7 +1177,6 @@
   margin: 0;
 }
 
-
 /* ==========================================================================
    Right Sidebar Components (Xbox Recent Grid, Friends Lounge, Steam Stats)
    ========================================================================== */
@@ -1237,12 +1313,13 @@
   transform: scale(1.08);
 }
 
-/* Friends Lounge (Compact Sidebar) */
+/* Friends Lounge (Sidebar) */
 .friends-compact-list {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 250px;
+  min-height: 380px;
+  max-height: 520px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 2px;
@@ -1252,8 +1329,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px;
-  border-radius: 9px;
+  padding: 7px 10px;
+  border-radius: 10px;
   background: transparent;
   border: 1px solid transparent;
   transition: all 0.15s ease;
@@ -1270,8 +1347,8 @@
 
 .friend-avatar-compact {
   position: relative;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.18));
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1282,7 +1359,7 @@
 }
 
 .friend-avatar-compact .friend-avatar-letter {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: #d8ccff;
 }
@@ -1291,8 +1368,8 @@
   position: absolute;
   right: -2px;
   bottom: -2px;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: #0b0d14;
   border: 1px solid rgba(139, 92, 246, 0.4);
@@ -1311,7 +1388,7 @@
 }
 
 .friend-name-compact {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #fff;
   white-space: nowrap;
@@ -1343,29 +1420,10 @@
   border: 1px solid transparent;
 }
 
-.friend-plat.steam {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.25);
-}
-
-.friend-plat.psn {
-  color: #60a5fa;
-  background: rgba(37, 99, 235, 0.14);
-  border-color: rgba(59, 130, 246, 0.25);
-}
-
-.friend-plat.xbl {
-  color: #4ade80;
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.25);
-}
-
-.friend-plat.nintendo {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.25);
-}
+.friend-plat.steam { color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); }
+.friend-plat.psn { color: #60a5fa; background: rgba(37, 99, 235, 0.14); border-color: rgba(59, 130, 246, 0.25); }
+.friend-plat.xbl { color: #4ade80; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.25); }
+.friend-plat.nintendo { color: #f87171; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.25); }
 
 .friend-compact-row.skeleton {
   pointer-events: none;
