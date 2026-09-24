@@ -12,7 +12,7 @@ import { icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
 import { getCustomAvatar, S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
-import { esc, fmtBytes } from "../../core/utils";
+import { esc, fmtBytes, fmtCdnName } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
 import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -260,12 +260,17 @@ function renderDownloads(): string {
       <div class="settings-group-title">${t("settings.netAdvTitle")}</div>
       <div class="settings-row">
         <div class="settings-row-text">
-          <div class="settings-row-title">${icon("zap", 13)} ${t("downloads.cdnFind")}</div>
-          <div class="settings-row-desc">${t("settings.netFindCdnDesc")}${S.preferredCdn ? ` <code class="cdn-badge">${esc(S.preferredCdn)}</code>` : ""}</div>
+          <div class="settings-row-title">${icon("globe", 13)} ${t("downloads.cdnLabel")}</div>
+          <div class="settings-row-desc">${t("downloads.cdnHint")}${S.preferredCdn ? ` <code class="cdn-badge">${esc(fmtCdnName(S.preferredCdn))}</code>` : ` <code class="cdn-badge">${t("downloads.cdnAuto")}</code>`}</div>
         </div>
         <div class="settings-row-control">
-          ${S.preferredCdn ? `<button type="button" class="apple-pill-btn secondary small" data-act="dl-reset-cdn">${icon("x", 12)} ${t("downloads.cdnReset")}</button>` : ""}
-          <button type="button" class="apple-pill-btn primary small" data-act="dl-find-fastest-cdn">${icon("zap", 12)} ${t("downloads.cdnFind")}</button>
+          <div class="cdn-pills" role="radiogroup" aria-label="${t("downloads.cdnLabel")}">
+            <button type="button" class="cdn-pill-btn ${!S.preferredCdn ? "active" : ""}" data-act="dl-set-cdn" data-cdn="">${t("downloads.cdnAutoShort")}</button>
+            <button type="button" class="cdn-pill-btn ${S.preferredCdn === "epicgames-download1.akamaized.net" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="epicgames-download1.akamaized.net">Akamai</button>
+            <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egdownload.fastly-edge.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egdownload.fastly-edge.com">Fastly</button>
+            <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egs-cloudfront-chunks.epicgamescdn.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egs-cloudfront-chunks.epicgamescdn.com">CloudFront</button>
+          </div>
+          <button type="button" class="apple-pill-btn primary small" data-act="dl-find-fastest-cdn" title="${t("downloads.cdnFindHint")}">${icon("zap", 12)} ${t("downloads.cdnFind")}</button>
         </div>
       </div>
       <div class="settings-row">

@@ -546,9 +546,13 @@ export function renderDownloads(): string {
             <div class="dl-settings-row-desc">${t("downloads.cdnHint")}</div>
           </div>
           <div class="dl-settings-row-control">
-            <span class="dl-cdn-current" id="dl-cdn-current" title="${S.preferredCdn ? esc(S.preferredCdn) : ""}">${S.preferredCdn ? esc(S.preferredCdn) : t("downloads.cdnAuto")}</span>
-            <button class="ps5-btn secondary" data-act="dl-find-fastest-cdn">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
-            ${S.preferredCdn ? `<button class="ps5-btn ghost" data-act="dl-reset-cdn">${t("downloads.cdnReset")}</button>` : ""}
+            <div class="cdn-pills" role="radiogroup" aria-label="${t("downloads.cdnLabel")}">
+              <button type="button" class="cdn-pill-btn ${!S.preferredCdn ? "active" : ""}" data-act="dl-set-cdn" data-cdn="">${t("downloads.cdnAutoShort")}</button>
+              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "epicgames-download1.akamaized.net" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="epicgames-download1.akamaized.net">Akamai</button>
+              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egdownload.fastly-edge.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egdownload.fastly-edge.com">Fastly</button>
+              <button type="button" class="cdn-pill-btn ${S.preferredCdn === "egs-cloudfront-chunks.epicgamescdn.com" ? "active" : ""}" data-act="dl-set-cdn" data-cdn="egs-cloudfront-chunks.epicgamescdn.com">CloudFront</button>
+            </div>
+            <button class="ps5-btn secondary" data-act="dl-find-fastest-cdn" title="${t("downloads.cdnFindHint")}">${icon("zap", 13)} ${t("downloads.cdnFind")}</button>
           </div>
         </div>
 

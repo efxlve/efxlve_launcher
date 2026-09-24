@@ -794,9 +794,10 @@
   border: 1px solid rgba(59, 130, 246, 0.3) !important;
 }
 
-/* Network profile pills (Apple segmented container) */
+/* Network profile & CDN pills (Apple segmented container) */
 .net-profile-pills,
-.ss-format-pills {
+.ss-format-pills,
+.cdn-pills {
   display: inline-flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.35);
@@ -806,7 +807,8 @@
   gap: 3px;
 }
 .net-profile-btn,
-.ss-format-btn {
+.ss-format-btn,
+.cdn-pill-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -821,12 +823,14 @@
   transition: all 0.15s ease;
 }
 .net-profile-btn:hover,
-.ss-format-btn:hover {
+.ss-format-btn:hover,
+.cdn-pill-btn:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
 }
 .net-profile-btn.active,
-.ss-format-btn.active {
+.ss-format-btn.active,
+.cdn-pill-btn.active {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   font-weight: 700;

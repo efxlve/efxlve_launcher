@@ -244,6 +244,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - Kullanıcının karşılaştığı `TimeoutError: The read operation timed out ... urllib3.exceptions.ReadTimeoutError` ve zincirleme Python istisnaları (`The above exception was the direct cause...`) ele alındı (`transfers.rs`, `tr.json`, `en.json`).
   - Epic Games sunucularındaki geçici ağ gecikmeleri veya yoğunluktan kaynaklanan okuma zaman aşımları (`timeout`, `timed out`, `readtimeouterror`) otomatik olarak yakalanıp 3 saniyelik beklemenin ardından tek seferlik otomatik yeniden deneme (auto-retry) döngüsüne bağlandı.
   - Hatanın kalıcı olması durumunda ham Python ve `urllib3` hata dökümleri yerine konsol disiplinine uygun temiz bildirim (`@t:dl.timeoutError` — "Epic Games sunucusu yanıt vermedi (Zaman aşımı). Lütfen internet bağlantınızı kontrol edip tekrar deneyin.") gösterilmesi sağlandı. Doğrulama: `npm.cmd run build` ve `cargo test` (61/61) hatasız tamamlandı.
+- **İndirme CDN Ayarı & "CDN Listesi Bulunamadı" Hatası Kalıcı Olarak Çözüldü:**
+  - Yeni kurulumlarda veya kütüphanesinde önbelleğe alınmış manifest bulunmayan kullanıcılarda "En hızlısını bul" tıklandığında `base_urls` listesi boş olduğu için `downloads.cdnNoData` ("CDN listesi bulunamadı") hatası vermesi engellendi.
+  - Rust backend'e (`commands.rs::build_cdn_targets`, `epic_measure_cdns`) Epic Games'in 3 kanonik CDN uç noktası (`egdownload.fastly-edge.com`, `epicgames-download1.akamaized.net`, `egs-cloudfront-chunks.epicgamescdn.com`) varsayılan hedef olarak entegre edildi; sıfır oyunlu hesaplarda bile TTFB gecikme ölçümü kusursuz çalışır hale getirildi (birim testleri eklendi, 63/63 test yeşil).
+  - İndirmeler sayfası ve Ayarlar > İndirmeler paneline Apple/PS5 Segmented Rail (`.cdn-pills`, `[ Otomatik | Akamai | Fastly | CloudFront ]`) ve "En hızlısını bul" butonu eklendi; tek tıkla elle CDN seçebilme veya otomatik gecikme testine göre en düşük pingli CDN'e geçiş sağlandı. Doğrulama: `npm.cmd run build` ve `cargo test` (63/63) hatasız.
 
 ---
 

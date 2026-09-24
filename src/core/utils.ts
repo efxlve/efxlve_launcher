@@ -132,3 +132,23 @@ export function parseEnvText(text: string): Record<string, string> {
   }
   return out;
 }
+
+/** Format CDN hostname into a clean provider name for UI display. */
+export function fmtCdnName(host: string): string {
+  if (!host) return "";
+  const low = host.toLowerCase();
+  if (low.includes("akamai")) return `Akamai (${host})`;
+  if (low.includes("fastly")) return `Fastly (${host})`;
+  if (low.includes("cloudfront") || low.includes("epicgamescdn")) return `CloudFront (${host})`;
+  return host;
+}
+
+/** Short provider label for badges/pills. */
+export function cdnShortLabel(host: string): string {
+  if (!host) return "";
+  const low = host.toLowerCase();
+  if (low.includes("akamai")) return "Akamai";
+  if (low.includes("fastly")) return "Fastly";
+  if (low.includes("cloudfront") || low.includes("epicgamescdn")) return "CloudFront";
+  return host;
+}
