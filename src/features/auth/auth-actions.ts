@@ -280,11 +280,33 @@ export async function runProgressiveAuth(
     render();
     toast(
       t(actionName === "login" ? "auth.signInFailed" : "auth.importFailed", {
-        msg: localizeMessage(String(e)),
+        msg: cleanAuthError(e),
       }),
       "err",
     );
   }
+}
+
+/** Translate raw CLI/legendary auth errors into human-friendly messages. */
+export function cleanAuthError(err: unknown): string {
+  const msg = String(err);
+  if (
+    msg.includes("No EGS login session") ||
+    msg.includes("AppData path does not exist") ||
+    msg.includes("EGS AppData") ||
+    msg.includes("ValueError")
+  ) {
+    return t("auth.egsNotFound");
+  }
+  if (
+    msg.includes("Invalid authorization code") ||
+    msg.includes("400 Bad Request") ||
+    msg.includes("invalid_grant") ||
+    msg.includes("errors.com.epicgames")
+  ) {
+    return t("auth.invalidCode");
+  }
+  return localizeMessage(msg);
 }
 
 export async function epicDoLogin(code: string): Promise<void> {
