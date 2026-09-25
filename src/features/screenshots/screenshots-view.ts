@@ -273,7 +273,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
               <span class="ss-share-chip ${isAvifOrWebp ? "format" : ""}">${isAvifOrWebp ? t("ss.compressedChip") : t("ss.rawPng")}</span>
             </div>
           </div>
-          <button class="ss-share-close" data-act="close-share-modal" title="Kapat">
+          <button class="ss-share-close" data-act="close-share-modal" title="${t("common.close")}">
             ${icon("x", 16)}
           </button>
         </div>
@@ -526,6 +526,47 @@ export function closeScreenshotLightbox(): void {
   if (lbRoot) {
     lbRoot.innerHTML = "";
   }
+}
+
+type PendingScreenshotDelete = { appName: string; filePath: string; lightbox: boolean };
+
+let pendingScreenshotDelete: PendingScreenshotDelete | null = null;
+
+/** In-app confirm. `window.confirm` is the browser's own dialog. */
+export function openScreenshotDeleteConfirm(appName: string, filePath: string, lightbox: boolean): void {
+  pendingScreenshotDelete = { appName, filePath, lightbox };
+  let root = document.getElementById("ss-delete-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "ss-delete-root";
+    document.body.appendChild(root);
+  }
+  root.innerHTML = `
+    <div class="modal-backdrop ss-delete-backdrop" data-act="ss-delete-backdrop">
+      <div class="modal-box ss-delete-card" role="dialog" aria-modal="true">
+        <div class="selective-header">
+          <h2>${t("ss.deleteTip")}</h2>
+        </div>
+        <p class="ss-delete-copy">${t("ss.deleteConfirm")}</p>
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="ss-delete-cancel">${t("common.cancel")}</button>
+          <button class="btn danger" data-act="ss-delete-confirm">${t("common.delete")}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function closeScreenshotDeleteConfirm(): void {
+  pendingScreenshotDelete = null;
+  document.getElementById("ss-delete-root")?.remove();
+}
+
+export function takePendingScreenshotDelete(): PendingScreenshotDelete | null {
+  const pending = pendingScreenshotDelete;
+  pendingScreenshotDelete = null;
+  document.getElementById("ss-delete-root")?.remove();
+  return pending;
 }
 
 export function navigateScreenshotLightbox(dir: "prev" | "next"): void {

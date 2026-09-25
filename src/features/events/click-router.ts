@@ -68,15 +68,18 @@ import { closeEditPlaytimeModal, openEditPlaytimeModal, saveEditedPlaytime, } fr
 
 import {
   closeScreenshotLightbox,
+  closeScreenshotDeleteConfirm,
   closeShareModal,
   compressScreenshotItem,
   copyScreenshotImageToClipboard,
   fetchAndRenderScreenshots,
   navigateScreenshotLightbox,
+  openScreenshotDeleteConfirm,
   openScreenshotLightbox,
   openShareModal,
   playScreenshotShutterSound,
   renderDrawerScreenshots,
+  takePendingScreenshotDelete,
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
@@ -1311,23 +1314,27 @@ document.addEventListener("click", (e) => {
     void epicOpenGameScreenshotsFolder(id, title);
   } else if (act === "delete-screenshot" && id) {
     const filePath = t.dataset.path;
-    const isLightbox = t.dataset.lightbox === "true";
-    if (filePath) {
-      if (confirm(i18nT("ss.deleteConfirm"))) {
-        epicDeleteGameScreenshot(filePath)
-          .then((success) => {
-            if (success) {
-              toast(i18nT("ss.deleted"), "ok");
-              const s = S.epicSummaries.find((x) => x.appName === id);
-              const title = s ? s.title : id;
-              if (isLightbox) closeScreenshotLightbox();
-              void fetchAndRenderScreenshots(id, title, true);
-            } else {
-              toast(i18nT("ss.deleteFailed"), "err");
-            }
-          })
-          .catch((err) => toast(String(err), "err"));
-      }
+    if (filePath) openScreenshotDeleteConfirm(id, filePath, t.dataset.lightbox === "true");
+  } else if (act === "ss-delete-backdrop") {
+    if (e.target === t) closeScreenshotDeleteConfirm();
+  } else if (act === "ss-delete-cancel") {
+    closeScreenshotDeleteConfirm();
+  } else if (act === "ss-delete-confirm") {
+    const pending = takePendingScreenshotDelete();
+    if (pending) {
+      epicDeleteGameScreenshot(pending.filePath)
+        .then((success) => {
+          if (success) {
+            toast(i18nT("ss.deleted"), "ok");
+            const s = S.epicSummaries.find((x) => x.appName === pending.appName);
+            const title = s ? s.title : pending.appName;
+            if (pending.lightbox) closeScreenshotLightbox();
+            void fetchAndRenderScreenshots(pending.appName, title, true);
+          } else {
+            toast(i18nT("ss.deleteFailed"), "err");
+          }
+        })
+        .catch((err) => toast(String(err), "err"));
     }
   } else if (act === "open-screenshot-lightbox" && id) {
     const idx = parseInt(t.dataset.idx || "0", 10);

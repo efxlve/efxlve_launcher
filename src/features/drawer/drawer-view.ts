@@ -246,7 +246,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const devRaw = g ? g.metadata.developer : undefined;
   const dev = typeof devRaw === "string" ? devRaw : "";
-  const hasUpdate = s.updateAvailable || S.availableUpdates.has(appName);
   const achSum = S.epicAchSummaries[appName];
   const pt = S.playtimeMap.get(appName);
   const critic = criticStat(S.loadedCritic.get(appName));
@@ -254,10 +253,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`
     : "—";
 
-  const status = hasUpdate ? `<span class="chip warn">${t("drawer.updateAvailable")}</span>` : "";
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
-    status,
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");

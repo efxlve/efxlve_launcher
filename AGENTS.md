@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.9:** README gerçek ekran görüntüleriyle güncellenir. Oyun sayfasında güncelleme yalnızca düğmede durur; stüdyo satırı noktalarla ayrılır. Ekran görüntüsü silme onayı launcher penceresindedir. `v0.1.9` olarak yayınlanır.
 - **Sürüm 0.1.8:** taşınabilir disk taraması Rockstar, EA ve Ubisoft klasörlerini atlar; Epic Launcher’da kurulumu bitmiş olanlar kalır. `Play*.exe` oyunları Epic kayıtlıysa sessizce Epic üzerinden açılır. `v0.1.8` olarak yayınlanır.
 - **Sürüm 0.1.7:** launcher güncellemesi gelince uygulama içi uyarı ve Windows bildirimi gider. `v0.1.7` olarak yayınlanır.
 - **Test kimliği:** `cache.rs` içindeki Epic hesap kimliği sahte bir yer tutucudur. Gerçek hesap kimliği ve tarayıcı profili repoda tutulmaz.
@@ -310,9 +311,9 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Yükleme yeri:** indirilecek boyut ve gerekli alan `disk_size` / `download_size` üzerinden gelir. Veri gelene kadar satırda kısa bir yükleme çubuğu durur.
 - **Arka plan:** varsayılan saf siyah kalır. Ayarlar > Görünüm’den Epic seçilince zemin Epic Games Launcher’ın kendi siyahı (`#101014`) olur.
 - **Oyun sayfası boş sekmeler:** veri yokken yalnızca ikon, başlık ve açıklama var. Ekran görüntüsü yalnızca oyun penceresi öndeyken kısayolla alınır.
-- **Dil:** kayıtlı seçim yoksa işletim sistemi dili seçilir; desteklenmeyen dilde İngilizce kalır. 15 dil dosyası İngilizce katalogla aynı 1.203 anahtarı taşır.
+- **Dil:** kayıtlı seçim yoksa işletim sistemi dili seçilir; desteklenmeyen dilde İngilizce kalır. 15 dil dosyası İngilizce katalogla aynı 1.211 anahtarı taşır; klasör tarama metinleri de 13 ikincil dilde durur.
 - **Durdur:** oyun sayfasındaki durdur işareti oynat üçgeniyle aynı boyda dolu bir kare.
-- **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok.
+- **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok. Ekran görüntüleri `docs/screenshots/` içinde: kütüphane, oyun sayfası, güncelleme, indirmeler, mağaza, profil, yönet.
 - **Mağaza rozeti:** sahip olunan oyunda “Kütüphanede” Epic mavisi (`#26bbff`). Metin `store.inLibrary` anahtarından gelir.
 - **Yönet penceresi:** oyunu kaldırınca pencere hemen kapanır; silme komutu bitmeden de ekranda kalmaz.
 - **Taşınabilir disk:** Ayarlar > İndirmeler “Klasörü tara” `.egstore` kurulumlarını kütüphaneye bağlar. `.mancpn` yoksa klasör adı katalogdaki `FolderName` ile eşleşir. Rockstar, EA ve Ubisoft klasörleri taramaya girmez; Epic Launcher’da kurulumu bitmiş olanlar girer. Epic Launcher’a yeni kayıt yazılmaz.
@@ -325,9 +326,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Oyun sayfası:** koleksiyon etiketleri Oyun Hakkında’nın üstünde. Seçim penceresi alta taşmıyor; tik yalnızca seçili satırda görünür.
 - **Kütüphane listesi:** satır ve kapak büyütüldü; başarım sütunu var. Sağdaki düğmeler dar ve aynı genişlikte; Yükle grimsi. Yüklü olmayan Epic oyunları gri; EA ve Ubisoft renkli kalır.
 - **Oyun sayfası kayması:** sekme içeriği kısalıp uzayınca sağ çubuk yer ayırır; sayfa yana kaymaz (`scrollbar-gutter: stable`).
-- **Ekran görüntüsü:** yalnızca oyunun kendi penceresi öndeyken alınır; oyun arka plandayken launcher'dan çekim yok. Aynı anda tek çekim ve tek sıkıştırma (`screenshots.rs`, `screenshots-view.ts`).
+- **Ekran görüntüsü:** yalnızca oyunun kendi penceresi öndeyken alınır; oyun arka plandayken launcher'dan çekim yok. Aynı anda tek çekim ve tek sıkıştırma (`screenshots.rs`, `screenshots-view.ts`). Silme onayı tarayıcı kutusu değil, launcher penceresidir.
 - **Yönet penceresi:** oyun sayfasındaki Yönet düğmesi sekmeyi değiştirmez; ayarlar ayrı bir pencerede açılır (`manage-view.ts`).
 - **İndirme hızı 0 B/s:** Bazı legendary sürümleri hızı `Download\t15 MiB/s` diye yazar, bazıları yalnızca `Downloaded:` / `Written:` sayacı basar. `Written: 72 MiB` birikimli boyut hız sanılıyordu (disk yüksek, ağ 0). Hız biriminde `/s` şart; sekme ve iki nokta üst üste aynı anahtarla okunur. Hız satırı yoksa hız, indirilen ve diske yazılan bayt farkından hesaplanır. Ara örnekler son gerçek hızı sıfırlamaz (`transfers.rs`, `ipc-listeners.ts`).
+- **Oyun sayfası güncelleme:** başlığın altındaki “Update Available” yazısı yok. Güncelleme yalnızca alttaki Update düğmesinde durur. Stüdyo, başlatıcı ve anti-cheat arasına orta nokta konur.
 
 ---
 

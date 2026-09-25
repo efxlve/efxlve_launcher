@@ -41,6 +41,7 @@ import { closeManagePopup } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
+  closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
   closeShareModal,
   navigateScreenshotLightbox,
@@ -89,6 +90,14 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
       closeShareModal();
+      return;
+    }
+  }
+
+  if (document.getElementById("ss-delete-root")) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeScreenshotDeleteConfirm();
       return;
     }
   }
