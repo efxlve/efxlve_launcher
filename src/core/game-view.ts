@@ -15,6 +15,16 @@ import { rawOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
+/** Achievement count for a library list row. Dash when the game has no tracked set. */
+export function listAchievementCell(appName: string): string {
+  const ach = S.epicAchSummaries[appName];
+  const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
+  if (ach?.supported && ach.total_achievements > 0) {
+    return `<span class="lrow-ach${done ? " done" : ""}">${icon("trophy", 13)}<span class="tabular-nums">${ach.user_unlocked}/${ach.total_achievements}</span></span>`;
+  }
+  return `<span class="lrow-ach">—</span>`;
+}
+
 /** Compact playtime + achievement chips for a library cover. Empty when the setting is off or there is nothing to show. */
 export function libraryCoverStats(appName: string): string {
   if (!S.showCoverStats) return "";
@@ -65,7 +75,8 @@ export function patchLibraryCardDom(appName: string): boolean {
   const badgeHtml = libraryCardBadge(s);
   const actions = epicActionButtons(s, "full", { primaryOnly: true });
   items.forEach((item) => {
-    item.classList.toggle("not-installed", !s.installed);
+    const dim = item.classList.contains("lrow") ? libraryListDimmed(s) : !s.installed;
+    item.classList.toggle("not-installed", dim);
     const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
     const badge = badgeHost?.querySelector(".pbadge");
     if (badgeHtml) {
@@ -83,6 +94,8 @@ export function patchLibraryCardDom(appName: string): boolean {
     } else if (stats) {
       stats.remove();
     }
+    const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
+    if (achHost) achHost.innerHTML = listAchievementCell(appName);
     const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
     if (actionHost) actionHost.innerHTML = actions;
     const cardArt = item.querySelector<HTMLElement>("[data-card-art]");
@@ -151,6 +164,12 @@ export function toggleFav(appName: string): void {
         btn.innerHTML = `${icon("heart", 14)} ${isNowFaved ? t("common.favorited") : t("common.favorite")}`;
       }
     });
+}
+
+/** Uninstalled Epic titles are dimmed in the list. EA and Ubisoft stay full color. */
+export function libraryListDimmed(s: EpicSummary): boolean {
+  if (s.installed) return false;
+  return !requiresThirdPartyLauncher(getThirdPartyLauncher(rawOf(s.appName)));
 }
 
 /** Primary action buttons (play/install/update/cancel) for a game card. */

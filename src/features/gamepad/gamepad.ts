@@ -374,10 +374,7 @@ export function cycleTopView(step: number): void {
 
 export function handleGamepadTabSwitch(step: number): void {
   if (S.currentModalAppName) {
-    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs", "screenshots"];
-    const curSummary = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
-    if (curSummary?.installed) tabs.push("manage");
-    tabs.push("specs");
+    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs", "screenshots", "specs"];
 
     const curIdx = tabs.indexOf(S.activeDrawerTab);
     const nextIdx = (curIdx + step + tabs.length) % tabs.length;

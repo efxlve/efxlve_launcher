@@ -18,6 +18,8 @@ export const modalRoot = document.getElementById("modal-root") as HTMLElement;
 export const selectiveRoot = document.getElementById("selective-root") as HTMLElement;
 /** Install location dialog root. */
 export const installRoot = document.getElementById("install-root") as HTMLElement;
+/** Game manage popup root. Sits under playtime, cover and move dialogs. */
+export const manageRoot = document.getElementById("manage-root") as HTMLElement;
 /** Playtime editor modal root. */
 export const playtimeRoot = document.getElementById("playtime-root") as HTMLElement;
 /** Cross-drive move modal root. */

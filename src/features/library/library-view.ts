@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar } from "../../core/game-view";
+import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -250,12 +250,13 @@ function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   return `
-    <div class="lrow${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${esc(studioOf(s))}</div>
       </div>
+      <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>
       <div class="lrow-col" data-lib-playtime="${s.appName}">${secs > 0 ? fmtPlaytime(secs) : "—"}</div>
       <div class="lrow-col">${s.installed && s.installSize > 0 ? fmtBytes(s.installSize) : "—"}</div>
       <div class="lrow-action" data-card-action>${epicActionButtons(s, "small", { primaryOnly: true })}</div>
@@ -274,7 +275,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   if (S.epicViewMode === "list") {
     return `
       <div class="lib-list">
-        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
+        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }

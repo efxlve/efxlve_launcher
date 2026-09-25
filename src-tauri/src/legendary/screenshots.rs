@@ -4,18 +4,73 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use tauri::{AppHandle, Emitter};
 
-static RUNNING_GAME: RwLock<Option<(String, String)>> = RwLock::new(None);
+#[derive(Clone)]
+struct RunningGame {
+    app_name: String,
+    title: String,
+    install_path: Option<PathBuf>,
+    exes: Vec<String>,
+}
 
-pub fn set_active_running_game(app_name: &str, title: &str) {
+static RUNNING_GAME: RwLock<Option<RunningGame>> = RwLock::new(None);
+static CAPTURE_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_active_running_game(
+    app_name: &str,
+    title: &str,
+    install_path: Option<PathBuf>,
+    exes: Vec<String>,
+) {
     if let Ok(mut g) = RUNNING_GAME.write() {
-        *g = Some((app_name.to_string(), title.to_string()));
+        *g = Some(RunningGame {
+            app_name: app_name.to_string(),
+            title: title.to_string(),
+            install_path,
+            exes,
+        });
+    }
+}
+
+/// True only when the foreground window belongs to the running game, not the launcher.
+fn game_window_is_foreground() -> bool {
+    let game = match RUNNING_GAME.read() {
+        Ok(g) => (*g).clone(),
+        Err(_) => return false,
+    };
+    let Some(game) = game else {
+        return false;
+    };
+    let pids = super::transfers::game_process_pids(game.install_path.as_deref(), &game.exes);
+    if pids.is_empty() {
+        return false;
+    }
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        extern "system" {
+            fn GetForegroundWindow() -> *mut std::ffi::c_void;
+            fn GetWindowThreadProcessId(hwnd: *mut std::ffi::c_void, pid: *mut u32) -> u32;
+        }
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.is_null() {
+                return false;
+            }
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(hwnd, &mut pid);
+            pids.contains(&pid)
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        false
     }
 }
 
 pub fn clear_active_running_game(app_name: &str) {
     if let Ok(mut g) = RUNNING_GAME.write() {
-        if let Some((ref cur, _)) = *g {
-            if cur == app_name {
+        if let Some(cur) = g.as_ref() {
+            if cur.app_name == app_name {
                 *g = None;
             }
         }
@@ -23,7 +78,10 @@ pub fn clear_active_running_game(app_name: &str) {
 }
 
 pub fn get_active_running_game() -> Option<(String, String)> {
-    RUNNING_GAME.read().ok().and_then(|g| g.clone())
+    RUNNING_GAME
+        .read()
+        .ok()
+        .and_then(|g| g.as_ref().map(|g| (g.app_name.clone(), g.title.clone())))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -597,8 +655,33 @@ mod win_capture {
     }
 }
 
-/// Synchronously captures the primary screen and saves it to the game's folder.
+/// Synchronously captures the primary screen and saves it to the running game's folder.
+/// Refuses when no game is running, and ignores a second request while one capture is in flight.
 pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
+    let Some((running_app, running_title)) = get_active_running_game() else {
+        return Err("@t:ss.notInGame".to_string());
+    };
+    if !app_name.is_empty() && app_name != running_app {
+        return Err("@t:ss.notInGame".to_string());
+    }
+    if !game_window_is_foreground() {
+        return Err("@t:ss.notInGame".to_string());
+    }
+    if CAPTURE_BUSY.swap(true, std::sync::atomic::Ordering::AcqRel) {
+        return Err("@t:ss.busy".to_string());
+    }
+    let _ = title;
+    struct ReleaseCapture;
+    impl Drop for ReleaseCapture {
+        fn drop(&mut self) {
+            CAPTURE_BUSY.store(false, std::sync::atomic::Ordering::Release);
+        }
+    }
+    let _guard = ReleaseCapture;
+    capture_screen_to_game_folder(&running_app, &running_title)
+}
+
+fn capture_screen_to_game_folder(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
     let clean_t = if !title.trim().is_empty() {
         clean_folder_name(title)
     } else {
@@ -720,7 +803,7 @@ pub fn start_f12_listener(app: AppHandle) {
         loop {
             // Only check the hotkey while a game is actively running
             let running = get_active_running_game();
-            if running.is_none() {
+            if running.is_none() || !game_window_is_foreground() {
                 was_down = false;
                 std::thread::sleep(std::time::Duration::from_millis(250));
                 continue;
@@ -751,6 +834,7 @@ pub fn start_f12_listener(app: AppHandle) {
                         let app_name_clone = app_name.clone();
                         let title_clone = title.clone();
                         std::thread::spawn(move || {
+                            // A busy capture is dropped; the previous one is still writing.
                             if let Ok(item) = capture_game_screenshot_sync(&app_name_clone, &title_clone) {
                                 let _ = app_clone.emit(
                                     "screenshot-captured",
@@ -951,7 +1035,7 @@ mod tests {
 
     #[test]
     fn test_running_game_lifecycle() {
-        set_active_running_game("Sugar", "Alan Wake 2");
+        set_active_running_game("Sugar", "Alan Wake 2", None, Vec::new());
         assert_eq!(get_active_running_game(), Some(("Sugar".to_string(), "Alan Wake 2".to_string())));
         clear_active_running_game("Sugar");
         assert_eq!(get_active_running_game(), None);

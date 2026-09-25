@@ -109,21 +109,29 @@
 
 /* --- List view --- */
 .lib-list { display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.lrow-head, .lrow { display: grid; grid-template-columns: 40px minmax(0, 1fr) 120px 100px 140px; align-items: center; gap: 14px; padding: 0 14px; }
-.lrow-head { height: 34px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
-.lrow { height: 60px; border-top: 1px solid var(--line); cursor: pointer; contain: layout paint; content-visibility: auto; contain-intrinsic-size: auto 60px; }
+.lrow-head, .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 120px 130px 100px 124px; align-items: center; gap: 16px; padding: 0 16px; }
+.lrow-head { height: 36px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
+.lrow { height: 84px; border-top: 1px solid var(--line); cursor: pointer; contain: layout paint; content-visibility: auto; contain-intrinsic-size: auto 84px; }
 .lrow-head + .lrow { border-top: none; }
 .lrow:hover { background: var(--surface-2); }
-.lrow-art { position: relative; width: 36px; height: 48px; border-radius: 4px; overflow: hidden; background: var(--surface-3); }
+.lrow-art { position: relative; width: 52px; height: 70px; border-radius: 5px; overflow: hidden; background: var(--surface-3); }
 .lrow-art img, .lrow-art .pcover { width: 100%; height: 100%; object-fit: cover; }
-.lrow.not-installed .lrow-art img { opacity: 0.6; }
+.lrow.not-installed .lrow-art img { opacity: 0.45; filter: grayscale(1); }
 .lrow-main { min-width: 0; }
 .lrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.lrow-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lrow.not-installed .lrow-name { color: var(--text-2); }
+.lrow-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow.not-installed .lrow-name,
+.lrow.not-installed .lrow-meta,
+.lrow.not-installed .lrow-col,
+.lrow.not-installed .lrow-ach { color: var(--text-3); }
 .lrow .pbadge { position: static; flex-shrink: 0; background: var(--surface-3); }
-.lrow-meta { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lrow-col { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lrow-meta { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
+.lrow-ach.done { color: var(--text); }
 .lrow-action { display: flex; justify-content: flex-end; }
+.lrow-action .btn { width: 112px; }
+.lrow-action .btn.install { background: var(--surface-3); color: var(--text-2); font-weight: 500; border-color: var(--line); }
+.lrow-action .btn.install:hover { background: var(--surface-2); color: var(--text); }
 
 /* Collection tabs live in the filter row. The folder gallery is gone. */

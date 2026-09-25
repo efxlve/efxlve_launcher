@@ -5,7 +5,7 @@
 
 import { AUTO_UPDATE_TIME_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
-import { closeModal, collectionRoot, playtimeRoot, viewEl } from "../../core/dom";
+import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
@@ -13,7 +13,6 @@ import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
-  epicCaptureGameScreenshot,
   epicInstallGame,
   epicSaveGameSettings,
   epicSetScreenshotHotkey,
@@ -38,14 +37,13 @@ import { updateInstallFinalPath } from "../install/install-dialog";
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
+import { closeManagePopup } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotLightbox,
   closeShareModal,
-  fetchAndRenderScreenshots,
   navigateScreenshotLightbox,
-  playScreenshotShutterSound,
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
 // Vertical wheel scrolls the game page tab strip horizontally when it overflows.
@@ -113,23 +111,6 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  if (e.keyCode === S.screenshotHotkey || e.key === S.screenshotHotkeyName || (S.screenshotHotkey === 0x7B && e.key === "F12")) {
-    if (S.currentModalAppName) {
-      e.preventDefault();
-      const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
-      const title = s ? s.title : S.currentModalAppName;
-      toast(i18nT("ss.capturing"), "");
-      epicCaptureGameScreenshot(S.currentModalAppName, title)
-        .then((item) => {
-          toast(i18nT("ss.saved", { file: item.file_name }), "ok");
-          playScreenshotShutterSound();
-          void fetchAndRenderScreenshots(S.currentModalAppName!, title, true);
-        })
-        .catch((err) => toast(String(err), "err"));
-      return;
-    }
-  }
-
   if (e.key === "Enter" || e.key === " ") {
     const active = document.activeElement as HTMLElement | null;
     if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card")) && !active.closest("input, select, textarea")) {
@@ -158,6 +139,10 @@ document.addEventListener("keydown", (e) => {
     }
     if (playtimeRoot && playtimeRoot.innerHTML.trim()) {
       closeEditPlaytimeModal();
+      return;
+    }
+    if (manageRoot && manageRoot.innerHTML.trim()) {
+      closeManagePopup();
       return;
     }
     if (S.selectiveInstallOptions) {

@@ -251,7 +251,7 @@ export function openGameCollectionsModal(appName: string): void {
 
   collectionRoot.innerHTML = `
     <div class="col-modal-backdrop" data-act="col-modal-backdrop">
-      <div class="col-modal-card" style="max-width:540px; height:auto; max-height:75vh;" role="dialog" aria-modal="true">
+      <div class="col-modal-card" role="dialog" aria-modal="true">
         <div class="col-modal-header">
           <div class="col-modal-title">
             <div class="col-modal-header-avatar">

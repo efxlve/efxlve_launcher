@@ -58,7 +58,7 @@ import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-ins
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
 import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { openPalette } from "../palette/palette";
-import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
@@ -76,6 +76,7 @@ import {
   openScreenshotLightbox,
   openShareModal,
   playScreenshotShutterSound,
+  renderDrawerScreenshots,
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
@@ -929,8 +930,15 @@ document.addEventListener("click", (e) => {
       })
       .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "manage-game" && id) {
-    S.activeDrawerTab = "manage";
-    openEpicModal(id, false);
+    if (S.activeDrawerTab === "manage") {
+      S.activeDrawerTab = "overview";
+      if (S.currentModalAppName === id) openEpicModal(id, false);
+    }
+    openManagePopup(id);
+  } else if (act === "close-manage-popup") {
+    closeManagePopup();
+  } else if (act === "manage-overlay-close") {
+    if (e.target === t) closeManagePopup();
   } else if (act === "open-move-game-modal" && id) {
     const raw = rawOf(id);
     const partner = getThirdPartyLauncher(raw);
@@ -1253,6 +1261,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "ach-refresh" && id) {
     void fetchAndRenderAchievements(id, true);
   } else if (act === "capture-screenshot" && id) {
+    if (!S.runningGames.has(id)) {
+      toast(i18nT("ss.notInGame"), "");
+      return;
+    }
     const s = S.epicSummaries.find((x) => x.appName === id);
     const title = t.dataset.title || (s ? s.title : id);
     playScreenshotShutterSound();
@@ -1260,9 +1272,18 @@ document.addEventListener("click", (e) => {
     epicCaptureGameScreenshot(id, title)
       .then((item) => {
         toast(i18nT("ss.saved", { file: item.file_name }), "ok");
-        void fetchAndRenderScreenshots(id, title, true);
+        const existing = S.loadedScreenshots.get(id) || [];
+        S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
+        if (S.screenshotCompressionEnabled) {
+          void compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
+        }
+        if (S.currentModalAppName === id && S.activeDrawerTab === "screenshots") {
+          const contentEl = document.getElementById("drawer-tab-content");
+          const cur = S.epicSummaries.find((x) => x.appName === id);
+          if (contentEl && cur) contentEl.innerHTML = renderDrawerScreenshots(cur);
+        }
       })
-      .catch((err) => toast(String(err), "err"));
+      .catch((err) => toast(localizeMessage(String(err)), "err"));
   } else if (act === "open-screenshots-folder" && id) {
     const s = S.epicSummaries.find((x) => x.appName === id);
     const title = t.dataset.title || (s ? s.title : id);

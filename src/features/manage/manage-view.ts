@@ -3,8 +3,9 @@
  * open (settings sync, verify progress and reset). State lives in S.
  */
 
+import { manageRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { lastPlayedLabel, rawOf } from "../../core/selectors";
+import { lastPlayedLabel, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
@@ -39,6 +40,31 @@ function verifyBox(percent: number, detail: string, speed: string): string {
     <div class="verify-box">
       <div class="progress"><span id="manage-verify-fill" style="width:${percent}%"></span></div>
       <div class="verify-meta"><span id="manage-verify-count">${esc(detail)}</span><span id="manage-verify-speed">${esc(speed)}</span></div>
+    </div>`;
+}
+
+/** Closes the manage popup without touching the game page underneath. */
+export function closeManagePopup(): void {
+  if (manageRoot) manageRoot.innerHTML = "";
+}
+
+/** Opens manage settings in a dialog so the game page stays on its current tab. */
+export function openManagePopup(appName: string): void {
+  if (!manageRoot) return;
+  const s = summaryOf(appName);
+  if (!s) return;
+  manageRoot.innerHTML = `
+    <div class="manage-overlay" data-act="manage-overlay-close">
+      <div class="manage-dialog">
+        <div class="manage-head">
+          <div class="manage-head-text">
+            <h2>${t("drawer.manage")}</h2>
+            <div class="manage-head-sub">${esc(s.title)}</div>
+          </div>
+          <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
+        </div>
+        <div class="manage-body">${renderDrawerManage(s)}</div>
+      </div>
     </div>`;
 }
 

@@ -178,16 +178,19 @@ export async function compressImageToBlob(
   if (!blob) throw new Error("Image compression failed");
 
   const buffer = await blob.arrayBuffer();
-  let binary = "";
   const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Chunked so a multi-megabyte frame does not build one giant intermediate string.
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   const base64 = btoa(binary);
 
   return { base64, ext: targetExt, bytes: blob.size };
 }
+
+let compressChain: Promise<void> = Promise.resolve();
 
 export async function compressScreenshotItem(
   appName: string,
@@ -195,6 +198,18 @@ export async function compressScreenshotItem(
   format: "avif" | "webp" | "jpg" = S.screenshotCompressionFormat,
   quality: number = S.screenshotCompressionQuality,
   silent = false
+): Promise<GameScreenshotItem | null> {
+  const run = compressChain.then(() => compressScreenshotNow(appName, item, format, quality, silent));
+  compressChain = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+async function compressScreenshotNow(
+  appName: string,
+  item: GameScreenshotItem,
+  format: "avif" | "webp" | "jpg",
+  quality: number,
+  silent: boolean,
 ): Promise<GameScreenshotItem | null> {
   try {
     const { base64, ext, bytes } = await compressImageToBlob(item.data_url, format, quality);

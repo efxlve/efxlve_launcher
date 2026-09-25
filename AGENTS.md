@@ -301,6 +301,12 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - **Otomatik Masaüstü Kısayolu Oluşturma & Ayarlar Seçeneği:** İndirme tamamlandığında (`monitor_download`) oyun için otomatik masaüstü kısayolu oluşturulması sağlandı (`transfers.rs`). Ayarlar > İndirmeler sekmesine açma/kapatma anahtarı yerleştirildi (`settings-view.ts`, `click-router.ts`, `commands.rs`); kullanıcı tercihi backend ve localStorage ile kalıcı hale getirildi.
   - **Kütüphane Sıralaması & Doğal Dil Collation:** Sabit Türkçe collator (`tr`) yerine aktif dile duyarlı `getCollator(lang, { sensitivity: "base", numeric: true })` yapısına geçildi; İngilizce ve diğer dillerde 'I'/'ı' dönüşüm hatası giderildi, "Doom 2" ve "Doom 10" gibi seriler doğal sayısal sıralamaya kavuşturuldu. Varsayılan sıralama geçmiş, oynama süresi, kurulu olma ve ada göre optimize edildi (`library-view.ts`).
   - **Epic Mağazası Oturumu & WebView2 İzolasyonu:** Launcher kimlik doğrulama belirteci (OAuth2 CLI) ile Mağaza web görünümü (sandboxed Chromium çerez havuzu) ayrımı netleştirildi; kullanıcı mağazada bir defa giriş yaptığında WebView2 oturumunun kalıcı kalması korundu.
+- **Oyun taşıma:** disk listesi A’dan Z’ye gerçek sürücüleri sayar. Aynı diskte yeniden adlandırma yer kontrolü yapmaz; başka diske kopyada kota 0 diye “yer yok” denmez.
+- **Oyun sayfası:** koleksiyon etiketleri Oyun Hakkında’nın üstünde. Seçim penceresi alta taşmıyor; tik yalnızca seçili satırda görünür.
+- **Kütüphane listesi:** satır ve kapak büyütüldü; başarım sütunu var. Sağdaki düğmeler dar ve aynı genişlikte; Yükle grimsi. Yüklü olmayan Epic oyunları gri; EA ve Ubisoft renkli kalır.
+- **Oyun sayfası kayması:** sekme içeriği kısalıp uzayınca sağ çubuk yer ayırır; sayfa yana kaymaz (`scrollbar-gutter: stable`).
+- **Ekran görüntüsü:** yalnızca oyunun kendi penceresi öndeyken alınır; oyun arka plandayken launcher'dan çekim yok. Aynı anda tek çekim ve tek sıkıştırma (`screenshots.rs`, `screenshots-view.ts`).
+- **Yönet penceresi:** oyun sayfasındaki Yönet düğmesi sekmeyi değiştirmez; ayarlar ayrı bir pencerede açılır (`manage-view.ts`).
 - **İndirme hızı 0 B/s:** Bazı legendary sürümleri hızı `Download\t15 MiB/s` diye yazar, bazıları yalnızca `Downloaded:` / `Written:` sayacı basar. `Written: 72 MiB` birikimli boyut hız sanılıyordu (disk yüksek, ağ 0). Hız biriminde `/s` şart; sekme ve iki nokta üst üste aynı anahtarla okunur. Hız satırı yoksa hız, indirilen ve diske yazılan bayt farkından hesaplanır. Ara örnekler son gerçek hızı sıfırlamaz (`transfers.rs`, `ipc-listeners.ts`).
 
 ---

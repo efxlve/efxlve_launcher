@@ -29,6 +29,7 @@ import { renderProfile } from "./features/profile/profile-view";
 import { closeAvatarModal } from "./features/profile/profile-avatar";
 import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
+import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
 
@@ -103,6 +104,7 @@ function closeAllModals(): void {
   closeNotifPanel();
   closeAvatarModal();
   closeInstallDialog();
+  closeManagePopup();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

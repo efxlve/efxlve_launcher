@@ -90,7 +90,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   const faved = S.epicFav.has(s.appName);
   return `
     ${primaryAction(s, p, partner)}
-    <button class="btn ghost lg ${S.activeDrawerTab === "manage" ? "active" : ""}" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
+    <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitle")}">${icon("external", 16)}</button>
     ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}`;
@@ -258,7 +258,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
     status,
-    `<span id="drawer-col-chips-container" class="gp-tags">${renderCollectionTags(appName)}</span>`,
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
@@ -378,6 +377,7 @@ export function renderDrawerOverview(
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
+        <div id="drawer-col-chips-container" class="gp-tags gp-about-tags">${renderCollectionTags(s.appName)}</div>
         <section class="gp-section">
           <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
           <div class="hub-desc-text" id="hub-desc-text">${effectiveDesc ? aboutMarkup(effectiveDesc) : `<p>${t("drawer.noDescription")}</p>`}</div>

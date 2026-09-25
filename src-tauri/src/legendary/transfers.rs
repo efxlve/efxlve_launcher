@@ -1928,7 +1928,12 @@ async fn spawn_launched(
         v
     };
 
-    super::screenshots::set_active_running_game(app_name, &game_title);
+    super::screenshots::set_active_running_game(
+        app_name,
+        &game_title,
+        install_path.clone(),
+        candidate_exes.clone(),
+    );
 
     // Early-crash check in the first 2.5 seconds (only errors on a non-zero exit with no running process)
     let early_failure = match tokio::time::timeout(std::time::Duration::from_millis(2500), child.wait()).await {
