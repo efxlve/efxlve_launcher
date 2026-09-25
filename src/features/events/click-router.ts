@@ -1071,6 +1071,7 @@ document.addEventListener("click", (e) => {
     const lang = t.dataset.lang;
     if (lang && lang !== S.appLanguage) {
       S.appLanguage = lang;
+      S.trCollator = new Intl.Collator(lang, { sensitivity: "base", numeric: true });
       localStorage.setItem(LANG_KEY, lang);
       void setLanguage(lang).then(() => {
         updateOfflineModeUi();

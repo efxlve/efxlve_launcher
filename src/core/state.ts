@@ -9,6 +9,7 @@
  * This file is intentionally free of logic; it only declares state.
  */
 import { EPIC_STORE_URL } from "../epic";
+import { initialLanguage } from "../i18n";
 import {
   APP_AUTO_UPDATE_KEY,
   CUSTOM_AVATARS_KEY,
@@ -22,7 +23,6 @@ import {
   AUTO_UPDATE_KEY,
   AUTO_UPDATE_TIME_KEY,
   INITIAL_CARD_CHUNK,
-  LANG_KEY,
   MINIMIZE_TRAY_KEY,
   COVER_STATS_KEY,
   SURFACE_KEY,
@@ -111,7 +111,7 @@ export const S = {
   loadedCritic: (new Map()) as Map<string, CriticData>,
   loadingCriticFor: (null) as string | null,
   loadingSteamAboutFor: (null) as string | null,
-  appLanguage: (localStorage.getItem(LANG_KEY) || "tr") as string,
+  appLanguage: initialLanguage(),
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
   epicFilter: "all" as EpicFilter,
@@ -221,7 +221,7 @@ export const S = {
   dlQueueStatus: ({ isPaused: false, queue: [] }) as DlQueueStatus,
   speedChartTimer: (null) as number | null,
   renderScheduled: false,
-  trCollator: new Intl.Collator(localStorage.getItem(LANG_KEY) || "tr", { sensitivity: "base", numeric: true }),
+  trCollator: new Intl.Collator(initialLanguage(), { sensitivity: "base", numeric: true }),
   renderedCardCount: INITIAL_CARD_CHUNK,
   libScrollObserver: (null) as IntersectionObserver | null,
   epicSettingsCache: (null) as EpicSettings | null,

@@ -32,6 +32,33 @@ export const LANGUAGES: LanguageMeta[] = [
 
 const REGISTRY: Record<string, Dict> = { tr, en };
 
+/** Maps an OS locale tag onto a bundled language. Unknown tags become English. */
+export function matchSystemLanguage(tags: readonly string[]): string {
+  for (const raw of tags) {
+    const norm = raw.trim().replace(/_/g, "-");
+    if (!norm) continue;
+    const exact = LANGUAGES.find((l) => l.code.toLowerCase() === norm.toLowerCase());
+    if (exact) return exact.code;
+    const lower = norm.toLowerCase();
+    if (lower.startsWith("zh")) {
+      return /hant|tw|hk|mo/.test(lower) ? "zh-Hant" : "zh-Hans";
+    }
+    if (lower.startsWith("pt")) return "pt-BR";
+    const base = lower.split("-")[0];
+    const byBase = LANGUAGES.find((l) => l.code.toLowerCase() === base);
+    if (byBase) return byBase.code;
+  }
+  return "en";
+}
+
+/** Saved choice wins. Otherwise the OS language, then English. */
+export function initialLanguage(): string {
+  const saved = localStorage.getItem("efxlve-lang");
+  if (saved && LANGUAGES.some((l) => l.code === saved)) return saved;
+  const tags = navigator.languages?.length ? navigator.languages : [navigator.language || "en"];
+  return matchSystemLanguage(tags);
+}
+
 // Languages not bundled in the main chunk are lazy-loaded on demand.
 const LOADERS: Record<string, () => Promise<{ default: Dict }>> = {
   de: () => import("./locales/de.json"),
