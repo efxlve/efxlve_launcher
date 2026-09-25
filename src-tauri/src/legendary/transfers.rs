@@ -1978,28 +1978,40 @@ async fn spawn_launched(
             }),
         );
 
-        // If cloud sync is enabled, run sync-saves automatically
-        let settings_path = super::skip::default_config_dir()
-            .join("game_settings")
-            .join(format!("{app_name_bg}.json"));
-        let should_sync = std::fs::read_to_string(&settings_path)
-            .ok()
-            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-            .and_then(|v| v.get("cloudSavesEnabled").and_then(|c| c.as_bool()))
-            .unwrap_or(false);
+        // Cloud sync defaults on. The toggle lives in efxlve_game_settings.json
+        // (camelCase). An older path looked at a file that was never written, so
+        // legendary sync-saves never ran.
+        let should_sync = super::commands::load_all_game_custom_configs()
+            .get(&app_name_bg)
+            .and_then(|c| c.cloud_saves_enabled)
+            .unwrap_or(true);
 
         if should_sync {
             let mut sync_cmd = tokio::process::Command::new(&bin_bg);
-            sync_cmd.arg("sync-saves").arg(&app_name_bg);
-            sync_cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+            // -y first: sync-saves asks upload/download and would exit on a closed stdin.
+            sync_cmd.args(["-y", "sync-saves", &app_name_bg]);
+            sync_cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
             #[cfg(windows)]
             sync_cmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = sync_cmd.status().await;
+            let finished = sync_cmd.output().await;
+            let (success, message) = match finished {
+                Ok(out) if out.status.success() => (true, String::new()),
+                Ok(out) => {
+                    let text = format!(
+                        "{}\n{}",
+                        String::from_utf8_lossy(&out.stdout),
+                        String::from_utf8_lossy(&out.stderr)
+                    );
+                    (false, short_error(&text))
+                }
+                Err(e) => (false, e.to_string()),
+            };
             let _ = app_bg.emit(
                 "cloud-sync-complete",
                 serde_json::json!({
                     "id": app_name_bg,
-                    "success": true
+                    "success": success,
+                    "message": message
                 }),
             );
         }

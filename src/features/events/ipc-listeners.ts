@@ -452,7 +452,12 @@ export async function initApp(hooks: {
         if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
           void epicBackupSave(id)
             .then(() => pushNotification({ kind: "info", title: t("notif.backupDone", { title }), appName: id }))
-            .catch(() => pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), appName: id }));
+            .catch((err) => {
+              const msg = String(err);
+              // No recorded save folder is not a failed cloud sync.
+              if (msg.includes("backup.noSaveDir") || msg.includes("backup.saveDirMissing")) return;
+              pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), appName: id });
+            });
         }
       }
 
@@ -532,10 +537,14 @@ export async function initApp(hooks: {
       }
     );
 
-    await listen<{ id: string; success: boolean }>("cloud-sync-complete", () => {
-      toast(t("manage.cloudSynced"), "ok");
+    await listen<{ id: string; success: boolean; message?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
-      if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
+      if (event.payload.success) {
+        if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
+        return;
+      }
+      const detail = localizeMessage(event.payload.message || "");
+      toast(detail || t("backup.failed", { msg: "" }), "err");
     });
 
     try {

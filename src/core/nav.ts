@@ -21,9 +21,10 @@ import { openStoreUrl, setView } from "../features/store/store-view";
 export function updateSidebarActive(): void {
   const sidebar = document.getElementById("sidebar");
   if (!sidebar) return;
+  const gameOpen = Boolean(S.currentModalAppName);
   sidebar.querySelectorAll<HTMLElement>("[data-view], [data-act='open-store']").forEach((el) => {
-    const active = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
-    el.classList.toggle("active", active);
+    const section = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
+    el.classList.toggle("active", section && !gameOpen);
   });
   syncSidebarGameActive();
 }

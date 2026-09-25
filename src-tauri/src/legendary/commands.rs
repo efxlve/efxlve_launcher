@@ -1857,7 +1857,7 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
 pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;
     let mut cmd = tokio::process::Command::new(&bin);
-    cmd.args(["sync-saves", &app_name]);
+    cmd.args(["-y", "sync-saves", &app_name]);
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
     let out = cmd.output().await.map_err(|e| e.to_string())?;

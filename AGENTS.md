@@ -127,6 +127,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Kenar çubuğu:** oyun sayfası açıkken bölüm ve oyun aynı anda beyaz çizgi taşımaz. Çizgi yalnızca açık oyundadır.
+- **Bulut kayıt:** oyun kapanınca `legendary -y sync-saves` gerçek ayardan çalışır (varsayılan açık). Eski kod hiç yazılmayan bir dosyaya bakıp senkronu atlıyordu. Kayıt klasörü olmayan oyunda yerel yedek bildirimi basılmaz.
 - **Ayarlar > Hesap:** hesap satırı ile düğmeler ayrı. Liste üstte; Yeni hesap ve çıkış alt satırda. Oturum açıkken kenar çubuğu hâlâ profili açar.
 - **Discord Rich Presence:** durum metninin yanında launcher ikonu, açık oyunun kapağı ve oynarken geçen süre gider. Discord kapalıysa worker sessizce bekler.
 - **Ayarlar > Hakkında:** kimlik kartı uygulama ikonunu (`128x128@2x.png`) gösterir. Tanıtım metninden konsol ve PS5 ibaresi çıkarıldı. Gizlenen oyun yokken hayalet ikonu ve kısa bir espri gösterilir.
