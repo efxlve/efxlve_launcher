@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Ana pencere için varsayılan yetkinlik",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default", "updater:default", "process:allow-restart"]
+  "permissions": ["core:default", "opener:default", "updater:default", "process:allow-restart", "notification:default"]
 }

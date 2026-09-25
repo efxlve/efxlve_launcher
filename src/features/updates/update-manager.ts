@@ -13,6 +13,11 @@
  */
 
 import { getVersion } from "@tauri-apps/api/app";
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from "@tauri-apps/plugin-notification";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { APP_AUTO_UPDATE_KEY, isTauri } from "../../core/constants";
@@ -38,6 +43,22 @@ export function appUpdateInstallBlocked(): boolean {
     if (!dl.done) return true;
   }
   return S.activeDlMetrics !== null;
+}
+
+/** Windows toast plus the in-app toast, so an update is visible outside the bell. */
+async function announceUpdate(title: string, body: string): Promise<void> {
+  toast(title, "ok");
+  if (!isTauri) return;
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const permission = await requestPermission();
+      granted = permission === "granted";
+    }
+    if (granted) sendNotification({ title, body });
+  } catch {
+    // The in-app toast already covered the open window.
+  }
 }
 
 /** In-place progress update (Rule 15: never re-render the whole view). */
@@ -94,11 +115,13 @@ export async function checkForAppUpdate(manual = false): Promise<void> {
     S.appUpdateNotes = update.body || "";
     S.appUpdateStatus = "available";
     scheduleRender();
+    const availableTitle = t("appUpdate.available", { version: update.version });
     pushNotification({
       kind: "update",
-      title: t("appUpdate.available", { version: update.version }),
+      title: availableTitle,
       body: t("appUpdate.availableBody"),
     });
+    void announceUpdate(availableTitle, t("appUpdate.availableBody"));
     if (S.appAutoUpdate) void downloadAppUpdate();
   } catch (e) {
     if (manual) {
@@ -142,12 +165,15 @@ export async function downloadAppUpdate(): Promise<void> {
     S.appUpdateStatus = "ready";
     scheduleRender();
     const blocked = appUpdateInstallBlocked();
+    const readyTitle = t("appUpdate.ready", { version: S.appUpdateVersion });
+    const readyBody = blocked ? t("appUpdate.readyBlockedBody") : t("appUpdate.readyBody");
     pushNotification({
       kind: "update",
-      title: t("appUpdate.ready", { version: S.appUpdateVersion }),
-      body: blocked ? t("appUpdate.readyBlockedBody") : t("appUpdate.readyBody"),
+      title: readyTitle,
+      body: readyBody,
       action: "app-update-install",
     });
+    void announceUpdate(readyTitle, readyBody);
   } catch (e) {
     S.appUpdateStatus = "error";
     S.appUpdateError = String(e);
