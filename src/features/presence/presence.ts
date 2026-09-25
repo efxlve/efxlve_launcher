@@ -19,20 +19,18 @@ export const DEFAULT_DISCORD_CLIENT_ID = "1551663205426794596";
 
 let lastKey = "";
 
-/** The Discord application id to use: the user's override, else the default. */
+/** Always the built-in Efxlve Discord application id. */
 export function effectivePresenceClientId(): string {
-  return S.presenceClientId.trim() || DEFAULT_DISCORD_CLIENT_ID;
+  return DEFAULT_DISCORD_CLIENT_ID;
 }
 
 /** Loads the persisted presence settings and configures the backend worker. */
 export async function initPresence(): Promise<void> {
   try {
     const st = await epicGetSettings();
-    S.presenceEnabled = Boolean(st.presence_enabled);
-    S.presenceClientId = st.presence_client_id ?? "";
+    S.presenceEnabled = st.presence_enabled ?? true;
   } catch {
-    S.presenceEnabled = false;
-    S.presenceClientId = "";
+    S.presenceEnabled = true;
   }
   applyPresenceSettings();
 }

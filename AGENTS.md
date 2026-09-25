@@ -127,6 +127,9 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Ayarlar > Hakkında:** kimlik kartı uygulama ikonunu (`128x128@2x.png`) gösterir. Tanıtım metninden konsol ve PS5 ibaresi çıkarıldı. Gizlenen oyun yokken hayalet ikonu ve kısa bir espri gösterilir.
+- **Ayarlar:** Discord Rich Presence varsayılan açık ve sabit uygulama kimliği kullanır; kimlik kutusu yok. Gezinme düğmeleri ayarı kaldırıldı. Oyun kapanınca kayıt yedeği varsayılan açık. Kurulu başlatıcı sürümündeki bozuk ayraç düzeltildi.
+- **Ayarlar > İndirmeler:** CDN marka seçici kalktı. Satır "İndirme sunucusu": Otomatik veya "En hızlısını bul". Hız profili "En yüksek / Dengeli / Düşük"; worker sayısı arayüzde yok.
 - **Uygulama ikonu:** siyah zemin, beyaz oyun kolu, hafif parlama. `src-tauri/icons` (ico, icns, png) paket ikon listesinden gelir. Görev çubuğu ve tepsi, `tauri dev` yeniden derlendikten sonra güncellenir.
 - **Kısayol ve yedek:** yüklü olmayan oyunda sağ tık menüsünde masaüstü kısayolu yok. Yedekleme hataları `@t:` anahtarı yerine çevrilmiş metin gösterir.
 - **Oyun gizleme:** kütüphane sağ tık ve Yönet sekmesinden gizlenir. Ayarlar > Gizlenen oyunlar listesinden geri açılır. Gizli oyunlar ızgara, arama ve kenar çubuğunda görünmez.
