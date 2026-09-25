@@ -133,7 +133,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Kütüphane sıralaması:** buton "Sırala" + seçili değer. Menü: Başlık (A-Z), Son oynanan, En çok oynanan, Başarımlar, Yüklü önce, Başlık (Z-A). Güncelleme ve platin sıralaması kalktı.
 - **Kütüphane:** satırda 6 portre. Hover kapağı büyütür; beyaz kenar çizgisi yok, parlama çok hafif.
 - **Kabuk:** kenar çubuğunun sağında ve sayfa başlığının altında ince beyaz kılavuz çizgisi. Alt durum çubuğu (indirme notu ve sürüm) yok.
-- **Yönet:** düğme kurulu olmayan oyunlarda da görünür. Doğrulama, klasör ve kaldırma yalnızca kurulu oyunlarda.
+- **Yönet:** kurulu olmayan oyunda yalnızca kapak değiştirme ve oynama süresi. Kayıt ve başlatma bölümleri kurulu oyunda. EA, Ubisoft ve Rockstar kayıtları kendi sistemlerini kullanır.
 - **Oyun sayfası:** hero 380px. Oyun Hakkında metni sol kolonu doldurur. Üst çubukta ve hero'da yalnızca geri düğmesi var.
 - **Açılış:** stil yüklenene kadar kabuk gizlenir. Kenar çubuğu "Son Oynananlar" başlığı 15px; liste 7 oyuna son oynananlarla, yetmezse rastgele yüklü oyunlarla dolar.
 - **Oyun sayfası temizliği:** Kurulu rozeti, kupa ilerleme kutusu ve medya galerisi kaldırıldı. Koleksiyon etiketleri başlığın altına alındı. Hero 460px. Üst çubukta geri/ileri her zaman görünür; hero üzerindeki "Kütüphane Esc" kalktı.

@@ -173,12 +173,10 @@ export function renderCustomCoverModalFrame(appName: string): void {
             <button class="target-segment-pill ${S.activeCoverTarget === "cover" ? "active" : ""}" data-act="set-cover-target" data-target="cover" data-id="${appName}">
               ${icon("image", 14)}
               <span>${t("cover.portraitTab")}</span>
-              ${hasCustomCover ? `<span class="target-indicator-dot" title="${t("cover.customCoverTip")}"></span>` : ""}
             </button>
             <button class="target-segment-pill ${S.activeCoverTarget === "hero" ? "active" : ""}" data-act="set-cover-target" data-target="hero" data-id="${appName}">
               ${icon("rows", 14)}
               <span>${t("cover.heroTab")}</span>
-              ${hasCustomHero ? `<span class="target-indicator-dot" title="${t("cover.customHeroTip")}"></span>` : ""}
             </button>
           </div>
 

@@ -314,7 +314,6 @@
   background: transparent; color: var(--text-2); font-size: 12px; font-family: inherit; cursor: pointer;
 }
 .target-segment-pill.active, .cover-tab-btn.active { background: var(--surface-3); color: var(--text); }
-.target-indicator-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .cover-preview-section { display: flex; gap: 16px; align-items: flex-start; }
 .cover-preview-card { position: relative; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-2); }
 .cover-preview-card.portrait { width: 120px; aspect-ratio: 3 / 4; }
