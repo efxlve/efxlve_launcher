@@ -113,8 +113,15 @@ export function renderInstallDialog(): void {
   const s = S.epicSummariesMap.get(appName);
   if (!s) return;
 
+  const input = document.getElementById("install-dir-input") as HTMLInputElement | null;
+  if (input) S.installDialogDir = input.value;
+
   const loading = S.installDialogLoading;
   const finalPath = joinPath(S.installDialogDir, S.installDialogFolder);
+  const sizeValue = (bytes: number) =>
+    loading
+      ? `<span class="install-size-pending" aria-hidden="true"></span>`
+      : `<strong>${fmtBytes(bytes)}</strong>`;
   installRoot.innerHTML = `
     <div class="selective-overlay" data-act="install-overlay-close">
       <div class="selective-dialog install-dialog">
@@ -127,9 +134,9 @@ export function renderInstallDialog(): void {
             <div class="install-cover">${epicArt(s)}</div>
             <div class="install-game-info">
               <div class="install-game-title">${esc(s.title)}</div>
-              <div class="install-game-stats">
-                <span>${t("selective.downloadSize")}: <strong>${loading ? "…" : fmtBytes(S.installDialogDownloadSize)}</strong></span>
-                <span>${t("selective.storageSize")}: <strong>${loading ? "…" : fmtBytes(S.installDialogDiskSize)}</strong></span>
+              <div class="install-game-stats${loading ? " is-loading" : ""}">
+                <span>${t("selective.downloadSize")}: ${sizeValue(S.installDialogDownloadSize)}</span>
+                <span>${t("selective.storageSize")}: ${sizeValue(S.installDialogDiskSize)}</span>
               </div>
             </div>
           </div>

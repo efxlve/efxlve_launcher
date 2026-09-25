@@ -2293,6 +2293,66 @@ pub struct GameInstallOptions {
     pub has_options: bool,
 }
 
+fn json_u64(v: &serde_json::Value) -> u64 {
+    v.as_u64()
+        .or_else(|| v.as_i64().and_then(|n| u64::try_from(n).ok()))
+        .or_else(|| v.as_f64().map(|n| n as u64))
+        .unwrap_or(0)
+}
+
+/// Base install/download bytes plus optional tag rows.
+///
+/// Legendary puts the real totals on `disk_size` / `download_size`. The tag
+/// arrays stay empty when the game has no optional packs, so reading only
+/// those arrays reports zero.
+fn sizes_from_manifest(manifest: &serde_json::Value) -> (u64, u64, Vec<InstallOptionTag>) {
+    let disk_total = manifest.get("disk_size").map(json_u64).unwrap_or(0);
+    let download_total = manifest.get("download_size").map(json_u64).unwrap_or(0);
+    let disk_tags = manifest.get("tag_disk_size").and_then(|v| v.as_array());
+    let dl_tags = manifest.get("tag_download_size").and_then(|v| v.as_array());
+
+    let mut base_size = 0u64;
+    let mut base_download_size = 0u64;
+    let mut tags = Vec::new();
+
+    if let Some(d_tags) = disk_tags {
+        for item in d_tags {
+            let tag_name = item.get("tag").and_then(|v| v.as_str()).unwrap_or("");
+            let size = item.get("size").map(json_u64).unwrap_or(0);
+            let dl_size = dl_tags
+                .and_then(|arr| {
+                    arr.iter()
+                        .find(|x| x.get("tag").and_then(|t| t.as_str()) == Some(tag_name))
+                })
+                .and_then(|x| x.get("size"))
+                .map(json_u64)
+                .unwrap_or(size);
+
+            if tag_name.is_empty() {
+                base_size = size;
+                base_download_size = dl_size;
+            } else if size > 0 || dl_size > 0 {
+                let (label, category) = map_tag_label(tag_name);
+                tags.push(InstallOptionTag {
+                    tag: tag_name.to_string(),
+                    label: label.to_string(),
+                    size,
+                    download_size: dl_size,
+                    category: category.to_string(),
+                });
+            }
+        }
+    }
+
+    if base_size == 0 {
+        base_size = disk_total;
+    }
+    if base_download_size == 0 {
+        base_download_size = if download_total > 0 { download_total } else { base_size };
+    }
+    (base_size, base_download_size, tags)
+}
+
 fn map_tag_label(tag: &str) -> (&'static str, &'static str) {
     match tag {
         "voice_de_de" => ("Deutsch", "languages"),
@@ -2332,35 +2392,30 @@ pub async fn epic_get_install_options(
     let mut base_download_size = 0u64;
     let mut tags = Vec::new();
 
-    // Call legendary info --offline --json
-    if let Ok(val) = client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--offline", "--json"]).await {
+    // Offline first. One online call only when the cached manifest has no sizes.
+    let mut used_online = false;
+    let info = match client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--offline", "--json"]).await {
+        Ok(val) => Some(val),
+        Err(_) => {
+            used_online = true;
+            client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--json"]).await.ok()
+        }
+    };
+    if let Some(val) = info.as_ref() {
         if let Some(manifest) = val.get("manifest") {
-            let disk_tags = manifest.get("tag_disk_size").and_then(|v| v.as_array());
-            let dl_tags = manifest.get("tag_download_size").and_then(|v| v.as_array());
-
-            if let Some(d_tags) = disk_tags {
-                for item in d_tags {
-                    let tag_name = item.get("tag").and_then(|v| v.as_str()).unwrap_or("");
-                    let size = item.get("size").and_then(|v| v.as_u64()).unwrap_or(0);
-                    let dl_size = dl_tags
-                        .and_then(|arr| arr.iter().find(|x| x.get("tag").and_then(|t| t.as_str()) == Some(tag_name)))
-                        .and_then(|x| x.get("size").and_then(|v| v.as_u64()))
-                        .unwrap_or(size);
-
-                    if tag_name.is_empty() {
-                        base_size = size;
-                        base_download_size = dl_size;
-                    } else {
-                        let (label, category) = map_tag_label(tag_name);
-                        tags.push(InstallOptionTag {
-                            tag: tag_name.to_string(),
-                            label: label.to_string(),
-                            size,
-                            download_size: dl_size,
-                            category: category.to_string(),
-                        });
-                    }
-                }
+            let parsed = sizes_from_manifest(manifest);
+            base_size = parsed.0;
+            base_download_size = parsed.1;
+            tags = parsed.2;
+        }
+    }
+    if !used_online && base_size == 0 && base_download_size == 0 {
+        if let Ok(val) = client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--json"]).await {
+            if let Some(manifest) = val.get("manifest") {
+                let parsed = sizes_from_manifest(manifest);
+                base_size = parsed.0;
+                base_download_size = parsed.1;
+                tags = parsed.2;
             }
         }
     }
@@ -2654,6 +2709,42 @@ pub async fn epic_cancel_move_game(app_name: String) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_sizes_from_manifest_uses_totals_when_tags_are_empty() {
+        let manifest = serde_json::json!({
+            "disk_size": 4_000_000_000u64,
+            "download_size": 2_500_000_000u64,
+            "tag_disk_size": [],
+            "tag_download_size": []
+        });
+        let (disk, download, tags) = sizes_from_manifest(&manifest);
+        assert_eq!(disk, 4_000_000_000);
+        assert_eq!(download, 2_500_000_000);
+        assert!(tags.is_empty());
+    }
+
+    #[test]
+    fn test_sizes_from_manifest_keeps_base_tag_separate_from_optional() {
+        let manifest = serde_json::json!({
+            "disk_size": 5_000u64,
+            "download_size": 4_000u64,
+            "tag_disk_size": [
+                {"tag": "", "size": 3_000u64},
+                {"tag": "voice_de_de", "size": 2_000u64}
+            ],
+            "tag_download_size": [
+                {"tag": "", "size": 2_200u64},
+                {"tag": "voice_de_de", "size": 1_800u64}
+            ]
+        });
+        let (disk, download, tags) = sizes_from_manifest(&manifest);
+        assert_eq!(disk, 3_000);
+        assert_eq!(download, 2_200);
+        assert_eq!(tags.len(), 1);
+        assert_eq!(tags[0].tag, "voice_de_de");
+        assert_eq!(tags[0].size, 2_000);
+    }
 
     #[test]
     fn test_scan_achievements_carnation() {
