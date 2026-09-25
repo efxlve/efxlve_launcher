@@ -313,7 +313,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Oyun sayfası boş sekmeler:** veri yokken yalnızca ikon, başlık ve açıklama var. Ekran görüntüsü yalnızca oyun penceresi öndeyken kısayolla alınır.
 - **Dil:** kayıtlı seçim yoksa işletim sistemi dili seçilir; desteklenmeyen dilde İngilizce kalır. 15 dil dosyası İngilizce katalogla aynı 1.211 anahtarı taşır; klasör tarama metinleri de 13 ikincil dilde durur.
 - **Durdur:** oyun sayfasındaki durdur işareti oynat üçgeniyle aynı boyda dolu bir kare.
-- **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok. Ekran görüntüleri `docs/screenshots/` içinde: kütüphane, oyun sayfası, güncelleme, indirmeler, mağaza, profil, yönet.
+- **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok. Ekran görüntüleri `docs/screenshots/` içinde: kütüphane, oyun sayfası, güncelleme, indirmeler, mağaza, profil, yönet. TV Modu yok; README'de coming soon yazılır, var gibi anlatılmaz.
+- **README indirme:** kurulabilir sürüm Windows setup `.exe`. Linux, macOS ve TV Modu coming soon. Uygulama değişmeden yeni sürüm açılmaz.
 - **Mağaza rozeti:** sahip olunan oyunda “Kütüphanede” Epic mavisi (`#26bbff`). Metin `store.inLibrary` anahtarından gelir.
 - **Yönet penceresi:** oyunu kaldırınca pencere hemen kapanır; silme komutu bitmeden de ekranda kalmaz.
 - **Taşınabilir disk:** Ayarlar > İndirmeler “Klasörü tara” `.egstore` kurulumlarını kütüphaneye bağlar. `.mancpn` yoksa klasör adı katalogdaki `FolderName` ile eşleşir. Rockstar, EA ve Ubisoft klasörleri taramaya girmez; Epic Launcher’da kurulumu bitmiş olanlar girer. Epic Launcher’a yeni kayıt yazılmaz.

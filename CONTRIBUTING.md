@@ -17,7 +17,7 @@ The app has one visual language. A new screen uses the components already in `sr
 - One line of text stays one line. Truncate with ellipsis. Descriptions clamp to two lines.
 - Speeds, sizes, percentages, and durations use tabular numbers so a changing value does not shove the row sideways.
 - Every control is keyboard-focusable and shows a visible focus ring. Do not scale a card on focus.
-- The desktop UI is for a mouse and keyboard. Gamepad navigation belongs in TV Mode.
+- The desktop UI is for a mouse and keyboard. A full-screen TV Mode for a controller is coming soon. Do not add a second controller layout on the desktop screens, and do not document TV Mode as something the app already has.
 - Copy is short and plain. No hype, no exclamation marks.
 - Confirmations use the launcher's own dialog. Do not call `window.confirm` or `window.alert`. WebView2 shows those as a browser box titled with the page address.
 
