@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Uygulama ikonu:** siyah zemin, beyaz oyun kolu, hafif parlama. `src-tauri/icons` (ico, icns, png) paket ikon listesinden gelir. Görev çubuğu ve tepsi, `tauri dev` yeniden derlendikten sonra güncellenir.
 - **Kısayol ve yedek:** yüklü olmayan oyunda sağ tık menüsünde masaüstü kısayolu yok. Yedekleme hataları `@t:` anahtarı yerine çevrilmiş metin gösterir.
 - **Oyun gizleme:** kütüphane sağ tık ve Yönet sekmesinden gizlenir. Ayarlar > Gizlenen oyunlar listesinden geri açılır. Gizli oyunlar ızgara, arama ve kenar çubuğunda görünmez.
 - **Kapak bilgisi:** ızgara kapaklarının sol üstünde süre ve başarım (`18/42`). Tamamlanan başarımlar beyaz rozet. Ayarlar > Görünüm’den kapanır, varsayılan açık.
