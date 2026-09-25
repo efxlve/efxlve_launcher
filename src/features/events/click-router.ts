@@ -24,7 +24,7 @@ import type { DrawerTab, EpicSort, EpicViewMode, View } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { rawOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
@@ -820,6 +820,24 @@ document.addEventListener("click", (e) => {
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "import-installed-folder") {
+    void (async () => {
+      const chosen = await epicSelectFolderDialog(null, i18nT("settings.importInstalled")).catch(() => null);
+      if (!chosen) return;
+      toast(i18nT("settings.importInstalledScanning"), "");
+      try {
+        const res = await epicImportInstalledFolder(chosen);
+        if (res.imported === 0 && res.relinked === 0) {
+          toast(i18nT("settings.importInstalledNone"), "");
+        } else {
+          toast(i18nT("settings.importInstalledDone", { imported: res.imported, relinked: res.relinked }), "ok");
+          await refreshEpicInstalled();
+          render();
+        }
+      } catch (e) {
+        toast(localizeMessage(String(e)), "err");
+      }
+    })();
   } else if (act === "dl-pick-install-dir") {
     void (async () => {
       const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;

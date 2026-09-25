@@ -1857,33 +1857,89 @@ mod win_process {
 
 pub use win_process::{game_process_pids, is_game_process_running};
 
+/// Epic ships some titles behind a small `PlayTitle.exe`. Rockstar then
+/// refuses to start unless Epic Games Launcher is the parent process, so
+/// these titles are handed to Epic instead of the raw game binary
+/// (`PlayRDR2.exe` next to `RDR2.exe`).
+fn direct_game_exe(install_path: &Path, executable: &str) -> Option<String> {
+    let file_name = Path::new(executable).file_name()?.to_str()?;
+    if file_name.len() <= 8 || !file_name[file_name.len() - 4..].eq_ignore_ascii_case(".exe") {
+        return None;
+    }
+    let stem = &file_name[..file_name.len() - 4];
+    if !stem[..4].eq_ignore_ascii_case("play") {
+        return None;
+    }
+    let real_name = format!("{}.exe", &stem[4..]);
+    let stub = install_path.join(file_name);
+    let real = install_path.join(&real_name);
+    if !real.is_file() {
+        return None;
+    }
+    let stub_len = std::fs::metadata(&stub).ok()?.len();
+    let real_len = std::fs::metadata(&real).ok()?.len();
+    if stub_len < 8 * 1024 * 1024 && real_len > stub_len {
+        Some(real_name)
+    } else {
+        None
+    }
+}
+
 async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
     app_name: &str,
     extra_args: &[&str],
 ) -> Result<(), String> {
-    let mut cmd = tokio::process::Command::new(bin);
-    cmd.arg("launch").arg(app_name);
+    let config = super::skip::default_config_dir();
+    let installed_games = super::cache::read_installed(&config);
+    let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
+
+    // Rockstar closes the game when its parent is not Epic. Ask Epic to
+    // launch the existing install instead of starting the raw exe.
+    let via_epic = installed_entry.and_then(|entry| {
+        direct_game_exe(Path::new(&entry.install_path), &entry.executable)?;
+        super::import_installed::epic_launcher_executable()
+    });
+    if let Some(epic_exe) = via_epic.as_ref() {
+        if let Some(entry) = installed_entry {
+            super::import_installed::bind_existing_install(app_name, Path::new(&entry.install_path));
+        }
+        let uri = format!("com.epicgames.launcher://apps/{app_name}?action=launch&silent=true");
+        let _ = tokio::process::Command::new(epic_exe).arg(uri).spawn();
+    }
+
+    let mut cmd = if via_epic.is_some() {
+        // Epic stays open after the game exits, so it is not the process we wait on.
+        let mut cmd = tokio::process::Command::new("cmd");
+        cmd.args(["/C", "exit", "0"]);
+        cmd
+    } else {
+        let mut cmd = tokio::process::Command::new(bin);
+        cmd.arg("launch").arg(app_name);
+        cmd
+    };
 
     // Per-game wrapper + environment variables (applied to legendary so the
     // launched game inherits them).
     let cfgs = super::commands::load_all_game_custom_configs();
-    if let Some(cfg) = cfgs.get(app_name) {
-        if let Some(wrapper) = cfg.wrapper.as_deref().map(str::trim).filter(|w| !w.is_empty()) {
-            cmd.arg("--wrapper").arg(wrapper);
-        }
-        if let Some(envs) = cfg.env_vars.as_ref() {
-            for (key, value) in envs {
-                if !key.trim().is_empty() {
-                    cmd.env(key.trim(), value);
+    if via_epic.is_none() {
+        if let Some(cfg) = cfgs.get(app_name) {
+            if let Some(wrapper) = cfg.wrapper.as_deref().map(str::trim).filter(|w| !w.is_empty()) {
+                cmd.arg("--wrapper").arg(wrapper);
+            }
+            if let Some(envs) = cfg.env_vars.as_ref() {
+                for (key, value) in envs {
+                    if !key.trim().is_empty() {
+                        cmd.env(key.trim(), value);
+                    }
                 }
             }
         }
-    }
 
-    for arg in extra_args {
-        cmd.arg(arg);
+        for arg in extra_args {
+            cmd.arg(arg);
+        }
     }
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -1891,10 +1947,6 @@ async fn spawn_launched(
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
-
-    let config = super::skip::default_config_dir();
-    let installed_games = super::cache::read_installed(&config);
-    let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
 
     let install_path: Option<PathBuf> = installed_entry
         .map(|g| PathBuf::from(&g.install_path))
@@ -2193,6 +2245,22 @@ mod tests {
         assert_eq!(r.next_line().await.as_deref(), Some("Download: 6.0 MiB/s"));
         assert_eq!(r.next_line().await.as_deref(), Some("last"));
         assert_eq!(r.next_line().await, None);
+    }
+
+    #[test]
+    fn play_stub_launches_the_game_binary() {
+        let temp = std::env::temp_dir().join("efxlve_test_play_stub");
+        let _ = std::fs::remove_dir_all(&temp);
+        std::fs::create_dir_all(&temp).unwrap();
+        std::fs::write(temp.join("PlayRDR2.exe"), b"stub").unwrap();
+        std::fs::write(temp.join("RDR2.exe"), vec![0u8; 64]).unwrap();
+        assert_eq!(
+            direct_game_exe(&temp, "PlayRDR2.exe").as_deref(),
+            Some("RDR2.exe")
+        );
+        std::fs::write(temp.join("OnlyGame.exe"), b"game").unwrap();
+        assert!(direct_game_exe(&temp, "OnlyGame.exe").is_none());
+        let _ = std::fs::remove_dir_all(&temp);
     }
 
     #[test]

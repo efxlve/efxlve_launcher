@@ -2726,6 +2726,15 @@ pub async fn epic_get_system_drives() -> Vec<super::move_game::SystemDriveInfo> 
         .unwrap_or_default()
 }
 
+/// Scans a folder for Epic installs (`.egstore`) and registers them.
+#[tauri::command]
+pub async fn epic_import_installed_folder(
+    app: AppHandle,
+    path: String,
+) -> Result<super::import_installed::ImportInstalledResult, String> {
+    super::import_installed::import_installed_folder(&app, std::path::Path::new(&path)).await
+}
+
 /// Opens the native Windows folder picker ("Browse")
 #[tauri::command]
 pub async fn epic_select_folder_dialog(

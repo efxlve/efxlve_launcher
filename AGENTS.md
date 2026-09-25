@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.8:** taşınabilir disk taraması Rockstar, EA ve Ubisoft klasörlerini atlar; Epic Launcher’da kurulumu bitmiş olanlar kalır. `Play*.exe` oyunları Epic kayıtlıysa sessizce Epic üzerinden açılır. `v0.1.8` olarak yayınlanır.
 - **Sürüm 0.1.7:** launcher güncellemesi gelince uygulama içi uyarı ve Windows bildirimi gider. `v0.1.7` olarak yayınlanır.
 - **Test kimliği:** `cache.rs` içindeki Epic hesap kimliği sahte bir yer tutucudur. Gerçek hesap kimliği ve tarayıcı profili repoda tutulmaz.
 - **Sürüm 0.1.6:** kaldırmada masaüstü kısayolu silinir, yönet penceresi kapanır, dar ayarlar satırı ve yükleme yolu kutusu düzelir. `v0.1.6` olarak yayınlanır.
@@ -313,7 +314,9 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Durdur:** oyun sayfasındaki durdur işareti oynat üçgeniyle aynı boyda dolu bir kare.
 - **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok.
 - **Mağaza rozeti:** sahip olunan oyunda “Kütüphanede” Epic mavisi (`#26bbff`). Metin `store.inLibrary` anahtarından gelir.
-- **Yönet penceresi:** oyunu kaldırınca pencere hemen kapanır; silme bitene kadar düğme ekranda kalmaz.
+- **Yönet penceresi:** oyunu kaldırınca pencere hemen kapanır; silme komutu bitmeden de ekranda kalmaz.
+- **Taşınabilir disk:** Ayarlar > İndirmeler “Klasörü tara” `.egstore` kurulumlarını kütüphaneye bağlar. `.mancpn` yoksa klasör adı katalogdaki `FolderName` ile eşleşir. Rockstar, EA ve Ubisoft klasörleri taramaya girmez; Epic Launcher’da kurulumu bitmiş olanlar girer. Epic Launcher’a yeni kayıt yazılmaz.
+- **Epic başlatma sapı:** `PlayRDR2.exe` gibi küçük dosyalar doğrudan açılırsa Rockstar ebeveyni Epic olmadığı için oyunu kapatır. Kayıt mevcut klasörü gösteriyorsa başlatma Epic’e sessizce bırakılır; Epic aynı oyunu başka klasöre yeniden indirmez.
 - **Kısayol:** oyun kaldırılınca launcher’ın masaüstüne yazdığı `.lnk` de silinir.
 - **Ayarlar dar pencere:** kurulum klasörü satırı harf harf alta düşmez; metin okunur genişlikte kalır, sığmazsa kontrol alt satıra iner.
 - **Yükleme yeri:** klasör kutusu varsayılan yolu metin olarak gösterir. Boyutlar gelince boş kutu yolu silmez.

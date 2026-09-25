@@ -623,6 +623,8 @@ export const epicFriends = () => invoke<EpicFriendsData>("epic_friends");
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");
+export const epicImportInstalledFolder = (path: string) =>
+  invoke<{ imported: number; relinked: number }>("epic_import_installed_folder", { path });
 export const epicSetInstallDir = (dir: string | null) =>
   invoke<EpicSettings>("epic_set_install_dir", { dir });
 

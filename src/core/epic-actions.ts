@@ -21,6 +21,7 @@ import {
 } from "../epic";
 import { isTauri } from "./constants";
 import { closeModal } from "./dom";
+import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
@@ -118,13 +119,16 @@ export async function epicCancel(appName: string): Promise<void> {
 
 /** Uninstall a game, close the drawer and refresh installed state. */
 export async function epicUninstall(appName: string): Promise<void> {
+  // Close before the command returns so the dialog cannot be clicked again.
+  closeManagePopup();
+  closeModal();
   try {
     const msg = await epicUninstallGame(appName);
     toast(msg, "ok");
   } catch (e) {
     toast(String(e), "err");
   }
-  closeModal();
+  closeManagePopup();
   await refreshEpicInstalled();
   if (S.view === "library") patchLibraryCardDom(appName);
 }

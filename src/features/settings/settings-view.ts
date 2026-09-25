@@ -86,7 +86,11 @@ function renderDownloads(): string {
   );
 
   return (
-    group(dir + profile + cdn, t("settings.secDownloads")) +
+    group(dir + row(
+      t("settings.importInstalled"),
+      t("settings.importInstalledDesc"),
+      `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
+    ) + profile + cdn, t("settings.secDownloads")) +
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
       row(t("downloads.pauseOnPlay"), t("downloads.pauseOnPlayDesc"), toggle("toggle-pause-on-play", S.pauseOnPlay)) +

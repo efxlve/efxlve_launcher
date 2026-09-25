@@ -45,7 +45,9 @@ function verifyBox(percent: number, detail: string, speed: string): string {
 
 /** Closes the manage popup without touching the game page underneath. */
 export function closeManagePopup(): void {
-  if (manageRoot) manageRoot.innerHTML = "";
+  const root = manageRoot ?? document.getElementById("manage-root");
+  if (root) root.replaceChildren();
+  document.querySelectorAll(".manage-overlay").forEach((el) => el.remove());
 }
 
 /** Opens manage settings in a dialog so the game page stays on its current tab. */
