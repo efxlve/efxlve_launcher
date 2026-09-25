@@ -16,8 +16,6 @@
 
 Efxlve opens from the library already saved on disk, so the window does not wait on the network. A sync still runs in the background. Installs, updates, and launches go through [legendary](https://github.com/legendary-gl/legendary).
 
-The app is black, with white as the accent. Green, amber, and red only mean status.
-
 ## Download
 
 The current release is **0.1.9**.
@@ -28,7 +26,7 @@ The current release is **0.1.9**.
 
 Windows is the release you can install today. Linux and macOS are coming soon.
 
-If the setup file is not on the page yet, the release build is still finishing. It shows up there when the workflow is done. After that, the installed app can update itself. A copy you build with `tauri dev`, or an exe you move by hand, does not.
+Once it is installed, the launcher can update itself.
 
 ![Library. A cover grid with playtime and achievement counts on each tile.](./docs/screenshots/library.jpg)
 
