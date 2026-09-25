@@ -22,7 +22,7 @@ export type EpicSort = "alpha" | "alphaDesc" | "recent" | "played" | "achievemen
 export type EpicViewMode = "grid" | "list";
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "hidden" | "about";
+export type SettingsSection = "account" | "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "hidden" | "about";
 
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";

@@ -14,6 +14,7 @@ import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
+import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateInstallBlocked } from "../updates/update-manager";
 import {
@@ -28,6 +29,7 @@ import {
 } from "../../epic";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
+  { id: "account", labelKey: "settings.secAccount" },
   { id: "downloads", labelKey: "settings.secDownloads" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
   { id: "appearance", labelKey: "settings.secAppearance" },
@@ -286,6 +288,7 @@ function renderHidden(): string {
 
 function renderSection(section: SettingsSection): string {
   switch (section) {
+    case "account": return renderAccountSettings();
     case "integrations": return renderIntegrations();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();

@@ -127,6 +127,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Ayarlar > Hesap:** hesap satırı ile düğmeler ayrı. Liste üstte; Yeni hesap ve çıkış alt satırda. Oturum açıkken kenar çubuğu hâlâ profili açar.
+- **Discord Rich Presence:** durum metninin yanında launcher ikonu, açık oyunun kapağı ve oynarken geçen süre gider. Discord kapalıysa worker sessizce bekler.
 - **Ayarlar > Hakkında:** kimlik kartı uygulama ikonunu (`128x128@2x.png`) gösterir. Tanıtım metninden konsol ve PS5 ibaresi çıkarıldı. Gizlenen oyun yokken hayalet ikonu ve kısa bir espri gösterilir.
 - **Ayarlar:** Discord Rich Presence varsayılan açık ve sabit uygulama kimliği kullanır; kimlik kutusu yok. Gezinme düğmeleri ayarı kaldırıldı. Oyun kapanınca kayıt yedeği varsayılan açık. Kurulu başlatıcı sürümündeki bozuk ayraç düzeltildi.
 - **Ayarlar > İndirmeler:** CDN marka seçici kalktı. Satır "İndirme sunucusu": Otomatik veya "En hızlısını bul". Hız profili "En yüksek / Dengeli / Düşük"; worker sayısı arayüzde yok.

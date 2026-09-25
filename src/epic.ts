@@ -564,8 +564,14 @@ export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 export const epicPresenceConfigure = (enabled: boolean, clientId: string) =>
   invoke<void>("epic_presence_configure", { enabled, clientId });
 /** Discord Rich Presence: push a localized activity (details + state). */
-export const epicPresenceUpdate = (details: string, state: string) =>
-  invoke<void>("epic_presence_update", { details, state });
+export const epicPresenceUpdate = (
+  details: string,
+  state: string,
+  largeImage = "",
+  largeText = "",
+  smallImage = "",
+  startMs = 0,
+) => invoke<void>("epic_presence_update", { details, state, largeImage, largeText, smallImage, startMs });
 /** Discord Rich Presence: clear the current activity. */
 export const epicPresenceClear = () => invoke<void>("epic_presence_clear");
 

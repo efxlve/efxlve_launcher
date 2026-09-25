@@ -180,7 +180,7 @@
 | Command Name | TypeScript Signature | Rust Handler Location | Description |
 |---|---|---|---|
 | `epic_presence_configure` | `(enabled: boolean, clientId: string) => Promise<void>` | `presence.rs` | Enables/disables presence and persists the Discord application id. |
-| `epic_presence_update` | `(details: string, state: string) => Promise<void>` | `presence.rs` | Pushes a localized activity (frontend owns the text). |
+| `epic_presence_update` | `(details, state, largeImage?, largeText?, smallImage?, startMs?) => Promise<void>` | `presence.rs` | Pushes a localized activity plus optional HTTPS images and an elapsed-time start. |
 | `epic_presence_clear` | `() => Promise<void>` | `presence.rs` | Clears the current activity. |
 
 > Presence is **off by default**. A single background worker thread owns the Discord IPC client, de-duplicates updates and backs off on failures; it exits when disabled, so idle cost is zero. The activity text is localized in the frontend and forwarded as plain strings.

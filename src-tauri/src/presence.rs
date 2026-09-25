@@ -14,8 +14,18 @@ use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 /// How long to wait before trying to (re)connect after a failure.
 const RECONNECT_COOLDOWN: Duration = Duration::from_secs(30);
 
+struct ActivityUpdate {
+    details: String,
+    state: String,
+    large_image: String,
+    large_text: String,
+    small_image: String,
+    /// Unix milliseconds. Zero means no elapsed timer.
+    start_ms: i64,
+}
+
 enum Msg {
-    Update { details: String, state: String },
+    Update(ActivityUpdate),
     Clear,
     Stop,
 }
@@ -52,13 +62,25 @@ pub fn configure(enabled: bool, client_id: &str) {
 }
 
 /// Sends a localized activity update (de-duplicated inside the worker).
-pub fn update(details: &str, state: &str) {
+/// Image fields are HTTPS URLs or empty. `start_ms` is unix milliseconds, or 0.
+pub fn update(
+    details: &str,
+    state: &str,
+    large_image: &str,
+    large_text: &str,
+    small_image: &str,
+    start_ms: i64,
+) {
     let guard = HANDLE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.as_ref() {
-        let _ = handle.tx.send(Msg::Update {
+        let _ = handle.tx.send(Msg::Update(ActivityUpdate {
             details: details.to_string(),
             state: state.to_string(),
-        });
+            large_image: large_image.to_string(),
+            large_text: large_text.to_string(),
+            small_image: small_image.to_string(),
+            start_ms,
+        }));
     }
 }
 
@@ -72,7 +94,7 @@ pub fn clear() {
 
 fn worker(rx: Receiver<Msg>, client_id: String) {
     let mut client: Option<DiscordIpcClient> = None;
-    let mut last: Option<(String, String)> = None;
+    let mut last: Option<(String, String, String, String, i64)> = None;
     let mut next_connect = Instant::now();
 
     while let Ok(msg) = rx.recv() {
@@ -84,8 +106,15 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
                 }
                 last = None;
             }
-            Msg::Update { details, state } => {
-                if last.as_ref() == Some(&(details.clone(), state.clone())) {
+            Msg::Update(upd) => {
+                let signature = (
+                    upd.details.clone(),
+                    upd.state.clone(),
+                    upd.large_image.clone(),
+                    upd.small_image.clone(),
+                    upd.start_ms,
+                );
+                if last.as_ref() == Some(&signature) {
                     continue;
                 }
                 if client.is_none() {
@@ -99,13 +128,30 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
                     }
                     client = Some(c);
                 }
-                let payload = activity::Activity::new().details(&details).state(&state);
+                let mut payload = activity::Activity::new().details(&upd.details).state(&upd.state);
+                let mut assets = activity::Assets::new();
+                let mut has_assets = false;
+                if !upd.large_image.is_empty() {
+                    let hover = if upd.large_text.is_empty() { &upd.details } else { &upd.large_text };
+                    assets = assets.large_image(&upd.large_image).large_text(hover);
+                    has_assets = true;
+                }
+                if !upd.small_image.is_empty() {
+                    assets = assets.small_image(&upd.small_image).small_text("Efxlve Launcher");
+                    has_assets = true;
+                }
+                if has_assets {
+                    payload = payload.assets(assets);
+                }
+                if upd.start_ms > 0 {
+                    payload = payload.timestamps(activity::Timestamps::new().start(upd.start_ms));
+                }
                 let ok = client
                     .as_mut()
                     .map(|c| c.set_activity(payload).is_ok())
                     .unwrap_or(false);
                 if ok {
-                    last = Some((details, state));
+                    last = Some(signature);
                 } else {
                     // Connection dropped (e.g. Discord closed): retry later.
                     client = None;
@@ -133,8 +179,22 @@ pub fn epic_presence_configure(app: tauri::AppHandle, enabled: bool, client_id: 
 
 /// Pushes a localized activity update (`details` first line, `state` second).
 #[tauri::command]
-pub fn epic_presence_update(details: String, state: String) {
-    update(&details, &state);
+pub fn epic_presence_update(
+    details: String,
+    state: String,
+    large_image: Option<String>,
+    large_text: Option<String>,
+    small_image: Option<String>,
+    start_ms: Option<i64>,
+) {
+    update(
+        &details,
+        &state,
+        large_image.as_deref().unwrap_or(""),
+        large_text.as_deref().unwrap_or(""),
+        small_image.as_deref().unwrap_or(""),
+        start_ms.unwrap_or(0),
+    );
 }
 
 /// Clears the current activity.

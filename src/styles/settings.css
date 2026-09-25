@@ -11,6 +11,9 @@
 .settings-nav-item:hover { background: var(--surface-1); color: var(--text); }
 .settings-nav-item.active { background: var(--surface-2); color: var(--text); }
 .settings-panel { min-width: 0; max-width: 920px; }
+.settings-accounts { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
+.settings-accounts .acc-actions { width: 100%; }
+.settings-accounts .acc-actions .btn.danger { margin-left: auto; }
 .settings-panel > .section-title:first-child, .settings-panel > .card:first-child { margin-top: 0; }
 .settings-section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
 .settings-section-head .section-title { margin: 0 0 10px; }

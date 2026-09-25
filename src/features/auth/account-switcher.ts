@@ -77,7 +77,7 @@ export async function removeSavedAccount(accountId: string): Promise<void> {
 /** Show the sign-in form on the Accounts page to link another Epic account (the current one stays archived). */
 export function promptAddAccount(): void {
   S.accountsAddMode = true;
-  setView("accounts");
+  if (S.view !== "settings") setView("accounts");
   render();
 }
 
