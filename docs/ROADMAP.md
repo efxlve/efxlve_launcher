@@ -191,7 +191,7 @@
 Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre ele alınacak:
 
 1. **Diğer 13 dilin tam çevirisi:** Şu an `de/es/fr/it/ja/ko/pl/pt-BR/ru/th/zh-Hans/zh-Hant/ar` dosyalarında yalnızca 45 çekirdek anahtar var; gerisi İngilizce'ye düşüyor. Tam çeviri ~13 × 1100 anahtar (büyük iş, kalite riski; insan/AI çeviri turu gerekir).
-2. **Discord Rich Presence görseli:** Discord uygulamasına "large image" asset yükleyip `activity::Assets::new().large_image(...)` ile logo/kapak gösterimi eklemek (uygulama simgesi dışında).
+2. **Discord Rich Presence görseli:** ✅ Tamamlandı — launcher ikonu ve oyun kapağı `large_image` / `small_image` olarak gider; oyundayken süre sayacı da eklenir.
 3. **Cross-platform (Linux/macOS Wine/Proton):** Yalnızca araştırma/araştırma dokümanı mevcut ([`CROSS_PLATFORM.md`](./CROSS_PLATFORM.md)); gerçek implementasyon ayrı bir proje büyüklüğünde (Proton/DXVK/VKD3D, GPTK, prefix yöneticisi).
 4. **Discord RPC ek bağlamlar:** İsteğe bağlı olarak kupa/başarım ilerlemesi gibi daha zengin durum metinleri.
 5. **EOS Social Overlay — uygulandı (tespit + rozet):** Epic'in EOS Overlay'i **oyun sürecine enjekte edilir** (Shift+F3) ve sistem geneline Epic Games Launcher tarafından kurulur; launcher webview'ine gömülemez. Ayarlar'da **tespit + sürüm + overlay desteği** kartı (`eos_overlay_status`), oyun detayında **"EOS Desteği" rozeti** (`epic_detect_eos`, sınırlı derinlikte tarama + oyun başına önbellek) eklendi. Otomatik kurulum, Epic'in redistributable'ı bir `productId` gerektirdiği ve uygulama-başına yapıldığı için kapsam dışıdır.

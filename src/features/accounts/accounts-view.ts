@@ -157,6 +157,40 @@ function gogCard(): string {
     </section>`;
 }
 
+/** Account list, switch, add and sign-out, embedded in Settings. */
+export function renderAccountSettings(): string {
+  const connected = Boolean(S.epicAccount) && S.epicPhase === "library";
+  if (!connected) {
+    return `<div class="settings-accounts"><p class="page-sub">${t("accounts.epicDesc")}</p>${signInBlock(false)}</div>`;
+  }
+  const accountId = S.playerProfileData?.account_id || S.epicAccountId || "";
+  const current = getCustomAvatar();
+  const saved = S.savedAccounts || [];
+  const rows = saved.length > 0
+    ? saved.map((acc) => {
+        const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === S.epicAccount;
+        const url = S.customAvatars[acc.account_id] || (isCurrent ? current : null);
+        const actions = isCurrent
+          ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
+          : `<button class="btn small" data-act="account-switch" data-id="${esc(acc.account_id)}">${t("settings.accountSwitchBtn")}</button>
+             <button class="icon-btn danger" data-act="account-remove" data-id="${esc(acc.account_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
+        return `
+          <div class="row">
+            ${avatar(url, acc.display_name)}
+            <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div><div class="row-meta">ID ${esc(acc.account_id.slice(0, 12))}…</div></div>
+            <div class="row-actions">${actions}</div>
+          </div>`;
+      }).join("")
+    : `<div class="row">${avatar(current, S.epicAccount)}<div class="row-main"><div class="row-title">${esc(S.epicAccount)}</div><div class="row-meta">${S.epicSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`;
+  const tools = S.accountsAddMode
+    ? signInBlock(true)
+    : `<div class="acc-actions">
+        <button class="btn ghost small" data-act="account-add">${icon("plus", 13)} ${t("settings.accountAdd")}</button>
+        <button class="btn ghost danger small" data-act="epic-logout">${t("settings.logout")}</button>
+      </div>`;
+  return `<div class="settings-accounts"><div class="list">${rows}</div>${tools}</div>`;
+}
+
 export function renderAccounts(): string {
   if (S.epicPhase === "checking") return emptyState("users", t("accounts.title"), `<span class="spinner"></span>`);
   return `
