@@ -32,6 +32,7 @@ export function updateSidebarActive(): void {
 function pendingUpdateCount(): number {
   let n = 0;
   for (const s of S.epicSummaries) {
+    if (S.hiddenGames.has(s.appName)) continue;
     if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) n++;
   }
   return n;
@@ -41,8 +42,10 @@ function pendingUpdateCount(): number {
 function syncPageGameCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  const show = S.view === "library" && !S.currentModalAppName && S.epicSummaries.length > 0;
-  const label = t("lib.gameCount", { count: S.epicSummaries.length });
+  let visible = 0;
+  for (const s of S.epicSummaries) if (!S.hiddenGames.has(s.appName)) visible++;
+  const show = S.view === "library" && !S.currentModalAppName && visible > 0;
+  const label = t("lib.gameCount", { count: visible });
   if (el.textContent !== label) el.textContent = label;
   el.hidden = !show;
 }
@@ -127,7 +130,7 @@ export function updateSidebarGames(): void {
   if (!host) return;
   const recentIdx = new Map<string, number>();
   S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
-  const installed = S.epicSummaries.filter((s) => s.installed);
+  const installed = S.epicSummaries.filter((s) => s.installed && !S.hiddenGames.has(s.appName));
   const played = installed
     .filter((s) => recentIdx.has(s.appName))
     .sort((a, b) => (recentIdx.get(a.appName) ?? 0) - (recentIdx.get(b.appName) ?? 0));

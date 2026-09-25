@@ -45,10 +45,11 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
     ${item("manage-game", t("common.manage"), "settings")}
     <div class="ps5-context-sep"></div>
-    ${item("manage-create-shortcut", t("ctx.shortcut"), "external")}
+    ${installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
     ${installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
     ${installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
+    ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", t("common.uninstall"), "trash", true)}` : ""}
   `;
 

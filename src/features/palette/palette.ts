@@ -73,11 +73,13 @@ function renderResults(query: string): void {
     // Installed matches first, then the rest, capped at MAX_GAMES.
     const matched: typeof S.epicSummaries = [];
     for (const s of S.epicSummaries) {
+      if (S.hiddenGames.has(s.appName)) continue;
       if (s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
       if (matched.length >= MAX_GAMES) break;
     }
     if (matched.length < MAX_GAMES) {
       for (const s of S.epicSummaries) {
+        if (S.hiddenGames.has(s.appName)) continue;
         if (!s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
         if (matched.length >= MAX_GAMES) break;
       }
@@ -86,7 +88,7 @@ function renderResults(query: string): void {
   } else {
     for (const id of S.epicRecent.slice(0, 5)) {
       const s = S.epicSummariesMap.get(id);
-      if (s) games.push(gameItem(s.appName, s.title, s.installed, idx++));
+      if (s && !S.hiddenGames.has(s.appName)) games.push(gameItem(s.appName, s.title, s.installed, idx++));
     }
   }
 

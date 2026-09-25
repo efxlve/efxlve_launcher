@@ -9,6 +9,7 @@
 #winbar {
   height: var(--winbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 2px;
   padding-left: 14px; background: var(--bg); -webkit-app-region: drag; position: relative; z-index: 20;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 .winbar-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
 .winbar-beta { margin-left: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-3); }
@@ -38,7 +39,7 @@
 /* --- Sidebar --- */
 #sidebar {
   width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
-  padding: 12px 0 8px; background: var(--bg); border-right: 1px solid var(--line);
+  padding: 12px 0 8px; background: var(--bg); border-right: 1px solid rgba(255, 255, 255, 0.14);
 }
 .sb-profile { display: flex; align-items: center; gap: 2px; margin: 0 8px 10px; }
 .sb-account {
@@ -79,7 +80,7 @@
 
 .sb-games { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
 .sb-games-label {
-  margin: 6px 16px 8px; padding-top: 14px; border-top: 1px solid var(--line);
+  margin: 6px 16px 8px; padding-top: 14px; border-top: none;
   font-size: 15px; font-weight: 600; color: var(--text-2);
 }
 .sb-game {
@@ -103,7 +104,7 @@
 #main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
 #page-header {
   height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
-  padding: 0 20px 0 14px; border-bottom: 1px solid var(--line);
+  padding: 0 20px 0 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -122,14 +123,6 @@
 #content { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
 #view { flex: 1; overflow-y: auto; padding: 20px 28px 40px; }
 #view.view-enter > * { animation: page-in var(--ease-in) both; }
-
-/* --- Status bar --- */
-#statusbar {
-  height: var(--statusbar-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 12px; background: var(--bg); border-top: 1px solid var(--line); font-size: 11px; color: var(--text-3);
-}
-.statusbar-dl { border: none; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
-.statusbar-dl:hover, .statusbar-dl.active { color: var(--text); }
 
 /* Notification panel opens beside the profile bell, clear of the sidebar. */
 #notif-root { position: relative; z-index: 400; }

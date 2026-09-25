@@ -541,6 +541,7 @@ export async function initApp(hooks: {
     try {
       const pt = await epicGetPlaytimes();
       S.playtimeMap = new Map(Object.entries(pt));
+      if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
     } catch {
       // ignore
     }

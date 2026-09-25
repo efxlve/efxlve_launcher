@@ -2,13 +2,13 @@
  * Library view: quiet Steam / Epic cover wall.
  *
  * Default All is a portrait grid only. Filters are plain text. Cards rest as
- * covers; hover shows title + one action. Exception badges are Update / Running
- * only. Full-page innerHTML of a grown 500-card chunk is treated as a bug.
+ * covers. Hover scales the cover with a light rim. The only badge is Running.
+ * Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
 import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryDlBar } from "../../core/game-view";
+import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -18,18 +18,15 @@ import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
-/** Sort options shown in the library sort dropdown, evaluated dynamically with current language. */
-export function getSortOptions(): {
-  id: EpicSort;
-  label: string;
-  icon: "clock" | "arrow-down-a-z" | "check-circle" | "trophy" | "refresh";
-}[] {
+/** Sort options shown in the library sort dropdown, in the menu order. */
+export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
-    { id: "recent", label: t("lib.sortRecent"), icon: "clock" },
-    { id: "alpha", label: t("lib.sortAlpha"), icon: "arrow-down-a-z" },
-    { id: "installed", label: t("lib.sortInstalled"), icon: "check-circle" },
-    { id: "platinum", label: t("lib.sortPlatinum"), icon: "trophy" },
-    { id: "updates", label: t("lib.sortUpdates"), icon: "refresh" },
+    { id: "alpha", label: t("lib.sortAlpha") },
+    { id: "recent", label: t("lib.sortRecent") },
+    { id: "played", label: t("lib.sortPlayed") },
+    { id: "achievements", label: t("lib.sortAchievements") },
+    { id: "installed", label: t("lib.sortInstalled") },
+    { id: "alphaDesc", label: t("lib.sortAlphaDesc") },
   ];
 }
 
@@ -81,6 +78,13 @@ function getCollator(): Intl.Collator {
   return cachedCollator;
 }
 
+/** Higher means more of the achievement set is unlocked. Games without data stay at the bottom. */
+function achievementRank(appName: string): number {
+  const a = S.epicAchSummaries[appName];
+  if (!a?.supported || !a.total_achievements) return 0;
+  return a.user_unlocked / a.total_achievements;
+}
+
 let visibleCache: EpicSummary[] | null = null;
 let visibleCacheSig = "";
 
@@ -93,7 +97,10 @@ function visibleSignature(): string {
     String(S.libraryDataRev),
     S.appLanguage,
     String(S.epicFav.size),
+    [...S.hiddenGames].sort().join(","),
     String(S.availableUpdates.size),
+    String(S.playtimeMap.size),
+    String(Object.keys(S.epicAchSummaries).length),
     S.epicRecent.join(","),
   ].join("\x1f");
 }
@@ -128,6 +135,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
   }
 
   const list = S.epicSummaries.filter((s) => {
+    if (S.hiddenGames.has(s.appName)) return false;
     if (S.activeCollectionId === "fav") {
       if (!S.epicFav.has(s.appName)) return false;
     } else if (S.activeCollectionId === "uncategorized" && uncatSet) {
@@ -163,21 +171,21 @@ export function epicVisibleSummaries(): EpicSummary[] {
     case "alpha":
       result = [...list].sort(byTitle);
       break;
+    case "alphaDesc":
+      result = [...list].sort((a, b) => byTitle(b, a));
+      break;
     case "installed":
       result = [...list].sort((a, b) => Number(b.installed) - Number(a.installed) || byTitle(a, b));
       break;
-    case "updates":
+    case "played":
       result = [...list].sort(
         (a, b) =>
-          Number(b.updateAvailable || S.availableUpdates.has(b.appName)) -
-            Number(a.updateAvailable || S.availableUpdates.has(a.appName)) ||
+          (S.playtimeMap.get(b.appName)?.total_seconds ?? 0) - (S.playtimeMap.get(a.appName)?.total_seconds ?? 0) ||
           byTitle(a, b),
       );
       break;
-    case "platinum":
-      result = [...list].sort(
-        (a, b) => Number(isAppPlatinum(b.appName)) - Number(isAppPlatinum(a.appName)) || byTitle(a, b),
-      );
+    case "achievements":
+      result = [...list].sort((a, b) => achievementRank(b.appName) - achievementRank(a.appName) || byTitle(a, b));
       break;
     default: {
       const recentIdxMap = new Map<string, number>();
@@ -222,21 +230,18 @@ export function epicVisibleSummaries(): EpicSummary[] {
 }
 
 /**
- * Grid tile: cover + one-line caption. Uninstalled games rest slightly dimmed
- * (Steam convention) instead of carrying an "Installed" badge; hover reveals
- * the single primary action.
+ * Grid tile is the portrait only. Hover grows the whole tile, not the image inside it.
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button" title="${title}">
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
+        ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
-        <div class="poverlay"><div class="bottom" data-card-action>${epicActionButtons(s, "full", { primaryOnly: true })}</div></div>
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
       </div>
-      <div class="pcard-title" title="${title}">${title}</div>
     </div>`;
 }
 
@@ -346,7 +351,7 @@ function libraryHeader(tools: string, filters: string): string {
 }
 
 export function renderSkeletonLibrary(): string {
-  const cards = Array.from({ length: 12 }, () => `<div class="pcard"><div class="pcard-art skeleton"></div><div class="pcard-title"><span class="skeleton" style="display:block;width:70%;height:12px"></span></div></div>`).join("");
+  const cards = Array.from({ length: 12 }, () => `<div class="pcard"><div class="pcard-art skeleton"></div></div>`).join("");
   return `${libraryHeader("", "")}<div class="pgrid">${cards}</div>`;
 }
 
@@ -418,13 +423,13 @@ export function renderEpic(): string {
   const tools = `
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
-        ${icon(currentSort.icon, 14)}<span class="sort-btn-label">${esc(currentSort.label)}</span>${icon("chevron-down", 12)}
+        <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
+        <span class="sort-btn-label">${esc(currentSort.label)}</span>
+        ${icon(S.isSortDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>
       <div id="sort-dropdown-menu" class="sort-dropdown-menu ${S.isSortDropdownOpen ? "show" : ""}">
         ${sortOpts.map((opt) => `
-          <button class="ps5-context-item sort-menu-item-btn ${S.epicSort === opt.id ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">
-            ${icon(opt.icon, 14)}<span class="sort-menu-item-name">${esc(opt.label)}</span>${S.epicSort === opt.id ? icon("check", 13) : ""}
-          </button>`).join("")}
+          <button class="sort-menu-item-btn ${S.epicSort === opt.id ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">${esc(opt.label)}</button>`).join("")}
       </div>
     </div>
     <div class="seg" role="group" aria-label="${t("lib.viewMode")}">
@@ -437,7 +442,7 @@ export function renderEpic(): string {
     filterTab("all", t("library.all")),
     filterTab("fav", t("library.favorites")),
     ...S.epicCollections.map((col) =>
-      `<button class="tab lib-filter lib-col-tab ${S.activeCollectionId === col.id ? "active" : ""}" draggable="true" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}">${esc(col.name)}</button>`,
+      `<button class="tab lib-filter lib-col-tab ${S.activeCollectionId === col.id ? "active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}">${esc(col.name)}</button>`,
     ),
     `<button class="icon-btn lib-col-add" data-act="open-new-collection-modal" title="${esc(t("col.newTitle"))}">${icon("plus", 16)}</button>`,
   ].join("");
@@ -476,71 +481,88 @@ export function consumeCollectionDragClick(): boolean {
   return true;
 }
 
-/** Drag-reorder collection tabs. All and Favorites are not draggable. */
+/** Hold-and-drag reorder. A draggable button never starts a drag in WebView2. */
 export function initCollectionTabs(): void {
-  let dragId: string | null = null;
+  let tab: HTMLElement | null = null;
+  let startX = 0;
+  let moved = false;
 
-  const clearMarks = (): void => {
-    document.querySelectorAll(".lib-col-tab.dragging, .lib-col-tab.drop-before").forEach((el) => {
-      el.classList.remove("dragging", "drop-before");
-    });
-  };
-
-  document.addEventListener("dragstart", (e) => {
-    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
-    if (!tab?.dataset.colId) return;
-    dragId = tab.dataset.colId;
-    collectionDragged = true;
-    tab.classList.add("dragging");
-    e.dataTransfer?.setData("text/plain", dragId);
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  document.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    const hit = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+    if (!hit?.dataset.colId) return;
+    collectionDragged = false;
+    tab = hit;
+    startX = e.clientX;
+    moved = false;
   });
 
-  document.addEventListener("dragover", (e) => {
-    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
-    if (!tab || !dragId || tab.dataset.colId === dragId) return;
-    e.preventDefault();
-    document.querySelectorAll(".lib-col-tab.drop-before").forEach((el) => el.classList.remove("drop-before"));
-    tab.classList.add("drop-before");
+  document.addEventListener("mousemove", (e) => {
+    if (!tab) return;
+    if (!moved) {
+      if (Math.abs(e.clientX - startX) < 5) return;
+      moved = true;
+      collectionDragged = true;
+      tab.classList.add("dragging");
+    }
+    const bar = tab.parentElement;
+    const add = bar?.querySelector(".lib-col-add");
+    if (!bar || !add) return;
+    let before: Element = add;
+    for (const other of bar.querySelectorAll<HTMLElement>(".lib-col-tab")) {
+      if (other === tab) continue;
+      const rect = other.getBoundingClientRect();
+      if (e.clientX < rect.left + rect.width / 2) {
+        before = other;
+        break;
+      }
+    }
+    if (tab.nextElementSibling !== before) slideCollectionTabs(bar, tab, before);
   });
 
-  document.addEventListener("drop", (e) => {
-    const tab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
-    const from = dragId;
-    dragId = null;
-    clearMarks();
-    if (!tab?.dataset.colId || !from || tab.dataset.colId === from) return;
-    e.preventDefault();
-    const rect = tab.getBoundingClientRect();
-    const after = e.clientX > rect.left + rect.width / 2;
-    void moveCollectionTab(from, tab.dataset.colId, after);
-  });
-
-  document.addEventListener("dragend", () => {
-    dragId = null;
-    clearMarks();
+  document.addEventListener("mouseup", () => {
+    if (!tab) return;
+    tab.classList.remove("dragging");
+    const didMove = moved;
+    const bar = tab.parentElement;
+    tab = null;
+    moved = false;
+    if (!didMove || !bar) return;
+    const ids = [...bar.querySelectorAll<HTMLElement>(".lib-col-tab")]
+      .map((el) => el.dataset.colId)
+      .filter((id): id is string => Boolean(id));
+    void persistCollectionOrder(ids);
   });
 }
 
-async function moveCollectionTab(fromId: string, toId: string, after: boolean): Promise<void> {
-  const ids = S.epicCollections.map((c) => c.id).filter((id) => id !== fromId);
-  let insert = ids.indexOf(toId);
-  if (insert < 0) return;
-  if (after) insert += 1;
-  ids.splice(insert, 0, fromId);
+/** Slide tabs from their previous x into the new order. One shot, no idle loop. */
+function slideCollectionTabs(bar: HTMLElement, dragged: HTMLElement, before: Element): void {
+  const tabs = [...bar.querySelectorAll<HTMLElement>(".lib-col-tab")];
+  const from = new Map(tabs.map((el) => [el, el.getBoundingClientRect().left]));
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  bar.insertBefore(dragged, before);
+  if (reduce) return;
+  for (const el of tabs) {
+    const dx = (from.get(el) ?? 0) - el.getBoundingClientRect().left;
+    if (dx === 0) continue;
+    el.style.transition = "none";
+    el.style.transform = `translateX(${dx}px)`;
+    requestAnimationFrame(() => {
+      el.style.transition = "transform 140ms ease-out";
+      el.style.transform = "";
+      el.addEventListener("transitionend", () => {
+        el.style.transition = "";
+      }, { once: true });
+    });
+  }
+}
+
+async function persistCollectionOrder(ids: string[]): Promise<void> {
   const byId = new Map(S.epicCollections.map((c) => [c.id, c]));
   S.epicCollections = ids.flatMap((id) => {
     const col = byId.get(id);
     return col ? [col] : [];
   });
-  const bar = document.querySelector(".lib-filters");
-  const add = bar?.querySelector(".lib-col-add");
-  if (bar && add) {
-    for (const id of ids) {
-      const el = bar.querySelector(`[data-col-id="${CSS.escape(id)}"]`);
-      if (el) bar.insertBefore(el, add);
-    }
-  }
   try {
     await epicReorderCollections(ids);
   } catch (err) {

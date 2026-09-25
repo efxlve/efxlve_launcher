@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, NAV_HISTORY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, HIDDEN_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, NAV_HISTORY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
@@ -23,7 +23,7 @@ import { toast } from "../../core/toast";
 import type { DrawerTab, EpicSort, EpicViewMode, View } from "../../core/types";
 import { esc, fmtBytes, fmtCdnName, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
-import { currentLanguage, setLanguage, t as i18nT } from "../../i18n";
+import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { rawOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
@@ -585,6 +585,16 @@ document.addEventListener("click", (e) => {
     resetCustomCover(id);
     closeCustomCoverModal();
     toast(i18nT("cover.originalRestored"), "ok");
+  } else if (act === "hide-game" && id) {
+    S.hiddenGames.add(id);
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
+    if (S.currentModalAppName === id) closeModal();
+    toast(i18nT("lib.hidden"), "");
+    render();
+  } else if (act === "unhide-game" && id) {
+    S.hiddenGames.delete(id);
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
+    render();
   } else if (act === "epic-fav" && id) {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {
@@ -998,7 +1008,7 @@ document.addEventListener("click", (e) => {
         const listEl = document.getElementById("manage-backup-list");
         if (listEl) listEl.innerHTML = renderBackupListHtml(id);
       })
-      .catch((err) => toast(i18nT("backup.failed", { msg: String(err) }), "err"))
+      .catch((err) => toast(i18nT("backup.failed", { msg: localizeMessage(String(err)) }), "err"))
       .finally(() => {
         S.isBackingUp = false;
         const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
@@ -1010,7 +1020,7 @@ document.addEventListener("click", (e) => {
       toast(i18nT("backup.restoring"), "");
       epicRestoreBackup(id, bid)
         .then((msg) => toast(msg, "ok"))
-        .catch((err) => toast(i18nT("backup.restoreFailed", { msg: String(err) }), "err"));
+        .catch((err) => toast(i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }), "err"));
     }
   } else if (act === "manage-delete-backup" && id) {
     const bid = t.dataset.bid;
@@ -1023,7 +1033,7 @@ document.addEventListener("click", (e) => {
           const listEl = document.getElementById("manage-backup-list");
           if (listEl) listEl.innerHTML = renderBackupListHtml(id);
         })
-        .catch((err) => toast(i18nT("backup.deleteFailed", { msg: String(err) }), "err"));
+        .catch((err) => toast(i18nT("backup.deleteFailed", { msg: localizeMessage(String(err)) }), "err"));
     }
   } else if (act === "manage-open-backup-folder" && id) {
     epicOpenBackupFolder(id)
@@ -1386,6 +1396,10 @@ document.addEventListener("click", (e) => {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
+  } else if (act === "toggle-cover-stats") {
+    S.showCoverStats = !S.showCoverStats;
+    localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
+    render();
   } else if (act === "toggle-nav-history-buttons") {
     S.showNavHistoryButtons = !S.showNavHistoryButtons;
     localStorage.setItem(NAV_HISTORY_KEY, String(S.showNavHistoryButtons));

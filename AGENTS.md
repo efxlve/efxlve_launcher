@@ -127,7 +127,14 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
-- **Koleksiyon penceresi:** köşe çentikleri yok. Arama ve ad alanı dolu kutu, liste ince çerçeve. Sil solda, İptal ve Kaydet sağda.
+- **Kısayol ve yedek:** yüklü olmayan oyunda sağ tık menüsünde masaüstü kısayolu yok. Yedekleme hataları `@t:` anahtarı yerine çevrilmiş metin gösterir.
+- **Oyun gizleme:** kütüphane sağ tık ve Yönet sekmesinden gizlenir. Ayarlar > Gizlenen oyunlar listesinden geri açılır. Gizli oyunlar ızgara, arama ve kenar çubuğunda görünmez.
+- **Kapak bilgisi:** ızgara kapaklarının sol üstünde süre ve başarım (`18/42`). Tamamlanan başarımlar beyaz rozet. Ayarlar > Görünüm’den kapanır, varsayılan açık.
+- **Kütüphane sıralaması:** buton "Sırala" + seçili değer. Menü: Başlık (A-Z), Son oynanan, En çok oynanan, Başarımlar, Yüklü önce, Başlık (Z-A). Güncelleme ve platin sıralaması kalktı.
+- **Kütüphane:** satırda 6 portre. Hover kapağı büyütür; beyaz kenar çizgisi yok, parlama çok hafif.
+- **Kabuk:** kenar çubuğunun sağında ve sayfa başlığının altında ince beyaz kılavuz çizgisi. Alt durum çubuğu (indirme notu ve sürüm) yok.
+- **Yönet:** düğme kurulu olmayan oyunlarda da görünür. Doğrulama, klasör ve kaldırma yalnızca kurulu oyunlarda.
+- **Oyun sayfası:** hero 380px. Oyun Hakkında metni sol kolonu doldurur. Üst çubukta ve hero'da yalnızca geri düğmesi var.
 - **Açılış:** stil yüklenene kadar kabuk gizlenir. Kenar çubuğu "Son Oynananlar" başlığı 15px; liste 7 oyuna son oynananlarla, yetmezse rastgele yüklü oyunlarla dolar.
 - **Oyun sayfası temizliği:** Kurulu rozeti, kupa ilerleme kutusu ve medya galerisi kaldırıldı. Koleksiyon etiketleri başlığın altına alındı. Hero 460px. Üst çubukta geri/ileri her zaman görünür; hero üzerindeki "Kütüphane Esc" kalktı.
 - **Kütüphane başlığı sadeleşti:** büyük "Kütüphane" ve ikinci arama kutusu kaldırıldı; oyun sayısı üst çubukta. Güncelleme sekmesi kütüphaneden silindi; bekleyen güncellemeler İndirmeler sayfasında ve kenar çubuğu rozetinde.

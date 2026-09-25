@@ -11,7 +11,7 @@
 .game-hub { min-height: 100%; display: flex; flex-direction: column; }
 
 /* --- Hero --- */
-.gp-hero { position: relative; height: 500px; flex-shrink: 0; background: #000; overflow: hidden; }
+.gp-hero { position: relative; height: 380px; flex-shrink: 0; background: #000; overflow: hidden; }
 .gp-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .gp-hero-scrim {
   position: absolute; inset: 0;
@@ -67,10 +67,10 @@
 .gp-thumb-ph { display: grid; place-items: center; color: var(--text-3); }
 
 /* --- Overview --- */
-.hub-overview-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 32px; align-items: start; }
+.hub-overview-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
 @media (max-width: 1200px) { .hub-overview-layout { grid-template-columns: 1fr; } }
 .hub-overview-sidebar { display: flex; flex-direction: column; gap: 16px; }
-.hub-desc-text { max-width: 68ch; font-size: 15px; line-height: 1.7; color: var(--text-2); }
+.hub-desc-text { max-width: none; font-size: 15px; line-height: 1.7; color: var(--text-2); }
 .hub-desc-text p { margin: 0; }
 .hub-desc-text p + p { margin-top: 14px; }
 .gp-features-card { padding: 18px 18px 8px; }

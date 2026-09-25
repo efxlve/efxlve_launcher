@@ -44,6 +44,8 @@ export const NOTIF_KEY = "efxlve-notifications";
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 /** Show optional back/forward navigation buttons in the top bar. */
 export const NAV_HISTORY_KEY = "efxlve-nav-history-buttons";
+/** Playtime and achievement chips painted on library covers. On unless set to "false". */
+export const COVER_STATS_KEY = "efxlve-cover-stats";
 /** How many profile trophy cards render before "show more". */
 export const PROFILE_CARD_CHUNK = 36;
 /** Automatically back up local saves when a game closes. */
@@ -63,6 +65,8 @@ export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
+/** App names hidden from the library, sidebar and search. */
+export const HIDDEN_KEY = "efxlve-hidden-games";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
 /** Recently installed and updated game ids. */
