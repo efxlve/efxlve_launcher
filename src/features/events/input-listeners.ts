@@ -38,7 +38,6 @@ import { updateInstallFinalPath } from "../install/install-dialog";
 import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
-import { applyPresenceSettings } from "../presence/presence";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
@@ -235,11 +234,6 @@ document.addEventListener("change", (e) => {
       }
     };
     reader.readAsDataURL(file);
-  }
-  if (target && target.id === "presence-client-id") {
-    S.presenceClientId = target.value.trim();
-    applyPresenceSettings();
-    return;
   }
   if (target && target.id === "studio-filter") {
     return;

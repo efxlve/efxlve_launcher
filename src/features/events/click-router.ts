@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, HIDDEN_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, NAV_HISTORY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, HIDDEN_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
@@ -21,7 +21,7 @@ import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DrawerTab, EpicSort, EpicViewMode, View } from "../../core/types";
-import { esc, fmtBytes, fmtCdnName, parseEnvText } from "../../core/utils";
+import { cdnShortLabel, esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, eosOverlayStatus, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
@@ -840,7 +840,7 @@ document.addEventListener("click", (e) => {
         await epicSetPreferredCdn(host || null);
         S.preferredCdn = host;
         if (host) {
-          toast(i18nT("downloads.cdnSet", { host: fmtCdnName(host) }), "ok");
+          toast(i18nT("downloads.cdnSet", { host: cdnShortLabel(host) }), "ok");
         } else {
           toast(i18nT("downloads.cdnResetDone"), "ok");
         }
@@ -862,7 +862,7 @@ document.addEventListener("click", (e) => {
         const best = probes[0];
         await epicSetPreferredCdn(best.host);
         S.preferredCdn = best.host;
-        toast(i18nT("downloads.cdnPicked", { host: fmtCdnName(best.host), ms: best.ms }), "ok");
+        toast(i18nT("downloads.cdnPicked", { host: cdnShortLabel(best.host), ms: best.ms }), "ok");
         render();
       } catch (e) {
         toast(String(e), "err");
@@ -1399,11 +1399,6 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
-    render();
-  } else if (act === "toggle-nav-history-buttons") {
-    S.showNavHistoryButtons = !S.showNavHistoryButtons;
-    localStorage.setItem(NAV_HISTORY_KEY, String(S.showNavHistoryButtons));
-    updateNavHistoryUi();
     render();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;

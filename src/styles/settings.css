@@ -61,7 +61,11 @@
 
 /* About */
 .settings-about { display: flex; align-items: center; gap: 14px; }
-.settings-about-logo { width: 44px; height: 44px; border-radius: var(--r-md); }
+.settings-about-logo {
+  width: 44px; height: 44px; border-radius: var(--r-md); flex-shrink: 0;
+  object-fit: cover; display: block;
+}
+.settings-about-copy { min-width: 0; }
 .settings-about-text { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: var(--text-2); max-width: 720px; }
 
 @media (max-width: 1000px) {

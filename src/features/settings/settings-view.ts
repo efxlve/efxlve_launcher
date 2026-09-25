@@ -6,14 +6,14 @@
  * state (S); every action is routed through the global data-act delegation.
  */
 
+import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { isTauri } from "../../core/constants";
-import { icon } from "../../core/icons";
+import { emptyState, icon } from "../../core/icons";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
-import { esc, fmtBytes, fmtCdnName } from "../../core/utils";
+import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { LANGUAGES, t } from "../../i18n";
-import { DEFAULT_DISCORD_CLIENT_ID } from "../presence/presence";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateInstallBlocked } from "../updates/update-manager";
 import {
@@ -35,13 +35,6 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "system", labelKey: "settings.secSystem" },
   { id: "hidden", labelKey: "settings.secHidden" },
   { id: "about", labelKey: "settings.secAbout" },
-];
-
-const CDNS: [string, string][] = [
-  ["", ""],
-  ["epicgames-download1.akamaized.net", "Akamai"],
-  ["egdownload.fastly-edge.com", "Fastly"],
-  ["egs-cloudfront-chunks.epicgamescdn.com", "CloudFront"],
 ];
 
 /** A single setting line: title/description on the left, a control on the right. */
@@ -68,7 +61,7 @@ function group(rows: string, title = ""): string {
 function renderDownloads(): string {
   const dir = row(
     t("settings.installDirTitle"),
-    `${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "â€”")}</code>`,
+    `${t("settings.installDirHint")} <code>${esc(S.epicDefaultDir || "—")}</code>`,
     `<input id="epic-install-dir" class="input settings-path-input" value="${esc(S.epicSettingsCache?.install_dir ?? "")}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
      <button type="button" class="btn ghost small" data-act="dl-pick-install-dir">${t("common.browse")}</button>
      <button type="button" class="btn primary small" data-act="epic-save-install-dir">${t("common.save")}</button>`,
@@ -82,23 +75,22 @@ function renderDownloads(): string {
       <button class="${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${t("settings.netLow")}</button>
     </div>`);
 
+  const cdnHost = S.preferredCdn ? cdnShortLabel(S.preferredCdn) : "";
   const cdn = row(
     t("downloads.cdnLabel"),
-    `${t("downloads.cdnHint")} <code>${esc(S.preferredCdn ? fmtCdnName(S.preferredCdn) : t("downloads.cdnAuto"))}</code>`,
-    `<div class="seg" role="radiogroup" aria-label="${t("downloads.cdnLabel")}">
-      ${CDNS.map(([host, label]) => `<button type="button" class="${S.preferredCdn === host ? "active" : ""}" data-act="dl-set-cdn" data-cdn="${host}">${label || t("downloads.cdnAutoShort")}</button>`).join("")}
-    </div>
-    <button type="button" class="btn ghost small" data-act="dl-find-fastest-cdn" title="${t("downloads.cdnFindHint")}">${t("downloads.cdnFind")}</button>`,
+    cdnHost ? t("downloads.cdnHintPicked", { host: cdnHost }) : t("downloads.cdnHint"),
+    `<button type="button" class="btn ghost small ${cdnHost ? "" : "active"}" data-act="dl-set-cdn" data-cdn="">${t("downloads.cdnAutoShort")}</button>
+     <button type="button" class="btn ghost small" data-act="dl-find-fastest-cdn">${t("downloads.cdnFind")}</button>`,
   );
 
   return (
     group(dir + profile + cdn, t("settings.secDownloads")) +
     group(
-      row(t("downloads.speedBits"), null, toggle("toggle-speed-bits", S.speedInBits)) +
+      row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
       row(t("downloads.pauseOnPlay"), t("downloads.pauseOnPlayDesc"), toggle("toggle-pause-on-play", S.pauseOnPlay)) +
       row(t("settings.autoDesktopShortcut"), t("settings.autoDesktopShortcutDesc"), toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut)) +
       row(t("settings.offlineTitle"), t("settings.offlineDesc"), toggle("toggle-offline-mode", S.offlineMode)) +
-      row(t("downloads.cacheClear"), t("settings.netCacheDesc"), `<button type="button" class="btn ghost small" data-act="dl-cleanup-cache">${t("downloads.cacheClear")}</button>`),
+      row(t("downloads.cacheClear"), t("settings.netCacheDesc"), `<button type="button" class="btn ghost small" data-act="dl-cleanup-cache">${t("downloads.cacheClearBtn")}</button>`),
       t("settings.netAdvTitle"),
     )
   );
@@ -132,7 +124,7 @@ function renderIntegrations(): string {
     : S.thirdPartyLaunchers.map((l: ThirdPartyLauncher) => row(
         esc(l.name),
         l.installed ? esc(l.installPath || t("settings.pathUnknown")) : t("settings.thirdPartyRecommended"),
-        `${l.installed ? `<span class="chip ok">${t("settings.installed")}${l.version ? ` Â· v${esc(l.version)}` : ""}</span>` : `<span class="chip">${t("settings.notInstalled")}</span>`}
+        `${l.installed ? `<span class="chip ok">${t("settings.installed")}${l.version ? ` \u00B7 v${esc(l.version)}` : ""}</span>` : `<span class="chip">${t("settings.notInstalled")}</span>`}
          <button class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("settings.officialDownload")}</button>`,
       )).join("") +
       row(t("settings.thirdPartyDesc"), null, `<button class="btn ghost small" data-act="third-party-refresh">${t("settings.rescan")}</button>`);
@@ -157,10 +149,7 @@ function renderIntegrations(): string {
      <button class="btn ghost small" data-act="refresh-eos">${t("settings.eosRefresh")}</button>`,
   );
 
-  const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled)) +
-    (S.presenceEnabled
-      ? row(t("settings.presenceClientIdDesc"), null, `<input id="presence-client-id" class="input settings-path-input" placeholder="${DEFAULT_DISCORD_CLIENT_ID}" value="${esc(S.presenceClientId)}" spellcheck="false" autocomplete="off" />`)
-      : "");
+  const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
   return (
     group(eglGroup, t("settings.eglTitle")) +
@@ -178,7 +167,6 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
-      row(t("settings.navHistoryButtonsTitle"), t("settings.navHistoryButtonsDesc"), toggle("toggle-nav-history-buttons", S.showNavHistoryButtons)) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)),
       t("settings.secAppearance"),
     ) +
@@ -265,8 +253,8 @@ function renderAbout(): string {
     row(label, esc(text), `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${url}">${icon("external", 13)}</button>`);
   return `
     <div class="card settings-about">
-      <span class="sb-logo settings-about-logo">${icon("gamepad-2", 22)}</span>
-      <div>
+      <img class="settings-about-logo" src="${launcherIcon}" alt="" />
+      <div class="settings-about-copy">
         <div class="settings-identity-name">Efxlve Launcher <span class="settings-value">v${esc(S.appVersion)}</span></div>
         <div class="settings-row-desc">${t("settings.aboutTagline")}</div>
       </div>
@@ -286,7 +274,7 @@ function renderAbout(): string {
 function renderHidden(): string {
   const ids = [...S.hiddenGames];
   if (ids.length === 0) {
-    return `<h3 class="section-title">${t("settings.secHidden")}</h3><p class="page-sub">${t("settings.hiddenEmpty")}</p>`;
+    return emptyState("ghost", t("settings.hiddenEmpty"), t("settings.hiddenEmptyDesc"));
   }
   const rows = ids
     .map((id) => ({ id, title: S.epicSummariesMap.get(id)?.title || id }))
