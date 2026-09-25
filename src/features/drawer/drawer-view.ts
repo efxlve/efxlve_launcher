@@ -72,7 +72,7 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
-    return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 14)} ${t("common.stop")}</button>`;
+    return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
   if (s.installed) {
     return s.updateAvailable || S.availableUpdates.has(s.appName)

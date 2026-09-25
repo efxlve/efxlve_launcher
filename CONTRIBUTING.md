@@ -1,47 +1,46 @@
-# Contributing to Efxlve Launcher
+# Contributing
 
-Thank you for your interest in contributing to **Efxlve Launcher**!
+Efxlve Launcher is an open-source Epic Games launcher for Windows. The interface is TypeScript. The native side is Rust on Tauri 2. Installs and launches go through the `legendary` CLI.
 
-Efxlve Launcher is an open-source alternative launcher for Epic Games on Windows, built with **Tauri v2 + Rust + Vanilla TypeScript**.
+Issues and pull requests are welcome. Read this file and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before changing the interface. If an AI assistant writes the patch, it should follow [AGENTS.md](./AGENTS.md).
 
----
+## Look and behavior
 
-## 🎨 Design Guidelines & Aesthetics
+The app has one visual language. Do not restyle a screen to resemble another product.
 
-Before submitting any frontend changes, please review our core aesthetic principles:
+- Background is true black (`#000`). The accent is white. Green, amber, and red mean status, not decoration.
+- No decorative gradients, neon glow, gradient text, or glass blur on repeated cards.
+- Do not turn every control into a full pill. Radius comes from the shared tokens.
+- No emoji in the interface. Use the existing SVG icons, or add one in `src/core/icons.ts`.
+- One line of text stays one line. Truncate with ellipsis. Descriptions clamp to two lines.
+- Speeds, sizes, percentages, and durations use tabular numbers.
+- Every control is keyboard-focusable and shows a visible focus ring. Do not scale a card on focus.
+- The desktop UI is for a mouse and keyboard. Gamepad navigation belongs in TV Mode.
+- New screens use the components in `src/styles/`. Do not invent a second button or card style.
+- Copy is short and plain. No hype, no exclamation marks.
 
-1. **PlayStation 5 Console Dark Aesthetic:**
-   - Keep the dark, spacious obsidian and midnight blue atmosphere (`#07080d`, `#0b0d14`).
-   - Clean, readable typography and subtle hairline borders (`rgba(255, 255, 255, 0.08)`).
-   - High-contrast trophy counters (Platinum, Gold, Silver, Bronze).
-2. **No "Generic AI Design" Clichés:**
-   - **Prohibited:** Decorative purple→indigo→cyan gradients, neon box-shadow glows, gradient text (`background-clip: text`), and turning every button into a pill capsule (`border-radius: 999px`).
-   - **Color signifies STATE only:** Green = Online / Ready, Amber = Updating / Offline, Red = Error / Destructive.
-3. **10-Foot Controller Accessibility:**
-   - Every interactive UI element must be navigable via Gamepad (Xbox / DualSense).
-   - Provide clean `:focus-visible` focus rings (lavender / light blue).
-   - Avoid mouse-only dropdowns or cramped layouts.
+## Code
 
----
+- Comments are English and explain why something exists.
+- New interface work goes in `src/features/<name>/`. `src/main.ts` stays a thin bootstrap.
+- Keep a source file under about 1,500 lines. Split it by responsibility when it grows past that.
+- User-facing strings go through `src/locales/`. English and Turkish must both have the key. Other languages fall back to English until they are filled in.
+- Tauri arguments are camelCase on the JavaScript side (`appName`, not `app_name`).
+- Do not redraw the whole library when one card changes. Patch the card.
+- On PowerShell, run npm as `npm.cmd`.
 
-## 💻 Development Workflow
-
-### Commands
-Always use `npm.cmd` on Windows PowerShell to avoid execution policy errors:
+## Checks
 
 ```powershell
-npm.cmd run tauri dev      # Recommended: full desktop app
-npm.cmd run build          # Validate TypeScript and Vite build (zero errors required)
-cargo check                # Fast Rust validation
-cargo test                 # Rust unit tests (mandatory for new logic)
+npm.cmd run build
+cargo check
+cargo test
 ```
 
-### Pull Request Guidelines
-1. **TypeScript strictness:** Ensure `npm.cmd run build` passes with zero errors.
-2. **Rust tests:** Any new IPC commands, CLI argument parser, or cache logic must include automated tests in `cargo test`.
-3. **Commit convention:** Use semantic commits (`feat:`, `fix:`, `perf:`, `refactor:`, `docs:`).
+`npm.cmd run build` must pass. New Rust behavior needs a unit test.
 
----
+## Pull requests
 
-## 📜 AI Agent Guidelines
-If you are an AI assistant helping a contributor, please read **[AGENTS.md](./AGENTS.md)** first. It contains critical operational invariants (camelCase Tauri parameters, stdout vs stderr handling, null serialization, and render disciplines).
+Use a short commit message that says why the change exists. `feat:`, `fix:`, `perf:`, `refactor:`, and `docs:` are fine. One concern per pull request is easier to review.
+
+Do not commit secrets, signing keys, or local launcher config.

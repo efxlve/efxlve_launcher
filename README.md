@@ -1,110 +1,78 @@
-# Efxlve Launcher 🎮
+# Efxlve Launcher
 
 <p align="center">
-  <img src="./dist/assets/logo.png" alt="Efxlve Launcher Logo" width="128" onerror="this.style.display='none'"/>
+  <img src="./src-tauri/icons/128x128.png" alt="Efxlve Launcher" width="96" />
 </p>
 
 <p align="center">
-  <strong>A high-performance, PlayStation 5 console-inspired desktop launcher for your Epic Games library.</strong><br>
-  Built with Tauri v2, Rust, and Vanilla TypeScript for maximum speed and minimal memory footprint.
+  A fast desktop launcher for an Epic Games library on Windows.<br>
+  Tauri 2, Rust, and TypeScript. No UI framework.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tauri-v2-blue?logo=tauri" alt="Tauri v2"/>
-  <img src="https://img.shields.io/badge/Rust-2021%20Stable-orange?logo=rust" alt="Rust"/>
-  <img src="https://img.shields.io/badge/Frontend-Vite%20%2B%20TypeScript-blue?logo=typescript" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/Platform-Windows%20x86__64-brightgreen?logo=windows" alt="Windows"/>
-  <img src="https://img.shields.io/badge/License-GPL--3.0-purple" alt="License"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
+  <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
----
+Efxlve keeps the library on disk and opens from that cache. A network sync runs in the background and does not block the window. Downloads, installs, and launches go through [legendary](https://github.com/legendary-gl/legendary).
 
-## ✨ Features
+The interface is a fixed sidebar, a cover grid, and a full game page. Surfaces are black. The accent is white. Green, amber, and red are used only for status.
 
-- 🎮 **PlayStation 5 Console Dark Aesthetic:** Obsidian & midnight blue interface (`#07080d`), cinematic game hero spotlight, 3D floating showcase posters, and refined typography.
-- 🕹️ **10-Foot Gamepad Navigation:** Full game controller support (Xbox, PlayStation DualSense, DirectInput) with spatial navigation, D-pad browsing, and dedicated console HUD.
-- 🏆 **Epic Achievements & Platinum Trophies:** Instant offline achievement tracking with dedicated PlayStation-style 4-tier trophy hub (Platinum, Gold, Silver, Bronze counters), progress levels, and secret achievement spoiler protection.
-- ⚡ **Blazing Fast & Ultra Lightweight:** Progressive chunk rendering (<5ms render times for 500+ games), instant NVMe cache hydration, low RAM consumption (<90 MB idle vs 800+ MB on official launcher).
-- ⬇️ **Advanced Download Manager:** Multi-game queue, pause/resume, download speed and disk write charts, integrity verification, and customizable installation directories.
-- 🛒 **Embedded Epic Games Store:** Browse store pages, claim free weekly games, and inspect PDP product details directly inside a native embedded child webview.
-- 🎨 **Custom Covers & Hero Art:** Built-in SteamGridDB integration for high-resolution custom vertical covers, wide heroes, and logos.
-- 📸 **In-Game Screenshot Manager:** Native background F12 capture hook, screenshot gallery, and multi-format compression (WebP / AVIF).
-- 🤝 **Partner Launchers & Anti-Cheat Detection:** Automatic detection and one-click launch for EA App (`link2ea://`), Ubisoft Connect, Rockstar Games Launcher, BattlEye, and Easy Anti-Cheat.
-- 🛡️ **Zero-Crash Manifest Recovery:** Fault-tolerant catalog parsing (`skip.rs`) that automatically recovers from discontinued or 401-blocked Epic catalog items.
+## What it does
 
----
+- Library as a cover grid or a denser list, with search, filters, and sort.
+- Game page with the primary action, about text, achievements, add-ons, screenshots, and system requirements.
+- Download queue with pause, resume, speed, and a chosen install folder.
+- Epic Games Store inside the app, including free games.
+- More than one Epic account, with a switch that does not ask for the password again.
+- Custom covers through SteamGridDB, or a file you pick.
+- Screenshots with a hotkey, only while the game window is in front.
+- Move an installed game to another folder or drive.
+- EA App and Ubisoft Connect games launch through their own apps.
+- Optional Discord status, tray, and signed app updates.
+- Interface languages follow the operating system until you pick one in Settings.
 
-## 🛠️ Architecture Overview
+Gamepad play is a separate full-screen TV Mode. The desktop screens stay built for a mouse and keyboard. Every control can still be focused from the keyboard.
 
-Efxlve Launcher wraps the battle-tested, open-source [`legendary`](https://github.com/legendary-gl/legendary) CLI via a high-performance native Rust backend:
+## Requirements
 
-- **Frontend:** Pure Vanilla TypeScript + Vite 6 (Zero heavy frameworks, instant DOM updates).
-- **Backend:** Tauri v2, Tokio async runtime, Rust native system APIs.
-- **Data Pipeline:** **Cache-First** architecture. Local metadata is read in 0ms on startup; remote library synchronization runs silently in the background.
+- Windows 10 or 11, 64-bit
+- WebView2 (already present on Windows 11)
 
-For full technical details, diagrams, and data flow pipelines, read **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+To build from source: Node.js 20 or newer, and Rust stable with the MSVC toolchain.
 
----
+## Build
 
-## 🚀 Getting Started
+```powershell
+git clone https://github.com/efxlve/efxlve_launcher.git
+cd efxlve_launcher
+npm.cmd install
+npm.cmd run tauri dev
+```
 
-### Prerequisites
-- **Windows 10 / 11 (x86_64)**
-- **WebView2 Runtime** (Pre-installed on Windows 11)
-- For building from source:
-  - [Node.js 20+](https://nodejs.org/)
-  - [Rust Stable](https://rustup.rs/) (MSVC toolchain with Visual Studio C++ Build Tools)
+On PowerShell, use `npm.cmd`. `npm` is often blocked by the execution policy.
 
-### Installation & Development
+```powershell
+npm.cmd run build          # typecheck and frontend build
+npm.cmd run tauri build    # installer
+```
 
-1. **Clone the repository:**
-   ```powershell
-   git clone https://github.com/your-username/efxlve_launcher.git
-   cd efxlve_launcher
-   ```
+From `src-tauri`:
 
-2. **Install frontend dependencies:**
-   ```powershell
-   npm.cmd install
-   ```
+```powershell
+cargo check
+cargo test
+```
 
-3. **Run the desktop app in development mode:**
-   ```powershell
-   npm.cmd run tauri dev
-   ```
+## Further reading
 
-4. **Build production binaries:**
-   ```powershell
-   npm.cmd run tauri build
-   ```
+- [ARCHITECTURE.md](./ARCHITECTURE.md) for how data moves through the app
+- [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) for layout, color, and components
+- [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a change
+- [AGENTS.md](./AGENTS.md) if you are using an AI assistant on this repo
 
----
+## License
 
-## 🎮 Controller Shortcuts (10-Foot Mode)
+GNU General Public License v3.0. The launcher wraps `legendary`, which is also GPL-3.0.
 
-| Button / Key | Action |
-|---|---|
-| **A / ✕ (Cross)** | Select / Launch / Inspect |
-| **B / ○ (Circle)** | Back / Close Modal or Lightbox |
-| **X / □ (Square)** | Toggle Favorite |
-| **Y / △ (Triangle)** | Focus Library Search |
-| **LB / RB (L1 / R1)** | Cycle Navigation Tabs & Filters |
-| **D-Pad / Left Stick** | Spatial Navigation through Game Grid |
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-Please check out **[CONTRIBUTING.md](./CONTRIBUTING.md)** and **[AGENTS.md](./AGENTS.md)** before submitting code.
-
----
-
-## 📜 License
-
-This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)** — conforming with the underlying `legendary` CLI engine.
-
-### Acknowledgments
-- [`legendary`](https://github.com/legendary-gl/legendary) by derrod for the incredible Epic Games client backend.
-- [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher) for architectural inspiration.
-- [SteamGridDB](https://www.steamgriddb.com/) for community game assets.
+Thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), and [SteamGridDB](https://www.steamgriddb.com/).
