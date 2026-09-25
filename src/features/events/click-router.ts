@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, HIDDEN_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
@@ -56,6 +56,8 @@ import { renderBackupListHtml } from "../drawer/drawer-widgets";
 
 import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
 import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
+import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
+import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { openPalette } from "../palette/palette";
 import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -299,6 +301,14 @@ document.addEventListener("click", (e) => {
     void removeSavedAccount(id);
   } else if (act === "account-add") {
     promptAddAccount();
+  } else if (act === "open-hide-achievements") {
+    openHideAchievementsModal();
+  } else if (act === "profile-toggle-hidden") {
+    S.profileShowHidden = !S.profileShowHidden;
+    resetProfileCards();
+    render();
+  } else if (act === "unhide-achievement" && id) {
+    unhideAchievement(id);
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
     resetProfileCards();
@@ -394,6 +404,8 @@ document.addEventListener("click", (e) => {
       });
       if (!refreshLibraryResultsInPlace()) render();
     }
+  } else if (act === "open-hide-games") {
+    openHideGamesModal();
   } else if (act === "open-custom-cover" && id) {
     const target = (t.dataset.target as "cover" | "hero") || "cover";
     openCustomCoverModal(id, target);
@@ -590,15 +602,16 @@ document.addEventListener("click", (e) => {
     closeCustomCoverModal();
     toast(i18nT("cover.originalRestored"), "ok");
   } else if (act === "hide-game" && id) {
-    S.hiddenGames.add(id);
-    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
-    if (S.currentModalAppName === id) closeModal();
-    toast(i18nT("lib.hidden"), "");
-    render();
+    hideGameIds([id]);
   } else if (act === "unhide-game" && id) {
-    S.hiddenGames.delete(id);
-    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
-    render();
+    unhideGameIds([id]);
+  } else if (act === "unhide-selected") {
+    const ids: string[] = [];
+    document.querySelectorAll<HTMLInputElement>(".settings-hidden-list .selective-checkbox:checked").forEach((box) => {
+      const rowId = box.closest<HTMLElement>("[data-hidden-row]")?.dataset.id;
+      if (rowId) ids.push(rowId);
+    });
+    unhideGameIds(ids);
   } else if (act === "epic-fav" && id) {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {

@@ -127,6 +127,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.10:** Kütüphane birkaç oyunu aynı anda gizleyebilir. Profil başarım satırlarını gizler; başarım başlıkları oyun adıdır. Kütüphanede Yüklü filtresi vardır. Ayarlar’daki gizli oyunlar kapak ve geliştirici gösterir; Detay ile açılır veya toplu gösterilir. `v0.1.10` olarak yayınlanır.
+- **Kütüphane:** filtre satırında Yüklü yalnızca kurulu oyunları gösterir. Tümü tam listeye döner; arama ve sıralama aynı kalır.
+- **Profil başarımları:** göz simgesi satır seçip gizler; "Gizli" sekmesi geri açar. Satırda yalnızca oyun adı vardır. Gizleme listesinde kapak kutusu durur.
+- **Kütüphane:** araç çubuğu bir liste açıp birkaç oyunu tek seferde gizleyebilir.
 - **Lisans:** depo kökünde resmi GPL-3.0 `LICENSE` dosyası var.
 - **Sürüm 0.1.9:** README gerçek ekran görüntüleriyle güncellenir. Oyun sayfasında güncelleme yalnızca düğmede durur; stüdyo satırı noktalarla ayrılır. Ekran görüntüsü silme onayı launcher penceresindedir. `v0.1.9` olarak yayınlanır.
 - **Sürüm 0.1.8:** taşınabilir disk taraması Rockstar, EA ve Ubisoft klasörlerini atlar; Epic Launcher’da kurulumu bitmiş olanlar kalır. `Play*.exe` oyunları Epic kayıtlıysa sessizce Epic üzerinden açılır. `v0.1.8` olarak yayınlanır.
@@ -145,7 +149,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Ayarlar > İndirmeler:** CDN marka seçici kalktı. Satır "İndirme sunucusu": Otomatik veya "En hızlısını bul". Hız profili "En yüksek / Dengeli / Düşük"; worker sayısı arayüzde yok.
 - **Uygulama ikonu:** siyah zemin, beyaz oyun kolu, hafif parlama. `src-tauri/icons` (ico, icns, png) paket ikon listesinden gelir. Görev çubuğu ve tepsi, `tauri dev` yeniden derlendikten sonra güncellenir.
 - **Kısayol ve yedek:** yüklü olmayan oyunda sağ tık menüsünde masaüstü kısayolu yok. Yedekleme hataları `@t:` anahtarı yerine çevrilmiş metin gösterir.
-- **Oyun gizleme:** kütüphane sağ tık ve Yönet sekmesinden gizlenir. Ayarlar > Gizlenen oyunlar listesinden geri açılır. Gizli oyunlar ızgara, arama ve kenar çubuğunda görünmez.
+- **Oyun gizleme:** kütüphane sağ tık, Yönet ve araç çubuğundan gizlenir. Ayarlar > Gizlenen oyunlar satırı seçer; oyun sayfasını yalnızca Detay açar. Seçilenleri göster başlığın sağındadır. Aynı uygulama kimliği bir kez listelenir. Gizli oyunlar ızgara, arama ve kenar çubuğunda görünmez.
 - **Kapak bilgisi:** ızgara kapaklarının sol üstünde süre ve başarım (`18/42`). Tamamlanan başarımlar beyaz rozet. Ayarlar > Görünüm’den kapanır, varsayılan açık.
 - **Kütüphane sıralaması:** buton "Sırala" + seçili değer. Menü: Başlık (A-Z), Son oynanan, En çok oynanan, Başarımlar, Yüklü önce, Başlık (Z-A). Güncelleme ve platin sıralaması kalktı.
 - **Kütüphane:** satırda 6 portre. Hover kapağı büyütür; beyaz kenar çizgisi yok, parlama çok hafif.

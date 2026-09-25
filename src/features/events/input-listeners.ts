@@ -22,6 +22,8 @@ import {
 import {
   closeCollectionModal,
 } from "../collections/collections-view";
+import { closeHideGamesModal } from "../library/hide-games";
+import { closeHideAchievementsModal } from "../profile/hide-achievements";
 import {
   closeCustomCoverModal,
   renderCustomCoverModalContent,
@@ -47,6 +49,33 @@ import {
   navigateScreenshotLightbox,
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
+document.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  const target = e.target as HTMLElement | null;
+  if (!target?.closest(".settings-hidden-row")) return;
+  if (target.closest(".settings-hidden-actions")) return;
+  // A focused checkbox is scrolled back into view and fights the wheel.
+  e.preventDefault();
+});
+
+document.addEventListener("click", (e) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const row = target.closest<HTMLElement>(".settings-hidden-row");
+  if (!row) return;
+  // Details and Show are not the row. Keep their clicks off the checkbox.
+  if (target.closest(".settings-hidden-actions")) {
+    e.stopPropagation();
+    return;
+  }
+  // The label already toggles the checkbox. Padding outside it does not.
+  if (target.closest("input, label")) return;
+  const box = row.querySelector<HTMLInputElement>(".selective-checkbox");
+  if (!box) return;
+  box.checked = !box.checked;
+  box.dispatchEvent(new Event("change", { bubbles: true }));
+});
+
 // Vertical wheel scrolls the game page tab strip horizontally when it overflows.
 document.addEventListener("wheel", (e) => {
   const bar = (e.target as HTMLElement)?.closest<HTMLElement>(".gp-tabs");
@@ -146,6 +175,16 @@ document.addEventListener("keydown", (e) => {
       closeCollectionModal();
       return;
     }
+    const hideRoot = document.getElementById("hide-games-root");
+    if (hideRoot && hideRoot.innerHTML.trim()) {
+      closeHideGamesModal();
+      return;
+    }
+    const hideAchRoot = document.getElementById("hide-achievements-root");
+    if (hideAchRoot && hideAchRoot.innerHTML.trim()) {
+      closeHideAchievementsModal();
+      return;
+    }
     if (playtimeRoot && playtimeRoot.innerHTML.trim()) {
       closeEditPlaytimeModal();
       return;
@@ -211,6 +250,11 @@ document.addEventListener("keydown", (e) => {
 
 document.addEventListener("change", (e) => {
   const target = e.target as HTMLInputElement;
+  if (target?.classList?.contains("selective-checkbox") && target.closest(".settings-hidden-list")) {
+    const btn = document.getElementById("hidden-show-selected") as HTMLButtonElement | null;
+    if (btn) btn.disabled = !document.querySelector(".settings-hidden-list .selective-checkbox:checked");
+    return;
+  }
   if (target && target.id === "custom-cover-file-input" && target.files && target.files[0]) {
     const file = target.files[0];
     const reader = new FileReader();

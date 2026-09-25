@@ -20,6 +20,8 @@ import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
+import { closeHideGamesModal } from "./features/library/hide-games";
+import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
 import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
@@ -102,6 +104,8 @@ function closeAllModals(): void {
   closeShareModal();
   closeCustomCoverModal();
   closeCollectionModal();
+  closeHideGamesModal();
+  closeHideAchievementsModal();
   closeStorageManager();
   closeNotifPanel();
   closeAvatarModal();

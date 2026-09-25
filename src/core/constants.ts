@@ -68,6 +68,8 @@ export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 export const FAV_KEY = "efxlve-favorites";
 /** App names hidden from the library, sidebar and search. */
 export const HIDDEN_KEY = "efxlve-hidden-games";
+/** Achievement sandbox ids hidden from the profile list. Separate from hidden games. */
+export const HIDDEN_ACH_KEY = "efxlve-hidden-achievements";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
 /** Recently installed and updated game ids. */

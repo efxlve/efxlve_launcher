@@ -1144,6 +1144,8 @@ export interface ProfileGameRecord {
   is_platinum: boolean;
   unlocked_percent: number;
   last_unlocked_date: string | null;
+  /** Backend may still send this. The profile list does not show it. */
+  set_label?: string;
 }
 
 export interface EpicPlayerProfile {

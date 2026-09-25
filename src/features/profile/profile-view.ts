@@ -25,7 +25,9 @@ function coverOf(appName: string, fallback = ""): string {
 
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
-    return `<div class="row">${emptyState("trophy", t("profile.emptyTitle"), t("profile.emptyDesc"))}</div>`;
+    const title = S.profileShowHidden ? t("profile.hiddenEmpty") : t("profile.emptyTitle");
+    const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : t("profile.emptyDesc");
+    return `<div class="row">${emptyState("trophy", title, desc)}</div>`;
   }
   return cardGames.map((g) => {
     const isPlat = g.is_platinum || g.unlocked_percent >= 100;
@@ -37,6 +39,9 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       g.total_product_xp > 0 ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} XP` : "",
       pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
     ].filter(Boolean).join(" · ");
+    const show = S.profileShowHidden && g.sandbox_id
+      ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
+      : "";
     return `
       <div class="row profile-game-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="row-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="row-thumb"></span>`}
@@ -45,6 +50,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
           <div class="row-meta">${meta}</div>
           <div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>
         </div>
+        ${show}
         <div class="profile-game-pct${isPlat ? " plat" : ""}">${pct}%</div>
       </div>`;
   }).join("");
@@ -138,10 +144,19 @@ function renderFriendsSection(): string {
     </section>`;
 }
 
-/** Applies the profile filter tab, search box and sort order. */
+function userHidAchievement(g: ProfileGameRecord): boolean {
+  return !!g.sandbox_id && S.hiddenAchievements.has(g.sandbox_id);
+}
+
+/** Applies the profile filter tab, search box, sort order, and hidden rows. */
 export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGameRecord[] {
   const q = S.profileSearchQuery.trim().toLowerCase();
   const list = allGames.filter((g) => {
+    if (S.hiddenGames.has(g.app_name)) return false;
+    const hiddenRow = userHidAchievement(g);
+    if (S.profileShowHidden) {
+      if (!hiddenRow) return false;
+    } else if (hiddenRow) return false;
     const done = g.is_platinum || g.unlocked_percent >= 100;
     if (S.profileFilter === "platinum" && !done) return false;
     if (S.profileFilter === "in_progress" && !(g.unlocked_percent > 0 && !done)) return false;
@@ -179,8 +194,14 @@ export function renderProfile(): string {
   const initial = displayName.trim().charAt(0).toUpperCase() || "E";
 
   const filtered = filteredProfileGames(allGames);
-  let countPlat = 0, countProgress = 0, countNotStarted = 0;
+  let countPlat = 0, countProgress = 0, countNotStarted = 0, countVisible = 0, countHidden = 0;
   for (const g of allGames) {
+    if (S.hiddenGames.has(g.app_name)) continue;
+    if (userHidAchievement(g)) {
+      countHidden++;
+      continue;
+    }
+    countVisible++;
     const done = g.is_platinum || g.unlocked_percent >= 100;
     if (done) countPlat++;
     else if (g.unlocked_percent > 0) countProgress++;
@@ -217,12 +238,14 @@ export function renderProfile(): string {
         <div class="profile-main">
           <div class="gp-toolbar">
             <div class="tabs">
-              ${filterTab("all", t("profile.filterAll"), allGames.length)}
+              ${filterTab("all", t("profile.filterAll"), countVisible)}
               ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
               ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
               ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
+              ${countHidden > 0 ? `<button class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden">${t("profile.hiddenToggle")}<span class="count">${countHidden}</span></button>` : ""}
             </div>
             <div class="gp-toolbar-right">
+              <button class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
               <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${t("profile.searchPlaceholder")}" value="${esc(S.profileSearchQuery)}" />
                 ${S.profileSearchQuery ? `<button class="icon-btn" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
               </label>

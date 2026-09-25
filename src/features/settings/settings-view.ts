@@ -10,6 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { isTauri } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { render } from "../../core/render";
+import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
@@ -23,6 +24,7 @@ import {
   epicDetectEglGames,
   epicGetSettings,
   epicGetSteamGridKey,
+  epicPortrait,
   epicThirdPartyLaunchers,
   type EglDetectedGame,
   type ThirdPartyLauncher,
@@ -281,17 +283,71 @@ function renderAbout(): string {
     <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>`;
 }
 
+function hiddenCover(id: string): string {
+  const custom = S.customCovers[id];
+  if (custom) return custom;
+  const raw = rawOf(id);
+  return (raw ? epicPortrait(raw) : null) || S.epicSummariesMap.get(id)?.cover || "";
+}
+
+/** Catalog developer only. Missing metadata stays a blank second line. */
+function catalogDeveloper(id: string): string {
+  const value = rawOf(id)?.metadata?.developer;
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * One row per app id. Two catalog products can share a title; those stay
+ * separate. The second line is the developer, never a platform or id.
+ * The row selects. Only Details opens the game page. Show only unhides.
+ */
 function renderHidden(): string {
-  const ids = [...S.hiddenGames];
-  if (ids.length === 0) {
+  const seen = new Set<string>();
+  const games: { id: string; title: string; developer: string }[] = [];
+  for (const id of S.hiddenGames) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const raw = rawOf(id);
+    games.push({
+      id,
+      title: S.epicSummariesMap.get(id)?.title || raw?.app_title || id,
+      developer: catalogDeveloper(id),
+    });
+  }
+  if (games.length === 0) {
     return emptyState("ghost", t("settings.hiddenEmpty"), t("settings.hiddenEmptyDesc"));
   }
-  const rows = ids
-    .map((id) => ({ id, title: S.epicSummariesMap.get(id)?.title || id }))
-    .sort((a, b) => a.title.localeCompare(b.title, S.appLanguage))
-    .map((g) => row(esc(g.title), null, `<button class="btn ghost small" data-act="unhide-game" data-id="${esc(g.id)}">${t("settings.hiddenShow")}</button>`))
-    .join("");
-  return group(rows, t("settings.secHidden"));
+  const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
+  games.sort((a, b) => collator.compare(a.title, b.title) || collator.compare(a.developer, b.developer) || collator.compare(a.id, b.id));
+  const rows = games.map((g) => {
+    const url = hiddenCover(g.id);
+    const thumb = url
+      ? `<img class="hide-game-thumb" src="${esc(url)}" alt="" width="32" height="42" loading="lazy" decoding="async" />`
+      : `<span class="hide-game-thumb placeholder">${icon("gamepad-2", 14)}</span>`;
+    return `
+      <div class="row settings-hidden-row" data-hidden-row data-id="${esc(g.id)}">
+        <label class="settings-hidden-pick">
+          <input type="checkbox" class="selective-checkbox" aria-label="${esc(g.title)}" />
+          <span class="settings-hidden-open">
+            ${thumb}
+            <span class="row-main">
+              <span class="row-title">${esc(g.title)}</span>
+              <span class="row-meta">${esc(g.developer)}</span>
+            </span>
+          </span>
+        </label>
+        <div class="settings-hidden-actions">
+          <button type="button" class="btn ghost small" data-act="epic-detail" data-id="${esc(g.id)}">${t("trophy.detail")}</button>
+          <button type="button" class="btn ghost small" data-act="unhide-game" data-id="${esc(g.id)}">${t("settings.hiddenShow")}</button>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="settings-section-head settings-hidden-head">
+      <h3 class="section-title">${t("settings.secHidden")}</h3>
+      <button type="button" class="btn ghost small" id="hidden-show-selected" data-act="unhide-selected" disabled>${t("settings.hiddenShowSelected")}</button>
+    </div>
+    <div class="list settings-group settings-hidden-list">${rows}</div>`;
 }
 
 function renderSection(section: SettingsSection): string {

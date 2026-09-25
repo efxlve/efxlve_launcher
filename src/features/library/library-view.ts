@@ -380,7 +380,7 @@ function isFilterActive(tab: string | undefined, colId?: string): boolean {
   switch (tab) {
     case "all": return S.activeCollectionId === null && S.epicFilter === "all";
     case "fav": return S.activeCollectionId === "fav";
-    case "installed": return S.epicFilter === "installed";
+    case "installed": return S.activeCollectionId === null && S.epicFilter === "installed";
     case "updates": return S.epicFilter === "updates";
     default: return false;
   }
@@ -417,7 +417,9 @@ export function renderEpic(): string {
   // A full page rebuild must not replay a grown 200–520 card chunk.
   resetCardChunk();
 
-  if (S.epicFilter === "updates" || S.epicFilter === "installed" || S.epicFilter === "collections") S.epicFilter = "all";
+  // Installed is a live tab and must survive a rebuild. Updates and the retired
+  // collections mode have no tab, so a redraw must not leave the grid stuck there.
+  if (S.epicFilter === "updates" || S.epicFilter === "collections") S.epicFilter = "all";
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
@@ -437,10 +439,12 @@ export function renderEpic(): string {
       <button class="${S.epicViewMode === "grid" ? "active" : ""}" data-act="lib-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
       <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
     </div>
+    <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>
     <button class="icon-btn lib-refresh-btn ${S.epicSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
 
   const filters = [
     filterTab("all", t("library.all")),
+    filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
     ...S.epicCollections.map((col) =>
       `<button class="tab lib-filter lib-col-tab ${S.activeCollectionId === col.id ? "active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}">${esc(col.name)}</button>`,
