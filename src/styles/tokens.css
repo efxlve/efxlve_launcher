@@ -80,6 +80,14 @@
   --ps5-status-err: var(--err);
 }
 
+/* Epic Games Launcher canvas, sampled from the launcher itself. */
+:root[data-surface="epic"] {
+  --bg: #101014;
+  --surface-1: #18181c;
+  --surface-2: #222228;
+  --surface-3: #2c2c32;
+}
+
 * {
   box-sizing: border-box;
   scrollbar-width: thin;

@@ -12,11 +12,11 @@
 .game-hub { min-height: 100%; display: flex; flex-direction: column; }
 
 /* --- Hero --- */
-.gp-hero { position: relative; height: 440px; flex-shrink: 0; background: #000; overflow: hidden; }
+.gp-hero { position: relative; height: 440px; flex-shrink: 0; background: var(--bg); overflow: hidden; }
 .gp-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .gp-hero-scrim {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.72) 70%, #000 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.72) 70%, var(--bg) 100%);
 }
 .gp-hero-top { position: absolute; top: 16px; left: 32px; right: 32px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
 .gp-hero-nav { display: flex; align-items: center; gap: 6px; }

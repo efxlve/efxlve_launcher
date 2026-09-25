@@ -169,6 +169,10 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
+      row(t("settings.surfaceTitle"), t("settings.surfaceDesc"), `<div class="seg">
+        <button type="button" class="${S.surface === "black" ? "active" : ""}" data-act="set-surface" data-surface="black">${t("settings.surfaceBlack")}</button>
+        <button type="button" class="${S.surface === "epic" ? "active" : ""}" data-act="set-surface" data-surface="epic">${t("settings.surfaceEpic")}</button>
+      </div>`) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)),
       t("settings.secAppearance"),
     ) +

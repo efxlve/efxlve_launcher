@@ -237,7 +237,7 @@
 .ced.col-modal-card {
   width: min(720px, 100%);
   height: min(760px, calc(100vh - 40px));
-  background: #000;
+  background: var(--bg);
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
 .ced .col-modal-header { padding: 20px 24px 16px; }

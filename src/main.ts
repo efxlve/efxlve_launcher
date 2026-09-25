@@ -8,10 +8,9 @@
  */
 
 import "./styles/index.css";
-document.documentElement.classList.add("ready");
+import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi } from "./core/nav";
-import { S } from "./core/state";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
@@ -32,6 +31,9 @@ import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
+
+if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
+document.documentElement.classList.add("ready");
 
 let lastRenderedView: View | null = null;
 viewEl.addEventListener("animationend", (e) => {

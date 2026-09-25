@@ -45,6 +45,8 @@ export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 /** Show optional back/forward navigation buttons in the top bar. */
 /** Playtime and achievement chips painted on library covers. On unless set to "false". */
 export const COVER_STATS_KEY = "efxlve-cover-stats";
+/** Shell surface: "black" (default) or "epic" (#101014). */
+export const SURFACE_KEY = "efxlve-surface";
 /** How many profile trophy cards render before "show more". */
 export const PROFILE_CARD_CHUNK = 36;
 /** Automatically back up local saves when a game closes. */
