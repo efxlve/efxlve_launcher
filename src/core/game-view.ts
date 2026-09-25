@@ -13,15 +13,34 @@ import { icon } from "./icons";
 import { openEpicModal, render } from "./render";
 import { rawOf } from "./selectors";
 import { S } from "./state";
-import { esc } from "./utils";
+import { esc, fmtPlaytime } from "./utils";
 
-/** Exception badge for a library tile (update / running only — never "Installed"). */
+/** Compact playtime + achievement chips for a library cover. Empty when the setting is off or there is nothing to show. */
+export function libraryCoverStats(appName: string): string {
+  if (!S.showCoverStats) return "";
+  const chips: string[] = [];
+  const secs = S.playtimeMap.get(appName)?.total_seconds ?? 0;
+  if (secs > 0) {
+    chips.push(`<span class="cover-stat">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
+  }
+  const ach = S.epicAchSummaries[appName];
+  const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
+  if (ach?.supported && ach.total_achievements > 0) {
+    const label = `${ach.user_unlocked}/${ach.total_achievements}`;
+    chips.push(
+      `<span class="cover-stat${done ? " done" : ""}">${icon("trophy", 12)}<span>${label}</span></span>`,
+    );
+  } else if (done) {
+    chips.push(`<span class="cover-stat done">${icon("trophy", 12)}</span>`);
+  }
+  if (chips.length === 0) return "";
+  return `<div class="cover-stats" data-cover-stats>${chips.join("")}</div>`;
+}
+
+/** Live state on a library tile. Updates stay on the downloads page. */
 export function libraryCardBadge(s: EpicSummary): string {
   if (S.runningGames.has(s.appName)) {
     return `<span class="pbadge running">${t("lib.running")}</span>`;
-  }
-  if (s.updateAvailable || S.availableUpdates.has(s.appName)) {
-    return `<span class="pbadge update">${t("lib.updateBadge")}</span>`;
   }
   return "";
 }
@@ -55,14 +74,23 @@ export function patchLibraryCardDom(appName: string): boolean {
     } else if (badge) {
       badge.remove();
     }
+    const art = item.querySelector<HTMLElement>(".pcard-art");
+    const statsHtml = libraryCoverStats(appName);
+    const stats = art?.querySelector<HTMLElement>("[data-cover-stats]");
+    if (art && statsHtml) {
+      if (stats) stats.outerHTML = statsHtml;
+      else art.insertAdjacentHTML("afterbegin", statsHtml);
+    } else if (stats) {
+      stats.remove();
+    }
     const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
     if (actionHost) actionHost.innerHTML = actions;
-    const art = item.querySelector<HTMLElement>("[data-card-art]");
-    const track = art?.querySelector(".card-dl-track");
+    const cardArt = item.querySelector<HTMLElement>("[data-card-art]");
+    const track = cardArt?.querySelector(".card-dl-track");
     if (p !== null) {
       const bar = track?.querySelector<HTMLElement>(".card-dl-bar");
       if (bar) bar.style.width = `${p}%`;
-      else art?.insertAdjacentHTML("beforeend", libraryDlBar(appName, p));
+      else cardArt?.insertAdjacentHTML("beforeend", libraryDlBar(appName, p));
     } else if (track) {
       track.remove();
     }

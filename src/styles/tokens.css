@@ -8,7 +8,7 @@
   --sidebar-w: 252px;
   --winbar-h: 34px;
   --header-h: 60px;
-  --statusbar-h: 24px;
+  --statusbar-h: 0px;
 
   /* Surfaces: true black like Hydra. Sidebar and content share one void. */
   --bg: #000000;

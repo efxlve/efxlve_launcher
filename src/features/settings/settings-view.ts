@@ -33,6 +33,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "appearance", labelKey: "settings.secAppearance" },
   { id: "screenshots", labelKey: "settings.secScreenshots" },
   { id: "system", labelKey: "settings.secSystem" },
+  { id: "hidden", labelKey: "settings.secHidden" },
   { id: "about", labelKey: "settings.secAbout" },
 ];
 
@@ -176,7 +177,11 @@ function renderAppearance(): string {
       <span class="lang-name">${esc(l.label)}</span>
     </button>`).join("");
   return (
-    group(row(t("settings.navHistoryButtonsTitle"), t("settings.navHistoryButtonsDesc"), toggle("toggle-nav-history-buttons", S.showNavHistoryButtons)), t("settings.secAppearance")) +
+    group(
+      row(t("settings.navHistoryButtonsTitle"), t("settings.navHistoryButtonsDesc"), toggle("toggle-nav-history-buttons", S.showNavHistoryButtons)) +
+      row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)),
+      t("settings.secAppearance"),
+    ) +
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`
   );
 }
@@ -278,12 +283,26 @@ function renderAbout(): string {
     <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>`;
 }
 
+function renderHidden(): string {
+  const ids = [...S.hiddenGames];
+  if (ids.length === 0) {
+    return `<h3 class="section-title">${t("settings.secHidden")}</h3><p class="page-sub">${t("settings.hiddenEmpty")}</p>`;
+  }
+  const rows = ids
+    .map((id) => ({ id, title: S.epicSummariesMap.get(id)?.title || id }))
+    .sort((a, b) => a.title.localeCompare(b.title, S.appLanguage))
+    .map((g) => row(esc(g.title), null, `<button class="btn ghost small" data-act="unhide-game" data-id="${esc(g.id)}">${t("settings.hiddenShow")}</button>`))
+    .join("");
+  return group(rows, t("settings.secHidden"));
+}
+
 function renderSection(section: SettingsSection): string {
   switch (section) {
     case "integrations": return renderIntegrations();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
     case "system": return renderSystem();
+    case "hidden": return renderHidden();
     case "about": return renderAbout();
     default: return renderDownloads();
   }

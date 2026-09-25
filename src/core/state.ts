@@ -16,6 +16,7 @@ import {
   CUSTOM_HEROES_KEY,
   DEMO_PLAT_KEY,
   FAV_KEY,
+  HIDDEN_KEY,
   AUTO_BACKUP_KEY,
   AUTO_SHORTCUT_KEY,
   AUTO_UPDATE_KEY,
@@ -24,6 +25,7 @@ import {
   LANG_KEY,
   MINIMIZE_TRAY_KEY,
   NAV_HISTORY_KEY,
+  COVER_STATS_KEY,
   PAUSE_ON_PLAY_KEY,
   PROFILE_CARD_CHUNK,
   RECENT_KEY,
@@ -46,6 +48,13 @@ function loadJsonRecord(key: string): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+/** Drops retired sort ids (updates, platinum) so a stored value still matches the menu. */
+function normalizeEpicSort(saved: string | null): EpicSort {
+  if (saved === "alpha" || saved === "alphaDesc" || saved === "recent" || saved === "played" || saved === "achievements" || saved === "installed") return saved;
+  if (saved === "platinum") return "achievements";
+  return saved ? "alpha" : "recent";
 }
 
 export const S = {
@@ -106,7 +115,7 @@ export const S = {
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
   epicFilter: "all" as EpicFilter,
-  epicSort: ((localStorage.getItem("efxlve-sort") as EpicSort) || "recent") as EpicSort,
+  epicSort: normalizeEpicSort(localStorage.getItem("efxlve-sort")),
   epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   demoPlatinumApps: (loadStrSet(DEMO_PLAT_KEY)) as Set<string>,
@@ -159,6 +168,7 @@ export const S = {
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,
   isBackingUp: false,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
+  hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   epicRecent: ([...loadStrSet(RECENT_KEY)].slice(0, 8)) as string[],
   storeMode: ("store") as "store" | "profile",
   storeResizeTimer: 0,
@@ -232,6 +242,7 @@ export const S = {
   settingsIntegrationsLoading: false,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
   showNavHistoryButtons: (localStorage.getItem(NAV_HISTORY_KEY) === "true") as boolean,
+  showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   autoBackupOnExit: (localStorage.getItem(AUTO_BACKUP_KEY) === "true") as boolean,
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
   autoUpdateTime: (localStorage.getItem(AUTO_UPDATE_TIME_KEY) || "03:00") as string,

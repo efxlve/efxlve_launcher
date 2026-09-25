@@ -17,12 +17,12 @@ export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "
 /** Library filter modes. */
 export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections";
 /** Library sort modes. */
-export type EpicSort = "recent" | "alpha" | "installed" | "updates" | "platinum";
+export type EpicSort = "alpha" | "alphaDesc" | "recent" | "played" | "achievements" | "installed";
 /** Library layout mode: cover grid or dense list. */
 export type EpicViewMode = "grid" | "list";
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "about";
+export type SettingsSection = "downloads" | "integrations" | "appearance" | "screenshots" | "system" | "hidden" | "about";
 
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";

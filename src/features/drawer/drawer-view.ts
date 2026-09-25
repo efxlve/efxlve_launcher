@@ -90,7 +90,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   const faved = S.epicFav.has(s.appName);
   return `
     ${primaryAction(s, p, partner)}
-    ${s.installed ? `<button class="btn ghost lg ${S.activeDrawerTab === "manage" ? "active" : ""}" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>` : ""}
+    <button class="btn ghost lg ${S.activeDrawerTab === "manage" ? "active" : ""}" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitle")}">${icon("external", 16)}</button>
     ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}`;
@@ -276,7 +276,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-hero-top">
             <div class="gp-hero-nav">
               <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
-              <button class="icon-btn gp-hero-tool" id="gp-nav-forward" data-act="nav-history-forward" data-i18n-title="nav.historyForward" title="${t("nav.historyForward")}">${icon("arrow-right", 16)}</button>
             </div>
             <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
           </div>

@@ -6,6 +6,7 @@
  */
 
 import { playtimeRoot } from "../../core/dom";
+import { patchLibraryCardDom } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { lastPlayedLabel } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -163,6 +164,7 @@ export async function saveEditedPlaytime(appName: string): Promise<void> {
         : t("playtime.noSession");
     }
 
+    if (S.view === "library") patchLibraryCardDom(appName);
     document.querySelectorAll<HTMLElement>(`[data-lib-playtime="${appName}"]`).forEach((el) => {
       el.textContent = updated.total_seconds > 0 ? fmtPlaytime(updated.total_seconds) : "—";
     });

@@ -15,10 +15,15 @@
 .lib-refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
 .lib-filters { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 .lib-filters::-webkit-scrollbar { height: 0; display: none; }
-.lib-col-tab { cursor: grab; flex-shrink: 0; }
-.lib-col-tab.dragging { opacity: 0.45; }
-.lib-col-tab.drop-before { box-shadow: inset 2px 0 0 var(--accent); }
-.lib-col-add { width: 32px; height: 32px; flex-shrink: 0; align-self: center; margin-left: 4px; }
+.lib-col-tab { cursor: grab; flex-shrink: 0; touch-action: none; }
+.lib-col-tab.dragging { cursor: grabbing; opacity: 0.45; }
+.lib-col-add {
+  width: 20px; height: 20px; flex-shrink: 0; align-self: center; margin-left: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 50%;
+  background: transparent; color: #fff;
+}
+.lib-col-add:hover { background: rgba(255, 255, 255, 0.08); border-color: #fff; color: #fff; }
+.lib-col-add svg { width: 12px; height: 12px; }
 .lib-error-code {
   font-family: Consolas, monospace; font-size: 12px; color: var(--text-2);
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-width: 560px;
@@ -26,24 +31,41 @@
 
 /* --- Sort menu --- */
 .sort-dropdown-container { position: relative; }
-.lib-sort-btn .sort-btn-label { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.lib-sort-btn { gap: 8px; padding: 0 10px 0 12px; }
+.lib-sort-kicker { color: var(--text-3); font-weight: 400; }
+.lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 .sort-dropdown-menu {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 60; min-width: 200px; padding: 4px;
-  background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
-  box-shadow: var(--shadow-pop); display: none;
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 196px; padding: 6px;
+  background: #141414; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); display: none;
 }
 .sort-dropdown-menu.show { display: block; }
-.sort-menu-item-name { flex: 1; }
-.sort-menu-item-btn.selected { color: var(--text); }
-.sort-menu-item-btn.selected svg { color: var(--accent); }
+.sort-menu-item-btn {
+  display: block; width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 4px;
+  background: transparent; color: var(--text-2); font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sort-menu-item-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+.sort-menu-item-btn.selected { background: rgba(255, 255, 255, 0.1); color: var(--text); }
 
 /* --- Cover grid --- */
-.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 24px 18px; }
+.pgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }
 .lib-sentinel { grid-column: 1 / -1; height: 24px; pointer-events: none; }
-.pcard { position: relative; cursor: pointer; min-width: 0; border-radius: var(--r-md); }
-/* Layout/paint containment keeps each tile's work local while chunks append;
-   measured ~10x fewer >20ms frames when scrolling 500 games. */
-.pgrid > .pcard { contain: layout paint; content-visibility: auto; contain-intrinsic-size: auto 272px; }
+.pcard {
+  position: relative; cursor: pointer; min-width: 0; border-radius: var(--r-md);
+  transform-origin: center center;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
+}
+/* Layout/paint containment keeps each tile's work local while chunks append.
+   Hover drops it so the grown portrait is not clipped back into its cell. */
+.pgrid > .pcard { contain: layout paint; content-visibility: auto; contain-intrinsic-size: auto 300px; }
+.pgrid > .pcard:hover, .pgrid > .pcard:focus-visible {
+  z-index: 4; contain: none; content-visibility: visible;
+  transform: scale(1.06);
+  box-shadow:
+    0 0 18px 1px rgba(255, 255, 255, 0.1),
+    0 16px 28px rgba(0, 0, 0, 0.45);
+}
 .pcard:focus-visible { outline-offset: 3px; }
 .pcard-art {
   position: relative; aspect-ratio: 3 / 4; border-radius: var(--r-md); overflow: hidden;
@@ -52,15 +74,27 @@
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
 .pcard.not-installed .pcard-art > img { opacity: 0.6; transition: opacity var(--ease); }
-.pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; }
-.pcard:hover .pcard-art { outline-color: var(--line-strong); }
-.pcard-title {
-  margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
+.pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .pgrid > .pcard:hover, .pgrid > .pcard:focus-visible { transform: none; }
 }
-.pcard.not-installed .pcard-title { color: var(--text-2); }
 .pcard-meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.cover-stats {
+  position: absolute; top: 8px; left: 8px; z-index: 3; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 4px; max-width: calc(100% - 16px); pointer-events: none;
+}
+.cover-stat {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; max-width: 100%; padding: 0 7px;
+  border-radius: 6px; background: rgba(0, 0, 0, 0.72); color: #fff;
+  font-size: 12px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden;
+}
+.cover-stat svg { width: 12px; height: 12px; flex-shrink: 0; }
+.cover-stat span { overflow: hidden; text-overflow: ellipsis; }
+.cover-stat.done { background: #fff; color: #000; }
+.pcard .pbadge { left: auto; right: 8px; }
 .pbadge {
   position: absolute; top: 8px; left: 8px; z-index: 3; height: 20px; padding: 0 7px;
   display: inline-flex; align-items: center; border-radius: 4px; pointer-events: none;
@@ -69,14 +103,6 @@
 .pbadge.running { color: var(--ok); }
 .pbadge.update { color: var(--warn); }
 .pbadge.now { color: var(--ok); }
-
-.poverlay {
-  position: absolute; inset: 0; z-index: 4; display: flex; align-items: flex-end; padding: 10px;
-  background: rgba(0, 0, 0, 0.42); opacity: 0; pointer-events: none; transition: opacity var(--ease);
-}
-.pcard:hover .poverlay, .pcard:focus-visible .poverlay { opacity: 1; }
-.poverlay .bottom { width: 100%; }
-.poverlay .btn { width: 100%; pointer-events: auto; }
 
 .card-dl-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 5; background: rgba(0, 0, 0, 0.6); }
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }

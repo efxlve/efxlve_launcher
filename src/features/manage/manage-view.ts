@@ -85,7 +85,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
   return `
     <div class="manage-tab-content">
-      <div class="section-title">${t("manage.groupFiles")}</div>
+      ${s.installed ? `<div class="section-title">${t("manage.groupFiles")}</div>
       <div class="list">
         ${row(t("manage.verifyTitle"), t("manage.verifyDesc"),
           `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>`,
@@ -95,7 +95,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
         ${row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
           `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
-      </div>
+      </div>` : ""}
 
       <div class="section-title">${t("manage.groupSaves")}</div>
       <div class="list">
@@ -144,10 +144,15 @@ export function renderDrawerManage(s: EpicSummary): string {
         </div>
       </div>
 
-      <div class="list mg-danger">
+      <div class="list">
+        ${row(t("manage.hideTitle"), t("manage.hideDesc"),
+          `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
+      </div>
+
+      ${s.installed ? `<div class="list mg-danger">
         ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
           `<button class="btn danger small" data-act="epic-uninstall" data-id="${id}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)}
-      </div>
+      </div>` : ""}
     </div>`;
 }
 
