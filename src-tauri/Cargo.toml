@@ -1,6 +1,6 @@
 [package]
 name = "efxlve-launcher"
-version = "0.1.3"
+version = "0.1.4"
 description = "Efxlve oyun mağazası launcher (Tauri v2 demo)"
 edition = "2021"
 

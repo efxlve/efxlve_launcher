@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.4:** dil dosyaları, sistem dili, taşıma, yükleme boyutu ve sade README `v0.1.4` etiketiyle yayınlanır.
 - **Sürüm 0.1.3:** Hydra kabuğu, ikon, ayarlar ve bulut kayıt düzeltmeleri `v0.1.3` etiketiyle yayınlanır.
 - **Kenar çubuğu:** oyun sayfası açıkken bölüm ve oyun aynı anda beyaz çizgi taşımaz. Çizgi yalnızca açık oyundadır.
 - **Bulut kayıt:** oyun kapanınca `legendary -y sync-saves` gerçek ayardan çalışır (varsayılan açık). Eski kod hiç yazılmayan bir dosyaya bakıp senkronu atlıyordu. Kayıt klasörü olmayan oyunda yerel yedek bildirimi basılmaz.
