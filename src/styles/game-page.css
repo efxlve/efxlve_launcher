@@ -303,8 +303,7 @@
 .screenshots-empty-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 20px; text-align: center; color: var(--text-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }
 .screenshots-empty-icon svg { width: 36px; height: 36px; }
 .screenshots-empty-title { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--text); }
-.screenshots-empty-desc { margin: 0 0 8px; font-size: 13px; max-width: 420px; }
-.screenshots-empty-actions { display: flex; gap: 8px; }
+.screenshots-empty-desc { margin: 0; font-size: 13px; max-width: 420px; }
 .screenshots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 .screenshot-card { cursor: pointer; border-radius: var(--r-md); }
 .screenshot-thumb-wrap { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }

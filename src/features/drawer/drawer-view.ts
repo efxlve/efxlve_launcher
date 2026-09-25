@@ -411,7 +411,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   if (S.dlcLoading && !dlcRes) return loadingState(t("dlc.scanning"));
   const allDlcs = dlcRes?.dlcs || [];
   const storeBtn = `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.discoverDlc")}</button>`;
-  if (allDlcs.length === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"), storeBtn);
+  if (allDlcs.length === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
 
   const query = S.dlcSearchQuery.trim().toLowerCase();
   const filtered = query ? allDlcs.filter((d) => d.title.toLowerCase().includes(query)) : allDlcs;
@@ -475,15 +475,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const data = S.loadedAchievements.get(s.appName);
   if (!data) return loadingState(t("ach.checking"));
 
-  const retry = `<button class="btn ghost small" data-act="ach-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("ach.retry")}</button>`;
   if (data.achievements.length === 0) {
     if (partner) {
-      const open = requiresThirdPartyLauncher(partner)
-        ? `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("external", 13)} ${t("ach.openPartner", { name: esc(partner.name) })}</button>`
-        : "";
-      return emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }), retry + open);
+      return emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }));
     }
-    return emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"), retry);
+    return emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"));
   }
 
   enrichAchievementsData(s.appName, data);
@@ -621,9 +617,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
     return loadingState(t("sys.loading"));
   }
   if (!data.supported || data.systems.length === 0) {
-    return emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"),
-      `<button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("common.retry")}</button>
-       <button class="btn primary small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("sys.goStore")}</button>`);
+    return emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"));
   }
 
   const hasWin = data.systems.some((sys) => isWinSys(sys.systemType));

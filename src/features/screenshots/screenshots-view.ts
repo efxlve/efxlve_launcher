@@ -358,10 +358,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
         <h3 class="screenshots-title">${icon("image", 15)} <span>${t("ss.title")}</span></h3>
         <span class="screenshots-count-chip">${t("ss.photoCount", { count: screenshots.length })}</span>
       </div>
-      <div class="screenshots-head-actions">
-        <button class="btn primary small" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}" title="${t("ss.captureTip")}">
-          ${icon("camera", 13)} ${t("ss.capture")}
-        </button>
+      ${screenshots.length === 0 ? "" : `<div class="screenshots-head-actions">
         ${hasUncompressed ? `
           <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="${t("ss.compressAllTip")}">
             ${icon("minimize-2", 13)} ${t("ss.compressAll")}
@@ -370,7 +367,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
         <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="${t("ss.openFolderTip")}">
           ${icon("folder", 13)} ${t("ss.openFolder")}
         </button>
-      </div>
+      </div>`}
     </div>
   `;
 
@@ -384,14 +381,6 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
           <p class="screenshots-empty-desc">
             ${t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </p>
-          <div class="screenshots-empty-actions">
-            <button class="btn primary" data-act="capture-screenshot" data-id="${s.appName}" data-title="${esc(s.title)}">
-              ${icon("camera", 14)} ${t("ss.captureNow")}
-            </button>
-            <button class="btn ghost" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}">
-              ${icon("folder", 14)} ${t("ss.openFolderLong")}
-            </button>
-          </div>
         </div>
       </div>
     `;

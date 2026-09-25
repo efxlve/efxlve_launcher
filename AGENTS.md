@@ -303,6 +303,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - **Epic Mağazası Oturumu & WebView2 İzolasyonu:** Launcher kimlik doğrulama belirteci (OAuth2 CLI) ile Mağaza web görünümü (sandboxed Chromium çerez havuzu) ayrımı netleştirildi; kullanıcı mağazada bir defa giriş yaptığında WebView2 oturumunun kalıcı kalması korundu.
 - **Yükleme yeri:** indirilecek boyut ve gerekli alan `disk_size` / `download_size` üzerinden gelir. Veri gelene kadar satırda kısa bir yükleme çubuğu durur.
 - **Arka plan:** varsayılan saf siyah kalır. Ayarlar > Görünüm’den Epic seçilince zemin Epic Games Launcher’ın kendi siyahı (`#101014`) olur.
+- **Oyun sayfası boş sekmeler:** veri yokken yalnızca ikon, başlık ve açıklama var. Ekran görüntüsü yalnızca oyun penceresi öndeyken kısayolla alınır.
 - **Oyun taşıma:** disk listesi A’dan Z’ye gerçek sürücüleri sayar. Aynı diskte yeniden adlandırma yer kontrolü yapmaz; başka diske kopyada kota 0 diye “yer yok” denmez.
 - **Oyun sayfası:** koleksiyon etiketleri Oyun Hakkında’nın üstünde. Seçim penceresi alta taşmıyor; tik yalnızca seçili satırda görünür.
 - **Kütüphane listesi:** satır ve kapak büyütüldü; başarım sütunu var. Sağdaki düğmeler dar ve aynı genişlikte; Yükle grimsi. Yüklü olmayan Epic oyunları gri; EA ve Ubisoft renkli kalır.
