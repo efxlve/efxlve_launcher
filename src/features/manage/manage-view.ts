@@ -72,6 +72,7 @@ export function renderDrawerManage(s: EpicSummary): string {
   const id = st.appName;
   const partner = getThirdPartyLauncher(rawOf(s.appName));
   const blockedMove = requiresThirdPartyLauncher(partner);
+  const partnerSaves = partner?.type === "ea" || partner?.type === "ubisoft" || partner?.type === "rockstar";
   const v = S.verifyingMap.get(id);
   const pt = S.playtimeMap.get(id);
   const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
@@ -97,21 +98,29 @@ export function renderDrawerManage(s: EpicSummary): string {
           `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
       </div>` : ""}
 
-      <div class="section-title">${t("manage.groupSaves")}</div>
+      <div class="section-title">${t("manage.groupCover")}</div>
       <div class="list">
-        ${row(t("manage.eosCloudTitle"), cloudDesc,
-          `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-          "", "manage-cloud-subtitle")}
-        ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
-          `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
-           <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
-          `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
+        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
       </div>
 
-      <div class="section-title">${t("manage.groupLaunch")}</div>
+      ${s.installed ? `<div class="section-title">${t("manage.groupSaves")}</div>
       <div class="list">
-        ${row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate))}
-        ${row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority))}
+        ${partnerSaves
+          ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
+          : `${row(t("manage.eosCloudTitle"), cloudDesc,
+              `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
+              "", "manage-cloud-subtitle")}
+            ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
+              `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
+               <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
+              `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}`}
+      </div>` : ""}
+
+      ${s.installed ? `<div class="section-title">${t("manage.groupLaunch")}</div>
+      <div class="list">
+        ${s.installed ? row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate)) : ""}
+        ${s.installed ? row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority)) : ""}
         <div class="row mg-row stack">
           <div class="mg-title">${t("manage.argsTitle")}</div>
           <div class="mg-desc">${t("manage.argsDesc")}</div>
@@ -129,7 +138,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           <textarea id="manage-env-input" class="input mg-env" spellcheck="false" placeholder="DXVK_HUD=1&#10;WINEDLLOVERRIDES=d3d11=n,b">${esc(envToText(st.envVars))}</textarea>
           <div class="mg-inline end"><button class="btn primary small" data-act="manage-save-launch-extras" data-id="${id}">${t("common.save")}</button></div>
         </div>
-      </div>
+      </div>` : ""}
 
       <div class="section-title">${t("manage.groupPlaytime")}</div>
       <div class="list">
