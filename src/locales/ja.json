@@ -271,6 +271,7 @@
   "move.cancelling": "移動をキャンセル中…元のファイルは安全です。",
   "move.cancelFailed": "キャンセル要求を送れませんでした: {msg}",
   "store.starting": "ストアとセッションを開始しています",
+  "store.inLibrary": "ライブラリ内",
   "common.play": "プレイ",
   "common.install": "インストール",
   "common.manage": "プロパティと管理",

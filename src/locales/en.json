@@ -271,6 +271,7 @@
   "move.cancelling": "Cancelling move… Source files are safe.",
   "move.cancelFailed": "Cancel request could not be sent: {msg}",
   "store.starting": "Starting store and session",
+  "store.inLibrary": "In Library",
   "common.play": "Play",
   "common.install": "Install",
   "common.manage": "Properties & Manage",

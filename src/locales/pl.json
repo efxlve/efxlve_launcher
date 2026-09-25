@@ -271,6 +271,7 @@
   "move.cancelling": "Anulowanie przenoszenia… Pliki źródłowe są bezpieczne.",
   "move.cancelFailed": "Nie udało się wysłać żądania anulowania: {msg}",
   "store.starting": "Uruchamianie sklepu i sesji",
+  "store.inLibrary": "W bibliotece",
   "common.play": "Graj",
   "common.install": "Zainstaluj",
   "common.manage": "Właściwości i zarządzanie",

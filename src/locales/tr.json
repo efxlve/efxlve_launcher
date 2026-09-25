@@ -271,6 +271,7 @@
   "move.cancelling": "Taşıma iptal ediliyor… Kaynak dosyalar güvende.",
   "move.cancelFailed": "İptal isteği gönderilemedi: {msg}",
   "store.starting": "Mağaza ve oturum başlatılıyor",
+  "store.inLibrary": "Kütüphanede",
   "common.play": "Oyna",
   "common.install": "Yükle",
   "common.manage": "Özellikler & Yönet",

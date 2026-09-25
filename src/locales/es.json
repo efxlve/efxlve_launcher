@@ -271,6 +271,7 @@
   "move.cancelling": "Cancelando el traslado… Los archivos de origen están a salvo.",
   "move.cancelFailed": "No se pudo enviar la cancelación: {msg}",
   "store.starting": "Iniciando la tienda y la sesión",
+  "store.inLibrary": "En la biblioteca",
   "common.play": "Jugar",
   "common.install": "Instalar",
   "common.manage": "Propiedades y gestionar",

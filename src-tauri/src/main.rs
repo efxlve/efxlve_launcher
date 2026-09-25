@@ -279,10 +279,10 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             transition: all 0.15s ease !important;
         }
         .efxlve-price-tag.owned {
-            background: rgba(168, 85, 247, 0.12) !important;
-            border: 1px solid rgba(168, 85, 247, 0.3) !important;
-            color: #c084fc !important;
-            box-shadow: 0 2px 10px rgba(168, 85, 247, 0.16) !important;
+            background: rgba(0, 116, 228, 0.16) !important;
+            border: 1px solid rgba(38, 187, 255, 0.45) !important;
+            color: #26bbff !important;
+            box-shadow: none !important;
         }
         .efxlve-price-tag.installed {
             background: rgba(99, 102, 241, 0.14) !important;
@@ -562,9 +562,10 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
 
     // 4. Multi-language dictionary (ABSOLUTELY NO EMOJI)
     function getI18n() {
-        var lang = (document.documentElement.lang || navigator.language || 'tr').toLowerCase();
+        var lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase();
+        var dict;
         if (lang.indexOf('tr') === 0) {
-            return {
+            dict = {
                 owned: 'Kütüphanede',
                 installed: 'Yüklü',
                 wishlist: 'İstek Listesinde',
@@ -574,7 +575,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 ctaLaunch: 'Kütüphaneden Başlat'
             };
         } else if (lang.indexOf('de') === 0) {
-            return {
+            dict = {
                 owned: 'In Bibliothek',
                 installed: 'Installiert',
                 wishlist: 'Wunschliste',
@@ -584,7 +585,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 ctaLaunch: 'Aus Bibliothek starten'
             };
         } else {
-            return {
+            dict = {
                 owned: 'In Library',
                 installed: 'Installed',
                 wishlist: 'In Wishlist',
@@ -594,6 +595,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 ctaLaunch: 'Launch from Library'
             };
         }
+        if (window.__EFXLVE_OWNED_LABEL) dict.owned = window.__EFXLVE_OWNED_LABEL;
+        return dict;
     }
 
     // Function that strips editions and suffixes (GTA V Premium Edition -> GTA 5, Watch Dogs 2 Standard Edition -> Watch Dogs 2)
@@ -1086,6 +1089,10 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
 })();
 "#;
 
+fn js_string(value: &str) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
+}
+
 #[tauri::command]
 async fn show_store_view(
     app: AppHandle,
@@ -1096,6 +1103,7 @@ async fn show_store_view(
     bottom: Option<f64>,
     url: String,
     recreate: bool,
+    owned_label: Option<String>,
 ) -> Result<String, String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size, WebviewBuilder, WebviewUrl};
     eprintln!("[store-view] show url={url} recreate={recreate}");
@@ -1110,6 +1118,7 @@ async fn show_store_view(
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let owned_games = get_owned_games_json();
+    let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
 
     // If the webview already exists, show it INSTANTLY (0 ms) without waiting for any network request
     if !recreate {
@@ -1124,7 +1133,7 @@ async fn show_store_view(
                 STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
                 return Ok("@t:win.focused".into());
             }
-            let _ = v.eval(&format!("window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
+            let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
                     if cur.as_str() != target.as_str() {
@@ -1147,7 +1156,7 @@ async fn show_store_view(
     }
 
     let init_script = format!(
-        "window.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
+        "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
     );
 
     let seq = STORE_VIEW_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

@@ -271,6 +271,7 @@
   "move.cancelling": "กำลังยกเลิกการย้าย… ไฟล์ต้นทางปลอดภัย",
   "move.cancelFailed": "ส่งคำขอยกเลิกไม่ได้: {msg}",
   "store.starting": "กำลังเริ่มร้านค้าและเซสชัน",
+  "store.inLibrary": "ในคลัง",
   "common.play": "เล่น",
   "common.install": "ติดตั้ง",
   "common.manage": "คุณสมบัติและการจัดการ",

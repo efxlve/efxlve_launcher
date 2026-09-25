@@ -271,6 +271,7 @@
   "move.cancelling": "Verschieben wird abgebrochen… Quelldateien sind sicher.",
   "move.cancelFailed": "Abbruch konnte nicht gesendet werden: {msg}",
   "store.starting": "Shop und Sitzung werden gestartet",
+  "store.inLibrary": "In Bibliothek",
   "common.play": "Spielen",
   "common.install": "Installieren",
   "common.manage": "Eigenschaften und Verwalten",

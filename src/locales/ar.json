@@ -271,6 +271,7 @@
   "move.cancelling": "جارٍ إلغاء النقل… الملفات المصدر آمنة.",
   "move.cancelFailed": "تعذر إرسال طلب الإلغاء: {msg}",
   "store.starting": "جارٍ بدء المتجر والجلسة",
+  "store.inLibrary": "في المكتبة",
   "common.play": "تشغيل",
   "common.install": "تثبيت",
   "common.manage": "الخصائص والإدارة",

@@ -271,6 +271,7 @@
   "move.cancelling": "正在取消移动…源文件是安全的。",
   "move.cancelFailed": "无法发送取消请求：{msg}",
   "store.starting": "正在启动商店和会话",
+  "store.inLibrary": "已在库中",
   "common.play": "开始游戏",
   "common.install": "安装",
   "common.manage": "属性与管理",

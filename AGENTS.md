@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.5:** mağazadaki “Kütüphanede” rozeti Epic mavisi ve `store.inLibrary` anahtarıyla `v0.1.5` olarak yayınlanır.
 - **Sürüm 0.1.4:** dil dosyaları, sistem dili, taşıma, yükleme boyutu ve sade README `v0.1.4` etiketiyle yayınlanır.
 - **Sürüm 0.1.3:** Hydra kabuğu, ikon, ayarlar ve bulut kayıt düzeltmeleri `v0.1.3` etiketiyle yayınlanır.
 - **Kenar çubuğu:** oyun sayfası açıkken bölüm ve oyun aynı anda beyaz çizgi taşımaz. Çizgi yalnızca açık oyundadır.
@@ -308,6 +309,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Dil:** kayıtlı seçim yoksa işletim sistemi dili seçilir; desteklenmeyen dilde İngilizce kalır. 15 dil dosyası İngilizce katalogla aynı 1.203 anahtarı taşır.
 - **Durdur:** oyun sayfasındaki durdur işareti oynat üçgeniyle aynı boyda dolu bir kare.
 - **README ve CONTRIBUTING:** sade İngilizce. Arayüz siyah ve beyaz diye anlatılır; PS5 ve konsol benzetmesi yok.
+- **Mağaza rozeti:** sahip olunan oyunda “Kütüphanede” Epic mavisi (`#26bbff`). Metin `store.inLibrary` anahtarından gelir.
 - **Oyun taşıma:** disk listesi A’dan Z’ye gerçek sürücüleri sayar. Aynı diskte yeniden adlandırma yer kontrolü yapmaz; başka diske kopyada kota 0 diye “yer yok” denmez.
 - **Oyun sayfası:** koleksiyon etiketleri Oyun Hakkında’nın üstünde. Seçim penceresi alta taşmıyor; tik yalnızca seçili satırda görünür.
 - **Kütüphane listesi:** satır ve kapak büyütüldü; başarım sütunu var. Sağdaki düğmeler dar ve aynı genişlikte; Yükle grimsi. Yüklü olmayan Epic oyunları gri; EA ve Ubisoft renkli kalır.

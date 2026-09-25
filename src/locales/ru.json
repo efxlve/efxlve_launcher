@@ -271,6 +271,7 @@
   "move.cancelling": "Отмена перемещения… Исходные файлы в безопасности.",
   "move.cancelFailed": "Не удалось отправить запрос на отмену: {msg}",
   "store.starting": "Запуск магазина и сеанса",
+  "store.inLibrary": "В библиотеке",
   "common.play": "Играть",
   "common.install": "Установить",
   "common.manage": "Свойства и управление",

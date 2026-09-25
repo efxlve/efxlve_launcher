@@ -271,6 +271,7 @@
   "move.cancelling": "이동 취소 중… 원본 파일은 안전합니다.",
   "move.cancelFailed": "취소 요청을 보낼 수 없습니다: {msg}",
   "store.starting": "스토어 및 세션 시작 중",
+  "store.inLibrary": "라이브러리에 있음",
   "common.play": "플레이",
   "common.install": "설치",
   "common.manage": "속성 및 관리",

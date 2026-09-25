@@ -78,7 +78,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   viewEl.innerHTML = renderStoreLoadingScreen();
   render();
   try {
-    await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false });
+    await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
       S.storeShown = false;
       if (isTauri) invoke<string>("hide_store_view").catch(() => {});
