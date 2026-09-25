@@ -741,6 +741,8 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-cancel" && id) {
     void epicCancel(id);
   } else if (act === "epic-uninstall" && id) {
+    // Close first so a finished uninstall cannot be clicked again while the dialog stays up.
+    closeManagePopup();
     void epicUninstall(id);
   } else if (act === "open-dlc-manager" && id) {
     S.activeDrawerTab = "dlcs";

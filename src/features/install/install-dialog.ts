@@ -113,9 +113,6 @@ export function renderInstallDialog(): void {
   const s = S.epicSummariesMap.get(appName);
   if (!s) return;
 
-  const input = document.getElementById("install-dir-input") as HTMLInputElement | null;
-  if (input) S.installDialogDir = input.value;
-
   const loading = S.installDialogLoading;
   const finalPath = joinPath(S.installDialogDir, S.installDialogFolder);
   const sizeValue = (bytes: number) =>

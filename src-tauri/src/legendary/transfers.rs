@@ -1461,6 +1461,8 @@ pub async fn epic_uninstall_game(
 ) -> Result<String, String> {
     let bin = resolve_bin(&app)?;
     let title = app_name.clone();
+    // Read the title while installed.json still has it, then drop the matching .lnk.
+    super::commands::remove_desktop_shortcut(&app_name).await;
     let mut cmd = tokio::process::Command::new(&bin);
     cmd.arg("-y").arg("uninstall");
     if keep_files {

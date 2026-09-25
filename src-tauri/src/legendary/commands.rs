@@ -1884,6 +1884,53 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
     }
 }
 
+/// Desktop `.lnk` name. Must match what `epic_create_desktop_shortcut` writes.
+pub(crate) fn desktop_shortcut_file_name(title: &str) -> String {
+    let clean = title.replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], " ");
+    format!("{}.lnk", clean.trim())
+}
+
+fn installed_title(app_name: &str) -> Option<String> {
+    let config = skip::default_config_dir();
+    let installed_file = config.join("installed.json");
+    if let Ok(text) = std::fs::read_to_string(&installed_file) {
+        if let Ok(map) = serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text) {
+            if let Some(entry) = map.get(app_name) {
+                if !entry.title.trim().is_empty() {
+                    return Some(entry.title.clone());
+                }
+            }
+        }
+    }
+    cache::read_installed(&config)
+        .into_iter()
+        .find(|g| g.app_name == app_name)
+        .map(|g| g.title)
+        .filter(|t| !t.trim().is_empty())
+}
+
+/// Removes the desktop shortcut this launcher created. Missing files are ignored.
+pub async fn remove_desktop_shortcut(app_name: &str) {
+    #[cfg(windows)]
+    {
+        let Some(title) = installed_title(app_name) else {
+            return;
+        };
+        let file_name = desktop_shortcut_file_name(&title).replace('\'', "''");
+        if file_name == ".lnk" {
+            return;
+        }
+        let ps = format!(
+            "$d = [Environment]::GetFolderPath('Desktop'); $lnk = Join-Path $d '{file_name}'; if (Test-Path -LiteralPath $lnk) {{ Remove-Item -LiteralPath $lnk -Force }}"
+        );
+        let _ = tokio::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &ps])
+            .creation_flags(0x08000000)
+            .output()
+            .await;
+    }
+}
+
 #[tauri::command]
 pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> Result<String, String> {
     let config = skip::default_config_dir();
@@ -1923,10 +1970,9 @@ pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> 
             found.unwrap_or_else(|| std::path::PathBuf::from(&entry.install_path))
         };
 
-        let title_clean = entry.title.replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], " ");
+        let title_clean = desktop_shortcut_file_name(&entry.title).replace('\'', "''");
         let ps = format!(
-            "$ws = New-Object -ComObject WScript.Shell; $d = [Environment]::GetFolderPath('Desktop'); $lnk = Join-Path $d '{}.lnk'; $s = $ws.CreateShortcut($lnk); $s.TargetPath = '{}'; $s.WorkingDirectory = '{}'; $s.Save()",
-            title_clean.trim(),
+            "$ws = New-Object -ComObject WScript.Shell; $d = [Environment]::GetFolderPath('Desktop'); $lnk = Join-Path $d '{title_clean}'; $s = $ws.CreateShortcut($lnk); $s.TargetPath = '{}'; $s.WorkingDirectory = '{}'; $s.Save()",
             target_exe.to_string_lossy().replace('\'', "''"),
             entry.install_path.replace('\'', "''")
         );
@@ -2709,6 +2755,13 @@ pub async fn epic_cancel_move_game(app_name: String) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_desktop_shortcut_file_name_matches_create_and_remove() {
+        assert_eq!(desktop_shortcut_file_name("Cyberpunk 2077"), "Cyberpunk 2077.lnk");
+        assert_eq!(desktop_shortcut_file_name("A:B/C"), "A B C.lnk");
+        assert_eq!(desktop_shortcut_file_name("  Alan Wake 2  "), "Alan Wake 2.lnk");
+    }
 
     #[test]
     fn test_sizes_from_manifest_uses_totals_when_tags_are_empty() {
