@@ -195,20 +195,25 @@ export async function initApp(hooks: {
           ? Math.round(totalBytes * Math.max(0, Math.min(100, progress)) / 100)
           : null
       );
-      let measuredSpeedBytes = speedBytes ?? 0;
+      // A missing or zero sample must not wipe the last real rate. Legendary
+      // often repeats the same byte total between speed lines.
+      let measuredSpeedBytes = speedBytes && speedBytes > 0 ? speedBytes : 0;
+      let freshNet = measuredSpeedBytes > 0;
       if (sampleBytes !== null) {
         if (lastDlSample?.id === id) {
           const elapsed = (now - lastDlSample.at) / 1000;
           const delta = sampleBytes - lastDlSample.bytes;
           // Progress output can arrive in a burst; tiny intervals create fake
           // multi-gigabyte speeds when the same byte block is reported twice.
-          if (elapsed >= 0.25 && delta > 0) {
+          if (!freshNet && elapsed >= 0.25 && delta > 0) {
             measuredSpeedBytes = Math.round(delta / elapsed);
+            freshNet = true;
           }
         }
         lastDlSample = { id, bytes: sampleBytes, at: now };
       }
       const measuredDiskBytes = Math.min(diskBytes ?? 0, 1024 * 1024 * 1024);
+      const freshDisk = measuredDiskBytes > 0;
       if (!done) startSpeedChartTimer();
 
       if (!done) {
@@ -228,7 +233,7 @@ export async function initApp(hooks: {
             speed: speed ?? "—",
             speedBytes: measuredSpeedBytes,
             diskSpeed: diskSpeed ?? "—",
-            diskBytes: measuredDiskBytes,
+            diskBytes: freshDisk ? measuredDiskBytes : 0,
             eta: eta ?? t("common.calculating"),
             downloadedBytes: downloadedBytes ?? 0,
             totalBytes: totalBytes ?? 0,
@@ -236,14 +241,17 @@ export async function initApp(hooks: {
         } else {
           S.activeDlMetrics.progress = progress;
           if (speed) S.activeDlMetrics.speed = speed;
-          if (downloadedBytes !== undefined && downloadedBytes !== null) S.activeDlMetrics.speedBytes = measuredSpeedBytes;
+          if (freshNet) S.activeDlMetrics.speedBytes = measuredSpeedBytes;
           if (diskSpeed) S.activeDlMetrics.diskSpeed = diskSpeed;
-          if (diskBytes !== undefined && diskBytes !== null) S.activeDlMetrics.diskBytes = measuredDiskBytes;
+          if (freshDisk) S.activeDlMetrics.diskBytes = measuredDiskBytes;
           if (eta) S.activeDlMetrics.eta = eta;
           if (downloadedBytes) S.activeDlMetrics.downloadedBytes = downloadedBytes;
           if (totalBytes) S.activeDlMetrics.totalBytes = totalBytes;
         }
-        pushSpeedData(measuredSpeedBytes, measuredDiskBytes);
+        pushSpeedData(
+          freshNet ? measuredSpeedBytes : S.activeDlMetrics.speedBytes,
+          freshDisk ? measuredDiskBytes : S.activeDlMetrics.diskBytes,
+        );
 
         // All DOM writes are batched to one rAF so bursty progress events never
         // cause repeated DOM writes to the sidebar counter and download bars.

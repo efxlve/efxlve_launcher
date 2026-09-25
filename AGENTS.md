@@ -143,7 +143,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Kütüphane:** satırda 6 portre. Hover kapağı büyütür; beyaz kenar çizgisi yok, parlama çok hafif.
 - **Kabuk:** kenar çubuğunun sağında ve sayfa başlığının altında ince beyaz kılavuz çizgisi. Alt durum çubuğu (indirme notu ve sürüm) yok.
 - **Yönet:** kurulu olmayan oyunda yalnızca kapak değiştirme ve oynama süresi. Kayıt ve başlatma bölümleri kurulu oyunda. EA, Ubisoft ve Rockstar kayıtları kendi sistemlerini kullanır.
-- **Oyun sayfası:** hero 380px. Oyun Hakkında metni sol kolonu doldurur. Üst çubukta ve hero'da yalnızca geri düğmesi var.
+- **Oyun sayfası:** hero 440px. Oyun Hakkında metni sol kolonu doldurur. Üst çubukta ve hero'da yalnızca geri düğmesi var.
 - **Açılış:** stil yüklenene kadar kabuk gizlenir. Kenar çubuğu "Son Oynananlar" başlığı 15px; liste 7 oyuna son oynananlarla, yetmezse rastgele yüklü oyunlarla dolar.
 - **Oyun sayfası temizliği:** Kurulu rozeti, kupa ilerleme kutusu ve medya galerisi kaldırıldı. Koleksiyon etiketleri başlığın altına alındı. Hero 460px. Üst çubukta geri/ileri her zaman görünür; hero üzerindeki "Kütüphane Esc" kalktı.
 - **Kütüphane başlığı sadeleşti:** büyük "Kütüphane" ve ikinci arama kutusu kaldırıldı; oyun sayısı üst çubukta. Güncelleme sekmesi kütüphaneden silindi; bekleyen güncellemeler İndirmeler sayfasında ve kenar çubuğu rozetinde.
@@ -301,6 +301,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   - **Otomatik Masaüstü Kısayolu Oluşturma & Ayarlar Seçeneği:** İndirme tamamlandığında (`monitor_download`) oyun için otomatik masaüstü kısayolu oluşturulması sağlandı (`transfers.rs`). Ayarlar > İndirmeler sekmesine açma/kapatma anahtarı yerleştirildi (`settings-view.ts`, `click-router.ts`, `commands.rs`); kullanıcı tercihi backend ve localStorage ile kalıcı hale getirildi.
   - **Kütüphane Sıralaması & Doğal Dil Collation:** Sabit Türkçe collator (`tr`) yerine aktif dile duyarlı `getCollator(lang, { sensitivity: "base", numeric: true })` yapısına geçildi; İngilizce ve diğer dillerde 'I'/'ı' dönüşüm hatası giderildi, "Doom 2" ve "Doom 10" gibi seriler doğal sayısal sıralamaya kavuşturuldu. Varsayılan sıralama geçmiş, oynama süresi, kurulu olma ve ada göre optimize edildi (`library-view.ts`).
   - **Epic Mağazası Oturumu & WebView2 İzolasyonu:** Launcher kimlik doğrulama belirteci (OAuth2 CLI) ile Mağaza web görünümü (sandboxed Chromium çerez havuzu) ayrımı netleştirildi; kullanıcı mağazada bir defa giriş yaptığında WebView2 oturumunun kalıcı kalması korundu.
+- **İndirme hızı 0 B/s:** Bazı legendary sürümleri hızı `Download\t15 MiB/s` diye yazar, bazıları yalnızca `Downloaded:` / `Written:` sayacı basar. `Written: 72 MiB` birikimli boyut hız sanılıyordu (disk yüksek, ağ 0). Hız biriminde `/s` şart; sekme ve iki nokta üst üste aynı anahtarla okunur. Hız satırı yoksa hız, indirilen ve diske yazılan bayt farkından hesaplanır. Ara örnekler son gerçek hızı sıfırlamaz (`transfers.rs`, `ipc-listeners.ts`).
 
 ---
 

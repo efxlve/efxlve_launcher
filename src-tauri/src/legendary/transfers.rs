@@ -398,22 +398,34 @@ pub fn parse_eta(line: &str) -> Option<(String, u64)> {
     Some((raw_eta, secs))
 }
 
-/// Extracts the speed from a "Download: 15.40 MiB/s" or "Speed: 12.5 MB/s" line.
+/// Extracts a rate from lines such as `Download: 15.40 MiB/s` or `Download\t15.40 MiB/s`.
+/// A cumulative size (`Written: 72.5 MiB`) is not a rate: the unit must contain `/s`.
 pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
     for key in keys {
         if let Some(idx) = line.find(key) {
-            let rest = line[idx + key.len()..].trim_start();
-            let num_end = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))?;
+            let rest = line[idx + key.len()..]
+                .trim_start()
+                .trim_start_matches([':', '\t'])
+                .trim_start();
+            let Some(num_end) = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ',')) else {
+                continue;
+            };
             if num_end == 0 {
                 continue;
             }
-            let num: f64 = rest[..num_end].replace(',', ".").parse().ok()?;
+            let Ok(num) = rest[..num_end].replace(',', ".").parse::<f64>() else {
+                continue;
+            };
             let after = rest[num_end..].trim_start();
             let unit: String = after
                 .chars()
                 .take_while(|c| c.is_alphanumeric() || *c == '/')
                 .collect();
             let unit_lower = unit.to_lowercase();
+            // Sizes (`MiB`, `MB`) share a prefix with rates. Only `/s` is a speed.
+            if !unit_lower.contains("/s") {
+                continue;
+            }
             let bytes_per_sec = if unit_lower.starts_with("gib") || unit_lower.starts_with("gb") {
                 (num * 1024.0 * 1024.0 * 1024.0) as u64
             } else if unit_lower.starts_with("mib") || unit_lower.starts_with("mb") {
@@ -428,6 +440,35 @@ pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
         }
     }
     None
+}
+
+/// Bytes/sec from two cumulative MiB samples. `None` until the window is long enough.
+fn format_rate(bytes_per_sec: u64) -> String {
+    let mb = bytes_per_sec as f64 / (1024.0 * 1024.0);
+    if mb >= 0.1 {
+        format!("{mb:.1} MiB/s")
+    } else {
+        let kb = bytes_per_sec as f64 / 1024.0;
+        format!("{kb:.1} KiB/s")
+    }
+}
+
+fn bytes_per_sec_from_mib(prev: &mut Option<(f64, std::time::Instant)>, mib: f64) -> Option<u64> {
+    let now = std::time::Instant::now();
+    let out = if let Some((prev_mib, at)) = *prev {
+        let dt = now.saturating_duration_since(at).as_secs_f64();
+        if dt >= 0.4 {
+            Some(((mib - prev_mib).max(0.0) * 1024.0 * 1024.0 / dt) as u64)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    if out.is_some() || prev.is_none() {
+        *prev = Some((mib, now));
+    }
+    out
 }
 
 /// MiB value from `Downloaded: 123.45 MiB` / `Download size: 123.45 MiB` lines.
@@ -723,6 +764,10 @@ async fn monitor_download(
     let mut current_eta_seconds: Option<u64> = None;
     let mut last_pct: i32 = -1;
     let mut last_emit = std::time::Instant::now();
+    let mut net_rate: Option<(f64, std::time::Instant)> = None;
+    let mut disk_rate: Option<(f64, std::time::Instant)> = None;
+    let mut explicit_net = false;
+    let mut explicit_disk = false;
     let mut high_mem = false;
     let mut rate_limit_retried = false;
     let mut timeout_retried = false;
@@ -744,17 +789,39 @@ async fn monitor_download(
                 }
                 if let Some((spd_s, bytes_sec)) = parse_speed(
                     &line,
-                    &["Download speed:", "Download Speed:", "Download:", "Speed:", "Net:"],
+                    &[
+                        "Download speed:",
+                        "Download Speed:",
+                        "Download:",
+                        "Download",
+                        "Speed:",
+                        "Net:",
+                    ],
                 ) {
-                    current_speed = Some(spd_s);
-                    current_speed_bytes = Some(bytes_sec);
+                    if bytes_sec > 0 {
+                        explicit_net = true;
+                        current_speed = Some(spd_s);
+                        current_speed_bytes = Some(bytes_sec);
+                    }
                 }
                 if let Some((d_spd_s, d_bytes_sec)) = parse_speed(
                     &line,
-                    &["Disk speed:", "Disk Speed:", "Written speed:", "Disk:", "Written:", "Write:"],
+                    &[
+                        "Disk speed:",
+                        "Disk Speed:",
+                        "Written speed:",
+                        "Disk write:",
+                        "Disk:",
+                        "Write:",
+                        "Disk",
+                        "Write",
+                    ],
                 ) {
-                    current_disk_speed = Some(d_spd_s);
-                    current_disk_bytes = Some(d_bytes_sec);
+                    if d_bytes_sec > 0 {
+                        explicit_disk = true;
+                        current_disk_speed = Some(d_spd_s);
+                        current_disk_bytes = Some(d_bytes_sec);
+                    }
                 }
                 if total_mib <= 0.0 {
                     if let Some(v) = parse_mib_after(&line, "Download size:") {
@@ -763,6 +830,21 @@ async fn monitor_download(
                 }
                 if let Some(d) = parse_mib_after(&line, "Downloaded:") {
                     downloaded_mib = d;
+                    // Some legendary builds print only the byte counters, not a MiB/s line.
+                    if !explicit_net {
+                        if let Some(bps) = bytes_per_sec_from_mib(&mut net_rate, d) {
+                            current_speed_bytes = Some(bps);
+                            current_speed = Some(format_rate(bps));
+                        }
+                    }
+                }
+                if let Some(w) = parse_mib_after(&line, "Written:") {
+                    if !explicit_disk {
+                        if let Some(bps) = bytes_per_sec_from_mib(&mut disk_rate, w) {
+                            current_disk_bytes = Some(bps);
+                            current_disk_speed = Some(format_rate(bps));
+                        }
+                    }
                 }
 
                 let mut new_pct: Option<i32> = None;
@@ -2070,6 +2152,28 @@ mod tests {
 
         let disk = parse_speed(line, &["Disk:", "Disk speed:"]);
         assert_eq!(disk, Some(("24.5 MiB/s".to_string(), 25690112)));
+
+        // Cumulative sizes are not rates, even when the key is a prefix.
+        let size_line = "[DLManager] INFO:  - Downloaded: 25.00 MiB, Written: 72.50 MiB";
+        assert_eq!(
+            parse_speed(size_line, &["Download:", "Download", "Speed:"]),
+            None
+        );
+        assert_eq!(
+            parse_speed(size_line, &["Disk:", "Write:", "Written:", "Write", "Disk"]),
+            None
+        );
+
+        // Newer legendary builds separate the label with a tab instead of ": ".
+        let tabbed = "[DLManager] INFO:  - Download\t15.40 MiB/s, Write\t24.50 MiB/s";
+        assert_eq!(
+            parse_speed(tabbed, &["Download:", "Download"]),
+            Some(("15.4 MiB/s".to_string(), 16148070))
+        );
+        assert_eq!(
+            parse_speed(tabbed, &["Write:", "Write"]),
+            Some(("24.5 MiB/s".to_string(), 25690112))
+        );
     }
 
     #[tokio::test]
