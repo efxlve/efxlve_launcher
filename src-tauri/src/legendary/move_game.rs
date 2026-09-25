@@ -53,12 +53,26 @@ mod win_disk {
 
     #[link(name = "kernel32")]
     extern "system" {
+        fn GetLogicalDrives() -> u32;
+        fn GetDriveTypeW(lpRootPathName: *const u16) -> u32;
         fn GetDiskFreeSpaceExW(
             lpDirectoryName: *const u16,
             lpFreeBytesAvailableToCaller: *mut u64,
             lpTotalNumberOfBytes: *mut u64,
             lpTotalNumberOfFreeBytes: *mut u64,
         ) -> i32;
+    }
+
+    /// Drive types that can hold a game folder. CD/DVD (5) and missing roots (1) are skipped.
+    pub fn is_storage_drive(root: &Path) -> bool {
+        let mut wide: Vec<u16> = root.as_os_str().encode_wide().collect();
+        wide.push(0);
+        let kind = unsafe { GetDriveTypeW(wide.as_ptr()) };
+        matches!(kind, 2 | 3 | 4 | 6)
+    }
+
+    pub fn logical_drive_mask() -> u32 {
+        unsafe { GetLogicalDrives() }
     }
 
     pub fn get_disk_space(path: &Path) -> Option<(u64, u64)> {
@@ -79,7 +93,8 @@ mod win_disk {
         };
 
         if ret != 0 {
-            Some((free_available, total_bytes))
+            // Caller quota can be 0 on a drive that still has free bytes. Use the larger figure.
+            Some((free_available.max(total_free), total_bytes))
         } else {
             None
         }
@@ -92,9 +107,17 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
 
     #[cfg(windows)]
     {
-        for letter_char in b'C'..=b'Z' {
+        let mask = win_disk::logical_drive_mask();
+        for i in 0..26 {
+            if mask & (1 << i) == 0 {
+                continue;
+            }
+            let letter_char = b'A' + i;
             let drive_str = format!("{}:\\", letter_char as char);
             let drive_path = Path::new(&drive_str);
+            if !win_disk::is_storage_drive(drive_path) {
+                continue;
+            }
             if let Some((free, total)) = win_disk::get_disk_space(drive_path) {
                 if total > 0 {
                     // `letter` is the bare drive letter (e.g. "C"); the frontend
@@ -513,20 +536,28 @@ async fn move_game_folder_internal(
             .await
             .map_err(|e| format!("@t:move.scanFailed\u{1f}{}", e))?;
 
-    // Target drive free-space check
+    // 3. Same drive or different drive? A rename on the same volume needs no extra free space.
+    let cur_drive = get_drive_prefix(&cur_path);
+    let target_drive = get_drive_prefix(&target_base);
+    let is_same_drive = match (&cur_drive, &target_drive) {
+        (Some(c), Some(t)) => c.eq_ignore_ascii_case(t),
+        _ => false,
+    };
+
+    // Cross-volume copy needs the game's size free on the destination.
     #[cfg(windows)]
-    {
-        let check_path = if target_base.exists() {
-            target_base.clone()
-        } else {
-            target_base
-                .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| target_base.clone())
-        };
+    if !is_same_drive {
+        let mut check_path = target_base.clone();
+        while !check_path.exists() {
+            match check_path.parent() {
+                Some(parent) if parent != check_path => check_path = parent.to_path_buf(),
+                _ => break,
+            }
+        }
 
         if let Some((free_bytes, _)) = win_disk::get_disk_space(&check_path) {
-            let required_bytes = total_bytes + 500_000_000; // 500 MB safety buffer
+            // A small pad covers the folder metadata, not a second copy of the game.
+            let required_bytes = total_bytes.saturating_add(64 * 1024 * 1024);
             if free_bytes < required_bytes {
                 return Err(format!(
                     "@t:move.notEnoughSpace\u{1f}{:.1}\u{1f}{:.1}",
@@ -536,14 +567,6 @@ async fn move_game_folder_internal(
             }
         }
     }
-
-    // 3. Same drive or different drive?
-    let cur_drive = get_drive_prefix(&cur_path);
-    let target_drive = get_drive_prefix(&target_base);
-    let is_same_drive = match (&cur_drive, &target_drive) {
-        (Some(c), Some(t)) => c.eq_ignore_ascii_case(t),
-        _ => false,
-    };
 
     tokio::fs::create_dir_all(&target_base)
         .await
