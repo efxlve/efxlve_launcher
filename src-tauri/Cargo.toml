@@ -1,6 +1,7 @@
 [package]
 name = "efxlve-launcher"
 version = "0.1.9"
+license = "GPL-3.0-only"
 description = "Efxlve oyun mağazası launcher (Tauri v2 demo)"
 edition = "2021"
 

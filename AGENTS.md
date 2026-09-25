@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Lisans:** depo kökünde resmi GPL-3.0 `LICENSE` dosyası var.
 - **Sürüm 0.1.9:** README gerçek ekran görüntüleriyle güncellenir. Oyun sayfasında güncelleme yalnızca düğmede durur; stüdyo satırı noktalarla ayrılır. Ekran görüntüsü silme onayı launcher penceresindedir. `v0.1.9` olarak yayınlanır.
 - **Sürüm 0.1.8:** taşınabilir disk taraması Rockstar, EA ve Ubisoft klasörlerini atlar; Epic Launcher’da kurulumu bitmiş olanlar kalır. `Play*.exe` oyunları Epic kayıtlıysa sessizce Epic üzerinden açılır. `v0.1.8` olarak yayınlanır.
 - **Sürüm 0.1.7:** launcher güncellemesi gelince uygulama içi uyarı ve Windows bildirimi gider. `v0.1.7` olarak yayınlanır.
