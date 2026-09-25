@@ -128,6 +128,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 ## 9. Son Çalışma Özeti
 
 - **Sürüm 0.1.7:** launcher güncellemesi gelince uygulama içi uyarı ve Windows bildirimi gider. `v0.1.7` olarak yayınlanır.
+- **Test kimliği:** `cache.rs` içindeki Epic hesap kimliği sahte bir yer tutucudur. Gerçek hesap kimliği ve tarayıcı profili repoda tutulmaz.
 - **Sürüm 0.1.6:** kaldırmada masaüstü kısayolu silinir, yönet penceresi kapanır, dar ayarlar satırı ve yükleme yolu kutusu düzelir. `v0.1.6` olarak yayınlanır.
 - **Sürüm 0.1.5:** mağazadaki “Kütüphanede” rozeti Epic mavisi ve `store.inLibrary` anahtarıyla `v0.1.5` olarak yayınlanır.
 - **Sürüm 0.1.4:** dil dosyaları, sistem dili, taşıma, yükleme boyutu ve sade README `v0.1.4` etiketiyle yayınlanır.
