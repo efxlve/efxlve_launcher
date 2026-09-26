@@ -101,7 +101,7 @@ function connectedBlock(): string {
     return `
       <div class="row">
         ${avatar(url, acc.display_name)}
-        <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div><div class="row-meta">ID ${esc(acc.account_id.slice(0, 12))}…</div></div>
+        <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div></div>
         <div class="row-actions">${actions}</div>
       </div>`;
   }).join("");
@@ -177,7 +177,7 @@ export function renderAccountSettings(): string {
         return `
           <div class="row">
             ${avatar(url, acc.display_name)}
-            <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div><div class="row-meta">ID ${esc(acc.account_id.slice(0, 12))}…</div></div>
+            <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div></div>
             <div class="row-actions">${actions}</div>
           </div>`;
       }).join("")

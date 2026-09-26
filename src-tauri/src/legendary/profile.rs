@@ -627,12 +627,25 @@ pub async fn fetch_player_profile(
 ) -> Result<EpicPlayerProfile, String> {
     let cache_file = profile_cache_path(config);
 
-    // 1. Cache check (return instantly if force_refresh is false and the file exists)
+    // 1. Cache check. Ignore a file left by a different Epic account.
+    let active_account = fs::read_to_string(config.join("user.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+        .and_then(|user| {
+            user.get("account_id")
+                .and_then(|v| v.as_str())
+                .map(|id| id.to_string())
+        });
     if !force_refresh && cache_file.is_file() {
         if let Ok(content) = fs::read_to_string(&cache_file) {
             if let Ok(mut prof) = serde_json::from_str::<EpicPlayerProfile>(&content) {
-                upgrade_cached_titles(config, &mut prof);
-                return Ok(prof);
+                let same_account = active_account
+                    .as_deref()
+                    .is_some_and(|id| id == prof.account_id);
+                if same_account {
+                    upgrade_cached_titles(config, &mut prof);
+                    return Ok(prof);
+                }
             }
         }
     }
@@ -852,9 +865,10 @@ pub async fn fetch_player_profile(
         title_revision: TITLE_REVISION,
     };
 
-    // 5. Cache to disk
+    // 5. Cache to disk and keep a copy in this account's archive.
     if let Ok(serialized) = serde_json::to_string_pretty(&profile) {
         let _ = fs::write(&cache_file, serialized);
+        super::accounts::archive_active_sidecars(config);
     }
 
     Ok(profile)

@@ -187,6 +187,9 @@ document.addEventListener("click", (e) => {
     if (S.view === "settings") {
       // Paint the page shell immediately, then hydrate in the background so a
       // slow integration scan can never make the launcher look frozen.
+      // The downloads shortcut sets its own section before setView, so this
+      // only applies when Settings itself is opened.
+      S.settingsSection = "account";
       render();
       void loadSettingsView();
       return;
@@ -317,6 +320,8 @@ document.addEventListener("click", (e) => {
     unhideAchievement(id);
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
+    // Hidden is its own list. Leaving it must drop that mode in the same click.
+    S.profileShowHidden = false;
     resetProfileCards();
     render();
   } else if (act === "profile-show-more") {

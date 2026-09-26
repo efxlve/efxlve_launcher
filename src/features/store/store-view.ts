@@ -196,36 +196,54 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   }
 }
 
-export async function loadPlayerProfile(forceRefresh = false): Promise<void> {
+let profileLoadGen = 0;
+
+export async function loadPlayerProfile(forceRefresh = false, replace = false): Promise<void> {
   if (!isTauri) return;
+  // `replace` drops an in-flight fetch from the previous account and reads cache.
+  if (S.profileLoading && !forceRefresh && !replace) return;
+  const gen = ++profileLoadGen;
   S.profileLoading = true;
   S.profileError = "";
   render();
   try {
-    S.playerProfileData = await epicGetPlayerProfile(forceRefresh);
+    const data = await epicGetPlayerProfile(forceRefresh);
+    if (gen !== profileLoadGen) return;
+    S.playerProfileData = data;
   } catch (e) {
+    if (gen !== profileLoadGen) return;
     S.profileError = String(e);
   } finally {
-    S.profileLoading = false;
-    render();
+    if (gen === profileLoadGen) {
+      S.profileLoading = false;
+      render();
+    }
   }
 }
 
+let friendsLoadGen = 0;
+
 /** Loads the Epic friends list (read-only, unofficial API). */
-export async function loadFriends(force = false): Promise<void> {
-  if (!isTauri || S.friendsLoading) return;
-  if (!force && S.friends.length > 0) return;
+export async function loadFriends(force = false, replace = false): Promise<void> {
+  if (!isTauri) return;
+  if (S.friendsLoading && !force && !replace) return;
+  if (!force && !replace && S.friends.length > 0) return;
+  const gen = ++friendsLoadGen;
   S.friendsLoading = true;
   S.friendsError = "";
   render();
   try {
     const data = await epicFriends();
+    if (gen !== friendsLoadGen) return;
     S.friends = data.friends;
   } catch (e) {
+    if (gen !== friendsLoadGen) return;
     S.friendsError = localizeMessage(String(e));
   } finally {
-    S.friendsLoading = false;
-    render();
+    if (gen === friendsLoadGen) {
+      S.friendsLoading = false;
+      render();
+    }
   }
 }
 

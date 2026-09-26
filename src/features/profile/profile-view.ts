@@ -12,7 +12,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtPlaytime } from "../../core/utils";
+import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
@@ -152,7 +152,7 @@ function userHidAchievement(g: ProfileGameRecord): boolean {
 export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGameRecord[] {
   const q = S.profileSearchQuery.trim().toLowerCase();
   const list = allGames.filter((g) => {
-    if (S.hiddenGames.has(g.app_name)) return false;
+    if (isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name)) return false;
     const hiddenRow = userHidAchievement(g);
     if (S.profileShowHidden) {
       if (!hiddenRow) return false;
@@ -196,7 +196,7 @@ export function renderProfile(): string {
   const filtered = filteredProfileGames(allGames);
   let countPlat = 0, countProgress = 0, countNotStarted = 0, countVisible = 0, countHidden = 0;
   for (const g of allGames) {
-    if (S.hiddenGames.has(g.app_name)) continue;
+    if (isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name)) continue;
     if (userHidAchievement(g)) {
       countHidden++;
       continue;
@@ -209,7 +209,7 @@ export function renderProfile(): string {
   }
   const stat = (value: string, label: string): string => `<div class="profile-stat"><span class="profile-stat-val">${value}</span><span class="profile-stat-label">${label}</span></div>`;
   const filterTab = (val: string, label: string, n: number): string =>
-    `<button class="tab ${S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
+    `<button class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
   return `
     <div class="page profile-page">

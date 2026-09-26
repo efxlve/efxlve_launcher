@@ -11,7 +11,7 @@ import { render } from "../../core/render";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc } from "../../core/utils";
+import { esc, isOpaqueId } from "../../core/utils";
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { t } from "../../i18n";
 
@@ -37,7 +37,7 @@ function listable(): ProfileGameRecord[] {
   const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
   const list: ProfileGameRecord[] = [];
   for (const g of games) {
-    if (!g.sandbox_id || S.hiddenGames.has(g.app_name) || S.hiddenAchievements.has(g.sandbox_id)) continue;
+    if (!g.sandbox_id || isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name) || S.hiddenAchievements.has(g.sandbox_id)) continue;
     list.push(g);
   }
   list.sort((a, b) => collator.compare(a.app_title, b.app_title));

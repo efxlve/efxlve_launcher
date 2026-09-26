@@ -34,6 +34,7 @@ import {
 } from "../../epic";
 import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
+import { loadFriends, loadPlayerProfile } from "../store/store-view";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -45,16 +46,23 @@ export async function bootEpic(): Promise<void> {
   await refreshEpic();
 }
 
-export async function refreshEpic(): Promise<void> {
+export async function refreshEpic(forceSync = false): Promise<void> {
   if (!isTauri) {
     render();
     return;
   }
-  S.epicPhase = "checking";
-  S.epicError = "";
-  S.epicBusyMsg = "";
-  S.epicSyncNote = "";
-  render();
+  // Account switch already painted a loading line. "checking" would hide it
+  // behind a blank skeleton until the snapshot (or the full list) returns.
+  if (!forceSync) {
+    S.epicPhase = "checking";
+    S.epicError = "";
+    S.epicBusyMsg = "";
+    S.epicSyncNote = "";
+    render();
+  } else {
+    S.epicError = "";
+    S.epicBusyMsg = "";
+  }
   try {
     S.setupInfo = await epicSetupStatus();
     if (S.setupInfo.needsDownload) {
@@ -71,6 +79,7 @@ export async function refreshEpic(): Promise<void> {
       return;
     }
     S.epicAccount = cached.account;
+    if (cached.accountId) S.epicAccountId = cached.accountId;
     if (cached.collections && Array.isArray(cached.collections)) {
       S.epicCollections = cached.collections;
     }
@@ -78,11 +87,14 @@ export async function refreshEpic(): Promise<void> {
     pruneRecent();
     setEpicGamesRaw(cached.games);
     S.epicPhase = "library";
+    if (forceSync) S.epicSyncing = true;
     render();
-    void loadEpicAchSummaries();
+    // Achievement summaries wait until the list finishes. Starting them now
+    // competes with that list on a large account.
+    if (!forceSync) void loadEpicAchSummaries();
     void loadEpicCollections();
     void refreshUpdates();
-    void syncEpicLibrary(false);
+    void syncEpicLibrary(false, forceSync);
     void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     S.epicPhase = "error";
@@ -101,9 +113,14 @@ export async function loadEpicAchSummaries(): Promise<void> {
   }
 }
 
-/** Background sync. */
-export async function syncEpicLibrary(manual: boolean): Promise<void> {
-  if (!isTauri || S.epicSyncing) return;
+/** Bumps when a newer library sync should discard an in-flight one. */
+let librarySyncGen = 0;
+
+/** Background sync. `force` starts a new pass even if one is already running. */
+export async function syncEpicLibrary(manual: boolean, force = false): Promise<void> {
+  if (!isTauri) return;
+  if (S.epicSyncing && !force) return;
+  const gen = ++librarySyncGen;
   S.epicSyncing = true;
   if (manual) {
     S.epicBusyMsg = t("lib.syncing");
@@ -115,6 +132,7 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
       epicListInstalled(),
       epicListSkipped(),
     ]);
+    if (gen !== librarySyncGen) return;
     setEpicSummaries(summarize(egames, einstalled, eskipped));
     pruneRecent();
     setEpicGamesRaw(egames);
@@ -134,15 +152,20 @@ export async function syncEpicLibrary(manual: boolean): Promise<void> {
       void loadEpicCollections();
     }
   } catch (e) {
+    if (gen !== librarySyncGen) return;
     if (isNotAuth(e)) {
       S.epicPhase = "login";
     } else {
       S.epicSyncNote = t("lib.offlineCache");
     }
   } finally {
-    S.epicSyncing = false;
-    S.epicBusyMsg = "";
-    if (S.view === "library") scheduleRender();
+    if (gen === librarySyncGen) {
+      S.epicSyncing = false;
+      S.epicBusyMsg = "";
+      if (S.view === "library" || S.view === "profile" || S.view === "accounts" || S.view === "settings") {
+        scheduleRender();
+      }
+    }
   }
 }
 
@@ -238,6 +261,11 @@ export async function runProgressiveAuth(
     const account = await authCall();
     if (timer) clearInterval(timer);
     S.epicAccount = account;
+    S.playerProfileData = null;
+    S.profileError = "";
+    S.friends = [];
+    S.friendsError = "";
+    S.epicAchSummaries = {};
     S.authProgress = 42;
     updateAuthProgressUi();
 
@@ -251,6 +279,7 @@ export async function runProgressiveAuth(
     await new Promise((r) => setTimeout(r, 450));
 
     const cached: CachedLibrary = await epicCachedLibrary();
+    if (cached.accountId) S.epicAccountId = cached.accountId;
     S.epicSkippedCount = cached.skipped.length;
     setEpicSummaries(summarize(cached.games, cached.installed, cached.skipped));
     pruneRecent();
@@ -289,7 +318,9 @@ export async function runProgressiveAuth(
     render();
 
     toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
-    void syncEpicLibrary(false);
+    void syncEpicLibrary(false, true);
+    void loadPlayerProfile(true);
+    void loadFriends(true);
     void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     if (timer) clearInterval(timer);

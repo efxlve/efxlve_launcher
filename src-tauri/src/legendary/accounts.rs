@@ -67,11 +67,7 @@ pub fn ensure_current_account_saved(config_dir: &Path) {
     let dst_user = acc_dir.join("user.json");
     let _ = fs::copy(&src_user, &dst_user);
 
-    // Also copy efxlve_library_snapshot.json if exists
-    let src_snapshot = config_dir.join("efxlve_library_snapshot.json");
-    if src_snapshot.is_file() {
-        let _ = fs::copy(&src_snapshot, acc_dir.join("efxlve_library_snapshot.json"));
-    }
+    archive_sidecars(config_dir, &acc_dir);
 
     // Update metadata list
     let mut list = read_accounts_meta(config_dir);
@@ -96,6 +92,62 @@ pub fn ensure_current_account_saved(config_dir: &Path) {
     }
 
     write_accounts_meta(config_dir, &list);
+}
+
+const LIBRARY_SNAPSHOT: &str = "efxlve_library_snapshot.json";
+const PROFILE_CACHE: &str = "profile_cache.json";
+
+fn copy_if_file(src: &Path, dst: &Path) {
+    if src.is_file() {
+        let _ = fs::copy(src, dst);
+    }
+}
+
+fn restore_or_remove(src: &Path, dst: &Path) {
+    if src.is_file() {
+        let _ = fs::copy(src, dst);
+    } else if dst.is_file() {
+        let _ = fs::remove_file(dst);
+    }
+}
+
+/// Restores this account's library, or writes an empty snapshot.
+/// A missing file would make the next read scan shared metadata from the previous account.
+fn restore_library_snapshot(src: &Path, dst: &Path) {
+    if src.is_file() {
+        let _ = fs::copy(src, dst);
+    } else {
+        let _ = fs::write(dst, "[]");
+    }
+}
+
+fn archive_sidecars(config_dir: &Path, acc_dir: &Path) {
+    copy_if_file(
+        &config_dir.join(LIBRARY_SNAPSHOT),
+        &acc_dir.join(LIBRARY_SNAPSHOT),
+    );
+    copy_if_file(
+        &config_dir.join(PROFILE_CACHE),
+        &acc_dir.join(PROFILE_CACHE),
+    );
+}
+
+/// Copies the active library snapshot and profile cache into the signed-in account folder.
+pub fn archive_active_sidecars(config_dir: &Path) {
+    let Some((active_id, _)) = read_active_user(config_dir) else {
+        return;
+    };
+    let acc_dir = accounts_dir(config_dir).join(&active_id);
+    let _ = fs::create_dir_all(&acc_dir);
+    archive_sidecars(config_dir, &acc_dir);
+}
+
+/// Clears the shared library snapshot and profile cache after a new login.
+/// The snapshot becomes `[]` so the UI does not scan the previous account's
+/// metadata. Archived copies stay in the account folder. The next `list` fills the snapshot.
+pub fn discard_shared_session_cache(config_dir: &Path) {
+    let _ = fs::write(config_dir.join(LIBRARY_SNAPSHOT), "[]");
+    let _ = fs::remove_file(config_dir.join(PROFILE_CACHE));
 }
 
 fn read_accounts_meta(config_dir: &Path) -> Vec<SavedAccount> {
@@ -155,14 +207,16 @@ pub fn switch_account(config_dir: &Path, target_account_id: &str) -> Result<Save
     fs::copy(&target_user, &active_user)
         .map_err(|e| format!("Failed to activate account user.json: {e}"))?;
 
-    // 4. If target has a saved library snapshot, restore it; otherwise clear active snapshot
-    let target_snapshot = target_dir.join("efxlve_library_snapshot.json");
-    let active_snapshot = config_dir.join("efxlve_library_snapshot.json");
-    if target_snapshot.is_file() {
-        let _ = fs::copy(&target_snapshot, &active_snapshot);
-    } else if active_snapshot.is_file() {
-        let _ = fs::remove_file(&active_snapshot);
-    }
+    // 4. Restore this account's library and profile, or clear the shared copies
+    // so the previous account's files are not shown under the new session.
+    restore_library_snapshot(
+        &target_dir.join(LIBRARY_SNAPSHOT),
+        &config_dir.join(LIBRARY_SNAPSHOT),
+    );
+    restore_or_remove(
+        &target_dir.join(PROFILE_CACHE),
+        &config_dir.join(PROFILE_CACHE),
+    );
 
     // 5. Update last_used in metadata
     let mut list = read_accounts_meta(config_dir);
@@ -251,6 +305,27 @@ mod tests {
         let active = read_active_user(&dir).unwrap();
         assert_eq!(active.0, "test_acc_2");
         assert_eq!(active.1, "TesterTwo");
+        // No archived library yet: shared snapshot is empty, not the other account's metadata.
+        assert_eq!(
+            fs::read_to_string(dir.join("efxlve_library_snapshot.json")).unwrap(),
+            "[]"
+        );
+
+        // Account 2's library stays archived when a new login clears the shared snapshot.
+        fs::write(dir.join("efxlve_library_snapshot.json"), "[{\"app_name\":\"a\"}]").unwrap();
+        archive_active_sidecars(&dir);
+        discard_shared_session_cache(&dir);
+        assert_eq!(
+            fs::read_to_string(dir.join("efxlve_library_snapshot.json")).unwrap(),
+            "[]"
+        );
+        let archived = fs::read_to_string(
+            dir.join("accounts")
+                .join("test_acc_2")
+                .join("efxlve_library_snapshot.json"),
+        )
+        .unwrap();
+        assert!(archived.contains("app_name"));
 
         // 4. Remove account 1
         remove_saved_account(&dir, "test_acc_1").unwrap();

@@ -8,6 +8,12 @@
 
 import { currentLanguage, t } from "../i18n";
 
+/** Epic sandbox ids are 16+ hex characters. They are not game titles. */
+export function isOpaqueId(value: string): boolean {
+  const text = value.trim();
+  return text.length >= 16 && /^[0-9a-f]+$/i.test(text);
+}
+
 /** Escape a string for safe HTML interpolation. */
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));

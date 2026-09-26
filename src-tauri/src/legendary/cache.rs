@@ -51,12 +51,9 @@ pub fn write_library_snapshot(config: &Path, games: &[LegendaryGame]) {
 
 pub fn read_library_snapshot(config: &Path) -> Option<Vec<LegendaryGame>> {
     let text = std::fs::read_to_string(snapshot_path(config)).ok()?;
-    let games: Vec<LegendaryGame> = serde_json::from_str(&text).ok()?;
-    if games.is_empty() {
-        None
-    } else {
-        Some(games)
-    }
+    // An empty file is a real snapshot. Falling through to metadata/*.json
+    // would parse the previous account's catalog after a switch.
+    serde_json::from_str(&text).ok()
 }
 
 /// All game metadata in the cache (broken files are skipped).
@@ -425,9 +422,12 @@ mod tests {
             ..Default::default()
         }];
         write_library_snapshot(&dir, &games);
-        let back = read_library_snapshot(&dir).expect("snapshot okunmalı");
+        let back = read_library_snapshot(&dir).expect("snapshot should round-trip");
         assert_eq!(back.len(), 1);
         assert_eq!(back[0].app_name, "snap-game");
+        std::fs::write(snapshot_path(&dir), "[]").unwrap();
+        let empty = read_library_snapshot(&dir).expect("empty snapshot stays present");
+        assert!(empty.is_empty());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

@@ -2,7 +2,7 @@
    App shell (Hydra layout): full-width window bar, sidebar with account +
    nav + filtered game list, page header, content and a bottom status bar.
    ========================================================================== */
-#app { display: flex; flex-direction: column; height: 100vh; }
+#app { position: relative; display: flex; flex-direction: column; height: 100vh; }
 #body { flex: 1; min-height: 0; display: flex; }
 
 /* --- Window bar --- */

@@ -231,14 +231,16 @@ export function epicVisibleSummaries(): EpicSummary[] {
 
 /**
  * Grid tile is the portrait only, plus an optional caption under the cover
- * ("Titles under covers" in Settings). Hover grows the whole tile, not the
- * image inside it.
+ * ("Titles under covers" in Settings). Hover grows the cover, not the caption.
+ * The caption already shows the name, so the card does not also set a title
+ * tooltip (that tooltip is a square system box on the rounded cover).
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
-  const caption = S.showCoverTitles ? `<div class="pcard-caption" title="${title}">${title}</div>` : "";
+  const caption = S.showCoverTitles ? `<div class="pcard-caption">${title}</div>` : "";
+  const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button" title="${title}">
+    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
         ${libraryCoverStats(s.appName)}

@@ -207,7 +207,9 @@ pub async fn epic_list_games(app: AppHandle) -> Result<Vec<LegendaryGame>, Strin
     }
     // Refresh the consolidated snapshot so the next cold start is instant.
     if !games.is_empty() {
-        cache::write_library_snapshot(&skip::default_config_dir(), &games);
+        let config = skip::default_config_dir();
+        cache::write_library_snapshot(&config, &games);
+        super::accounts::archive_active_sidecars(&config);
     }
     Ok(games)
 }
@@ -298,13 +300,17 @@ fn extract_auth_code(input: &str) -> Result<String, super::LegendaryError> {
 pub async fn epic_login_with_code(app: AppHandle, code: String) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;
     let code = extract_auth_code(&code).map_err(|e| fail(&app, e))?;
-    client::run_unit(&bin, &["auth", "--code", &code])
+    let config_dir = super::skip::default_config_dir();
+    // Archive the open session before auth replaces user.json.
+    super::accounts::ensure_current_account_saved(&config_dir);
+    // -y first: an existing session would otherwise wait for a yes/no that never arrives.
+    client::run_unit(&bin, &["-y", "auth", "--code", &code])
         .await
         .map_err(|e| fail(&app, e))?;
     let st: LegendaryStatus = client::run_json(&bin, &["status", "--offline", "--json"])
         .await
         .map_err(|e| fail(&app, e))?;
-    let config_dir = super::skip::default_config_dir();
+    super::accounts::discard_shared_session_cache(&config_dir);
     super::accounts::ensure_current_account_saved(&config_dir);
     Ok(st.account)
 }
@@ -335,13 +341,15 @@ pub async fn epic_import_egl(app: AppHandle) -> Result<String, String> {
             }
         }
     }
+    let config_dir = super::skip::default_config_dir();
+    super::accounts::ensure_current_account_saved(&config_dir);
     client::run_unit(&bin, &["-y", "auth", "--import"])
         .await
         .map_err(|e| fail(&app, e))?;
     let st: LegendaryStatus = client::run_json(&bin, &["status", "--offline", "--json"])
         .await
         .map_err(|e| fail(&app, e))?;
-    let config_dir = super::skip::default_config_dir();
+    super::accounts::discard_shared_session_cache(&config_dir);
     super::accounts::ensure_current_account_saved(&config_dir);
     Ok(st.account)
 }

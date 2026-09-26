@@ -484,6 +484,8 @@
   border-radius: var(--r-sm); cursor: pointer;
 }
 .hide-game-row:hover { background: var(--surface-2); }
+/* The row's display:flex beats the browser's [hidden] rule, so a search match never disappeared. */
+.hide-game-row[hidden] { display: none; }
 .hide-game-thumb {
   display: block; width: 32px; height: 42px; min-width: 32px; max-width: 32px;
   min-height: 42px; max-height: 42px; flex: 0 0 32px; overflow: hidden;

@@ -242,7 +242,7 @@ export const S = {
   notifications: ([]) as AppNotification[],
   notifOpen: false,
   studioFilter: "",
-  settingsSection: ("downloads") as SettingsSection,
+  settingsSection: ("account") as SettingsSection,
   profileCardCount: PROFILE_CARD_CHUNK as number,
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,

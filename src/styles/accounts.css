@@ -49,3 +49,19 @@
 }
 .auth-step-row.active .auth-step-pip { box-shadow: inset 0 0 0 1px var(--accent); }
 .auth-step-row.done .auth-step-pip { background: var(--accent); color: var(--on-accent); }
+
+/* Account switch: one fade over the shell, then it is removed. Window controls stay usable. */
+.account-switch {
+  position: absolute; z-index: 40; left: 0; right: 0; top: var(--winbar-h); bottom: 0;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(0, 0, 0, 0.62);
+  animation: fade-in var(--ease-in) both;
+}
+.account-switch[hidden] { display: none !important; }
+.account-switch-name:empty { display: none; }
+.account-switch-name { font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.account-switch.leaving { animation: account-switch-out var(--ease-in) both; }
+@keyframes account-switch-out { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .account-switch, .account-switch.leaving { animation: none !important; }
+}
