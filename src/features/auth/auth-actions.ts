@@ -7,6 +7,7 @@
 
 import { isTauri } from "../../core/constants";
 import { refreshUpdates } from "../../core/epic-actions";
+import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { pruneRecent } from "../../core/recent";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
@@ -94,6 +95,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     if (!forceSync) void loadEpicAchSummaries();
     void loadEpicCollections();
     void refreshUpdates();
+    void syncEpicServerPlaytimes();
     void syncEpicLibrary(false, forceSync);
     void epicResumePendingDownload().catch(() => {});
   } catch (e) {

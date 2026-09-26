@@ -21,7 +21,7 @@ import { epicWideArt, isTurkishUser, rawOf, summaryOf } from "../../core/selecto
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSteamAbout, epicGetSystemRequirements, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SteamAbout, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
@@ -121,39 +121,74 @@ function tabButton(tab: string, label: string, count = 0, extraClass = ""): stri
   return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
 }
 
-/** Steam about text plus store facts, keyed by app and launcher language. */
-const steamAboutCache = new Map<string, SteamAbout>();
-
-function steamAboutKey(appName: string): string {
-  return `${appName}|${currentLanguage()}`;
-}
-
-function steamMetaLine(data: SteamAbout): string {
-  return [data.developers, data.release_date, data.genres].filter((part) => part && part.trim()).join(" · ");
-}
-
-/** Split a store/wiki blurb into readable paragraphs. */
+/** Split Epic's catalog blurb into readable paragraphs. */
 function aboutMarkup(text: string): string {
   const parts = text.split(/\n+/).map((part) => part.trim()).filter(Boolean);
   if (parts.length === 0) return "";
   return parts.map((part) => `<p>${esc(part)}</p>`).join("");
 }
 
-function applySteamAbout(appName: string, data: SteamAbout): void {
-  if (!data.description) return;
-  steamAboutCache.set(steamAboutKey(appName), data);
-  if (S.currentModalAppName !== appName) return;
-  const descEl = document.getElementById("hub-desc-text");
-  if (descEl) descEl.innerHTML = aboutMarkup(data.description);
-  const metaEl = document.getElementById("hub-desc-meta");
-  const meta = steamMetaLine(data);
-  if (metaEl) {
-    metaEl.textContent = meta;
-    metaEl.hidden = !meta;
+/** IGDB has no keyless API, so the About box links to its search page. */
+function igdbSearchUrl(title: string): string {
+  return `https://www.igdb.com/search?type=1&q=${encodeURIComponent(title)}`;
+}
+
+/** Epic's catalog description (raw or from the store data); empty when unusable. */
+function epicDescription(s: EpicSummary): string {
+  const rawDesc = s.description?.trim();
+  const hasRealDesc = rawDesc && rawDesc !== NO_DESC && rawDesc !== s.title && rawDesc.length > 25;
+  const reqData = S.loadedRequirements.get(s.appName);
+  const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : "");
+  return (hasRealDesc ? rawDesc : storeDesc) || "";
+}
+
+/** Wikipedia fallback text per game + language ("" = checked, nothing found). */
+const aboutCache = new Map<string, string>();
+
+function aboutKey(appName: string): string {
+  return `${appName}|${currentLanguage()}`;
+}
+
+/**
+ * Order: the game's own store first (Epic), then Wikipedia.
+ * The store text is already in memory; Wikipedia is fetched once per game and
+ * language and only when the store has nothing.
+ */
+async function loadWikiAbout(s: EpicSummary): Promise<void> {
+  try {
+    const wiki = await epicGetWikiAbout(s.title, s.appName, currentLanguage());
+    aboutCache.set(aboutKey(s.appName), wiki.description?.trim() || "");
+  } catch (err) {
+    console.warn("Wiki about could not be loaded:", err);
+  } finally {
+    paintAboutText(s);
   }
 }
 
-/** Kicks off the lazy overview fetches (HLTB, critic, Steam about) once per game and language. */
+/** Source note under the description: Epic's store, or the Wikipedia fallback. */
+function aboutSourceText(epicDesc: string, wikiText: string): string {
+  return !epicDesc && wikiText
+    ? t("drawer.wikiSource", { store: "Epic Games Store" })
+    : t("drawer.sourceEpic");
+}
+
+/** Paints the About box and its source note from the current sources. */
+function paintAboutText(s: EpicSummary): void {
+  if (S.currentModalAppName !== s.appName) return;
+  const descEl = document.getElementById("hub-desc-text");
+  if (!descEl) return;
+  const epicDesc = epicDescription(s);
+  const wikiText = aboutCache.get(aboutKey(s.appName)) || "";
+  const text = epicDesc || wikiText;
+  descEl.innerHTML = text ? aboutMarkup(text) : `<p>${t("drawer.noDescription")}</p>`;
+  const srcEl = document.getElementById("hub-desc-source");
+  if (srcEl) {
+    srcEl.hidden = !text;
+    srcEl.textContent = aboutSourceText(epicDesc, wikiText);
+  }
+}
+
+/** Kicks off the lazy overview fetches (HLTB, critic, store data) once per game. */
 function ensureOverviewData(s: EpicSummary): void {
   const appName = s.appName;
   if (S.activeDrawerTab !== "overview") return;
@@ -181,17 +216,13 @@ function ensureOverviewData(s: EpicSummary): void {
       .catch(() => {})
       .finally(() => { S.loadingCriticFor = null; });
   }
-  const aboutKey = steamAboutKey(appName);
-  if (!steamAboutCache.has(aboutKey) && S.loadingSteamAboutFor !== aboutKey) {
-    S.loadingSteamAboutFor = aboutKey;
-    epicGetSteamAbout(s.title, appName, currentLanguage())
-      .then((data) => {
-        if (data.supported && data.description) applySteamAbout(appName, data);
-      })
-      .catch((err) => console.warn("Steam about text could not be loaded:", err))
-      .finally(() => {
-        if (S.loadingSteamAboutFor === aboutKey) S.loadingSteamAboutFor = null;
-      });
+  // Wikipedia is asked only when the game's own store has no description.
+  const key = aboutKey(appName);
+  if (!aboutCache.has(key) && S.loadingAboutFor !== key && !epicDescription(s)) {
+    S.loadingAboutFor = key;
+    void loadWikiAbout(s).finally(() => {
+      if (S.loadingAboutFor === key) S.loadingAboutFor = null;
+    });
   }
 }
 
@@ -362,14 +393,16 @@ export function renderDrawerOverview(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
-  const reqData = S.loadedRequirements.get(s.appName);
-
-  const rawDesc = s.description?.trim();
-  const hasRealDesc = rawDesc && rawDesc !== NO_DESC && rawDesc !== s.title && rawDesc.length > 25;
-  const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : null);
-  const steamAbout = steamAboutCache.get(steamAboutKey(s.appName));
-  const effectiveDesc = steamAbout?.description || (hasRealDesc ? rawDesc : storeDesc || null);
-  const steamMeta = steamAbout ? steamMetaLine(steamAbout) : "";
+  const epicDesc = epicDescription(s);
+  const key = aboutKey(s.appName);
+  const wikiText = aboutCache.get(key) || "";
+  // The game's own store (Epic) wins; Wikipedia is the fallback. The source
+  // note under the box tells the user when the fallback is being used.
+  const effectiveDesc = epicDesc || wikiText || null;
+  const aboutResolved = aboutCache.has(key);
+  const aboutLoading = !effectiveDesc && !aboutResolved && (S.loadingReqFor === s.appName || S.loadingAboutFor === key);
+  const sourceText = aboutSourceText(epicDesc, wikiText);
+  const sourceHidden = !effectiveDesc;
 
   return `
     <div class="hub-overview-layout">
@@ -377,8 +410,17 @@ export function renderDrawerOverview(
         <div id="drawer-col-chips-container" class="gp-tags gp-about-tags">${renderCollectionTags(s.appName)}</div>
         <section class="gp-section">
           <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
-          <div class="hub-desc-text" id="hub-desc-text">${effectiveDesc ? aboutMarkup(effectiveDesc) : `<p>${t("drawer.noDescription")}</p>`}</div>
-          <p class="hub-desc-meta" id="hub-desc-meta"${steamMeta ? "" : " hidden"}>${esc(steamMeta)}</p>
+          <div class="hub-desc-text" id="hub-desc-text">${
+            aboutLoading
+              ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
+              : effectiveDesc
+                ? aboutMarkup(effectiveDesc)
+                : `<p>${t("drawer.noDescription")}</p>`
+          }</div>
+          <p class="hub-desc-igdb">
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${igdbSearchUrl(s.title)}">${icon("external", 13)} ${t("drawer.igdbLink")}</button>
+          </p>
+          <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
         </section>
       </div>
       <aside class="hub-overview-sidebar">
@@ -675,10 +717,18 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
     if (cur && S.currentModalAppName === appName) {
       if (S.activeDrawerTab === "overview") {
         const descEl = document.getElementById("hub-desc-text");
-        const steamAbout = steamAboutCache.get(steamAboutKey(appName));
-        if (descEl && !steamAbout?.description && (data.shortDescription || data.description)) {
-          const text = data.shortDescription || cleanStoreDescription(data.description || "");
+        const text = data.shortDescription || cleanStoreDescription(data.description || "");
+        if (descEl && text) {
+          // The game's own store always outranks the Wikipedia fallback.
           descEl.innerHTML = aboutMarkup(text);
+          const srcEl = document.getElementById("hub-desc-source");
+          if (srcEl) {
+            srcEl.hidden = false;
+            srcEl.textContent = t("drawer.sourceEpic");
+          }
+        } else if (descEl?.querySelector(".hub-desc-loading") && S.loadingAboutFor !== aboutKey(appName)) {
+          // Store data arrived without a description and no fallback is pending.
+          descEl.innerHTML = `<p>${t("drawer.noDescription")}</p>`;
         }
       }
       const featuresEl = document.getElementById("hub-features-list");

@@ -917,6 +917,13 @@ export interface GameStatusEvent {
 export const epicGetPlaytimes = () =>
   invoke<Record<string, PlaytimeRecord>>("epic_get_playtimes");
 
+/**
+ * Epic's own server-side playtime snapshot (`appName -> seconds`), including
+ * hours played outside this launcher. Cached on disk for a few hours.
+ */
+export const epicSyncEpicPlaytimes = (force = false) =>
+  invoke<Record<string, number>>("epic_sync_epic_playtimes", { force });
+
 export const epicSetPlaytime = (
   appName: string,
   totalSeconds: number,
@@ -1065,17 +1072,15 @@ export interface CriticData {
 export const epicGetCritic = (title: string, appName: string, forceRefresh = false) =>
   invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh });
 
-export interface SteamAbout {
+/** Wikipedia fallback text; `supported: false` means "checked, nothing found". */
+export interface WikiAbout {
   supported: boolean;
   description: string;
-  developers?: string;
-  release_date?: string;
-  genres?: string;
 }
 
-/** Localized about text from the Steam store. `lang` is the launcher locale. */
-export const epicGetSteamAbout = (title: string, appName: string, lang: string, forceRefresh = false) =>
-  invoke<SteamAbout>("epic_get_steam_about", { title, appName, lang, forceRefresh });
+/** Wikipedia lead in the launcher language (English when that wiki has none). */
+export const epicGetWikiAbout = (title: string, appName: string, lang: string, forceRefresh = false) =>
+  invoke<WikiAbout>("epic_get_wiki_about", { title, appName, lang, forceRefresh });
 
 /* ---------- SteamGridDB API v2 ---------- */
 

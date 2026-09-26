@@ -75,8 +75,10 @@
 .hub-desc-text { max-width: none; font-size: 15px; line-height: 1.7; color: var(--text-2); }
 .hub-desc-text p { margin: 0; }
 .hub-desc-text p + p { margin-top: 14px; }
+.hub-desc-loading { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 13px; }
+.hub-desc-igdb { margin: 10px 0 0; }
+.hub-desc-source { margin: 8px 0 0; font-size: 12px; color: var(--text-3); }
 .gp-features-card { padding: 18px 18px 8px; }
-.hub-desc-meta { margin: 8px 0 0; font-size: 12px; color: var(--text-3); }
 .gp-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .gp-about-tags { margin: 0 0 14px; }
 .gp-tag { height: 28px; padding: 0 10px; border: none; cursor: pointer; font-family: inherit; }
@@ -90,8 +92,6 @@
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }
-.hub-card-count { color: var(--text-3); font-weight: 500; }
-.hub-card-tools { display: flex; align-items: center; gap: 8px; }
 .hub-card-link {
   display: inline-flex; align-items: center; gap: 4px; border: none; background: none; padding: 4px 6px; border-radius: 4px;
   color: var(--text-2); font-size: 12px; font-family: inherit; cursor: pointer;
@@ -150,47 +150,6 @@
 .hub-feature-val.plat, .hub-feature-val.gold, .hub-feature-val.accent { color: var(--text); }
 .hub-size-val { font-variant-numeric: tabular-nums; }
 .hub-version-badge { margin-left: 6px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-
-/* Trophy spotlight */
-.hub-trophy-progress-box { padding: 12px; border-radius: var(--r-sm); background: var(--surface-2); }
-.hub-trophy-progress-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.hub-trophy-percent-badge { display: flex; align-items: baseline; gap: 10px; }
-.hub-trophy-percent-num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.hub-trophy-percent-num.plat { color: var(--accent); }
-.hub-trophy-counts { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.hub-trophy-medals { display: flex; gap: 12px; }
-.hub-medal-item { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); }
-.hub-medal-item.gold svg { color: #d4a72c; }
-.hub-medal-item.silver svg { color: #a9adb7; }
-.hub-medal-item.bronze svg { color: #b07a4f; }
-.hub-trophy-bar-track { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
-.hub-trophy-bar-fill { height: 100%; background: var(--accent); }
-.hub-trophy-next-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-top: 10px; }
-.hub-trophy-target-card {
-  display: flex; align-items: center; gap: 10px; padding: 10px; text-align: left; cursor: pointer;
-  border: none; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); font-family: inherit;
-}
-.hub-trophy-target-card:hover { background: var(--surface-3); }
-.hub-trophy-target-icon { width: 40px; height: 40px; border-radius: var(--r-sm); overflow: hidden; flex-shrink: 0; display: grid; place-items: center; background: var(--surface-3); color: var(--text-3); }
-.hub-trophy-target-icon img { width: 100%; height: 100%; object-fit: cover; }
-.hub-trophy-target-info { min-width: 0; }
-.hub-trophy-target-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hub-trophy-target-desc { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hub-trophy-target-badge { font-size: 11px; color: var(--text-2); }
-
-/* Media strip & empty rows */
-.hub-media-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.hub-media-item { position: relative; aspect-ratio: 16 / 9; padding: 0; border: none; border-radius: var(--r-sm); overflow: hidden; cursor: pointer; background: var(--surface-2); }
-.hub-media-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hub-media-overlay { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(0, 0, 0, 0.55); opacity: 0; transition: opacity var(--ease); }
-.hub-media-item:hover .hub-media-overlay { opacity: 1; }
-.hub-media-date { font-size: 11px; color: #fff; font-variant-numeric: tabular-nums; }
-.hub-media-zoom-icon { color: #fff; }
-.hub-media-empty { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r-sm); background: var(--surface-2); }
-.hub-media-empty-icon { color: var(--text-3); display: grid; place-items: center; }
-.hub-media-empty-info { flex: 1; min-width: 0; }
-.hub-media-empty-title { font-size: 13px; font-weight: 500; }
-.hub-media-empty-desc { font-size: 12px; color: var(--text-3); }
 
 /* --- Achievements --- */
 .ach-summary-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }

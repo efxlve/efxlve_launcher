@@ -19,7 +19,6 @@ import {
   type EpicSummary,
   type GameScreenshotItem,
 } from "../../epic";
-import { renderOverviewMediaSpotlight } from "../drawer/drawer-widgets";
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
   if (!force && S.loadedScreenshots.has(appName)) return;
   S.loadingScreenshotsFor = appName;
@@ -45,12 +44,6 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
           if (contentEl) {
             const curSummary = S.epicSummaries.find((x) => x.appName === appName);
             if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
-          }
-        } else if (S.activeDrawerTab === "overview") {
-          const mediaContainer = document.getElementById("overview-media-container");
-          if (mediaContainer) {
-            const curSummary = S.epicSummaries.find((x) => x.appName === appName);
-            if (curSummary) mediaContainer.innerHTML = renderOverviewMediaSpotlight(curSummary);
           }
         }
       }

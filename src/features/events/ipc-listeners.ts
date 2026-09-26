@@ -41,6 +41,7 @@ import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled } from "../../core/epic-actions";
+import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -563,6 +564,8 @@ export async function initApp(hooks: {
       const pt = await epicGetPlaytimes();
       S.playtimeMap = new Map(Object.entries(pt));
       if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
+      // Epic's server snapshot fills in the hours played outside this launcher.
+      void syncEpicServerPlaytimes();
     } catch {
       // ignore
     }

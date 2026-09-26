@@ -115,7 +115,7 @@ export const S = {
   loadingHltbFor: (null) as string | null,
   loadedCritic: (new Map()) as Map<string, CriticData>,
   loadingCriticFor: (null) as string | null,
-  loadingSteamAboutFor: (null) as string | null,
+  loadingAboutFor: (null) as string | null,
   appLanguage: initialLanguage(),
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
