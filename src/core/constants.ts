@@ -42,9 +42,21 @@ export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
 export const NOTIF_KEY = "efxlve-notifications";
 /** Hide to the system tray on close instead of quitting. */
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
-/** Show optional back/forward navigation buttons in the top bar. */
 /** Playtime and achievement chips painted on library covers. On unless set to "false". */
 export const COVER_STATS_KEY = "efxlve-cover-stats";
+/** Show the game title under each cover tile in the library grid. */
+export const COVER_TITLES_KEY = "efxlve-cover-titles";
+/** Optional page-by-page library browsing instead of progressive chunking. */
+export const LIB_PAGINATION_KEY = "efxlve-lib-pagination";
+/** Games rendered per library page when pagination is on. */
+export const LIB_PAGE_SIZE_KEY = "efxlve-lib-page-size";
+/** Allowed library page sizes (games per page). */
+export const LIB_PAGE_SIZES = [24, 48, 96] as const;
+/** Coerce a stored page size onto LIB_PAGE_SIZES (defaults to the smallest). */
+export function normalizeLibraryPageSize(raw: string | number | null | undefined): number {
+  const size = typeof raw === "number" ? raw : Number(raw);
+  return (LIB_PAGE_SIZES as readonly number[]).includes(size) ? size : LIB_PAGE_SIZES[0];
+}
 /** Shell surface: "black" (default) or "epic" (#101014). */
 export const SURFACE_KEY = "efxlve-surface";
 /** How many profile trophy cards render before "show more". */

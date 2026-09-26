@@ -47,6 +47,9 @@ pub struct EpicSettings {
     /// Preferred Epic CDN hostname for downloads (`--preferred-cdn`).
     #[serde(default)]
     pub preferred_cdn: Option<String>,
+    /// Root folder for in-game screenshots (`None` = Pictures\Efxlve Screenshots).
+    #[serde(default)]
+    pub screenshot_dir: Option<String>,
     #[serde(default = "default_true")]
     pub auto_desktop_shortcut: bool,
 }
@@ -1689,6 +1692,8 @@ fn main() {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
             }
+            // The hotkey listener must already know the configured folder.
+            legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
             legendary::screenshots::start_f12_listener(app.handle().clone());
             build_tray(app)?;
             Ok(())
@@ -1830,6 +1835,10 @@ fn main() {
             legendary::screenshots::epic_open_game_screenshots_folder,
             legendary::screenshots::epic_set_screenshot_hotkey,
             legendary::screenshots::epic_get_screenshot_hotkey,
+            legendary::screenshots::epic_get_screenshot_dir,
+            legendary::screenshots::epic_set_screenshot_dir,
+            legendary::screenshots::epic_get_screenshot_move_info,
+            legendary::screenshots::epic_open_screenshot_dir,
             legendary::screenshots::epic_replace_screenshot_with_compressed,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,

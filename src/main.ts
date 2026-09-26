@@ -28,7 +28,7 @@ import { closeNotifPanel, renderNotificationPanel } from "./features/notificatio
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
 import { closeAvatarModal } from "./features/profile/profile-avatar";
-import { closeScreenshotLightbox, closeShareModal } from "./features/screenshots/screenshots-view";
+import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
@@ -101,6 +101,7 @@ function render(): void {
 function closeAllModals(): void {
   closeModal();
   closeScreenshotLightbox();
+  closeScreenshotMoveConfirm();
   closeShareModal();
   closeCustomCoverModal();
   closeCollectionModal();

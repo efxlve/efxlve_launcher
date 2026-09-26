@@ -10,7 +10,7 @@ import { modalRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc, formatScreenshotDate } from "../../core/utils";
+import { esc, fmtBytes, formatScreenshotDate } from "../../core/utils";
 import { t } from "../../i18n";
 
 import {
@@ -566,6 +566,51 @@ export function takePendingScreenshotDelete(): PendingScreenshotDelete | null {
   const pending = pendingScreenshotDelete;
   pendingScreenshotDelete = null;
   document.getElementById("ss-delete-root")?.remove();
+  return pending;
+}
+
+type PendingScreenshotMove = { targetDir: string | null; count: number; bytes: number };
+
+let pendingScreenshotMove: PendingScreenshotMove | null = null;
+
+/**
+ * In-app confirm shown when the screenshots folder changes while files exist.
+ * `window.confirm` is the browser's own dialog, so the launcher asks here.
+ */
+export function openScreenshotMoveConfirm(targetDir: string | null, count: number, bytes: number): void {
+  pendingScreenshotMove = { targetDir, count, bytes };
+  let root = document.getElementById("ss-move-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "ss-move-root";
+    document.body.appendChild(root);
+  }
+  root.innerHTML = `
+    <div class="modal-backdrop ss-move-backdrop" data-act="ss-move-backdrop">
+      <div class="modal-box ss-move-card" role="dialog" aria-modal="true" data-act="prevent-modal-close">
+        <div class="selective-header">
+          <h2>${t("ss.moveTitle")}</h2>
+        </div>
+        <p class="ss-move-copy">${t("ss.moveBody", { count, size: fmtBytes(bytes) })}</p>
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="ss-move-cancel">${t("common.cancel")}</button>
+          <button class="btn ghost" data-act="ss-move-keep">${t("ss.moveKeep")}</button>
+          <button class="btn primary" data-act="ss-move-confirm">${t("ss.moveConfirm")}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function closeScreenshotMoveConfirm(): void {
+  pendingScreenshotMove = null;
+  document.getElementById("ss-move-root")?.remove();
+}
+
+export function takePendingScreenshotMove(): PendingScreenshotMove | null {
+  const pending = pendingScreenshotMove;
+  pendingScreenshotMove = null;
+  document.getElementById("ss-move-root")?.remove();
   return pending;
 }
 

@@ -3,7 +3,7 @@
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { AUTO_UPDATE_TIME_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri } from "../../core/constants";
+import { AUTO_UPDATE_TIME_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { navGoBack, navGoForward } from "../../core/nav";
@@ -45,6 +45,7 @@ import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../p
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
+  closeScreenshotMoveConfirm,
   closeShareModal,
   navigateScreenshotLightbox,
 } from "../screenshots/screenshots-view";
@@ -127,6 +128,14 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
       closeScreenshotDeleteConfirm();
+      return;
+    }
+  }
+
+  if (document.getElementById("ss-move-root")) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeScreenshotMoveConfirm();
       return;
     }
   }
@@ -474,6 +483,14 @@ document.addEventListener("change", (e) => {
     return;
   }
   const act = t.dataset.act;
+  if (act === "lib-page-size") {
+    // Shared by the library pagination bar and the Settings > Appearance row.
+    S.libPageSize = normalizeLibraryPageSize((t as HTMLSelectElement).value);
+    localStorage.setItem(LIB_PAGE_SIZE_KEY, String(S.libPageSize));
+    S.libPage = 1;
+    render();
+    return;
+  }
   if (act === "manage-toggle-autoupdate" && S.activeManageSettings) {
     S.activeManageSettings.autoUpdate = (t as HTMLInputElement).checked;
     epicSaveGameSettings(S.activeManageSettings)

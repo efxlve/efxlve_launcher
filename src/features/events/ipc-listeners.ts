@@ -542,7 +542,9 @@ export async function initApp(hooks: {
         }
 
         if (S.screenshotCompressionEnabled) {
-          void compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, false);
+          // Compression is on by default now, so the automatic pass stays silent:
+          // "capturing" + "saved" toasts are enough feedback for one hotkey press.
+          void compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
         }
       }
     );

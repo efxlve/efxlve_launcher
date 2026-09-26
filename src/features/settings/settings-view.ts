@@ -7,14 +7,15 @@
  */
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
-import { isTauri } from "../../core/constants";
+import { LIB_PAGE_SIZES, isTauri } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { render } from "../../core/render";
 import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
-import { LANGUAGES, t } from "../../i18n";
+import { toast } from "../../core/toast";
+import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateInstallBlocked } from "../updates/update-manager";
@@ -23,13 +24,20 @@ import {
   eosOverlayStatus,
   epicDefaultInstallDir,
   epicDetectEglGames,
+  epicGetScreenshotDir,
+  epicGetScreenshotMoveInfo,
   epicGetSettings,
   epicGetSteamGridKey,
+  epicOpenScreenshotDir,
   epicPortrait,
+  epicSelectFolderDialog,
+  epicSetScreenshotDir,
   epicThirdPartyLaunchers,
   type EglDetectedGame,
+  type ScreenshotMoveInfo,
   type ThirdPartyLauncher,
 } from "../../epic";
+import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
@@ -161,6 +169,13 @@ function renderIntegrations(): string {
   );
 }
 
+/** Page-size picker shared by Settings and the library pagination bar. */
+function pageSizeSelect(): string {
+  return `<select class="settings-select" data-act="lib-page-size" aria-label="${t("settings.libPageSizeTitle")}">
+    ${LIB_PAGE_SIZES.map((n) => `<option value="${n}" ${n === S.libPageSize ? "selected" : ""}>${n}</option>`).join("")}
+  </select>`;
+}
+
 function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
@@ -173,7 +188,10 @@ function renderAppearance(): string {
         <button type="button" class="${S.surface === "black" ? "active" : ""}" data-act="set-surface" data-surface="black">${t("settings.surfaceBlack")}</button>
         <button type="button" class="${S.surface === "epic" ? "active" : ""}" data-act="set-surface" data-surface="epic">${t("settings.surfaceEpic")}</button>
       </div>`) +
-      row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)),
+      row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
+      row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
+      row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
+      (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
       t("settings.secAppearance"),
     ) +
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`
@@ -181,6 +199,15 @@ function renderAppearance(): string {
 }
 
 function renderScreenshots(): string {
+  const folder = row(
+    t("settings.ssDirTitle"),
+    `${t("settings.ssDirDesc")} <code>${esc(S.screenshotDir || "—")}</code>`,
+    `<button type="button" class="btn ghost small" data-act="ss-open-dir">${t("ss.openFolder")}</button>
+     <button type="button" class="btn ghost small" data-act="ss-pick-dir">${t("common.browse")}</button>
+     <button type="button" class="btn ghost small" data-act="ss-reset-dir">${t("settings.ssDirReset")}</button>`,
+    true,
+  );
+
   const hotkey = row(
     t("settings.hotkeyLabel"),
     `${t("settings.activeKey")}: <strong>${esc(S.screenshotHotkeyName)}</strong>`,
@@ -203,7 +230,7 @@ function renderScreenshots(): string {
       row(t("settings.quality"), null, `<input type="range" min="0.70" max="0.95" step="0.05" value="${S.screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" class="settings-range" /><span id="ss-quality-val" class="settings-range-val">%${Math.round(S.screenshotCompressionQuality * 100)}</span>`)
     : "";
 
-  return group(hotkey + compression + options, t("settings.screenshotsTitle"));
+  return group(folder + hotkey + compression + options, t("settings.screenshotsTitle"));
 }
 
 function renderSystem(): string {
@@ -378,15 +405,17 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
         loadSavedAccounts().catch(() => []),
+        epicGetScreenshotDir().catch(() => ""),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
       S.steamGridApiKey = sgdbKey;
+      S.screenshotDir = ssDir || "";
     } catch {
       // Silent: keep the last cached values.
     }
@@ -425,5 +454,93 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   } finally {
     S.settingsIntegrationsLoading = false;
     render();
+  }
+}
+
+/** Applies a new screenshots root and reports how many files were moved. */
+async function applyScreenshotDir(target: string | null, moveExisting: boolean): Promise<void> {
+  try {
+    const res = await epicSetScreenshotDir(target, moveExisting);
+    S.screenshotDir = res.dir;
+    if (res.moved > 0 && res.skipped > 0) toast(t("ss.movedPartial", { count: res.moved, skipped: res.skipped }), "ok");
+    else if (res.moved > 0) toast(t("ss.moved", { count: res.moved }), "ok");
+    else toast(target ? t("ss.dirSaved") : t("ss.dirReset"), "ok");
+    render();
+  } catch (e) {
+    toast(localizeMessage(String(e)), "err");
+  }
+}
+
+/** Current screenshots stats; empty stats when the backend cannot answer. */
+async function screenshotMoveInfo(): Promise<ScreenshotMoveInfo> {
+  try {
+    return await epicGetScreenshotMoveInfo();
+  } catch {
+    return { count: 0, bytes: 0, dir: "" };
+  }
+}
+
+/** Opens the folder picker; when files exist, asks whether to move them. */
+async function pickScreenshotsFolder(): Promise<void> {
+  const chosen = await epicSelectFolderDialog(S.screenshotDir || null, t("settings.ssDirPicker")).catch(() => null);
+  if (!chosen || chosen.toLowerCase() === S.screenshotDir.toLowerCase()) return;
+  const info = await screenshotMoveInfo();
+  if (info.count > 0) {
+    openScreenshotMoveConfirm(chosen, info.count, info.bytes);
+    return;
+  }
+  await applyScreenshotDir(chosen, false);
+}
+
+/** Opens the effective screenshots root in Explorer (created when missing). */
+async function openScreenshotsFolder(): Promise<void> {
+  try {
+    await epicOpenScreenshotDir();
+  } catch (e) {
+    toast(localizeMessage(String(e)), "err");
+  }
+}
+
+/** Restores the default folder; existing files follow only with confirmation. */
+async function resetScreenshotsFolder(): Promise<void> {
+  const info = await screenshotMoveInfo();
+  if (info.count > 0) {
+    openScreenshotMoveConfirm(null, info.count, info.bytes);
+    return;
+  }
+  await applyScreenshotDir(null, false);
+}
+
+/**
+ * Screenshot-folder actions routed here from click-router so the shared router
+ * does not grow. Returns true when the action was handled.
+ */
+export function handleSettingsAction(act: string | undefined, _el: HTMLElement): boolean {
+  switch (act) {
+    case "ss-open-dir":
+      void openScreenshotsFolder();
+      return true;
+    case "ss-pick-dir":
+      void pickScreenshotsFolder();
+      return true;
+    case "ss-reset-dir":
+      void resetScreenshotsFolder();
+      return true;
+    case "ss-move-confirm": {
+      const pending = takePendingScreenshotMove();
+      if (pending) void applyScreenshotDir(pending.targetDir, true);
+      return true;
+    }
+    case "ss-move-keep": {
+      const pending = takePendingScreenshotMove();
+      if (pending) void applyScreenshotDir(pending.targetDir, false);
+      return true;
+    }
+    case "ss-move-cancel":
+    case "ss-move-backdrop":
+      closeScreenshotMoveConfirm();
+      return true;
+    default:
+      return false;
   }
 }

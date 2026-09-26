@@ -543,6 +543,7 @@ export interface EpicSettings {
   presence_enabled?: boolean | null;
   presence_client_id?: string | null;
   preferred_cdn?: string | null;
+  screenshot_dir?: string | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
@@ -1192,6 +1193,36 @@ export const epicSetScreenshotHotkey = (vkey: number) =>
 
 export const epicGetScreenshotHotkey = () =>
   invoke<number>("epic_get_screenshot_hotkey");
+
+/** Effective screenshots root (configured folder, or the default Pictures path). */
+export const epicGetScreenshotDir = () =>
+  invoke<string>("epic_get_screenshot_dir");
+
+/** Files and bytes currently stored in the screenshots root (move confirmation). */
+export interface ScreenshotMoveInfo {
+  count: number;
+  bytes: number;
+  dir: string;
+}
+
+/** Outcome of a screenshots root change. */
+export interface ScreenshotDirResult {
+  dir: string;
+  moved: number;
+  skipped: number;
+}
+
+/** Saves the screenshots root; null restores the default. `moveExisting` moves the old files in. */
+export const epicSetScreenshotDir = (path: string | null, moveExisting = false) =>
+  invoke<ScreenshotDirResult>("epic_set_screenshot_dir", { path, moveExisting });
+
+/** Stats for the "move existing screenshots?" confirmation. */
+export const epicGetScreenshotMoveInfo = () =>
+  invoke<ScreenshotMoveInfo>("epic_get_screenshot_move_info");
+
+/** Opens the screenshots root in Explorer, creating it when missing. */
+export const epicOpenScreenshotDir = () =>
+  invoke<string>("epic_open_screenshot_dir");
 
 export const epicReplaceScreenshotWithCompressed = (
   originalPath: string,

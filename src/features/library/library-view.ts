@@ -6,7 +6,7 @@
  * Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
-import { INITIAL_CARD_CHUNK, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
+import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
@@ -230,10 +230,13 @@ export function epicVisibleSummaries(): EpicSummary[] {
 }
 
 /**
- * Grid tile is the portrait only. Hover grows the whole tile, not the image inside it.
+ * Grid tile is the portrait only, plus an optional caption under the cover
+ * ("Titles under covers" in Settings). Hover grows the whole tile, not the
+ * image inside it.
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
+  const caption = S.showCoverTitles ? `<div class="pcard-caption" title="${title}">${title}</div>` : "";
   return `
     <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button" title="${title}">
       <div class="pcard-art" data-card-art data-badge-host>
@@ -242,6 +245,7 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
       </div>
+      ${caption}
     </div>`;
 }
 
@@ -279,15 +283,73 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
-  return `<div class="pgrid">${itemsHtml}${sentinelHtml}</div>`;
+  return `<div class="pgrid${S.showCoverTitles ? " has-captions" : ""}">${itemsHtml}${sentinelHtml}</div>`;
+}
+
+/**
+ * Result-set fingerprint. Any change to query, filter, sort, collection or page
+ * size restarts pagination at page 1; page navigation itself is preserved.
+ */
+let lastResultKey = "";
+
+/** Page numbers with gap markers, e.g. 1 … 4 5 6 … 29. */
+function pageNumbers(page: number, pages: number): (number | "gap")[] {
+  const wanted = new Set([1, pages, page - 2, page - 1, page, page + 1, page + 2]);
+  const ordered = [...wanted].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out: (number | "gap")[] = [];
+  let prev = 0;
+  for (const n of ordered) {
+    if (prev > 0 && n - prev > 1) out.push("gap");
+    out.push(n);
+    prev = n;
+  }
+  return out;
+}
+
+/** Optional pagination bar: range label, page buttons and a page-size picker. */
+function renderLibraryPager(total: number): string {
+  if (!S.libPagination) return "";
+  const size = S.libPageSize;
+  const pages = Math.max(1, Math.ceil(total / size));
+  const page = Math.min(Math.max(1, S.libPage), pages);
+  const from = (page - 1) * size + 1;
+  const to = Math.min(total, page * size);
+  const buttons = pageNumbers(page, pages)
+    .map((n) =>
+      n === "gap"
+        ? `<span class="lib-pager-gap">…</span>`
+        : `<button class="btn ${n === page ? "primary" : "ghost"} small lib-pager-num" data-act="lib-page" data-page="${n}" title="${t("lib.pageNumber", { n })}" aria-label="${t("lib.pageNumber", { n })}">${n}</button>`,
+    )
+    .join("");
+  return `
+    <div class="lib-pager">
+      <span class="lib-pager-range">${t("lib.showingRange", { from, to, total })}</span>
+      <div class="lib-pager-pages">
+        <button class="btn ghost small icon-only" data-act="lib-page-prev" title="${t("lib.pagePrev")}" aria-label="${t("lib.pagePrev")}" ${page <= 1 ? "disabled" : ""}>${icon("chevron-left", 14)}</button>
+        ${buttons}
+        <button class="btn ghost small icon-only" data-act="lib-page-next" title="${t("lib.pageNext")}" aria-label="${t("lib.pageNext")}" ${page >= pages ? "disabled" : ""}>${icon("chevron-right", 14)}</button>
+      </div>
+      <label class="lib-pager-size">
+        <span>${t("lib.pageSize")}</span>
+        <select class="settings-select" data-act="lib-page-size" aria-label="${t("lib.pageSize")}">
+          ${LIB_PAGE_SIZES.map((n) => `<option value="${n}" ${n === size ? "selected" : ""}>${n}</option>`).join("")}
+        </select>
+      </label>
+    </div>`;
 }
 
 /**
  * Renders the library content area. Default All is a cover grid (or list).
- * Collections and Free Games are separate filter modes.
+ * Collections are a separate filter mode.
  */
 export function renderEpicItems(): string {
   const inCollection = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+  // Any change to the result set definition restarts pagination at page 1.
+  const resultKey = [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination].join("\x1f");
+  if (resultKey !== lastResultKey) {
+    lastResultKey = resultKey;
+    S.libPage = 1;
+  }
   const visible = epicVisibleSummaries();
 
   if (visible.length === 0) {
@@ -302,11 +364,21 @@ export function renderEpicItems(): string {
     return emptyState("gamepad-2", t("lib.noGames"), "", `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>`);
   }
 
-  const chunk = visible.slice(0, S.renderedCardCount);
+  let chunk: EpicSummary[];
+  let sentinelHtml = "";
+  if (S.libPagination) {
+    // Pagination replaces progressive chunking: only the current page is in the DOM.
+    const pages = Math.max(1, Math.ceil(visible.length / S.libPageSize));
+    S.libPage = Math.min(Math.max(1, S.libPage), pages);
+    const start = (S.libPage - 1) * S.libPageSize;
+    chunk = visible.slice(start, start + S.libPageSize);
+  } else {
+    chunk = visible.slice(0, S.renderedCardCount);
+    sentinelHtml = S.renderedCardCount < visible.length ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>` : "";
+  }
   const itemsHtml = chunk.map(renderItem).join("");
-  const sentinelHtml = S.renderedCardCount < visible.length ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>` : "";
 
-  return renderResults(itemsHtml, sentinelHtml);
+  return `${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
 export function setupLibScrollObserver(): void {

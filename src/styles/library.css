@@ -81,6 +81,10 @@
   .pgrid > .pcard:hover, .pgrid > .pcard:focus-visible { transform: none; }
 }
 .pcard-meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Optional caption under the cover (Settings > Appearance). One line, clipped. */
+.pcard-caption { margin-top: 8px; padding: 0 2px; font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pcard:hover .pcard-caption, .pcard:focus-visible .pcard-caption { color: var(--text); }
+.pgrid.has-captions > .pcard { contain-intrinsic-size: auto 324px; }
 
 .cover-stats {
   position: absolute; top: 8px; left: 8px; z-index: 3; display: flex; flex-direction: column;
@@ -136,3 +140,12 @@
 .lrow-action .btn.install:hover { background: var(--surface-2); color: var(--text); }
 
 /* Collection tabs live in the filter row. The folder gallery is gone. */
+
+/* --- Optional pagination bar (Settings > Appearance) --- */
+.lib-pager { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+.lib-pager-range { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.lib-pager-pages { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.lib-pager-pages .btn { min-width: 32px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.lib-pager-gap { color: var(--text-3); padding: 0 4px; }
+.lib-pager-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
+.lib-pager-size .settings-select { min-width: 76px; }

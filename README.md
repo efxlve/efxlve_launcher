@@ -18,9 +18,9 @@ Efxlve opens from the library already saved on disk, so the window does not wait
 
 ## Download
 
-The current release is **0.1.9**.
+The current release is **0.1.12**.
 
-1. Open the [latest release](https://github.com/efxlve/efxlve_launcher/releases/latest). The [v0.1.9](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.9) page is the same build.
+1. Open the [latest release](https://github.com/efxlve/efxlve_launcher/releases/latest). The [v0.1.12](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.12) page is the same build.
 2. Download the Windows setup. It is the `.exe` installer. Leave the `.msi` alone.
 3. Run that setup. You need Windows 10 or 11, 64-bit. WebView2 is required, and Windows 11 already has it.
 

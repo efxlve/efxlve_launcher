@@ -2229,3 +2229,13 @@ Closed-beta testers called the Library "AI", busy, and unoptimized. The default 
 - **Performance:** Cached `epicVisibleSummaries` + one `Intl.Collator` per sort; `patchLibraryCardDom` for game-status / download done-fail-cancel / action UI / update badges; full `renderEpic()` resets the card chunk to 48; gamepad uses grid index + idle 80ms poll; titlebar is opaque (no `backdrop-filter`).
 - **Guardrail:** AGENTS.md Library rule — restacking glass/glow/Installed badges/shelves on All is a bug.
 
+## 171. Kütüphane Sayfalama, Kapak Altı Başlık, Taşınabilir Ekran Görüntüsü Klasörü
+
+Discord geri bildirimiyle gelen üç istek ve görsel boyut şikâyeti ele alındı.
+
+- **Kütüphane sayfalama (varsayılan kapalı):** Ayarlar > Görünüm'de anahtar ve sayfa boyu seçici (24/48/96). Açıkken kademeli yükleme yerine yalnızca geçerli sayfa DOM'a girer; altta `1 - 24 / 575` aralığı, sayfa düğmeleri (aktif sayfa beyaz vurgu) ve sayfa boyu seçicisi bulunur. Arama, filtre, sıralama, koleksiyon veya sayfa boyu değişince sayfa 1'e döner; sayfa gezinirken konum korunur. Yeni modül: `src/features/library/library-options.ts`.
+- **Kapak altında oyun adı (varsayılan kapalı):** Ayarlar > Görünüm'den açılır; ızgarada tek satır, ellipsis korumalı oyun adı gösterilir. Liste görünümü değişmez.
+- **Ekran görüntüsü klasörü:** Ayarlar > Ekran Görüntüsü'nde yolu gösteren satır ve **Göz At / Sıfırla / Klasörü aç** düğmeleri. Seçim `settings.json` içine yazılır; her oyun kendi alt klasörünü alır. Klasör değişirken mevcut görüntü varsa launcher içi onay penceresi çıkar: **Taşı** (oyun klasörü düzeni korunur, hedefteki dosyanın üzerine yazılmaz, farklı diskte kopyala+sil), **Taşıma**, **İptal**. Eski görüntüler galeride görünmeye devam eder; tarama hem yeni kökü hem eski varsayılan `Pictures\Efxlve Screenshots` klasörünü kapsar. Yeni komutlar: `epic_get_screenshot_move_info`, `epic_open_screenshot_dir`; `epic_set_screenshot_dir` artık `move_existing` alır.
+- **Görsel sıkıştırma varsayılan açık:** `SS_COMPRESS_KEY` yoksa açık kabul edilir; kullanıcı kapattıysa (`"false"`) tercihi korunur. AVIF kodlayamayan WebView2 sürümlerinde otomatik WebP'ye düşer. F12 sonrası otomatik sıkıştırma sessizdir (çift bildirim yok).
+- 18 + 7 yeni çeviri anahtarı 15 dilin tamamına eklendi (anahtar sayısı 1249 → **1274**, tam eşitlik). Doğrulama: `npm.cmd run build`, `cargo test` (93/93; hesaba bağlı DBD testi hariç). Yeni birim testleri: `screenshot_root_prefers_configured_folder`, `move_screenshots_keeps_game_folders_and_skips_existing_files`.
+

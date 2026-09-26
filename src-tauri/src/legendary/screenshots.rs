@@ -119,10 +119,41 @@ pub fn get_user_videos_dir() -> PathBuf {
     }
 }
 
+/// User-configured screenshots root. `None` keeps the legacy
+/// `%USERPROFILE%\Pictures\Efxlve Screenshots` layout.
+static SCREENSHOT_ROOT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
+
+/// Stores the configured root for this session (called at startup and on save).
+pub fn set_screenshot_root(root: Option<String>) {
+    let cleaned = root
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty())
+        .map(PathBuf::from);
+    if let Ok(mut slot) = SCREENSHOT_ROOT.lock() {
+        *slot = cleaned;
+    }
+}
+
+fn configured_screenshot_root() -> Option<PathBuf> {
+    SCREENSHOT_ROOT.lock().ok().and_then(|slot| slot.clone())
+}
+
+/// Pure resolver: the configured folder wins, otherwise the Pictures default.
+/// Kept pure so the fallback rule is unit-testable without session state.
+pub fn resolve_screenshot_root(configured: Option<&Path>) -> PathBuf {
+    match configured {
+        Some(path) => path.to_path_buf(),
+        None => get_user_pictures_dir().join("Efxlve Screenshots"),
+    }
+}
+
+/// Root that holds one screenshot folder per game.
+pub fn screenshots_root() -> PathBuf {
+    resolve_screenshot_root(configured_screenshot_root().as_deref())
+}
+
 pub fn game_screenshots_dir(clean_title: &str) -> PathBuf {
-    get_user_pictures_dir()
-        .join("Efxlve Screenshots")
-        .join(clean_title)
+    screenshots_root().join(clean_title)
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -314,10 +345,14 @@ pub async fn epic_get_game_screenshots(
 
         let mut scanned_paths = std::collections::HashSet::new();
 
-        // 1. Dedicated Efxlve Screenshots folders: %USERPROFILE%\Pictures\Efxlve Screenshots\<clean_t>
+        // 1. Per-game folders: the configured root plus the legacy default so
+        // screenshots taken before a folder change stay visible.
+        let legacy_root = get_user_pictures_dir().join("Efxlve Screenshots");
         let dirs_to_check = vec![
             game_screenshots_dir(&clean_t),
             game_screenshots_dir(&clean_app),
+            legacy_root.join(&clean_t),
+            legacy_root.join(&clean_app),
             get_user_pictures_dir().join(&clean_t),
         ];
 
@@ -955,6 +990,175 @@ pub async fn epic_open_game_screenshots_folder(
     .map_err(|e| e.to_string())?
 }
 
+/// Effective screenshots root (configured folder or the Pictures default).
+#[tauri::command]
+pub fn epic_get_screenshot_dir(app: AppHandle) -> String {
+    set_screenshot_root(crate::load_settings(&app).screenshot_dir);
+    screenshots_root().to_string_lossy().to_string()
+}
+
+/// Files and bytes currently stored in the effective screenshots root.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotMoveInfo {
+    pub count: u32,
+    pub bytes: u64,
+    pub dir: String,
+}
+
+/// Outcome of a screenshots root change (`skipped` = target file already existed).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotDirResult {
+    pub dir: String,
+    pub moved: u32,
+    pub skipped: u32,
+}
+
+/// Counts screenshot files directly under `root` and inside its game folders.
+fn count_screenshots_in(root: &Path) -> (u32, u64) {
+    let mut count = 0u32;
+    let mut bytes = 0u64;
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return (0, 0);
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if let Ok(files) = std::fs::read_dir(&path) {
+                for file in files.flatten() {
+                    let file_path = file.path();
+                    if file_path.is_file() {
+                        count += 1;
+                        bytes += file_path.metadata().map(|m| m.len()).unwrap_or(0);
+                    }
+                }
+            }
+        } else if path.is_file() {
+            count += 1;
+            bytes += path.metadata().map(|m| m.len()).unwrap_or(0);
+        }
+    }
+    (count, bytes)
+}
+
+/// Moves one file; falls back to copy + delete when the target is on another drive.
+fn move_file_to(from: &Path, to: &Path) -> Result<(), String> {
+    if let Some(parent) = to.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    if std::fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    std::fs::copy(from, to).map_err(|e| e.to_string())?;
+    std::fs::remove_file(from).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Moves every screenshot from `old_root` into `new_root`, keeping the per-game
+/// folder layout. Files that already exist at the target are left untouched.
+fn move_screenshots(old_root: &Path, new_root: &Path) -> Result<(u32, u32), String> {
+    if !old_root.is_dir() || old_root == new_root {
+        return Ok((0, 0));
+    }
+    std::fs::create_dir_all(new_root).map_err(|e| e.to_string())?;
+    let mut moved = 0u32;
+    let mut skipped = 0u32;
+    let entries = std::fs::read_dir(old_root).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let dest_dir = new_root.join(entry.file_name());
+            let files = std::fs::read_dir(&path).map_err(|e| e.to_string())?;
+            for file in files.flatten() {
+                let file_path = file.path();
+                if !file_path.is_file() {
+                    continue;
+                }
+                let target = dest_dir.join(file.file_name());
+                if target.exists() {
+                    skipped += 1;
+                    continue;
+                }
+                move_file_to(&file_path, &target)?;
+                moved += 1;
+            }
+        } else if path.is_file() {
+            let target = new_root.join(entry.file_name());
+            if target.exists() {
+                skipped += 1;
+                continue;
+            }
+            move_file_to(&path, &target)?;
+            moved += 1;
+        }
+    }
+    Ok((moved, skipped))
+}
+
+/// Stats for the "move existing screenshots?" confirmation.
+#[tauri::command]
+pub fn epic_get_screenshot_move_info(app: AppHandle) -> ScreenshotMoveInfo {
+    set_screenshot_root(crate::load_settings(&app).screenshot_dir);
+    let root = screenshots_root();
+    let (count, bytes) = count_screenshots_in(&root);
+    ScreenshotMoveInfo {
+        count,
+        bytes,
+        dir: root.to_string_lossy().to_string(),
+    }
+}
+
+/// Opens the effective screenshots root, creating it when missing.
+#[tauri::command]
+pub fn epic_open_screenshot_dir(app: AppHandle) -> Result<String, String> {
+    set_screenshot_root(crate::load_settings(&app).screenshot_dir);
+    let root = screenshots_root();
+    std::fs::create_dir_all(&root).map_err(|e| format!("@t:ss.dirCreateFailed\u{1f}{e}"))?;
+    #[cfg(windows)]
+    let res = std::process::Command::new("explorer").arg(&root).spawn();
+    #[cfg(target_os = "macos")]
+    let res = std::process::Command::new("open").arg(&root).spawn();
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    let res = std::process::Command::new("xdg-open").arg(&root).spawn();
+    res.map(|_| "@t:win.folderOpened".to_string())
+        .map_err(|e| format!("@t:win.folderOpenFailed\u{1f}{e}"))
+}
+
+/// Saves the screenshots root (`None` = default). With `move_existing`, the
+/// files from the previous root are moved into the new one first.
+#[tauri::command]
+pub fn epic_set_screenshot_dir(
+    app: AppHandle,
+    path: Option<String>,
+    move_existing: Option<bool>,
+) -> Result<ScreenshotDirResult, String> {
+    let cleaned = path.map(|p| p.trim().to_string()).filter(|p| !p.is_empty());
+    if let Some(dir) = &cleaned {
+        std::fs::create_dir_all(dir)
+            .map_err(|e| format!("@t:ss.dirCreateFailed\u{1f}{e}"))?;
+    }
+    let old_root = screenshots_root();
+    let new_root = resolve_screenshot_root(cleaned.as_deref().map(Path::new));
+    let mut moved = 0u32;
+    let mut skipped = 0u32;
+    if move_existing.unwrap_or(false) && old_root != new_root {
+        let (m, s) = move_screenshots(&old_root, &new_root)
+            .map_err(|e| format!("@t:ss.moveFailed\u{1f}{e}"))?;
+        moved = m;
+        skipped = s;
+    }
+    let mut settings = crate::load_settings(&app);
+    settings.screenshot_dir = cleaned;
+    crate::save_settings(&app, &settings);
+    set_screenshot_root(settings.screenshot_dir.clone());
+    Ok(ScreenshotDirResult {
+        dir: new_root.to_string_lossy().to_string(),
+        moved,
+        skipped,
+    })
+}
+
 /// Detects new screenshots taken during play and moves / links them.
 pub fn scan_new_captures_for_game(clean_title: &str, start_time: std::time::SystemTime) -> Vec<PathBuf> {
     let mut added = Vec::new();
@@ -1024,6 +1228,47 @@ mod tests {
     fn test_clean_folder_name() {
         assert_eq!(clean_folder_name("Dead by Daylight: Special Edition"), "Dead by Daylight Special Edition");
         assert_eq!(clean_folder_name("Tom Clancy's The Division / 2"), "Tom Clancy's The Division 2");
+    }
+
+    #[test]
+    fn screenshot_root_prefers_configured_folder() {
+        let custom = Path::new(r"D:\Captures");
+        assert_eq!(resolve_screenshot_root(Some(custom)), PathBuf::from(custom));
+        assert_eq!(resolve_screenshot_root(Some(custom)).join("Game"), PathBuf::from(r"D:\Captures").join("Game"));
+        // No configured folder: the legacy Pictures root stays the default.
+        assert!(resolve_screenshot_root(None).ends_with("Efxlve Screenshots"));
+    }
+
+    #[test]
+    fn move_screenshots_keeps_game_folders_and_skips_existing_files() {
+        let base = std::env::temp_dir().join(format!("efxlve-ss-move-{}", std::process::id()));
+        let old = base.join("old");
+        let new = base.join("new");
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(old.join("Game A")).unwrap();
+        std::fs::create_dir_all(old.join("Game B")).unwrap();
+        std::fs::create_dir_all(new.join("Game B")).unwrap();
+        std::fs::write(old.join("Game A").join("a1.png"), b"a1").unwrap();
+        std::fs::write(old.join("Game A").join("a2.png"), b"a2").unwrap();
+        std::fs::write(old.join("Game B").join("b1.png"), b"b1").unwrap();
+        std::fs::write(new.join("Game B").join("b1.png"), b"already").unwrap();
+        std::fs::write(old.join("loose.png"), b"loose").unwrap();
+
+        let (count, bytes) = count_screenshots_in(&old);
+        assert_eq!(count, 4);
+        assert!(bytes > 0);
+
+        let (moved, skipped) = move_screenshots(&old, &new).unwrap();
+        assert_eq!((moved, skipped), (3, 1));
+        assert!(new.join("Game A").join("a1.png").is_file());
+        assert!(new.join("Game A").join("a2.png").is_file());
+        assert!(new.join("loose.png").is_file());
+        // An existing target file is never overwritten.
+        assert_eq!(std::fs::read(new.join("Game B").join("b1.png")).unwrap(), b"already");
+        assert!(!old.join("Game A").join("a1.png").exists());
+        // The same root is a no-op even when "move" was requested.
+        assert_eq!(move_screenshots(&new, &new).unwrap(), (0, 0));
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]

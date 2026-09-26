@@ -60,6 +60,7 @@ import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
+import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
 import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
@@ -86,7 +87,7 @@ import {
 } from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
-import { loadIntegrationsView, loadSettingsView } from "../settings/settings-view";
+import { loadIntegrationsView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
@@ -195,6 +196,10 @@ document.addEventListener("click", (e) => {
   }
   const act = t.dataset.act;
   const id = t.dataset.id;
+  // New optional library controls and screenshot-folder actions; kept out of
+  // this router so the file does not keep growing.
+  if (handleLibraryOptionAction(act, t)) return;
+  if (handleSettingsAction(act, t)) return;
   if (act === "close") {
     const el = e.target as HTMLElement;
     if (el === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .drawer-close, .mclose")) closeModal();
