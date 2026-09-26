@@ -1,0 +1,99 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // DeepSeek V4.1 Flash for this repo. Model id matches the DeepSeek OpenCode
+  // pack (`deepseek-flash` = merged V4.1 Flash). Remove both lines to inherit
+  // the global model again.
+  "model": "deepseek/deepseek-flash",
+  "small_model": "deepseek/deepseek-flash",
+  // Combined with root AGENTS.md. Rules plus the file map, every turn.
+  "instructions": ["docs/OPENCODE.md", "docs/OPENCODE_MAP.md"],
+  // Same flash window as the DeepSeek pack. Without limit.input, compaction.reserved
+  // is ignored and the session can grow toward ~968K. Nested keys deep-merge, so
+  // this does not replace a global provider block.
+  "provider": {
+    "deepseek": {
+      "models": {
+        "deepseek-flash": {
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "limit": {
+            "context": 1000000,
+            "input": 131072,
+            "output": 384000
+          },
+          "options": {
+            "temperature": 0,
+            "thinking": { "type": "disabled" }
+          }
+        }
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 16000,
+    "tail_turns": 8,
+    "preserve_recent_tokens": 12000
+  },
+  "attachment": {
+    "image": {
+      "auto_resize": true,
+      "max_width": 1600,
+      "max_height": 1600,
+      "max_base64_bytes": 2097152
+    }
+  },
+  "tool_output": {
+    "max_lines": 800,
+    "max_bytes": 20480
+  },
+  // Thinking split on one Flash model. DeepSeek does not ship reasoning
+  // variants, so this uses agent.options (schema field). Unknown agent keys
+  // are folded into options. openai-compatible maps reasoningEffort to
+  // reasoning_effort. thinking.type is the DeepSeek on/off switch.
+  // explore / title / librarian / scout: thinking off.
+  // build / deep-worker: thinking on, reasoningEffort max.
+  "agent": {
+    "explore": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "disabled" }
+      }
+    },
+    "title": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "disabled" }
+      }
+    },
+    "librarian": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "disabled" }
+      }
+    },
+    "scout": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "disabled" }
+      }
+    },
+    "build": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "enabled" },
+        "reasoningEffort": "max"
+      }
+    },
+    "deep-worker": {
+      "model": "deepseek/deepseek-flash",
+      "options": {
+        "thinking": { "type": "enabled" },
+        "reasoningEffort": "max"
+      }
+    }
+  }
+}

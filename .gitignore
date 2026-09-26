@@ -30,3 +30,9 @@ tools/store-check/fixtures.json
 tools/store-check/fixtures.js
 tools/store-check/report*.png
 tools/store-check/.tmp-chrome-profile-*/
+
+# OpenCode yerel eklenti kurulumu (ajan markdown'ı repoda kalır)
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/bun.lock
