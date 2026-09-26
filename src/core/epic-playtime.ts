@@ -32,11 +32,14 @@ export function mergeEpicServerPlaytimes(server: Record<string, number>): boolea
   return changed;
 }
 
-/** Fetches the Epic snapshot and repaints when something changed. */
-export async function syncEpicServerPlaytimes(): Promise<void> {
+/**
+ * Fetches the Epic snapshot and repaints when something changed. `force`
+ * skips the backend cache and is used right after a game session ends.
+ */
+export async function syncEpicServerPlaytimes(force = false): Promise<void> {
   if (!isTauri) return;
   try {
-    const server = await epicSyncEpicPlaytimes();
+    const server = await epicSyncEpicPlaytimes(force);
     if (mergeEpicServerPlaytimes(server)) scheduleRender();
   } catch (err) {
     // Offline or an expired session: keep the locally tracked numbers.

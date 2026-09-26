@@ -439,12 +439,18 @@ export async function initApp(hooks: {
       } else {
         S.runningGames.delete(id);
         if (totalSeconds !== undefined) {
+          // The local counter only knows the sessions this launcher started.
+          // Replacing the map with it would drop a 300h game to 1h, so the
+          // shown value is the higher of the two (Epic's hours never shrink).
+          const shownSeconds = S.playtimeMap.get(id)?.total_seconds ?? 0;
           S.playtimeMap.set(id, {
-            total_seconds: totalSeconds,
+            total_seconds: Math.max(totalSeconds, shownSeconds),
             session_count: sessionCount || 1,
             last_played: lastPlayed,
             last_played_timestamp: lastPlayedTimestamp,
           });
+          // Pull Epic's fresh total now; max() keeps it safe if Epic lags behind.
+          void syncEpicServerPlaytimes(true);
         }
         toast(
           sessionSeconds

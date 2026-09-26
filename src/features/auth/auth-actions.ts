@@ -143,6 +143,9 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     S.epicBusyMsg = "";
     void loadEpicAchSummaries();
     void refreshUpdates();
+    // The full list may include games missing from the instant snapshot, so
+    // refresh the Epic playtime merge once it is in memory.
+    void syncEpicServerPlaytimes();
     if (manual) {
       try {
         S.epicCollections = await epicImportEglCollections();

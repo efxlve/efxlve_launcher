@@ -178,4 +178,17 @@ mod tests {
         assert_eq!(user_value(raw, "account_id"), "acc");
         assert_eq!(user_value(raw, "missing"), "");
     }
+
+    /// Live smoke test (network + signed-in session). Run with:
+    /// `cargo test epic_playtime_snapshot_is_readable -- --ignored --nocapture`
+    #[test]
+    #[ignore = "requires a signed-in Epic session and network"]
+    fn epic_playtime_snapshot_is_readable() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let map = fetch_playtimes().await.expect("live playtime fetch");
+            assert!(!map.is_empty(), "a signed-in account should have playtime records");
+            assert!(map.values().any(|seconds| *seconds > 0));
+        });
+    }
 }
