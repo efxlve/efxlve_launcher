@@ -13,6 +13,7 @@ pub mod playtime;
 pub mod backup;
 pub mod collections;
 pub mod skip;
+pub mod download_resume;
 pub mod transfers;
 pub mod hltb;
 pub mod steamgrid;

@@ -1,6 +1,7 @@
 // Prevents an extra console window from opening on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod eos;
 mod legendary;
 mod presence;
 
@@ -105,6 +106,9 @@ static STORE_INSET_TOP: std::sync::atomic::AtomicU64 = std::sync::atomic::Atomic
 static STORE_INSET_BOTTOM: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 /// Whether the store webview is currently shown; a hidden view must stay off-screen on resize.
 static STORE_VISIBLE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Command palette is open. The child webview stays off-screen until this clears,
+/// so a window resize cannot place it over the palette.
+static STORE_PALETTE_OPEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 /// Bumped every time the store is hidden. A show that started earlier must not
 /// paint the webview back on top of another page.
 static STORE_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -123,6 +127,144 @@ fn store_bounds(win_w: f64, win_h: f64, left: f64, top: f64, bottom: f64) -> (f6
     let top = top.max(0.0);
     let bottom = bottom.max(0.0);
     (left, top, (win_w - left).max(100.0), (win_h - top - bottom).max(100.0))
+}
+
+/// The child webview may sit in the content area only while the store page is
+/// showing and the command palette is closed.
+fn store_child_on_screen(store_visible: bool, palette_open: bool) -> bool {
+    store_visible && !palette_open
+}
+
+/// Bounds a resize may apply to the store child webview.
+/// `None` leaves it off-screen: the store is hidden, or the command palette is
+/// open. A resize must not pull the webview back over the palette, and it must
+/// not hide it again (a second hide/show is the close flicker).
+fn store_resize_bounds(
+    store_visible: bool,
+    palette_open: bool,
+    win_w: f64,
+    win_h: f64,
+    left: f64,
+    top: f64,
+    bottom: f64,
+) -> Option<(f64, f64, f64, f64)> {
+    if !store_child_on_screen(store_visible, palette_open) {
+        return None;
+    }
+    Some(store_bounds(win_w, win_h, left, top, bottom))
+}
+
+/// What one palette hold/release call is allowed to do.
+/// A second call for the same transition is `Ignore`, so one close cannot
+/// show, hide, and show the child webview again.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StoreHoldEffect {
+    Park,
+    Show,
+    ReleaseHidden,
+    Ignore,
+}
+
+fn store_hold_effect(palette_open: bool, store_visible: bool, hold: bool, restore: bool) -> StoreHoldEffect {
+    if hold {
+        if palette_open {
+            StoreHoldEffect::Ignore
+        } else {
+            StoreHoldEffect::Park
+        }
+    } else if !palette_open {
+        StoreHoldEffect::Ignore
+    } else if restore && store_visible {
+        StoreHoldEffect::Show
+    } else {
+        StoreHoldEffect::ReleaseHidden
+    }
+}
+
+fn webview_rect(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
+    tauri::Rect {
+        position: tauri::Position::Logical(tauri::LogicalPosition::new(x, y)),
+        size: tauri::Size::Logical(tauri::LogicalSize::new(width, height)),
+    }
+}
+
+fn bounds_key(x: f64, y: f64, width: f64, height: f64) -> (i32, i32, i32, i32) {
+    (x.round() as i32, y.round() as i32, width.round() as i32, height.round() as i32)
+}
+
+/// Last rect sent to the child. A resize echo of that same rect must not
+/// apply bounds again; split position/size updates were collapsing it to 1x1
+/// and forcing a second show.
+static STORE_APPLIED_BOUNDS: std::sync::Mutex<Option<(i32, i32, i32, i32)>> = std::sync::Mutex::new(None);
+
+fn bounds_already_applied(x: f64, y: f64, width: f64, height: f64) -> bool {
+    STORE_APPLIED_BOUNDS.lock().ok().and_then(|slot| *slot) == Some(bounds_key(x, y, width, height))
+}
+
+fn remember_applied_bounds(x: f64, y: f64, width: f64, height: f64) {
+    if let Ok(mut slot) = STORE_APPLIED_BOUNDS.lock() {
+        *slot = Some(bounds_key(x, y, width, height));
+    }
+}
+
+/// One position+size update. `set_position` then `set_size` reads the parked
+/// 1x1 size back and collapses the webview after it has just been shown.
+fn move_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+    if bounds_already_applied(x, y, width, height) {
+        return Ok(());
+    }
+    let views = store_views(window);
+    if views.is_empty() {
+        return Ok(());
+    }
+    let rect = webview_rect(x, y, width, height);
+    for v in &views {
+        v.set_bounds(rect).map_err(|e| e.to_string())?;
+    }
+    remember_applied_bounds(x, y, width, height);
+    Ok(())
+}
+
+/// Moves every store child webview off-screen and hides it once.
+/// Shared by `hide_store_view` and the command-palette hold.
+fn park_store_offscreen(window: &tauri::Window) -> Result<(), String> {
+    const X: f64 = -10000.0;
+    const Y: f64 = -10000.0;
+    let views = store_views(window);
+    if views.is_empty() {
+        return Ok(());
+    }
+    let rect = webview_rect(X, Y, 1.0, 1.0);
+    for v in &views {
+        v.set_bounds(rect).map_err(|e| e.to_string())?;
+    }
+    for v in &views {
+        v.hide().map_err(|e| e.to_string())?;
+    }
+    remember_applied_bounds(X, Y, 1.0, 1.0);
+    Ok(())
+}
+
+/// Shows the parked child at one rect. Callers must not follow this with a
+/// second show or a hide in the same close.
+fn show_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+    let width = width.max(100.0);
+    let height = height.max(100.0);
+    let views = store_views(window);
+    if views.is_empty() {
+        return Ok(());
+    }
+    if !bounds_already_applied(x, y, width, height) {
+        let rect = webview_rect(x, y, width, height);
+        for v in &views {
+            v.set_bounds(rect).map_err(|e| e.to_string())?;
+        }
+        remember_applied_bounds(x, y, width, height);
+    }
+    for v in &views {
+        v.show().map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
@@ -1114,8 +1256,8 @@ async fn show_store_view(
     let pos = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
     remember_store_insets(x, y, bottom.unwrap_or(0.0));
-    let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed);
-    STORE_VISIBLE.store(true, std::sync::atomic::Ordering::Relaxed);
+    let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
+    STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
 
     let owned_games = get_owned_games_json();
     let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
@@ -1123,15 +1265,21 @@ async fn show_store_view(
     // If the webview already exists, show it INSTANTLY (0 ms) without waiting for any network request
     if !recreate {
         if let Some(v) = store_views(&window).into_iter().next() {
-            let _ = v.set_position(pos);
-            let _ = v.set_size(size);
-            v.show().map_err(|e| e.to_string())?;
-            if STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed) != epoch {
-                let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
-                let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
-                let _ = v.hide();
-                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
+            // The palette hold parks the webview; do not move it back on screen.
+            if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
+                let _ = park_store_offscreen(&window);
+            } else {
+                let _ = v.set_position(pos);
+                let _ = v.set_size(size);
+                v.show().map_err(|e| e.to_string())?;
+            }
+            if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {
+                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
+                let _ = park_store_offscreen(&window);
                 return Ok("@t:win.focused".into());
+            }
+            if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
+                let _ = park_store_offscreen(&window);
             }
             let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             if let Ok(target) = url.parse::<url::Url>() {
@@ -1140,6 +1288,9 @@ async fn show_store_view(
                         let _ = v.navigate(target);
                     }
                 }
+            }
+            if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
+                let _ = park_store_offscreen(&window);
             }
             return Ok("@t:win.focused".into());
         }
@@ -1193,16 +1344,14 @@ async fn show_store_view(
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {
             eprintln!("[store-view] child created");
-            if STORE_EPOCH.load(std::sync::atomic::Ordering::Relaxed) != epoch {
-                let window = app
-                    .get_window("main")
-                    .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
-                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
-                for v in store_views(&window) {
-                    let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
-                    let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
-                    let _ = v.hide();
-                }
+            let window = app
+                .get_window("main")
+                .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+            if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {
+                STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
+                let _ = park_store_offscreen(&window);
+            } else if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
+                let _ = park_store_offscreen(&window);
             }
             Ok("@t:store.opened".into())
         }
@@ -1224,20 +1373,18 @@ async fn show_store_view(
 /// Resizes the embedded store view (does not reload the page).
 #[tauri::command]
 fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64, bottom: Option<f64>) -> Result<(), String> {
-    use tauri::{LogicalPosition, LogicalSize, Position, Size};
+    use std::sync::atomic::Ordering::SeqCst;
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
-    let pos = Position::Logical(LogicalPosition::new(x, y));
-    let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
     remember_store_insets(x, y, bottom.unwrap_or(0.0));
-    if !STORE_VISIBLE.load(std::sync::atomic::Ordering::Relaxed) {
+    let palette_open = STORE_PALETTE_OPEN.load(SeqCst);
+    // Palette-open resizes must not hide or show. Parking here races the
+    // single restore and flashes the child closed, then open again.
+    if !store_child_on_screen(STORE_VISIBLE.load(SeqCst), palette_open) {
         return Ok(());
     }
-    for v in store_views(&window) {
-        let _ = v.set_position(pos);
-        let _ = v.set_size(size);
-    }
+    let _ = move_store_bounds(&window, x, y, width.max(100.0), height.max(100.0));
     Ok(())
 }
 
@@ -1247,18 +1394,60 @@ fn resize_store_view(app: AppHandle, x: f64, y: f64, width: f64, height: f64, bo
 /// overlap can remain on screen.
 #[tauri::command]
 fn hide_store_view(app: AppHandle) -> Result<String, String> {
-    use tauri::{LogicalPosition, LogicalSize, Position, Size};
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
-    STORE_EPOCH.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
-    for v in store_views(&window) {
-        let _ = v.set_position(Position::Logical(LogicalPosition::new(-10000.0, -10000.0)));
-        let _ = v.set_size(Size::Logical(LogicalSize::new(1.0, 1.0)));
-        v.hide().map_err(|e| e.to_string())?;
-    }
+    STORE_EPOCH.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
+    park_store_offscreen(&window)?;
     Ok("gizlendi".into())
+}
+
+/// Parks the store child webview while the command palette is open, then puts
+/// it back when the palette closes. `restore` is false when the user has left
+/// the store (or another launcher surface is covering it) before the hold ends.
+#[tauri::command]
+fn set_store_palette_hold(
+    app: AppHandle,
+    hold: bool,
+    restore: bool,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    bottom: Option<f64>,
+) -> Result<(), String> {
+    use std::sync::atomic::Ordering::SeqCst;
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    match store_hold_effect(
+        STORE_PALETTE_OPEN.load(SeqCst),
+        STORE_VISIBLE.load(SeqCst),
+        hold,
+        restore,
+    ) {
+        StoreHoldEffect::Ignore => Ok(()),
+        StoreHoldEffect::Park => {
+            STORE_PALETTE_OPEN.store(true, SeqCst);
+            let _ = park_store_offscreen(&window);
+            Ok(())
+        }
+        StoreHoldEffect::ReleaseHidden => {
+            STORE_PALETTE_OPEN.store(false, SeqCst);
+            Ok(())
+        }
+        StoreHoldEffect::Show => {
+            STORE_PALETTE_OPEN.store(false, SeqCst);
+            remember_store_insets(x, y, bottom.unwrap_or(0.0));
+            show_store_bounds(&window, x, y, width, height)?;
+            // A hide that landed while we were showing wins; do not show again.
+            if STORE_PALETTE_OPEN.load(SeqCst) || !STORE_VISIBLE.load(SeqCst) {
+                let _ = park_store_offscreen(&window);
+            }
+            Ok(())
+        }
+    }
 }
 
 /// Destroys the embedded store webview to release its renderer process memory
@@ -1293,84 +1482,6 @@ fn open_folder(path: String) -> Result<String, String> {
     let res = std::process::Command::new("xdg-open").arg(&p).spawn();
     res.map(|_| "@t:win.folderOpened".to_string())
         .map_err(|e| format!("@t:win.folderOpenFailed\u{1f}{e}"))
-}
-
-/// Whether the EOS Overlay (installed system-wide by the Epic Games Launcher) is present.
-#[derive(Default, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EosOverlayStatus {
-    pub installed: bool,
-    pub path: String,
-    pub version: String,
-    pub overlay_supported: bool,
-}
-
-/// Checks the standard EOS Overlay install locations. The overlay is injected into
-/// games (Shift+F3) by Epic's service; our launcher only reports its presence.
-/// Version and overlay-support flags come from the EOS service registry key.
-#[tauri::command]
-async fn eos_overlay_status() -> EosOverlayStatus {
-    tauri::async_runtime::spawn_blocking(eos_overlay_status_blocking)
-        .await
-        .unwrap_or_default()
-}
-
-fn eos_overlay_status_blocking() -> EosOverlayStatus {
-    let mut path = String::new();
-    for var in ["ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"] {
-        if let Ok(base) = std::env::var(var) {
-            let root = std::path::Path::new(&base)
-                .join("Epic Games")
-                .join("Epic Online Services");
-            if root.is_dir() {
-                path = root.to_string_lossy().to_string();
-                break;
-            }
-        }
-    }
-    let installed = !path.is_empty();
-
-    let mut version = String::new();
-    let mut overlay_supported = false;
-    #[cfg(windows)]
-    {
-        for key in [
-            r"HKLM\SOFTWARE\WOW6432Node\Epic Games\EOS\MainService",
-            r"HKLM\SOFTWARE\Epic Games\EOS\MainService",
-        ] {
-            use std::os::windows::process::CommandExt;
-            let Ok(out) = std::process::Command::new("reg")
-                .creation_flags(0x08000000)
-                .args(["query", key])
-                .output()
-            else {
-                continue;
-            };
-            let text = String::from_utf8_lossy(&out.stdout);
-            for line in text.lines() {
-                let line = line.trim();
-                if let Some(v) = line.strip_prefix("Version") {
-                    if let Some(val) = v.split_whitespace().last() {
-                        if !val.is_empty() && val != "REG_SZ" {
-                            version = val.to_string();
-                        }
-                    }
-                } else if let Some(v) = line.strip_prefix("OverlayInstallSupported") {
-                    overlay_supported = v.split_whitespace().last() == Some("1");
-                }
-            }
-            if !version.is_empty() {
-                break;
-            }
-        }
-    }
-
-    EosOverlayStatus {
-        installed,
-        path,
-        version,
-        overlay_supported,
-    }
 }
 
 /// Best-effort scan of a game's install directory for the EOS SDK runtime.
@@ -1595,25 +1706,25 @@ fn main() {
                 }
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
-                use std::sync::atomic::Ordering::Relaxed;
-                if !STORE_VISIBLE.load(Relaxed) {
+                use std::sync::atomic::Ordering::{Relaxed, SeqCst};
+                let palette_open = STORE_PALETTE_OPEN.load(SeqCst);
+                let store_visible = STORE_VISIBLE.load(SeqCst);
+                let Ok(scale_factor) = window.scale_factor() else {
                     return;
-                }
-                if let Ok(scale_factor) = window.scale_factor() {
-                    let logical_size = physical_size.to_logical::<f64>(scale_factor);
-                    let (x, y, w, h) = store_bounds(
-                        logical_size.width,
-                        logical_size.height,
-                        f64::from_bits(STORE_INSET_LEFT.load(Relaxed)),
-                        f64::from_bits(STORE_INSET_TOP.load(Relaxed)),
-                        f64::from_bits(STORE_INSET_BOTTOM.load(Relaxed)),
-                    );
-                    let pos = tauri::Position::Logical(tauri::LogicalPosition::new(x, y));
-                    let size = tauri::Size::Logical(tauri::LogicalSize::new(w, h));
-                    for v in store_views(window) {
-                        let _ = v.set_position(pos);
-                        let _ = v.set_size(size);
-                    }
+                };
+                let logical_size = physical_size.to_logical::<f64>(scale_factor);
+                // `None` (palette open, or store hidden): leave the child where the
+                // hold parked it. Parking again hides a restore that just showed it.
+                if let Some((x, y, w, h)) = store_resize_bounds(
+                    store_visible,
+                    palette_open,
+                    logical_size.width,
+                    logical_size.height,
+                    f64::from_bits(STORE_INSET_LEFT.load(Relaxed)),
+                    f64::from_bits(STORE_INSET_TOP.load(Relaxed)),
+                    f64::from_bits(STORE_INSET_BOTTOM.load(Relaxed)),
+                ) {
+                    let _ = move_store_bounds(window, x, y, w, h);
                 }
             }
         })
@@ -1700,9 +1811,11 @@ fn main() {
             show_store_view,
             resize_store_view,
             hide_store_view,
+            set_store_palette_hold,
             destroy_store_view,
             open_folder,
-            eos_overlay_status,
+            eos::eos_overlay_status,
+            eos::eos_install_redistributable,
             epic_detect_eos,
             legendary::friends::epic_friends,
             legendary::steamgrid::epic_get_steamgrid_key,
@@ -1729,7 +1842,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::store_bounds;
+    use super::{store_bounds, store_hold_effect, store_resize_bounds, StoreHoldEffect};
 
     #[test]
     fn store_bounds_fill_content_area_between_header_and_status_bar() {
@@ -1740,5 +1853,28 @@ mod tests {
     fn store_bounds_clamp_to_minimum_size_and_non_negative_insets() {
         assert_eq!(store_bounds(200.0, 120.0, 232.0, 36.0, 24.0), (232.0, 36.0, 100.0, 100.0));
         assert_eq!(store_bounds(800.0, 600.0, -5.0, -1.0, -3.0), (0.0, 0.0, 800.0, 600.0));
+    }
+
+    #[test]
+    fn store_stays_offscreen_while_palette_open_including_resize() {
+        // Store page is current, but the command palette is open.
+        assert_eq!(store_resize_bounds(true, true, 1600.0, 900.0, 225.0, 36.0, 0.0), None);
+        // Same window after the palette closes: the content area is restored.
+        assert_eq!(
+            store_resize_bounds(true, false, 1600.0, 900.0, 225.0, 36.0, 0.0),
+            Some((225.0, 36.0, 1375.0, 864.0))
+        );
+        // Left the store entirely: a resize still must not bring the webview back.
+        assert_eq!(store_resize_bounds(false, false, 1600.0, 900.0, 225.0, 36.0, 0.0), None);
+        assert_eq!(store_resize_bounds(false, true, 1600.0, 900.0, 225.0, 36.0, 0.0), None);
+
+        // One close shows once. A second release in the same turn does nothing.
+        assert_eq!(store_hold_effect(true, true, false, true), StoreHoldEffect::Show);
+        assert_eq!(store_hold_effect(false, true, false, true), StoreHoldEffect::Ignore);
+        assert_eq!(store_hold_effect(true, true, true, false), StoreHoldEffect::Ignore);
+        assert_eq!(store_hold_effect(false, true, true, false), StoreHoldEffect::Park);
+        // Left the store while the palette was open: clear the hold, stay hidden.
+        assert_eq!(store_hold_effect(true, false, false, true), StoreHoldEffect::ReleaseHidden);
+        assert_eq!(store_hold_effect(true, true, false, false), StoreHoldEffect::ReleaseHidden);
     }
 }

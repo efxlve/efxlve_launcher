@@ -30,9 +30,109 @@ export function storeRect(): { x: number; y: number; width: number; height: numb
   };
 }
 
+/** Launcher surfaces drawn in the main webview. The store child sits above them. */
+const COVERING_ROOT_IDS = [
+  "modal-root",
+  "storage-root",
+  "manage-root",
+  "install-root",
+  "selective-root",
+  "playtime-root",
+  "collection-root",
+  "cover-modal-root",
+  "move-modal-root",
+  "options-root",
+  "hide-games-root",
+  "hide-achievements-root",
+  "share-modal-root",
+] as const;
+
+/** True while the command palette is keeping the store child webview off-screen. */
+let storeHeldForPalette = false;
+/** True after a close has already asked Rust to show the child once. */
+let storeRestoreInFlight = false;
+/** Watches covering roots only while a hold is waiting for them to close. */
+let coverWatch: MutationObserver | null = null;
+
+function coveringStore(): boolean {
+  for (const id of COVERING_ROOT_IDS) {
+    if (document.getElementById(id)?.firstElementChild) return true;
+  }
+  return false;
+}
+
+function paletteDomOpen(): boolean {
+  return Boolean(document.getElementById("palette-root")?.firstElementChild);
+}
+
+function stopCoverWatch(): void {
+  coverWatch?.disconnect();
+  coverWatch = null;
+}
+
+function watchCoversThenRelease(): void {
+  if (coverWatch) return;
+  coverWatch = new MutationObserver(() => {
+    if (!storeHeldForPalette || paletteDomOpen() || coveringStore()) return;
+    releaseStoreForPalette();
+  });
+  for (const id of COVERING_ROOT_IDS) {
+    const el = document.getElementById(id);
+    if (el) coverWatch.observe(el, { childList: true });
+  }
+}
+
 export function syncStoreViewSize(): void {
-  if (S.view !== "store" || !S.storeShown || !isTauri) return;
+  // A resize while the palette is open, or the echo of the single restore,
+  // must not move or hide the child again.
+  if (S.view !== "store" || !S.storeShown || !isTauri || storeHeldForPalette || storeRestoreInFlight) return;
   invoke<void>("resize_store_view", storeRect()).catch(() => undefined);
+}
+
+/**
+ * Parks the store child webview so the command palette (main webview) can
+ * paint above it. Same off-screen hide the store already uses when leaving
+ * the page; the store page itself stays current.
+ */
+export function holdStoreForPalette(): Promise<void> {
+  // Also hold while the store page is still loading. An in-flight show checks
+  // this flag and parks the child instead of painting over the palette.
+  if (storeHeldForPalette || S.view !== "store" || !isTauri) return Promise.resolve();
+  storeHeldForPalette = true;
+  return invoke("set_store_palette_hold", {
+    hold: true,
+    restore: false,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    bottom: 0,
+  }).then(
+    () => undefined,
+    () => {
+      storeHeldForPalette = false;
+    },
+  );
+}
+
+/** Puts the store child back once, unless the user left the store or a launcher surface is still open. */
+export function releaseStoreForPalette(): void {
+  // closePalette and a same-turn DOM/resize sync both call this. The first
+  // call owns the single restore; the second finds the hold already cleared.
+  if (!storeHeldForPalette || paletteDomOpen() || storeRestoreInFlight) return;
+  if (S.view === "store" && S.storeShown && coveringStore()) {
+    watchCoversThenRelease();
+    return;
+  }
+  stopCoverWatch();
+  storeHeldForPalette = false;
+  if (!isTauri) return;
+  const restore = S.view === "store" && S.storeShown;
+  const rect = restore ? storeRect() : { x: 0, y: 0, width: 100, height: 100, bottom: 0 };
+  storeRestoreInFlight = true;
+  void invoke("set_store_palette_hold", { hold: false, restore, ...rect }).finally(() => {
+    storeRestoreInFlight = false;
+  });
 }
 
 export function renderStoreLoadingScreen(): string {

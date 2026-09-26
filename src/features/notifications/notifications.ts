@@ -115,13 +115,19 @@ export function clearNotifications(): void {
   updateNotifBadge();
 }
 
-/** Reflects the unread count on the nav bell (shell element, always present). */
+/**
+ * One dot on the sidebar bell. Missing EOS keeps it amber until the service
+ * folder exists, even if the notice was cleared from the list. Amber replaces
+ * the unread dot so the two never stack.
+ */
 export function updateNotifBadge(): void {
   const badge = document.getElementById("notif-badge");
   if (!badge) return;
   const n = unreadCount();
+  const eosMissing = S.eosOverlay !== null && !S.eosOverlay.installed;
   badge.textContent = n > 9 ? "9+" : String(n);
-  badge.classList.toggle("hidden", n === 0);
+  badge.classList.toggle("warn", eosMissing);
+  badge.classList.toggle("hidden", !eosMissing && n === 0);
 }
 
 function relTime(ts: number): string {

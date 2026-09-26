@@ -127,6 +127,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Sürüm 0.1.11:** Epic Online Services zorunludur. Yoksa açılış bildirimi ve Ayarlar > Entegrasyonlar satırı, kurulana kadar çoğu özelliğin çalışmayacağını söyler. İndir resmi kurucuyu açar. Bildirimde yoksay yok. Liste temizlense de EOS yoksa uyarı sonraki açılışta ve Ayarlar açılınca geri gelir. Kenar çubuğundaki zil, EOS kurulana kadar amber nokta taşır. Yarım kalan, hata veren, zaman aşımına uğrayan veya duraklatılan indirme kısmi dosyaları ve devam kaydını diskte tutar; sonraki kurulum aynı klasörden sürer. Yalnızca hiç kurulmamış bir oyunun açık iptali kısmi klasörü siler. Epic Games Store sayfasında arama, gömülü mağazanın üstünde açılır; arama kapanınca mağaza bir kez geri gelir. `v0.1.11` olarak yayınlanır.
 - **Sürüm 0.1.10:** Kütüphane birkaç oyunu aynı anda gizleyebilir. Profil başarım satırlarını gizler; başarım başlıkları oyun adıdır. Kütüphanede Yüklü filtresi vardır. Ayarlar’daki gizli oyunlar kapak ve geliştirici gösterir; Detay ile açılır veya toplu gösterilir. `v0.1.10` olarak yayınlanır.
 - **Kütüphane:** filtre satırında Yüklü yalnızca kurulu oyunları gösterir. Tümü tam listeye döner; arama ve sıralama aynı kalır.
 - **Profil başarımları:** göz simgesi satır seçip gizler; "Gizli" sekmesi geri açar. Satırda yalnızca oyun adı vardır. Gizleme listesinde kapak kutusu durur.

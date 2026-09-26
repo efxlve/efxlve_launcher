@@ -67,6 +67,7 @@ import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { applyMovedGamePath } from "../move-game/move-game-actions";
+import { initEosInstall } from "../eos/eos-install";
 import { initPresence, syncPresence } from "../presence/presence";
 import { renderMoveGameModalFrame, updateMoveProgressInPlace } from "../move-game/move-game-view";
 import {
@@ -166,6 +167,7 @@ export async function initApp(hooks: {
   void loadSavedAccounts();
 
   if (isTauri) {
+    void initEosInstall();
     void initAppUpdater();
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});
     void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});

@@ -28,6 +28,7 @@
 .net-chip.offline { color: var(--warn); }
 .net-chip.offline .net-dot { background: var(--warn); }
 .notif-badge { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); font-size: 0; pointer-events: none; }
+.notif-badge.warn { background: var(--warn); }
 .win-controls { display: flex; align-self: stretch; margin-left: 6px; -webkit-app-region: no-drag; }
 .win-btn {
   width: 46px; border: none; background: none; color: var(--text-2); cursor: pointer;

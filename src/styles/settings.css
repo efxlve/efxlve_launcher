@@ -53,6 +53,10 @@
 .settings-row { align-items: center; padding: 12px 14px; flex-wrap: wrap; }
 .settings-row:hover { background: transparent; }
 .settings-row.stacked { flex-direction: column; align-items: stretch; gap: 10px; }
+/* Column axis: the 220px flex-basis on .row-main is a width hint for
+   horizontal rows. Here it becomes a tall empty block above the controls. */
+.settings-row.stacked .row-main { flex: 0 1 auto; }
+.settings-row.stacked .settings-row-control { flex: 0 0 auto; }
 .settings-row .row-main { flex: 1 1 220px; min-width: min(220px, 100%); }
 .settings-row-title { font-size: 13px; font-weight: 500; overflow-wrap: break-word; }
 .settings-row-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; margin-top: 2px; overflow-wrap: break-word; }
@@ -109,3 +113,28 @@
   .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; }
   .settings-row-control { justify-content: flex-start; }
 }
+#eos-settings-row { align-items: center; }
+#eos-settings-row .row-main { flex: 1 1 280px; min-width: min(100%, 220px); }
+#eos-settings-row .settings-row-control {
+  flex: 1 1 280px;
+  min-width: min(100%, 260px);
+  justify-content: flex-end;
+}
+.progress.eos-install-bar {
+  flex: 1 1 160px;
+  width: auto;
+  min-width: 140px;
+  max-width: 220px;
+  height: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+}
+.eos-install-pct {
+  font-size: 12px;
+  color: var(--text-2);
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#eos-row-control .btn:disabled,
+#eos-row-control .btn.disabled { opacity: 0.45; pointer-events: none; }

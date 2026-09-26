@@ -1,12 +1,14 @@
 //! Game download/install: `legendary install` wrapper + queue + cancel.
 //!
-//! Contract: progress flows through the existing `download-progress` event
-//! (`{id, progress, done}`), hata `download-failed`, iptal
-//! and cancellation is reported via `download-cancelled`. Only one active download at a time.
+//! Progress is `download-progress`. Failures use `download-failed`. Only an
+//! explicit user cancel uses `download-cancelled`. One active download at a time.
 //!
-//! Patterns borrowed from Heroic: `-y --skip-dlcs --skip-sdl`, and on MemoryError
-//! `--max-shared-memory 5000` ile tekrar, stdout regex parse, indirme
-//! a fresh process per attempt (partial files resume on the next run).
+//! Install flags follow Heroic: `-y` first, then `install`, `--base-path`,
+//! `--skip-dlcs`, `--skip-sdl`. A MemoryError retries once with a larger
+//! shared-memory cap. Each attempt is a new process. Partial files and the
+//! resume record stay on disk unless the user cancels an install that has
+//! never finished. A crash, timeout, or pause must not start the next attempt
+//! in an empty folder.
 //!
 //! Concurrency note: the child process belongs to the monitor task; shared
 //! state is held only across short critical sections (never hold a lock
@@ -34,6 +36,8 @@ pub struct EpicDlState {
     queue: VecDeque<PendingDownload>,
     active_generation: Option<u64>,
     next_generation: u64,
+    /// Base path and tags for the process that currently owns `active`.
+    active_meta: Option<PendingDownload>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -87,22 +91,121 @@ fn clear_pending_download() {
     let _ = std::fs::remove_file(pending_download_path());
 }
 
-fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
+fn read_pending_download() -> Option<PendingDownload> {
+    std::fs::read_to_string(pending_download_path())
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+}
+
+fn clear_pending_if_app(app_name: &str) {
+    if read_pending_download().is_some_and(|pending| pending.app_name == app_name) {
+        clear_pending_download();
+    }
+}
+
+fn game_was_installed(app_name: &str) -> bool {
     let config = super::skip::default_config_dir();
-    let was_installed = super::cache::read_installed(&config)
+    super::cache::read_installed(&config)
         .iter()
-        .any(|game| game.app_name == app_name);
-    if was_installed {
+        .any(|game| game.app_name == app_name)
+}
+
+fn record_from_pending(pending: &PendingDownload) -> super::download_resume::ResumeRecord {
+    super::download_resume::ResumeRecord {
+        app_name: pending.app_name.clone(),
+        install_tags: pending.install_tags.clone(),
+        install_dir: pending.install_dir.clone(),
+    }
+}
+
+fn pending_from_record(record: super::download_resume::ResumeRecord) -> PendingDownload {
+    PendingDownload {
+        app_name: record.app_name,
+        install_tags: record.install_tags,
+        install_dir: record.install_dir,
+    }
+}
+
+/// Base path and tags from memory, then the active pending file, then the per-app record.
+fn remembered_request(app_name: &str, meta: Option<&PendingDownload>) -> PendingDownload {
+    if let Some(meta) = meta.filter(|item| item.app_name == app_name) {
+        return meta.clone();
+    }
+    if let Some(pending) = read_pending_download().filter(|pending| pending.app_name == app_name) {
+        return pending;
+    }
+    if let Some(saved) = super::download_resume::load_one(&super::download_resume::resumes_path(), app_name) {
+        return pending_from_record(saved);
+    }
+    PendingDownload {
+        app_name: app_name.to_string(),
+        install_tags: Vec::new(),
+        install_dir: None,
+    }
+}
+
+fn has_resume_record(app_name: &str) -> bool {
+    read_pending_download().is_some_and(|pending| pending.app_name == app_name)
+        || super::download_resume::load_one(&super::download_resume::resumes_path(), app_name).is_some()
+}
+
+fn saved_install_dir(app_name: &str) -> Option<String> {
+    remembered_request(app_name, None).install_dir
+}
+
+fn persist_resume(pending: &PendingDownload) {
+    write_pending_download(
+        &pending.app_name,
+        &pending.install_tags,
+        pending.install_dir.as_deref(),
+    );
+    super::download_resume::save_one(
+        &super::download_resume::resumes_path(),
+        &record_from_pending(pending),
+    );
+}
+
+/// Cleanup and resume-record updates for a finished attempt.
+/// Partial folders are removed only when the plan says so (user cancel of a
+/// game that was never installed). Failure and pause leave both in place.
+fn finish_stop(app: &AppHandle, app_name: &str, stop: super::download_resume::DownloadStop) {
+    let plan = super::download_resume::plan_stop(stop);
+    if plan.cleanup_partial {
+        cleanup_partial_install(app, app_name);
+    }
+    super::download_resume::commit_stop(&super::download_resume::resumes_path(), app_name, stop);
+    if !plan.keep_resume_record {
+        clear_pending_if_app(app_name);
+    }
+}
+
+fn user_halted(app: &AppHandle) -> bool {
+    app.state::<AppState>()
+        .epic_dl
+        .lock()
+        .map(|slot| slot.cancelled || slot.paused)
+        .unwrap_or(false)
+}
+
+fn release_owned_slot(app: &AppHandle, app_name: &str, generation: u64) {
+    if let Ok(mut slot) = app.state::<AppState>().epic_dl.lock() {
+        if slot.active.as_deref() == Some(app_name) && slot.active_generation == Some(generation) {
+            slot.active = None;
+            slot.active_generation = None;
+            slot.pid = None;
+            slot.active_meta = None;
+        }
+    }
+}
+
+fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
+    if game_was_installed(app_name) {
         // Do not delete game directories for games that were already installed (e.g. game updates).
         return;
     }
 
-    let pending_install_dir = std::fs::read_to_string(pending_download_path())
-        .ok()
-        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
-        .filter(|pending| pending.app_name == app_name)
-        .and_then(|pending| pending.install_dir);
-
+    let pending_install_dir = saved_install_dir(app_name);
+    let config = super::skip::default_config_dir();
     let base = resolve_base(app, pending_install_dir);
 
     // Identify candidate folder names created by Legendary:
@@ -168,6 +271,7 @@ impl Default for EpicDlState {
             queue: VecDeque::new(),
             active_generation: None,
             next_generation: 0,
+            active_meta: None,
         }
     }
 }
@@ -178,42 +282,100 @@ fn queue_names(queue: &VecDeque<PendingDownload>) -> Vec<String> {
 
 fn start_download_request(app: &AppHandle, request: PendingDownload) -> Result<String, String> {
     let bin = resolve_bin(app)?;
-    let base = resolve_base(app, request.install_dir.clone());
-    let mut child = spawn_install_with_tags(
-        app,
-        &bin,
-        &request.app_name,
-        &base,
-        false,
-        &request.install_tags,
-    )
-    .map_err(|e| format!("@t:dl.startFailed\u{1f}{e}"))?;
-    let stdout = child.stdout.take();
-    let stderr = child.stderr.take();
-    let pid = child.id();
+    let saved = super::download_resume::load_one(&super::download_resume::resumes_path(), &request.app_name);
+    let resuming = saved.is_some();
+    let merged = pending_from_record(super::download_resume::merge_resume(
+        saved.as_ref(),
+        record_from_pending(&request),
+    ));
+    // Persist the resolved folder, not a later settings default. A retry that
+    // omits the path would otherwise install into an empty directory.
+    let base = resolve_base(app, merged.install_dir.clone());
+    let request = PendingDownload {
+        app_name: merged.app_name,
+        install_tags: merged.install_tags,
+        install_dir: Some(base.to_string_lossy().to_string()),
+    };
+
+    // Claim the slot before spawn so a second caller cannot start another
+    // legendary install against the same .egstore.
     let generation = {
         let state = app.state::<AppState>();
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.active.is_some() {
-            drop(s);
-            drop(child);
             return Err("@t:dl.anotherStarted".into());
         }
         s.next_generation = s.next_generation.wrapping_add(1);
         let generation = s.next_generation;
         s.active = Some(request.app_name.clone());
         s.active_generation = Some(generation);
-        s.pid = pid;
+        s.active_meta = Some(request.clone());
+        s.pid = None;
         s.cancelled = false;
         s.paused = false;
         generation
     };
-    write_pending_download(
+
+    let mut child = match spawn_install_with_tags(
+        app,
+        &bin,
         &request.app_name,
+        &base,
+        false,
         &request.install_tags,
-        request.install_dir.as_deref(),
-    );
-    emit_progress(app, &request.app_name, 0, false);
+    ) {
+        Ok(child) => child,
+        Err(e) => {
+            release_owned_slot(app, &request.app_name, generation);
+            return Err(format!("@t:dl.startFailed\u{1f}{e}"));
+        }
+    };
+
+    let cancelled_during_start = {
+        let state = app.state::<AppState>();
+        let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
+        let owns = s.active.as_deref() == Some(request.app_name.as_str())
+            && s.active_generation == Some(generation);
+        if owns && !s.cancelled {
+            s.pid = child.id();
+            s.active_meta = Some(request.clone());
+            false
+        } else if owns {
+            s.active = None;
+            s.active_generation = None;
+            s.pid = None;
+            s.active_meta = None;
+            s.cancelled = false;
+            true
+        } else {
+            // A newer attempt owns the slot. Do not touch its resume record.
+            drop(child);
+            return Err("@t:dl.anotherStarted".into());
+        }
+    };
+    if cancelled_during_start {
+        // The user cancelled while the process was starting. Dropping the child
+        // kills it (`kill_on_drop`) before it can rewrite .egstore.
+        drop(child);
+        finish_stop(
+            app,
+            &request.app_name,
+            super::download_resume::DownloadStop::UserCancel {
+                was_installed: game_was_installed(&request.app_name),
+            },
+        );
+        emit_cancelled(app, &request.app_name);
+        return Ok("@t:dl.cancelled".into());
+    }
+
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+    persist_resume(&request);
+    // A resumed install must not flash 0%. Legendary's own progress line is the
+    // first percent we publish. A brand-new install still starts at 0.
+    if !resuming {
+        emit_progress(app, &request.app_name, 0, false);
+    }
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {
         monitor_download(
@@ -857,12 +1019,14 @@ async fn monitor_download(
 
                 let pct_changed = new_pct.is_some() && new_pct != Some(last_pct);
                 let time_elapsed = last_emit.elapsed().as_millis() >= 250;
-                if pct_changed || time_elapsed {
+                // Speed lines arrive before the first `Progress:` line. Publishing 0
+                // here resets a resumed download in the UI.
+                if (pct_changed || time_elapsed) && (new_pct.is_some() || last_pct >= 0) {
                     last_emit = std::time::Instant::now();
                     if let Some(p) = new_pct {
                         last_pct = p;
                     }
-                    let p = if last_pct >= 0 { last_pct as u8 } else { 0 };
+                    let p = last_pct as u8;
                     let dl_bytes = if downloaded_mib > 0.0 { Some((downloaded_mib * 1024.0 * 1024.0) as u64) } else { None };
                     let tot_bytes = if total_mib > 0.0 { Some((total_mib * 1024.0 * 1024.0) as u64) } else { None };
                     emit_progress_full(
@@ -892,19 +1056,13 @@ async fn monitor_download(
         // Heroic pattern: on a memory error, raise the limit and retry once.
         if !high_mem && err_text.contains("MemoryError") {
             // Do not restart if it was cancelled.
-            let cancelled = app
-                .state::<AppState>()
-                .epic_dl
-                .lock()
-                .map(|s| s.cancelled)
-                .unwrap_or(false);
-            if cancelled {
+            if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
             high_mem = true;
-            total_mib = 0.0;
-            downloaded_mib = 0.0;
-            last_pct = -1;
+            if user_halted(&app) {
+                break Err("@t:dl.cancelled".into());
+            }
             match spawn_install_with_tags(&app, &bin, &app_name, &base, true, &install_tags) {
                 Ok(c) => {
                     child = c;
@@ -912,6 +1070,14 @@ async fn monitor_download(
                     stderr = child.stderr.take();
                     // Update the pid (so the cancel command finds the current process)
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        let still_ours = s.active_generation == Some(generation)
+                            && !s.cancelled
+                            && !s.paused;
+                        if !still_ours {
+                            drop(s);
+                            drop(child);
+                            break Err("@t:dl.cancelled".into());
+                        }
                         s.pid = child.id();
                     }
                     continue;
@@ -923,26 +1089,28 @@ async fn monitor_download(
         }
         // If Epic rate-limited with HTTP 429, wait 8 seconds for the rate-limit window to clear and retry once.
         if !rate_limit_retried && (err_text.contains("429") || err_text.contains("Too Many Requests")) {
-            let cancelled = app
-                .state::<AppState>()
-                .epic_dl
-                .lock()
-                .map(|s| s.cancelled)
-                .unwrap_or(false);
-            if cancelled {
+            if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
             rate_limit_retried = true;
             tokio::time::sleep(std::time::Duration::from_secs(8)).await;
-            total_mib = 0.0;
-            downloaded_mib = 0.0;
-            last_pct = -1;
+            if user_halted(&app) {
+                break Err("@t:dl.cancelled".into());
+            }
             match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        let still_ours = s.active_generation == Some(generation)
+                            && !s.cancelled
+                            && !s.paused;
+                        if !still_ours {
+                            drop(s);
+                            drop(child);
+                            break Err("@t:dl.cancelled".into());
+                        }
                         s.pid = child.id();
                     }
                     continue;
@@ -954,26 +1122,28 @@ async fn monitor_download(
         }
         // If Epic service timed out (TimeoutError / ReadTimeoutError), wait 3 seconds and retry once.
         if !timeout_retried && (err_text.contains("timed out") || err_text.contains("Timeout") || err_text.contains("ReadTimeoutError")) {
-            let cancelled = app
-                .state::<AppState>()
-                .epic_dl
-                .lock()
-                .map(|s| s.cancelled)
-                .unwrap_or(false);
-            if cancelled {
+            if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
             timeout_retried = true;
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-            total_mib = 0.0;
-            downloaded_mib = 0.0;
-            last_pct = -1;
+            if user_halted(&app) {
+                break Err("@t:dl.cancelled".into());
+            }
             match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        let still_ours = s.active_generation == Some(generation)
+                            && !s.cancelled
+                            && !s.paused;
+                        if !still_ours {
+                            drop(s);
+                            drop(child);
+                            break Err("@t:dl.cancelled".into());
+                        }
                         s.pid = child.id();
                     }
                     continue;
@@ -986,67 +1156,95 @@ async fn monitor_download(
         break Err(short_error(&err_text));
     };
 
-    // Son durum: iptal/duraklatma/tamamlama
-    let next = {
+    // Release the slot only after this monitor has seen the child exit.
+    // An older monitor must not delete a newer transfer's files or resume record.
+    let (was_cancelled, was_paused, next) = {
         let state = app.state::<AppState>();
         let mut s = match state.epic_dl.lock() {
             Ok(g) => g,
             Err(_) => return,
         };
-        let was_cancelled = s.cancelled;
-        let was_paused = s.paused;
         let owns_active = s.active.as_deref() == Some(app_name.as_str())
             && s.active_generation == Some(generation);
-
-        // An older monitor must never clean up a newer transfer.
         if !owns_active {
             return;
         }
+        let was_cancelled = s.cancelled;
+        let was_paused = s.paused;
+        let next = if was_cancelled || !was_paused {
+            s.cancelled = false;
+            let next = s.queue.pop_front();
+            write_queue_snapshot(&s.queue);
+            next
+        } else {
+            None
+        };
+        s.active = None;
+        s.active_generation = None;
+        s.pid = None;
+        s.active_meta = None;
+        (was_cancelled, was_paused, next)
+    };
 
-        if was_paused {
-            // Release the active slot only after the monitor has observed the
-            // child exit, so resume cannot race the old process cleanup.
-            if s.active.as_ref().is_some_and(|a| a == &app_name) {
-                s.active = None;
-            }
-            s.active_generation = None;
-            s.pid = None;
+    let stop = if was_cancelled {
+        super::download_resume::DownloadStop::UserCancel {
+            was_installed: game_was_installed(&app_name),
+        }
+    } else if was_paused {
+        super::download_resume::DownloadStop::Pause
+    } else if result.is_ok() {
+        super::download_resume::DownloadStop::Success
+    } else {
+        super::download_resume::DownloadStop::Failure
+    };
+    // Failure and pause keep the partial folder and the resume record.
+    // Only a user cancel of a never-installed game removes them.
+    finish_stop(&app, &app_name, stop);
+
+    match stop {
+        super::download_resume::DownloadStop::Pause => {
             emit_paused(&app, &app_name);
             return;
         }
-
-        clear_pending_download();
-
-        if s.active.as_ref().is_some_and(|a| a == &app_name) {
-            s.active = None;
-            s.active_generation = None;
-            s.pid = None;
-        }
-        if was_cancelled {
-            s.cancelled = false;
+        super::download_resume::DownloadStop::UserCancel { .. } => {
             emit_cancelled(&app, &app_name);
-        } else {
-            let tot_bytes = if total_mib > 0.0 { Some((total_mib * 1024.0 * 1024.0) as u64) } else { None };
-            match &result {
-                Ok(()) => {
-                    emit_progress_full(&app, &app_name, 100, true, None, None, None, None, None, None, tot_bytes, tot_bytes);
-                    let settings = crate::load_settings(&app);
-                    if settings.auto_desktop_shortcut {
-                        let app_clone = app.clone();
-                        let app_name_clone = app_name.clone();
-                        tauri::async_runtime::spawn(async move {
-                            tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-                            let _ = super::commands::epic_create_desktop_shortcut(app_clone, app_name_clone).await;
-                        });
-                    }
-                }
-                Err(msg) => emit_failed(&app, &app_name, msg.clone()),
+        }
+        super::download_resume::DownloadStop::Success => {
+            let tot_bytes = if total_mib > 0.0 {
+                Some((total_mib * 1024.0 * 1024.0) as u64)
+            } else {
+                None
+            };
+            emit_progress_full(
+                &app,
+                &app_name,
+                100,
+                true,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                tot_bytes,
+                tot_bytes,
+            );
+            let settings = crate::load_settings(&app);
+            if settings.auto_desktop_shortcut {
+                let app_clone = app.clone();
+                let app_name_clone = app_name.clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+                    let _ = super::commands::epic_create_desktop_shortcut(app_clone, app_name_clone).await;
+                });
             }
         }
-        let next = s.queue.pop_front();
-        write_queue_snapshot(&s.queue);
-        next
-    };
+        super::download_resume::DownloadStop::Failure => {
+            if let Err(msg) = &result {
+                emit_failed(&app, &app_name, msg.clone());
+            }
+        }
+    }
     if let Some(n) = next {
         let next_id = n.app_name.clone();
         if let Err(msg) = start_download_request(&app, n) {
@@ -1211,19 +1409,27 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
             drop(s);
             emit_cancelled(&app, &app_name);
             return Ok("@t:dl.removedFromQueue".into());
-        } else if pending_download_path().is_file() {
-            // The launcher may have been restarted before the restore command
-            // recreated the in-memory process state.
-            cleanup_partial_install(&app, &app_name);
-            clear_pending_download();
+        } else if has_resume_record(&app_name) {
+            // Real user cancel before the in-memory id was rebound (launcher
+            // restart). A crash never reaches this command, so the resume record
+            // and partial files stay until the user actually cancels.
             drop(s);
+            finish_stop(
+                &app,
+                &app_name,
+                super::download_resume::DownloadStop::UserCancel {
+                    was_installed: game_was_installed(&app_name),
+                },
+            );
             emit_cancelled(&app, &app_name);
             return Ok("@t:dl.cancelled".into());
         } else {
             return Err("@t:dl.noActive".into());
         }
     };
-    // Terminate via the pid (the monitor task treats the exit as a cancellation).
+    // The monitor applies the cancel plan after the child exits. Cleaning up
+    // here would delete `.egstore` before that exit is classified, and a
+    // mismatched id would wipe a different game's resume record.
     if let Some(pid) = pid {
         #[cfg(windows)]
         {
@@ -1240,8 +1446,6 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
                 .await;
         }
     }
-    cleanup_partial_install(&app, &app_name);
-    clear_pending_download();
     Ok("@t:dl.cancelled".into())
 }
 
@@ -1284,15 +1488,7 @@ pub async fn epic_resume_download(
     state: tauri::State<'_, AppState>,
     app_name: String,
 ) -> Result<String, String> {
-    let request = std::fs::read_to_string(pending_download_path())
-        .ok()
-        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
-        .filter(|pending| pending.app_name == app_name)
-        .unwrap_or(PendingDownload {
-            app_name: app_name.clone(),
-            install_tags: Vec::new(),
-            install_dir: None,
-        });
+    let request = remembered_request(&app_name, None);
     // Pause terminates the child asynchronously. Wait for its monitor to
     // release the active slot before starting the replacement process.
     for _ in 0..40 {
@@ -1332,14 +1528,7 @@ pub async fn epic_reorder_queue(
                 let prev_pid = if let Some(curr_active) = s.active.clone() {
                     let pid = s.pid.take();
                     s.paused = true;
-                    let active_request = std::fs::read_to_string(pending_download_path())
-                        .ok()
-                        .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok())
-                        .unwrap_or(PendingDownload {
-                            app_name: curr_active,
-                            install_tags: Vec::new(),
-                            install_dir: None,
-                        });
+                    let active_request = remembered_request(&curr_active, s.active_meta.as_ref());
                     s.queue.push_front(active_request);
                     write_queue_snapshot(&s.queue);
                     pid

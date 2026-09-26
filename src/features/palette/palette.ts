@@ -13,6 +13,7 @@ import { emptyState, icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { epicPortrait } from "../../epic";
+import { holdStoreForPalette, releaseStoreForPalette } from "../store/store-view";
 
 const MAX_GAMES = 8;
 
@@ -118,7 +119,11 @@ function highlight(): void {
 
 export function closePalette(): void {
   const r = root();
-  if (r) r.innerHTML = "";
+  if (!r?.firstElementChild) return;
+  r.innerHTML = "";
+  // The store child webview sits above this palette. Put it back only after
+  // the palette DOM is gone, and only if the user is still on the store.
+  releaseStoreForPalette();
 }
 
 /** Run a palette entry through the global click router, then close. */
@@ -130,6 +135,9 @@ function run(el: HTMLElement): void {
 export function openPalette(): void {
   const r = root();
   if (!r) return;
+  // Start parking the store child before the palette paints. A native webview
+  // ignores z-index, so the palette would otherwise open underneath it.
+  const held = holdStoreForPalette();
   r.innerHTML = `
     <div class="palette-backdrop" data-palette-close>
       <div class="palette" role="dialog" aria-label="${esc(t("palette.open"))}">
@@ -138,9 +146,11 @@ export function openPalette(): void {
         <div class="palette-hint">${t("palette.hint")}</div>
       </div>
     </div>`;
-  const input = document.getElementById("palette-input") as HTMLInputElement | null;
-  input?.focus();
   renderResults("");
+  const focusInput = () => (document.getElementById("palette-input") as HTMLInputElement | null)?.focus();
+  focusInput();
+  // Focus again once the child webview is parked; it can steal focus until hide() lands.
+  void held.then(focusInput);
 }
 
 function onKey(e: KeyboardEvent): void {

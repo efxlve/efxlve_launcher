@@ -1,6 +1,6 @@
 [package]
 name = "efxlve-launcher"
-version = "0.1.10"
+version = "0.1.11"
 license = "GPL-3.0-only"
 description = "Efxlve oyun mağazası launcher (Tauri v2 demo)"
 edition = "2021"
@@ -22,6 +22,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 url = "2"
 base64 = "0.22"
 discord-rich-presence = "1.1"
+flate2 = "1"
 
 [features]
 default = ["custom-protocol"]

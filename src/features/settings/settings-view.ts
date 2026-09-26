@@ -18,6 +18,7 @@ import { LANGUAGES, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateInstallBlocked } from "../updates/update-manager";
+import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
   eosOverlayStatus,
   epicDefaultInstallDir,
@@ -148,14 +149,7 @@ function renderIntegrations(): string {
     true,
   );
 
-  const eos = row(
-    `${t("settings.eosTitle")}${S.eosOverlay?.installed && S.eosOverlay.version ? ` <span class="eos-version">${esc(S.eosOverlay.version)}</span>` : ""}`,
-    `<span class="eos-dot inline ${S.eosOverlay?.installed ? "on" : "off"}"></span>${S.eosOverlay?.installed ? t("settings.eosInstalledDesc") : t("settings.eosMissingDesc")}` +
-      (S.eosOverlay?.installed && !S.eosOverlay.overlaySupported ? `<br /><span class="settings-note-warn">${t("settings.eosNotSupported")}</span>` : "") +
-      (S.eosOverlay?.installed && S.eosOverlay.path ? `<br /><code>${esc(S.eosOverlay.path)}</code>` : ""),
-    `${S.eosOverlay?.installed ? `<button class="btn ghost small" data-act="open-eos-folder">${t("settings.eosOpenFolder")}</button>` : ""}
-     <button class="btn ghost small" data-act="refresh-eos">${t("settings.eosRefresh")}</button>`,
-  );
+  const eos = renderEosSettingsRow();
 
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
@@ -398,6 +392,8 @@ export async function loadSettingsView(): Promise<void> {
     }
   }
   render();
+  // Re-add the EOS notice if it was cleared. Uses the status already in memory.
+  syncEosNotice();
   if (S.settingsSection === "integrations") void loadIntegrationsView();
 }
 
@@ -407,7 +403,10 @@ export async function loadSettingsView(): Promise<void> {
  */
 export async function loadIntegrationsView(force = false): Promise<void> {
   if (!isTauri || S.settingsIntegrationsLoading) return;
-  if (S.settingsIntegrationsLoaded && !force) return;
+  if (S.settingsIntegrationsLoaded && !force) {
+    syncEosNotice();
+    return;
+  }
   S.settingsIntegrationsLoading = true;
   render();
   try {
@@ -419,6 +418,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.eglDetectedList = eglList;
     S.thirdPartyLaunchers = thirdParty;
     S.eosOverlay = eos;
+    syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {
     // Silent: keep the last cached values.

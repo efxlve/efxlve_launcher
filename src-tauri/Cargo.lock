@@ -944,10 +944,11 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "efxlve-launcher"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "base64 0.22.1",
  "discord-rich-presence",
+ "flate2",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
