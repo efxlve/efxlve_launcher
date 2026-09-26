@@ -231,7 +231,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
 
 /**
  * Grid tile is the portrait only, plus an optional caption under the cover
- * ("Titles under covers" in Settings). Hover grows the cover, not the caption.
+ * ("Titles under covers" in Settings). Hover grows the cover frame, not the caption.
  * The caption already shows the name, so the card does not also set a title
  * tooltip (that tooltip is a square system box on the rounded cover).
  */
@@ -383,7 +383,26 @@ export function renderEpicItems(): string {
   return `${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
+let cardSettleWired = false;
+
+/** Keep the grown cover unclipped until its shrink finishes. */
+function wireCardSettle(): void {
+  if (cardSettleWired) return;
+  cardSettleWired = true;
+  document.addEventListener("pointerout", (e) => {
+    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pcard");
+    if (!card) return;
+    const next = e.relatedTarget as Node | null;
+    if (next && card.contains(next)) return;
+    card.classList.add("pcard-settling");
+    window.setTimeout(() => card.classList.remove("pcard-settling"), 150);
+  });
+}
+
+wireCardSettle();
+
 export function setupLibScrollObserver(): void {
+  wireCardSettle();
   if (S.libScrollObserver) {
     S.libScrollObserver.disconnect();
     S.libScrollObserver = null;
