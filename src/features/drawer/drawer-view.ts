@@ -17,7 +17,7 @@ import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { epicWideArt, isTurkishUser, rawOf, summaryOf } from "../../core/selectors";
+import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -229,6 +229,7 @@ function ensureOverviewData(s: EpicSummary): void {
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
   const s = summaryOf(appName);
   if (!s) return;
+  const isSameApp = S.currentModalAppName === appName;
   S.currentModalAppName = appName;
   if (isInitialOpen) {
     S.activeDrawerTab = "overview";
@@ -251,9 +252,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const ssCount = S.loadedScreenshots.get(appName)?.length ?? 0;
   const isPlat = isAppPlatinum(appName);
 
-  // Tab switch / live refresh: patch the tab strip and content only.
+  // Tab switch / live refresh on the SAME game: patch the tab strip and content only.
   const contentEl = document.getElementById("drawer-tab-content");
-  if (!isInitialOpen && contentEl && modalRoot.querySelector(".game-hub")) {
+  if (!isInitialOpen && isSameApp && contentEl && modalRoot.querySelector(".game-hub")) {
     const tabs = document.getElementById("drawer-tabs-scrollable");
     modalRoot.querySelectorAll<HTMLElement>(".drawer-tab").forEach((btn) => {
       const active = btn.dataset.tab === S.activeDrawerTab;
@@ -298,6 +299,20 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat ${attrs ? "clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
 
+  const versions = gameVersionsOf(appName);
+  const versionSwitcher = versions.length > 1
+    ? `<div class="gp-version-switch" title="${t("drawer.switchVersion")}">
+        <span class="gp-version-label">${t("drawer.version")}:</span>
+        <div class="seg gp-version-seg">
+          ${versions.map((v) => `
+            <button type="button" class="${v.appName === appName ? "active" : ""}" data-act="switch-drawer-version" data-id="${esc(v.appName)}">
+              ${v.source === "epic" ? "Epic Games" : "GOG"}${v.installed ? ` (${t("common.installed")})` : ""}
+            </button>
+          `).join("")}
+        </div>
+      </div>`
+    : "";
+
   modalRoot.innerHTML = `
     <div class="overlay">
       <div class="game-hub">
@@ -317,7 +332,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         </div>
 
         <div class="gp-bar">
-          <div class="gp-actions">${actionsHtml(s, partner)}</div>
+          <div class="gp-bar-left">
+            <div class="gp-actions">${actionsHtml(s, partner)}</div>
+            ${versionSwitcher}
+          </div>
           <div class="gp-stats">
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}

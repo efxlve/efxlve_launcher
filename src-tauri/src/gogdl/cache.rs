@@ -69,7 +69,17 @@ pub fn save_installed_games(
 pub fn load_cached_library(app: &AppHandle) -> GogCachedLibrary {
     let path = library_snapshot_path(app);
     if let Ok(bytes) = fs::read(&path) {
-        if let Ok(cached) = serde_json::from_slice::<GogCachedLibrary>(&bytes) {
+        if let Ok(mut cached) = serde_json::from_slice::<GogCachedLibrary>(&bytes) {
+            for g in &mut cached.games {
+                if let Some(ref c) = g.cover_url {
+                    if c.contains("_product_card_v2_mobile_slider_639.jpg") {
+                        if g.hero_url.is_none() {
+                            g.hero_url = Some(c.clone());
+                        }
+                        g.cover_url = Some(c.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg"));
+                    }
+                }
+            }
             return cached;
         }
     }

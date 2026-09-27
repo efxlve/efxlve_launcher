@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "Античит: {name}",
   "drawer.favTitle": "Добавить в избранное или убрать",
   "drawer.storeTitle": "Открыть страницу в Epic Games Store",
+  "drawer.version": "Версия",
+  "drawer.switchVersion": "Сменить версию магазина",
   "drawer.statTime": "ВРЕМЯ",
   "drawer.statPlat": "ПЛАТИНА",
   "drawer.statTrophy": "ТРОФЕЙ",

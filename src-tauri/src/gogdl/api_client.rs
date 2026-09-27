@@ -206,20 +206,27 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                 let title = item["title"].as_str().unwrap_or("Unknown Game").to_string();
 
                 // Cover art: GOG API returns protocol-relative CDN paths like
-                // `//images-3.gog.com/HASH` or sometimes bare hashes. Append a
-                // sizing suffix to request a properly sized portrait image.
+                // `//images-3.gog.com/HASH` or bare hashes.
+                // - `_glx_vertical_cover.jpg` has aspect ratio ~0.71 (perfect for 3:4 portrait cards)
+                // - `_product_card_v2_mobile_slider_639.jpg` has aspect ratio ~1.77 (wide banner for hero)
                 let raw_img = item["image"].as_str().unwrap_or_default();
-                let cover_url = if raw_img.is_empty() {
-                    None
+                let (cover_url, hero_url) = if raw_img.is_empty() {
+                    (None, None)
                 } else if raw_img.starts_with("http") {
-                    Some(raw_img.to_string())
+                    (Some(raw_img.to_string()), Some(raw_img.to_string()))
                 } else if raw_img.starts_with("//") {
                     // Protocol-relative URL — keep the original CDN subdomain
-                    Some(format!("https:{raw_img}_product_card_v2_mobile_slider_639.jpg"))
+                    (
+                        Some(format!("https:{raw_img}_glx_vertical_cover.jpg")),
+                        Some(format!("https:{raw_img}_product_card_v2_mobile_slider_639.jpg")),
+                    )
                 } else {
                     // Bare hash — build the full CDN URL
                     let clean = raw_img.trim_start_matches('/');
-                    Some(format!("https://images.gog.com/{clean}_product_card_v2_mobile_slider_639.jpg"))
+                    (
+                        Some(format!("https://images.gog.com/{clean}_glx_vertical_cover.jpg")),
+                        Some(format!("https://images.gog.com/{clean}_product_card_v2_mobile_slider_639.jpg")),
+                    )
                 };
 
                 let category = item["category"].as_str().map(String::from);
@@ -234,7 +241,7 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                     install_size: 0,
                     version: None,
                     cover_url,
-                    hero_url: None,
+                    hero_url,
                     description: None,
                     cloud_saves_supported: item["isGalaxyCompatible"].as_bool().unwrap_or(false),
                     dlc_count: 0,

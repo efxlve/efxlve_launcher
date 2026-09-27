@@ -164,6 +164,65 @@ export function rawOf(appName: string): EpicGame | undefined {
   return S.epicGamesRawMap.get(appName);
 }
 
+export interface GameVersion {
+  source: GameSource;
+  appName: string;
+  title: string;
+  installed: boolean;
+  version: string | null;
+  installPath: string | null;
+}
+
+/** Strips edition labels and punctuation to produce a canonical comparison key. */
+export function canonicalGameTitle(title: string): string {
+  if (!title) return "";
+  let s = title.toLowerCase();
+  s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, "");
+  s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, "");
+  s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, "");
+  return s.replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Finds all available store versions (e.g. Epic and GOG) of a given game. */
+export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
+  const current = summaryOf(appNameOrTitle);
+  const title = current?.title || appNameOrTitle;
+  const canon = canonicalGameTitle(title);
+  if (!canon) return [];
+
+  const versions: GameVersion[] = [];
+
+  for (const s of S.epicSummaries) {
+    if (canonicalGameTitle(s.title) === canon) {
+      versions.push({
+        source: "epic",
+        appName: s.appName,
+        title: s.title,
+        installed: s.installed,
+        version: s.version,
+        installPath: s.installPath || null,
+      });
+      break;
+    }
+  }
+
+  for (const g of S.gogSummaries) {
+    if (canonicalGameTitle(g.title) === canon) {
+      versions.push({
+        source: "gog",
+        appName: g.key,
+        title: g.title,
+        installed: g.installed,
+        version: g.version,
+        installPath: g.installPath || null,
+      });
+      break;
+    }
+  }
+
+  return versions;
+}
+
 /**
  * True when the selected UI language is Turkish. Used to show locale-specific
  * content (e.g. the Goygoy Engine Turkish reviews).

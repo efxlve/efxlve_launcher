@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "反作弊：{name}",
   "drawer.favTitle": "添加 / 从收藏中移除",
   "drawer.storeTitle": "打开 Epic Games Store 页面",
+  "drawer.version": "版本",
+  "drawer.switchVersion": "切换商店版本",
   "drawer.statTime": "时长",
   "drawer.statPlat": "白金",
   "drawer.statTrophy": "奖杯",

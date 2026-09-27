@@ -39,10 +39,15 @@
   display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
   margin-top: -36px; padding: 0 32px 16px; position: relative; z-index: 1; background: transparent;
 }
+.gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .gp-actions { display: flex; align-items: center; gap: 8px; }
 .gp-actions .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
 .gp-actions .btn.ghost.active { background: var(--surface-2); color: var(--text); }
+.gp-version-switch { display: inline-flex; align-items: center; gap: 8px; }
+.gp-version-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.gp-version-seg.seg { height: 44px; }
+.gp-version-seg.seg > button { height: 38px; padding: 0 14px; font-size: 13px; font-weight: 600; }
 .gp-stats {
   display: flex; align-items: stretch; gap: 0;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 4px;

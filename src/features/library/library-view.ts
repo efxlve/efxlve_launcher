@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { rawOf } from "../../core/selectors";
+import { canonicalGameTitle, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -146,20 +146,44 @@ export function epicVisibleSummaries(): EpicSummary[] {
 
   const baseItems: EpicSummary[] = [];
 
-  if (S.sourceFilter === "all" || S.sourceFilter === "epic") {
-    baseItems.push(...S.epicSummaries);
-  }
+  if (S.sourceFilter === "all") {
+    // When showing all stores, deduplicate cross-store games using canonical titles.
+    // If one copy is installed and the other is not, pick the installed one so the card reflects ready-to-play status!
+    const canonMap = new Map<string, EpicSummary>();
 
-  if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
-    // When showing all stores, deduplicate: if an Epic game with the same
-    // normalized title already exists, skip the GOG duplicate. The user can
-    // access the GOG copy from the game detail page.
-    const seenTitles = S.sourceFilter === "all"
-      ? new Set(S.epicSummaries.map((s) => s.title.trim().toLowerCase()))
-      : null;
+    for (const s of S.epicSummaries) {
+      canonMap.set(canonicalGameTitle(s.title), s);
+    }
 
     for (const g of S.gogSummaries) {
-      if (seenTitles && seenTitles.has(g.title.trim().toLowerCase())) continue;
+      const c = canonicalGameTitle(g.title);
+      const existing = canonMap.get(c);
+      const gogSummary: EpicSummary = {
+        appName: g.key,
+        title: g.title,
+        version: g.version,
+        cover: g.coverUrl,
+        description: g.description,
+        dlcCount: g.dlcCount,
+        installed: g.installed,
+        installPath: g.installPath,
+        installSize: g.installSize,
+        installedVersion: g.installedVersion,
+        updateAvailable: g.updateAvailable,
+      };
+
+      if (!existing) {
+        canonMap.set(c, gogSummary);
+      } else if (!existing.installed && g.installed) {
+        canonMap.set(c, gogSummary);
+      }
+    }
+
+    baseItems.push(...canonMap.values());
+  } else if (S.sourceFilter === "epic") {
+    baseItems.push(...S.epicSummaries);
+  } else if (S.sourceFilter === "gog") {
+    for (const g of S.gogSummaries) {
       baseItems.push({
         appName: g.key,
         title: g.title,

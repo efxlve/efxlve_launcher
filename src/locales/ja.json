@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "アンチチート: {name}",
   "drawer.favTitle": "お気に入りに追加 / 削除",
   "drawer.storeTitle": "Epic Games Store のページを開く",
+  "drawer.version": "バージョン",
+  "drawer.switchVersion": "ストア版を切り替え",
   "drawer.statTime": "時間",
   "drawer.statPlat": "プラチナ",
   "drawer.statTrophy": "トロフィー",

@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "안티치트: {name}",
   "drawer.favTitle": "즐겨찾기 추가 / 제거",
   "drawer.storeTitle": "Epic Games Store 페이지 열기",
+  "drawer.version": "버전",
+  "drawer.switchVersion": "스토어 버전 전환",
   "drawer.statTime": "시간",
   "drawer.statPlat": "플래티넘",
   "drawer.statTrophy": "트로피",

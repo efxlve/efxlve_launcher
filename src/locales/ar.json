@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "مكافحة الغش: {name}",
   "drawer.favTitle": "إضافة / إزالة من المفضلة",
   "drawer.storeTitle": "فتح صفحة Epic Games Store",
+  "drawer.version": "الإصدار",
+  "drawer.switchVersion": "تبديل إصدار المتجر",
   "drawer.statTime": "الوقت",
   "drawer.statPlat": "بلاتيني",
   "drawer.statTrophy": "جائزة",

@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "Anti-cheat: {name}",
   "drawer.favTitle": "Aggiungi o rimuovi dai preferiti",
   "drawer.storeTitle": "Apri la pagina su Epic Games Store",
+  "drawer.version": "Versione",
+  "drawer.switchVersion": "Cambia versione negozio",
   "drawer.statTime": "TEMPO",
   "drawer.statPlat": "PLATINO",
   "drawer.statTrophy": "TROFEO",

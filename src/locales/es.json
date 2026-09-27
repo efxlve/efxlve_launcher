@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "Antitramas: {name}",
   "drawer.favTitle": "Añadir o quitar de favoritos",
   "drawer.storeTitle": "Abrir la página de Epic Games Store",
+  "drawer.version": "Versión",
+  "drawer.switchVersion": "Cambiar versión de tienda",
   "drawer.statTime": "TIEMPO",
   "drawer.statPlat": "PLATINO",
   "drawer.statTrophy": "TROFEO",

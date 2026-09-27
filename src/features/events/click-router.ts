@@ -1296,6 +1296,8 @@ document.addEventListener("click", (e) => {
       const title = s ? s.title : id;
       void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
     }
+  } else if (act === "switch-drawer-version" && id) {
+    openEpicModal(id, false);
   } else if (act === "drawer-tab") {
     const tab = t.dataset.tab as DrawerTab;
     if (tab && S.currentModalAppName) {

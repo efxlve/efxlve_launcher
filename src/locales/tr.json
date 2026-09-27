@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "Hile Koruması: {name}",
   "drawer.favTitle": "Favorilere Ekle / Çıkar",
   "drawer.storeTitle": "Epic Games Store Sayfasını Aç",
+  "drawer.version": "Sürüm",
+  "drawer.switchVersion": "Mağaza sürümünü değiştir",
   "drawer.statTime": "SÜRE",
   "drawer.statPlat": "PLATİN",
   "drawer.statTrophy": "KUPA",

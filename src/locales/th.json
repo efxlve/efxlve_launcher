@@ -374,6 +374,8 @@
   "drawer.anticheatTitle": "แอนตี้ชีต: {name}",
   "drawer.favTitle": "เพิ่ม / นำออกจากรายการโปรด",
   "drawer.storeTitle": "เปิดหน้าร้าน Epic Games Store",
+  "drawer.version": "เวอร์ชัน",
+  "drawer.switchVersion": "สลับเวอร์ชันร้านค้า",
   "drawer.statTime": "เวลา",
   "drawer.statPlat": "แพลตินัม",
   "drawer.statTrophy": "ถ้วย",
