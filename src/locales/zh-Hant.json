@@ -469,7 +469,7 @@
   "sys.loadingStore": "正在取得 Epic Games Store 系統需求…",
   "sys.loading": "正在取得系統需求…",
   "sys.notFoundTitle": "找不到需求表",
-  "sys.notFoundDesc": "Epic Games Store 上可能沒有直接為此遊戲定義硬體表。",
+  "sys.notFoundDesc": "可能沒有直接為此遊戲定義硬體需求表。",
   "sys.goStore": "前往商店頁面",
   "sys.unspecified": "未指定需求。",
   "sys.languages": "支援的語言",

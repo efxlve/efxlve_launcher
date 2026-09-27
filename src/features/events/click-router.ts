@@ -1359,7 +1359,7 @@ document.addEventListener("click", (e) => {
       openEpicModal(S.currentModalAppName, false, false);
     }
   } else if (act === "req-refresh" && id) {
-    const s = S.epicSummaries.find((x) => x.appName === id);
+    const s = summaryOf(id);
     if (s) void fetchAndRenderRequirements(id, s.title, true);
   } else if (act === "open-store-achievements" && id) {
     const s = S.epicSummaries.find((x) => x.appName === id);

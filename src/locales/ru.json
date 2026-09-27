@@ -469,7 +469,7 @@
   "sys.loadingStore": "Загрузка системных требований из Epic Games Store…",
   "sys.loading": "Загрузка системных требований…",
   "sys.notFoundTitle": "Таблица требований не найдена",
-  "sys.notFoundDesc": "В Epic Games Store для этой игры может не быть таблицы оборудования.",
+  "sys.notFoundDesc": "Для этой игры может не быть таблицы системных требований.",
   "sys.goStore": "К странице в магазине",
   "sys.unspecified": "Требования не указаны.",
   "sys.languages": "Поддерживаемые языки",

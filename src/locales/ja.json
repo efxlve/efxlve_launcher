@@ -469,7 +469,7 @@
   "sys.loadingStore": "Epic Games Store のシステム要件を取得中…",
   "sys.loading": "システム要件を取得中…",
   "sys.notFoundTitle": "要件表が見つかりません",
-  "sys.notFoundDesc": "このゲームには、Epic Games Store 上でハードウェア表が直接定義されていない場合があります。",
+  "sys.notFoundDesc": "このゲームには、ハードウェア要件表が直接定義されていない場合があります。",
   "sys.goStore": "ストアページへ",
   "sys.unspecified": "要件は指定されていません。",
   "sys.languages": "対応言語",

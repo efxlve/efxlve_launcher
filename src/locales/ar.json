@@ -469,7 +469,7 @@
   "sys.loadingStore": "جارٍ جلب متطلبات نظام Epic Games Store…",
   "sys.loading": "جارٍ جلب متطلبات النظام…",
   "sys.notFoundTitle": "لم يُعثر على جدول المتطلبات",
-  "sys.notFoundDesc": "قد لا يكون جدول العتاد معرّفًا مباشرة على Epic Games Store لهذه اللعبة.",
+  "sys.notFoundDesc": "قد لا يكون جدول متطلبات العتاد معرّفًا مباشرة لهذه اللعبة.",
   "sys.goStore": "الانتقال إلى صفحة المتجر",
   "sys.unspecified": "لم يُحدد متطلب.",
   "sys.languages": "اللغات المدعومة",

@@ -469,7 +469,7 @@
   "sys.loadingStore": "กำลังดึงความต้องการของระบบจาก Epic Games Store…",
   "sys.loading": "กำลังดึงความต้องการของระบบ…",
   "sys.notFoundTitle": "ไม่พบตารางความต้องการ",
-  "sys.notFoundDesc": "เกมนี้อาจไม่มีตารางฮาร์ดแวร์โดยตรงบน Epic Games Store",
+  "sys.notFoundDesc": "อาจไม่มีตารางข้อกำหนดของฮาร์ดแวร์โดยตรงสำหรับเกมนี้",
   "sys.goStore": "ไปที่หน้าร้าน",
   "sys.unspecified": "ไม่ได้ระบุความต้องการ",
   "sys.languages": "ภาษาที่รองรับ",

@@ -469,7 +469,7 @@
   "sys.loadingStore": "Systemanforderungen aus dem Epic Games Store werden geladen…",
   "sys.loading": "Systemanforderungen werden geladen…",
   "sys.notFoundTitle": "Keine Anforderungstabelle gefunden",
-  "sys.notFoundDesc": "Für dieses Spiel ist im Epic Games Store möglicherweise keine Hardwaretabelle hinterlegt.",
+  "sys.notFoundDesc": "Für dieses Spiel ist möglicherweise keine Hardwaretabelle hinterlegt.",
   "sys.goStore": "Zur Shop-Seite",
   "sys.unspecified": "Keine Anforderung angegeben.",
   "sys.languages": "Unterstützte Sprachen",

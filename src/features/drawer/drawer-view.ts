@@ -22,7 +22,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
-import { gogGetGameDetails } from "../../gog";
+import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
 
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
@@ -224,6 +224,9 @@ function ensureOverviewData(s: EpicSummary): void {
     const rawId = appName.slice(5);
     void gogGetGameDetails(rawId)
       .then((details) => {
+        if (details.requirements) {
+          S.loadedRequirements.set(appName, details.requirements);
+        }
         if (S.currentModalAppName !== appName) return;
         if (details.description && !s.description) {
           s.description = cleanStoreDescription(details.description);
@@ -239,6 +242,12 @@ function ensureOverviewData(s: EpicSummary): void {
         }
       })
       .catch(() => {});
+    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) {
+      void fetchAndRenderAchievements(appName);
+    }
+    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) {
+      void fetchAndRenderRequirements(appName, s.title);
+    }
   }
 
   // Wikipedia is asked only when the game's own store has no description.
@@ -553,16 +562,16 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
 }
 
 export function renderDrawerAchievements(s: EpicSummary): string {
-  if (s.appName.startsWith("gog::")) {
-    return emptyState("shield", "GOG.COM", t("gog.drmFreeDetails"));
-  }
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = S.demoPlatinumApps.has(s.appName);
   const partner = getThirdPartyLauncher(rawOf(s.appName));
 
   if (S.loadingAchFor === s.appName) return loadingState(t("ach.loadingStore"));
   const data = S.loadedAchievements.get(s.appName);
-  if (!data) return loadingState(t("ach.checking"));
+  if (!data) {
+    void fetchAndRenderAchievements(s.appName);
+    return loadingState(t("ach.checking"));
+  }
 
   if (data.achievements.length === 0) {
     if (partner) {
@@ -663,11 +672,13 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 }
 
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
-  if (!isTauri || S.loadingAchFor === appName || appName.startsWith("gog::")) return;
+  if (!isTauri || S.loadingAchFor === appName) return;
   S.loadingAchFor = appName;
   if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
   try {
-    const data = await epicGetAchievements(appName, forceRefresh);
+    const isGog = appName.startsWith("gog::");
+    const rawId = isGog ? appName.slice(5) : appName;
+    const data = isGog ? await gogGetAchievements(rawId) : await epicGetAchievements(appName, forceRefresh);
     S.loadedAchievements.set(appName, data);
     const sum = S.epicAchSummaries[appName];
     if (!sum) {
@@ -678,7 +689,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
         user_xp: data.user_xp,
         total_xp: data.total_xp,
         is_platinum: data.is_platinum,
-        supported: data.total_achievements > 0,
+        supported: (data.total_achievements ?? 0) > 0,
       };
     } else {
       sum.user_unlocked = data.user_unlocked;
@@ -686,13 +697,16 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
       sum.user_xp = data.user_xp;
       sum.total_xp = data.total_xp;
       sum.is_platinum = data.is_platinum;
+      sum.supported = (data.total_achievements ?? 0) > 0;
     }
   } catch (e) {
     console.warn("Achievements could not be fetched or this game has no achievement support:", e);
     S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });
   } finally {
     S.loadingAchFor = null;
-    if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
+    if (S.currentModalAppName === appName && (S.activeDrawerTab === "achievements" || S.activeDrawerTab === "overview")) {
+      openEpicModal(appName, false, false);
+    }
   }
 }
 
@@ -752,7 +766,9 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
   if (!isTauri || S.loadingReqFor === appName) return;
   S.loadingReqFor = appName;
   try {
-    const data = await epicGetSystemRequirements(title, appName, forceRefresh);
+    const isGog = appName.startsWith("gog::");
+    const rawId = isGog ? appName.slice(5) : appName;
+    const data = isGog ? await gogGetSystemRequirements(rawId) : await epicGetSystemRequirements(title, appName, forceRefresh);
     S.loadedRequirements.set(appName, data);
 
     // Fill in the store description for games that lack one.

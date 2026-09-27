@@ -469,7 +469,7 @@
   "sys.loadingStore": "Obteniendo requisitos del sistema de Epic Games Store…",
   "sys.loading": "Obteniendo requisitos del sistema…",
   "sys.notFoundTitle": "No se encontró una tabla de requisitos",
-  "sys.notFoundDesc": "Puede que Epic Games Store no defina una tabla de hardware para este juego.",
+  "sys.notFoundDesc": "Puede que no se defina una tabla de hardware para este juego.",
   "sys.goStore": "Ir a la página de la tienda",
   "sys.unspecified": "Ningún requisito indicado.",
   "sys.languages": "Idiomas compatibles",

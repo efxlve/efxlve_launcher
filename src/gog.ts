@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { LibraryItem } from "./core/types";
+import type { EpicAchievementsData, GameRequirementsResponse } from "./epic";
 
 export interface GogAuthStatus {
   logged_in: boolean;
@@ -96,13 +97,23 @@ export interface GogGameDetails {
   description: string | null;
   developer: string | null;
   publisher: string | null;
+  cover_url: string | null;
   hero_url: string | null;
   slug: string | null;
   screenshots: string[];
+  requirements?: GameRequirementsResponse | null;
 }
 
 export async function gogGetGameDetails(gameId: string): Promise<GogGameDetails> {
   return invoke<GogGameDetails>("gog_get_game_details", { gameId });
+}
+
+export async function gogGetAchievements(gameId: string): Promise<EpicAchievementsData> {
+  return invoke<EpicAchievementsData>("gog_get_achievements", { gameId });
+}
+
+export async function gogGetSystemRequirements(gameId: string): Promise<GameRequirementsResponse> {
+  return invoke<GameRequirementsResponse>("gog_get_system_requirements", { gameId });
 }
 
 /** Convert a raw GOG summary into the unified LibraryItem format. */
@@ -118,8 +129,8 @@ export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
     installed: g.is_installed,
     installPath: g.install_path,
     installSize: g.install_size,
-    coverUrl: g.cover_url ? g.cover_url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg") : null,
-    heroUrl: g.hero_url || (g.cover_url ? g.cover_url.replace("_glx_vertical_cover.jpg", "_glx_bg_top_padding_7.jpg").replace("_product_card_v2_mobile_slider_639.jpg", "_glx_bg_top_padding_7.jpg") : null),
+    coverUrl: g.cover_url || null,
+    heroUrl: g.hero_url || g.cover_url || null,
     description: g.description || "",
     updateAvailable: false,
     cloudSavesSupported: g.cloud_saves_supported,

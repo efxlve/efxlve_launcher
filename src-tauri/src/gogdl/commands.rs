@@ -3,7 +3,8 @@
 use tauri::{AppHandle, command};
 
 use super::api_client::{
-    exchange_auth_code, fetch_game_details, fetch_user_library, get_user_profile, refresh_tokens,
+    exchange_auth_code, fetch_game_details, fetch_gog_achievements, fetch_user_library,
+    get_user_profile, refresh_tokens,
 };
 use super::cache::{
     clear_auth_tokens, load_auth_tokens, load_cached_library, load_installed_games,
@@ -14,6 +15,7 @@ use super::models::{
 };
 use super::paths::{downloaded_binary, resolve_binary};
 use super::{cmd_error, GogError};
+use crate::legendary::models::{GameAchievementsResponse, GameRequirementsResponse};
 
 /// Checks whether the user is currently authenticated with GOG.COM.
 #[command]
@@ -148,3 +150,42 @@ pub async fn gog_get_game_details(
 ) -> Result<GogGameDetails, String> {
     fetch_game_details(&game_id).await.map_err(cmd_error)
 }
+
+/// Retrieves user achievements for a GOG game from the official Gameplay API.
+#[command]
+pub async fn gog_get_achievements(
+    app: AppHandle,
+    game_id: String,
+) -> Result<GameAchievementsResponse, String> {
+    let mut tokens = load_auth_tokens(&app).ok_or_else(|| cmd_error(GogError::NotAuthenticated))?;
+    let clean_id = game_id.trim_start_matches("gog::");
+
+    let res = fetch_gog_achievements(&tokens.access_token, &tokens.user_id, clean_id).await;
+    match res {
+        Ok(ach) => Ok(ach),
+        Err(GogError::NotAuthenticated) => {
+            let refreshed = refresh_tokens(&tokens.refresh_token)
+                .await
+                .map_err(cmd_error)?;
+            tokens = refreshed;
+            let _ = save_auth_tokens(&app, &tokens);
+            fetch_gog_achievements(&tokens.access_token, &tokens.user_id, clean_id)
+                .await
+                .map_err(cmd_error)
+        }
+        Err(e) => Err(cmd_error(e)),
+    }
+}
+
+/// Retrieves hardware requirements for a GOG game.
+#[command]
+pub async fn gog_get_system_requirements(
+    game_id: String,
+) -> Result<GameRequirementsResponse, String> {
+    let clean_id = game_id.trim_start_matches("gog::");
+    let details = fetch_game_details(clean_id).await.map_err(cmd_error)?;
+    details
+        .requirements
+        .ok_or_else(|| "No requirements defined for this game".to_string())
+}
+

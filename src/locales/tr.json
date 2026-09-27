@@ -469,7 +469,7 @@
   "sys.loadingStore": "Epic Games Store sistem gereksinimleri alınıyor…",
   "sys.loading": "Sistem gereksinimleri alınıyor…",
   "sys.notFoundTitle": "Gereksinim Tablosu Bulunamadı",
-  "sys.notFoundDesc": "Bu oyun için Epic Games Store üzerinde doğrudan donanım tablosu tanımlanmamış olabilir.",
+  "sys.notFoundDesc": "Bu oyun için doğrudan bir donanım gereksinimleri tablosu tanımlanmamış olabilir.",
   "sys.goStore": "Mağaza Sayfası'na Git",
   "sys.unspecified": "Gereksinim belirtilmemiş.",
   "sys.languages": "Desteklenen Diller",

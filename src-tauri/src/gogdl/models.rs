@@ -125,9 +125,13 @@ pub struct GogGameDetails {
     #[serde(default)]
     pub publisher: Option<String>,
     #[serde(default)]
+    pub cover_url: Option<String>,
+    #[serde(default)]
     pub hero_url: Option<String>,
     #[serde(default)]
     pub slug: Option<String>,
     #[serde(default)]
     pub screenshots: Vec<String>,
+    #[serde(default)]
+    pub requirements: Option<crate::legendary::models::GameRequirementsResponse>,
 }

@@ -469,7 +469,7 @@
   "sys.loadingStore": "Récupération des configurations requises Epic Games Store…",
   "sys.loading": "Récupération des configurations requises…",
   "sys.notFoundTitle": "Aucun tableau de prérequis",
-  "sys.notFoundDesc": "Un tableau matériel n'est peut-être pas défini sur Epic Games Store pour ce jeu.",
+  "sys.notFoundDesc": "Un tableau matériel n'est peut-être pas défini pour ce jeu.",
   "sys.goStore": "Aller à la page de la boutique",
   "sys.unspecified": "Aucun prérequis indiqué.",
   "sys.languages": "Langues prises en charge",

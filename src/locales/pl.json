@@ -469,7 +469,7 @@
   "sys.loadingStore": "Pobieranie wymagań systemowych z Epic Games Store…",
   "sys.loading": "Pobieranie wymagań systemowych…",
   "sys.notFoundTitle": "Nie znaleziono tabeli wymagań",
-  "sys.notFoundDesc": "W Epic Games Store może nie być tabeli sprzętu dla tej gry.",
+  "sys.notFoundDesc": "Dla tej gry może nie być zdefiniowanej tabeli wymagań sprzętowych.",
   "sys.goStore": "Przejdź do strony w sklepie",
   "sys.unspecified": "Nie podano wymagań.",
   "sys.languages": "Obsługiwane języki",

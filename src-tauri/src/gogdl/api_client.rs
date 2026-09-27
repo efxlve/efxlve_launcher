@@ -255,7 +255,57 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
         page += 1;
     }
 
+    // Enrich library with official vertical covers and backdrop art from GamesDB
+    enrich_with_gamesdb(&mut games).await;
+
     Ok(games)
+}
+
+/// Enriches game summaries with authentic uncropped vertical box art and heroes from GamesDB.
+pub async fn enrich_with_gamesdb(games: &mut [GogGameSummary]) {
+    let client = match create_client() {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    let mut set = tokio::task::JoinSet::new();
+    for (idx, g) in games.iter().enumerate() {
+        if let Some(ref c) = g.cover_url {
+            if c.contains("namespace=gamesdb") {
+                continue;
+            }
+        }
+        let id = g.game_id.clone();
+        let client_clone = client.clone();
+        set.spawn(async move {
+            let url = format!("https://gamesdb.gog.com/platforms/gog/external_releases/{id}");
+            if let Ok(res) = client_clone.get(&url).send().await {
+                if res.status().is_success() {
+                    if let Ok(val) = res.json::<Value>().await {
+                        let vert = val["game"]["vertical_cover"]["url_format"]
+                            .as_str()
+                            .map(|s| s.replace("{formatter}", "").replace("{ext}", "jpg"));
+                        let bg = val["game"]["background"]["url_format"]
+                            .as_str()
+                            .map(|s| s.replace("{formatter}", "_1600").replace("{ext}", "jpg"));
+                        return (idx, vert, bg);
+                    }
+                }
+            }
+            (idx, None, None)
+        });
+    }
+
+    while let Some(res) = set.join_next().await {
+        if let Ok((idx, vert, bg)) = res {
+            if let Some(v) = vert {
+                games[idx].cover_url = Some(v);
+            }
+            if let Some(b) = bg {
+                games[idx].hero_url = Some(b);
+            }
+        }
+    }
 }
 
 /// Fetches detailed game metadata on-demand from public GOG APIs.
@@ -301,7 +351,22 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
         }
     }
 
-    // Secondary fetch from v2 API for developer, publisher, and high-res screenshots
+    // Query GamesDB for official uncropped vertical cover and high-res hero background
+    let gdb_url = format!("https://gamesdb.gog.com/platforms/gog/external_releases/{game_id}");
+    if let Ok(gdb_res) = client.get(&gdb_url).send().await {
+        if gdb_res.status().is_success() {
+            if let Ok(val) = gdb_res.json::<Value>().await {
+                if let Some(vert) = val["game"]["vertical_cover"]["url_format"].as_str() {
+                    details.cover_url = Some(vert.replace("{formatter}", "").replace("{ext}", "jpg"));
+                }
+                if let Some(bg) = val["game"]["background"]["url_format"].as_str() {
+                    details.hero_url = Some(bg.replace("{formatter}", "_1600").replace("{ext}", "jpg"));
+                }
+            }
+        }
+    }
+
+    // Secondary fetch from v2 API for developer, publisher, high-res screenshots and hardware requirements
     let v2_url = format!("https://api.gog.com/v2/games/{game_id}");
     if let Ok(v2_res) = client.get(&v2_url).send().await {
         if v2_res.status().is_success() {
@@ -327,9 +392,250 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
                         details.screenshots = urls;
                     }
                 }
+
+                // Parse supported operating systems and system requirements
+                if let Some(ops) = val["_embedded"]["supportedOperatingSystems"].as_array() {
+                    let mut systems = Vec::new();
+                    for op in ops {
+                        let os_name = op["operatingSystem"]["name"].as_str().unwrap_or("windows");
+                        let system_type = match os_name.to_lowercase().as_str() {
+                            "osx" | "mac" | "macos" => "Mac".to_string(),
+                            "linux" => "Linux".to_string(),
+                            _ => "Windows".to_string(),
+                        };
+
+                        let mut min_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                        let mut rec_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                        let mut key_order: Vec<String> = Vec::new();
+
+                        if let Some(req_groups) = op["systemRequirements"].as_array() {
+                            for group in req_groups {
+                                let req_type = group["type"].as_str().unwrap_or_default();
+                                if let Some(reqs) = group["requirements"].as_array() {
+                                    for item in reqs {
+                                        let raw_name = item["name"].as_str().unwrap_or_default();
+                                        let clean_name = raw_name.trim().trim_end_matches(':').trim();
+                                        let title = if clean_name.is_empty() {
+                                            item["id"].as_str().unwrap_or("Hardware").to_string()
+                                        } else {
+                                            clean_name.to_string()
+                                        };
+                                        let desc = item["description"].as_str().unwrap_or_default().trim().to_string();
+                                        if !desc.is_empty() {
+                                            if !key_order.contains(&title) {
+                                                key_order.push(title.clone());
+                                            }
+                                            if req_type.eq_ignore_ascii_case("minimum") {
+                                                min_map.insert(title, desc);
+                                            } else if req_type.eq_ignore_ascii_case("recommended") {
+                                                rec_map.insert(title, desc);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        let mut details_items = Vec::new();
+                        for title in key_order {
+                            let minimum = min_map.remove(&title);
+                            let recommended = rec_map.remove(&title);
+                            details_items.push(crate::legendary::models::SystemDetailItem {
+                                title,
+                                minimum,
+                                recommended,
+                            });
+                        }
+
+                        if !details_items.is_empty() {
+                            systems.push(crate::legendary::models::SystemRequirement {
+                                system_type,
+                                details: details_items,
+                            });
+                        }
+                    }
+
+                    if !systems.is_empty() {
+                        details.requirements = Some(crate::legendary::models::GameRequirementsResponse {
+                            supported: true,
+                            systems,
+                            languages: Vec::new(),
+                            app_name: format!("gog::{game_id}"),
+                            description: None,
+                            short_description: None,
+                            tags: Vec::new(),
+                        });
+                    }
+                }
             }
         }
     }
 
     Ok(details)
 }
+
+/// Fetches user achievements for a GOG game using the official GOG Gameplay API.
+pub async fn fetch_gog_achievements(
+    access_token: &str,
+    user_id: &str,
+    game_id: &str,
+) -> Result<crate::legendary::models::GameAchievementsResponse, GogError> {
+    let client = create_client()?;
+    let url = format!("https://gameplay.gog.com/clients/{game_id}/users/{user_id}/achievements");
+
+    let res = client
+        .get(&url)
+        .header(AUTHORIZATION, format!("Bearer {access_token}"))
+        .send()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
+
+    if !res.status().is_success() {
+        if res.status().as_u16() == 401 {
+            return Err(GogError::NotAuthenticated);
+        }
+        return Ok(crate::legendary::models::GameAchievementsResponse {
+            supported: Some(false),
+            ..Default::default()
+        });
+    }
+
+    let val: Value = res
+        .json()
+        .await
+        .map_err(|e| GogError::ParseError(e.to_string()))?;
+
+    let items = val["items"].as_array();
+    let mut achievements = Vec::new();
+    let mut user_unlocked = 0u32;
+
+    if let Some(arr) = items {
+        for item in arr {
+            let key = item["achievement_key"].as_str().unwrap_or_default().to_string();
+            let name = item["name"].as_str().unwrap_or(&key).to_string();
+            let desc = item["description"].as_str().unwrap_or_default().to_string();
+            let unlock_date = item["date_unlocked"].as_str().map(String::from);
+            let unlocked = unlock_date.is_some();
+            if unlocked {
+                user_unlocked += 1;
+            }
+            let icon_unlocked = item["image_url_unlocked"].as_str().unwrap_or_default().to_string();
+            let icon_locked = item["image_url_locked"].as_str().unwrap_or(&icon_unlocked).to_string();
+            let icon_link = if unlocked { icon_unlocked } else { icon_locked };
+            let rarity_val = item["rarity"].as_f64();
+            let hidden = !item["visible"].as_bool().unwrap_or(true);
+
+            achievements.push(crate::legendary::models::AchievementItem {
+                name: key,
+                display_name: name,
+                description: desc,
+                xp: 0,
+                unlocked,
+                progress: if unlocked { 100.0 } else { 0.0 },
+                unlock_date,
+                icon_id: item["achievement_id"].as_str().unwrap_or_default().to_string(),
+                icon_link,
+                tier: None,
+                rarity: rarity_val.map(|p| crate::legendary::models::AchievementRarity { percent: Some(p) }),
+                hidden,
+                is_base: true,
+            });
+        }
+    }
+
+    let total = achievements.len() as u32;
+    let completed: Vec<_> = achievements.iter().filter(|a| a.unlocked).cloned().collect();
+    let uninitiated: Vec<_> = achievements.iter().filter(|a| !a.unlocked).cloned().collect();
+    let is_platinum = total > 0 && user_unlocked >= total;
+
+    Ok(crate::legendary::models::GameAchievementsResponse {
+        total_achievements: total,
+        user_unlocked,
+        achievements,
+        completed,
+        uninitiated,
+        is_platinum,
+        supported: Some(total > 0),
+        base_achievements: total,
+        base_unlocked: user_unlocked,
+        ..Default::default()
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_gog_achievements_structure() {
+        let json_str = r#"{
+            "total_count": 2,
+            "items": [
+                {
+                    "achievement_id": "1",
+                    "achievement_key": "TEST_ACH_1",
+                    "visible": true,
+                    "name": "First Achievement",
+                    "description": "Do something cool",
+                    "image_url_unlocked": "https://images.gog.com/unlocked.jpg",
+                    "image_url_locked": "https://images.gog.com/locked.jpg",
+                    "rarity": 42.5,
+                    "date_unlocked": "2023-01-01T00:00:00Z"
+                },
+                {
+                    "achievement_id": "2",
+                    "achievement_key": "TEST_ACH_2",
+                    "visible": false,
+                    "name": "Hidden Achievement",
+                    "description": "Secret stuff",
+                    "image_url_unlocked": "https://images.gog.com/unlocked2.jpg",
+                    "image_url_locked": "https://images.gog.com/locked2.jpg",
+                    "rarity": 1.2,
+                    "date_unlocked": null
+                }
+            ]
+        }"#;
+
+        let val: Value = serde_json::from_str(json_str).unwrap();
+        let items = val["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["name"], "First Achievement");
+        assert_eq!(items[0]["date_unlocked"], "2023-01-01T00:00:00Z");
+        assert_eq!(items[1]["visible"], false);
+    }
+
+    #[test]
+    fn test_parse_gog_system_requirements_keys() {
+        let req_json = r#"{
+            "_embedded": {
+                "supportedOperatingSystems": [
+                    {
+                        "operatingSystem": { "name": "windows" },
+                        "systemRequirements": [
+                            {
+                                "type": "minimum",
+                                "requirements": [
+                                    { "id": "system", "name": "System:", "description": "Windows 10" },
+                                    { "id": "processor", "name": "Processor:", "description": "Intel i5" }
+                                ]
+                            },
+                            {
+                                "type": "recommended",
+                                "requirements": [
+                                    { "id": "system", "name": "System:", "description": "Windows 11" },
+                                    { "id": "processor", "name": "Processor:", "description": "Intel i7" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }"#;
+
+        let val: Value = serde_json::from_str(req_json).unwrap();
+        let ops = val["_embedded"]["supportedOperatingSystems"].as_array().unwrap();
+        assert_eq!(ops.len(), 1);
+        assert_eq!(ops[0]["operatingSystem"]["name"], "windows");
+    }
+}
+

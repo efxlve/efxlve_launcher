@@ -469,7 +469,7 @@
   "sys.loadingStore": "Fetching Epic Games Store system requirements…",
   "sys.loading": "Fetching system requirements…",
   "sys.notFoundTitle": "No Requirements Table Found",
-  "sys.notFoundDesc": "A hardware table may not be directly defined on Epic Games Store for this game.",
+  "sys.notFoundDesc": "A hardware requirements table may not be directly defined for this game.",
   "sys.goStore": "Go to Store Page",
   "sys.unspecified": "No requirement specified.",
   "sys.languages": "Supported Languages",
