@@ -2249,3 +2249,12 @@ Discord geri bildirimiyle gelen üç istek ve görsel boyut şikâyeti ele alın
 - **i18n:** yeni anahtarlar `drawer.loadingAbout`, `drawer.igdbLink`, `drawer.wikiSource`, `drawer.sourceEpic`; toplam **1258 anahtar**, tr/en tam eşlik, 15 dil parity.
 - Doğrulama: `npm.cmd run build`, `cargo check`, `cargo test` (95/95; hesaba bağlı DBD testi hariç).
 
+## 173. Oynanış Süresi Kaybının Kökü: Tepside Sayma + Çökme Kurtarma
+
+Bir kullanıcı The Last of Us Part I hikâyesini bitirmesine rağmen süre 42 dk görünüyordu. Teşhis: Epic'te oyunun süresi **0 saat** (Epic Launcher hiç kullanılmamış; oyun kendi süresini Epic'e bildirmiyor) ve yerel kayıt yalnızca tek bir 42 dk'lık oturumdu — launcher oyun sırasında kapalıydı, izleyici süreçle birlikte ölmüştü.
+
+- **Oyun çalışırken pencere kapatma artık tepsiye gizler** (aktif indirmedeki davranışın aynısı): `CloseRequested` ve tepsi "Çıkış" artık `has_running_game()` durumunu da kontrol eder; backend izleyicisi yaşamaya devam eder, oturum tam sayılır.
+- **Çökme/yeniden başlatmaya dayanıklı oturum kaydı** (`src-tauri/src/legendary/playtime_session.rs`): oyun algılanınca `playtime_session.json` işaretçisi yazılır, 15 sn'de bir kalp atışı güncellenir; canlı kayıt başarıyla yazılırsa işaretçi silinir, aksi hâlde sonraki açılışta `recover_stale()` süreyi ekler (en az 60 sn, en fazla 24 saat; işaretçi önce silindiği için çift sayım olmaz).
+- **Metin düzeltmesi:** Yönet > oynanış süresi kutusu ve "Süreyi Düzenle" açıklaması artık "oturumlar bu launcher'da sayılır, Epic'te saat varsa eklenir; oynarken pencereyi kapatırsan da tepside sayılmaya devam eder" diyor (15 dil).
+- **Birim testler:** işaretçi turu, tek seferlik kurtarma (dosya silinir, ikinci çağrı boş döner), kısa işaretçinin reddi, 24 saat sınırı. Doğrulama: `npm.cmd run build`, `cargo check`, `cargo test` (106/106; 3 canlı test ignored).
+

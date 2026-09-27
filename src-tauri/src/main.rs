@@ -1596,6 +1596,12 @@ fn has_active_download(app: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+/// True while a game session started from this launcher is running. Closing the
+/// window must not kill the monitor, or that playtime is never recorded.
+fn has_running_game() -> bool {
+    legendary::screenshots::get_active_running_game().is_some()
+}
+
 #[tauri::command]
 fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> {
     let window = app
@@ -1649,8 +1655,9 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             "quit" => {
-                if has_active_download(app) {
-                    // Keep the backend monitor and download process alive while hidden.
+                if has_active_download(app) || has_running_game() {
+                    // Keep the backend monitor, downloads and playtime tracking
+                    // alive while hidden.
                     if let Some(w) = app.get_window("main") {
                         let _ = w.hide();
                     }
@@ -1692,6 +1699,9 @@ fn main() {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
             }
+            // A marker left behind by a killed/restarted launcher becomes real
+            // playtime before anything else reads the store.
+            legendary::playtime_session::recover_stale();
             // The hotkey listener must already know the configured folder.
             legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
             legendary::screenshots::start_f12_listener(app.handle().clone());
@@ -1705,6 +1715,7 @@ fn main() {
                     .minimize_to_tray
                     .load(std::sync::atomic::Ordering::Relaxed)
                     || has_active_download(&window.app_handle())
+                    || has_running_game()
                 {
                     api.prevent_close();
                     let _ = window.hide();

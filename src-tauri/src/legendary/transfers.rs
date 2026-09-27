@@ -2231,6 +2231,7 @@ async fn spawn_launched(
         let mut child_finished = false;
         let mut game_detected = false;
         let mut consecutive_not_found = 0;
+        let mut last_heartbeat = std::time::Instant::now();
 
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
@@ -2250,7 +2251,16 @@ async fn spawn_launched(
             let proc_running = is_game_process_running(install_path_bg.as_deref(), &candidate_exes_bg);
 
             if proc_running || (!child_finished) {
+                if !game_detected {
+                    // Crash-safe session: keep a marker so a launcher restart
+                    // can still recover this playtime.
+                    super::playtime_session::begin(&app_name_bg);
+                }
                 game_detected = true;
+                if last_heartbeat.elapsed() >= std::time::Duration::from_secs(15) {
+                    super::playtime_session::heartbeat();
+                    last_heartbeat = std::time::Instant::now();
+                }
                 consecutive_not_found = 0;
                 continue;
             }
@@ -2277,7 +2287,15 @@ async fn spawn_launched(
         super::screenshots::clear_active_running_game(&app_name_bg);
         let elapsed = start_time.elapsed().as_secs();
         let rec = if game_detected && elapsed >= 5 {
-            super::playtime::record_session(&app_name_bg, elapsed).unwrap_or_default()
+            match super::playtime::record_session(&app_name_bg, elapsed) {
+                Ok(record) => {
+                    // The marker is only dropped once the live record exists;
+                    // on a write failure the next start recovers the session.
+                    super::playtime_session::finish();
+                    record
+                }
+                Err(_) => super::playtime::get_game_playtime(&app_name_bg),
+            }
         } else {
             super::playtime::get_game_playtime(&app_name_bg)
         };

@@ -4,10 +4,11 @@ OpenCode bu dosyayı ve `docs/OPENCODE_MAP.md` dosyasını kök `opencode.jsonc`
 
 `AGENTS.md` §4.3’teki “iş bitince commit at” satırı bu oturumlarda geçersizdir. Commit yalnızca kullanıcı açıkça isterse.
 
-## Şimdi (0.1.15)
+## Şimdi (0.1.16)
 
-Sürüm repoda **0.1.15** (`package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`).
+Sürüm repoda **0.1.16** (`package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`).
 
+- **0.1.16** (`v0.1.16`): oyun çalışırken pencere kapatılırsa launcher tepsiye gizlenir, oynanış süresi sayılmaya devam eder; çökme/yeniden başlatmada oturum işaretçisi + kalp atışı ile süre kurtarılır. Yeni modül: `legendary/playtime_session.rs`. Oynanış süresi metinleri gerçeğe uygun hale getirildi.
 - **0.1.15** (`v0.1.15`): açıklama oyunun kendi mağazasından (Epic), yoksa Wikipedia'dan gelir; altında kaynak notu ("Kaynak: Epic Games Store" / "… kaynak: Wikipedia") ve IGDB arama butonu vardır. Oynanış süreleri Epic'in kendi sunucusundan salt okunur alınır ve yerel kayıtla birleştirilir (yerel değer düşürülmez). Steam ve anahtarlı IGDB entegrasyonu kaldırıldı; iki ölü görünüm bileşeni, onlara ait CSS ve 20 ölü çeviri anahtarı silindi. Yeni modüller: `legendary/wiki.rs`, `legendary/library_playtime.rs`, `core/epic-playtime.ts`.
 - **0.1.12** (`v0.1.12`): kütüphanede isteğe bağlı sayfalama (24/48/96) ve kapak altı oyun adı; ekran görüntüsü klasörü seçilebilir, değiştirirken mevcut görüntüler onayla taşınır, "Klasörü aç" düğmesi; görsel sıkıştırma varsayılan açık (AVIF, destek yoksa WebP).
 - **0.1.10:** çoklu oyun gizleme, başarım satırı gizleme, başarım başlığı = kütüphane oyun adı, kütüphanede Yüklü filtresi, Ayarlar’da gizli oyunlar (kapak, geliştirici, Detay, Seçilenleri göster; satır yalnızca seçer).

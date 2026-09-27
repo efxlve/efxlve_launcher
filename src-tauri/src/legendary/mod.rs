@@ -10,6 +10,7 @@ pub mod downloader;
 pub mod models;
 pub mod paths;
 pub mod playtime;
+pub mod playtime_session;
 pub mod backup;
 pub mod collections;
 pub mod skip;
