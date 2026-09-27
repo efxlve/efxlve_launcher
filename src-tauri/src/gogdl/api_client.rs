@@ -205,16 +205,21 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
 
                 let title = item["title"].as_str().unwrap_or("Unknown Game").to_string();
 
-                // Cover art: GOG provides image hash or path.
-                // Standard CDN format: https://images.gog.com/<image>_product_card_v2_mobile_slider_639.jpg
+                // Cover art: GOG API returns protocol-relative CDN paths like
+                // `//images-3.gog.com/HASH` or sometimes bare hashes. Append a
+                // sizing suffix to request a properly sized portrait image.
                 let raw_img = item["image"].as_str().unwrap_or_default();
                 let cover_url = if raw_img.is_empty() {
                     None
                 } else if raw_img.starts_with("http") {
                     Some(raw_img.to_string())
+                } else if raw_img.starts_with("//") {
+                    // Protocol-relative URL — keep the original CDN subdomain
+                    Some(format!("https:{raw_img}_product_card_v2_mobile_slider_639.jpg"))
                 } else {
+                    // Bare hash — build the full CDN URL
                     let clean = raw_img.trim_start_matches('/');
-                    Some(format!("https://images.gog.com/{clean}.jpg"))
+                    Some(format!("https://images.gog.com/{clean}_product_card_v2_mobile_slider_639.jpg"))
                 };
 
                 let category = item["category"].as_str().map(String::from);

@@ -43,8 +43,22 @@ function pendingUpdateCount(): number {
 function syncPageGameCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
+  // Count both Epic and GOG games, deduplicating by normalized title so the
+  // number matches what the library grid actually renders.
+  const seenTitles = new Set<string>();
   let visible = 0;
-  for (const s of S.epicSummaries) if (!S.hiddenGames.has(s.appName)) visible++;
+  for (const s of S.epicSummaries) {
+    if (S.hiddenGames.has(s.appName)) continue;
+    seenTitles.add(s.title.trim().toLowerCase());
+    visible++;
+  }
+  for (const g of S.gogSummaries) {
+    if (S.hiddenGames.has(g.key)) continue;
+    const norm = g.title.trim().toLowerCase();
+    if (seenTitles.has(norm)) continue;
+    seenTitles.add(norm);
+    visible++;
+  }
   const show = S.view === "library" && !S.currentModalAppName && visible > 0;
   const label = t("lib.gameCount", { count: visible });
   if (el.textContent !== label) el.textContent = label;

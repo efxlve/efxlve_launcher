@@ -151,7 +151,15 @@ export function epicVisibleSummaries(): EpicSummary[] {
   }
 
   if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
+    // When showing all stores, deduplicate: if an Epic game with the same
+    // normalized title already exists, skip the GOG duplicate. The user can
+    // access the GOG copy from the game detail page.
+    const seenTitles = S.sourceFilter === "all"
+      ? new Set(S.epicSummaries.map((s) => s.title.trim().toLowerCase()))
+      : null;
+
     for (const g of S.gogSummaries) {
+      if (seenTitles && seenTitles.has(g.title.trim().toLowerCase())) continue;
       baseItems.push({
         appName: g.key,
         title: g.title,
