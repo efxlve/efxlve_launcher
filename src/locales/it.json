@@ -1293,5 +1293,7 @@
   "accounts.manageAccounts": "Gestisci account",
   "nav.switchAccounts": "Selettore account",
   "settings.installedIconTitle": "Pulsante Gioca sulle copertine",
-  "settings.installedIconDesc": "Mostra un pulsante Gioca rapido accanto al titolo dei giochi installati."
+  "settings.installedIconDesc": "Mostra un pulsante Gioca rapido accanto al titolo dei giochi installati.",
+  "settings.dimUninstalledTitle": "Attenua giochi non installati",
+  "settings.dimUninstalledDesc": "Attenua le copertine e le righe dei giochi non installati per far risaltare i titoli installati."
 }

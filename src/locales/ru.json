@@ -1293,5 +1293,7 @@
   "accounts.manageAccounts": "Управление аккаунтами",
   "nav.switchAccounts": "Переключатель аккаунтов",
   "settings.installedIconTitle": "Кнопка «Играть» на обложках",
-  "settings.installedIconDesc": "Показывать кнопку быстрого запуска рядом с названием установленных игр."
+  "settings.installedIconDesc": "Показывать кнопку быстрого запуска рядом с названием установленных игр.",
+  "settings.dimUninstalledTitle": "Затемнять неустановленные игры",
+  "settings.dimUninstalledDesc": "Затемнять обложки и строки неустановленных игр, чтобы выделить установленные."
 }

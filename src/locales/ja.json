@@ -1293,5 +1293,7 @@
   "accounts.manageAccounts": "アカウントを管理",
   "nav.switchAccounts": "アカウントスイッチャー",
   "settings.installedIconTitle": "カバーにプレイボタンを表示",
-  "settings.installedIconDesc": "インストール済みゲームのタイトルの横にクイックプレイボタンを表示します。"
+  "settings.installedIconDesc": "インストール済みゲームのタイトルの横にクイックプレイボタンを表示します。",
+  "settings.dimUninstalledTitle": "未インストールゲームを薄く表示",
+  "settings.dimUninstalledDesc": "インストール済みのタイトルを目立たせるため、未インストールのカバーやリスト行を薄く表示します。"
 }

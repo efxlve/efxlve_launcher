@@ -1293,5 +1293,7 @@
   "accounts.manageAccounts": "Administrar cuentas",
   "nav.switchAccounts": "Selector de cuentas",
   "settings.installedIconTitle": "Botón Jugar en portadas",
-  "settings.installedIconDesc": "Muestra un botón de inicio rápido junto al título de los juegos instalados."
+  "settings.installedIconDesc": "Muestra un botón de inicio rápido junto al título de los juegos instalados.",
+  "settings.dimUninstalledTitle": "Atenuar juegos no instalados",
+  "settings.dimUninstalledDesc": "Atenúa las portadas y filas de juegos no instalados para resaltar los títulos instalados."
 }

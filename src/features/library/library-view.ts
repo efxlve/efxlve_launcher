@@ -367,14 +367,15 @@ export function resetCardChunk(): void {
 }
 
 function renderResults(itemsHtml: string, sentinelHtml: string): string {
+  const dimCls = S.dimUninstalled ? " dim-uninstalled" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list">
+      <div class="lib-list${dimCls}">
         <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
-  return `<div class="pgrid${S.showCoverTitles || S.showInstalledIcon || S.showStoreBadge ? " has-captions" : ""}">${itemsHtml}${sentinelHtml}</div>`;
+  return `<div class="pgrid${S.showCoverTitles || S.showInstalledIcon || S.showStoreBadge ? " has-captions" : ""}${dimCls}">${itemsHtml}${sentinelHtml}</div>`;
 }
 
 /**

@@ -108,7 +108,7 @@
 }
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
-.pcard.not-installed .pcard-art > img { opacity: 0.52; transition: opacity var(--ease), filter var(--ease); }
+.pgrid.dim-uninstalled .pcard.not-installed .pcard-art > img { opacity: 0.52; transition: opacity var(--ease), filter var(--ease); }
 .pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
 .pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
@@ -145,29 +145,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: var(--surface-2);
-  color: var(--text-2);
+  border: none;
+  background: #ffffff;
+  color: #000000;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
   line-height: 1;
-  transition: background-color var(--ease), color var(--ease), transform var(--ease), border-color var(--ease);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: transform var(--ease), box-shadow var(--ease), filter var(--ease);
 }
 .pcard-play-btn svg {
   margin-left: 1px;
 }
 .pcard-play-btn:hover {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
-  transform: scale(1.1);
+  transform: scale(1.14);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+  filter: brightness(1.08);
 }
 .pcard-play-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 .pcard-stores {
   font-size: 11px;
@@ -215,14 +215,14 @@
 .lrow:hover { background: var(--surface-2); }
 .lrow-art { position: relative; width: 52px; height: 70px; border-radius: 5px; overflow: hidden; background: var(--surface-3); }
 .lrow-art img, .lrow-art .pcover { width: 100%; height: 100%; object-fit: cover; }
-.lrow.not-installed .lrow-art img { opacity: 0.45; filter: grayscale(1); }
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-art img { opacity: 0.45; filter: grayscale(1); }
 .lrow-main { min-width: 0; }
 .lrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .lrow-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lrow.not-installed .lrow-name,
-.lrow.not-installed .lrow-meta,
-.lrow.not-installed .lrow-col,
-.lrow.not-installed .lrow-ach { color: var(--text-3); }
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-name,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-meta,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-col,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-ach { color: var(--text-3); }
 .lrow .pbadge { position: static; flex-shrink: 0; background: var(--surface-3); }
 .lrow-meta { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }

@@ -1307,5 +1307,7 @@
   "accounts.manageAccounts": "Manage Accounts",
   "nav.switchAccounts": "Account Switcher",
   "settings.installedIconTitle": "Play button on covers",
-  "settings.installedIconDesc": "Show a quick Play button next to the title for installed games in the library."
+  "settings.installedIconDesc": "Show a quick Play button next to the title for installed games in the library.",
+  "settings.dimUninstalledTitle": "Dim uninstalled games",
+  "settings.dimUninstalledDesc": "Dim covers and list rows for uninstalled games to make installed titles stand out."
 }

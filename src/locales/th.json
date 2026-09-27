@@ -1293,5 +1293,7 @@
   "accounts.manageAccounts": "จัดการบัญชี",
   "nav.switchAccounts": "ตัวสลับบัญชี",
   "settings.installedIconTitle": "ปุ่มเล่นบนหน้าปก",
-  "settings.installedIconDesc": "แสดงปุ่มเล่นด่วนข้างชื่อเกมที่ติดตั้งแล้วในคลัง"
+  "settings.installedIconDesc": "แสดงปุ่มเล่นด่วนข้างชื่อเกมที่ติดตั้งแล้วในคลัง",
+  "settings.dimUninstalledTitle": "หรี่เกมที่ยังไม่ได้ติดตั้ง",
+  "settings.dimUninstalledDesc": "หรี่ภาพปกและแถวรายการของเกมที่ไม่ได้ติดตั้งเพื่อให้เกมที่ติดตั้งแล้วโดดเด่นขึ้น"
 }
