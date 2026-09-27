@@ -32,6 +32,11 @@ export function getSortOptions(): { id: EpicSort; label: string }[] {
 
 /** Studio/publisher name for a game (empty when unknown). */
 export function studioOf(s: EpicSummary): string {
+  if (s.appName.startsWith("gog::")) {
+    const rawId = s.appName.slice(5);
+    const item = S.gogSummariesMap.get(rawId) || S.allGamesMap.get(s.appName);
+    return item?.developer || "";
+  }
   const g = rawOf(s.appName);
   const d = g?.metadata?.developer;
   return typeof d === "string" ? d.trim() : "";
@@ -39,7 +44,7 @@ export function studioOf(s: EpicSummary): string {
 
 /**
  * Parses the search box into plain terms plus `key:value` operators:
- * `dev:<studio>` and `is:installed|notinstalled|fav|update`.
+ * `dev:<studio>`, `is:installed|notinstalled|fav|update|epic|gog`.
  */
 function parseQuery(q: string): {
   terms: string[];
@@ -48,8 +53,9 @@ function parseQuery(q: string): {
   notInstalled: boolean;
   fav: boolean;
   update: boolean;
+  source: string;
 } {
-  const out = { terms: [] as string[], dev: "", installed: false, notInstalled: false, fav: false, update: false };
+  const out = { terms: [] as string[], dev: "", installed: false, notInstalled: false, fav: false, update: false, source: "" };
   for (const tk of q.split(/\s+/)) {
     if (!tk) continue;
     if (tk.startsWith("dev:") || tk.startsWith("studio:")) out.dev = tk.slice(tk.indexOf(":") + 1).toLowerCase();
@@ -57,6 +63,8 @@ function parseQuery(q: string): {
     else if (tk === "is:notinstalled") out.notInstalled = true;
     else if (tk === "is:fav" || tk === "is:favorite") out.fav = true;
     else if (tk === "is:update" || tk === "is:updates") out.update = true;
+    else if (tk === "is:epic") out.source = "epic";
+    else if (tk === "is:gog") out.source = "gog";
     else out.terms.push(tk);
   }
   return out;
@@ -93,6 +101,7 @@ function visibleSignature(): string {
     S.query,
     S.epicFilter,
     S.epicSort,
+    S.sourceFilter,
     S.activeCollectionId ?? "",
     String(S.libraryDataRev),
     S.appLanguage,
@@ -102,6 +111,7 @@ function visibleSignature(): string {
     String(S.playtimeMap.size),
     String(Object.keys(S.epicAchSummaries).length),
     S.epicRecent.join(","),
+    String(S.gogSummaries.length),
   ].join("\x1f");
 }
 
@@ -134,7 +144,34 @@ export function epicVisibleSummaries(): EpicSummary[] {
     }
   }
 
-  const list = S.epicSummaries.filter((s) => {
+  const baseItems: EpicSummary[] = [];
+
+  if (S.sourceFilter === "all" || S.sourceFilter === "epic") {
+    baseItems.push(...S.epicSummaries);
+  }
+
+  if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
+    for (const g of S.gogSummaries) {
+      baseItems.push({
+        appName: g.key,
+        title: g.title,
+        version: g.version,
+        cover: g.coverUrl,
+        description: g.description,
+        dlcCount: g.dlcCount,
+        installed: g.installed,
+        installPath: g.installPath,
+        installSize: g.installSize,
+        installedVersion: g.installedVersion,
+        updateAvailable: g.updateAvailable,
+      });
+    }
+  }
+
+  const list = baseItems.filter((s) => {
+    if (query.source === "epic" && s.appName.startsWith("gog::")) return false;
+    if (query.source === "gog" && !s.appName.startsWith("gog::")) return false;
+
     if (S.hiddenGames.has(s.appName)) return false;
     if (S.activeCollectionId === "fav") {
       if (!S.epicFav.has(s.appName)) return false;
@@ -239,8 +276,9 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const caption = S.showCoverTitles ? `<div class="pcard-caption">${title}</div>` : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
+  const isGog = s.appName.startsWith("gog::");
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
         ${libraryCoverStats(s.appName)}
@@ -255,8 +293,9 @@ export function epicCardPortrait(s: EpicSummary): string {
 function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const isGog = s.appName.startsWith("gog::");
   return `
-    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
@@ -452,8 +491,9 @@ export function renderSkeletonLibrary(): string {
 export function syncLibraryHeadingCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  const show = S.view === "library" && !S.currentModalAppName && S.epicSummaries.length > 0;
-  el.textContent = t("lib.gameCount", { count: S.epicSummaries.length });
+  const total = S.epicSummaries.length + S.gogSummaries.length;
+  const show = S.view === "library" && !S.currentModalAppName && total > 0;
+  el.textContent = t("lib.gameCount", { count: total });
   el.hidden = !show;
 }
 
@@ -487,13 +527,16 @@ export function renderEpic(): string {
   if (!isTauri) {
     return emptyState("zap", t("lib.epicIntegration"), t("lib.desktopOnly"));
   }
-  if (S.epicPhase === "checking" || (S.epicPhase === "library" && S.epicSummaries.length === 0)) {
+  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0;
+  const isAnyConnected = (S.epicPhase === "library" && Boolean(S.epicAccount)) || (S.gogPhase === "library" && Boolean(S.gogAccount));
+
+  if (S.epicPhase === "checking" && S.gogPhase === "checking") {
     return renderSkeletonLibrary();
   }
-  if (S.epicPhase === "setup" || S.epicPhase === "login") {
+  if (!isAnyConnected && (S.epicPhase === "setup" || S.epicPhase === "login") && !hasGames) {
     return emptyState("layers", t("lib.connectTitle"), t("lib.connectDesc"), `<button class="btn primary" data-view="accounts">${t("accounts.connectCta")}</button>`);
   }
-  if (S.epicPhase === "error") {
+  if (S.epicPhase === "error" && !hasGames) {
     return `
       <div class="empty-state">
         ${icon("alert-triangle", 36)}
@@ -516,7 +559,18 @@ export function renderEpic(): string {
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
+  const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
+  const sourceSeg = hasGog
+    ? `
+    <div class="seg source-seg" role="group" aria-label="${t("filter.source")}">
+      <button class="${S.sourceFilter === "all" ? "active" : ""}" data-act="source-filter" data-val="all" title="${t("source.all")}">${t("source.all")}</button>
+      <button class="${S.sourceFilter === "epic" ? "active" : ""}" data-act="source-filter" data-val="epic" title="${t("source.epic")}">Epic</button>
+      <button class="${S.sourceFilter === "gog" ? "active" : ""}" data-act="source-filter" data-val="gog" title="${t("source.gog")}">GOG</button>
+    </div>`
+    : "";
+
   const tools = `
+    ${sourceSeg}
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
         <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
@@ -533,7 +587,7 @@ export function renderEpic(): string {
       <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
     </div>
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>
-    <button class="icon-btn lib-refresh-btn ${S.epicSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
+    <button class="icon-btn lib-refresh-btn ${S.epicSyncing || S.gogSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
 
   const filters = [
     filterTab("all", t("library.all")),

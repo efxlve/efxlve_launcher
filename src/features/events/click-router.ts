@@ -20,7 +20,7 @@ import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOffl
 import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import type { DrawerTab, EpicSort, EpicViewMode, View } from "../../core/types";
+import type { DrawerTab, EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
@@ -368,6 +368,12 @@ document.addEventListener("click", (e) => {
     const appId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;
     if (appId) {
       openEpicModal(appId, true);
+    }
+  } else if (act === "source-filter" && t.dataset.val) {
+    const val = t.dataset.val as SourceFilter;
+    if (val === "all" || val === "epic" || val === "gog") {
+      S.sourceFilter = val;
+      render();
     }
   } else if (act === "epic-filter" && t.dataset.val) {
     S.epicFilter = t.dataset.val as typeof S.epicFilter;
