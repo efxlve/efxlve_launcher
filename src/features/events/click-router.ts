@@ -16,7 +16,7 @@ import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { patchLibraryCardDom, toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi } from "../../core/nav";
+import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi, updatePageHeader } from "../../core/nav";
 import { closeAllModals, openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -321,6 +321,10 @@ document.addEventListener("click", (e) => {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
     const store = (t.dataset.store as "epic" | "gog") || S.activeStore || "epic";
+    if (S.activeStore !== store) {
+      S.activeStore = store;
+      updatePageHeader();
+    }
     pushNavHistory({ view: "store" });
     void openStore(store);
   } else if (act === "open-profile") {
