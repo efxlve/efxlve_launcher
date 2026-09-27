@@ -466,6 +466,573 @@ Redirect URI:  https://embed.gog.com/on_login_success?origin=client
 
 ---
 
+## 4.5 Frontend UI Değişiklikleri — Dosya Bazında Detaylı Uygulama Notları
+
+> [!IMPORTANT]
+> **Framework:** Proje **vanilla TypeScript** (React/Vue/Svelte yok). Tüm UI HTML string template literal olarak üretilir ve `innerHTML` ile DOM'a basılır. State tek `S` nesnesi (`src/core/state.ts`). Event delegation `data-act` ve `data-view` attribute'ları ile `click-router.ts`'te yapılır. Vite 6 bundler, lucide-static ikonlar, CSS custom properties token sistemi.
+
+### 4.5.1 Kütüphane Görünümü — `src/features/library/library-view.ts` (670 satır)
+
+Bu dosya GOG entegrasyonunun **en çok etkileneceği** frontend dosyasıdır.
+
+#### Mevcut Yapı (sadece Epic):
+
+```typescript
+// Filtreleme: S.epicSummaries üzerinden filter() + sort()
+export function epicVisibleSummaries(): EpicSummary[] { ... }
+
+// Grid kartı: data-act="epic-detail" ile tıklanır
+export function epicCardPortrait(s: EpicSummary): string { ... }
+
+// Liste satırı: aynı data-act
+function epicListRow(s: EpicSummary): string { ... }
+
+// Ana render: renderEpic() → header + results
+export function renderEpic(): string { ... }
+
+// DOM patching: patchLibraryCardDom()
+// Scroll observer: setupLibScrollObserver()
+```
+
+#### Yapılacak Değişiklikler:
+
+**A) `epicVisibleSummaries()` → birleşik liste**
+
+```typescript
+// ÖNCE: Sadece Epic
+const list = S.epicSummaries.filter((s) => { ... });
+
+// SONRA: Epic + GOG birleşik
+// Seçenek 1: Birleşik LibraryItem dizisi (önerilen)
+export function visibleLibraryItems(): LibraryItem[] {
+  // S.sourceFilter kontrolü ekle
+  let items: LibraryItem[] = [];
+  if (S.sourceFilter === "all" || S.sourceFilter === "epic") {
+    items.push(...S.epicSummaries.map(epicToLibItem));
+  }
+  if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
+    items.push(...S.gogSummaries.map(gogToLibItem));
+  }
+  // Mevcut filter/sort mantığı aynen uygulanır
+  return items.filter(filterPredicate).sort(sortComparator);
+}
+```
+
+> **Not:** `epicVisibleSummaries()` adı `visibleLibraryItems()` olarak değiştirilir. Tüm çağıran dosyalar güncellenir.
+
+**B) Kart render — `epicCardPortrait()` değişiklikleri:**
+
+```html
+<!-- ÖNCE: -->
+<div class="pcard" data-act="epic-detail" data-id="Fortnite" data-lib-item="Fortnite">
+
+<!-- SONRA: -->
+<div class="pcard" data-act="game-detail" data-id="Fortnite" data-source="epic" data-lib-item="epic::Fortnite">
+<!-- veya GOG: -->
+<div class="pcard" data-act="game-detail" data-id="1207658924" data-source="gog" data-lib-item="gog::1207658924">
+```
+
+Değişenler:
+- `data-act="epic-detail"` → `data-act="game-detail"` (kaynak-agnostik)
+- `data-source="epic"` veya `data-source="gog"` eklenir
+- `data-lib-item` key formatı: `{source}::{id}`
+
+**C) `epicArt()` → `gameArt()` (game-view.ts)**
+
+```typescript
+// ÖNCE: Epic kapak çözümü
+export function epicArt(s: EpicSummary): string {
+  const custom = S.customCovers[s.appName];
+  const g = rawOf(s.appName);
+  const url = g ? epicPortrait(g) : s.cover;
+  ...
+}
+
+// SONRA: Kaynak-agnostik
+export function gameArt(item: LibraryItem): string {
+  const key = `${item.source}::${item.id}`;
+  const custom = S.customCovers[key] || S.customCovers[item.id];
+  if (custom) return `<img src="${esc(custom)}" alt="" loading="lazy" decoding="async" />`;
+  if (item.source === "gog") {
+    return item.portrait_url
+      ? `<img src="${esc(item.portrait_url)}" alt="" loading="lazy" decoding="async" />`
+      : `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+  }
+  // Epic yolu (mevcut mantık)
+  const g = rawOf(item.id);
+  const url = g ? epicPortrait(g) : item.cover_url;
+  ...
+}
+```
+
+**D) Filtre sekmelerine kaynak filtresi ekleme:**
+
+```typescript
+// ÖNCE: filters dizisi
+const filters = [
+  filterTab("all", t("library.all")),
+  filterTab("installed", t("library.installed")),
+  filterTab("fav", t("library.favorites")),
+  ...collections
+];
+
+// SONRA: Kaynak segmented control + filtreler
+// Kaynak: sol tarafta seg (All | Epic | GOG)
+// Filtreler: sağda veya altında (All | Installed | Favorites | ...)
+const sourceSeg = `
+  <div class="seg source-seg" role="group" aria-label="${t("filter.source")}">
+    <button class="${S.sourceFilter === "all" ? "active" : ""}"
+      data-act="source-filter" data-val="all">${t("source.all")}</button>
+    <button class="${S.sourceFilter === "epic" ? "active" : ""}"
+      data-act="source-filter" data-val="epic">${t("source.epic")}</button>
+    <button class="${S.sourceFilter === "gog" ? "active" : ""}"
+      data-act="source-filter" data-val="gog">${t("source.gog")}</button>
+  </div>`;
+```
+
+> **Koşullu gösterim:** Kaynak segmenti yalnızca GOG hesabı bağlıysa gösterilir. Tek kaynak (sadece Epic) varken segment gizlenir.
+
+**E) Oyun sayısı başlığı:**
+
+```typescript
+// ÖNCE:
+el.textContent = t("lib.gameCount", { count: S.epicSummaries.length });
+
+// SONRA:
+const total = S.epicSummaries.length + S.gogSummaries.length;
+el.textContent = t("lib.gameCount", { count: total });
+```
+
+**F) `visibleSignature()` önbellek anahtarı:**
+
+```typescript
+// ÖNCE:
+function visibleSignature(): string {
+  return [S.query, S.epicFilter, S.epicSort, ...].join("\x1f");
+}
+
+// SONRA: sourceFilter eklenmeli
+function visibleSignature(): string {
+  return [S.query, S.epicFilter, S.epicSort, S.sourceFilter, ...].join("\x1f");
+}
+```
+
+**G) Gelişmiş arama operatörleri:**
+
+```typescript
+// ÖNCE: dev:, is:installed, is:fav, is:update
+// SONRA: + is:gog, is:epic
+else if (tk === "is:gog") out.source = "gog";
+else if (tk === "is:epic") out.source = "epic";
+```
+
+### 4.5.2 Oyun Kartı Yardımcıları — `src/core/game-view.ts` (207 satır)
+
+| Fonksiyon | Değişiklik |
+|-----------|-----------|
+| `epicArt(s)` | `gameArt(item)` olarak yeniden adlandır, GOG kapak çözümü ekle |
+| `epicActionButtons(s)` | `gameActionButtons(item)` — GOG için `gog-play`, `gog-install` action'ları |
+| `epicDlProgress(appName)` | Key formatını `source::id` olarak güncelle |
+| `patchLibraryCardDom(appName)` | Selector'ı `[data-lib-item="${source}::${id}"]` olarak güncelle |
+| `refreshGameActionUi(appName)` | Source parametresi ekle |
+| `libraryCardBadge(s)` | `S.runningGames` key'i `source::id` formatına |
+| `libraryCoverStats(appName)` | Başarım verisini kaynağa göre çek (Epic vs GOG) |
+| `toggleFav(appName)` | Favori key formatını güncelle |
+
+**Kritik: `patchLibraryCardDom` DOM selector değişikliği:**
+
+```typescript
+// ÖNCE:
+const items = document.querySelectorAll<HTMLElement>(`[data-lib-item="${appName}"]`);
+
+// SONRA:
+const items = document.querySelectorAll<HTMLElement>(`[data-lib-item="${source}::${id}"]`);
+// VEYA geriye uyumlu: [data-lib-item][data-source="epic"][data-id="Fortnite"]
+```
+
+### 4.5.3 Hesaplar Sayfası — `src/features/accounts/accounts-view.ts` (203 satır)
+
+**Mevcut GOG kartı (satır 149-158) — şu an placeholder:**
+
+```typescript
+function gogCard(): string {
+  return `
+    <section class="card acc-card acc-card-soon">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">G</span>
+        <div class="row-main"><div class="acc-store-name">GOG.COM</div>
+          <div class="row-meta">${t("accounts.gogDesc")}</div></div>
+        <span class="chip">${t("accounts.soon")}</span>
+      </div>
+    </section>`;
+}
+```
+
+**Aktif GOG kartı (yeni):**
+
+```typescript
+function gogCard(): string {
+  const connected = Boolean(S.gogAccount) && S.gogPhase === "library";
+  const status = S.gogPhase === "setup"
+    ? `<span class="chip warn">${t("accounts.setupNeeded")}</span>`
+    : connected
+      ? `<span class="chip ok">${t("accounts.connected")}</span>`
+      : `<span class="chip">${t("accounts.notConnected")}</span>`;
+
+  const body = S.gogPhase === "setup"
+    ? gogSetupBlock()      // gogdl binary indirme
+    : connected
+      ? gogConnectedBlock()  // Bağlı hesap + çıkış
+      : gogSignInBlock();    // Login URL + kod girişi
+
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">G</span>
+        <div class="row-main">
+          <div class="acc-store-name">GOG.COM</div>
+          <div class="row-meta">${connected ? esc(S.gogAccount) : t("accounts.gogShort")}</div>
+        </div>
+        ${status}
+      </div>
+      <div class="acc-card-body">${body}</div>
+    </section>`;
+}
+
+// GOG login bloğu — Epic ile aynı pattern:
+function gogSignInBlock(): string {
+  return `
+    <p class="acc-lead">${t("accounts.gogDesc")}</p>
+    <div class="acc-signin">
+      <div class="acc-actions">
+        <button class="btn primary" data-act="gog-open-login">
+          ${icon("external", 14)} ${t("gog.loginUrl")}
+        </button>
+      </div>
+      <div class="auth-code">
+        <input id="gog-code" class="input"
+          placeholder="${t("gog.enterCode")}" autocomplete="off" />
+        <button class="btn primary icon-only" data-act="gog-do-login"
+          title="${t("auth.submitCode")}">
+          ${icon("arrow-right", 15)}
+        </button>
+      </div>
+      <ol class="auth-guide">
+        <li>${t("gog.guideStep1")}</li>
+        <li>${t("gog.guideStep2")}</li>
+        <li>${t("gog.guideStep3")}</li>
+      </ol>
+    </div>`;
+}
+```
+
+### 4.5.4 Ana Render Orkestratörü — `src/main.ts` (120 satır)
+
+```typescript
+// ÖNCE (satır 80-85):
+viewEl.innerHTML =
+  S.view === "library" ? renderEpic()
+  : S.view === "downloads" ? renderDownloads()
+  : ...
+
+// DEĞİŞMEZ — renderEpic() adı yanıltıcı olabilir ama fonksiyon içinde
+// hem Epic hem GOG itemlarını çizecek. Rename opsiyonel:
+// renderEpic() → renderLibrary()
+```
+
+> **Not:** `main.ts`'e yeni import veya view eklenmez. Kütüphane zaten birleşik render edecek. GOG'un ayrı bir view'ı yok.
+
+### 4.5.5 Event Delegation — `src/features/events/click-router.ts`
+
+Yeni `data-act` değerleri eklenecek:
+
+```typescript
+// YENİ GOG ACTION'LARI:
+case "game-detail":        // Birleşik detay açıcı (source'a göre dispatch)
+case "gog-open-login":     // GOG login URL'sini aç
+case "gog-do-login":       // GOG auth code gönder
+case "gog-play":           // GOG oyun başlat
+case "gog-install":        // GOG oyun kur
+case "gog-stop":           // GOG oyun durdur
+case "gog-cancel":         // GOG indirme iptal
+case "gog-logout":         // GOG çıkış
+case "gog-refresh":        // GOG kütüphane yenile
+case "source-filter":      // Kaynak filtresi (all/epic/gog)
+
+// MEVCUT DEĞİŞENLER:
+case "epic-detail":        // Hâlâ çalışır (geriye uyumlu) → openEpicModal
+case "game-detail":        // YENİ: data-source okur, epic veya gog dispatch
+```
+
+**Source-aware dispatch örneği:**
+
+```typescript
+if (act === "game-detail") {
+  const source = el.dataset.source;
+  const id = el.dataset.id;
+  if (source === "gog") {
+    openGogModal(id);   // Yeni fonksiyon
+  } else {
+    openEpicModal(id);  // Mevcut fonksiyon
+  }
+}
+```
+
+### 4.5.6 Detay Sayfası (Drawer) — `src/features/drawer/drawer-view.ts`
+
+| Bileşen | Epic | GOG | Değişiklik |
+|---------|------|-----|-----------|
+| Hero banner | keyImages'dan | gamesdb background | `gameHero(source, id)` |
+| Başlık + geliştirici | metadata'dan | api.gog.com'dan | Aynı yapı |
+| Oyna / Kur butonları | `data-act="epic-play"` | `data-act="gog-play"` | Source-aware |
+| Başarım sekmesi | Epic API | gameplay.gog.com | Koşullu gösterim |
+| DLC sekmesi | Epic DLC sistemi | GOG ayrı ürün | Farklı mantık |
+| Screenshots | Ortak | Ortak | Değişmez |
+| Manage | Wrapper/env | Wrapper/env | Aynı yapı |
+| Cloud Saves | Epic bulut | `gogdl save-sync` | Koşullu gösterim |
+| Mağaza linki | store.epicgames.com | gog.com/game/... | Source-aware URL |
+| HLTB / Critic | Başlık araması | Başlık araması | Değişmez |
+
+**Drawer açılışı — source-aware:**
+
+```typescript
+// Mevcut: openEpicModal(appName)
+// Yeni:   openGameModal(id, source)
+// Drawer içindeki tüm butonlara data-source eklenir
+```
+
+### 4.5.7 İndirmeler Sayfası — `src/features/downloads/downloads-view.ts`
+
+```typescript
+// Mevcut indirme kartı:
+// <div class="dl-card" data-dlbtn="Fortnite">
+
+// GOG ile:
+// <div class="dl-card" data-dlbtn="gog::1207658924" data-source="gog">
+// Kaynak ikonu gösterilir (solda küçük E veya G harfi)
+```
+
+### 4.5.8 Kurulum Diyalogu — `src/features/install/install-dialog.ts`
+
+**GOG için ek alanlar:**
+- Dil seçimi dropdown'u (GOG oyunlar çok dilli kurulum destekler)
+- DLC ile birlikte kur seçeneği (Epic'teki `--skip-dlcs` yerine `--with-dlcs`)
+- Platform zaten sadece Windows
+
+```html
+<!-- GOG Install Dialog ek -->
+<label class="install-field">
+  <span>${t("gog.selectLanguage")}</span>
+  <select class="settings-select" data-act="gog-install-lang">
+    <option value="en-US">English</option>
+    <option value="tr-TR">Türkçe</option>
+    ...
+  </select>
+</label>
+```
+
+### 4.5.9 Kenar Çubuğu — `src/core/nav.ts`
+
+**Sidebar oyun listesi:**
+
+```typescript
+// Mevcut: S.epicRecent'ten son 7 oyun
+// GOG ile: epicRecent + gogRecent birleşik, son 7
+
+// updateSidebarGames() fonksiyonunda:
+// recent listesinde her öğenin source'u belli olmalı
+// Sidebar game item: data-source="gog" veya data-source="epic"
+```
+
+**Heading count:**
+
+```typescript
+// Mevcut: S.epicSummaries.length
+// GOG ile: S.epicSummaries.length + S.gogSummaries.length
+```
+
+### 4.5.10 CSS Değişiklikleri — `src/styles/library.css`
+
+Minimum CSS değişikliği gerekir çünkü mevcut token sistemi kaynak-agnostik:
+
+```css
+/* Kaynak filtre segmenti — mevcut .seg sınıfını kullanır */
+.source-seg {
+  /* Mevcut .seg stili yeterli, ek stil gerekmez */
+}
+
+/* GOG kartlarında kaynak ikonu (opsiyonel) */
+.pcard[data-source="gog"] .source-icon,
+.lrow[data-source="gog"] .source-icon {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+}
+```
+
+> Yeni CSS sınıfı eklenmez — mevcut `.pcard`, `.lrow`, `.btn`, `.chip`, `.card`, `.acc-card` sınıfları aynen kullanılır. Tasarım sistemi (`docs/DESIGN_SYSTEM.md`) değişmez.
+
+### 4.5.11 Kütüphane Sağ Tık Bağlam Menüsü — `src/features/context-menu/context-menu.ts` (127 satır)
+
+Masaüstü kütüphanesinde bir oyun kartına sağ tıklandığında PS5/Steam tarzı konsol bağlam menüsü (`ps5-context-menu`) açılır.
+
+**Mevcut Durum:**
+- `initContextMenu()` içindeki dinleyici `target.closest('[data-act="epic-detail"][data-id]')` seçicisini arar.
+- `showContextMenu(x, y, appName)` fonksiyonu `summaryOf(appName)` ile oyunu çeker.
+- Menü eylemleri: `play`, `install`, `manage-game`, `manage-create-shortcut`, `epic-open-folder`, `manage-create-backup`, `epic-fav`, `hide-game`, `uninstall`.
+
+**GOG Entegrasyonu İçin Değişiklikler:**
+1. **Seçici Genişletme:**
+   ```typescript
+   // ÖNCE:
+   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
+   // SONRA:
+   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="game-detail"][data-id], [data-act="epic-detail"][data-id]');
+   const source = target.dataset.source || "epic";
+   const id = target.dataset.id;
+   ```
+2. **Menü Maddeleri Uyarlaması:**
+   - GOG oyunları için `epic-open-folder` yerine `gog-open-folder` (veya ortak `open-install-folder`).
+   - GOG DRM-free olduğundan kısayol oluşturma (`manage-create-shortcut`) doğrudan `.exe` hedeflidir.
+   - `manage-create-backup` (save backup) GOG için de yerel save klasörü üzerinden tam uyumludur.
+   - `uninstall` GOG için `gog-uninstall` tetikler (onay modalı ile doğrudan klasör temizliği).
+
+### 4.5.12 Oyun Gizleme Modalı — `src/features/library/hide-games.ts` (248 satır)
+
+Kütüphane araç çubuğundaki göz ikonu (`lib-hide-btn`) ile açılan toplu oyun gizleme modalı.
+
+**GOG Entegrasyonu İçin Değişiklikler:**
+- `listableGames()` fonksiyonu artık sadece `S.epicSummaries` üzerinde değil, birleşik `visibleLibraryItems()` veya `S.epicSummaries + S.gogSummaries` üzerinde döner:
+  ```typescript
+  function listableGames(): LibraryItem[] {
+    const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
+    const list: LibraryItem[] = [];
+    for (const item of getAllLibraryItems()) {
+      const key = `${item.source}::${item.id}`;
+      if (!S.hiddenGames.has(key) && !S.hiddenGames.has(item.id)) list.push(item);
+    }
+    list.sort((a, b) => collator.compare(a.title, b.title));
+    return list;
+  }
+  ```
+- Satır HTML'inde `data-id="${item.source}::${item.id}"` ve `data-source="${item.source}"` kullanılır.
+- Kapak görseli `coverUrl(item)` helper'ı ile GOG için `item.portrait_url || item.cover_url` üzerinden çözülür.
+
+### 4.5.13 Koleksiyonlar & Kategoriler — `src/features/collections/collections-view.ts` (337 satır)
+
+Kullanıcıların oyunları sepetleyebildiği kategorilendirme sistemi (`S.epicCollections`).
+
+**GOG Entegrasyonu İçin Değişiklikler:**
+- Koleksiyon modellerinde `app_names: string[]` dizisi saklanır.
+- **Geriye Dönük Uyumluluk Kuralı:**
+  - Mevcut Epic oyunları: `["Fortnite", "Salt"]` formatında kalabilir.
+  - Yeni eklenen oyunlar: `["epic::Fortnite", "gog::1207658924"]` formatında saklanır.
+  - Kontrol helper'ı:
+    ```typescript
+    export function isInCollection(col: GameCollection, source: GameSource, id: string): boolean {
+      const fullKey = `${source}::${id}`.toLowerCase();
+      const rawId = id.toLowerCase();
+      return col.app_names.some((name) => {
+        const lower = name.toLowerCase();
+        return lower === fullKey || (source === "epic" && lower === rawId);
+      });
+    }
+    ```
+- Koleksiyon sekmesinde (`lib-col-tab`) filtreleme yapıldığında hem Epic hem GOG oyunları aynı koleksiyonda yan yana listelenir.
+
+### 4.5.14 Özel Kapak Değiştirme — `src/features/cover/cover-view.ts` (305 satır)
+
+SteamGridDB API entegrasyonu, özel URL veya yerel dosya ile oyun kapağı ve banner'ı değiştirme penceresi.
+
+**GOG Uyumluluğu:**
+- SteamGridDB oyun araması **oyun başlığı (`title`)** üzerinden çalışır. GOG oyunları için hiçbir ek ayar yapmadan doğrudan çalışır!
+- Saklama anahtarı: `S.customCovers["gog::1207658924"] = url;`
+- LocalStorage anahtarı (`CUSTOM_COVERS_KEY`) değişmez; `Record<string, string>` JSON formatı multi-source anahtarları sorunsuz taşır.
+
+### 4.5.15 TV Modu & Gamepad Dolaşımı — `src/features/gamepad/tv-mode.ts` (855 satır)
+
+Gamepad ile koltuktan kontrol edilen tam ekran konsol modu.
+
+**GOG Uyumluluğu:**
+- TV Modu DOM üzerinden `pcard` ve odaklanabilir butonları sanal kılavuzla gezer (`data-act` ve `tabindex`).
+- Kütüphane kartlarında `data-act="game-detail"` yapıldığında, TV Modu gamepad 'A' (Cross) tuş basışında bu yeni action'ı yakalar.
+- Raf/filtre sekmeleri (LB/RB) kaynak filtresini de destekleyebilir veya TV Modunda tüm mağazalar birleşik olarak sunulmaya devam eder.
+
+### 4.5.16 O(1) Durum Seçicileri — `src/core/selectors.ts` (106 satır)
+
+Kütüphanede 500+ Epic ve 200+ GOG oyunu varken UI akıcılığını (120 FPS) korumak için O(1) hash map erişimi zorunludur.
+
+**Genişletilmiş Seçiciler:**
+```typescript
+/** Birleşik O(1) sorgu: source ve id ile veya tekil key ile arar */
+export function libraryItemOf(keyOrId: string, source?: GameSource): LibraryItem | undefined {
+  if (keyOrId.includes("::")) {
+    return S.allGamesMap.get(keyOrId);
+  }
+  if (source) {
+    return S.allGamesMap.get(`${source}::${keyOrId}`);
+  }
+  // Geriye dönük uyumluluk: Önce doğrudan dene, sonra Epic, sonra GOG
+  return S.allGamesMap.get(`epic::${keyOrId}`) || S.allGamesMap.get(`gog::${keyOrId}`);
+}
+
+/** Ham GOG metadata sorgusu */
+export function gogRawOf(gameId: string): GogGame | undefined {
+  return S.gogGamesRawMap.get(gameId);
+}
+```
+
+### 4.5.17 Framework & Paket Güncellemeleri Değerlendirmesi
+
+> [!IMPORTANT]
+> **Kullanıcı Sorusu: "Kullanılacak framework için güncellemeler falan not alındı mı?"**
+
+1. **Frontend Framework Durumu:**
+   - Efxlve Launcher **herhangi bir frontend framework'ü (React, Vue, Svelte, Angular, Solid) KULLANMAMAKTADIR**.
+   - Proje mimarisi **100% Vanilla TypeScript + Vite 6 + Native DOM Manipulation** üzerine kuruludur.
+   - Bu bilinçli bir mimari tercihtir: 8 GB RAM ve entegre GPU'lu sistemlerde resmi Epic Games Launcher'ın 600-900 MB bellek tüketimine karşın Efxlve'in 70-120 MB RAM tüketmesi ve sıfır takılma ile 120 FPS çalışması bu framework'süz yalın DOM mimarisine dayanır.
+   - **GOG desteği için herhangi bir framework kurulmayacak veya framework versiyon güncellemesi YAPILMAYACAKTIR.**
+
+2. **NPM Paketleri (`package.json`):**
+   - `@tauri-apps/api: ^2.11.1` — Yeterli, güncelleme gerekmez.
+   - `lucide: ^1.45.0` — İkonlar için kullanılır, yeterli.
+   - `@tauri-apps/plugin-notification`, `plugin-opener`, `plugin-process`, `plugin-updater` — Yeterli.
+   - **Gerekli Yeni NPM Paketi:** **0 adet (SIFIR)**. OAuth2 manuel kod yapıştırma veya localhost yönlendirmesi mevcut native fetch/Tauri invoke ile tam olarak çözülür.
+
+3. **Rust Kütüphaneleri (`src-tauri/Cargo.toml`):**
+   - `reqwest = { version = "0.12", features = ["json", "rustls-tls-webpki-roots", "stream"] }` — GOG Galaxy REST API'leri için eksiksiz hazır.
+   - `tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "time"] }` — Subprocess ve async işlemler için eksiksiz hazır.
+   - `serde / serde_json` — JSON modelleme için hazır.
+   - `flate2 = "1"` — GOG zlib paket manifestoları için hazır.
+   - **Gerekli Yeni Crate:** **0 adet (SIFIR)**. Mevcut bağımlılık seti GOG entegrasyonu için %100 yeterlidir.
+
+### 4.5.18 Özet: Tüm Fonksiyon Rename/Genelleme Tablosu
+
+| Eski (Epic-specific) | Yeni (Source-agnostic) | Dosya | Not |
+|----------------------|----------------------|-------|-----|
+| `epicVisibleSummaries()` | `visibleLibraryItems()` | library-view.ts | Epic + GOG birleşik filtreleme ve sıralama |
+| `epicCardPortrait(s)` | `libraryCard(item)` | library-view.ts | Birleşik portre kartı, source badge opsiyonu |
+| `epicListRow(s)` | `libraryListRow(item)` | library-view.ts | Birleşik yoğun liste satırı |
+| `renderEpic()` | `renderLibrary()` | library-view.ts | viewEl kütüphane ana çizimi |
+| `renderEpicItems()` | `renderLibraryItems()` | library-view.ts | Chunk & pagination içerik alanı |
+| `epicArt(s)` | `gameArt(item)` | game-view.ts | GamesDB vertical cover / Epic key art fallback |
+| `epicActionButtons(s)` | `gameActionButtons(item)` | game-view.ts | Kaynağa göre Play/Install/Update düğmeleri |
+| `epicDlProgress(appName)` | `gameDlProgress(key)` | game-view.ts | İndirme ilerleme sorgusu |
+| `patchLibraryCardDom(appName)` | `patchLibraryCardDom(key)` | game-view.ts | DOM'da tek kartı yerinde yamalama |
+| `openEpicModal(appName)` | `openGameModal(id, source)` | render.ts + drawer | Oyun detay drawer'ı açılışı |
+| `data-act="epic-detail"` | `data-act="game-detail"` | Tüm kartlar & satırlar | Click delegation anahtarı |
+| `data-act="epic-play"` | `data-act="game-play"` | Tüm butonlar | Oyun başlatma |
+| `data-act="epic-install"` | `data-act="game-install"` | Tüm butonlar | Kurulum başlatma |
+| `data-act="epic-fav"` | `data-act="game-fav"` | Kalp düğmeleri | Favori aç/kapa |
+
+> [!TIP]
+> **Geriye uyumluluk:** Tüm rename'ler **tek seferde** yapılmalıdır. Eski `epic-*` data-act değerleri click-router'da fallback olarak tutulabilir ama temiz kesim önerilir.
+
+---
+
 ## 5. Detaylı Teknik Spesifikasyonlar
 
 ### 5.1 gogdl stderr İlerleme Parsing
@@ -840,13 +1407,115 @@ src/
 
 ---
 
-## Sonraki Adımlar
+## 12. Gelecek AI Modelleri İçin Görev Devir & Devam Protokolü (AI Handover Protocol)
 
-1. [ ] Bu planı gözden geçir ve onay ver
-2. [ ] Faz 0'ı başlat: `GameSource` ve `LibraryItem` tiplerini ekle
-3. [ ] gogdl binary'sini GitHub'dan indirip Windows'ta test et
-4. [ ] gogdl CLI komutlarını elle çalıştırıp stderr formatını doğrula
-5. [ ] Rust `gogdl/` modülünü oluştur (skeleton)
+> [!IMPORTANT]
+> **Bu bölüm, bu projede token/oturum sınırları nedeniyle görevi devralacak yeni AI modelleri (Claude, GPT, Gemini, Llama vb.) için yazılmıştır.**
+> Göreve başlamadan önce bu protokolü, [`AGENTS.md`](./AGENTS.md) ve [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) dosyalarını okuyun.
+
+### 12.1 Kritik Tuzaklar & Asla İhlal Edilmeyecek Kurallar
+
+1. **Windows PowerShell Komut Kuralı:**
+   - Asla `npm run ...` çalıştırma; Windows PowerShell'de execution policy sebebiyle patlar.
+   - **Daima `npm.cmd run build`** ve **`npm.cmd run tauri dev`** kullan.
+   - Rust kontrolleri için `cargo check` ve `cargo test` kullan.
+
+2. **Frontend Framework Tuzağı:**
+   - Bu projede React, Vue, Svelte, Angular **YOKTUR**.
+   - Proje **saf vanilla TypeScript**'tir.
+   - Bileşenler template literal fonksiyonlarıdır: `function myComponent(): string { return '<div>...</div>'; }`.
+   - Asla `import React`, `useState`, `ref` vb. import etmeye kalkma.
+   - Paket yöneticisine yeni framework eklemeye kalkma.
+
+3. **Render Disiplini (Altın Kural §10):**
+   - İlerleme olaylarında (download progress, sync, verify) kütüphaneyi **asla `viewEl.innerHTML = ...` ile baştan çizme**.
+   - Yalnızca ilgili kartı yerinde yamala: `patchLibraryCardDom(key)`.
+   - Tam innerHTML yeniden çizimi 500+ oyunda DOM thrashing yaratır ve projenin "120 FPS akıcılık" ilkesini bozar.
+
+4. **Tauri Argüman Uyumu (Altın Kural §6.1):**
+   - Rust fonksiyonu: `pub async fn gog_info(game_id: String) -> Result<...>`
+   - Frontend çağrısı: `invoke("gog_info", { gameId })` -> **Rust snake_case, frontend camelCase!**
+   - İsim uyuşmazlığı Tauri v2'de sessizce parametreyi boş gönderir ve hata verir.
+
+5. **Sıfır Emoji Politikası (Zero-Emoji Policy — Kesin Yasak):**
+   - Butonlarda, başlıklarda, loglarda veya toast mesajlarında asla emoji (`🎮`, `⭐`, `🔥`, `🚀`, `✨`, `🇹🇷` vb.) kullanma.
+   - Her zaman `icon("isim", 14)` SVG fonksiyonunu veya düz metin ISO kodlarını (`TR`, `EN`) kullan.
+
+6. **Tabular Nums Zorunluluğu:**
+   - İndirme hızları (`MB/s`), disk hızları, yüzdeler (`%45`), süreler (`02:30`), oyun süreleri ve sayaçlarda `tabular-nums` CSS sınıfını veya `font-variant-numeric: tabular-nums` stilini kullan. Sayısal jitter yasaktır.
+
+7. **CSS & Tasarım Sistemi Hijyeni:**
+   - Asla yeni rastgele renkler, neon parlama (`glow`), gökkuşağı gradyanları veya 999px hap kapsüller üretme.
+   - Sadece [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) içindeki token'ları kullan (`--bg #000`, `--accent #fff`).
+   - Kartlarda `contain: layout paint` kuralını bozma.
+
+8. **Dead Code & Artık Dosya Bırakmama (Temizlik Disiplini):**
+   - Test scriptleri (`test.py`, `temp.js`), atıl fonksiyonlar veya kullanılmayan tipler repoda bırakılmaz.
+   - Her aşamadan sonra `npm.cmd run build` ile TypeScript tip kontrolü yap.
+
+---
+
+### 12.2 Adım Adım Uygulama Sırası (Sıradaki AI Buradan Başlayacak)
+
+```
+[Faz 0: Tip & Adapter] ──> [Faz 1: Rust gogdl İskeleti] ──> [Faz 2: Auth & Accounts]
+          │                                                               │
+          ▼                                                               ▼
+[Faz 3: Birleşik Kütüphane] ──> [Faz 4: İndirme & Kurulum] ──> [Faz 5: Başlatma & Drawer]
+```
+
+#### Adım 1: Faz 0 — Tip Sistemi ve Adapter'lar (Mevcut Epic'i Kırmadan)
+1. `src/core/types.ts` dosyasına `GameSource = "epic" | "gog"`, `SourceFilter = "all" | "epic" | "gog"` ve `LibraryItem` arayüzünü ekle.
+2. `src/core/state.ts` içine `gogSummaries`, `gogSummariesMap`, `allGamesMap`, `sourceFilter`, `gogAccount`, `gogPhase` alanlarını ekle.
+3. `src/core/selectors.ts` içine `epicToLibraryItem()`, `gogToLibraryItem()` ve `libraryItemOf()` helper'larını ekle.
+4. Doğrulama: `npm.cmd run build` çalıştır. Sıfır tip hatası vermelidir.
+
+#### Adım 2: Faz 1 — Backend `gogdl` Modül İskeleti
+1. `src-tauri/src/gogdl/` klasörünü oluştur:
+   - `mod.rs`: `GogError`, binary yolu tespiti (`%LOCALAPPDATA%\efxlve\bin\gogdl.exe`), auto-download.
+   - `models.rs`: `GogGame`, `GogInstalled`, `GogGameSummary`, `GogProgress`.
+   - `commands.rs`: `gog_setup_status`, `gog_auth_status`, `gog_list_games`, `gog_cached_library`.
+   - `api_client.rs`: `reqwest` tabanlı GOG Galaxy REST API istemcisi (`galaxy-library.gog.com`, `gamesdb.gog.com`).
+   - `cache.rs`: Disk önbellekleme (`%USERPROFILE%\.config\efxlve\gog_library_snapshot.json`).
+2. `src-tauri/src/main.rs` içinde `mod gogdl;` tanımla ve `invoke_handler`'a ekle.
+3. Doğrulama: `cargo check` çalıştır. Sıfır hata vermelidir.
+
+#### Adım 3: Faz 2 — Kimlik Doğrulama & Hesaplar UI
+1. `src/gog.ts` barrel dosyasını oluştur (Tauri `invoke` sarmalayıcıları).
+2. `src/features/accounts/accounts-view.ts` içindeki `gogCard()` fonksiyonunu placeholder'dan aktif karta dönüştür.
+3. OAuth2 login akışını bağla: GOG web login URL açma -> kullanıcı auth code yapıştırır -> `gogdl auth --code <code>` veya doğrudan `auth.gog.com/token` takası.
+4. Oturum açılınca `S.gogAccount` ve `S.gogPhase = "library"` güncelle.
+5. Doğrulama: `npm.cmd run build` ve `cargo check`.
+
+#### Adım 4: Faz 3 — Kütüphane Görünümünü Birleştirme
+1. `src/features/library/library-view.ts` içindeki `epicVisibleSummaries()` fonksiyonunu birleşik `visibleLibraryItems()` olarak güncelle.
+2. Kart render'ında `data-source="epic|gog"` ve `data-lib-item="${source}::${id}"` formatına geç.
+3. `src/core/game-view.ts` içindeki `epicArt()`'ı `gameArt(item)` olarak uyarla (GOG GamesDB vertical cover desteği).
+4. `library-toolbar.ts` veya `library-view.ts`'e `sourceSeg` (All | Epic | GOG) ekle (yalnızca GOG hesabı bağlıyken görünür).
+5. Doğrulama: `npm.cmd run build`.
+
+#### Adım 5: Faz 4 — İndirme, Kurulum & Kuyruk
+1. `src-tauri/src/gogdl/transfers.rs` oluştur: `gogdl download` sürecini çalıştırıp stderr'den `= Progress:` satırlarını oku.
+2. `src/features/install/install-dialog.ts`'e GOG dil seçimi ekle.
+3. İndirme kuyruğunda `source` ayrımını sağla.
+
+#### Adım 6: Faz 5 — Başlatma, Oynanış Süresi & Detay Drawer
+1. GOG DRM-free oyun başlatma: `goggame-*.info` içindeki çalıştırılabilir dosyayı doğrudan `tokio::process::Command` ile aç veya `gogdl launch` kullan.
+2. `runningGames` setine `gog::${id}` olarak ekle.
+3. `drawer-view.ts` içinde GOG mağaza bağlantıları ve başarım/cloud-save sekmelerini kaynağa göre koşullu göster.
+
+---
+
+## 13. Sonraki Adımlar & Başlangıç Kontrol Listesi
+
+1. [x] heroic-gogdl ve GOG Galaxy API araştırması tamamlandı.
+2. [x] Mimari karar (hibrit: REST API + gogdl CLI worker) belirlendi.
+3. [x] Kütüphane, UI ve tip dönüşüm spesifikasyonları eksiksiz hazırlandı.
+4. [x] Yeni AI modelleri için görev devir protokolü oluşturuldu.
+5. [ ] **Kullanıcı onayı ile Faz 0 (Tip Sistemi & State Genişletmesi) başlatılacak.**
+6. [ ] gogdl binary'si test edilip `%LOCALAPPDATA%\efxlve\bin\` yoluna yerleştirilecek.
+7. [ ] Rust `src-tauri/src/gogdl/` modül iskeleti kurulacak.
 
 > [!TIP]
-> Faz 0 (tip sistemi refactoru) mevcut Epic işlevselliğini **hiç bozmadan** yapılabilir ve yapılmalıdır. Bu, geri kalan fazlar için sağlam bir temel oluşturur.
+> **Tavsiye:** Faz 0 tamamen güvenli ve geriye dönük uyumludur; mevcut Epic kütüphanesini bozmadan projenin tip altyapısını GOG'a hazır hale getirir. Kullanıcı "uygulamaya başla" dediğinde ilk adım olarak Faz 0 uygulanmalıdır.
+
