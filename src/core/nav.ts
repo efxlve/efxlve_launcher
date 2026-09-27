@@ -23,13 +23,7 @@ export function updateSidebarActive(): void {
   if (!sidebar) return;
   const gameOpen = Boolean(S.currentModalAppName);
   sidebar.querySelectorAll<HTMLElement>("[data-view], [data-act='open-store']").forEach((el) => {
-    let section = false;
-    if (S.view === "store") {
-      const targetStore = el.dataset.store || "epic";
-      section = el.dataset.act === "open-store" && (S.activeStore || "epic") === targetStore;
-    } else {
-      section = el.dataset.view === S.view;
-    }
+    const section = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
     el.classList.toggle("active", section && !gameOpen);
   });
   syncSidebarGameActive();
@@ -99,7 +93,7 @@ export function updatePageHeader(): void {
     const game = S.currentModalAppName ? S.epicSummariesMap.get(S.currentModalAppName)?.title : null;
     const titles: Partial<Record<View, string>> = {
       library: t("nav.library"),
-      store: S.activeStore === "gog" ? t("nav.gogStore") : t("nav.store"),
+      store: S.activeStore === "gog" ? t("nav.gogStore") : t("nav.epicStore"),
       downloads: t("nav.downloads"),
       settings: t("nav.settings"),
       profile: t("palette.cmdProfile"),

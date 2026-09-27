@@ -46,8 +46,7 @@
             </button>
           </div>
           <nav id="nav" class="sb-nav">
-            <button class="sb-item" data-act="open-store" data-store="epic" data-i18n-title="nav.storeTitle" title="Epic Games Store (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Epic Games Store</span></button>
-            <button class="sb-item" data-act="open-store" data-store="gog" data-i18n-title="nav.gogStoreTitle" title="GOG.COM Store"><i data-lucide="shopping-bag"></i><span data-i18n="nav.gogStore">GOG.COM Store</span></button>
+            <button class="sb-item" data-act="open-store" data-i18n-title="nav.storeTitle" title="Mağazalar (Ctrl+1)"><i data-lucide="store"></i><span data-i18n="nav.store">Mağazalar</span></button>
             <button class="sb-item active" data-view="library" data-i18n-title="nav.libraryTitle" title="Library (Ctrl+2)"><i data-lucide="layout-grid"></i><span data-i18n="nav.library">Library</span></button>
             <button class="sb-item" data-view="downloads" data-i18n-title="nav.downloadsTitle" title="Downloads (Ctrl+3)"><i data-lucide="download"></i><span data-i18n="nav.downloads">Downloads</span><span id="dl-badge" class="sb-count hidden"></span></button>
             <button class="sb-item" data-view="settings" data-i18n-title="nav.settingsTitle" title="Settings (Ctrl+,)"><i data-lucide="settings"></i><span data-i18n="nav.settings">Settings</span></button>
@@ -63,13 +62,14 @@
             <span id="lib-heading-count" class="page-header-count" hidden></span>
             <div id="store-switcher" class="seg store-switcher" hidden>
               <button type="button" class="active" data-act="open-store" data-store="epic">Epic Games</button>
-              <button type="button" data-act="open-store" data-store="gog">GOG.COM</button>
+              <button type="button" data-act="open-store" data-store="gog">GOG</button>
             </div>
             <button class="page-search" data-act="open-palette" data-i18n-title="palette.open" title="Search (Ctrl+K)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <span data-i18n="palette.searchGames">Search games</span>
               <span class="kbd">Ctrl K</span>
             </button>
+            <div id="store-progress-line" class="store-progress-line hidden"></div>
           </header>
           <main id="content">
             <section id="view"></section>

@@ -97,10 +97,6 @@ fn library_dir(app: AppHandle) -> String {
 /// (using the `add_child` API behind the `unstable` feature).
 /// The top bar stays on top as HTML and the tabs keep working.
 ///
-/// NOTE: because the child webview position cannot be changed afterwards, when
-/// the window is resized it is rebuilt with `recreate=true`
-/// (a label counter prevents collisions; old ones close in the background).
-static STORE_VIEW_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// Left/top insets (logical px) of the store area, reported by the frontend
 /// shell (sidebar width + window bar height). Stored as f64 bits so the native
@@ -211,6 +207,8 @@ fn remember_applied_bounds(x: f64, y: f64, width: f64, height: f64) {
     }
 }
 
+static ACTIVE_STORE_LABEL: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
 /// One position+size update. `set_position` then `set_size` reads the parked
 /// 1x1 size back and collapses the webview after it has just been shown.
 fn move_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
@@ -221,9 +219,16 @@ fn move_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height:
     if views.is_empty() {
         return Ok(());
     }
+    let active = ACTIVE_STORE_LABEL.lock().map(|l| l.clone()).unwrap_or_default();
     let rect = webview_rect(x, y, width, height);
+    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
     for v in &views {
-        v.set_bounds(rect).map_err(|e| e.to_string())?;
+        if active.is_empty() || v.label() == active {
+            v.set_bounds(rect).map_err(|e| e.to_string())?;
+        } else {
+            let _ = v.set_bounds(offscreen);
+            let _ = v.hide();
+        }
     }
     remember_applied_bounds(x, y, width, height);
     Ok(())
@@ -258,15 +263,25 @@ fn show_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height:
     if views.is_empty() {
         return Ok(());
     }
+    let active = ACTIVE_STORE_LABEL.lock().map(|l| l.clone()).unwrap_or_default();
+    let rect = webview_rect(x, y, width, height);
+    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
     if !bounds_already_applied(x, y, width, height) {
-        let rect = webview_rect(x, y, width, height);
         for v in &views {
-            v.set_bounds(rect).map_err(|e| e.to_string())?;
+            if active.is_empty() || v.label() == active {
+                v.set_bounds(rect).map_err(|e| e.to_string())?;
+            } else {
+                let _ = v.set_bounds(offscreen);
+            }
         }
         remember_applied_bounds(x, y, width, height);
     }
     for v in &views {
-        v.show().map_err(|e| e.to_string())?;
+        if active.is_empty() || v.label() == active {
+            v.show().map_err(|e| e.to_string())?;
+        } else {
+            let _ = v.hide();
+        }
     }
     Ok(())
 }
@@ -275,7 +290,7 @@ fn store_views(window: &tauri::Window) -> Vec<tauri::Webview> {
     window
         .webviews()
         .into_iter()
-        .filter(|w| w.label().starts_with("epic-store-view"))
+        .filter(|w| w.label().starts_with("epic-store-view") || w.label().starts_with("store-view-"))
         .collect()
 }
 
@@ -1266,9 +1281,24 @@ async fn show_store_view(
     let owned_games = get_owned_games_json();
     let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
 
-    // If the webview already exists, show it INSTANTLY (0 ms) without waiting for any network request
+    let store_id = if url.contains("gog.com") { "gog" } else { "epic" };
+    let target_label = format!("store-view-{store_id}");
+    if let Ok(mut active) = ACTIVE_STORE_LABEL.lock() {
+        *active = target_label.clone();
+    }
+
+    // Park & hide any other store webviews so only the active store view is visible
+    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
+    for v in store_views(&window) {
+        if v.label() != target_label {
+            let _ = v.set_bounds(offscreen);
+            let _ = v.hide();
+        }
+    }
+
+    // If the webview for THIS store already exists, show it INSTANTLY (0 ms) without waiting for any network request
     if !recreate {
-        if let Some(v) = store_views(&window).into_iter().next() {
+        if let Some(v) = store_views(&window).into_iter().find(|w| w.label() == target_label) {
             // The palette hold parks the webview; do not move it back on screen.
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
@@ -1285,10 +1315,12 @@ async fn show_store_view(
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
             }
-            let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
+            if store_id == "epic" {
+                let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
+            }
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
-                    if cur.as_str() != target.as_str() {
+                    if cur.as_str() != target.as_str() && !target.as_str().ends_with(".com/") && !target.as_str().ends_with(".com/en") && !target.as_str().ends_with(".com") {
                         let _ = v.navigate(target);
                     }
                 }
@@ -1299,7 +1331,7 @@ async fn show_store_view(
             return Ok("@t:win.focused".into());
         }
     } else {
-        for v in store_views(&window) {
+        if let Some(v) = store_views(&window).into_iter().find(|w| w.label() == target_label) {
             let _ = v.close();
         }
     }
@@ -1314,10 +1346,9 @@ async fn show_store_view(
         "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
     );
 
-    let seq = STORE_VIEW_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let app_nav = app.clone();
     let builder = WebviewBuilder::new(
-        format!("epic-store-view-{seq}"),
+        target_label,
         WebviewUrl::External(parsed),
     )
     // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
@@ -1463,6 +1494,9 @@ fn destroy_store_view(app: AppHandle) -> Result<String, String> {
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut active) = ACTIVE_STORE_LABEL.lock() {
+        active.clear();
+    }
     for v in store_views(&window) {
         let _ = v.close();
     }

@@ -106,6 +106,7 @@
 #page-header {
   height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
   padding: 0 20px 0 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  position: relative;
 }
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -114,6 +115,19 @@
 .store-switcher[hidden] { display: none !important; }
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(.store-switcher:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
+.store-progress-line {
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: store-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+.store-progress-line.hidden { display: none; }
+@keyframes store-sweep {
+  0% { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
 .page-search {
   display: flex; align-items: center; gap: 8px; width: 260px; height: 36px; padding: 0 12px;
   border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);

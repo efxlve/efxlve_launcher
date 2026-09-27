@@ -37,7 +37,7 @@ export function isPaletteOpen(): boolean {
 function commands(): Command[] {
   const list: Command[] = [
     { label: t("nav.library"), iconName: "layout-grid", attrs: `data-view="library"`, keywords: "library kutuphane" },
-    { label: t("nav.store"), iconName: "external", attrs: `data-act="open-store"`, keywords: "store magaza epic" },
+    { label: t("nav.store"), iconName: "external", attrs: `data-act="open-store"`, keywords: "store magaza epic gog" },
     { label: t("nav.downloads"), iconName: "download", attrs: `data-view="downloads"`, keywords: "downloads indirmeler queue" },
     { label: t("palette.cmdProfile"), iconName: "users", attrs: `data-view="profile"`, keywords: "profile profil friends" },
     { label: t("palette.cmdSettings"), iconName: "settings", attrs: `data-view="settings"`, keywords: "settings ayarlar" },

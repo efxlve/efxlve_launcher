@@ -171,6 +171,11 @@ function scheduleStoreDestroy(): void {
   }, STORE_IDLE_DESTROY_MS);
 }
 
+function setStoreProgress(visible: boolean): void {
+  const p = document.getElementById("store-progress-line");
+  if (p) p.classList.toggle("hidden", !visible);
+}
+
 export async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeAllModals();
   cancelStoreDestroy();
@@ -180,19 +185,25 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   S.storeMode = mode;
   S.view = "store";
   viewEl.innerHTML = renderStoreLoadingScreen();
+  setStoreProgress(true);
   render();
   try {
     await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
       S.storeShown = false;
+      setStoreProgress(false);
       if (isTauri) invoke<string>("hide_store_view").catch(() => {});
       return;
     }
     S.storeShown = true;
+    window.setTimeout(() => {
+      if (epoch === storeOpenEpoch) setStoreProgress(false);
+    }, 250);
     window.setTimeout(syncStoreViewSize, 50);
     window.setTimeout(syncStoreViewSize, 200);
   } catch (e) {
     if (epoch !== storeOpenEpoch) return;
+    setStoreProgress(false);
     S.storeShown = false;
     S.view = S.lastNonStoreView;
     render();
@@ -266,6 +277,7 @@ export function hideStore(): void {
   storeOpenEpoch += 1;
   const wasShown = S.storeShown;
   S.storeShown = false;
+  setStoreProgress(false);
   if (isTauri && (wasShown || S.view === "store")) {
     invoke<string>("hide_store_view").catch((e: unknown) => toast(String(e), "err"));
   }
