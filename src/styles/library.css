@@ -145,29 +145,33 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: none;
-  background: #ffffff;
-  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--surface-2);
+  color: var(--text-2);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
-  transition: transform var(--ease), box-shadow var(--ease), filter var(--ease);
+  transition: background-color var(--ease), color var(--ease), transform var(--ease), border-color var(--ease);
 }
 .pcard-play-btn svg {
   margin-left: 1px;
 }
+.pcard:hover .pcard-play-btn {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.28);
+}
 .pcard-play-btn:hover {
-  transform: scale(1.14);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-  filter: brightness(1.08);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
 }
 .pcard-play-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.94);
 }
 .pcard-stores {
   font-size: 11px;

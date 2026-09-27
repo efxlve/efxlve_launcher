@@ -128,10 +128,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
-- **Kurulu Olmayan Oyunları Soluklaştırma Opsiyonu (Optional Dimming) & Parlak Beyaz Oyna Butonu:**
-  1. **Kurulu Olmayanları Soluklaştırma Seçeneği (Settings > Görünüm):** Ayarlar > Görünüm menüsüne "Kurulu olmayanları soluklaştır" (`dimUninstalled`, `DIM_UNINSTALLED_KEY`) opsiyonu eklendi. Aktif olduğunda kurulu olmayan oyunların kapakları ve liste satırları soluklaştırılarak (`.dim-uninstalled`) kurulu oyunlar öne çıkar; kapatıldığında ise tüm oyunlar tam renk ve tam parlaklıkta görüntülenir.
-  2. **Parlak Beyaz Oyna Butonu (`.pcard-play-btn`):** Kapak üzerindeki Oyna butonu saf beyaz arkaplan (`#ffffff`), siyah ikon (`#000000`), yumuşak gölge (`0 2px 6px rgba(0,0,0,0.45)`) ve hover anında beyaz parıltı (`box-shadow: 0 0 12px rgba(255,255,255,0.6)`) ile çok daha belirgin, modern ve parlak hale getirildi.
-  3. **15 Dil Desteği:** `settings.dimUninstalledTitle` ve `settings.dimUninstalledDesc` anahtarları 15 dilde eksiksiz tanımlandı.
+- **Kapak Oyna Butonu Rengi & Varsayılan Olarak Açık Dimleme Ayarı:**
+  1. **Oyna Butonu Renginin Geri Alınması (`.pcard-play-btn`):** Kapak üzerindeki Oyna butonu önceki asil PS5 obsidian rengine (`background: var(--surface-2)`, `border: 1px solid rgba(255,255,255,0.16)`, `color: var(--text-2)`) döndürüldü; karta odaklanıldığında veya üzerine gelindiğinde buton ikonu parlak beyaz `var(--text)` ve belirgin kenarlık alarak zarif ve parlak bir etkileşim sunar, butona tıklandığında/üzerine gelindiğinde `--accent` beyaza döner.
+  2. **Kurulu Olmayanları Soluklaştırma Varsayılanı (Default ON):** `dimUninstalled` (`DIM_UNINSTALLED_KEY`) ayarı varsayılan olarak açık (`!== "false"`) şekilde korunarak ilk açılışta kurulu oyunların öne çıkması sağlandı; kullanıcı isterse Ayarlar > Görünüm altından kapatıp tüm kapakları tam parlaklıkta görüntüleyebilir.
+  3. **15 Dil Desteği:** `settings.dimUninstalledTitle` ve `settings.dimUninstalledDesc` anahtarları 15 dilde eksiksiz tanımlı kalmaya devam ediyor.
 
 - **Kütüphanede Yüklü Oyunlarda Oyna Butonu (`.pcard-play-btn`) & Kurulu Olmayan Kapakların Koyulaştırılması:**
   1. **Kapak Başlık Satırında Oyna Butonu:** Yüklü oyunların başlık satırının hemen sağında, tıklandığında oyunu doğrudan başlatan (`data-act="epic-play"`) şık, yuvarlak bir Oyna butonu (`.pcard-play-btn`, `icon("play", 10)`) yerleştirildi. Hover anında beyaz vurgu (`--accent`) ve dokunsal mikro geri bildirim alır. Ayarlar > Görünüm sekmesindeki seçenek "Kapaklarda Oyna butonu" / "Play button on covers" olarak güncellendi (varsayılan kapalı).
