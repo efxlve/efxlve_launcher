@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -88,7 +88,7 @@ function getCollator(): Intl.Collator {
 
 /** Higher means more of the achievement set is unlocked. Games without data stay at the bottom. */
 function achievementRank(appName: string): number {
-  const a = S.epicAchSummaries[appName];
+  const a = achSummaryOf(appName);
   if (!a?.supported || !a.total_achievements) return 0;
   return a.user_unlocked / a.total_achievements;
 }

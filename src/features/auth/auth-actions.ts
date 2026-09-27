@@ -33,6 +33,7 @@ import {
   summarize,
   type CachedLibrary,
 } from "../../epic";
+import { gogGetAchievementsSummary } from "../../gog";
 import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadFriends, loadPlayerProfile } from "../store/store-view";
@@ -108,7 +109,11 @@ export async function refreshEpic(forceSync = false): Promise<void> {
 export async function loadEpicAchSummaries(): Promise<void> {
   if (!isTauri) return;
   try {
-    S.epicAchSummaries = await epicGetAchievementsSummary();
+    const [epicSummaries, gogSummaries] = await Promise.all([
+      epicGetAchievementsSummary().catch(() => ({})),
+      gogGetAchievementsSummary().catch(() => ({})),
+    ]);
+    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries };
     if (S.view === "library") scheduleRender();
   } catch (e) {
     console.warn("Achievement summaries could not be fetched:", e);

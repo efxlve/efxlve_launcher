@@ -8,6 +8,7 @@
  */
 
 import { isAppPlatinum } from "../../core/game-view";
+import { achSummaryOf } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -344,7 +345,7 @@ export function renderGameFeatures(
   antiCheat: string | null = null,
   reqData?: GameRequirementsResponse,
 ): string {
-  const achSum = S.epicAchSummaries[s.appName];
+  const achSum = achSummaryOf(s.appName);
   const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
   const cloudFolder = customAttrs?.CloudSaveFolder?.value || customAttrs?.CloudIncludeList?.value;
   const hasCloud = Boolean(cloudFolder || (S.activeManageSettings?.appName === s.appName && S.activeManageSettings.cloudSavesEnabled));

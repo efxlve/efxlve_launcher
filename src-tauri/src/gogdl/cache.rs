@@ -106,3 +106,24 @@ pub fn save_cached_library(
     let json = serde_json::to_vec_pretty(&snapshot)?;
     fs::write(&path, json).map_err(|e| GogError::Io(e.to_string()))
 }
+
+/// Load cached GOG achievement summaries from disk.
+pub fn load_achievements_cache(app: &AppHandle) -> HashMap<String, crate::legendary::models::GameAchievementSummary> {
+    let path = super::paths::achievements_cache_path(app);
+    if let Ok(bytes) = fs::read(&path) {
+        if let Ok(map) = serde_json::from_slice::<HashMap<String, crate::legendary::models::GameAchievementSummary>>(&bytes) {
+            return map;
+        }
+    }
+    HashMap::new()
+}
+
+/// Save GOG achievement summaries to disk in a single sequential I/O operation.
+pub fn save_achievements_cache(
+    app: &AppHandle,
+    cache: &HashMap<String, crate::legendary::models::GameAchievementSummary>,
+) -> Result<(), GogError> {
+    let path = super::paths::achievements_cache_path(app);
+    let json = serde_json::to_vec_pretty(cache)?;
+    fs::write(&path, json).map_err(|e| GogError::Io(e.to_string()))
+}

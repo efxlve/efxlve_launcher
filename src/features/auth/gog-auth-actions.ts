@@ -3,6 +3,7 @@
  */
 
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { patchLibraryCardDom } from "../../core/game-view";
 import { setGogSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -15,8 +16,10 @@ import {
   gogCachedLibrary,
   gogListGames,
   gogLogout,
+  gogSyncAchievements,
   gogToLibraryItem,
 } from "../../gog";
+import { invalidateLibraryVisibleCache } from "../library/library-view";
 
 /** Clean extraction of code from input, whether pasted as raw code or full redirect URL. */
 export function extractGogAuthCode(raw: string): string {
@@ -80,10 +83,30 @@ export async function syncGogLibrary(): Promise<void> {
     setGogSummaries(items);
     S.gogSyncing = false;
     scheduleRender();
+    void syncGogAchievements();
   } catch (err) {
     S.gogSyncing = false;
     toast(t("gog.syncFailed"));
     scheduleRender();
+  }
+}
+
+/** Synchronize achievement summaries for GOG games in the background. */
+export async function syncGogAchievements(): Promise<void> {
+  try {
+    const summaries = await gogSyncAchievements();
+    if (summaries && Object.keys(summaries).length > 0) {
+      Object.assign(S.epicAchSummaries, summaries);
+      if (S.view === "library") {
+        document.querySelectorAll<HTMLElement>("[data-lib-item]").forEach((el) => {
+          const id = el.dataset.libItem;
+          if (id && id.startsWith("gog::")) patchLibraryCardDom(id);
+        });
+        invalidateLibraryVisibleCache();
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to sync GOG achievements:", err);
   }
 }
 
@@ -118,6 +141,7 @@ export async function initGogSession(): Promise<void> {
 
       // 2. Background silent sync
       void syncGogLibrary();
+      void syncGogAchievements();
     } else {
       S.gogPhase = "login";
     }

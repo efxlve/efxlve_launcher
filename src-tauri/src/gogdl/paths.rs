@@ -106,3 +106,8 @@ pub fn installed_json_path(app: &AppHandle) -> PathBuf {
 pub fn library_snapshot_path(app: &AppHandle) -> PathBuf {
     gog_config_dir(app).join("efxlve_gog_library_snapshot.json")
 }
+
+/// `<app_data>/gog/achievements_cache.json` containing cached achievement summaries.
+pub fn achievements_cache_path(app: &AppHandle) -> PathBuf {
+    gog_config_dir(app).join("achievements_cache.json")
+}

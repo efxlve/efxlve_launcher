@@ -15,9 +15,14 @@ import { rawOf, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
+/** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
+export function achSummaryOf(appName: string) {
+  return S.epicAchSummaries[appName] || (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`]);
+}
+
 /** Achievement count for a library list row. Dash when the game has no tracked set. */
 export function listAchievementCell(appName: string): string {
-  const ach = S.epicAchSummaries[appName];
+  const ach = achSummaryOf(appName);
   const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
   if (ach?.supported && ach.total_achievements > 0) {
     return `<span class="lrow-ach${done ? " done" : ""}">${icon("trophy", 13)}<span class="tabular-nums">${ach.user_unlocked}/${ach.total_achievements}</span></span>`;
@@ -33,7 +38,7 @@ export function libraryCoverStats(appName: string): string {
   if (secs > 0) {
     chips.push(`<span class="cover-stat">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
   }
-  const ach = S.epicAchSummaries[appName];
+  const ach = achSummaryOf(appName);
   const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
   if (ach?.supported && ach.total_achievements > 0) {
     const label = `${ach.user_unlocked}/${ach.total_achievements}`;
@@ -69,7 +74,10 @@ export function libraryDlBar(appName: string, p: number | null): string {
  */
 export function patchLibraryCardDom(appName: string): boolean {
   const s = summaryOf(appName);
-  const items = document.querySelectorAll<HTMLElement>(`[data-lib-item="${appName}"]`);
+  const clean = appName.replace(/^gog::/, "");
+  const items = document.querySelectorAll<HTMLElement>(
+    `[data-lib-item="${appName}"], [data-lib-item="gog::${clean}"], [data-lib-item="${clean}"]`
+  );
   if (!s || items.length === 0) return false;
   const p = epicDlProgress(appName);
   const badgeHtml = libraryCardBadge(s);
@@ -123,7 +131,7 @@ export function refreshGameActionUi(appName: string): void {
 
 /** True when the game has the platinum trophy (100% achievements). */
 export function isAppPlatinum(appName: string): boolean {
-  return Boolean(S.demoPlatinumApps.has(appName) || S.epicAchSummaries[appName]?.is_platinum);
+  return Boolean(S.demoPlatinumApps.has(appName) || achSummaryOf(appName)?.is_platinum);
 }
 
 /** Active download progress for a game, or null when not downloading. */

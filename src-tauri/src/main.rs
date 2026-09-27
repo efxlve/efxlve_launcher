@@ -1899,6 +1899,8 @@ fn main() {
             gogdl::commands::gog_list_games,
             gogdl::commands::gog_get_game_details,
             gogdl::commands::gog_get_achievements,
+            gogdl::commands::gog_get_achievements_summary,
+            gogdl::commands::gog_sync_achievements,
             gogdl::commands::gog_get_system_requirements,
             gogdl::transfers::gog_install_game,
             gogdl::transfers::gog_cancel_download,

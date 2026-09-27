@@ -7,15 +7,17 @@ use super::api_client::{
     get_user_profile, refresh_tokens,
 };
 use super::cache::{
-    clear_auth_tokens, load_auth_tokens, load_cached_library, load_installed_games,
-    save_auth_tokens, save_cached_library,
+    clear_auth_tokens, load_achievements_cache, load_auth_tokens, load_cached_library,
+    load_installed_games, save_achievements_cache, save_auth_tokens, save_cached_library,
 };
 use super::models::{
     GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary, GogSetupStatus,
 };
 use super::paths::{downloaded_binary, resolve_binary};
 use super::{cmd_error, GogError};
-use crate::legendary::models::{GameAchievementsResponse, GameRequirementsResponse};
+use crate::legendary::models::{
+    GameAchievementSummary, GameAchievementsResponse, GameRequirementsResponse,
+};
 
 /// Checks whether the user is currently authenticated with GOG.COM.
 #[command]
@@ -161,8 +163,8 @@ pub async fn gog_get_achievements(
     let clean_id = game_id.trim_start_matches("gog::");
 
     let res = fetch_gog_achievements(&tokens.access_token, &tokens.user_id, clean_id).await;
-    match res {
-        Ok(ach) => Ok(ach),
+    let data = match res {
+        Ok(ach) => ach,
         Err(GogError::NotAuthenticated) => {
             let refreshed = refresh_tokens(&tokens.refresh_token)
                 .await
@@ -171,10 +173,103 @@ pub async fn gog_get_achievements(
             let _ = save_auth_tokens(&app, &tokens);
             fetch_gog_achievements(&tokens.access_token, &tokens.user_id, clean_id)
                 .await
-                .map_err(cmd_error)
+                .map_err(cmd_error)?
         }
-        Err(e) => Err(cmd_error(e)),
+        Err(e) => return Err(cmd_error(e)),
+    };
+
+    let summary = GameAchievementSummary {
+        app_name: format!("gog::{clean_id}"),
+        total_achievements: data.total_achievements,
+        user_unlocked: data.user_unlocked,
+        user_xp: data.user_xp,
+        total_xp: data.total_xp,
+        is_platinum: data.is_platinum,
+        supported: data.supported.unwrap_or(data.total_achievements > 0),
+        base_achievements: data.base_achievements,
+        base_unlocked: data.base_unlocked,
+    };
+    let mut cache = load_achievements_cache(&app);
+    cache.insert(format!("gog::{clean_id}"), summary.clone());
+    cache.insert(clean_id.to_string(), summary);
+    let _ = save_achievements_cache(&app, &cache);
+
+    Ok(data)
+}
+
+/// Returns all cached GOG achievement summaries from disk.
+#[command]
+pub async fn gog_get_achievements_summary(
+    app: AppHandle,
+) -> Result<std::collections::HashMap<String, GameAchievementSummary>, String> {
+    Ok(load_achievements_cache(&app))
+}
+
+/// Background synchronization of GOG achievement summaries for user's owned games.
+#[command]
+pub async fn gog_sync_achievements(
+    app: AppHandle,
+) -> Result<std::collections::HashMap<String, GameAchievementSummary>, String> {
+    let tokens = match load_auth_tokens(&app) {
+        Some(t) => t,
+        None => return Ok(std::collections::HashMap::new()),
+    };
+    let cached_lib = load_cached_library(&app);
+    if cached_lib.games.is_empty() {
+        return Ok(load_achievements_cache(&app));
     }
+
+    let mut cache = load_achievements_cache(&app);
+    let uncached: Vec<String> = cached_lib
+        .games
+        .iter()
+        .map(|g| g.game_id.clone())
+        .filter(|id| !cache.contains_key(&format!("gog::{id}")) && !cache.contains_key(id))
+        .collect();
+
+    if uncached.is_empty() {
+        return Ok(cache);
+    }
+
+    let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(4));
+    let mut handles = Vec::new();
+
+    for id in uncached {
+        let sem = sem.clone();
+        let access_token = tokens.access_token.clone();
+        let user_id = tokens.user_id.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire().await;
+            let res = fetch_gog_achievements(&access_token, &user_id, &id).await;
+            (id, res)
+        }));
+    }
+
+    let mut updated = false;
+    for handle in handles {
+        if let Ok((id, Ok(resp))) = handle.await {
+            let summary = GameAchievementSummary {
+                app_name: format!("gog::{id}"),
+                total_achievements: resp.total_achievements,
+                user_unlocked: resp.user_unlocked,
+                user_xp: resp.user_xp,
+                total_xp: resp.total_xp,
+                is_platinum: resp.is_platinum,
+                supported: resp.supported.unwrap_or(resp.total_achievements > 0),
+                base_achievements: resp.base_achievements,
+                base_unlocked: resp.base_unlocked,
+            };
+            cache.insert(format!("gog::{id}"), summary.clone());
+            cache.insert(id, summary);
+            updated = true;
+        }
+    }
+
+    if updated {
+        let _ = save_achievements_cache(&app, &cache);
+    }
+
+    Ok(cache)
 }
 
 /// Retrieves hardware requirements for a GOG game.

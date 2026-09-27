@@ -13,7 +13,7 @@ import { isTauri, NO_DESC } from "../../core/constants";
 import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
-import { epicDlProgress, isAppPlatinum } from "../../core/game-view";
+import { epicDlProgress, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
@@ -21,9 +21,10 @@ import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, summaryOf } from "..
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
 
+import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, isMacSys, isWinSys, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard } from "./drawer-widgets";
@@ -682,25 +683,23 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     const rawId = isGog ? appName.slice(5) : appName;
     const data = isGog ? await gogGetAchievements(rawId) : await epicGetAchievements(appName, forceRefresh);
     S.loadedAchievements.set(appName, data);
-    const sum = S.epicAchSummaries[appName];
-    if (!sum) {
-      S.epicAchSummaries[appName] = {
-        app_name: appName,
-        user_unlocked: data.user_unlocked,
-        total_achievements: data.total_achievements,
-        user_xp: data.user_xp,
-        total_xp: data.total_xp,
-        is_platinum: data.is_platinum,
-        supported: (data.total_achievements ?? 0) > 0,
-      };
-    } else {
-      sum.user_unlocked = data.user_unlocked;
-      sum.total_achievements = data.total_achievements;
-      sum.user_xp = data.user_xp;
-      sum.total_xp = data.total_xp;
-      sum.is_platinum = data.is_platinum;
-      sum.supported = (data.total_achievements ?? 0) > 0;
+    const summary: EpicAchievementSummary = {
+      app_name: appName,
+      user_unlocked: data.user_unlocked,
+      total_achievements: data.total_achievements,
+      user_xp: data.user_xp,
+      total_xp: data.total_xp,
+      is_platinum: data.is_platinum,
+      supported: (data.total_achievements ?? 0) > 0,
+    };
+    S.epicAchSummaries[appName] = summary;
+    if (isGog) {
+      S.epicAchSummaries[rawId] = summary;
+      S.epicAchSummaries[`gog::${rawId}`] = summary;
     }
+    patchLibraryCardDom(appName);
+    if (isGog) patchLibraryCardDom(rawId);
+    invalidateLibraryVisibleCache();
   } catch (e) {
     console.warn("Achievements could not be fetched or this game has no achievement support:", e);
     S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });

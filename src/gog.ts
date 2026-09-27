@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { LibraryItem } from "./core/types";
-import type { EpicAchievementsData, GameRequirementsResponse } from "./epic";
+import type { EpicAchievementSummary, EpicAchievementsData, GameRequirementsResponse } from "./epic";
 
 export interface GogAuthStatus {
   logged_in: boolean;
@@ -110,6 +110,14 @@ export async function gogGetGameDetails(gameId: string): Promise<GogGameDetails>
 
 export async function gogGetAchievements(gameId: string): Promise<EpicAchievementsData> {
   return invoke<EpicAchievementsData>("gog_get_achievements", { gameId });
+}
+
+export async function gogGetAchievementsSummary(): Promise<Record<string, EpicAchievementSummary>> {
+  return invoke<Record<string, EpicAchievementSummary>>("gog_get_achievements_summary");
+}
+
+export async function gogSyncAchievements(): Promise<Record<string, EpicAchievementSummary>> {
+  return invoke<Record<string, EpicAchievementSummary>>("gog_sync_achievements");
 }
 
 export async function gogGetSystemRequirements(gameId: string): Promise<GameRequirementsResponse> {

@@ -1362,10 +1362,15 @@ document.addEventListener("click", (e) => {
     const s = summaryOf(id);
     if (s) void fetchAndRenderRequirements(id, s.title, true);
   } else if (act === "open-store-achievements" && id) {
-    const s = S.epicSummaries.find((x) => x.appName === id);
-    const title = s ? s.title : id;
-    const url = epicAchievementsUrl(title, id);
-    void openStoreUrl(url, "store");
+    if (id.startsWith("gog::")) {
+      const cleanId = id.slice(5);
+      void openStoreUrl(`https://www.gog.com/en/game/${cleanId}`, "store");
+    } else {
+      const s = summaryOf(id);
+      const title = s ? s.title : id;
+      const url = epicAchievementsUrl(title, id);
+      void openStoreUrl(url, "store");
+    }
   } else if (act === "clear-ach-search") {
     S.achSearchQuery = "";
     if (S.currentModalAppName) {
