@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "설치된 게임이 아직 없습니다",
   "sidebar.recent": "최근 플레이",
   "palette.open": "게임 및 명령 검색 (Ctrl+K)",
@@ -1287,7 +1287,9 @@
   "ctx.ignoreIndicator": "업데이트 표시 지우기",
   "ctx.restoreIndicator": "업데이트 표시 복원",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "계정 전환",
+  "accounts.manageAccounts": "계정 관리",
+  "nav.switchAccounts": "계정 전환기"
 }

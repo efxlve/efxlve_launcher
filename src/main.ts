@@ -10,7 +10,7 @@
 import "./styles/index.css";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
-import { updateChrome, updateNavHistoryUi } from "./core/nav";
+import { updateChrome, updateNavHistoryUi, updateSidebarAccountSwitcher } from "./core/nav";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
@@ -114,6 +114,10 @@ function closeAllModals(): void {
   closeInstallDialog();
   closeManagePopup();
   closeChangelogModal();
+  if (S.isAccountSwitcherOpen) {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+  }
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

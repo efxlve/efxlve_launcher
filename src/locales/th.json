@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "ยังไม่มีเกมที่ติดตั้ง",
   "sidebar.recent": "เล่นล่าสุด",
   "palette.open": "ค้นหาเกมและคำสั่ง (Ctrl+K)",
@@ -1285,10 +1285,11 @@
   "dl.indicatorIgnoredToast": "ล้างตัวบ่งชี้การอัปเดตสำหรับ {title} แล้ว",
   "dl.indicatorRestoredToast": "กู้คืนตัวบ่งชี้การอัปเดตสำหรับ {title} แล้ว",
   "ctx.ignoreIndicator": "ล้างตัวบ่งชี้การอัปเดต",
-  "ctx.restoreIndicator": "แสดงตัวบ่งชี้การอัปเดต"
-,
+  "ctx.restoreIndicator": "แสดงตัวบ่งชี้การอัปเดต",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "สลับบัญชี",
+  "accounts.manageAccounts": "จัดการบัญชี",
+  "nav.switchAccounts": "ตัวสลับบัญชี"
 }

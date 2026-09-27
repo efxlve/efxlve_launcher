@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "لا توجد ألعاب مثبتة بعد",
   "sidebar.recent": "لُعبت مؤخرًا",
   "palette.open": "البحث في الألعاب والأوامر (Ctrl+K)",
@@ -1287,7 +1287,9 @@
   "ctx.ignoreIndicator": "إخفاء مؤشر التحديث",
   "ctx.restoreIndicator": "إظهار مؤشر التحديث",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "تبديل الحساب",
+  "accounts.manageAccounts": "إدارة الحسابات",
+  "nav.switchAccounts": "مبدّل الحسابات"
 }

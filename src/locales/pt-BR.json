@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "Nenhum jogo instalado",
   "sidebar.recent": "Jogados recentemente",
   "palette.open": "Buscar jogos e comandos (Ctrl+K)",
@@ -1285,10 +1285,11 @@
   "dl.indicatorIgnoredToast": "Indicador de atualização oculto para {title}.",
   "dl.indicatorRestoredToast": "Indicador de atualização restaurado para {title}.",
   "ctx.ignoreIndicator": "Ocultar indicador de atualização",
-  "ctx.restoreIndicator": "Mostrar indicador de atualização"
-,
+  "ctx.restoreIndicator": "Mostrar indicador de atualização",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "Alternar conta",
+  "accounts.manageAccounts": "Gerenciar contas",
+  "nav.switchAccounts": "Alternador de contas"
 }

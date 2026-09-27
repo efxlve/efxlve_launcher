@@ -13,6 +13,7 @@ import { canonicalGameTitle, rawOf, totalLibraryGamesCount } from "./selectors";
 import { getCustomAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
+import { icon } from "./icons";
 import { t } from "../i18n";
 import { epicPortrait } from "../epic";
 import { openStoreUrl, setView } from "../features/store/store-view";
@@ -226,10 +227,198 @@ export function updateOfflineModeUi(): void {
   btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
 }
 
+let sbSwitcherSig = "";
+
+/**
+ * Bottom sidebar multi-platform account switcher button and floating popover menu.
+ * Displays connected platforms (Epic, GOG), current user avatar/name, and allows
+ * 1-click fast switching or adding new store accounts.
+ */
+export function updateSidebarAccountSwitcher(): void {
+  const host = document.getElementById("sb-account-host");
+  if (!host) return;
+
+  const hasEpic = Boolean(S.epicAccount);
+  const hasGog = Boolean(S.gogAccount);
+  const hasAny = hasEpic || hasGog;
+
+  const activeAvatar = hasEpic
+    ? getCustomAvatar(S.epicAccountId) || getCustomAvatar()
+    : hasGog
+    ? getCustomAvatar(S.gogAccountId)
+    : null;
+
+  const primaryName = hasEpic
+    ? S.epicAccount
+    : hasGog
+    ? S.gogAccount
+    : t("nav.signIn");
+
+  let storesSubtitle = t("accounts.title");
+  if (hasEpic && hasGog) {
+    storesSubtitle = "Epic · GOG";
+  } else if (hasEpic) {
+    storesSubtitle = "Epic Games";
+  } else if (hasGog) {
+    storesSubtitle = "GOG.COM";
+  }
+
+  // Fast signature check to avoid unnecessary DOM thrashing
+  const epicAccsSig = (S.savedAccounts || [])
+    .map((a) => `${a.account_id}:${a.display_name}:${a.is_active ? 1 : 0}`)
+    .join(",");
+  const gogAccsSig = (S.gogSavedAccounts || [])
+    .map((a) => `${a.user_id}:${a.username}:${a.is_active ? 1 : 0}`)
+    .join(",");
+  const sig = [
+    S.isAccountSwitcherOpen ? "1" : "0",
+    S.epicAccount,
+    S.epicAccountId || "",
+    S.gogAccount,
+    S.gogAccountId || "",
+    epicAccsSig,
+    gogAccsSig,
+    activeAvatar || "",
+    S.appLanguage,
+  ].join("|");
+
+  if (sig === sbSwitcherSig && host.firstElementChild) return;
+  sbSwitcherSig = sig;
+
+  let avatarHtml = "";
+  if (activeAvatar) {
+    avatarHtml = `<img src="${esc(activeAvatar)}" alt="" />`;
+  } else if (hasAny) {
+    const initial = (primaryName.trim()[0] || "?").toUpperCase();
+    avatarHtml = `<span class="sb-switcher-avatar-initial">${esc(initial)}</span>`;
+  } else {
+    avatarHtml = icon("user", 16);
+  }
+
+  let popoverHtml = "";
+  if (S.isAccountSwitcherOpen) {
+    // Epic Section
+    const epicItems = (S.savedAccounts || [])
+      .map((acc) => {
+        const isActive =
+          acc.is_active ||
+          acc.account_id === S.epicAccountId ||
+          acc.display_name === S.epicAccount;
+        const av =
+          S.customAvatars[acc.account_id] ||
+          (isActive ? getCustomAvatar(S.epicAccountId) || getCustomAvatar() : null);
+        const avContent = av
+          ? `<img src="${esc(av)}" alt="" />`
+          : esc((acc.display_name.trim()[0] || "?").toUpperCase());
+        return `
+          <button type="button" class="sb-pop-acc-item ${isActive ? "active" : ""}" data-act="sb-switch-epic" data-id="${esc(acc.account_id)}" title="${esc(acc.display_name)}">
+            <span class="sb-pop-acc-avatar">${avContent}</span>
+            <span class="sb-pop-acc-name">${esc(acc.display_name)}</span>
+            ${isActive ? `<span class="sb-pop-check">${icon("check", 14)}</span>` : ""}
+          </button>
+        `;
+      })
+      .join("");
+
+    const epicSection = `
+      <div class="sb-pop-section">
+        <div class="sb-pop-platform-head">
+          <span class="sb-pop-platform-badge">EPIC GAMES</span>
+          <button type="button" class="sb-pop-add-btn" data-act="sb-add-epic" title="${t("settings.accountAdd")}">
+            ${icon("plus", 12)}
+          </button>
+        </div>
+        <div class="sb-pop-account-list">
+          ${
+            epicItems ||
+            `<button type="button" class="sb-pop-empty-add" data-act="sb-add-epic">
+              ${icon("plus", 13)}
+              <span>${t("nav.signIn")} (Epic)</span>
+            </button>`
+          }
+        </div>
+      </div>
+    `;
+
+    // GOG Section
+    const gogItems = (S.gogSavedAccounts || [])
+      .map((acc) => {
+        const isActive = acc.is_active || acc.user_id === S.gogAccountId;
+        const av =
+          S.customAvatars[acc.user_id] ||
+          (isActive ? getCustomAvatar(S.gogAccountId) : null);
+        const avContent = av
+          ? `<img src="${esc(av)}" alt="" />`
+          : esc((acc.username.trim()[0] || "?").toUpperCase());
+        return `
+          <button type="button" class="sb-pop-acc-item ${isActive ? "active" : ""}" data-act="sb-switch-gog" data-id="${esc(acc.user_id)}" title="${esc(acc.username)}">
+            <span class="sb-pop-acc-avatar">${avContent}</span>
+            <span class="sb-pop-acc-name">${esc(acc.username)}</span>
+            ${isActive ? `<span class="sb-pop-check">${icon("check", 14)}</span>` : ""}
+          </button>
+        `;
+      })
+      .join("");
+
+    const gogSection = `
+      <div class="sb-pop-section">
+        <div class="sb-pop-platform-head">
+          <span class="sb-pop-platform-badge">GOG.COM</span>
+          <button type="button" class="sb-pop-add-btn" data-act="sb-add-gog" title="${t("settings.accountAdd")}">
+            ${icon("plus", 12)}
+          </button>
+        </div>
+        <div class="sb-pop-account-list">
+          ${
+            gogItems ||
+            `<button type="button" class="sb-pop-empty-add" data-act="sb-add-gog">
+              ${icon("plus", 13)}
+              <span>${t("nav.signIn")} (GOG)</span>
+            </button>`
+          }
+        </div>
+      </div>
+    `;
+
+    popoverHtml = `
+      <div id="sb-account-popover" class="sb-popover" role="dialog" aria-label="${t("accounts.switchAccountTitle")}">
+        <div class="sb-popover-head">
+          <span class="sb-popover-title">${t("accounts.switchAccountTitle")}</span>
+          <button type="button" class="icon-btn tiny" data-act="open-accounts-settings" title="${t("accounts.manageAccounts")}">
+            ${icon("settings", 13)}
+          </button>
+        </div>
+        ${epicSection}
+        ${gogSection}
+        <div class="sb-popover-footer">
+          <button type="button" class="sb-pop-footer-btn" data-act="open-accounts-settings">
+            ${icon("user", 13)}
+            <span>${t("accounts.manageAccounts")}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  const btnHtml = `
+    <button type="button" class="sb-switcher-btn ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${t("accounts.switchAccountTitle")}">
+      <span class="sb-switcher-avatar">${avatarHtml}</span>
+      <span class="sb-switcher-info">
+        <span class="sb-switcher-name">${esc(primaryName)}</span>
+        <span class="sb-switcher-stores">${esc(storesSubtitle)}</span>
+      </span>
+      <span class="sb-switcher-caret">${icon("chevron-up", 14)}</span>
+    </button>
+  `;
+
+  host.innerHTML = popoverHtml + btnHtml;
+}
+
 /** Refresh the account chip, the active sidebar item and the installed-games list. */
 export function updateChrome(): void {
   updateSidebarActive();
   updateSidebarGames();
+  updateSidebarAccountSwitcher();
   updatePageHeader();
   updateStatusBar();
   const acc = document.getElementById("account");

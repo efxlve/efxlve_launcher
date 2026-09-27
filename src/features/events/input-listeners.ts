@@ -6,7 +6,7 @@
 import { AUTO_UPDATE_TIME_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
-import { navGoBack, navGoForward } from "../../core/nav";
+import { navGoBack, navGoForward, updateSidebarAccountSwitcher } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -169,6 +169,11 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
+    if (S.isAccountSwitcherOpen) {
+      S.isAccountSwitcherOpen = false;
+      updateSidebarAccountSwitcher();
+      return;
+    }
     if (S.activeMoveModalAppName) {
       if (S.isMovingGame) {
         toast(i18nT("move.inProgress"), "");

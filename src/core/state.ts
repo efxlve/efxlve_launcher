@@ -237,6 +237,7 @@ export const S = {
   isSortDropdownOpen: false,
   isStoreDropdownOpen: false,
   isColDropdownOpen: false,
+  isAccountSwitcherOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,

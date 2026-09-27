@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "Установленных игр пока нет",
   "sidebar.recent": "Недавно запущенные",
   "palette.open": "Поиск игр и команд (Ctrl+K)",
@@ -1287,7 +1287,9 @@
   "ctx.ignoreIndicator": "Скрыть индикатор обновления",
   "ctx.restoreIndicator": "Показать индикатор обновления",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "Сменить аккаунт",
+  "accounts.manageAccounts": "Управление аккаунтами",
+  "nav.switchAccounts": "Переключатель аккаунтов"
 }

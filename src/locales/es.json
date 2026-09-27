@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "Aún no hay juegos instalados",
   "sidebar.recent": "Jugados recientemente",
   "palette.open": "Buscar juegos y comandos (Ctrl+K)",
@@ -1287,7 +1287,9 @@
   "ctx.ignoreIndicator": "Ocultar indicador de actualización",
   "ctx.restoreIndicator": "Mostrar indicador de actualización",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "Cambiar de cuenta",
+  "accounts.manageAccounts": "Administrar cuentas",
+  "nav.switchAccounts": "Selector de cuentas"
 }

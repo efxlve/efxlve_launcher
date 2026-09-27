@@ -1,4 +1,4 @@
-﻿{
+{
   "sidebar.noInstalled": "還沒有已安裝的遊戲",
   "sidebar.recent": "最近遊玩",
   "palette.open": "搜尋遊戲和命令 (Ctrl+K)",
@@ -1285,10 +1285,11 @@
   "dl.indicatorIgnoredToast": "已清除 {title} 的更新指示器。",
   "dl.indicatorRestoredToast": "已恢復 {title} 的更新指示器。",
   "ctx.ignoreIndicator": "清除更新指示器",
-  "ctx.restoreIndicator": "恢復更新指示器"
-,
+  "ctx.restoreIndicator": "恢復更新指示器",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
-,
-  "settings.gogLogout": "Sign out of GOG"
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.gogLogout": "Sign out of GOG",
+  "accounts.switchAccountTitle": "切換帳戶",
+  "accounts.manageAccounts": "管理帳戶",
+  "nav.switchAccounts": "帳戶切換器"
 }

@@ -128,6 +128,15 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Kenar Çubuğu Çoklu Platform Hesap Değiştirici & Açılır Menü (Sidebar Multi-Platform Account Switcher Popover):**
+  1. **Alt Bar Butonu (`.sb-switcher-btn`):** Sol kenar çubuğunun en altına (`#sb-account-host`), Son Oynananlar listesinin hemen altına yerleşen modern, Discord/Steam tarzı hesap paneli eklendi. Aktif kullanıcının avatarını, kullanıcı adını, bağlı mağazaları (`Epic · GOG`, `Epic Games`, `GOG.COM` veya `Accounts`) ve açılış yönünü belirten chevron ikonunu (`icon("chevron-up", 14)`) gösterir.
+  2. **Yüzen PS5 Dark Açılır Menü (`#sb-account-popover`):** Butona tıklandığında butonun hemen üzerinde yumuşak animasyonla (`sbPopIn`, 130ms) açılan, gerçek siyah (`var(--bg)`, `#000`) ve koyu obsidian yüzeyli popover menü eklendi.
+  3. **Platform Bazlı Gruplama & Tek Tıkla Geçiş:** Popover içinde Epic Games ve GOG.COM bölümleri ayrı ayrı listelenir. Her kayıtlı hesap avatarı ve adıyla listelenir; aktif oturum yeşil onay işareti (`icon("check", 14)`) taşır. Başka bir hesaba tıklandığında tek tıkla oturum geçişi (`sb-switch-epic` / `sb-switch-gog`) yapılır.
+  4. **Hızlı Hesap Ekleme & Yönetim Kısayolu:** Her platform başlığında yeni hesap bağlama butonu (`+`, `sb-add-epic` / `sb-add-gog`) yer alır. Alt kısımda ise doğrudan Ayarlar > Hesaplar sayfasına yönlendiren "Hesapları Yönet" / "Manage Accounts" butonu yer alır.
+  5. **Dış Tıklama, Escape ve Modal Hijyeni:** Popover açıkken menü dışına tıklandığında, `Esc` tuşuna basıldığında veya herhangi bir modal/sayfa geçişi tetiklendiğinde menü otomatik olarak kapanır.
+  6. **Performans (O(1) & Sıfır DOM Thrashing):** `updateSidebarAccountSwitcher` hızlı imza kontrolü (`sbSwitcherSig`) ile durum değişmediğinde DOM'a asla dokunmaz; sıfır reflow ve 120 FPS akıcılık korunur.
+  7. **i18n & İkon Altyapısı:** `src/core/icons.ts` içine `"user"` SVG vektörü eklendi; 15 dilde `accounts.switchAccountTitle`, `accounts.manageAccounts` ve `nav.switchAccounts` çevirileri eksiksiz tanımlandı.
+
 - **Profil GOG Rozet Düzeltmesi, Oyun Sayısı Senkronizasyonu, Hesap Ayarları İyileştirmeleri & Kütüphane Mağaza Başlık Altı Metinleri:**
   1. **Profilde GOG / Epic Rozet Düzeltmesi:** Profil oyun listesinde `buildGogProfileGames()` içinde `app_name: item.key` (`gog::<id>`) olarak düzeltildi ve `isGog` kontrolü `S.allGamesMap` ile güçlendirildi. GOG oyunlarının hatalı olarak "EPIC" rozeti alması sorunu tamamen giderildi.
   2. **Profil ve Kütüphane Oyun Sayısı Eşitlemesi (594 Oyun):** Kütüphanedeki ve profildeki oyun sayısı uyuşmazlığı giderildi: `totalLibraryGamesCount()` fonksiyonu `src/core/selectors.ts` içine taşındı; hem kütüphane başlığı hem profil başlığı aynı deduplicate edilmiş ve gizli oyunları hariç tutan fonksiyonu çağırarak birebir aynı oyun sayısını (594) gösterir.

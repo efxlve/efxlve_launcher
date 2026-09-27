@@ -17,7 +17,7 @@ import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
 import { patchLibraryCardDom, toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi, updatePageHeader } from "../../core/nav";
+import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi, updatePageHeader, updateSidebarAccountSwitcher } from "../../core/nav";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -29,7 +29,7 @@ import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../..
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { allStoreSummaries, rawOf, summaryOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
-import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
+import { cancelAddAccount, loadSavedAccounts, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
 import {
   extractGogAuthCode,
   gogLoginWithCode,
@@ -37,7 +37,7 @@ import {
   openGogLoginPage,
   syncGogLibrary,
 } from "../auth/gog-auth-actions";
-import { switchGogAccount, removeSavedGogAccount, promptAddGogAccount, cancelAddGogAccount } from "../auth/gog-account-switcher";
+import { switchGogAccount, removeSavedGogAccount, promptAddGogAccount, cancelAddGogAccount, loadSavedGogAccounts } from "../auth/gog-account-switcher";
 import { gogCancelDownload, gogImportGame, gogVerifyGame } from "../../gog";
 import {
   closeCollectionModal,
@@ -128,6 +128,15 @@ document.addEventListener("click", (e) => {
       S.isColDropdownOpen = false;
       const menu = document.getElementById("col-dropdown-menu");
       if (menu) menu.classList.remove("show");
+    }
+  }
+
+  // Close the sidebar account switcher when clicking outside it.
+  if (S.isAccountSwitcherOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest("#sb-account-host")) {
+      S.isAccountSwitcherOpen = false;
+      updateSidebarAccountSwitcher();
     }
   }
 
@@ -386,6 +395,40 @@ document.addEventListener("click", (e) => {
     void removeSavedAccount(id);
   } else if (act === "account-add") {
     promptAddAccount();
+  } else if (act === "toggle-account-switcher") {
+    S.isAccountSwitcherOpen = !S.isAccountSwitcherOpen;
+    if (S.isAccountSwitcherOpen) {
+      void loadSavedAccounts().then(() => updateSidebarAccountSwitcher());
+      void loadSavedGogAccounts().then(() => updateSidebarAccountSwitcher());
+    }
+    updateSidebarAccountSwitcher();
+  } else if (act === "sb-switch-epic" && id) {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+    void switchAccount(id);
+  } else if (act === "sb-switch-gog" && id) {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+    void switchGogAccount(id);
+  } else if (act === "sb-add-epic") {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+    closeAllModals();
+    promptAddAccount();
+  } else if (act === "sb-add-gog") {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+    closeAllModals();
+    setView("accounts");
+    pushNavHistory({ view: "accounts" });
+    promptAddGogAccount();
+  } else if (act === "open-accounts-settings") {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
+    closeAllModals();
+    setView("accounts");
+    pushNavHistory({ view: "accounts" });
+    render();
   } else if (act === "open-hide-achievements") {
     openHideAchievementsModal();
   } else if (act === "profile-toggle-hidden") {
