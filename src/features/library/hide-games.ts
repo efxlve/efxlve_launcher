@@ -12,7 +12,7 @@ import { closeModal } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { updateBadge, updateChrome } from "../../core/nav";
 import { render } from "../../core/render";
-import { rawOf } from "../../core/selectors";
+import { allStoreSummaries, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -31,6 +31,7 @@ function rootEl(): HTMLElement | null {
 function coverUrl(s: EpicSummary): string {
   const custom = S.customCovers[s.appName];
   if (custom) return custom;
+  if (s.appName.startsWith("gog::")) return s.cover || "";
   const raw = rawOf(s.appName);
   return (raw ? epicPortrait(raw) : null) || s.cover || "";
 }
@@ -39,7 +40,7 @@ function coverUrl(s: EpicSummary): string {
 function listableGames(): EpicSummary[] {
   const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
   const list: EpicSummary[] = [];
-  for (const s of S.epicSummaries) {
+  for (const s of allStoreSummaries()) {
     if (!S.hiddenGames.has(s.appName)) list.push(s);
   }
   list.sort((a, b) => collator.compare(a.title, b.title));

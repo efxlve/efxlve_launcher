@@ -16,8 +16,8 @@
 | **Faz 3** | Kütüphane Görünümü & Birleşik Render | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
 | **Faz 4** | İndirme & Kurulum Yönetimi | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
 | **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
-| **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | 🔄 Sıradaki | `npm.cmd run build` |
-| **Faz 7** | Import, Repair & Kaldırma | ⏳ Bekliyor | `cargo check` |
+| **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
+| **Faz 7** | Import, Repair & Kaldırma | 🔄 Sıradaki | `cargo check` + `npm.cmd run build` |
 
 ---
 
@@ -58,6 +58,12 @@
 - [x] Faz 5: `src/features/drawer/drawer-view.ts` GOG oyunları için geliştirici bilgisi, DRM-Free rozeti, mağaza sayfası araması ve başarımlar/DLC için DRM-free uyarlaması ile güncellendi.
 - [x] Faz 5: `src/features/events/click-router.ts` mağaza yönlendirmesini GOG mağaza aramasına bağladı.
 - [x] Faz 5 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (107 test geçti), `npm.cmd run build` (sıfır hata).
+- [x] Faz 6: `src/core/selectors.ts` içine `gogToEpicSummary` ve `allStoreSummaries` yardımcıları eklendi.
+- [x] Faz 6: `src/features/settings/settings-view.ts` gizlenen GOG oyunları için kapak (`hiddenCover`), geliştirici (`catalogDeveloper`) ve başlık çözücüleri ile güncellendi.
+- [x] Faz 6: `src/features/library/hide-games.ts` çoklu gizleme penceresinde GOG oyunlarını listeleyecek (`allStoreSummaries`) ve kapaklarını gösterecek şekilde güncellendi.
+- [x] Faz 6: `src/features/collections/collections-view.ts` ve `click-router.ts` koleksiyon pencerelerinde (`renderCollectionModal`, `updateColGamesListInPlace`, `col-select-all`) GOG oyunlarının seçilip kategorilere atanabilmesini sağladı.
+- [x] Faz 6: `src/features/events/click-router.ts` sağ tık bağlam menüsü (`context-menu.ts`) eylemlerini (`play`, `install`, `uninstall`, `cancel`) karşılayacak takma adlarla güçlendirildi.
+- [x] Faz 6 doğrulaması: `cargo check` (0 hata), `cargo test` (107 test geçti), `npm.cmd run build` (başarılı).
 
 ---
 

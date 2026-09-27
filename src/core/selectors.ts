@@ -103,26 +103,35 @@ export function setGogSummaries(items: LibraryItem[]): void {
   S.libraryDataRev++;
 }
 
+/** Converts a GOG LibraryItem into an EpicSummary structure for legacy views. */
+export function gogToEpicSummary(g: LibraryItem): EpicSummary {
+  return {
+    appName: g.key,
+    title: g.title,
+    version: g.version,
+    cover: g.coverUrl,
+    description: g.description,
+    dlcCount: g.dlcCount,
+    installed: g.installed,
+    installPath: g.installPath,
+    installSize: g.installSize,
+    installedVersion: g.installedVersion,
+    updateAvailable: g.updateAvailable,
+  };
+}
+
+/** Returns all games across all stores as EpicSummary items. */
+export function allStoreSummaries(): EpicSummary[] {
+  if (S.gogSummaries.length === 0) return S.epicSummaries;
+  return [...S.epicSummaries, ...S.gogSummaries.map(gogToEpicSummary)];
+}
+
 /** O(1) summary lookup by app name (Epic or GOG). */
 export function summaryOf(appName: string): EpicSummary | undefined {
   if (appName.startsWith("gog::")) {
     const cleanId = appName.slice(5);
     const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
-    if (g) {
-      return {
-        appName: g.key,
-        title: g.title,
-        version: g.version,
-        cover: g.coverUrl,
-        description: g.description,
-        dlcCount: g.dlcCount,
-        installed: g.installed,
-        installPath: g.installPath,
-        installSize: g.installSize,
-        installedVersion: g.installedVersion,
-        updateAvailable: g.updateAvailable,
-      };
-    }
+    if (g) return gogToEpicSummary(g);
   }
   return S.epicSummariesMap.get(appName);
 }

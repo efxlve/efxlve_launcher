@@ -11,6 +11,7 @@ import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
+import { allStoreSummaries, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -85,7 +86,7 @@ export function renderCollectionModal(): void {
   const isEditing = Boolean(S.activeEditingColId);
 
   const q = S.colModalSearchQuery.toLowerCase();
-  let filtered = S.epicSummaries.filter((s) => s.title.toLowerCase().includes(q));
+  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
   if (S.colModalTabFilter === "selected") {
     filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
   } else if (S.colModalTabFilter === "installed") {
@@ -175,7 +176,7 @@ export function updateColGamesListInPlace(): void {
   const container = document.querySelector(".col-games-list");
   if (!container) return;
   const q = S.colModalSearchQuery.toLowerCase();
-  let filtered = S.epicSummaries.filter((s) => s.title.toLowerCase().includes(q));
+  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
   if (S.colModalTabFilter === "selected") {
     filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
   } else if (S.colModalTabFilter === "installed") {
@@ -246,7 +247,7 @@ export function openGameCollectionsModal(appName: string): void {
       .map((c) => c.id),
   );
 
-  const sum = S.epicSummaries.find((s) => s.appName === appName);
+  const sum = summaryOf(appName);
   const title = sum?.title || appName;
 
   collectionRoot.innerHTML = `

@@ -26,7 +26,7 @@ import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
-import { rawOf, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, rawOf, summaryOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
 import {
@@ -752,7 +752,7 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "col-select-all") {
     const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-    let matches = S.epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+    let matches = allStoreSummaries().filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
     if (S.colModalTabFilter === "installed") {
       matches = matches.filter((s) => s.installed);
     }
@@ -763,7 +763,7 @@ document.addEventListener("click", (e) => {
       S.colModalSelectedApps.clear();
     } else {
       const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-      let matches = S.epicSummaries.filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
+      let matches = allStoreSummaries().filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
       if (S.colModalTabFilter === "installed") {
         matches = matches.filter((s) => s.installed);
       }
@@ -790,11 +790,11 @@ document.addEventListener("click", (e) => {
       .catch((err) => {
         toast(i18nT("col.importFailed", { msg: String(err) }), "err");
       });
-  } else if (act === "epic-play" && id) {
+  } else if ((act === "epic-play" || act === "play") && id) {
     void epicPlay(id);
-  } else if (act === "epic-stop" && id) {
+  } else if ((act === "epic-stop" || act === "stop") && id) {
     void epicStop(id);
-  } else if (act === "epic-install" && id) {
+  } else if ((act === "epic-install" || act === "install") && id) {
     void openInstallDialog(id);
   } else if (act === "install-browse") {
     void browseInstallDir();
@@ -805,13 +805,13 @@ document.addEventListener("click", (e) => {
   } else if (act === "install-overlay-close") {
     const el = e.target as HTMLElement;
     if (el === t) closeInstallDialog();
-  } else if (act === "epic-cancel" && id) {
+  } else if ((act === "epic-cancel" || act === "cancel") && id) {
     if (id.startsWith("gog::")) {
       void gogCancelDownload(id);
     } else {
       void epicCancel(id);
     }
-  } else if (act === "epic-uninstall" && id) {
+  } else if ((act === "epic-uninstall" || act === "uninstall") && id) {
     // Close first so a finished uninstall cannot be clicked again while the dialog stays up.
     closeManagePopup();
     void epicUninstall(id);

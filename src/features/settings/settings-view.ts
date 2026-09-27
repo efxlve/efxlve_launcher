@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isTauri } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { render } from "../../core/render";
-import { rawOf } from "../../core/selectors";
+import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
@@ -307,12 +307,17 @@ function renderAbout(): string {
 function hiddenCover(id: string): string {
   const custom = S.customCovers[id];
   if (custom) return custom;
+  if (id.startsWith("gog::")) return summaryOf(id)?.cover || "";
   const raw = rawOf(id);
   return (raw ? epicPortrait(raw) : null) || S.epicSummariesMap.get(id)?.cover || "";
 }
 
 /** Catalog developer only. Missing metadata stays a blank second line. */
 function catalogDeveloper(id: string): string {
+  if (id.startsWith("gog::")) {
+    const rawId = id.slice(5);
+    return S.gogSummariesMap.get(rawId)?.developer || "";
+  }
   const value = rawOf(id)?.metadata?.developer;
   return typeof value === "string" ? value.trim() : "";
 }
@@ -329,9 +334,10 @@ function renderHidden(): string {
     if (!id || seen.has(id)) continue;
     seen.add(id);
     const raw = rawOf(id);
+    const sum = summaryOf(id);
     games.push({
       id,
-      title: S.epicSummariesMap.get(id)?.title || raw?.app_title || id,
+      title: sum?.title || S.epicSummariesMap.get(id)?.title || raw?.app_title || id,
       developer: catalogDeveloper(id),
     });
   }
