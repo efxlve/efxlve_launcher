@@ -11,8 +11,8 @@
 | Faz | Tanım | Durum | Doğrulama |
 |-----|-------|-------|-----------|
 | **Faz 0** | Tip Sistemi, State & O(1) Seçiciler | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
-| **Faz 1** | Rust `gogdl` Backend İskeleti & REST İstemcisi | 🔄 Başlatılıyor | `cargo check` |
-| **Faz 2** | GOG Auth & Accounts Sayfası | ⏳ Bekliyor | `npm.cmd run build` |
+| **Faz 1** | Rust `gogdl` Backend İskeleti & REST İstemcisi | ✅ Tamamlandı | `cargo check` + `cargo test` (107 test geçti) |
+| **Faz 2** | GOG Auth & Accounts Sayfası | 🔄 Başlatılıyor | `npm.cmd run build` |
 | **Faz 3** | Kütüphane Görünümü & Birleşik Render | ⏳ Bekliyor | `npm.cmd run build` |
 | **Faz 4** | İndirme & Kurulum Yönetimi | ⏳ Bekliyor | `cargo check` + `npm.cmd run build` |
 | **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ⏳ Bekliyor | `npm.cmd run build` |
@@ -29,6 +29,11 @@
 - [x] Faz 0: `src/core/state.ts` içine GOG ve multi-source state alanları (`allGamesMap`, `gogSummaries` vb.) eklendi.
 - [x] Faz 0: `src/core/selectors.ts` içine `epicToLibraryItem()`, `rebuildAllGamesMap()`, `libraryItemOf()`, `getAllLibraryItems()` ve `setGogSummaries()` eklendi.
 - [x] Faz 0 doğrulaması: `npm.cmd run build` ve `cargo check` sıfır hata ile geçti.
+- [x] Faz 1: `src-tauri/src/gogdl/` modülü oluşturuldu (`mod.rs`, `models.rs`, `paths.rs`, `cache.rs`, `api_client.rs`, `commands.rs`).
+- [x] Faz 1: GOG Galaxy REST API istemcisi (`exchange_auth_code`, `refresh_tokens`, `get_user_profile`, `fetch_user_library`) eklendi.
+- [x] Faz 1: `src-tauri/src/main.rs` içine `mod gogdl;` ve 6 yeni Tauri IPC komutu kaydedildi.
+- [x] Faz 1: `src/gog.ts` frontend API barrel modülü eklendi.
+- [x] Faz 1 doğrulaması: `cargo check` (0 warning), `cargo test` (107 test geçti), `npm.cmd run build` (başarılı).
 
 ---
 

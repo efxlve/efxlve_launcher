@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod eos;
+mod gogdl;
 mod legendary;
 mod presence;
 
@@ -1855,7 +1856,13 @@ fn main() {
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,
-            legendary::commands::epic_cancel_move_game
+            legendary::commands::epic_cancel_move_game,
+            gogdl::commands::gog_auth_status,
+            gogdl::commands::gog_auth_code,
+            gogdl::commands::gog_logout,
+            gogdl::commands::gog_setup_status,
+            gogdl::commands::gog_cached_library,
+            gogdl::commands::gog_list_games
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");
