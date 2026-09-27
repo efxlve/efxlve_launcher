@@ -1291,5 +1291,7 @@
   "settings.gogLogout": "Sign out of GOG",
   "accounts.switchAccountTitle": "切换账户",
   "accounts.manageAccounts": "管理账户",
-  "nav.switchAccounts": "账户切换器"
+  "nav.switchAccounts": "账户切换器",
+  "settings.installedIconTitle": "已安装游戏图标",
+  "settings.installedIconDesc": "在已安装游戏的标题旁显示电脑桌面图标（GOG 风格）。"
 }

@@ -1291,5 +1291,7 @@
   "settings.gogLogout": "Sign out of GOG",
   "accounts.switchAccountTitle": "계정 전환",
   "accounts.manageAccounts": "계정 관리",
-  "nav.switchAccounts": "계정 전환기"
+  "nav.switchAccounts": "계정 전환기",
+  "settings.installedIconTitle": "설치된 게임 아이콘",
+  "settings.installedIconDesc": "설치된 게임의 제목 옆에 PC 데스크톱 아이콘을 표시합니다(GOG 스타일)."
 }

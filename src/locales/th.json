@@ -1291,5 +1291,7 @@
   "settings.gogLogout": "Sign out of GOG",
   "accounts.switchAccountTitle": "สลับบัญชี",
   "accounts.manageAccounts": "จัดการบัญชี",
-  "nav.switchAccounts": "ตัวสลับบัญชี"
+  "nav.switchAccounts": "ตัวสลับบัญชี",
+  "settings.installedIconTitle": "ไอคอนเกมที่ติดตั้งแล้ว",
+  "settings.installedIconDesc": "แสดงไอคอนเดสก์ท็อปข้างชื่อเกมที่ติดตั้งแล้ว (สไตล์ GOG)"
 }

@@ -1291,5 +1291,7 @@
   "settings.gogLogout": "Sign out of GOG",
   "accounts.switchAccountTitle": "Cambiar de cuenta",
   "accounts.manageAccounts": "Administrar cuentas",
-  "nav.switchAccounts": "Selector de cuentas"
+  "nav.switchAccounts": "Selector de cuentas",
+  "settings.installedIconTitle": "Icono de juego instalado",
+  "settings.installedIconDesc": "Muestra un icono de escritorio junto al título de los juegos instalados (estilo GOG)."
 }

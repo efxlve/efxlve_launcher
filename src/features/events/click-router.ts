@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, INSTALLED_ICON_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { toggleIgnoreUpdate } from "../downloads/downloads-view";
 import { closeModal, viewEl } from "../../core/dom";
@@ -1299,7 +1299,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "manage-create-backup" && id && !S.isBackingUp) {
     S.isBackingUp = true;
     const createBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
-    if (createBtn) { createBtn.disabled = true; createBtn.textContent = "Yedekleniyor…"; }
+    if (createBtn) { createBtn.disabled = true; createBtn.textContent = i18nT("backup.backingUp"); }
     toast(i18nT("backup.backingUp"), "");
     epicBackupSave(id)
       .then((b) => {
@@ -1313,7 +1313,7 @@ document.addEventListener("click", (e) => {
       .finally(() => {
         S.isBackingUp = false;
         const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
-        if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = "Yedek Al"; }
+        if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = i18nT("manage.backup"); }
       });
   } else if (act === "manage-restore-backup" && id) {
     const bid = t.dataset.bid;
@@ -1742,6 +1742,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-badge") {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
+    scheduleRender();
+  } else if (act === "toggle-installed-icon") {
+    S.showInstalledIcon = !S.showInstalledIcon;
+    localStorage.setItem(INSTALLED_ICON_KEY, String(S.showInstalledIcon));
     scheduleRender();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;

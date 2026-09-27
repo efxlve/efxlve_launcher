@@ -1305,5 +1305,7 @@
   "settings.gogLogout": "GOG'dan Çıkış Yap",
   "accounts.switchAccountTitle": "Hesap Değiştir",
   "accounts.manageAccounts": "Hesapları Yönet",
-  "nav.switchAccounts": "Hesap Değiştirici"
+  "nav.switchAccounts": "Hesap Değiştirici",
+  "settings.installedIconTitle": "Yüklü oyun ikonu",
+  "settings.installedIconDesc": "Yüklü oyunların adının yanında bilgisayar/masaüstü ikonu göster (GOG tarzı)."
 }

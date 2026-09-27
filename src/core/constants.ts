@@ -48,6 +48,8 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
+/** Show a desktop PC icon next to the title for installed games (GOG style). */
+export const INSTALLED_ICON_KEY = "efxlve-installed-icon";
 /** Optional page-by-page library browsing instead of progressive chunking. */
 export const LIB_PAGINATION_KEY = "efxlve-lib-pagination";
 /** Games rendered per library page when pagination is on. */

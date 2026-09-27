@@ -124,13 +124,33 @@
   gap: 2px;
   min-width: 0;
 }
+.pcard-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
 .pcard-title {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.pcard-installed-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-3);
+  line-height: 1;
+}
+.pcard:hover .pcard-installed-icon {
+  color: var(--text-2);
 }
 .pcard-stores {
   font-size: 11px;

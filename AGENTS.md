@@ -128,6 +128,11 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Kütüphanede Yüklü Oyun İkonu (GOG Tarzı Masaüstü İkonu) & Yedekleme Butonu Dili Düzeltmesi:**
+  1. **Opsiyonel Yüklü Oyun İkonu (`.pcard-installed-icon`):** Kullanıcı geri bildirimi doğrultusunda, GOG Galaxy estetiğinde olduğu gibi kütüphanedeki yüklü oyunların başlık satırının hemen sağında küçük masaüstü/bilgisayar ikonu (`icon("monitor", 12)`) gösterilmesi sağlandı. Ayarlar > Görünüm sekmesine "Yüklü oyun ikonu" / "Installed game icon" seçeneği eklendi (`INSTALLED_ICON_KEY`, `S.showInstalledIcon`, varsayılan kapalı). Liste modunda da başlık yanına entegre edildi.
+  2. **Yedekleme Butonu Dili Düzeltmesi (i18n):** Oyun yönetim sekmesinde yedek alma butonunun işlem sırasında ve sonrasında dilden bağımsız olarak sabit Türkçe ("Yedekleniyor…", "Yedek Al") kalmasına neden olan açık giderildi; `i18nT("manage.backup")` ve `i18nT("backup.backingUp")` dinamik çevirilerine bağlandı.
+  3. **15 Dil Eşliği:** `settings.installedIconTitle` ve `settings.installedIconDesc` 15 dilde tanımlandı.
+
 - **Kenar Çubuğu Çoklu Platform Hesap Değiştirici & Açılır Menü (Sidebar Multi-Platform Account Switcher Popover):**
   1. **Alt Bar Butonu (`.sb-switcher-btn`):** Sol kenar çubuğunun en altına (`#sb-account-host`), Son Oynananlar listesinin hemen altına yerleşen modern, Discord/Steam tarzı hesap paneli eklendi. Aktif kullanıcının avatarını, kullanıcı adını, bağlı mağazaları (`Epic · GOG`, `Epic Games`, `GOG.COM` veya `Accounts`) ve açılış yönünü belirten chevron ikonunu (`icon("chevron-up", 14)`) gösterir.
   2. **Yüzen PS5 Dark Açılır Menü (`#sb-account-popover`):** Butona tıklandığında butonun hemen üzerinde yumuşak animasyonla (`sbPopIn`, 130ms) açılan, gerçek siyah (`var(--bg)`, `#000`) ve koyu obsidian yüzeyli popover menü eklendi.

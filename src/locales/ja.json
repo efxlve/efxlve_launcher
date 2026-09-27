@@ -1291,5 +1291,7 @@
   "settings.gogLogout": "Sign out of GOG",
   "accounts.switchAccountTitle": "アカウントを切り替える",
   "accounts.manageAccounts": "アカウントを管理",
-  "nav.switchAccounts": "アカウントスイッチャー"
+  "nav.switchAccounts": "アカウントスイッチャー",
+  "settings.installedIconTitle": "インストール済みアイコン",
+  "settings.installedIconDesc": "インストール済みゲームのタイトルの横にPCアイコンを表示します（GOGスタイル）。"
 }
