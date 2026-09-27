@@ -34,11 +34,23 @@ pub async fn gog_auth_status(app: AppHandle) -> Result<GogAuthStatus, String> {
     };
 
     // Fast check: if we have tokens on disk, return logged in
-    // Background validation can refresh if needed
+    let cached = load_cached_library(&app);
+    let mut username = cached.account.clone();
+    if username.as_deref() == Some("GOG User") || username.is_none() {
+        if let Ok(profile) = get_user_profile(&tokens.access_token).await {
+            if !profile.username.is_empty() && profile.username != "GOG User" {
+                username = Some(profile.username.clone());
+                let _ = save_cached_library(&app, Some(&profile.username), Some(&tokens.user_id), &cached.games);
+                let gog_dir = super::paths::gog_config_dir(&app);
+                super::accounts::ensure_current_gog_account_saved(&gog_dir, Some(&profile.username));
+            }
+        }
+    }
+
     Ok(GogAuthStatus {
         logged_in: true,
         user_id: Some(tokens.user_id),
-        username: None,
+        username,
     })
 }
 
@@ -62,6 +74,9 @@ pub async fn gog_auth_code(app: AppHandle, code: String) -> Result<GogAuthStatus
         });
 
     save_auth_tokens(&app, &tokens).map_err(cmd_error)?;
+
+    let gog_dir = super::paths::gog_config_dir(&app);
+    super::accounts::ensure_current_gog_account_saved(&gog_dir, Some(&profile.username));
 
     Ok(GogAuthStatus {
         logged_in: true,
@@ -138,8 +153,18 @@ pub async fn gog_list_games(app: AppHandle) -> Result<Vec<GogGameSummary>, Strin
         }
     }
 
+    let cached = load_cached_library(&app);
+    let mut username = cached.account;
+    if username.as_deref() == Some("GOG User") || username.is_none() {
+        if let Ok(profile) = get_user_profile(&tokens.access_token).await {
+            if !profile.username.is_empty() && profile.username != "GOG User" {
+                username = Some(profile.username);
+            }
+        }
+    }
+
     // Cache to disk
-    let _ = save_cached_library(&app, None, Some(&tokens.user_id), &enriched);
+    let _ = save_cached_library(&app, username.as_deref(), Some(&tokens.user_id), &enriched);
 
     Ok(enriched)
 }
@@ -290,10 +315,19 @@ pub async fn gog_get_saved_accounts(
     app: AppHandle,
 ) -> Result<Vec<super::accounts::SavedGogAccount>, String> {
     let gog_dir = super::paths::gog_config_dir(&app);
-    // Read cached library to get username
     let cached = load_cached_library(&app);
-    let username = cached.account.as_deref();
-    Ok(super::accounts::list_saved_gog_accounts(&gog_dir, username))
+    let mut username = cached.account;
+    if username.as_deref() == Some("GOG User") || username.is_none() {
+        if let Some(tokens) = load_auth_tokens(&app) {
+            if let Ok(profile) = get_user_profile(&tokens.access_token).await {
+                if !profile.username.is_empty() && profile.username != "GOG User" {
+                    username = Some(profile.username.clone());
+                    let _ = save_cached_library(&app, Some(&profile.username), Some(&tokens.user_id), &cached.games);
+                }
+            }
+        }
+    }
+    Ok(super::accounts::list_saved_gog_accounts(&gog_dir, username.as_deref()))
 }
 
 /// Switches the active GOG account.

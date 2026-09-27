@@ -134,14 +134,6 @@ export function isAppPlatinum(appName: string): boolean {
   return Boolean(S.demoPlatinumApps.has(appName) || achSummaryOf(appName)?.is_platinum);
 }
 
-/** Return badge indicating store source if all sources are shown. */
-export function libraryStoreBadge(appName: string): string {
-  if (!S.showStoreBadge || S.sourceFilter !== "all") return "";
-  const isGog = appName.startsWith("gog::") || S.gogSummariesMap.has(appName) || S.allGamesMap.get(appName)?.source === "gog";
-  if (isGog) return `<span class="store-badge" data-store-badge title="GOG.COM">G</span>`;
-  return `<span class="store-badge" data-store-badge title="Epic Games">E</span>`;
-}
-
 /** Active download progress for a game, or null when not downloading. */
 export function epicDlProgress(appName: string): number | null {
   const dl = S.downloads.get(appName);

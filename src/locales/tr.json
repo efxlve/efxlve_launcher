@@ -1,4 +1,4 @@
-{
+﻿{
   "sidebar.noInstalled": "Henüz yüklü oyun yok",
   "sidebar.recent": "Son Oynananlar",
   "palette.open": "Oyun ve komut ara (Ctrl+K)",
@@ -1301,5 +1301,7 @@
   "ctx.ignoreIndicator": "Güncelleme Göstergesini Temizle",
   "ctx.restoreIndicator": "Güncelleme Göstergesini Göster",
   "settings.storeBadgeTitle": "Mağaza Rozeti",
-  "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde her oyunun hangi mağazadan olduğunu gösteren küçük bir rozet."
+  "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde oyun başlıklarının altında hangi mağazalara ait olduğunu gösterir."
+,
+  "settings.gogLogout": "GOG'dan Çıkış Yap"
 }

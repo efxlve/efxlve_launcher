@@ -71,20 +71,48 @@ export function epicToLibraryItem(s: EpicSummary): LibraryItem {
   };
 }
 
-/** Rebuilds the unified allGamesMap from both epicSummaries and gogSummaries in O(N). */
+let canonStoresMap = new Map<string, string>();
+
+/** Rebuilds the unified allGamesMap and store mapping from both epicSummaries and gogSummaries in O(N). */
 export function rebuildAllGamesMap(): void {
   const map = new Map<string, LibraryItem>();
+  const storeSets = new Map<string, Set<string>>();
+
   for (const s of S.epicSummaries) {
     const item = epicToLibraryItem(s);
     map.set(item.key, item);
     // Index by plain appName as well for seamless backward compatibility
     map.set(s.appName, item);
+    const c = canonicalGameTitle(s.title);
+    if (c) {
+      let set = storeSets.get(c);
+      if (!set) {
+        set = new Set();
+        storeSets.set(c, set);
+      }
+      set.add("Epic");
+    }
   }
   for (const g of S.gogSummaries) {
     map.set(g.key, g);
     map.set(g.id, g);
+    const c = canonicalGameTitle(g.title);
+    if (c) {
+      let set = storeSets.get(c);
+      if (!set) {
+        set = new Set();
+        storeSets.set(c, set);
+      }
+      set.add("GOG");
+    }
   }
   S.allGamesMap = map;
+
+  const storesMap = new Map<string, string>();
+  for (const [canon, set] of storeSets.entries()) {
+    storesMap.set(canon, Array.from(set).sort().join(", "));
+  }
+  canonStoresMap = storesMap;
 }
 
 /** Replace the parsed summary list and rebuild its lookup map. */
@@ -221,6 +249,34 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
   }
 
   return versions;
+}
+
+/** Returns the formatted store label(s) for a game (e.g. "Epic", "GOG", "Epic, GOG") in O(1). */
+export function gameStoresLabel(appNameOrTitle: string): string {
+  const canon = canonicalGameTitle(appNameOrTitle);
+  const found = canonStoresMap.get(canon);
+  if (found) return found;
+  if (appNameOrTitle.startsWith("gog::") || S.gogSummariesMap.has(appNameOrTitle)) return "GOG";
+  return "Epic";
+}
+
+/** Computes the deduplicated total library game count, excluding hidden games. */
+export function totalLibraryGamesCount(): number {
+  const seenTitles = new Set<string>();
+  let count = 0;
+  for (const s of S.epicSummaries) {
+    if (S.hiddenGames.has(s.appName)) continue;
+    seenTitles.add(canonicalGameTitle(s.title));
+    count++;
+  }
+  for (const g of S.gogSummaries) {
+    if (S.hiddenGames.has(g.key)) continue;
+    const canon = canonicalGameTitle(g.title);
+    if (seenTitles.has(canon)) continue;
+    seenTitles.add(canon);
+    count++;
+  }
+  return count;
 }
 
 /**

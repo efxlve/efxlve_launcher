@@ -1,4 +1,4 @@
-{
+﻿{
   "sidebar.noInstalled": "Brak zainstalowanych gier",
   "sidebar.recent": "Ostatnio grane",
   "palette.open": "Szukaj gier i poleceń (Ctrl+K)",
@@ -1287,5 +1287,7 @@
   "ctx.ignoreIndicator": "Wyczyść wskaźnik aktualizacji",
   "ctx.restoreIndicator": "Przywróć wskaźnik aktualizacji",
   "settings.storeBadgeTitle": "Store Badge",
-  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
+  "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores."
+,
+  "settings.gogLogout": "Sign out of GOG"
 }

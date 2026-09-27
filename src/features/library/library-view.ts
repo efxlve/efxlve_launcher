@@ -8,9 +8,9 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, libraryStoreBadge, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, rawOf } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -306,7 +306,14 @@ export function epicVisibleSummaries(): EpicSummary[] {
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
-  const caption = S.showCoverTitles ? `<div class="pcard-caption">${title}</div>` : "";
+  const showStores = S.showStoreBadge && S.sourceFilter === "all";
+  const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
+  const caption = (S.showCoverTitles || Boolean(storesLabel))
+    ? `<div class="pcard-caption">
+        ${S.showCoverTitles ? `<span class="pcard-title">${title}</span>` : ""}
+        ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
+      </div>`
+    : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   const isGog = s.appName.startsWith("gog::");
   return `
@@ -316,7 +323,6 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
-        ${libraryStoreBadge(s.appName)}
       </div>
       ${caption}
     </div>`;
@@ -327,12 +333,16 @@ function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   const isGog = s.appName.startsWith("gog::");
+  const showStores = S.showStoreBadge && S.sourceFilter === "all";
+  const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
+  const studio = esc(studioOf(s));
+  const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
-      <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}${libraryStoreBadge(s.appName)}</div>
+      <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
-        <div class="lrow-meta">${esc(studioOf(s))}</div>
+        <div class="lrow-meta">${metaText}</div>
       </div>
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>
       <div class="lrow-col" data-lib-playtime="${s.appName}">${secs > 0 ? fmtPlaytime(secs) : "—"}</div>
@@ -524,7 +534,7 @@ export function renderSkeletonLibrary(): string {
 export function syncLibraryHeadingCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  const total = S.epicSummaries.length + S.gogSummaries.length;
+  const total = totalLibraryGamesCount();
   const show = S.view === "library" && !S.currentModalAppName && total > 0;
   el.textContent = t("lib.gameCount", { count: total });
   el.hidden = !show;

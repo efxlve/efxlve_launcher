@@ -9,7 +9,7 @@
 import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { canonicalGameTitle, rawOf } from "./selectors";
+import { canonicalGameTitle, rawOf, totalLibraryGamesCount } from "./selectors";
 import { getCustomAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
@@ -47,22 +47,7 @@ function pendingUpdateCount(): number {
 function syncPageGameCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  // Count both Epic and GOG games, deduplicating by canonical title so the
-  // number matches what the library grid actually renders.
-  const seenTitles = new Set<string>();
-  let visible = 0;
-  for (const s of S.epicSummaries) {
-    if (S.hiddenGames.has(s.appName)) continue;
-    seenTitles.add(canonicalGameTitle(s.title));
-    visible++;
-  }
-  for (const g of S.gogSummaries) {
-    if (S.hiddenGames.has(g.key)) continue;
-    const canon = canonicalGameTitle(g.title);
-    if (seenTitles.has(canon)) continue;
-    seenTitles.add(canon);
-    visible++;
-  }
+  const visible = totalLibraryGamesCount();
   const show = S.view === "library" && !S.currentModalAppName && visible > 0;
   const label = t("lib.gameCount", { count: visible });
   if (el.textContent !== label) el.textContent = label;

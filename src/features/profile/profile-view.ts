@@ -9,8 +9,9 @@ import { getCustomAvatar } from "./profile-avatar";
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
+import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
-import { rawOf } from "../../core/selectors";
+import { rawOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
@@ -43,11 +44,15 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
+    const isGog = g.app_name.startsWith("gog::") || S.gogSummariesMap.has(g.app_name) || S.allGamesMap.get(g.app_name)?.source === "gog";
+    const storeChip = S.gogSummaries.length > 0
+      ? (isGog ? ` <span class="profile-store-chip">GOG</span>` : ` <span class="profile-store-chip">EPIC</span>`)
+      : "";
     return `
       <div class="row profile-game-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="row-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="row-thumb"></span>`}
         <div class="row-main">
-          <div class="row-title">${esc(g.app_title)}${S.gogSummaries.length > 0 ? (g.app_name.startsWith("gog::") ? ` <span class="profile-store-chip">GOG</span>` : ` <span class="profile-store-chip">EPIC</span>`) : ""}${isPlat ? ` <span class="profile-plat">${epicPlatinumIcon(12)}</span>` : ""}</div>
+          <div class="row-title">${esc(g.app_title)}${storeChip}${isPlat ? ` <span class="profile-plat">${epicPlatinumIcon(12)}</span>` : ""}</div>
           <div class="row-meta">${meta}</div>
           <div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>
         </div>
@@ -180,13 +185,12 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
 
 function buildGogProfileGames(): ProfileGameRecord[] {
   const games: ProfileGameRecord[] = [];
-  for (const [key, item] of S.gogSummariesMap.entries()) {
-    const achId = key.startsWith("gog::") ? key : `gog::${key}`;
-    const ach = S.epicAchSummaries[achId] || S.epicAchSummaries[key.replace("gog::", "")];
+  for (const item of S.gogSummaries) {
+    const ach = achSummaryOf(item.key) || achSummaryOf(item.id);
     if (ach && ach.total_achievements > 0) {
       games.push({
         sandbox_id: "",
-        app_name: key,
+        app_name: item.key,
         app_title: item.title,
         cover: item.coverUrl,
         total_unlocked: ach.user_unlocked,
@@ -261,11 +265,10 @@ export function renderProfile(): string {
           <h1 class="profile-name">${esc(displayName)}</h1>
           <div class="profile-sub">
             ${epicChip}${gogChip}
-            ${accountId ? `<button class="btn ghost small" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyIdTitle", { id: accountId })}">${icon("copy", 12)} ID</button>` : ""}
           </div>
         </div>
         <div class="profile-stats">
-          ${stat(String(S.epicSummaries.length + S.gogSummaries.length), t("profile.games"))}
+          ${stat(String(totalLibraryGamesCount()), t("profile.games"))}
           ${stat(esc(fmtPlaytime(totalPlaytimeSec)), t("profile.played"))}
           ${stat(((prof?.total_unlocked || 0) + gogTotalUnlocked).toLocaleString(), t("profile.trophies"))}
           ${stat(String((prof?.platinum_count || 0) + gogPlatCount), t("profile.platLabel"))}
