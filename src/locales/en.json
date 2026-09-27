@@ -1278,5 +1278,8 @@
   "source.all": "All Stores",
   "source.epic": "Epic Games",
   "source.gog": "GOG.COM",
-  "filter.source": "Store Filter"
+  "filter.source": "Store Filter",
+  "sys.openEpicStore": "Open in Epic Store",
+  "sys.openGogStore": "Open in GOG Store",
+  "drawer.storeTitleGog": "Open the GOG Store page"
 }

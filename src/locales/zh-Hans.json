@@ -1263,5 +1263,8 @@
   "drawer.wikiSource": "无法从 {store} 获取数据。当前来源：Wikipedia。",
   "drawer.sourceEpic": "来源：Epic Games Store",
   "drawer.sourceGog": "来源：GOG",
-  "common.unknownError": "未知错误"
+  "common.unknownError": "未知错误",
+  "sys.openEpicStore": "在 Epic Store 中打开",
+  "sys.openGogStore": "在 GOG Store 中打开",
+  "drawer.storeTitleGog": "打开 GOG Store 页面"
 }

@@ -1263,5 +1263,8 @@
   "drawer.wikiSource": "{store} からデータを取得できませんでした。現在のソース: Wikipedia。",
   "drawer.sourceEpic": "ソース: Epic Games Store",
   "drawer.sourceGog": "出典: GOG",
-  "common.unknownError": "不明なエラー"
+  "common.unknownError": "不明なエラー",
+  "sys.openEpicStore": "Epic Store で開く",
+  "sys.openGogStore": "GOG Store で開く",
+  "drawer.storeTitleGog": "GOG Store のページを開く"
 }

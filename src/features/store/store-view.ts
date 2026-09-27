@@ -179,6 +179,11 @@ function setStoreProgress(visible: boolean): void {
 export async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeAllModals();
   cancelStoreDestroy();
+  if (url.includes("gog.com")) {
+    S.activeStore = "gog";
+  } else if (url.includes("epicgames.com")) {
+    S.activeStore = "epic";
+  }
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   const epoch = ++storeOpenEpoch;
   S.lastStoreUrl = url;

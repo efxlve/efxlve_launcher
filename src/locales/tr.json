@@ -1278,5 +1278,8 @@
   "source.all": "Tüm Mağazalar",
   "source.epic": "Epic Games",
   "source.gog": "GOG.COM",
-  "filter.source": "Mağaza Filtresi"
+  "filter.source": "Mağaza Filtresi",
+  "sys.openEpicStore": "Epic Store'da Aç",
+  "sys.openGogStore": "GOG Store'da Aç",
+  "drawer.storeTitleGog": "GOG Store Sayfasını Aç"
 }

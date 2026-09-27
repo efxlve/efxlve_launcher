@@ -1263,5 +1263,8 @@
   "drawer.wikiSource": "Нет данных из {store}. Текущий источник: Wikipedia.",
   "drawer.sourceEpic": "Источник: Epic Games Store",
   "drawer.sourceGog": "Источник: GOG",
-  "common.unknownError": "Неизвестная ошибка"
+  "common.unknownError": "Неизвестная ошибка",
+  "sys.openEpicStore": "Открыть в Epic Store",
+  "sys.openGogStore": "Открыть в GOG Store",
+  "drawer.storeTitleGog": "Открыть страницу в GOG Store"
 }

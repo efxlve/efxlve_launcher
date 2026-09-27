@@ -89,11 +89,13 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const p = epicDlProgress(s.appName);
   const faved = S.epicFav.has(s.appName);
+  const isGog = s.appName.startsWith("gog::");
+  const storeTitle = t(isGog ? "drawer.storeTitleGog" : "drawer.storeTitle");
   return `
     ${primaryAction(s, p, partner)}
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-    <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitle")}">${icon("external", 16)}</button>
+    <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
     ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}`;
 }
 
@@ -324,7 +326,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
-    isGog ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("shield", 13)} DRM-Free</span>` : "",
+    isGog ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
@@ -757,7 +759,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
       <div class="page-actions">
         <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("sys.openStore")}</button>
+        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : "sys.openEpicStore")}</button>
       </div>
     </div>`;
 }

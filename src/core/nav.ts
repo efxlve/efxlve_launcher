@@ -107,7 +107,7 @@ export function updatePageHeader(): void {
     const game = S.currentModalAppName ? S.epicSummariesMap.get(S.currentModalAppName)?.title : null;
     const titles: Partial<Record<View, string>> = {
       library: t("nav.library"),
-      store: S.activeStore === "gog" ? t("nav.gogStore") : t("nav.epicStore"),
+      store: t("nav.store"),
       downloads: t("nav.downloads"),
       settings: t("nav.settings"),
       profile: t("palette.cmdProfile"),

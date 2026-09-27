@@ -1263,5 +1263,8 @@
   "drawer.wikiSource": "لا توجد بيانات من {store}. المصدر الحالي: Wikipedia.",
   "drawer.sourceEpic": "المصدر: Epic Games Store",
   "drawer.sourceGog": "المصدر: GOG",
-  "common.unknownError": "خطأ غير معروف"
+  "common.unknownError": "خطأ غير معروف",
+  "sys.openEpicStore": "فتح في Epic Store",
+  "sys.openGogStore": "فتح في GOG Store",
+  "drawer.storeTitleGog": "فتح صفحة GOG Store"
 }

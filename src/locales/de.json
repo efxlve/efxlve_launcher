@@ -1263,5 +1263,8 @@
   "drawer.wikiSource": "Keine Daten von {store}. Aktuelle Quelle: Wikipedia.",
   "drawer.sourceEpic": "Quelle: Epic Games Store",
   "drawer.sourceGog": "Quelle: GOG",
-  "common.unknownError": "Unbekannter Fehler"
+  "common.unknownError": "Unbekannter Fehler",
+  "sys.openEpicStore": "Im Epic Store öffnen",
+  "sys.openGogStore": "Im GOG Store öffnen",
+  "drawer.storeTitleGog": "GOG Store-Seite öffnen"
 }
