@@ -284,3 +284,36 @@ pub async fn gog_get_system_requirements(
         .ok_or_else(|| "No requirements defined for this game".to_string())
 }
 
+/// Returns all saved GOG accounts.
+#[command]
+pub async fn gog_get_saved_accounts(
+    app: AppHandle,
+) -> Result<Vec<super::accounts::SavedGogAccount>, String> {
+    let gog_dir = super::paths::gog_config_dir(&app);
+    // Read cached library to get username
+    let cached = load_cached_library(&app);
+    let username = cached.account.as_deref();
+    Ok(super::accounts::list_saved_gog_accounts(&gog_dir, username))
+}
+
+/// Switches the active GOG account.
+#[command]
+pub async fn gog_switch_account(
+    app: AppHandle,
+    user_id: String,
+) -> Result<super::accounts::SavedGogAccount, String> {
+    let gog_dir = super::paths::gog_config_dir(&app);
+    let cached = load_cached_library(&app);
+    let username = cached.account.as_deref();
+    super::accounts::switch_gog_account(&gog_dir, &user_id, username)
+}
+
+/// Removes a saved GOG account.
+#[command]
+pub async fn gog_remove_saved_account(
+    app: AppHandle,
+    user_id: String,
+) -> Result<(), String> {
+    let gog_dir = super::paths::gog_config_dir(&app);
+    super::accounts::remove_saved_gog_account(&gog_dir, &user_id)
+}

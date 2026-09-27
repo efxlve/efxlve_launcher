@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { toggleIgnoreUpdate } from "../downloads/downloads-view";
 import { closeModal, viewEl } from "../../core/dom";
@@ -18,7 +18,7 @@ import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } f
 import { patchLibraryCardDom, toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi, updatePageHeader } from "../../core/nav";
-import { closeAllModals, openEpicModal, render } from "../../core/render";
+import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DrawerTab, EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
@@ -37,6 +37,7 @@ import {
   openGogLoginPage,
   syncGogLibrary,
 } from "../auth/gog-auth-actions";
+import { switchGogAccount, removeSavedGogAccount, promptAddGogAccount, cancelAddGogAccount } from "../auth/gog-account-switcher";
 import { gogCancelDownload, gogImportGame, gogVerifyGame } from "../../gog";
 import {
   closeCollectionModal,
@@ -319,6 +320,14 @@ document.addEventListener("click", (e) => {
     void gogLogoutAction();
   } else if (act === "gog-refresh") {
     void syncGogLibrary();
+  } else if (act === "gog-account-switch" && id) {
+    void switchGogAccount(id);
+  } else if (act === "gog-account-remove" && id) {
+    void removeSavedGogAccount(id);
+  } else if (act === "gog-account-add") {
+    promptAddGogAccount();
+  } else if (act === "gog-auth-cancel") {
+    cancelAddGogAccount();
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
@@ -1687,6 +1696,10 @@ document.addEventListener("click", (e) => {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
     render();
+  } else if (act === "toggle-store-badge") {
+    S.showStoreBadge = !S.showStoreBadge;
+    localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
+    scheduleRender();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;
     localStorage.setItem(MINIMIZE_TRAY_KEY, String(S.minimizeToTray));

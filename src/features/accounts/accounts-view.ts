@@ -166,23 +166,34 @@ function gogSignInBlock(): string {
 }
 
 function gogConnectedBlock(): string {
-  const current = getCustomAvatar(S.gogAccountId);
+  const accountRows = (S.gogSavedAccounts || []).map((acc) => {
+    const isCurrent = acc.is_active || acc.user_id === S.gogAccountId;
+    const url = S.customAvatars[acc.user_id] || null;
+    const actions = isCurrent
+      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
+      : `<button class="btn small" data-act="gog-account-switch" data-id="${esc(acc.user_id)}">${t("settings.accountSwitchBtn")}</button>
+         <button class="icon-btn danger" data-act="gog-account-remove" data-id="${esc(acc.user_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
+    return `
+      <div class="row">
+        ${avatar(url, acc.username)}
+        <div class="row-main"><div class="row-title">${esc(acc.username)}</div></div>
+        <div class="row-actions">${actions}</div>
+      </div>`;
+  }).join("");
+
+  const singleRow = `<div class="row">${avatar(getCustomAvatar(S.gogAccountId), S.gogAccount)}<div class="row-main"><div class="row-title">${esc(S.gogAccount)}</div><div class="row-meta">${S.gogSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`;
+
   return `
     <div class="list acc-accounts">
-      <div class="row">
-        ${avatar(current, S.gogAccount)}
-        <div class="row-main">
-          <div class="row-title">${esc(S.gogAccount)}</div>
-          <div class="row-meta">${S.gogSummaries.length} ${t("settings.accountTotalGames")}</div>
-        </div>
-        <div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div>
-      </div>
+      ${accountRows || singleRow}
     </div>
-    <div class="acc-actions">
-      <button class="btn ghost small ${S.gogSyncing ? "spinning" : ""}" data-act="gog-refresh">${icon("refresh", 13)} ${t("lib.refresh")}</button>
-      <span class="acc-spacer"></span>
-      <button class="btn ghost danger small" data-act="gog-logout">${t("settings.logout")}</button>
-    </div>`;
+    ${S.gogAccountsAddMode ? gogSignInBlock() + `<div class="acc-actions"><button class="btn ghost small" data-act="gog-auth-cancel">${t("common.cancel")}</button></div>` : `
+      <div class="acc-actions">
+        <button class="btn ghost small" data-act="gog-account-add">${icon("plus", 13)} ${t("settings.accountAdd")}</button>
+        <button class="btn ghost small ${S.gogSyncing ? "spinning" : ""}" data-act="gog-refresh">${icon("refresh", 13)} ${t("lib.refresh")}</button>
+        <span class="acc-spacer"></span>
+        <button class="btn ghost danger small" data-act="gog-logout">${t("settings.logout")}</button>
+      </div>`}`;
 }
 
 function gogCard(): string {

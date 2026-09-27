@@ -953,6 +953,7 @@
   "profile.refresh": "プロフィールを更新",
   "profile.showMore": "もっと見る",
   "profile.refreshTitle": "Epic Games のサーバーからプロフィールとトロフィーを更新",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "すべて",
   "profile.filterPlatinum": "プラチナ",
   "profile.filterInProgress": "進行中",
@@ -1284,5 +1285,7 @@
   "dl.indicatorIgnoredToast": "{title} のアップデート通知バッジを非表示にしました。",
   "dl.indicatorRestoredToast": "{title} のアップデート通知バッジを再表示しました。",
   "ctx.ignoreIndicator": "アップデート通知バッジを非表示",
-  "ctx.restoreIndicator": "アップデート通知バッジを表示"
+  "ctx.restoreIndicator": "アップデート通知バッジを表示",
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

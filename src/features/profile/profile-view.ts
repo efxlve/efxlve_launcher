@@ -20,7 +20,8 @@ import { epicPortrait, type ProfileGameRecord } from "../../epic";
 function coverOf(appName: string, fallback = ""): string {
   const s = S.epicSummariesMap.get(appName);
   const raw = rawOf(appName);
-  return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || fallback;
+  const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
+  return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
 }
 
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
@@ -46,7 +47,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       <div class="row profile-game-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="row-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="row-thumb"></span>`}
         <div class="row-main">
-          <div class="row-title">${esc(g.app_title)}${isPlat ? ` <span class="profile-plat">${epicPlatinumIcon(12)}</span>` : ""}</div>
+          <div class="row-title">${esc(g.app_title)}${S.gogSummaries.length > 0 ? (g.app_name.startsWith("gog::") ? ` <span class="profile-store-chip">GOG</span>` : ` <span class="profile-store-chip">EPIC</span>`) : ""}${isPlat ? ` <span class="profile-plat">${epicPlatinumIcon(12)}</span>` : ""}</div>
           <div class="row-meta">${meta}</div>
           <div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>
         </div>
@@ -82,7 +83,7 @@ function recentApps(): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const push = (name: string): boolean => {
-    if (!seen.has(name) && S.epicSummariesMap.has(name)) {
+    if (!seen.has(name) && (S.epicSummariesMap.has(name) || S.allGamesMap.has(name))) {
       seen.add(name);
       out.push(name);
     }
@@ -94,12 +95,13 @@ function recentApps(): string[] {
     .sort((a, b) => (b[1].last_played_timestamp || 0) - (a[1].last_played_timestamp || 0));
   for (const [name] of played) if (push(name)) return out;
   for (const s of S.epicSummaries) if (s.installed && push(s.appName)) return out;
+  for (const g of S.gogSummaries) if (g.installed && push(g.key)) return out;
   return out;
 }
 
 function renderRecentGrid(): string {
   const items = recentApps().map((appName) => {
-    const title = S.epicSummariesMap.get(appName)?.title || appName;
+    const title = S.epicSummariesMap.get(appName)?.title || S.allGamesMap.get(appName)?.title || appName;
     const cover = coverOf(appName);
     return `<button class="profile-recent-item" data-act="epic-detail" data-id="${esc(appName)}" title="${esc(title)}">${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : ""}</button>`;
   }).join("");
@@ -176,18 +178,45 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
   });
 }
 
+function buildGogProfileGames(): ProfileGameRecord[] {
+  const games: ProfileGameRecord[] = [];
+  for (const [key, item] of S.gogSummariesMap.entries()) {
+    const achId = key.startsWith("gog::") ? key : `gog::${key}`;
+    const ach = S.epicAchSummaries[achId] || S.epicAchSummaries[key.replace("gog::", "")];
+    if (ach && ach.total_achievements > 0) {
+      games.push({
+        sandbox_id: "",
+        app_name: key,
+        app_title: item.title,
+        cover: item.coverUrl,
+        total_unlocked: ach.user_unlocked,
+        total_achievements: ach.total_achievements,
+        total_xp: ach.user_xp || 0,
+        total_product_xp: ach.total_xp || 0,
+        is_platinum: ach.is_platinum || false,
+        unlocked_percent: ach.total_achievements > 0 ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0,
+        last_unlocked_date: null,
+      });
+    }
+  }
+  return games;
+}
+
 export function renderProfile(): string {
-  if (S.profileLoading && !S.playerProfileData) {
+  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0;
+  if (S.profileLoading && !hasAnyData) {
     return `<div class="page">${`<div class="empty-state"><span class="spinner"></span><h3>${t("profile.loadingTitle")}</h3><p>${t("profile.loadingDesc")}</p></div>`}</div>`;
   }
-  if (S.profileError && !S.playerProfileData) {
+  if (S.profileError && !hasAnyData) {
     return `<div class="page">${emptyState("info", t("profile.errorTitle"), esc(S.profileError), `<button class="btn primary" data-act="refresh-profile">${t("profile.retry")}</button>`)}</div>`;
   }
 
   const prof = S.playerProfileData;
   const displayName = prof?.display_name || S.epicAccount || t("profile.player");
   const accountId = prof?.account_id || S.epicAccountId || "";
-  const allGames = prof?.games || [];
+  const gogGames = buildGogProfileGames();
+  const allGames = [...(prof?.games || []), ...gogGames];
+
   let totalPlaytimeSec = 0;
   for (const r of S.playtimeMap.values()) totalPlaytimeSec += r.total_seconds || 0;
   const customAvatar = getCustomAvatar(accountId);
@@ -207,9 +236,20 @@ export function renderProfile(): string {
     else if (g.unlocked_percent > 0) countProgress++;
     else countNotStarted++;
   }
+
+  let gogTotalUnlocked = 0, gogPlatCount = 0, gogTotalXp = 0;
+  for (const g of gogGames) {
+    gogTotalUnlocked += g.total_unlocked;
+    if (g.is_platinum || g.unlocked_percent >= 100) gogPlatCount++;
+    gogTotalXp += g.total_xp;
+  }
+
   const stat = (value: string, label: string): string => `<div class="profile-stat"><span class="profile-stat-val">${value}</span><span class="profile-stat-label">${label}</span></div>`;
   const filterTab = (val: string, label: string, n: number): string =>
     `<button class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
+
+  const epicChip = `<span class="chip ${S.offlineMode ? "warn" : "ok"}">${S.offlineMode ? t("profile.offlineMode") : "Epic Games"}</span>`;
+  const gogChip = S.gogAccount ? `<span class="chip ok">GOG.COM</span>` : "";
 
   return `
     <div class="page profile-page">
@@ -220,18 +260,18 @@ export function renderProfile(): string {
         <div class="row-main">
           <h1 class="profile-name">${esc(displayName)}</h1>
           <div class="profile-sub">
-            <span class="chip ${S.offlineMode ? "warn" : "ok"}">${S.offlineMode ? t("profile.offlineMode") : t("profile.connected")}</span>
+            ${epicChip}${gogChip}
             ${accountId ? `<button class="btn ghost small" data-act="copy-account-id" data-val="${esc(accountId)}" title="${t("profile.copyIdTitle", { id: accountId })}">${icon("copy", 12)} ID</button>` : ""}
           </div>
         </div>
         <div class="profile-stats">
-          ${stat(String(S.epicSummaries.length), t("profile.games"))}
+          ${stat(String(S.epicSummaries.length + S.gogSummaries.length), t("profile.games"))}
           ${stat(esc(fmtPlaytime(totalPlaytimeSec)), t("profile.played"))}
-          ${stat((prof?.total_unlocked || 0).toLocaleString(), t("profile.trophies"))}
-          ${stat(String(prof?.platinum_count || 0), t("profile.platLabel"))}
-          ${stat((prof?.total_xp || 0).toLocaleString(), "XP")}
+          ${stat(((prof?.total_unlocked || 0) + gogTotalUnlocked).toLocaleString(), t("profile.trophies"))}
+          ${stat(String((prof?.platinum_count || 0) + gogPlatCount), t("profile.platLabel"))}
+          ${stat(((prof?.total_xp || 0) + gogTotalXp).toLocaleString(), "XP")}
         </div>
-        <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
+        <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${S.gogSummaries.length > 0 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
       </section>
 
       <div class="profile-body">

@@ -953,6 +953,7 @@
   "profile.refresh": "Profil aktualisieren",
   "profile.showMore": "Mehr anzeigen",
   "profile.refreshTitle": "Profil und Trophäen von den Epic Games-Servern aktualisieren",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "Alle",
   "profile.filterPlatinum": "Platin",
   "profile.filterInProgress": "In Arbeit",
@@ -1284,5 +1285,7 @@
   "dl.indicatorIgnoredToast": "Update-Anzeige für {title} ausgeblendet.",
   "dl.indicatorRestoredToast": "Update-Anzeige für {title} wiederhergestellt.",
   "ctx.ignoreIndicator": "Update-Anzeige ausblenden",
-  "ctx.restoreIndicator": "Update-Anzeige anzeigen"
+  "ctx.restoreIndicator": "Update-Anzeige anzeigen",
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

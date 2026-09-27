@@ -148,6 +148,34 @@
 .card-dl-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 5; background: rgba(0, 0, 0, 0.6); }
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
+.store-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.lrow .store-badge {
+  bottom: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+  border-radius: 3px;
+}
+
 /* --- List view --- */
 .lib-list { display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
 .lrow-head, .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 120px 130px 100px 124px; align-items: center; gap: 16px; padding: 0 16px; }

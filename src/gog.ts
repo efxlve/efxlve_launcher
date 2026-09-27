@@ -145,3 +145,20 @@ export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
     dlcCount: g.dlc_count,
   };
 }
+
+export interface SavedGogAccount {
+  user_id: string;
+  username: string;
+  last_used: number;
+  is_active: boolean;
+  game_count: number | null;
+}
+
+export const gogGetSavedAccounts = () =>
+  invoke<SavedGogAccount[]>("gog_get_saved_accounts");
+
+export const gogSwitchAccount = (userId: string) =>
+  invoke<SavedGogAccount>("gog_switch_account", { userId });
+
+export const gogRemoveSavedAccount = (userId: string) =>
+  invoke<void>("gog_remove_saved_account", { userId });

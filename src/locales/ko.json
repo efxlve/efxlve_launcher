@@ -953,6 +953,7 @@
   "profile.refresh": "프로필 새로 고침",
   "profile.showMore": "더 보기",
   "profile.refreshTitle": "Epic Games 서버에서 프로필과 트로피 새로 고침",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "전체",
   "profile.filterPlatinum": "플래티넘",
   "profile.filterInProgress": "진행 중",
@@ -1284,5 +1285,7 @@
   "dl.indicatorIgnoredToast": "{title}의 업데이트 표시가 지워졌습니다.",
   "dl.indicatorRestoredToast": "{title}의 업데이트 표시가 복원되었습니다.",
   "ctx.ignoreIndicator": "업데이트 표시 지우기",
-  "ctx.restoreIndicator": "업데이트 표시 복원"
+  "ctx.restoreIndicator": "업데이트 표시 복원",
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

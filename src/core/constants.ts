@@ -46,6 +46,8 @@ export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 export const COVER_STATS_KEY = "efxlve-cover-stats";
 /** Show the game title under each cover tile in the library grid. */
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
+/** Show a store source badge when viewing all stores. */
+export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Optional page-by-page library browsing instead of progressive chunking. */
 export const LIB_PAGINATION_KEY = "efxlve-lib-pagination";
 /** Games rendered per library page when pagination is on. */

@@ -1908,7 +1908,10 @@ fn main() {
             gogdl::transfers::gog_import_game,
             gogdl::transfers::gog_verify_game,
             gogdl::launcher::gog_launch_game,
-            gogdl::launcher::gog_stop_game
+            gogdl::launcher::gog_stop_game,
+            gogdl::commands::gog_get_saved_accounts,
+            gogdl::commands::gog_switch_account,
+            gogdl::commands::gog_remove_saved_account
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");

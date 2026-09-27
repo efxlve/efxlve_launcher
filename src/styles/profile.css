@@ -40,3 +40,19 @@
 .friend-row:hover { background: var(--surface-2); }
 .friend-fav { color: var(--warn); }
 .friend-plats { display: flex; gap: 4px; }
+
+.profile-store-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+

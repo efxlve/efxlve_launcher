@@ -20,6 +20,7 @@ import {
   gogToLibraryItem,
 } from "../../gog";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
+import { loadSavedGogAccounts } from "./gog-account-switcher";
 
 /** Clean extraction of code from input, whether pasted as raw code or full redirect URL. */
 export function extractGogAuthCode(raw: string): string {
@@ -63,6 +64,8 @@ export async function gogLoginWithCode(rawCode: string): Promise<void> {
     S.gogAccount = status.username || "GOG User";
     S.gogAccountId = status.user_id || null;
     S.gogPhase = "library";
+    S.gogAccountsAddMode = false;
+    await loadSavedGogAccounts();
     toast(t("accounts.connected"));
     await syncGogLibrary();
   } catch (err) {
@@ -138,6 +141,8 @@ export async function initGogSession(): Promise<void> {
       if (cached.games.length > 0) {
         setGogSummaries(cached.games.map(gogToLibraryItem));
       }
+      
+      await loadSavedGogAccounts();
 
       // 2. Background silent sync
       void syncGogLibrary();

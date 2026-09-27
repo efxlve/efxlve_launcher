@@ -1,4 +1,4 @@
-{
+﻿{
   "sidebar.noInstalled": "ยังไม่มีเกมที่ติดตั้ง",
   "sidebar.recent": "เล่นล่าสุด",
   "palette.open": "ค้นหาเกมและคำสั่ง (Ctrl+K)",
@@ -953,6 +953,7 @@
   "profile.refresh": "รีเฟรชโปรไฟล์",
   "profile.showMore": "แสดงเพิ่ม",
   "profile.refreshTitle": "รีเฟรชโปรไฟล์และถ้วยรางวัลจากเซิร์ฟเวอร์ Epic Games",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "ทั้งหมด",
   "profile.filterPlatinum": "แพลตินัม",
   "profile.filterInProgress": "กำลังดำเนินการ",
@@ -1285,4 +1286,7 @@
   "dl.indicatorRestoredToast": "กู้คืนตัวบ่งชี้การอัปเดตสำหรับ {title} แล้ว",
   "ctx.ignoreIndicator": "ล้างตัวบ่งชี้การอัปเดต",
   "ctx.restoreIndicator": "แสดงตัวบ่งชี้การอัปเดต"
+,
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

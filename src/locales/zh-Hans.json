@@ -1,4 +1,4 @@
-{
+﻿{
   "sidebar.noInstalled": "还没有已安装的游戏",
   "sidebar.recent": "最近玩过",
   "palette.open": "搜索游戏和命令 (Ctrl+K)",
@@ -953,6 +953,7 @@
   "profile.refresh": "刷新个人资料",
   "profile.showMore": "显示更多",
   "profile.refreshTitle": "从 Epic Games 服务器刷新个人资料和奖杯",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "全部",
   "profile.filterPlatinum": "白金",
   "profile.filterInProgress": "进行中",
@@ -1285,4 +1286,7 @@
   "dl.indicatorRestoredToast": "已恢复 {title} 的更新指示器。",
   "ctx.ignoreIndicator": "清除更新指示器",
   "ctx.restoreIndicator": "恢复更新指示器"
+,
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

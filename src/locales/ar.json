@@ -953,6 +953,7 @@
   "profile.refresh": "تحديث الملف الشخصي",
   "profile.showMore": "عرض المزيد",
   "profile.refreshTitle": "تحديث الملف الشخصي والجوائز من خوادم Epic Games",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "الكل",
   "profile.filterPlatinum": "بلاتيني",
   "profile.filterInProgress": "قيد التقدّم",
@@ -1284,5 +1285,7 @@
   "dl.indicatorIgnoredToast": "تم إخفاء مؤشر التحديث لـ {title}.",
   "dl.indicatorRestoredToast": "تمت استعادة مؤشر التحديث لـ {title}.",
   "ctx.ignoreIndicator": "إخفاء مؤشر التحديث",
-  "ctx.restoreIndicator": "إظهار مؤشر التحديث"
+  "ctx.restoreIndicator": "إظهار مؤشر التحديث",
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }

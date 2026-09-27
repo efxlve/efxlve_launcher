@@ -953,6 +953,7 @@
   "profile.refresh": "Profili Yenile",
   "profile.showMore": "Daha Fazla Göster",
   "profile.refreshTitle": "Profili ve kupaları Epic Games sunucularından tazele",
+  "profile.refreshTitleMulti": "Profili ve kupaları Epic Games ve GOG sunucularından tazele",
   "profile.filterAll": "Tümü",
   "profile.filterPlatinum": "Platin",
   "profile.filterInProgress": "Devam Edenler",
@@ -1298,5 +1299,7 @@
   "dl.indicatorIgnoredToast": "{title} için güncelleme göstergesi temizlendi.",
   "dl.indicatorRestoredToast": "{title} için güncelleme göstergesi geri yüklendi.",
   "ctx.ignoreIndicator": "Güncelleme Göstergesini Temizle",
-  "ctx.restoreIndicator": "Güncelleme Göstergesini Göster"
+  "ctx.restoreIndicator": "Güncelleme Göstergesini Göster",
+  "settings.storeBadgeTitle": "Mağaza Rozeti",
+  "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde her oyunun hangi mağazadan olduğunu gösteren küçük bir rozet."
 }

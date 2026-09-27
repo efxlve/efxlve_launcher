@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, libraryStoreBadge, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -316,6 +316,7 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
+        ${libraryStoreBadge(s.appName)}
       </div>
       ${caption}
     </div>`;
@@ -328,7 +329,7 @@ function epicListRow(s: EpicSummary): string {
   const isGog = s.appName.startsWith("gog::");
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
-      <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
+      <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}${libraryStoreBadge(s.appName)}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${esc(studioOf(s))}</div>

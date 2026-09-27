@@ -190,6 +190,7 @@ function renderAppearance(): string {
       </div>`) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
+      row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
       t("settings.secAppearance"),

@@ -7,6 +7,7 @@ pub mod models;
 pub mod paths;
 pub mod transfers;
 pub mod launcher;
+pub mod accounts;
 
 use thiserror::Error;
 

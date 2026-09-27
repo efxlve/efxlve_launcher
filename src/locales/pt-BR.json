@@ -1,4 +1,4 @@
-{
+﻿{
   "sidebar.noInstalled": "Nenhum jogo instalado",
   "sidebar.recent": "Jogados recentemente",
   "palette.open": "Buscar jogos e comandos (Ctrl+K)",
@@ -953,6 +953,7 @@
   "profile.refresh": "Atualizar perfil",
   "profile.showMore": "Mostrar mais",
   "profile.refreshTitle": "Atualizar perfil e troféus nos servidores da Epic Games",
+  "profile.refreshTitleMulti": "Refresh profile and trophies from Epic Games and GOG servers",
   "profile.filterAll": "Todos",
   "profile.filterPlatinum": "Platina",
   "profile.filterInProgress": "Em andamento",
@@ -1285,4 +1286,7 @@
   "dl.indicatorRestoredToast": "Indicador de atualização restaurado para {title}.",
   "ctx.ignoreIndicator": "Ocultar indicador de atualização",
   "ctx.restoreIndicator": "Mostrar indicador de atualização"
+,
+  "settings.storeBadgeTitle": "Store Badge",
+  "settings.storeBadgeDesc": "Show a small badge on each game cover indicating which store it belongs to when viewing all stores."
 }
