@@ -498,3 +498,48 @@
 }
 .hide-list-empty { margin: 0; padding: 32px 8px; text-align: center; color: var(--text-3); font-size: 13px; }
 .hide-list-count { margin-right: auto; font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* --- Changelog Modal --- */
+.changelog-backdrop { z-index: 350; }
+.changelog-dialog {
+  width: min(640px, 94vw); max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+}
+.changelog-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.changelog-head-text { display: flex; align-items: center; gap: 10px; }
+.changelog-head-text h2 { margin: 0; font-size: 17px; font-weight: 600; color: #ffffff; }
+.changelog-head-badge {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-2); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.changelog-body {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 24px;
+}
+.changelog-release {
+  display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line);
+}
+.changelog-release:last-child { padding-bottom: 0; border-bottom: none; }
+.changelog-rel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.changelog-rel-title { display: flex; align-items: center; gap: 8px; }
+.changelog-ver { font-size: 16px; font-weight: 700; color: #ffffff; font-variant-numeric: tabular-nums; }
+.changelog-tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 999px;
+}
+.changelog-tag.current { background: #ffffff; color: #000000; }
+.changelog-date { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.changelog-group { display: flex; flex-direction: column; gap: 6px; }
+.changelog-group-label {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3);
+}
+.changelog-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.changelog-list li { font-size: 13px; line-height: 1.5; color: var(--text-2); }
+.changelog-list li strong { color: var(--text); font-weight: 600; }
+

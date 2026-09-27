@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "업데이트 다운로드에 실패했습니다.",
   "appUpdate.installFailed": "업데이트 설치에 실패했습니다.",
   "appUpdate.errorShort": "오류",
-  "settings.aboutTagline": "Epic Games 라이브러리를 위한 빠르고 독립적인 데스크톱 런처.",
-  "settings.aboutDisclaimerTitle": "법적 고지 및 면책",
-  "settings.aboutDisclaimer": "Efxlve Launcher는 독립적인 비공식 오픈 소스 프로젝트입니다. Epic Games, Inc.와 제휴, 보증, 후원 또는 연관되어 있지 않습니다. \"Epic Games\", Epic Games 로고, Epic Games Store는 미국 및 기타 국가에서 Epic Games, Inc.의 상표 또는 등록 상표입니다. 그 밖의 상표는 각 소유자의 자산입니다.",
-  "settings.aboutOpenSource": "이 프로젝트는 커뮤니티가 이끌며, 투명하고, 완전히 오픈 소스입니다. GitHub에서 기여하고, 문제를 보고하고, 코드를 직접 확인할 수 있습니다.",
+  "settings.aboutTagline": "Epic Games, GOG 및 최신 디지털 게임 라이브러리를 위한 빠르고 개인정보를 보호하는 통합 데스크톱 런처.",
+  "settings.aboutDisclaimerTitle": "법적 고지 및 면책 조항",
+  "settings.aboutDisclaimer": "Efxlve Launcher는 독립적인 비공식 오픈 소스 프로젝트입니다. Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc., Ubisoft Entertainment와 제휴, 보증 또는 후원 관계가 아닙니다. 모든 상표는 해당 소유자의 재산입니다.",
+  "settings.aboutOpenSource": "이 프로젝트는 GNU General Public License v3.0 (GPL-3.0)에 따라 완전히 공개된 오픈 소스입니다.",
   "settings.aboutLinksTitle": "공식 링크 및 개발자",
   "settings.aboutWebsite": "웹사이트",
   "settings.aboutGithub": "GitHub 저장소",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "스토어:",
   "col.allCollections": "컬렉션",
   "col.noCollectionFilter": "모든 게임 (필터 해제)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher는 DRM을 우회하지 않으며 게임 파일을 호스팅하거나 배포하지 않습니다. 모든 다운로드와 인증은 공식 스토어 서비스와 직접 통신합니다.",
+  "settings.viewChangelog": "변경 내역 보기",
+  "changelog.title": "새로운 기능",
+  "changelog.current": "현재",
+  "changelog.added": "추가됨",
+  "changelog.improved": "개선됨",
+  "changelog.fixed": "수정됨"
 }

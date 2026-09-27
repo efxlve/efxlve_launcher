@@ -97,6 +97,7 @@ import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, s
 import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
 import { loadIntegrationsView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
+import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 document.addEventListener("click", (e) => {
   // Close the sort dropdown when clicking outside it.
   if (S.isSortDropdownOpen) {
@@ -329,6 +330,12 @@ document.addEventListener("click", (e) => {
     void openStore(store);
   } else if (act === "open-profile") {
     openProfile();
+  } else if (act === "open-changelog") {
+    openChangelogModal();
+  } else if (act === "close-changelog-modal") {
+    closeChangelogModal();
+  } else if (act === "changelog-backdrop") {
+    if (e.target === t) closeChangelogModal();
   } else if (act === "toggle-notifications") {
     if (S.notifOpen) closeNotifPanel();
     else openNotifPanel();

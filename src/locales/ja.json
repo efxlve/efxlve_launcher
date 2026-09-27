@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "アップデートのダウンロードに失敗しました。",
   "appUpdate.installFailed": "アップデートのインストールに失敗しました。",
   "appUpdate.errorShort": "エラー",
-  "settings.aboutTagline": "Epic Games ライブラリ向けの、高速で独立したデスクトップランチャー。",
-  "settings.aboutDisclaimerTitle": "法的通知と免責事項",
-  "settings.aboutDisclaimer": "Efxlve Launcher は独立した非公式のオープンソースプロジェクトです。Epic Games, Inc. とは提携、承認、後援、関連のいずれもありません。「Epic Games」、Epic Games のロゴ、および Epic Games Store は、アメリカ合衆国およびその他の国における Epic Games, Inc. の商標または登録商標です。その他の商標は、それぞれの所有者に帰属します。",
-  "settings.aboutOpenSource": "このプロジェクトはコミュニティ主導で、透明性が高く、完全にオープンソースです。GitHub で貢献、問題の報告、コードの確認ができます。",
+  "settings.aboutTagline": "Epic Games、GOG、および最新のデジタルゲームライブラリ向けの高速でプライバシー重視の統合デスクトップランチャー。",
+  "settings.aboutDisclaimerTitle": "法的通知および免責事項",
+  "settings.aboutDisclaimer": "Efxlve Launcherは、独立した非公式のオープンソースプロジェクトです。Epic Games, Inc.、CD PROJEKT S.A.、GOG sp. z o.o.、Valve Corporation、Electronic Arts Inc.、Ubisoft Entertainment等とは提携、推奨、支援されていません。すべての商標はそれぞれの所有者に帰属します。",
+  "settings.aboutOpenSource": "本プロジェクトはGNU General Public License v3.0 (GPL-3.0)の下で完全なオープンソースとして公開されています。",
   "settings.aboutLinksTitle": "公式リンクと開発者",
   "settings.aboutWebsite": "ウェブサイト",
   "settings.aboutGithub": "GitHub リポジトリ",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "ストア:",
   "col.allCollections": "コレクション",
   "col.noCollectionFilter": "すべてのゲーム（フィルター解除）",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve LauncherはDRMを回避せず、ゲームファイルをホストまたは配布しません。すべてのダウンロードと認証は公式ストアと直接通信します。",
+  "settings.viewChangelog": "更新履歴を表示",
+  "changelog.title": "新機能と改善",
+  "changelog.current": "現在",
+  "changelog.added": "追加",
+  "changelog.improved": "改善",
+  "changelog.fixed": "修正"
 }

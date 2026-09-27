@@ -13,6 +13,7 @@ import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./co
 import { updateChrome, updateNavHistoryUi } from "./core/nav";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
+import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
@@ -112,6 +113,7 @@ function closeAllModals(): void {
   closeAvatarModal();
   closeInstallDialog();
   closeManagePopup();
+  closeChangelogModal();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

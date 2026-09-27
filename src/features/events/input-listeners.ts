@@ -22,6 +22,7 @@ import {
 import {
   closeCollectionModal,
 } from "../collections/collections-view";
+import { closeChangelogModal } from "../changelog/changelog-view";
 import { closeHideGamesModal } from "../library/hide-games";
 import { closeHideAchievementsModal } from "../profile/hide-achievements";
 import {
@@ -174,6 +175,11 @@ document.addEventListener("keydown", (e) => {
       } else {
         closeMoveGameModal();
       }
+      return;
+    }
+    const changelogRoot = document.getElementById("changelog-root");
+    if (changelogRoot && changelogRoot.innerHTML.trim()) {
+      closeChangelogModal();
       return;
     }
     const coverRoot = document.getElementById("cover-modal-root");

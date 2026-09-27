@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "Update download failed.",
   "appUpdate.installFailed": "Update installation failed.",
   "appUpdate.errorShort": "Error",
-  "settings.aboutTagline": "A fast, independent desktop launcher for your Epic Games library.",
+  "settings.aboutTagline": "A fast, privacy-focused, unified desktop launcher for Epic Games, GOG, and modern digital game libraries.",
   "settings.aboutDisclaimerTitle": "Legal Notice & Disclaimer",
-  "settings.aboutDisclaimer": "Efxlve Launcher is an independent and unofficial open-source project. It is not affiliated with, endorsed by, sponsored by, or associated with Epic Games, Inc. \"Epic Games\", the Epic Games logo, and Epic Games Store are trademarks or registered trademarks of Epic Games, Inc. in the United States of America and elsewhere. All other trademarks are the property of their respective owners.",
-  "settings.aboutOpenSource": "This project is community-driven, transparent, and fully open-source. You can contribute, report issues, or inspect the code directly on GitHub.",
+  "settings.aboutDisclaimer": "Efxlve Launcher is an independent, community-driven, unofficial open-source project. It is not affiliated with, endorsed by, sponsored by, or associated with Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc., Ubisoft Entertainment, or any of their subsidiaries or affiliates. \"Epic Games\", \"Epic Games Store\", and \"EOS\" are trademarks or registered trademarks of Epic Games, Inc. \"GOG\", \"GOG.COM\", and \"GOG GALAXY\" are registered trademarks of GOG sp. z o.o. \"Steam\" is a trademark or registered trademark of Valve Corporation. \"EA\" and \"EA app\" are trademarks of Electronic Arts Inc. \"Ubisoft\" and \"Ubisoft Connect\" are trademarks of Ubisoft Entertainment. All other trademarks, registered trademarks, logos, and game titles are the property of their respective owners.",
+  "settings.aboutOpenSource": "This project is transparent and fully open-source under the GNU General Public License v3.0 (GPL-3.0). You can inspect the complete source code, audit network traffic, report issues, or contribute on GitHub.",
   "settings.aboutLinksTitle": "Official Links & Developer",
   "settings.aboutWebsite": "Website",
   "settings.aboutGithub": "GitHub Repository",
@@ -1284,5 +1284,12 @@
   "drawer.storeTitleGog": "Open the GOG Store page",
   "lib.storeBy": "Store:",
   "col.allCollections": "Collections",
-  "col.noCollectionFilter": "All Games (Clear Filter)"
+  "col.noCollectionFilter": "All Games (Clear Filter)",
+  "settings.aboutDrmNotice": "Efxlve Launcher does not crack, bypass DRM, host, or distribute game files. All downloads, authentication, and cloud saves communicate directly between your machine and official store services via established open-source utilities (such as legendary and gogdl). Users may only access and install titles legitimately owned on their respective accounts.",
+  "settings.viewChangelog": "View Changelog",
+  "changelog.title": "What's New",
+  "changelog.current": "Current",
+  "changelog.added": "Added",
+  "changelog.improved": "Improved",
+  "changelog.fixed": "Fixed"
 }

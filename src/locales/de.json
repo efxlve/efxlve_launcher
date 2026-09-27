@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "Update-Download fehlgeschlagen.",
   "appUpdate.installFailed": "Update-Installation fehlgeschlagen.",
   "appUpdate.errorShort": "Fehler",
-  "settings.aboutTagline": "Ein schneller, unabhängiger Desktop-Launcher für deine Epic Games-Bibliothek.",
-  "settings.aboutDisclaimerTitle": "Rechtlicher Hinweis",
-  "settings.aboutDisclaimer": "Efxlve Launcher ist ein unabhängiges, inoffizielles Open-Source-Projekt. Es steht in keiner Verbindung zu Epic Games, Inc. und wird von Epic Games, Inc. nicht unterstützt, gesponsert oder begleitet. \"Epic Games\", das Epic Games-Logo und Epic Games Store sind Marken oder eingetragene Marken von Epic Games, Inc. in den Vereinigten Staaten von Amerika und andernorts. Alle anderen Marken gehören ihren jeweiligen Inhabern.",
-  "settings.aboutOpenSource": "Dieses Projekt wird von der Community getragen, ist transparent und vollständig Open Source. Du kannst auf GitHub mitarbeiten, Probleme melden oder den Code einsehen.",
+  "settings.aboutTagline": "Ein schneller, datenschutzorientierter, einheitlicher Desktop-Launcher für Epic Games, GOG und moderne digitale Spielebibliotheken.",
+  "settings.aboutDisclaimerTitle": "Rechtliche Hinweise & Haftungsausschluss",
+  "settings.aboutDisclaimer": "Efxlve Launcher ist ein unabhängiges, von der Community betriebenes, inoffizielles Open-Source-Projekt. Es ist weder mit Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc., Ubisoft Entertainment noch mit deren Tochtergesellschaften verbunden, unterstützt, gesponsert oder assoziiert. Alle Warenzeichen, eingetragenen Warenzeichen und Markennamen sind Eigentum ihrer jeweiligen Inhaber.",
+  "settings.aboutOpenSource": "Dieses Projekt ist transparent und vollständig quelloffen unter der GNU General Public License v3.0 (GPL-3.0).",
   "settings.aboutLinksTitle": "Offizielle Links und Entwickler",
   "settings.aboutWebsite": "Website",
   "settings.aboutGithub": "GitHub-Repository",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "Store:",
   "col.allCollections": "Sammlungen",
   "col.noCollectionFilter": "Alle Spiele (Filter aufheben)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher knackt, umgeht DRM nicht, hostet und verteilt keine Spieldateien. Alle Downloads und Anmeldungen kommunizieren direkt mit den offiziellen Store-Diensten.",
+  "settings.viewChangelog": "Änderungsprotokoll anzeigen",
+  "changelog.title": "Neuigkeiten",
+  "changelog.current": "Aktuell",
+  "changelog.added": "Hinzugefügt",
+  "changelog.improved": "Verbessert",
+  "changelog.fixed": "Behoben"
 }

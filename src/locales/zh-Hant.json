@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "更新下載失敗。",
   "appUpdate.installFailed": "更新安裝失敗。",
   "appUpdate.errorShort": "錯誤",
-  "settings.aboutTagline": "面向 Epic Games 遊戲庫的快速、獨立桌面啟動器。",
+  "settings.aboutTagline": "專為 Epic Games、GOG 及現代數位遊戲庫打造的高速、注重隱私的一體化桌面啟動器。",
   "settings.aboutDisclaimerTitle": "法律聲明與免責聲明",
-  "settings.aboutDisclaimer": "Efxlve Launcher 是獨立的非官方開放原始碼專案。它與 Epic Games, Inc. 沒有附屬、認可、贊助或關聯關係。「Epic Games」、Epic Games 標誌和 Epic Games Store 是 Epic Games, Inc. 在美利堅合眾國及其他地區的商標或註冊商標。所有其他商標歸其各自擁有者所有。",
-  "settings.aboutOpenSource": "本專案由社群推動，透明且完全開放原始碼。你可以在 GitHub 上貢獻、回報問題或直接檢視程式碼。",
+  "settings.aboutDisclaimer": "Efxlve Launcher 是一個獨立的非官方社群開源專案。與 Epic Games, Inc.、CD PROJEKT S.A.、GOG sp. z o.o.、Valve Corporation、Electronic Arts Inc. 或 Ubisoft Entertainment 等公司均無任何附屬、贊助或背書關係。所有商標均歸其各自所有者所有。",
+  "settings.aboutOpenSource": "本專案遵循 GNU 通用公共許可證 v3.0 (GPL-3.0) 完全開源且透明。",
   "settings.aboutLinksTitle": "官方連結與開發者",
   "settings.aboutWebsite": "網站",
   "settings.aboutGithub": "GitHub 存放庫",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "商店：",
   "col.allCollections": "收藏夾",
   "col.noCollectionFilter": "所有遊戲（清除篩選）",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher 不破解或繞過 DRM，亦不存放或分發遊戲檔案。所有下載和登入均直接與官方商店伺服器通訊。",
+  "settings.viewChangelog": "檢視更新日誌",
+  "changelog.title": "新功能與變更",
+  "changelog.current": "目前",
+  "changelog.added": "新增",
+  "changelog.improved": "改進",
+  "changelog.fixed": "修復"
 }

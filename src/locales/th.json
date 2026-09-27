@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "ดาวน์โหลดอัปเดตไม่สำเร็จ",
   "appUpdate.installFailed": "ติดตั้งอัปเดตไม่สำเร็จ",
   "appUpdate.errorShort": "ข้อผิดพลาด",
-  "settings.aboutTagline": "ตัวเปิดเกมเดสก์ท็อปที่เร็วและอิสระสำหรับคลังเกม Epic Games",
-  "settings.aboutDisclaimerTitle": "ประกาศทางกฎหมายและข้อจำกัดความรับผิด",
-  "settings.aboutDisclaimer": "Efxlve Launcher เป็นโครงการโอเพนซอร์สอิสระและไม่เป็นทางการ ไม่ได้สังกัด รับรอง สนับสนุน หรือเกี่ยวข้องกับ Epic Games, Inc. \"Epic Games\" โลโก้ Epic Games และ Epic Games Store เป็นเครื่องหมายการค้าหรือเครื่องหมายการค้าจดทะเบียนของ Epic Games, Inc. ในสหรัฐอเมริกาและที่อื่น เครื่องหมายการค้าอื่นเป็นทรัพย์สินของเจ้าของแต่ละราย",
-  "settings.aboutOpenSource": "โครงการนี้ขับเคลื่อนโดยชุมชน โปร่งใส และเป็นโอเพนซอร์สทั้งหมด คุณร่วมพัฒนา รายงานปัญหา หรือตรวจโค้ดได้โดยตรงบน GitHub",
+  "settings.aboutTagline": "ตัวเปิดเกมบนเดสก์ท็อปที่รวดเร็ว เน้นความเป็นส่วนตัว และรวมศูนย์สำหรับ Epic Games, GOG และคลังเกมดิจิทัลยุคใหม่",
+  "settings.aboutDisclaimerTitle": "ประกาศทางกฎหมายและข้อจำกัดความรับผิดชอบ",
+  "settings.aboutDisclaimer": "Efxlve Launcher เป็นโครงการโอเพนซอร์สอิสระที่ไม่เป็นทางการ ไม่มีส่วนเกี่ยวข้อง รับรอง หรือสนับสนุนโดย Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc. หรือ Ubisoft Entertainment เครื่องหมายการค้าทั้งหมดเป็นทรัพย์สินของเจ้าของที่เกี่ยวข้อง",
+  "settings.aboutOpenSource": "โครงการนี้โปร่งใสและเป็นโอเพนซอร์สเต็มรูปแบบภายใต้ GNU General Public License v3.0 (GPL-3.0)",
   "settings.aboutLinksTitle": "ลิงก์ทางการและผู้พัฒนา",
   "settings.aboutWebsite": "เว็บไซต์",
   "settings.aboutGithub": "ที่เก็บ GitHub",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "ร้านค้า:",
   "col.allCollections": "คอลเลกชัน",
   "col.noCollectionFilter": "เกมทั้งหมด (ล้างตัวกรอง)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher ไม่แฮ็กหรือข้าม DRM และไม่จัดเก็บหรือแจกจ่ายไฟล์เกม การดาวน์โหลดและการยืนยันตัวตนทั้งหมดสื่อสารโดยตรงกับเซิร์ฟเวอร์ทางการของร้านค้า",
+  "settings.viewChangelog": "ดูบันทึกการเปลี่ยนแปลง",
+  "changelog.title": "มีอะไรใหม่",
+  "changelog.current": "ปัจจุบัน",
+  "changelog.added": "เพิ่มแล้ว",
+  "changelog.improved": "ปรับปรุง",
+  "changelog.fixed": "แก้ไขแล้ว"
 }

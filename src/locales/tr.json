@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "Güncelleme indirilemedi.",
   "appUpdate.installFailed": "Güncelleme kurulamadı.",
   "appUpdate.errorShort": "Hata",
-  "settings.aboutTagline": "Epic Games kütüphaneniz için hızlı ve bağımsız bir masaüstü başlatıcı.",
+  "settings.aboutTagline": "Epic Games, GOG ve modern dijital oyun kütüphaneleri için hızlı, gizlilik odaklı, birleşik bir masaüstü başlatıcı.",
   "settings.aboutDisclaimerTitle": "Yasal Bildirim & Bağımsızlık Beyanı",
-  "settings.aboutDisclaimer": "Efxlve Launcher bağımsız ve resmi olmayan bir açık kaynak projesidir. Epic Games, Inc. ile hiçbir resmi bağı, ticari ortaklığı, sponsorluğu veya onayı bulunmamaktadır. \"Epic Games\", Epic Games logosu ve Epic Games Store, Epic Games, Inc.'in Amerika Birleşik Devletleri ve diğer ülkelerdeki ticari veya tescilli markalarıdır. Tüm diğer ticari markalar ilgili sahiplerine aittir.",
-  "settings.aboutOpenSource": "Bu proje topluluk odaklı, şeffaf ve tamamen açık kaynak kodludur. Katkıda bulunabilir, hata bildirebilir veya kodu inceleyebilirsiniz.",
+  "settings.aboutDisclaimer": "Efxlve Launcher bağımsız, topluluk odaklı ve resmi olmayan bir açık kaynak projesidir. Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc., Ubisoft Entertainment veya bunların hiçbir bağlı kuruluşu ile resmi bir bağı, ticari ortaklığı, sponsorluğu veya onayı bulunmamaktadır. \"Epic Games\", \"Epic Games Store\" ve \"EOS\", Epic Games, Inc.'in; \"GOG\", \"GOG.COM\" ve \"GOG GALAXY\", GOG sp. z o.o.'nun; \"Steam\", Valve Corporation'ın; \"EA\" ve \"EA app\", Electronic Arts Inc.'in; \"Ubisoft\" ve \"Ubisoft Connect\", Ubisoft Entertainment'ın tescilli ticari markalarıdır. Tüm diğer ticari markalar, logolar ve oyun isimleri ilgili yasal sahiplerine aittir.",
+  "settings.aboutOpenSource": "Bu proje şeffaf ve GNU Genel Kamu Lisansı v3.0 (GPL-3.0) kapsamında tamamen açık kaynak kodludur. Kaynak kodun tamamını inceleyebilir, ağ trafiğini denetleyebilir, hata bildirebilir veya GitHub üzerinden katkıda bulunabilirsiniz.",
   "settings.aboutLinksTitle": "Resmi Bağlantılar & Geliştirici",
   "settings.aboutWebsite": "Web Sitesi",
   "settings.aboutGithub": "GitHub Reposu",
@@ -1284,5 +1284,12 @@
   "drawer.storeTitleGog": "GOG Store Sayfasını Aç",
   "lib.storeBy": "Mağaza:",
   "col.allCollections": "Koleksiyonlar",
-  "col.noCollectionFilter": "Tüm Oyunlar (Filtreyi Temizle)"
+  "col.noCollectionFilter": "Tüm Oyunlar (Filtreyi Temizle)",
+  "settings.aboutDrmNotice": "Efxlve Launcher telif hakkı içeren oyun dosyalarını barındırmaz, dağıtmaz veya DRM korumalarını atlatmaz. Tüm indirmeler, hesap doğrulama ve bulut kayıtları, doğrudan kullanıcının cihazı ile resmi mağaza sunucuları arasında yetkili açık kaynak araçlar (legendary ve gogdl gibi) aracılığıyla gerçekleşir. Kullanıcılar yalnızca kendi hesaplarında yasal olarak sahip oldukları oyunları yükleyebilir ve çalıştırabilir.",
+  "settings.viewChangelog": "Değişiklik Günlüğü",
+  "changelog.title": "Yenilikler",
+  "changelog.current": "Güncel",
+  "changelog.added": "Yeni",
+  "changelog.improved": "İyileştirildi",
+  "changelog.fixed": "Düzeltildi"
 }

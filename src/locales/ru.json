@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "Не удалось загрузить обновление.",
   "appUpdate.installFailed": "Не удалось установить обновление.",
   "appUpdate.errorShort": "Ошибка",
-  "settings.aboutTagline": "Быстрый независимый лаунчер для библиотеки Epic Games.",
-  "settings.aboutDisclaimerTitle": "Правовое уведомление",
-  "settings.aboutDisclaimer": "Efxlve Launcher — независимый неофициальный проект с открытым кодом. Он не связан с Epic Games, Inc., не одобрен и не спонсируется этой компанией. «Epic Games», логотип Epic Games и Epic Games Store являются товарными знаками или зарегистрированными товарными знаками Epic Games, Inc. в Соединённых Штатах Америки и других странах. Все прочие товарные знаки принадлежат их владельцам.",
-  "settings.aboutOpenSource": "Проект ведёт сообщество, он прозрачный и полностью открытый. Можно участвовать, сообщать о проблемах или смотреть код на GitHub.",
+  "settings.aboutTagline": "Быстрый, конфиденциальный и единый лаунчер для Epic Games, GOG и современных библиотек цифровых игр.",
+  "settings.aboutDisclaimerTitle": "Юридическое уведомление и отказ от ответственности",
+  "settings.aboutDisclaimer": "Efxlve Launcher — это независимый общественный проект с открытым исходным кодом. Он не связан, не поддерживается и не спонсируется Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc. или Ubisoft Entertainment. Все товарные знаки принадлежат их законным владельцам.",
+  "settings.aboutOpenSource": "Этот проект полностью прозрачен и открыт под лицензией GNU General Public License v3.0 (GPL-3.0).",
   "settings.aboutLinksTitle": "Официальные ссылки и разработчик",
   "settings.aboutWebsite": "Сайт",
   "settings.aboutGithub": "Репозиторий GitHub",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "Магазин:",
   "col.allCollections": "Коллекции",
   "col.noCollectionFilter": "Все игры (Сбросить фильтр)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher не обходит DRM, не размещает и не распространяет файлы игр. Все загрузки и авторизации происходят напрямую с официальными серверами магазинов.",
+  "settings.viewChangelog": "Журнал изменений",
+  "changelog.title": "Что нового",
+  "changelog.current": "Текущая",
+  "changelog.added": "Добавлено",
+  "changelog.improved": "Улучшено",
+  "changelog.fixed": "Исправлено"
 }

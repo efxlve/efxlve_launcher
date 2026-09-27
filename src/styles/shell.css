@@ -12,7 +12,53 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 .winbar-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
-.winbar-beta { margin-left: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-3); }
+.winbar-version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  margin-left: 10px;
+  padding: 0 8px 0 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  user-select: none;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 100ms ease;
+}
+.winbar-version-pill:hover {
+  background: var(--surface-3);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+.winbar-version-pill:active {
+  transform: scale(0.96);
+}
+.winbar-beta-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 6px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.winbar-version-num {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
 .winbar-spacer { flex: 1; align-self: stretch; }
 .winbar-btn {
   position: relative; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px;

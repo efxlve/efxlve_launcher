@@ -290,6 +290,9 @@ function renderAbout(): string {
       <div class="settings-about-copy">
         <div class="settings-identity-name">Efxlve Launcher <span class="settings-value">v${esc(S.appVersion)}</span></div>
         <div class="settings-row-desc">${t("settings.aboutTagline")}</div>
+        <div style="margin-top: 10px;">
+          <button type="button" class="btn ghost small" data-act="open-changelog">${icon("clock", 13)} <span>${t("settings.viewChangelog")}</span></button>
+        </div>
       </div>
     </div>
     ${group(
@@ -301,6 +304,7 @@ function renderAbout(): string {
     )}
     <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
     <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
+    <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
     <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>`;
 }
 

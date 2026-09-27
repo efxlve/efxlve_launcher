@@ -16,7 +16,10 @@
     <div id="app">
       <header id="winbar" data-tauri-drag-region>
         <span class="winbar-title" data-tauri-drag-region>Efxlve Launcher</span>
-        <span class="winbar-beta" data-tauri-drag-region>Beta</span>
+        <button type="button" class="winbar-version-pill" data-act="open-changelog" title="Changelog">
+          <span class="winbar-beta-chip">BETA</span>
+          <span id="winbar-version-num" class="winbar-version-num">v0.1.16</span>
+        </button>
         <div class="winbar-spacer" data-tauri-drag-region></div>
         <button id="btn-offline-mode" class="winbar-btn net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online">
           <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Online</span>
@@ -94,6 +97,7 @@
     <div id="palette-root"></div>
     <div id="ctx-root"></div>
     <div id="notif-root"></div>
+    <div id="changelog-root"></div>
     <div id="account-switch" class="account-switch" hidden>
       <span class="spinner"></span>
       <span class="account-switch-name"></span>

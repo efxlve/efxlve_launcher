@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "فشل تنزيل التحديث.",
   "appUpdate.installFailed": "فشل تثبيت التحديث.",
   "appUpdate.errorShort": "خطأ",
-  "settings.aboutTagline": "مشغّل سطح مكتب سريع ومستقل لمكتبة Epic Games.",
+  "settings.aboutTagline": "مشغل ألعاب مكتبي سريع يركز على الخصوصية وموحد لألعاب Epic Games و GOG والمكتبات الرقمية الحديثة.",
   "settings.aboutDisclaimerTitle": "إشعار قانوني وإخلاء مسؤولية",
-  "settings.aboutDisclaimer": "Efxlve Launcher مشروع مفتوح المصدر مستقل وغير رسمي. ليس تابعًا لـ Epic Games, Inc. ولا معتمدًا منها ولا برعايتها ولا مرتبطًا بها. \"Epic Games\" وشعار Epic Games وEpic Games Store علامات تجارية أو علامات تجارية مسجلة لـ Epic Games, Inc. في الولايات المتحدة الأمريكية وغيرها. كل العلامات التجارية الأخرى ملك لأصحابها.",
-  "settings.aboutOpenSource": "هذا المشروع يقوده المجتمع، وشفاف، ومفتوح المصدر بالكامل. يمكنك المساهمة أو الإبلاغ عن المشكلات أو فحص الشفرة مباشرة على GitHub.",
+  "settings.aboutDisclaimer": "Efxlve Launcher هو مشروع مفتوح المصدر غير رسمي ومستقل. ليس تابعًا لـ Epic Games, Inc. أو CD PROJEKT S.A. أو GOG sp. z o.o. أو Valve Corporation أو Electronic Arts Inc. أو Ubisoft Entertainment. جميع العلامات التجارية هي ملك لأصحابها المعنيين.",
+  "settings.aboutOpenSource": "هذا المشروع شفاف ومفتوح المصدر بالكامل بموجب رخصة جنو العمومية v3.0 (GPL-3.0).",
   "settings.aboutLinksTitle": "الروابط الرسمية والمطوّر",
   "settings.aboutWebsite": "الموقع",
   "settings.aboutGithub": "مستودع GitHub",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "المتجر:",
   "col.allCollections": "المجموعات",
   "col.noCollectionFilter": "كل الألعاب (إلغاء التصفية)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "لا يتجاوز Efxlve Launcher حماية DRM ولا يستضيف ملفات الألعاب أو يوزعها. تتم جميع التنزيلات والمصادقة مباشرة مع خوادم المتاجر الرسمية.",
+  "settings.viewChangelog": "عرض سجل التغييرات",
+  "changelog.title": "ما الجديد",
+  "changelog.current": "الحالي",
+  "changelog.added": "تمت الإضافة",
+  "changelog.improved": "تم التحسين",
+  "changelog.fixed": "تم الإصلاح"
 }

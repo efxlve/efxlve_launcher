@@ -98,6 +98,10 @@ export function updateStatusBar(): void {
   }
   const ver = document.getElementById("statusbar-version");
   if (ver && S.appVersion && !ver.textContent) ver.textContent = `v${S.appVersion}`;
+  const winbarVer = document.getElementById("winbar-version-num");
+  if (winbarVer && S.appVersion && winbarVer.textContent !== `v${S.appVersion}`) {
+    winbarVer.textContent = `v${S.appVersion}`;
+  }
 }
 
 /** Page header: back button state and a title for the current view or open game page. */

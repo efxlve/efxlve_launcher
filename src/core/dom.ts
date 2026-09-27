@@ -34,6 +34,8 @@ export const ctxRoot = document.getElementById("ctx-root") as HTMLElement | null
 export const collectionRoot = document.getElementById("collection-root");
 /** Storage manager modal root. */
 export const storageRoot = document.getElementById("storage-root");
+/** Changelog modal root. */
+export const changelogRoot = document.getElementById("changelog-root");
 
 /** Mark the sidebar game entry that matches the open game page. */
 export function syncSidebarGameActive(): void {

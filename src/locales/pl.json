@@ -1075,10 +1075,10 @@
   "appUpdate.downloadFailed": "Pobieranie aktualizacji nie powiodło się.",
   "appUpdate.installFailed": "Instalacja aktualizacji nie powiodła się.",
   "appUpdate.errorShort": "Błąd",
-  "settings.aboutTagline": "Szybki, niezależny launcher na komputer do biblioteki Epic Games.",
-  "settings.aboutDisclaimerTitle": "Informacja prawna",
-  "settings.aboutDisclaimer": "Efxlve Launcher to niezależny i nieoficjalny projekt open source. Nie jest powiązany, zatwierdzony, sponsorowany ani stowarzyszony z Epic Games, Inc. „Epic Games”, logo Epic Games i Epic Games Store są znakami towarowymi lub zastrzeżonymi znakami towarowymi Epic Games, Inc. w Stanach Zjednoczonych Ameryki i gdzie indziej. Wszystkie inne znaki towarowe należą do ich właścicieli.",
-  "settings.aboutOpenSource": "Ten projekt jest prowadzony przez społeczność, przejrzysty i w pełni open source. Możesz współtworzyć, zgłaszać problemy albo przejrzeć kod na GitHub.",
+  "settings.aboutTagline": "Szybki, zorientowany na prywatność i ujednolicony launcher gier na komputer dla Epic Games, GOG i nowoczesnych bibliotek cyfrowych.",
+  "settings.aboutDisclaimerTitle": "Informacja prawna i zastrzeżenia",
+  "settings.aboutDisclaimer": "Efxlve Launcher to niezależny, społecznościowy i nieoficjalny projekt open-source. Nie jest powiązany, wspierany ani sponsorowany przez Epic Games, Inc., CD PROJEKT S.A., GOG sp. z o.o., Valve Corporation, Electronic Arts Inc. ani Ubisoft Entertainment. Wszelkie znaki towarowe należą do ich prawnych właścicieli.",
+  "settings.aboutOpenSource": "Ten projekt jest przejrzysty i w pełni otwartoźródłowy na licencji GNU General Public License v3.0 (GPL-3.0).",
   "settings.aboutLinksTitle": "Oficjalne linki i autor",
   "settings.aboutWebsite": "Strona",
   "settings.aboutGithub": "Repozytorium GitHub",
@@ -1270,5 +1270,12 @@
   "lib.storeBy": "Sklep:",
   "col.allCollections": "Kolekcje",
   "col.noCollectionFilter": "Wszystkie gry (Wyczyść filtr)",
-  "source.gog": "GOG"
+  "source.gog": "GOG",
+  "settings.aboutDrmNotice": "Efxlve Launcher nie omija zabezpieczeń DRM, nie przechowuje ani nie rozpowszechnia plików gier. Wszystkie pobrania i logowania komunikują się bezpośrednio z oficjalnymi serwerami platform.",
+  "settings.viewChangelog": "Zobacz dziennik zmian",
+  "changelog.title": "Co nowego",
+  "changelog.current": "Aktualna",
+  "changelog.added": "Dodano",
+  "changelog.improved": "Ulepszono",
+  "changelog.fixed": "Naprawiono"
 }

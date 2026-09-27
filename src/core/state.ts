@@ -291,7 +291,7 @@ export const S = {
   gamepadPolling: false,
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
-  appVersion: "0.1.0",
+  appVersion: "0.1.16",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",
