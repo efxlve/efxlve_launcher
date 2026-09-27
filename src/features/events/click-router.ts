@@ -300,8 +300,9 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
+    const store = (t.dataset.store as "epic" | "gog") || S.activeStore || "epic";
     pushNavHistory({ view: "store" });
-    void openStore();
+    void openStore(store);
   } else if (act === "open-profile") {
     openProfile();
   } else if (act === "toggle-notifications") {

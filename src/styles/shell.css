@@ -110,7 +110,9 @@
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-#page-header:not(:has(.page-header-count:not([hidden]))) .page-header-title { flex: 1; }
+.store-switcher { margin-left: 12px; margin-right: auto; }
+.store-switcher[hidden] { display: none !important; }
+#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(.store-switcher:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
 .page-search {
   display: flex; align-items: center; gap: 8px; width: 260px; height: 36px; padding: 0 12px;

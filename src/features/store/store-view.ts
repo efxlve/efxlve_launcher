@@ -139,8 +139,12 @@ export function renderStoreLoadingScreen(): string {
   return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${t("store.starting")}</span></div>`;
 }
 
-export async function openStore(): Promise<void> {
-  await openStoreUrl(EPIC_STORE_URL, "store");
+export const GOG_STORE_URL = "https://www.gog.com/";
+
+export async function openStore(store: "epic" | "gog" = "epic"): Promise<void> {
+  S.activeStore = store;
+  const url = store === "gog" ? GOG_STORE_URL : EPIC_STORE_URL;
+  await openStoreUrl(url, "store");
 }
 
 /** After this long away from the store, its webview is destroyed to free RAM. */

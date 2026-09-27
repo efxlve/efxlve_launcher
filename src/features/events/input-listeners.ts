@@ -50,6 +50,7 @@ import {
   navigateScreenshotLightbox,
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
+import { gogLoginWithCode } from "../auth/gog-auth-actions";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   const target = e.target as HTMLElement | null;
@@ -599,6 +600,10 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       const input = t as HTMLInputElement;
       void epicDoLogin(input.value);
+    } else if (t && t.id === "gog-code") {
+      e.preventDefault();
+      const input = t as HTMLInputElement;
+      void gogLoginWithCode(input.value);
     }
   }
 });

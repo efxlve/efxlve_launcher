@@ -70,6 +70,10 @@
 - [x] Faz 7: `src/features/install/install-dialog.ts` ve `click-router.ts` GOG oyunları için doğrudan var olan klasörü bağlama/içe aktarma (`gog-import-existing`) butonu ve eylemi ekledi.
 - [x] Faz 7: `src/features/events/click-router.ts` Manage sekmesindeki dosya doğrulama eylemini (`manage-verify`) GOG oyunları için `gogVerifyGame`'e bağladı.
 - [x] Faz 7 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (110 test geçti), `npm.cmd run build` (başarılı).
+- [x] Faz 8 (Ayarlar & Mağaza Entegrasyonu): `src/features/accounts/accounts-view.ts` içindeki `renderAccountSettings` hem `epicCard()` hem `gogCard()` çizecek şekilde güncellendi; Ayarlar > Hesap üzerinden doğrudan GOG web girişi, yetkilendirme kodu yapıştırma, kütüphane yenileme ve çıkış yapma bağlandı.
+- [x] Faz 8 (Ayarlar & Mağaza Entegrasyonu): GOG.COM Store entegre edildi — `index.html` kenar çubuğuna GOG Store butonu (`ShoppingBag` ikonuyla), sayfa üst başlığına `[ Epic Games | GOG.COM ]` mağaza geçiş segmenti (`.seg.store-switcher`) eklendi; `openStore("gog" | "epic")` gömülü native child webview'i `https://www.gog.com/` adresine pürüzsüz yönlendiriyor.
+- [x] Faz 8 (Ayarlar & Mağaza Entegrasyonu): `input-listeners.ts` içine `#gog-code` Enter tuşu kısayolu eklendi; `nav.ts` `updateChrome` Epic oturumu yokken GOG hesabı bağlıysa çipte GOG adını gösterecek şekilde zenginleştirildi; 15 dilde `nav.gogStore` ve `nav.gogStoreTitle` yerelleştirildi.
+- [x] Faz 8 doğrulaması: `cargo test` (110 test geçti), `npm.cmd run build` (başarılı, 0 tip/derleme hatası).
 
 ---
 

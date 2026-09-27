@@ -23,7 +23,13 @@ export function updateSidebarActive(): void {
   if (!sidebar) return;
   const gameOpen = Boolean(S.currentModalAppName);
   sidebar.querySelectorAll<HTMLElement>("[data-view], [data-act='open-store']").forEach((el) => {
-    const section = S.view === "store" ? el.dataset.act === "open-store" : el.dataset.view === S.view;
+    let section = false;
+    if (S.view === "store") {
+      const targetStore = el.dataset.store || "epic";
+      section = el.dataset.act === "open-store" && (S.activeStore || "epic") === targetStore;
+    } else {
+      section = el.dataset.view === S.view;
+    }
     el.classList.toggle("active", section && !gameOpen);
   });
   syncSidebarGameActive();
@@ -93,7 +99,7 @@ export function updatePageHeader(): void {
     const game = S.currentModalAppName ? S.epicSummariesMap.get(S.currentModalAppName)?.title : null;
     const titles: Partial<Record<View, string>> = {
       library: t("nav.library"),
-      store: t("nav.store"),
+      store: S.activeStore === "gog" ? t("nav.gogStore") : t("nav.store"),
       downloads: t("nav.downloads"),
       settings: t("nav.settings"),
       profile: t("palette.cmdProfile"),
@@ -103,6 +109,15 @@ export function updatePageHeader(): void {
     if (title.textContent !== next) title.textContent = next;
   }
   syncPageGameCount();
+  const switcher = document.getElementById("store-switcher");
+  if (switcher) {
+    switcher.hidden = S.view !== "store";
+    if (S.view === "store") {
+      switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+        btn.classList.toggle("active", (btn.dataset.store || "epic") === (S.activeStore || "epic"));
+      });
+    }
+  }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
 }
@@ -187,18 +202,19 @@ export function updateChrome(): void {
   updateStatusBar();
   const acc = document.getElementById("account");
   if (acc) {
-    // Signed in: the account chip opens the profile; signed out: the store accounts page.
+    // Signed in: the account chip opens the profile (if Epic) or accounts page; signed out: the store accounts page.
+    const hasAccount = Boolean(S.epicAccount || S.gogAccount);
     acc.dataset.view = S.epicAccount ? "profile" : "accounts";
     acc.classList.toggle("active", S.view === "profile" || S.view === "accounts");
-    const name = S.epicAccount || t("nav.signIn");
-    const customAvatar = S.epicAccount ? getCustomAvatar() : null;
+    const name = S.epicAccount || S.gogAccount || t("nav.signIn");
+    const customAvatar = S.epicAccount ? getCustomAvatar() : (S.gogAccountId ? getCustomAvatar(S.gogAccountId) : null);
     const avatarToken = customAvatar ? `${customAvatar.length}:${customAvatar.slice(0, 32)}` : "none";
-    const acctState = `${S.epicAccount || ""}:${avatarToken}`;
+    const acctState = `${name}:${avatarToken}`;
 
     if (acc.dataset.acctState !== acctState) {
       acc.dataset.acctState = acctState;
-      if (S.epicAccount) {
-        const initial = (S.epicAccount.trim()[0] || "?").toUpperCase();
+      if (hasAccount) {
+        const initial = (name.trim()[0] || "?").toUpperCase();
         acc.innerHTML =
           (customAvatar
             ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(customAvatar)}" alt="" /></span>`
@@ -211,9 +227,9 @@ export function updateChrome(): void {
         createIcons({ icons: { CircleUserRound } });
       }
     }
-    acc.classList.toggle("logged", !!S.epicAccount);
-    acc.title = S.epicAccount
-      ? t("nav.profileTip", { name })
+    acc.classList.toggle("logged", hasAccount);
+    acc.title = hasAccount
+      ? (S.epicAccount ? t("nav.profileTip", { name }) : name)
       : t("nav.loginTip");
   }
 }
