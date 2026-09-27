@@ -14,8 +14,8 @@
 | **Faz 1** | Rust `gogdl` Backend İskeleti & REST İstemcisi | ✅ Tamamlandı | `cargo check` + `cargo test` (107 test geçti) |
 | **Faz 2** | GOG Auth & Accounts Sayfası | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
 | **Faz 3** | Kütüphane Görünümü & Birleşik Render | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
-| **Faz 4** | İndirme & Kurulum Yönetimi | 🔄 Başlatılıyor | `cargo check` + `npm.cmd run build` |
-| **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ⏳ Bekliyor | `npm.cmd run build` |
+| **Faz 4** | İndirme & Kurulum Yönetimi | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
+| **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | 🔄 Sıradaki | `npm.cmd run build` |
 | **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | ⏳ Bekliyor | `npm.cmd run build` |
 | **Faz 7** | Import, Repair & Kaldırma | ⏳ Bekliyor | `cargo check` |
 
@@ -45,6 +45,13 @@
 - [x] Faz 3: `syncLibraryHeadingCount` toplam oyun sayısını her iki mağaza toplamı olarak güncelledi.
 - [x] Faz 3: `src/features/events/click-router.ts` içine `source-filter` click eylemi bağlandı.
 - [x] Faz 3 doğrulaması: `npm.cmd run build` (başarılı).
+- [x] Faz 4: `src-tauri/src/gogdl/paths.rs` içine `ensure_binary` (GitHub Releases üzerinden gogdl.exe otomatik indirme) ve `installed_json_path` eklendi.
+- [x] Faz 4: `src-tauri/src/gogdl/cache.rs` içine gogdl uyumlu `46899977096215655` auth map yapısı ve `load_installed_games`/`save_installed_games` eklendi.
+- [x] Faz 4: `src-tauri/src/gogdl/transfers.rs` oluşturuldu: `gogdl download` süreci, CRLF/CR stderr akışı parser (`= Progress:`, `ETA:`, `+ Download`, `+ Disk`), 250ms rAF-dostu IPC emit, iptal ve `goggame-<id>.info` tespiti ile yerel kayıt.
+- [x] Faz 4: `src-tauri/src/gogdl/commands.rs` içinde `gog_cached_library` ve `gog_list_games` yerel kurulum durumlarını (`installed.json`) birleştirecek şekilde zenginleştirildi.
+- [x] Faz 4: `src/core/selectors.ts` (`summaryOf`) ve `src/core/game-view.ts` (`patchLibraryCardDom`) GOG oyunları için tam destek kazandı.
+- [x] Faz 4: `src/features/install/install-dialog.ts` ve `src/features/events/click-router.ts` GOG oyunlarını `gogInstallGame` ve `gogCancelDownload` komutlarına bağladı.
+- [x] Faz 4 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (107 test geçti), `npm.cmd run build` (sıfır hata).
 
 ---
 

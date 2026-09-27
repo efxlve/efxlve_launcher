@@ -11,7 +11,7 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { rawOf } from "./selectors";
+import { rawOf, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
@@ -68,7 +68,7 @@ export function libraryDlBar(appName: string, p: number | null): string {
  * grid — a full library innerHTML is treated as a bug.
  */
 export function patchLibraryCardDom(appName: string): boolean {
-  const s = S.epicSummariesMap.get(appName);
+  const s = summaryOf(appName);
   const items = document.querySelectorAll<HTMLElement>(`[data-lib-item="${appName}"]`);
   if (!s || items.length === 0) return false;
   const p = epicDlProgress(appName);

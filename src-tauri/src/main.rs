@@ -1862,7 +1862,9 @@ fn main() {
             gogdl::commands::gog_logout,
             gogdl::commands::gog_setup_status,
             gogdl::commands::gog_cached_library,
-            gogdl::commands::gog_list_games
+            gogdl::commands::gog_list_games,
+            gogdl::transfers::gog_install_game,
+            gogdl::transfers::gog_cancel_download
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");

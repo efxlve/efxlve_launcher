@@ -36,6 +36,7 @@ import {
   openGogLoginPage,
   syncGogLibrary,
 } from "../auth/gog-auth-actions";
+import { gogCancelDownload } from "../../gog";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -805,7 +806,11 @@ document.addEventListener("click", (e) => {
     const el = e.target as HTMLElement;
     if (el === t) closeInstallDialog();
   } else if (act === "epic-cancel" && id) {
-    void epicCancel(id);
+    if (id.startsWith("gog::")) {
+      void gogCancelDownload(id);
+    } else {
+      void epicCancel(id);
+    }
   } else if (act === "epic-uninstall" && id) {
     // Close first so a finished uninstall cannot be clicked again while the dialog stays up.
     closeManagePopup();

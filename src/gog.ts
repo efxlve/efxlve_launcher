@@ -62,6 +62,14 @@ export async function gogListGames(): Promise<GogGameSummary[]> {
   return invoke<GogGameSummary[]>("gog_list_games");
 }
 
+export async function gogInstallGame(gameId: string, installPath?: string): Promise<void> {
+  return invoke<void>("gog_install_game", { gameId, installPath: installPath ?? null });
+}
+
+export async function gogCancelDownload(gameId: string): Promise<void> {
+  return invoke<void>("gog_cancel_download", { gameId });
+}
+
 /** Convert a raw GOG summary into the unified LibraryItem format. */
 export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
   return {

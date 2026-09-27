@@ -11,10 +11,11 @@ import { epicInstall, epicPlay } from "../../core/epic-actions";
 import { installRoot } from "../../core/dom";
 import { epicArt, epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { rawOf } from "../../core/selectors";
+import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
+import { gogInstallGame } from "../../gog";
 import {
   epicDefaultInstallDir,
   epicGetAutoDesktopShortcut,
@@ -54,8 +55,24 @@ async function resolveDefaultDir(): Promise<string> {
 
 /** Opens the dialog and hydrates sizes, folder name and per-game preferences. */
 export async function openInstallDialog(appName: string): Promise<void> {
-  const s = S.epicSummariesMap.get(appName);
+  const isGog = appName.startsWith("gog::");
+  const s = summaryOf(appName);
   if (!s || epicDlProgress(appName) !== null) return;
+
+  if (isGog) {
+    S.installDialogAppName = appName;
+    S.installDialogFolder = s.title.replace(/[<>:"/\\|?*]+/g, "").trim() || appName.replace("gog::", "");
+    S.installDialogDownloadSize = s.installSize || 0;
+    S.installDialogDiskSize = s.installSize || 0;
+    S.installDialogAutoUpdate = false;
+    S.installDialogShortcut = true;
+    S.installDialogHasOptions = false;
+    S.installDialogLoading = false;
+    S.installDialogDir = S.epicSettingsCache?.install_dir || S.epicDefaultDir || "C:\\Games\\GOG";
+    renderInstallDialog();
+    return;
+  }
+
   const g = rawOf(appName);
   const partner = getThirdPartyLauncher(g);
   if (requiresThirdPartyLauncher(partner)) {
@@ -110,7 +127,7 @@ export async function openInstallDialog(appName: string): Promise<void> {
 export function renderInstallDialog(): void {
   const appName = S.installDialogAppName;
   if (!installRoot || !appName) return;
-  const s = S.epicSummariesMap.get(appName);
+  const s = summaryOf(appName);
   if (!s) return;
 
   const loading = S.installDialogLoading;
@@ -198,6 +215,13 @@ export async function confirmInstall(): Promise<void> {
   const input = document.getElementById("install-dir-input") as HTMLInputElement | null;
   const dir = (input?.value ?? S.installDialogDir).trim() || null;
   const hasOptions = S.installDialogHasOptions;
+
+  if (appName.startsWith("gog::")) {
+    closeInstallDialog();
+    const finalDir = dir ? joinPath(dir, S.installDialogFolder) : undefined;
+    await gogInstallGame(appName, finalDir);
+    return;
+  }
 
   try {
     const st = await epicGetGameSettings(appName);

@@ -43,6 +43,7 @@ import { modalRoot } from "../../core/dom";
 import { refreshEpicInstalled } from "../../core/epic-actions";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
+import { libraryItemOf, rebuildAllGamesMap } from "../../core/selectors";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall } from "../../core/recent";
@@ -193,7 +194,7 @@ export async function initApp(hooks: {
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
-      const title = S.epicSummariesMap.get(id)?.title ?? id;
+      const title = libraryItemOf(id)?.title ?? S.epicSummariesMap.get(id)?.title ?? id;
       const now = performance.now();
       const sampleBytes = downloadedBytes ?? (
         totalBytes && totalBytes > 0
@@ -292,7 +293,15 @@ export async function initApp(hooks: {
         if (S.view === "downloads") render();
         else if (S.view === "library") patchLibraryCardDom(id);
       });
-      if (S.epicSummaries.some((s) => s.appName === id)) {
+      if (id.startsWith("gog::")) {
+        const cleanId = id.slice(5);
+        const item = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(id);
+        if (item) {
+          item.installed = true;
+          rebuildAllGamesMap();
+          if (S.view === "library") patchLibraryCardDom(id);
+        }
+      } else if (S.epicSummaries.some((s) => s.appName === id)) {
         void refreshEpicInstalled().then(() => {
           if (S.view === "library") patchLibraryCardDom(id);
         });
@@ -314,7 +323,7 @@ export async function initApp(hooks: {
       S.diskHistory.fill(0);
       stopSpeedChartTimer();
       updateBadge();
-      const failTitle = S.epicSummaries.find((s) => s.appName === event.payload.id)?.title ?? event.payload.id;
+      const failTitle = libraryItemOf(event.payload.id)?.title ?? S.epicSummaries.find((s) => s.appName === event.payload.id)?.title ?? event.payload.id;
       pushNotification({
         kind: "error",
         title: t("notif.downloadFailed", { title: failTitle }),

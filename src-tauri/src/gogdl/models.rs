@@ -13,7 +13,7 @@ pub struct GogAuthTokens {
     pub user_id: String,
     #[serde(default)]
     pub session_id: Option<String>,
-    #[serde(default)]
+    #[serde(default, rename = "loginTime")]
     pub login_time: Option<f64>,
 }
 

@@ -103,8 +103,27 @@ export function setGogSummaries(items: LibraryItem[]): void {
   S.libraryDataRev++;
 }
 
-/** O(1) summary lookup by app name (Epic). */
+/** O(1) summary lookup by app name (Epic or GOG). */
 export function summaryOf(appName: string): EpicSummary | undefined {
+  if (appName.startsWith("gog::")) {
+    const cleanId = appName.slice(5);
+    const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
+    if (g) {
+      return {
+        appName: g.key,
+        title: g.title,
+        version: g.version,
+        cover: g.coverUrl,
+        description: g.description,
+        dlcCount: g.dlcCount,
+        installed: g.installed,
+        installPath: g.installPath,
+        installSize: g.installSize,
+        installedVersion: g.installedVersion,
+        updateAvailable: g.updateAvailable,
+      };
+    }
+  }
   return S.epicSummariesMap.get(appName);
 }
 
