@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "切换账户",
   "accounts.manageAccounts": "管理账户",
   "nav.switchAccounts": "账户切换器",
-  "settings.installedIconTitle": "已安装游戏图标",
-  "settings.installedIconDesc": "在已安装游戏的标题旁显示电脑桌面图标（GOG 风格）。"
+  "settings.installedIconTitle": "在封面上显示播放按钮",
+  "settings.installedIconDesc": "在已安装游戏的标题旁显示快速启动的“开始”按钮。"
 }

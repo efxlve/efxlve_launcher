@@ -1306,6 +1306,6 @@
   "accounts.switchAccountTitle": "Hesap Değiştir",
   "accounts.manageAccounts": "Hesapları Yönet",
   "nav.switchAccounts": "Hesap Değiştirici",
-  "settings.installedIconTitle": "Yüklü oyun ikonu",
-  "settings.installedIconDesc": "Yüklü oyunların adının yanında bilgisayar/masaüstü ikonu göster (GOG tarzı)."
+  "settings.installedIconTitle": "Kapaklarda Oyna butonu",
+  "settings.installedIconDesc": "Yüklü oyunların başlık satırında doğrudan oyunu başlatabileceğiniz bir Oyna butonu göster."
 }

@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "切換帳戶",
   "accounts.manageAccounts": "管理帳戶",
   "nav.switchAccounts": "帳戶切換器",
-  "settings.installedIconTitle": "已安裝遊戲圖示",
-  "settings.installedIconDesc": "在已安裝遊戲的標題旁顯示電腦桌面圖示（GOG 風格）。"
+  "settings.installedIconTitle": "在封面上顯示遊玩按鈕",
+  "settings.installedIconDesc": "在已安裝遊戲的標題旁顯示快速啟動的「遊玩」按鈕。"
 }

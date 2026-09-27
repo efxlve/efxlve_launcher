@@ -308,14 +308,14 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
-  const showInstalledIcon = S.showInstalledIcon && s.installed;
-  const installedIconHtml = showInstalledIcon
-    ? `<span class="pcard-installed-icon" title="${t("lib.installed")}">${icon("monitor", 12)}</span>`
+  const showInstalledPlay = S.showInstalledIcon && s.installed;
+  const installedPlayHtml = showInstalledPlay
+    ? `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${s.appName}" title="${t("palette.play")}">${icon("play", 10)}</button>`
     : "";
   const titleRow = S.showCoverTitles
-    ? `<span class="pcard-title-row"><span class="pcard-title">${title}</span>${installedIconHtml}</span>`
-    : (showInstalledIcon ? `<span class="pcard-title-row"><span class="pcard-title"></span>${installedIconHtml}</span>` : "");
-  const caption = (S.showCoverTitles || Boolean(storesLabel) || showInstalledIcon)
+    ? `<span class="pcard-title-row"><span class="pcard-title">${title}</span>${installedPlayHtml}</span>`
+    : (showInstalledPlay ? `<span class="pcard-title-row"><span class="pcard-title"></span>${installedPlayHtml}</span>` : "");
+  const caption = (S.showCoverTitles || Boolean(storesLabel) || showInstalledPlay)
     ? `<div class="pcard-caption">
         ${titleRow}
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
@@ -342,14 +342,13 @@ function epicListRow(s: EpicSummary): string {
   const isGog = s.appName.startsWith("gog::");
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
-  const showInstalledIcon = S.showInstalledIcon && s.installed;
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
-        <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${showInstalledIcon ? `<span class="pcard-installed-icon" title="${t("lib.installed")}">${icon("monitor", 12)}</span>` : ""}${libraryCardBadge(s)}</div>
+        <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${metaText}</div>
       </div>
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>

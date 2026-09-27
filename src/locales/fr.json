@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "Changer de compte",
   "accounts.manageAccounts": "Gérer les comptes",
   "nav.switchAccounts": "Sélecteur de compte",
-  "settings.installedIconTitle": "Icône de jeu installé",
-  "settings.installedIconDesc": "Affiche une icône d'ordinateur à côté du titre des jeux installés (style GOG)."
+  "settings.installedIconTitle": "Bouton Jouer sur les jaquettes",
+  "settings.installedIconDesc": "Affiche un bouton Jouer rapide à côté du titre des jeux installés."
 }

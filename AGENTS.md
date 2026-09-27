@@ -128,10 +128,11 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
-- **Kütüphanede Yüklü Oyun İkonu (GOG Tarzı Masaüstü İkonu) & Yedekleme Butonu Dili Düzeltmesi:**
-  1. **Opsiyonel Yüklü Oyun İkonu (`.pcard-installed-icon`):** Kullanıcı geri bildirimi doğrultusunda, GOG Galaxy estetiğinde olduğu gibi kütüphanedeki yüklü oyunların başlık satırının hemen sağında küçük masaüstü/bilgisayar ikonu (`icon("monitor", 12)`) gösterilmesi sağlandı. Ayarlar > Görünüm sekmesine "Yüklü oyun ikonu" / "Installed game icon" seçeneği eklendi (`INSTALLED_ICON_KEY`, `S.showInstalledIcon`, varsayılan kapalı). Liste modunda da başlık yanına entegre edildi.
-  2. **Yedekleme Butonu Dili Düzeltmesi (i18n):** Oyun yönetim sekmesinde yedek alma butonunun işlem sırasında ve sonrasında dilden bağımsız olarak sabit Türkçe ("Yedekleniyor…", "Yedek Al") kalmasına neden olan açık giderildi; `i18nT("manage.backup")` ve `i18nT("backup.backingUp")` dinamik çevirilerine bağlandı.
-  3. **15 Dil Eşliği:** `settings.installedIconTitle` ve `settings.installedIconDesc` 15 dilde tanımlandı.
+- **Kütüphanede Yüklü Oyunlarda Oyna Butonu (`.pcard-play-btn`) & Kurulu Olmayan Kapakların Koyulaştırılması:**
+  1. **Kapak Başlık Satırında Oyna Butonu:** Yüklü oyunların başlık satırının hemen sağında, tıklandığında oyunu doğrudan başlatan (`data-act="epic-play"`) şık, yuvarlak bir Oyna butonu (`.pcard-play-btn`, `icon("play", 10)`) yerleştirildi. Hover anında beyaz vurgu (`--accent`) ve dokunsal mikro geri bildirim alır. Ayarlar > Görünüm sekmesindeki seçenek "Kapaklarda Oyna butonu" / "Play button on covers" olarak güncellendi (varsayılan kapalı).
+  2. **Kurulu Olmayan Kapak Kontrastı (Dimming):** Geri bildirim doğrultusunda ızgara görünümünde kurulu olmayan oyunların kapak opaklığı `0.60`'tan `0.52`'ye çekilerek renkli kapak estetiği bozulmadan kurulu oyunların çok daha belirgin şekilde öne çıkması sağlandı.
+  3. **Yedekleme Butonu Dili Düzeltmesi (i18n):** Oyun yönetim sekmesinde yedek alma butonunun işlem sırasında ve sonrasında dilden bağımsız olarak sabit Türkçe ("Yedekleniyor…", "Yedek Al") kalmasına neden olan açık giderildi; `i18nT("manage.backup")` ve `i18nT("backup.backingUp")` dinamik çevirilerine bağlandı.
+  4. **15 Dil Eşliği:** `settings.installedIconTitle` ve `settings.installedIconDesc` 15 dilde "Play button on covers" olarak güncellendi.
 
 - **Kenar Çubuğu Çoklu Platform Hesap Değiştirici & Açılır Menü (Sidebar Multi-Platform Account Switcher Popover):**
   1. **Alt Bar Butonu (`.sb-switcher-btn`):** Sol kenar çubuğunun en altına (`#sb-account-host`), Son Oynananlar listesinin hemen altına yerleşen modern, Discord/Steam tarzı hesap paneli eklendi. Aktif kullanıcının avatarını, kullanıcı adını, bağlı mağazaları (`Epic · GOG`, `Epic Games`, `GOG.COM` veya `Accounts`) ve açılış yönünü belirten chevron ikonunu (`icon("chevron-up", 14)`) gösterir.

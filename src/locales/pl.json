@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "Przełącz konto",
   "accounts.manageAccounts": "Zarządzaj kontami",
   "nav.switchAccounts": "Przełącznik kont",
-  "settings.installedIconTitle": "Ikona zainstalowanej gry",
-  "settings.installedIconDesc": "Pokaż ikonę komputera obok tytułu zainstalowanych gier (styl GOG)."
+  "settings.installedIconTitle": "Przycisk Graj na okładkach",
+  "settings.installedIconDesc": "Pokaż przycisk szybkiego uruchamiania obok tytułu zainstalowanych gier."
 }

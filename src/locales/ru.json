@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "Сменить аккаунт",
   "accounts.manageAccounts": "Управление аккаунтами",
   "nav.switchAccounts": "Переключатель аккаунтов",
-  "settings.installedIconTitle": "Значок установленной игры",
-  "settings.installedIconDesc": "Показывать значок ПК рядом с названием установленных игр (в стиле GOG)."
+  "settings.installedIconTitle": "Кнопка «Играть» на обложках",
+  "settings.installedIconDesc": "Показывать кнопку быстрого запуска рядом с названием установленных игр."
 }

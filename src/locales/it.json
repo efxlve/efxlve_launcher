@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "Cambia account",
   "accounts.manageAccounts": "Gestisci account",
   "nav.switchAccounts": "Selettore account",
-  "settings.installedIconTitle": "Icona gioco installato",
-  "settings.installedIconDesc": "Mostra un'icona desktop accanto al titolo per i giochi installati (stile GOG)."
+  "settings.installedIconTitle": "Pulsante Gioca sulle copertine",
+  "settings.installedIconDesc": "Mostra un pulsante Gioca rapido accanto al titolo dei giochi installati."
 }

@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "تبديل الحساب",
   "accounts.manageAccounts": "إدارة الحسابات",
   "nav.switchAccounts": "مبدّل الحسابات",
-  "settings.installedIconTitle": "أيقونة اللعبة المثبتة",
-  "settings.installedIconDesc": "إظهار أيقونة شاشة كمبيوتر بجانب عنوان الألعاب المثبتة (نمط GOG)."
+  "settings.installedIconTitle": "زر تشغيل على الأغلفة",
+  "settings.installedIconDesc": "إظهار زر تشغيل سريع بجانب عنوان الألعاب المثبتة في المكتبة."
 }

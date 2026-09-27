@@ -1306,6 +1306,6 @@
   "accounts.switchAccountTitle": "Switch Account",
   "accounts.manageAccounts": "Manage Accounts",
   "nav.switchAccounts": "Account Switcher",
-  "settings.installedIconTitle": "Installed game icon",
-  "settings.installedIconDesc": "Show a desktop PC icon next to the title for installed games (GOG style)."
+  "settings.installedIconTitle": "Play button on covers",
+  "settings.installedIconDesc": "Show a quick Play button next to the title for installed games in the library."
 }

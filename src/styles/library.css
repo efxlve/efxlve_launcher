@@ -108,7 +108,7 @@
 }
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
-.pcard.not-installed .pcard-art > img { opacity: 0.6; transition: opacity var(--ease), filter var(--ease); }
+.pcard.not-installed .pcard-art > img { opacity: 0.52; transition: opacity var(--ease), filter var(--ease); }
 .pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
 .pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
@@ -141,16 +141,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pcard-installed-icon {
+.pcard-play-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: var(--text-3);
-  line-height: 1;
-}
-.pcard:hover .pcard-installed-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--surface-2);
   color: var(--text-2);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: background-color var(--ease), color var(--ease), transform var(--ease), border-color var(--ease);
+}
+.pcard-play-btn svg {
+  margin-left: 1px;
+}
+.pcard-play-btn:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+}
+.pcard-play-btn:active {
+  transform: scale(0.94);
 }
 .pcard-stores {
   font-size: 11px;

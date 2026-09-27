@@ -1292,6 +1292,6 @@
   "accounts.switchAccountTitle": "Konto wechseln",
   "accounts.manageAccounts": "Konten verwalten",
   "nav.switchAccounts": "Kontowechsler",
-  "settings.installedIconTitle": "Symbol für installierte Spiele",
-  "settings.installedIconDesc": "Zeigt neben dem Titel installierter Spiele ein Desktop-Symbol an (GOG-Stil)."
+  "settings.installedIconTitle": "Play-Taste auf Covern",
+  "settings.installedIconDesc": "Zeigt neben dem Titel installierter Spiele eine Schnellstart-Taste an."
 }
