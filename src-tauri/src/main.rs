@@ -1897,6 +1897,7 @@ fn main() {
             gogdl::commands::gog_setup_status,
             gogdl::commands::gog_cached_library,
             gogdl::commands::gog_list_games,
+            gogdl::commands::gog_get_game_details,
             gogdl::transfers::gog_install_game,
             gogdl::transfers::gog_cancel_download,
             gogdl::transfers::gog_uninstall_game,

@@ -1262,6 +1262,7 @@
   "drawer.loadingAbout": "Loading description…",
   "drawer.wikiSource": "No data from {store}. Current source: Wikipedia.",
   "drawer.sourceEpic": "Source: Epic Games Store",
+  "drawer.sourceGog": "Source: GOG",
   "common.unknownError": "Unknown error",
   "gog.webLogin": "GOG Web Login",
   "gog.pastePlaceholder": "Paste the authorization code or redirect URL here...",

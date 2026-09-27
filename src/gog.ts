@@ -90,6 +90,21 @@ export async function gogVerifyGame(gameId: string): Promise<string> {
   return invoke<string>("gog_verify_game", { gameId });
 }
 
+export interface GogGameDetails {
+  game_id: string;
+  title: string;
+  description: string | null;
+  developer: string | null;
+  publisher: string | null;
+  hero_url: string | null;
+  slug: string | null;
+  screenshots: string[];
+}
+
+export async function gogGetGameDetails(gameId: string): Promise<GogGameDetails> {
+  return invoke<GogGameDetails>("gog_get_game_details", { gameId });
+}
+
 /** Convert a raw GOG summary into the unified LibraryItem format. */
 export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
   return {
@@ -104,7 +119,7 @@ export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
     installPath: g.install_path,
     installSize: g.install_size,
     coverUrl: g.cover_url ? g.cover_url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg") : null,
-    heroUrl: g.hero_url || (g.cover_url ? g.cover_url.replace("_glx_vertical_cover.jpg", "_product_card_v2_mobile_slider_639.jpg") : null),
+    heroUrl: g.hero_url || (g.cover_url ? g.cover_url.replace("_glx_vertical_cover.jpg", "_glx_bg_top_padding_7.jpg").replace("_product_card_v2_mobile_slider_639.jpg", "_glx_bg_top_padding_7.jpg") : null),
     description: g.description || "",
     updateAvailable: false,
     cloudSavesSupported: g.cloud_saves_supported,

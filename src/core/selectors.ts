@@ -244,6 +244,23 @@ export function epicWideArt(s: EpicSummary): string | null {
   if (customHero) return customHero;
   const cached = wideArtCache.get(s.appName);
   if (cached !== undefined) return cached;
+
+  if (s.appName.startsWith("gog::")) {
+    const rawId = s.appName.slice(5);
+    const item = S.gogSummariesMap.get(rawId) || S.allGamesMap.get(s.appName);
+    if (item?.heroUrl && !item.heroUrl.includes("_glx_vertical_cover")) {
+      wideArtCache.set(s.appName, item.heroUrl);
+      return item.heroUrl;
+    }
+    if (item?.coverUrl) {
+      const hero = item.coverUrl
+        .replace("_glx_vertical_cover.jpg", "_glx_bg_top_padding_7.jpg")
+        .replace("_product_card_v2_mobile_slider_639.jpg", "_glx_bg_top_padding_7.jpg");
+      wideArtCache.set(s.appName, hero);
+      return hero;
+    }
+  }
+
   let url: string | null = s.cover;
   const imgs = rawOf(s.appName)?.metadata?.keyImages;
   if (Array.isArray(imgs)) {

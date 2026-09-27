@@ -1262,6 +1262,7 @@
   "drawer.loadingAbout": "Açıklama yükleniyor…",
   "drawer.wikiSource": "{store}'dan veriler alınamadı. Şu anki kaynak: Wikipedia.",
   "drawer.sourceEpic": "Kaynak: Epic Games Store",
+  "drawer.sourceGog": "Kaynak: GOG",
   "common.unknownError": "Bilinmeyen hata",
   "gog.webLogin": "GOG Web Girişi",
   "gog.pastePlaceholder": "Yetkilendirme kodunu veya yönlendirme URL'sini buraya yapıştırın...",

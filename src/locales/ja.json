@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "説明を読み込み中…",
   "drawer.wikiSource": "{store} からデータを取得できませんでした。現在のソース: Wikipedia。",
   "drawer.sourceEpic": "ソース: Epic Games Store",
+  "drawer.sourceGog": "出典: GOG",
   "common.unknownError": "不明なエラー"
 }

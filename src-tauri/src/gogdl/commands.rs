@@ -2,12 +2,16 @@
 
 use tauri::{AppHandle, command};
 
-use super::api_client::{exchange_auth_code, fetch_user_library, get_user_profile, refresh_tokens};
+use super::api_client::{
+    exchange_auth_code, fetch_game_details, fetch_user_library, get_user_profile, refresh_tokens,
+};
 use super::cache::{
     clear_auth_tokens, load_auth_tokens, load_cached_library, load_installed_games,
     save_auth_tokens, save_cached_library,
 };
-use super::models::{GogAuthStatus, GogCachedLibrary, GogGameSummary, GogSetupStatus};
+use super::models::{
+    GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary, GogSetupStatus,
+};
 use super::paths::{downloaded_binary, resolve_binary};
 use super::{cmd_error, GogError};
 
@@ -134,4 +138,13 @@ pub async fn gog_list_games(app: AppHandle) -> Result<Vec<GogGameSummary>, Strin
     let _ = save_cached_library(&app, None, Some(&tokens.user_id), &enriched);
 
     Ok(enriched)
+}
+
+/// Retrieves detailed game metadata (official description, 2560px background, developers, and screenshots) on demand.
+#[command]
+pub async fn gog_get_game_details(
+    _app: AppHandle,
+    game_id: String,
+) -> Result<GogGameDetails, String> {
+    fetch_game_details(&game_id).await.map_err(cmd_error)
 }

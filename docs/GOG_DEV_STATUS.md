@@ -77,6 +77,12 @@
 - [x] Faz 9 (Dikey Kapak İyileştirmesi & Çift Sürüm Yönetimi): GOG kapakları `_glx_vertical_cover.jpg` (~0.71 en-boy oranı, tam dikey kutu kapağı) olarak güncellendi; yatay banner'lar hero görseline aktarıldı. Disk üzerindeki mevcut anlık görüntü önbelleği geriye dönük uyumlulukla otomatik taşındı.
 - [x] Faz 9 (Edition-Duyarlı Kütüphane Birleştirmesi): `canonicalGameTitle` fonksiyonu ile "Control" ve "Control Ultimate Edition" gibi sürüm ekine sahip oyunlar tespit edilip kütüphanede (`Tüm Mağazalar` görünümünde) tekil kart olarak birleştirildi (kurulu sürüm öncelikli olarak gösterilir).
 - [x] Faz 9 (Oyun Detay Sayfasında Sürüm Değiştirici): `drawer-view.ts` içine birden fazla mağazada bulunan oyunlar için aksiyon butonlarının hemen yanında sürüm geçiş segmenti (`.gp-version-switch`, `[ Epic Games | GOG ]`) entegre edildi. Kullanıcı tek tıkla oyunun Epic veya GOG kopyasına geçip ilgili sürümü kurabilir veya başlatabilir. 15 dilde `drawer.version` ve `drawer.switchVersion` yerelleştirildi.
+- [x] Faz 10 (GOG Detay Sayfası & Yüksek Çözünürlüklü Veri Desteği):
+  - Rust backend'e `gog_get_game_details` komutu eklendi: `api.gog.com/products/{id}` ve `api.gog.com/v2/games/{id}` servislerinden resmi mağaza açıklaması, 2560px panoramik hero arka planı, gerçek geliştirici ve yayıncı bilgisi çekilir.
+  - `epicWideArt` artık GOG oyunları için 342px dikey kapağı ekrana germez; doğrudan 1600x650 / 2560x655 panoramik görsellere bağlanır (`_glx_bg_top_padding_7.jpg` ve `images.background`).
+  - Geliştirici alanındaki "Action" gibi kategori hataları resmi stüdyo adıyla (ör. Remedy Entertainment) değiştirildi.
+  - Wikipedia entegrasyonundaki `is_disambiguation` filtresi geliştirilerek anlam ayrımı sayfaları ("şu anlamlara gelebilir...") ayıklandı ve doğrudan video oyunu makalesine yönlendirildi.
+  - `aboutSourceText` GOG oyunları için "Kaynak: GOG" olarak ayrıştırıldı ve 15 dile çevrildi.
 
 ---
 

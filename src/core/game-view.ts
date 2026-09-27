@@ -139,7 +139,10 @@ export function epicArt(s: EpicSummary): string {
   const custom = S.customCovers[s.appName];
   if (custom) return `<img src="${esc(custom)}" alt="" loading="lazy" decoding="async" />`;
   const g = rawOf(s.appName);
-  const url = g ? epicPortrait(g) : s.cover;
+  let url = g ? epicPortrait(g) : s.cover;
+  if (url && url.includes("_product_card_v2_mobile_slider_639.jpg")) {
+    url = url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg");
+  }
   if (url) return `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`;
   return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
 }

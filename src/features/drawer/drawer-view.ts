@@ -22,6 +22,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { gogGetGameDetails } from "../../gog";
 
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
@@ -165,11 +166,12 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
   }
 }
 
-/** Source note under the description: Epic's store, or the Wikipedia fallback. */
-function aboutSourceText(epicDesc: string, wikiText: string): string {
-  return !epicDesc && wikiText
-    ? t("drawer.wikiSource", { store: "Epic Games Store" })
-    : t("drawer.sourceEpic");
+/** Source note under the description: Epic's/GOG's store, or the Wikipedia fallback. */
+function aboutSourceText(storeDesc: string, wikiText: string, isGog = false): string {
+  const storeName = isGog ? "GOG" : "Epic Games Store";
+  return !storeDesc && wikiText
+    ? t("drawer.wikiSource", { store: storeName })
+    : (isGog ? t("drawer.sourceGog") : t("drawer.sourceEpic"));
 }
 
 /** Paints the About box and its source note from the current sources. */
@@ -177,14 +179,14 @@ function paintAboutText(s: EpicSummary): void {
   if (S.currentModalAppName !== s.appName) return;
   const descEl = document.getElementById("hub-desc-text");
   if (!descEl) return;
-  const epicDesc = epicDescription(s);
+  const storeDesc = epicDescription(s);
   const wikiText = aboutCache.get(aboutKey(s.appName)) || "";
-  const text = epicDesc || wikiText;
+  const text = storeDesc || wikiText;
   descEl.innerHTML = text ? aboutMarkup(text) : `<p>${t("drawer.noDescription")}</p>`;
   const srcEl = document.getElementById("hub-desc-source");
   if (srcEl) {
     srcEl.hidden = !text;
-    srcEl.textContent = aboutSourceText(epicDesc, wikiText);
+    srcEl.textContent = aboutSourceText(storeDesc, wikiText, s.appName.startsWith("gog::"));
   }
 }
 
@@ -216,6 +218,29 @@ function ensureOverviewData(s: EpicSummary): void {
       .catch(() => {})
       .finally(() => { S.loadingCriticFor = null; });
   }
+
+  // Fetch official GOG metadata on demand
+  if (appName.startsWith("gog::")) {
+    const rawId = appName.slice(5);
+    void gogGetGameDetails(rawId)
+      .then((details) => {
+        if (S.currentModalAppName !== appName) return;
+        if (details.description && !s.description) {
+          s.description = cleanStoreDescription(details.description);
+          paintAboutText(s);
+        }
+        if (details.hero_url) {
+          const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
+          if (heroEl) heroEl.src = details.hero_url;
+        }
+        if (details.developer) {
+          const devEl = modalRoot.querySelector(".gp-meta > span:first-child");
+          if (devEl) devEl.textContent = details.developer;
+        }
+      })
+      .catch(() => {});
+  }
+
   // Wikipedia is asked only when the game's own store has no description.
   const key = aboutKey(appName);
   if (!aboutCache.has(key) && S.loadingAboutFor !== key && !epicDescription(s)) {

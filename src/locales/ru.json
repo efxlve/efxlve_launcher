@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "Загрузка описания…",
   "drawer.wikiSource": "Нет данных из {store}. Текущий источник: Wikipedia.",
   "drawer.sourceEpic": "Источник: Epic Games Store",
+  "drawer.sourceGog": "Источник: GOG",
   "common.unknownError": "Неизвестная ошибка"
 }

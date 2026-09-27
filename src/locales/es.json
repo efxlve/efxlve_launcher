@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "Cargando descripción…",
   "drawer.wikiSource": "No hay datos de {store}. Fuente actual: Wikipedia.",
   "drawer.sourceEpic": "Fuente: Epic Games Store",
+  "drawer.sourceGog": "Fuente: GOG",
   "common.unknownError": "Error desconocido"
 }

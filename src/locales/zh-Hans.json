@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "正在加载简介…",
   "drawer.wikiSource": "无法从 {store} 获取数据。当前来源：Wikipedia。",
   "drawer.sourceEpic": "来源：Epic Games Store",
+  "drawer.sourceGog": "来源：GOG",
   "common.unknownError": "未知错误"
 }

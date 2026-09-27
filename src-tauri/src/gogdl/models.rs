@@ -112,3 +112,22 @@ pub struct GogInstalledInfo {
     pub install_size: u64,
     pub executable: Option<String>,
 }
+
+/// Detailed metadata fetched on-demand for the game detail hub.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GogGameDetails {
+    pub game_id: String,
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub developer: Option<String>,
+    #[serde(default)]
+    pub publisher: Option<String>,
+    #[serde(default)]
+    pub hero_url: Option<String>,
+    #[serde(default)]
+    pub slug: Option<String>,
+    #[serde(default)]
+    pub screenshots: Vec<String>,
+}

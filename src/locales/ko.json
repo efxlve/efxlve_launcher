@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "설명을 불러오는 중…",
   "drawer.wikiSource": "{store}에서 데이터를 가져오지 못했습니다. 현재 출처: Wikipedia.",
   "drawer.sourceEpic": "출처: Epic Games Store",
+  "drawer.sourceGog": "출처: GOG",
   "common.unknownError": "알 수 없는 오류"
 }

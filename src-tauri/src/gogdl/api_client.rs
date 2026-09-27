@@ -9,7 +9,7 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT};
 use serde_json::Value;
 
-use super::models::{GogAuthTokens, GogGameSummary, GogUserProfile};
+use super::models::{GogAuthTokens, GogGameDetails, GogGameSummary, GogUserProfile};
 use super::GogError;
 
 pub const GOG_CLIENT_ID: &str = "46899977096215655";
@@ -256,4 +256,80 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
     }
 
     Ok(games)
+}
+
+/// Fetches detailed game metadata on-demand from public GOG APIs.
+pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogError> {
+    let client = create_client()?;
+    let product_url = format!("https://api.gog.com/products/{game_id}?expand=description");
+
+    let res = client
+        .get(&product_url)
+        .send()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
+
+    let mut details = GogGameDetails {
+        game_id: game_id.to_string(),
+        ..Default::default()
+    };
+
+    if res.status().is_success() {
+        if let Ok(val) = res.json::<Value>().await {
+            details.title = val["title"].as_str().unwrap_or_default().to_string();
+            details.slug = val["slug"].as_str().map(String::from);
+
+            let desc = val["description"]["full"]
+                .as_str()
+                .or_else(|| val["description"].as_str())
+                .unwrap_or_default();
+            if !desc.is_empty() {
+                details.description = Some(desc.to_string());
+            }
+
+            if let Some(bg) = val["images"]["background"].as_str() {
+                if !bg.is_empty() {
+                    details.hero_url = Some(if bg.starts_with("//") {
+                        format!("https:{bg}")
+                    } else if bg.starts_with("http") {
+                        bg.to_string()
+                    } else {
+                        format!("https://images.gog.com/{bg}")
+                    });
+                }
+            }
+        }
+    }
+
+    // Secondary fetch from v2 API for developer, publisher, and high-res screenshots
+    let v2_url = format!("https://api.gog.com/v2/games/{game_id}");
+    if let Ok(v2_res) = client.get(&v2_url).send().await {
+        if v2_res.status().is_success() {
+            if let Ok(val) = v2_res.json::<Value>().await {
+                if let Some(devs) = val["_embedded"]["developers"].as_array() {
+                    if let Some(first) = devs.first().and_then(|d| d["name"].as_str()) {
+                        details.developer = Some(first.to_string());
+                    }
+                }
+                if let Some(pubs) = val["_embedded"]["publishers"].as_array() {
+                    if let Some(first) = pubs.first().and_then(|p| p["name"].as_str()) {
+                        details.publisher = Some(first.to_string());
+                    }
+                }
+                if let Some(screens) = val["_embedded"]["screenshots"].as_array() {
+                    let mut urls = Vec::new();
+                    for s in screens {
+                        if let Some(href) = s["_links"]["self"]["href"].as_str() {
+                            urls.push(href.replace("{formatter}", "1600"));
+                        }
+                    }
+                    if !urls.is_empty() {
+                        details.screenshots = urls;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(details)
 }

@@ -58,9 +58,15 @@ fn urlencoding_term(title: &str) -> String {
 fn is_disambiguation(text: &str) -> bool {
     let lower = text.to_lowercase();
     lower.contains("may refer to")
+        || lower.contains("may also refer to")
+        || lower.contains("can refer to")
         || lower.contains("şunlardan biri")
+        || lower.contains("şu anlamlara gelebilir")
+        || lower.contains("anlamına gelebilir")
+        || lower.contains("anlamlarına gelebilir")
         || lower.contains("birden fazla anlam")
         || lower.contains("anlam ayrımı")
+        || lower.contains("anlam ayrım")
 }
 
 /// Strips a parenthetical suffix: "Mortal Shell (video game)" -> "Mortal Shell".

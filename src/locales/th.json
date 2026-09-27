@@ -1262,5 +1262,6 @@
   "drawer.loadingAbout": "กำลังโหลดคำอธิบาย…",
   "drawer.wikiSource": "ไม่พบข้อมูลจาก {store} แหล่งข้อมูลปัจจุบัน: Wikipedia",
   "drawer.sourceEpic": "แหล่งข้อมูล: Epic Games Store",
+  "drawer.sourceGog": "ที่มา: GOG",
   "common.unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ"
 }
