@@ -274,8 +274,11 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     return;
   }
 
+  const isGog = appName.startsWith("gog::");
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
-  const devRaw = g ? g.metadata.developer : undefined;
+  const devRaw = isGog
+    ? (S.gogSummariesMap.get(appName.slice(5))?.developer || "")
+    : (g ? g.metadata.developer : undefined);
   const dev = typeof devRaw === "string" ? devRaw : "";
   const achSum = S.epicAchSummaries[appName];
   const pt = S.playtimeMap.get(appName);
@@ -286,6 +289,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
+    isGog ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("shield", 13)} DRM-Free</span>` : "",
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
@@ -338,7 +342,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
       </div>
     </div>`;
 
-  if (!S.dlcCache.has(appName)) {
+  if (!isGog && !S.dlcCache.has(appName)) {
     epicGetGameDlcs(appName)
       .then((res) => {
         S.dlcCache.set(appName, res);
@@ -506,6 +510,9 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
 }
 
 export function renderDrawerAchievements(s: EpicSummary): string {
+  if (s.appName.startsWith("gog::")) {
+    return emptyState("shield", "GOG.COM", t("gog.drmFreeDetails"));
+  }
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = S.demoPlatinumApps.has(s.appName);
   const partner = getThirdPartyLauncher(rawOf(s.appName));
@@ -613,7 +620,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 }
 
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
-  if (!isTauri || S.loadingAchFor === appName) return;
+  if (!isTauri || S.loadingAchFor === appName || appName.startsWith("gog::")) return;
   S.loadingAchFor = appName;
   if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
   try {

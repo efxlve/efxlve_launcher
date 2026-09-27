@@ -26,7 +26,7 @@ import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
 import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
-import { rawOf } from "../../core/selectors";
+import { rawOf, summaryOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
 import {
@@ -1238,9 +1238,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-open-folder" && id) {
     void epicOpenFolder(id);
   } else if (act === "epic-store-page" && id) {
-    const s = S.epicSummaries.find((x) => x.appName === id);
-    const title = s ? s.title : id;
-    void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
+    if (id.startsWith("gog::")) {
+      const s = summaryOf(id);
+      const title = s ? s.title : id.slice(5);
+      const url = `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
+      void openStoreUrl(url, "store");
+    } else {
+      const s = S.epicSummaries.find((x) => x.appName === id);
+      const title = s ? s.title : id;
+      void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
+    }
   } else if (act === "drawer-tab") {
     const tab = t.dataset.tab as DrawerTab;
     if (tab && S.currentModalAppName) {

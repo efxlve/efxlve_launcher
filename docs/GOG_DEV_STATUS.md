@@ -15,8 +15,8 @@
 | **Faz 2** | GOG Auth & Accounts Sayfası | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
 | **Faz 3** | Kütüphane Görünümü & Birleşik Render | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
 | **Faz 4** | İndirme & Kurulum Yönetimi | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
-| **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | 🔄 Sıradaki | `npm.cmd run build` |
-| **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | ⏳ Bekliyor | `npm.cmd run build` |
+| **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
+| **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | 🔄 Sıradaki | `npm.cmd run build` |
 | **Faz 7** | Import, Repair & Kaldırma | ⏳ Bekliyor | `cargo check` |
 
 ---
@@ -52,6 +52,12 @@
 - [x] Faz 4: `src/core/selectors.ts` (`summaryOf`) ve `src/core/game-view.ts` (`patchLibraryCardDom`) GOG oyunları için tam destek kazandı.
 - [x] Faz 4: `src/features/install/install-dialog.ts` ve `src/features/events/click-router.ts` GOG oyunlarını `gogInstallGame` ve `gogCancelDownload` komutlarına bağladı.
 - [x] Faz 4 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (107 test geçti), `npm.cmd run build` (sıfır hata).
+- [x] Faz 5: `src-tauri/src/gogdl/launcher.rs` oluşturuldu: DRM-free GOG oyunu başlatma (`gog_launch_game`), süreç ağacı takibi (`is_game_process_running`), 15 sn kalp atışlı çökme korumalı oturum kaydı (`playtime_session`), oynanış süresi yazımı (`playtime::record_session`) ve sonlandırma (`gog_stop_game`).
+- [x] Faz 5: `src-tauri/src/main.rs` içine `gog_launch_game` ve `gog_stop_game` kaydedildi; `src/gog.ts` içine TypeScript arayüzleri eklendi.
+- [x] Faz 5: `src/core/epic-actions.ts` (`epicPlay`, `epicStop`) GOG oyunlarını doğrudan destekleyecek şekilde yönlendirildi.
+- [x] Faz 5: `src/features/drawer/drawer-view.ts` GOG oyunları için geliştirici bilgisi, DRM-Free rozeti, mağaza sayfası araması ve başarımlar/DLC için DRM-free uyarlaması ile güncellendi.
+- [x] Faz 5: `src/features/events/click-router.ts` mağaza yönlendirmesini GOG mağaza aramasına bağladı.
+- [x] Faz 5 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (107 test geçti), `npm.cmd run build` (sıfır hata).
 
 ---
 

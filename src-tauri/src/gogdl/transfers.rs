@@ -165,7 +165,7 @@ fn parse_speed(line: &str, keyword: &str) -> Option<(String, u64)> {
 }
 
 /// Parses `goggame-<id>.info` in target directory if it exists to extract executable path.
-fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInfo> {
+pub fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInfo> {
     let info_path = target_dir.join(format!("goggame-{game_id}.info"));
     if !info_path.is_file() {
         return None;

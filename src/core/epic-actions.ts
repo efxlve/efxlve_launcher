@@ -23,6 +23,7 @@ import { isTauri } from "./constants";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
+import { gogLaunchGame, gogStopGame } from "../gog";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -35,7 +36,9 @@ import { syncLibraryHeadingCount } from "../features/library/library-view";
 /** Launch a game and record it in the recent list. */
 export async function epicStop(appName: string): Promise<void> {
   try {
-    const msg = await epicStopGame(appName);
+    const msg = appName.startsWith("gog::")
+      ? await gogStopGame(appName)
+      : await epicStopGame(appName);
     S.runningGames.delete(appName);
     toast(msg, "ok");
     refreshGameActionUi(appName);
@@ -48,7 +51,9 @@ export async function epicPlay(appName: string): Promise<void> {
   pushRecent(appName);
   toast(t("dl.launching"), "");
   try {
-    const msg = await epicLaunchGame(appName);
+    const msg = appName.startsWith("gog::")
+      ? await gogLaunchGame(appName)
+      : await epicLaunchGame(appName);
     toast(msg, "ok");
   } catch (e) {
     toast(String(e), "err");

@@ -70,6 +70,14 @@ export async function gogCancelDownload(gameId: string): Promise<void> {
   return invoke<void>("gog_cancel_download", { gameId });
 }
 
+export async function gogLaunchGame(gameId: string): Promise<string> {
+  return invoke<string>("gog_launch_game", { gameId });
+}
+
+export async function gogStopGame(gameId: string): Promise<string> {
+  return invoke<string>("gog_stop_game", { gameId });
+}
+
 /** Convert a raw GOG summary into the unified LibraryItem format. */
 export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
   return {
