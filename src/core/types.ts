@@ -8,6 +8,15 @@
 /** Top-level application view/route. */
 export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts";
 
+/** Store or catalog provider source for a game. */
+export type GameSource = "epic" | "gog";
+
+/** Active catalog source filter in the library toolbar. */
+export type SourceFilter = "all" | "epic" | "gog";
+
+/** Account/setup lifecycle phase for GOG.COM. */
+export type GogPhase = "checking" | "setup" | "login" | "library" | "error";
+
 /** Account/setup lifecycle phase. */
 export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
 
@@ -65,5 +74,46 @@ export interface SavedAccount {
   last_used: number;
   is_active: boolean;
   game_count?: number;
+}
+
+/**
+ * Unified representation of a game from any store provider (Epic, GOG, etc.).
+ *
+ * Used by the library grid, list rows, context menu, search and collections to
+ * provide a store-agnostic presentation layer.
+ */
+export interface LibraryItem {
+  /** Unique composite key in format `${source}::${id}` (e.g. `epic::Salt`, `gog::1207658924`). */
+  key: string;
+  /** Provider store. */
+  source: GameSource;
+  /** Store-specific identifier (Epic appName or GOG product id). */
+  id: string;
+  /** Normalized display title. */
+  title: string;
+  /** Developer or studio name (or empty string). */
+  developer: string;
+  /** Version string or release name. */
+  version: string;
+  /** Installed version (if installed, otherwise null). */
+  installedVersion: string | null;
+  /** True when the game files are present on the local disk. */
+  installed: boolean;
+  /** Local installation directory path (or null). */
+  installPath: string | null;
+  /** Total installation size in bytes (or 0). */
+  installSize: number;
+  /** Primary portrait / key cover art URL (or null). */
+  coverUrl: string | null;
+  /** Wide hero / banner art URL (or null). */
+  heroUrl: string | null;
+  /** Short or localized game description text. */
+  description: string;
+  /** Whether an update is available on the remote store. */
+  updateAvailable: boolean;
+  /** Whether the game supports remote cloud save synchronization. */
+  cloudSavesSupported: boolean;
+  /** Total number of DLC expansions or add-ons owned. */
+  dlcCount: number;
 }
 

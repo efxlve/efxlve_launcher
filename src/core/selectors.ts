@@ -9,6 +9,7 @@
 import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
 import { t } from "../i18n";
 import { S } from "./state";
+import type { GameSource, LibraryItem } from "./types";
 
 /** Wide-art URL cache (key art lookup was repeated for every card render). */
 const wideArtCache = new Map<string, string | null>();
@@ -45,16 +46,89 @@ export function setEpicGamesRaw(games: EpicGame[]): void {
   clearCoverCaches();
 }
 
+/** Convert an Epic summary item into the store-agnostic LibraryItem interface. */
+export function epicToLibraryItem(s: EpicSummary): LibraryItem {
+  const g = rawOf(s.appName);
+  const d = g?.metadata?.developer;
+  const dev = typeof d === "string" ? d.trim() : "";
+  return {
+    key: `epic::${s.appName}`,
+    source: "epic",
+    id: s.appName,
+    title: s.title,
+    developer: dev,
+    version: s.version,
+    installedVersion: s.installedVersion,
+    installed: s.installed,
+    installPath: s.installPath,
+    installSize: s.installSize,
+    coverUrl: s.cover,
+    heroUrl: epicWideArt(s),
+    description: s.description,
+    updateAvailable: s.updateAvailable,
+    cloudSavesSupported: true,
+    dlcCount: s.dlcCount,
+  };
+}
+
+/** Rebuilds the unified allGamesMap from both epicSummaries and gogSummaries in O(N). */
+export function rebuildAllGamesMap(): void {
+  const map = new Map<string, LibraryItem>();
+  for (const s of S.epicSummaries) {
+    const item = epicToLibraryItem(s);
+    map.set(item.key, item);
+    // Index by plain appName as well for seamless backward compatibility
+    map.set(s.appName, item);
+  }
+  for (const g of S.gogSummaries) {
+    map.set(g.key, g);
+    map.set(g.id, g);
+  }
+  S.allGamesMap = map;
+}
+
 /** Replace the parsed summary list and rebuild its lookup map. */
 export function setEpicSummaries(sums: EpicSummary[]): void {
   S.epicSummaries = sums;
   S.epicSummariesMap = new Map(sums.map((s) => [s.appName, s]));
+  rebuildAllGamesMap();
   S.libraryDataRev++;
 }
 
-/** O(1) summary lookup by app name. */
+/** Replace the GOG library item list and rebuild its lookup map. */
+export function setGogSummaries(items: LibraryItem[]): void {
+  S.gogSummaries = items;
+  S.gogSummariesMap = new Map(items.map((item) => [item.id, item]));
+  rebuildAllGamesMap();
+  S.libraryDataRev++;
+}
+
+/** O(1) summary lookup by app name (Epic). */
 export function summaryOf(appName: string): EpicSummary | undefined {
   return S.epicSummariesMap.get(appName);
+}
+
+/** O(1) unified lookup of any library item by composite key (`source::id`) or plain id. */
+export function libraryItemOf(keyOrId: string, source?: GameSource): LibraryItem | undefined {
+  if (keyOrId.includes("::")) {
+    return S.allGamesMap.get(keyOrId);
+  }
+  if (source) {
+    return S.allGamesMap.get(`${source}::${keyOrId}`);
+  }
+  return S.allGamesMap.get(keyOrId) || S.allGamesMap.get(`epic::${keyOrId}`) || S.allGamesMap.get(`gog::${keyOrId}`);
+}
+
+/** Returns all library items across all enabled sources according to the active source filter. */
+export function getAllLibraryItems(): LibraryItem[] {
+  const items: LibraryItem[] = [];
+  if (S.sourceFilter === "all" || S.sourceFilter === "epic") {
+    items.push(...S.epicSummaries.map(epicToLibraryItem));
+  }
+  if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
+    items.push(...S.gogSummaries);
+  }
+  return items;
 }
 
 /** O(1) raw metadata lookup by app name. */

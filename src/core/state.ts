@@ -42,7 +42,7 @@ import {
   normalizeLibraryPageSize,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, SavedAccount, SettingsSection, View } from "./types";
+import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, SourceFilter, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
@@ -92,6 +92,21 @@ export const S = {
   epicGamesRaw: ([]) as EpicGame[],
   epicGamesRawMap: (new Map()) as Map<string, EpicGame>,
   epicSummariesMap: (new Map()) as Map<string, EpicSummary>,
+  gogPhase: ("checking") as GogPhase,
+  gogBooted: false,
+  gogAccount: "",
+  gogAccountId: (null) as string | null,
+  gogError: "",
+  gogBusy: "",
+  gogSyncing: false,
+  gogSyncNote: "",
+  gogDefaultDir: "",
+  sourceFilter: ("all") as SourceFilter,
+  gogSummaries: ([]) as LibraryItem[],
+  gogSummariesMap: (new Map()) as Map<string, LibraryItem>,
+  gogGamesRaw: ([]) as unknown[],
+  gogGamesRawMap: (new Map()) as Map<string, unknown>,
+  allGamesMap: (new Map()) as Map<string, LibraryItem>,
   customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
   customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
   customAvatars: loadJsonRecord(CUSTOM_AVATARS_KEY),
