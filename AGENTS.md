@@ -128,6 +128,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+> ⚠️ **NOT (UX Sadeleştirme Backlog):** "Dim uninstalled games" (Kapak/liste soluklaştırma) ve "Highlight installed titles" (Başlık kontrastı) ayarları iki ayrı toggle olarak arayüzü kalabalıklaştırdı ve biraz karmaşık oldu. Kullanıcı geri bildirimi doğrultusunda bu iki özellik ilerleyen güncellemelerde birleştirilerek / sadeleştirilerek tek bir şık UX çatısı altında tekrardan düşünülüp yeniden düzenlenecektir (bkz. `docs/ROADMAP.md` §5).
+
 - **Yüklü Oyun Başlıklarını Öne Çıkarma Seçeneği (Contrast Titles — Default ON):**
   1. **Başlık Kontrastı Ayarı (Settings > Görünüm):** Ayarlar > Görünüm sekmesine "Yüklü oyun başlıklarını öne çıkar" (`contrastTitles`, `CONTRAST_TITLES_KEY`) seçeneği eklendi (varsayılan olarak AÇIK / `true`).
   2. **Görsel Tasarım & Akıcılık (`.pgrid.contrast-titles` & `.lib-list.contrast-titles`):** Yüklü oyunların başlıkları parlak beyaz (`color: var(--text)`, `#ffffff`) ve belirgin font ağırlığı (`font-weight: 600`) alarak kütüphanede anında öne çıkar; kurulu olmayan oyunların başlıkları ise daha koyu gri (`color: var(--text-3)`, `#5c5c5c`) gösterilerek göz yormayan, asil bir hiyerarşi oluşturulur. Kurulu olmayan karta hover olunduğunda başlık yumuşakça `var(--text-2)` seviyesine aydınlanır.
