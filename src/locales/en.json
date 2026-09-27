@@ -1256,5 +1256,20 @@
   "drawer.loadingAbout": "Loading description…",
   "drawer.wikiSource": "No data from {store}. Current source: Wikipedia.",
   "drawer.sourceEpic": "Source: Epic Games Store",
-  "common.unknownError": "Unknown error"
+  "common.unknownError": "Unknown error",
+  "gog.webLogin": "GOG Web Login",
+  "gog.pastePlaceholder": "Paste the authorization code or redirect URL here...",
+  "gog.syncing": "Syncing GOG library...",
+  "gog.syncComplete": "GOG library synced",
+  "gog.syncFailed": "Failed to sync GOG library",
+  "gog.guideStep1Title": "1. Sign in on GOG.COM:",
+  "gog.guideStep1Desc": "Click the button above to open the official GOG login page in your browser.",
+  "gog.guideStep2Title": "2. Complete login:",
+  "gog.guideStep2Desc": "Sign in with your GOG credentials. A blank page or login success message will appear.",
+  "gog.guideStep3Title": "3. Copy authorization code:",
+  "gog.guideStep3Desc": "Copy the code parameter from the browser URL bar (or whole URL) and paste it here.",
+  "source.all": "All Stores",
+  "source.epic": "Epic Games",
+  "source.gog": "GOG.COM",
+  "filter.source": "Store Filter"
 }

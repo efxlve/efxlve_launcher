@@ -30,6 +30,13 @@ import { rawOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import { cancelAddAccount, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
 import {
+  extractGogAuthCode,
+  gogLoginWithCode,
+  gogLogoutAction,
+  openGogLoginPage,
+  syncGogLibrary,
+} from "../auth/gog-auth-actions";
+import {
   closeCollectionModal,
   deleteCollectionFromModal,
   loadEpicCollections,
@@ -263,6 +270,32 @@ document.addEventListener("click", (e) => {
     void syncEpicLibrary(true);
   } else if (act === "epic-retry") {
     void refreshEpic();
+  } else if (act === "gog-open-login") {
+    void openGogLoginPage();
+  } else if (act === "gog-do-login") {
+    const input = document.getElementById("gog-code") as HTMLInputElement | null;
+    void gogLoginWithCode(input?.value ?? "");
+  } else if (act === "gog-paste") {
+    void (async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const code = extractGogAuthCode(text);
+        const input = document.getElementById("gog-code") as HTMLInputElement | null;
+        if (input && code) {
+          input.value = code;
+          input.focus();
+          toast(i18nT("auth.codePasted"), "ok");
+        } else {
+          toast(i18nT("auth.pasteFailed"), "err");
+        }
+      } catch {
+        toast(i18nT("auth.pasteFailed"), "err");
+      }
+    })();
+  } else if (act === "gog-logout") {
+    void gogLogoutAction();
+  } else if (act === "gog-refresh") {
+    void syncGogLibrary();
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {

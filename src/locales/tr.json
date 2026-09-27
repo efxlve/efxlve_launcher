@@ -1256,5 +1256,20 @@
   "drawer.loadingAbout": "Açıklama yükleniyor…",
   "drawer.wikiSource": "{store}'dan veriler alınamadı. Şu anki kaynak: Wikipedia.",
   "drawer.sourceEpic": "Kaynak: Epic Games Store",
-  "common.unknownError": "Bilinmeyen hata"
+  "common.unknownError": "Bilinmeyen hata",
+  "gog.webLogin": "GOG Web Girişi",
+  "gog.pastePlaceholder": "Yetkilendirme kodunu veya yönlendirme URL'sini buraya yapıştırın...",
+  "gog.syncing": "GOG kütüphanesi senkronize ediliyor...",
+  "gog.syncComplete": "GOG kütüphanesi senkronize edildi",
+  "gog.syncFailed": "GOG kütüphanesi senkronize edilemedi",
+  "gog.guideStep1Title": "1. GOG.COM'da oturum açın:",
+  "gog.guideStep1Desc": "Resmi GOG giriş sayfasını tarayıcınızda açmak için yukarıdaki düğmeye tıklayın.",
+  "gog.guideStep2Title": "2. Girişi tamamlayın:",
+  "gog.guideStep2Desc": "GOG bilgilerinizle giriş yapın. Boş bir sayfa veya başarılı giriş mesajı görünecektir.",
+  "gog.guideStep3Title": "3. Kodu kopyalayın:",
+  "gog.guideStep3Desc": "Tarayıcı adres çubuğundaki URL'den code parametresini (veya tüm URL'yi) kopyalayıp buraya yapıştırın.",
+  "source.all": "Tüm Mağazalar",
+  "source.epic": "Epic Games",
+  "source.gog": "GOG.COM",
+  "filter.source": "Mağaza Filtresi"
 }

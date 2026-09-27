@@ -60,6 +60,7 @@ import { toast } from "../../core/toast";
 import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
+import { initGogSession } from "../auth/gog-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
@@ -165,6 +166,7 @@ export async function initApp(hooks: {
   // registration, settings fetches or window-chrome IPC.
   initGamepadSupport();
   void bootEpic();
+  void initGogSession();
   void loadSavedAccounts();
 
   if (isTauri) {

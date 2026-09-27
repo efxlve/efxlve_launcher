@@ -12,8 +12,8 @@
 |-----|-------|-------|-----------|
 | **Faz 0** | Tip Sistemi, State & O(1) Seçiciler | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
 | **Faz 1** | Rust `gogdl` Backend İskeleti & REST İstemcisi | ✅ Tamamlandı | `cargo check` + `cargo test` (107 test geçti) |
-| **Faz 2** | GOG Auth & Accounts Sayfası | 🔄 Başlatılıyor | `npm.cmd run build` |
-| **Faz 3** | Kütüphane Görünümü & Birleşik Render | ⏳ Bekliyor | `npm.cmd run build` |
+| **Faz 2** | GOG Auth & Accounts Sayfası | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
+| **Faz 3** | Kütüphane Görünümü & Birleşik Render | 🔄 Başlatılıyor | `npm.cmd run build` |
 | **Faz 4** | İndirme & Kurulum Yönetimi | ⏳ Bekliyor | `cargo check` + `npm.cmd run build` |
 | **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ⏳ Bekliyor | `npm.cmd run build` |
 | **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | ⏳ Bekliyor | `npm.cmd run build` |
@@ -34,6 +34,12 @@
 - [x] Faz 1: `src-tauri/src/main.rs` içine `mod gogdl;` ve 6 yeni Tauri IPC komutu kaydedildi.
 - [x] Faz 1: `src/gog.ts` frontend API barrel modülü eklendi.
 - [x] Faz 1 doğrulaması: `cargo check` (0 warning), `cargo test` (107 test geçti), `npm.cmd run build` (başarılı).
+- [x] Faz 2: `src/features/accounts/accounts-view.ts` içindeki `gogCard()` aktif kart ve giriş formuna dönüştürüldü.
+- [x] Faz 2: `src/features/auth/gog-auth-actions.ts` oluşturuldu (`gogLoginWithCode`, `syncGogLibrary`, `gogLogoutAction`, `initGogSession`).
+- [x] Faz 2: `src/features/events/click-router.ts` içine `gog-open-login`, `gog-do-login`, `gog-paste`, `gog-logout`, `gog-refresh` bağlandı.
+- [x] Faz 2: `src/features/events/ipc-listeners.ts` içine açılışta oturum tespiti ve önbellekten hızlı kütüphane hidrasyonu (`initGogSession`) eklendi.
+- [x] Faz 2: `tr.json` ve `en.json` dillerine tüm `gog.*` ve `source.*` metinleri eklendi.
+- [x] Faz 2 doğrulaması: `npm.cmd run build` ve `cargo check` sıfır hata ile geçti.
 
 ---
 

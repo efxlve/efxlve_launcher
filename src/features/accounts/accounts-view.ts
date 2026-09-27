@@ -146,14 +146,68 @@ function epicCard(): string {
     </section>`;
 }
 
-function gogCard(): string {
+function gogSignInBlock(): string {
   return `
-    <section class="card acc-card acc-card-soon">
+    <div class="acc-signin">
+      <div class="acc-actions">
+        <button class="btn primary" data-act="gog-open-login">${icon("external", 14)} ${t("gog.webLogin")}</button>
+      </div>
+      <div class="auth-code">
+        <input id="gog-code" class="input" placeholder="${t("gog.pastePlaceholder")}" autocomplete="off" spellcheck="false" />
+        <button class="btn ghost" data-act="gog-paste" title="${t("auth.pasteBtn")}">${icon("copy", 14)} ${t("auth.pasteBtn")}</button>
+        <button class="btn primary icon-only" data-act="gog-do-login" title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
+      </div>
+      <ol class="auth-guide">
+        <li><strong>${t("gog.guideStep1Title")}</strong> ${t("gog.guideStep1Desc")}</li>
+        <li><strong>${t("gog.guideStep2Title")}</strong> ${t("gog.guideStep2Desc")}</li>
+        <li><strong>${t("gog.guideStep3Title")}</strong> ${t("gog.guideStep3Desc")}</li>
+      </ol>
+    </div>`;
+}
+
+function gogConnectedBlock(): string {
+  const current = getCustomAvatar(S.gogAccountId);
+  return `
+    <div class="list acc-accounts">
+      <div class="row">
+        ${avatar(current, S.gogAccount)}
+        <div class="row-main">
+          <div class="row-title">${esc(S.gogAccount)}</div>
+          <div class="row-meta">${S.gogSummaries.length} ${t("settings.accountTotalGames")}</div>
+        </div>
+        <div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div>
+      </div>
+    </div>
+    <div class="acc-actions">
+      <button class="btn ghost small ${S.gogSyncing ? "spinning" : ""}" data-act="gog-refresh">${icon("refresh", 13)} ${t("lib.refresh")}</button>
+      <span class="acc-spacer"></span>
+      <button class="btn ghost danger small" data-act="gog-logout">${t("settings.logout")}</button>
+    </div>`;
+}
+
+function gogCard(): string {
+  const connected = Boolean(S.gogAccount) && S.gogPhase === "library";
+  const status = S.gogSyncing
+    ? `<span class="chip">${t("auth.syncingTitle")}</span>`
+    : connected
+      ? `<span class="chip ok">${t("accounts.connected")}</span>`
+      : `<span class="chip">${t("accounts.notConnected")}</span>`;
+  const body = S.gogSyncing
+    ? `<p class="acc-lead">${t("gog.syncing")}</p><div class="progress auth-progress"><span style="width:60%"></span></div>`
+    : connected
+      ? gogConnectedBlock()
+      : `<p class="acc-lead">${t("accounts.gogDesc")}</p>${gogSignInBlock()}`;
+  return `
+    <section class="card acc-card">
       <div class="acc-card-head">
         <span class="acc-store-mark">G</span>
-        <div class="row-main"><div class="acc-store-name">GOG.COM</div><div class="row-meta">${t("accounts.gogDesc")}</div></div>
-        <span class="chip">${t("accounts.soon")}</span>
+        <div class="row-main">
+          <div class="acc-store-name">GOG.COM</div>
+          <div class="row-meta">${connected ? esc(S.gogAccount) : t("accounts.gogDesc")}</div>
+        </div>
+        ${status}
       </div>
+      <div class="acc-card-body">${body}</div>
     </section>`;
 }
 
