@@ -127,6 +127,7 @@ export async function openInstallDialog(appName: string): Promise<void> {
 export function renderInstallDialog(): void {
   const appName = S.installDialogAppName;
   if (!installRoot || !appName) return;
+  const isGog = appName.startsWith("gog::");
   const s = summaryOf(appName);
   if (!s) return;
 
@@ -175,6 +176,8 @@ export function renderInstallDialog(): void {
           </label>
         </div>
         <div class="install-footer">
+          ${isGog ? `<button type="button" class="btn ghost small" data-act="gog-import-existing" data-id="${esc(appName)}">${t("settings.importInstalled")}</button>` : ""}
+          <span style="flex:1"></span>
           <button type="button" class="install-cancel-btn" data-act="install-cancel">${t("common.cancel")}</button>
           <button type="button" class="install-confirm-btn" data-act="install-confirm" data-id="${esc(appName)}" ${loading ? "disabled" : ""}>
             ${icon("download", 14)} ${t("common.install")}

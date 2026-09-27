@@ -78,6 +78,18 @@ export async function gogStopGame(gameId: string): Promise<string> {
   return invoke<string>("gog_stop_game", { gameId });
 }
 
+export async function gogUninstallGame(gameId: string): Promise<string> {
+  return invoke<string>("gog_uninstall_game", { gameId });
+}
+
+export async function gogImportGame(gameId: string, installPath: string): Promise<GogGameSummary> {
+  return invoke<GogGameSummary>("gog_import_game", { gameId, installPath });
+}
+
+export async function gogVerifyGame(gameId: string): Promise<string> {
+  return invoke<string>("gog_verify_game", { gameId });
+}
+
 /** Convert a raw GOG summary into the unified LibraryItem format. */
 export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
   return {

@@ -1865,6 +1865,9 @@ fn main() {
             gogdl::commands::gog_list_games,
             gogdl::transfers::gog_install_game,
             gogdl::transfers::gog_cancel_download,
+            gogdl::transfers::gog_uninstall_game,
+            gogdl::transfers::gog_import_game,
+            gogdl::transfers::gog_verify_game,
             gogdl::launcher::gog_launch_game,
             gogdl::launcher::gog_stop_game
         ])

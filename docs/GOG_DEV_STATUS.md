@@ -17,7 +17,7 @@
 | **Faz 4** | İndirme & Kurulum Yönetimi | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
 | **Faz 5** | Başlatma, Süre Takibi & Oyun Drawer'ı | ✅ Tamamlandı | `cargo check` + `npm.cmd run build` |
 | **Faz 6** | Sağ Tık, Toplu Gizleme & Koleksiyonlar | ✅ Tamamlandı | `npm.cmd run build` (başarılı) |
-| **Faz 7** | Import, Repair & Kaldırma | 🔄 Sıradaki | `cargo check` + `npm.cmd run build` |
+| **Faz 7** | Import, Repair & Kaldırma | ✅ Tamamlandı | `cargo check` + `cargo test` (110 test) + `npm.cmd run build` |
 
 ---
 
@@ -64,6 +64,12 @@
 - [x] Faz 6: `src/features/collections/collections-view.ts` ve `click-router.ts` koleksiyon pencerelerinde (`renderCollectionModal`, `updateColGamesListInPlace`, `col-select-all`) GOG oyunlarının seçilip kategorilere atanabilmesini sağladı.
 - [x] Faz 6: `src/features/events/click-router.ts` sağ tık bağlam menüsü (`context-menu.ts`) eylemlerini (`play`, `install`, `uninstall`, `cancel`) karşılayacak takma adlarla güçlendirildi.
 - [x] Faz 6 doğrulaması: `cargo check` (0 hata), `cargo test` (107 test geçti), `npm.cmd run build` (başarılı).
+- [x] Faz 7: `src-tauri/src/gogdl/transfers.rs` içine `gog_uninstall_game`, `gog_import_game`, `gog_verify_game` ve yardımcılar (`calculate_dir_size`, `find_fallback_exe`) eklendi; 3 yeni birim test eklendi.
+- [x] Faz 7: `src-tauri/src/main.rs` ve `src/gog.ts` içine `gog_uninstall_game`, `gog_import_game` ve `gog_verify_game` kaydedildi.
+- [x] Faz 7: `src/core/epic-actions.ts` (`epicUninstall`) GOG oyunları için süreç durdurma, dizin silme, `installed.json` temizleme ve UI anlık kart yamalama (`patchLibraryCardDom`) ile donatıldı.
+- [x] Faz 7: `src/features/install/install-dialog.ts` ve `click-router.ts` GOG oyunları için doğrudan var olan klasörü bağlama/içe aktarma (`gog-import-existing`) butonu ve eylemi ekledi.
+- [x] Faz 7: `src/features/events/click-router.ts` Manage sekmesindeki dosya doğrulama eylemini (`manage-verify`) GOG oyunları için `gogVerifyGame`'e bağladı.
+- [x] Faz 7 doğrulaması: `cargo check` (0 hata, 0 uyarı), `cargo test` (110 test geçti), `npm.cmd run build` (başarılı).
 
 ---
 

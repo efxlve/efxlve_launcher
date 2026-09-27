@@ -457,3 +457,222 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
 
     Ok(())
 }
+
+/// Helper to calculate directory size iteratively.
+pub fn calculate_dir_size(root: &Path) -> u64 {
+    let mut total = 0u64;
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                if let Ok(meta) = entry.metadata() {
+                    if meta.is_file() {
+                        total = total.saturating_add(meta.len());
+                    } else if meta.is_dir() {
+                        stack.push(entry.path());
+                    }
+                }
+            }
+        }
+    }
+    total
+}
+
+/// Helper to scan for the best main executable in a game directory if not in goggame-*.info.
+pub fn find_fallback_exe(dir: &Path) -> Option<String> {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        let mut candidates: Vec<String> = Vec::new();
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                if let Some(ext) = p.extension() {
+                    if ext.eq_ignore_ascii_case("exe") {
+                        if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                            let lower = name.to_ascii_lowercase();
+                            if !lower.starts_with("unins")
+                                && !lower.starts_with("crash")
+                                && !lower.starts_with("unitycrash")
+                                && !lower.contains("redist")
+                            {
+                                candidates.push(name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(first) = candidates.into_iter().next() {
+            return Some(first);
+        }
+    }
+    None
+}
+
+/// Uninstalls an installed GOG game. Stops any running instance, removes the
+/// folder, and removes the game entry from `installed.json`.
+#[command]
+pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<String, String> {
+    let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
+    let composite_id = format!("gog::{clean_id}");
+
+    // Terminate running instance if any
+    let _ = super::launcher::gog_stop_game(app.clone(), composite_id).await;
+
+    let mut installed_map = load_installed_games(&app);
+    let info = installed_map
+        .remove(&clean_id)
+        .ok_or_else(|| "Oyun kurulu değil.".to_string())?;
+
+    let path_str = info.install_path.trim();
+    if !path_str.is_empty() {
+        let p = Path::new(path_str);
+        if p.exists() && p.is_dir() {
+            if let Err(e) = tokio::fs::remove_dir_all(p).await {
+                eprintln!("Could not delete GOG install dir '{}': {}", path_str, e);
+            }
+        }
+    }
+
+    save_installed_games(&app, &installed_map)
+        .map_err(|e| format!("installed.json kaydedilemedi: {e}"))?;
+
+    Ok("Oyun başarıyla kaldırıldı.".to_string())
+}
+
+/// Imports an existing local GOG game installation into `installed.json`.
+#[command]
+pub async fn gog_import_game(
+    app: AppHandle,
+    game_id: String,
+    install_path: String,
+) -> Result<GogInstalledInfo, String> {
+    let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
+    let target = PathBuf::from(install_path.trim());
+    if !target.is_dir() {
+        return Err("Belirtilen klasör mevcut değil veya bir dizin değil.".to_string());
+    }
+
+    let mut info = scan_gog_info(&target, &clean_id).unwrap_or_else(|| GogInstalledInfo {
+        game_id: clean_id.clone(),
+        title: clean_id.clone(),
+        install_path: target.to_string_lossy().to_string(),
+        version: "1.0.0".to_string(),
+        install_size: 0,
+        executable: None,
+    });
+
+    if info.executable.is_none() {
+        info.executable = find_fallback_exe(&target);
+    }
+    info.install_size = calculate_dir_size(&target);
+
+    let mut installed_map = load_installed_games(&app);
+    installed_map.insert(clean_id, info.clone());
+    save_installed_games(&app, &installed_map)
+        .map_err(|e| format!("installed.json kaydedilemedi: {e}"))?;
+
+    Ok(info)
+}
+
+/// Verifies that an installed GOG game's files and executable exist on disk.
+#[command]
+pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<String, String> {
+    let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
+    let mut installed_map = load_installed_games(&app);
+    let info = installed_map
+        .get_mut(&clean_id)
+        .ok_or_else(|| "Oyun kurulu olarak bulunamadı.".to_string())?;
+
+    let p = Path::new(&info.install_path);
+    if !p.is_dir() {
+        return Err("Oyun kurulum dizini diskte bulunamadı.".to_string());
+    }
+
+    if let Some(ref exe) = info.executable {
+        let exe_path = p.join(exe);
+        if !exe_path.is_file() {
+            return Err(format!("Ana çalıştırılabilir dosya bulunamadı: {exe}"));
+        }
+    } else if let Some(fb) = find_fallback_exe(p) {
+        info.executable = Some(fb);
+    } else {
+        return Err("Kurulum dizininde çalıştırılabilir dosya bulunamadı.".to_string());
+    }
+
+    info.install_size = calculate_dir_size(p);
+    let _ = save_installed_games(&app, &installed_map);
+
+    Ok("Oyun dosyaları başarıyla doğrulandı.".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{self, File};
+    use std::io::Write;
+
+    #[test]
+    fn test_calculate_dir_size() {
+        let temp = std::env::temp_dir().join("efxlve_test_dir_size");
+        let _ = fs::remove_dir_all(&temp);
+        fs::create_dir_all(&temp).unwrap();
+        let sub = temp.join("sub");
+        fs::create_dir_all(&sub).unwrap();
+
+        fs::write(temp.join("file1.bin"), b"12345").unwrap(); // 5 bytes
+        fs::write(sub.join("file2.bin"), b"1234567").unwrap(); // 7 bytes
+
+        let total = calculate_dir_size(&temp);
+        assert_eq!(total, 12);
+
+        let _ = fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_find_fallback_exe() {
+        let temp = std::env::temp_dir().join("efxlve_test_fallback_exe");
+        let _ = fs::remove_dir_all(&temp);
+        fs::create_dir_all(&temp).unwrap();
+
+        // Create unins000.exe and Game.exe
+        File::create(temp.join("unins000.exe")).unwrap();
+        File::create(temp.join("Game.exe")).unwrap();
+
+        let found = find_fallback_exe(&temp);
+        assert_eq!(found.as_deref(), Some("Game.exe"));
+
+        let _ = fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_scan_gog_info() {
+        let temp = std::env::temp_dir().join("efxlve_test_gog_info");
+        let _ = fs::remove_dir_all(&temp);
+        fs::create_dir_all(&temp).unwrap();
+
+        let info_content = r#"{
+            "gameId": "123456",
+            "name": "Test Game",
+            "version": "1.0.3",
+            "playTasks": [
+                {
+                    "isPrimary": true,
+                    "path": "bin\\TestGame.exe",
+                    "type": "FileTask"
+                }
+            ]
+        }"#;
+
+        let mut f = File::create(temp.join("goggame-123456.info")).unwrap();
+        f.write_all(info_content.as_bytes()).unwrap();
+
+        let info = scan_gog_info(&temp, "123456");
+        assert!(info.is_some());
+        let val = info.unwrap();
+        assert_eq!(val.title, "Test Game");
+        assert_eq!(val.version, "1.0.3");
+        assert_eq!(val.executable.as_deref(), Some("bin\\TestGame.exe"));
+
+        let _ = fs::remove_dir_all(&temp);
+    }
+}

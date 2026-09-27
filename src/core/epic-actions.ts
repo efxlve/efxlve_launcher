@@ -23,7 +23,7 @@ import { isTauri } from "./constants";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
-import { gogLaunchGame, gogStopGame } from "../gog";
+import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -128,13 +128,34 @@ export async function epicUninstall(appName: string): Promise<void> {
   closeManagePopup();
   closeModal();
   try {
-    const msg = await epicUninstallGame(appName);
-    toast(msg, "ok");
+    if (appName.startsWith("gog::")) {
+      const cleanId = appName.slice(5);
+      const msg = await gogUninstallGame(cleanId);
+      toast(msg, "ok");
+      // Update in-memory state
+      const g = S.gogSummariesMap.get(cleanId);
+      if (g) {
+        g.installed = false;
+        g.installPath = null;
+        g.installSize = 0;
+        g.installedVersion = null;
+      }
+      const item = S.allGamesMap.get(appName);
+      if (item) {
+        item.installed = false;
+        item.installPath = null;
+        item.installSize = 0;
+        item.installedVersion = null;
+      }
+    } else {
+      const msg = await epicUninstallGame(appName);
+      toast(msg, "ok");
+      await refreshEpicInstalled();
+    }
   } catch (e) {
     toast(String(e), "err");
   }
   closeManagePopup();
-  await refreshEpicInstalled();
   if (S.view === "library") patchLibraryCardDom(appName);
 }
 

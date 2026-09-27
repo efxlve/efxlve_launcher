@@ -14,7 +14,7 @@ import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, D
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
-import { toggleFav } from "../../core/game-view";
+import { patchLibraryCardDom, toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi } from "../../core/nav";
 import { closeAllModals, openEpicModal, render } from "../../core/render";
@@ -36,7 +36,7 @@ import {
   openGogLoginPage,
   syncGogLibrary,
 } from "../auth/gog-auth-actions";
-import { gogCancelDownload } from "../../gog";
+import { gogCancelDownload, gogImportGame, gogVerifyGame } from "../../gog";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -805,6 +805,40 @@ document.addEventListener("click", (e) => {
   } else if (act === "install-overlay-close") {
     const el = e.target as HTMLElement;
     if (el === t) closeInstallDialog();
+  } else if (act === "gog-import-existing" && id) {
+    void (async () => {
+      const chosen = await epicSelectFolderDialog(null, i18nT("settings.importInstalled")).catch(() => null);
+      if (!chosen) return;
+      try {
+        const info = await gogImportGame(id, chosen);
+        toast(i18nT("settings.importInstalledDone", { imported: 1, relinked: 0 }), "ok");
+        closeInstallDialog();
+        const cleanId = id.replace("gog::", "");
+        const g = S.gogSummariesMap.get(cleanId);
+        if (g) {
+          g.installed = true;
+          g.installPath = info.install_path;
+          g.installSize = info.install_size;
+          if (info.version) {
+            g.version = info.version;
+            g.installedVersion = info.version;
+          }
+        }
+        const item = S.allGamesMap.get(id);
+        if (item) {
+          item.installed = true;
+          item.installPath = info.install_path;
+          item.installSize = info.install_size;
+          if (info.version) {
+            item.version = info.version;
+            item.installedVersion = info.version;
+          }
+        }
+        if (S.view === "library") patchLibraryCardDom(id);
+      } catch (err) {
+        toast(String(err), "err");
+      }
+    })();
   } else if ((act === "epic-cancel" || act === "cancel") && id) {
     if (id.startsWith("gog::")) {
       void gogCancelDownload(id);
@@ -1059,10 +1093,23 @@ document.addEventListener("click", (e) => {
     void cancelMoveGame(id);
   } else if (act === "manage-verify" && id) {
     updateVerifyProgressInPlace(id, 0, 100, 0, i18nT("dl.starting"), i18nT("dl.starting"));
-    epicVerifyGame(id).catch((err) => {
-      resetVerifyInPlace(id);
-      toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
-    });
+    if (id.startsWith("gog::")) {
+      gogVerifyGame(id)
+        .then((msg) => {
+          updateVerifyProgressInPlace(id, 100, 100, 100, msg, "");
+          toast(msg, "ok");
+          window.setTimeout(() => resetVerifyInPlace(id), 1200);
+        })
+        .catch((err) => {
+          resetVerifyInPlace(id);
+          toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
+        });
+    } else {
+      epicVerifyGame(id).catch((err) => {
+        resetVerifyInPlace(id);
+        toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
+      });
+    }
   } else if (act === "manage-sync-saves" && id && !S.manageSyncingSaves) {
     S.manageSyncingSaves = true;
     const syncBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-sync-saves"]');
