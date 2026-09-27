@@ -1266,5 +1266,9 @@
   "common.unknownError": "未知错误",
   "sys.openEpicStore": "在 Epic Store 中打开",
   "sys.openGogStore": "在 GOG Store 中打开",
-  "drawer.storeTitleGog": "打开 GOG Store 页面"
+  "drawer.storeTitleGog": "打开 GOG Store 页面",
+  "lib.storeBy": "商店：",
+  "col.allCollections": "收藏夹",
+  "col.noCollectionFilter": "所有游戏（清除筛选）",
+  "source.gog": "GOG"
 }

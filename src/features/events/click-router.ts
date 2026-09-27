@@ -108,6 +108,26 @@ document.addEventListener("click", (e) => {
     }
   }
 
+  // Close the store dropdown when clicking outside it.
+  if (S.isStoreDropdownOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest(".store-dropdown-container")) {
+      S.isStoreDropdownOpen = false;
+      const menu = document.getElementById("store-dropdown-menu");
+      if (menu) menu.classList.remove("show");
+    }
+  }
+
+  // Close the collection dropdown when clicking outside it.
+  if (S.isColDropdownOpen) {
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl.closest(".col-dropdown-container")) {
+      S.isColDropdownOpen = false;
+      const menu = document.getElementById("col-dropdown-menu");
+      if (menu) menu.classList.remove("show");
+    }
+  }
+
   // Marker palette closes when clicking outside it.
   if (S.isMarkerPaletteOpen) {
     const targetEl = e.target as HTMLElement;
@@ -371,10 +391,58 @@ document.addEventListener("click", (e) => {
     if (appId) {
       openEpicModal(appId, true);
     }
+  } else if (act === "toggle-store-dropdown") {
+    S.isStoreDropdownOpen = !S.isStoreDropdownOpen;
+    S.isSortDropdownOpen = false;
+    S.isColDropdownOpen = false;
+    const sortMenu = document.getElementById("sort-dropdown-menu");
+    if (sortMenu) sortMenu.classList.remove("show");
+    const colMenu = document.getElementById("col-dropdown-menu");
+    if (colMenu) colMenu.classList.remove("show");
+    const menu = document.getElementById("store-dropdown-menu");
+    if (menu) {
+      menu.classList.toggle("show", S.isStoreDropdownOpen);
+    } else {
+      render();
+    }
   } else if (act === "source-filter" && t.dataset.val) {
     const val = t.dataset.val as SourceFilter;
     if (val === "all" || val === "epic" || val === "gog") {
       S.sourceFilter = val;
+      S.isStoreDropdownOpen = false;
+      const menu = document.getElementById("store-dropdown-menu");
+      if (menu) menu.classList.remove("show");
+      resetCardChunk();
+      render();
+    }
+  } else if (act === "toggle-col-dropdown") {
+    S.isColDropdownOpen = !S.isColDropdownOpen;
+    S.isSortDropdownOpen = false;
+    S.isStoreDropdownOpen = false;
+    const sortMenu = document.getElementById("sort-dropdown-menu");
+    if (sortMenu) sortMenu.classList.remove("show");
+    const storeMenu = document.getElementById("store-dropdown-menu");
+    if (storeMenu) storeMenu.classList.remove("show");
+    const menu = document.getElementById("col-dropdown-menu");
+    if (menu) {
+      menu.classList.toggle("show", S.isColDropdownOpen);
+    } else {
+      render();
+    }
+  } else if (act === "select-col-filter") {
+    const colId = t.dataset.colId;
+    S.isColDropdownOpen = false;
+    const menu = document.getElementById("col-dropdown-menu");
+    if (menu) menu.classList.remove("show");
+    if (!colId || colId === "none") {
+      S.activeCollectionId = null;
+      S.epicFilter = "all";
+    } else {
+      S.activeCollectionId = colId;
+      S.epicFilter = "all";
+    }
+    if (!updateLibraryFilterInPlace()) {
+      resetCardChunk();
       render();
     }
   } else if (act === "epic-filter" && t.dataset.val) {
@@ -403,6 +471,14 @@ document.addEventListener("click", (e) => {
       S.epicFilter = "all";
     }
     S.isSortDropdownOpen = false;
+    S.isStoreDropdownOpen = false;
+    S.isColDropdownOpen = false;
+    const sortMenu = document.getElementById("sort-dropdown-menu");
+    if (sortMenu) sortMenu.classList.remove("show");
+    const storeMenu = document.getElementById("store-dropdown-menu");
+    if (storeMenu) storeMenu.classList.remove("show");
+    const colMenu = document.getElementById("col-dropdown-menu");
+    if (colMenu) colMenu.classList.remove("show");
     const hasCustomCol = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     if (hadCustomCol !== hasCustomCol || !updateLibraryFilterInPlace()) {
       resetCardChunk();
@@ -410,6 +486,12 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "toggle-sort-dropdown") {
     S.isSortDropdownOpen = !S.isSortDropdownOpen;
+    S.isStoreDropdownOpen = false;
+    S.isColDropdownOpen = false;
+    const storeMenu = document.getElementById("store-dropdown-menu");
+    if (storeMenu) storeMenu.classList.remove("show");
+    const colMenu = document.getElementById("col-dropdown-menu");
+    if (colMenu) colMenu.classList.remove("show");
     const menu = document.getElementById("sort-dropdown-menu");
     if (menu) {
       menu.classList.toggle("show", S.isSortDropdownOpen);
@@ -684,6 +766,9 @@ document.addEventListener("click", (e) => {
     resetCardChunk();
     render();
   } else if (act === "open-new-collection-modal") {
+    S.isColDropdownOpen = false;
+    const menu = document.getElementById("col-dropdown-menu");
+    if (menu) menu.classList.remove("show");
     openCollectionModal();
   } else if (act === "edit-collection") {
     const colId = t.dataset.colId;

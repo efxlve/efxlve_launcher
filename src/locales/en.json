@@ -1277,9 +1277,12 @@
   "gog.guideStep3Desc": "Copy the code parameter from the browser URL bar (or whole URL) and paste it here.",
   "source.all": "All Stores",
   "source.epic": "Epic Games",
-  "source.gog": "GOG.COM",
+  "source.gog": "GOG",
   "filter.source": "Store Filter",
   "sys.openEpicStore": "Open in Epic Store",
   "sys.openGogStore": "Open in GOG Store",
-  "drawer.storeTitleGog": "Open the GOG Store page"
+  "drawer.storeTitleGog": "Open the GOG Store page",
+  "lib.storeBy": "Store:",
+  "col.allCollections": "Collections",
+  "col.noCollectionFilter": "All Games (Clear Filter)"
 }

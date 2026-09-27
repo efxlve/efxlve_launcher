@@ -1266,5 +1266,9 @@
   "common.unknownError": "Неизвестная ошибка",
   "sys.openEpicStore": "Открыть в Epic Store",
   "sys.openGogStore": "Открыть в GOG Store",
-  "drawer.storeTitleGog": "Открыть страницу в GOG Store"
+  "drawer.storeTitleGog": "Открыть страницу в GOG Store",
+  "lib.storeBy": "Магазин:",
+  "col.allCollections": "Коллекции",
+  "col.noCollectionFilter": "Все игры (Сбросить фильтр)",
+  "source.gog": "GOG"
 }

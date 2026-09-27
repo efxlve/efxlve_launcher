@@ -592,17 +592,31 @@ export function renderEpic(): string {
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
   const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
-  const sourceSeg = hasGog
+  const currentStoreLabel =
+    S.sourceFilter === "epic"
+      ? t("source.epic")
+      : S.sourceFilter === "gog"
+        ? t("source.gog")
+        : t("source.all");
+
+  const sourceDropdown = hasGog
     ? `
-    <div class="seg source-seg" role="group" aria-label="${t("filter.source")}">
-      <button class="${S.sourceFilter === "all" ? "active" : ""}" data-act="source-filter" data-val="all" title="${t("source.all")}">${t("source.all")}</button>
-      <button class="${S.sourceFilter === "epic" ? "active" : ""}" data-act="source-filter" data-val="epic" title="${t("source.epic")}">Epic</button>
-      <button class="${S.sourceFilter === "gog" ? "active" : ""}" data-act="source-filter" data-val="gog" title="${t("source.gog")}">GOG</button>
+    <div class="store-dropdown-container">
+      <button class="btn ghost lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
+        <span class="lib-sort-kicker">${esc(t("lib.storeBy"))}</span>
+        <span class="sort-btn-label">${esc(currentStoreLabel)}</span>
+        ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
+      </button>
+      <div id="store-dropdown-menu" class="sort-dropdown-menu ${S.isStoreDropdownOpen ? "show" : ""}">
+        <button class="sort-menu-item-btn ${S.sourceFilter === "all" ? "selected" : ""}" data-act="source-filter" data-val="all">${esc(t("source.all"))}</button>
+        <button class="sort-menu-item-btn ${S.sourceFilter === "epic" ? "selected" : ""}" data-act="source-filter" data-val="epic">${esc(t("source.epic"))}</button>
+        <button class="sort-menu-item-btn ${S.sourceFilter === "gog" ? "selected" : ""}" data-act="source-filter" data-val="gog">${esc(t("source.gog"))}</button>
+      </div>
     </div>`
     : "";
 
   const tools = `
-    ${sourceSeg}
+    ${sourceDropdown}
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
         <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
@@ -621,14 +635,51 @@ export function renderEpic(): string {
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>
     <button class="icon-btn lib-refresh-btn ${S.epicSyncing || S.gogSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
 
+  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+  const activeCol = isColActive ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
+  const colBtnLabel = activeCol ? activeCol.name : t("col.allCollections");
+
+  const colDropdown = `
+    <div class="col-dropdown-container">
+      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive ? "active" : ""}" data-act="toggle-col-dropdown" data-col-id="${esc(activeCol?.id ?? "")}" title="${esc(t("col.allCollections"))}">
+        <span>${esc(colBtnLabel)}</span>
+        ${icon(S.isColDropdownOpen ? "chevron-up" : "chevron-down", 14)}
+      </button>
+      <div id="col-dropdown-menu" class="sort-dropdown-menu col-dropdown-menu ${S.isColDropdownOpen ? "show" : ""}">
+        ${S.epicCollections.length > 0 ? `
+          <div class="col-dropdown-list">
+            ${isColActive ? `
+              <button class="sort-menu-item-btn col-menu-item-btn" data-act="select-col-filter" data-col-id="none">
+                <span class="col-item-name" style="opacity: 0.7;">${esc(t("col.noCollectionFilter"))}</span>
+              </button>
+              <div class="col-dropdown-divider"></div>
+            ` : ""}
+            ${S.epicCollections.map((col) => {
+              const isSelected = S.activeCollectionId === col.id;
+              const count = col.app_names?.length ?? 0;
+              return `
+                <button class="sort-menu-item-btn col-menu-item-btn lib-col-tab ${isSelected ? "selected" : ""}" data-act="select-col-filter" data-tab="collection" data-col-id="${esc(col.id)}">
+                  <span class="col-item-name">${esc(col.name)}</span>
+                  <span class="col-item-count">${count}</span>
+                </button>`;
+            }).join("")}
+          </div>
+          <div class="col-dropdown-divider"></div>
+        ` : `
+          <div class="col-dropdown-empty">${esc(t("col.noCollectionsLong"))}</div>
+          <div class="col-dropdown-divider"></div>
+        `}
+        <button class="sort-menu-item-btn col-menu-add-btn" data-act="open-new-collection-modal">
+          ${icon("plus", 14)} <span>${esc(t("col.newTitle"))}</span>
+        </button>
+      </div>
+    </div>`;
+
   const filters = [
     filterTab("all", t("library.all")),
     filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    ...S.epicCollections.map((col) =>
-      `<button class="tab lib-filter lib-col-tab ${S.activeCollectionId === col.id ? "active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}">${esc(col.name)}</button>`,
-    ),
-    `<button class="icon-btn lib-col-add" data-act="open-new-collection-modal" title="${esc(t("col.newTitle"))}">${icon("plus", 16)}</button>`,
+    colDropdown,
   ].join("");
 
   return `
@@ -648,6 +699,16 @@ export function updateLibraryFilterInPlace(): boolean {
   filters.querySelectorAll<HTMLElement>(".lib-filter[data-act='quick-tab']").forEach((tabEl) => {
     tabEl.classList.toggle("active", isFilterActive(tabEl.dataset.tab, tabEl.dataset.colId));
   });
+
+  const colDropdownBtn = filters.querySelector<HTMLElement>(".lib-col-dropdown-btn");
+  if (colDropdownBtn) {
+    const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+    colDropdownBtn.classList.toggle("active", isColActive);
+    const activeCol = isColActive ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
+    const labelSpan = colDropdownBtn.querySelector("span");
+    if (labelSpan) labelSpan.textContent = activeCol ? activeCol.name : t("col.allCollections");
+    colDropdownBtn.dataset.colId = activeCol?.id ?? "";
+  }
 
   resetCardChunk();
   invalidateLibraryVisibleCache();

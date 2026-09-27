@@ -230,6 +230,8 @@ export const S = {
   prevRenderedUpdatesCount: (-1) as number,
   prevRenderedColId: (undefined) as string | null | undefined,
   isSortDropdownOpen: false,
+  isStoreDropdownOpen: false,
+  isColDropdownOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,

@@ -14,8 +14,8 @@
 .lib-filters.tabs { gap: 28px; }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
 .lib-refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
-.lib-filters { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-.lib-filters::-webkit-scrollbar { height: 0; display: none; }
+.lib-filters { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow: visible; }
+.lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { cursor: grab; flex-shrink: 0; touch-action: none; }
 .lib-col-tab.dragging { cursor: grabbing; opacity: 0.45; }
 .lib-col-add {
@@ -30,8 +30,8 @@
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-width: 560px;
 }
 
-/* --- Sort menu --- */
-.sort-dropdown-container { position: relative; }
+/* --- Sort & Store menus --- */
+.sort-dropdown-container, .store-dropdown-container { position: relative; }
 .lib-sort-btn { gap: 8px; padding: 0 10px 0 12px; }
 .lib-sort-kicker { color: var(--text-3); font-weight: 400; }
 .lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
@@ -48,6 +48,35 @@
 }
 .sort-menu-item-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
 .sort-menu-item-btn.selected { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+
+/* --- Collections dropdown in filter bar --- */
+.col-dropdown-container { position: relative; display: inline-flex; align-items: center; }
+.lib-col-dropdown-btn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.col-dropdown-menu {
+  left: 0; right: auto; min-width: 220px; max-width: 280px; max-height: 320px; overflow-y: auto;
+}
+.col-dropdown-divider {
+  height: 1px; margin: 5px 0; background: rgba(255, 255, 255, 0.08);
+}
+.col-menu-item-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+}
+.col-item-name {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;
+}
+.col-item-count {
+  font-size: 11px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums;
+  padding: 1px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); flex-shrink: 0;
+}
+.col-menu-add-btn {
+  display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 500;
+}
+.col-menu-add-btn:hover { color: #fff; }
+.col-dropdown-empty {
+  padding: 8px 10px; font-size: 13px; color: var(--text-3); text-align: center;
+}
 
 /* --- Cover grid --- */
 .pgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }

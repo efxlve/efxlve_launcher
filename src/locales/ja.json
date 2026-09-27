@@ -1266,5 +1266,9 @@
   "common.unknownError": "不明なエラー",
   "sys.openEpicStore": "Epic Store で開く",
   "sys.openGogStore": "GOG Store で開く",
-  "drawer.storeTitleGog": "GOG Store のページを開く"
+  "drawer.storeTitleGog": "GOG Store のページを開く",
+  "lib.storeBy": "ストア:",
+  "col.allCollections": "コレクション",
+  "col.noCollectionFilter": "すべてのゲーム（フィルター解除）",
+  "source.gog": "GOG"
 }

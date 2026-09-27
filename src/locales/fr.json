@@ -1266,5 +1266,9 @@
   "common.unknownError": "Erreur inconnue",
   "sys.openEpicStore": "Ouvrir dans Epic Store",
   "sys.openGogStore": "Ouvrir dans GOG Store",
-  "drawer.storeTitleGog": "Ouvrir la page GOG Store"
+  "drawer.storeTitleGog": "Ouvrir la page GOG Store",
+  "lib.storeBy": "Boutique :",
+  "col.allCollections": "Collections",
+  "col.noCollectionFilter": "Tous les jeux (Effacer le filtre)",
+  "source.gog": "GOG"
 }

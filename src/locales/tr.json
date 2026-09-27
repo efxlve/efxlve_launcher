@@ -1277,9 +1277,12 @@
   "gog.guideStep3Desc": "Tarayıcı adres çubuğundaki URL'den code parametresini (veya tüm URL'yi) kopyalayıp buraya yapıştırın.",
   "source.all": "Tüm Mağazalar",
   "source.epic": "Epic Games",
-  "source.gog": "GOG.COM",
+  "source.gog": "GOG",
   "filter.source": "Mağaza Filtresi",
   "sys.openEpicStore": "Epic Store'da Aç",
   "sys.openGogStore": "GOG Store'da Aç",
-  "drawer.storeTitleGog": "GOG Store Sayfasını Aç"
+  "drawer.storeTitleGog": "GOG Store Sayfasını Aç",
+  "lib.storeBy": "Mağaza:",
+  "col.allCollections": "Koleksiyonlar",
+  "col.noCollectionFilter": "Tüm Oyunlar (Filtreyi Temizle)"
 }

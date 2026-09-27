@@ -1266,5 +1266,9 @@
   "common.unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",
   "sys.openEpicStore": "เปิดใน Epic Store",
   "sys.openGogStore": "เปิดใน GOG Store",
-  "drawer.storeTitleGog": "เปิดหน้าร้าน GOG Store"
+  "drawer.storeTitleGog": "เปิดหน้าร้าน GOG Store",
+  "lib.storeBy": "ร้านค้า:",
+  "col.allCollections": "คอลเลกชัน",
+  "col.noCollectionFilter": "เกมทั้งหมด (ล้างตัวกรอง)",
+  "source.gog": "GOG"
 }
