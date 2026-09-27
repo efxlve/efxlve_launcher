@@ -18,6 +18,7 @@ export interface ChangelogRelease {
   version: string;
   date: string;
   isCurrent?: boolean;
+  items?: ChangelogText[];
   added?: ChangelogText[];
   improved?: ChangelogText[];
   fixed?: ChangelogText[];
@@ -26,138 +27,160 @@ export interface ChangelogRelease {
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.16",
-    date: "2026-09-28",
+    date: "2026-09-27",
     isCurrent: true,
-    added: [
+    items: [
       {
-        en: "GOG.COM & GOG Galaxy integration: OAuth2 login, unified library, DRM-free downloads, and cloud saves.",
-        tr: "GOG.COM & GOG Galaxy entegrasyonu: OAuth2 girişi, birleşik kütüphane, DRM-free indirmeler ve bulut kayıtları.",
+        en: "Playtime is now counted even if you close the launcher window while a game is running: the window hides to the tray (exactly like an active download) and the session keeps going.",
+        tr: "Oyun çalışırken başlatıcı penceresi kapatılsa bile oynama süresi sayılmaya devam eder: pencere sistem tepsisine gizlenir (tıpkı etkin bir indirme gibi) ve oturum sürer.",
       },
       {
-        en: "GOG GamesDB integration: crystal clear vertical box art portraits and 1600px panoramic hero banners.",
-        tr: "GOG GamesDB entegrasyonu: kristal netliğinde dikey kutu afişleri ve 1600px panoramik hero görselleri.",
+        en: "If the launcher is closed by hand, restarted for an update or crashes mid-session, the measured time is recovered on the next start instead of being lost.",
+        tr: "Başlatıcı elle kapatılırsa, bir güncelleme için yeniden başlatılırsa veya oturum ortasında çökerse, ölçülen süre kaybolmak yerine bir sonraki açılışta kurtarılır.",
       },
       {
-        en: "GOG Gameplay API: full achievements support with rarity percentages, tier cups, and unlock status.",
-        tr: "GOG Gameplay API: nadirlik oranları, kupa seviyeleri ve kilit durumuyla tam başarım desteği.",
-      },
-      {
-        en: "Multi-store game deduplication with in-page version switcher (Epic / GOG) for owned duplicates.",
-        tr: "Çift oyunları tekil kartta birleştirme ve oyun sayfasında sürüm değiştirici (Epic / GOG).",
-      },
-      {
-        en: "Store selector dropdown menu (Store: All / Epic / GOG) on the library toolbar.",
-        tr: "Kütüphane araç çubuğunda açılır mağaza seçim menüsü (Mağaza: Tümü / Epic / GOG ⌄).",
-      },
-      {
-        en: "Collections dropdown tab in the filter bar with per-collection item counters.",
-        tr: "Filtre satırında sayaçlı ve filtre temizleme seçenekli açılır Koleksiyonlar menüsü.",
-      },
-      {
-        en: "Hardware-accelerated sliding indicator animation on the store switcher buttons.",
-        tr: "Mağaza geçiş düğmelerinde donanım hızlandırmalı kayan gösterge animasyonu.",
-      },
-      {
-        en: "Interactive titlebar version pill with release changelog viewer.",
-        tr: "Pencere çubuğunda etkileşimli BETA sürüm hapı ve Değişiklik Günlüğü penceresi.",
-      },
-    ],
-    improved: [
-      {
-        en: "Store-agnostic system requirements (Windows Minimum and Recommended specifications) across all stores.",
-        tr: "Mağazadan bağımsız sistem gereksinimleri (Windows Asgari ve Önerilen donanım tabloları).",
-      },
-      {
-        en: "Instant 0ms store switching with persistent background dual-webviews.",
-        tr: "Arka planda korunan çift webview mimarisiyle 0 ms anlık mağaza geçişi.",
-      },
-      {
-        en: "Refined tray minimization while downloads or game sessions are active in the background.",
-        tr: "İndirme ve oyun oturumları sırasında sistem tepsisine küçültme ve arka plan desteği.",
-      },
-    ],
-    fixed: [
-      {
-        en: "Fixed GOG achievements not reflecting in library portrait cards and cover stats.",
-        tr: "GOG başarımlarının kütüphane portre kartlarında görünmeme sorunu giderildi.",
-      },
-      {
-        en: "Fixed cropped title text on GOG covers (e.g. 'CONTRO', 'ABSOLU DRIFT').",
-        tr: "GOG kapaklarındaki kesilmiş başlık metinleri düzeltildi.",
-      },
-      {
-        en: "Fixed low-resolution stretched background art on GOG game detail pages.",
-        tr: "GOG detay sayfalarındaki bulanık ve pikselleşmiş arka plan görselleri düzeltildi.",
-      },
-      {
-        en: "Enhanced 15-second heartbeat crash recovery for game playtime tracking.",
-        tr: "Oynanış süresi takibi için 15 saniyelik kalp atışlı çökme ve kapanma kurtarma sistemi.",
+        en: "The playtime explanation in Properties now says exactly that: sessions are counted here, Epic's own hours are merged in when Epic has them for that game, and not every game reports to Epic.",
+        tr: "Özellikler'deki oynama süresi açıklaması güncellendi: oturumlar burada sayılır, Epic'in ilgili oyun için saati varsa birleştirilir ve her oyun Epic'e raporlama yapmaz.",
       },
     ],
   },
   {
     version: "0.1.15",
-    date: "2026-09-25",
-    added: [
+    date: "2026-09-26",
+    items: [
       {
-        en: "Live game descriptions fetched directly from official store APIs with Wikipedia and IGDB fallbacks.",
-        tr: "Wikipedia ve IGDB yedekleriyle birlikte doğrudan mağaza API'lerinden canlı oyun açıklamaları.",
+        en: "\"About the game\" now comes from the game's own store first (Epic) and falls back to Wikipedia. Source attribution line specifies \"Source: Epic Games Store\" or \"Current source: Wikipedia\" (strictly verified video game articles only).",
+        tr: "\"Oyun hakkında\" bölümü artık önce oyunun kendi mağazasından (Epic) alınır ve bulunamazsa Wikipedia'ya başvurulur. Kaynak satırı \"Kaynak: Epic Games Store\" veya \"Geçerli kaynak: Wikipedia\" olarak belirtilir (yalnızca doğrulanabilir video oyunu makaleleri kabul edilir).",
       },
       {
-        en: "Combined server-side playtime sync with local session tracking.",
-        tr: "Sunucu taraflı oyun süresi senkronizasyonu ile yerel oturum kayıtlarının birleştirilmesi.",
+        en: "New Search on IGDB button under the description opens the game on IGDB in your browser without needing an account or API key.",
+        tr: "Açıklamanın altındaki yeni \"IGDB'de Ara\" düğmesi oyunu tarayıcınızda açar (hesap veya API anahtarı gerekmez).",
+      },
+      {
+        en: "Real playtime: hours are read from Epic's playtime service and merged with local tracking, displaying on library covers, profile totals, and most-played sorting.",
+        tr: "Gerçek oynama süresi: saatler Epic'in servisinden okunur ve yerel takiple birleştirilir; kütüphane kapaklarında, profil toplamında ve en çok oynananlar sıralamasında gösterilir.",
+      },
+      {
+        en: "A quiet loading spinner is displayed while descriptions are fetching instead of showing \"no description\".",
+        tr: "Açıklama yüklenirken \"açıklama yok\" uyarısı yerine sessiz bir yükleme göstergesi görüntülenir.",
+      },
+      {
+        en: "Cleanups: removed deprecated overview components, styles, and 20 unused translation keys while keeping all 15 languages complete.",
+        tr: "Temizlik: 15 dilin tamamı eksiksiz tutularak kullanılmayan genel bakış bileşenleri, stilleri ve 20 atıl çeviri anahtarı temizlendi.",
       },
     ],
-    improved: [
+  },
+  {
+    version: "0.1.14",
+    date: "2026-09-26",
+    items: [
       {
-        en: "Streamlined codebase: removed deprecated third-party integrations and cleaned up translation keys.",
-        tr: "Kod tabanı sadeleştirmesi: kullanılmayan entegrasyonlar ve çeviri anahtarları temizlendi.",
+        en: "Library cover grows smoothly on hover and shrinks cleanly when pointer leaves without clipping contain boundaries.",
+        tr: "Kütüphane kapağı imleç üzerine geldiğinde akıcı bir şekilde büyür ve imleç ayrıldığında kırpılma olmadan temiz bir şekilde küçülür.",
+      },
+    ],
+  },
+  {
+    version: "0.1.13",
+    date: "2026-09-26",
+    items: [
+      {
+        en: "Fast account switching: switches accounts without full logout, displaying the saved library snapshot immediately while Epic updates in the background.",
+        tr: "Hızlı hesap değiştirme: tam çıkış yapmadan hesaplar arası geçiş yapılır, Epic listesi arka planda güncellenirken kaydedilmiş kütüphane anında gösterilir.",
       },
     ],
   },
   {
     version: "0.1.12",
-    date: "2026-09-22",
-    added: [
+    date: "2026-09-26",
+    items: [
       {
-        en: "Optional library pagination (24, 48, 96 games per page) in Appearance settings.",
-        tr: "Görünüm ayarlarında isteğe bağlı kütüphane sayfalama seçeneği (sayfa başına 24, 48, 96 oyun).",
+        en: "Optional library pagination: choose 24, 48, or 96 games per page in Settings > Appearance & Language to browse with page buttons.",
+        tr: "İsteğe bağlı kütüphane sayfalama: Ayarlar > Görünüm ve Dil bölümünden sayfa başına 24, 48 veya 96 oyun seçilebilir.",
       },
       {
-        en: "SteamGridDB custom portrait and hero artwork manager with instant reset.",
-        tr: "Anında sıfırlama özellikli SteamGridDB özel portre ve yatay afiş yöneticisi.",
+        en: "Optional titles under covers: display game title beneath each grid portrait.",
+        tr: "Kapakların altında isteğe bağlı başlıklar: ızgaradaki her kapağın altında oyun adını gösterme seçeneği.",
       },
       {
-        en: "Screenshot gallery with folder migration support.",
-        tr: "Klasör taşıma ve yönetme destekli oyun ekran görüntüsü galerisi.",
+        en: "Screenshots folder customization: configure custom directory with one-click migration and \"Open Folder\" button.",
+        tr: "Ekran görüntüleri klasörü: klasör taşıma onayı ve \"Klasörü Aç\" butonu ile yakalama klasörünü özelleştirme.",
+      },
+      {
+        en: "Image compression on by default: captures saved as AVIF (~1 MB instead of 10-15 MB) with WebP fallback.",
+        tr: "Görsel sıkıştırma varsayılan olarak açık: yeni yakalamalar WebP yedeklemeli AVIF formatında (10-15 MB yerine ~1 MB) kaydedilir.",
       },
     ],
   },
   {
     version: "0.1.11",
-    date: "2026-09-18",
-    added: [
+    date: "2026-09-26",
+    items: [
       {
-        en: "Epic Online Services (EOS) status detection and overlay check.",
-        tr: "Epic Online Services (EOS) durum tespiti ve oyun içi overlay kontrolü.",
+        en: "Epic Online Services requirement detection with notification banner and direct installer download in Settings.",
+        tr: "Epic Online Services gereksinimi tespiti: bildirim uyarısı ve Ayarlar'dan tek tıkla resmi yükleyici indirme.",
       },
       {
-        en: "Resumable download manager for interrupted, paused, or network-failed game downloads.",
-        tr: "Yarım kalan, duraklatılan veya kesilen oyun indirmeleri için kaldığı yerden devam etme yöneticisi.",
+        en: "Resumable downloads: interrupted downloads or launcher exits resume seamlessly from saved files.",
+        tr: "Kaldığı yerden devam eden indirmeler: kesilen indirmeler veya uygulama kapanışları kaydedilen dosyalardan devam eder.",
+      },
+      {
+        en: "Epic Games Store search bar positioned conveniently above the embedded webview.",
+        tr: "Epic Games Store arama kutusu gömülü mağaza görünümünün üzerinde açılır.",
       },
     ],
   },
   {
     version: "0.1.10",
-    date: "2026-09-15",
-    added: [
+    date: "2026-09-25",
+    items: [
       {
-        en: "Batch library game hiding with selective management modal.",
-        tr: "Toplu seçim penceresiyle çoklu oyun gizleme ve yönetme desteği.",
+        en: "Batch game hiding to hide multiple titles at once from the library.",
+        tr: "Kütüphaneden birden fazla oyunu aynı anda gizlemek için toplu gizleme yöneticisi.",
       },
       {
-        en: "Profile trophy privacy controls and Platinum rank showcase.",
-        tr: "Profil kupa gizlilik kontrolleri ve Platin kupa vitrini.",
+        en: "Achievement row visibility controls and game title display on each row.",
+        tr: "Başarım satırlarını gizleme ve her satırda oyun adını gösterme kontrolü.",
+      },
+      {
+        en: "Library quick filter for installed games only.",
+        tr: "Kütüphaneyi yalnızca yüklü oyunlara göre filtreleme seçeneği.",
+      },
+      {
+        en: "Hidden games manager in Settings displaying covers, developers, and unhide options.",
+        tr: "Ayarlar'da kapaklar, geliştirici bilgileri ve yeniden gösterme seçenekleriyle gizli oyunlar yöneticisi.",
+      },
+    ],
+  },
+  {
+    version: "0.1.9",
+    date: "2026-09-25",
+    items: [
+      {
+        en: "Open-source desktop launcher for your Epic Games library powered by legendary CLI.",
+        tr: "legendary CLI destekli, Epic Games kütüphaneniz için açık kaynaklı masaüstü başlatıcı.",
+      },
+      {
+        en: "Single consolidated update action on game detail pages.",
+        tr: "Oyun detay sayfalarında sadeleştirilmiş tekil güncelleme eylemi.",
+      },
+      {
+        en: "Folder exclusion: skips third-party Rockstar, EA, and Ubisoft folders unless previously installed by Epic.",
+        tr: "Klasör filtreleme: Epic tarafından önceden kurulmamışsa Rockstar, EA ve Ubisoft klasörlerini atlar.",
+      },
+      {
+        en: "Automatic desktop shortcut cleanup upon game uninstall.",
+        tr: "Oyun kaldırıldığında masaüstü kısayolunun otomatik temizlenmesi.",
+      },
+    ],
+  },
+  {
+    version: "0.1.0",
+    date: "2026-09-24",
+    items: [
+      {
+        en: "Signed launcher auto-update via GitHub Releases, update manager with silent background downloads, and install gating during gameplay.",
+        tr: "GitHub Releases üzerinden imzalı otomatik güncelleme sistemi, sessiz arka plan indirmesi ve oyun sırasında kurulumu erteleme.",
       },
     ],
   },
@@ -168,11 +191,11 @@ function pickText(item: ChangelogText): string {
   return item.en;
 }
 
-function renderGroup(title: string, items: ChangelogText[] | undefined): string {
+function renderGroup(title: string | undefined, items: ChangelogText[] | undefined): string {
   if (!items || items.length === 0) return "";
   return `
     <div class="changelog-group">
-      <span class="changelog-group-label">${esc(title)}</span>
+      ${title ? `<span class="changelog-group-label">${esc(title)}</span>` : ""}
       <ul class="changelog-list">
         ${items.map((item) => `<li>${esc(pickText(item))}</li>`).join("")}
       </ul>
@@ -203,6 +226,7 @@ export function renderChangelogModal(): void {
           </div>
           <span class="changelog-date">${esc(rel.date)}</span>
         </div>
+        ${renderGroup(undefined, rel.items)}
         ${renderGroup(t("changelog.added"), rel.added)}
         ${renderGroup(t("changelog.improved"), rel.improved)}
         ${renderGroup(t("changelog.fixed"), rel.fixed)}
