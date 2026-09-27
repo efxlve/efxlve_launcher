@@ -53,6 +53,7 @@ cargo test                 # Rust birim testleri (yeni mantık/komut eklendiğin
     - **Yavaş ağ önceliği:** Arayüz daima disk önbelleğinden anında açılır; hiçbir ağ isteği UI'yi bloklayamaz. Görsel/varlık istekleri tembel ve iptal edilebilir olur; başarısız ağ UI'yi kilitlemez (Heroic Prensibi, §5).
     - **Kademeli yükleme:** İlk boyama (FCP) için kritik olmayan her şey (kupa özetleri, HLTB, eleştirmen skorları, DLC listesi, ekran görüntüleri) talep üzerine ve sekme açıldığında yüklenir.
     - **Görsel modernlikten ödün yok:** Bu optimizasyonlar UI kalitesini düşürmez; PS5 konsol estetiği, ferah kartlar ve akıcı geçişler korunur. Performans ve estetik birlikte zorunludur.
+11. **ZORUNLU SÜRÜM & CHANGELOG SENKRONİZASYON KURALI:** Yeni bir sürüm çıkarılacağı zaman (örneğin v0.1.17 ve sonraki tüm sürümler), `package.json`, `src-tauri/tauri.conf.json` ve `src-tauri/Cargo.toml` sürümleri güncellenirken, **`src/features/changelog/changelog-view.ts` içindeki `CHANGELOG_DATA` dizisi de ZORUNLU olarak o sürümün resmi notlarıyla (TR/EN maddeleri) güncellenmeli ve `isCurrent: true` yeni sürüme taşınmalıdır.** Başlatıcıdaki sürüm hapı ve Ayarlar > Hakkında menüsündeki "Değişiklik Günlüğü" doğrudan bu diziyi okur; GitHub Releases ile daima 1:1 tutarlı olmalıdır.
 
 ## 5. Mimari & Veri Akışı Prensibi
 
@@ -126,6 +127,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 - **Tarihçe & Geçmiş Sürüm Günlükleri (Bölüm 1–78):** [`docs/CHANGELOG_INTERNAL.md`](./docs/CHANGELOG_INTERNAL.md)
 
 ## 9. Son Çalışma Özeti
+
+- **İndirmeler Sekmesi Oyun Bazlı Güncelleme Göstergesini Temizleme (Clear Indicator) & Sürüm Changelog Kuralı:** (1) İndirmeler sayfasında güncellemesi bekleyen oyunlar için o oyuna özel güncelleme bildirimini/göstergesini temizleme (susturma) özelliği eklendi (`toggleIgnoreUpdate`, `S.ignoredUpdates`, `efxlve-ignored-updates`). Kullanıcı belirli bir oyunu bir süre güncellemek istemediğinde güncelleme satırındaki `bell-off` butonuna veya sağ tık bağlam menüsüne tıklayarak ilgili oyunun göstergesini temizleyebilir. Bu durumda sol kenar çubuğundaki "Downloads" sayaç rozeti (`pendingUpdateCount`) ve Son Oynananlar güncelleme durumu anında güncellenir (sayı düşer veya 0 ise rozet gizlenir). Güncelleme satırında "Gösterge temizlendi" rozeti görünür ve istenildiğinde `bell` butonuyla bildirimler anında geri yüklenebilir. Oyun güncellendiğinde veya silindiğinde yok sayma kaydı otomatik temizlenir. 15 dilde tüm tooltip ve toast metinleri eklendi. (2) AGENTS.md §4 (Kural 11) ve §10 bölümlerine v0.1.17 ve sonraki tüm sürümler yayınlanırken `src/features/changelog/changelog-view.ts` içindeki `CHANGELOG_DATA` dizisinin GitHub Releases ile 1:1 güncellenmesi zorunlu kural olarak işlendi.
 
 - **BETA Başlığı, Etkileşimli Sürüm Hapı, Değişiklik Günlüğü (Changelog) & Çoklu Mağaza Yasal Uyarıları:** (1) Pencere çubuğundaki (Titlebar) düz "Beta" yazısı, siyah/beyaz kapsül tasarımına dönüştürüldü (`.winbar-version-pill`, `.winbar-beta-chip`, `.winbar-version-num` `v0.1.16`); tıklandığında açılan tam teşekküllü **Değişiklik Günlüğü (Changelog)** penceresi eklendi (`src/features/changelog/changelog-view.ts`). Günlük içeriği resmi GitHub Releases kayıtlarıyla birebir (1:1) eşleştirildi (v0.1.16 arka planda oynanış süresi ve çökme kurtarma, v0.1.15 Epic/Wikipedia mağaza açıklaması, IGDB araması ve gerçek Epic oynama süresi, v0.1.14 kapak hover büyümesi, v0.1.13 hızlı hesap geçişi, v0.1.12 sayfalama ve ekran görüntüsü klasörü, v0.1.11 EOS tespiti ve devam eden indirmeler, v0.1.10 çoklu gizleme, v0.1.9 ve v0.1.0) ve iki dilli (TR/EN) olarak konsol dark penceresinde listelenir. (2) Ayarlar > Hakkında (About) sekmesi güncellendi: Tagline tek mağazadan çoklu mağazaya (`Epic Games, GOG ve modern dijital oyun kütüphaneleri...`) uyarlandı; "Değişiklik Günlüğü" açma düğmesi eklendi. (3) Yasal bildirimler ve telif hakları bölümü gelecekteki mağaza genişlemelerini (Epic Games, CD PROJEKT / GOG, Valve / Steam, EA, Ubisoft vb.) kapsayacak şekilde bağımsızlık, DRM korumalarını aşmama, telif haklarına riayet ve GPL-3.0 açık kaynak beyanlarıyla 15 dilde eksiksiz güçlendirildi (`settings.aboutTagline`, `settings.aboutDisclaimer`, `settings.aboutDrmNotice`, `settings.aboutOpenSource`).
 
@@ -361,9 +364,10 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 **Tek seferlik kurulum (GitHub):** Repo Secrets'a eklenir: `TAURI_SIGNING_PRIVATE_KEY` = `~/.tauri/efxlve.key` dosya içeriği; `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = `~/.tauri/efxlve.key.password.txt` içeriği. **Anahtar/parola kaybolursa mevcut kullanıcılar bir daha güncelleme alamaz** — güvenli yedek şart.
 
 **Her sürümde yapılacaklar:**
-1. `src-tauri/tauri.conf.json` **ve** `src-tauri/Cargo.toml` içindeki `version` artırılır (örn. `0.1.1`).
-2. Commit + tag push: `git tag v0.1.1` → `git push origin v0.1.1` (workflow `v*` etiketiyle tetiklenir).
-3. GitHub Actions imzalı build alır, release'i yayınlar (`releaseDraft: false`) ve `latest.json` üretir. Kurulu istemciler bir sonraki açılışta/odaklanmada güncellemeyi görür.
+1. `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` **ve** `package.json` içindeki `version` artırılır (örn. `0.1.17`).
+2. **Değişiklik Günlüğü (Changelog) Senkronizasyonu (ZORUNLU):** `src/features/changelog/changelog-view.ts` içindeki `CHANGELOG_DATA` dizisine yeni sürüm (`version: "0.1.17"`, `date`, `isCurrent: true`, `items: [{ en: "...", tr: "..." }]`) GitHub Releases notlarıyla 1:1 eşleşecek şekilde en başa eklenir; eski sürümün `isCurrent` değeri kaldırılır.
+3. Commit + tag push: `git tag v0.1.17` → `git push origin v0.1.17` (workflow `v*` etiketiyle tetiklenir).
+4. GitHub Actions imzalı build alır, release'i yayınlar (`releaseDraft: false`) ve `latest.json` üretir. Kurulu istemciler bir sonraki açılışta/odaklanmada güncellemeyi görür.
 
 **Kurallar & tuzaklar:**
 - **Repo ve release'ler public kalmalıdır:** updater `latest.json` ve paketleri kimlik doğrulamasız indirir; private repoda release asset'leri 404 döner (ilk kurulumda repo private olduğu için tespit edildi, public yapıldı).

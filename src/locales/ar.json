@@ -1277,5 +1277,12 @@
   "changelog.current": "الحالي",
   "changelog.added": "تمت الإضافة",
   "changelog.improved": "تم التحسين",
-  "changelog.fixed": "تم الإصلاح"
+  "changelog.fixed": "تم الإصلاح",
+  "dl.ignoreIndicatorTip": "إخفاء مؤشر التحديث لهذه اللعبة",
+  "dl.restoreIndicatorTip": "استعادة مؤشر التحديث لهذه اللعبة",
+  "dl.indicatorIgnored": "تم إخفاء المؤشر",
+  "dl.indicatorIgnoredToast": "تم إخفاء مؤشر التحديث لـ {title}.",
+  "dl.indicatorRestoredToast": "تمت استعادة مؤشر التحديث لـ {title}.",
+  "ctx.ignoreIndicator": "إخفاء مؤشر التحديث",
+  "ctx.restoreIndicator": "إظهار مؤشر التحديث"
 }

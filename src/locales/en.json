@@ -1291,5 +1291,12 @@
   "changelog.current": "Current",
   "changelog.added": "Added",
   "changelog.improved": "Improved",
-  "changelog.fixed": "Fixed"
+  "changelog.fixed": "Fixed",
+  "dl.ignoreIndicatorTip": "Clear update indicator for this game",
+  "dl.restoreIndicatorTip": "Restore update indicator for this game",
+  "dl.indicatorIgnored": "Indicator cleared",
+  "dl.indicatorIgnoredToast": "Update indicator cleared for {title}.",
+  "dl.indicatorRestoredToast": "Update indicator restored for {title}.",
+  "ctx.ignoreIndicator": "Clear Update Indicator",
+  "ctx.restoreIndicator": "Restore Update Indicator"
 }

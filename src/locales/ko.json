@@ -1277,5 +1277,12 @@
   "changelog.current": "현재",
   "changelog.added": "추가됨",
   "changelog.improved": "개선됨",
-  "changelog.fixed": "수정됨"
+  "changelog.fixed": "수정됨",
+  "dl.ignoreIndicatorTip": "이 게임의 업데이트 표시 지우기",
+  "dl.restoreIndicatorTip": "이 게임의 업데이트 표시 복원",
+  "dl.indicatorIgnored": "표시 숨김",
+  "dl.indicatorIgnoredToast": "{title}의 업데이트 표시가 지워졌습니다.",
+  "dl.indicatorRestoredToast": "{title}의 업데이트 표시가 복원되었습니다.",
+  "ctx.ignoreIndicator": "업데이트 표시 지우기",
+  "ctx.restoreIndicator": "업데이트 표시 복원"
 }

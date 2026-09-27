@@ -1277,5 +1277,12 @@
   "changelog.current": "Текущая",
   "changelog.added": "Добавлено",
   "changelog.improved": "Улучшено",
-  "changelog.fixed": "Исправлено"
+  "changelog.fixed": "Исправлено",
+  "dl.ignoreIndicatorTip": "Скрыть индикатор обновления для этой игры",
+  "dl.restoreIndicatorTip": "Восстановить индикатор обновления для этой игры",
+  "dl.indicatorIgnored": "Индикатор скрыт",
+  "dl.indicatorIgnoredToast": "Индикатор обновления скрыт для {title}.",
+  "dl.indicatorRestoredToast": "Индикатор обновления восстановлен для {title}.",
+  "ctx.ignoreIndicator": "Скрыть индикатор обновления",
+  "ctx.restoreIndicator": "Показать индикатор обновления"
 }

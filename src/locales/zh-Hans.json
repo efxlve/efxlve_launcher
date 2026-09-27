@@ -1277,5 +1277,12 @@
   "changelog.current": "当前",
   "changelog.added": "新增",
   "changelog.improved": "改进",
-  "changelog.fixed": "修复"
+  "changelog.fixed": "修复",
+  "dl.ignoreIndicatorTip": "清除此游戏的更新指示器",
+  "dl.restoreIndicatorTip": "恢复此游戏的更新指示器",
+  "dl.indicatorIgnored": "已隐藏指示器",
+  "dl.indicatorIgnoredToast": "已清除 {title} 的更新指示器。",
+  "dl.indicatorRestoredToast": "已恢复 {title} 的更新指示器。",
+  "ctx.ignoreIndicator": "清除更新指示器",
+  "ctx.restoreIndicator": "恢复更新指示器"
 }

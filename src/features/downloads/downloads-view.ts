@@ -7,9 +7,12 @@
  * patched by id from the IPC listener.
  */
 
+import { IGNORED_UPDATES_KEY } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
+import { updateBadge } from "../../core/nav";
 import { epicWideArt, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
@@ -250,6 +253,25 @@ function renderActiveCard(dl: DlMetrics): string {
     </section>`;
 }
 
+/** Toggle whether a game's pending update indicator is cleared/ignored. */
+export function toggleIgnoreUpdate(appName: string): boolean {
+  const isIgnored = S.ignoredUpdates.has(appName);
+  if (isIgnored) {
+    S.ignoredUpdates.delete(appName);
+  } else {
+    S.ignoredUpdates.add(appName);
+  }
+  localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
+  updateBadge();
+  const title = S.epicSummariesMap.get(appName)?.title || appName;
+  if (!isIgnored) {
+    toast(t("dl.indicatorIgnoredToast", { title }));
+  } else {
+    toast(t("dl.indicatorRestoredToast", { title }));
+  }
+  return !isIgnored;
+}
+
 export function renderDownloads(): string {
   const active = activeDownload();
   const queueApps = S.dlQueueStatus.queue.filter((id) => !active || id !== active.id);
@@ -268,11 +290,16 @@ export function renderDownloads(): string {
   }).join("");
 
   const updateRows = updates.map((s) => {
+    const isIgnored = S.ignoredUpdates.has(s.appName);
     const info = S.availableUpdates.get(s.appName);
     const ver = info?.latestVersion ? `${info.installedVersion ? `${esc(info.installedVersion)} → ` : ""}${esc(info.latestVersion)}` : "";
-    const meta = [ver, s.installSize ? fmtBytes(s.installSize) : ""].filter(Boolean).join(" · ");
+    const metaParts = [ver, s.installSize ? fmtBytes(s.installSize) : ""].filter(Boolean);
+    if (isIgnored) metaParts.push(`<span class="dl-ignored-badge">${esc(t("dl.indicatorIgnored"))}</span>`);
+    const meta = metaParts.join(" · ");
+    const ignoreTip = isIgnored ? t("dl.restoreIndicatorTip") : t("dl.ignoreIndicatorTip");
+    const ignoreBtn = `<button class="icon-btn${isIgnored ? " active" : ""}" data-act="toggle-ignore-update" data-id="${esc(s.appName)}" title="${esc(ignoreTip)}">${icon(isIgnored ? "bell" : "bell-off", 15)}</button>`;
     return gameRow(s, s.appName, meta || t("drawer.updateAvailable"),
-      `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>${manageBtn(s.appName)}`);
+      `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>${ignoreBtn}${manageBtn(s.appName)}`);
   }).join("");
 
   const installed = installedGames();

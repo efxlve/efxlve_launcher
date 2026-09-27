@@ -1291,5 +1291,12 @@
   "changelog.current": "Güncel",
   "changelog.added": "Yeni",
   "changelog.improved": "İyileştirildi",
-  "changelog.fixed": "Düzeltildi"
+  "changelog.fixed": "Düzeltildi",
+  "dl.ignoreIndicatorTip": "Bu oyun için güncelleme göstergesini temizle",
+  "dl.restoreIndicatorTip": "Bu oyun için güncelleme göstergesini geri yükle",
+  "dl.indicatorIgnored": "Gösterge temizlendi",
+  "dl.indicatorIgnoredToast": "{title} için güncelleme göstergesi temizlendi.",
+  "dl.indicatorRestoredToast": "{title} için güncelleme göstergesi geri yüklendi.",
+  "ctx.ignoreIndicator": "Güncelleme Göstergesini Temizle",
+  "ctx.restoreIndicator": "Güncelleme Göstergesini Göster"
 }

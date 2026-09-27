@@ -1277,5 +1277,12 @@
   "changelog.current": "Aktualna",
   "changelog.added": "Dodano",
   "changelog.improved": "Ulepszono",
-  "changelog.fixed": "Naprawiono"
+  "changelog.fixed": "Naprawiono",
+  "dl.ignoreIndicatorTip": "Wyczyść wskaźnik aktualizacji dla tej gry",
+  "dl.restoreIndicatorTip": "Przywróć wskaźnik aktualizacji dla tej gry",
+  "dl.indicatorIgnored": "Wskaźnik wyczyszczony",
+  "dl.indicatorIgnoredToast": "Wskaźnik aktualizacji został wyczyszczony dla {title}.",
+  "dl.indicatorRestoredToast": "Wskaźnik aktualizacji został przywrócony dla {title}.",
+  "ctx.ignoreIndicator": "Wyczyść wskaźnik aktualizacji",
+  "ctx.restoreIndicator": "Przywróć wskaźnik aktualizacji"
 }

@@ -1277,5 +1277,12 @@
   "changelog.current": "ปัจจุบัน",
   "changelog.added": "เพิ่มแล้ว",
   "changelog.improved": "ปรับปรุง",
-  "changelog.fixed": "แก้ไขแล้ว"
+  "changelog.fixed": "แก้ไขแล้ว",
+  "dl.ignoreIndicatorTip": "ล้างตัวบ่งชี้การอัปเดตสำหรับเกมนี้",
+  "dl.restoreIndicatorTip": "กู้คืนตัวบ่งชี้การอัปเดตสำหรับเกมนี้",
+  "dl.indicatorIgnored": "ล้างตัวบ่งชี้แล้ว",
+  "dl.indicatorIgnoredToast": "ล้างตัวบ่งชี้การอัปเดตสำหรับ {title} แล้ว",
+  "dl.indicatorRestoredToast": "กู้คืนตัวบ่งชี้การอัปเดตสำหรับ {title} แล้ว",
+  "ctx.ignoreIndicator": "ล้างตัวบ่งชี้การอัปเดต",
+  "ctx.restoreIndicator": "แสดงตัวบ่งชี้การอัปเดต"
 }

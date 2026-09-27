@@ -19,7 +19,7 @@ import {
   requiresThirdPartyLauncher,
   summarize,
 } from "../epic";
-import { isTauri } from "./constants";
+import { isTauri, IGNORED_UPDATES_KEY } from "./constants";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
@@ -98,6 +98,10 @@ export async function epicInstall(appName: string, installDir?: string | null): 
   });
   try {
     const msg = await epicInstallGame(appName, installDir ?? undefined);
+    if (S.ignoredUpdates.has(appName)) {
+      S.ignoredUpdates.delete(appName);
+      localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
+    }
     toast(msg, "ok");
     S.dlQueueStatus = await epicGetQueue();
     if (S.view === "downloads") render();
@@ -154,6 +158,10 @@ export async function epicUninstall(appName: string): Promise<void> {
     }
   } catch (e) {
     toast(String(e), "err");
+  }
+  if (S.ignoredUpdates.has(appName)) {
+    S.ignoredUpdates.delete(appName);
+    localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
   }
   closeManagePopup();
   if (S.view === "library") patchLibraryCardDom(appName);

@@ -1277,5 +1277,12 @@
   "changelog.current": "Atual",
   "changelog.added": "Adicionado",
   "changelog.improved": "Melhorado",
-  "changelog.fixed": "Corrigido"
+  "changelog.fixed": "Corrigido",
+  "dl.ignoreIndicatorTip": "Ocultar indicador de atualização para este jogo",
+  "dl.restoreIndicatorTip": "Restaurar indicador de atualização para este jogo",
+  "dl.indicatorIgnored": "Indicador oculto",
+  "dl.indicatorIgnoredToast": "Indicador de atualização oculto para {title}.",
+  "dl.indicatorRestoredToast": "Indicador de atualização restaurado para {title}.",
+  "ctx.ignoreIndicator": "Ocultar indicador de atualização",
+  "ctx.restoreIndicator": "Mostrar indicador de atualização"
 }

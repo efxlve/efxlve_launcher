@@ -1277,5 +1277,12 @@
   "changelog.current": "Actuel",
   "changelog.added": "Ajouté",
   "changelog.improved": "Amélioré",
-  "changelog.fixed": "Corrigé"
+  "changelog.fixed": "Corrigé",
+  "dl.ignoreIndicatorTip": "Masquer l'indicateur de mise à jour pour ce jeu",
+  "dl.restoreIndicatorTip": "Restaurer l'indicateur de mise à jour pour ce jeu",
+  "dl.indicatorIgnored": "Indicateur masqué",
+  "dl.indicatorIgnoredToast": "Indicateur de mise à jour masqué pour {title}.",
+  "dl.indicatorRestoredToast": "Indicateur de mise à jour restauré pour {title}.",
+  "ctx.ignoreIndicator": "Masquer l'indicateur de mise à jour",
+  "ctx.restoreIndicator": "Afficher l'indicateur de mise à jour"
 }

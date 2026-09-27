@@ -1277,5 +1277,12 @@
   "changelog.current": "現在",
   "changelog.added": "追加",
   "changelog.improved": "改善",
-  "changelog.fixed": "修正"
+  "changelog.fixed": "修正",
+  "dl.ignoreIndicatorTip": "このゲームのアップデート通知バッジを非表示にする",
+  "dl.restoreIndicatorTip": "このゲームのアップデート通知バッジを再表示する",
+  "dl.indicatorIgnored": "バッジ非表示中",
+  "dl.indicatorIgnoredToast": "{title} のアップデート通知バッジを非表示にしました。",
+  "dl.indicatorRestoredToast": "{title} のアップデート通知バッジを再表示しました。",
+  "ctx.ignoreIndicator": "アップデート通知バッジを非表示",
+  "ctx.restoreIndicator": "アップデート通知バッジを表示"
 }

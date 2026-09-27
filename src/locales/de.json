@@ -1277,5 +1277,12 @@
   "changelog.current": "Aktuell",
   "changelog.added": "Hinzugefügt",
   "changelog.improved": "Verbessert",
-  "changelog.fixed": "Behoben"
+  "changelog.fixed": "Behoben",
+  "dl.ignoreIndicatorTip": "Update-Anzeige für dieses Spiel ausblenden",
+  "dl.restoreIndicatorTip": "Update-Anzeige für dieses Spiel wiederherstellen",
+  "dl.indicatorIgnored": "Anzeige ausgeblendet",
+  "dl.indicatorIgnoredToast": "Update-Anzeige für {title} ausgeblendet.",
+  "dl.indicatorRestoredToast": "Update-Anzeige für {title} wiederhergestellt.",
+  "ctx.ignoreIndicator": "Update-Anzeige ausblenden",
+  "ctx.restoreIndicator": "Update-Anzeige anzeigen"
 }

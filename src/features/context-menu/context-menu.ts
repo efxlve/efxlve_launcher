@@ -44,6 +44,9 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
     ${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
     ${item("manage-game", t("common.manage"), "settings")}
+    ${installed && (s.updateAvailable || S.availableUpdates.has(appName))
+      ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
+      : ""}
     <div class="ps5-context-sep"></div>
     ${installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
     ${installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}

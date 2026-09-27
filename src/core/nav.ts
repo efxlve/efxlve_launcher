@@ -29,12 +29,16 @@ export function updateSidebarActive(): void {
   syncSidebarGameActive();
 }
 
-/** Installed games that have a newer build waiting. */
+/** Installed games that have a newer build waiting and have not been ignored. */
 function pendingUpdateCount(): number {
   let n = 0;
   for (const s of S.epicSummaries) {
-    if (S.hiddenGames.has(s.appName)) continue;
+    if (S.hiddenGames.has(s.appName) || S.ignoredUpdates.has(s.appName)) continue;
     if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) n++;
+  }
+  for (const g of S.gogSummaries) {
+    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    if (g.installed && g.updateAvailable) n++;
   }
   return n;
 }
@@ -198,8 +202,11 @@ export function updateSidebarGames(): void {
   const stateOf = (app: string, update: boolean): string =>
     S.runningGames.has(app) ? "running" : S.downloads.has(app) && !S.downloads.get(app)?.done ? "dl" : update ? "update" : "";
 
+  const hasPendingUpdate = (app: string, update: boolean): boolean =>
+    update && !S.ignoredUpdates.has(app);
+
   const sig = shown
-    .map((s) => `${s.appName}:${stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName))}`)
+    .map((s) => `${s.appName}:${stateOf(s.appName, hasPendingUpdate(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName)))}`)
     .join("|") + `|${S.appLanguage}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
@@ -212,7 +219,7 @@ export function updateSidebarGames(): void {
     .map((s) => {
       const raw = rawOf(s.appName);
       const cover = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
-      const state = stateOf(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName));
+      const state = stateOf(s.appName, hasPendingUpdate(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName)));
       const thumb = cover
         ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
         : `<span class="sb-game-ph">${esc((s.title[0] || "?").toUpperCase())}</span>`;
