@@ -10,7 +10,7 @@ import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCusto
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, DIM_UNINSTALLED_KEY, INSTALLED_ICON_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
+import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, DIM_UNINSTALLED_KEY, CONTRAST_TITLES_KEY, INSTALLED_ICON_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { toggleIgnoreUpdate } from "../downloads/downloads-view";
 import { closeModal, viewEl } from "../../core/dom";
@@ -1750,6 +1750,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-dim-uninstalled") {
     S.dimUninstalled = !S.dimUninstalled;
     localStorage.setItem(DIM_UNINSTALLED_KEY, String(S.dimUninstalled));
+    scheduleRender();
+  } else if (act === "toggle-contrast-titles") {
+    S.contrastTitles = !S.contrastTitles;
+    localStorage.setItem(CONTRAST_TITLES_KEY, String(S.contrastTitles));
     scheduleRender();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;

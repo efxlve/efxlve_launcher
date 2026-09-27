@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "커버에 플레이 버튼 표시",
   "settings.installedIconDesc": "설치된 게임 제목 옆에 빠른 플레이 버튼을 표시합니다.",
   "settings.dimUninstalledTitle": "미설치 게임 흐리게 표시",
-  "settings.dimUninstalledDesc": "설치된 게임이 눈에 띄도록 미설치 게임의 커버와 목록 행을 흐리게 표시합니다."
+  "settings.dimUninstalledDesc": "설치된 게임이 눈에 띄도록 미설치 게임의 커버와 목록 행을 흐리게 표시합니다.",
+  "settings.contrastTitlesTitle": "설치된 게임 제목 강조",
+  "settings.contrastTitlesDesc": "설치된 게임 제목은 밝은 흰색으로, 미설치 게임 제목은 어둡게 표시합니다."
 }

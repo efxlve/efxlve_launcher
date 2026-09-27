@@ -52,6 +52,8 @@ export const STORE_BADGE_KEY = "efxlve-store-badge";
 export const INSTALLED_ICON_KEY = "efxlve-installed-icon";
 /** Dim covers and list rows for uninstalled games to make installed titles stand out. */
 export const DIM_UNINSTALLED_KEY = "efxlve-dim-uninstalled";
+/** Highlight installed game titles in bright white and uninstalled in darker tone. */
+export const CONTRAST_TITLES_KEY = "efxlve-contrast-titles";
 /** Optional page-by-page library browsing instead of progressive chunking. */
 export const LIB_PAGINATION_KEY = "efxlve-lib-pagination";
 /** Games rendered per library page when pagination is on. */

@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "Botón Jugar en portadas",
   "settings.installedIconDesc": "Muestra un botón de inicio rápido junto al título de los juegos instalados.",
   "settings.dimUninstalledTitle": "Atenuar juegos no instalados",
-  "settings.dimUninstalledDesc": "Atenúa las portadas y filas de juegos no instalados para resaltar los títulos instalados."
+  "settings.dimUninstalledDesc": "Atenúa las portadas y filas de juegos no instalados para resaltar los títulos instalados.",
+  "settings.contrastTitlesTitle": "Resaltar títulos instalados",
+  "settings.contrastTitlesDesc": "Muestra los títulos de juegos instalados en blanco brillante y los no instalados más oscuros."
 }

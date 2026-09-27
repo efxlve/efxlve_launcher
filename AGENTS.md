@@ -128,6 +128,11 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Yüklü Oyun Başlıklarını Öne Çıkarma Seçeneği (Contrast Titles — Default ON):**
+  1. **Başlık Kontrastı Ayarı (Settings > Görünüm):** Ayarlar > Görünüm sekmesine "Yüklü oyun başlıklarını öne çıkar" (`contrastTitles`, `CONTRAST_TITLES_KEY`) seçeneği eklendi (varsayılan olarak AÇIK / `true`).
+  2. **Görsel Tasarım & Akıcılık (`.pgrid.contrast-titles` & `.lib-list.contrast-titles`):** Yüklü oyunların başlıkları parlak beyaz (`color: var(--text)`, `#ffffff`) ve belirgin font ağırlığı (`font-weight: 600`) alarak kütüphanede anında öne çıkar; kurulu olmayan oyunların başlıkları ise daha koyu gri (`color: var(--text-3)`, `#5c5c5c`) gösterilerek göz yormayan, asil bir hiyerarşi oluşturulur. Kurulu olmayan karta hover olunduğunda başlık yumuşakça `var(--text-2)` seviyesine aydınlanır.
+  3. **15 Dil Eşliği:** `settings.contrastTitlesTitle` ve `settings.contrastTitlesDesc` 15 dilde eksiksiz yerelleştirildi.
+
 - **Kapak Oyna Butonu Rengi & Varsayılan Olarak Açık Dimleme Ayarı:**
   1. **Oyna Butonu Renginin Geri Alınması (`.pcard-play-btn`):** Kapak üzerindeki Oyna butonu önceki asil PS5 obsidian rengine (`background: var(--surface-2)`, `border: 1px solid rgba(255,255,255,0.16)`, `color: var(--text-2)`) döndürüldü; karta odaklanıldığında veya üzerine gelindiğinde buton ikonu parlak beyaz `var(--text)` ve belirgin kenarlık alarak zarif ve parlak bir etkileşim sunar, butona tıklandığında/üzerine gelindiğinde `--accent` beyaza döner.
   2. **Kurulu Olmayanları Soluklaştırma Varsayılanı (Default ON):** `dimUninstalled` (`DIM_UNINSTALLED_KEY`) ayarı varsayılan olarak açık (`!== "false"`) şekilde korunarak ilk açılışta kurulu oyunların öne çıkması sağlandı; kullanıcı isterse Ayarlar > Görünüm altından kapatıp tüm kapakları tam parlaklıkta görüntüleyebilir.

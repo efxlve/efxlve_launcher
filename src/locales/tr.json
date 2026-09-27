@@ -1309,5 +1309,7 @@
   "settings.installedIconTitle": "Kapaklarda Oyna butonu",
   "settings.installedIconDesc": "Yüklü oyunların başlık satırında doğrudan oyunu başlatabileceğiniz bir Oyna butonu göster.",
   "settings.dimUninstalledTitle": "Kurulu olmayanları soluklaştır",
-  "settings.dimUninstalledDesc": "Yüklü oyunların öne çıkması için kütüphanedeki kurulu olmayan oyunların kapaklarını ve satırlarını soluklaştır."
+  "settings.dimUninstalledDesc": "Yüklü oyunların öne çıkması için kütüphanedeki kurulu olmayan oyunların kapaklarını ve satırlarını soluklaştır.",
+  "settings.contrastTitlesTitle": "Yüklü oyun başlıklarını öne çıkar",
+  "settings.contrastTitlesDesc": "Yüklü oyunların başlıklarını parlak beyaz, kurulu olmayanları daha koyu göster."
 }

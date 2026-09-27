@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "Przycisk Graj na okładkach",
   "settings.installedIconDesc": "Pokaż przycisk szybkiego uruchamiania obok tytułu zainstalowanych gier.",
   "settings.dimUninstalledTitle": "Przyciemnij niezainstalowane gry",
-  "settings.dimUninstalledDesc": "Przyciemnij okładki i wiersze niezainstalowanych gier, aby wyróżnić zainstalowane tytuły."
+  "settings.dimUninstalledDesc": "Przyciemnij okładki i wiersze niezainstalowanych gier, aby wyróżnić zainstalowane tytuły.",
+  "settings.contrastTitlesTitle": "Wyróżnij zainstalowane tytuły",
+  "settings.contrastTitlesDesc": "Wyświetlaj tytuły zainstalowanych gier w jasnej bieli, a niezainstalowane w ciemniejszym odcieniu."
 }

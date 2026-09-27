@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "زر تشغيل على الأغلفة",
   "settings.installedIconDesc": "إظهار زر تشغيل سريع بجانب عنوان الألعاب المثبتة في المكتبة.",
   "settings.dimUninstalledTitle": "تعتيم الألعاب غير المثبتة",
-  "settings.dimUninstalledDesc": "تعتيم الأغلفة وقوائم الألعاب غير المثبتة لإبراز الألعاب المثبتة."
+  "settings.dimUninstalledDesc": "تعتيم الأغلفة وقوائم الألعاب غير المثبتة لإبراز الألعاب المثبتة.",
+  "settings.contrastTitlesTitle": "إبراز عناوين الألعاب المثبتة",
+  "settings.contrastTitlesDesc": "عرض عناوين الألعاب المثبتة باللون الأبيض الساطع وعناوين غير المثبتة بلون أكثر قتامة."
 }

@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "Play-Taste auf Covern",
   "settings.installedIconDesc": "Zeigt neben dem Titel installierter Spiele eine Schnellstart-Taste an.",
   "settings.dimUninstalledTitle": "Nicht installierte Spiele abdunkeln",
-  "settings.dimUninstalledDesc": "Cover und Zeilen nicht installierter Spiele abdunkeln, um installierte Titel hervorzuheben."
+  "settings.dimUninstalledDesc": "Cover und Zeilen nicht installierter Spiele abdunkeln, um installierte Titel hervorzuheben.",
+  "settings.contrastTitlesTitle": "Installierte Titel hervorheben",
+  "settings.contrastTitlesDesc": "Titel installierter Spiele hellweiß und nicht installierter Titel dunkler anzeigen."
 }

@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "カバーにプレイボタンを表示",
   "settings.installedIconDesc": "インストール済みゲームのタイトルの横にクイックプレイボタンを表示します。",
   "settings.dimUninstalledTitle": "未インストールゲームを薄く表示",
-  "settings.dimUninstalledDesc": "インストール済みのタイトルを目立たせるため、未インストールのカバーやリスト行を薄く表示します。"
+  "settings.dimUninstalledDesc": "インストール済みのタイトルを目立たせるため、未インストールのカバーやリスト行を薄く表示します。",
+  "settings.contrastTitlesTitle": "インストール済みタイトルを強調",
+  "settings.contrastTitlesDesc": "インストール済みタイトルの文字を明るい白で、未インストールのタイトルを暗めに表示します。"
 }

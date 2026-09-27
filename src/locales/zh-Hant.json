@@ -1295,5 +1295,7 @@
   "settings.installedIconTitle": "在封面上顯示遊玩按鈕",
   "settings.installedIconDesc": "在已安裝遊戲的標題旁顯示快速啟動的「遊玩」按鈕。",
   "settings.dimUninstalledTitle": "淡化未安裝的遊戲",
-  "settings.dimUninstalledDesc": "淡化未安裝遊戲的封面與列表行，以突顯已安裝的遊戲。"
+  "settings.dimUninstalledDesc": "淡化未安裝遊戲的封面與列表行，以突顯已安裝的遊戲。",
+  "settings.contrastTitlesTitle": "突顯已安裝遊戲的標題",
+  "settings.contrastTitlesDesc": "以亮白色顯示已安裝遊戲的標題，未安裝遊戲的標題顯示為較暗的顏色。"
 }
