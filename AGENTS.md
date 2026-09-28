@@ -128,6 +128,15 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **GOG Galaxy Oynanış Süresi + Sidebar/Profil Yenilemesi (28.09.2026, ROADMAP §6.11):**
+  1. **GOG Galaxy playtime içe aktarıldı:** GOG'nin public playtime API'si yok (araştırıldı: `gameplay.gog.com` yalnız başarım, `content-system` build listesi, profil sayfası HTML). Süreler Galaxy'nin yerel SQLite DB'sinde (`GameTimes.minutesInGame`, anahtarlar `gog_<id>_…`). Yeni `gogdl/galaxy_playtime.rs` bu dosyayı **salt-okunur** okur (rusqlite bundled), GOG kullanıcı id'sine göre filtreler; `gog_sync_playtime` komutu + `syncGogPlaytime()` frontend'i ile açılışta ve GOG oturumu bitince `S.playtimeMap`'e yazılır (yerel değeri asla düşürmez). Birim testi eklendi (toplam **129 test**).
+  2. **Sidebar hesap değiştirici sadeleşti:** tek hesabın adı/avatarı yerine **yalnız ikon + sayaç** (>1 hesapta); kullanılmayan `.sb-switcher-*` CSS'i silindi.
+  3. **Mükerrer buton kaldırıldı:** hesap popover'ında hem başlıktaki dişli hem "Hesapları Yönet" aynı işi yapıyordu → dişli kaldırıldı.
+  4. **Profil hesap-merkezli yeniden tasarlandı:** üstte hesap çipleri (Epic + GOG, avatar/platform/aktif noktası, `+` → Hesaplar), istatistikler **seçili ve aktif** hesaba ait (süre mağaza bazında ayrıştırılır), pasif hesapta açıklama + **Bu Hesaba Geç**, yeni **Mağaza Bazında Kütüphane** kartı, arkadaşlar yalnız Epic'te. Hesap geçişinde seçim aktif hesaba döner. 4 anahtar × 15 dil (**1.307 anahtar**, tam parite).
+  5. **Kodlama hatası bulundu ve düzeltildi:** `main.rs` içindeki gömülü mağaza betiğinde çift kodlanmış (mojibake) TR/DE etiketleri vardı (`Kütüphanede`, `Yüklü`, `İstek Listesinde`, `sürüm`, `ücretsiz`, `Başlat`, `In Bibliothek öffnen`, `[₺$€£]`) — düzeltildi; depo genelinde encoding taraması **0 mojibake / 0 bozuk satır**.
+  6. **Doğrulama:** `npm.cmd run build` ✅, `cargo check` ✅ (0 uyarı), `cargo test` **129/129** ✅, i18n 15/15 parite, IPC **142/142** komut.
+  7. **Not (kullanıcı):** GOG/Galaxy testleri daha sonra yapılacak; ardından kullanıcının bildireceği sorunlar → sonra v0.1.17 release hazırlığı.
+
 - **GOG Entegrasyonu Tamamlanması: Güncelleme Tespiti + Bug + Komut Temizliği (28.09.2026, ROADMAP §6.10):**
   1. **GOG güncelleme tespiti kuruldu:** `gogdl/updates.rs` kurulu `buildId`'yi content-system public build listesiyle karşılaştırır (auth'suz, 6 saatlik disk önbelleği, 4'lü paralel batch, `gog_check_updates` komutu); kurulum/güncelleme sonrası önbellek tazelenir. Frontend `refreshGogUpdates()` sonucu `S.gogUpdates` + kütüphane öğelerinin `updateAvailable` alanına yazılır → kart eylemi **Güncelle**ye döner, İndirmeler > Güncellemeler listesi ve kenar çubuğu rozeti GOG'u da sayar. 2 birim testi.
   2. **GOG güncelleme bug'ı düzeltildi:** kurulu GOG oyununda "Güncelle" kurulum diyaloğunu açıp oyunu başka klasöre kurma riski taşıyordu; artık mevcut klasöre yerinde güncellenir (Epic ile aynı davranış).

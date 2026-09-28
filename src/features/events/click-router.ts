@@ -313,6 +313,11 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "unhide-achievement" && id) {
     unhideAchievement(id);
+  } else if (act === "profile-account" && t.dataset.key) {
+    // Profile header account selector: switch which account's stats are shown.
+    S.profileAccount = t.dataset.key;
+    resetProfileCards();
+    render();
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
     S.profileShowHidden = false;

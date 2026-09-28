@@ -213,31 +213,6 @@ export function updateSidebarAccountSwitcher(): void {
   const host = document.getElementById("sb-account-host");
   if (!host) return;
 
-  const hasEpic = Boolean(S.epicAccount);
-  const hasGog = Boolean(S.gogAccount);
-  const hasAny = hasEpic || hasGog;
-
-  const activeAvatar = hasEpic
-    ? getCustomAvatar(S.epicAccountId) || getCustomAvatar()
-    : hasGog
-    ? getCustomAvatar(S.gogAccountId)
-    : null;
-
-  const primaryName = hasEpic
-    ? S.epicAccount
-    : hasGog
-    ? S.gogAccount
-    : t("nav.signIn");
-
-  let storesSubtitle = t("accounts.title");
-  if (hasEpic && hasGog) {
-    storesSubtitle = "Epic · GOG";
-  } else if (hasEpic) {
-    storesSubtitle = "Epic Games";
-  } else if (hasGog) {
-    storesSubtitle = "GOG.COM";
-  }
-
   // Fast signature check to avoid unnecessary DOM thrashing
   const epicAccsSig = (S.savedAccounts || [])
     .map((a) => `${a.account_id}:${a.display_name}:${a.is_active ? 1 : 0}`)
@@ -253,22 +228,16 @@ export function updateSidebarAccountSwitcher(): void {
     S.gogAccountId || "",
     epicAccsSig,
     gogAccsSig,
-    activeAvatar || "",
     S.appLanguage,
   ].join("|");
 
   if (sig === sbSwitcherSig && host.firstElementChild) return;
   sbSwitcherSig = sig;
 
-  let avatarHtml = "";
-  if (activeAvatar) {
-    avatarHtml = `<img src="${esc(activeAvatar)}" alt="" />`;
-  } else if (hasAny) {
-    const initial = (primaryName.trim()[0] || "?").toUpperCase();
-    avatarHtml = `<span class="sb-switcher-avatar-initial">${esc(initial)}</span>`;
-  } else {
-    avatarHtml = icon("user", 16);
-  }
+  // Icon-only button: with several linked accounts, showing one name/avatar
+  // would be ambiguous. The popover lists the accounts, their platforms and the
+  // active one (checkmark), so the button stays neutral.
+  const accountCount = (S.savedAccounts?.length || 0) + (S.gogSavedAccounts?.length || 0);
 
   let popoverHtml = "";
   if (S.isAccountSwitcherOpen) {
@@ -359,9 +328,6 @@ export function updateSidebarAccountSwitcher(): void {
       <div id="sb-account-popover" class="sb-popover" role="dialog" aria-label="${t("accounts.switchAccountTitle")}">
         <div class="sb-popover-head">
           <span class="sb-popover-title">${t("accounts.switchAccountTitle")}</span>
-          <button type="button" class="icon-btn tiny" data-act="open-accounts-settings" title="${t("accounts.manageAccounts")}">
-            ${icon("settings", 13)}
-          </button>
         </div>
         ${epicSection}
         ${gogSection}
@@ -375,14 +341,13 @@ export function updateSidebarAccountSwitcher(): void {
     `;
   }
 
+  const btnLabel = accountCount > 0
+    ? `${t("accounts.switchAccountTitle")} (${accountCount})`
+    : t("nav.switchAccounts");
   const btnHtml = `
-    <button type="button" class="sb-switcher-btn ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${t("accounts.switchAccountTitle")}">
-      <span class="sb-switcher-avatar">${avatarHtml}</span>
-      <span class="sb-switcher-info">
-        <span class="sb-switcher-name">${esc(primaryName)}</span>
-        <span class="sb-switcher-stores">${esc(storesSubtitle)}</span>
-      </span>
-      <span class="sb-switcher-caret">${icon("chevron-up", 14)}</span>
+    <button type="button" class="sb-switcher-btn icon-only ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${esc(btnLabel)}">
+      ${icon("users", 16)}
+      ${accountCount > 1 ? `<span class="sb-switcher-count tabular-nums">${accountCount}</span>` : ""}
     </button>
   `;
 

@@ -30,6 +30,8 @@ export async function switchGogAccount(userId: string): Promise<void> {
     S.gogAccount = result.username;
     S.gogAccountId = result.user_id;
     S.gogSyncing = true;
+    // Profile follows the newly active account.
+    S.profileAccount = null;
 
     // Clear GOG state for fresh hydration
     setGogSummaries([]);

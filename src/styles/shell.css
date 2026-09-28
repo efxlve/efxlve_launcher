@@ -183,66 +183,39 @@
   background: var(--surface-2);
 }
 
-.sb-switcher-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: var(--surface-3);
-  color: var(--text-2);
+/* Icon-only switcher: with several linked accounts the button stays neutral
+   (no single name/avatar) and the popover carries the account list. */
+.sb-switcher-btn.icon-only {
+  position: relative;
+  justify-content: center;
+  gap: 0;
+  height: 40px;
+  padding: 0;
 }
-.sb-switcher-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.sb-switcher-avatar svg {
+.sb-switcher-btn.icon-only svg {
   width: 16px;
   height: 16px;
-}
-.sb-switcher-avatar-initial {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.sb-switcher-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.sb-switcher-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sb-switcher-stores {
-  font-size: 11px;
-  font-weight: 500;
   color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-
-.sb-switcher-caret {
-  width: 14px;
-  height: 14px;
-  color: var(--text-3);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--ease), color var(--ease);
+.sb-switcher-btn.icon-only:hover svg,
+.sb-switcher-btn.icon-only.active svg {
+  color: var(--text);
+}
+.sb-switcher-count {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 .sb-switcher-btn:hover .sb-switcher-caret {
   color: var(--text);

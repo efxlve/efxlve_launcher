@@ -278,6 +278,8 @@ export const S = {
   studioFilter: "",
   settingsSection: ("account") as SettingsSection,
   profileCardCount: PROFILE_CARD_CHUNK as number,
+  /** Profile page: the account whose stats are shown (`epic:<id>` / `gog:<id>`). Null = active account. */
+  profileAccount: (null) as string | null,
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,

@@ -73,6 +73,8 @@ export async function switchAccount(accountId: string): Promise<void> {
     showAccountSwitch(switched.display_name);
     S.epicAccount = switched.display_name;
     S.epicAccountId = switched.account_id;
+    // Profile follows the newly active account.
+    S.profileAccount = null;
     S.playerProfileData = null;
     S.profileError = "";
     S.friends = [];

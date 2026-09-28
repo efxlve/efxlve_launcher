@@ -11,7 +11,7 @@ import { getCustomAvatar } from "./profile-avatar";
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
-import { rawOf, totalLibraryGamesCount } from "../../core/selectors";
+import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
@@ -82,6 +82,97 @@ export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
 function platformLabel(key: string): string {
   const map: Record<string, string> = { steam: "Steam", psn: "PSN", xbl: "Xbox", nintendo: "Switch", epic: "Epic" };
   return map[key] || key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+/** Epic-side library size (hidden games excluded). */
+function totalEpicGames(): number {
+  let n = 0;
+  for (const s of S.epicSummaries) if (!S.hiddenGames.has(s.appName)) n++;
+  return n;
+}
+
+/** One selectable account in the profile header. */
+interface ProfileAccount {
+  key: string;
+  kind: "epic" | "gog";
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+/** Every linked account (Epic + GOG), active one flagged. */
+function profileAccounts(): ProfileAccount[] {
+  const out: ProfileAccount[] = [];
+  const seen = new Set<string>();
+  const pushEpic = (id: string, name: string, active: boolean): void => {
+    if (!id || seen.has(`epic:${id}`)) return;
+    seen.add(`epic:${id}`);
+    out.push({ key: `epic:${id}`, kind: "epic", id, name: name || "Epic Games", active });
+  };
+  for (const acc of S.savedAccounts || []) {
+    pushEpic(acc.account_id, acc.display_name, acc.is_active || acc.account_id === S.epicAccountId);
+  }
+  if (S.epicAccountId) pushEpic(S.epicAccountId, S.epicAccount, true);
+  for (const acc of S.gogSavedAccounts || []) {
+    const key = `gog:${acc.user_id}`;
+    if (!acc.user_id || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ key, kind: "gog", id: acc.user_id, name: acc.username || "GOG User", active: acc.is_active || acc.user_id === S.gogAccountId });
+  }
+  if (S.gogAccountId) {
+    const key = `gog:${S.gogAccountId}`;
+    if (!seen.has(key)) out.push({ key, kind: "gog", id: S.gogAccountId, name: S.gogAccount || "GOG User", active: true });
+  }
+  return out;
+}
+
+/** The account selected in the profile header (falls back to the active one). */
+function selectedProfileAccount(): ProfileAccount {
+  const all = profileAccounts();
+  const selected = S.profileAccount ? all.find((a) => a.key === S.profileAccount) : undefined;
+  if (selected) return selected;
+  const active = all.find((a) => a.active);
+  if (active) return active;
+  return { key: "epic:", kind: "epic", id: S.epicAccountId || "", name: S.epicAccount || t("profile.player"), active: false };
+}
+
+/** Account chips row; hidden when only a single account is linked. */
+function renderProfileAccountChips(current: ProfileAccount): string {
+  const all = profileAccounts();
+  if (all.length <= 1) return "";
+  const chips = all.map((a) => {
+    const avatar = getCustomAvatar(a.id);
+    const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
+    return `
+      <button type="button" class="profile-acc-chip${a.key === current.key ? " active" : ""}" data-act="profile-account" data-key="${esc(a.key)}" title="${esc(a.name)}">
+        <span class="profile-acc-avatar">${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}</span>
+        <span class="profile-acc-name">${esc(a.name)}</span>
+        <span class="profile-acc-platform">${a.kind === "epic" ? "EPIC" : "GOG"}</span>
+        ${a.active ? `<span class="profile-acc-dot" aria-hidden="true"></span>` : ""}
+      </button>`;
+  }).join("");
+  return `
+    <div class="profile-accounts" role="tablist" aria-label="${esc(t("profile.accountsTitle"))}">
+      ${chips}
+      <button type="button" class="profile-acc-add" data-view="accounts" title="${esc(t("settings.accountAdd"))}">${icon("plus", 14)}</button>
+    </div>`;
+}
+
+/** Per-store library sizes for the linked stores. */
+function renderStoreBreakdown(): string {
+  const rows: string[] = [];
+  if (S.epicAccount) {
+    rows.push(`<div class="row profile-store-row"><div class="row-main"><div class="row-title">Epic Games</div></div><span class="row-meta">${totalEpicGames()} ${t("profile.games")}</span></div>`);
+  }
+  if (S.gogAccount) {
+    rows.push(`<div class="row profile-store-row"><div class="row-main"><div class="row-title">GOG.COM</div></div><span class="row-meta">${S.gogSummaries.length} ${t("profile.games")}</span></div>`);
+  }
+  if (rows.length === 0) return "";
+  return `
+    <section class="card profile-side-card">
+      <div class="profile-side-head"><h3 class="gp-section-title">${t("profile.storeBreakdown")}</h3></div>
+      ${rows.join("")}
+    </section>`;
 }
 
 function recentApps(): string[] {
@@ -215,20 +306,26 @@ export function renderProfile(): string {
     return `<div class="page">${emptyState("info", t("profile.errorTitle"), esc(S.profileError), `<button class="btn primary" data-act="refresh-profile">${t("profile.retry")}</button>`)}</div>`;
   }
 
-  const prof = S.playerProfileData;
-  const displayName = prof?.display_name || S.epicAccount || t("profile.player");
-  const accountId = prof?.account_id || S.epicAccountId || "";
-  const gogGames = buildGogProfileGames();
-  const allGames = [...(prof?.games || []), ...gogGames];
+  const account = selectedProfileAccount();
+  const isEpic = account.kind === "epic";
+  const prof = isEpic && account.active ? S.playerProfileData : null;
 
-  let totalPlaytimeSec = 0;
-  for (const r of S.playtimeMap.values()) totalPlaytimeSec += r.total_seconds || 0;
+  // Only the active account has live data: the launcher never guesses another
+  // account's trophies or hours (see ROADMAP 7 for the shared-library plan).
+  const games: ProfileGameRecord[] = !account.active
+    ? []
+    : isEpic
+      ? prof?.games || []
+      : buildGogProfileGames();
+
+  const displayName = account.name || (isEpic ? S.epicAccount : S.gogAccount) || t("profile.player");
+  const accountId = account.id;
   const customAvatar = getCustomAvatar(accountId);
   const initial = displayName.trim().charAt(0).toUpperCase() || "E";
 
-  const filtered = filteredProfileGames(allGames);
+  const filtered = filteredProfileGames(games);
   let countPlat = 0, countProgress = 0, countNotStarted = 0, countVisible = 0, countHidden = 0;
-  for (const g of allGames) {
+  for (const g of games) {
     if (isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name)) continue;
     if (userHidAchievement(g)) {
       countHidden++;
@@ -241,42 +338,51 @@ export function renderProfile(): string {
     else countNotStarted++;
   }
 
-  let gogTotalUnlocked = 0, gogPlatCount = 0, gogTotalXp = 0;
-  for (const g of gogGames) {
-    gogTotalUnlocked += g.total_unlocked;
-    if (g.is_platinum || g.unlocked_percent >= 100) gogPlatCount++;
-    gogTotalXp += g.total_xp;
-  }
-
   const stat = (value: string, label: string): string => `<div class="profile-stat"><span class="profile-stat-val">${value}</span><span class="profile-stat-label">${label}</span></div>`;
   const filterTab = (val: string, label: string, n: number): string =>
     `<button class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
-  const epicChip = `<span class="chip ${S.offlineMode ? "warn" : "ok"}">${S.offlineMode ? t("profile.offlineMode") : "Epic Games"}</span>`;
-  const gogChip = S.gogAccount ? `<span class="chip ok">GOG.COM</span>` : "";
+  // Stats belong to the selected active account; GOG totals come from its cached
+  // achievement summaries and the merged playtime map.
+  let unlocked = 0, platinums = 0, xp = 0, playtimeSeconds = 0;
+  if (account.active) {
+    if (isEpic) {
+      unlocked = prof?.total_unlocked || 0;
+      platinums = prof?.platinum_count || 0;
+      xp = prof?.total_xp || 0;
+    } else {
+      for (const g of games) {
+        unlocked += g.total_unlocked;
+        xp += g.total_xp;
+        if (g.is_platinum || g.unlocked_percent >= 100) platinums++;
+      }
+    }
+    // Playtime is split by store so a GOG total never mixes Epic hours in.
+    for (const [key, rec] of S.playtimeMap) {
+      if (key.startsWith("gog::") === !isEpic) playtimeSeconds += rec.total_seconds || 0;
+    }
+  }
 
-  return `
-    <div class="page profile-page">
-      <section class="card profile-head">
-        <button class="profile-avatar-btn" data-act="profile-change-avatar" title="${customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle")}">
-          <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
-        </button>
-        <div class="row-main">
-          <h1 class="profile-name">${esc(displayName)}</h1>
-          <div class="profile-sub">
-            ${epicChip}${gogChip}
-          </div>
-        </div>
-        <div class="profile-stats">
-          ${stat(String(totalLibraryGamesCount()), t("profile.games"))}
-          ${stat(esc(fmtPlaytime(totalPlaytimeSec)), t("profile.played"))}
-          ${stat(((prof?.total_unlocked || 0) + gogTotalUnlocked).toLocaleString(), t("profile.trophies"))}
-          ${stat(String((prof?.platinum_count || 0) + gogPlatCount), t("profile.platLabel"))}
-          ${stat(((prof?.total_xp || 0) + gogTotalXp).toLocaleString(), "XP")}
-        </div>
-        <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${S.gogSummaries.length > 0 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
-      </section>
+  const platformChip = `<span class="chip ${S.offlineMode && isEpic ? "warn" : "ok"}">${isEpic ? "Epic Games" : "GOG.COM"}</span>`;
+  const statusChip = account.active
+    ? `<span class="chip ok">${t("accounts.connected")}</span>`
+    : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`;
 
+  const statsRow = account.active
+    ? `<div class="profile-stats">
+        ${stat(String(isEpic ? totalEpicGames() : S.gogSummaries.length), t("profile.games"))}
+        ${stat(esc(fmtPlaytime(playtimeSeconds)), t("profile.played"))}
+        ${stat(unlocked.toLocaleString(), t("profile.trophies"))}
+        ${stat(String(platinums), t("profile.platLabel"))}
+        ${stat(xp.toLocaleString(), "XP")}
+      </div>`
+    : `<div class="profile-inactive">
+        <p class="row-meta">${t("profile.inactiveDesc")}</p>
+        <button class="btn primary small" data-act="${isEpic ? "account-switch" : "gog-account-switch"}" data-id="${esc(accountId)}">${t("settings.accountSwitchBtn")}</button>
+      </div>`;
+
+  const body = account.active
+    ? `
       <div class="profile-body">
         <div class="profile-main">
           <div class="gp-toolbar">
@@ -303,9 +409,27 @@ export function renderProfile(): string {
           <div id="profile-games-grid" class="list">${renderProfileGrid(filtered)}</div>
         </div>
         <aside class="profile-side">
+          ${renderStoreBreakdown()}
           ${renderRecentGrid()}
-          ${renderFriendsSection()}
+          ${isEpic ? renderFriendsSection() : ""}
         </aside>
-      </div>
+      </div>`
+    : "";
+
+  return `
+    <div class="page profile-page">
+      ${renderProfileAccountChips(account)}
+      <section class="card profile-head">
+        <button class="profile-avatar-btn" data-act="profile-change-avatar" title="${customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle")}">
+          <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
+        </button>
+        <div class="row-main">
+          <h1 class="profile-name">${esc(displayName)}</h1>
+          <div class="profile-sub">${platformChip}${statusChip}</div>
+        </div>
+        ${statsRow}
+        <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${S.gogSummaries.length > 0 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
+      </section>
+      ${body}
     </div>`;
 }
