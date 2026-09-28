@@ -145,28 +145,26 @@
 }
 .pcard-play-btn {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: 8px;
+  right: 8px;
   z-index: 6;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(14, 15, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(14, 15, 18, 0.88);
   color: #ffffff;
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  opacity: 0;
-  transform: translateY(4px) scale(0.9);
-  pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  opacity: 0.92;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
   transition:
     opacity 120ms ease,
-    transform 120ms cubic-bezier(0.2, 0, 0, 1),
+    transform 120ms ease,
     background-color 120ms ease,
     color 120ms ease,
     border-color 120ms ease,
@@ -174,27 +172,28 @@
 }
 .pcard-play-btn svg {
   margin-left: 2px;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 .pcard:hover .pcard-play-btn,
 .pcard:focus-visible .pcard-play-btn,
 .pcard:focus-within .pcard-play-btn {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(18, 19, 24, 0.96);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
 }
 .pcard-play-btn:hover {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
-  transform: translateY(0) scale(1.12);
+  transform: scale(1.12);
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.6),
     0 0 14px rgba(255, 255, 255, 0.35);
 }
 .pcard-play-btn:active {
-  transform: translateY(0) scale(0.94);
+  transform: scale(0.94);
 }
 .pcard-stores {
   font-size: 11px;
