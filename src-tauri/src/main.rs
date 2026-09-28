@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod eos;
+mod eos_social;
 mod gogdl;
 mod legendary;
 mod presence;
@@ -1869,6 +1870,10 @@ fn main() {
             open_folder,
             eos::eos_overlay_status,
             eos::eos_install_redistributable,
+            eos_social::eos_social_status,
+            eos_social::eos_social_connect,
+            eos_social::eos_social_disconnect,
+            eos_social::eos_social_presence,
             epic_detect_eos,
             legendary::friends::epic_friends,
             legendary::friends::epic_friends_presence,
