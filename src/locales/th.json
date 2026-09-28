@@ -1339,5 +1339,7 @@
   "cloud.uploadBtn": "Upload to Cloud",
   "cloud.uploadTooltip": "Package and upload latest local save to cloud",
   "cloud.syncBtn": "Sync Cloud",
-  "cloud.syncTooltip": "Check cloud backups and synchronize"
+  "cloud.syncTooltip": "Check cloud backups and synchronize",
+  "settings.highlightInstalledTitle": "เน้นเกมที่ติดตั้งแล้ว",
+  "settings.highlightInstalledDesc": "หรี่หน้าปกและชื่อเกมที่ยังไม่ได้ติดตั้งลงเล็กน้อยเพื่อเน้นเกมที่ติดตั้งแล้ว"
 }

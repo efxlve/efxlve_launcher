@@ -1339,5 +1339,7 @@
   "cloud.uploadBtn": "Upload to Cloud",
   "cloud.uploadTooltip": "Package and upload latest local save to cloud",
   "cloud.syncBtn": "Sync Cloud",
-  "cloud.syncTooltip": "Check cloud backups and synchronize"
+  "cloud.syncTooltip": "Check cloud backups and synchronize",
+  "settings.highlightInstalledTitle": "突出显示已安装的游戏",
+  "settings.highlightInstalledDesc": "略微淡化未安装的封面和标题，以使已安装的游戏更加醒目。"
 }

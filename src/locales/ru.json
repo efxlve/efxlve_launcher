@@ -1339,5 +1339,7 @@
   "cloud.uploadBtn": "Upload to Cloud",
   "cloud.uploadTooltip": "Package and upload latest local save to cloud",
   "cloud.syncBtn": "Sync Cloud",
-  "cloud.syncTooltip": "Check cloud backups and synchronize"
+  "cloud.syncTooltip": "Check cloud backups and synchronize",
+  "settings.highlightInstalledTitle": "Выделять установленные игры",
+  "settings.highlightInstalledDesc": "Слегка затемняет обложки и названия неустановленных игр, чтобы выделить установленные."
 }

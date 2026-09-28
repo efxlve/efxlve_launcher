@@ -1339,5 +1339,7 @@
   "cloud.uploadBtn": "Upload to Cloud",
   "cloud.uploadTooltip": "Package and upload latest local save to cloud",
   "cloud.syncBtn": "Sync Cloud",
-  "cloud.syncTooltip": "Check cloud backups and synchronize"
+  "cloud.syncTooltip": "Check cloud backups and synchronize",
+  "settings.highlightInstalledTitle": "インストール済みゲームを強調",
+  "settings.highlightInstalledDesc": "未インストールのカバーとタイトルをかすかに暗くして、インストール済みのゲームを際立たせます。"
 }

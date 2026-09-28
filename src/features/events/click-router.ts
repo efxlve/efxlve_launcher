@@ -14,6 +14,7 @@ import {
   AUTO_SHORTCUT_KEY,
   AUTO_UPDATE_KEY,
   COVER_STATS_KEY,
+  HIGHLIGHT_INSTALLED_KEY,
   DIM_UNINSTALLED_KEY,
   CONTRAST_TITLES_KEY,
   INSTALLED_ICON_KEY,
@@ -590,13 +591,13 @@ document.addEventListener("click", (e) => {
     S.showInstalledIcon = !S.showInstalledIcon;
     localStorage.setItem(INSTALLED_ICON_KEY, String(S.showInstalledIcon));
     scheduleRender();
-  } else if (act === "toggle-dim-uninstalled") {
-    S.dimUninstalled = !S.dimUninstalled;
-    localStorage.setItem(DIM_UNINSTALLED_KEY, String(S.dimUninstalled));
-    scheduleRender();
-  } else if (act === "toggle-contrast-titles") {
-    S.contrastTitles = !S.contrastTitles;
-    localStorage.setItem(CONTRAST_TITLES_KEY, String(S.contrastTitles));
+  } else if (act === "toggle-highlight-installed" || act === "toggle-dim-uninstalled" || act === "toggle-contrast-titles") {
+    S.highlightInstalled = !S.highlightInstalled;
+    S.dimUninstalled = S.highlightInstalled;
+    S.contrastTitles = S.highlightInstalled;
+    localStorage.setItem(HIGHLIGHT_INSTALLED_KEY, String(S.highlightInstalled));
+    localStorage.setItem(DIM_UNINSTALLED_KEY, String(S.highlightInstalled));
+    localStorage.setItem(CONTRAST_TITLES_KEY, String(S.highlightInstalled));
     scheduleRender();
   } else if (act === "toggle-minimize-tray") {
     S.minimizeToTray = !S.minimizeToTray;

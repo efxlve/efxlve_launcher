@@ -128,6 +128,14 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Kütüphane Görsel Kontrastı & Yüklü Oyun Vurgusu Sadeleştirmesi (Seçenek A Tamamlandı):**
+  1. **Tek Birleşik Akıllı Switch (`highlightInstalled` / `HIGHLIGHT_INSTALLED_KEY`):** Ayarlar > Görünüm altındaki iki ayrı kafa karıştırıcı ve birbiriyle çelişebilen toggle ("Kurulu olmayanları soluklaştır" ve "Yüklü oyun başlıklarını öne çıkar"), tek bir dengeli ve zarif konsol seçeneğinde birleştirildi: **"Yüklü oyunları öne çıkar"** (`settings.highlightInstalledTitle` / `settings.highlightInstalledDesc`, varsayılan AÇIK / `true`).
+  2. **Kusursuz Görsel Hiyerarşi & Akıcılık (`.pgrid.highlight-installed`, `.lib-list.highlight-installed`):**
+     - **Açıkken (Varsayılan):** Yüklü oyunlar %100 canlı renkli kapak + parlak beyaz başlık (`#fff`, 600 weight) alır. Kurulu olmayan oyunlar hafif obsidian soluk kapak (%52 opaklık) + soluk gri başlık (`var(--text-3)`) ile sönükleşir. Kartın veya satırın üzerine gelindiğinde (hover) hem kapak hem başlık yumuşakça (120ms) %100 parlaklığa canlanır.
+     - **Kapalıyken:** Tüm kütüphane eşit parlaklıkta ve homojen düz görünümde sergilenir.
+  3. **Geriye Dönük Uyumluluk (Migration Fallback):** Eski `dimUninstalled` ve `contrastTitles` anahtarları state seviyesinde otomatik senkronize edilir; kullanıcı daha önce ikisini birden kapatmışsa durum korunur.
+  4. **15 Dil Eşliği:** 15 dil JSON dosyasının tamamında `settings.highlightInstalledTitle` ve `settings.highlightInstalledDesc` anahtarları eksiksiz yerelleştirildi.
+
 - **Frontend Olay Router'ı Modülerleştirmesi (`click-router.ts` 1.938 → 662 Satır):**
   1. **1.500 Satır Kuralı Uyumlaştırması (Kural §4.8):** Tek bir dosyada toplanarak 1.938 satıra ulaşan global tıklama yönlendiricisi (`click-router.ts`), sorumluluk bazlı 8 bağımsız alt işleyiciye bölündü (`src/features/events/handlers/`):
      - `auth-handlers.ts` (215 satır): Epic/GOG oturum açma, kod yapıştırma, çoklu hesap geçişi ve kenar çubuğu hesap popover aksiyonları.
@@ -152,8 +160,6 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   2. **Özel Kayıt Klasörü Seçimi (`epic_set_custom_save_path`):** Oyun Yönetim (Manage) sekmesinde kayıt klasörü konumu gösterilir (`.mg-path`); kullanıcı isterse native klasör diyaloğu (`epicSelectFolderDialog`) ile kayıt klasörünü değiştirebilir veya varsayılana sıfırlayabilir.
   3. **Kayıt Yedekleme Hatası & Otomatik Seçim Fallback'i:** `epic_backup_save` çalıştırıldığında kayıt dizini bulunamazsa kullanıcıya bilgilendirme yapılarak anında klasör seçim penceresi açılır; klasör seçildiğinde yol kaydedilip yedekleme otomatik olarak anında tamamlanır.
   4. **15 Dil Paritesi & Birim Testleri:** `manage.saveFolderTitle`, `manage.chooseSaveFolder`, `manage.resetSaveFolder`, `backup.selectFolderPrompt` vb. anahtarlar 15 dilde eksiksiz tanımlandı; `test_detect_save_path_candidates` birim testi ile 117 Rust testinin tamamı başarıyla geçti.
-
-> ⚠️ **NOT (UX Sadeleştirme Backlog):** "Dim uninstalled games" (Kapak/liste soluklaştırma) ve "Highlight installed titles" (Başlık kontrastı) ayarları iki ayrı toggle olarak arayüzü kalabalıklaştırdı ve biraz karmaşık oldu. Kullanıcı geri bildirimi doğrultusunda bu iki özellik ilerleyen güncellemelerde birleştirilerek / sadeleştirilerek tek bir şık UX çatısı altında tekrardan düşünülüp yeniden düzenlenecektir (bkz. `docs/ROADMAP.md` §5).
 
 - **Oyun Kaldırma (Uninstall) & İndirilenlerde Güncelleme Kalma Hatası Düzeltmesi (EGL Manifest & Dosya Temizliği):**
   1. **EGL Manifest & Artık Dosya/Klasör Temizliği (`transfers.rs` & `cache.rs`):** Resmi Epic Games Launcher'dan (EGL) indirilmiş veya içe aktarılmış oyunlar kaldırıldığında `legendary uninstall` komutu EGL'nin `C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item` dosyalarını silmediği ve oyun klasörünü tamamen kaldırmadığı için, resmi Epic Games Launcher'da oyun "Onar" (Repair) moduna düşüyor ve başlatıcı klasörü görüp oyunu kurulu sanarak `installed.json`'a tekrar kaydediyordu. `epic_uninstall_game` komutuna oyunun ve DLC'lerinin EGL `.item` manifestlerini silme, `installed.json`'dan anında çıkarma ve `!keep_files` durumunda oyun dizinini salt-okunur kilitlerini kaldırarak eksiksiz silme (`force_remove_dir_all` ve sistem yollarını koruyan `is_safe_game_dir`) eklendi.

@@ -40,6 +40,7 @@ import {
   COVER_TITLES_KEY,
   STORE_BADGE_KEY,
   INSTALLED_ICON_KEY,
+  HIGHLIGHT_INSTALLED_KEY,
   DIM_UNINSTALLED_KEY,
   CONTRAST_TITLES_KEY,
   LIB_PAGE_SIZE_KEY,
@@ -282,8 +283,24 @@ export const S = {
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   showInstalledIcon: (localStorage.getItem(INSTALLED_ICON_KEY) === "true") as boolean,
-  dimUninstalled: (localStorage.getItem(DIM_UNINSTALLED_KEY) !== "false") as boolean,
-  contrastTitles: (localStorage.getItem(CONTRAST_TITLES_KEY) !== "false") as boolean,
+  highlightInstalled: (() => {
+    const direct = localStorage.getItem(HIGHLIGHT_INSTALLED_KEY);
+    if (direct !== null) return direct !== "false";
+    const dim = localStorage.getItem(DIM_UNINSTALLED_KEY);
+    const contrast = localStorage.getItem(CONTRAST_TITLES_KEY);
+    if (dim === "false" && contrast === "false") return false;
+    return true;
+  })() as boolean,
+  dimUninstalled: (() => {
+    const direct = localStorage.getItem(HIGHLIGHT_INSTALLED_KEY);
+    if (direct !== null) return direct !== "false";
+    return localStorage.getItem(DIM_UNINSTALLED_KEY) !== "false";
+  })() as boolean,
+  contrastTitles: (() => {
+    const direct = localStorage.getItem(HIGHLIGHT_INSTALLED_KEY);
+    if (direct !== null) return direct !== "false";
+    return localStorage.getItem(CONTRAST_TITLES_KEY) !== "false";
+  })() as boolean,
   libPagination: (localStorage.getItem(LIB_PAGINATION_KEY) === "true") as boolean,
   libPageSize: normalizeLibraryPageSize(localStorage.getItem(LIB_PAGE_SIZE_KEY)),
   libPage: 1,

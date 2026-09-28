@@ -1339,5 +1339,7 @@
   "cloud.uploadBtn": "Upload to Cloud",
   "cloud.uploadTooltip": "Package and upload latest local save to cloud",
   "cloud.syncBtn": "Sync Cloud",
-  "cloud.syncTooltip": "Check cloud backups and synchronize"
+  "cloud.syncTooltip": "Check cloud backups and synchronize",
+  "settings.highlightInstalledTitle": "تمييز الألعاب المثبتة",
+  "settings.highlightInstalledDesc": "يخفت أغلفة وعناوين الألعاب غير المثبتة لإبراز الألعاب المثبتة."
 }

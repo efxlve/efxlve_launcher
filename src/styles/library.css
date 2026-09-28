@@ -108,6 +108,7 @@
 }
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
+.pgrid.highlight-installed .pcard.not-installed .pcard-art > img,
 .pgrid.dim-uninstalled .pcard.not-installed .pcard-art > img { opacity: 0.52; transition: opacity var(--ease), filter var(--ease); }
 .pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
 .pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: transparent; }
@@ -182,14 +183,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.pgrid.highlight-installed .pcard:not(.not-installed) .pcard-title,
 .pgrid.contrast-titles .pcard:not(.not-installed) .pcard-title {
   color: var(--text);
   font-weight: 600;
 }
+.pgrid.highlight-installed .pcard.not-installed .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed .pcard-title {
   color: var(--text-3);
   font-weight: 500;
 }
+.pgrid.highlight-installed .pcard.not-installed:hover .pcard-title,
+.pgrid.highlight-installed .pcard.not-installed:focus-visible .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed:hover .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed:focus-visible .pcard-title {
   color: var(--text-2);
@@ -231,22 +236,30 @@
 .lrow:hover { background: var(--surface-2); }
 .lrow-art { position: relative; width: 52px; height: 70px; border-radius: 5px; overflow: hidden; background: var(--surface-3); }
 .lrow-art img, .lrow-art .pcover { width: 100%; height: 100%; object-fit: cover; }
+.lib-list.highlight-installed .lrow.not-installed .lrow-art img,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-art img { opacity: 0.45; filter: grayscale(1); }
 .lrow-main { min-width: 0; }
 .lrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .lrow-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-list.highlight-installed .lrow.not-installed .lrow-name,
+.lib-list.highlight-installed .lrow.not-installed .lrow-meta,
+.lib-list.highlight-installed .lrow.not-installed .lrow-col,
+.lib-list.highlight-installed .lrow.not-installed .lrow-ach,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-name,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-meta,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-col,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-ach { color: var(--text-3); }
+.lib-list.highlight-installed .lrow:not(.not-installed) .lrow-name,
 .lib-list.contrast-titles .lrow:not(.not-installed) .lrow-name {
   color: var(--text);
   font-weight: 600;
 }
+.lib-list.highlight-installed .lrow.not-installed .lrow-name,
 .lib-list.contrast-titles .lrow.not-installed .lrow-name {
   color: var(--text-3);
   font-weight: 500;
 }
+.lib-list.highlight-installed .lrow.not-installed:hover .lrow-name,
 .lib-list.contrast-titles .lrow.not-installed:hover .lrow-name {
   color: var(--text-2);
 }

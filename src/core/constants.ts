@@ -50,6 +50,8 @@ export const COVER_TITLES_KEY = "efxlve-cover-titles";
 export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Show a quick Play button next to the title for installed games on covers. */
 export const INSTALLED_ICON_KEY = "efxlve-installed-icon";
+/** Highlight installed games by subtly dimming uninstalled covers and titles. Default ON. */
+export const HIGHLIGHT_INSTALLED_KEY = "efxlve-highlight-installed";
 /** Dim covers and list rows for uninstalled games to make installed titles stand out. */
 export const DIM_UNINSTALLED_KEY = "efxlve-dim-uninstalled";
 /** Highlight installed game titles in bright white and uninstalled in darker tone. */

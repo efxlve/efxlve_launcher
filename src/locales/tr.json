@@ -1317,6 +1317,8 @@
   "nav.switchAccounts": "Hesap Değiştirici",
   "settings.installedIconTitle": "Kapaklarda Oyna butonu",
   "settings.installedIconDesc": "Yüklü oyunların başlık satırında doğrudan oyunu başlatabileceğiniz bir Oyna butonu göster.",
+  "settings.highlightInstalledTitle": "Yüklü oyunları öne çıkar",
+  "settings.highlightInstalledDesc": "Kurulu olmayan oyunların kapaklarını ve başlıklarını hafifçe soluklaştırarak yüklü oyunları belirginleştirir.",
   "settings.dimUninstalledTitle": "Kurulu olmayanları soluklaştır",
   "settings.dimUninstalledDesc": "Yüklü oyunların öne çıkması için kütüphanedeki kurulu olmayan oyunların kapaklarını ve satırlarını soluklaştır.",
   "settings.contrastTitlesTitle": "Yüklü oyun başlıklarını öne çıkar",

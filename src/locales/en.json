@@ -1317,6 +1317,8 @@
   "nav.switchAccounts": "Account Switcher",
   "settings.installedIconTitle": "Play button on covers",
   "settings.installedIconDesc": "Show a quick Play button next to the title for installed games in the library.",
+  "settings.highlightInstalledTitle": "Highlight installed games",
+  "settings.highlightInstalledDesc": "Subtly dims uninstalled covers and titles to make installed games stand out.",
   "settings.dimUninstalledTitle": "Dim uninstalled games",
   "settings.dimUninstalledDesc": "Dim covers and list rows for uninstalled games to make installed titles stand out.",
   "settings.contrastTitlesTitle": "Highlight installed titles",
