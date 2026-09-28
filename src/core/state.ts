@@ -49,7 +49,7 @@ import {
   loadStrSet,
 } from "./constants";
 import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GogPhase, LibraryItem, SavedAccount, SettingsSection, SourceFilter, View } from "./types";
-import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
+import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicFriendRequest, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
 function loadJsonRecord(key: string): Record<string, string> {
@@ -139,7 +139,10 @@ export const S = {
   gogFriends: ([]) as import("../gog").GogFriend[],
   gogFriendsLoading: false,
   gogFriendsError: "",
-  friendsFilter: ("all") as "all" | "epic" | "gog",
+  /** GOG user ids currently online (presence service) and the last refresh time. */
+  gogOnline: (new Set()) as Set<string>,
+  friendsPresenceAt: 0,
+  friendsFilter: ("all") as "all" | "active" | "epic" | "gog",
   friendsQuery: "",
   sourceFilter: ("all") as SourceFilter,
   gogSummaries: ([]) as LibraryItem[],
@@ -299,6 +302,7 @@ export const S = {
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),
   friends: ([]) as EpicFriend[],
+  friendsIncoming: ([]) as EpicFriendRequest[],
   friendsLoading: false,
   friendsError: "",
   notifications: ([]) as AppNotification[],

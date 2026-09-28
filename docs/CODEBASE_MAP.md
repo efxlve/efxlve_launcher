@@ -155,7 +155,7 @@ efxlve_launcher/
 | `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
 | `events/` | `click-router.ts`, `handlers/*` (8 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
 | `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
-| `friends/` | `friends-view.ts` | Friends page: merged read-only Epic + GOG list, store filter, in-place search, refresh. |
+| `friends/` | `friends-view.ts` | Friends page: merged Epic + GOG list with live GOG presence, Epic last-seen, "Active" filter, incoming-request actions and 60s presence polling only while open. |
 | `install/` | `install-dialog.ts` | Install location dialog (sizes, folder picker, auto-update/shortcut). |
 | `library/` | `library-view.ts`, `library-options.ts`, `hide-games.ts` | Grid/list rendering with progressive chunks and pagination, filter/sort UI, hidden-games modal. |
 | `manage/` | `manage-view.ts` | Manage popup sections and in-place updates (verify, save folder, paths, launch extras, cloud row). |
@@ -188,13 +188,13 @@ efxlve_launcher/
 | `legendary/import_installed.rs` | Portable folder scan/import, `.item` rewrite helpers. |
 | `legendary/download_resume.rs` | Partial download records and cleanup rules. |
 | `legendary/playtime.rs`, `playtime_session.rs`, `library_playtime.rs` | Local session tracking, crash recovery marker, Epic server playtime. |
-| `legendary/profile.rs`, `friends.rs` | Epic GraphQL profile/XP and friends list. |
+| `legendary/profile.rs`, `friends.rs` | Epic GraphQL profile/XP; friends list, incoming requests and last-online presence (unofficial Web APIs). |
 | `legendary/screenshots.rs` | Hotkey hook, capture, compression worker. |
 | `legendary/backup.rs` | Local save backup/restore. |
 | `legendary/move_game.rs` | Cross-drive relocation + EGL/legendary manifest path updates. |
 | `legendary/collections.rs`, `skip.rs`, `hltb.rs`, `critic.rs`, `steamgrid.rs`, `wiki.rs` | Collections, 401 skipping, HLTB, OpenCritic, SteamGridDB, Wikipedia fallback. |
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
-| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **friends list** (`chat.gog.com`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
+| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **friends list + live Galaxy presence** (`chat.gog.com`, `presence.gog.com`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
 
 ---

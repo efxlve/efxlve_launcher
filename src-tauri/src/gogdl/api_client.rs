@@ -674,6 +674,59 @@ pub async fn fetch_gog_friends(
     Ok(parse_gog_friends(&val))
 }
 
+/// Lists which of the given user ids are online in GOG Galaxy right now.
+///
+/// The presence service accepts up to 250 ids per request and only returns the
+/// ones that are online.
+pub async fn fetch_presence(
+    user_ids: &[String],
+    access_token: &str,
+) -> Result<Vec<String>, GogError> {
+    if user_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let client = create_client()?;
+    let mut online = Vec::new();
+    for chunk in user_ids.chunks(250) {
+        let url = format!("https://presence.gog.com/statuses?user_id={}", chunk.join(","));
+        let res = client
+            .get(&url)
+            .header(AUTHORIZATION, format!("Bearer {access_token}"))
+            .send()
+            .await
+            .map_err(|e| GogError::Http(e.to_string()))?;
+
+        if res.status() == reqwest::StatusCode::UNAUTHORIZED
+            || res.status() == reqwest::StatusCode::FORBIDDEN
+        {
+            return Err(GogError::NotAuthenticated);
+        }
+        if !res.status().is_success() {
+            continue;
+        }
+        let val: Value = res
+            .json()
+            .await
+            .map_err(|e| GogError::ParseError(e.to_string()))?;
+        online.extend(parse_presence(&val));
+    }
+    Ok(online)
+}
+
+/// Reads `items[].user_id` from a presence service response.
+fn parse_presence(value: &Value) -> Vec<String> {
+    value
+        .get("items")
+        .and_then(|v| v.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|i| i.get("user_id").and_then(|v| v.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -704,6 +757,28 @@ mod tests {
     fn test_parse_gog_friends_empty_payload() {
         let val: Value = serde_json::from_str(r#"{ "items": [] }"#).unwrap();
         assert!(parse_gog_friends(&val).is_empty());
+    }
+
+    #[test]
+    fn test_parse_presence_returns_online_ids() {
+        let val: Value = serde_json::from_str(
+            r#"{
+                "total_count": 2,
+                "limit": 250,
+                "items": [
+                    { "data": {}, "client_id": "46755278331571209", "user_id": "111" },
+                    { "data": {}, "client_id": "46755278331571209", "user_id": "222" }
+                ]
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(parse_presence(&val), vec!["111", "222"]);
+    }
+
+    #[test]
+    fn test_parse_presence_empty_response() {
+        let val: Value = serde_json::from_str(r#"{ "total_count": 0, "items": [] }"#).unwrap();
+        assert!(parse_presence(&val).is_empty());
     }
 
     #[test]

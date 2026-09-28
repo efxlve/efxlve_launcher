@@ -208,3 +208,7 @@ export interface GogFriend {
 }
 
 export const gogFriends = () => invoke<GogFriend[]>("gog_friends");
+
+/** Subset of the given GOG user ids that are online in Galaxy right now. */
+export const gogFriendsPresence = (userIds: string[]) =>
+  invoke<string[]>("gog_friends_presence", { userIds });

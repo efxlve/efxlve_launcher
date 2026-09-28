@@ -11,7 +11,7 @@ import { NOTIF_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
-import { esc } from "../../core/utils";
+import { esc, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
 
 const MAX = 50;
@@ -130,16 +130,6 @@ export function updateNotifBadge(): void {
   badge.classList.toggle("hidden", !eosMissing && n === 0);
 }
 
-function relTime(ts: number): string {
-  const diff = Math.max(0, Date.now() - ts);
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t("notif.justNow");
-  if (mins < 60) return t("notif.minutesAgo", { n: mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("notif.hoursAgo", { n: hours });
-  return t("notif.daysAgo", { n: Math.floor(hours / 24) });
-}
-
 /** Signature of the last painted panel; renders stay no-op while nothing changes. */
 let notifPanelSig = "";
 
@@ -175,7 +165,7 @@ export function renderNotificationPanel(): void {
           <span class="notif-item-body">
             <span class="notif-item-title">${esc(n.title)}</span>
             ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
-            <span class="notif-item-time">${esc(relTime(n.ts))}</span>
+            <span class="notif-item-time">${esc(relativeTime(n.ts))}</span>
           </span>
         </button>`;
     })

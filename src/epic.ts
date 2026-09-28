@@ -605,14 +605,28 @@ export interface EpicFriend {
   alias: string;
   favorite: boolean;
   mutual: number;
-  platforms: string[];
+  /** ISO timestamp of the last time this friend was seen online, if known. */
+  lastOnline: string | null;
+}
+/** One incoming Epic friend request. */
+export interface EpicFriendRequest {
+  accountId: string;
+  displayName: string;
+  mutual: number;
+  favorite: boolean;
+  created: string;
 }
 export interface EpicFriendsData {
   accountId: string;
   displayName: string;
   friends: EpicFriend[];
+  incoming: EpicFriendRequest[];
 }
 export const epicFriends = () => invoke<EpicFriendsData>("epic_friends");
+/** Last-online timestamps by account id (cheap presence refresh). */
+export const epicFriendsPresence = () => invoke<Record<string, string>>("epic_friends_presence");
+export const epicFriendAccept = (friendId: string) => invoke<void>("epic_friend_accept", { friendId });
+export const epicFriendRemove = (friendId: string) => invoke<void>("epic_friend_remove", { friendId });
 
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });

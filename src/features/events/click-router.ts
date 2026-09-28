@@ -71,7 +71,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
-import { loadFriendsView } from "../friends/friends-view";
+import { loadFriendsView, respondToFriendRequest } from "../friends/friends-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
@@ -304,6 +304,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "friends-filter" && t.dataset.val) {
     S.friendsFilter = t.dataset.val as typeof S.friendsFilter;
     render();
+  } else if (act === "friends-accept" && id) {
+    void respondToFriendRequest(id, true);
+  } else if (act === "friends-decline" && id) {
+    void respondToFriendRequest(id, false);
   } else if (act === "friends-search-clear") {
     S.friendsQuery = "";
     render();

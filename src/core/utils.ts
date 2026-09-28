@@ -20,6 +20,22 @@ export function esc(s: string): string {
 }
 
 /**
+ * Localized relative time ("just now", "5 min ago", "3 h ago", "2 d ago") from
+ * an epoch timestamp or ISO date. Returns an empty string when there is none.
+ */
+export function relativeTime(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "";
+  const ts = typeof value === "number" ? value : Date.parse(value);
+  if (!Number.isFinite(ts)) return "";
+  const mins = Math.floor(Math.max(0, Date.now() - ts) / 60000);
+  if (mins < 1) return t("notif.justNow");
+  if (mins < 60) return t("notif.minutesAgo", { n: mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t("notif.hoursAgo", { n: hours });
+  return t("notif.daysAgo", { n: Math.floor(hours / 24) });
+}
+
+/**
  * Format a transfer rate. When `bits` is true the value is shown in bits per
  * second (Mbps/Kbps), which some users prefer over bytes (MB/s).
  */

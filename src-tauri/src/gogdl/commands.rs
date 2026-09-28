@@ -404,6 +404,30 @@ pub async fn gog_friends(app: AppHandle) -> Result<Vec<GogFriend>, String> {
     Ok(friends)
 }
 
+/// Lists which of the given GOG user ids are online right now (presence service).
+#[command]
+pub async fn gog_friends_presence(
+    app: AppHandle,
+    user_ids: Vec<String>,
+) -> Result<Vec<String>, String> {
+    let mut tokens = load_auth_tokens(&app).ok_or_else(|| cmd_error(GogError::NotAuthenticated))?;
+    let online = match super::api_client::fetch_presence(&user_ids, &tokens.access_token).await {
+        Ok(list) => list,
+        Err(GogError::NotAuthenticated) => {
+            let refreshed = super::api_client::refresh_tokens(&tokens.refresh_token)
+                .await
+                .map_err(cmd_error)?;
+            tokens = refreshed;
+            let _ = save_auth_tokens(&app, &tokens);
+            super::api_client::fetch_presence(&user_ids, &tokens.access_token)
+                .await
+                .map_err(cmd_error)?
+        }
+        Err(e) => return Err(cmd_error(e)),
+    };
+    Ok(online)
+}
+
 /// Reads hours played in the official GOG Galaxy client (local database,
 /// read-only). `user_id` is the signed-in GOG user id.
 #[command]
