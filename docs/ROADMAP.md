@@ -363,6 +363,7 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Hesap ID'si artık gösterilmiyor:** Ayarlar > Hesap satırlarındaki kopyalanabilir ID çipi kaldırıldı; ölü kalan `copy-account-id` dalı, `profile.copyIdTitle` ve `profile.accountIdCopied` anahtarları (15 dil) silindi.
 - **Profil başlığı sadeleşti:** Yeşil "Epic Games / GOG.COM / Connected" hapları yerine **sakin tipografik mağaza jetonları** (`profile-token`, 11px büyük harf + harf aralığı) ve **nokta + durum** göstergesi (`profile-status`; yeşil = bağlı, amber = aktif değil/çevrimdışı) kullanılıyor. Genel Bakış'ta jetonlar `·` ile ayrılır, yanında bağlı hesap adları notu kalır.
 - **Doğrulama:** `npm.cmd run build` ✅, tsc 0 hata, i18n **1.309 anahtar** 15/15 parite, 0 ölü anahtar, 0 ölü CSS adayı (dinamik sınıflar hariç).
+- **Kullanıcı kararı (aynı gün):** Profil başlığında **jeton + nokta/durum** görünümü ve hesap sayfasında **satır avatarı + kamera rozeti** onaylandı; ek "Netflix tarzı hesap balonları" şeridi **kapsam dışı** bırakıldı.
 
 ### 6.12. 28.09.2026 beşinci tur (profil "Genel Bakış" + avatar sistemi + switcher butonu)
 

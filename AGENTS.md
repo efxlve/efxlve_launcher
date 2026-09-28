@@ -128,6 +128,13 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Avatar Keşfedilebilirliği + Hesap ID Gizleme + Profil Başlığı (28.09.2026, ROADMAP §6.13):**
+  1. **Profil fotoğrafı artık belli:** Avatarın sağ altına **her zaman görünen kamera rozeti** eklendi (hover/focus'ta beyaz dolgu, pointer, focus halkası). Aynı desen **Ayarlar > Hesap** satırlarındaki avatarlara da uygulandı → satırdaki fotoğrafa tıklamak o hesabın fotoğrafını değiştirir.
+  2. **Hesap ID'si artık gösterilmiyor:** Ayarlar > Hesap'taki kopyalanabilir ID çipi kaldırıldı; ölü kalan `copy-account-id` dalı ve `profile.copyIdTitle`/`profile.accountIdCopied` anahtarları (15 dil) silindi → **0 ölü anahtar**.
+  3. **Profil başlığı sadeleşti:** Yeşil "Epic Games / GOG.COM / Connected" hapları yerine **tipografik mağaza jetonları** + **nokta/durum** göstergesi (yeşil bağlı, amber aktif değil/çevrimdışı). Genel Bakış'ta jetonlar `·` ile ayrılır, bağlı hesap adları notu kalır.
+  4. **Doğrulama:** `npm.cmd run build` ✅, tsc 0 hata, i18n **1.309 anahtar** 15/15 parite, 0 ölü CSS adayı.
+  5. **Kullanıcı kararı (aynı gün):** Başlıkta **jeton + nokta/durum** görünümü ve hesap sayfasında **satır avatarı + kamera rozeti** onaylandı → ek "Netflix tarzı hesap balonları" şeridi **yapılmayacak**.
+
 - **Profil "Genel Bakış" Sekmesi + Avatar Sistemi + Hesap Değiştirici Butonu (28.09.2026, ROADMAP §6.12/§7.6):**
   1. **"Genel Bakış" (birleşik profil) sekmesi:** Çip satırının ilk öğesi; aktif mağazaların (Epic + GOG) profilini tek ekranda birleştirir. Başlıkta mağaza çipleri + **bağlı hesap adları** notu, istatistikler iki mağazanın toplamı, oyun listesi birleşik. Yan karta **Bağlı Hesaplar** eklendi (ad + mağaza + aktif noktası; pasif hesapta "Bu Hesaba Geç", aktifte "Profili gör"). Varsayılan: tek aktif hesap → o hesabın profili, çoklu aktif → Genel Bakış. 4 yeni anahtar × 15 dil (**1.311 anahtar**, tam parite).
   2. **Avatar sistemi ayrıştırıldı:** Ad alanlı anahtarlar — `global` / `epic:<id>` / `gog:<id>`; eski `default` → `global` göçü; çıplak id alias'ları korunuyor. `avatarFor()` **yalnızca** ilgili anahtarın fotoğrafını döndürür (hesaplar arası fallback zinciri kaldırıldı) → her hesap kendi fotoğrafını, birleşik profil kendi fotoğrafını kullanır. Sol üst hesap çipi artık birleşik profilin fotoğrafını gösteriyor. Detaylı plan: **ROADMAP §7.6**.
