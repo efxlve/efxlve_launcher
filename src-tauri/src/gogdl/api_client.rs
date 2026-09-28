@@ -714,8 +714,7 @@ pub async fn fetch_presence(
 }
 
 /// Reads `items[].user_id` from a presence service response.
-fn parse_presence(value: &Value) -> Vec<String> {
-    value
+fn parse_presence(value: &Value) -> Vec<String> {    value
         .get("items")
         .and_then(|v| v.as_array())
         .map(|items| {
@@ -725,6 +724,38 @@ fn parse_presence(value: &Value) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// Marks the signed-in user online or offline in Galaxy (presence heartbeat).
+///
+/// The presence service expects a heartbeat roughly every five minutes while
+/// the client runs; the status expires on its own once the heartbeats stop.
+pub async fn send_presence(
+    user_id: &str,
+    access_token: &str,
+    online: bool,
+) -> Result<(), GogError> {
+    let client = create_client()?;
+    let url = format!("https://presence.gog.com/users/{user_id}/status");
+    let request = if online {
+        client.post(&url)
+    } else {
+        client.delete(&url)
+    };
+    let res = request
+        .header(AUTHORIZATION, format!("Bearer {access_token}"))
+        .send()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
+
+    if res.status() == reqwest::StatusCode::UNAUTHORIZED || res.status() == reqwest::StatusCode::FORBIDDEN
+    {
+        return Err(GogError::NotAuthenticated);
+    }
+    if !res.status().is_success() {
+        return Err(GogError::Http(format!("presence status {}", res.status())));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -779,6 +810,44 @@ mod tests {
     fn test_parse_presence_empty_response() {
         let val: Value = serde_json::from_str(r#"{ "total_count": 0, "items": [] }"#).unwrap();
         assert!(parse_presence(&val).is_empty());
+    }
+
+    /// Live check of the presence heartbeat using the stored GOG session.
+    /// Run with `cargo test -- --ignored --nocapture`; ends by going offline.
+    #[tokio::test]
+    #[ignore]
+    async fn live_presence_heartbeat() {
+        let Some((user_id, token)) = stored_gog_session() else {
+            println!("no stored GOG session; skipping");
+            return;
+        };
+        send_presence(&user_id, &token, true)
+            .await
+            .expect("heartbeat failed");
+        let online = fetch_presence(&[user_id.clone()], &token)
+            .await
+            .expect("presence query failed");
+        println!("online after heartbeat: {online:?}");
+        assert!(online.contains(&user_id), "account did not appear online");
+        send_presence(&user_id, &token, false)
+            .await
+            .expect("offline call failed");
+    }
+
+    /// Reads the launcher's stored GOG session (test helper for live checks).
+    fn stored_gog_session() -> Option<(String, String)> {
+        let appdata = std::env::var("APPDATA").ok()?;
+        let path = std::path::Path::new(&appdata)
+            .join("com.efxlve.launcher")
+            .join("gog")
+            .join("auth.json");
+        let text = std::fs::read_to_string(path).ok()?;
+        let value: Value = serde_json::from_str(&text).ok()?;
+        let first = value.as_object()?.values().next()?.clone();
+        Some((
+            first.get("user_id")?.as_str()?.to_string(),
+            first.get("access_token")?.as_str()?.to_string(),
+        ))
     }
 
     #[test]

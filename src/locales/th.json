@@ -97,6 +97,7 @@
   "friends.notSignedIn": "ต้องลงชื่อเข้าใช้ Epic เพื่อดูเพื่อน",
   "friends.networkError": "ติดต่อรายชื่อเพื่อนไม่ได้ (ข้อผิดพลาดเครือข่าย)",
   "friends.authError": "เซสชัน Epic ไม่ถูกต้องหรือหมดอายุ",
+  "friends.epicNote": "Epic ไม่เปิดเผยสถานะออนไลน์ให้แอปของบุคคลที่สาม จึงแสดงเฉพาะเวลาที่ใช้งานล่าสุดสำหรับเพื่อน Epic",
   "friends.errorTitle": "ไม่สามารถโหลดรายชื่อเพื่อนได้",
   "friends.filterActive": "ใช้งานอยู่",
   "friends.onlineNow": "ออนไลน์อยู่",

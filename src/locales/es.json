@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Hace falta iniciar sesión en Epic para ver amigos.",
   "friends.networkError": "No se pudo llegar a la lista de amigos (error de red).",
   "friends.authError": "La sesión de Epic no es válida o ha caducado.",
+  "friends.epicNote": "Epic no comparte el estado en línea con aplicaciones de terceros; para los amigos de Epic solo se muestra la última conexión.",
   "friends.errorTitle": "No se pudieron cargar los amigos",
   "friends.filterActive": "Activo",
   "friends.onlineNow": "En línea ahora",

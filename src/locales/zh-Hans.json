@@ -97,6 +97,7 @@
   "friends.notSignedIn": "查看好友需要登录 Epic。",
   "friends.networkError": "无法获取好友列表（网络错误）。",
   "friends.authError": "Epic 会话无效或已过期。",
+  "friends.epicNote": "Epic 不向第三方应用提供在线状态，因此 Epic 好友仅显示最后在线时间。",
   "friends.errorTitle": "无法加载好友",
   "friends.filterActive": "活跃",
   "friends.onlineNow": "当前在线",

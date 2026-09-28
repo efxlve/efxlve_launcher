@@ -1721,7 +1721,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -1740,6 +1740,8 @@ fn main() {
             // The hotkey listener must already know the configured folder.
             legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
             legendary::screenshots::start_f12_listener(app.handle().clone());
+            // Keeps the GOG account visible as online while the launcher runs.
+            gogdl::presence::spawn(app.handle().clone());
             build_tray(app)?;
             Ok(())
         })
@@ -1928,8 +1930,15 @@ fn main() {
             cloud_backup::commands::cloud_backup_download_game,
             cloud_backup::commands::cloud_backup_delete_remote,
         ])
-        .run(tauri::generate_context!())
-        .expect("Tauri application failed to run");
+        .build(tauri::generate_context!())
+        .expect("Tauri application failed to build");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Exit = event {
+            // Best effort: drop the GOG presence before the process ends.
+            tauri::async_runtime::block_on(gogdl::presence::go_offline(app_handle));
+        }
+    });
 }
 
 #[cfg(test)]

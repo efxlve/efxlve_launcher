@@ -34,6 +34,7 @@
 .friend-meta-sep { color: var(--text-3); margin: 0 5px; }
 
 .friends-updated { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.friends-note { margin: -4px 0 12px; color: var(--text-3); max-width: 720px; }
 .friends-requests { margin-bottom: 14px; }
 .friends-requests .gp-section-title { margin: 0; }
 .friends-requests .gp-section-title .count { color: var(--text-3); font-weight: 500; }

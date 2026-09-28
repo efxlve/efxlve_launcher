@@ -7,6 +7,7 @@ pub mod galaxy;
 pub mod galaxy_playtime;
 pub mod models;
 pub mod paths;
+pub mod presence;
 pub mod transfers;
 pub mod launcher;
 pub mod accounts;

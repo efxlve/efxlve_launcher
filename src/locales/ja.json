@@ -97,6 +97,7 @@
   "friends.notSignedIn": "フレンドを表示するには Epic へのサインインが必要です。",
   "friends.networkError": "フレンドリストに接続できませんでした（ネットワークエラー）。",
   "friends.authError": "Epic のセッションが無効か、期限切れです。",
+  "friends.epicNote": "Epic はオンライン状態をサードパーティ製アプリに提供していないため、Epic のフレンドには最終オンライン時刻のみを表示します。",
   "friends.errorTitle": "フレンドを読み込めませんでした",
   "friends.filterActive": "アクティブ",
   "friends.onlineNow": "オンライン中",

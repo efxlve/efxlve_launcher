@@ -97,6 +97,7 @@
   "friends.notSignedIn": "친구를 보려면 Epic 로그인이 필요합니다.",
   "friends.networkError": "친구 목록에 연결할 수 없습니다 (네트워크 오류).",
   "friends.authError": "Epic 세션이 잘못되었거나 만료되었습니다.",
+  "friends.epicNote": "Epic은 온라인 상태를 서드파티 앱에 제공하지 않으므로, Epic 친구에게는 마지막 접속 시간만 표시됩니다.",
   "friends.errorTitle": "친구를 불러올 수 없습니다",
   "friends.filterActive": "활성",
   "friends.onlineNow": "현재 온라인",

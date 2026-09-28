@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Per gli amici serve l'accesso a Epic.",
   "friends.networkError": "Impossibile raggiungere l'elenco amici (errore di rete).",
   "friends.authError": "La sessione Epic non è valida o è scaduta.",
+  "friends.epicNote": "Epic non condivide lo stato online con app di terze parti; per gli amici Epic viene mostrato solo l'ultimo accesso.",
   "friends.errorTitle": "Impossibile caricare gli amici",
   "friends.filterActive": "Attivo",
   "friends.onlineNow": "Online ora",

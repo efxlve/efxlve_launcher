@@ -199,6 +199,7 @@ export function renderFriendsView(): string {
   const loading = (S.friendsLoading || S.gogFriendsLoading) && all.length === 0;
   const error = S.friendsError || S.gogFriendsError;
   const activeCount = all.filter(isActive).length;
+  const epicCount = all.filter((f) => f.store === "epic").length;
 
   const filterTab = (val: string, label: string): string =>
     `<button class="tab ${S.friendsFilter === val ? "active" : ""}" data-act="friends-filter" data-val="${val}">${label}</button>`;
@@ -239,6 +240,7 @@ export function renderFriendsView(): string {
         ${all.length > 0 && S.friendsPresenceAt > 0 ? `<span class="friends-sub-sep" aria-hidden="true">·</span><span id="friends-updated" class="friends-updated">${t("friends.updated", { when: relativeTime(S.friendsPresenceAt) })}</span>` : ""}
       </p>
       ${error && rows.length > 0 ? `<p class="page-sub friends-error">${esc(error)}</p>` : ""}
+      ${epicCount > 0 ? `<p class="page-sub friends-note">${esc(t("friends.epicNote"))}</p>` : ""}
       <div id="friends-requests">${renderFriendRequests()}</div>
       <div id="friends-list">${body}</div>
     </div>`;

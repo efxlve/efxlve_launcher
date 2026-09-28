@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Für Freunde ist eine Epic-Anmeldung nötig.",
   "friends.networkError": "Freundesliste nicht erreichbar (Netzwerkfehler).",
   "friends.authError": "Die Epic-Sitzung ist ungültig oder abgelaufen.",
+  "friends.epicNote": "Epic teilt den Live-Status nicht mit Drittanbieter-Apps; für Epic-Freunde wird nur „Zuletzt gesehen“ angezeigt.",
   "friends.errorTitle": "Freunde konnten nicht geladen werden",
   "friends.filterActive": "Aktiv",
   "friends.onlineNow": "Jetzt online",
