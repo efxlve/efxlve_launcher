@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "二進位檔案無法運作",
   "dl.versionReadFailed": "無法讀取版本",
   "dl.versionNotFound": "找不到版本",
-  "dl.altBinaryFailed": "無法執行備用 legendary",
   "dl.fetchingVersion": "正在取得版本資訊...",
   "profile.notLoggedIn": "未登入 Epic（找不到 user.json）",
   "profile.userReadFailed": "無法讀取 user.json：{a1}",

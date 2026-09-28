@@ -26,16 +26,7 @@ pub fn downloaded_binary(app: &AppHandle) -> PathBuf {
 }
 
 /// Resolves the executable path for `gogdl.exe`.
-pub fn resolve_binary(
-    app: &AppHandle,
-    override_path: Option<&str>,
-) -> Result<PathBuf, GogError> {
-    if let Some(p) = override_path {
-        let pb = PathBuf::from(p);
-        if pb.is_file() {
-            return Ok(pb);
-        }
-    }
+pub fn resolve_binary(app: &AppHandle) -> Result<PathBuf, GogError> {
     let dl = downloaded_binary(app);
     if dl.is_file() {
         return Ok(dl);
@@ -45,7 +36,7 @@ pub fn resolve_binary(
 
 /// Ensures `gogdl.exe` is present on disk, downloading it from GitHub Releases if missing.
 pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, GogError> {
-    if let Ok(p) = resolve_binary(app, None) {
+    if let Ok(p) = resolve_binary(app) {
         return Ok(p);
     }
     let target = downloaded_binary(app);

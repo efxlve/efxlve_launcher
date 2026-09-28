@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "ไบนารีไม่ทำงาน",
   "dl.versionReadFailed": "อ่านเวอร์ชันไม่ได้",
   "dl.versionNotFound": "ไม่พบเวอร์ชัน",
-  "dl.altBinaryFailed": "รัน legendary สำรองไม่ได้",
   "dl.fetchingVersion": "กำลังดึงข้อมูลเวอร์ชัน...",
   "profile.notLoggedIn": "ยังไม่ได้ลงชื่อเข้าใช้ Epic (ไม่พบ user.json)",
   "profile.userReadFailed": "อ่าน user.json ไม่ได้: {a1}",

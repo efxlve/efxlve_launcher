@@ -63,7 +63,6 @@ export interface SetupStatus {
   binaryPath: string | null;
   version: string | null;
   needsDownload: boolean;
-  altBin: string | null;
 }
 
 export interface SetupEvent {

@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "바이너리가 동작하지 않습니다",
   "dl.versionReadFailed": "버전을 읽을 수 없습니다",
   "dl.versionNotFound": "버전을 찾을 수 없습니다",
-  "dl.altBinaryFailed": "대체 legendary를 실행할 수 없습니다",
   "dl.fetchingVersion": "버전 정보 가져오는 중...",
   "profile.notLoggedIn": "Epic에 로그인하지 않음 (user.json 없음)",
   "profile.userReadFailed": "user.json을 읽을 수 없습니다: {a1}",

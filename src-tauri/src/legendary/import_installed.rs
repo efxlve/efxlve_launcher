@@ -296,9 +296,7 @@ pub async fn import_installed_folder(
 
     let config = super::skip::default_config_dir();
     let mut map = installed_map(&config);
-    let settings = crate::load_settings(app);
-    let bin = super::paths::resolve_binary(app, settings.alt_legendary_bin.as_deref())
-        .map_err(|e| e.to_string())?;
+    let bin = super::paths::resolve_binary(app).map_err(|e| e.to_string())?;
 
     let mut imported = 0u32;
     let mut relinked = 0u32;

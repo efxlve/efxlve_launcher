@@ -661,8 +661,7 @@ async fn move_game_folder_internal(
     }
 
     // B) legendary move <app> <target_base> --skip-move
-    let settings = crate::load_settings(app);
-    let bin_path = crate::legendary::paths::resolve_binary(app, settings.alt_legendary_bin.as_deref())
+    let bin_path = crate::legendary::paths::resolve_binary(app)
         .unwrap_or_else(|_| PathBuf::from("legendary"));
 
     let mut move_cmd = tokio::process::Command::new(bin_path);

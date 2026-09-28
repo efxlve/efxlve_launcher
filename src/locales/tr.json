@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "binary çalışmıyor",
   "dl.versionReadFailed": "sürüm okunamadı",
   "dl.versionNotFound": "sürüm bulunamadı",
-  "dl.altBinaryFailed": "alternatif legendary çalıştırılamadı",
   "dl.fetchingVersion": "Sürüm bilgisi alınıyor...",
   "profile.notLoggedIn": "Epic hesabına giriş yapılmamış (user.json bulunamadı)",
   "profile.userReadFailed": "user.json okunamadı: {a1}",

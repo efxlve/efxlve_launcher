@@ -73,26 +73,13 @@ async fn latest_tag() -> Result<String, LegendaryError> {
 }
 
 /// Returns the binary path if ready, otherwise downloads it. Can take a while.
-pub async fn ensure_binary(
-    app: &AppHandle,
-    override_path: Option<String>,
-) -> Result<PathBuf, LegendaryError> {
-    if let Some(o) = override_path.as_deref() {
-        let p = PathBuf::from(o);
-        if p.is_file() {
-            binary_version(&p)
-                .await
-                .map_err(|_| LegendaryError::DownloadFailed("@t:dl.altBinaryFailed".into()))?;
-            return Ok(p);
-        }
-    }
-
+pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
     let target = paths::downloaded_binary(app);
     if target.is_file() {
         if binary_version(&target).await.is_ok() {
             return Ok(target);
         }
-        // Bozuk dosya: silip yeniden indir.
+        // Corrupt file: remove it and download again.
         let _ = tokio::fs::remove_file(&target).await;
     }
 

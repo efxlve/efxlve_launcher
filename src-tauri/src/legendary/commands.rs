@@ -16,12 +16,10 @@ pub struct SetupStatus {
     pub binary_path: Option<String>,
     pub version: Option<String>,
     pub needs_download: bool,
-    pub alt_bin: Option<String>,
 }
 
 fn resolve_or_err(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    let settings = load_settings(app);
-    paths::resolve_binary(app, settings.alt_legendary_bin.as_deref()).map_err(cmd_error)
+    paths::resolve_binary(app).map_err(cmd_error)
 }
 
 /// Writes the full error output to a file and returns a user-friendly message.
@@ -45,8 +43,7 @@ fn fail(app: &AppHandle, e: LegendaryError) -> String {
 
 #[tauri::command]
 pub async fn epic_setup_status(app: AppHandle) -> Result<SetupStatus, String> {
-    let settings = load_settings(&app);
-    let path = paths::resolve_binary(&app, settings.alt_legendary_bin.as_deref()).ok();
+    let path = paths::resolve_binary(&app).ok();
     let mut version = None;
     if let Some(ref p) = path {
         version = downloader::binary_version(p).await.ok();
@@ -56,14 +53,12 @@ pub async fn epic_setup_status(app: AppHandle) -> Result<SetupStatus, String> {
         binary_path: path.map(|p| p.to_string_lossy().to_string()),
         version,
         needs_download,
-        alt_bin: settings.alt_legendary_bin,
     })
 }
 
 #[tauri::command]
 pub async fn epic_ensure_binary(app: AppHandle) -> Result<String, String> {
-    let settings = load_settings(&app);
-    downloader::ensure_binary(&app, settings.alt_legendary_bin)
+    downloader::ensure_binary(&app)
         .await
         .map(|p| p.to_string_lossy().to_string())
         .map_err(|e| fail(&app, e))
@@ -384,21 +379,6 @@ pub fn epic_remove_saved_account(_app: AppHandle, account_id: String) -> Result<
 #[tauri::command]
 pub fn epic_get_settings(app: AppHandle) -> crate::EpicSettings {
     load_settings(&app)
-}
-
-#[tauri::command]
-pub fn epic_set_alt_bin(app: AppHandle, path: Option<String>) -> Result<crate::EpicSettings, String> {
-    let mut s = load_settings(&app);
-    s.alt_legendary_bin = path.and_then(|p| {
-        let t = p.trim().to_string();
-        if t.is_empty() {
-            None
-        } else {
-            Some(t)
-        }
-    });
-    save_settings(&app, &s);
-    Ok(s)
 }
 
 #[derive(serde::Serialize)]

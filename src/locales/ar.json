@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "الملف الثنائي لا يعمل",
   "dl.versionReadFailed": "تعذر قراءة الإصدار",
   "dl.versionNotFound": "لم يُعثر على الإصدار",
-  "dl.altBinaryFailed": "تعذر تشغيل legendary البديل",
   "dl.fetchingVersion": "جارٍ جلب معلومات الإصدار...",
   "profile.notLoggedIn": "لم يتم تسجيل الدخول إلى Epic (لم يُعثر على user.json)",
   "profile.userReadFailed": "تعذر قراءة user.json: {a1}",

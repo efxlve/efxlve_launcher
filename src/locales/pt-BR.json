@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "o binário não está funcionando",
   "dl.versionReadFailed": "não foi possível ler a versão",
   "dl.versionNotFound": "versão não encontrada",
-  "dl.altBinaryFailed": "não foi possível executar o legendary alternativo",
   "dl.fetchingVersion": "Buscando informações da versão...",
   "profile.notLoggedIn": "Não entrou na Epic (user.json não encontrado)",
   "profile.userReadFailed": "Não foi possível ler user.json: {a1}",

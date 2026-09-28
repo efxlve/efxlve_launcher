@@ -33,7 +33,6 @@ fn app_set_minimize_to_tray(enabled: bool, state: tauri::State<'_, TrayPref>) {
 /// Epic/Legendary settings (`<app_data>/settings.json`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EpicSettings {
-    pub alt_legendary_bin: Option<String>,
     #[serde(default)]
     pub install_dir: Option<String>,
     #[serde(default)]
@@ -1842,7 +1841,7 @@ fn main() {
             legendary::commands::epic_switch_account,
             legendary::commands::epic_remove_saved_account,
             legendary::commands::epic_get_settings,
-            legendary::commands::epic_set_alt_bin,
+            legendary::commands::epic_get_settings,
             legendary::commands::epic_measure_cdns,
             legendary::commands::epic_set_preferred_cdn,
             legendary::commands::epic_cleanup_cache,

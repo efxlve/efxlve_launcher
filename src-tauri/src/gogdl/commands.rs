@@ -97,7 +97,7 @@ pub async fn gog_logout(app: AppHandle) -> Result<(), String> {
 #[command]
 pub async fn gog_setup_status(app: AppHandle) -> Result<GogSetupStatus, String> {
     let dl_bin = downloaded_binary(&app);
-    let resolved = resolve_binary(&app, None).ok();
+    let resolved = resolve_binary(&app).ok();
 
     Ok(GogSetupStatus {
         binary_path: resolved.as_ref().map(|p| p.to_string_lossy().to_string()),

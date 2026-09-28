@@ -527,8 +527,7 @@ fn resolve_base(app: &AppHandle, override_dir: Option<String>) -> PathBuf {
 }
 
 fn resolve_bin(app: &AppHandle) -> Result<PathBuf, String> {
-    let settings = load_settings(app);
-    paths::resolve_binary(app, settings.alt_legendary_bin.as_deref()).map_err(cmd_error)
+    paths::resolve_binary(app).map_err(cmd_error)
 }
 
 /// Extracts seconds and the raw string from a "00:01:22" or "01:22" line.

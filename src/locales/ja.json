@@ -823,7 +823,6 @@
   "dl.binaryNotWorking": "バイナリが動作していません",
   "dl.versionReadFailed": "バージョンを読み取れませんでした",
   "dl.versionNotFound": "バージョンが見つかりません",
-  "dl.altBinaryFailed": "代替の legendary を実行できませんでした",
   "dl.fetchingVersion": "バージョン情報を取得中...",
   "profile.notLoggedIn": "Epic にサインインしていません（user.json が見つかりません）",
   "profile.userReadFailed": "user.json を読み取れませんでした: {a1}",
