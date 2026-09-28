@@ -196,7 +196,12 @@ function renderAppearance(): string {
       row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
-      (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
+      (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : "") +
+      row(
+        t("settings.tvModeTitle"),
+        t("settings.tvModeDesc"),
+        `<button type="button" class="btn ghost small" data-act="open-tv-mode">${icon("gamepad-2", 13)} ${t("tv.open")}</button>`,
+      ),
       t("settings.secAppearance"),
     ) +
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`

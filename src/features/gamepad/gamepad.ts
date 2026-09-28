@@ -18,6 +18,7 @@ import {
   epicVisibleSummaries,
 } from "../library/library-view";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
+import { showTvPrompt, tvActivate, tvBack, tvMove, tvOpenDetails, tvRowJump } from "./tv-mode";
 import { setView } from "../store/store-view";
 export function ensureGamepadHud(): HTMLElement {
   if (!S.gamepadHudEl) {
@@ -59,6 +60,14 @@ export function updateGamepadHud(active = true): void {
       <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
       <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
     `;
+  } else if (S.view === "tv") {
+    hud.innerHTML = `
+      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.select")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>${t("common.back")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.detail")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
+      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
+    `;
   } else if (S.view === "profile") {
     hud.innerHTML = `
       <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.inspectTrophies")}</span></div>
@@ -81,7 +90,7 @@ export function updateGamepadHud(active = true): void {
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
     const name = e.gamepad.id.split("(")[0].trim();
-    toast(t("gamepad.connected", { name }), "ok");
+    if (!showTvPrompt(name)) toast(t("gamepad.connected", { name }), "ok");
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
@@ -171,8 +180,19 @@ export function gamepadLoop(): void {
     const btnLB = btns[4]?.pressed;
     const btnRB = btns[5]?.pressed;
 
-    if (btnB) {
-      // B / Daire (○): Geri / Kapat
+    if (S.view === "tv") {
+      // TV Mode owns the whole controller: A selects, B goes back, X opens the
+      // game page, LB/RB jump rows and the D-Pad moves the focus.
+      if (btnA || btnB || btnX || btnLB || btnRB || up || down || left || right) {
+        S.lastGamepadActionTime = now;
+        if (btnB) tvBack();
+        else if (btnA) tvActivate();
+        else if (btnX) tvOpenDetails();
+        else if (btnLB || btnRB) tvRowJump(btnRB ? 1 : -1);
+        else tvMove(up ? "up" : down ? "down" : left ? "left" : "right");
+      }
+    } else if (btnB) {
+      // B / Circle: back / close
       S.lastGamepadActionTime = now;
       if (S.activeLightboxScreenshot) {
         closeScreenshotLightbox();

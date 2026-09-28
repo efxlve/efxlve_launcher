@@ -6,7 +6,7 @@
  */
 
 /** Top-level application view/route. */
-export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts";
+export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "tv";
 
 /** Store or catalog provider source for a game. */
 export type GameSource = "epic" | "gog";

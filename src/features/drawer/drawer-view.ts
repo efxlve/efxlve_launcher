@@ -149,15 +149,32 @@ function epicDescription(s: EpicSummary): string {
 /** Wikipedia fallback text per game + language ("" = checked, nothing found). */
 const aboutCache = new Map<string, string>();
 
+/** Games whose store-side "about" sources have all settled. */
+const storeAboutSettled = new Set<string>();
+
 function aboutKey(appName: string): string {
   return `${appName}|${currentLanguage()}`;
 }
 
 /**
- * Order: the game's own store first (Epic), then Wikipedia.
- * The store text is already in memory; Wikipedia is fetched once per game and
- * language and only when the store has nothing.
+ * Order: the game's own store first (Epic/GOG), then Wikipedia.
+ *
+ * The wiki fallback is deliberately NOT requested until the store lookup has
+ * settled. Starting it earlier made Wikipedia appear first and then get
+ * replaced by the store text, which read like a wrong description.
  */
+function maybeLoadWikiAbout(s: EpicSummary): void {
+  if (epicDescription(s)) return;
+  if (!storeAboutSettled.has(s.appName)) return;
+  if (!S.loadedRequirements.has(s.appName)) return;
+  const key = aboutKey(s.appName);
+  if (aboutCache.has(key) || S.loadingAboutFor === key) return;
+  S.loadingAboutFor = key;
+  void loadWikiAbout(s).finally(() => {
+    if (S.loadingAboutFor === key) S.loadingAboutFor = null;
+  });
+}
+
 async function loadWikiAbout(s: EpicSummary): Promise<void> {
   try {
     const wiki = await epicGetWikiAbout(s.title, s.appName, currentLanguage());
@@ -225,7 +242,7 @@ function ensureOverviewData(s: EpicSummary): void {
   // Fetch official GOG metadata on demand
   if (appName.startsWith("gog::")) {
     const rawId = appName.slice(5);
-    void gogGetGameDetails(rawId)
+    const detailsP = gogGetGameDetails(rawId)
       .then((details) => {
         if (details.requirements) {
           S.loadedRequirements.set(appName, details.requirements);
@@ -245,21 +262,23 @@ function ensureOverviewData(s: EpicSummary): void {
         }
       })
       .catch(() => {});
+    const reqP =
+      !S.loadedRequirements.has(appName) && S.loadingReqFor !== appName
+        ? fetchAndRenderRequirements(appName, s.title)
+        : Promise.resolve();
+    // GOG has two store-side sources (details + requirements): the wiki may only
+    // start once both have settled, otherwise its text would flash and be
+    // replaced by the store description.
+    void Promise.allSettled([detailsP, reqP]).then(() => {
+      storeAboutSettled.add(appName);
+      maybeLoadWikiAbout(s);
+    });
     if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) {
       void fetchAndRenderAchievements(appName);
     }
-    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) {
-      void fetchAndRenderRequirements(appName, s.title);
-    }
-  }
-
-  // Wikipedia is asked only when the game's own store has no description.
-  const key = aboutKey(appName);
-  if (!aboutCache.has(key) && S.loadingAboutFor !== key && !epicDescription(s)) {
-    S.loadingAboutFor = key;
-    void loadWikiAbout(s).finally(() => {
-      if (S.loadingAboutFor === key) S.loadingAboutFor = null;
-    });
+  } else {
+    // Epic: the store description arrives with the requirements call.
+    maybeLoadWikiAbout(s);
   }
 }
 
@@ -270,7 +289,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   S.currentModalAppName = appName;
   if (isInitialOpen) {
     S.activeDrawerTab = "overview";
-    S.activeAchScope = "all";
     S.activeAchFilter = "all";
     S.achSearchQuery = "";
     S.achSortOrder = "default";
@@ -809,6 +827,14 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
     S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
   } finally {
     S.loadingReqFor = null;
+    // Epic's description arrives with this call: mark the store side settled and
+    // only then decide whether the wiki fallback is needed. GOG is marked by the
+    // details + requirements pair in `ensureOverviewData`.
+    if (!appName.startsWith("gog::")) {
+      storeAboutSettled.add(appName);
+      const settled = summaryOf(appName);
+      if (settled) maybeLoadWikiAbout(settled);
+    }
     if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") openEpicModal(appName, false);
   }
 }

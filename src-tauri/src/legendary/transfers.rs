@@ -1215,6 +1215,9 @@ async fn monitor_download(
             } else {
                 None
             };
+            // Keep the Epic Games Launcher's own `.item` version in step with the
+            // files legendary just wrote; otherwise EGL re-offers the update.
+            super::cache::sync_egl_manifest_version(&super::skip::default_config_dir(), &app_name);
             emit_progress_full(
                 &app,
                 &app_name,

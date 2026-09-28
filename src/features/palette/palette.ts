@@ -44,6 +44,7 @@ function commands(): Command[] {
     { label: t("palette.cmdRefresh"), iconName: "refresh", attrs: `data-act="epic-refresh"`, keywords: "refresh sync yenile" },
     { label: t("palette.cmdStorage"), iconName: "hard-drive", attrs: `data-act="open-storage-manager"`, keywords: "storage disk depolama" },
     { label: t("palette.cmdOffline"), iconName: S.offlineMode ? "wifi" : "wifi-off", attrs: `data-act="toggle-offline-mode"`, keywords: "offline online cevrimdisi" },
+    { label: t("tv.open"), iconName: "gamepad-2", attrs: `data-act="open-tv-mode"`, keywords: "tv mode kumanda gamepad koltuk" },
   ];
   return list;
 }

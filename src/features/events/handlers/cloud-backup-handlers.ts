@@ -6,7 +6,9 @@ import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import {
+  deleteCloudBackupAction,
   disconnectGoogleDriveAction,
+  downloadCloudBackupAction,
   loadCloudBackupsAction,
   startGoogleDriveAuthAction,
   testCloudConnectionAction,
@@ -32,6 +34,19 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         })();
       }
       return true;
+
+    case "manage-cloud-restore": {
+      // Restore the newest cloud backup over the local save folder.
+      const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
+      if (id && latest) void downloadCloudBackupAction(id, latest.remoteId, latest.backupId);
+      return true;
+    }
+
+    case "manage-cloud-delete": {
+      const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
+      if (id && latest) void deleteCloudBackupAction(id, latest.remoteId);
+      return true;
+    }
 
     case "set-cloud-provider": {
       const provider = t.dataset.provider as CloudBackupProvider;

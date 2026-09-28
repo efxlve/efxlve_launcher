@@ -5,7 +5,7 @@
 
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
-import { esc } from "../../core/utils";
+import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
 import { initCloudBackupSettings } from "./cloud-backup-actions";
 
@@ -127,18 +127,34 @@ export function renderManageCloudBackupRow(appName: string): string {
   if (!st || !st.enabled || st.provider === "none") return "";
 
   const providerLabel = st.provider === "google_drive" ? "Google Drive" : "WebDAV";
+  const latest = S.cloudBackupsMap.get(appName)?.[0];
+  const busy = S.cloudBackupSyncing ? "disabled" : "";
+  const latestLine = latest
+    ? `<div class="mg-desc">${t("cloud.latestBackup", { info: `${latest.formattedDate} · ${fmtBytes(latest.sizeBytes)}` })}</div>`
+    : "";
+  // Restore/delete act on the newest backup; they only appear once it is known.
+  const latestActions = latest
+    ? `<button class="btn ghost small" data-act="manage-cloud-restore" data-id="${appName}" title="${t("ach.restoreTitle")}" ${busy}>
+         ${icon("download", 13)} ${t("ach.restore")}
+       </button>
+       <button class="icon-btn danger" data-act="manage-cloud-delete" data-id="${appName}" title="${t("common.delete")}" ${busy}>
+         ${icon("trash", 13)}
+       </button>`
+    : "";
 
   return `
     <div class="row mg-row">
       <div class="row-main">
         <div class="mg-title">${t("cloud.manageRowTitle", { provider: providerLabel })}</div>
         <div class="mg-desc">${t("cloud.manageRowDesc")}</div>
+        ${latestLine}
       </div>
       <div class="row-actions">
-        <button class="btn ghost small" data-act="manage-cloud-sync" data-id="${appName}" title="${t("cloud.syncTooltip")}" ${S.cloudBackupSyncing ? "disabled" : ""}>
+        ${latestActions}
+        <button class="btn ghost small" data-act="manage-cloud-sync" data-id="${appName}" title="${t("cloud.syncTooltip")}" ${busy}>
           ${icon("refresh", 13)} ${t("cloud.syncBtn")}
         </button>
-        <button class="btn ghost small" data-act="manage-cloud-upload" data-id="${appName}" title="${t("cloud.uploadTooltip")}" ${S.cloudBackupSyncing ? "disabled" : ""}>
+        <button class="btn ghost small" data-act="manage-cloud-upload" data-id="${appName}" title="${t("cloud.uploadTooltip")}" ${busy}>
           ${icon("upload", 13)} ${t("cloud.uploadBtn")}
         </button>
       </div>

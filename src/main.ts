@@ -34,6 +34,7 @@ import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
+import { renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
 document.documentElement.classList.add("ready");
@@ -55,6 +56,9 @@ function scheduleRender(): void {
 
 /** Render the active view and refresh the surrounding chrome. */
 function render(): void {
+  // TV Mode is a full-screen shell state; a single place toggles its body class.
+  document.body.classList.toggle("tv-mode", S.view === "tv");
+
   // When leaving the store, hard-hide the native webview to avoid overlap.
   if (S.view !== "store" && S.storeShown) hideStore();
 
@@ -83,6 +87,7 @@ function render(): void {
     : S.view === "downloads" ? renderDownloads()
     : S.view === "profile" ? renderProfile()
     : S.view === "accounts" ? renderAccounts()
+    : S.view === "tv" ? renderTvMode()
     : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();

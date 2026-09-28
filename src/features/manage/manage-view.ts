@@ -13,6 +13,7 @@ import { t } from "../../i18n";
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { renderManageCloudBackupRow } from "../cloud-backup/cloud-backup-view";
+import { loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
 
 /** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
 function envToText(env: Record<string, string> | undefined): string {
@@ -44,8 +45,12 @@ function verifyBox(percent: number, detail: string, speed: string): string {
     </div>`;
 }
 
+/** App name of the currently open manage popup; null when it is closed. */
+let openManageAppName: string | null = null;
+
 /** Closes the manage popup without touching the game page underneath. */
 export function closeManagePopup(): void {
+  openManageAppName = null;
   const root = manageRoot ?? document.getElementById("manage-root");
   if (root) root.replaceChildren();
   document.querySelectorAll(".manage-overlay").forEach((el) => el.remove());
@@ -56,6 +61,7 @@ export function openManagePopup(appName: string): void {
   if (!manageRoot) return;
   const s = summaryOf(appName);
   if (!s) return;
+  openManageAppName = appName;
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
       <div class="manage-dialog">
@@ -69,6 +75,15 @@ export function openManagePopup(appName: string): void {
         <div class="manage-body">${renderDrawerManage(s)}</div>
       </div>
     </div>`;
+
+  // The cloud row offers restore/delete for the newest backup, so the list has
+  // to be known when the popup opens (one call, silently skipped when disabled).
+  const cloud = S.cloudBackupSettings;
+  if (cloud?.enabled && cloud.provider !== "none" && !S.cloudBackupsMap.has(appName)) {
+    void loadCloudBackupsAction(appName).then(() => {
+      if (openManageAppName === appName) openManagePopup(appName);
+    });
+  }
 }
 
 /** Renders action buttons for the save directory row. */

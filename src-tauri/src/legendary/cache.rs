@@ -480,6 +480,98 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     v
 }
 
+/// Copies legendary's freshly installed version and size into the Epic Games
+/// Launcher `.item` for this app (and any of its DLCs).
+///
+/// EGL decides "update available" by comparing the `.item`'s `AppVersionString`
+/// with the catalog. legendary rewrites `installed.json` but never touches the
+/// `.item`, so without this sync the official launcher offers the very same
+/// update again right after this launcher already installed it.
+pub fn sync_egl_manifest_version(config: &Path, app_name: &str) {
+    let dir = egl_manifests_dir();
+    if !dir.is_dir() {
+        return;
+    }
+    let installed = read_installed(config);
+    let find = |name: &str| installed.iter().find(|g| g.app_name.eq_ignore_ascii_case(name));
+    let Some(main) = find(app_name) else {
+        return;
+    };
+    let main_version = main.version.clone();
+    let main_size = main.install_size;
+
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("item") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(mut val) = serde_json::from_str::<serde_json::Value>(&text) else {
+            continue;
+        };
+
+        let item_app = val
+            .get("AppName")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        let main_of_item = val
+            .get("MainGameAppName")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        let (version, size) = if item_app.eq_ignore_ascii_case(app_name) {
+            (main_version.clone(), main_size)
+        } else if main_of_item.eq_ignore_ascii_case(app_name) {
+            match find(&item_app) {
+                Some(dlc) => (dlc.version.clone(), dlc.install_size),
+                None => continue,
+            }
+        } else {
+            continue;
+        };
+
+        if apply_installed_version(&mut val, &version, size) {
+            if let Ok(new_text) = serde_json::to_string_pretty(&val) {
+                let _ = std::fs::write(&path, new_text);
+            }
+        }
+    }
+}
+
+/// Writes the installed version/size into one `.item` object. Returns true when
+/// a field actually changed. Split out so it can be unit-tested without EGL.
+fn apply_installed_version(val: &mut serde_json::Value, version: &str, install_size: u64) -> bool {
+    let Some(obj) = val.as_object_mut() else {
+        return false;
+    };
+    let mut changed = false;
+    if !version.is_empty() && obj.get("AppVersionString").and_then(|v| v.as_str()) != Some(version) {
+        obj.insert(
+            "AppVersionString".to_string(),
+            serde_json::Value::String(version.to_string()),
+        );
+        changed = true;
+    }
+    if obj.get("InstallSize").and_then(|v| v.as_u64()) != Some(install_size) {
+        obj.insert("InstallSize".to_string(), serde_json::Value::from(install_size));
+        changed = true;
+    }
+    if obj.get("bNeedsValidation").and_then(|v| v.as_bool()) == Some(true) {
+        obj.insert("bNeedsValidation".to_string(), serde_json::Value::Bool(false));
+        changed = true;
+    }
+    changed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -556,5 +648,27 @@ mod tests {
         assert!(text.contains("Cyberpunk"));
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_apply_installed_version_updates_item_fields() {
+        let mut val = serde_json::json!({
+            "AppName": "Ginger",
+            "AppVersionString": "2.31_hotfix",
+            "InstallSize": 66400731896u64,
+            "bNeedsValidation": true
+        });
+
+        assert!(apply_installed_version(&mut val, "2.32_hotfix", 117213238008));
+        assert_eq!(val["AppVersionString"], "2.32_hotfix");
+        assert_eq!(val["InstallSize"], 117213238008u64);
+        assert_eq!(val["bNeedsValidation"], false);
+
+        // Re-running with the same values must be a no-op (no needless writes).
+        assert!(!apply_installed_version(&mut val, "2.32_hotfix", 117213238008));
+
+        // An unknown version must not clobber whatever EGL already stored.
+        assert!(!apply_installed_version(&mut val, "", 117213238008));
+        assert_eq!(val["AppVersionString"], "2.32_hotfix");
     }
 }
