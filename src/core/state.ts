@@ -8,7 +8,7 @@
  *
  * This file is intentionally free of logic; it only declares state.
  */
-import { EPIC_STORE_URL } from "../epic";
+import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry } from "../epic";
 import { initialLanguage } from "../i18n";
 import {
   APP_AUTO_UPDATE_KEY,
@@ -195,6 +195,10 @@ export const S = {
   networkProfile: ("balanced") as string,
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,
   isBackingUp: false,
+  cloudBackupSettings: (null) as CloudBackupSettings | null,
+  cloudBackupTesting: false,
+  cloudBackupSyncing: false,
+  cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   ignoredUpdates: (loadStrSet(IGNORED_UPDATES_KEY)) as Set<string>,

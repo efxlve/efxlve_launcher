@@ -38,6 +38,7 @@ import {
   type ThirdPartyLauncher,
 } from "../../epic";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
+import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
@@ -162,6 +163,7 @@ function renderIntegrations(): string {
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
   return (
+    renderCloudBackupSettingsGroup() +
     group(eglGroup, t("settings.eglTitle")) +
     group(tplRows, t("settings.thirdPartyTitle")) +
     group(sgdb, "SteamGridDB") +

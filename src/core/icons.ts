@@ -34,6 +34,7 @@ export type IconName =
   | "settings"
   | "zap"
   | "cloud"
+  | "upload"
   | "terminal"
   | "pause"
   | "chevron-up"
@@ -202,6 +203,8 @@ const ICON_PATHS: Record<string, string> = {
     '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   cloud:
     '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  upload:
+    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
   terminal:
     '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
   calendar:

@@ -2492,6 +2492,9 @@ async fn spawn_launched(
             }),
         );
 
+        // Auto Cloud Backup (WebDAV/Google Drive) if enabled in settings
+        crate::cloud_backup::manager::trigger_auto_sync_on_exit(app_bg.clone(), app_name_bg.clone());
+
         // Cloud sync defaults on. The toggle lives in efxlve_game_settings.json
         // (camelCase). An older path looked at a file that was never written, so
         // legendary sync-saves never ran.

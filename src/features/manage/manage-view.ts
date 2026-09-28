@@ -12,6 +12,7 @@ import { t } from "../../i18n";
 
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
+import { renderManageCloudBackupRow } from "../cloud-backup/cloud-backup-view";
 
 /** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
 function envToText(env: Record<string, string> | undefined): string {
@@ -163,7 +164,8 @@ export function renderDrawerManage(s: EpicSummary): string {
             ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
               `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
-              `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}`}
+              `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
+            ${renderManageCloudBackupRow(id)}`}
       </div>` : ""}
 
       ${s.installed ? `<div class="section-title">${t("manage.groupLaunch")}</div>

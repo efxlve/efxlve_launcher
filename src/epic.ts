@@ -1286,4 +1286,74 @@ export const epicMoveGame = (appName: string, targetBasePath: string) =>
 export const epicCancelMoveGame = (appName: string) =>
   invoke<boolean>("epic_cancel_move_game", { appName });
 
+/* ---------- Cloud Save Backup (WebDAV & Google Drive) ---------- */
+
+export type CloudBackupProvider = "none" | "webdav" | "google_drive";
+
+export interface CloudBackupSettings {
+  enabled: boolean;
+  provider: CloudBackupProvider;
+  autoSyncOnGameExit: boolean;
+  webdavUrl: string;
+  webdavUsername: string;
+  webdavPassword: string;
+  gdriveFolderId?: string | null;
+  gdriveUserEmail?: string | null;
+  gdriveRefreshToken?: string | null;
+  lastSyncTime?: number | null;
+}
+
+export interface CloudBackupEntry {
+  backupId: string;
+  appName: string;
+  timestamp: number;
+  formattedDate: string;
+  sizeBytes: number;
+  fileCount: number;
+  sha256: string;
+  provider: string;
+  remoteId: string;
+}
+
+export interface CloudSyncStatus {
+  appName: string;
+  localBackupId?: string | null;
+  localTimestamp?: number | null;
+  cloudBackupId?: string | null;
+  cloudTimestamp?: number | null;
+  isInSync: boolean;
+  newerSide: string; // "local" | "cloud" | "equal" | "none"
+}
+
+export const cloudBackupGetSettings = () =>
+  invoke<CloudBackupSettings>("cloud_backup_get_settings");
+
+export const cloudBackupSaveSettings = (settings: CloudBackupSettings) =>
+  invoke<void>("cloud_backup_save_settings", { settings });
+
+export const cloudBackupTestConnection = (settings: CloudBackupSettings) =>
+  invoke<string>("cloud_backup_test_connection", { settings });
+
+export const cloudBackupStartGdriveAuth = () =>
+  invoke<string>("cloud_backup_start_gdrive_auth");
+
+export const cloudBackupDisconnectGdrive = () =>
+  invoke<void>("cloud_backup_disconnect_gdrive");
+
+export const cloudBackupUploadGame = (appName: string, backupId?: string) =>
+  invoke<CloudBackupEntry>("cloud_backup_upload_game", { appName, backupId: backupId ?? null });
+
+export const cloudBackupListGame = (appName: string) =>
+  invoke<CloudBackupEntry[]>("cloud_backup_list_game", { appName });
+
+export const cloudBackupDownloadGame = (appName: string, remoteId: string, backupId: string) =>
+  invoke<string>("cloud_backup_download_game", { appName, remoteId, backupId });
+
+export const cloudBackupDeleteRemote = (remoteId: string) =>
+  invoke<void>("cloud_backup_delete_remote", { remoteId });
+
+export const cloudBackupGetSyncStatus = (appName: string) =>
+  invoke<CloudSyncStatus>("cloud_backup_get_sync_status", { appName });
+
+
 

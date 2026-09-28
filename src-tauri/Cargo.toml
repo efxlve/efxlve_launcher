@@ -23,6 +23,8 @@ url = "2"
 base64 = "0.22"
 discord-rich-presence = "1.1"
 flate2 = "1"
+tar = "0.4"
+sha2 = "0.10"
 
 [features]
 default = ["custom-protocol"]

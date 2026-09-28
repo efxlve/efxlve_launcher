@@ -79,6 +79,15 @@ import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageManager, openStorageManager } from "../storage/storage-view";
 import { closeEditPlaytimeModal, openEditPlaytimeModal, saveEditedPlaytime, } from "../playtime/playtime-view";
+import {
+  updateCloudBackupSettings,
+  testCloudConnectionAction,
+  startGoogleDriveAuthAction,
+  disconnectGoogleDriveAction,
+  uploadGameCloudAction,
+  loadCloudBackupsAction,
+} from "../cloud-backup/cloud-backup-actions";
+import type { CloudBackupProvider } from "../../epic";
 
 import {
   closeScreenshotLightbox,
@@ -1400,6 +1409,53 @@ document.addEventListener("click", (e) => {
     epicOpenBackupFolder(id)
       .then((msg) => toast(msg, "ok"))
       .catch((err) => toast(String(err), "err"));
+  } else if (act === "manage-cloud-upload" && id) {
+    void uploadGameCloudAction(id);
+  } else if (act === "manage-cloud-sync" && id) {
+    void (async () => {
+      toast(i18nT("cloud.syncTooltip"), "");
+      await loadCloudBackupsAction(id);
+      await uploadGameCloudAction(id);
+    })();
+  } else if (act === "set-cloud-provider") {
+    const provider = t.dataset.provider as CloudBackupProvider;
+    if (provider) {
+      void updateCloudBackupSettings({ provider, enabled: true });
+    }
+  } else if (act === "toggle-cloud-backup-enabled") {
+    const chk = (e.target as HTMLInputElement).checked;
+    void updateCloudBackupSettings({
+      enabled: chk,
+      provider: chk && (!S.cloudBackupSettings || S.cloudBackupSettings.provider === "none") ? "google_drive" : S.cloudBackupSettings?.provider ?? "google_drive",
+    });
+  } else if (act === "toggle-cloud-auto-sync") {
+    const chk = (e.target as HTMLInputElement).checked;
+    void updateCloudBackupSettings({ autoSyncOnGameExit: chk });
+  } else if (act === "cloud-gdrive-connect") {
+    void startGoogleDriveAuthAction();
+  } else if (act === "cloud-gdrive-disconnect") {
+    void disconnectGoogleDriveAction();
+  } else if (act === "cloud-webdav-save") {
+    const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;
+    const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;
+    const passInput = document.getElementById("cloud-webdav-pass") as HTMLInputElement | null;
+    void updateCloudBackupSettings({
+      webdavUrl: urlInput?.value.trim() ?? "",
+      webdavUsername: userInput?.value.trim() ?? "",
+      webdavPassword: passInput?.value ?? "",
+    }).then(() => toast(i18nT("cloud.webdavSaved"), "ok"));
+  } else if (act === "cloud-webdav-test") {
+    const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;
+    const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;
+    const passInput = document.getElementById("cloud-webdav-pass") as HTMLInputElement | null;
+    void (async () => {
+      await updateCloudBackupSettings({
+        webdavUrl: urlInput?.value.trim() ?? "",
+        webdavUsername: userInput?.value.trim() ?? "",
+        webdavPassword: passInput?.value ?? "",
+      });
+      await testCloudConnectionAction();
+    })();
   } else if (act === "toggle-auto-desktop-shortcut") {
     S.autoDesktopShortcut = !S.autoDesktopShortcut;
     localStorage.setItem(AUTO_SHORTCUT_KEY, String(S.autoDesktopShortcut));

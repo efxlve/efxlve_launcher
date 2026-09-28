@@ -5,6 +5,7 @@ mod eos;
 mod gogdl;
 mod legendary;
 mod presence;
+mod cloud_backup;
 
 use std::sync::Mutex;
 
@@ -1912,7 +1913,17 @@ fn main() {
             gogdl::launcher::gog_stop_game,
             gogdl::commands::gog_get_saved_accounts,
             gogdl::commands::gog_switch_account,
-            gogdl::commands::gog_remove_saved_account
+            gogdl::commands::gog_remove_saved_account,
+            cloud_backup::commands::cloud_backup_get_settings,
+            cloud_backup::commands::cloud_backup_save_settings,
+            cloud_backup::commands::cloud_backup_test_connection,
+            cloud_backup::commands::cloud_backup_start_gdrive_auth,
+            cloud_backup::commands::cloud_backup_disconnect_gdrive,
+            cloud_backup::commands::cloud_backup_upload_game,
+            cloud_backup::commands::cloud_backup_list_game,
+            cloud_backup::commands::cloud_backup_download_game,
+            cloud_backup::commands::cloud_backup_delete_remote,
+            cloud_backup::commands::cloud_backup_get_sync_status
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");
