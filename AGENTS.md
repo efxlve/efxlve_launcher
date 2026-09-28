@@ -128,6 +128,15 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **GOG Entegrasyonu Tamamlanması: Güncelleme Tespiti + Bug + Komut Temizliği (28.09.2026, ROADMAP §6.10):**
+  1. **GOG güncelleme tespiti kuruldu:** `gogdl/updates.rs` kurulu `buildId`'yi content-system public build listesiyle karşılaştırır (auth'suz, 6 saatlik disk önbelleği, 4'lü paralel batch, `gog_check_updates` komutu); kurulum/güncelleme sonrası önbellek tazelenir. Frontend `refreshGogUpdates()` sonucu `S.gogUpdates` + kütüphane öğelerinin `updateAvailable` alanına yazılır → kart eylemi **Güncelle**ye döner, İndirmeler > Güncellemeler listesi ve kenar çubuğu rozeti GOG'u da sayar. 2 birim testi.
+  2. **GOG güncelleme bug'ı düzeltildi:** kurulu GOG oyununda "Güncelle" kurulum diyaloğunu açıp oyunu başka klasöre kurma riski taşıyordu; artık mevcut klasöre yerinde güncellenir (Epic ile aynı davranış).
+  3. **Komut temizliği tamamlandı (D6):** `epic_status`, `epic_capture_game_screenshot`, `epic_get_screenshot_hotkey`, `cloud_backup_get_sync_status` + `CloudSyncStatus` modeli (Rust+TS) kaldırıldı; **`epic_get_settings` çift kaydı** düzeltildi → **141 komut / 141 kayıt / 0 çağrısız / 0 ölü olay**.
+  4. **i18n:** `gogdl` içindeki sabit Türkçe mesajlar `@t:` anahtarlarına çevrildi; 6 Galaxy + TV/bulut anahtarlarıyla birlikte **1.303 anahtar, 15 dil tam parite**.
+  5. **Doküman:** `TAURI_IPC_REFERENCE.md` 141 komut (GOG Galaxy + güncelleme satırları, üretilmiş tam dizin), `CODEBASE_MAP.md` `gogdl/galaxy.rs`, ROADMAP §6.10 + E8 + D6 kapanışı.
+  6. **0.1.18 planı not alındı:** Hesap Paylaşımı / Birleşik Kütüphane (Steam aile paylaşımı modeli) — **`docs/ROADMAP.md` §7** (kullanıcı isteği, fazlar, riskler, L efor).
+  7. **Doğrulama:** `npm.cmd run build` ✅, `cargo check` ✅ (0 uyarı), `cargo test` **128/128** ✅ (3 canlı ignored), i18n 15/15 parite, IPC 141/141.
+
 - **GOG Galaxy Entegrasyonu (28.09.2026, kullanıcı isteği — E8 ilk faz) + `alt_bin` kaldırma:**
   1. **`alt_bin` tamamen silindi (kullanıcı kararı):** `epic_set_alt_bin` komutu, `alt_legendary_bin` ayarı, `EpicSettings/SetupStatus.altBin` alanları, `resolve_binary`/`ensure_binary` override parametreleri ve `dl.altBinaryFailed` anahtarı (15 dil) kaldırıldı → tek yol otomatik indirilen `legendary.exe`/`gogdl.exe`. IPC 142 komut.
   2. **GOG Galaxy kurulu oyun tespiti (`gogdl/galaxy.rs`):** registry taraması (`HKLM\SOFTWARE\WOW6432Node\GOG.com\Games`, 64-bit görünüm ve `HKCU`), `path/gameName/version/buildId/exe` alanları, klasör varlık doğrulaması, `games` kök anahtarının filtrelenmesi; iki birim testi (toplam **126 test**).

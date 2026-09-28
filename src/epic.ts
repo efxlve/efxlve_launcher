@@ -1302,16 +1302,6 @@ export interface CloudBackupEntry {
   remoteId: string;
 }
 
-export interface CloudSyncStatus {
-  appName: string;
-  localBackupId?: string | null;
-  localTimestamp?: number | null;
-  cloudBackupId?: string | null;
-  cloudTimestamp?: number | null;
-  isInSync: boolean;
-  newerSide: string; // "local" | "cloud" | "equal" | "none"
-}
-
 export const cloudBackupGetSettings = () =>
   invoke<CloudBackupSettings>("cloud_backup_get_settings");
 

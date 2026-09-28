@@ -1,4 +1,4 @@
-// Prevents an extra console window from opening on Windows in release builds.
+﻿// Prevents an extra console window from opening on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod eos;
@@ -347,7 +347,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     'use strict';
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, true);
 
-    // 1. Text normalization (perfectly cleans Turkish 'İ', 'ı', accents and whitespace)
+    // 1. Text normalization (perfectly cleans Turkish 'Ä°', 'Ä±', accents and whitespace)
     function normalizeText(str) {
         return (str || '')
             .normalize('NFD')
@@ -727,13 +727,13 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         var dict;
         if (lang.indexOf('tr') === 0) {
             dict = {
-                owned: 'Kütüphanede',
-                installed: 'Yüklü',
-                wishlist: 'İstek Listesinde',
-                pdpOwned: 'Bu oyun Efxlve kütüphanenizde var',
+                owned: 'KÃ¼tÃ¼phanede',
+                installed: 'YÃ¼klÃ¼',
+                wishlist: 'Ä°stek Listesinde',
+                pdpOwned: 'Bu oyun Efxlve kÃ¼tÃ¼phanenizde var',
                 pdpInstalled: 'Bu oyun sisteminizde kurulu',
-                ctaOpen: 'Kütüphanede Aç',
-                ctaLaunch: 'Kütüphaneden Başlat'
+                ctaOpen: 'KÃ¼tÃ¼phanede AÃ§',
+                ctaLaunch: 'KÃ¼tÃ¼phaneden BaÅŸlat'
             };
         } else if (lang.indexOf('de') === 0) {
             dict = {
@@ -742,7 +742,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 wishlist: 'Wunschliste',
                 pdpOwned: 'Dieses Spiel ist in deiner Efxlve-Bibliothek',
                 pdpInstalled: 'Dieses Spiel ist installiert',
-                ctaOpen: 'In Bibliothek öffnen',
+                ctaOpen: 'In Bibliothek Ã¶ffnen',
                 ctaLaunch: 'Aus Bibliothek starten'
             };
         } else {
@@ -765,11 +765,11 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         if (!title) return '';
         var s = normalizeText(title);
         // Remove edition / version phrases after a colon or dash
-        s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
+        s = s.replace(/[:\-â€“â€”]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
         
         // Remove edition words
-        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');
-        s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, '');
+        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sÃ¼rÃ¼m)?\b/gi, '');
+        s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sÃ¼rÃ¼m|surum)\b/gi, '');
 
         // Common game abbreviations (GTA V / GTA 5)
         s = s.replace(/\bgrand theft auto\b/gi, 'gta');
@@ -850,7 +850,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
             var spans = card.querySelectorAll('span, div, p');
             for (var s = 0; s < spans.length; s++) {
                 var txt = (spans[s].textContent || '').trim();
-                if (txt.length >= 3 && txt.length <= 60 && !txt.startsWith('₺') && !txt.startsWith('$') && !txt.startsWith('€') && txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun') {
+                if (txt.length >= 3 && txt.length <= 60 && !txt.startsWith('â‚º') && !txt.startsWith('$') && !txt.startsWith('â‚¬') && txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun') {
                     if (titleMap[normalizeText(txt)]) {
                         rawTitle = txt;
                         break;
@@ -917,8 +917,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         // 3. Detect price / free / release date from text content
         for (var j = all.length - 1; j >= 0; j--) {
             var txt = (all[j].textContent || '').trim();
-            if (/^[₺$€£]|ücretsiz|ucretsiz|free|\d+[,.]\d{2}/i.test(txt)) {
-                if (txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun' && txt !== 'Sürüm' && txt !== 'Surum') {
+            if (/^[â‚º$â‚¬Â£]|Ã¼cretsiz|ucretsiz|free|\d+[,.]\d{2}/i.test(txt)) {
+                if (txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun' && txt !== 'SÃ¼rÃ¼m' && txt !== 'Surum') {
                     if (all[j].parentElement && !isCardRoot(all[j].parentElement) && all[j].parentElement.querySelectorAll('span, div').length > 1) {
                         return all[j].parentElement;
                     }
@@ -1055,7 +1055,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                             var dtxt = (elDesc.textContent || '').trim();
                             if (/^-\s*%?\s*\d+%?$/.test(dtxt)) {
                                 elDesc.style.setProperty('display', 'none', 'important');
-                            } else if (/\*\s*$/.test(dtxt) && /^[₺$€£]|\d+[,.]\d{2}/.test(dtxt)) {
+                            } else if (/\*\s*$/.test(dtxt) && /^[â‚º$â‚¬Â£]|\d+[,.]\d{2}/.test(dtxt)) {
                                 elDesc.style.setProperty('display', 'none', 'important');
                             }
                         }
@@ -1790,8 +1790,7 @@ fn main() {
             app_set_tray_labels,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
-            legendary::commands::epic_status,
-            legendary::commands::epic_list_games,
+    legendary::commands::epic_list_games,
             legendary::commands::epic_list_installed,
             legendary::commands::epic_list_skipped,
             legendary::commands::epic_cached_library,
@@ -1841,7 +1840,6 @@ fn main() {
             legendary::commands::epic_switch_account,
             legendary::commands::epic_remove_saved_account,
             legendary::commands::epic_get_settings,
-            legendary::commands::epic_get_settings,
             legendary::commands::epic_measure_cdns,
             legendary::commands::epic_set_preferred_cdn,
             legendary::commands::epic_cleanup_cache,
@@ -1878,11 +1876,9 @@ fn main() {
             legendary::steamgrid::epic_get_steamgrid_covers,
             legendary::commands::epic_get_player_profile,
             legendary::screenshots::epic_get_game_screenshots,
-            legendary::screenshots::epic_capture_game_screenshot,
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_open_game_screenshots_folder,
             legendary::screenshots::epic_set_screenshot_hotkey,
-            legendary::screenshots::epic_get_screenshot_hotkey,
             legendary::screenshots::epic_get_screenshot_dir,
             legendary::screenshots::epic_set_screenshot_dir,
             legendary::screenshots::epic_get_screenshot_move_info,
@@ -1915,6 +1911,7 @@ fn main() {
             gogdl::commands::gog_remove_saved_account,
 gogdl::commands::gog_detect_galaxy_games,
 gogdl::commands::gog_sync_galaxy_installed,
+gogdl::commands::gog_check_updates,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,
@@ -1924,7 +1921,6 @@ gogdl::commands::gog_sync_galaxy_installed,
             cloud_backup::commands::cloud_backup_list_game,
             cloud_backup::commands::cloud_backup_download_game,
             cloud_backup::commands::cloud_backup_delete_remote,
-            cloud_backup::commands::cloud_backup_get_sync_status
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to run");

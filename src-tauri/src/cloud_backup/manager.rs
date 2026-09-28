@@ -1,4 +1,4 @@
-//! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
+﻿//! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
 
 use std::path::PathBuf;
 use std::sync::OnceLock;
@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
 use crate::cloud_backup::gdrive;
-use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings, CloudSyncStatus};
+use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{app_backup_dir, create_backup, list_backups, restore_backup};
 use crate::legendary::skip::default_config_dir;
@@ -272,43 +272,6 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
         }
         CloudBackupProvider::None => Ok(()),
     }
-}
-
-/// Compares local and cloud backup timestamps to determine synchronization status.
-pub async fn get_sync_status(app_name: &str) -> Result<CloudSyncStatus, String> {
-    let local_backups = list_backups(app_name);
-    let latest_local = local_backups.into_iter().max_by_key(|b| b.timestamp);
-
-    let cloud_backups = list_cloud_backups(app_name).await.unwrap_or_default();
-    let latest_cloud = cloud_backups.into_iter().max_by_key(|b| b.timestamp);
-
-    let local_ts = latest_local.as_ref().map(|b| b.timestamp);
-    let cloud_ts = latest_cloud.as_ref().map(|b| b.timestamp);
-
-    let (is_in_sync, newer_side) = match (local_ts, cloud_ts) {
-        (Some(l), Some(c)) => {
-            if l == c {
-                (true, "equal".to_string())
-            } else if l > c {
-                (false, "local".to_string())
-            } else {
-                (false, "cloud".to_string())
-            }
-        }
-        (Some(_), None) => (false, "local".to_string()),
-        (None, Some(_)) => (false, "cloud".to_string()),
-        (None, None) => (true, "none".to_string()),
-    };
-
-    Ok(CloudSyncStatus {
-        app_name: app_name.to_string(),
-        local_backup_id: latest_local.map(|b| b.id),
-        local_timestamp: local_ts,
-        cloud_backup_id: latest_cloud.map(|b| b.backup_id),
-        cloud_timestamp: cloud_ts,
-        is_in_sync,
-        newer_side,
-    })
 }
 
 /// Hook called automatically when a game process exits.

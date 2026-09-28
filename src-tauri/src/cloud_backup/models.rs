@@ -66,15 +66,3 @@ pub struct CloudBackupEntry {
     pub provider: String,
     pub remote_id: String,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CloudSyncStatus {
-    pub app_name: String,
-    pub local_backup_id: Option<String>,
-    pub local_timestamp: Option<u64>,
-    pub cloud_backup_id: Option<String>,
-    pub cloud_timestamp: Option<u64>,
-    pub is_in_sync: bool,
-    pub newer_side: String, // "local", "cloud", "equal", "none"
-}

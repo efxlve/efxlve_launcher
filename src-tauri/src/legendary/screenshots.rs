@@ -793,19 +793,6 @@ $bmp.Dispose()
     parse_file_to_item(&target_file).ok_or_else(|| "@t:ss.fileReadFailed".to_string())
 }
 
-/// Captures a screenshot and saves it to the game's folder.
-#[tauri::command]
-pub async fn epic_capture_game_screenshot(
-    _app: AppHandle,
-    app_name: String,
-    title: String,
-) -> Result<GameScreenshotItem, String> {
-    tokio::task::spawn_blocking(move || {
-        capture_game_screenshot_sync(&app_name, &title)
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
 
 static SCREENSHOT_HOTKEY: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0x7B);
 
@@ -817,8 +804,9 @@ pub fn epic_set_screenshot_hotkey(vkey: i32) {
     }
 }
 
-/// Returns the active screenshot hotkey virtual key code.
-#[tauri::command]
+/// Returns the active screenshot hotkey virtual key code (test accessor; the
+/// hook reads the atomic directly, so this is not an IPC command).
+#[cfg(test)]
 pub fn epic_get_screenshot_hotkey() -> i32 {
     SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed)
 }

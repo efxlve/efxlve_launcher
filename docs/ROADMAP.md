@@ -279,7 +279,7 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 | D3 | **tsc `--noUnusedLocals` 8 gerçek bulgu:** `nav.ts(12) canonicalGameTitle`, `state.ts(51) GameSource`, `cloud-backup-actions.ts(21) CloudBackupProvider`, `cloud-backup-view.ts(8) fmtBytes`, `drawer-widgets.ts(15) formatScreenshotDate`, `drawer-widgets.ts(17) EpicAchievementSummary`, `auth-handlers.ts(44) t`, `gamepad.ts(92) e` | `npx tsc --noEmit --noUnusedLocals` |
 | D4 | **65 ölü i18n anahtarı** (ör. `settings.dimUninstalledTitle/Desc`, `settings.contrastTitlesTitle/Desc`, `col.preset*` 14 adet, `nav.epicStore/gogStore`, `drawer.statistics/options`, `ss.captureTip/captureNow`, `nav.switchAccounts`, `accounts.soon` …) — `localStorage` migration anahtarları kodda kalacak, sadece çeviriler silinecek | i18n denetimi (en.json 1.357 anahtar) |
 | D5 | **Ölü CSS blokları (~40 aday):** `components.css`: `ps5-btn*`, `apple-segmented-rail`, `apple-segment`, `apple-search-box`, `toggle-switch/slider`, `modal-overlay`, `ctx-menu`, `tpl-*` (13 adet); `game-page.css`: `gp-back`, `hub-card-link`; `library.css`: `pcard-meta`, `lib-col-add` (21-27); `settings.css`: `settings-danger`; `shell.css`: `sb-games-empty`; `modals.css`: `col-quick-btn`, `col-marker-clear-btn`, `col-label`, `col-quick-label`; `accounts.css`: `acc-card-soon` | CSS denetimi (`kind-*`, `tier-*`, `apple-pill-btn` dinamik olduğu için korunacak) |
-| D6 | **Kullanılmayan komutlar:** ✅ `epic_set_alt_bin` **silindi** (B11 kararı 28.09.2026). Ayrıca frontend sarmalayıcıları silindiği için çağıranı kalmayan `epic_status`, `epic_capture_game_screenshot`, `epic_get_screenshot_hotkey` (kısayol yolu Rust içinde çalışıyor) ve `cloud_backup_get_sync_status` (yönet satırı durum göstergesi için rezerve) bir sonraki turda değerlendirilecek | `main.rs` generate_handler (**142/142** kayıtlı) |
+| D6 | ✅ **KAPANDI (28.09.2026):** `epic_set_alt_bin` silindi (B11); `epic_status`, `epic_capture_game_screenshot`, `epic_get_screenshot_hotkey`, `cloud_backup_get_sync_status` ve `CloudSyncStatus` modeli kaldırıldı; ayrıca `epic_get_settings` çift kaydı düzeltildi → **141 komut / 141 kayıt / 0 çağrısız** | `main.rs` generate_handler |
 | D7 | **Rust `#[allow(dead_code)]` 8 nokta** (gogdl modelleri, paths, playtime, profile) — GOG API uyumluluğu için tutulanlar belgelenmeli, gerisi silinmeli | `gogdl/mod.rs:18`, `gogdl/models.rs:31,44,106`, `gogdl/paths.rs:8`, `legendary/playtime.rs:57`, `legendary/profile.rs:106` |
 | D8 | `src/styles/tv-mode.css` ve `src/features/gamepad/tv-mode.ts` silinmiş ama `docs/CODEBASE_MAP.md:55,59` hâlâ listeliyor (bkz. §6.6) | `CODEBASE_MAP.md` |
 
@@ -357,4 +357,53 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.10. 28.09.2026 üçüncü tur (GOG entegrasyonu tamamlanması + komut temizliği)
 
+- **GOG güncelleme tespiti eklendi (kütüphanede `updateAvailable` artık GOG için de çalışıyor):** yeni `gogdl/updates.rs` — kurulu `buildId` (`goggame-<id>.info`) ile content-system public build listesi (`content-system.gog.com/products/<id>/os/windows/builds?generation=2`, auth gerekmez) karşılaştırılır. 6 saatlik disk önbelleği (`gog_updates.json`), batch başına 4 paralel istek, `gog_check_updates(force)` komutu. Kurulum/güncelleme sonrası `store_installed_build` ile önbellek tazelenir. Frontend: `refreshGogUpdates()` sonucu `S.gogUpdates` + `LibraryItem.updateAvailable` alanına yazılır; **kart eylemi "Güncelle"ye döner**, İndirmeler > Güncellemeler listesi ve kenar çubuğu rozeti GOG'u da sayar, sürüm satırı `kurulu build → yeni build` gösterir. 2 yeni birim testi.
+- **GOG "Güncelle" bug'ı düzeltildi:** kurulu bir GOG oyununda Güncelle/Kur'a basınca kurulum diyaloğu açılıyor ve oyunu **başka bir klasöre** kurma riski vardı; artık Epic'teki gibi mevcut kurulum klasörü kullanılır (diyalog atlanır, yerinde güncelleme).
+- **Komut temizliği (D6 kapandı):** `epic_status`, `epic_capture_game_screenshot`, `epic_get_screenshot_hotkey`, `cloud_backup_get_sync_status` + `CloudSyncStatus` modeli (Rust+TS) kaldırıldı. Ayrıca **`epic_get_settings` `generate_handler!` içinde iki kez kayıtlıydı** (kopya) — düzeltildi. Sonuç: **141 komut, 141 kayıt, 0 çağrısız komut, 0 ölü olay**.
+- **Testler:** 128 (121 + 3 ignored + 2 galaxy + 2 updates → toplam 128; canlı 3 test ignored).
+- **Bulunan ek not:** `gogdl/transfers.rs` içindeki sabit Türkçe kullanıcı mesajları `@t:` anahtarlarına çevrildi (GOG doğrulama/kaldırma/içe aktarma akışları artık 15 dilde).
+
+
+
+---
+
+## 7. v0.1.18 — Hesap Paylaşımı / Birleşik Kütüphane (Steam Aile Paylaşımı Modeli)
+
+> **Kullanıcı isteği (28.09.2026):** "Hem kendi Epic hesabım hem arkadaşımın hesabı açık olsun; hangi hesapta olursam olayım **iki hesabın bütün oyunlarını** görüntüleyebilmeliyim. Oyun detay sayfasında oyun kime aitse **tek butonla o hesaba geçilebilmeli**; başarımlar ve oyun saati de o hesaba göre gelmeli. Aynısı GOG için de geçerli."
+> **Karar:** Ağır iş — **0.1.18'e planlandı**. Aşağıdaki spec uygulama sırasında referans alınacak.
+
+### 7.1. Neden bu kadar iş?
+- Epic/GOG oyunları **yalnızca sahibi olan hesapla başlatılabilir** (yetki kontrolü sunucuda). Bu yüzden "tüm hesapların oyunlarını gör" + "tek tıkla sahibine geç" ikilisi zorunludur; oyunu başka hesapla oynatmak teknik olarak mümkün değildir.
+- Başarım ve oynanış süresi verileri **hesap bazlıdır**; şu an tek global önbellek (`achievements_cache.json`, `playtime.json`) kullanılıyor → hesap bazlı ayrıştırma gerekir.
+
+### 7.2. Hazır altyapı (mevcut kod, yeniden kullanılacak)
+- `legendary/accounts.rs`: her kayıtlı hesap için `user.json` + **`efxlve_library_snapshot.json`** arşivi (`%USERPROFILE%\.config\legendary\accounts\<account_id>\`). Birleşik kütüphane indeksi bu anlık görüntülerden **ağ olmadan** kurulabilir.
+- `epic_switch_account` / `gog_switch_account`: tek tıkla hesap geçişi zaten çalışıyor (kabuk kararır, kütüphane anında hidrasyon).
+- `gogdl/accounts.rs`: GOG için aynı arşiv modeli.
+- `S.savedAccounts` / `S.gogSavedAccounts`, `updateSidebarAccountSwitcher` ve `accounts-view.ts` hesap listeleri.
+
+### 7.3. Uygulama planı (fazlar)
+1. **Hesap bazlı veri ayrımı (ön koşul):**
+   - Başarım önbelleği: `achievements_cache.json` → `accounts/<account_id>/achievements_cache.json` (göç: mevcut dosya aktif hesaba taşınır).
+   - Oynanış süresi: `playtime.json` kayıtlarına `account_id` eklenir (göç: mevcut kayıtlar aktif hesaba yazılır) veya dosya hesap klasörüne taşınır.
+   - Başarım özeti (`epic_get_achievements_summary`) ve `S.epicAchSummaries` hesap değişiminde zaten sıfırlanıyor; yeni modelde "görüntülenen hesap" parametresi alır.
+2. **Birleşik indeks (Rust):** `epic_shared_library_index()` komutu: kayıtlı tüm hesapların snapshot'larını okur, `{ gameKey: { accountId, displayName, source, ownedAt } }` döndürür, diskte `shared_index.json` olarak önbelleklenir (TTL + hesap listesi imzası). Ağ erişimi yok.
+3. **Kütüphane (frontend):**
+   - Yeni ayar: **"Tüm hesapların oyunlarını göster"** (varsayılan kapalı). Açıkken `epicVisibleSummaries()` birleşik indeksi de kapsar; sahibi aktif hesap olmayan oyunlar kartta hafif bir **sahip rozeti** (mevcut mağaza rozeti stilinde, `account.displayName`) taşır ve kartın eylemi **"Hesaba Geç"** olur.
+   - Aktif hesabın sahip olduğu oyunlarda davranış aynen bugünkü gibi.
+4. **Oyun detay sayfası:** başlık altında `Sahibi: <hesap>` çipi + **"Bu Hesaba Geç"** butonu (`epic_switch_account`/`gog_switch_account` → oturum değişir, sayfa yeniden hidrasyonla açılır, oyun artık oynanabilir). Başarım/oynanış süresi sekmesi geçiş sonrası sahibinin verilerini gösterir.
+5. **Koleksiyonlar / arama / filtreler:** birleşik modda mağaza + hesap filtreleri (örn. `account:<ad>` arama operatörü); gizleme ve favoriler hesap bazlı mı global mi olacağı kararı (öneri: global, oyun anahtarı bazlı).
+6. **i18n:** ~12-15 yeni anahtar × 15 dil (`account.owner`, `account.switchTo`, `settings.sharedLibrary*` vb.).
+7. **Testler:** snapshot okuma indeksi, hesap bazlı başarım/süre ayrımı, geçiş sonrası hidrasyon, gizli/favori etkileşimi.
+
+### 7.4. Riskler / dikkat
+- **Kapak/veri tutarlılığı:** aynı oyun iki hesapta varsa tek kart gösterilir; sahibi "kurulu olan hesap → ilk sahip" sırasıyla seçilir (mevcut `canonicalGameTitle` dedupe mantığı genişletilir).
+- **Kurulum yolu çakışması:** iki hesap aynı oyunu kurduysa tek kurulum paylaşılır; kaldırma yalnızca kurulu hesabın kaydını etkiler.
+- **Gizlilik:** hesapların e-posta/kimlik bilgisi hiçbir yerde gösterilmez (mevcut kural), yalnızca görünen ad ve avatar.
+- **Performans:** indeks tamamen diskten okunur; 500+ oyun × 2-3 hesap için O(N) tek geçiş, ağ yok, önbellekli. Kütüphane render'ı birleşik modda da O(1) haritalarla çalışmalı.
+- **Kapsam dışı (ilk sürüm):** aynı anda iki hesabın oyununu *çalıştırma* (imkânsız), hesap bazlı ayrı kurulum klasörleri, bulut kayıt paylaşımı.
+
+### 7.5. Tahmini iş büyüklüğü
+**L (3-5 geliştirme günü):** Rust tarafı ~1 gün (indeks + hesap bazlı önbellek göçü), frontend ~1.5 gün (kütüphane/detay/filtreler), i18n + testler + doküman ~1 gün.

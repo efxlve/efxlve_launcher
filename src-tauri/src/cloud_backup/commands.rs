@@ -1,10 +1,10 @@
-//! Tauri IPC commands for Cloud Save Backup.
+﻿//! Tauri IPC commands for Cloud Save Backup.
 
 use tauri::{command, AppHandle};
 
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::manager;
-use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupSettings, CloudSyncStatus};
+use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupSettings};
 
 #[command]
 pub fn cloud_backup_get_settings() -> Result<CloudBackupSettings, String> {
@@ -77,9 +77,4 @@ pub async fn cloud_backup_download_game(
 #[command]
 pub async fn cloud_backup_delete_remote(remote_id: String) -> Result<(), String> {
     manager::delete_remote_backup(&remote_id).await
-}
-
-#[command]
-pub async fn cloud_backup_get_sync_status(app_name: String) -> Result<CloudSyncStatus, String> {
-    manager::get_sync_status(&app_name).await
 }

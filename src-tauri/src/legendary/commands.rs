@@ -176,13 +176,6 @@ async fn run_with_recovery<T: DeserializeOwned>(
     Err(last_err)
 }
 
-#[tauri::command]
-pub async fn epic_status(app: AppHandle) -> Result<LegendaryStatus, String> {
-    let bin = resolve_or_err(&app)?;
-    let config_dir = config_dir_for(&bin).await;
-    run_with_recovery(&app, &bin, &config_dir, &["status", "--offline", "--json"]).await
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct LibraryEvent {

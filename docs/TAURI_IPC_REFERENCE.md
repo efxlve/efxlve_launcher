@@ -1,7 +1,7 @@
 ﻿# TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 144 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 141 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -48,7 +48,6 @@
 |---|---|---|---|
 | `epic_setup_status` | `() => Promise<SetupStatus>` | `legendary/commands.rs` | Checks if `legendary.exe` is installed, its version, and if download is needed. |
 | `epic_ensure_binary` | `() => Promise<string>` | `legendary/commands.rs` | Automatically downloads and extracts standalone `legendary.exe` if absent. |
-| `epic_status` | `() => Promise<EpicStatus>` | `legendary/commands.rs` | Returns account name, library count, and config path from Legendary status. |
 | `epic_login_with_code` | `(code: string) => Promise<string>` | `legendary/commands.rs` | Authenticates Epic account using authorization code from `https://legendary.gl/epiclogin`. |
 | `epic_import_egl` | `() => Promise<string>` | `legendary/commands.rs` | Imports session tokens directly from official Epic Games Launcher installation. |
 | `epic_logout` | `() => Promise<string>` | `legendary/commands.rs` | Clears credentials and invalidates active session. |
@@ -145,10 +144,8 @@
 | Command Name | TypeScript Signature | Rust Handler Location | Description |
 |---|---|---|---|
 | `epic_get_game_screenshots` | `(appName: string, title: string) => Promise<GameScreenshotItem[]>` | `legendary/screenshots.rs` | Loads screenshot gallery for a specific game. |
-| `epic_capture_game_screenshot` | `(appName: string, title: string) => Promise<GameScreenshotItem>` | `legendary/screenshots.rs` | Captures active display window and saves to disk. |
 | `epic_delete_game_screenshot` | `(filePath: string) => Promise<boolean>` | `legendary/screenshots.rs` | Deletes a screenshot file. |
 | `epic_open_game_screenshots_folder`| `(appName: string, title: string) => Promise<void>` | `legendary/screenshots.rs` | Opens folder containing screenshots in Windows Explorer. |
-| `epic_get_screenshot_hotkey` | `() => Promise<number>` | `legendary/screenshots.rs` | Gets global virtual key code (default 123 = F12). |
 | `epic_set_screenshot_hotkey` | `(vkey: number) => Promise<void>` | `legendary/screenshots.rs` | Updates global keyboard capture hook hotkey. |
 | `epic_replace_screenshot_with_compressed` | `(originalPath: string, compressedBase64: string, newExt: string) => Promise<GameScreenshotItem>` | `legendary/screenshots.rs` | Replaces large PNG with AVIF/WebP compressed file. |
 
@@ -217,6 +214,7 @@
 | `gog_get_saved_accounts` / `gog_switch_account` / `gog_remove_saved_account` | `gogdl/accounts.rs` | Multi-account vault. |
 | `gog_detect_galaxy_games` | `gogdl/galaxy.rs` | Lists games the official GOG Galaxy client installed (registry scan, folders verified). |
 | `gog_sync_galaxy_installed` | `gogdl/galaxy.rs` | Registers detected Galaxy installs in this launcher (returns how many were added). |
+| `gog_check_updates` | `gogdl/updates.rs` | Compares installed build ids with the newest public builds (disk-cached, force flag for a manual refresh). |
 | `gog_install_game` / `gog_cancel_download` | `gogdl/transfers.rs` | gogdl download with streamed progress. |
 | `gog_import_game` / `gog_verify_game` / `gog_uninstall_game` | `gogdl/transfers.rs` | Folder import, file verification, clean uninstall. |
 | `gog_launch_game` / `gog_stop_game` | `gogdl/launcher.rs` | DRM-free launch with crash-safe playtime recording. |
@@ -229,7 +227,6 @@
 | `cloud_backup_test_connection` | `cloud_backup/commands.rs` | Validates the WebDAV/Drive configuration. |
 | `cloud_backup_start_gdrive_auth` / `cloud_backup_disconnect_gdrive` | `cloud_backup/commands.rs` | OAuth2 PKCE loopback flow and disconnect. |
 | `cloud_backup_upload_game` / `cloud_backup_list_game` / `cloud_backup_download_game` / `cloud_backup_delete_remote` | `cloud_backup/commands.rs` | Per-game archive upload, listing, restore and delete. |
-| `cloud_backup_get_sync_status` | `cloud_backup/commands.rs` | Compares local and cloud timestamps (`is_in_sync`, `newer_side`). |
 
 > The automatic path runs on game exit (`trigger_auto_sync_on_exit`) and reports through the `cloud-sync-complete` event.
 
@@ -378,24 +375,26 @@ export interface ScreenshotsUpdatedEvent {
 
 ---
 
+---
+
 ## 4. Complete Command Index (generated from `generate_handler!`)
 
 | Rust file | # | Commands |
 |---|---|---|
-| `cloud_backup/commands.rs` | 10 | `cloud_backup_get_settings`, `cloud_backup_save_settings`, `cloud_backup_test_connection`, `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`, `cloud_backup_upload_game`, `cloud_backup_list_game`, `cloud_backup_download_game`, `cloud_backup_delete_remote`, `cloud_backup_get_sync_status` |
+| `cloud_backup/commands.rs` | 9 | `cloud_backup_get_settings`, `cloud_backup_save_settings`, `cloud_backup_test_connection`, `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`, `cloud_backup_upload_game`, `cloud_backup_list_game`, `cloud_backup_download_game`, `cloud_backup_delete_remote` |
 | `eos.rs` | 2 | `eos_overlay_status`, `eos_install_redistributable` |
-| `gogdl/commands.rs` | 16 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_setup_status`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed` |
+| `gogdl/commands.rs` | 17 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_setup_status`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed`, `gog_check_updates` |
 | `gogdl/launcher.rs` | 2 | `gog_launch_game`, `gog_stop_game` |
 | `gogdl/transfers.rs` | 5 | `gog_install_game`, `gog_cancel_download`, `gog_uninstall_game`, `gog_import_game`, `gog_verify_game` |
-| `legendary/commands.rs` | 59 | `epic_setup_status`, `epic_ensure_binary`, `epic_status`, `epic_list_games`, `epic_list_skipped`, `epic_cached_library`, `epic_list_installed`, `epic_login_with_code`, `epic_import_egl`, `epic_logout`, `epic_get_saved_accounts`, `epic_switch_account`, `epic_remove_saved_account`, `epic_get_settings`, `epic_measure_cdns`, `epic_set_preferred_cdn`, `epic_cleanup_cache`, `epic_get_achievements`, `epic_get_achievements_summary`, `epic_get_hltb`, `epic_get_critic`, `epic_get_system_requirements`, `epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_third_party_launchers`, `epic_verify_game`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_set_custom_save_path`, `epic_sync_saves`, `epic_create_desktop_shortcut`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`, `epic_get_playtimes`, `epic_set_playtime`, `epic_get_network_profile`, `epic_set_network_profile`, `epic_get_offline_mode`, `epic_set_offline_mode`, `epic_get_auto_desktop_shortcut`, `epic_set_auto_desktop_shortcut`, `epic_backup_save`, `epic_list_backups`, `epic_restore_backup`, `epic_delete_backup`, `epic_open_backup_folder`, `epic_get_collections`, `epic_save_collection`, `epic_reorder_collections`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`, `epic_get_player_profile`, `epic_get_system_drives`, `epic_import_installed_folder`, `epic_select_folder_dialog`, `epic_move_game`, `epic_cancel_move_game` |
+| `legendary/commands.rs` | 58 | `epic_setup_status`, `epic_ensure_binary`, `epic_list_games`, `epic_list_skipped`, `epic_cached_library`, `epic_list_installed`, `epic_login_with_code`, `epic_import_egl`, `epic_logout`, `epic_get_saved_accounts`, `epic_switch_account`, `epic_remove_saved_account`, `epic_get_settings`, `epic_measure_cdns`, `epic_set_preferred_cdn`, `epic_cleanup_cache`, `epic_get_achievements`, `epic_get_achievements_summary`, `epic_get_hltb`, `epic_get_critic`, `epic_get_system_requirements`, `epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_third_party_launchers`, `epic_verify_game`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_set_custom_save_path`, `epic_sync_saves`, `epic_create_desktop_shortcut`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`, `epic_get_playtimes`, `epic_set_playtime`, `epic_get_network_profile`, `epic_set_network_profile`, `epic_get_offline_mode`, `epic_set_offline_mode`, `epic_get_auto_desktop_shortcut`, `epic_set_auto_desktop_shortcut`, `epic_backup_save`, `epic_list_backups`, `epic_restore_backup`, `epic_delete_backup`, `epic_open_backup_folder`, `epic_get_collections`, `epic_save_collection`, `epic_reorder_collections`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`, `epic_get_player_profile`, `epic_get_system_drives`, `epic_import_installed_folder`, `epic_select_folder_dialog`, `epic_move_game`, `epic_cancel_move_game` |
 | `legendary/friends.rs` | 1 | `epic_friends` |
 | `legendary/library_playtime.rs` | 1 | `epic_sync_epic_playtimes` |
-| `legendary/screenshots.rs` | 11 | `epic_get_game_screenshots`, `epic_capture_game_screenshot`, `epic_set_screenshot_hotkey`, `epic_get_screenshot_hotkey`, `epic_replace_screenshot_with_compressed`, `epic_delete_game_screenshot`, `epic_open_game_screenshots_folder`, `epic_get_screenshot_dir`, `epic_get_screenshot_move_info`, `epic_open_screenshot_dir`, `epic_set_screenshot_dir` |
+| `legendary/screenshots.rs` | 9 | `epic_get_game_screenshots`, `epic_set_screenshot_hotkey`, `epic_replace_screenshot_with_compressed`, `epic_delete_game_screenshot`, `epic_open_game_screenshots_folder`, `epic_get_screenshot_dir`, `epic_get_screenshot_move_info`, `epic_open_screenshot_dir`, `epic_set_screenshot_dir` |
 | `legendary/steamgrid.rs` | 5 | `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers` |
 | `legendary/transfers.rs` | 13 | `epic_install_game`, `epic_install_with_options`, `epic_resume_pending_download`, `epic_cancel_download`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`, `epic_uninstall_game`, `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_stop_game` |
 | `legendary/wiki.rs` | 1 | `epic_get_wiki_about` |
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 
-**Total: 144 commands**
+**Total: 141 commands**
 
