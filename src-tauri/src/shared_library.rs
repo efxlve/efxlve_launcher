@@ -120,15 +120,22 @@ fn gog_snapshot(account_dir: &Path) -> gogdl::models::GogCachedLibrary {
     serde_json::from_str::<gogdl::models::GogCachedLibrary>(&text).unwrap_or(empty)
 }
 
+/// Active GOG user id from `<gog>/auth.json` (written by gogdl).
+fn read_active_gog_user(gog_dir: &Path) -> Option<String> {
+    let bytes = std::fs::read(gog_dir.join("auth.json")).ok()?;
+    let map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_slice(&bytes).ok()?;
+    map.values()
+        .find_map(|v| v.get("user_id").and_then(|id| id.as_str()).map(str::to_string))
+}
+
 /// Builds the shared index from every saved account except the active ones.
-#[tauri::command]
-pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
+pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
     let mut accounts = Vec::new();
     let mut games: Vec<SharedGame> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
 
     // ---- Epic ----
-    let config = legendary::skip::default_config_dir();
+    let config = config_dir;
     let active_epic = legendary::accounts::read_active_user(&config).map(|(id, _)| id);
     let active_epic_games = epic_app_names(&epic_snapshot(&config));
 
@@ -178,12 +185,8 @@ pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
     }
 
     // ---- GOG ----
-    let gog_dir = app
-        .path()
-        .app_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("gog");
-    let active_gog = gogdl::cache::load_auth_tokens(&app).map(|t| t.user_id);
+    let gog_dir = gog_dir;
+    let active_gog = read_active_gog_user(gog_dir);
     let active_gog_games: HashSet<String> = gog_snapshot(&gog_dir)
         .games
         .into_iter()
@@ -237,9 +240,48 @@ pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
     SharedLibraryIndex { accounts, games }
 }
 
+/// Tauri entry point: reads the real config/app-data paths.
+#[tauri::command]
+pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
+    let config = legendary::skip::default_config_dir();
+    let gog = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("gog");
+    build_index(&config, &gog)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Live check against this machine's saved accounts.
+    /// Run: `cargo test live_shared_library_index -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_shared_library_index() {
+        let config = legendary::skip::default_config_dir();
+        let gog = std::path::PathBuf::from(std::env::var("APPDATA").unwrap_or_default())
+            .join("com.efxlve.launcher")
+            .join("gog");
+        let index = build_index(&config, &gog);
+        println!("accounts:");
+        for a in &index.accounts {
+            println!("  {} | {} | {} | {} games", a.owner_key, a.owner_name, a.store, a.game_count);
+        }
+        println!("shared games: {}", index.games.len());
+        for g in index.games.iter().take(10) {
+            println!(
+                "  {} | {} | owner={} | cover={}",
+                g.key,
+                g.title,
+                g.owner_name,
+                g.cover.is_some()
+            );
+        }
+        assert!(index.games.len() <= index.accounts.iter().map(|a| a.game_count).sum::<usize>());
+    }
 
     #[test]
     fn portrait_prefers_tall_then_falls_back() {

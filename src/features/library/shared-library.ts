@@ -9,7 +9,8 @@
 
 import { sharedLibraryIndex, type EpicSummary } from "../../epic";
 import { S } from "../../core/state";
-import { sharedToSummary } from "../../core/selectors";
+import { rebuildAllGamesMap, sharedToSummary } from "../../core/selectors";
+import { scheduleRender } from "../../core/render";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 
@@ -23,7 +24,10 @@ export async function loadSharedLibrary(): Promise<void> {
     S.sharedLibrary = null;
     S.sharedOwners.clear();
   }
+  // Keep the unified lookup map and the visible grid in sync with the index.
+  rebuildAllGamesMap();
   S.libraryDataRev++;
+  scheduleRender();
 }
 
 /** Summaries for the library grid (empty while the setting is off). */

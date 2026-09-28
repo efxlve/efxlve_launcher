@@ -314,6 +314,16 @@ export function totalLibraryGamesCount(): number {
     seenTitles.add(canon);
     count++;
   }
+  // Games from other saved accounts count too while the shared library is on.
+  if (S.showSharedLibrary) {
+    for (const g of S.sharedOwners.values()) {
+      if (S.hiddenGames.has(g.key)) continue;
+      const canon = canonicalGameTitle(g.title);
+      if (seenTitles.has(canon)) continue;
+      seenTitles.add(canon);
+      count++;
+    }
+  }
   return count;
 }
 
