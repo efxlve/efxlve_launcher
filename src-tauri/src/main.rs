@@ -1,4 +1,4 @@
-﻿// Prevents an extra console window from opening on Windows in release builds.
+// Prevents an extra console window from opening on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod eos;
@@ -6,6 +6,7 @@ mod gogdl;
 mod legendary;
 mod presence;
 mod cloud_backup;
+mod shared_library;
 
 use std::sync::Mutex;
 
@@ -1927,6 +1928,7 @@ fn main() {
             eos::eos_overlay_status,
             eos::eos_install_redistributable,
             epic_take_pending_launch,
+            shared_library::shared_library_index,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,

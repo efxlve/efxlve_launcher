@@ -25,6 +25,7 @@ import {
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
+  SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
   SURFACE_KEY,
   isTauri,
@@ -69,6 +70,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
+import { loadSharedLibrary, switchToSharedOwner } from "../library/shared-library";
 import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
@@ -465,8 +467,7 @@ document.addEventListener("click", (e) => {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
-  } else if (act === "epic-play" && id) {
-    void epicPlay(id);
+  } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);
   } else if (act === "epic-sync-egl") {
@@ -564,6 +565,14 @@ document.addEventListener("click", (e) => {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
     scheduleRender();
+  } else if (act === "toggle-shared-library") {
+    S.showSharedLibrary = !S.showSharedLibrary;
+    localStorage.setItem(SHOW_SHARED_LIBRARY_KEY, String(S.showSharedLibrary));
+    if (S.showSharedLibrary) void loadSharedLibrary();
+    S.libraryDataRev++;
+    scheduleRender();
+  } else if (act === "shared-switch" && id) {
+    void switchToSharedOwner(id);
   } else if (act === "toggle-installed-icon") {
     S.showInstalledIcon = !S.showInstalledIcon;
     localStorage.setItem(INSTALLED_ICON_KEY, String(S.showInstalledIcon));

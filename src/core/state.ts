@@ -41,6 +41,7 @@ import {
   STORE_BADGE_KEY,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
+  SHOW_SHARED_LIBRARY_KEY,
   DIM_UNINSTALLED_KEY,
   CONTRAST_TITLES_KEY,
   LIB_PAGE_SIZE_KEY,
@@ -306,6 +307,10 @@ export const S = {
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   showInstalledIcon: (localStorage.getItem(INSTALLED_ICON_KEY) === "true") as boolean,
+  /** Games from other saved accounts (Steam family-sharing style). Default ON. */
+  sharedLibrary: (null) as import("../epic").SharedLibraryIndex | null,
+  sharedOwners: new Map<string, import("../epic").SharedGame>(),
+  showSharedLibrary: (localStorage.getItem(SHOW_SHARED_LIBRARY_KEY) !== "false") as boolean,
   highlightInstalled: (() => {
     const direct = localStorage.getItem(HIGHLIGHT_INSTALLED_KEY);
     if (direct !== null) return direct !== "false";

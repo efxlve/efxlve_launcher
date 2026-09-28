@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "Выделять установленные игры",
-  "settings.highlightInstalledDesc": "Слегка затемняет обложки и названия неустановленных игр, чтобы выделить установленные."
+  "settings.highlightInstalledDesc": "Слегка затемняет обложки и названия неустановленных игр, чтобы выделить установленные.",
+  "settings.sharedLibraryTitle": "Показывать игры всех аккаунтов",
+  "settings.sharedLibraryDesc": "Добавляет игры других сохранённых аккаунтов. Откройте игру, чтобы одним нажатием переключиться на её владельца.",
+  "shared.ownerBadge": "Владелец: {name}",
+  "shared.switch": "Сменить аккаунт",
+  "shared.switchTo": "Переключиться на {name}",
+  "shared.detailNote": "Эта игра принадлежит {name}. Переключитесь на этот аккаунт, чтобы установить и играть."
 }

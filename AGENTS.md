@@ -128,6 +128,13 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Hesap Paylaşımı / Birleşik Kütüphane — v1 (29.09.2026, ROADMAP §7.3 uygulandı):**
+  1. **Ağsız birleşik indeks:** Yeni `shared_library.rs` → `shared_library_index` komutu (IPC 143); kayıtlı tüm hesapların **disk anlık görüntülerini** okur (Epic: `<config>/accounts/<id>/efxlve_library_snapshot.json`, GOG: `<appdata>/gog/accounts/<id>/efxlve_gog_library_snapshot.json`), **aktif hesabın sahip olduğu oyunları hariç tutar** ve kalanları sahibiyle birlikte döndürür (kapak: Epic `keyImages` portre önceliği — `epicPortrait` ile birebir; GOG `cover_url`). Hesap adları Epic `user.json` / GOG snapshot `account` alanından.
+  2. **Kütüphane:** Yeni ayar **"Tüm hesapların oyunlarını göster"** (Görünüm, varsayılan AÇIK). Açıkken `epicVisibleSummaries()` birleşik indeksi de kapsar (Tümü/Epic/GOG filtreleri + arama/koleksiyon/gizleme aynen çalışır, kanonik başlıkla çift kayıt engellenir); kart ve liste satırında **"Sahibi: <hesap>"** etiketi görünür ve kartın eylemi **"Hesaba Geç"** olur.
+  3. **Detay sayfası:** `summaryOf()` artık paylaşılan oyunlar için sentetik özet döndürür (başlık + kapak); hero meta satırında **"Sahibi: <hesap>"** çipi (tooltip: tam açıklama) ve aksiyon çubuğunda **tek tıkla hesap geçişi** (`shared-switch` → mevcut `switchAccount` / `switchGogAccount` akışı, geçiş sonrası indeks tazelenir ve oyun artık aktif hesabın normal kütüphanesinde oynanabilir olur).
+  4. **Doğrulama (canlı veri):** Kullanıcının makinesinde aktif Epic hesabı 820 kayıt, ikinci hesap (BurkWight616) 93 kayıt → **25 oyun yalnızca ikinci hesapta** (birleşik modda bunlar görünecek). `cargo test` **127** (+1 portre testi), `cargo check` 0 uyarı, `tsc --noUnusedLocals` 0 hata, `npm.cmd run build` ✅, i18n **1.311 anahtar** 15/15 parite, 0 ölü anahtar, IPC **143**.
+  5. **Kapsam dışı (sonraki tur):** hesap bazlı başarım/süre ayrımı (ROADMAP §7.3/1), hesap filtresi (`account:` operatörü), paylaşılan oyunların koleksiyon/favori etkileşimi ayrıntıları.
+
 - **v0.1.17 GitHub Release Notes + English Commit Rule (29.09.2026):**
   1. **Release body rewritten in English** as an official announcement (Highlights / Fixes / Under the hood / Downloads sections, 2.3 KB) via the GitHub API; the previous placeholder line ("Kurulum dosyaları ve otomatik güncelleme paketleri aşağıdaki varlıklarda.") is gone. Release: https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.17
   2. **New rule (user decision):** commit messages and bodies are written in **English** from now on — added to §4.3. Old commits are left as they are.

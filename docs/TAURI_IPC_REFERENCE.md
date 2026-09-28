@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 142 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 143 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -82,6 +82,7 @@
 | `epic_get_queue` | `() => Promise<DlQueueStatus>` | `legendary/transfers.rs` | Fetches active queue status, running item ID, and pending queue order. |
 | `epic_reorder_queue` | `(appName: string, action: "up"\|"down"\|"top"\|"now"\|"remove") => Promise<DlQueueStatus>` | `legendary/transfers.rs` | Moves item up/down or forces immediate priority in queue. |
 | `epic_uninstall_game` | `(appName: string, keepFiles: boolean) => Promise<string>` | `legendary/transfers.rs` | Uninstalls game files and unlinks local manifest. |
+| `shared_library_index` | `() => Promise<SharedLibraryIndex>` | `shared_library.rs` | Union of every saved account's library from disk snapshots (no network) with per-game owner info. |
 | `epic_take_pending_launch` | `() => Promise<string \| null>` | `main.rs` | Game requested by a desktop shortcut (`--launch <app>`), consumed once by the UI. |
 | `epic_launch_game` | `(appName: string) => Promise<string>` | `legendary/transfers.rs` | Launches game process (supports third-party launchers like `link2ea://`). |
 | `epic_default_install_dir` | `() => Promise<string>` | `legendary/transfers.rs` | Returns default OS installation directory for games. |
@@ -389,5 +390,5 @@ export interface ScreenshotsUpdatedEvent {
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 
-**Total: 142 commands**
+**Total: 143 commands**
 

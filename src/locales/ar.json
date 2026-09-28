@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "تمييز الألعاب المثبتة",
-  "settings.highlightInstalledDesc": "يخفت أغلفة وعناوين الألعاب غير المثبتة لإبراز الألعاب المثبتة."
+  "settings.highlightInstalledDesc": "يخفت أغلفة وعناوين الألعاب غير المثبتة لإبراز الألعاب المثبتة.",
+  "settings.sharedLibraryTitle": "عرض ألعاب جميع الحسابات",
+  "settings.sharedLibraryDesc": "يتضمن ألعاب حساباتك المحفوظة الأخرى. افتح لعبة للتبديل إلى مالكها بنقرة واحدة.",
+  "shared.ownerBadge": "المالك: {name}",
+  "shared.switch": "تبديل الحساب",
+  "shared.switchTo": "التبديل إلى {name}",
+  "shared.detailNote": "هذه اللعبة مملوكة لـ {name}. بدّل إلى هذا الحساب لتثبيتها ولعبها."
 }

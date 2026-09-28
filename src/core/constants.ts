@@ -52,6 +52,8 @@ export const STORE_BADGE_KEY = "efxlve-store-badge";
 export const INSTALLED_ICON_KEY = "efxlve-installed-icon";
 /** Highlight installed games by subtly dimming uninstalled covers and titles. Default ON. */
 export const HIGHLIGHT_INSTALLED_KEY = "efxlve-highlight-installed";
+/** Show games owned by other saved accounts in the library. Default ON. */
+export const SHOW_SHARED_LIBRARY_KEY = "efxlve-show-shared-library";
 /** Dim covers and list rows for uninstalled games to make installed titles stand out. */
 export const DIM_UNINSTALLED_KEY = "efxlve-dim-uninstalled";
 /** Highlight installed game titles in bright white and uninstalled in darker tone. */

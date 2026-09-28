@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "Resaltar juegos instalados",
-  "settings.highlightInstalledDesc": "Atenúa sutilmente las portadas y títulos no instalados para resaltar los instalados."
+  "settings.highlightInstalledDesc": "Atenúa sutilmente las portadas y títulos no instalados para resaltar los instalados.",
+  "settings.sharedLibraryTitle": "Mostrar juegos de todas las cuentas",
+  "settings.sharedLibraryDesc": "Incluye los juegos de tus otras cuentas guardadas. Abre un juego para cambiar a su propietario con un clic.",
+  "shared.ownerBadge": "Propietario: {name}",
+  "shared.switch": "Cambiar de cuenta",
+  "shared.switchTo": "Cambiar a {name}",
+  "shared.detailNote": "Este juego pertenece a {name}. Cambia a esa cuenta para instalarlo y jugarlo."
 }

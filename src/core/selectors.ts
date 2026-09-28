@@ -106,6 +106,28 @@ export function rebuildAllGamesMap(): void {
       set.add("GOG");
     }
   }
+  // Other accounts' games stay searchable/detail-openable through the same map.
+  for (const g of S.sharedOwners.values()) {
+    const item: LibraryItem = {
+      key: g.key,
+      source: g.store === "gog" ? "gog" : "epic",
+      id: g.key.startsWith("gog::") ? g.key.slice(5) : g.key,
+      title: g.title,
+      developer: "",
+      version: "—",
+      installedVersion: null,
+      installed: false,
+      installPath: null,
+      installSize: 0,
+      coverUrl: g.cover,
+      heroUrl: g.cover,
+      description: "",
+      updateAvailable: false,
+      cloudSavesSupported: false,
+      dlcCount: 0,
+    };
+    if (!map.has(item.key)) map.set(item.key, item);
+  }
   S.allGamesMap = map;
 
   const storesMap = new Map<string, string>();
@@ -161,7 +183,35 @@ export function summaryOf(appName: string): EpicSummary | undefined {
     const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
     if (g) return gogToEpicSummary(g);
   }
-  return S.epicSummariesMap.get(appName);
+  const own = S.epicSummariesMap.get(appName);
+  if (own) return own;
+  // Games that only another saved account owns resolve to a shared entry so the
+  // detail page can show the owner and offer the account switch.
+  const shared = sharedOwnerOf(appName);
+  if (shared) return sharedToSummary(shared);
+  return undefined;
+}
+
+/** Owner of a game that belongs to another saved account (shared library). */
+export function sharedOwnerOf(key: string): import("../epic").SharedGame | undefined {
+  return S.sharedOwners.get(key);
+}
+
+/** Minimal summary for a shared (other-account) game. */
+export function sharedToSummary(g: import("../epic").SharedGame): EpicSummary {
+  return {
+    appName: g.key,
+    title: g.title,
+    version: "—",
+    cover: g.cover,
+    description: "",
+    dlcCount: 0,
+    installed: false,
+    installPath: null,
+    installSize: 0,
+    installedVersion: null,
+    updateAvailable: false,
+  };
 }
 
 /** O(1) unified lookup of any library item by composite key (`source::id`) or plain id. */

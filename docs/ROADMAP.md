@@ -475,7 +475,8 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - `gogdl/accounts.rs`: GOG için aynı arşiv modeli.
 - `S.savedAccounts` / `S.gogSavedAccounts`, `updateSidebarAccountSwitcher` ve `accounts-view.ts` hesap listeleri.
 
-### 7.3. Uygulama planı (fazlar)
+### 7.3. Uygulama planı (fazlar) — **v1 uygulandı (29.09.2026)**
+> **Durum:** 1-2-3-4 numaralı adımların v1'i tamamlandı (`shared_library.rs` + `shared_library_index`, kütüphane birleşik modu + sahip etiketi + "Hesaba Geç" eylemi, detay sayfası sahip çipi + geçiş). Kalanlar: hesap bazlı başarım/süre ayrımı, `account:` arama operatörü, koleksiyon/favori ayrıntıları.
 1. **Hesap bazlı veri ayrımı (ön koşul):**
    - Başarım önbelleği: `achievements_cache.json` → `accounts/<account_id>/achievements_cache.json` (göç: mevcut dosya aktif hesaba taşınır).
    - Oynanış süresi: `playtime.json` kayıtlarına `account_id` eklenir (göç: mevcut kayıtlar aktif hesaba yazılır) veya dosya hesap klasörüne taşınır.

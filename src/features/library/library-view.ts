@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, rawOf, sharedOwnerOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -18,6 +18,7 @@ import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
+import { sharedSummaries } from "./shared-library";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -175,9 +176,16 @@ export function epicVisibleSummaries(): EpicSummary[] {
       }
     }
 
+    // Games from other saved accounts (they never shadow an owned copy).
+    for (const s of sharedSummaries()) {
+      const c = canonicalGameTitle(s.title);
+      if (!canonMap.has(c)) canonMap.set(c, s);
+    }
+
     baseItems.push(...canonMap.values());
   } else if (S.sourceFilter === "epic") {
     baseItems.push(...S.epicSummaries);
+    baseItems.push(...sharedSummaries().filter((s) => !s.appName.startsWith("gog::")));
   } else if (S.sourceFilter === "gog") {
     for (const g of S.gogSummaries) {
       baseItems.push({
@@ -194,6 +202,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
         updateAvailable: g.updateAvailable,
       });
     }
+    baseItems.push(...sharedSummaries().filter((s) => s.appName.startsWith("gog::")));
   }
 
   const list = baseItems.filter((s) => {
@@ -304,14 +313,17 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
+  const owner = sharedOwnerOf(s.appName);
+  const ownerLabel = owner ? esc(t("shared.ownerBadge", { name: owner.ownerName })) : "";
   const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
   const titleRow = S.showCoverTitles
     ? `<span class="pcard-title-row"><span class="pcard-title" title="${title}">${title}</span>${playBtnHtml}</span>`
     : "";
-  const caption = (S.showCoverTitles || Boolean(storesLabel))
+  const caption = (S.showCoverTitles || Boolean(storesLabel) || Boolean(ownerLabel))
     ? `<div class="pcard-caption">
         ${titleRow}
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
+        ${ownerLabel ? `<span class="pcard-owner">${ownerLabel}</span>` : ""}
       </div>`
     : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
@@ -336,7 +348,9 @@ function epicListRow(s: EpicSummary): string {
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
-  const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
+  const owner = sharedOwnerOf(s.appName);
+  const ownerLabel = owner ? esc(t("shared.ownerBadge", { name: owner.ownerName })) : "";
+  const metaText = [studio, storesLabel, ownerLabel].filter(Boolean).join(" · ");
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>

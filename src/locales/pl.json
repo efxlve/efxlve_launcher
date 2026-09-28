@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "Wyróżnij zainstalowane gry",
-  "settings.highlightInstalledDesc": "Subtelnie przyciemnia okładki i tytuły niezainstalowanych gier, aby wyróżnić zainstalowane."
+  "settings.highlightInstalledDesc": "Subtelnie przyciemnia okładki i tytuły niezainstalowanych gier, aby wyróżnić zainstalowane.",
+  "settings.sharedLibraryTitle": "Pokaż gry ze wszystkich kont",
+  "settings.sharedLibraryDesc": "Uwzględnia gry z innych zapisanych kont. Otwórz grę, aby jednym kliknięciem przełączyć się na jej właściciela.",
+  "shared.ownerBadge": "Właściciel: {name}",
+  "shared.switch": "Przełącz konto",
+  "shared.switchTo": "Przełącz na {name}",
+  "shared.detailNote": "Ta gra należy do {name}. Przełącz się na to konto, aby ją zainstalować i uruchomić."
 }

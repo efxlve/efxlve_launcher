@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "突出显示已安装的游戏",
-  "settings.highlightInstalledDesc": "略微淡化未安装的封面和标题，以使已安装的游戏更加醒目。"
+  "settings.highlightInstalledDesc": "略微淡化未安装的封面和标题，以使已安装的游戏更加醒目。",
+  "settings.sharedLibraryTitle": "显示所有账户的游戏",
+  "settings.sharedLibraryDesc": "包含其他已保存账户的游戏。打开游戏即可一键切换到其所有者。",
+  "shared.ownerBadge": "所有者：{name}",
+  "shared.switch": "切换账户",
+  "shared.switchTo": "切换到 {name}",
+  "shared.detailNote": "此游戏属于 {name}。切换到该账户即可安装并游玩。"
 }

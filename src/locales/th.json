@@ -1303,5 +1303,11 @@
   "cloud.syncBtn": "Sync Cloud",
   "cloud.syncTooltip": "Check cloud backups and synchronize",
   "settings.highlightInstalledTitle": "เน้นเกมที่ติดตั้งแล้ว",
-  "settings.highlightInstalledDesc": "หรี่หน้าปกและชื่อเกมที่ยังไม่ได้ติดตั้งลงเล็กน้อยเพื่อเน้นเกมที่ติดตั้งแล้ว"
+  "settings.highlightInstalledDesc": "หรี่หน้าปกและชื่อเกมที่ยังไม่ได้ติดตั้งลงเล็กน้อยเพื่อเน้นเกมที่ติดตั้งแล้ว",
+  "settings.sharedLibraryTitle": "แสดงเกมจากทุกบัญชี",
+  "settings.sharedLibraryDesc": "รวมเกมจากบัญชีอื่นที่บันทึกไว้ เปิดเกมเพื่อสลับไปยังเจ้าของได้ในคลิกเดียว",
+  "shared.ownerBadge": "เจ้าของ: {name}",
+  "shared.switch": "สลับบัญชี",
+  "shared.switchTo": "สลับไปยัง {name}",
+  "shared.detailNote": "เกมนี้เป็นของ {name} สลับไปยังบัญชีนั้นเพื่อติดตั้งและเล่น"
 }

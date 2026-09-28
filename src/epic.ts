@@ -554,6 +554,28 @@ export const epicStopGame = (appName: string) =>
   invoke<string>("epic_stop_game", { appName });
 /** Game requested by a desktop shortcut (`--launch <app>`), consumed once. */
 export const epicTakePendingLaunch = () => invoke<string | null>("epic_take_pending_launch");
+
+/** One game that belongs to another saved account (shared library). */
+export interface SharedGame {
+  key: string;
+  title: string;
+  cover: string | null;
+  store: string;
+  ownerKey: string;
+  ownerName: string;
+}
+export interface SharedAccount {
+  ownerKey: string;
+  ownerName: string;
+  store: string;
+  gameCount: number;
+}
+export interface SharedLibraryIndex {
+  accounts: SharedAccount[];
+  games: SharedGame[];
+}
+/** Union of every saved account's library (read from disk snapshots, no network). */
+export const sharedLibraryIndex = () => invoke<SharedLibraryIndex>("shared_library_index");
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */

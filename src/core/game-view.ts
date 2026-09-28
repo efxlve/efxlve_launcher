@@ -11,7 +11,7 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { rawOf, summaryOf } from "./selectors";
+import { rawOf, sharedOwnerOf, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
@@ -206,6 +206,12 @@ export function epicActionButtons(
   opts: { primaryOnly?: boolean } = {},
 ): string {
   const btn = size ? ` ${size}` : "";
+  // Games from another saved account cannot be installed with the active one:
+  // the card offers the one-click account switch instead.
+  const sharedOwner = sharedOwnerOf(s.appName);
+  if (sharedOwner) {
+    return `<button class="btn ghost${btn}" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 14)} ${t("shared.switch")}</button>`;
+  }
   const p = epicDlProgress(s.appName);
   if (p !== null) {
     const main = `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
