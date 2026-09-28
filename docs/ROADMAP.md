@@ -583,3 +583,118 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 
 **M (2-3 geliştirme günü):** Faz 0 kullanıcıda ~30 dk; Faz 1 yarım gün; Faz 2 ~1.5 gün; Faz 3 ~1 gün; Faz 4 (DM) ayrıca ~1 gün. DLL boyutu netleşince kurulum paketi etkisi raporlanır.
 
+---
+
+## 9. Steam Entegrasyonu (Araştırma + Plan - 29.09.2026)
+
+### 9.1. Araştırma sorusu: Steam istemcisi olmadan olur mu?
+
+**Kısa cevap: Oyunları başlatmak için hayır; veriyi göstermek için evet.**
+
+- Steam oyunlarının çoğu **Steamworks DRM** (`steam_api64.dll`) taşır: oyun açılırken Steam istemcisinin açık ve oturum açmış olmasını şart koşar. İstemci yoksa oyun "Steam is not running" diyerek kapanır.
+- DRM'siz (Steamworks'siz) oyunlar doğrudan `.exe` ile başlatılabilir; ama bu azınlıktır ve oyun bazında güvenilir bir liste yok.
+- **Depo indirme** (SteamKit2 / DepotDownloader yaklaşımı) teknik olarak mümkündür ama: (a) Steam hesabıyla oturum + depo anahtarı gerektirir, (b) DRM/ToS açısından gri alandır, (c) devasa bir iştir. **Yapılmayacak.**
+- **Karar (kullanıcı talimatı doğrultusunda): Launcher'lı entegrasyon.** Steam kuruluysa algıla, kütüphaneyi oku, `steam://` protokolleriyle başlat/kur/kaldır/doğrula. Steam kurulu değilse kart "Steam kurulu değil" der ve resmi indirme bağlantısını verir.
+
+### 9.2. Veri kaynakları (hepsi yerel, ağsız — ağ yalnız kapak/açıklama için)
+
+| Veri | Kaynak |
+|---|---|
+| Steam kurulum yolu | `HKCU\Software\Valve\Steam` → `SteamPath`; `HKLM\SOFTWARE\WOW6432Node\Valve\Steam` → `InstallPath` (controller.rs bunu zaten okuyor ✓) |
+| Kütüphane klasörleri | `<steam>\steamapps\libraryfolders.vdf` (`libraryfolders` sözlüğündeki her `path`) |
+| Kurulu oyunlar | her kitaplıkta `steamapps\appmanifest_<appid>.acf` → `appid`, `name`, `installdir`, `SizeOnDisk`, `StateFlags`, `buildid`, `LastUpdated` |
+| Oynanış süresi | `<steam>\userdata\<id>\config\localconfig.vdf` → `Software/Valve/Steam/apps/<appid>/Playtime` (dakika) + `LastPlayed` |
+| Kullanıcı | `userdata\<id>` klasörleri + `config\loginusers.vdf` (`PersonaName`, `AccountID`, `MostRecent`) |
+| Kapak / hero | Steam CDN (anahtarsız): `cdn.cloudflare.steamstatic.com/steam/apps/<appid>/library_600x900.jpg`, `header.jpg`, `library_hero.jpg` |
+| Açıklama / gereksinimler | `store.steampowered.com/api/appdetails?appids=<id>&l=<dil>` (anahtarsız; ~200 istek/5 dk → **disk önbelleği şart**) |
+| Başarımlar | `api.steampowered.com/ISteamUserStats/GetPlayerAchievements` → **Web API anahtarı + herkese açık profil** ister (Ayarlar'a opsiyonel anahtar alanı) |
+
+### 9.3. Eylem protokolleri (dosya işlemi bizde yok)
+
+- Başlat: `steam://rungameid/<appid>` (Steam kapalıysa açılır, oyun sıraya girer)
+- Kur: `steam://install/<appid>` · Kaldır: `steam://uninstall/<appid>` · Doğrula: `steam://validate/<appid>`
+- Mağaza sayfası: `https://store.steampowered.com/app/<appid>` (launcher içindeki mağaza görünümünde Steam sekmesi yoksa harici tarayıcı)
+- Bizim tarafımızda **dosya silme/taşıma/doğrulama yok**; bunlar Steam'in kendi bakım akışına bırakılır (kullanıcıyı yanlış yönlendirmemek için arayüzde "Steam'de açar" dili kullanılır).
+
+### 9.4. Uygulama planı (fazlar)
+
+- **Faz 1 — Algılama + kart (yarım gün):** `src-tauri/src/steam.rs`: `steam_status`, `steam_list_installed`, `steam_launch_game` komutları; Ayarlar > Entegrasyonlar'a **Steam** kartı (kurulum yolu, kurulu oyun sayısı, liste, "Steam'de Başlat"). Ağ yok, 15 dil.
+- **Faz 2 — Kütüphane entegrasyonu (1 gün):** `SourceFilter`'a `"steam"`, anahtarlar `steam::<appid>`, kapaklar CDN'den (portre + hero), detay sayfası + `appdetails` açıklaması (6 saatlik disk önbelleği), `localconfig.vdf`'den oynanış süresi içe aktarma, eylem çubuğu (Steam'de Başlat / Kur / Kaldır / Doğrula), koleksiyon/favori/gizleme otomatik çalışır (anahtar tabanlı), arama/sıralama/filtreler aynen.
+- **Faz 3 — Derinlik (1 gün):** Başarımlar (opsiyonel kullanıcı API anahtarı), sistem gereksinimleri (`appdetails` → `pc_requirements`), ekran görüntüleri, DLC listesi (`appdetails` → `dlc`), "Steam'de Aç" satırları.
+- **Faz 4 (opsiyonel/riskli):** Steam dışı oyunları Steam'e ekleme (`shortcuts.vdf` yazımı) — dosya biçimi kırılgan, yalnız rehber olarak önerilir; Steam Aile Paylaşımı görünürlüğü.
+
+### 9.5. Riskler ve önlemler
+
+| Risk | Önlem |
+|---|---|
+| `appdetails` hız sınırı (HTTP 429) | 6 saatlik disk önbelleği; istek yalnız sekme açıldığında ve oyun başına bir kez |
+| `localconfig.vdf` büyük (MB) | Yalnız ihtiyaç anında oku, özeti kendi önbelleğimize yaz (GOG Galaxy oynanış süresi deseniyle aynı) |
+| Steam kapalıyken `steam://` gecikir | Başlatma Steam'e bırakılır; arayüz "Steam açılıyor" bilgisini gösterir, launcher bloklanmaz |
+| Steamworks DRM | Kaldırma/taşıma/doğrulama Steam'e bırakılır; launcher yalnız protokol çağırır |
+| `libraryfolders.vdf` biçimi sürüm değiştirir | Basit anahtar/değer ayrıştırıcı + bilinmeyen biçimde boş liste (çökme yok), birim testi |
+
+---
+
+## 10. EA / Ubisoft / Xbox Entegrasyonları (Araştırma + Plan - 29.09.2026)
+
+Kullanıcı talimatı: "Launcher'sız yapabilirsen yap; yapamazsan Launcher'lı ekle." Üçünün de durumu aynı: **lisans doğrulaması kendi istemcilerinde**, bu yüzden **launcher'lı** entegrasyon.
+
+### 10.1. EA App
+
+- **Launcher'sız: Hayır.** EA oyunları `EADesktop.exe` + `EABackgroundService` ile lisans doğrular; istemci kapalıysa oyun açılmaz.
+- Algılama: `HKLM\SOFTWARE\WOW6432Node\Electronic Arts\EA Games\<oyun>` → `Install Dir`; ayrıca EA App'in `installerdata` klasöründeki `*.mfst` dosyaları (ürün kimliği + dil).
+- Eylemler: başlat `link2ea://launchgame/<id>` (launcher zaten EA oyunlarını bu protokolle başlatıyor ✓); kur/kaldır/onar EA App'e bırakılır.
+- Kütüphane: mevcut `third_party` altyapısı + `requiresThirdPartyLauncher` yeniden kullanılır; kapak için SteamGridDB anahtarı veya EA CDN'i.
+
+### 10.2. Ubisoft Connect
+
+- **Launcher'sız: Hayır.** Oyunlar Connect ile lisans doğrular.
+- Algılama: `HKLM\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\<id>` → `InstallDir`; `HKCU\Software\Ubisoft\...` tamamlayıcı.
+- Eylemler: başlat `uplay://launch/<id>/0`; kur/kaldır/doğrula Connect'e bırakılır.
+- Kütüphane: EA ile aynı desen.
+
+### 10.3. Xbox (Microsoft Store / PC Game Pass)
+
+- **Launcher'sız: Hayır.** Oyunlar MSIX paketi + **Gaming Services** DRM'i ile çalışır; çalıştırma yalnız `explorer.exe shell:appsFolder\<PackageFamilyName>!<AppId>` ile ve Gaming Services arka planda açıkken olur.
+- Algılama: `C:\XboxGames\*\Content\MicrosoftGame.config` (hızlı, dosya tabanlı) + `HKLM\SOFTWARE\Microsoft\GamingServices` sürümü; PowerShell `Get-AppxPackage` **yalnız kullanıcı isterse** (yavaş; `CREATE_NO_WINDOW`).
+- Eylemler: başlat (yukarıdaki `shell:appsFolder`), kur/kaldır Microsoft Store'a bırakılır.
+- Sınır: Xbox oynanış süresi/başarım verisi için resmî yerel API yok → yalnız algılama + kütüphane + başlatma.
+
+### 10.4. Ortak karar ve sıralama
+
+- Üçü de **launcher'lı** olur; öncelik **EA → Ubisoft → Xbox** (algılama kolaylığı ve kullanıcı talebi sırası).
+- Her biri için ortak desen: algılama (registry/dosya, ağsız) → Ayarlar > Entegrasyonlar kartı → "Kütüphaneye Aktar" → kapak → başlatma protokolü → "X uygulamasında aç" eylemleri → 15 dil. Bizim tarafımızda **dosya işlemi yok**.
+- Mevcut `ThirdPartyLauncher` + `requiresThirdPartyLauncher` altyapısı genişletilir (EA/Ubisoft zaten tanınıyor).
+
+---
+
+## 11. Epic Tarzı "Yükleme Seçenekleri" Diyaloğu (29.09.2026)
+
+Mevcut `src/features/dlc/selective-install.ts` zaten çalışıyor: zorunlu ana oyun satırı, dil etiketleri, ek paketler, DLC'ler, satır başına boyut, toplam indirme/disk. Epic'in Fortnite diyaloğuna yaklaştırmak için yapılacaklar:
+
+1. Başlığa oyun kapağı (küçük portre) + başlık + "Yükleme Seçenekleri".
+2. **Yüklü DLC'ler** listede "Yüklü" rozetiyle, işaretli ve kilitli gösterilir (gizlenmez).
+3. Bölüm başlıklarına **"Tümünü seç" / "Temizle"** küçük eylemleri.
+4. Zorunlu satırlarda kilit ikonu (`lock`) ve "Gerekli" etiketi.
+5. Toplam satırında "N öğe seçili" sayacı + indirme/disk toplamları.
+6. Alt bilgi notu: "İsteğe bağlı içerik sonradan Yönet > Dosyaları Doğrula akışından değiştirilebilir."
+7. Dil etiketleri ve ek paketler varsayılan olarak **kapalı** başlar (yalnız oyunun varsayılan dili iner) — Epic de böyle davranır.
+
+---
+
+## 12. Kontrolcü Desteği (Steam Input Benzeri)
+
+### 12.1. Faz 1 — uygulandı (29.09.2026)
+
+- Kumanda ailesi algılama (`controllerKind`: PlayStation / Xbox / Switch / genel), HUD gliflerinin otomatik değişmesi (✕ ○ □ △ ve L1/R1), Ayarlar > **Kontrolcü** bölümü (bağlı kumandalar, XInput köprüsü durumu, resmî ViGEmBus/DS4Windows bağlantıları), PlayStation kumandası bağlanınca tek seferlik bilgilendirme bildirimi (tıklayınca ilgili ayar bölümü açılır).
+- Rust: `controller_support_status` — ViGEmBus servisi (`HKLM\SYSTEM\CurrentControlSet\Services\ViGEmBus`) ve Steam kurulum yolu kayıt defterinden okunur (ağ yok).
+
+### 12.2. Faz 2 — plan: yerleşik sanal gamepad (ViGEmBus)
+
+- Sorun: Windows DualSense/DualShock'u **DirectInput** aygıtı olarak gösterir; yalnız XInput okuyan oyunlar (Dead by Daylight vb.) onları hiç görmez. Steam bunu **ViGEmBus** çekirdek sürücüsü + Steam Input eşlemesiyle çözer.
+- Yapılabilir yol: kullanıcı ViGEmBus'u bir kez kurar (imzalı, açık kaynak, Nefarius); launcher `vigem-client` (Rust) ile **sanal Xbox 360 kolu** oluşturur; DualSense girdisi HID'den okunup eşlenir (tuşlar + analog çubuklar + tetikler + ölü bölge). Bu, DS4Windows'un çekirdeğidir ve **tamamen kullanıcı modunda** çalışır (çekirdek sürücü yazmayız).
+- Maliyet/riskler: yeni bağımlılıklar (`vigem-client` + HID okuma), eşleme kalitesi (ölü bölge/eksen tersliği), performans (yalnız oyun oturumu sürerken çalışır, boşta durur), sürücü kurulumu gerektirmesi.
+- Hafif alternatif: kullanıcı oyunu Steam'e "Steam dışı oyun" olarak ekleyip Steam Input'u açar; launcher bunu tek tıkla yapmayı **önerebilir** (`shortcuts.vdf` yazımı riskli → yalnız rehber + bağlantı).
+- **Karar:** Faz 2 backlog'a alındı; Faz 1 kullanıcıya doğru yolu (ViGEmBus + DS4Windows veya Steam Input) gösteriyor ve köprüyü algılıyor.
+
+

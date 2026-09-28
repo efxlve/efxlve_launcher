@@ -8,7 +8,7 @@ import { openEpicModal } from "../../../core/render";
 import { summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { openStoreUrl } from "../../store/store-view";
-import { applySelectiveInstall, closeSelectiveModal } from "../../dlc/selective-install";
+import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
@@ -38,6 +38,31 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         void applySelectiveInstall(id, tags, dlcs);
       }
       return true;
+
+    case "selective-bulk": {
+      // Section-wide select/clear for the optional language, extra pack and
+      // add-on lists. Installed add-ons are always skipped: they are already
+      // on disk and must not be queued again.
+      const opts = S.selectiveInstallOptions;
+      const group = t.dataset.group;
+      const selectAll = t.dataset.mode === "all";
+      if (!opts || !group) return true;
+      if (group === "dlcs") {
+        for (const dlc of opts.dlcs) {
+          if (dlc.installed) continue;
+          if (selectAll) S.selectedDlcAppIds.add(dlc.appId);
+          else S.selectedDlcAppIds.delete(dlc.appId);
+        }
+      } else {
+        for (const tag of opts.tags) {
+          if (tag.category !== group) continue;
+          if (selectAll) S.selectedInstallTags.add(tag.tag);
+          else S.selectedInstallTags.delete(tag.tag);
+        }
+      }
+      renderSelectiveModal();
+      return true;
+    }
 
     case "epic-open-folder":
       if (id) void epicOpenFolder(id);
