@@ -21,6 +21,7 @@ import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateInstallBlocked } from "../updates/update-manager";
 import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
+  controllerSupportStatus,
   eosOverlayStatus,
   epicDefaultInstallDir,
   epicDetectEglGames,
@@ -39,12 +40,15 @@ import {
 } from "../../epic";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { controllerKind } from "../gamepad/gamepad";
+import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
   { id: "downloads", labelKey: "settings.secDownloads" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
+  { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
   { id: "screenshots", labelKey: "settings.secScreenshots" },
   { id: "system", labelKey: "settings.secSystem" },
@@ -189,6 +193,59 @@ function renderIntegrations(): string {
     group(sgdb, "SteamGridDB") +
     group(presence + eos, t("settings.secSocial"))
   );
+}
+
+/** Localized controller family names (kept literal so the key audit sees them). */
+const CONTROLLER_KIND_KEYS: Record<ControllerKind, string> = {
+  playstation: "controller.kindPlaystation",
+  xbox: "controller.kindXbox",
+  switch: "controller.kindSwitch",
+  generic: "controller.kindGeneric",
+};
+
+/**
+ * Controller section: what is plugged in right now, plus the XInput bridge
+ * status. Windows shows PlayStation pads as DirectInput devices, so games that
+ * only read XInput (Dead by Daylight and friends) need ViGEmBus/DS4Windows or
+ * Steam Input; we detect both and point at the official downloads.
+ */
+function renderController(): string {
+  const pads = (navigator.getGamepads ? navigator.getGamepads() : []).filter(
+    (g): g is Gamepad => g !== null && g.connected,
+  );
+  const padRows = pads.length > 0
+    ? pads.map((g) => {
+        const name = g.id.split("(")[0].trim();
+        return row(
+          esc(name),
+          t(CONTROLLER_KIND_KEYS[controllerKind(g.id)]),
+          `<span class="chip ok">${t("controller.connected")}</span>`,
+        );
+      }).join("")
+    : row(
+        t("controller.none"),
+        t("controller.noneDesc"),
+        `<button class="btn ghost small" data-act="controller-refresh">${t("controller.refresh")}</button>`,
+      );
+
+  const status = S.controllerBridge;
+  const bridgeChip = status === null
+    ? `<span class="chip">${t("controller.checking")}</span>`
+    : status.viEmBus
+      ? `<span class="chip ok">${t("controller.bridgeFound")}</span>`
+      : `<span class="chip warn">${t("controller.bridgeMissing")}</span>`;
+  const steamNote = status?.steam ? `<br />${t("controller.steamNote")}` : "";
+  const bridge = row(
+    t("controller.bridgeTitle"),
+    `${t("controller.bridgeDesc")}${steamNote}`,
+    `${bridgeChip}
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://github.com/nefarius/ViGEmBus/releases">${t("controller.downloadVigem")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://github.com/Ryochan7/DS4Windows/releases">${t("controller.downloadDs4")}</button>
+     <button class="btn ghost small" data-act="controller-refresh">${t("controller.refresh")}</button>`,
+    true,
+  );
+
+  return group(padRows, t("controller.padsTitle")) + group(bridge, t("settings.secController"));
 }
 
 /** Page-size picker shared by Settings and the library pagination bar. */
@@ -411,6 +468,7 @@ function renderSection(section: SettingsSection): string {
   switch (section) {
     case "account": return renderAccountSettings();
     case "integrations": return renderIntegrations();
+    case "controller": return renderController();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
     case "system": return renderSystem();
@@ -460,6 +518,28 @@ export async function loadSettingsView(): Promise<void> {
   // Re-add the EOS notice if it was cleared. Uses the status already in memory.
   syncEosNotice();
   if (S.settingsSection === "integrations") void loadIntegrationsView();
+  if (S.settingsSection === "controller") void loadControllerView();
+}
+
+/**
+ * Refreshes the controller section: connected pads are read synchronously and
+ * the XInput bridge probe is one cheap registry query.
+ */
+export async function loadControllerView(force = false): Promise<void> {
+  if (!isTauri) {
+    render();
+    return;
+  }
+  if (S.controllerBridge && !force) {
+    render();
+    return;
+  }
+  try {
+    S.controllerBridge = await controllerSupportStatus();
+  } catch {
+    S.controllerBridge = { viEmBus: false, steam: false, steamPath: "" };
+  }
+  render();
 }
 
 /**

@@ -8,11 +8,14 @@
 import { MORE_CARD_CHUNK } from "../../core/constants";
 import { closeModal } from "../../core/dom";
 import { toggleFav } from "../../core/game-view";
+import { icon } from "../../core/icons";
 import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
-import type { DrawerTab } from "../../core/types";
+import type { ControllerKind, DrawerTab } from "../../core/types";
+import { controllerSupportStatus } from "../../epic";
+import { pushNotification } from "../notifications/notifications";
 import {
   epicCardPortrait,
   epicVisibleSummaries,
@@ -20,6 +23,63 @@ import {
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
 import { showTvPrompt, tvActivate, tvBack, tvMove, tvOpenDetails, tvRowJump } from "./tv-mode";
 import { setView } from "../store/store-view";
+
+/** Detects the controller family from the Gamepad API id string. */
+export function controllerKind(id: string): ControllerKind {
+  const s = id.toLowerCase();
+  if (s.includes("dualsense") || s.includes("dualshock") || s.includes("playstation") || s.includes("054c")) return "playstation";
+  if (s.includes("xbox") || s.includes("xinput") || s.includes("045e")) return "xbox";
+  if (s.includes("switch") || s.includes("nintendo") || s.includes("057e")) return "switch";
+  return "generic";
+}
+
+/** Face-button glyph: PlayStation pads get their geometric shapes instead of A/B/X/Y. */
+function faceGlyph(kind: ControllerKind, btn: "a" | "b" | "x" | "y"): string {
+  if (kind === "playstation") {
+    const shapes = { a: "x", b: "circle", x: "square", y: "triangle" } as const;
+    return `<span class="gp-glyph btn-${btn}">${icon(shapes[btn], 11)}</span>`;
+  }
+  return `<span class="gp-glyph btn-${btn}">${btn.toUpperCase()}</span>`;
+}
+
+/** Shoulder glyphs: L1/R1 on PlayStation pads, LB/RB elsewhere. */
+function bumperGlyphs(kind: ControllerKind): string {
+  const [l, r] = kind === "playstation" ? ["L1", "R1"] : ["LB", "RB"];
+  return `<span class="gp-glyph btn-bumper">${l}</span><span class="gp-glyph btn-bumper">${r}</span>`;
+}
+
+function hudItem(glyphs: string, label: string): string {
+  return `<div class="gp-hud-item">${glyphs} <span>${label}</span></div>`;
+}
+
+let bridgeProbed = false;
+let bridgeAvailable = false;
+
+/**
+ * Steam Input style hint: PlayStation pads speak DirectInput, so games that only
+ * read XInput ignore them unless an XInput bridge (ViGEmBus / Steam) is present.
+ * The registry probe runs at most once per session and never blocks the UI.
+ */
+async function notifyPlaystationBridge(): Promise<void> {
+  if (S.gamepadKind !== "playstation") return;
+  if (!bridgeProbed) {
+    bridgeProbed = true;
+    try {
+      const status = await controllerSupportStatus();
+      bridgeAvailable = status.viEmBus || status.steam;
+    } catch {
+      // Keep the pessimistic default; the Settings card offers a manual check.
+    }
+  }
+  if (bridgeAvailable) return;
+  pushNotification({
+    kind: "info",
+    title: t("controller.bridgeNotifTitle", { name: S.gamepadName }),
+    body: t("controller.bridgeNotifBody"),
+    action: "controller-open-settings",
+  });
+}
+
 export function ensureGamepadHud(): HTMLElement {
   if (!S.gamepadHudEl) {
     S.gamepadHudEl = document.getElementById("gamepad-hud-bar");
@@ -48,49 +108,55 @@ export function updateGamepadHud(active = true): void {
   const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(S.currentModalAppName);
 
   // Skip rebuilding the HUD markup when nothing that affects it changed.
-  const hudKey = `${modalOpen ? "modal" : S.view}|${S.appLanguage}`;
+  const hudKey = `${modalOpen ? "modal" : S.view}|${S.appLanguage}|${S.gamepadKind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
+  const kind = S.gamepadKind;
+  const dpad = `<span class="gp-glyph btn-dpad">D-Pad</span>`;
+
   if (modalOpen) {
-    hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.select")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>${t("common.back")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.favorite")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
-    `;
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
+      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
   } else if (S.view === "tv") {
-    hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.select")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-b">B</span> <span>${t("common.back")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.detail")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
-    `;
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(faceGlyph(kind, "x"), t("gamepad.detail")),
+      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
   } else if (S.view === "profile") {
-    hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.inspectTrophies")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("profile.refresh")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>${t("common.search")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
-    `;
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.inspectTrophies")),
+      hudItem(faceGlyph(kind, "x"), t("profile.refresh")),
+      hudItem(faceGlyph(kind, "y"), t("common.search")),
+      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
   } else {
-    hud.innerHTML = `
-      <div class="gp-hud-item"><span class="gp-glyph btn-a">A</span> <span>${t("gamepad.detail")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-x">X</span> <span>${t("gamepad.favorite")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-y">Y</span> <span>${t("common.search")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-bumper">LB</span><span class="gp-glyph btn-bumper">RB</span> <span>${t("gamepad.tabs")}</span></div>
-      <div class="gp-hud-item"><span class="gp-glyph btn-dpad">D-Pad</span> <span>${t("gamepad.navigate")}</span></div>
-    `;
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.detail")),
+      hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
+      hudItem(faceGlyph(kind, "y"), t("common.search")),
+      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
   }
 }
 
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
     const name = e.gamepad.id.split("(")[0].trim();
+    S.gamepadName = name;
+    S.gamepadKind = controllerKind(e.gamepad.id);
     if (!showTvPrompt(name)) toast(t("gamepad.connected", { name }), "ok");
+    void notifyPlaystationBridge();
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
@@ -116,7 +182,10 @@ export function initGamepadSupport(): void {
   // Is a controller already connected at startup?
   setTimeout(() => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    if (Array.from(gamepads).some((g) => g !== null && g.connected)) {
+    const first = Array.from(gamepads).find((g) => g !== null && g.connected);
+    if (first) {
+      S.gamepadName = first.id.split("(")[0].trim();
+      S.gamepadKind = controllerKind(first.id);
       if (!S.gamepadPolling) {
         S.gamepadPolling = true;
         updateGamepadHud(true);

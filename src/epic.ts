@@ -576,6 +576,15 @@ export interface SharedLibraryIndex {
 }
 /** Union of every saved account's library (read from disk snapshots, no network). */
 export const sharedLibraryIndex = () => invoke<SharedLibraryIndex>("shared_library_index");
+
+/** Controller bridging layers present on this machine (Settings > Controller). */
+export interface ControllerSupportStatus {
+  viEmBus: boolean;
+  steam: boolean;
+  steamPath: string;
+}
+export const controllerSupportStatus = () =>
+  invoke<ControllerSupportStatus>("controller_support_status");
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */

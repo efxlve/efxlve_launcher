@@ -86,7 +86,7 @@ import {
   openNotifPanel,
   renderNotificationPanel,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
@@ -552,6 +552,13 @@ document.addEventListener("click", (e) => {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
+    if (S.settingsSection === "controller") void loadControllerView();
+  } else if (act === "controller-refresh") {
+    void loadControllerView(true);
+  } else if (act === "controller-open-settings") {
+    S.view = "settings";
+    S.settingsSection = "controller";
+    void loadSettingsView();
   } else if (act === "set-surface") {
     const surface = t.dataset.surface === "epic" ? "epic" : "black";
     S.surface = surface;
