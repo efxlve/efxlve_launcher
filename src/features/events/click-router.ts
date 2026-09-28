@@ -297,15 +297,6 @@ document.addEventListener("click", (e) => {
     void loadFriends(true);
   } else if (act === "refresh-friends") {
     void loadFriends(true);
-  } else if (act === "copy-account-id") {
-    const val = t.dataset.val;
-    if (val) {
-      navigator.clipboard.writeText(val).then(() => {
-        toast(i18nT("profile.accountIdCopied"), "ok");
-      }).catch(() => {
-        toast(val, "");
-      });
-    }
   } else if (act === "open-hide-achievements") {
     openHideAchievementsModal();
   } else if (act === "profile-toggle-hidden") {

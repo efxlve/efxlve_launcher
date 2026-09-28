@@ -357,6 +357,13 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.13. 28.09.2026 altıncı tur (avatar keşfedilebilirliği + hesap ID gizleme + profil başlığı sadeleşmesi)
+
+- **Profil fotoğrafı artık keşfedilebilir:** Avatarın sağ altına **her zaman görünen kamera rozeti** (`.avatar-edit-btn` + `.avatar-edit-badge`) eklendi; hover/focus'ta rozet beyaz (`--accent`) dolguya dönüyor, imleç pointer, `:focus-visible` halkası var. Aynı desen **Ayarlar > Hesap** satırlarındaki avatarlara da uygulandı — satırdaki fotoğrafa tıklamak o hesabın fotoğrafını değiştirir (yeni buton/anahtar gerekmedi).
+- **Hesap ID'si artık gösterilmiyor:** Ayarlar > Hesap satırlarındaki kopyalanabilir ID çipi kaldırıldı; ölü kalan `copy-account-id` dalı, `profile.copyIdTitle` ve `profile.accountIdCopied` anahtarları (15 dil) silindi.
+- **Profil başlığı sadeleşti:** Yeşil "Epic Games / GOG.COM / Connected" hapları yerine **sakin tipografik mağaza jetonları** (`profile-token`, 11px büyük harf + harf aralığı) ve **nokta + durum** göstergesi (`profile-status`; yeşil = bağlı, amber = aktif değil/çevrimdışı) kullanılıyor. Genel Bakış'ta jetonlar `·` ile ayrılır, yanında bağlı hesap adları notu kalır.
+- **Doğrulama:** `npm.cmd run build` ✅, tsc 0 hata, i18n **1.309 anahtar** 15/15 parite, 0 ölü anahtar, 0 ölü CSS adayı (dinamik sınıflar hariç).
+
 ### 6.12. 28.09.2026 beşinci tur (profil "Genel Bakış" + avatar sistemi + switcher butonu)
 
 - **Profil "Genel Bakış" sekmesi:** Aktif hesapların birleşik profili artık çip satırının ilk öğesi (kullanıcı geri bildirimiyle adı **"Genel Bakış"**; önerilen ad kullanılmadı). Başlıkta tüm aktif mağazaların çipleri + hesap adları notu (`Efxlve (Epic) · Efxlve (GOG)`), istatistikler iki mağazanın toplamı, oyun listesi birleşik (Epic + GOG). Yan kartlara **Bağlı Hesaplar** eklendi: her hesabın adı, mağazası, aktif noktası; pasif hesapta tek tıkla **Bu Hesaba Geç**, aktifte "Profili gör". Varsayılan seçim: tek aktif hesap → o hesabın profili, birden fazla aktif → Genel Bakış. 4 yeni anahtar × 15 dil (1.311 anahtar, tam parite).

@@ -84,17 +84,19 @@ function signInBlock(allowCancel: boolean): string {
     </div>`;
 }
 
-function avatar(url: string | null, name: string): string {
-  return `<span class="settings-avatar">${url ? `<img src="${esc(url)}" alt="" />` : esc((name.trim()[0] || "?").toUpperCase())}</span>`;
-}
-
 /**
- * Copyable account-id chip. Support asks for this ID, so it stays reachable
- * from the accounts page after the profile-header copy button was retired.
+ * Avatar for an account row. Clicking it edits that account's own photo
+ * (the badge makes the action discoverable).
  */
-function idChip(id: string): string {
-  const short = id.length > 10 ? `${id.slice(0, 8)}…` : id;
-  return `<button type="button" class="chip acc-id-chip" data-act="copy-account-id" data-val="${esc(id)}" title="${esc(t("profile.copyIdTitle", { id }))}">${icon("copy", 12)} ${esc(short)}</button>`;
+function avatar(url: string | null, name: string, key?: string): string {
+  const initial = (name.trim()[0] || "?").toUpperCase();
+  const face = `<span class="settings-avatar">${url ? `<img src="${esc(url)}" alt="" />` : esc(initial)}</span>`;
+  if (!key) return face;
+  const title = url ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
+  return `<button type="button" class="avatar-edit-btn" data-act="profile-change-avatar" data-key="${esc(key)}" data-name="${esc(name)}" title="${esc(title)}" aria-label="${esc(title)}">
+    ${face}
+    <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
+  </button>`;
 }
 
 function connectedBlock(): string {
@@ -104,12 +106,12 @@ function connectedBlock(): string {
     const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === S.epicAccount;
     const url = avatarFor(`epic:${acc.account_id}`);
     const actions = isCurrent
-      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>${accountId ? idChip(accountId) : ""}`
+      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
       : `<button class="btn small" data-act="account-switch" data-id="${esc(acc.account_id)}">${t("settings.accountSwitchBtn")}</button>
          <button class="icon-btn danger" data-act="account-remove" data-id="${esc(acc.account_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
     return `
       <div class="row">
-        ${avatar(url, acc.display_name)}
+        ${avatar(url, acc.display_name, `epic:${acc.account_id}`)}
         <div class="row-main"><div class="row-title">${esc(acc.display_name)}</div></div>
         <div class="row-actions">${actions}</div>
       </div>`;
@@ -117,7 +119,7 @@ function connectedBlock(): string {
 
   return `
     <div class="list acc-accounts">
-      ${rows || `<div class="row">${avatar(current, S.epicAccount)}<div class="row-main"><div class="row-title">${esc(S.epicAccount)}</div><div class="row-meta">${S.epicSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span>${accountId ? idChip(accountId) : ""}</div></div>`}
+      ${rows || `<div class="row">${avatar(current, S.epicAccount, `epic:${accountId}`)}<div class="row-main"><div class="row-title">${esc(S.epicAccount)}</div><div class="row-meta">${S.epicSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`}
     </div>
     ${S.accountsAddMode ? signInBlock(true) : `
       <div class="acc-actions">
@@ -190,13 +192,13 @@ function gogConnectedBlock(): string {
          <button class="icon-btn danger" data-act="gog-account-remove" data-id="${esc(acc.user_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
     return `
       <div class="row">
-        ${avatar(url, name)}
+        ${avatar(url, name, `gog:${acc.user_id}`)}
         <div class="row-main"><div class="row-title">${esc(name)}</div></div>
         <div class="row-actions">${actions}</div>
       </div>`;
   }).join("");
 
-  const singleRow = `<div class="row">${avatar(getCustomAvatar(S.gogAccountId), currentName)}<div class="row-main"><div class="row-title">${esc(currentName)}</div><div class="row-meta">${S.gogSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`;
+  const singleRow = `<div class="row">${avatar(getCustomAvatar(S.gogAccountId), currentName, `gog:${S.gogAccountId || ""}`)}<div class="row-main"><div class="row-title">${esc(currentName)}</div><div class="row-meta">${S.gogSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`;
 
   return `
     <div class="list acc-accounts">

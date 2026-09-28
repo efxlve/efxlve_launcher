@@ -159,6 +159,41 @@ select option { background: var(--surface-1); color: var(--text); }
 button.chip { border: 0; font-family: inherit; cursor: pointer; }
 button.chip:hover { background: var(--surface-3); color: var(--text); }
 
+/* --- Editable avatar (profile header, account rows) --- */
+.avatar-edit-btn {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+.avatar-edit-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.avatar-edit-btn:active { transform: scale(0.98); }
+.avatar-edit-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--text-2);
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+.avatar-edit-badge svg { width: 12px; height: 12px; }
+.avatar-edit-btn:hover .avatar-edit-badge,
+.avatar-edit-btn:focus-visible .avatar-edit-badge {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+
 /* --- Cards & rows --- */
 .card {
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;

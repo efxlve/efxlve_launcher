@@ -93,6 +93,29 @@
 .profile-acc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .profile-acc-avatar svg { width: 14px; height: 14px; color: var(--text-2); }
 .profile-sub-note { font-size: 12px; color: var(--text-3); }
+
+/* Platform tokens and status: quiet uppercase text, colour only for state. */
+.profile-sub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.profile-token {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.profile-token-sep { color: var(--text-3); }
+.profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.profile-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.profile-status.inactive .profile-status-dot { background: var(--warn); }
 .profile-acc-name { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-acc-platform {
   font-size: 9px; font-weight: 700; letter-spacing: 0.5px; color: var(--text-3);

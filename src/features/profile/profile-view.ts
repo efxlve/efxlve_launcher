@@ -461,11 +461,21 @@ export function renderProfile(): string {
   }
 
   const activeNames = activeAccounts().map((a) => `${a.name} (${a.kind === "epic" ? "Epic" : "GOG"})`).join(" · ");
+  const token = (label: string): string => `<span class="profile-token">${esc(label)}</span>`;
+  const status = (label: string, kind: "ok" | "warn"): string =>
+    `<span class="profile-status${kind === "warn" ? " inactive" : ""}"><span class="profile-status-dot"></span>${esc(label)}</span>`;
+
   const subChips = combined
-    ? `${activeAccounts().map((a) => `<span class="chip ${a.kind === "epic" && S.offlineMode ? "warn" : "ok"}">${a.kind === "epic" ? "Epic Games" : "GOG.COM"}</span>`).join("")}
-       ${activeNames ? `<span class="profile-sub-note">${esc(activeNames)}</span>` : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`}`
-    : `<span class="chip ${S.offlineMode && isEpic ? "warn" : "ok"}">${isEpic ? "Epic Games" : "GOG.COM"}</span>
-       ${account!.active ? `<span class="chip ok">${t("accounts.connected")}</span>` : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`}`;
+    ? `${activeAccounts().map((a) => token(a.kind === "epic" ? "Epic Games" : "GOG.COM")).join(`<span class="profile-token-sep">·</span>`)}
+       ${activeNames
+         ? `<span class="profile-sub-note">${esc(activeNames)}</span>`
+         : status(t("profile.inactiveTitle"), "warn")}`
+    : `${token(isEpic ? "Epic Games" : "GOG.COM")}
+       ${!account!.active
+         ? status(t("profile.inactiveTitle"), "warn")
+         : S.offlineMode && isEpic
+           ? status(t("profile.offlineMode"), "warn")
+           : status(t("accounts.connected"), "ok")}`;
 
   const gamesCount = combined
     ? totalEpicGames() + S.gogSummaries.length
@@ -527,8 +537,9 @@ export function renderProfile(): string {
     <div class="page profile-page">
       ${renderProfileAccountChips(selection)}
       <section class="card profile-head">
-        <button class="profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}">
+        <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
           <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 26) : esc(initial)}</span>
+          <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
         </button>
         <div class="row-main">
           <h1 class="profile-name">${esc(displayName)}</h1>
