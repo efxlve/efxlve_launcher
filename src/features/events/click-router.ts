@@ -284,7 +284,8 @@ document.addEventListener("click", (e) => {
     closeNotifPanel();
     openEpicModal(id);
   } else if (act === "profile-change-avatar") {
-    promptAvatarAction();
+    // The header avatar edits the selected profile's own photo (combined = global).
+    promptAvatarAction(t.dataset.key || undefined, t.dataset.name || undefined);
   } else if (act === "avatar-modal-close") {
     closeAvatarModal();
   } else if (act === "avatar-modal-remove" && id) {

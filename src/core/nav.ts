@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
-import { getCustomAvatar, S } from "./state";
+import { avatarFor, globalAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { icon } from "./icons";
@@ -248,9 +248,7 @@ export function updateSidebarAccountSwitcher(): void {
           acc.is_active ||
           acc.account_id === S.epicAccountId ||
           acc.display_name === S.epicAccount;
-        const av =
-          S.customAvatars[acc.account_id] ||
-          (isActive ? getCustomAvatar(S.epicAccountId) || getCustomAvatar() : null);
+        const av = avatarFor(`epic:${acc.account_id}`);
         const avContent = av
           ? `<img src="${esc(av)}" alt="" />`
           : esc((acc.display_name.trim()[0] || "?").toUpperCase());
@@ -288,9 +286,7 @@ export function updateSidebarAccountSwitcher(): void {
     const gogItems = (S.gogSavedAccounts || [])
       .map((acc) => {
         const isActive = acc.is_active || acc.user_id === S.gogAccountId;
-        const av =
-          S.customAvatars[acc.user_id] ||
-          (isActive ? getCustomAvatar(S.gogAccountId) : null);
+        const av = avatarFor(`gog:${acc.user_id}`);
         const avContent = av
           ? `<img src="${esc(av)}" alt="" />`
           : esc((acc.username.trim()[0] || "?").toUpperCase());
@@ -328,25 +324,20 @@ export function updateSidebarAccountSwitcher(): void {
       <div id="sb-account-popover" class="sb-popover" role="dialog" aria-label="${t("accounts.switchAccountTitle")}">
         <div class="sb-popover-head">
           <span class="sb-popover-title">${t("accounts.switchAccountTitle")}</span>
+          <button type="button" class="icon-btn tiny" data-act="open-accounts-settings" title="${t("accounts.manageAccounts")}">
+            ${icon("settings", 13)}
+          </button>
         </div>
         ${epicSection}
         ${gogSection}
-        <div class="sb-popover-footer">
-          <button type="button" class="sb-pop-footer-btn" data-act="open-accounts-settings">
-            ${icon("user", 13)}
-            <span>${t("accounts.manageAccounts")}</span>
-          </button>
-        </div>
       </div>
     `;
   }
 
-  const btnLabel = accountCount > 0
-    ? `${t("accounts.switchAccountTitle")} (${accountCount})`
-    : t("nav.switchAccounts");
   const btnHtml = `
-    <button type="button" class="sb-switcher-btn icon-only ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${esc(btnLabel)}">
-      ${icon("users", 16)}
+    <button type="button" class="sb-switcher-btn ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${esc(t("accounts.switchAccountTitle"))}">
+      ${icon("arrow-left-right", 16)}
+      <span class="sb-switcher-label">${t("accounts.switchAccountTitle")}</span>
       ${accountCount > 1 ? `<span class="sb-switcher-count tabular-nums">${accountCount}</span>` : ""}
     </button>
   `;
@@ -367,18 +358,18 @@ export function updateChrome(): void {
     acc.dataset.view = S.epicAccount ? "profile" : "accounts";
     acc.classList.toggle("active", S.view === "profile" || S.view === "accounts");
     const name = S.epicAccount || S.gogAccount || t("nav.signIn");
-    const customAvatar = S.epicAccount ? getCustomAvatar() : (S.gogAccountId ? getCustomAvatar(S.gogAccountId) : null);
-    const avatarToken = customAvatar ? `${customAvatar.length}:${customAvatar.slice(0, 32)}` : "none";
+    // The chip carries the combined profile's own photo, not one account's face.
+    const combinedAvatar = globalAvatar();
+    const avatarToken = combinedAvatar ? `${combinedAvatar.length}:${combinedAvatar.slice(0, 32)}` : "none";
     const acctState = `${name}:${avatarToken}`;
 
     if (acc.dataset.acctState !== acctState) {
       acc.dataset.acctState = acctState;
       if (hasAccount) {
-        const initial = (name.trim()[0] || "?").toUpperCase();
         acc.innerHTML =
-          (customAvatar
-            ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(customAvatar)}" alt="" /></span>`
-            : `<span class="account-avatar"><span class="avatar-initial">${esc(initial)}</span></span>`) +
+          (combinedAvatar
+            ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(combinedAvatar)}" alt="" /></span>`
+            : `<span class="account-avatar">${icon("gamepad-2", 15)}</span>`) +
           `<span class="account-name">${esc(name)}</span>`;
       } else {
         acc.innerHTML =

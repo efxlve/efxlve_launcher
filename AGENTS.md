@@ -128,6 +128,13 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Profil "Genel Bakış" Sekmesi + Avatar Sistemi + Hesap Değiştirici Butonu (28.09.2026, ROADMAP §6.12/§7.6):**
+  1. **"Genel Bakış" (birleşik profil) sekmesi:** Çip satırının ilk öğesi; aktif mağazaların (Epic + GOG) profilini tek ekranda birleştirir. Başlıkta mağaza çipleri + **bağlı hesap adları** notu, istatistikler iki mağazanın toplamı, oyun listesi birleşik. Yan karta **Bağlı Hesaplar** eklendi (ad + mağaza + aktif noktası; pasif hesapta "Bu Hesaba Geç", aktifte "Profili gör"). Varsayılan: tek aktif hesap → o hesabın profili, çoklu aktif → Genel Bakış. 4 yeni anahtar × 15 dil (**1.311 anahtar**, tam parite).
+  2. **Avatar sistemi ayrıştırıldı:** Ad alanlı anahtarlar — `global` / `epic:<id>` / `gog:<id>`; eski `default` → `global` göçü; çıplak id alias'ları korunuyor. `avatarFor()` **yalnızca** ilgili anahtarın fotoğrafını döndürür (hesaplar arası fallback zinciri kaldırıldı) → her hesap kendi fotoğrafını, birleşik profil kendi fotoğrafını kullanır. Sol üst hesap çipi artık birleşik profilin fotoğrafını gösteriyor. Detaylı plan: **ROADMAP §7.6**.
+  3. **Hesap değiştirici butonu:** Arkadaş ikonuna benzeyen `users` yerine yeni **`arrow-left-right`** ikonu + **"Hesap Değiştir"** etiketi + hesap sayısı rozeti. Popover'dan alttaki "Hesapları Yönet" kaldırıldı; dişli (Ayarlar > Hesaplar) en üst sağa geri kondu.
+  4. **Ölü CSS temizliği:** Kaldırılan `.sb-switcher-avatar/info/name/stores/caret`, `.sb-popover-footer`, `.sb-pop-footer-btn`, `.avatar-initial` silindi; yeni `.sb-switcher-label`, `.profile-sub-note`, `.profile-acc-row` eklendi.
+  5. **Doğrulama:** `npm.cmd run build` ✅, `tsc --noUnusedLocals` 0 hata, i18n 15/15 parite, ölü CSS adayı 8 (hepsi dinamik sınıf).
+
 - **GOG Galaxy Oynanış Süresi + Sidebar/Profil Yenilemesi (28.09.2026, ROADMAP §6.11):**
   1. **GOG Galaxy playtime içe aktarıldı:** GOG'nin public playtime API'si yok (araştırıldı: `gameplay.gog.com` yalnız başarım, `content-system` build listesi, profil sayfası HTML). Süreler Galaxy'nin yerel SQLite DB'sinde (`GameTimes.minutesInGame`, anahtarlar `gog_<id>_…`). Yeni `gogdl/galaxy_playtime.rs` bu dosyayı **salt-okunur** okur (rusqlite bundled), GOG kullanıcı id'sine göre filtreler; `gog_sync_playtime` komutu + `syncGogPlaytime()` frontend'i ile açılışta ve GOG oturumu bitince `S.playtimeMap`'e yazılır (yerel değeri asla düşürmez). Birim testi eklendi (toplam **129 test**).
   2. **Sidebar hesap değiştirici sadeleşti:** tek hesabın adı/avatarı yerine **yalnız ikon + sayaç** (>1 hesapta); kullanılmayan `.sb-switcher-*` CSS'i silindi.

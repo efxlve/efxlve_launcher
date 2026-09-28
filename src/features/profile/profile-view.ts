@@ -1,18 +1,20 @@
-import { getCustomAvatar } from "./profile-avatar";
 /**
  * Profile page renderer.
  *
- * Header with identity and real account totals, then a two-column layout:
- * achievement progress per game (left) and recently played + friends (right).
- * Only data the launcher actually has is shown; no derived or estimated
- * trophy tiers.
+ * Account-centric layout for multiple Epic/GOG accounts:
+ * - a chip row selects the combined "Overview" profile or one linked account;
+ * - only the active account of each store has live data, so the combined view
+ *   merges the active accounts and inactive accounts show a one-click switch;
+ * - photos are strictly per key (`global`, `epic:<id>`, `gog:<id>`).
+ *
+ * Only data the launcher actually has is shown; no derived or estimated tiers.
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { rawOf } from "../../core/selectors";
-import { S } from "../../core/state";
+import { avatarFor, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
@@ -126,36 +128,101 @@ function profileAccounts(): ProfileAccount[] {
   return out;
 }
 
-/** The account selected in the profile header (falls back to the active one). */
-function selectedProfileAccount(): ProfileAccount {
-  const all = profileAccounts();
-  const selected = S.profileAccount ? all.find((a) => a.key === S.profileAccount) : undefined;
-  if (selected) return selected;
-  const active = all.find((a) => a.active);
-  if (active) return active;
-  return { key: "epic:", kind: "epic", id: S.epicAccountId || "", name: S.epicAccount || t("profile.player"), active: false };
+/** Active accounts only: the combined profile merges exactly these. */
+function activeAccounts(): ProfileAccount[] {
+  return profileAccounts().filter((a) => a.active);
 }
 
-/** Account chips row; hidden when only a single account is linked. */
-function renderProfileAccountChips(current: ProfileAccount): string {
+type ProfileSelection = { mode: "combined" } | { mode: "account"; account: ProfileAccount };
+
+/**
+ * Resolves what the page shows: the combined overview (default once several
+ * accounts/stores are linked) or one specific account.
+ */
+function profileSelection(): ProfileSelection {
   const all = profileAccounts();
-  if (all.length <= 1) return "";
+  const selected = S.profileAccount;
+  if (selected && selected !== "overview") {
+    const found = all.find((a) => a.key === selected);
+    if (found) return { mode: "account", account: found };
+  }
+  const actives = activeAccounts();
+  if (!selected && actives.length <= 1) {
+    if (actives.length === 1) return { mode: "account", account: actives[0] };
+  }
+  return { mode: "combined" };
+}
+
+function accountAvatar(account: ProfileAccount): string | null {
+  return avatarFor(account.key);
+}
+
+/** Avatar chip row: combined overview plus every linked account. */
+function renderProfileAccountChips(selection: ProfileSelection): string {
+  const all = profileAccounts();
+  const showOverview = activeAccounts().length > 0 && (all.length > 1 || activeAccounts().length > 1);
+  if (!showOverview && all.length <= 1) return "";
+
+  const overviewChip = showOverview
+    ? (() => {
+        const av = globalAvatar();
+        return `
+      <button type="button" class="profile-acc-chip${selection.mode === "combined" ? " active" : ""}" data-act="profile-account" data-key="overview" title="${esc(t("profile.overview"))}">
+        <span class="profile-acc-avatar">${av ? `<img src="${esc(av)}" alt="" />` : icon("gamepad-2", 14)}</span>
+        <span class="profile-acc-name">${esc(t("profile.overview"))}</span>
+        <span class="profile-acc-platform">${t("profile.overviewChip")}</span>
+      </button>`;
+      })()
+    : "";
+
   const chips = all.map((a) => {
-    const avatar = getCustomAvatar(a.id);
+    const avatar = accountAvatar(a);
     const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
+    const isCurrent = selection.mode === "account" && selection.account.key === a.key;
     return `
-      <button type="button" class="profile-acc-chip${a.key === current.key ? " active" : ""}" data-act="profile-account" data-key="${esc(a.key)}" title="${esc(a.name)}">
+      <button type="button" class="profile-acc-chip${isCurrent ? " active" : ""}" data-act="profile-account" data-key="${esc(a.key)}" title="${esc(a.name)}">
         <span class="profile-acc-avatar">${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}</span>
         <span class="profile-acc-name">${esc(a.name)}</span>
         <span class="profile-acc-platform">${a.kind === "epic" ? "EPIC" : "GOG"}</span>
         ${a.active ? `<span class="profile-acc-dot" aria-hidden="true"></span>` : ""}
       </button>`;
   }).join("");
+
   return `
     <div class="profile-accounts" role="tablist" aria-label="${esc(t("profile.accountsTitle"))}">
+      ${overviewChip}
       ${chips}
       <button type="button" class="profile-acc-add" data-view="accounts" title="${esc(t("settings.accountAdd"))}">${icon("plus", 14)}</button>
     </div>`;
+}
+
+/** Side card: every linked account with its store and switch action. */
+function renderLinkedAccountsCard(selection: ProfileSelection): string {
+  const all = profileAccounts();
+  if (all.length === 0) return "";
+  const rows = all.map((a) => {
+    const avatar = accountAvatar(a);
+    const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
+    const current = selection.mode === "account" && selection.account.key === a.key;
+    const action = a.active
+      ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="${esc(a.key)}">${current ? t("profile.overviewChip") : t("profile.showAccount")}</button>`
+      : `<button type="button" class="btn primary small" data-act="${a.kind === "epic" ? "account-switch" : "gog-account-switch"}" data-id="${esc(a.id)}">${t("settings.accountSwitchBtn")}</button>`;
+    return `
+      <div class="row profile-acc-row">
+        <span class="profile-acc-avatar">${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}</span>
+        <div class="row-main">
+          <div class="row-title">${esc(a.name)}</div>
+          <div class="row-meta">${a.kind === "epic" ? "Epic Games" : "GOG.COM"}</div>
+        </div>
+        ${a.active ? `<span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>` : ""}
+        ${action}
+      </div>`;
+  }).join("");
+  return `
+    <section class="card profile-side-card">
+      <div class="profile-side-head"><h3 class="gp-section-title">${t("profile.linkedAccounts")}</h3></div>
+      ${rows}
+    </section>`;
 }
 
 /** Per-store library sizes for the linked stores. */
@@ -297,6 +364,27 @@ function buildGogProfileGames(): ProfileGameRecord[] {
   return games;
 }
 
+/** Sums the stats the launcher actually has for the given game list. */
+function sumStats(games: ProfileGameRecord[]): { unlocked: number; platinums: number; xp: number } {
+  let unlocked = 0, platinums = 0, xp = 0;
+  for (const g of games) {
+    unlocked += g.total_unlocked;
+    xp += g.total_xp;
+    if (g.is_platinum || g.unlocked_percent >= 100) platinums++;
+  }
+  return { unlocked, platinums, xp };
+}
+
+/** Playtime sum, split by store so totals never mix Epic and GOG hours. */
+function playtimeFor(scope: "epic" | "gog" | "all"): number {
+  let total = 0;
+  for (const [key, rec] of S.playtimeMap) {
+    const isGog = key.startsWith("gog::");
+    if (scope === "all" || isGog === (scope === "gog")) total += rec.total_seconds || 0;
+  }
+  return total;
+}
+
 export function renderProfile(): string {
   const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
@@ -306,21 +394,28 @@ export function renderProfile(): string {
     return `<div class="page">${emptyState("info", t("profile.errorTitle"), esc(S.profileError), `<button class="btn primary" data-act="refresh-profile">${t("profile.retry")}</button>`)}</div>`;
   }
 
-  const account = selectedProfileAccount();
-  const isEpic = account.kind === "epic";
-  const prof = isEpic && account.active ? S.playerProfileData : null;
+  const selection = profileSelection();
+  const combined = selection.mode === "combined";
+  const account = combined ? null : selection.account;
+  const isEpic = account?.kind === "epic";
+  const prof = combined || isEpic ? (S.epicAccount ? S.playerProfileData : null) : null;
 
-  // Only the active account has live data: the launcher never guesses another
-  // account's trophies or hours (see ROADMAP 7 for the shared-library plan).
-  const games: ProfileGameRecord[] = !account.active
+  // Live data exists only for active accounts: never guess another account's
+  // trophies or hours (see ROADMAP 7 for the shared-library plan).
+  const showData = combined ? Boolean(S.epicAccount || S.gogAccount) : Boolean(account?.active);
+  const games: ProfileGameRecord[] = !showData
     ? []
-    : isEpic
-      ? prof?.games || []
-      : buildGogProfileGames();
+    : combined
+      ? [...(prof?.games || []), ...buildGogProfileGames()]
+      : isEpic
+        ? prof?.games || []
+        : buildGogProfileGames();
 
-  const displayName = account.name || (isEpic ? S.epicAccount : S.gogAccount) || t("profile.player");
-  const accountId = account.id;
-  const customAvatar = getCustomAvatar(accountId);
+  const displayName = combined
+    ? t("profile.overview")
+    : account!.name || (isEpic ? S.epicAccount : S.gogAccount) || t("profile.player");
+  const avatarKey = combined ? "global" : account!.key;
+  const customAvatar = combined ? globalAvatar() : accountAvatar(account!);
   const initial = displayName.trim().charAt(0).toUpperCase() || "E";
 
   const filtered = filteredProfileGames(games);
@@ -342,35 +437,45 @@ export function renderProfile(): string {
   const filterTab = (val: string, label: string, n: number): string =>
     `<button class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
-  // Stats belong to the selected active account; GOG totals come from its cached
-  // achievement summaries and the merged playtime map.
+  // Stats: combined view sums both active stores; an account view uses only that
+  // account's data (its own store's hours included).
   let unlocked = 0, platinums = 0, xp = 0, playtimeSeconds = 0;
-  if (account.active) {
-    if (isEpic) {
+  if (showData) {
+    const sums = sumStats(games);
+    if (combined) {
+      unlocked = sums.unlocked;
+      platinums = sums.platinums;
+      xp = sums.xp;
+      playtimeSeconds = playtimeFor("all");
+    } else if (isEpic) {
       unlocked = prof?.total_unlocked || 0;
       platinums = prof?.platinum_count || 0;
       xp = prof?.total_xp || 0;
+      playtimeSeconds = playtimeFor("epic");
     } else {
-      for (const g of games) {
-        unlocked += g.total_unlocked;
-        xp += g.total_xp;
-        if (g.is_platinum || g.unlocked_percent >= 100) platinums++;
-      }
-    }
-    // Playtime is split by store so a GOG total never mixes Epic hours in.
-    for (const [key, rec] of S.playtimeMap) {
-      if (key.startsWith("gog::") === !isEpic) playtimeSeconds += rec.total_seconds || 0;
+      unlocked = sums.unlocked;
+      platinums = sums.platinums;
+      xp = sums.xp;
+      playtimeSeconds = playtimeFor("gog");
     }
   }
 
-  const platformChip = `<span class="chip ${S.offlineMode && isEpic ? "warn" : "ok"}">${isEpic ? "Epic Games" : "GOG.COM"}</span>`;
-  const statusChip = account.active
-    ? `<span class="chip ok">${t("accounts.connected")}</span>`
-    : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`;
+  const activeNames = activeAccounts().map((a) => `${a.name} (${a.kind === "epic" ? "Epic" : "GOG"})`).join(" · ");
+  const subChips = combined
+    ? `${activeAccounts().map((a) => `<span class="chip ${a.kind === "epic" && S.offlineMode ? "warn" : "ok"}">${a.kind === "epic" ? "Epic Games" : "GOG.COM"}</span>`).join("")}
+       ${activeNames ? `<span class="profile-sub-note">${esc(activeNames)}</span>` : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`}`
+    : `<span class="chip ${S.offlineMode && isEpic ? "warn" : "ok"}">${isEpic ? "Epic Games" : "GOG.COM"}</span>
+       ${account!.active ? `<span class="chip ok">${t("accounts.connected")}</span>` : `<span class="chip warn">${t("profile.inactiveTitle")}</span>`}`;
 
-  const statsRow = account.active
+  const gamesCount = combined
+    ? totalEpicGames() + S.gogSummaries.length
+    : isEpic
+      ? totalEpicGames()
+      : S.gogSummaries.length;
+
+  const statsRow = showData
     ? `<div class="profile-stats">
-        ${stat(String(isEpic ? totalEpicGames() : S.gogSummaries.length), t("profile.games"))}
+        ${stat(String(gamesCount), t("profile.games"))}
         ${stat(esc(fmtPlaytime(playtimeSeconds)), t("profile.played"))}
         ${stat(unlocked.toLocaleString(), t("profile.trophies"))}
         ${stat(String(platinums), t("profile.platLabel"))}
@@ -378,10 +483,10 @@ export function renderProfile(): string {
       </div>`
     : `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
-        <button class="btn primary small" data-act="${isEpic ? "account-switch" : "gog-account-switch"}" data-id="${esc(accountId)}">${t("settings.accountSwitchBtn")}</button>
+        <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${isEpic ? "account-switch" : "gog-account-switch"}" data-id="${esc(account!.id)}"`}>${combined ? t("accounts.manageAccounts") : t("settings.accountSwitchBtn")}</button>
       </div>`;
 
-  const body = account.active
+  const body = showData
     ? `
       <div class="profile-body">
         <div class="profile-main">
@@ -409,23 +514,25 @@ export function renderProfile(): string {
           <div id="profile-games-grid" class="list">${renderProfileGrid(filtered)}</div>
         </div>
         <aside class="profile-side">
+          ${renderLinkedAccountsCard(selection)}
           ${renderStoreBreakdown()}
           ${renderRecentGrid()}
-          ${isEpic ? renderFriendsSection() : ""}
+          ${!combined || isEpic || S.epicAccount ? renderFriendsSection() : ""}
         </aside>
       </div>`
     : "";
 
+  const avatarTitle = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
   return `
     <div class="page profile-page">
-      ${renderProfileAccountChips(account)}
+      ${renderProfileAccountChips(selection)}
       <section class="card profile-head">
-        <button class="profile-avatar-btn" data-act="profile-change-avatar" title="${customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle")}">
-          <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
+        <button class="profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}">
+          <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 26) : esc(initial)}</span>
         </button>
         <div class="row-main">
           <h1 class="profile-name">${esc(displayName)}</h1>
-          <div class="profile-sub">${platformChip}${statusChip}</div>
+          <div class="profile-sub">${subChips}</div>
         </div>
         ${statsRow}
         <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${S.gogSummaries.length > 0 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>

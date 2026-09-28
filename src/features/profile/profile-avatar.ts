@@ -1,9 +1,10 @@
 /**
- * Local custom avatar manager for Epic Games accounts.
+ * Local custom avatar manager.
  *
- * Stores optimized WebP/JPEG base64 avatars in localStorage keyed by account ID.
- * Avatars are strictly local to this PC and isolated per Epic account so that
- * when multiple accounts are switched in the future, each retains its own photo.
+ * Stores optimized WebP/JPEG base64 avatars in localStorage under namespaced
+ * keys: `global` for the combined profile, `epic:<accountId>` and
+ * `gog:<userId>` per account. Photos never leak between accounts and the
+ * combined profile has its own picture.
  */
 
 import { CUSTOM_AVATARS_KEY } from "../../core/constants";
@@ -11,27 +12,31 @@ import { icon } from "../../core/icons";
 import { updateChrome } from "../../core/nav";
 import { render } from "../../core/render";
 import { esc } from "../../core/utils";
-import { getCustomAvatar, S } from "../../core/state";
+import { avatarFor, getCustomAvatar, GLOBAL_AVATAR_KEY, S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 
 export { getCustomAvatar };
 
-export function getCurrentAccountId(): string {
-  return S.playerProfileData?.account_id || S.epicAccountId || S.epicAccount || "default";
+/** Namespaced key for a profile photo (`global` or `epic:/gog:<id>`). */
+export function avatarKeyFor(kind: "epic" | "gog" | "global", id?: string | null): string {
+  if (kind === "global" || !id) return GLOBAL_AVATAR_KEY;
+  return `${kind}:${id}`;
 }
 
-export function saveCustomAvatar(accountId: string, dataUrl: string): void {
-  S.customAvatars[accountId] = dataUrl;
-  if (S.playerProfileData?.account_id) {
-    S.customAvatars[S.playerProfileData.account_id] = dataUrl;
-  }
-  if (S.epicAccountId) {
-    S.customAvatars[S.epicAccountId] = dataUrl;
-  }
-  if (S.epicAccount) {
-    S.customAvatars[S.epicAccount] = dataUrl;
-  }
+/** Key of the photo the current context edits (active account, else combined). */
+export function getCurrentAvatarKey(): string {
+  if (S.epicAccountId) return `epic:${S.epicAccountId}`;
+  if (S.gogAccountId) return `gog:${S.gogAccountId}`;
+  return GLOBAL_AVATAR_KEY;
+}
+
+/** Writes the photo for one key only; other accounts keep their own. */
+export function saveCustomAvatar(key: string, dataUrl: string): void {
+  S.customAvatars[key] = dataUrl;
+  // Keep the legacy bare-id alias in sync so older lookups still resolve.
+  const raw = key.includes(":") ? key.slice(key.indexOf(":") + 1) : "";
+  if (raw) S.customAvatars[raw] = dataUrl;
   try {
     localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(S.customAvatars));
   } catch (e) {
@@ -42,12 +47,11 @@ export function saveCustomAvatar(accountId: string, dataUrl: string): void {
   toast(t("profile.avatarUpdated"), "ok");
 }
 
-export function removeCustomAvatar(accountId: string): void {
-  delete S.customAvatars[accountId];
-  if (S.playerProfileData?.account_id) delete S.customAvatars[S.playerProfileData.account_id];
-  if (S.epicAccountId) delete S.customAvatars[S.epicAccountId];
-  if (S.epicAccount) delete S.customAvatars[S.epicAccount];
-  delete S.customAvatars["default"];
+/** Deletes only this key's photo (and its legacy alias). */
+export function removeCustomAvatar(key: string): void {
+  delete S.customAvatars[key];
+  const raw = key.includes(":") ? key.slice(key.indexOf(":") + 1) : "";
+  if (raw) delete S.customAvatars[raw];
   try {
     localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(S.customAvatars));
   } catch (e) {
@@ -59,7 +63,7 @@ export function removeCustomAvatar(accountId: string): void {
   toast(t("profile.avatarRemoved"), "ok");
 }
 
-export function openAvatarFilePicker(accountId: string): void {
+export function openAvatarFilePicker(key: string): void {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/png, image/jpeg, image/webp, image/gif";
@@ -86,7 +90,7 @@ export function openAvatarFilePicker(accountId: string): void {
         canvas.height = targetSize;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          saveCustomAvatar(accountId, result);
+          saveCustomAvatar(key, result);
           closeAvatarModal();
           return;
         }
@@ -101,7 +105,7 @@ export function openAvatarFilePicker(accountId: string): void {
 
         ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
         const optimizedDataUrl = canvas.toDataURL("image/webp", 0.88);
-        saveCustomAvatar(accountId, optimizedDataUrl);
+        saveCustomAvatar(key, optimizedDataUrl);
         closeAvatarModal();
       };
       img.onerror = () => {
@@ -122,19 +126,20 @@ export function closeAvatarModal(): void {
   if (modal) modal.remove();
 }
 
-export function promptAvatarAction(accId?: string): void {
-  const accountId = accId || getCurrentAccountId();
-  const currentAvatar = S.customAvatars[accountId];
+/** Opens the avatar flow for one key (`global` or `epic:/gog:<id>`). */
+export function promptAvatarAction(key?: string, displayName?: string): void {
+  const avatarKey = key || getCurrentAvatarKey();
+  const name = displayName || S.playerProfileData?.display_name || S.epicAccount || S.gogAccount || t("profile.player");
+  const currentAvatar = avatarFor(avatarKey);
 
   // If no custom avatar is set yet, directly launch the file picker.
   if (!currentAvatar) {
-    openAvatarFilePicker(accountId);
+    openAvatarFilePicker(avatarKey);
     return;
   }
 
   // If custom avatar is set, open a sleek modal to change or remove it.
   closeAvatarModal();
-  const displayName = S.playerProfileData?.display_name || S.epicAccount || t("profile.player");
   const modalHtml = `
     <div id="avatar-manage-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
       <div class="modal-box ps5-avatar-modal" role="dialog" aria-modal="true">
@@ -150,19 +155,19 @@ export function promptAvatarAction(accId?: string): void {
 
         <div class="ps5-avatar-modal-body">
           <div class="ps5-avatar-preview-wrap">
-            <img class="ps5-avatar-preview-img" src="${esc(currentAvatar)}" alt="${esc(displayName)}" />
+            <img class="ps5-avatar-preview-img" src="${esc(currentAvatar)}" alt="${esc(name)}" />
           </div>
           <div class="ps5-avatar-modal-info">
-            <h4>${esc(displayName)}</h4>
+            <h4>${esc(name)}</h4>
             <p>${t("profile.avatarDesc")}</p>
           </div>
         </div>
 
         <div class="ps5-avatar-modal-footer">
-          <button class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(accountId)}">
+          <button class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
             ${icon("trash", 13)} <span>${t("profile.removePhoto")}</span>
           </button>
-          <button class="apple-pill-btn primary" data-act="avatar-modal-upload" data-id="${esc(accountId)}">
+          <button class="apple-pill-btn primary" data-act="avatar-modal-upload" data-id="${esc(avatarKey)}">
             ${icon("camera", 13)} <span>${t("profile.choosePhoto")}</span>
           </button>
         </div>

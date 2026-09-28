@@ -357,6 +357,12 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.12. 28.09.2026 beşinci tur (profil "Genel Bakış" + avatar sistemi + switcher butonu)
+
+- **Profil "Genel Bakış" sekmesi:** Aktif hesapların birleşik profili artık çip satırının ilk öğesi (kullanıcı geri bildirimiyle adı **"Genel Bakış"**; önerilen ad kullanılmadı). Başlıkta tüm aktif mağazaların çipleri + hesap adları notu (`Efxlve (Epic) · Efxlve (GOG)`), istatistikler iki mağazanın toplamı, oyun listesi birleşik (Epic + GOG). Yan kartlara **Bağlı Hesaplar** eklendi: her hesabın adı, mağazası, aktif noktası; pasif hesapta tek tıkla **Bu Hesaba Geç**, aktifte "Profili gör". Varsayılan seçim: tek aktif hesap → o hesabın profili, birden fazla aktif → Genel Bakış. 4 yeni anahtar × 15 dil (1.311 anahtar, tam parite).
+- **Avatar sistemi ayrıştırıldı:** Fotoğraflar artık ad alanlı anahtarlarla saklanıyor — `global` (birleşik profil), `epic:<accountId>`, `gog:<userId>`. Eski `default` anahtarı tek seferlik göçle `global`e taşınıyor; eski çıplak id kayıtları okunmaya devam ediyor. Böylece **her hesap yalnızca kendi fotoğrafını** gösteriyor (önceki fallback zinciri tüm hesaplara aynı fotoğrafı yayıyordu) ve **birleşik profilin kendine ait bir fotoğrafı** var. Sol üstteki hesap çipi (kenar çubuğu) artık birleşik profilin fotoğrafını gösteriyor. Detaylı tasarım ve kurallar: **§7.6**.
+- **Sidebar hesap değiştirici butonu:** `users` (arkadaşlar gibi duran) ikon yerine yeni **`arrow-left-right`** ikonu eklendi ve butona **"Hesap Değiştir"** etiketi konuldu; sağda bağlı hesap sayısı rozeti duruyor. Popover'da alttaki "Hesapları Yönet" butonu kaldırıldı, başlıktaki **dişli (Ayarlar > Hesaplar) en üst sağa** geri kondu.
+
 ### 6.11. 28.09.2026 dördüncü tur (GOG Galaxy oynanış süresi + sidebar/profil yenilemesi)
 
 - **GOG Galaxy oynanış süresi içe aktarıldı (`gogdl/galaxy_playtime.rs`):** GOG'nin **public playtime API'si yok** (doğrulandı: `gameplay.gog.com` yalnızca başarım uçları veriyor, `content-system` build listesi veriyor, profil sayfası HTML döndürüyor ve playtime gömülü değil). Süreler Galaxy'nin yerel SQLite veritabanında: `%ProgramData%\GOG.com\Galaxy\storage\galaxy-2.0.db` → `GameTimes(userId, releaseKey, minutesInGame)`, anahtarlar `gog_<ürünId>_<sürüm>` biçiminde. Modül dosyayı **salt-okunur** açar (rusqlite, `bundled`), oturum açık GOG kullanıcı kimliğine göre filtreler ve aynı oyun için en büyük değeri tutar. Komut: `gog_sync_playtime(user_id)`. Frontend `syncGogPlaytime()` ile `S.playtimeMap`'e `gog::<id>` anahtarıyla yazar (yerel değeri asla düşürmez); açılışta ve GOG oturumu bitince çağrılır. Birim testi: release key → ürün id ayrıştırma.
@@ -416,3 +422,25 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 
 ### 7.5. Tahmini iş büyüklüğü
 **L (3-5 geliştirme günü):** Rust tarafı ~1 gün (indeks + hesap bazlı önbellek göçü), frontend ~1.5 gün (kütüphane/detay/filtreler), i18n + testler + doküman ~1 gün.
+
+### 7.6. Avatar sistemi (detaylı plan — 28.09.2026'da büyük ölçüde uygulandı)
+
+**Amaç:** Her hesabın kendi fotoğrafı, birleşik profilin kendine ait fotoğrafı; hiçbir fotoğraf başka bir hesaba sızmaz.
+
+**Anahtar şeması (`localStorage: CUSTOM_AVATARS_KEY`):**
+| Anahtar | Kullanıldığı yer | Not |
+|---|---|---|
+| `global` | Birleşik **Genel Bakış** profili + sol üst kenar çubuğu hesap çipi | Eski `default` anahtarı tek seferlik göçle buraya taşınır |
+| `epic:<accountId>` | Epic hesap profili, hesap çipi, hesap popover'ı | Eski çıplak `<accountId>` kayıtları okunmaya devam eder (alias) |
+| `gog:<userId>` | GOG hesap profili, hesap çipi, hesap popover'ı | Aynı alias kuralı |
+
+**Kurallar:**
+1. `avatarFor(key)` **yalnızca** o anahtarın fotoğrafını döndürür (+ aynı hesabın eski çıplak id kaydı). Başka hesabın fotoğrafına fallback YOKTUR (eski zincir kaldırıldı).
+2. Yazma/silme tek anahtara dokunur; `saveCustomAvatar` yalnızca ilgili anahtarı ve onun legacy alias'ını günceller. Bir hesabın fotoğrafını silmek diğerlerini etkilemez.
+3. Fotoğraf yoksa: hesap çiplerinde baş harf, birleşik profilde ve kenar çubuğunda nötr `gamepad-2` işareti gösterilir (başka hesabın yüzü asla).
+4. Yükleme akışı tek: 256×256 merkez kırpma + WebP (0.88). Yeni anahtar türü eklenirse `avatarKeyFor()` genişletilir.
+
+**Gelecek (0.1.18 ile):**
+- Hesap değiştirme sonrası avatar önbelleği: aynı hesabın fotoğrafı tüm yüzeylerde (çip, popover, profil, TV Modu) tek kaynaktan okunur — mevcut `updateChrome()` + `render()` akışı bunu zaten sağlıyor; yeni yüzey eklendiğinde `avatarFor` kullanılmalı.
+- Platformdan gelen gerçek avatarlar (Epic GraphQL profil fotoğrafı / GOG avatar URL'i) isteğe bağlı: `platformAvatar` ayrı bir alanda tutulup `avatarFor` sırası **yerel yükleme → platform avatarı → baş harf/işaret** olacak şekilde genişletilebilir. Ağ isteği UI'yi bloklamamalı (mevcut görsel disiplini).
+- Dışa/içe aktarma: avatarların `.efxlveprofile` benzeri tek dosyada yedeklenmesi (kullanıcı isteğine bağlı).

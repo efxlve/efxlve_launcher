@@ -61,6 +61,28 @@ function loadJsonRecord(key: string): Record<string, string> {
   }
 }
 
+/** Key of the combined profile's photo (sidebar chip and Overview header). */
+export const GLOBAL_AVATAR_KEY = "global";
+
+/**
+ * One-time migration of the legacy avatar store: the old shared photo lived
+ * under `default`; it becomes the combined profile's photo. Bare account ids
+ * (pre-namespacing) keep working through `avatarFor`'s alias lookup.
+ */
+function migrateAvatarKeys(store: Record<string, string>): Record<string, string> {
+  const legacy = store["default"];
+  if (legacy && !store[GLOBAL_AVATAR_KEY]) {
+    store[GLOBAL_AVATAR_KEY] = legacy;
+    delete store["default"];
+    try {
+      localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(store));
+    } catch {
+      // Storage blocked: the in-memory migration still applies for this session.
+    }
+  }
+  return store;
+}
+
 /** Drops retired sort ids (updates, platinum) so a stored value still matches the menu. */
 function normalizeEpicSort(saved: string | null): EpicSort {
   if (saved === "alpha" || saved === "alphaDesc" || saved === "recent" || saved === "played" || saved === "achievements" || saved === "installed") return saved;
@@ -121,7 +143,7 @@ export const S = {
   allGamesMap: (new Map()) as Map<string, LibraryItem>,
   customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
   customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
-  customAvatars: loadJsonRecord(CUSTOM_AVATARS_KEY),
+  customAvatars: migrateAvatarKeys(loadJsonRecord(CUSTOM_AVATARS_KEY)),
   steamGridApiKey: (null) as string | null,
   customCoverActiveTab: ("steamgrid") as "steamgrid" | "url" | "file",
   activeCoverTarget: ("cover") as "cover" | "hero",
@@ -342,22 +364,35 @@ export const S = {
 };
 
 /**
- * Resolves the custom avatar for the given account or the current logged-in account.
- * Checks accountId, playerProfileData.account_id, epicAccountId, and epicAccount.
+ * Resolves the custom avatar for the given key.
+ *
+ * Keys are namespaced: `global` (the combined profile), `epic:<accountId>` and
+ * `gog:<userId>`. Legacy raw ids and the retired `default` key still resolve so
+ * existing photos survive the migration.
  */
+export function avatarFor(key: string): string | null {
+  if (!key) return null;
+  if (S.customAvatars[key]) return S.customAvatars[key];
+  const raw = key.includes(":") ? key.slice(key.indexOf(":") + 1) : key;
+  if (raw && S.customAvatars[raw]) return S.customAvatars[raw];
+  return null;
+}
+
+/** True when the key (or its legacy alias) has a photo. */
+export function hasCustomAvatar(key: string): boolean {
+  return avatarFor(key) !== null;
+}
+
+/** Avatar for one specific account; never falls back to another account's photo. */
 export function getCustomAvatar(accountId?: string | null): string | null {
-  if (accountId && S.customAvatars[accountId]) {
-    return S.customAvatars[accountId];
-  }
-  if (S.playerProfileData?.account_id && S.customAvatars[S.playerProfileData.account_id]) {
-    return S.customAvatars[S.playerProfileData.account_id];
-  }
-  if (S.epicAccountId && S.customAvatars[S.epicAccountId]) {
-    return S.customAvatars[S.epicAccountId];
-  }
-  if (S.epicAccount && S.customAvatars[S.epicAccount]) {
-    return S.customAvatars[S.epicAccount];
-  }
-  return S.customAvatars["default"] || null;
+  if (accountId) return avatarFor(accountId);
+  if (S.epicAccountId) return avatarFor(`epic:${S.epicAccountId}`);
+  if (S.gogAccountId) return avatarFor(`gog:${S.gogAccountId}`);
+  return null;
+}
+
+/** The combined profile's own photo (sidebar chip and Overview header). */
+export function globalAvatar(): string | null {
+  return avatarFor(GLOBAL_AVATAR_KEY);
 }
 

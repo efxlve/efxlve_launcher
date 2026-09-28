@@ -104,7 +104,6 @@
 }
 .account-avatar svg { width: 18px; height: 18px; }
 .account-avatar .avatar-img, .account-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.avatar-initial { font-size: 13px; font-weight: 600; color: var(--text); }
 .account-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .sb-nav { display: flex; flex-direction: column; gap: 0; flex-shrink: 0; }
@@ -183,46 +182,40 @@
   background: var(--surface-2);
 }
 
-/* Icon-only switcher: with several linked accounts the button stays neutral
-   (no single name/avatar) and the popover carries the account list. */
-.sb-switcher-btn.icon-only {
-  position: relative;
-  justify-content: center;
-  gap: 0;
-  height: 40px;
-  padding: 0;
-}
-.sb-switcher-btn.icon-only svg {
+/* Switcher row: a switch icon, an "Account Switcher" label and a count of
+   linked accounts. It never shows one account's name or photo. */
+.sb-switcher-btn > svg {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
   color: var(--text-2);
 }
-.sb-switcher-btn.icon-only:hover svg,
-.sb-switcher-btn.icon-only.active svg {
+.sb-switcher-btn:hover > svg,
+.sb-switcher-btn.active > svg {
   color: var(--text);
 }
+.sb-switcher-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .sb-switcher-count {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 4px;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 4px;
   background: var(--surface-3);
   color: var(--text-2);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  line-height: 15px;
+  line-height: 18px;
   text-align: center;
   font-variant-numeric: tabular-nums;
-}
-.sb-switcher-btn:hover .sb-switcher-caret {
-  color: var(--text);
-}
-.sb-switcher-btn.active .sb-switcher-caret {
-  transform: rotate(180deg);
-  color: var(--text);
 }
 
 /* --- Account Switcher Popover --- */
@@ -400,32 +393,6 @@
   background: var(--surface-1);
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.24);
-}
-
-.sb-popover-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
-  margin-top: 2px;
-}
-.sb-pop-footer-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  border: none;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color var(--ease), color var(--ease);
-}
-.sb-pop-footer-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
 }
 
 /* --- Page header + content --- */

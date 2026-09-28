@@ -8,7 +8,7 @@
  */
 
 import { emptyState, icon } from "../../core/icons";
-import { getCustomAvatar, S } from "../../core/state";
+import { avatarFor, getCustomAvatar, S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
@@ -102,7 +102,7 @@ function connectedBlock(): string {
   const current = getCustomAvatar();
   const rows = (S.savedAccounts || []).map((acc) => {
     const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === S.epicAccount;
-    const url = S.customAvatars[acc.account_id] || (isCurrent ? current : null);
+    const url = avatarFor(`epic:${acc.account_id}`);
     const actions = isCurrent
       ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>${accountId ? idChip(accountId) : ""}`
       : `<button class="btn small" data-act="account-switch" data-id="${esc(acc.account_id)}">${t("settings.accountSwitchBtn")}</button>
@@ -182,7 +182,7 @@ function gogConnectedBlock(): string {
 
   const accountRows = (S.gogSavedAccounts || []).map((acc) => {
     const isCurrent = acc.is_active || acc.user_id === S.gogAccountId;
-    const url = S.customAvatars[acc.user_id] || null;
+    const url = avatarFor(`gog:${acc.user_id}`);
     const name = acc.username && acc.username !== "GOG User" ? acc.username : currentName;
     const actions = isCurrent
       ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
