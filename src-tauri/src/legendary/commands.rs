@@ -2981,7 +2981,10 @@ mod tests {
         assert_eq!(cat_tex, "extras");
     }
 
+    /// Live check: reads the signed-in account's catalog metadata from disk.
+    /// Run: `cargo test test_epic_get_game_dlcs -- --ignored --nocapture`
     #[test]
+    #[ignore]
     fn test_epic_get_game_dlcs_ginger() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
@@ -2995,7 +2998,11 @@ mod tests {
         });
     }
 
+    /// Live check: DLC ownership is account specific, so this only runs on demand
+    /// against whatever account is signed in on this machine.
+    /// Run: `cargo test test_epic_get_game_dlcs -- --ignored --nocapture`
     #[test]
+    #[ignore]
     fn test_epic_get_game_dlcs_brill_only_owned() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {

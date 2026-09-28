@@ -1306,7 +1306,6 @@
   "settings.highlightInstalledDesc": "未インストールのカバーとタイトルをかすかに暗くして、インストール済みのゲームを際立たせます。",
   "settings.sharedLibraryTitle": "すべてのアカウントのゲームを表示",
   "settings.sharedLibraryDesc": "保存されている他のアカウントのゲームも含めます。ゲームを開くとワンクリックで所有者のアカウントに切り替えられます。",
-  "shared.ownerBadge": "所有者: {name}",
   "shared.switch": "アカウントを切り替え",
   "shared.switchTo": "{name} に切り替え",
   "shared.detailNote": "このゲームは {name} に属します。インストールしてプレイするにはそのアカウントに切り替えてください。"

@@ -8,7 +8,7 @@
 
 import { ctxRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { summaryOf } from "../../core/selectors";
+import { summaryOf, sharedOwnerOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
@@ -40,20 +40,24 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   const menu = document.createElement("div");
   menu.className = "ps5-context-menu";
   menu.setAttribute("role", "menu");
+  // Games from another saved account: no install/manage, only the switch.
+  const shared = sharedOwnerOf(appName);
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
-    ${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
-    ${item("manage-game", t("common.manage"), "settings")}
-    ${installed && (s.updateAvailable || S.availableUpdates.has(appName))
+    ${shared
+      ? `<button class="ps5-context-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
+      : `${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
+    ${item("manage-game", t("common.manage"), "settings")}`}
+    ${!shared && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
       : ""}
     <div class="ps5-context-sep"></div>
-    ${installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
-    ${installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
-    ${installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
+    ${!shared && installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
+    ${!shared && installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
+    ${!shared && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
-    ${installed ? `<div class="ps5-context-sep"></div>${item("uninstall", t("common.uninstall"), "trash", true)}` : ""}
+    ${!shared && installed ? `<div class="ps5-context-sep"></div>${item("uninstall", t("common.uninstall"), "trash", true)}` : ""}
   `;
 
   const root = ctxRoot || document.body;

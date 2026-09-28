@@ -1306,7 +1306,6 @@
   "settings.highlightInstalledDesc": "Esmaece sutilmente capas e títulos não instalados para destacar os jogos instalados.",
   "settings.sharedLibraryTitle": "Mostrar jogos de todas as contas",
   "settings.sharedLibraryDesc": "Inclui jogos das suas outras contas salvas. Abra um jogo para trocar para o proprietário com um clique.",
-  "shared.ownerBadge": "Proprietário: {name}",
   "shared.switch": "Trocar de conta",
   "shared.switchTo": "Trocar para {name}",
   "shared.detailNote": "Este jogo pertence a {name}. Troque para essa conta para instalá-lo e jogá-lo."

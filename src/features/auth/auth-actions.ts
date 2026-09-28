@@ -37,6 +37,7 @@ import { gogGetAchievementsSummary } from "../../gog";
 import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadPlayerProfile } from "../store/store-view";
+import { loadSharedLibrary } from "../library/shared-library";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -331,6 +332,7 @@ export async function runProgressiveAuth(
     toast(t("auth.signedIn", { name: S.epicAccount ?? "" }), "ok");
     void syncEpicLibrary(false, true);
     void loadPlayerProfile(true);
+    void loadSharedLibrary();
     void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     if (timer) clearInterval(timer);
@@ -397,5 +399,6 @@ export async function epicDoLogout(): Promise<void> {
   S.view = "library";
   S.epicPhase = "login";
   closeAllModals();
+  void loadSharedLibrary();
   render();
 }

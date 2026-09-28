@@ -1272,7 +1272,6 @@
   "settings.highlightInstalledDesc": "Kurulu olmayan oyunların kapaklarını ve başlıklarını hafifçe soluklaştırarak yüklü oyunları belirginleştirir.",
   "settings.sharedLibraryTitle": "Tüm hesapların oyunlarını göster",
   "settings.sharedLibraryDesc": "Kayıtlı diğer hesaplarınızın oyunlarını da kütüphaneye ekler. Bir oyunu açıp tek tıkla sahibine geçebilirsiniz.",
-  "shared.ownerBadge": "Sahibi: {name}",
   "shared.switch": "Hesaba Geç",
   "shared.switchTo": "{name} hesabına geç",
   "shared.detailNote": "Bu oyun {name} hesabına ait. Kurmak ve oynamak için o hesaba geçin.",

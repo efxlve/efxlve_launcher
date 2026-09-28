@@ -24,6 +24,7 @@ import {
   gogToLibraryItem,
 } from "../../gog";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
+import { loadSharedLibrary } from "../library/shared-library";
 import { loadSavedGogAccounts } from "./gog-account-switcher";
 
 /** Clean extraction of code from input, whether pasted as raw code or full redirect URL. */
@@ -204,6 +205,7 @@ export async function gogLogoutAction(): Promise<void> {
   S.gogAccountId = null;
   S.gogPhase = "login";
   setGogSummaries([]);
+  void loadSharedLibrary();
   scheduleRender();
 }
 

@@ -1272,7 +1272,6 @@
   "settings.highlightInstalledDesc": "Subtly dims uninstalled covers and titles to make installed games stand out.",
   "settings.sharedLibraryTitle": "Show games from all accounts",
   "settings.sharedLibraryDesc": "Include games owned by your other saved accounts. Open a game to switch to its owner with one click.",
-  "shared.ownerBadge": "Owner: {name}",
   "shared.switch": "Switch account",
   "shared.switchTo": "Switch to {name}",
   "shared.detailNote": "This game belongs to {name}. Switch to that account to install and play it.",

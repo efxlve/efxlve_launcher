@@ -17,6 +17,7 @@ import {
 } from "../../epic";
 import { refreshEpic } from "./auth-actions";
 import { loadPlayerProfile, setView } from "../store/store-view";
+import { loadSharedLibrary } from "../library/shared-library";
 
 /** Load all archived accounts and update state. */
 export async function loadSavedAccounts(): Promise<SavedAccount[]> {
@@ -94,6 +95,7 @@ export async function switchAccount(accountId: string): Promise<void> {
     // Profile uses the restored cache.
     await refreshEpic(true);
     void loadPlayerProfile(false, true);
+    void loadSharedLibrary();
   } catch (err) {
     console.error("Account switch failed:", err);
     toast(String(err), "err");

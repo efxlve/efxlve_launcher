@@ -6,6 +6,7 @@ import { gogGetSavedAccounts, gogSwitchAccount as gogSwitchAccountIpc, gogRemove
 import { S } from "../../core/state";
 import { render, scheduleRender } from "../../core/render";
 import { initGogSession } from "./gog-auth-actions";
+import { loadSharedLibrary } from "../library/shared-library";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { setGogSummaries } from "../../core/selectors";
@@ -42,6 +43,7 @@ export async function switchGogAccount(userId: string): Promise<void> {
 
     // Background sync
     await initGogSession();
+    void loadSharedLibrary();
   } catch (e) {
     toast(String(e), "err");
   } finally {

@@ -70,7 +70,9 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
-import { loadSharedLibrary, switchToSharedOwner } from "../library/shared-library";
+import { loadSharedLibrary } from "../library/shared-library";
+import { switchAccount } from "../auth/account-switcher";
+import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
@@ -572,7 +574,13 @@ document.addEventListener("click", (e) => {
     S.libraryDataRev++;
     scheduleRender();
   } else if (act === "shared-switch" && id) {
-    void switchToSharedOwner(id);
+    // `epic:<accountId>` / `gog:<userId>` — the switch functions reload the
+    // shared index themselves so the entry stops being "someone else's".
+    const [store, ownerId] = id.split(":");
+    if (ownerId) {
+      if (store === "epic") void switchAccount(ownerId);
+      else if (store === "gog") void switchGogAccount(ownerId);
+    }
   } else if (act === "toggle-installed-icon") {
     S.showInstalledIcon = !S.showInstalledIcon;
     localStorage.setItem(INSTALLED_ICON_KEY, String(S.showInstalledIcon));

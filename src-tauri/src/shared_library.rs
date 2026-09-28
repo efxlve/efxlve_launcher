@@ -108,6 +108,39 @@ fn epic_app_names(games: &[legendary::models::LegendaryGame]) -> HashSet<String>
     games.iter().map(|g| g.app_name.clone()).collect()
 }
 
+/// Categories that mark Unreal Engine / Fab content rather than a game
+/// (mirrors the frontend's `UE_CATEGORY_PATHS`).
+const NON_GAME_CATEGORIES: [&str; 4] = ["assets", "asset-format", "plugins", "projects"];
+
+/// Mirrors the frontend's game filter: DLCs, Unreal Engine/Fab content and
+/// mobile-only entries are not games and never belong in the library.
+fn is_game_entry(game: &legendary::models::LegendaryGame) -> bool {
+    let md = &game.metadata;
+    if md.get("mainGameItem").is_some() {
+        return false;
+    }
+    if md.get("namespace").and_then(|v| v.as_str()) == Some("ue") {
+        return false;
+    }
+    if let Some(cats) = md.get("categories").and_then(|v| v.as_array()) {
+        for category in cats {
+            if let Some(path) = category.get("path").and_then(|v| v.as_str()) {
+                if path == "mods" || NON_GAME_CATEGORIES.contains(&path) {
+                    return false;
+                }
+            }
+        }
+    }
+    let keys: Vec<String> = game.asset_infos.keys().map(|k| k.to_lowercase()).collect();
+    let has_mobile = keys
+        .iter()
+        .any(|k| k.contains("android") || k.contains("ios") || k.contains("mobile"));
+    let has_desktop = keys.iter().any(|k| {
+        k.contains("windows") || k.contains("win32") || k.contains("win64") || k.contains("mac") || k.contains("linux")
+    });
+    !(has_mobile && !has_desktop)
+}
+
 fn gog_snapshot(account_dir: &Path) -> gogdl::models::GogCachedLibrary {
     let empty = gogdl::models::GogCachedLibrary {
         account: None,
@@ -154,6 +187,9 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
             let mut count = 0usize;
             for game in &snapshot {
                 if game.app_name.is_empty() || active_epic_games.contains(&game.app_name) {
+                    continue;
+                }
+                if !is_game_entry(game) {
                     continue;
                 }
                 if !seen.insert(game.app_name.clone()) {
@@ -256,6 +292,54 @@ pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
 mod tests {
     use super::*;
 
+    fn game_with_metadata(metadata: serde_json::Value, asset_keys: &[&str]) -> legendary::models::LegendaryGame {
+        legendary::models::LegendaryGame {
+            app_name: "x".into(),
+            app_title: "X".into(),
+            asset_infos: asset_keys
+                .iter()
+                .map(|k| ((*k).to_string(), legendary::models::GameAsset::default()))
+                .collect(),
+            base_urls: Vec::new(),
+            metadata: serde_json::from_value(metadata).unwrap(),
+            sidecar: None,
+            achievements: None,
+            dlcs: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn non_game_entries_are_rejected() {
+        // Fab / Unreal Engine asset.
+        let asset = game_with_metadata(
+            serde_json::json!({
+                "namespace": "89efe5924d3d467c839449ab6ab52e7f",
+                "categories": [{ "path": "plugins/engine" }, { "path": "plugins" }, { "path": "asset-format" }]
+            }),
+            &["Windows"],
+        );
+        assert!(!is_game_entry(&asset));
+
+        // DLC pointing at a main game.
+        let dlc = game_with_metadata(serde_json::json!({ "mainGameItem": { "id": "y" } }), &["Windows"]);
+        assert!(!is_game_entry(&dlc));
+
+        // Mobile-only entry.
+        let mobile = game_with_metadata(serde_json::json!({ "categories": [{ "path": "games" }] }), &["Android"]);
+        assert!(!is_game_entry(&mobile));
+
+        // Real game.
+        let game = game_with_metadata(
+            serde_json::json!({ "categories": [{ "path": "games" }, { "path": "applications" }] }),
+            &["Windows"],
+        );
+        assert!(is_game_entry(&game));
+
+        // Desktop entry without asset info is kept.
+        let unknown = game_with_metadata(serde_json::json!({}), &[]);
+        assert!(is_game_entry(&unknown));
+    }
+
     /// Live check against this machine's saved accounts.
     /// Run: `cargo test live_shared_library_index -- --ignored --nocapture`
     #[test]
@@ -284,8 +368,7 @@ mod tests {
     }
 
     #[test]
-    fn portrait_prefers_tall_then_falls_back() {
-        let meta = |value: serde_json::Value| -> std::collections::HashMap<String, serde_json::Value> {
+    fn portrait_prefers_tall_then_falls_back() {        let meta = |value: serde_json::Value| -> std::collections::HashMap<String, serde_json::Value> {
             serde_json::from_value(value).unwrap()
         };
         assert_eq!(

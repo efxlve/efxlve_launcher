@@ -191,7 +191,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.gp-meta-owner { color: var(--text-2); }
+/* Games that belong to another saved account keep a quiet card: the owner is
+   shown on the detail page action bar only. */
 .pgrid.highlight-installed .pcard:not(.not-installed) .pcard-title,
 .pgrid.contrast-titles .pcard:not(.not-installed) .pcard-title {
   color: var(--text);

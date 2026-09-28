@@ -354,13 +354,11 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`
     : "—";
 
-  const sharedOwner = sharedOwnerOf(appName);
   const meta = [
     dev ? `<span>${esc(dev)}</span>` : "",
     isGog ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
-    sharedOwner ? `<span class="gp-meta-item gp-meta-owner" title="${esc(t("shared.detailNote", { name: sharedOwner.ownerName }))}">${icon("user", 13)} ${esc(t("shared.ownerBadge", { name: sharedOwner.ownerName }))}</span>` : "",
   ].filter(Boolean).join("");
 
   const loadingDot = `<span class="spinner gp-mini-spin"></span>`;
