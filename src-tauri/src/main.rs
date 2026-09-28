@@ -347,7 +347,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     'use strict';
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, true);
 
-    // 1. Text normalization (perfectly cleans Turkish 'Ä°', 'Ä±', accents and whitespace)
+    // 1. Text normalization (perfectly cleans Turkish 'İ', 'ı', accents and whitespace)
     function normalizeText(str) {
         return (str || '')
             .normalize('NFD')
@@ -727,13 +727,13 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         var dict;
         if (lang.indexOf('tr') === 0) {
             dict = {
-                owned: 'KÃ¼tÃ¼phanede',
-                installed: 'YÃ¼klÃ¼',
-                wishlist: 'Ä°stek Listesinde',
-                pdpOwned: 'Bu oyun Efxlve kÃ¼tÃ¼phanenizde var',
+                owned: 'Kütüphanede',
+                installed: 'Yüklü',
+                wishlist: 'İstek Listesinde',
+                pdpOwned: 'Bu oyun Efxlve kütüphanenizde var',
                 pdpInstalled: 'Bu oyun sisteminizde kurulu',
-                ctaOpen: 'KÃ¼tÃ¼phanede AÃ§',
-                ctaLaunch: 'KÃ¼tÃ¼phaneden BaÅŸlat'
+                ctaOpen: 'Kütüphanede Aç',
+                ctaLaunch: 'Kütüphaneden Başlat'
             };
         } else if (lang.indexOf('de') === 0) {
             dict = {
@@ -742,7 +742,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                 wishlist: 'Wunschliste',
                 pdpOwned: 'Dieses Spiel ist in deiner Efxlve-Bibliothek',
                 pdpInstalled: 'Dieses Spiel ist installiert',
-                ctaOpen: 'In Bibliothek Ã¶ffnen',
+                ctaOpen: 'In Bibliothek öffnen',
                 ctaLaunch: 'Aus Bibliothek starten'
             };
         } else {
@@ -768,8 +768,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         s = s.replace(/[:\-â€“â€”]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
         
         // Remove edition words
-        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sÃ¼rÃ¼m)?\b/gi, '');
-        s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sÃ¼rÃ¼m|surum)\b/gi, '');
+        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');
+        s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, '');
 
         // Common game abbreviations (GTA V / GTA 5)
         s = s.replace(/\bgrand theft auto\b/gi, 'gta');
@@ -917,8 +917,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         // 3. Detect price / free / release date from text content
         for (var j = all.length - 1; j >= 0; j--) {
             var txt = (all[j].textContent || '').trim();
-            if (/^[â‚º$â‚¬Â£]|Ã¼cretsiz|ucretsiz|free|\d+[,.]\d{2}/i.test(txt)) {
-                if (txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun' && txt !== 'SÃ¼rÃ¼m' && txt !== 'Surum') {
+            if (/^[₺$€£]|ücretsiz|ucretsiz|free|\d+[,.]\d{2}/i.test(txt)) {
+                if (txt !== 'Ana Oyun' && txt !== 'Eklenti' && txt !== 'Temel Oyun' && txt !== 'Sürüm' && txt !== 'Surum') {
                     if (all[j].parentElement && !isCardRoot(all[j].parentElement) && all[j].parentElement.querySelectorAll('span, div').length > 1) {
                         return all[j].parentElement;
                     }
@@ -1055,7 +1055,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                             var dtxt = (elDesc.textContent || '').trim();
                             if (/^-\s*%?\s*\d+%?$/.test(dtxt)) {
                                 elDesc.style.setProperty('display', 'none', 'important');
-                            } else if (/\*\s*$/.test(dtxt) && /^[â‚º$â‚¬Â£]|\d+[,.]\d{2}/.test(dtxt)) {
+                            } else if (/\*\s*$/.test(dtxt) && /^[₺$€£]|\d+[,.]\d{2}/.test(dtxt)) {
                                 elDesc.style.setProperty('display', 'none', 'important');
                             }
                         }
@@ -1912,6 +1912,7 @@ fn main() {
 gogdl::commands::gog_detect_galaxy_games,
 gogdl::commands::gog_sync_galaxy_installed,
 gogdl::commands::gog_check_updates,
+gogdl::commands::gog_sync_playtime,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

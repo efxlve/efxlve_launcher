@@ -20,6 +20,7 @@ import {
   gogListGames,
   gogLogout,
   gogSyncAchievements,
+  gogSyncPlaytime,
   gogToLibraryItem,
 } from "../../gog";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
@@ -153,6 +154,45 @@ export async function syncGogAchievements(): Promise<void> {
   }
 }
 
+/**
+ * Imports hours played in the official GOG Galaxy client.
+ *
+ * GOG has no public playtime API; Galaxy keeps `GameTimes.minutesInGame` in its
+ * local SQLite database and the backend reads it read-only. Local values are
+ * never lowered (same rule as Epic's server playtime merge).
+ */
+export async function syncGogPlaytime(): Promise<void> {
+  if (!isTauri || !S.gogAccount) return;
+  try {
+    const rows = await gogSyncPlaytime(S.gogAccountId);
+    let changed = false;
+    for (const row of rows) {
+      const key = `gog::${row.gameId}`;
+      const rec = S.playtimeMap.get(key);
+      if (!rec) {
+        S.playtimeMap.set(key, { total_seconds: row.seconds, session_count: 0 });
+        changed = true;
+      } else if (row.seconds > (rec.total_seconds || 0)) {
+        rec.total_seconds = row.seconds;
+        changed = true;
+      }
+    }
+    if (changed) {
+      S.libraryDataRev++;
+      if (S.view === "library" && S.showCoverStats) {
+        document.querySelectorAll<HTMLElement>('[data-lib-item^="gog::"]').forEach((el) => {
+          const id = el.dataset.libItem;
+          if (id) patchLibraryCardDom(id);
+        });
+      } else if (S.view === "profile") {
+        scheduleRender();
+      }
+    }
+  } catch (err) {
+    console.warn("GOG Galaxy playtime could not be read:", err);
+  }
+}
+
 /** Disconnect the GOG account and clear local cache. */
 export async function gogLogoutAction(): Promise<void> {
   try {
@@ -187,6 +227,7 @@ export async function initGogSession(): Promise<void> {
       // 2. Background silent sync
       void syncGogLibrary();
       void syncGogAchievements();
+      void syncGogPlaytime();
     } else {
       S.gogPhase = "login";
     }

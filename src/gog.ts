@@ -190,3 +190,12 @@ export interface GogUpdateInfo {
 
 export const gogCheckUpdates = (force = false) =>
   invoke<GogUpdateInfo[]>("gog_check_updates", { force });
+
+/** One playtime row read from GOG Galaxy's local database. */
+export interface GalaxyPlaytimeEntry {
+  gameId: string;
+  seconds: number;
+}
+
+export const gogSyncPlaytime = (userId?: string | null) =>
+  invoke<GalaxyPlaytimeEntry[]>("gog_sync_playtime", { userId: userId ?? null });

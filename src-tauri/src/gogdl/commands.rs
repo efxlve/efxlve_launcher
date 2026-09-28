@@ -378,3 +378,16 @@ pub async fn gog_check_updates(
 ) -> Result<Vec<super::models::GogUpdateInfo>, String> {
     super::updates::check_updates(&app, force.unwrap_or(false)).await
 }
+
+/// Reads hours played in the official GOG Galaxy client (local database,
+/// read-only). `user_id` is the signed-in GOG user id.
+#[command]
+pub async fn gog_sync_playtime(
+    user_id: Option<String>,
+) -> Result<Vec<super::galaxy_playtime::GalaxyPlaytimeEntry>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        super::galaxy_playtime::read_galaxy_playtime(user_id.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())
+}

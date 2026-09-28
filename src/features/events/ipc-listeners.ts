@@ -61,7 +61,7 @@ import { toast } from "../../core/toast";
 import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
-import { initGogSession } from "../auth/gog-auth-actions";
+import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
@@ -462,6 +462,8 @@ export async function initApp(hooks: {
           });
           // Pull Epic's fresh total now; max() keeps it safe if Epic lags behind.
           void syncEpicServerPlaytimes(true);
+          // GOG hours live in Galaxy's local database (read-only import).
+          if (id.startsWith("gog::")) void syncGogPlaytime();
         }
         toast(
           sessionSeconds
