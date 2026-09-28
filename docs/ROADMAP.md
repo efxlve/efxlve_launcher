@@ -520,3 +520,65 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - Hesap değiştirme sonrası avatar önbelleği: aynı hesabın fotoğrafı tüm yüzeylerde (çip, popover, profil, TV Modu) tek kaynaktan okunur — mevcut `updateChrome()` + `render()` akışı bunu zaten sağlıyor; yeni yüzey eklendiğinde `avatarFor` kullanılmalı.
 - Platformdan gelen gerçek avatarlar (Epic GraphQL profil fotoğrafı / GOG avatar URL'i) isteğe bağlı: `platformAvatar` ayrı bir alanda tutulup `avatarFor` sırası **yerel yükleme → platform avatarı → baş harf/işaret** olacak şekilde genişletilebilir. Ağ isteği UI'yi bloklamamalı (mevcut görsel disiplini).
 - Dışa/içe aktarma: avatarların `.efxlveprofile` benzeri tek dosyada yedeklenmesi (kullanıcı isteğine bağlı).
+
+---
+
+## 8. Discord Social SDK Entegrasyonu (Plan + Fizibilite — 29.09.2026)
+
+**Karar bekleniyor (kullanıcı onayı):** Arkadaş özellikleri (Epic/GOG) kaldırıldıktan sonra Discord, launcher'ın sosyal katmanı olarak planlandı. Bu bölüm fizibilite bulgularını ve uygulama planını kaydeder.
+
+### 8.1. Fizibilite sonucu: **UYGULANABİLİR**
+
+| Kriter | Durum | Kanıt / not |
+|---|---|---|
+| Resmî SDK var mı? | ✅ | **Discord Social SDK** (ücretsiz, tüm geliştiricilere açık) |
+| Windows x64 | ✅ | Generally Available |
+| **Sunucu (backend) gerekli mi?** | ❌ Gerekmiyor | Discord uygulamasında **Public Client** açılıp `Client::GetToken` + PKCE kullanılıyor; token yenileme `Client::RefreshToken` ile istemcide |
+| Tarayıcı/redirect akışı | ✅ SDK hallediyor | Redirect `http://127.0.0.1/callback` portalda kayıtlı olmalı; SDK "redirects automatically handles" — bizim loopback sunucusu yazmamıza gerek yok |
+| Arkadaş listesi + canlı durum | ✅ | Unified Friends List (`openid` + `sdk.social_layer_presence`); presence: online/idle/dnd/offline + "playing X" |
+| DM (sohbet) | ✅ (ek kapsam) | `sdk.social_layer` (communication scopes) — lobi/ses/kanal da aynı kapsamda |
+| Kurulum paketine gömme hakkı | ✅ | SDK Terms §2.a: "distribute the Discord Social SDK **as integrated into your Application**" (tek başına dağıtım yasak) |
+| "Oyun" şartı | ⚠️ Düşük risk | Şartlar "Application" diyor (oyunla sınırlı değil); portalda SDK'yı etkinleştirmek için kısa bir form dolduruluyor, Discord gerekirse entegrasyonu inceleyebilir |
+| API dili | ⚠️ C++20 | `discordpp.h` (header-implemented) + `discord_partner_sdk.dll`; Rust için ya DLL'in C API'si (varsa) doğrudan bağlanır ya da küçük bir C++ shim (VS 2022 mevcut) |
+| DLL boyutu | ❓ | İndirilince ölçülecek (tahmin 10-40 MB, ses/WebRTC içeriyor) |
+| Tick ihtiyacı | ⚠️ | `discordpp::RunCallbacks()` düzenli çağrılmalı; plan: SDK yalnız **bağlıyken** ve **düşük frekansta** (≈4 Hz) tick edilir, Discord sayfası kapalıyken durdurulur → "boşta sıfır yük" korunur |
+
+### 8.2. Ne kazanıyoruz (hedeflerimiz)
+
+1. **Arkadaş listesi**: Discord arkadaşları, avatarları, çevrimiçi/boşta/rahatsız etme/çevrimdışı durumları, "şu an X oynuyor".
+2. **Canlı güncelleme**: SDK olay gönderir (polling gerekmez).
+3. **Sohbet (opsiyonel, 2. faz)**: birebir DM paneli (mesaj geçmişi + gönderme).
+4. **Unified Friends**: Discord tarafında Steam/Epic hesabı bağlıysa oyun-içi kimlikler de listelenebilir.
+5. **Rich Presence**: zaten IPC ile var (`src-tauri/src/presence.rs`, varsayılan kapalı) — SDK'ya geçmek zorunlu değil; ikisi birlikte yaşayabilir.
+
+### 8.3. Uygulama planı (fazlar)
+
+**Faz 0 — Portal (kullanıcı, ~15-30 dk):**
+1. Discord Developer Portal'da **Team** + **Application** oluştur (ad: `Efxlve Launcher`).
+2. OAuth2 sekmesinde **redirect**: `http://127.0.0.1/callback` + **Public Client** açık.
+3. Sol menü → **Discord Social SDK → Getting Started** formunu doldur ve **Submit** (SDK bu uygulama için etkinleştirilir).
+4. **Downloads** sekmesinden C++ SDK zip'ini indir → `src-tauri/vendor/discord-sdk/` altına çıkar (gitignore'da).
+5. Bana **Application ID**'yi ver.
+
+**Faz 1 — SDK'yı kanıtla (ben, yarım gün):** DLL'i yükle, `Client` oluştur, `AddLogCallback` + `SetStatusChangedCallback` ile durum izle, `Authorize` + `GetToken` ile giriş yap ve **arkadaş sayısını** oku. (EOS'taki gibi izole canlı test; bu kez veri gerçekten var.)
+
+**Faz 2 — Rust altyapısı (1-1.5 gün):** `src-tauri/src/discord/` modülü — FFI (C API varsa doğrudan; yoksa `cc` ile derlenen ince C++ shim), token saklama/yenileme (`<appdata>/discord/token.json`), arkadaş listesi + presence olayları, düşük frekanslı tick, `discord_status/connect/disconnect/friends` komutları.
+
+**Faz 3 — Arayüz (1 gün):** Arkadaşlar sayfasını **Discord odaklı** yeniden kur (liste + durum noktaları + "şu an oynuyor" + arama), Ayarlar > Entegrasyonlar'a "Discord" kartı (Bağlan / Bağlantıyı Kes / durum), i18n (15 dil).
+
+**Faz 4 — (opsiyonel) DM paneli:** arkadaşa tıkla → sağda sohbet paneli (mesaj geçmişi + gönder). Communication scopes gerektirir.
+
+### 8.4. Riskler ve önlemler
+
+| Risk | Önlem |
+|---|---|
+| Portal formu / entegrasyon incelemesi reddedilebilir | Formu doğru doldur (alternatif oyun başlatıcı, 13+), gerekirse Discord ile iletişim; SDK yoksa uygulama bugünkü gibi çalışmaya devam eder (graceful degradation) |
+| SDK Discord tarafından kaldırılabilir/limitlenebilir | Özellik tamamen opsiyonel; DLL yoksa/bağlantı düşerse arkadaş sayfası boş durum gösterir, çökme yok |
+| Tick döngüsü performans kuralını ihlal eder | Yalnız Discord görünümü açıkken ≈4 Hz tick; sayfa kapanınca `RunCallbacks` durur |
+| Token güvenliği | Token'lar `<appdata>/discord/` altında, repoya asla girmez; `discord_partner_sdk.dll` gitignore'da |
+| "Oyun değil" itirazı | Şartlar "Application" diyor; launcher zaten bir uygulama. Gerekirse SDK'yı yalnız sosyal katman için kullan |
+
+### 8.5. Tahmini iş büyüklüğü
+
+**M (2-3 geliştirme günü):** Faz 0 kullanıcıda ~30 dk; Faz 1 yarım gün; Faz 2 ~1.5 gün; Faz 3 ~1 gün; Faz 4 (DM) ayrıca ~1 gün. DLL boyutu netleşince kurulum paketi etkisi raporlanır.
+
