@@ -11,7 +11,7 @@ use super::cache::{
     load_installed_games, save_achievements_cache, save_auth_tokens, save_cached_library,
 };
 use super::models::{
-    GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary, GogSetupStatus,
+    GogAuthStatus, GogCachedLibrary, GogFriend, GogGameDetails, GogGameSummary, GogSetupStatus,
 };
 use super::paths::{downloaded_binary, resolve_binary};
 use super::{cmd_error, GogError};
@@ -377,6 +377,31 @@ pub async fn gog_check_updates(
     force: Option<bool>,
 ) -> Result<Vec<super::models::GogUpdateInfo>, String> {
     super::updates::check_updates(&app, force.unwrap_or(false)).await
+}
+
+/// Lists the signed-in user's GOG friends (chat service, read-only).
+#[command]
+pub async fn gog_friends(app: AppHandle) -> Result<Vec<GogFriend>, String> {
+    let mut tokens = load_auth_tokens(&app).ok_or_else(|| cmd_error(GogError::NotAuthenticated))?;
+    let user_id = tokens.user_id.clone();
+    if user_id.is_empty() {
+        return Err(cmd_error(GogError::NotAuthenticated));
+    }
+    let friends = match super::api_client::fetch_gog_friends(&user_id, &tokens.access_token).await {
+        Ok(list) => list,
+        Err(GogError::NotAuthenticated) => {
+            let refreshed = super::api_client::refresh_tokens(&tokens.refresh_token)
+                .await
+                .map_err(cmd_error)?;
+            tokens = refreshed;
+            let _ = save_auth_tokens(&app, &tokens);
+            super::api_client::fetch_gog_friends(&user_id, &tokens.access_token)
+                .await
+                .map_err(cmd_error)?
+        }
+        Err(e) => return Err(cmd_error(e)),
+    };
+    Ok(friends)
 }
 
 /// Reads hours played in the official GOG Galaxy client (local database,

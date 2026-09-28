@@ -43,6 +43,7 @@ import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
+import { refreshFriendsListInPlace } from "../friends/friends-view";
 import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotDeleteConfirm,
@@ -456,6 +457,11 @@ document.addEventListener("input", (e) => {
       resetProfileCards();
       grid.innerHTML = renderProfileGrid(filteredProfileGames(S.playerProfileData.games || []));
     }
+    return;
+  }
+  if (t.id === "friends-search") {
+    S.friendsQuery = (t as HTMLInputElement).value;
+    refreshFriendsListInPlace();
     return;
   }
   if (t.id === "move-target-input") {

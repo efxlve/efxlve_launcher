@@ -135,6 +135,12 @@ export const S = {
   gogGalaxyDetected: ([]) as import("../gog").GalaxyDetectedGame[],
   gogGalaxySyncing: false,
   gogUpdates: (new Map()) as Map<string, import("../gog").GogUpdateInfo>,
+  /** Friends page: GOG chat list plus the shared filter/search state. */
+  gogFriends: ([]) as import("../gog").GogFriend[],
+  gogFriendsLoading: false,
+  gogFriendsError: "",
+  friendsFilter: ("all") as "all" | "epic" | "gog",
+  friendsQuery: "",
   sourceFilter: ("all") as SourceFilter,
   gogSummaries: ([]) as LibraryItem[],
   gogSummariesMap: (new Map()) as Map<string, LibraryItem>,

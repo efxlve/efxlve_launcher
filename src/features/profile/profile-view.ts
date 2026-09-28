@@ -81,11 +81,6 @@ export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
   return renderProfileGameCards(shown) + more;
 }
 
-function platformLabel(key: string): string {
-  const map: Record<string, string> = { steam: "Steam", psn: "PSN", xbl: "Xbox", nintendo: "Switch", epic: "Epic" };
-  return map[key] || key.charAt(0).toUpperCase() + key.slice(1);
-}
-
 /** Epic-side library size (hidden games excluded). */
 function totalEpicGames(): number {
   let n = 0;
@@ -272,40 +267,6 @@ function renderRecentGrid(): string {
     <section class="card profile-side-card">
       <div class="profile-side-head"><h3 class="gp-section-title">${t("profile.recentGamesTitle")}</h3><button class="btn ghost small" data-view="library">${t("profile.showAll")}</button></div>
       ${items ? `<div class="profile-recent-grid">${items}</div>` : `<p class="row-meta">${t("profile.noRecentGames")}</p>`}
-    </section>`;
-}
-
-function renderFriendsSection(): string {
-  let body: string;
-  if (S.friendsLoading && S.friends.length === 0) {
-    body = `<div class="empty-state"><span class="spinner"></span></div>`;
-  } else if (S.friendsError) {
-    body = `<p class="row-meta">${esc(S.friendsError)}</p><button class="btn ghost small" data-act="refresh-friends">${t("profile.retry")}</button>`;
-  } else if (S.friends.length === 0) {
-    body = `<p class="row-meta">${t("friends.empty")}</p>`;
-  } else {
-    const sorted = [...S.friends].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
-    body = `<div class="friends-list">${sorted.map((f) => {
-      const name = f.displayName || f.alias || f.accountId.slice(0, 8);
-      const plats = f.platforms.map((p) => `<span class="chip">${esc(platformLabel(p))}</span>`).join("");
-      return `
-        <div class="friend-row">
-          <span class="settings-avatar">${esc((name.trim().charAt(0) || "?").toUpperCase())}</span>
-          <div class="row-main">
-            <div class="row-title" title="${esc(name)}">${esc(name)}${f.favorite ? ` <span class="friend-fav">${icon("star", 11)}</span>` : ""}</div>
-            ${f.alias && f.displayName ? `<div class="row-meta" title="${esc(f.alias)}">${esc(f.alias)}</div>` : ""}
-          </div>
-          ${plats ? `<div class="friend-plats">${plats}</div>` : ""}
-        </div>`;
-    }).join("")}</div>`;
-  }
-  return `
-    <section class="card profile-side-card">
-      <div class="profile-side-head">
-        <h3 class="gp-section-title">${t("friends.title")}${S.friends.length > 0 ? ` <span class="count">${S.friends.length}</span>` : ""}</h3>
-        <button class="icon-btn lib-refresh-btn ${S.friendsLoading ? "spinning" : ""}" data-act="refresh-friends" title="${t("friends.refresh")}">${icon("refresh", 15)}</button>
-      </div>
-      ${body}
     </section>`;
 }
 
@@ -611,7 +572,6 @@ export function renderProfile(): string {
           ${renderLinkedAccountsCard(selection)}
           ${renderStoreBreakdown()}
           ${renderRecentGrid()}
-          ${!combined || isEpic || S.epicAccount ? renderFriendsSection() : ""}
         </aside>
       </div>`
     : "";

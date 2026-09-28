@@ -1,7 +1,7 @@
-﻿# TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
+# TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 142 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 143 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -216,6 +216,7 @@
 | `gog_sync_galaxy_installed` | `gogdl/galaxy.rs` | Registers detected Galaxy installs in this launcher (returns how many were added). |
 | `gog_check_updates` | `gogdl/updates.rs` | Compares installed build ids with the newest public builds (disk-cached, force flag for a manual refresh). |
 | `gog_sync_playtime` | `gogdl/galaxy_playtime.rs` | Reads hours played in the official GOG Galaxy client from its local SQLite database (read-only). |
+| `gog_friends` | `gogdl/commands.rs` | Read-only GOG friends list from the chat service (names + avatars). |
 | `gog_install_game` / `gog_cancel_download` | `gogdl/transfers.rs` | gogdl download with streamed progress. |
 | `gog_import_game` / `gog_verify_game` / `gog_uninstall_game` | `gogdl/transfers.rs` | Folder import, file verification, clean uninstall. |
 | `gog_launch_game` / `gog_stop_game` | `gogdl/launcher.rs` | DRM-free launch with crash-safe playtime recording. |
@@ -384,7 +385,7 @@ export interface ScreenshotsUpdatedEvent {
 |---|---|---|
 | `cloud_backup/commands.rs` | 9 | `cloud_backup_get_settings`, `cloud_backup_save_settings`, `cloud_backup_test_connection`, `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`, `cloud_backup_upload_game`, `cloud_backup_list_game`, `cloud_backup_download_game`, `cloud_backup_delete_remote` |
 | `eos.rs` | 2 | `eos_overlay_status`, `eos_install_redistributable` |
-| `gogdl/commands.rs` | 18 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_setup_status`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed`, `gog_check_updates`, `gog_sync_playtime` |
+| `gogdl/commands.rs` | 19 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_setup_status`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed`, `gog_check_updates`, `gog_sync_playtime`, `gog_friends` |
 | `gogdl/launcher.rs` | 2 | `gog_launch_game`, `gog_stop_game` |
 | `gogdl/transfers.rs` | 5 | `gog_install_game`, `gog_cancel_download`, `gog_uninstall_game`, `gog_import_game`, `gog_verify_game` |
 | `legendary/commands.rs` | 58 | `epic_setup_status`, `epic_ensure_binary`, `epic_list_games`, `epic_list_skipped`, `epic_cached_library`, `epic_list_installed`, `epic_login_with_code`, `epic_import_egl`, `epic_logout`, `epic_get_saved_accounts`, `epic_switch_account`, `epic_remove_saved_account`, `epic_get_settings`, `epic_measure_cdns`, `epic_set_preferred_cdn`, `epic_cleanup_cache`, `epic_get_achievements`, `epic_get_achievements_summary`, `epic_get_hltb`, `epic_get_critic`, `epic_get_system_requirements`, `epic_detect_egl_games`, `epic_sync_egl_installed`, `epic_third_party_launchers`, `epic_verify_game`, `epic_get_game_settings`, `epic_save_game_settings`, `epic_set_custom_save_path`, `epic_sync_saves`, `epic_create_desktop_shortcut`, `epic_get_game_dlcs`, `epic_get_install_options`, `epic_check_updates`, `epic_get_playtimes`, `epic_set_playtime`, `epic_get_network_profile`, `epic_set_network_profile`, `epic_get_offline_mode`, `epic_set_offline_mode`, `epic_get_auto_desktop_shortcut`, `epic_set_auto_desktop_shortcut`, `epic_backup_save`, `epic_list_backups`, `epic_restore_backup`, `epic_delete_backup`, `epic_open_backup_folder`, `epic_get_collections`, `epic_save_collection`, `epic_reorder_collections`, `epic_delete_collection`, `epic_set_game_collections`, `epic_import_egl_collections`, `epic_get_player_profile`, `epic_get_system_drives`, `epic_import_installed_folder`, `epic_select_folder_dialog`, `epic_move_game`, `epic_cancel_move_game` |
@@ -397,5 +398,5 @@ export interface ScreenshotsUpdatedEvent {
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 
-**Total: 142 commands**
+**Total: 143 commands**
 

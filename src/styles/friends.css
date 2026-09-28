@@ -1,0 +1,29 @@
+/* ==========================================================================
+   Friends page: one merged, read-only list for every connected store.
+   Store labels reuse the quiet typographic token language of the profile.
+   ========================================================================== */
+
+.friends-page { display: flex; flex-direction: column; }
+
+.friends-sub {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin: -4px 0 14px; font-size: 13px; color: var(--text-3);
+}
+.friends-count { color: var(--text-2); font-weight: 600; }
+.friends-sub-sep { color: var(--text-3); }
+.friends-error { color: var(--err); margin-bottom: 12px; }
+
+.friend-row { gap: 12px; }
+.friend-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--surface-3); color: var(--text-2);
+  font-size: 14px; font-weight: 600;
+}
+.friend-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.friend-fav { display: inline-flex; vertical-align: -1px; color: var(--warn); }
+
+.store-token {
+  flex-shrink: 0; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
+}

@@ -199,3 +199,12 @@ export interface GalaxyPlaytimeEntry {
 
 export const gogSyncPlaytime = (userId?: string | null) =>
   invoke<GalaxyPlaytimeEntry[]>("gog_sync_playtime", { userId: userId ?? null });
+
+/** One friend from GOG's chat service. */
+export interface GogFriend {
+  userId: string;
+  username: string;
+  avatarUrl: string;
+}
+
+export const gogFriends = () => invoke<GogFriend[]>("gog_friends");

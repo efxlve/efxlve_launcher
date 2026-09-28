@@ -9,7 +9,7 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT};
 use serde_json::Value;
 
-use super::models::{GogAuthTokens, GogBuildInfo, GogGameDetails, GogGameSummary, GogUserProfile};
+use super::models::{GogAuthTokens, GogBuildInfo, GogFriend, GogGameDetails, GogGameSummary, GogUserProfile};
 use super::GogError;
 
 pub const GOG_CLIENT_ID: &str = "46899977096215655";
@@ -610,9 +610,101 @@ pub async fn fetch_latest_build(game_id: &str) -> Result<Option<GogBuildInfo>, G
     Ok(fallback)
 }
 
+/// Maps a chat.gog.com friends payload to friend rows, sorted by name.
+fn parse_gog_friends(val: &Value) -> Vec<GogFriend> {
+    let mut friends = Vec::new();
+    if let Some(items) = val.get("items").and_then(|v| v.as_array()) {
+        for item in items {
+            let user_id = match item.get("user_id") {
+                Some(Value::String(s)) => s.clone(),
+                Some(n) => n.to_string(),
+                None => String::new(),
+            };
+            let username = item.get("username").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            if user_id.is_empty() || username.is_empty() {
+                continue;
+            }
+            let raw_avatar = item
+                .get("images")
+                .and_then(|i| i.get("medium"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let avatar_url = if raw_avatar.starts_with("//") {
+                format!("https:{raw_avatar}")
+            } else {
+                raw_avatar.to_string()
+            };
+            friends.push(GogFriend {
+                user_id,
+                username,
+                avatar_url,
+            });
+        }
+    }
+    friends.sort_by_key(|f| f.username.to_lowercase());
+    friends
+}
+
+/// Fetches the signed-in user's GOG friends from the chat service.
+pub async fn fetch_gog_friends(
+    user_id: &str,
+    access_token: &str,
+) -> Result<Vec<GogFriend>, GogError> {
+    let client = create_client()?;
+    let url = format!("https://chat.gog.com/users/{user_id}/friends");
+    let res = client
+        .get(&url)
+        .header(AUTHORIZATION, format!("Bearer {access_token}"))
+        .send()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
+
+    if res.status() == reqwest::StatusCode::UNAUTHORIZED || res.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(GogError::NotAuthenticated);
+    }
+    if !res.status().is_success() {
+        return Ok(Vec::new());
+    }
+
+    let val: Value = res
+        .json()
+        .await
+        .map_err(|e| GogError::ParseError(e.to_string()))?;
+
+    Ok(parse_gog_friends(&val))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_gog_friends_maps_and_sorts() {
+        let val: Value = serde_json::from_str(
+            r#"{
+                "items": [
+                    { "user_id": 7, "username": "Zeynep", "images": { "medium": "//images.gog.com/z_avm.jpg" } },
+                    { "user_id": "3", "username": "ahmet", "images": { "medium": "https://images.gog.com/a_avm.jpg" } },
+                    { "user_id": "", "username": "NoId" },
+                    { "user_id": "9", "username": "" }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        let friends = parse_gog_friends(&val);
+        assert_eq!(friends.len(), 2);
+        assert_eq!(friends[0].username, "ahmet");
+        assert_eq!(friends[0].avatar_url, "https://images.gog.com/a_avm.jpg");
+        assert_eq!(friends[1].username, "Zeynep");
+        assert_eq!(friends[1].avatar_url, "https://images.gog.com/z_avm.jpg");
+    }
+
+    #[test]
+    fn test_parse_gog_friends_empty_payload() {
+        let val: Value = serde_json::from_str(r#"{ "items": [] }"#).unwrap();
+        assert!(parse_gog_friends(&val).is_empty());
+    }
 
     #[test]
     fn test_parse_gog_achievements_structure() {

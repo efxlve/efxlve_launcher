@@ -127,6 +127,16 @@ pub struct GogBuildInfo {
     pub date_published: String,
 }
 
+/// One friend from GOG's chat service.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GogFriend {
+    pub user_id: String,
+    pub username: String,
+    #[serde(default)]
+    pub avatar_url: String,
+}
+
 /// Update state for one installed GOG game (installed build vs. latest build).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

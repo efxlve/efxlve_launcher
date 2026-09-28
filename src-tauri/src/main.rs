@@ -1912,6 +1912,7 @@ fn main() {
 gogdl::commands::gog_detect_galaxy_games,
 gogdl::commands::gog_sync_galaxy_installed,
 gogdl::commands::gog_check_updates,
+gogdl::commands::gog_friends,
 gogdl::commands::gog_sync_playtime,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,

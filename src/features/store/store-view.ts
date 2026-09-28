@@ -273,7 +273,6 @@ export async function openProfile(): Promise<void> {
   if (!S.playerProfileData && !S.profileLoading) {
     void loadPlayerProfile();
   }
-  void loadFriends();
   render();
 }
 
