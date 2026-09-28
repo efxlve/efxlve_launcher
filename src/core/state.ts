@@ -48,7 +48,7 @@ import {
   normalizeLibraryPageSize,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, SourceFilter, View } from "./types";
+import type { AppNotification, AppUpdateStatus, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GogPhase, LibraryItem, SavedAccount, SettingsSection, SourceFilter, View } from "./types";
 import type { CriticData, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicFriend, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
@@ -264,7 +264,7 @@ export const S = {
   renderedCardCount: INITIAL_CARD_CHUNK,
   libScrollObserver: (null) as IntersectionObserver | null,
   epicSettingsCache: (null) as EpicSettings | null,
-  presenceEnabled: true,
+  presenceEnabled: false,
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),
@@ -325,7 +325,7 @@ export const S = {
   gamepadPolling: false,
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
-  appVersion: "0.1.16",
+  appVersion: "0.1.17",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",

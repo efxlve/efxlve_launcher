@@ -26,9 +26,75 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.17",
+    date: "2026-09-28",
+    isCurrent: true,
+    items: [
+      {
+        en: "GOG.COM support: connect your GOG account under Accounts, browse a unified library (All / Epic / GOG), and install, verify, import, uninstall or launch DRM-free GOG games.",
+        tr: "GOG.COM desteği: GOG hesabınızı Hesaplar sayfasından bağlayın, birleşik kütüphaneyi (Tümü / Epic / GOG) görüntüleyin; GOG oyunlarını kurun, doğrulayın, içe aktarın, kaldırın veya DRM-free başlatın.",
+      },
+      {
+        en: "GOG detail pages use official data: store description, studio, 1600px hero art, GamesDB covers, Windows requirements and the full achievement list with rarity and trophy tiers.",
+        tr: "GOG detay sayfaları resmi verileri kullanır: mağaza açıklaması, stüdyo, 1600px hero görseli, GamesDB kapakları, Windows gereksinimleri ve enderlik/kupa seviyeleriyle tam başarım listesi.",
+      },
+      {
+        en: "Multi-account switcher for both stores: switch Epic or GOG sessions in one click from Settings or the new sidebar account panel; saved sessions stay signed in.",
+        tr: "İki mağaza için çoklu hesap değiştirici: Ayarlar'dan veya yeni kenar çubuğu hesap panelinden tek tıkla Epic ya da GOG oturumu değiştirin; kayıtlı oturumlar açık kalır.",
+      },
+      {
+        en: "Cloud save backup: archive and upload saves to your own WebDAV server or Google Drive, list, restore or delete backups per game, and upload automatically when a game closes.",
+        tr: "Bulut kayıt yedekleme: kayıtları kendi WebDAV sunucunuza veya Google Drive'a arşivleyip yükleyin; oyun başına yedekleri listeleyin, geri yükleyin veya silin ve oyun kapanınca otomatik yükleyin.",
+      },
+      {
+        en: "Save folder handling: automatic save-folder detection for games without Epic cloud metadata, a manual folder picker, and local backup/restore from the Manage tab.",
+        tr: "Kayıt klasörü yönetimi: Epic bulut verisi olmayan oyunlar için otomatik kayıt klasörü tespiti, elle klasör seçici ve Yönet sekmesinden yerel yedekleme/geri yükleme.",
+      },
+      {
+        en: "Uninstall is now complete: Epic Launcher manifests and leftover folders are cleaned up, so the official launcher no longer offers a phantom repair and removed games leave the Updates list immediately.",
+        tr: "Kaldırma artık eksiksiz: Epic Launcher manifestleri ve artık klasörler temizlenir; resmi başlatıcı hayalet onarım önermez ve kaldırılan oyunlar Güncellemeler listesinden anında çıkar.",
+      },
+      {
+        en: "Notification center: a bell with an unread count and persistent history for downloads, updates, backups, cloud sync failures and launcher updates.",
+        tr: "Bildirim merkezi: indirmeler, güncellemeler, yedekler, bulut eşitleme hataları ve başlatıcı güncellemeleri için okunmamış sayacı ve kalıcı geçmişi olan bir zil.",
+      },
+      {
+        en: "Per-game update indicators can be dismissed from the bell button or the right-click menu and restored later; the sidebar badge and updates list follow immediately.",
+        tr: "Oyun bazlı güncelleme göstergeleri zil düğmesinden veya sağ tık menüsünden susturulup sonradan geri getirilebilir; kenar çubuğu rozeti ve güncelleme listesi anında uyum sağlar.",
+      },
+      {
+        en: "Library: the two conflicting highlight switches became one \"Highlight installed games\" setting; optional store badges under titles, titles under covers, and a compact play badge on installed covers.",
+        tr: "Kütüphane: iki çelişkili vurgulama anahtarının yerini tek \"Yüklü oyunları öne çıkar\" ayarı aldı; başlık altında isteğe bağlı mağaza rozeti, kapak altı oyun adı ve yüklü kapaklarda kompakt oynatma rozeti.",
+      },
+      {
+        en: "Settings panel rebuilt around an account card, download speed profiles, CDN selection, screenshot format and quality, and scheduled updates; the BETA pill opens a full changelog.",
+        tr: "Ayarlar paneli hesap kartı, indirme hız profilleri, CDN seçimi, ekran görüntüsü formatı ve kalitesi ile zamanlanmış güncellemeler etrafında yeniden kuruldu; BETA hapı tam değişiklik günlüğünü açar.",
+      },
+      {
+        en: "Launcher self-update: new versions appear in Settings > System, download silently in the background and install only when you ask; installation defers while a game download or a game session is running.",
+        tr: "Başlatıcı otomatik güncelleme: yeni sürümler Ayarlar > Sistem'de görünür, arka planda sessizce indirilir ve yalnızca siz istediğinizde kurulur; oyun indirmesi veya oyun oturumu sürerken kurulum ertelenir.",
+      },
+      {
+        en: "Sign-in and download hardening: the Epic Launcher import bridge maps the modern config folder automatically, and failed or timed-out downloads show clear messages instead of raw Python output.",
+        tr: "Oturum açma ve indirme sağlamlaştırması: Epic Launcher içe aktarma köprüsü modern yapılandırma klasörünü otomatik eşler; başarısız veya zaman aşımına uğrayan indirmeler ham Python çıktısı yerine net mesajlar gösterir.",
+      },
+      {
+        en: "All 15 languages are complete, including every GOG screen and message (1352 keys, Turkish and English in full parity).",
+        tr: "GOG ekranları ve mesajları dahil 15 dilin tamamı eksiksiz (1352 anahtar, Türkçe ve İngilizce tam eşlik).",
+      },
+      {
+        en: "Fixes: collections can be reordered again from the Collections menu, the library refresh button syncs both stores, and a failed automatic cloud upload is reported in the notification center.",
+        tr: "Düzeltmeler: koleksiyonlar Koleksiyonlar menüsünden yeniden sıralanabilir, kütüphane yenile düğmesi iki mağazayı da eşitler ve başarısız otomatik bulut yüklemesi bildirim merkezinde raporlanır.",
+      },
+      {
+        en: "Cleanup: the click router is split into eight domain handlers, the library filter cache invalidates on data revisions, and retired handlers, styles and translation keys were removed.",
+        tr: "Temizlik: tıklama yönlendiricisi sekiz alan işleyicisine bölündü, kütüphane filtre önbelleği veri revizyonlarıyla geçersizleşir ve kaldırılan işleyiciler, stiller ve çeviri anahtarları temizlendi.",
+      },
+    ],
+  },
+  {
     version: "0.1.16",
     date: "2026-09-27",
-    isCurrent: true,
     items: [
       {
         en: "Playtime is now counted even if you close the launcher window while a game is running: the window hides to the tray (exactly like an active download) and the session keeps going.",
