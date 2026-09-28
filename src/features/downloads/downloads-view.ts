@@ -10,7 +10,7 @@
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
-import { epicWideArt, rawOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
@@ -196,14 +196,18 @@ function installedGames(): EpicSummary[] {
   const recentIdx = new Map<string, number>();
   S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
   const collator = S.trCollator ?? new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
-  return S.epicSummaries
-    .filter((s) => s.installed && !(s.updateAvailable || S.availableUpdates.has(s.appName)))
-    .sort((a, b) => {
-      const ra = recentIdx.get(a.appName);
-      const rb = recentIdx.get(b.appName);
-      if (ra !== undefined || rb !== undefined) return (ra ?? 9999) - (rb ?? 9999);
-      return collator.compare(a.title, b.title);
-    });
+  const gogInstalled = S.gogSummaries
+    .filter((g) => g.installed && !g.updateAvailable)
+    .map(gogToEpicSummary);
+  return [
+    ...S.epicSummaries.filter((s) => s.installed && !(s.updateAvailable || S.availableUpdates.has(s.appName))),
+    ...gogInstalled,
+  ].sort((a, b) => {
+    const ra = recentIdx.get(a.appName);
+    const rb = recentIdx.get(b.appName);
+    if (ra !== undefined || rb !== undefined) return (ra ?? 9999) - (rb ?? 9999);
+    return collator.compare(a.title, b.title);
+  });
 }
 
 function renderActiveCard(dl: DlMetrics): string {
@@ -276,7 +280,12 @@ export function renderDownloads(): string {
   const active = activeDownload();
   const queueApps = S.dlQueueStatus.queue.filter((id) => !active || id !== active.id);
 
-  const updates = S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName)));
+  // GOG games with a newer public build join the same updates list.
+  const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable).map(gogToEpicSummary);
+  const updates = [
+    ...S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))),
+    ...gogUpdates,
+  ];
   const manageBtn = (id: string): string => `<button class="icon-btn" data-act="manage-game" data-id="${id}" title="${t("common.manage")}">${icon("settings", 16)}</button>`;
 
   const queueRows = queueApps.map((id, idx) => {
@@ -292,7 +301,10 @@ export function renderDownloads(): string {
   const updateRows = updates.map((s) => {
     const isIgnored = S.ignoredUpdates.has(s.appName);
     const info = S.availableUpdates.get(s.appName);
-    const ver = info?.latestVersion ? `${info.installedVersion ? `${esc(info.installedVersion)} → ` : ""}${esc(info.latestVersion)}` : "";
+    const gInfo = S.gogUpdates.get(s.appName);
+    const latestVersion = info?.latestVersion || gInfo?.latestVersion || "";
+    const installedVersion = info?.installedVersion || gInfo?.installedBuildId || "";
+    const ver = latestVersion ? `${installedVersion ? `${esc(installedVersion)} → ` : ""}${esc(latestVersion)}` : "";
     const metaParts = [ver, s.installSize ? fmtBytes(s.installSize) : ""].filter(Boolean);
     if (isIgnored) metaParts.push(`<span class="dl-ignored-badge">${esc(t("dl.indicatorIgnored"))}</span>`);
     const meta = metaParts.join(" · ");

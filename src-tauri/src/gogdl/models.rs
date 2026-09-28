@@ -116,6 +116,29 @@ pub struct GogInstalledInfo {
     pub build_id: String,
 }
 
+/// Latest public build of a GOG product (content-system release feed).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GogBuildInfo {
+    pub build_id: String,
+    #[serde(default)]
+    pub version_name: String,
+    #[serde(default)]
+    pub date_published: String,
+}
+
+/// Update state for one installed GOG game (installed build vs. latest build).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GogUpdateInfo {
+    pub game_id: String,
+    pub installed_build_id: String,
+    pub latest_build_id: String,
+    pub latest_version: String,
+    #[serde(default)]
+    pub date_published: String,
+}
+
 /// Detailed metadata fetched on-demand for the game detail hub.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GogGameDetails {

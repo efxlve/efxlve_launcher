@@ -376,6 +376,8 @@ pub async fn gog_install_game(
                 // Keep GOG Galaxy's registry entry in step so the official client
                 // does not offer the update we just installed. Best effort.
                 super::galaxy::sync_galaxy_version(&clean_id_clone, &info.version, &info.build_id);
+                // Freshly installed build is up to date: refresh the update cache.
+                super::updates::store_installed_build(&app_clone, &clean_id_clone, &info.build_id, &info.version);
                 installed_map.insert(clean_id_clone.clone(), info);
                 let _ = save_installed_games(&app_clone, &installed_map);
 

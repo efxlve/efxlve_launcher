@@ -9,6 +9,7 @@ pub mod paths;
 pub mod transfers;
 pub mod launcher;
 pub mod accounts;
+pub mod updates;
 
 use thiserror::Error;
 

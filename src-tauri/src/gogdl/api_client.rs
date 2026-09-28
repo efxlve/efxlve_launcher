@@ -9,7 +9,7 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT};
 use serde_json::Value;
 
-use super::models::{GogAuthTokens, GogGameDetails, GogGameSummary, GogUserProfile};
+use super::models::{GogAuthTokens, GogBuildInfo, GogGameDetails, GogGameSummary, GogUserProfile};
 use super::GogError;
 
 pub const GOG_CLIENT_ID: &str = "46899977096215655";
@@ -560,6 +560,54 @@ pub async fn fetch_gog_achievements(
         base_unlocked: user_unlocked,
         ..Default::default()
     })
+}
+
+/// Newest public Windows build of a product (content-system release feed).
+///
+/// The endpoint is public, so the update check needs no extra login. Items are
+/// newest-first; generation 2 entries are preferred, legacy generation 1 entries
+/// are only used when nothing newer exists.
+pub async fn fetch_latest_build(game_id: &str) -> Result<Option<GogBuildInfo>, GogError> {
+    let client = create_client()?;
+    let url = format!(
+        "https://content-system.gog.com/products/{game_id}/os/windows/builds?generation=2"
+    );
+    let resp = client.get(&url).send().await.map_err(|e| GogError::Http(e.to_string()))?;
+    if !resp.status().is_success() {
+        return Ok(None);
+    }
+    let val: Value = resp.json().await.map_err(|e| GogError::ParseError(e.to_string()))?;
+    let Some(items) = val.get("items").and_then(|v| v.as_array()) else {
+        return Ok(None);
+    };
+    let mut fallback: Option<GogBuildInfo> = None;
+    for item in items {
+        let build_id = item.get("build_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if build_id.is_empty() {
+            continue;
+        }
+        let build = GogBuildInfo {
+            build_id,
+            version_name: item
+                .get("version_name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            date_published: item
+                .get("date_published")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+        };
+        // Prefer the first generation 2 build (the modern patch chain).
+        if item.get("generation").and_then(|v| v.as_u64()) == Some(2) {
+            return Ok(Some(build));
+        }
+        if fallback.is_none() {
+            fallback = Some(build);
+        }
+    }
+    Ok(fallback)
 }
 
 #[cfg(test)]

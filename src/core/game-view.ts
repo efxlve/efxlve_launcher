@@ -218,7 +218,7 @@ export function epicActionButtons(
     return `<button class="btn play${btn}" data-act="epic-stop" data-id="${s.appName}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
   }
   if (s.installed) {
-    const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName);
+    const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName);
     if (hasUpdate) {
       return `<button class="btn update${btn}" data-act="epic-install" data-id="${s.appName}" title="${t("common.updateDownload")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }

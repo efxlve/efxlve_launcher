@@ -90,7 +90,7 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
     case "epic-refresh":
       // One refresh entry point keeps both store libraries in step.
       void syncEpicLibrary(true);
-      if (S.gogAccount) void syncGogLibrary();
+      if (S.gogAccount) void syncGogLibrary(true);
       return true;
 
     case "epic-retry":

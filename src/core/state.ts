@@ -112,6 +112,7 @@ export const S = {
   gogDefaultDir: "",
   gogGalaxyDetected: ([]) as import("../gog").GalaxyDetectedGame[],
   gogGalaxySyncing: false,
+  gogUpdates: (new Map()) as Map<string, import("../gog").GogUpdateInfo>,
   sourceFilter: ("all") as SourceFilter,
   gogSummaries: ([]) as LibraryItem[],
   gogSummariesMap: (new Map()) as Map<string, LibraryItem>,

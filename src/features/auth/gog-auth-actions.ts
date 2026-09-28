@@ -4,16 +4,19 @@
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { patchLibraryCardDom } from "../../core/game-view";
+import { updateBadge } from "../../core/nav";
 import { setGogSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { scheduleRender } from "../../core/render";
 import { t } from "../../i18n";
+import { isTauri } from "../../core/constants";
 import {
   GOG_LOGIN_URL,
   gogAuthCode,
   gogAuthStatus,
   gogCachedLibrary,
+  gogCheckUpdates,
   gogListGames,
   gogLogout,
   gogSyncAchievements,
@@ -76,7 +79,7 @@ export async function gogLoginWithCode(rawCode: string): Promise<void> {
 }
 
 /** Synchronize user's owned GOG library in the background. */
-export async function syncGogLibrary(): Promise<void> {
+export async function syncGogLibrary(force = false): Promise<void> {
   S.gogSyncing = true;
   scheduleRender();
 
@@ -87,10 +90,47 @@ export async function syncGogLibrary(): Promise<void> {
     S.gogSyncing = false;
     scheduleRender();
     void syncGogAchievements();
+    void refreshGogUpdates(force);
   } catch (err) {
     S.gogSyncing = false;
     toast(t("gog.syncFailed"));
     scheduleRender();
+  }
+}
+
+/**
+ * Compares installed GOG build ids with the newest public builds and mirrors the
+ * result onto library items. Offline or rate-limited calls keep the previous
+ * state (the backend caches each build lookup for a few hours).
+ */
+export async function refreshGogUpdates(force = false): Promise<void> {
+  if (!isTauri || S.offlineMode || !S.gogAccount) return;
+  try {
+    const list = await gogCheckUpdates(force);
+    S.gogUpdates.clear();
+    const updatedIds = new Set<string>();
+    for (const u of list) {
+      const key = `gog::${u.gameId}`;
+      S.gogUpdates.set(key, u);
+      updatedIds.add(key);
+    }
+    // Library items carry the flag so badges, action buttons and the downloads
+    // updates list all agree without extra lookups.
+    for (const g of S.gogSummaries) {
+      g.updateAvailable = updatedIds.has(g.key);
+    }
+    S.libraryDataRev++;
+    if (S.view === "library") {
+      document.querySelectorAll<HTMLElement>('[data-lib-item^="gog::"]').forEach((el) => {
+        const id = el.dataset.libItem;
+        if (id) patchLibraryCardDom(id);
+      });
+    } else if (S.view === "downloads") {
+      scheduleRender();
+    }
+    updateBadge();
+  } catch (err) {
+    console.warn("GOG update check failed:", err);
   }
 }
 

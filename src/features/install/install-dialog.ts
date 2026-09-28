@@ -60,6 +60,11 @@ export async function openInstallDialog(appName: string): Promise<void> {
   if (!s || epicDlProgress(appName) !== null) return;
 
   if (isGog) {
+    // Updates reuse the existing folder; skip the dialog (mirrors the Epic path).
+    if (s.installed && s.installPath) {
+      await gogInstallGame(appName, s.installPath);
+      return;
+    }
     S.installDialogAppName = appName;
     S.installDialogFolder = s.title.replace(/[<>:"/\\|?*]+/g, "").trim() || appName.replace("gog::", "");
     S.installDialogDownloadSize = s.installSize || 0;

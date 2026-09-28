@@ -368,3 +368,13 @@ pub async fn gog_sync_galaxy_installed(app: AppHandle) -> Result<u32, String> {
         .await
         .map_err(|e| e.to_string())?
 }
+
+/// Compares installed GOG build ids with the newest public builds.
+/// Returns one entry per game that has an update; results are disk-cached.
+#[command]
+pub async fn gog_check_updates(
+    app: AppHandle,
+    force: Option<bool>,
+) -> Result<Vec<super::models::GogUpdateInfo>, String> {
+    super::updates::check_updates(&app, force.unwrap_or(false)).await
+}

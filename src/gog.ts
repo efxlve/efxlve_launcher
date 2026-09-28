@@ -178,3 +178,15 @@ export const gogDetectGalaxyGames = () =>
 
 export const gogSyncGalaxyInstalled = () =>
   invoke<number>("gog_sync_galaxy_installed");
+
+/** Update state for one installed GOG game (installed build vs. latest build). */
+export interface GogUpdateInfo {
+  gameId: string;
+  installedBuildId: string;
+  latestBuildId: string;
+  latestVersion: string;
+  datePublished: string;
+}
+
+export const gogCheckUpdates = (force = false) =>
+  invoke<GogUpdateInfo[]>("gog_check_updates", { force });
