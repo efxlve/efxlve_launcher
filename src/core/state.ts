@@ -355,6 +355,8 @@ export const S = {
   gamepadName: "",
   gamepadKind: ("generic") as ControllerKind,
   controllerBridge: (null) as ControllerSupportStatus | null,
+  steamStatus: (null) as import("../steam").SteamStatus | null,
+  steamGames: [] as import("../steam").SteamGame[],
   appVersion: "0.1.17",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",

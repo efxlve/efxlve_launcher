@@ -41,6 +41,7 @@ import {
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
+import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
@@ -187,6 +188,7 @@ function renderIntegrations(): string {
 
   return (
     renderCloudBackupSettingsGroup() +
+    renderSteamGroup() +
     group(eglGroup, t("settings.eglTitle")) +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     group(tplRows, t("settings.thirdPartyTitle")) +
@@ -246,6 +248,36 @@ function renderController(): string {
   );
 
   return group(padRows, t("controller.padsTitle")) + group(bridge, t("settings.secController"));
+}
+
+/** Steam card: detected client, installed games and the Steam hand-off. */
+function renderSteamGroup(): string {
+  const status = S.steamStatus;
+  if (!status) return "";
+  const rescan = `<button class="btn ghost small" data-act="steam-refresh">${t("settings.rescan")}</button>`;
+  if (!status.installed) {
+    return group(row(t("steam.notFound"), t("steam.desc"), rescan), "Steam");
+  }
+  const games = S.steamGames;
+  const MAX_ROWS = 60;
+  const gameRows = games.slice(0, MAX_ROWS).map((g: SteamGame) => `
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">${esc(g.name)}</div>
+        <div class="row-meta">${fmtBytes(g.sizeBytes)}${g.stateFlags === 4 ? "" : ` · ${t("steam.updateRequired")}`}</div>
+      </div>
+      <button class="btn ghost small" data-act="steam-launch" data-id="${esc(g.appId)}">${icon("play", 13)} ${t("steam.launch")}</button>
+    </div>`).join("");
+  const more = games.length > MAX_ROWS
+    ? `<div class="row"><div class="row-meta">${t("steam.more", { count: games.length - MAX_ROWS })}</div></div>`
+    : "";
+  const empty = games.length === 0
+    ? `<div class="row"><div class="row-meta">${t("steam.empty")}</div></div>`
+    : "";
+  return group(
+    row(t("steam.games", { count: games.length }), esc(status.path), rescan) + gameRows + more + empty,
+    "Steam",
+  );
 }
 
 /** Page-size picker shared by Settings and the library pagination bar. */
@@ -555,16 +587,20 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, thirdParty, eos, galaxyList] = await Promise.all([
+    const [eglList, thirdParty, eos, galaxyList, steamState, steamGames] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
+      steamStatus().catch(() => null),
+      steamListInstalled().catch(() => [] as SteamGame[]),
     ]);
     S.eglDetectedList = eglList;
     S.thirdPartyLaunchers = thirdParty;
     S.eosOverlay = eos;
     S.gogGalaxyDetected = galaxyList;
+    S.steamStatus = steamState;
+    S.steamGames = steamGames;
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

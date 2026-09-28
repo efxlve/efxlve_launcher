@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 142 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 145 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -252,6 +252,21 @@
 | `epic_get_playtimes` | `() => Promise<Record<string, PlaytimeRecord>>` | `legendary/commands.rs` + `playtime.rs` | Returns the persisted per-game playtime database. |
 | `epic_set_playtime` | `(appName: string, totalSeconds: number, lastPlayed?: string \| null) => Promise<PlaytimeRecord>` | `legendary/commands.rs` + `playtime.rs` | Overwrites a game's playtime (manual editor) and returns the updated record. |
 
+### 2.19. Controller Support & Steam Detection
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `controller_support_status` | `() => Promise<ControllerSupportStatus>` | `controller.rs` | Reports whether an XInput bridge (ViGEmBus service) and the Steam client are present, with the Steam install path. Registry only, no network. |
+| `steam_status` | `() => Promise<SteamStatus>` | `steam.rs` | Steam client presence, install path and the number of games found in its app manifests. |
+| `steam_list_installed` | `() => Promise<SteamGame[]>` | `steam.rs` | Reads every `steamapps/appmanifest_*.acf` across all library folders (`libraryfolders.vdf`), deduplicated by app id. |
+| `steam_launch_game` | `(appId: string) => Promise<void>` | `steam.rs` | Hands the launch to the Steam client via `steam://rungameid/<appId>`; non-numeric ids are rejected. The launcher never starts Steam executables itself. |
+
+### 2.20. Shared Library (All Accounts)
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `shared_library_index` | `() => Promise<SharedLibraryIndex>` | `shared_library.rs` | Union of every saved account's disk snapshot, excluding the active account's games and non-game entries (DLCs, UE/Fab assets, mobile-only). Owner is reported per game for the one-click switch. |
+
 ---
 
 ## 3. Background IPC Event Payloads
@@ -376,6 +391,7 @@ export interface ScreenshotsUpdatedEvent {
 | Rust file | # | Commands |
 |---|---|---|
 | `cloud_backup/commands.rs` | 9 | `cloud_backup_get_settings`, `cloud_backup_save_settings`, `cloud_backup_test_connection`, `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`, `cloud_backup_upload_game`, `cloud_backup_list_game`, `cloud_backup_download_game`, `cloud_backup_delete_remote` |
+| `controller.rs` | 1 | `controller_support_status` |
 | `eos.rs` | 2 | `eos_overlay_status`, `eos_install_redistributable` |
 | `gogdl/commands.rs` | 17 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed`, `gog_check_updates`, `gog_sync_playtime` |
 | `gogdl/launcher.rs` | 2 | `gog_launch_game`, `gog_stop_game` |
@@ -388,6 +404,8 @@ export interface ScreenshotsUpdatedEvent {
 | `legendary/wiki.rs` | 1 | `epic_get_wiki_about` |
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
+| `shared_library.rs` | 1 | `shared_library_index` |
+| `steam.rs` | 3 | `steam_status`, `steam_list_installed`, `steam_launch_game` |
 
-**Total: 142 commands**
+**Total: 145 commands**
 

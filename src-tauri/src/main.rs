@@ -8,6 +8,8 @@ mod presence;
 mod cloud_backup;
 mod shared_library;
 mod controller;
+mod steam;
+mod winreg;
 
 use std::sync::Mutex;
 
@@ -1931,6 +1933,9 @@ fn main() {
             epic_take_pending_launch,
             shared_library::shared_library_index,
             controller::controller_support_status,
+            steam::steam_status,
+            steam::steam_list_installed,
+            steam::steam_launch_game,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
