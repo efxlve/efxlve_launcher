@@ -135,6 +135,11 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
                 let app_name = val.get("AppName").and_then(|v| v.as_str()).unwrap_or("").trim();
                 let title = val.get("DisplayName").and_then(|v| v.as_str()).unwrap_or("").trim();
                 let executable = val.get("LaunchExecutable").and_then(|v| v.as_str()).unwrap_or("").trim();
+                // If a launch executable is specified, verify it exists. If it does not,
+                // the game files are missing or incomplete (EGL would show "Repair").
+                if !executable.is_empty() && !Path::new(install_loc).join(executable).exists() {
+                    continue;
+                }
                 let version = val.get("AppVersionString").and_then(|v| v.as_str()).unwrap_or("").trim();
                 let install_size = val.get("InstallSize").and_then(|v| v.as_u64()).unwrap_or(0);
 
@@ -152,6 +157,80 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
         }
     }
     out
+}
+
+/// Deletes all EGL .item manifests in ProgramData for this game (and any of its DLCs).
+/// Without this, official Epic Games Store displays "Repair" instead of returning to
+/// the uninstalled state, and our launcher re-detects the game on refresh.
+pub fn remove_egl_manifests_for_game(app_name: &str) {
+    let dir = egl_manifests_dir();
+    if !dir.is_dir() {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("item") {
+                continue;
+            }
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+                let matches_app = val
+                    .get("AppName")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.eq_ignore_ascii_case(app_name))
+                    .unwrap_or(false);
+                let matches_main = val
+                    .get("MainGameAppName")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.eq_ignore_ascii_case(app_name))
+                    .unwrap_or(false);
+                if matches_app || matches_main {
+                    let _ = std::fs::remove_file(&path);
+                }
+            }
+        }
+    }
+}
+
+/// Explicitly removes a game from legendary's installed.json.
+pub fn remove_game_from_installed_json(config: &Path, app_name: &str) {
+    let installed_file = config.join("installed.json");
+    if let Ok(text) = std::fs::read_to_string(&installed_file) {
+        if let Ok(mut map) = serde_json::from_str::<HashMap<String, serde_json::Value>>(&text) {
+            let before_len = map.len();
+            map.retain(|k, _| !k.eq_ignore_ascii_case(app_name));
+            if map.len() != before_len {
+                if let Ok(json_str) = serde_json::to_string_pretty(&map) {
+                    let _ = std::fs::write(&installed_file, json_str);
+                }
+            }
+        }
+    }
+}
+
+/// Removes cached manifest files and custom game settings for an uninstalled game.
+pub fn remove_game_manifests(config: &Path, app_name: &str) {
+    let manifests_dir = config.join("manifests");
+    if manifests_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(manifests_dir) {
+            let prefix = format!("{}_", app_name.to_lowercase());
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Some(file_name) = p.file_name().and_then(|n| n.to_str()) {
+                    if file_name.to_lowercase().starts_with(&prefix) {
+                        let _ = std::fs::remove_file(p);
+                    }
+                }
+            }
+        }
+    }
+    let game_settings = config.join("game_settings").join(format!("{app_name}.json"));
+    if game_settings.is_file() {
+        let _ = std::fs::remove_file(game_settings);
+    }
 }
 
 /// Copies the manifest of EGL-installed games from the .egstore folder to the legendary manifests dir
@@ -328,6 +407,24 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
 
     let mut changed = false;
 
+    // Prune stale entries whose install directory no longer exists on a mounted drive.
+    let keys: Vec<String> = map.keys().cloned().collect();
+    for key in keys {
+        if let Some(game) = map.get(&key) {
+            let path_str = game.install_path.trim();
+            if !path_str.is_empty() {
+                let p = Path::new(path_str);
+                if p.is_absolute() {
+                    let drive_present = p.components().next().map(|c| Path::new(&c).exists()).unwrap_or(false);
+                    if drive_present && !p.exists() {
+                        map.remove(&key);
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+
     // 1. Read the Epic Games Launcher manifests and add the missing ones
     for egl in read_egl_installed_games() {
         ensure_egl_manifest(config, &egl.app_name, &egl.install_path, &egl.version, "Windows");
@@ -440,5 +537,24 @@ mod tests {
             let has_spider_or_wand = installed.iter().any(|g| g.app_name.contains("be23672deb69402781cd47cc2919caf4") || g.title.contains("Spider-Man") || g.title == "Wand");
             assert!(has_spider_or_wand, "Spider-Man or Wand must be in the installed list");
         }
+    }
+
+    #[test]
+    fn test_remove_game_from_installed_json() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_cache_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let json_path = dir.join("installed.json");
+        let initial = r#"{"ReadyOrNot": {"app_name": "ReadyOrNot"}, "Cyberpunk": {"app_name": "Cyberpunk"}}"#;
+        std::fs::write(&json_path, initial).unwrap();
+
+        remove_game_from_installed_json(&dir, "ReadyOrNot");
+
+        let text = std::fs::read_to_string(&json_path).unwrap();
+        assert!(!text.contains("ReadyOrNot"));
+        assert!(text.contains("Cyberpunk"));
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

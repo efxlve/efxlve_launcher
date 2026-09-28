@@ -154,17 +154,36 @@ export async function epicUninstall(appName: string): Promise<void> {
     } else {
       const msg = await epicUninstallGame(appName);
       toast(msg, "ok");
+      // Update in-memory state immediately so UI and any concurrent checks reflect uninstalled state
+      const s = S.epicSummariesMap.get(appName);
+      if (s) {
+        s.installed = false;
+        s.installPath = null;
+        s.installSize = 0;
+        s.installedVersion = null;
+        s.updateAvailable = false;
+      }
+      const item = S.allGamesMap.get(appName);
+      if (item) {
+        item.installed = false;
+        item.installPath = null;
+        item.installSize = 0;
+        item.installedVersion = null;
+      }
+      S.availableUpdates.delete(appName);
       await refreshEpicInstalled();
     }
   } catch (e) {
     toast(String(e), "err");
   }
+  S.availableUpdates.delete(appName);
   if (S.ignoredUpdates.has(appName)) {
     S.ignoredUpdates.delete(appName);
     localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
   }
   closeManagePopup();
   if (S.view === "library") patchLibraryCardDom(appName);
+  if (S.view === "downloads") render();
 }
 
 /** Re-read the installed list from Legendary and refresh the UI. */
@@ -198,6 +217,8 @@ export async function refreshUpdates(): Promise<void> {
     const prev = new Set(S.availableUpdates.keys());
     S.availableUpdates.clear();
     for (const u of updates) {
+      const summary = S.epicSummariesMap.get(u.appName);
+      if (!summary || !summary.installed) continue;
       S.availableUpdates.set(u.appName, u);
       if (!firstRun && !prev.has(u.appName)) {
         const title = S.epicSummariesMap.get(u.appName)?.title ?? u.appName;

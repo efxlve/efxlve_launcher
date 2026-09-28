@@ -2520,6 +2520,22 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
 
     if let Some(obj) = installed_map.as_object() {
         for (app_name, val) in obj {
+            // Verify the game files actually exist on disk before checking for updates
+            let install_path = val.get("install_path").and_then(|v| v.as_str()).unwrap_or("").trim();
+            if !install_path.is_empty() {
+                let p = std::path::Path::new(install_path);
+                if p.is_absolute() {
+                    let drive_present = p.components().next().map(|c| std::path::Path::new(&c).exists()).unwrap_or(false);
+                    if drive_present && !p.exists() {
+                        continue;
+                    }
+                }
+                let executable = val.get("executable").and_then(|v| v.as_str()).unwrap_or("").trim();
+                if !executable.is_empty() && !p.join(executable).exists() {
+                    continue;
+                }
+            }
+
             let installed_ver = val.get("version").and_then(|v| v.as_str()).unwrap_or("").trim();
             let title = val.get("title").and_then(|v| v.as_str()).unwrap_or(app_name).to_string();
 

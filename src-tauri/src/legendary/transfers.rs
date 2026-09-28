@@ -1642,6 +1642,110 @@ pub fn epic_get_queue(state: tauri::State<'_, AppState>) -> Result<DlQueueStatus
     })
 }
 
+/// Validates whether a path is safe to recursively delete as a game installation folder.
+/// Guards against system directories, root drives, user profiles, or launcher roots.
+fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
+    if !path.is_absolute() {
+        return false;
+    }
+    // Must have at least 3 path components on Windows (Prefix, RootDir, Directory)
+    if path.components().count() < 3 {
+        return false;
+    }
+    let s = path.to_string_lossy().to_lowercase();
+    let s = s.trim_start_matches(r"\\?\");
+
+    // Must not be the default install root itself
+    if let Ok(canon_def) = default_install.canonicalize() {
+        let def_s = canon_def.to_string_lossy().to_lowercase();
+        let def_s = def_s.trim_start_matches(r"\\?\");
+        if s == def_s {
+            return false;
+        }
+    }
+    let def_raw = default_install.to_string_lossy().to_lowercase();
+    let def_raw = def_raw.trim_start_matches(r"\\?\");
+    if s == def_raw {
+        return false;
+    }
+
+    // Blacklist critical Windows roots
+    let forbidden = [
+        "c:\\", "d:\\", "e:\\", "f:\\", "g:\\",
+        "c:\\windows", "c:\\windows\\system32",
+        "c:\\program files", "c:\\program files (x86)",
+        "c:\\programdata", "c:\\programdata\\epic", "c:\\users",
+    ];
+    for f in forbidden {
+        if s == f || s == format!("{}\\", f.trim_end_matches('\\')) {
+            return false;
+        }
+    }
+
+    // Must not be user profile or core profile folders
+    if let Ok(user_profile) = std::env::var("USERPROFILE") {
+        let up = user_profile.to_lowercase();
+        if s == up
+            || s == format!("{}\\desktop", up)
+            || s == format!("{}\\documents", up)
+            || s == format!("{}\\downloads", up)
+            || s == format!("{}\\appdata", up)
+        {
+            return false;
+        }
+    }
+
+    true
+}
+
+/// Recursively removes a directory on Windows, stripping any read-only attributes
+/// that would otherwise cause `ERROR_ACCESS_DENIED` during deletion.
+fn force_remove_dir_all(path: &Path) -> std::io::Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+    // Fast path: try standard std::fs::remove_dir_all first
+    if std::fs::remove_dir_all(path).is_ok() {
+        return Ok(());
+    }
+
+    fn strip_readonly_and_delete(p: &Path) -> std::io::Result<()> {
+        if let Ok(meta) = p.symlink_metadata() {
+            if meta.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(p) {
+                    for entry in entries.flatten() {
+                        let _ = strip_readonly_and_delete(&entry.path());
+                    }
+                }
+                if let Ok(m) = p.metadata() {
+                    let mut perms = m.permissions();
+                    if perms.readonly() {
+                        perms.set_readonly(false);
+                        let _ = std::fs::set_permissions(p, perms);
+                    }
+                }
+                let _ = std::fs::remove_dir(p);
+            } else {
+                if let Ok(m) = p.metadata() {
+                    let mut perms = m.permissions();
+                    if perms.readonly() {
+                        perms.set_readonly(false);
+                        let _ = std::fs::set_permissions(p, perms);
+                    }
+                }
+                let _ = std::fs::remove_file(p);
+            }
+        }
+        Ok(())
+    }
+
+    let _ = strip_readonly_and_delete(path);
+    if path.exists() {
+        let _ = std::fs::remove_dir_all(path);
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn epic_uninstall_game(
     app: AppHandle,
@@ -1649,9 +1753,41 @@ pub async fn epic_uninstall_game(
     keep_files: bool,
 ) -> Result<String, String> {
     let bin = resolve_bin(&app)?;
-    let title = app_name.clone();
+    let config = super::skip::default_config_dir();
+
+    // Terminate any running process for this game before uninstalling
+    let _ = epic_stop_game(app.clone(), app_name.clone()).await;
+
+    // 1. Gather title and install path while installed.json or EGL manifests still have them
+    let mut resolved_title = app_name.clone();
+    let mut resolved_install_path: Option<PathBuf> = None;
+
+    let installed_list = super::cache::read_installed(&config);
+    if let Some(entry) = installed_list.iter().find(|g| g.app_name.eq_ignore_ascii_case(&app_name)) {
+        if !entry.title.trim().is_empty() {
+            resolved_title = entry.title.clone();
+        }
+        if !entry.install_path.trim().is_empty() {
+            resolved_install_path = Some(PathBuf::from(entry.install_path.trim()));
+        }
+    }
+
+    if resolved_install_path.is_none() {
+        let egl_games = super::cache::read_egl_installed_games();
+        if let Some(egl) = egl_games.iter().find(|g| g.app_name.eq_ignore_ascii_case(&app_name)) {
+            if !egl.title.trim().is_empty() {
+                resolved_title = egl.title.clone();
+            }
+            if !egl.install_path.trim().is_empty() {
+                resolved_install_path = Some(PathBuf::from(egl.install_path.trim()));
+            }
+        }
+    }
+
     // Read the title while installed.json still has it, then drop the matching .lnk.
     super::commands::remove_desktop_shortcut(&app_name).await;
+
+    // 2. Run legendary uninstall
     let mut cmd = tokio::process::Command::new(&bin);
     cmd.arg("-y").arg("uninstall");
     if keep_files {
@@ -1664,11 +1800,41 @@ pub async fn epic_uninstall_game(
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     let out = cmd.output().await.map_err(|e| e.to_string())?;
+
+    // 3. Remove all EGL .item manifests in ProgramData for this game (and any of its DLCs).
+    // Critical: If the .item manifest remains, official Epic Games Store displays
+    // "Repair" instead of returning to the uninstalled state, and our launcher
+    // re-detects the game on refresh.
+    super::cache::remove_egl_manifests_for_game(&app_name);
+
+    // 4. When not keeping files, completely remove remaining game files and directories
+    if !keep_files {
+        if let Some(ref path) = resolved_install_path {
+            let def_dir = default_install_dir();
+            if path.is_dir() && is_safe_game_dir(path, &def_dir) {
+                let _ = force_remove_dir_all(path);
+            }
+        }
+    }
+
+    // 5. Ensure the game is pruned from installed.json and manifests
+    super::cache::remove_game_from_installed_json(&config, &app_name);
+    super::cache::remove_game_manifests(&config, &app_name);
+
     if out.status.success() {
-        Ok(format!("@t:dl.uninstalled\u{1f}{title}"))
+        Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
     } else {
         let err = String::from_utf8_lossy(&out.stderr);
-        Err(short_error(&err))
+        let low = err.to_lowercase();
+        // If legendary reported it wasn't installed in its own database, but our
+        // cleanup completed (e.g. for EGL-imported games), treat it as uninstalled.
+        if low.contains("not installed")
+            || resolved_install_path.as_ref().map(|p| !p.exists()).unwrap_or(false)
+        {
+            Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
+        } else {
+            Err(short_error(&err))
+        }
     }
 }
 
@@ -2499,5 +2665,33 @@ mod tests {
             let running = is_game_process_running(None, &["explorer.exe".to_string()]);
             assert!(running, "explorer.exe should be running on Windows");
         }
+    }
+
+    #[test]
+    fn test_is_safe_game_dir() {
+        let def = PathBuf::from(r"C:\Games");
+        assert!(is_safe_game_dir(&PathBuf::from(r"C:\Games\ReadyOrNot"), &def));
+        assert!(is_safe_game_dir(&PathBuf::from(r"D:\EpicGames\Cyberpunk2077"), &def));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"C:\"), &def));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"D:\"), &def));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Games"), &def));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Windows"), &def));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Program Files"), &def));
+    }
+
+    #[test]
+    fn test_force_remove_dir_all_handles_readonly() {
+        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_uninstall_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        let sub = temp_dir.join("subfolder");
+        std::fs::create_dir_all(&sub).unwrap();
+        let file = sub.join("readonly_file.txt");
+        std::fs::write(&file, "test").unwrap();
+        let mut perms = std::fs::metadata(&file).unwrap().permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(&file, perms).unwrap();
+
+        assert!(force_remove_dir_all(&temp_dir).is_ok());
+        assert!(!temp_dir.exists());
     }
 }
