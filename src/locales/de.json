@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "Konten verwalten",
   "nav.switchAccounts": "Kontowechsler",
   "settings.installedIconTitle": "Play-Taste auf Covern",
-  "settings.installedIconDesc": "Zeigt neben dem Titel installierter Spiele eine Schnellstart-Taste an.",
+  "settings.installedIconDesc": "Zeigt auf den Covern installierter Spiele eine Schnellstart-Taste an.",
   "settings.dimUninstalledTitle": "Nicht installierte Spiele abdunkeln",
   "settings.dimUninstalledDesc": "Cover und Zeilen nicht installierter Spiele abdunkeln, um installierte Titel hervorzuheben.",
   "settings.contrastTitlesTitle": "Installierte Titel hervorheben",

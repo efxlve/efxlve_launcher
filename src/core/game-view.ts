@@ -67,6 +67,12 @@ export function libraryDlBar(appName: string, p: number | null): string {
     : "";
 }
 
+/** Instant play button overlaid on the cover for installed games. */
+export function libraryCoverPlayBtn(appName: string, installed: boolean): string {
+  if (!S.showInstalledIcon || !installed) return "";
+  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" title="${t("palette.play")}" aria-label="${t("palette.play")}">${icon("play", 14)}</button>`;
+}
+
 /**
  * Patch visible library items (grid cards and list rows) in place: badge,
  * installed dimming, primary action and download bar. Never rebuilds the
@@ -101,6 +107,13 @@ export function patchLibraryCardDom(appName: string): boolean {
       else art.insertAdjacentHTML("afterbegin", statsHtml);
     } else if (stats) {
       stats.remove();
+    }
+    const playBtn = art?.querySelector<HTMLElement>(".pcard-play-btn");
+    const playBtnHtml = libraryCoverPlayBtn(appName, s.installed);
+    if (art && playBtnHtml) {
+      if (!playBtn) art.insertAdjacentHTML("beforeend", playBtnHtml);
+    } else if (playBtn) {
+      playBtn.remove();
     }
     const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
     if (achHost) achHost.innerHTML = listAchievementCell(appName);

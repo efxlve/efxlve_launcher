@@ -128,6 +128,16 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Kütüphane Grid Başlık Rengi & Kapak Oyna Butonu Yeniden Tasarımı (Play Button & Grid Title Contrast):**
+  1. **Ayar Kapalıyken Parlak Başlık Rengi (`.pcard-title`):** "Yüklü oyunları öne çıkar" ayarı kapalıyken grid görünümündeki tüm oyun başlıklarının sönük gri (`var(--text-2)`) yerine berrak, net ve parlak beyaz (`var(--text)` / `#ffffff`, `font-weight: 500`) görünmesi sağlandı. Ayar açıkken yüklü oyunlar `var(--text)` (600 semi-bold), kurulu olmayanlar ise `var(--text-3)` soluk tonunu korur.
+  2. **Kapak Oyna Butonunun Yeniden Tasarımı (`.pcard-play-btn` & `.pcard-art`):**
+     - Başlık satırına sıkıştırılarak metinleri erken `...` ile bölen ("UNCHARTED: Legacy of Thi...") ve kısa başlıklarda sağa fırlayan 20px koyu halka buton kaldırıldı.
+     - Oyna butonu doğrudan poster sanatının içine (`.pcard-art` sağ-alt, `bottom: 10px; right: 10px; z-index: 6`), konsol ve Steam standardında 36px dairesel obsidian hover eylemi olarak taşındı.
+     - **Akıcı Etkileşim & Sıfır Donanım Yükü:** Düşük donanım kuralı (§6.13) gereği `backdrop-filter` kullanılmadan opak obsidian (`rgba(14, 15, 18, 0.9)`) ve `border: 1px solid rgba(255, 255, 255, 0.22)` ile tasarlandı; kart boştayken gizli (`opacity: 0`), karta hover/odak gelindiğinde yumuşakça belirir (120ms), butonun üzerine gelindiğinde parlak beyaz arka plan (`#fff`), siyah üçgen ikon ve mikro büyüme (`scale(1.12)`) ile canlanır.
+     - Başlıklar (`.pcard-title`) tam genişliğine kavuştu; başlık kapalıyken gereksiz boş caption DOM yükü engellendi.
+  3. **Yerinde Yama Desteği (`patchLibraryCardDom`):** Bir oyun kurulduğunda veya silindiğinde buton `patchLibraryCardDom` aracılığıyla DOM yeniden çizilmeden yerinde eklenir/kaldırılır.
+  4. **15 Dil Güncellemesi:** Ayarlar menüsündeki `settings.installedIconDesc` açıklaması 15 dilde kapağa uygun olarak güncellendi.
+
 - **Kütüphane Görsel Kontrastı & Yüklü Oyun Vurgusu Sadeleştirmesi (Seçenek A Tamamlandı):**
   1. **Tek Birleşik Akıllı Switch (`highlightInstalled` / `HIGHLIGHT_INSTALLED_KEY`):** Ayarlar > Görünüm altındaki iki ayrı kafa karıştırıcı ve birbiriyle çelişebilen toggle ("Kurulu olmayanları soluklaştır" ve "Yüklü oyun başlıklarını öne çıkar"), tek bir dengeli ve zarif konsol seçeneğinde birleştirildi: **"Yüklü oyunları öne çıkar"** (`settings.highlightInstalledTitle` / `settings.highlightInstalledDesc`, varsayılan AÇIK / `true`).
   2. **Kusursuz Görsel Hiyerarşi & Akıcılık (`.pgrid.highlight-installed`, `.lib-list.highlight-installed`):**

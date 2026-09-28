@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "إدارة الحسابات",
   "nav.switchAccounts": "مبدّل الحسابات",
   "settings.installedIconTitle": "زر تشغيل على الأغلفة",
-  "settings.installedIconDesc": "إظهار زر تشغيل سريع بجانب عنوان الألعاب المثبتة في المكتبة.",
+  "settings.installedIconDesc": "إظهار زر تشغيل سريع على أغلفة الألعاب المثبتة في المكتبة.",
   "settings.dimUninstalledTitle": "تعتيم الألعاب غير المثبتة",
   "settings.dimUninstalledDesc": "تعتيم الأغلفة وقوائم الألعاب غير المثبتة لإبراز الألعاب المثبتة.",
   "settings.contrastTitlesTitle": "إبراز عناوين الألعاب المثبتة",

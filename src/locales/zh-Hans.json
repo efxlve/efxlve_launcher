@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "管理账户",
   "nav.switchAccounts": "账户切换器",
   "settings.installedIconTitle": "在封面上显示播放按钮",
-  "settings.installedIconDesc": "在已安装游戏的标题旁显示快速启动的“开始”按钮。",
+  "settings.installedIconDesc": "在已安装游戏的封面上显示快速启动的“开始”按钮。",
   "settings.dimUninstalledTitle": "淡化未安装的游戏",
   "settings.dimUninstalledDesc": "淡化未安装游戏的封面和列表行，以突出显示已安装的游戏。",
   "settings.contrastTitlesTitle": "突出显示已安装游戏的标题",

@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverPlayBtn, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -308,16 +308,10 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
-  const showInstalledPlay = S.showInstalledIcon && s.installed;
-  const installedPlayHtml = showInstalledPlay
-    ? `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${s.appName}" title="${t("palette.play")}">${icon("play", 10)}</button>`
-    : "";
-  const titleRow = S.showCoverTitles
-    ? `<span class="pcard-title-row"><span class="pcard-title">${title}</span>${installedPlayHtml}</span>`
-    : (showInstalledPlay ? `<span class="pcard-title-row"><span class="pcard-title"></span>${installedPlayHtml}</span>` : "");
-  const caption = (S.showCoverTitles || Boolean(storesLabel) || showInstalledPlay)
+  const playBtnHtml = libraryCoverPlayBtn(s.appName, s.installed);
+  const caption = (S.showCoverTitles || Boolean(storesLabel))
     ? `<div class="pcard-caption">
-        ${titleRow}
+        ${S.showCoverTitles ? `<span class="pcard-title" title="${title}">${title}</span>` : ""}
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
       </div>`
     : "";
@@ -330,6 +324,7 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
+        ${playBtnHtml}
       </div>
       ${caption}
     </div>`;
@@ -376,7 +371,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
-  return `<div class="pgrid${S.showCoverTitles || S.showInstalledIcon || S.showStoreBadge ? " has-captions" : ""}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
+  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
 }
 
 /**

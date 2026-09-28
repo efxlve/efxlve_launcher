@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "Gérer les comptes",
   "nav.switchAccounts": "Sélecteur de compte",
   "settings.installedIconTitle": "Bouton Jouer sur les jaquettes",
-  "settings.installedIconDesc": "Affiche un bouton Jouer rapide à côté du titre des jeux installés.",
+  "settings.installedIconDesc": "Affiche un bouton Jouer rapide sur la jaquette des jeux installés.",
   "settings.dimUninstalledTitle": "Estomper les jeux non installés",
   "settings.dimUninstalledDesc": "Atténue les jaquettes et lignes des jeux non installés pour mettre en valeur les jeux installés.",
   "settings.contrastTitlesTitle": "Mettre en valeur les titres installés",

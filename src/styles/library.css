@@ -114,6 +114,7 @@
 .pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .pgrid > .pcard:hover .pcard-art, .pgrid > .pcard:focus-visible .pcard-art { transform: none; }
+  .pcard-play-btn { transition: none !important; }
 }
 .pcard-meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Optional caption under the cover (Settings > Appearance). */
@@ -128,51 +129,72 @@
 .pcard-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
   min-width: 0;
 }
 .pcard-title {
-  flex: 1;
+  display: block;
   min-width: 0;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 .pcard-play-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 6;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: var(--surface-2);
-  color: var(--text-2);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(14, 15, 18, 0.9);
+  color: #ffffff;
   cursor: pointer;
   padding: 0;
-  flex-shrink: 0;
   line-height: 1;
-  transition: background-color var(--ease), color var(--ease), transform var(--ease), border-color var(--ease);
+  opacity: 0;
+  transform: translateY(4px) scale(0.9);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  transition:
+    opacity 120ms ease,
+    transform 120ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 .pcard-play-btn svg {
-  margin-left: 1px;
+  margin-left: 2px;
+  width: 14px;
+  height: 14px;
 }
-.pcard:hover .pcard-play-btn {
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.28);
+.pcard:hover .pcard-play-btn,
+.pcard:focus-visible .pcard-play-btn,
+.pcard:focus-within .pcard-play-btn {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 .pcard-play-btn:hover {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
-  transform: scale(1.1);
+  transform: translateY(0) scale(1.12);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(255, 255, 255, 0.35);
 }
 .pcard-play-btn:active {
-  transform: scale(0.94);
+  transform: translateY(0) scale(0.94);
 }
 .pcard-stores {
   font-size: 11px;

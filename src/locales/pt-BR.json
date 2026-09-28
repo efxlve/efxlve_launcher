@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "Gerenciar contas",
   "nav.switchAccounts": "Alternador de contas",
   "settings.installedIconTitle": "Botão Jogar nas capas",
-  "settings.installedIconDesc": "Mostra um botão de reprodução rápida ao lado do título para jogos instalados.",
+  "settings.installedIconDesc": "Mostra um botão de reprodução rápida na capa dos jogos instalados.",
   "settings.dimUninstalledTitle": "Esmaecer jogos não instalados",
   "settings.dimUninstalledDesc": "Esmaece capas e linhas de jogos não instalados para destacar os títulos instalados.",
   "settings.contrastTitlesTitle": "Destacar títulos instalados",

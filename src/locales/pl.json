@@ -1302,7 +1302,7 @@
   "accounts.manageAccounts": "Zarządzaj kontami",
   "nav.switchAccounts": "Przełącznik kont",
   "settings.installedIconTitle": "Przycisk Graj na okładkach",
-  "settings.installedIconDesc": "Pokaż przycisk szybkiego uruchamiania obok tytułu zainstalowanych gier.",
+  "settings.installedIconDesc": "Pokaż przycisk szybkiego uruchamiania na okładce zainstalowanych gier.",
   "settings.dimUninstalledTitle": "Przyciemnij niezainstalowane gry",
   "settings.dimUninstalledDesc": "Przyciemnij okładki i wiersze niezainstalowanych gier, aby wyróżnić zainstalowane tytuły.",
   "settings.contrastTitlesTitle": "Wyróżnij zainstalowane tytuły",
