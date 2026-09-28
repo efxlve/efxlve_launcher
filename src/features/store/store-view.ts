@@ -255,8 +255,9 @@ export async function loadFriends(force = false, replace = false): Promise<void>
   try {
     const data = await epicFriends();
     if (gen !== friendsLoadGen) return;
-    S.friends = data.friends;
-    S.friendsIncoming = data.incoming;
+    S.friends = data.friends || [];
+    // Defensive: an older backend build may not send `incoming` yet.
+    S.friendsIncoming = data.incoming || [];
   } catch (e) {
     if (gen !== friendsLoadGen) return;
     S.friendsError = localizeMessage(String(e));
