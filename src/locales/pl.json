@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Do znajomych potrzebne jest logowanie Epic.",
   "friends.networkError": "Nie udało się pobrać listy znajomych (błąd sieci).",
   "friends.authError": "Sesja Epic jest nieprawidłowa lub wygasła.",
+  "friends.errorTitle": "Nie udało się wczytać znajomych",
   "friends.filterActive": "Aktywni",
   "friends.onlineNow": "Teraz online",
   "friends.lastSeen": "Ostatnio widziany: {when}",

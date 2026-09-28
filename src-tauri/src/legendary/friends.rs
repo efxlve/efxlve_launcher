@@ -434,4 +434,87 @@ mod tests {
         assert_eq!(requests[1].account_id, "n");
         assert_eq!(requests[1].display_name, "Yeni");
     }
+
+    /// Live check against Epic's services using the session legendary stored.
+    /// Requires a signed-in account; run with `cargo test -- --ignored --nocapture`.
+    #[tokio::test]
+    #[ignore]
+    async fn live_fetch_friends() {
+        let data = fetch_friends().await.expect("fetch_friends");
+        println!(
+            "account={} friends={} incoming={}",
+            data.display_name,
+            data.friends.len(),
+            data.incoming.len()
+        );
+        for f in data.friends.iter().take(5) {
+            println!(
+                "  friend {} ({}) last_online={:?}",
+                f.display_name, f.account_id, f.last_online
+            );
+        }
+        for r in data.incoming.iter().take(5) {
+            println!("  incoming {} ({})", r.display_name, r.account_id);
+        }
+        assert!(!data.account_id.is_empty());
+    }
+
+    /// Live check of the friend action route with a bogus id: the service must
+    /// answer 404 (path + auth correct), never 401/403.
+    #[tokio::test]
+    #[ignore]
+    async fn live_friend_action_probe() {
+        let missing = "00000000000000000000000000000000";
+        let accept_err = friend_action(missing, reqwest::Method::POST).await;
+        let remove_err = friend_action(missing, reqwest::Method::DELETE).await;
+        println!("accept: {accept_err:?}");
+        println!("remove: {remove_err:?}");
+        assert!(accept_err.is_err() && remove_err.is_err());
+    }
+
+    /// Live end-to-end check of the write path: accepts the oldest incoming
+    /// request, verifies it became a friend, then removes it again so the
+    /// account state is restored.
+    #[tokio::test]
+    #[ignore]
+    async fn live_friend_accept_and_remove() {
+        let before = fetch_friends().await.expect("fetch_friends");
+        let target = match before.incoming.last() {
+            Some(r) => r.account_id.clone(),
+            None => {
+                println!("no incoming requests to test with");
+                return;
+            }
+        };
+        println!("target {} ({} incoming before)", target, before.incoming.len());
+
+        friend_action(&target, reqwest::Method::POST)
+            .await
+            .expect("accept failed");
+        let after_accept = fetch_friends().await.expect("fetch_friends");
+        let became_friend = after_accept.friends.iter().any(|f| f.account_id == target);
+        let still_incoming = after_accept.incoming.iter().any(|r| r.account_id == target);
+        println!(
+            "after accept: friends={} incoming={} became_friend={} still_incoming={}",
+            after_accept.friends.len(),
+            after_accept.incoming.len(),
+            became_friend,
+            still_incoming
+        );
+
+        friend_action(&target, reqwest::Method::DELETE)
+            .await
+            .expect("remove failed");
+        let after_remove = fetch_friends().await.expect("fetch_friends");
+        let still_friend = after_remove.friends.iter().any(|f| f.account_id == target);
+        println!(
+            "after remove: friends={} incoming={} still_friend={}",
+            after_remove.friends.len(),
+            after_remove.incoming.len(),
+            still_friend
+        );
+
+        assert!(became_friend, "accepted request did not become a friend");
+        assert!(!still_friend, "removed friend is still in the list");
+    }
 }

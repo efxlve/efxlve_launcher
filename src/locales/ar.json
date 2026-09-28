@@ -97,6 +97,7 @@
   "friends.notSignedIn": "يلزم تسجيل الدخول إلى Epic لعرض الأصدقاء.",
   "friends.networkError": "تعذر الوصول إلى قائمة الأصدقاء (خطأ في الشبكة).",
   "friends.authError": "جلسة Epic غير صالحة أو منتهية.",
+  "friends.errorTitle": "تعذر تحميل الأصدقاء",
   "friends.filterActive": "النشطون",
   "friends.onlineNow": "متصل الآن",
   "friends.lastSeen": "آخر ظهور: {when}",

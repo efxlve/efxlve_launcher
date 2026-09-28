@@ -97,6 +97,7 @@
   "friends.notSignedIn": "É preciso entrar na Epic para ver os amigos.",
   "friends.networkError": "Não foi possível acessar a lista de amigos (erro de rede).",
   "friends.authError": "A sessão da Epic é inválida ou expirou.",
+  "friends.errorTitle": "Não foi possível carregar os amigos",
   "friends.filterActive": "Ativo",
   "friends.onlineNow": "Online agora",
   "friends.lastSeen": "Visto por último: {when}",

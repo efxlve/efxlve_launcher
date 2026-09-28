@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Для списка друзей нужен вход в Epic.",
   "friends.networkError": "Не удалось получить список друзей (ошибка сети).",
   "friends.authError": "Сеанс Epic недействителен или истёк.",
+  "friends.errorTitle": "Не удалось загрузить друзей",
   "friends.filterActive": "Активные",
   "friends.onlineNow": "Сейчас в сети",
   "friends.lastSeen": "Был(а) в сети: {when}",

@@ -63,8 +63,8 @@ efxlve_launcher/
 │   │   ├── store/                     # Embedded Epic/GOG store child webview manager
 │   │   └── updates/                   # Launcher self-update (check/download/install gating)
 │   ├── locales/                       # 15 language dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (primary, 1.320 keys)
-│   │   ├── en.json                    # English (1.320 keys, full parity)
+│   │   ├── tr.json                    # Turkish (primary, 1.332 keys)
+│   │   ├── en.json                    # English (1.332 keys, full parity)
 │   │   └── ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant  # all at full parity
 │   └── styles/                        # 13 stylesheets (12 modules + index.css)
 │       ├── index.css                  # Master CSS entry (imports every module in cascade order)

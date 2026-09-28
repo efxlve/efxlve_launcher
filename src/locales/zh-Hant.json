@@ -97,6 +97,7 @@
   "friends.notSignedIn": "檢視好友需要登入 Epic。",
   "friends.networkError": "無法取得好友清單（網路錯誤）。",
   "friends.authError": "Epic 工作階段無效或已過期。",
+  "friends.errorTitle": "無法載入好友",
   "friends.filterActive": "活躍",
   "friends.onlineNow": "目前在線",
   "friends.lastSeen": "最後上線：{when}",

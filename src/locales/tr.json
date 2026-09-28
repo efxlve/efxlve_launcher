@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Arkadaşlar için Epic oturumu gerekli.",
   "friends.networkError": "Arkadaş listesine ulaşılamadı (ağ hatası).",
   "friends.authError": "Epic oturumu geçersiz veya süresi dolmuş.",
+  "friends.errorTitle": "Arkadaşlar yüklenemedi",
   "friends.filterActive": "Aktif",
   "friends.onlineNow": "Şu an çevrimiçi",
   "friends.lastSeen": "Son görülme: {when}",

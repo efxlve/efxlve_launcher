@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Epic sign-in is required for friends.",
   "friends.networkError": "Could not reach the friends list (network error).",
   "friends.authError": "Epic session is invalid or expired.",
+  "friends.errorTitle": "Could not load friends",
   "friends.filterActive": "Active",
   "friends.onlineNow": "Online now",
   "friends.lastSeen": "Last seen {when}",

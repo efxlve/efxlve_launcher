@@ -97,6 +97,7 @@
   "friends.notSignedIn": "Une connexion Epic est requise pour les amis.",
   "friends.networkError": "Liste d'amis injoignable (erreur réseau).",
   "friends.authError": "La session Epic est invalide ou expirée.",
+  "friends.errorTitle": "Impossible de charger les amis",
   "friends.filterActive": "Actif",
   "friends.onlineNow": "En ligne",
   "friends.lastSeen": "Vu pour la dernière fois : {when}",

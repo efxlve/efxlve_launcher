@@ -203,7 +203,17 @@ export function renderFriendsView(): string {
   const filterTab = (val: string, label: string): string =>
     `<button class="tab ${S.friendsFilter === val ? "active" : ""}" data-act="friends-filter" data-val="${val}">${label}</button>`;
 
-  const body = loading ? loadingState(t("friends.loading")) : renderFriendsList(rows);
+  // A failing store must be visible even when the other store returned rows.
+  const body = loading
+    ? loadingState(t("friends.loading"))
+    : error && rows.length === 0
+      ? emptyState(
+          "info",
+          t("friends.errorTitle"),
+          esc(error),
+          `<button class="btn ghost small" data-act="refresh-friends">${t("profile.retry")}</button>`,
+        )
+      : renderFriendsList(rows);
 
   return `
     <div class="page friends-page">
@@ -228,7 +238,7 @@ export function renderFriendsView(): string {
         <span class="friends-sub-sep" aria-hidden="true">·</span><span id="friends-online" class="friends-count tabular-nums">${t("friends.onlineCount", { count: all.filter((f) => f.online).length })}</span>
         ${all.length > 0 && S.friendsPresenceAt > 0 ? `<span class="friends-sub-sep" aria-hidden="true">·</span><span id="friends-updated" class="friends-updated">${t("friends.updated", { when: relativeTime(S.friendsPresenceAt) })}</span>` : ""}
       </p>
-      ${error && rows.length === 0 ? `<p class="page-sub friends-error">${esc(error)}</p>` : ""}
+      ${error && rows.length > 0 ? `<p class="page-sub friends-error">${esc(error)}</p>` : ""}
       <div id="friends-requests">${renderFriendRequests()}</div>
       <div id="friends-list">${body}</div>
     </div>`;
@@ -296,15 +306,9 @@ export async function loadFriendsView(force = false): Promise<void> {
     return;
   }
 
-  const epicPromise = (async () => {
-    S.friendsLoading = true;
-    try {
-      await loadFriends(force);
-      S.friendsError = "";
-    } finally {
-      S.friendsLoading = false;
-    }
-  })();
+  // `loadFriends` owns its loading flag and re-renders; setting the flag here
+  // first would make it hit its own "already loading" guard and skip the fetch.
+  const epicPromise = loadFriends(force);
 
   const gogPromise = (async () => {
     if (!S.gogAccount && !S.gogAccountId) return;
