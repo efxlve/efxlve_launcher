@@ -85,14 +85,6 @@ pub struct GogAuthStatus {
     pub username: Option<String>,
 }
 
-/// gogdl binary presence status.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GogSetupStatus {
-    pub binary_path: Option<String>,
-    pub version: Option<String>,
-    pub needs_download: bool,
-}
-
 /// Disk cached library snapshot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GogCachedLibrary {

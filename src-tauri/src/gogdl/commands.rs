@@ -11,9 +11,8 @@ use super::cache::{
     load_installed_games, save_achievements_cache, save_auth_tokens, save_cached_library,
 };
 use super::models::{
-    GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary, GogSetupStatus,
+    GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary,
 };
-use super::paths::{downloaded_binary, resolve_binary};
 use super::{cmd_error, GogError};
 use crate::legendary::models::{
     GameAchievementSummary, GameAchievementsResponse, GameRequirementsResponse,
@@ -91,19 +90,6 @@ pub async fn gog_logout(app: AppHandle) -> Result<(), String> {
     clear_auth_tokens(&app);
     let _ = save_cached_library(&app, None, None, &[]);
     Ok(())
-}
-
-/// Checks the status of the local `gogdl.exe` binary.
-#[command]
-pub async fn gog_setup_status(app: AppHandle) -> Result<GogSetupStatus, String> {
-    let dl_bin = downloaded_binary(&app);
-    let resolved = resolve_binary(&app).ok();
-
-    Ok(GogSetupStatus {
-        binary_path: resolved.as_ref().map(|p| p.to_string_lossy().to_string()),
-        version: None,
-        needs_download: !dl_bin.is_file(),
-    })
 }
 
 /// Reads the cached GOG library snapshot for instantaneous local hydration on startup.

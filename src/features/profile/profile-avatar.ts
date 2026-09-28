@@ -18,12 +18,6 @@ import { t } from "../../i18n";
 
 export { getCustomAvatar };
 
-/** Namespaced key for a profile photo (`global` or `epic:/gog:<id>`). */
-export function avatarKeyFor(kind: "epic" | "gog" | "global", id?: string | null): string {
-  if (kind === "global" || !id) return GLOBAL_AVATAR_KEY;
-  return `${kind}:${id}`;
-}
-
 /** Key of the photo the current context edits (active account, else combined). */
 export function getCurrentAvatarKey(): string {
   if (S.epicAccountId) return `epic:${S.epicAccountId}`;

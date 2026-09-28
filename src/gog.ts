@@ -8,12 +8,6 @@ export interface GogAuthStatus {
   username: string | null;
 }
 
-export interface GogSetupStatus {
-  binary_path: string | null;
-  version: string | null;
-  needs_download: boolean;
-}
-
 export interface GogGameSummary {
   game_id: string;
   title: string;
@@ -49,10 +43,6 @@ export async function gogAuthCode(code: string): Promise<GogAuthStatus> {
 
 export async function gogLogout(): Promise<void> {
   return invoke<void>("gog_logout");
-}
-
-export async function gogSetupStatus(): Promise<GogSetupStatus> {
-  return invoke<GogSetupStatus>("gog_setup_status");
 }
 
 export async function gogCachedLibrary(): Promise<GogCachedLibrary> {

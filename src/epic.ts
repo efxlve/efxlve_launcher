@@ -51,14 +51,6 @@ export interface EpicInstalled {
   save_path: string | null;
 }
 
-export interface EpicStatus {
-  account: string;
-  games_available: number;
-  games_installed: number;
-  egl_sync_enabled: boolean;
-  config_directory: string;
-}
-
 export interface SetupStatus {
   binaryPath: string | null;
   version: string | null;
@@ -942,8 +934,6 @@ export const epicSetPlaytime = (
   });
 
 /* ---------- Download network profile ---------- */
-
-export type NetworkProfileType = "max" | "balanced" | "low";
 
 export const epicGetNetworkProfile = () =>
   invoke<string>("epic_get_network_profile");

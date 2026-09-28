@@ -1954,7 +1954,6 @@ fn main() {
             gogdl::commands::gog_auth_status,
             gogdl::commands::gog_auth_code,
             gogdl::commands::gog_logout,
-            gogdl::commands::gog_setup_status,
             gogdl::commands::gog_cached_library,
             gogdl::commands::gog_list_games,
             gogdl::commands::gog_get_game_details,

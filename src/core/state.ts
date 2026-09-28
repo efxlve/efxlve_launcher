@@ -382,11 +382,6 @@ export function avatarFor(key: string): string | null {
   return null;
 }
 
-/** True when the key (or its legacy alias) has a photo. */
-export function hasCustomAvatar(key: string): boolean {
-  return avatarFor(key) !== null;
-}
-
 /** Avatar for one specific account; never falls back to another account's photo. */
 export function getCustomAvatar(accountId?: string | null): string | null {
   if (accountId) return avatarFor(accountId);
