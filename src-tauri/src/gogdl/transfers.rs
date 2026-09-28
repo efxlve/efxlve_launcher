@@ -175,6 +175,7 @@ pub fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInf
 
     let title = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let version = val.get("version").and_then(|v| v.as_str()).unwrap_or("1.0.0").to_string();
+    let build_id = val.get("buildId").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let mut exe: Option<String> = None;
 
     if let Some(tasks) = val.get("playTasks").and_then(|v| v.as_array()) {
@@ -199,6 +200,7 @@ pub fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInf
         version,
         install_size: 0,
         executable: exe,
+        build_id,
     })
 }
 
@@ -368,8 +370,12 @@ pub async fn gog_install_game(
                         version: "1.0.0".to_string(),
                         install_size: 0,
                         executable: None,
+                        build_id: String::new(),
                     },
                 );
+                // Keep GOG Galaxy's registry entry in step so the official client
+                // does not offer the update we just installed. Best effort.
+                super::galaxy::sync_galaxy_version(&clean_id_clone, &info.version, &info.build_id);
                 installed_map.insert(clean_id_clone.clone(), info);
                 let _ = save_installed_games(&app_clone, &installed_map);
 
@@ -521,7 +527,7 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
     let mut installed_map = load_installed_games(&app);
     let info = installed_map
         .remove(&clean_id)
-        .ok_or_else(|| "Oyun kurulu deÄŸil.".to_string())?;
+        .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
 
     let path_str = info.install_path.trim();
     if !path_str.is_empty() {
@@ -533,10 +539,14 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
         }
     }
 
-    save_installed_games(&app, &installed_map)
-        .map_err(|e| format!("installed.json kaydedilemedi: {e}"))?;
+    // Drop GOG Galaxy's registry entry as well, otherwise the official client
+    // keeps showing a broken install (same reason we delete Epic `.item`s).
+    super::galaxy::remove_galaxy_registry(&clean_id);
 
-    Ok("Oyun baÅŸarÄ±yla kaldÄ±rÄ±ldÄ±.".to_string())
+    save_installed_games(&app, &installed_map)
+        .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
+
+    Ok(format!("@t:dl.uninstalled\u{1f}{}", info.title))
 }
 
 /// Imports an existing local GOG game installation into `installed.json`.
@@ -549,7 +559,7 @@ pub async fn gog_import_game(
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let target = PathBuf::from(install_path.trim());
     if !target.is_dir() {
-        return Err("Belirtilen klasÃ¶r mevcut deÄŸil veya bir dizin deÄŸil.".to_string());
+        return Err("@t:settings.importInstalledMissing".to_string());
     }
 
     let mut info = scan_gog_info(&target, &clean_id).unwrap_or_else(|| GogInstalledInfo {
@@ -559,6 +569,7 @@ pub async fn gog_import_game(
         version: "1.0.0".to_string(),
         install_size: 0,
         executable: None,
+        build_id: String::new(),
     });
 
     if info.executable.is_none() {
@@ -569,7 +580,7 @@ pub async fn gog_import_game(
     let mut installed_map = load_installed_games(&app);
     installed_map.insert(clean_id, info.clone());
     save_installed_games(&app, &installed_map)
-        .map_err(|e| format!("installed.json kaydedilemedi: {e}"))?;
+        .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
 
     Ok(info)
 }
@@ -581,28 +592,28 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<String, 
     let mut installed_map = load_installed_games(&app);
     let info = installed_map
         .get_mut(&clean_id)
-        .ok_or_else(|| "Oyun kurulu olarak bulunamadÄ±.".to_string())?;
+        .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
 
     let p = Path::new(&info.install_path);
     if !p.is_dir() {
-        return Err("Oyun kurulum dizini diskte bulunamadÄ±.".to_string());
+        return Err("@t:settings.importInstalledMissing".to_string());
     }
 
     if let Some(ref exe) = info.executable {
         let exe_path = p.join(exe);
         if !exe_path.is_file() {
-            return Err(format!("Ana Ã§alÄ±ÅŸtÄ±rÄ±labilir dosya bulunamadÄ±: {exe}"));
+            return Err("@t:dl.executableNotFound".to_string());
         }
     } else if let Some(fb) = find_fallback_exe(p) {
         info.executable = Some(fb);
     } else {
-        return Err("Kurulum dizininde Ã§alÄ±ÅŸtÄ±rÄ±labilir dosya bulunamadÄ±.".to_string());
+        return Err("@t:dl.executableNotFound".to_string());
     }
 
     info.install_size = calculate_dir_size(p);
     let _ = save_installed_games(&app, &installed_map);
 
-    Ok("Oyun dosyalarÄ± baÅŸarÄ±yla doÄŸrulandÄ±.".to_string())
+    Ok("@t:verify.success".to_string())
 }
 
 #[cfg(test)]

@@ -110,6 +110,8 @@ export const S = {
   gogSavedAccounts: ([]) as import("../gog").SavedGogAccount[],
   gogAccountsAddMode: false,
   gogDefaultDir: "",
+  gogGalaxyDetected: ([]) as import("../gog").GalaxyDetectedGame[],
+  gogGalaxySyncing: false,
   sourceFilter: ("all") as SourceFilter,
   gogSummaries: ([]) as LibraryItem[],
   gogSummariesMap: (new Map()) as Map<string, LibraryItem>,

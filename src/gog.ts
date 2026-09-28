@@ -162,3 +162,19 @@ export const gogSwitchAccount = (userId: string) =>
 
 export const gogRemoveSavedAccount = (userId: string) =>
   invoke<void>("gog_remove_saved_account", { userId });
+
+/** One game entry GOG Galaxy reports as installed (registry scan). */
+export interface GalaxyDetectedGame {
+  gameId: string;
+  title: string;
+  installPath: string;
+  version: string;
+  buildId: string;
+  executable: string;
+}
+
+export const gogDetectGalaxyGames = () =>
+  invoke<GalaxyDetectedGame[]>("gog_detect_galaxy_games");
+
+export const gogSyncGalaxyInstalled = () =>
+  invoke<number>("gog_sync_galaxy_installed");

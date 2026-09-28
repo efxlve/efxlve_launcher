@@ -37,6 +37,7 @@ import {
 } from "../../auth/gog-account-switcher";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
+import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
 import { pushNavHistory, updateSidebarAccountSwitcher } from "../../../core/nav";
 import { closeAllModals, render } from "../../../core/render";
 import { setView } from "../../store/store-view";
@@ -139,6 +140,35 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
     case "gog-account-add":
       promptAddGogAccount();
+      return true;
+
+    case "gog-galaxy-scan":
+      void (async () => {
+        S.gogGalaxyDetected = await gogDetectGalaxyGames().catch(() => []);
+        render();
+      })();
+      return true;
+
+    case "gog-galaxy-import":
+      void (async () => {
+        S.gogGalaxySyncing = true;
+        render();
+        try {
+          const count = await gogSyncGalaxyInstalled();
+          toast(
+            count > 0 ? i18nT("settings.gogGalaxyImported", { count }) : i18nT("settings.gogGalaxyNone"),
+            count > 0 ? "ok" : "",
+          );
+          S.gogGalaxyDetected = await gogDetectGalaxyGames().catch(() => []);
+          // Re-hydrate the GOG library so the imported games show as installed.
+          await syncGogLibrary();
+        } catch (e) {
+          toast(String(e), "err");
+        } finally {
+          S.gogGalaxySyncing = false;
+          render();
+        }
+      })();
       return true;
 
     case "gog-auth-cancel":

@@ -1913,6 +1913,8 @@ fn main() {
             gogdl::commands::gog_get_saved_accounts,
             gogdl::commands::gog_switch_account,
             gogdl::commands::gog_remove_saved_account,
+gogdl::commands::gog_detect_galaxy_games,
+gogdl::commands::gog_sync_galaxy_installed,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

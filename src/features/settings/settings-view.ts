@@ -39,6 +39,7 @@ import {
 } from "../../epic";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
@@ -137,6 +138,24 @@ function renderIntegrations(): string {
       `<button class="btn ghost small" data-act="import-egl-collections">${t("settings.importEglCollections")}</button>`,
     );
 
+  // GOG Galaxy parity: games installed by the official client are detected from
+  // its registry entries and can be imported with full launcher support.
+  const galaxy = S.gogGalaxyDetected;
+  const galaxyAction = galaxy.length > 0
+    ? `<button class="btn primary small" data-act="gog-galaxy-import" ${S.gogGalaxySyncing ? "disabled" : ""}>${S.gogGalaxySyncing ? t("settings.eglSyncing") : t("settings.gogGalaxyImport")}</button>`
+    : `<button class="btn ghost small" data-act="gog-galaxy-scan">${t("settings.rescan")}</button>`;
+  const galaxyRows = galaxy.map((g: GalaxyDetectedGame) => `
+    <div class="row">
+      <div class="row-main"><div class="row-title">${esc(g.title)}</div><div class="row-meta" title="${esc(g.installPath)}">${esc(g.installPath)}</div></div>
+      ${g.version ? `<span class="row-meta">v${esc(g.version)}</span>` : ""}
+    </div>`).join("");
+  const galaxyGroup =
+    row(
+      galaxy.length > 0 ? t("settings.gogGalaxyFound", { count: galaxy.length }) : t("settings.gogGalaxyNone"),
+      t("settings.gogGalaxyDesc"),
+      galaxyAction,
+    ) + galaxyRows;
+
   const tplRows = S.thirdPartyLaunchers.length === 0
     ? row(t("settings.thirdPartyDesc"), t("settings.scanning"), "")
     : S.thirdPartyLaunchers.map((l: ThirdPartyLauncher) => row(
@@ -165,6 +184,7 @@ function renderIntegrations(): string {
   return (
     renderCloudBackupSettingsGroup() +
     group(eglGroup, t("settings.eglTitle")) +
+    group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     group(tplRows, t("settings.thirdPartyTitle")) +
     group(sgdb, "SteamGridDB") +
     group(presence + eos, t("settings.secSocial"))
@@ -459,14 +479,16 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, thirdParty, eos] = await Promise.all([
+    const [eglList, thirdParty, eos, galaxyList] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
       eosOverlayStatus().catch(() => null),
+      gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
     ]);
     S.eglDetectedList = eglList;
     S.thirdPartyLaunchers = thirdParty;
     S.eosOverlay = eos;
+    S.gogGalaxyDetected = galaxyList;
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

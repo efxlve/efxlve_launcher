@@ -351,3 +351,20 @@ pub async fn gog_remove_saved_account(
     let gog_dir = super::paths::gog_config_dir(&app);
     super::accounts::remove_saved_gog_account(&gog_dir, &user_id)
 }
+
+/// Lists games installed by the official GOG Galaxy client (registry scan).
+#[command]
+pub async fn gog_detect_galaxy_games() -> Result<Vec<super::galaxy::GalaxyDetectedGame>, String> {
+    tauri::async_runtime::spawn_blocking(super::galaxy::detect_galaxy_games)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Registers detected Galaxy installs in this launcher's GOG installed map.
+/// Returns how many games were added.
+#[command]
+pub async fn gog_sync_galaxy_installed(app: AppHandle) -> Result<u32, String> {
+    tauri::async_runtime::spawn_blocking(move || super::galaxy::sync_galaxy_installed(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}

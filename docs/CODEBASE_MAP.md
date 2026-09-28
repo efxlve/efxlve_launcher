@@ -99,7 +99,7 @@ efxlve_launcher/
 │       │   ├── move_game.rs           # Cross-drive mover + EGL/legendary manifest updates
 │       │   ├── collections.rs / skip.rs / hltb.rs / critic.rs / steamgrid.rs / wiki.rs
 │       │   └── models.rs / client.rs / downloader.rs / paths.rs / mod.rs
-│       ├── gogdl/                     # GOG backend (9 files: api_client, accounts, cache, commands, launcher, paths, transfers, models, mod)
+│       ├── gogdl/                     # GOG backend (10 files: api_client, accounts, cache, commands, galaxy, launcher, paths, transfers, models, mod)
 │       └── cloud_backup/              # Cloud saves (7 files: manager, archive, webdav, gdrive, commands, models, mod)
 ├── docs/                              # Architecture, design & operations documentation
 │   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
@@ -191,7 +191,7 @@ efxlve_launcher/
 | `legendary/move_game.rs` | Cross-drive relocation + EGL/legendary manifest path updates. |
 | `legendary/collections.rs`, `skip.rs`, `hltb.rs`, `critic.rs`, `steamgrid.rs`, `wiki.rs` | Collections, 401 skipping, HLTB, OpenCritic, SteamGridDB, Wikipedia fallback. |
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
-| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts. |
+| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, and **GOG Galaxy detection/sync** (`galaxy.rs`: registry scan, import, uninstall cleanup, version sync). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
 
 ---

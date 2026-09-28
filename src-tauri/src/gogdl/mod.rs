@@ -3,6 +3,7 @@
 pub mod api_client;
 pub mod cache;
 pub mod commands;
+pub mod galaxy;
 pub mod models;
 pub mod paths;
 pub mod transfers;

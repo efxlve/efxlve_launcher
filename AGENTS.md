@@ -128,6 +128,16 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **GOG Galaxy Entegrasyonu (28.09.2026, kullanıcı isteği — E8 ilk faz) + `alt_bin` kaldırma:**
+  1. **`alt_bin` tamamen silindi (kullanıcı kararı):** `epic_set_alt_bin` komutu, `alt_legendary_bin` ayarı, `EpicSettings/SetupStatus.altBin` alanları, `resolve_binary`/`ensure_binary` override parametreleri ve `dl.altBinaryFailed` anahtarı (15 dil) kaldırıldı → tek yol otomatik indirilen `legendary.exe`/`gogdl.exe`. IPC 142 komut.
+  2. **GOG Galaxy kurulu oyun tespiti (`gogdl/galaxy.rs`):** registry taraması (`HKLM\SOFTWARE\WOW6432Node\GOG.com\Games`, 64-bit görünüm ve `HKCU`), `path/gameName/version/buildId/exe` alanları, klasör varlık doğrulaması, `games` kök anahtarının filtrelenmesi; iki birim testi (toplam **126 test**).
+  3. **İçe aktarma:** `gog_detect_galaxy_games` + `gog_sync_galaxy_installed` komutları; `.info` dosyası tercih edilir, yoksa registry verisiyle kayıt; Ayarlar > Entegrasyonlar'a **GOG Galaxy kartı** (bulunan oyun listesi, "Yeniden Tara", "Kütüphaneye Aktar"), entegrasyon sekmesi açılışında sessiz tarama. İçe aktarma sonrası GOG kütüphanesi yeniden hidrasyonu.
+  4. **Kaldırma senkronu:** `gog_uninstall_game` artık Galaxy registry anahtarını da siler (Epic `.item` temizliğinin GOG eşdeğeri).
+  5. **Güncelleme senkronu:** gogdl kurulum/güncelleme başarısında `sync_galaxy_version` Galaxy registry'sindeki `version`/`buildId` alanlarını günceller → resmi istemci aynı güncellemeyi tekrar önermez (best effort; HKLM yazımı yönetici ister). `GogInstalledInfo` artık `build_id` taşıyor ve `scan_gog_info` bunu `goggame-<id>.info`'dan okuyor.
+  6. **i18n hijyeni:** `gogdl/transfers.rs` içindeki tüm sabit Türkçe kullanıcı mesajları `@t:` anahtarlarına çevrildi (`dl.notInstalled`, `dl.uninstalled`, `dl.executableNotFound`, `verify.success`, `settings.importInstalledMissing`, `err.io`); 6 yeni Galaxy anahtarı 15 dilde (1.303 anahtar, tam parite).
+  7. **Doküman:** IPC_REFERENCE 144 komut + GOG Galaxy satırları, ROADMAP E8 tamamlandı/B11 kapandı, CODEBASE_MAP `gogdl/galaxy.rs`.
+  8. **Doğrulama:** `npm.cmd run build` ✅, `cargo check` ✅ (0 uyarı), `cargo test` **126/126** ✅, i18n 15/15 parite, IPC 144/144 kayıtlı. Kalan not (ROADMAP E8): Galaxy'nin SQLite veritabanını yazma riski değerlendirilmedi.
+
 - **Kullanıcı Geri Bildirimleri + Ölü Kod Temizliği + Optimizasyon Turu (28.09.2026, ROADMAP §6.4/§6.3/§6.5/§6.6):**
   1. **Epic güncelleme tekrarı çözüldü:** legendary güncelleme sonrası resmi Epic Games Launcher aynı güncellemeyi tekrar öneriyordu. Kök neden: EGL `.item` manifestindeki `AppVersionString`/`InstallSize` eski kalıyordu. `cache.rs::sync_egl_manifest_version` + `transfers.rs` başarı dalı eklendi; birim testi `test_apply_installed_version_updates_item_fields` (toplam **124 test**). GOG tarafı için Galaxy'nin kendi veritabanı/registry incelemesi backlog'a not edildi (§6.9).
   2. **"Oyun hakkında" yükleme sırası düzeltildi:** Wikipedia fallback'i artık mağaza verisi (Epic requirements/description, GOG details) tamamlanmadan başlamıyor (`storeAboutSettled` + `maybeLoadWikiAbout`); wiki metninin görünüp mağaza metniyle değiştirilmesi bitti.

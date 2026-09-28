@@ -111,6 +111,9 @@ pub struct GogInstalledInfo {
     pub version: String,
     pub install_size: u64,
     pub executable: Option<String>,
+    /// GOG build id (`goggame-<id>.info` / Galaxy registry); empty when unknown.
+    #[serde(default)]
+    pub build_id: String,
 }
 
 /// Detailed metadata fetched on-demand for the game detail hub.
