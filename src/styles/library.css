@@ -129,11 +129,12 @@
 .pcard-title-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   min-width: 0;
 }
 .pcard-title {
-  flex: 0 1 auto;
+  flex: 1;
   min-width: 0;
   font-size: 13px;
   font-weight: 500;
@@ -156,6 +157,7 @@
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
+  margin-left: auto;
   line-height: 1;
   transition:
     background-color var(--ease),

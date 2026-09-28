@@ -132,8 +132,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
   1. **Ayar Kapalıyken Parlak Başlık Rengi (`.pcard-title`):** "Yüklü oyunları öne çıkar" ayarı kapalıyken grid görünümündeki tüm oyun başlıklarının sönük gri (`var(--text-2)`) yerine berrak, net ve parlak beyaz (`var(--text)` / `#ffffff`, `font-weight: 500`) görünmesi sağlandı. Ayar açıkken yüklü oyunlar `var(--text)` (600 semi-bold), kurulu olmayanlar ise `var(--text-3)` soluk tonunu korur.
   2. **Kapak Afişini Bozan Büyük Buton Kaldırıldı & Zarif Başlık Rozetine Dönüştürüldü:**
      - Poster sanatını kapatan, YouTube oynatıcı hissi veren ve Rule §7.10'a aykırı düşen kapak üzeri büyük beyaz butonlar tamamen kaldırıldı; posterler 100% temiz, sinematik ve sessiz kapak duvarı estetiğine kavuştu.
-     - Yüklü oyunları belirtmek ve hızlı başlatmak için başlığın hemen yanına (`.pcard-title-row .pcard-play-btn`), ismin hemen bitişiğine yerleşen (`flex: 0 1 auto`), 18px dairesel koyu cam mikro rozet (`rgba(255,255,255,0.08)`, 9px play ikonu) eklendi.
-     - Kısa başlıklarda (örn: "Wand") sağ kenara fırlamaz, doğrudan ismin hemen 6px sağında asil bir donanım rozeti gibi durur. Butonun üzerine gelindiğinde `--accent` beyaz renge dönerek mikro büyüme (`scale(1.15)`) alır ve tıklandığında oyunu doğrudan başlatır.
+     - Yüklü oyunları belirtmek ve hızlı başlatmak için başlık satırının en sağına (`.pcard-title-row .pcard-play-btn`, `margin-left: auto`), kartın sağ kenarına hizalı 18px dairesel koyu cam mikro rozet (`rgba(255,255,255,0.08)`, 9px play ikonu) eklendi.
+     - Tüm kartlarda butonlar en sağ kenarda dikey bir hizada nizami durur; başlık aradaki tüm alanı (`flex: 1`) doldurur ve gerekirse `...` ile kırpılır. Butonun üzerine gelindiğinde `--accent` beyaz renge dönerek mikro büyüme (`scale(1.15)`) alır ve tıklandığında oyunu doğrudan başlatır.
   3. **Yerinde Yama Desteği (`patchLibraryCardDom`):** Bir oyun kurulduğunda veya silindiğinde rozet `patchLibraryCardDom` aracılığıyla DOM yeniden çizilmeden yerinde eklenir/kaldırılır.
   4. **Ayarlar & Dil Güncellemesi:** Ayarlar menüsündeki seçenek "Yüklü oyun simgesi" / "Installed game icon" olarak güncellendi.
 
