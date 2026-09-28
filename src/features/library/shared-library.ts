@@ -16,10 +16,8 @@ import { scheduleRender } from "../../core/render";
 export async function loadSharedLibrary(): Promise<void> {
   try {
     const index = await sharedLibraryIndex();
-    S.sharedLibrary = index;
     S.sharedOwners = new Map(index.games.map((g) => [g.key, g]));
   } catch {
-    S.sharedLibrary = null;
     S.sharedOwners.clear();
   }
   // Keep the unified lookup map and the visible grid in sync with the index.

@@ -106,27 +106,39 @@ export function rebuildAllGamesMap(): void {
       set.add("GOG");
     }
   }
-  // Other accounts' games stay searchable/detail-openable through the same map.
-  for (const g of S.sharedOwners.values()) {
-    const item: LibraryItem = {
-      key: g.key,
-      source: g.store === "gog" ? "gog" : "epic",
-      id: g.key.startsWith("gog::") ? g.key.slice(5) : g.key,
-      title: g.title,
-      developer: "",
-      version: "—",
-      installedVersion: null,
-      installed: false,
-      installPath: null,
-      installSize: 0,
-      coverUrl: g.cover,
-      heroUrl: g.cover,
-      description: "",
-      updateAvailable: false,
-      cloudSavesSupported: false,
-      dlcCount: 0,
-    };
-    if (!map.has(item.key)) map.set(item.key, item);
+  // Other accounts' games stay searchable/detail-openable through the same map
+  // while the shared library is enabled.
+  if (S.showSharedLibrary) {
+    for (const g of S.sharedOwners.values()) {
+      const item: LibraryItem = {
+        key: g.key,
+        source: g.store === "gog" ? "gog" : "epic",
+        id: g.key.startsWith("gog::") ? g.key.slice(5) : g.key,
+        title: g.title,
+        developer: "",
+        version: "—",
+        installedVersion: null,
+        installed: false,
+        installPath: null,
+        installSize: 0,
+        coverUrl: g.cover,
+        heroUrl: g.cover,
+        description: "",
+        updateAvailable: false,
+        cloudSavesSupported: false,
+        dlcCount: 0,
+      };
+      if (!map.has(item.key)) map.set(item.key, item);
+      const c = canonicalGameTitle(g.title);
+      if (c) {
+        let set = storeSets.get(c);
+        if (!set) {
+          set = new Set();
+          storeSets.set(c, set);
+        }
+        set.add(g.store === "gog" ? "GOG" : "Epic");
+      }
+    }
   }
   S.allGamesMap = map;
 

@@ -71,6 +71,7 @@ import {
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
+import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
@@ -578,6 +579,8 @@ document.addEventListener("click", (e) => {
     S.showSharedLibrary = !S.showSharedLibrary;
     localStorage.setItem(SHOW_SHARED_LIBRARY_KEY, String(S.showSharedLibrary));
     if (S.showSharedLibrary) void loadSharedLibrary();
+    // The unified lookup map follows the setting so no shared entry lingers.
+    rebuildAllGamesMap();
     S.libraryDataRev++;
     scheduleRender();
   } else if (act === "shared-switch" && id) {

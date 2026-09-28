@@ -44,20 +44,9 @@ pub struct SharedGame {
     pub owner_name: String,
 }
 
-/// A saved account that contributes games to the shared index.
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SharedAccount {
-    pub owner_key: String,
-    pub owner_name: String,
-    pub store: String,
-    pub game_count: usize,
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SharedLibraryIndex {
-    pub accounts: Vec<SharedAccount>,
     pub games: Vec<SharedGame>,
 }
 
@@ -163,7 +152,6 @@ fn read_active_gog_user(gog_dir: &Path) -> Option<String> {
 
 /// Builds the shared index from every saved account except the active ones.
 pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
-    let mut accounts = Vec::new();
     let mut games: Vec<SharedGame> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
 
@@ -184,7 +172,6 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
             }
             let name = epic_display_name(&dir);
             let snapshot = epic_snapshot(&dir);
-            let mut count = 0usize;
             for game in &snapshot {
                 if game.app_name.is_empty() || active_epic_games.contains(&game.app_name) {
                     continue;
@@ -209,14 +196,7 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
                     owner_key: format!("epic:{account_id}"),
                     owner_name: name.clone(),
                 });
-                count += 1;
             }
-            accounts.push(SharedAccount {
-                owner_key: format!("epic:{account_id}"),
-                owner_name: name,
-                store: "epic".into(),
-                game_count: count,
-            });
         }
     }
 
@@ -245,7 +225,6 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
                 .clone()
                 .filter(|n| !n.is_empty() && n != "GOG User")
                 .unwrap_or_else(|| user_id.clone());
-            let mut count = 0usize;
             for game in &snapshot.games {
                 if game.game_id.is_empty() || active_gog_games.contains(&game.game_id) {
                     continue;
@@ -262,18 +241,11 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
                     owner_key: format!("gog:{user_id}"),
                     owner_name: name.clone(),
                 });
-                count += 1;
             }
-            accounts.push(SharedAccount {
-                owner_key: format!("gog:{user_id}"),
-                owner_name: name,
-                store: "gog".into(),
-                game_count: count,
-            });
         }
     }
 
-    SharedLibraryIndex { accounts, games }
+    SharedLibraryIndex { games }
 }
 
 /// Tauri entry point: reads the real config/app-data paths.
@@ -350,10 +322,6 @@ mod tests {
             .join("com.efxlve.launcher")
             .join("gog");
         let index = build_index(&config, &gog);
-        println!("accounts:");
-        for a in &index.accounts {
-            println!("  {} | {} | {} | {} games", a.owner_key, a.owner_name, a.store, a.game_count);
-        }
         println!("shared games: {}", index.games.len());
         for g in index.games.iter().take(10) {
             println!(
@@ -364,7 +332,7 @@ mod tests {
                 g.cover.is_some()
             );
         }
-        assert!(index.games.len() <= index.accounts.iter().map(|a| a.game_count).sum::<usize>());
+        assert!(index.games.iter().all(|g| !g.title.is_empty()));
     }
 
     #[test]

@@ -564,14 +564,7 @@ export interface SharedGame {
   ownerKey: string;
   ownerName: string;
 }
-export interface SharedAccount {
-  ownerKey: string;
-  ownerName: string;
-  store: string;
-  gameCount: number;
-}
 export interface SharedLibraryIndex {
-  accounts: SharedAccount[];
   games: SharedGame[];
 }
 /** Union of every saved account's library (read from disk snapshots, no network). */
