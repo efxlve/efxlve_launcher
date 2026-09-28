@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverPlayBtn, libraryCoverStats, libraryDlBar, libraryListDimmed, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -308,10 +308,13 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
-  const playBtnHtml = libraryCoverPlayBtn(s.appName, s.installed);
+  const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
+  const titleRow = S.showCoverTitles
+    ? `<span class="pcard-title-row"><span class="pcard-title" title="${title}">${title}</span>${playBtnHtml}</span>`
+    : "";
   const caption = (S.showCoverTitles || Boolean(storesLabel))
     ? `<div class="pcard-caption">
-        ${S.showCoverTitles ? `<span class="pcard-title" title="${title}">${title}</span>` : ""}
+        ${titleRow}
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
       </div>`
     : "";
@@ -324,7 +327,6 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
-        ${playBtnHtml}
       </div>
       ${caption}
     </div>`;

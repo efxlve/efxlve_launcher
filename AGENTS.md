@@ -128,15 +128,14 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
-- **Kütüphane Grid Başlık Rengi & Kapak Oyna Butonu Yeniden Tasarımı (Play Button & Grid Title Contrast):**
+- **Kütüphane Grid Başlık Rengi & Zarif Yüklü Rozeti (Subtle Title Badge & Grid Title Contrast):**
   1. **Ayar Kapalıyken Parlak Başlık Rengi (`.pcard-title`):** "Yüklü oyunları öne çıkar" ayarı kapalıyken grid görünümündeki tüm oyun başlıklarının sönük gri (`var(--text-2)`) yerine berrak, net ve parlak beyaz (`var(--text)` / `#ffffff`, `font-weight: 500`) görünmesi sağlandı. Ayar açıkken yüklü oyunlar `var(--text)` (600 semi-bold), kurulu olmayanlar ise `var(--text-3)` soluk tonunu korur.
-  2. **Kapak Oyna Butonunun Yeniden Tasarımı (`.pcard-play-btn` & `.pcard-art`):**
-     - Başlık satırına sıkıştırılarak metinleri erken `...` ile bölen ("UNCHARTED: Legacy of Thi...") ve kısa başlıklarda sağa fırlayan 20px koyu halka buton kaldırıldı.
-     - Oyna butonu doğrudan poster sanatının içine (`.pcard-art` sağ-alt, `bottom: 8px; right: 8px; z-index: 6`), konsol standardında 32px dairesel beyaz birincil eylem rozeti (`#ffffff` zemin, siyah ikon, `0 3px 10px rgba(0,0,0,0.55)` gölge) olarak taşındı.
-     - **Bir Bakışta Net Görünürlük & Kusursuz Hover:** Koyu renkli oyun posterlerinde kaybolan koyu ton yerine parlak beyaz buton kullanıldı; her türlü görsel üzerinde anında fark edilir. Komşu kartların metinlerini kapatan Windows webview native tooltip (`title="Play"`) kaldırıldı (`aria-label` korundu). Hover anında renk sıçraması ve titreme engellendi (`#f0f0f0` ve `scale(1.08)` mikro geri bildirim).
-     - Başlıklar (`.pcard-title`) tam genişliğine kavuştu; başlık kapalıyken gereksiz boş caption DOM yükü engellendi.
-  3. **Yerinde Yama Desteği (`patchLibraryCardDom`):** Bir oyun kurulduğunda veya silindiğinde buton `patchLibraryCardDom` aracılığıyla DOM yeniden çizilmeden yerinde eklenir/kaldırılır.
-  4. **15 Dil Güncellemesi:** Ayarlar menüsündeki `settings.installedIconDesc` açıklaması 15 dilde kapağa uygun olarak güncellendi.
+  2. **Kapak Afişini Bozan Büyük Buton Kaldırıldı & Zarif Başlık Rozetine Dönüştürüldü:**
+     - Poster sanatını kapatan, YouTube oynatıcı hissi veren ve Rule §7.10'a aykırı düşen kapak üzeri büyük beyaz butonlar tamamen kaldırıldı; posterler 100% temiz, sinematik ve sessiz kapak duvarı estetiğine kavuştu.
+     - Yüklü oyunları belirtmek ve hızlı başlatmak için başlığın hemen yanına (`.pcard-title-row .pcard-play-btn`), ismin hemen bitişiğine yerleşen (`flex: 0 1 auto`), 18px dairesel koyu cam mikro rozet (`rgba(255,255,255,0.08)`, 9px play ikonu) eklendi.
+     - Kısa başlıklarda (örn: "Wand") sağ kenara fırlamaz, doğrudan ismin hemen 6px sağında asil bir donanım rozeti gibi durur. Butonun üzerine gelindiğinde `--accent` beyaz renge dönerek mikro büyüme (`scale(1.15)`) alır ve tıklandığında oyunu doğrudan başlatır.
+  3. **Yerinde Yama Desteği (`patchLibraryCardDom`):** Bir oyun kurulduğunda veya silindiğinde rozet `patchLibraryCardDom` aracılığıyla DOM yeniden çizilmeden yerinde eklenir/kaldırılır.
+  4. **Ayarlar & Dil Güncellemesi:** Ayarlar menüsündeki seçenek "Yüklü oyun simgesi" / "Installed game icon" olarak güncellendi.
 
 - **Kütüphane Görsel Kontrastı & Yüklü Oyun Vurgusu Sadeleştirmesi (Seçenek A Tamamlandı):**
   1. **Tek Birleşik Akıllı Switch (`highlightInstalled` / `HIGHLIGHT_INSTALLED_KEY`):** Ayarlar > Görünüm altındaki iki ayrı kafa karıştırıcı ve birbiriyle çelişebilen toggle ("Kurulu olmayanları soluklaştır" ve "Yüklü oyun başlıklarını öne çıkar"), tek bir dengeli ve zarif konsol seçeneğinde birleştirildi: **"Yüklü oyunları öne çıkar"** (`settings.highlightInstalledTitle` / `settings.highlightInstalledDesc`, varsayılan AÇIK / `true`).

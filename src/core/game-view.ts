@@ -67,11 +67,12 @@ export function libraryDlBar(appName: string, p: number | null): string {
     : "";
 }
 
-/** Instant play button overlaid on the cover for installed games. */
-export function libraryCoverPlayBtn(appName: string, installed: boolean): string {
+/** Simple, elegant play button / installed badge next to the game title. */
+export function libraryInstalledIcon(appName: string, installed: boolean): string {
   if (!S.showInstalledIcon || !installed) return "";
-  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 13)}</button>`;
+  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
 }
+export const libraryCoverPlayBtn = libraryInstalledIcon;
 
 /**
  * Patch visible library items (grid cards and list rows) in place: badge,
@@ -108,10 +109,11 @@ export function patchLibraryCardDom(appName: string): boolean {
     } else if (stats) {
       stats.remove();
     }
-    const playBtn = art?.querySelector<HTMLElement>(".pcard-play-btn");
-    const playBtnHtml = libraryCoverPlayBtn(appName, s.installed);
-    if (art && playBtnHtml) {
-      if (!playBtn) art.insertAdjacentHTML("beforeend", playBtnHtml);
+    const titleRow = item.querySelector<HTMLElement>(".pcard-title-row");
+    const playBtn = titleRow?.querySelector<HTMLElement>(".pcard-play-btn");
+    const playBtnHtml = libraryInstalledIcon(appName, s.installed);
+    if (titleRow && playBtnHtml) {
+      if (!playBtn) titleRow.insertAdjacentHTML("beforeend", playBtnHtml);
     } else if (playBtn) {
       playBtn.remove();
     }
