@@ -489,16 +489,27 @@ export function renderProfile(): string {
     }
   }
 
-  const activeNames = activeAccounts().map((a) => `${a.name} (${a.kind === "epic" ? "Epic" : "GOG"})`).join(" · ");
   const token = (label: string): string => `<span class="profile-token">${esc(label)}</span>`;
   const status = (label: string, kind: "ok" | "warn"): string =>
     `<span class="profile-status${kind === "warn" ? " inactive" : ""}"><span class="profile-status-dot"></span>${esc(label)}</span>`;
 
+  // Combined header: each store is paired with the account that is signed in,
+  // so the line reads as identity pairs instead of three loose fragments.
+  const pair = (a: ProfileAccount): string => {
+    const name = a.name && a.name !== "GOG User" ? a.name : "";
+    const offline = S.offlineMode && a.kind === "epic"
+      ? `<span class="profile-status-dot is-warn" title="${esc(t("profile.offlineMode"))}" aria-hidden="true"></span>`
+      : "";
+    return `<span class="profile-pair">
+      <span class="profile-pair-store">${a.kind === "epic" ? "Epic Games" : "GOG.COM"}</span>
+      ${name ? `<span class="profile-pair-account">(${esc(name)})</span>` : ""}
+      ${offline}
+    </span>`;
+  };
+
   const subChips = combined
-    ? `${activeAccounts().map((a) => token(a.kind === "epic" ? "Epic Games" : "GOG.COM")).join(`<span class="profile-token-sep">·</span>`)}
-       ${activeNames
-         ? `<span class="profile-sub-note">${esc(activeNames)}</span>`
-         : status(t("profile.inactiveTitle"), "warn")}`
+    ? (activeAccounts().map(pair).join(`<span class="profile-pair-sep">·</span>`)
+        || status(t("profile.inactiveTitle"), "warn"))
     : `${token(isEpic ? "Epic Games" : "GOG.COM")}
        ${!account!.active
          ? status(t("profile.inactiveTitle"), "warn")

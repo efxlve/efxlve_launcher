@@ -92,7 +92,6 @@
 }
 .profile-acc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .profile-acc-avatar svg { width: 14px; height: 14px; color: var(--text-2); }
-.profile-sub-note { font-size: 12px; color: var(--text-3); }
 
 /* Platform tokens and status: quiet uppercase text, colour only for state. */
 .profile-sub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -103,7 +102,12 @@
   text-transform: uppercase;
   color: var(--text-2);
 }
-.profile-token-sep { color: var(--text-3); }
+/* Store + account pairs in the combined header ("Epic Games (Efxlve) · GOG.COM (…)"). */
+.profile-pair { display: inline-flex; align-items: center; gap: 6px; }
+.profile-pair-store { font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0.01em; }
+.profile-pair-account { font-size: 12px; color: var(--text-3); }
+.profile-pair-sep { color: var(--text-3); }
+.profile-status-dot.is-warn { background: var(--warn); }
 .profile-status {
   display: inline-flex;
   align-items: center;

@@ -128,6 +128,8 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Genel Bakış Başlığında Mağaza↔Hesap Eşleştirmesi (28.09.2026, ROADMAP §6.15):** Genel Bakış alt satırındaki üç ayrı metin parçası (mağaza jetonları + hesap adları notu) yerine her mağaza kendi hesabıyla eşleştirildi: **`Epic Games (Efxlve)` · `GOG.COM (Efxlve)`** — mağaza adı vurgulu, hesap adı parantezde soluk, aralarında `·` ayracı; çevrimdışı modda Epic çiftinin yanında amber nokta (tooltip'li). Hesap görünümünde jeton + durum düzeni aynen kaldı. Ölü kalan `.profile-sub-note`/`.profile-token-sep` CSS'i silindi.
+
 - **İnaktif Profil İçin "Uykuda Hesap" Ekranı (28.09.2026, ROADMAP §6.14):**
   1. **Boş siyah sayfa bitti:** Pasif hesap seçildiğinde artık **standart gruplanmış liste** var (etiket solda, değer sağda, ince ayraçlar) — kilit ikonu + başlık + açıklama, **arşivdeki oyun sayısı / son kullanım / mağaza** satırları ve sağa yaslı tek **"Bu Hesaba Geç"** butonu. Üst başlıkta yalnız kimlik + mağaza jetonu + durum kalıyor (ilk ortalanmış panel denemesi düzenli durmadığı için liste diline çevrildi).
   2. **Rust arşiv sayısı:** `legendary/accounts.rs` → `snapshot_game_count()` her hesabın kütüphane anlık görüntüsündeki oyun sayısını bir kez okuyup `accounts_meta.json`'a yazıyor; `archive_active_sidecars` arşiv anında tazeliyor, `list_saved_accounts` eksikse dolduruyor. Test güncellendi (`game_count == Some(1)`).

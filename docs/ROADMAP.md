@@ -357,6 +357,10 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.15. 28.09.2026 sekizinci tur (Genel Bakış başlığında mağaza↔hesap eşleştirmesi)
+
+- **Genel Bakış alt satırı yeniden düzenlendi:** Önceden üç ayrı parça gibi duran `EPIC GAMES  GOG.COM  Efxlve (Epic) · Efxlve (GOG)` satırı yerine her mağaza **kendi hesabıyla eşleştirilmiş** tek okunur dizi kullanılıyor: **`Epic Games (Efxlve)` · `GOG.COM (Efxlve)`**. Mağaza adı vurgulu (`--text-2`, 600), hesap adı parantez içinde soluk (`--text-3`), aralarında sakin bir `·` ayracı. Çevrimdışı modda Epic çiftinin yanında amber nokta (tooltip: Çevrimdışı Mod) görünür. Hesap adı bilinmiyorsa yalnız mağaza adı yazılır. Hesap görünümünde (başlık zaten hesap adı) jeton + durum düzeni korunur. Kullanılmayan `.profile-sub-note` ve `.profile-token-sep` CSS'i silindi.
+
 ### 6.14. 28.09.2026 yedinci tur (inaktif profil için "uykuda hesap" ekranı)
 
 - **İnaktif hesap sayfası artık boş değil:** Pasif bir hesap seçildiğinde sayfa tamamen siyah kalmak yerine uygulamanın **standart gruplanmış liste dili** (etiket solda, değer sağda, saç teli ayraçlar) kullanılıyor: kilit ikonu + net başlık + "veriler yalnızca aktif hesapta" açıklaması, ardından **arşivdeki oyun sayısı**, **son kullanım** (göreli zaman) ve **mağaza** satırları, en altta sağa yaslı tek **"Bu Hesaba Geç"** birincil butonu. Üst başlıkta istatistik/paragraf yığını yerine sadece kimlik + mağaza jetonu + durum kalıyor.
