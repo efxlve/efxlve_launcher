@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Gérer les comptes",
   "settings.installedIconTitle": "Bouton Jouer sur les jaquettes",
   "settings.installedIconDesc": "Affiche un bouton Jouer rapide sur la jaquette des jeux installés.",
-  "settings.tvModeTitle": "Mode TV",
-  "settings.tvModeDesc": "Vue plein écran pour manette avec grandes jaquettes et rangées (A : sélectionner, B : retour, LB/RB : rangée).",
   "tv.open": "Ouvrir le mode TV",
   "tv.exit": "Quitter le mode TV",
   "tv.prompt": "Passer au mode TV",

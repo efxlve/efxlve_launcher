@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Zarządzaj kontami",
   "settings.installedIconTitle": "Przycisk Graj na okładkach",
   "settings.installedIconDesc": "Pokaż przycisk szybkiego uruchamiania na okładce zainstalowanych gier.",
-  "settings.tvModeTitle": "Tryb TV",
-  "settings.tvModeDesc": "Widok pełnoekranowy dla pada z dużymi okładkami i rzędami (A: wybierz, B: wstecz, LB/RB: rząd).",
   "tv.open": "Otwórz tryb TV",
   "tv.exit": "Zamknij tryb TV",
   "tv.prompt": "Przełącz na tryb TV",

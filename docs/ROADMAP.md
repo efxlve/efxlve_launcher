@@ -357,6 +357,18 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.20. 28.09.2026 on üçüncü tur (v0.1.17 sürüm hazırlığı)
+
+- **Masaüstü kısayolu başlatma hatası (kullanıcı/arkadaş bildirimi):** "Kısayoldan TLOU 2 açtım; oyun açılmaya başlıyor ama hemen kapanıyor, launcher içinden açınca sorun yok."
+  - **Kök neden:** `epic_create_desktop_shortcut`, `.lnk` hedefini **oyunun exe'sine** yazıyordu. Bu yol `legendary launch`'ın sağladığı argümanları/ortamı atladığı için Epic oyunları (özellikle DRM/entitlement kontrolü yapanlar) açılıp kapanıyordu.
+  - **Düzeltme:** Kısayol artık launcher'ı hedefliyor: `TargetPath = <launcher exe>`, `Arguments = --launch "<app>"`, `IconLocation = <oyun exe>,0`. Launcher açılışta `--launch` argümanını `parse_launch_arg` ile ayrıştırıp `PendingLaunch` state'ine koyuyor; önyükleme bitince arayüz `epic_take_pending_launch` ile alıp **normal oynatma hattından** (`epicPlay`) başlatıyor. Böylece oynanış süresi/oturum takibi ve hata mesajları da aynı yoldan geçiyor.
+  - **Test:** `parse_launch_arg` birim testleri (her iki biçim, boş/eksik değer, `--launcher` yanlış eşleşmemesi).
+  - **Bilinçli sınırlama:** `tauri-plugin-single-instance` eklenmedi; updater'ın yeniden başlatma akışıyla yarışıp güncellemeyi düşürme riski nedeniyle ertelendi. Launcher zaten açıkken kısayol ikinci bir pencere açar (oyun yine doğru başlar).
+- **TV Modu butonu gizlendi (kullanıcı isteği):** Ayarlar > Görünüm'deki "Open TV Mode" satırı kaldırıldı; `settings.tvModeTitle`/`settings.tvModeDesc` anahtarları silindi. TV Modu'na Ctrl+K komutu ve kumanda bağlanma önerisi ile erişim sürüyor.
+- **Güvenlik/açık taraması:** API anahtarı/token/secret/private key/`.env`/`.key`/`.pem`/`credentials.json` **yok**; oturumda kullanılan tüm kimlik değerleri repoda bulunamadı; git geçmişi temiz; kişisel veri/yerel yol yok. (GOG istemci bilgileri gogdl'ın herkese açık istemci kimlikleri; updater `pubkey` açık anahtar.)
+- **Changelog:** 0.1.17 girdisi 9 maddeye indirildi, anahtar sayısı 1305 yapıldı, "More bugs added." esprisi eklendi.
+- **Doğrulama:** `cargo check` 0 uyarı, `cargo test` **126** (+3 ignored), `npm.cmd run build` ✅, `tsc --noUnusedLocals` 0 hata, i18n 15/15 parite (1.305), IPC **142**.
+
 ### 6.19. 28.09.2026 on ikinci tur (arkadaş özelliklerinin tamamen kaldırılması)
 
 - **Kullanıcı kararı:** "Arkadaşlar hakkında (Epic + GOG + EOS SDK) bunların hepsini silelim. Bir işe yaramıyorlar. Bir temizlik yapalım, sonra Discord ile uğraşalım." Ayrıca: "Güvenlik açığı oluşturacak çok iş yaptık gibi."

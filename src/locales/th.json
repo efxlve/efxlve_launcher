@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "จัดการบัญชี",
   "settings.installedIconTitle": "ปุ่มเล่นบนหน้าปก",
   "settings.installedIconDesc": "แสดงปุ่มเล่นด่วนบนหน้าปกเกมที่ติดตั้งแล้วในคลัง",
-  "settings.tvModeTitle": "โหมดทีวี",
-  "settings.tvModeDesc": "มุมมองเต็มจอสำหรับจอยพร้อมปกขนาดใหญ่และแถว (A: เลือก, B: ย้อนกลับ, LB/RB: แถว)",
   "tv.open": "เปิดโหมดทีวี",
   "tv.exit": "ออกจากโหมดทีวี",
   "tv.prompt": "สลับไปโหมดทีวี",

@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Manage Accounts",
   "settings.installedIconTitle": "Installed game icon",
   "settings.installedIconDesc": "Show an elegant Play badge next to the title for installed games to launch directly.",
-  "settings.tvModeTitle": "TV Mode",
-  "settings.tvModeDesc": "Full-screen controller view with large covers and rows (A: select, B: back, LB/RB: row).",
   "tv.open": "Open TV Mode",
   "tv.exit": "Exit TV Mode",
   "tv.prompt": "Switch to TV Mode",

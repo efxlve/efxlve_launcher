@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Administrar cuentas",
   "settings.installedIconTitle": "Botón Jugar en portadas",
   "settings.installedIconDesc": "Muestra un botón de inicio rápido en la portada de los juegos instalados.",
-  "settings.tvModeTitle": "Modo TV",
-  "settings.tvModeDesc": "Vista a pantalla completa para mando con carátulas grandes y filas (A: seleccionar, B: volver, LB/RB: fila).",
   "tv.open": "Abrir modo TV",
   "tv.exit": "Salir del modo TV",
   "tv.prompt": "Cambiar al modo TV",

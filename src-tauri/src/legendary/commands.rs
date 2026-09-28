@@ -1977,10 +1977,20 @@ pub async fn epic_create_desktop_shortcut(_app: AppHandle, app_name: String) -> 
         };
 
         let title_clean = desktop_shortcut_file_name(&entry.title).replace('\'', "''");
+        // The shortcut must go through the launcher: `legendary launch` sets up the
+        // arguments and environment Epic titles need. Pointing the shortcut at the
+        // game exe directly made games start and close immediately.
+        let launcher_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let launcher_dir = launcher_exe
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_default();
         let ps = format!(
-            "$ws = New-Object -ComObject WScript.Shell; $d = [Environment]::GetFolderPath('Desktop'); $lnk = Join-Path $d '{title_clean}'; $s = $ws.CreateShortcut($lnk); $s.TargetPath = '{}'; $s.WorkingDirectory = '{}'; $s.Save()",
-            target_exe.to_string_lossy().replace('\'', "''"),
-            entry.install_path.replace('\'', "''")
+            "$ws = New-Object -ComObject WScript.Shell; $d = [Environment]::GetFolderPath('Desktop'); $lnk = Join-Path $d '{title_clean}'; $s = $ws.CreateShortcut($lnk); $s.TargetPath = '{}'; $s.Arguments = '--launch \"{}\"'; $s.WorkingDirectory = '{}'; $s.IconLocation = '{},0'; $s.Save()",
+            launcher_exe.to_string_lossy().replace('\'', "''"),
+            app_name.replace('\'', "''"),
+            launcher_dir.to_string_lossy().replace('\'', "''"),
+            target_exe.to_string_lossy().replace('\'', "''")
         );
 
         let output = tokio::process::Command::new("powershell")

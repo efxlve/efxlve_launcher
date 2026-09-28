@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "إدارة الحسابات",
   "settings.installedIconTitle": "زر تشغيل على الأغلفة",
   "settings.installedIconDesc": "إظهار زر تشغيل سريع على أغلفة الألعاب المثبتة في المكتبة.",
-  "settings.tvModeTitle": "وضع التلفاز",
-  "settings.tvModeDesc": "عرض بملء الشاشة لوحدة التحكم مع أغلفة كبيرة وصفوف (A: اختيار، B: رجوع، LB/RB: تبديل الصف).",
   "tv.open": "فتح وضع التلفاز",
   "tv.exit": "الخروج من وضع التلفاز",
   "tv.prompt": "التبديل إلى وضع التلفاز",

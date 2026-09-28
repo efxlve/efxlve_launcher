@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "管理帳戶",
   "settings.installedIconTitle": "在封面上顯示遊玩按鈕",
   "settings.installedIconDesc": "在已安裝遊戲的封面上顯示快速啟動的「遊玩」按鈕。",
-  "settings.tvModeTitle": "電視模式",
-  "settings.tvModeDesc": "面向手把的全螢幕檢視，大封面與橫向列（A：選擇，B：返回，LB/RB：切換列）。",
   "tv.open": "開啟電視模式",
   "tv.exit": "離開電視模式",
   "tv.prompt": "切換至電視模式",

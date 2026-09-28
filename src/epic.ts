@@ -552,6 +552,8 @@ export const epicLaunchGame = (appName: string) =>
   invoke<string>("epic_launch_game", { appName });
 export const epicStopGame = (appName: string) =>
   invoke<string>("epic_stop_game", { appName });
+/** Game requested by a desktop shortcut (`--launch <app>`), consumed once. */
+export const epicTakePendingLaunch = () => invoke<string | null>("epic_take_pending_launch");
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */

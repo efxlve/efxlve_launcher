@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Hesapları Yönet",
   "settings.installedIconTitle": "Yüklü oyun simgesi",
   "settings.installedIconDesc": "Yüklü oyunların başlığının yanında doğrudan oyunu başlatabileceğiniz zarif bir Oyna simgesi gösterir.",
-  "settings.tvModeTitle": "TV Modu",
-  "settings.tvModeDesc": "Büyük kapaklar ve raflarla kumanda için tam ekran görünüm (A: seç, B: geri, LB/RB: raf).",
   "tv.open": "TV Modunu Aç",
   "tv.exit": "TV Modundan Çık",
   "tv.prompt": "TV Moduna Geç",

@@ -16,6 +16,58 @@ pub struct AppState {
     pub epic_dl: Mutex<legendary::transfers::EpicDlState>,
 }
 
+/// Game requested on the command line (`--launch <app>`), consumed once by the UI.
+pub struct PendingLaunch(pub Mutex<Option<String>>);
+
+/// Reads `--launch <app>` / `--launch=<app>` from the process arguments.
+fn parse_launch_arg(args: impl Iterator<Item = String>) -> Option<String> {
+    let mut args = args.peekable();
+    while let Some(arg) = args.next() {
+        if arg == "--launch" {
+            return args.next().filter(|v| !v.trim().is_empty());
+        }
+        if let Some(value) = arg.strip_prefix("--launch=") {
+            let value = value.trim().trim_matches('"');
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Returns the pending `--launch` game once, then clears it.
+#[tauri::command]
+fn epic_take_pending_launch(state: tauri::State<'_, PendingLaunch>) -> Option<String> {
+    state.0.lock().ok().and_then(|mut guard| guard.take())
+}
+
+#[cfg(test)]
+mod launch_arg_tests {
+    use super::parse_launch_arg;
+
+    fn parse(args: &[&str]) -> Option<String> {
+        parse_launch_arg(args.iter().map(|s| s.to_string()))
+    }
+
+    #[test]
+    fn reads_launch_argument_in_both_forms() {
+        assert_eq!(parse(&["--launch", "Sugar"]), Some("Sugar".into()));
+        assert_eq!(parse(&["--launch=Sugar"]), Some("Sugar".into()));
+        assert_eq!(parse(&["--launch=\"Sugar\""]), Some("Sugar".into()));
+        assert_eq!(parse(&["--other", "--launch", "Sugar", "--x"]), Some("Sugar".into()));
+    }
+
+    #[test]
+    fn ignores_missing_or_empty_values() {
+        assert_eq!(parse(&[]), None);
+        assert_eq!(parse(&["--launch"]), None);
+        assert_eq!(parse(&["--launch", "  "]), None);
+        assert_eq!(parse(&["--launch="]), None);
+        assert_eq!(parse(&["--launcher", "x"]), None);
+    }
+}
+
 /// When set, closing the window hides it to the system tray instead of quitting
 /// so downloads keep running in the background.
 #[derive(Default)]
@@ -1721,6 +1773,10 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() {
+    // Desktop shortcuts start the launcher with `--launch <app>`; the app name is
+    // picked up by the UI after boot and routed through the normal play path.
+    let pending_launch = parse_launch_arg(std::env::args().skip(1));
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
@@ -1730,6 +1786,7 @@ fn main() {
             epic_dl: Mutex::new(legendary::transfers::EpicDlState::default()),
         })
         .manage(TrayPref::default())
+        .manage(PendingLaunch(Mutex::new(pending_launch)))
         .setup(|app| {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
@@ -1869,6 +1926,7 @@ fn main() {
             open_folder,
             eos::eos_overlay_status,
             eos::eos_install_redistributable,
+            epic_take_pending_launch,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,

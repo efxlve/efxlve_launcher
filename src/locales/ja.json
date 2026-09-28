@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "アカウントを管理",
   "settings.installedIconTitle": "カバーにプレイボタンを表示",
   "settings.installedIconDesc": "インストール済みゲームのカバー上にクイックプレイボタンを表示します。",
-  "settings.tvModeTitle": "TV モード",
-  "settings.tvModeDesc": "大きなカバーと行で操作するコントローラー向け全画面表示（A: 選択、B: 戻る、LB/RB: 行）。",
   "tv.open": "TV モードを開く",
   "tv.exit": "TV モードを終了",
   "tv.prompt": "TV モードに切り替え",

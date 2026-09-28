@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Управление аккаунтами",
   "settings.installedIconTitle": "Кнопка «Играть» на обложках",
   "settings.installedIconDesc": "Показывать кнопку быстрого запуска на обложках установленных игр.",
-  "settings.tvModeTitle": "ТВ-режим",
-  "settings.tvModeDesc": "Полноэкранный режим для геймпада с крупными обложками и рядами (A: выбрать, B: назад, LB/RB: ряд).",
   "tv.open": "Открыть ТВ-режим",
   "tv.exit": "Выйти из ТВ-режима",
   "tv.prompt": "Перейти в ТВ-режим",

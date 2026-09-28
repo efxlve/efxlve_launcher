@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Gerenciar contas",
   "settings.installedIconTitle": "Botão Jogar nas capas",
   "settings.installedIconDesc": "Mostra um botão de reprodução rápida na capa dos jogos instalados.",
-  "settings.tvModeTitle": "Modo TV",
-  "settings.tvModeDesc": "Visão em tela cheia para controle com capas grandes e fileiras (A: selecionar, B: voltar, LB/RB: fileira).",
   "tv.open": "Abrir modo TV",
   "tv.exit": "Sair do modo TV",
   "tv.prompt": "Mudar para o modo TV",

@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "管理账户",
   "settings.installedIconTitle": "在封面上显示播放按钮",
   "settings.installedIconDesc": "在已安装游戏的封面上显示快速启动的“开始”按钮。",
-  "settings.tvModeTitle": "电视模式",
-  "settings.tvModeDesc": "面向手柄的全屏视图，大封面与横向行（A：选择，B：返回，LB/RB：切换行）。",
   "tv.open": "打开电视模式",
   "tv.exit": "退出电视模式",
   "tv.prompt": "切换到电视模式",

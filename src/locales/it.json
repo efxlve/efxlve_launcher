@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Gestisci account",
   "settings.installedIconTitle": "Pulsante Gioca sulle copertine",
   "settings.installedIconDesc": "Mostra un pulsante Gioca rapido sulle copertine dei giochi installati.",
-  "settings.tvModeTitle": "Modalità TV",
-  "settings.tvModeDesc": "Vista a schermo intero per controller con copertine grandi e file (A: seleziona, B: indietro, LB/RB: fila).",
   "tv.open": "Apri modalità TV",
   "tv.exit": "Esci dalla modalità TV",
   "tv.prompt": "Passa alla modalità TV",

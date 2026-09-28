@@ -1262,8 +1262,6 @@
   "accounts.manageAccounts": "Konten verwalten",
   "settings.installedIconTitle": "Play-Taste auf Covern",
   "settings.installedIconDesc": "Zeigt auf den Covern installierter Spiele eine Schnellstart-Taste an.",
-  "settings.tvModeTitle": "TV-Modus",
-  "settings.tvModeDesc": "Vollbildansicht für Controller mit großen Kacheln und Reihen (A: Auswählen, B: Zurück, LB/RB: Reihe).",
   "tv.open": "TV-Modus öffnen",
   "tv.exit": "TV-Modus beenden",
   "tv.prompt": "Zum TV-Modus wechseln",

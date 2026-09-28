@@ -21,6 +21,7 @@ import {
   epicListSkipped,
   epicPauseDownload,
   epicResumeDownload,
+  epicTakePendingLaunch,
   toEpicSlug,
   type DlProgressEvent,
   type DownloadCancelledEvent,
@@ -40,7 +41,7 @@ import { initAppUpdater } from "../updates/update-manager";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
-import { refreshEpicInstalled } from "../../core/epic-actions";
+import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -606,6 +607,15 @@ export async function initApp(hooks: {
     try {
       S.preferredCdn = (await epicGetSettings()).preferred_cdn ?? "";
       S.autoDesktopShortcut = await epicGetAutoDesktopShortcut();
+    } catch {
+      // ignore
+    }
+
+    // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
+    // same play path as the Play button once the shell is up.
+    try {
+      const pending = await epicTakePendingLaunch();
+      if (pending) window.setTimeout(() => void epicPlay(pending), 1200);
     } catch {
       // ignore
     }
