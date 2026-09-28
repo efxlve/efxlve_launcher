@@ -525,16 +525,27 @@ export function renderProfile(): string {
             <div class="profile-sub">${subChips}</div>
           </div>
         </section>
-        <section class="card profile-dormant">
-          <span class="profile-dormant-icon" aria-hidden="true">${icon("lock", 32)}</span>
-          <h3 class="profile-dormant-title">${t("profile.dormantTitle")}</h3>
-          <p class="row-meta profile-dormant-desc">${t("profile.inactiveDesc")}</p>
-          <div class="profile-dormant-stats">
-            ${archive.games !== null ? stat(String(archive.games), t("profile.archivedGames")) : ""}
-            ${archive.lastUsed ? stat(archive.lastUsed, t("profile.lastUsed")) : ""}
-            ${stat(isEpic ? "Epic Games" : "GOG.COM", t("profile.store"))}
+        <section class="list profile-dormant">
+          <div class="row">
+            <span class="profile-dormant-ico" aria-hidden="true">${icon("lock", 18)}</span>
+            <div class="row-main">
+              <div class="row-title">${t("profile.dormantTitle")}</div>
+              <div class="row-meta profile-dormant-desc">${t("profile.inactiveDesc")}</div>
+            </div>
           </div>
-          <button class="btn primary" data-act="${switchAct}" data-id="${esc(account!.id)}">${t("settings.accountSwitchBtn")}</button>
+          ${archive.games !== null
+            ? `<div class="row"><div class="row-main"><div class="row-title">${t("profile.archivedGames")}</div></div><span class="profile-dormant-val tabular-nums">${archive.games}</span></div>`
+            : ""}
+          ${archive.lastUsed
+            ? `<div class="row"><div class="row-main"><div class="row-title">${t("profile.lastUsed")}</div></div><span class="profile-dormant-val">${esc(archive.lastUsed)}</span></div>`
+            : ""}
+          <div class="row">
+            <div class="row-main"><div class="row-title">${t("profile.store")}</div></div>
+            <span class="profile-dormant-val">${isEpic ? "Epic Games" : "GOG.COM"}</span>
+          </div>
+          <div class="row profile-dormant-actions">
+            <button class="btn primary" data-act="${switchAct}" data-id="${esc(account!.id)}">${t("settings.accountSwitchBtn")}</button>
+          </div>
         </section>
       </div>`;
   }

@@ -129,7 +129,7 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 ## 9. Son Çalışma Özeti
 
 - **İnaktif Profil İçin "Uykuda Hesap" Ekranı (28.09.2026, ROADMAP §6.14):**
-  1. **Boş siyah sayfa bitti:** Pasif hesap seçildiğinde artık tek parça sakin bir panel var — kilit ikonu, başlık, açıklama, **arşivdeki oyun sayısı + son kullanım + mağaza** istatistikleri ve tek **"Bu Hesaba Geç"** butonu. Üst başlıkta yalnız kimlik + mağaza jetonu + durum kalıyor (paragraf/istatistik yığını kaldırıldı).
+  1. **Boş siyah sayfa bitti:** Pasif hesap seçildiğinde artık **standart gruplanmış liste** var (etiket solda, değer sağda, ince ayraçlar) — kilit ikonu + başlık + açıklama, **arşivdeki oyun sayısı / son kullanım / mağaza** satırları ve sağa yaslı tek **"Bu Hesaba Geç"** butonu. Üst başlıkta yalnız kimlik + mağaza jetonu + durum kalıyor (ilk ortalanmış panel denemesi düzenli durmadığı için liste diline çevrildi).
   2. **Rust arşiv sayısı:** `legendary/accounts.rs` → `snapshot_game_count()` her hesabın kütüphane anlık görüntüsündeki oyun sayısını bir kez okuyup `accounts_meta.json`'a yazıyor; `archive_active_sidecars` arşiv anında tazeliyor, `list_saved_accounts` eksikse dolduruyor. Test güncellendi (`game_count == Some(1)`).
   3. **i18n:** 4 yeni anahtar × 15 dil (`profile.dormantTitle/archivedGames/lastUsed/store`) → **1.313 anahtar**, tam parite. Göreli zaman mevcut `notif.*` anahtarlarından.
   4. **Doğrulama:** `npm.cmd run build` ✅, tsc 0 hata, `cargo test accounts` ✅, i18n 15/15 parite, 0 mojibake.

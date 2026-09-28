@@ -144,22 +144,20 @@
 .profile-acc-row { min-height: 46px; }
 .profile-acc-row .profile-acc-avatar { width: 28px; height: 28px; }
 
-/* Dormant account: nothing loads until the user switches, so this panel carries
-   the archive facts and the single call to action. */
-.profile-dormant {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 46px 24px 42px;
+/* Dormant account: same grouped-list language as Settings/rows — label left,
+   value right, hairline separators, single action in the footer row. */
+.profile-dormant-desc { white-space: normal; max-width: 640px; }
+.profile-dormant-ico {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-3);
 }
-.profile-dormant-icon { color: var(--text-3); display: grid; place-items: center; }
-.profile-dormant-icon svg { width: 32px; height: 32px; }
-.profile-dormant-title { margin: 0; font-size: 17px; font-weight: 600; }
-.profile-dormant-desc { max-width: 480px; white-space: normal; margin: 0 0 4px; }
-.profile-dormant-stats { display: flex; align-items: stretch; justify-content: center; margin: 8px 0 16px; }
-.profile-dormant-stats .profile-stat { align-items: center; }
-.profile-dormant-stats .profile-stat-val { font-size: 15px; }
-.profile-dormant-stats .profile-stat-label { font-size: 10px; }
+.profile-dormant-ico svg { width: 16px; height: 16px; }
+.profile-dormant-val { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.profile-dormant-actions { justify-content: flex-end; }
 
