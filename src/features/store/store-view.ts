@@ -12,8 +12,8 @@ import { viewEl } from "../../core/dom";
 import { closeAllModals, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { EPIC_STORE_URL, epicFriends, epicGetPlayerProfile } from "../../epic";
-import { localizeMessage, t } from "../../i18n";
+import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
+import { t } from "../../i18n";
 import type { View } from "../../core/types";
 /** Store webview bounds: the #content area (right of the sidebar, between the header and the status bar). */
 export function storeRect(): { x: number; y: number; width: number; height: number; bottom: number } {
@@ -241,33 +241,6 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
   }
 }
 
-let friendsLoadGen = 0;
-
-/** Loads the Epic friends list (read-only, unofficial API). */
-export async function loadFriends(force = false, replace = false): Promise<void> {
-  if (!isTauri) return;
-  if (S.friendsLoading && !force && !replace) return;
-  if (!force && !replace && S.friends.length > 0) return;
-  const gen = ++friendsLoadGen;
-  S.friendsLoading = true;
-  S.friendsError = "";
-  render();
-  try {
-    const data = await epicFriends();
-    if (gen !== friendsLoadGen) return;
-    S.friends = data.friends || [];
-    // Defensive: an older backend build may not send `incoming` yet.
-    S.friendsIncoming = data.incoming || [];
-  } catch (e) {
-    if (gen !== friendsLoadGen) return;
-    S.friendsError = localizeMessage(String(e));
-  } finally {
-    if (gen === friendsLoadGen) {
-      S.friendsLoading = false;
-      render();
-    }
-  }
-}
 
 export async function openProfile(): Promise<void> {
   setView("profile");

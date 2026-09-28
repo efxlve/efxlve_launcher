@@ -43,7 +43,6 @@ import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
-import { refreshFriendsListInPlace } from "../friends/friends-view";
 import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotDeleteConfirm,
@@ -405,10 +404,10 @@ document.addEventListener("input", (e) => {
     if (lpSelect) {
       if (h > 0 || m > 0) {
         if (!lpSelect.value) {
-          lpSelect.value = "Daha önce oynandı (Epic Games)";
+          lpSelect.value = "Daha Ã¶nce oynandÄ± (Epic Games)";
         }
       } else {
-        if (lpSelect.value === "Daha önce oynandı (Epic Games)") {
+        if (lpSelect.value === "Daha Ã¶nce oynandÄ± (Epic Games)") {
           lpSelect.value = "";
         }
       }
@@ -457,11 +456,6 @@ document.addEventListener("input", (e) => {
       resetProfileCards();
       grid.innerHTML = renderProfileGrid(filteredProfileGames(S.playerProfileData.games || []));
     }
-    return;
-  }
-  if (t.id === "friends-search") {
-    S.friendsQuery = (t as HTMLInputElement).value;
-    refreshFriendsListInPlace();
     return;
   }
   if (t.id === "move-target-input") {

@@ -357,6 +357,15 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.19. 28.09.2026 on ikinci tur (arkadaş özelliklerinin tamamen kaldırılması)
+
+- **Kullanıcı kararı:** "Arkadaşlar hakkında (Epic + GOG + EOS SDK) bunların hepsini silelim. Bir işe yaramıyorlar. Bir temizlik yapalım, sonra Discord ile uğraşalım." Ayrıca: "Güvenlik açığı oluşturacak çok iş yaptık gibi."
+- **Silindi:** `src/features/friends/` (Arkadaşlar sayfası), `src/styles/friends.css` (+`index.css` importu), kenar çubuğu girdisi, `View` tipi `"friends"`, Ctrl+K komutu, click-router dalları (`friends-filter`, `friends-accept`, `friends-decline`, `friends-search-clear`, `refresh-friends`), input-listener (`friends-search`), `legendary/friends.rs` (+4 komut ve 3 canlı test), `gogdl` arkadaş komutları (`gog_friends`, `gog_friends_presence`), `GogFriend` modeli, `fetch_gog_friends`/`parse_gog_friends`/`fetch_presence`/`parse_presence` + testleri, `epic.ts`/`gog.ts` arkadaş tipleri, tüm arkadaş state alanları, 26 `friends.*` i18n anahtarı.
+- **Korundu:** **GOG presence kalp atışı** (`gogdl/presence.rs`, `send_presence`; kullanıcı "Galaxy'de çevrimiçi görünmek" özelliğini ayrıca istemişti), Discord Rich Presence, EOS overlay tespiti + oyun bazlı EOS rozeti.
+- **Güvenlik notu:** Epic hesabında **yazma** yapan tek özellik (arkadaş kabul/çıkarma) ve `chat.gog.com` üzerinden kişi verisi okuma kaldırıldı; EOS kimlik dosyası zaten silinmişti. Geriye kalan tek yazma işlemi kendi GOG durumumuzu bildiren kalp atışı.
+- **Sıradaki adım:** Discord entegrasyonu (Social SDK: arkadaş listesi + presence + DM) — kullanıcı onayı sonrası ayrı tur.
+- **Doğrulama:** `cargo check` 0 uyarı, `cargo test` **124** (+3 ignored), `npm.cmd run build` ✅, `tsc --noUnusedLocals` 0 hata, i18n **1.307 anahtar** 15/15 parite, 0 ölü anahtar, IPC **141** komut.
+
 ### 6.18. 28.09.2026 on birinci tur (EOS SDK denemesi: ürün kapsamlı sosyal grafik)
 
 - **Amaç:** Kullanıcının arkadaşının önerisiyle Epic'te **canlı** çevrimiçi durumu EOS SDK ile almak (REST yolları tükendiği için).

@@ -35,7 +35,6 @@ import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
 import { renderTvMode } from "./features/gamepad/tv-mode";
-import { renderFriendsView } from "./features/friends/friends-view";
 
 if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
 document.documentElement.classList.add("ready");
@@ -89,7 +88,6 @@ function render(): void {
     : S.view === "profile" ? renderProfile()
     : S.view === "accounts" ? renderAccounts()
     : S.view === "tv" ? renderTvMode()
-    : S.view === "friends" ? renderFriendsView()
     : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();

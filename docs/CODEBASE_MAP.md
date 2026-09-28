@@ -31,8 +31,7 @@ efxlve_launcher/
 │   │   ├── collection-icons.ts        # Built-in collection marker icons
 │   │   ├── utils.ts                   # Formatting/escaping helpers
 │   │   ├── constants.ts               # Thresholds, localStorage keys, chunk sizes
-│   │   └── types.ts                   # Core frontend types (`View` includes `"tv"` and `"friends"`)
-│   ├── features/                      # Modular feature domains (28 subsystems)
+│   ├── features/                      # Modular feature domains (27 subsystems)
 │   │   ├── accounts/                  # Accounts page: Epic + GOG cards, switchers, sign-in blocks
 │   │   ├── auth/                      # Epic/GOG login, EGL import, progressive sync, account vaults
 │   │   ├── changelog/                 # Changelog modal (TR/EN release notes, 1:1 with GitHub Releases)
@@ -45,7 +44,6 @@ efxlve_launcher/
 │   │   ├── drawer/                    # Full-page game page (overview, achievements, DLC, screenshots, manage, specs)
 │   │   ├── eos/                       # EOS overlay detection + installer helper
 │   │   ├── events/                    # click-router + 8 domain handlers, input listeners, IPC listeners (initApp)
-│   │   ├── friends/                   # Friends page: merged, read-only Epic + GOG list with filter/search
 │   │   ├── gamepad/                   # Controller polling/HUD + separate TV Mode view
 │   │   ├── install/                   # Install location dialog
 │   │   ├── library/                   # Grid/list library, pagination, hide-games modal, library options
@@ -63,10 +61,10 @@ efxlve_launcher/
 │   │   ├── store/                     # Embedded Epic/GOG store child webview manager
 │   │   └── updates/                   # Launcher self-update (check/download/install gating)
 │   ├── locales/                       # 15 language dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (primary, 1.332 keys)
-│   │   ├── en.json                    # English (1.332 keys, full parity)
+│   │   ├── tr.json                    # Turkish (primary, 1.307 keys)
+│   │   ├── en.json                    # English (1.307 keys, full parity)
 │   │   └── ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant  # all at full parity
-│   └── styles/                        # 13 stylesheets (12 modules + index.css)
+│   └── styles/                        # 12 stylesheets (11 modules + index.css)
 │       ├── index.css                  # Master CSS entry (imports every module in cascade order)
 │       ├── tokens.css                 # Flat palette, single accent, radii, reset
 │       ├── components.css             # Buttons, inputs, tabs, chips, rows, modal frame, toasts
@@ -76,7 +74,6 @@ efxlve_launcher/
 │       ├── downloads.css              # Download card, speed chart, grouped lists
 │       ├── settings.css               # Settings sub-nav and row panels
 │       ├── profile.css                # Profile header, showcase, progress lists
-│       ├── friends.css                # Friends page rows, avatars, store tokens
 │       ├── modals.css                 # Shared modal frame + dialog layouts
 │       ├── accounts.css               # Accounts page cards
 │       └── tv-mode.css                # TV Mode full-screen shell
@@ -95,7 +92,6 @@ efxlve_launcher/
 │       │   ├── import_installed.rs    # Portable-folder game scanner & import
 │       │   ├── download_resume.rs     # Partial download resume records
 │       │   ├── playtime.rs / playtime_session.rs / library_playtime.rs  # Local + server playtime
-│       │   ├── profile.rs / friends.rs# Epic GraphQL profile & friends
 │       │   ├── screenshots.rs         # Hotkey hook, capture, compression
 │       │   ├── backup.rs              # Local save backup/restore
 │       │   ├── move_game.rs           # Cross-drive mover + EGL/legendary manifest updates
@@ -155,7 +151,6 @@ efxlve_launcher/
 | `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
 | `events/` | `click-router.ts`, `handlers/*` (8 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
 | `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
-| `friends/` | `friends-view.ts` | Friends page: merged Epic + GOG list with live GOG presence, Epic last-seen, "Active" filter, incoming-request actions and 60s presence polling only while open. |
 | `install/` | `install-dialog.ts` | Install location dialog (sizes, folder picker, auto-update/shortcut). |
 | `library/` | `library-view.ts`, `library-options.ts`, `hide-games.ts` | Grid/list rendering with progressive chunks and pagination, filter/sort UI, hidden-games modal. |
 | `manage/` | `manage-view.ts` | Manage popup sections and in-place updates (verify, save folder, paths, launch extras, cloud row). |
@@ -188,13 +183,13 @@ efxlve_launcher/
 | `legendary/import_installed.rs` | Portable folder scan/import, `.item` rewrite helpers. |
 | `legendary/download_resume.rs` | Partial download records and cleanup rules. |
 | `legendary/playtime.rs`, `playtime_session.rs`, `library_playtime.rs` | Local session tracking, crash recovery marker, Epic server playtime. |
-| `legendary/profile.rs`, `friends.rs` | Epic GraphQL profile/XP; friends list, incoming requests and last-online presence (unofficial Web APIs). |
+| `legendary/profile.rs` | Epic GraphQL profile, XP and achievement overview. |
 | `legendary/screenshots.rs` | Hotkey hook, capture, compression worker. |
 | `legendary/backup.rs` | Local save backup/restore. |
 | `legendary/move_game.rs` | Cross-drive relocation + EGL/legendary manifest path updates. |
 | `legendary/collections.rs`, `skip.rs`, `hltb.rs`, `critic.rs`, `steamgrid.rs`, `wiki.rs` | Collections, 401 skipping, HLTB, OpenCritic, SteamGridDB, Wikipedia fallback. |
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
-| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **friends list + live Galaxy presence + online heartbeat** (`chat.gog.com`, `presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
+| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **online heartbeat** (`presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
 
 ---

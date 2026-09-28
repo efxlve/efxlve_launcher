@@ -71,7 +71,6 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
-import { loadFriendsView, respondToFriendRequest } from "../friends/friends-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
@@ -191,11 +190,6 @@ document.addEventListener("click", (e) => {
     setView(targetView);
     pushNavHistory({ view: targetView });
     if (S.view === "library") void bootEpic();
-    if (S.view === "friends") {
-      void loadFriendsView();
-      render();
-      return;
-    }
     if (S.view === "profile") {
       if (!S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
       render();
@@ -299,18 +293,6 @@ document.addEventListener("click", (e) => {
     openAvatarFilePicker(id);
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
-  } else if (act === "refresh-friends") {
-    void loadFriendsView(true);
-  } else if (act === "friends-filter" && t.dataset.val) {
-    S.friendsFilter = t.dataset.val as typeof S.friendsFilter;
-    render();
-  } else if (act === "friends-accept" && id) {
-    void respondToFriendRequest(id, true);
-  } else if (act === "friends-decline" && id) {
-    void respondToFriendRequest(id, false);
-  } else if (act === "friends-search-clear") {
-    S.friendsQuery = "";
-    render();
   } else if (act === "open-hide-achievements") {
     openHideAchievementsModal();
   } else if (act === "profile-toggle-hidden") {

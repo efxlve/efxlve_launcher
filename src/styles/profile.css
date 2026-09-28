@@ -1,6 +1,6 @@
 /* ==========================================================================
    Profile: identity header with real totals, achievement progress list,
-   recently played grid and friends list.
+   recently played grid.
    ========================================================================== */
 .profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
 .profile-avatar-btn { padding: 0; border: none; background: none; border-radius: 50%; cursor: pointer; }

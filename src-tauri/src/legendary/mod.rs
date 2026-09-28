@@ -24,7 +24,6 @@ pub mod profile;
 pub mod critic;
 pub mod screenshots;
 pub mod move_game;
-pub mod friends;
 pub mod accounts;
 pub mod import_installed;
 
