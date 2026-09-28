@@ -357,6 +357,14 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.18. 28.09.2026 on birinci tur (EOS SDK denemesi: ürün kapsamlı sosyal grafik)
+
+- **Amaç:** Kullanıcının arkadaşının önerisiyle Epic'te **canlı** çevrimiçi durumu EOS SDK ile almak (REST yolları tükendiği için).
+- **Yapılanlar:** Dev Portal ürününden **EOS C SDK v1.19.2.1** indirildi (`src-tauri/vendor/eos-sdk/`, gitignore'da); `libloading` ile çalışma anında yüklenen FFI yazıldı (v1.19.2.1 başlıklarından birebir: `EOS_Platform_Options` API 15, `EOS_Auth_Credentials` API 4, `EOS_Presence_*` API 1/3, tüm fonksiyonlar DLL'den export, `__stdcall` → `extern "system"`). Akış: `EOS_Initialize` → `EOS_Platform_Create` (ürün kimlikleri) → `EOS_Auth_Login` (`EOS_LCT_ExchangeCode`, `basic_profile|friends_list|presence`) → `EOS_Presence_QueryPresence` + `CopyPresence` (+ `EOS_Connect_Login`, `EOS_Friends_QueryFriends`).
+- **Sonuç (çalıştı ama işe yaramadı):** Giriş başarılı, **kendi presence'ımız `online`** döndü ✓. Ancak: `EOS_Friends_QueryFriends` **0 kayıt**, 18 Epic arkadaşının tamamı `EOS_NotFound`, `EOS_Connect_Login` (`EOS_ECT_EPIC_ID_TOKEN` → `EOS_InvalidUser`, `EOS_ECT_EPIC` → `ExternalTokenValidationFailed`). Yani **EOS sosyal grafiği ürün kapsamlı**; Epic genelindeki arkadaş durumu yalnızca Epic'in kendi ürününde (EGS launcher) görünür. Üçüncü taraf ürünle bu veri **alınamaz** — SDK dahil.
+- **Karar (kullanıcı onaylı geri alma):** `eos_sdk/`, `eos_social.rs`, `libloading`, 10 i18n anahtarı ve komut kayıtları silindi; `%APPDATA%\…\eos\credentials.json` (client secret) temizlendi. Epic tarafı **son görülme + arkadaşlık istekleri** ile kalıyor; GOG tarafı canlı durum + kalp atışı ile çalışmaya devam ediyor.
+- **Kalıcı bilgi:** Bu araştırma tekrar edilmesin diye tüm uç sonuçları (403/401/404/400, `client_missing_application_id`, `SCOPE_CONSENT`, `EOS_NotFound`) yukarıda ve §6.17'de kayıtlı.
+
 ### 6.17. 28.09.2026 onuncu tur (sosyal özellikler: canlı presence + arkadaşlık istekleri)
 
 - **Karar (kullanıcı):** "İleride değil şimdi ekle. Bu 2 mağazanın sosyal özelliklerini olabildiğince çalışır hale getirelim."

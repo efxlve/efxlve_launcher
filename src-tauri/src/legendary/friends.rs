@@ -99,15 +99,6 @@ fn read_user(config: &Path) -> Result<UserFile, String> {
     serde_json::from_str(&text).map_err(|e| e.to_string())
 }
 
-/// Reads the stored legendary session as `(account_id, access_token)`.
-pub(crate) fn read_session() -> Result<(String, String), String> {
-    let user = read_user(&default_config_dir())?;
-    if user.account_id.is_empty() || user.access_token.is_empty() {
-        return Err("@t:friends.notSignedIn".into());
-    }
-    Ok((user.account_id, user.access_token))
-}
-
 fn http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(12))

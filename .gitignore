@@ -24,6 +24,12 @@ Thumbs.db
 *.exe
 !src-tauri/icons/*.ico
 
+# EOS SDK (Epic'in kapalı kaynak SDK'sı; repoda tutulmaz, yerelden yüklenir)
+src-tauri/vendor/
+
+# Web sitesi projesi (ayrı repo; launcher ile birlikte commit'lenmesin)
+efxlve.com/
+
 # Mağaza doğrulama aracı (tools/store-check) — üretilen dosyalar
 tools/store-check/assets/
 tools/store-check/fixtures.json
