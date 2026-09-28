@@ -1,166 +1,141 @@
-import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
 /**
  * Global click delegation router.
  *
  * A single document-level click listener dispatches every data-act /
- * data-view interaction to the corresponding feature function. Keeping it in
- * one place avoids per-element listeners and preserves the event-delegation
- * contract documented in AGENTS.md.
+ * data-view interaction to the corresponding feature handler. Keeping it
+ * clean and modular avoids per-element listeners while strictly adhering
+ * to the <1500 line rule.
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTO_BACKUP_KEY, AUTO_SHORTCUT_KEY, AUTO_UPDATE_KEY, COVER_STATS_KEY, DEMO_PLAT_KEY, DIM_UNINSTALLED_KEY, CONTRAST_TITLES_KEY, INSTALLED_ICON_KEY, LANG_KEY, MINIMIZE_TRAY_KEY, PAUSE_ON_PLAY_KEY, PROFILE_CARD_CHUNK, SPEED_BITS_KEY, SS_COMPRESS_KEY, SS_FORMAT_KEY, STORE_BADGE_KEY, SURFACE_KEY, isTauri } from "../../core/constants";
+import {
+  AUTO_BACKUP_KEY,
+  AUTO_SHORTCUT_KEY,
+  AUTO_UPDATE_KEY,
+  COVER_STATS_KEY,
+  DIM_UNINSTALLED_KEY,
+  CONTRAST_TITLES_KEY,
+  INSTALLED_ICON_KEY,
+  LANG_KEY,
+  MINIMIZE_TRAY_KEY,
+  PAUSE_ON_PLAY_KEY,
+  PROFILE_CARD_CHUNK,
+  SPEED_BITS_KEY,
+  SS_COMPRESS_KEY,
+  SS_FORMAT_KEY,
+  STORE_BADGE_KEY,
+  SURFACE_KEY,
+  isTauri,
+} from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
-import { toggleIgnoreUpdate } from "../downloads/downloads-view";
 import { closeModal, viewEl } from "../../core/dom";
-import { epicCancel, epicPlay, epicStop, epicUninstall, refreshEpicInstalled } from "../../core/epic-actions";
-import { patchLibraryCardDom, toggleFav } from "../../core/game-view";
-import { icon } from "../../core/icons";
-import { navGoBack, navGoForward, pushNavHistory, updateNavHistoryUi, updateOfflineModeUi, updatePageHeader, updateSidebarAccountSwitcher } from "../../core/nav";
+import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
+import { toggleFav } from "../../core/game-view";
+import {
+  navGoBack,
+  navGoForward,
+  pushNavHistory,
+  updateNavHistoryUi,
+  updateOfflineModeUi,
+  updatePageHeader,
+  updateSidebarAccountSwitcher,
+} from "../../core/nav";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import type { DrawerTab, EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
-import { cdnShortLabel, esc, fmtBytes, parseEnvText } from "../../core/utils";
+import type { EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
-import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetCustomSavePath, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
-import { allStoreSummaries, rawOf, summaryOf } from "../../core/selectors";
-import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
-import { cancelAddAccount, loadSavedAccounts, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
+import { setLanguage, t as i18nT } from "../../i18n";
 import {
-  extractGogAuthCode,
-  gogLoginWithCode,
-  gogLogoutAction,
-  openGogLoginPage,
-  syncGogLibrary,
-} from "../auth/gog-auth-actions";
-import { switchGogAccount, removeSavedGogAccount, promptAddGogAccount, cancelAddGogAccount, loadSavedGogAccounts } from "../auth/gog-account-switcher";
-import { gogCancelDownload, gogImportGame, gogVerifyGame } from "../../gog";
-import {
-  closeCollectionModal,
-  deleteCollectionFromModal,
-  loadEpicCollections,
-  openCollectionModal,
-  openGameCollectionsModal,
-  saveCollectionFromModal,
-  saveGameCollectionsFromModal,
-  updateColGamesListInPlace,
-  updateMarkerUi,
-} from "../collections/collections-view";
-import {
-  closeCustomCoverModal,
-  loadSteamGridCovers,
-  openCustomCoverModal,
-  renderCustomCoverModalContent,
-  renderCustomCoverModalFrame,
-  resetCustomCover,
-  resetCustomHero,
-  saveCustomCover,
-  saveCustomHero,
-  searchAndLoadSteamGrid,
-} from "../cover/cover-view";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../drawer/drawer-view";
-import { renderBackupListHtml } from "../drawer/drawer-widgets";
-
-import { applySelectiveInstall, closeSelectiveModal } from "../dlc/selective-install";
-import { browseInstallDir, closeInstallDialog, confirmInstall, openInstallDialog } from "../install/install-dialog";
+  epicDetectEglGames,
+  epicGetQueue,
+  epicOpenFolderPath,
+  epicSetAutoDesktopShortcut,
+  epicSetNetworkProfile,
+  epicSetOfflineMode,
+  epicStorePageUrl,
+  epicSyncEglInstalled,
+  epicThirdPartyLaunchers,
+} from "../../epic";
+import { bootEpic } from "../auth/auth-actions";
+import { updateColGamesListInPlace } from "../collections/collections-view";
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
-import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
+import {
+  consumeCollectionDragClick,
+  refreshLibraryResultsInPlace,
+  resetCardChunk,
+  updateLibraryFilterInPlace,
+} from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
-import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace, updateManageModalInputsInPlace } from "../manage/manage-view";
-import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
-import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { closeStorageManager, openStorageManager } from "../storage/storage-view";
-import { closeEditPlaytimeModal, openEditPlaytimeModal, saveEditedPlaytime, } from "../playtime/playtime-view";
-import {
-  updateCloudBackupSettings,
-  testCloudConnectionAction,
-  startGoogleDriveAuthAction,
-  disconnectGoogleDriveAction,
-  uploadGameCloudAction,
-  loadCloudBackupsAction,
-} from "../cloud-backup/cloud-backup-actions";
-import type { CloudBackupProvider } from "../../epic";
-
-import {
-  closeScreenshotLightbox,
-  closeScreenshotDeleteConfirm,
-  closeShareModal,
-  compressScreenshotItem,
-  copyScreenshotImageToClipboard,
-  fetchAndRenderScreenshots,
-  navigateScreenshotLightbox,
-  openScreenshotDeleteConfirm,
-  openScreenshotLightbox,
-  openShareModal,
-  playScreenshotShutterSound,
-  renderDrawerScreenshots,
-  takePendingScreenshotDelete,
-} from "../screenshots/screenshots-view";
 import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
-import { clearNotifications, closeNotifPanel, dismissNotification, markAllRead, openNotifPanel, renderNotificationPanel } from "../notifications/notifications";
+import {
+  clearNotifications,
+  closeNotifPanel,
+  dismissNotification,
+  markAllRead,
+  openNotifPanel,
+  renderNotificationPanel,
+} from "../notifications/notifications";
 import { loadIntegrationsView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
+import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
+
+// Feature action handlers
+import { handleAuthAction } from "./handlers/auth-handlers";
+import { handleCloudBackupAction } from "./handlers/cloud-backup-handlers";
+import { handleCollectionAction } from "./handlers/collection-handlers";
+import { handleCoverAction } from "./handlers/cover-handlers";
+import { handleDownloadsAction } from "./handlers/downloads-handlers";
+import { handleDrawerAction } from "./handlers/drawer-handlers";
+import { handleManageAction } from "./handlers/manage-handlers";
+import { handleScreenshotAction } from "./handlers/screenshot-handlers";
+
 document.addEventListener("click", (e) => {
+  const targetEl = e.target as HTMLElement;
+
   // Close the sort dropdown when clicking outside it.
-  if (S.isSortDropdownOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".sort-dropdown-container")) {
-      S.isSortDropdownOpen = false;
-      const menu = document.getElementById("sort-dropdown-menu");
-      if (menu) menu.classList.remove("show");
-    }
+  if (S.isSortDropdownOpen && !targetEl.closest(".sort-dropdown-container")) {
+    S.isSortDropdownOpen = false;
+    const menu = document.getElementById("sort-dropdown-menu");
+    if (menu) menu.classList.remove("show");
   }
 
   // Close the store dropdown when clicking outside it.
-  if (S.isStoreDropdownOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".store-dropdown-container")) {
-      S.isStoreDropdownOpen = false;
-      const menu = document.getElementById("store-dropdown-menu");
-      if (menu) menu.classList.remove("show");
-    }
+  if (S.isStoreDropdownOpen && !targetEl.closest(".store-dropdown-container")) {
+    S.isStoreDropdownOpen = false;
+    const menu = document.getElementById("store-dropdown-menu");
+    if (menu) menu.classList.remove("show");
   }
 
   // Close the collection dropdown when clicking outside it.
-  if (S.isColDropdownOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".col-dropdown-container")) {
-      S.isColDropdownOpen = false;
-      const menu = document.getElementById("col-dropdown-menu");
-      if (menu) menu.classList.remove("show");
-    }
+  if (S.isColDropdownOpen && !targetEl.closest(".col-dropdown-container")) {
+    S.isColDropdownOpen = false;
+    const menu = document.getElementById("col-dropdown-menu");
+    if (menu) menu.classList.remove("show");
   }
 
   // Close the sidebar account switcher when clicking outside it.
-  if (S.isAccountSwitcherOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest("#sb-account-host")) {
-      S.isAccountSwitcherOpen = false;
-      updateSidebarAccountSwitcher();
-    }
+  if (S.isAccountSwitcherOpen && !targetEl.closest("#sb-account-host")) {
+    S.isAccountSwitcherOpen = false;
+    updateSidebarAccountSwitcher();
   }
 
   // Marker palette closes when clicking outside it.
-  if (S.isMarkerPaletteOpen) {
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl.closest(".col-marker-picker-container")) {
-      S.isMarkerPaletteOpen = false;
-      const pal = document.getElementById("col-marker-palette");
-      if (pal) pal.classList.remove("open");
-    }
+  if (S.isMarkerPaletteOpen && !targetEl.closest(".col-marker-picker-container")) {
+    S.isMarkerPaletteOpen = false;
+    const pal = document.getElementById("col-marker-palette");
+    if (pal) pal.classList.remove("open");
   }
 
   // In-modal game/collection selection.
-  const gameItem = (e.target as HTMLElement).closest<HTMLElement>(".col-game-item");
+  const gameItem = targetEl.closest<HTMLElement>(".col-game-item");
   if (gameItem) {
     const appName = gameItem.dataset.app;
     const colId = gameItem.dataset.colId;
@@ -200,15 +175,11 @@ document.addEventListener("click", (e) => {
   }
 
   // Capture the target before any re-render detaches it from the DOM.
-  const t = (e.target as HTMLElement).closest<HTMLElement>("[data-act], [data-view]");
+  const t = targetEl.closest<HTMLElement>("[data-act], [data-view]");
 
-  // Close the notification dropdown when clicking anywhere outside it. This only
-  // repaints the small panel — never the whole view.
-  if (S.notifOpen) {
-    const el = e.target as HTMLElement;
-    if (!el.closest("#notif-root") && !el.closest('[data-act="toggle-notifications"]')) {
-      closeNotifPanel();
-    }
+  // Close the notification dropdown when clicking anywhere outside it.
+  if (S.notifOpen && !targetEl.closest("#notif-root") && !targetEl.closest('[data-act="toggle-notifications"]')) {
+    closeNotifPanel();
   }
 
   if (!t) return;
@@ -234,10 +205,6 @@ document.addEventListener("click", (e) => {
       return;
     }
     if (S.view === "settings") {
-      // Paint the page shell immediately, then hydrate in the background so a
-      // slow integration scan can never make the launcher look frozen.
-      // The downloads shortcut sets its own section before setView, so this
-      // only applies when Settings itself is opened.
       S.settingsSection = "account";
       render();
       void loadSettingsView();
@@ -246,15 +213,27 @@ document.addEventListener("click", (e) => {
     render();
     return;
   }
+
   const act = t.dataset.act;
   const id = t.dataset.id;
-  // New optional library controls and screenshot-folder actions; kept out of
-  // this router so the file does not keep growing.
+
+  // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
   if (handleSettingsAction(act, t)) return;
+  if (handleAuthAction(act, t, id)) return;
+  if (handleCloudBackupAction(act, t, id, targetEl)) return;
+  if (handleCoverAction(act, t, id, targetEl)) return;
+  if (handleCollectionAction(act, t, id, targetEl)) return;
+  if (handleDownloadsAction(act, t, id, targetEl)) return;
+  if (handleManageAction(act, t, id, targetEl)) return;
+  if (handleDrawerAction(act, t, id, targetEl)) return;
+  if (handleScreenshotAction(act, t, id, targetEl)) return;
+
+  // Global Navigation & Modal Controls
   if (act === "close") {
-    const el = e.target as HTMLElement;
-    if (el === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || el.closest(".hub-back-btn, .drawer-close, .mclose")) closeModal();
+    if (targetEl === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || targetEl.closest(".hub-back-btn, .drawer-close, .mclose")) {
+      closeModal();
+    }
   } else if (act === "nav-history-back" || act === "page-back") {
     if (act === "page-back" && S.currentModalAppName) {
       closeModal();
@@ -262,10 +241,8 @@ document.addEventListener("click", (e) => {
     } else {
       navGoBack();
     }
-    return;
   } else if (act === "nav-history-forward") {
     navGoForward();
-    return;
   } else if (act === "goto-library") {
     pushNavHistory({ view: "library" });
     closeAllModals();
@@ -278,74 +255,6 @@ document.addEventListener("click", (e) => {
       const url = slug ? `https://store.epicgames.com/p/${slug}` : epicStorePageUrl(title);
       void openStoreUrl(url, "store");
     }
-  } else if (act === "epic-download") {
-    void epicDownload();
-  } else if (act === "epic-open-login") {
-    openUrl(EPIC_LOGIN_URL).catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "epic-do-login") {
-    const input = document.getElementById("epic-code") as HTMLInputElement | null;
-    void epicDoLogin(input?.value ?? "");
-  } else if (act === "epic-import") {
-    void epicDoImport();
-  } else if (act === "auth-paste") {
-    void (async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        const code = extractAuthCode(text);
-        const input = document.getElementById("epic-code") as HTMLInputElement | null;
-        if (input && code) {
-          input.value = code;
-          input.focus();
-          toast(i18nT("auth.codePasted"), "ok");
-        } else {
-          toast(i18nT("auth.pasteFailed"), "err");
-        }
-      } catch {
-        toast(i18nT("auth.pasteFailed"), "err");
-      }
-    })();
-  } else if (act === "auth-cancel") {
-    cancelAddAccount();
-  } else if (act === "epic-logout") {
-    void epicDoLogout();
-  } else if (act === "epic-refresh") {
-    void syncEpicLibrary(true);
-  } else if (act === "epic-retry") {
-    void refreshEpic();
-  } else if (act === "gog-open-login") {
-    void openGogLoginPage();
-  } else if (act === "gog-do-login") {
-    const input = document.getElementById("gog-code") as HTMLInputElement | null;
-    void gogLoginWithCode(input?.value ?? "");
-  } else if (act === "gog-paste") {
-    void (async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        const code = extractGogAuthCode(text);
-        const input = document.getElementById("gog-code") as HTMLInputElement | null;
-        if (input && code) {
-          input.value = code;
-          input.focus();
-          toast(i18nT("auth.codePasted"), "ok");
-        } else {
-          toast(i18nT("auth.pasteFailed"), "err");
-        }
-      } catch {
-        toast(i18nT("auth.pasteFailed"), "err");
-      }
-    })();
-  } else if (act === "gog-logout") {
-    void gogLogoutAction();
-  } else if (act === "gog-refresh") {
-    void syncGogLibrary();
-  } else if (act === "gog-account-switch" && id) {
-    void switchGogAccount(id);
-  } else if (act === "gog-account-remove" && id) {
-    void removeSavedGogAccount(id);
-  } else if (act === "gog-account-add") {
-    promptAddGogAccount();
-  } else if (act === "gog-auth-cancel") {
-    cancelAddGogAccount();
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
@@ -363,7 +272,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "close-changelog-modal") {
     closeChangelogModal();
   } else if (act === "changelog-backdrop") {
-    if (e.target === t) closeChangelogModal();
+    if (targetEl === t) closeChangelogModal();
   } else if (act === "toggle-notifications") {
     if (S.notifOpen) closeNotifPanel();
     else openNotifPanel();
@@ -381,9 +290,12 @@ document.addEventListener("click", (e) => {
     openEpicModal(id);
   } else if (act === "profile-change-avatar") {
     promptAvatarAction();
-  } else if (act === "avatar-modal-close") { closeAvatarModal();
-  } else if (act === "avatar-modal-remove" && id) { removeCustomAvatar(id);
-  } else if (act === "avatar-modal-upload" && id) { openAvatarFilePicker(id);
+  } else if (act === "avatar-modal-close") {
+    closeAvatarModal();
+  } else if (act === "avatar-modal-remove" && id) {
+    removeCustomAvatar(id);
+  } else if (act === "avatar-modal-upload" && id) {
+    openAvatarFilePicker(id);
   } else if (act === "refresh-profile") {
     void loadPlayerProfile(true);
     void loadFriends(true);
@@ -398,46 +310,6 @@ document.addEventListener("click", (e) => {
         toast(val, "");
       });
     }
-  } else if (act === "account-switch" && id) {
-    void switchAccount(id);
-  } else if (act === "account-remove" && id) {
-    void removeSavedAccount(id);
-  } else if (act === "account-add") {
-    promptAddAccount();
-  } else if (act === "toggle-account-switcher") {
-    S.isAccountSwitcherOpen = !S.isAccountSwitcherOpen;
-    if (S.isAccountSwitcherOpen) {
-      void loadSavedAccounts().then(() => updateSidebarAccountSwitcher());
-      void loadSavedGogAccounts().then(() => updateSidebarAccountSwitcher());
-    }
-    updateSidebarAccountSwitcher();
-  } else if (act === "sb-switch-epic" && id) {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-    void switchAccount(id);
-  } else if (act === "sb-switch-gog" && id) {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-    void switchGogAccount(id);
-  } else if (act === "sb-add-epic") {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-    closeAllModals();
-    promptAddAccount();
-  } else if (act === "sb-add-gog") {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-    closeAllModals();
-    setView("accounts");
-    pushNavHistory({ view: "accounts" });
-    promptAddGogAccount();
-  } else if (act === "open-accounts-settings") {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-    closeAllModals();
-    setView("accounts");
-    pushNavHistory({ view: "accounts" });
-    render();
   } else if (act === "open-hide-achievements") {
     openHideAchievementsModal();
   } else if (act === "profile-toggle-hidden") {
@@ -448,7 +320,6 @@ document.addEventListener("click", (e) => {
     unhideAchievement(id);
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
-    // Hidden is its own list. Leaving it must drop that mode in the same click.
     S.profileShowHidden = false;
     resetProfileCards();
     render();
@@ -473,11 +344,8 @@ document.addEventListener("click", (e) => {
     const colMenu = document.getElementById("col-dropdown-menu");
     if (colMenu) colMenu.classList.remove("show");
     const menu = document.getElementById("store-dropdown-menu");
-    if (menu) {
-      menu.classList.toggle("show", S.isStoreDropdownOpen);
-    } else {
-      render();
-    }
+    if (menu) menu.classList.toggle("show", S.isStoreDropdownOpen);
+    else render();
   } else if (act === "source-filter" && t.dataset.val) {
     const val = t.dataset.val as SourceFilter;
     if (val === "all" || val === "epic" || val === "gog") {
@@ -497,23 +365,15 @@ document.addEventListener("click", (e) => {
     const storeMenu = document.getElementById("store-dropdown-menu");
     if (storeMenu) storeMenu.classList.remove("show");
     const menu = document.getElementById("col-dropdown-menu");
-    if (menu) {
-      menu.classList.toggle("show", S.isColDropdownOpen);
-    } else {
-      render();
-    }
+    if (menu) menu.classList.toggle("show", S.isColDropdownOpen);
+    else render();
   } else if (act === "select-col-filter") {
     const colId = t.dataset.colId;
     S.isColDropdownOpen = false;
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) menu.classList.remove("show");
-    if (!colId || colId === "none") {
-      S.activeCollectionId = null;
-      S.epicFilter = "all";
-    } else {
-      S.activeCollectionId = colId;
-      S.epicFilter = "all";
-    }
+    S.activeCollectionId = (!colId || colId === "none") ? null : colId;
+    S.epicFilter = "all";
     if (!updateLibraryFilterInPlace()) {
       resetCardChunk();
       render();
@@ -566,11 +426,8 @@ document.addEventListener("click", (e) => {
     const colMenu = document.getElementById("col-dropdown-menu");
     if (colMenu) colMenu.classList.remove("show");
     const menu = document.getElementById("sort-dropdown-menu");
-    if (menu) {
-      menu.classList.toggle("show", S.isSortDropdownOpen);
-    } else {
-      render();
-    }
+    if (menu) menu.classList.toggle("show", S.isSortDropdownOpen);
+    else render();
   } else if (act === "select-sort") {
     const sortVal = t.dataset.sort as EpicSort;
     S.isSortDropdownOpen = false;
@@ -613,201 +470,8 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "open-hide-games") {
     openHideGamesModal();
-  } else if (act === "open-custom-cover" && id) {
-    const target = (t.dataset.target as "cover" | "hero") || "cover";
-    openCustomCoverModal(id, target);
-  } else if (act === "set-cover-target" && id) {
-    const target = (t.dataset.target as "cover" | "hero") || "cover";
-    if (target !== S.activeCoverTarget) {
-      S.activeCoverTarget = target;
-      S.sgdbAssetType = target === "hero" ? "heroes" : "grids";
-      S.sgdbSelectedCoverUrl = "";
-      renderCustomCoverModalFrame(id);
-      renderCustomCoverModalContent(id);
-      if (S.customCoverActiveTab === "steamgrid" && S.sgdbSelectedGameId) {
-        void loadSteamGridCovers(id, S.sgdbSelectedGameId);
-      }
-    }
-  } else if (act === "cover-modal-backdrop") {
-    if (e.target === t) closeCustomCoverModal();
-  } else if (act === "prevent-modal-close") {
-    // Keep the modal open when its content is clicked.
-  } else if (act === "close-custom-cover") {
-    if (t.classList.contains("cover-overlay") && e.target !== t) return;
-    closeCustomCoverModal();
-  } else if (act === "toggle-sgdb-modal-info") {
-    S.showModalSgdbInfo = !S.showModalSgdbInfo;
-    if (S.activeCustomCoverAppName) {
-      renderCustomCoverModalContent(S.activeCustomCoverAppName);
-    }
   } else if ((act === "open-external-url" || act === "open-critic-url") && t.dataset.url) {
     void openUrl(t.dataset.url);
-  } else if (act === "switch-cover-tab" && t.dataset.tab) {
-    S.customCoverActiveTab = t.dataset.tab as typeof S.customCoverActiveTab;
-    document.querySelectorAll(".cover-tab-btn").forEach((btn) => {
-      btn.classList.toggle("active", (btn as HTMLElement).dataset.tab === S.customCoverActiveTab);
-    });
-    if (S.activeCustomCoverAppName) {
-      renderCustomCoverModalContent(S.activeCustomCoverAppName);
-    }
-  } else if (act === "sgdb-search" && id) {
-    const input = document.getElementById("sgdb-search-input") as HTMLInputElement | null;
-    if (input) S.sgdbSearchQuery = input.value;
-    void searchAndLoadSteamGrid(id, S.sgdbSearchQuery);
-  } else if (act === "sgdb-select-game" && id && t.dataset.gameId) {
-    const gId = parseInt(t.dataset.gameId, 10);
-    if (!isNaN(gId)) {
-      S.sgdbSelectedGameId = gId;
-      void loadSteamGridCovers(id, gId);
-    }
-  } else if (act === "sgdb-set-asset-type" && id && t.dataset.type) {
-    const type = t.dataset.type as "grids" | "heroes";
-    S.sgdbAssetType = type;
-    const target = type === "heroes" ? "hero" : "cover";
-    if (target !== S.activeCoverTarget) {
-      S.activeCoverTarget = target;
-      S.sgdbSelectedCoverUrl = "";
-      renderCustomCoverModalFrame(id);
-    }
-    if (S.sgdbSelectedGameId) {
-      void loadSteamGridCovers(id, S.sgdbSelectedGameId);
-    }
-  } else if (act === "sgdb-set-style" && id) {
-    S.sgdbActiveStyle = t.dataset.style || "";
-    if (S.sgdbSelectedGameId) {
-      void loadSteamGridCovers(id, S.sgdbSelectedGameId);
-    }
-  } else if (act === "sgdb-select-card" && t.dataset.url) {
-    S.sgdbSelectedCoverUrl = t.dataset.url;
-    document.querySelectorAll(".sgdb-card").forEach((card) => {
-      const isSel = (card as HTMLElement).dataset.url === S.sgdbSelectedCoverUrl;
-      card.classList.toggle("selected", isSel);
-      const check = card.querySelector(".sgdb-selected-check");
-      if (isSel && !check) {
-        card.insertAdjacentHTML("beforeend", `<div class="sgdb-selected-check">${icon("check", 14)}</div>`);
-      } else if (!isSel && check) {
-        check.remove();
-      }
-    });
-    const previewImg = document.getElementById("cover-preview-img") as HTMLImageElement | null;
-    const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
-    if (previewImg && previewImg.tagName === "IMG") {
-      previewImg.src = S.sgdbSelectedCoverUrl;
-    } else if (previewWrapper) {
-      previewWrapper.innerHTML = `
-        <img id="cover-preview-img" src="${esc(S.sgdbSelectedCoverUrl)}" alt="${i18nT("cover.previewAlt")}" />
-        <div class="cover-preview-badge">${i18nT("cover.selectedPreview")}</div>
-      `;
-    }
-    const badge = previewWrapper?.querySelector(".cover-preview-badge");
-    if (badge) badge.textContent = i18nT("cover.selectedPreview");
-    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-    if (input) input.value = S.sgdbSelectedCoverUrl;
-  } else if (act === "save-inline-sgdb-key" && id) {
-    const input = document.getElementById("modal-sgdb-key-input") as HTMLInputElement | null;
-    const key = input?.value.trim() || "";
-    if (!key) {
-      toast(i18nT("cover.needKey"), "err");
-      return;
-    }
-    epicSetSteamGridKey(key)
-      .then(() => {
-        S.steamGridApiKey = key;
-        toast(i18nT("cover.keySaved"), "ok");
-        renderCustomCoverModalContent(id);
-        void searchAndLoadSteamGrid(id, S.sgdbSearchQuery);
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "save-sgdb-key") {
-    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
-    const key = input?.value.trim() || "";
-    epicSetSteamGridKey(key)
-      .then(() => {
-        S.steamGridApiKey = key || null;
-        toast(key ? i18nT("cover.keySaved") : i18nT("cover.keyRemoved"), "ok");
-        render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "test-sgdb-key") {
-    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
-    const key = input?.value.trim() || S.steamGridApiKey || "";
-    if (!key) {
-      toast(i18nT("cover.enterTestKey"), "err");
-      return;
-    }
-    toast(i18nT("cover.testing"), "");
-    epicTestSteamGridKey(key)
-      .then(() => toast(i18nT("cover.testOk"), "ok"))
-      .catch((err) => toast(i18nT("cover.testFailed", { msg: String(err) }), "err"));
-  } else if (act === "toggle-sgdb-key-visibility") {
-    const input = document.getElementById("settings-sgdb-key-input") as HTMLInputElement | null;
-    if (input) {
-      S.showSettingsSgdbKey = !S.showSettingsSgdbKey;
-      input.type = S.showSettingsSgdbKey ? "text" : "password";
-      t.innerHTML = icon(S.showSettingsSgdbKey ? "eye-off" : "eye", 13);
-    }
-  } else if (act === "toggle-modal-sgdb-key-visibility") {
-    const input = document.getElementById("modal-sgdb-key-input") as HTMLInputElement | null;
-    if (input) {
-      S.showModalSgdbKey = !S.showModalSgdbKey;
-      input.type = S.showModalSgdbKey ? "text" : "password";
-      t.innerHTML = icon(S.showModalSgdbKey ? "eye-off" : "eye", 13);
-    }
-  } else if (act === "preview-custom-cover-url") {
-    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-    const val = input?.value.trim();
-    if (val) {
-      S.sgdbSelectedCoverUrl = val;
-      const previewImg = document.getElementById("cover-preview-img") as HTMLImageElement | null;
-      const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
-      if (previewImg && previewImg.tagName === "IMG") {
-        previewImg.src = val;
-      } else if (previewWrapper) {
-        previewWrapper.innerHTML = `
-          <img id="cover-preview-img" src="${esc(val)}" alt="${i18nT("cover.previewAlt")}" />
-          <div class="cover-preview-badge">${i18nT("cover.webLink")}</div>
-        `;
-      }
-      const badge = previewWrapper?.querySelector(".cover-preview-badge");
-      if (badge) badge.textContent = i18nT("cover.webLink");
-    }
-  } else if (act === "save-custom-cover" && id) {
-    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-    const val = S.sgdbSelectedCoverUrl || input?.value.trim() || "";
-    if (val) {
-      if (S.activeCoverTarget === "hero") {
-        saveCustomHero(id, val);
-        toast(i18nT("cover.heroSaved"), "ok");
-      } else {
-        saveCustomCover(id, val);
-        toast(i18nT("cover.portraitSaved"), "ok");
-      }
-      closeCustomCoverModal();
-    } else {
-      toast(i18nT("cover.pickFirst"), "err");
-    }
-  } else if (act === "reset-active-target" && id) {
-    if (S.activeCoverTarget === "hero") {
-      resetCustomHero(id);
-      toast(i18nT("cover.heroReset"), "ok");
-    } else {
-      resetCustomCover(id);
-      toast(i18nT("cover.portraitReset"), "ok");
-    }
-    S.sgdbSelectedCoverUrl = "";
-    renderCustomCoverModalFrame(id);
-    renderCustomCoverModalContent(id);
-  } else if (act === "reset-all-art" && id) {
-    resetCustomCover(id);
-    resetCustomHero(id);
-    S.sgdbSelectedCoverUrl = "";
-    toast(i18nT("cover.allReset"), "ok");
-    renderCustomCoverModalFrame(id);
-    renderCustomCoverModalContent(id);
-  } else if (act === "reset-custom-cover" && id) {
-    resetCustomCover(id);
-    closeCustomCoverModal();
-    toast(i18nT("cover.originalRestored"), "ok");
   } else if (act === "hide-game" && id) {
     hideGameIds([id]);
   } else if (act === "unhide-game" && id) {
@@ -823,372 +487,10 @@ document.addEventListener("click", (e) => {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
-  } else if (act === "select-collection") {
-    const colId = t.dataset.colId;
-    if (colId === "all") {
-      S.activeCollectionId = null;
-      if (S.epicFilter === "fav") S.epicFilter = "all";
-    } else if (colId === "fav") {
-      S.activeCollectionId = "fav";
-      S.epicFilter = "all";
-    } else if (colId) {
-      S.activeCollectionId = colId;
-      if (S.epicFilter === "fav") S.epicFilter = "all";
-    }
-    if (S.currentModalAppName) closeModal();
-    resetCardChunk();
-    render();
-  } else if (act === "open-new-collection-modal") {
-    S.isColDropdownOpen = false;
-    const menu = document.getElementById("col-dropdown-menu");
-    if (menu) menu.classList.remove("show");
-    openCollectionModal();
-  } else if (act === "edit-collection") {
-    const colId = t.dataset.colId;
-    if (colId) openCollectionModal(colId);
-  } else if (act === "close-col-modal") {
-    closeCollectionModal();
-  } else if (act === "col-modal-backdrop") {
-    if (e.target === t) closeCollectionModal();
-  } else if (act === "toggle-col-marker-palette") {
-    S.isMarkerPaletteOpen = !S.isMarkerPaletteOpen;
-    const pal = document.getElementById("col-marker-palette");
-    if (pal) pal.classList.toggle("open", S.isMarkerPaletteOpen);
-  } else if (act === "pick-col-marker") {
-    const marker = t.dataset.icon;
-    if (marker) {
-      S.colModalMarker = marker;
-      S.isMarkerPaletteOpen = false;
-      updateMarkerUi();
-    }
-  } else if (act === "clear-col-marker") {
-    S.colModalMarker = "";
-    S.isMarkerPaletteOpen = false;
-    updateMarkerUi();
-  } else if (act === "col-delete-ask") {
-    document.getElementById("col-delete-confirm")?.removeAttribute("hidden");
-    document.querySelector(".col-footer-actions")?.setAttribute("hidden", "");
-  } else if (act === "col-delete-cancel") {
-    document.getElementById("col-delete-confirm")?.setAttribute("hidden", "");
-    document.querySelector(".col-footer-actions")?.removeAttribute("hidden");
-  } else if (act === "col-tab-filter") {
-    const filter = t.dataset.filter as "all" | "selected" | "installed";
-    if (filter) {
-      S.colModalTabFilter = filter;
-      document.querySelectorAll(".col-filter-tab").forEach((tab) => {
-        tab.classList.toggle("active", (tab as HTMLElement).dataset.filter === filter);
-      });
-      updateColGamesListInPlace();
-    }
-  } else if (act === "col-search-clear") {
-    S.colModalSearchQuery = "";
-    const sInput = document.getElementById("col-search-input") as HTMLInputElement | null;
-    if (sInput) {
-      sInput.value = "";
-      sInput.focus();
-    }
-    updateColGamesListInPlace();
-  } else if (act === "col-toggle-game") {
-    const app = t.dataset.app || (t.closest(".col-game-item") as HTMLElement)?.dataset.app;
-    if (app) {
-      if (S.colModalSelectedApps.has(app)) {
-        S.colModalSelectedApps.delete(app);
-      } else {
-        S.colModalSelectedApps.add(app);
-      }
-      const itemEl = (t.classList.contains("col-game-item") ? t : t.closest(".col-game-item")) as HTMLElement | null;
-      const isChecked = S.colModalSelectedApps.has(app);
-      const cb = itemEl?.querySelector(".col-game-cb") as HTMLInputElement | null;
-      if (cb) cb.checked = isChecked;
-      if (itemEl) itemEl.classList.toggle("selected", isChecked);
-
-      const selCountEl = document.getElementById("col-tab-selected-cnt");
-      if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
-
-      if (S.colModalTabFilter === "selected") {
-        updateColGamesListInPlace();
-      }
-    }
-  } else if (act === "col-select-all") {
-    const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-    let matches = allStoreSummaries().filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
-    if (S.colModalTabFilter === "installed") {
-      matches = matches.filter((s) => s.installed);
-    }
-    matches.forEach((s) => S.colModalSelectedApps.add(s.appName));
-    updateColGamesListInPlace();
-  } else if (act === "col-deselect-all") {
-    if (S.colModalTabFilter === "all" && !S.colModalSearchQuery.trim()) {
-      S.colModalSelectedApps.clear();
-    } else {
-      const q = S.colModalSearchQuery.toLocaleLowerCase("tr");
-      let matches = allStoreSummaries().filter((s) => s.title.toLocaleLowerCase("tr").includes(q));
-      if (S.colModalTabFilter === "installed") {
-        matches = matches.filter((s) => s.installed);
-      }
-      matches.forEach((s) => S.colModalSelectedApps.delete(s.appName));
-    }
-    updateColGamesListInPlace();
-  } else if (act === "col-save-btn") {
-    void saveCollectionFromModal();
-  } else if (act === "col-delete-confirm") {
-    const colId = t.dataset.colId;
-    if (colId) void deleteCollectionFromModal(colId);
-  } else if (act === "manage-game-collections" && id) {
-    openGameCollectionsModal(id);
-  } else if (act === "save-game-col-btn") {
-    void saveGameCollectionsFromModal();
-  } else if (act === "import-egl-collections") {
-    toast(i18nT("col.scanningEgl"), "");
-    void epicImportEglCollections()
-      .then((cols) => {
-        toast(i18nT("col.importedCount", { count: cols.length }), "ok");
-        void loadEpicCollections();
-        if (S.view === "settings") void loadSettingsView();
-      })
-      .catch((err) => {
-        toast(i18nT("col.importFailed", { msg: String(err) }), "err");
-      });
   } else if ((act === "epic-play" || act === "play") && id) {
     void epicPlay(id);
   } else if ((act === "epic-stop" || act === "stop") && id) {
     void epicStop(id);
-  } else if ((act === "epic-install" || act === "install") && id) {
-    void openInstallDialog(id);
-  } else if (act === "install-browse") {
-    void browseInstallDir();
-  } else if (act === "install-confirm" && id) {
-    void confirmInstall();
-  } else if (act === "install-cancel") {
-    closeInstallDialog();
-  } else if (act === "install-overlay-close") {
-    const el = e.target as HTMLElement;
-    if (el === t) closeInstallDialog();
-  } else if (act === "gog-import-existing" && id) {
-    void (async () => {
-      const chosen = await epicSelectFolderDialog(null, i18nT("settings.importInstalled")).catch(() => null);
-      if (!chosen) return;
-      try {
-        const info = await gogImportGame(id, chosen);
-        toast(i18nT("settings.importInstalledDone", { imported: 1, relinked: 0 }), "ok");
-        closeInstallDialog();
-        const cleanId = id.replace("gog::", "");
-        const g = S.gogSummariesMap.get(cleanId);
-        if (g) {
-          g.installed = true;
-          g.installPath = info.install_path;
-          g.installSize = info.install_size;
-          if (info.version) {
-            g.version = info.version;
-            g.installedVersion = info.version;
-          }
-        }
-        const item = S.allGamesMap.get(id);
-        if (item) {
-          item.installed = true;
-          item.installPath = info.install_path;
-          item.installSize = info.install_size;
-          if (info.version) {
-            item.version = info.version;
-            item.installedVersion = info.version;
-          }
-        }
-        if (S.view === "library") patchLibraryCardDom(id);
-      } catch (err) {
-        toast(String(err), "err");
-      }
-    })();
-  } else if ((act === "epic-cancel" || act === "cancel") && id) {
-    if (id.startsWith("gog::")) {
-      void gogCancelDownload(id);
-    } else {
-      void epicCancel(id);
-    }
-  } else if ((act === "epic-uninstall" || act === "uninstall") && id) {
-    // Close first so a finished uninstall cannot be clicked again while the dialog stays up.
-    closeManagePopup();
-    void epicUninstall(id);
-  } else if (act === "open-dlc-manager" && id) {
-    S.activeDrawerTab = "dlcs";
-    if (!S.dlcCache.has(id) && !S.dlcLoading) {
-      S.dlcLoading = true;
-      epicGetGameDlcs(id)
-        .then((res) => {
-          S.dlcCache.set(id, res);
-          if (S.activeDrawerTab === "dlcs" && S.currentModalAppName === id) {
-            openEpicModal(id, false);
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          S.dlcLoading = false;
-          if (S.activeDrawerTab === "dlcs" && S.currentModalAppName === id) {
-            openEpicModal(id, false);
-          }
-        });
-    }
-    openEpicModal(id, false);
-  } else if (act === "selective-close") {
-    closeSelectiveModal();
-  } else if (act === "selective-overlay-close") {
-    const el = e.target as HTMLElement;
-    if (el === t) closeSelectiveModal();
-  } else if (act === "open-edit-playtime" && id) {
-    openEditPlaytimeModal(id);
-  } else if (act === "close-edit-playtime") {
-    closeEditPlaytimeModal();
-  } else if (act === "playtime-overlay-close") {
-    const el = e.target as HTMLElement;
-    if (el === t) closeEditPlaytimeModal();
-  } else if (act === "pt-quick-add") {
-    const addHours = parseInt(t.dataset.hours || "0", 10);
-    const input = document.getElementById("pt-hours-input") as HTMLInputElement | null;
-    if (input) {
-      const cur = parseInt(input.value || "0", 10) || 0;
-      input.value = String(Math.max(0, cur + addHours));
-    }
-    const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
-    if (lpSelect && !lpSelect.value) {
-      lpSelect.value = "Daha önce oynandı (Epic Games)";
-    }
-  } else if (act === "pt-reset") {
-    const hInput = document.getElementById("pt-hours-input") as HTMLInputElement | null;
-    const mInput = document.getElementById("pt-minutes-input") as HTMLInputElement | null;
-    const lpSelect = document.getElementById("pt-last-played-select") as HTMLSelectElement | null;
-    if (hInput) hInput.value = "0";
-    if (mInput) mInput.value = "0";
-    if (lpSelect) lpSelect.value = "";
-  } else if (act === "save-playtime" && id) {
-    void saveEditedPlaytime(id);
-  } else if (act === "selective-apply" && id) {
-    const tags = Array.from(S.selectedInstallTags);
-    const dlcs = Array.from(S.selectedDlcAppIds);
-    void applySelectiveInstall(id, tags, dlcs);
-  } else if (act === "epic-save-install-dir") {
-    const input = document.getElementById("epic-install-dir") as HTMLInputElement | null;
-    const v = input?.value?.trim() ?? "";
-    epicSetInstallDir(v ? v : null)
-      .then((st: EpicSettings) => {
-        S.epicSettingsCache = st;
-        toast(i18nT("dl.installDirSaved"), "ok");
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "dl-save-install-dir") {
-    const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
-    const v = input?.value?.trim() ?? "";
-    epicSetInstallDir(v ? v : null)
-      .then((st: EpicSettings) => {
-        S.epicSettingsCache = st;
-        toast(i18nT("dl.installDirSaved"), "ok");
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "import-installed-folder") {
-    void (async () => {
-      const chosen = await epicSelectFolderDialog(null, i18nT("settings.importInstalled")).catch(() => null);
-      if (!chosen) return;
-      toast(i18nT("settings.importInstalledScanning"), "");
-      try {
-        const res = await epicImportInstalledFolder(chosen);
-        if (res.imported === 0 && res.relinked === 0) {
-          toast(i18nT("settings.importInstalledNone"), "");
-        } else {
-          toast(i18nT("settings.importInstalledDone", { imported: res.imported, relinked: res.relinked }), "ok");
-          await refreshEpicInstalled();
-          render();
-        }
-      } catch (e) {
-        toast(localizeMessage(String(e)), "err");
-      }
-    })();
-  } else if (act === "dl-pick-install-dir") {
-    void (async () => {
-      const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
-      const current = input?.value?.trim() || S.epicDefaultDir || null;
-      const chosen = await epicSelectFolderDialog(current, i18nT("move.pickerTitle")).catch(() => null);
-      if (!chosen) return;
-      if (input) input.value = chosen;
-      try {
-        const st = await epicSetInstallDir(chosen);
-        S.epicSettingsCache = st;
-        toast(i18nT("dl.installDirSaved"), "ok");
-        render();
-      } catch (e) {
-        toast(String(e), "err");
-      }
-    })();
-  } else if (act === "dl-set-cdn") {
-    const host = (t.getAttribute("data-cdn") || "").trim();
-    void (async () => {
-      try {
-        await epicSetPreferredCdn(host || null);
-        S.preferredCdn = host;
-        if (host) {
-          toast(i18nT("downloads.cdnSet", { host: cdnShortLabel(host) }), "ok");
-        } else {
-          toast(i18nT("downloads.cdnResetDone"), "ok");
-        }
-        render();
-      } catch (e) {
-        toast(String(e), "err");
-      }
-    })();
-  } else if (act === "dl-find-fastest-cdn") {
-    void (async () => {
-      const urls = S.epicGamesRaw.flatMap((g) => g.base_urls || []).filter(Boolean);
-      toast(i18nT("downloads.cdnTesting"), "");
-      try {
-        const probes = await epicMeasureCdns(urls);
-        if (probes.length === 0) {
-          toast(i18nT("downloads.cdnNoResult"), "err");
-          return;
-        }
-        const best = probes[0];
-        await epicSetPreferredCdn(best.host);
-        S.preferredCdn = best.host;
-        toast(i18nT("downloads.cdnPicked", { host: cdnShortLabel(best.host), ms: best.ms }), "ok");
-        render();
-      } catch (e) {
-        toast(String(e), "err");
-      }
-    })();
-  } else if (act === "dl-reset-cdn") {
-    void epicSetPreferredCdn(null)
-      .then(() => {
-        S.preferredCdn = "";
-        toast(i18nT("downloads.cdnResetDone"), "ok");
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "dl-cleanup-cache") {
-    toast(i18nT("downloads.cacheClearing"), "");
-    void epicCleanupCache()
-      .then((msg) => {
-        toast(msg, "ok");
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "open-storage-manager") {
-    void openStorageManager();
-  } else if (act === "close-storage-manager") {
-    closeStorageManager();
-  } else if (act === "storage-overlay-close") {
-    if (e.target === t) closeStorageManager();
-  } else if (act === "blocked-move-tp") {
-    const partner = t.dataset.partner || "Ubisoft Connect / EA App";
-    toast(i18nT("manage.moveThirdPartyAlert", { name: partner }), "");
-  } else if (act === "storage-move-game" && id) {
-    const raw = rawOf(id);
-    const partner = getThirdPartyLauncher(raw);
-    if (requiresThirdPartyLauncher(partner)) {
-      toast(i18nT("manage.moveThirdPartyAlert", { name: partner!.name }), "");
-      return;
-    }
-    closeStorageManager();
-    void openMoveGameModal(id);
-  } else if (act === "storage-uninstall" && id) {
-    closeStorageManager();
-    void epicUninstall(id);
   } else if (act === "epic-sync-egl") {
     if (S.eglSyncing) return;
     S.eglSyncing = true;
@@ -1213,249 +515,6 @@ document.addEventListener("click", (e) => {
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "toggle-ignore-update" && id) {
-    toggleIgnoreUpdate(id);
-    if (S.view === "downloads") {
-      render();
-    }
-  } else if (act === "manage-game" && id) {
-    if (S.activeDrawerTab === "manage") {
-      S.activeDrawerTab = "overview";
-      if (S.currentModalAppName === id) openEpicModal(id, false);
-    }
-    openManagePopup(id);
-  } else if (act === "close-manage-popup") {
-    closeManagePopup();
-  } else if (act === "manage-overlay-close") {
-    if (e.target === t) closeManagePopup();
-  } else if (act === "open-move-game-modal" && id) {
-    const raw = rawOf(id);
-    const partner = getThirdPartyLauncher(raw);
-    if (requiresThirdPartyLauncher(partner)) {
-      toast(i18nT("manage.moveThirdPartyAlert", { name: partner!.name }), "");
-      return;
-    }
-    void openMoveGameModal(id);
-  } else if (act === "close-move-modal") {
-    closeMoveGameModal();
-  } else if (act === "move-overlay-close") {
-    const el = e.target as HTMLElement;
-    if (el === t && !S.isMovingGame) closeMoveGameModal();
-  } else if (act === "select-move-drive") {
-    const drv = t.dataset.drive;
-    if (drv && !S.isMovingGame) {
-      S.selectedMoveDriveLetter = drv.toUpperCase();
-      const curPath = S.selectedMoveTargetPath.replace(/^[a-zA-Z]:[\\/]/, "");
-      S.selectedMoveTargetPath = `${S.selectedMoveDriveLetter}:\\${curPath || "Games"}`;
-      renderMoveGameModalFrame();
-    }
-  } else if (act === "browse-move-target") {
-    void browseMoveTarget();
-  } else if (act === "start-move-game" && id) {
-    void startMoveGame(id);
-  } else if (act === "cancel-move-game" && id) {
-    void cancelMoveGame(id);
-  } else if (act === "manage-verify" && id) {
-    updateVerifyProgressInPlace(id, 0, 100, 0, i18nT("dl.starting"), i18nT("dl.starting"));
-    if (id.startsWith("gog::")) {
-      gogVerifyGame(id)
-        .then((msg) => {
-          updateVerifyProgressInPlace(id, 100, 100, 100, msg, "");
-          toast(msg, "ok");
-          window.setTimeout(() => resetVerifyInPlace(id), 1200);
-        })
-        .catch((err) => {
-          resetVerifyInPlace(id);
-          toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
-        });
-    } else {
-      epicVerifyGame(id).catch((err) => {
-        resetVerifyInPlace(id);
-        toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
-      });
-    }
-  } else if (act === "manage-sync-saves" && id && !S.manageSyncingSaves) {
-    S.manageSyncingSaves = true;
-    const syncBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-sync-saves"]');
-    const cloudSub = document.getElementById("manage-cloud-subtitle");
-    if (syncBtn) syncBtn.disabled = true;
-    if (cloudSub) cloudSub.textContent = i18nT("manage.syncing");
-    epicSyncSaves(id)
-      .then((msg) => {
-        toast(msg, "ok");
-        const now = new Date().toLocaleString(currentLanguage());
-        if (S.activeManageSettings && S.activeManageSettings.appName === id) {
-          S.activeManageSettings.lastCloudSync = now;
-        }
-        if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: now });
-      })
-      .catch((err) => {
-        toast(i18nT("manage.syncFailed", { msg: String(err) }), "err");
-        if (cloudSub && S.activeManageSettings) {
-          cloudSub.textContent = S.activeManageSettings.lastCloudSync
-            ? i18nT("manage.lastSync", { time: esc(S.activeManageSettings.lastCloudSync) })
-            : i18nT("manage.cloudDesc");
-        }
-      })
-      .finally(() => {
-        S.manageSyncingSaves = false;
-        if (syncBtn) syncBtn.disabled = false;
-      });
-  } else if (act === "manage-create-shortcut" && id) {
-    epicCreateDesktopShortcut(id)
-      .then((msg) => toast(msg, "ok"))
-      .catch((err) => toast(i18nT("manage.shortcutFailed", { msg: String(err) }), "err"));
-  } else if (act === "manage-open-save-folder" && id) {
-    const activePath = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath;
-    if (activePath) {
-      epicOpenFolderPath(activePath).catch((err) => toast(i18nT("manage.folderOpenFailed", { a1: String(err) }), "err"));
-    }
-  } else if (act === "manage-choose-save-folder" && id) {
-    void (async () => {
-      const current = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath || null;
-      const chosen = await epicSelectFolderDialog(current, i18nT("manage.chooseSaveFolderTitle")).catch(() => null);
-      if (!chosen) return;
-      try {
-        await epicSetCustomSavePath(id, chosen);
-        if (S.activeManageSettings && S.activeManageSettings.appName === id) {
-          S.activeManageSettings.customSavePath = chosen;
-          updateManageModalInputsInPlace(S.activeManageSettings);
-        }
-        toast(i18nT("manage.saveFolderUpdated"), "ok");
-      } catch (err) {
-        toast(String(err), "err");
-      }
-    })();
-  } else if (act === "manage-reset-save-folder" && id) {
-    void (async () => {
-      try {
-        await epicSetCustomSavePath(id, null);
-        if (S.activeManageSettings && S.activeManageSettings.appName === id) {
-          S.activeManageSettings.customSavePath = null;
-          updateManageModalInputsInPlace(S.activeManageSettings);
-        }
-        toast(i18nT("manage.saveFolderReset"), "ok");
-      } catch (err) {
-        toast(String(err), "err");
-      }
-    })();
-  } else if (act === "manage-create-backup" && id && !S.isBackingUp) {
-    S.isBackingUp = true;
-    const createBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
-    if (createBtn) { createBtn.disabled = true; createBtn.textContent = i18nT("backup.backingUp"); }
-    toast(i18nT("backup.backingUp"), "");
-    epicBackupSave(id)
-      .then((b) => {
-        toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
-        const cur = S.gameBackupsMap.get(id) || [];
-        S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
-        const listEl = document.getElementById("manage-backup-list");
-        if (listEl) listEl.innerHTML = renderBackupListHtml(id);
-      })
-      .catch(async (err) => {
-        const errStr = String(err);
-        if (errStr.includes("backup.noSaveDir")) {
-          toast(i18nT("backup.selectFolderPrompt"), "err");
-          const current = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath || null;
-          const chosen = await epicSelectFolderDialog(current, i18nT("manage.chooseSaveFolderTitle")).catch(() => null);
-          if (chosen) {
-            try {
-              await epicSetCustomSavePath(id, chosen);
-              if (S.activeManageSettings && S.activeManageSettings.appName === id) {
-                S.activeManageSettings.customSavePath = chosen;
-                updateManageModalInputsInPlace(S.activeManageSettings);
-              }
-              const b = await epicBackupSave(id, chosen);
-              toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
-              const cur = S.gameBackupsMap.get(id) || [];
-              S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
-              const listEl = document.getElementById("manage-backup-list");
-              if (listEl) listEl.innerHTML = renderBackupListHtml(id);
-            } catch (innerErr) {
-              toast(i18nT("backup.failed", { msg: localizeMessage(String(innerErr)) }), "err");
-            }
-          }
-        } else {
-          toast(i18nT("backup.failed", { msg: localizeMessage(errStr) }), "err");
-        }
-      })
-      .finally(() => {
-        S.isBackingUp = false;
-        const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
-        if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = i18nT("manage.backup"); }
-      });
-  } else if (act === "manage-restore-backup" && id) {
-    const bid = t.dataset.bid;
-    if (bid) {
-      toast(i18nT("backup.restoring"), "");
-      epicRestoreBackup(id, bid)
-        .then((msg) => toast(msg, "ok"))
-        .catch((err) => toast(i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }), "err"));
-    }
-  } else if (act === "manage-delete-backup" && id) {
-    const bid = t.dataset.bid;
-    if (bid) {
-      epicDeleteBackup(id, bid)
-        .then(() => {
-          toast(i18nT("backup.deleted"), "");
-          const cur = S.gameBackupsMap.get(id) || [];
-          S.gameBackupsMap.set(id, cur.filter((x) => x.id !== bid));
-          const listEl = document.getElementById("manage-backup-list");
-          if (listEl) listEl.innerHTML = renderBackupListHtml(id);
-        })
-        .catch((err) => toast(i18nT("backup.deleteFailed", { msg: localizeMessage(String(err)) }), "err"));
-    }
-  } else if (act === "manage-open-backup-folder" && id) {
-    epicOpenBackupFolder(id)
-      .then((msg) => toast(msg, "ok"))
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "manage-cloud-upload" && id) {
-    void uploadGameCloudAction(id);
-  } else if (act === "manage-cloud-sync" && id) {
-    void (async () => {
-      toast(i18nT("cloud.syncTooltip"), "");
-      await loadCloudBackupsAction(id);
-      await uploadGameCloudAction(id);
-    })();
-  } else if (act === "set-cloud-provider") {
-    const provider = t.dataset.provider as CloudBackupProvider;
-    if (provider) {
-      void updateCloudBackupSettings({ provider, enabled: true });
-    }
-  } else if (act === "toggle-cloud-backup-enabled") {
-    const chk = (e.target as HTMLInputElement).checked;
-    void updateCloudBackupSettings({
-      enabled: chk,
-      provider: chk && (!S.cloudBackupSettings || S.cloudBackupSettings.provider === "none") ? "google_drive" : S.cloudBackupSettings?.provider ?? "google_drive",
-    });
-  } else if (act === "toggle-cloud-auto-sync") {
-    const chk = (e.target as HTMLInputElement).checked;
-    void updateCloudBackupSettings({ autoSyncOnGameExit: chk });
-  } else if (act === "cloud-gdrive-connect") {
-    void startGoogleDriveAuthAction();
-  } else if (act === "cloud-gdrive-disconnect") {
-    void disconnectGoogleDriveAction();
-  } else if (act === "cloud-webdav-save") {
-    const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;
-    const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;
-    const passInput = document.getElementById("cloud-webdav-pass") as HTMLInputElement | null;
-    void updateCloudBackupSettings({
-      webdavUrl: urlInput?.value.trim() ?? "",
-      webdavUsername: userInput?.value.trim() ?? "",
-      webdavPassword: passInput?.value ?? "",
-    }).then(() => toast(i18nT("cloud.webdavSaved"), "ok"));
-  } else if (act === "cloud-webdav-test") {
-    const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;
-    const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;
-    const passInput = document.getElementById("cloud-webdav-pass") as HTMLInputElement | null;
-    void (async () => {
-      await updateCloudBackupSettings({
-        webdavUrl: urlInput?.value.trim() ?? "",
-        webdavUsername: userInput?.value.trim() ?? "",
-        webdavPassword: passInput?.value ?? "",
-      });
-      await testCloudConnectionAction();
-    })();
   } else if (act === "toggle-auto-desktop-shortcut") {
     S.autoDesktopShortcut = !S.autoDesktopShortcut;
     localStorage.setItem(AUTO_SHORTCUT_KEY, String(S.autoDesktopShortcut));
@@ -1492,331 +551,6 @@ document.addEventListener("click", (e) => {
         if (S.currentModalAppName) openEpicModal(S.currentModalAppName, false);
       });
     }
-  } else if (act === "manage-save-args" && id && S.activeManageSettings) {
-    const input = document.getElementById("manage-args-input") as HTMLInputElement | null;
-    const val = input?.value?.trim() ?? "";
-    S.activeManageSettings.launchParameters = val;
-    epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast(i18nT("manage.argsSaved"), "ok"))
-      .catch((err) => toast(i18nT("manage.argsSaveFailed", { msg: String(err) }), "err"));
-  } else if (act === "manage-save-launch-extras" && id && S.activeManageSettings) {
-    const wrapperEl = document.getElementById("manage-wrapper-input") as HTMLInputElement | null;
-    const envEl = document.getElementById("manage-env-input") as HTMLTextAreaElement | null;
-    S.activeManageSettings.wrapper = wrapperEl?.value?.trim() ?? "";
-    S.activeManageSettings.envVars = parseEnvText(envEl?.value ?? "");
-    epicSaveGameSettings(S.activeManageSettings)
-      .then(() => toast(i18nT("manage.launchExtrasSaved"), "ok"))
-      .catch((err) => toast(i18nT("manage.argsSaveFailed", { msg: String(err) }), "err"));
-  } else if (act === "dl-pause" && id) {
-    epicPauseDownload(id)
-      .then((msg) => {
-        S.dlQueueStatus.isPaused = true;
-        toast(msg, "");
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "dl-resume" && id) {
-    if (S.autoPausedDl === id) S.autoPausedDl = null;
-    epicResumeDownload(id)
-      .then((msg) => {
-        S.dlQueueStatus.isPaused = false;
-        toast(msg, "");
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "dl-reorder-up" && id) {
-    epicReorderQueue(id, "up")
-      .then((q) => {
-        S.dlQueueStatus = q;
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "dl-reorder-down" && id) {
-    epicReorderQueue(id, "down")
-      .then((q) => {
-        S.dlQueueStatus = q;
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "dl-reorder-now" && id) {
-    epicReorderQueue(id, "now")
-      .then((q) => {
-        S.dlQueueStatus = q;
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "dl-reorder-remove" && id) {
-    epicReorderQueue(id, "remove")
-      .then((q) => {
-        S.dlQueueStatus = q;
-        toast(i18nT("dl.removedFromQueue"), "");
-        if (S.view === "downloads") render();
-      })
-      .catch((err) => toast(String(err), "err"));
-  } else if (act === "epic-open-folder" && id) {
-    void epicOpenFolder(id);
-  } else if (act === "epic-store-page" && id) {
-    if (id.startsWith("gog::")) {
-      const s = summaryOf(id);
-      const title = s ? s.title : id.slice(5);
-      const url = `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
-      void openStoreUrl(url, "store");
-    } else {
-      const s = S.epicSummaries.find((x) => x.appName === id);
-      const title = s ? s.title : id;
-      void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
-    }
-  } else if (act === "switch-drawer-version" && id) {
-    openEpicModal(id, false);
-  } else if (act === "drawer-tab") {
-    const tab = t.dataset.tab as DrawerTab;
-    if (tab && S.currentModalAppName) {
-      if (tab === S.activeDrawerTab) return;
-      S.activeDrawerTab = tab;
-      if (tab === "achievements") {
-        const cached = S.loadedAchievements.get(S.currentModalAppName);
-        if (!cached || cached.achievements.length === 0) {
-          void fetchAndRenderAchievements(S.currentModalAppName, true);
-        }
-      } else if (tab === "dlcs") {
-        if (!S.dlcCache.has(S.currentModalAppName) && !S.dlcLoading) {
-          S.dlcLoading = true;
-          epicGetGameDlcs(S.currentModalAppName)
-            .then((res) => {
-              S.dlcCache.set(S.currentModalAppName!, res);
-              if (S.activeDrawerTab === "dlcs" && S.currentModalAppName) {
-                openEpicModal(S.currentModalAppName, false, true);
-              }
-            })
-            .catch(() => {})
-            .finally(() => {
-              S.dlcLoading = false;
-              if (S.activeDrawerTab === "dlcs" && S.currentModalAppName) {
-                openEpicModal(S.currentModalAppName, false, true);
-              }
-            });
-        }
-      } else if (tab === "manage") {
-        if (!S.gameBackupsMap.has(S.currentModalAppName)) {
-          epicListBackups(S.currentModalAppName)
-            .then((b) => {
-              S.gameBackupsMap.set(S.currentModalAppName!, b);
-              const listEl = document.getElementById("manage-backup-list");
-              if (listEl && S.currentModalAppName) {
-                listEl.innerHTML = renderBackupListHtml(S.currentModalAppName);
-              }
-            })
-            .catch(() => {});
-        }
-      } else if (tab === "screenshots") {
-        if (!S.loadedScreenshots.has(S.currentModalAppName)) {
-          const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
-          if (s) void fetchAndRenderScreenshots(S.currentModalAppName, s.title);
-        }
-      } else if (tab === "specs") {
-        if (!S.loadedRequirements.has(S.currentModalAppName)) {
-          const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
-          if (s) void fetchAndRenderRequirements(S.currentModalAppName, s.title);
-        }
-      }
-      openEpicModal(S.currentModalAppName, false, true);
-    }
-  } else if (act === "sys-plat") {
-    const val = t.dataset.val;
-    if (val && S.currentModalAppName) {
-      if (S.activeSystemPlatform === val) return;
-      S.activeSystemPlatform = val;
-      openEpicModal(S.currentModalAppName, false, false);
-    }
-  } else if (act === "req-refresh" && id) {
-    const s = summaryOf(id);
-    if (s) void fetchAndRenderRequirements(id, s.title, true);
-  } else if (act === "open-store-achievements" && id) {
-    if (id.startsWith("gog::")) {
-      const cleanId = id.slice(5);
-      void openStoreUrl(`https://www.gog.com/en/game/${cleanId}`, "store");
-    } else {
-      const s = summaryOf(id);
-      const title = s ? s.title : id;
-      const url = epicAchievementsUrl(title, id);
-      void openStoreUrl(url, "store");
-    }
-  } else if (act === "clear-ach-search") {
-    S.achSearchQuery = "";
-    if (S.currentModalAppName) {
-      openEpicModal(S.currentModalAppName, false, false);
-    }
-  } else if (act === "ach-filter") {
-    const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
-    if (val && S.currentModalAppName) {
-      if (S.activeAchFilter === val) return;
-      S.activeAchFilter = val;
-      openEpicModal(S.currentModalAppName, false, false);
-    }
-  } else if (act === "ach-scope") {
-    const val = t.dataset.val as "all" | "base" | "dlc";
-    if (val && S.currentModalAppName) {
-      if (S.activeAchScope === val) return;
-      S.activeAchScope = val;
-      openEpicModal(S.currentModalAppName, false, false);
-    }
-  } else if (act === "ach-reveal") {
-    const achName = t.dataset.ach;
-    if (achName && S.currentModalAppName) {
-      const key = `${S.currentModalAppName}:${achName}`;
-      if (S.revealedAchievements.has(key)) {
-        S.revealedAchievements.delete(key);
-      } else {
-        S.revealedAchievements.add(key);
-      }
-      openEpicModal(S.currentModalAppName, false, false);
-    }
-  } else if (act === "toggle-demo-platinum" && id) {
-    if (S.demoPlatinumApps.has(id)) {
-      S.demoPlatinumApps.delete(id);
-      toast(i18nT("platinum.removed"), "");
-    } else {
-      S.demoPlatinumApps.add(id);
-      toast(i18nT("platinum.added"), "ok");
-    }
-    localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...S.demoPlatinumApps]));
-    if (S.view === "library") render();
-    if (S.currentModalAppName === id) openEpicModal(id, false, false);
-  } else if (act === "ach-refresh" && id) {
-    void fetchAndRenderAchievements(id, true);
-  } else if (act === "capture-screenshot" && id) {
-    if (!S.runningGames.has(id)) {
-      toast(i18nT("ss.notInGame"), "");
-      return;
-    }
-    const s = S.epicSummaries.find((x) => x.appName === id);
-    const title = t.dataset.title || (s ? s.title : id);
-    playScreenshotShutterSound();
-    toast(i18nT("ss.capturing"), "");
-    epicCaptureGameScreenshot(id, title)
-      .then((item) => {
-        toast(i18nT("ss.saved", { file: item.file_name }), "ok");
-        const existing = S.loadedScreenshots.get(id) || [];
-        S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
-        if (S.screenshotCompressionEnabled) {
-          void compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
-        }
-        if (S.currentModalAppName === id && S.activeDrawerTab === "screenshots") {
-          const contentEl = document.getElementById("drawer-tab-content");
-          const cur = S.epicSummaries.find((x) => x.appName === id);
-          if (contentEl && cur) contentEl.innerHTML = renderDrawerScreenshots(cur);
-        }
-      })
-      .catch((err) => toast(localizeMessage(String(err)), "err"));
-  } else if (act === "open-screenshots-folder" && id) {
-    const s = S.epicSummaries.find((x) => x.appName === id);
-    const title = t.dataset.title || (s ? s.title : id);
-    void epicOpenGameScreenshotsFolder(id, title);
-  } else if (act === "delete-screenshot" && id) {
-    const filePath = t.dataset.path;
-    if (filePath) openScreenshotDeleteConfirm(id, filePath, t.dataset.lightbox === "true");
-  } else if (act === "ss-delete-backdrop") {
-    if (e.target === t) closeScreenshotDeleteConfirm();
-  } else if (act === "ss-delete-cancel") {
-    closeScreenshotDeleteConfirm();
-  } else if (act === "ss-delete-confirm") {
-    const pending = takePendingScreenshotDelete();
-    if (pending) {
-      epicDeleteGameScreenshot(pending.filePath)
-        .then((success) => {
-          if (success) {
-            toast(i18nT("ss.deleted"), "ok");
-            const s = S.epicSummaries.find((x) => x.appName === pending.appName);
-            const title = s ? s.title : pending.appName;
-            if (pending.lightbox) closeScreenshotLightbox();
-            void fetchAndRenderScreenshots(pending.appName, title, true);
-          } else {
-            toast(i18nT("ss.deleteFailed"), "err");
-          }
-        })
-        .catch((err) => toast(String(err), "err"));
-    }
-  } else if (act === "open-screenshot-lightbox" && id) {
-    const idx = parseInt(t.dataset.idx || "0", 10);
-    openScreenshotLightbox(id, idx);
-  } else if (act === "close-screenshot-lightbox") {
-    closeScreenshotLightbox();
-  } else if (act === "close-screenshot-lightbox-backdrop") {
-    if (e.target === t) {
-      closeScreenshotLightbox();
-    }
-  } else if (act === "lightbox-nav") {
-    const dir = (t.dataset.dir as "prev" | "next") || "next";
-    navigateScreenshotLightbox(dir);
-  } else if (act === "share-screenshot" && id) {
-    const idx = parseInt(t.dataset.idx || "0", 10);
-    const list = S.loadedScreenshots.get(id) || [];
-    const item = list[idx];
-    if (item) {
-      openShareModal(id, item);
-    }
-  } else if (act === "close-share-modal") {
-    closeShareModal();
-  } else if (act === "do-copy-image") {
-    if (S.activeShareScreenshot) {
-      void copyScreenshotImageToClipboard(S.activeShareScreenshot.item);
-      closeShareModal();
-    }
-  } else if (act === "do-copy-path") {
-    if (S.activeShareScreenshot) {
-      const path = S.activeShareScreenshot.item.file_path;
-      navigator.clipboard.writeText(path).then(() => {
-        toast(i18nT("ss.pathCopiedShort"), "ok");
-      }).catch(() => {
-        toast(path, "");
-      });
-      closeShareModal();
-    }
-  } else if (act === "do-open-folder") {
-    if (S.activeShareScreenshot) {
-      const s = S.epicSummaries.find((x) => x.appName === S.activeShareScreenshot?.appName);
-      const title = s ? s.title : S.activeShareScreenshot.appName;
-      void epicOpenGameScreenshotsFolder(S.activeShareScreenshot.appName, title);
-      closeShareModal();
-    }
-  } else if (act === "do-compress-from-share") {
-    if (S.activeShareScreenshot) {
-      const { appName, item } = S.activeShareScreenshot;
-      closeShareModal();
-      void compressScreenshotItem(appName, item);
-    }
-  } else if (act === "do-native-share") {
-    if (S.activeShareScreenshot && typeof navigator.share === "function") {
-      const item = S.activeShareScreenshot.item;
-      navigator.share({
-        title: item.file_name,
-        text: i18nT("ss.shareText", { file: item.file_name }),
-      }).catch(() => {});
-      closeShareModal();
-    }
-  } else if (act === "compress-screenshot" && id) {
-    const idx = parseInt(t.dataset.idx || "0", 10);
-    const list = S.loadedScreenshots.get(id) || [];
-    const item = list[idx];
-    if (item) {
-      void compressScreenshotItem(id, item);
-    }
-  } else if (act === "compress-all-screenshots" && id) {
-    const list = S.loadedScreenshots.get(id) || [];
-    const uncompressed = list.filter((x) => !x.file_name.endsWith(".avif") && !x.file_name.endsWith(".webp"));
-    if (uncompressed.length === 0) {
-      toast(i18nT("ss.allCompressed"), "ok");
-    } else {
-      toast(i18nT("ss.compressingCount", { count: uncompressed.length }), "");
-      (async () => {
-        let count = 0;
-        for (const item of uncompressed) {
-          const res = await compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
-          if (res) count++;
-        }
-        toast(i18nT("ss.compressedCount", { count, format: S.screenshotCompressionFormat.toUpperCase() }), "ok");
-      })();
-    }
   } else if (act === "toggle-presence") {
     S.presenceEnabled = !S.presenceEnabled;
     applyPresenceSettings();
@@ -1829,13 +563,6 @@ document.addEventListener("click", (e) => {
     if (S.eosOverlay?.installed && S.eosOverlay.path) {
       void epicOpenFolderPath(S.eosOverlay.path).catch((e: unknown) => toast(String(e), "err"));
     }
-  } else if (act === "open-download-settings") {
-    closeAllModals();
-    S.settingsSection = "downloads";
-    setView("settings");
-    pushNavHistory({ view: "settings" });
-    render();
-    void loadSettingsView();
   } else if (act === "toggle-speed-bits") {
     S.speedInBits = !S.speedInBits;
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));
@@ -1933,5 +660,3 @@ document.addEventListener("click", (e) => {
     if (isTauri) void invoke("app_close");
   }
 });
-
-// Mouse-wheel support for horizontally scrollable tab strips.

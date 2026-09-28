@@ -163,8 +163,8 @@ src/
 
 **Kalan işler (opsiyonel, backlog):**
 1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 113 satır kabul edilebilir.
-2. **Olay router'ı** (`click-router.ts`, ~1.509 satır) `act → handler` kayıt defterine bölünmelidir (kural sınırı ~1.500'ün hemen üzerinde).
-3. **Rust dosya boyutları:** `legendary/commands.rs` (~2.500 satır), `legendary/transfers.rs` (~1.750), `main.rs` (~1.600) kural sınırının üzerinde; sorumluluk bazlı modüllere bölünmesi planlanıyor.
+2. **Olay router'ı** (`click-router.ts`, 1.938 → **662 satır**) ✅ TAMAMLANDI. Aksiyonlar sorumluluk bazlı 8 alt işleyiciye ayrıldı (`src/features/events/handlers/`: `auth`, `cloud-backup`, `collection`, `cover`, `downloads`, `drawer`, `manage`, `screenshot`).
+3. **Rust dosya boyutları:** `legendary/commands.rs` (~3.060 satır), `legendary/transfers.rs` (~2.700 satır), `main.rs` (~1.969 satır) kural sınırının üzerinde; sorumluluk bazlı modüllere bölünmesi planlanıyor.
 4. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması ✅, (b) optimizasyon/ölü kod temizliği ✅ (77 ölü anahtar + eski onboarding anahtarları silindi).
 
 **Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()`/`openEpicModal()`/`closeAllModals()`/`updateGamepadHud()` gerektiren modüller `core/render.ts` bus'ından import eder; `main.ts`/`ipc-listeners.ts` gerçek implementasyonları kaydeder.
