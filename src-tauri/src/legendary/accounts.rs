@@ -140,6 +140,21 @@ pub fn archive_active_sidecars(config_dir: &Path) {
     let acc_dir = accounts_dir(config_dir).join(&active_id);
     let _ = fs::create_dir_all(&acc_dir);
     archive_sidecars(config_dir, &acc_dir);
+
+    // Refresh this account's archived game count while the snapshot is current.
+    if let Some(count) = snapshot_game_count(&acc_dir) {
+        let mut list = read_accounts_meta(config_dir);
+        let mut dirty = false;
+        for acc in list.iter_mut() {
+            if acc.account_id == active_id && acc.game_count != Some(count) {
+                acc.game_count = Some(count);
+                dirty = true;
+            }
+        }
+        if dirty {
+            write_accounts_meta(config_dir, &list);
+        }
+    }
 }
 
 /// Clears the shared library snapshot and profile cache after a new login.
@@ -170,12 +185,35 @@ fn write_accounts_meta(config_dir: &Path, list: &[SavedAccount]) {
     }
 }
 
+/// Number of games in an account's archived library snapshot (best effort).
+fn snapshot_game_count(acc_dir: &Path) -> Option<usize> {
+    let text = fs::read_to_string(acc_dir.join(LIBRARY_SNAPSHOT)).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&text).ok()?;
+    value.as_array().map(|games| games.len())
+}
+
 /// Returns all saved accounts, ensuring current active user is included.
 pub fn list_saved_accounts(config_dir: &Path) -> Vec<SavedAccount> {
     ensure_current_account_saved(config_dir);
 
     let active_id = read_active_user(config_dir).map(|(id, _)| id).unwrap_or_default();
     let mut list = read_accounts_meta(config_dir);
+
+    // Backfill the archived game count once per account so the profile can show
+    // what an inactive account still holds without scanning shared metadata.
+    let mut dirty = false;
+    for acc in list.iter_mut() {
+        if acc.game_count.is_none() {
+            let count = snapshot_game_count(&accounts_dir(config_dir).join(&acc.account_id));
+            if let Some(count) = count {
+                acc.game_count = Some(count);
+                dirty = true;
+            }
+        }
+    }
+    if dirty {
+        write_accounts_meta(config_dir, &list);
+    }
 
     for acc in list.iter_mut() {
         acc.is_active = !active_id.is_empty() && acc.account_id == active_id;
@@ -326,6 +364,11 @@ mod tests {
         )
         .unwrap();
         assert!(archived.contains("app_name"));
+
+        // The archived game count is backfilled so the dormant profile can show it.
+        let list_with_count = list_saved_accounts(&dir);
+        let acc2 = list_with_count.iter().find(|a| a.account_id == "test_acc_2").unwrap();
+        assert_eq!(acc2.game_count, Some(1));
 
         // 4. Remove account 1
         remove_saved_account(&dir, "test_acc_1").unwrap();

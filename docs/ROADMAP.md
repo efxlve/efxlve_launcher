@@ -357,6 +357,12 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
 - **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
+### 6.14. 28.09.2026 yedinci tur (inaktif profil için "uykuda hesap" ekranı)
+
+- **İnaktif hesap sayfası artık boş değil:** Pasif bir hesap seçildiğinde sayfa tamamen siyah kalmak yerine tek parça, sakin bir **"uykuda hesap" paneli** gösteriyor: kilit ikonu, net başlık, "veriler yalnızca aktif hesapta yüklenir" açıklaması ve **yalnızca elimizde olan gerçek veriler** — arşivdeki oyun sayısı, son kullanım (göreli zaman) ve mağaza — ardından tek bir **"Bu Hesaba Geç"** birincil butonu. Üst başlıkta istatistik/paragraf yığını yerine sadece kimlik + mağaza jetonu + durum kalıyor.
+- **Arşiv oyun sayısı verisi (Rust):** `legacy::accounts.rs` her hesabın `efxlve_library_snapshot.json` dosyasından oyun sayısını bir kez okuyup `accounts_meta.json`'a yazıyor (`snapshot_game_count`); `archive_active_sidecars` arşivleme anında sayıyı tazeliyor, `list_saved_accounts` eksikse dolduruyor. Birim testi mevcut hesap testine eklendi (`game_count == Some(1)`).
+- **i18n:** 4 yeni anahtar × 15 dil (`profile.dormantTitle`, `profile.archivedGames`, `profile.lastUsed`, `profile.store`) → **1.313 anahtar**, tam parite. "Son kullanım" göreli zamanı mevcut `notif.secondsAgo/hoursAgo/daysAgo` anahtarlarını yeniden kullanır (yeni anahtar yok).
+
 ### 6.13. 28.09.2026 altıncı tur (avatar keşfedilebilirliği + hesap ID gizleme + profil başlığı sadeleşmesi)
 
 - **Profil fotoğrafı artık keşfedilebilir:** Avatarın sağ altına **her zaman görünen kamera rozeti** (`.avatar-edit-btn` + `.avatar-edit-badge`) eklendi; hover/focus'ta rozet beyaz (`--accent`) dolguya dönüyor, imleç pointer, `:focus-visible` halkası var. Aynı desen **Ayarlar > Hesap** satırlarındaki avatarlara da uygulandı — satırdaki fotoğrafa tıklamak o hesabın fotoğrafını değiştirir (yeni buton/anahtar gerekmedi).

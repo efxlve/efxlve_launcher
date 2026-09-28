@@ -385,6 +385,35 @@ function playtimeFor(scope: "epic" | "gog" | "all"): number {
   return total;
 }
 
+/** Relative "last used" label from a unix timestamp (seconds or ms). */
+function lastUsedLabel(ts: number): string {
+  if (!ts) return "";
+  const ms = ts > 1e12 ? ts : ts * 1000;
+  const diff = Math.max(0, Date.now() - ms);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t("notif.justNow");
+  if (mins < 60) return t("notif.minutesAgo", { n: mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t("notif.hoursAgo", { n: hours });
+  return t("notif.daysAgo", { n: Math.floor(hours / 24) });
+}
+
+/** Archived game count and last use for an account we are not signed in to. */
+function accountArchiveInfo(account: ProfileAccount): { games: number | null; lastUsed: string } {
+  if (account.kind === "epic") {
+    const saved = (S.savedAccounts || []).find((a) => a.account_id === account.id);
+    return {
+      games: typeof saved?.game_count === "number" ? saved.game_count : null,
+      lastUsed: lastUsedLabel(saved?.last_used || 0),
+    };
+  }
+  const saved = (S.gogSavedAccounts || []).find((a) => a.user_id === account.id);
+  return {
+    games: typeof saved?.game_count === "number" ? saved.game_count : null,
+    lastUsed: lastUsedLabel(saved?.last_used || 0),
+  };
+}
+
 export function renderProfile(): string {
   const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
@@ -476,6 +505,39 @@ export function renderProfile(): string {
          : S.offlineMode && isEpic
            ? status(t("profile.offlineMode"), "warn")
            : status(t("accounts.connected"), "ok")}`;
+
+  // Dormant account: nothing below loads until the user switches, so the page
+  // becomes one calm panel with the data we do have (archive count, last use).
+  if (!showData && !combined) {
+    const archive = accountArchiveInfo(account!);
+    const switchAct = isEpic ? "account-switch" : "gog-account-switch";
+    const avatarTitleDormant = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
+    return `
+      <div class="page profile-page">
+        ${renderProfileAccountChips(selection)}
+        <section class="card profile-head">
+          <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
+            <span class="settings-avatar profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
+            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+          </button>
+          <div class="row-main">
+            <h1 class="profile-name">${esc(displayName)}</h1>
+            <div class="profile-sub">${subChips}</div>
+          </div>
+        </section>
+        <section class="card profile-dormant">
+          <span class="profile-dormant-icon" aria-hidden="true">${icon("lock", 32)}</span>
+          <h3 class="profile-dormant-title">${t("profile.dormantTitle")}</h3>
+          <p class="row-meta profile-dormant-desc">${t("profile.inactiveDesc")}</p>
+          <div class="profile-dormant-stats">
+            ${archive.games !== null ? stat(String(archive.games), t("profile.archivedGames")) : ""}
+            ${archive.lastUsed ? stat(archive.lastUsed, t("profile.lastUsed")) : ""}
+            ${stat(isEpic ? "Epic Games" : "GOG.COM", t("profile.store"))}
+          </div>
+          <button class="btn primary" data-act="${switchAct}" data-id="${esc(account!.id)}">${t("settings.accountSwitchBtn")}</button>
+        </section>
+      </div>`;
+  }
 
   const gamesCount = combined
     ? totalEpicGames() + S.gogSummaries.length
