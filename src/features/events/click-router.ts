@@ -35,7 +35,6 @@ import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-action
 import { toggleFav } from "../../core/game-view";
 import {
   navGoBack,
-  navGoForward,
   pushNavHistory,
   updateNavHistoryUi,
   updateOfflineModeUi,
@@ -218,6 +217,10 @@ document.addEventListener("click", (e) => {
   const act = t.dataset.act;
   const id = t.dataset.id;
 
+  // Dialog containers carry this marker so a click on their body never closes
+  // the modal they live in. Handle it before any domain handler.
+  if (act === "prevent-modal-close") return;
+
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
   if (handleSettingsAction(act, t)) return;
@@ -235,15 +238,13 @@ document.addEventListener("click", (e) => {
     if (targetEl === t || t.matches(".hub-back-btn, .drawer-close, .mclose") || targetEl.closest(".hub-back-btn, .drawer-close, .mclose")) {
       closeModal();
     }
-  } else if (act === "nav-history-back" || act === "page-back") {
-    if (act === "page-back" && S.currentModalAppName) {
+  } else if (act === "page-back") {
+    if (S.currentModalAppName) {
       closeModal();
       updateNavHistoryUi();
     } else {
       navGoBack();
     }
-  } else if (act === "nav-history-forward") {
-    navGoForward();
   } else if (act === "goto-library") {
     pushNavHistory({ view: "library" });
     closeAllModals();
@@ -369,6 +370,7 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.toggle("show", S.isColDropdownOpen);
     else render();
   } else if (act === "select-col-filter") {
+    if (consumeCollectionDragClick()) return;
     const colId = t.dataset.colId;
     S.isColDropdownOpen = false;
     const menu = document.getElementById("col-dropdown-menu");

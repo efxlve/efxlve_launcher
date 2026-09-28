@@ -1,13 +1,13 @@
 /**
- * Click delegation handlers for game screenshot capture, deletion,
- * lightbox viewer, sharing, and batch image compression.
+ * Click delegation handlers for screenshot deletion, the lightbox viewer,
+ * sharing and batch image compression. Capture itself is keyboard-only: the
+ * hotkey is handled in the backend while the game window is focused.
  */
 
 import { toast } from "../../../core/toast";
-import { localizeMessage, t as i18nT } from "../../../i18n";
+import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import {
-  epicCaptureGameScreenshot,
   epicDeleteGameScreenshot,
   epicOpenGameScreenshotsFolder,
 } from "../../../epic";
@@ -22,8 +22,6 @@ import {
   openScreenshotDeleteConfirm,
   openScreenshotLightbox,
   openShareModal,
-  playScreenshotShutterSound,
-  renderDrawerScreenshots,
   takePendingScreenshotDelete,
 } from "../../screenshots/screenshots-view";
 
@@ -31,34 +29,6 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
-    case "capture-screenshot":
-      if (id) {
-        if (!S.runningGames.has(id)) {
-          toast(i18nT("ss.notInGame"), "");
-          return true;
-        }
-        const s = S.epicSummaries.find((x) => x.appName === id);
-        const title = t.dataset.title || (s ? s.title : id);
-        playScreenshotShutterSound();
-        toast(i18nT("ss.capturing"), "");
-        epicCaptureGameScreenshot(id, title)
-          .then((item) => {
-            toast(i18nT("ss.saved", { file: item.file_name }), "ok");
-            const existing = S.loadedScreenshots.get(id) || [];
-            S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
-            if (S.screenshotCompressionEnabled) {
-              void compressScreenshotItem(id, item, S.screenshotCompressionFormat, S.screenshotCompressionQuality, true);
-            }
-            if (S.currentModalAppName === id && S.activeDrawerTab === "screenshots") {
-              const contentEl = document.getElementById("drawer-tab-content");
-              const cur = S.epicSummaries.find((x) => x.appName === id);
-              if (contentEl && cur) contentEl.innerHTML = renderDrawerScreenshots(cur);
-            }
-          })
-          .catch((err) => toast(localizeMessage(String(err)), "err"));
-      }
-      return true;
-
     case "open-screenshots-folder":
       if (id) {
         const s = S.epicSummaries.find((x) => x.appName === id);

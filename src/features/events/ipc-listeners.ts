@@ -573,13 +573,17 @@ export async function initApp(hooks: {
         if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
         return;
       }
+      // A failed automatic cloud upload must not vanish while the game closes.
       const detail = localizeMessage(event.payload.message || "");
       toast(detail || t("backup.failed", { msg: "" }), "err");
+      const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
+      if (title) pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), body: detail, appName: event.payload.id });
     });
 
     try {
       const pt = await epicGetPlaytimes();
       S.playtimeMap = new Map(Object.entries(pt));
+      S.libraryDataRev++;
       if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
       // Epic's server snapshot fills in the hours played outside this launcher.
       void syncEpicServerPlaytimes();

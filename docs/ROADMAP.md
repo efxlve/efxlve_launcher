@@ -306,10 +306,42 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 
 ### 6.7. Bilinen riskler / izlenmesi gerekenler (düşük öncelik)
 
-- **`S.downloads` Map'i:** `updateStatusBar`/rozet için her taramada tüm aktif indirmeler dolaşılıyor; 500 oyunluk kütüphanede ölçüldü, sorun değil.
+- **`S.downloads` Map'i:** rozet için her taramada tüm aktif indirmeler dolaşılıyor; 500 oyunluk kütüphanede ölçüldü, sorun değil.
 - **`gogdl` manifest/`api_client` dosyaları** 641 satır — 1.500 limitine yakın; GOG büyürse bölünmeli (`gogdl/api_client.rs`, `gogdl/transfers.rs` 678).
 - **`legendary/profile.rs` 1.060**, `screenshots.rs` 1.353, `move_game.rs` 961, `eos.rs` 942 — limitin altında ama izlenmeli.
 - **`dist/` klasörü repoda değil** (doğru); build çıktıları commit edilmemeli.
 - **`presence` LAUNCHER_ICON** sabit bir commit hash'ine (`@b371b6b`) bağlı — commit geçmişi değişirse (force-push/rebase) Discord görseli kırılır; tag veya `main` kullanılmalı. Kanıt: `src/features/presence/presence.ts:16-17`.
+
+---
+
+### 6.8. Uygulama Durumu — 28.09.2026 (Sürüm 0.1.17 Hazırlığı + Kritik Hatalar)
+
+> Kapsam: §6.1 (R1-R6) + §6.2 (B1-B10) uygulandı. Doğrulama: `npm.cmd run build` ✅,
+> `cargo test` **120/120** ✅, i18n 15/15 tam parite, IPC 143/143 komut + 0 ölü olay.
+
+**Tamamlananlar:**
+- ✅ **R1/R3** — Sürüm **0.1.17**: `package.json`, `package-lock.json`, `Cargo.toml`, `tauri.conf.json`, `index.html` hapı, `state.ts` fallback'i.
+- ✅ **R2** — `CHANGELOG_DATA` 0.1.17 kaydı (TR/EN 15 madde) + `isCurrent` taşındı.
+- ✅ **R4/R5** — `dl.executableNotFound` 15 dile; 13 dildeki 14 eksik GOG/filtre anahtarı çevrildi; ölü `statusbar.*` + `ss.capture*` anahtarları silindi → **1.352 anahtar, tam parite**.
+- ✅ **R6** — `docs/CHANGELOG_INTERNAL.md` **§174** (0.1.17 kapsamı + denetim düzeltmeleri) yazıldı.
+- ✅ **B1** — `cloud-backup-status` ölü olayı kaldırıldı; otomatik bulut yüklemesi `cloud-sync-complete` yayıyor, hata toast + bildirim merkezine düşüyor.
+- ✅ **B2** — Koleksiyon sürükle-sıralama dikey dropdown listesine uyarlandı; hayalet `.lib-col-add` bağımlılığı ve CSS'i silindi; sürükleme tıklaması doğru dalda (`select-col-filter`) yutuluyor.
+- ✅ **B3** — `visibleSignature()` yalnız `libraryDataRev` temelli; tüm ilgili yazarlar (fav, gizleme, güncelleme, süre, başarım, koleksiyon, demo platin) rev bump'lıyor.
+- ✅ **B4** — Kütüphane yenile düğmesi iki mağazayı da eşitliyor; ölü `gog-refresh` dalı silindi.
+- ✅ **B5** — `prevent-modal-close` paylaşılan yönlendiriciye taşındı (kapak handler'ından çıkarıldı).
+- ✅ **B6** — Hesaplar sayfasına kopyalanabilir Hesap ID çipi eklendi; `copy-account-id` handler'ı yeniden canlı.
+- ✅ **B7** — Discord Presence varsayılanı kapalı (opt-in) olarak dokümanla eşitlendi.
+- ✅ **B8** — Ölü `updateStatusBar()` kaldırıldı; pencere sürüm hapı `updatePageHeader()`'a taşındı.
+- ✅ **B9** — `nav-history-back/forward` ölü dalları silindi, `updateNavHistoryUi()` yalnız gerçek geri düğmesini yönetiyor.
+- ✅ **B10** — Ölü `capture-screenshot` handler'ı ve ona bağlı ölü anahtarlar kaldırıldı.
+- ✅ **D3** — `tsc --noUnusedLocals` 8 bulgu temizlendi (0 hata).
+
+**Açık kalanlar (sonraki tur):**
+- 🚧 **B11 / E4** — `epic_set_alt_bin` (özel legendary binary) için Ayarlar satırı: ürün kararı bekliyor (arayüz eklenecek ya da alan+komut kaldırılacak).
+- 🚧 **§6.4/D1-D2, D4-D8** — Ölü handler dalları (`open-free-game`, `epic-filter`, `open-collection`, `back-to-collections`, `play/stop`, `cancel/install/uninstall`, `dl-reset-cdn`, `dl-save-install-dir`, `ach-scope`, `toggle-demo-platinum`, `open-dlc-manager`, `reset-custom-cover`), 61 ölü i18n anahtarı, ~40 ölü CSS bloğu, kullanılmayan export'lar.
+- 🚧 **§6.3/O1-O10** — Paket bölme (574 KB), kalan O(N) aramalar, Rust dosya bölünmeleri (`commands.rs` 3.060, `transfers.rs` 2.700, `main.rs` 1.969).
+- 🚧 **§6.5/E1-E2** — Ücretsiz haftalık oyunlar ve TV Modu: geri getirme ya da dokümandan çıkarma kararı.
+- 🚧 **§6.6/S3-S5** — `CODEBASE_MAP.md`, `TAURI_IPC_REFERENCE.md` (98 → 143), `REFACTOR_PLAN.md` sayaç senkronu.
+- 🚧 **R7/R8** — İmzalı build + `v0.1.17` tag push + `latest.json` doğrulaması (kullanıcı onayı/secrets gerekir).
 
 

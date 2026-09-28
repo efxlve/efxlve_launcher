@@ -180,6 +180,8 @@ select option { background: var(--surface-1); color: var(--text); }
 .chip.err { background: var(--err-tint); color: var(--err); }
 .chip.accent { background: var(--accent-tint); color: var(--accent); }
 .chip svg { width: 12px; height: 12px; }
+button.chip { border: 0; font-family: inherit; cursor: pointer; }
+button.chip:hover { background: var(--surface-3); color: var(--text); }
 
 /* --- Cards & rows --- */
 .card {

@@ -88,6 +88,15 @@ function avatar(url: string | null, name: string): string {
   return `<span class="settings-avatar">${url ? `<img src="${esc(url)}" alt="" />` : esc((name.trim()[0] || "?").toUpperCase())}</span>`;
 }
 
+/**
+ * Copyable account-id chip. Support asks for this ID, so it stays reachable
+ * from the accounts page after the profile-header copy button was retired.
+ */
+function idChip(id: string): string {
+  const short = id.length > 10 ? `${id.slice(0, 8)}…` : id;
+  return `<button type="button" class="chip acc-id-chip" data-act="copy-account-id" data-val="${esc(id)}" title="${esc(t("profile.copyIdTitle", { id }))}">${icon("copy", 12)} ${esc(short)}</button>`;
+}
+
 function connectedBlock(): string {
   const accountId = S.playerProfileData?.account_id || S.epicAccountId || "";
   const current = getCustomAvatar();
@@ -95,7 +104,7 @@ function connectedBlock(): string {
     const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === S.epicAccount;
     const url = S.customAvatars[acc.account_id] || (isCurrent ? current : null);
     const actions = isCurrent
-      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
+      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>${accountId ? idChip(accountId) : ""}`
       : `<button class="btn small" data-act="account-switch" data-id="${esc(acc.account_id)}">${t("settings.accountSwitchBtn")}</button>
          <button class="icon-btn danger" data-act="account-remove" data-id="${esc(acc.account_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
     return `
@@ -108,7 +117,7 @@ function connectedBlock(): string {
 
   return `
     <div class="list acc-accounts">
-      ${rows || `<div class="row">${avatar(current, S.epicAccount)}<div class="row-main"><div class="row-title">${esc(S.epicAccount)}</div><div class="row-meta">${S.epicSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div></div>`}
+      ${rows || `<div class="row">${avatar(current, S.epicAccount)}<div class="row-main"><div class="row-title">${esc(S.epicAccount)}</div><div class="row-meta">${S.epicSummaries.length} ${t("settings.accountTotalGames")}</div></div><div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span>${accountId ? idChip(accountId) : ""}</div></div>`}
     </div>
     ${S.accountsAddMode ? signInBlock(true) : `
       <div class="acc-actions">

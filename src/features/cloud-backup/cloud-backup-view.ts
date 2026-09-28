@@ -5,7 +5,7 @@
 
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
-import { esc, fmtBytes } from "../../core/utils";
+import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { initCloudBackupSettings } from "./cloud-backup-actions";
 

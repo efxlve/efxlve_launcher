@@ -54,10 +54,6 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       if (targetEl === t) closeCustomCoverModal();
       return true;
 
-    case "prevent-modal-close":
-      // Keep the modal open when its content is clicked.
-      return true;
-
     case "close-custom-cover":
       if (t.classList.contains("cover-overlay") && targetEl !== t) return true;
       closeCustomCoverModal();

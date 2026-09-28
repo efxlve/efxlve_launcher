@@ -224,6 +224,7 @@ export function hideGameIds(ids: readonly string[]): void {
   }
   if (added === 0) return;
   localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
+  S.libraryDataRev++;
   if (S.currentModalAppName && S.hiddenGames.has(S.currentModalAppName)) closeModal();
   toast(added === 1 ? t("lib.hidden") : t("lib.hiddenMany", { count: added }), "");
   refreshLibraryResultsInPlace();
@@ -244,5 +245,6 @@ export function unhideGameIds(ids: readonly string[]): void {
   }
   if (removed === 0) return;
   localStorage.setItem(HIDDEN_KEY, JSON.stringify([...S.hiddenGames]));
+  S.libraryDataRev++;
   render();
 }

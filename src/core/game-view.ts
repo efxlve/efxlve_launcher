@@ -181,6 +181,8 @@ export function toggleFav(appName: string): void {
   if (isNowFaved) S.epicFav.add(appName);
   else S.epicFav.delete(appName);
   localStorage.setItem(FAV_KEY, JSON.stringify([...S.epicFav]));
+  // Favorites are part of the library filter signature; force the cache to miss.
+  S.libraryDataRev++;
 
   document
     .querySelectorAll<HTMLElement>(`button[data-act="epic-fav"][data-id="${appName}"]`)

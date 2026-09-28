@@ -12,9 +12,9 @@ import { achSummaryOf } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, formatScreenshotDate } from "../../core/utils";
+import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
-import { type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
+import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
 export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {

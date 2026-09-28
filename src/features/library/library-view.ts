@@ -97,6 +97,8 @@ let visibleCache: EpicSummary[] | null = null;
 let visibleCacheSig = "";
 
 function visibleSignature(): string {
+  // Only cheap, stable keys belong here. Counters such as fav/update/playtime
+  // sizes miss add+remove pairs, so those writers bump `libraryDataRev`.
   return [
     S.query,
     S.epicFilter,
@@ -105,13 +107,7 @@ function visibleSignature(): string {
     S.activeCollectionId ?? "",
     String(S.libraryDataRev),
     S.appLanguage,
-    String(S.epicFav.size),
-    [...S.hiddenGames].sort().join(","),
-    String(S.availableUpdates.size),
-    String(S.playtimeMap.size),
-    String(Object.keys(S.epicAchSummaries).length),
     S.epicRecent.join(","),
-    String(S.gogSummaries.length),
   ].join("\x1f");
 }
 
@@ -743,38 +739,38 @@ export function consumeCollectionDragClick(): boolean {
   return true;
 }
 
-/** Hold-and-drag reorder. A draggable button never starts a drag in WebView2. */
+/** Hold-and-drag reorder inside the collections dropdown list. A moved pointer
+ *  must not also select the collection, so the follow-up click is consumed. */
 export function initCollectionTabs(): void {
   let tab: HTMLElement | null = null;
-  let startX = 0;
+  let startY = 0;
   let moved = false;
 
   document.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
     const hit = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
-    if (!hit?.dataset.colId) return;
+    if (!hit?.dataset.colId || !hit.closest(".col-dropdown-list")) return;
     collectionDragged = false;
     tab = hit;
-    startX = e.clientX;
+    startY = e.clientY;
     moved = false;
   });
 
   document.addEventListener("mousemove", (e) => {
     if (!tab) return;
     if (!moved) {
-      if (Math.abs(e.clientX - startX) < 5) return;
+      if (Math.abs(e.clientY - startY) < 5) return;
       moved = true;
       collectionDragged = true;
       tab.classList.add("dragging");
     }
     const bar = tab.parentElement;
-    const add = bar?.querySelector(".lib-col-add");
-    if (!bar || !add) return;
-    let before: Element = add;
+    if (!bar) return;
+    let before: Element | null = null;
     for (const other of bar.querySelectorAll<HTMLElement>(".lib-col-tab")) {
       if (other === tab) continue;
       const rect = other.getBoundingClientRect();
-      if (e.clientX < rect.left + rect.width / 2) {
+      if (e.clientY < rect.top + rect.height / 2) {
         before = other;
         break;
       }
@@ -797,18 +793,18 @@ export function initCollectionTabs(): void {
   });
 }
 
-/** Slide tabs from their previous x into the new order. One shot, no idle loop. */
-function slideCollectionTabs(bar: HTMLElement, dragged: HTMLElement, before: Element): void {
+/** Slide list items from their previous y into the new order. One shot, no idle loop. */
+function slideCollectionTabs(bar: HTMLElement, dragged: HTMLElement, before: Element | null): void {
   const tabs = [...bar.querySelectorAll<HTMLElement>(".lib-col-tab")];
-  const from = new Map(tabs.map((el) => [el, el.getBoundingClientRect().left]));
+  const from = new Map(tabs.map((el) => [el, el.getBoundingClientRect().top]));
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   bar.insertBefore(dragged, before);
   if (reduce) return;
   for (const el of tabs) {
-    const dx = (from.get(el) ?? 0) - el.getBoundingClientRect().left;
-    if (dx === 0) continue;
+    const dy = (from.get(el) ?? 0) - el.getBoundingClientRect().top;
+    if (dy === 0) continue;
     el.style.transition = "none";
-    el.style.transform = `translateX(${dx}px)`;
+    el.style.transform = `translateY(${dy}px)`;
     requestAnimationFrame(() => {
       el.style.transition = "transform 140ms ease-out";
       el.style.transform = "";
@@ -825,6 +821,7 @@ async function persistCollectionOrder(ids: string[]): Promise<void> {
     const col = byId.get(id);
     return col ? [col] : [];
   });
+  S.libraryDataRev++;
   try {
     await epicReorderCollections(ids);
   } catch (err) {

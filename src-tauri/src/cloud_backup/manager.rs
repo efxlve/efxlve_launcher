@@ -321,46 +321,48 @@ pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
     }
 
     tauri::async_runtime::spawn(async move {
-        // Create local backup first
+        // Create the local backup first, then upload it. Failures must reach the
+        // UI: `cloud-sync-complete` is the channel the frontend already listens to.
         let local_res = tauri::async_runtime::spawn_blocking({
             let name = app_name.clone();
             move || create_backup(&name, None)
         })
         .await;
 
-        if let Ok(Ok(info)) = local_res {
-            let _ = app.emit(
-                "cloud-backup-status",
-                serde_json::json!({
-                    "appName": app_name,
-                    "status": "uploading",
-                    "backupId": info.id,
-                }),
-            );
-
-            match upload_backup(&app_name, Some(&info.id)).await {
-                Ok(entry) => {
+        match local_res {
+            Ok(Ok(info)) => match upload_backup(&app_name, Some(&info.id)).await {
+                Ok(_) => {
                     let _ = app.emit(
-                        "cloud-backup-status",
+                        "cloud-sync-complete",
                         serde_json::json!({
-                            "appName": app_name,
-                            "status": "success",
-                            "backupId": entry.backup_id,
-                            "timestamp": entry.timestamp,
+                            "id": app_name,
+                            "success": true,
+                            "message": ""
                         }),
                     );
                 }
                 Err(err) => {
                     let _ = app.emit(
-                        "cloud-backup-status",
+                        "cloud-sync-complete",
                         serde_json::json!({
-                            "appName": app_name,
-                            "status": "error",
-                            "error": err,
+                            "id": app_name,
+                            "success": false,
+                            "message": err
                         }),
                     );
                 }
+            },
+            Ok(Err(err)) => {
+                let _ = app.emit(
+                    "cloud-sync-complete",
+                    serde_json::json!({
+                        "id": app_name,
+                        "success": false,
+                        "message": err
+                    }),
+                );
             }
+            Err(_) => {}
         }
     });
 }

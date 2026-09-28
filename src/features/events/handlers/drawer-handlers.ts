@@ -227,6 +227,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           toast(i18nT("platinum.added"), "ok");
         }
         localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...S.demoPlatinumApps]));
+        S.libraryDataRev++;
         if (S.view === "library") render();
         if (S.currentModalAppName === id) openEpicModal(id, false, false);
       }

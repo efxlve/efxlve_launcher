@@ -29,6 +29,8 @@ export function mergeEpicServerPlaytimes(server: Record<string, number>): boolea
       changed = true;
     }
   }
+  // Playtime feeds the default/played sorts, so the library cache must miss.
+  if (changed) S.libraryDataRev++;
   return changed;
 }
 

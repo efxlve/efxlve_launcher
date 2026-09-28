@@ -9,7 +9,7 @@
 import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { canonicalGameTitle, rawOf, totalLibraryGamesCount } from "./selectors";
+import { rawOf, totalLibraryGamesCount } from "./selectors";
 import { getCustomAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
@@ -63,39 +63,14 @@ export function updateBadge(): void {
   dlBadge.textContent = count > 0 ? String(count) : "";
   dlBadge.classList.toggle("hidden", count === 0);
   updateSidebarGames();
-  updateStatusBar();
 }
 
-/** Bottom status bar: the active download (title, percent, speed) or an idle note, plus the version. */
-export function updateStatusBar(): void {
-  const text = document.getElementById("statusbar-dl-text");
-  const btn = document.getElementById("statusbar-dl");
-  if (text) {
-    let label = t("statusbar.idle");
-    let busy = false;
-    for (const [id, d] of S.downloads) {
-      if (d.done) continue;
-      busy = true;
-      const m = S.activeDlMetrics && S.activeDlMetrics.id === id ? S.activeDlMetrics : null;
-      const title = S.epicSummariesMap.get(id)?.title ?? d.title;
-      label = t("statusbar.downloading", { title, p: Math.round(d.progress) }) + (m && m.speed && m.speed !== "—" ? ` · ${m.speed}` : "");
-      break;
-    }
-    const queued = S.dlQueueStatus.queue.length;
-    if (!busy && queued > 0) label = t("statusbar.queued", { n: queued });
-    if (text.textContent !== label) text.textContent = label;
-    btn?.classList.toggle("active", busy);
-  }
-  const ver = document.getElementById("statusbar-version");
-  if (ver && S.appVersion && !ver.textContent) ver.textContent = `v${S.appVersion}`;
+/** Page header: window version, back button state and a title for the current view or open game page. */
+export function updatePageHeader(): void {
   const winbarVer = document.getElementById("winbar-version-num");
   if (winbarVer && S.appVersion && winbarVer.textContent !== `v${S.appVersion}`) {
     winbarVer.textContent = `v${S.appVersion}`;
   }
-}
-
-/** Page header: back button state and a title for the current view or open game page. */
-export function updatePageHeader(): void {
   const title = document.getElementById("page-title");
   if (title) {
     const game = S.currentModalAppName ? S.epicSummariesMap.get(S.currentModalAppName)?.title : null;
@@ -420,7 +395,6 @@ export function updateChrome(): void {
   updateSidebarGames();
   updateSidebarAccountSwitcher();
   updatePageHeader();
-  updateStatusBar();
   const acc = document.getElementById("account");
   if (acc) {
     // Signed in: the account chip opens the profile (if Epic) or accounts page; signed out: the store accounts page.
@@ -550,33 +524,14 @@ function applyNavHistory(item: NavHistoryItem): void {
   }
 }
 
-/** Refresh the state and disabled attributes of the Back/Forward buttons. */
+/** Refresh the disabled state of the header back button. */
 export function updateNavHistoryUi(): void {
-  const grp = document.getElementById("nav-history-group");
   const backBtn = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
-  const fwdBtn = document.getElementById("nav-forward-btn") as HTMLButtonElement | null;
-
-  if (grp) grp.classList.remove("hidden");
   if (backBtn) {
     // The back arrow also closes an open game page (Hydra behavior).
     const hasBack = Boolean(S.currentModalAppName) || canNavBack();
     backBtn.disabled = !hasBack;
     backBtn.setAttribute("aria-disabled", String(!hasBack));
-  }
-  if (fwdBtn) {
-    const hasFwd = canNavForward();
-    fwdBtn.disabled = !hasFwd;
-    fwdBtn.classList.toggle("disabled", !hasFwd);
-    fwdBtn.setAttribute("aria-disabled", String(!hasFwd));
-  }
-  const heroBack = document.getElementById("gp-nav-back") as HTMLButtonElement | null;
-  const heroFwd = document.getElementById("gp-nav-forward") as HTMLButtonElement | null;
-  if (heroBack) {
-    const hasBack = Boolean(S.currentModalAppName) || canNavBack();
-    heroBack.disabled = !hasBack;
-  }
-  if (heroFwd) {
-    heroFwd.disabled = !canNavForward();
   }
 }
 

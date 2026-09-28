@@ -84,6 +84,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     if (cached.accountId) S.epicAccountId = cached.accountId;
     if (cached.collections && Array.isArray(cached.collections)) {
       S.epicCollections = cached.collections;
+      S.libraryDataRev++;
     }
     setEpicSummaries(summarize(cached.games, cached.installed, cached.skipped));
     pruneRecent();
@@ -114,6 +115,7 @@ export async function loadEpicAchSummaries(): Promise<void> {
       gogGetAchievementsSummary().catch(() => ({})),
     ]);
     S.epicAchSummaries = { ...epicSummaries, ...gogSummaries };
+    S.libraryDataRev++;
     if (S.view === "library") scheduleRender();
   } catch (e) {
     console.warn("Achievement summaries could not be fetched:", e);
@@ -154,6 +156,7 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     if (manual) {
       try {
         S.epicCollections = await epicImportEglCollections();
+        S.libraryDataRev++;
       } catch {
         void loadEpicCollections();
       }

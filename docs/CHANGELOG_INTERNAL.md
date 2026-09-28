@@ -2258,3 +2258,32 @@ Bir kullanıcı The Last of Us Part I hikâyesini bitirmesine rağmen süre 42 d
 - **Metin düzeltmesi:** Yönet > oynanış süresi kutusu ve "Süreyi Düzenle" açıklaması artık "oturumlar bu launcher'da sayılır, Epic'te saat varsa eklenir; oynarken pencereyi kapatırsan da tepside sayılmaya devam eder" diyor (15 dil).
 - **Birim testler:** işaretçi turu, tek seferlik kurtarma (dosya silinir, ikinci çağrı boş döner), kısa işaretçinin reddi, 24 saat sınırı. Doğrulama: `npm.cmd run build`, `cargo check`, `cargo test` (106/106; 3 canlı test ignored).
 
+## 174. v0.1.17 Kapsamı (GOG Entegrasyonu, Bulut Yedekleme, Çoklu Hesap, Panel Yenilemesi) + Denetim Düzeltmeleri
+
+v0.1.16'dan bu yana **42 commit / 95 dosya / +13.006 −1.535 satır**. Sürüm numarası 0.1.17'ye yükseltildi ve `CHANGELOG_DATA` resmi sürüm notlarıyla (TR/EN, 15 madde) eşitlendi.
+
+- **GOG.COM entegrasyonu (Faz 0-7):** `src-tauri/src/gogdl/` modülü (api_client, accounts, cache, commands, launcher, paths, transfers, models); GOG OAuth2 PKCE akışı ve 3 adımlı rehber; çoklu GOG hesabı (`gog_accounts_meta.json`); birleşik kütüphane (`All | Epic | GOG`, `allGamesMap`); GamesDB dikey kapak + 1600px hero; resmi mağaza açıklaması, stüdyo ve sistem gereksinimleri (v2 API); gameplay API başarımları (enderlik + kupa); `gogdl` indirme, doğrulama, klasörden içe aktarma ve temiz kaldırma; DRM-free başlatma + çökme korumalı oynanış süresi; ayrı GOG mağaza webview'i.
+- **Bulut kayıt yedekleme (`src-tauri/src/cloud_backup/`):** tar.gz arşivleme + SHA256; WebDAV (PUT/GET/PROPFIND/MKCOL/DELETE) ve Google Drive `appDataFolder` (OAuth2 PKCE, loopback `127.0.0.1:54123`); oyun kapanışında otomatik yükleme (`trigger_auto_sync_on_exit`); Ayarlar > Entegrasyonlar kartı ve Yönet sekmesi butonları.
+- **Yerel kayıt iyileştirmeleri:** otomatik kayıt klasörü tespiti (`detect_save_path`), özel kayıt klasörü seçimi (`epic_set_custom_save_path`), yedekleme hatasında klasör seçim fallback'i.
+- **Çoklu hesap:** Epic hesap değiştirici (`legendary/accounts.rs`) + GOG hesap değiştirici; kenar çubuğu hesap popover'ı (`updateSidebarAccountSwitcher`); oturum arşivleme ve tek tıkla geçiş.
+- **Kaldırma düzeltmesi:** EGL `.item` manifest temizliği, artık klasör silme (`force_remove_dir_all`, `is_safe_game_dir`), `installed.json` ayıklama ve güncelleme rozetlerinin anında temizlenmesi.
+- **Kütüphane:** `highlightInstalled` tek ayarı (dim + contrast birleşimi, geriye dönük migration); isteğe bağlı mağaza rozeti; kapak altı başlık; yüklü kapaklarda kompakt oynatma rozeti; sunucu taraflı gerçek Epic oynanış süreleri; isteğe bağlı sayfalama.
+- **Bildirim merkezi + güncelleme susturma:** `src/features/notifications/` (zil, okunmamış rozeti, kalıcı geçmiş), `S.ignoredUpdates` ve kenar çubuğu rozet entegrasyonu.
+- **Ayarlar/Profil/Sidebar yenilemesi:** macOS Sequoia + PS5 ayar paneli (hesap kartı, 3 hız kartı, CDN rayı, ekran görüntüsü formatı/kalitesi, sistem güncelleme kartı); Xbox/Steam iki kolonlu profil, yerel avatar (`profile-avatar.ts`), arkadaş paneli; mağaza değiştirici + koleksiyon/mağaza açılır menüleri.
+- **Başlatıcı otomatik güncelleme:** `tauri-plugin-updater` + `process`; GitHub Releases `latest.json`; imzalı paketler; açılış + odak kontrollü kontrol; sessiz indirme; oyun indirmesi/oturumu sürerken erteleme; Windows bildirimi (`.github/workflows/release.yml`).
+- **i18n:** 0.1.17 sonunda **1.352 anahtar**, 15 dilin tamamı tam eşlik (GOG ekranları dahil).
+- **Performans/temizlik:** `click-router.ts` 1.938 → 640 satır (8 alan işleyicisi), `main.ts` 116 satır; kütüphane önbelleği revizyon tabanlı.
+
+### 174.1. 28.09.2026 Denetim Düzeltmeleri (ROADMAP §6.1 + §6.2)
+
+- **Sürüm/Changelog hazırlığı:** `package.json`, `package-lock.json`, `Cargo.toml`, `tauri.conf.json`, `index.html` (pencere hapı) ve `state.ts` fallback'i **0.1.17**; `CHANGELOG_DATA` 0.1.17 kaydı ve `isCurrent` taşıması.
+- **i18n tamamlama:** `dl.executableNotFound` 15 dile; 13 dilde eksik 14 GOG/filtre anahtarı çevrildi; `statusbar.*` ve `ss.captureTip/captureNow/openFolderLong` ölü anahtarları silindi → **1.352 anahtar, sıfır eksik, tam parite**.
+- **Bulut yedeği görünürlüğü:** ölü `cloud-backup-status` olayı kaldırıldı; `trigger_auto_sync_on_exit` artık `cloud-sync-complete` yayıyor ve başarısız otomatik yükleme toast + bildirim merkezine düşüyor.
+- **Koleksiyon sıralama:** sürükle-bırak dikey açılır listeye uyarlandı (`.col-dropdown-list`, `clientY`, `translateY`), yalnız liste öğelerini hedefliyor ve sürükleme tıklaması `select-col-filter` dalında yutuluyor; ölü `.lib-col-add` CSS'i silindi.
+- **Kütüphane önbelleği:** `visibleSignature()` yalnız `libraryDataRev` temelli; favori (`toggleFav`), gizleme/gösterme, güncelleme seti, oynanış süresi (yerel + sunucu), başarım özetleri, koleksiyon atamaları ve demo platin yazarları rev bump'lıyor.
+- **Ölü kod:** `updateStatusBar()` kaldırıldı (winbar sürümü `updatePageHeader`'a taşındı); `nav-history-back/forward` dalları ve `updateNavHistoryUi`'nin hayalet ileri/hero butonları silindi; `prevent-modal-close` paylaşılan yönlendiriciye taşındı; `capture-screenshot` ölü handler'ı kaldırıldı; `gog-refresh` ölü dalı silindi ve yenile düğmesi iki mağazayı da eşitliyor.
+- **Hesap ID:** Hesaplar sayfasına kopyalanabilir Hesap ID çipi eklendi (ölü `copy-account-id` handler'ı ve `profile.copyIdTitle`/`accountIdCopied` anahtarları yeniden canlandı).
+- **Presence varsayılanı:** dokümanla eşitlendi (kapalı / opt-in).
+- **tsc `--noUnusedLocals`:** 8 bulgu temizlendi (şu an 0 hata).
+- **Doğrulama:** `npm.cmd run build` ✅, `cargo test` ✅ (bkz. commit mesajı), i18n denetimi 15/15 parite, IPC denetimi 143/143 komut + 0 ölü olay.
+

@@ -36,9 +36,10 @@ export function effectivePresenceClientId(): string {
 export async function initPresence(): Promise<void> {
   try {
     const st = await epicGetSettings();
-    S.presenceEnabled = st.presence_enabled ?? true;
+    // Opt-in: Discord Rich Presence stays off until the user enables it.
+    S.presenceEnabled = st.presence_enabled ?? false;
   } catch {
-    S.presenceEnabled = true;
+    S.presenceEnabled = false;
   }
   applyPresenceSettings();
 }

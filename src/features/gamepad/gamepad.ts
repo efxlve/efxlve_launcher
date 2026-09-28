@@ -89,7 +89,7 @@ export function initGamepadSupport(): void {
     }
   });
 
-  window.addEventListener("gamepaddisconnected", (e) => {
+  window.addEventListener("gamepaddisconnected", () => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {

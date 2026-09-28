@@ -331,6 +331,7 @@ export async function loadEpicCollections(): Promise<void> {
   if (!isTauri) return;
   try {
     S.epicCollections = await epicGetCollections();
+    S.libraryDataRev++;
     if (S.view === "library") scheduleRender();
   } catch (e) {
     console.warn("Collections could not be fetched:", e);

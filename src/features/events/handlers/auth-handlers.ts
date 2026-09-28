@@ -41,7 +41,7 @@ import { pushNavHistory, updateSidebarAccountSwitcher } from "../../../core/nav"
 import { closeAllModals, render } from "../../../core/render";
 import { setView } from "../../store/store-view";
 
-export function handleAuthAction(act: string | undefined, t: HTMLElement, id?: string): boolean {
+export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: string): boolean {
   if (!act) return false;
 
   switch (act) {
@@ -87,7 +87,9 @@ export function handleAuthAction(act: string | undefined, t: HTMLElement, id?: s
       return true;
 
     case "epic-refresh":
+      // One refresh entry point keeps both store libraries in step.
       void syncEpicLibrary(true);
+      if (S.gogAccount) void syncGogLibrary();
       return true;
 
     case "epic-retry":
@@ -125,10 +127,6 @@ export function handleAuthAction(act: string | undefined, t: HTMLElement, id?: s
 
     case "gog-logout":
       void gogLogoutAction();
-      return true;
-
-    case "gog-refresh":
-      void syncGogLibrary();
       return true;
 
     case "gog-account-switch":
