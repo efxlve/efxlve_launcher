@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, rawOf, sharedOwnerOf, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -313,17 +313,14 @@ export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
-  const owner = sharedOwnerOf(s.appName);
-  const ownerLabel = owner ? esc(t("shared.ownerBadge", { name: owner.ownerName })) : "";
   const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
   const titleRow = S.showCoverTitles
     ? `<span class="pcard-title-row"><span class="pcard-title" title="${title}">${title}</span>${playBtnHtml}</span>`
     : "";
-  const caption = (S.showCoverTitles || Boolean(storesLabel) || Boolean(ownerLabel))
+  const caption = (S.showCoverTitles || Boolean(storesLabel))
     ? `<div class="pcard-caption">
         ${titleRow}
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
-        ${ownerLabel ? `<span class="pcard-owner">${ownerLabel}</span>` : ""}
       </div>`
     : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
@@ -348,9 +345,7 @@ function epicListRow(s: EpicSummary): string {
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
-  const owner = sharedOwnerOf(s.appName);
-  const ownerLabel = owner ? esc(t("shared.ownerBadge", { name: owner.ownerName })) : "";
-  const metaText = [studio, storesLabel, ownerLabel].filter(Boolean).join(" · ");
+  const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>

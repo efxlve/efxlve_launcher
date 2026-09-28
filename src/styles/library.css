@@ -191,15 +191,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Games that belong to another saved account carry their owner under the title. */
-.pcard-owner {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .gp-meta-owner { color: var(--text-2); }
 .pgrid.highlight-installed .pcard:not(.not-installed) .pcard-title,
 .pgrid.contrast-titles .pcard:not(.not-installed) .pcard-title {

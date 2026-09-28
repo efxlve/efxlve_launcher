@@ -7,13 +7,14 @@
  * after MAX_GAMES hits, which stays well under a millisecond for 500+ games.
  */
 
-import { rawOf } from "../../core/selectors";
+import { rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { epicPortrait } from "../../epic";
+import { epicPortrait, type EpicSummary } from "../../epic";
 import { holdStoreForPalette, releaseStoreForPalette } from "../store/store-view";
+import { sharedSummaries } from "../library/shared-library";
 
 const MAX_GAMES = 8;
 
@@ -51,10 +52,13 @@ function commands(): Command[] {
 
 function gameItem(appName: string, title: string, installed: boolean, idx: number): string {
   const raw = rawOf(appName);
-  const cover = S.customCovers[appName] || (raw ? epicPortrait(raw) : null);
-  const action = installed
-    ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
-    : "";
+  const shared = sharedOwnerOf(appName);
+  const cover = S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || shared?.cover || null;
+  const action = shared
+    ? `<button class="btn ghost small" data-act="shared-switch" data-id="${esc(shared.ownerKey)}" tabindex="-1" title="${t("shared.detailNote", { name: esc(shared.ownerName) })}">${t("shared.switch")}</button>`
+    : installed
+      ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
+      : "";
   return `
     <div class="palette-item" data-idx="${idx}" data-act="epic-detail" data-id="${esc(appName)}" role="option">
       ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="palette-thumb"></span>`}
@@ -69,18 +73,22 @@ function renderResults(query: string): void {
   if (!list) return;
   const q = query.trim().toLowerCase();
 
+  // The palette searches the same union the library shows, so games from other
+  // saved accounts are findable (they open the detail page with the switch button).
+  const pool: EpicSummary[] = S.showSharedLibrary ? [...S.epicSummaries, ...sharedSummaries()] : S.epicSummaries;
+
   const games: string[] = [];
   let idx = 0;
   if (q) {
     // Installed matches first, then the rest, capped at MAX_GAMES.
-    const matched: typeof S.epicSummaries = [];
-    for (const s of S.epicSummaries) {
+    const matched: EpicSummary[] = [];
+    for (const s of pool) {
       if (S.hiddenGames.has(s.appName)) continue;
       if (s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
       if (matched.length >= MAX_GAMES) break;
     }
     if (matched.length < MAX_GAMES) {
-      for (const s of S.epicSummaries) {
+      for (const s of pool) {
         if (S.hiddenGames.has(s.appName)) continue;
         if (!s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
         if (matched.length >= MAX_GAMES) break;
@@ -89,7 +97,7 @@ function renderResults(query: string): void {
     for (const s of matched) games.push(gameItem(s.appName, s.title, s.installed, idx++));
   } else {
     for (const id of S.epicRecent.slice(0, 5)) {
-      const s = S.epicSummariesMap.get(id);
+      const s = summaryOf(id);
       if (s && !S.hiddenGames.has(s.appName)) games.push(gameItem(s.appName, s.title, s.installed, idx++));
     }
   }

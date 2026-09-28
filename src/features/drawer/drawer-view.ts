@@ -88,10 +88,21 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
 
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
-  const p = epicDlProgress(s.appName);
   const faved = S.epicFav.has(s.appName);
   const isGog = s.appName.startsWith("gog::");
   const storeTitle = t(isGog ? "drawer.storeTitleGog" : "drawer.storeTitle");
+
+  // Games from another saved account cannot be installed or managed with the
+  // active one, so the action bar offers the one-click account switch instead.
+  const sharedOwner = sharedOwnerOf(s.appName);
+  if (sharedOwner) {
+    return `
+      <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
+      <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
+      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>`;
+  }
+
+  const p = epicDlProgress(s.appName);
   return `
     ${primaryAction(s, p, partner)}
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
