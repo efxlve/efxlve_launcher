@@ -48,7 +48,6 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
 
     case "epic-install":
-    case "install":
       if (id) void openInstallDialog(id);
       return true;
 
@@ -107,7 +106,6 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
 
     case "epic-cancel":
-    case "cancel":
       if (id) {
         if (id.startsWith("gog::")) {
           void gogCancelDownload(id);
@@ -118,7 +116,6 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
 
     case "epic-uninstall":
-    case "uninstall":
       if (id) {
         closeManagePopup();
         void epicUninstall(id);
@@ -208,19 +205,6 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
     }
 
-    case "dl-save-install-dir": {
-      const input = document.getElementById("dl-install-dir") as HTMLInputElement | null;
-      const v = input?.value?.trim() ?? "";
-      epicSetInstallDir(v ? v : null)
-        .then((st: EpicSettings) => {
-          S.epicSettingsCache = st;
-          toast(i18nT("dl.installDirSaved"), "ok");
-          render();
-        })
-        .catch((e: unknown) => toast(String(e), "err"));
-      return true;
-    }
-
     case "import-installed-folder":
       void (async () => {
         const chosen = await epicSelectFolderDialog(null, i18nT("settings.importInstalled")).catch(() => null);
@@ -297,16 +281,6 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           toast(String(e), "err");
         }
       })();
-      return true;
-
-    case "dl-reset-cdn":
-      void epicSetPreferredCdn(null)
-        .then(() => {
-          S.preferredCdn = "";
-          toast(i18nT("downloads.cdnResetDone"), "ok");
-          render();
-        })
-        .catch((e: unknown) => toast(String(e), "err"));
       return true;
 
     case "dl-cleanup-cache":

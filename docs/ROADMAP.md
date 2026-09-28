@@ -208,9 +208,11 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - **Oyun kapanınca otomatik save yedekleme**.
 - **"En Çok Oynadıklarınız"** (profil, oyun süresi istatistikleri).
 
-> ⚠️ **Düzeltme (28.09.2026):** Yukarıdaki "Ücretsiz haftalık oyunlar rafı" maddesi artık geçerli değil —
+> ⚠️ **Karar (28.09.2026):** Yukarıdaki "Ücretsiz haftalık oyunlar rafı" maddesi artık geçerli değil —
 > `src-tauri/src/legendary/freegames.rs` ve `src/features/freegames/freegames.ts` sırasıyla `16523bb` /
-> `20e5cc5` ile silinmiş durumda. Detay ve karar için §6.5/§6.6.
+> `20e5cc5` ile silinmiş durumda ve **geri getirilmeyecek** (kullanıcı kararı). Kalan tüm izler
+> (ölü `open-free-game` dalı, `epicStorePageUrl` yardımcısı, doküman referansları) temizlendi.
+> TV Modu ise v0.1.17'de geri getirildi: `src/features/gamepad/tv-mode.ts` + `src/styles/tv-mode.css`.
 
 ---
 
@@ -285,13 +287,14 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 
 | # | Bulgu | Kanıt / Öneri |
 |---|---|---|
-| E1 | **Ücretsiz haftalık oyunlar (Free Games) tamamen kaldırılmış:** frontend + Rust dosyaları yok, i18n anahtarları yok; `click-router.ts:252` ölü handler kaldı. Karar: (a) özellik geri getirilecek (Epic `freeGamesPromotions` + filtre sekmesi + bildirim), ya da (b) dokümanlardan ve koddan tamamen temizlenecek. Serbest oyun bildirimi, ROADMAP §5 "gelecek iş" maddeleri ve AGENTS.md bu karara göre güncellenmeli | `git log -- '*freegames*'` → `16523bb`/`20e5cc5` D; kod araması: 0 eşleşme |
-| E2 | **TV Modu kaldırılmış:** `tv-mode.ts` + `tv-mode.css` silinmiş, hiçbir iz yok; AGENTS.md §1/§4.5/§7.9 ve README "coming soon" diyor. Karar verilip doküman hizalanmalı (oyun kolu HUD'ı gamepad.ts içinde yaşıyor) | `git log -- '*tv-mode*'` |
+| E1 | ✅ **KARAR (28.09.2026): geri getirilmeyecek.** Ücretsiz haftalık oyunlar tamamen kaldırıldı; kalan izler (ölü `open-free-game` dalı, `epicStorePageUrl`) temizlendi ve dokümanlar güncellendi | `git log -- '*freegames*'`; emisyon taraması: 0 |
+| E2 | ✅ **GERİ GETİRİLDİ (28.09.2026):** TV Modu `src/features/gamepad/tv-mode.ts` + `src/styles/tv-mode.css` ile yeniden yazıldı (Epic + GOG birleşik raflar, A/B/X/LB-RB/D-Pad, klavye ve fare desteği). Giriş noktaları: Ayarlar > Görünüm satırı, Ctrl+K komutu ve kumanda bağlanınca çıkan öneri. AGENTS.md/CODEBASE_MAP/DESIGN_SYSTEM senkron | `tv-mode.ts`, `settings-view.ts`, `palette.ts`, `gamepad.ts` |
 | E3 | **Geri/İleri UI'ı yok** (B9) — geri butonu `#nav-back-btn` tek başına duruyor; ileri butonu yok. İleri gitme sadece `Alt+Sağ` / fare 4 ile mümkün ve keşfedilebilir değil | `index.html:62` |
 | E4 | **Ekran görüntüsü alma** yalnız F12 ile; UI'da ipucu yok (ölü `ss.captureTip` anahtarı bunun kanıtı). Oyun sayfasına "Ekran görüntüsü al" butonu (oyun çalışırken) geri getirilebilir | D2/D4 |
 | E5 | **GOG tarafında `dl.freeGames` benzeri içerik yok**; GOG "in library" / claim akışı desteği yok (yalnız sahip olunanlar listelenir) — GOG planına eklenebilir | `docs/GOG_SUPPORT_PLAN.md` |
 | E6 | **Bildirim merkezi kapsamı:** güncelleme/indirme/bulut/hata var; AGENTS'ın "gelecek iş" notundaki **istek listesi indirimi**, **ön siparişe açılan oyun** ve **arkadaş çevrimiçi** bildirimleri yok | `docs/ROADMAP.md` §5 gelecek iş notları |
 | E7 | **EOS Overlay otomatik kurulum** kapsam dışı bırakılmış (bilinçli) — README/AGENTS'ta "tespit + rozet" olarak kalmalı; kullanıcıya kurulum yönlendirmesi Ayarlar'dan yapılabiliyor mu kontrol edilmeli | `src-tauri/src/eos.rs`, `features/eos/eos-install.ts` |
+| E8 | **GOG Galaxy kurulu oyun tespiti + tam özellik desteği (SIRADAKİ BÜYÜK ÖZELLİK, kullanıcı isteği 28.09.2026):** Epic tarafındaki EGL entegrasyonunun GOG karşılığı — GOG Galaxy'nin kurduğu oyunları tespit edip kütüphaneye alma, kaldırma/güncelleme işlemlerinin Galaxy tarafına da yansıması. Ön araştırma notları: Galaxy kurulum verisi `%ProgramData%\GOG.com\Galaxy\storage\galaxy-2.0.db` (SQLite) + `HKCU/HKLM\SOFTWARE\...\GOG.com\Games\<id>` kayıt defteri anahtarları + oyun klasöründeki `goggame-<id>.info` (`buildId`/`version`) üçlüsünde tutulur; `.info` güncellemesi güvenli, Galaxy DB yazımı Galaxy çalışırken riskli (önce salt-okunur tespit + `.info`/registry senkronu, DB yazımı ayrı değerlendirilmeli). Uninstall'da Galaxy kaydı da temizlenmeli (Epic'teki `.item` silme davranışının eşdeğeri). | `gogdl/cache.rs`, `gogdl/transfers.rs`, `legendary/cache.rs` (referans desen), `docs/GOG_SUPPORT_PLAN.md` |
 
 ### 6.6. Doküman senkronu (yanlış bilgi veren dosyalar)
 
@@ -337,11 +340,21 @@ Kullanıcı talebiyle not alındı; zorunlu değil, öncelik sırasına göre el
 - ✅ **D3** — `tsc --noUnusedLocals` 8 bulgu temizlendi (0 hata).
 
 **Açık kalanlar (sonraki tur):**
-- 🚧 **B11 / E4** — `epic_set_alt_bin` (özel legendary binary) için Ayarlar satırı: ürün kararı bekliyor (arayüz eklenecek ya da alan+komut kaldırılacak).
-- 🚧 **§6.4/D1-D2, D4-D8** — Ölü handler dalları (`open-free-game`, `epic-filter`, `open-collection`, `back-to-collections`, `play/stop`, `cancel/install/uninstall`, `dl-reset-cdn`, `dl-save-install-dir`, `ach-scope`, `toggle-demo-platinum`, `open-dlc-manager`, `reset-custom-cover`), 61 ölü i18n anahtarı, ~40 ölü CSS bloğu, kullanılmayan export'lar.
-- 🚧 **§6.3/O1-O10** — Paket bölme (574 KB), kalan O(N) aramalar, Rust dosya bölünmeleri (`commands.rs` 3.060, `transfers.rs` 2.700, `main.rs` 1.969).
-- 🚧 **§6.5/E1-E2** — Ücretsiz haftalık oyunlar ve TV Modu: geri getirme ya da dokümandan çıkarma kararı.
-- 🚧 **§6.6/S3-S5** — `CODEBASE_MAP.md`, `TAURI_IPC_REFERENCE.md` (98 → 143), `REFACTOR_PLAN.md` sayaç senkronu.
+- ✅ **B11 (kapalı):** `epic_set_alt_bin` UI/komut kararı — komut ve alan Rust'ta korunuyor, arayüz işi ertelendi (ROADMAP §6.3 optimizasyon turunda yeniden değerlendirilecek).
+- 🚧 **§6.4/D1-D2, D8** — Kalan ölü handler dalları (`epic-filter` kaldırıldı; `copy-account-id`, `capture-screenshot`, `gog-refresh`, `nav-history-*` artık canlı/silindi) ve kalan ~50 "gereksiz export" (yalnız kendi dosyasında kullanılan semboller). 28.09.2026 turunda **14 ölü dal, ölü CSS blokları ve 12 ölü fonksiyon** temizlendi.
+- 🚧 **§6.3/O1-O10** — Paket bölme (vite `vendor`/`icons` ayrıldı; derin bölme handler seviyesinde dinamik import gerektirir), Rust dosya bölünmeleri (`commands.rs` 3.060, `transfers.rs` 2.703, `main.rs` 1.969, `screenshots.rs` 1.353).
+- 🚧 **§6.6/S3-S5** — ✅ CODEBASE_MAP yeniden yazıldı, ✅ IPC_REFERENCE 143 komut + tam dizin, ✅ REFACTOR_PLAN sayaçları güncellendi.
 - 🚧 **R7/R8** — İmzalı build + `v0.1.17` tag push + `latest.json` doğrulaması (kullanıcı onayı/secrets gerekir).
+
+### 6.9. 28.09.2026 ikinci tur (kullanıcı geri bildirimleri + ölü kod + optimizasyon)
+
+- **Epic güncelleme tekrarı düzeltildi:** legendary kurulum/güncelleme sonrası EGL `.item` manifestindeki `AppVersionString`/`InstallSize` senkronlanıyor (`cache.rs::sync_egl_manifest_version`, `transfers.rs` başarı dalında); resmi Epic Launcher artık aynı güncellemeyi tekrar önermiyor. Birim testi eklendi (124 test).
+- **"Oyun hakkında" sırası düzeltildi:** Wikipedia fallback'i artık mağaza verisi (Epic requirements/description, GOG details) **tamamlanmadan** başlamıyor; kısa süreliğine wiki metni görünüp mağaza metniyle değiştirilmesi engellendi (`storeAboutSettled` + `maybeLoadWikiAbout`).
+- **Bulut yedekleme UI tamamlandı:** Yönet sekmesindeki bulut satırına "en son yedek" bilgisi + **Buluttan Geri Yükle** ve **Bulut Yedeğini Sil** düğmeleri eklendi (backend zaten hazırdı, erişilemiyordu). `cloud.latestBackup` anahtarı 15 dile eklendi.
+- **TV Modu geri getirildi** (§6.5/E2).
+- **Ölü kod temizliği:** `copy-account-id` yeniden canlandı (hesap ID çipi), `capture-screenshot`/`gog-refresh`/`epic-filter`/`open-collection`/`back-to-collections`/`play`/`stop`/`cancel`/`install`/`uninstall`/`dl-reset-cdn`/`dl-save-install-dir`/`ach-scope`/`toggle-demo-platinum`/`open-dlc-manager`/`reset-custom-cover`/`nav-history-*`/`open-free-game` dalları silindi; `activeAchScope` state alanı kaldırıldı; `epicStorePageUrl`, `epicStoreSearch` (kullanılmıyorsa), `fmtSize`, `getAllLibraryItems`, `libraryCoverPlayBtn`, `recordNavHistory`, `setLibraryPageSize`, `epicStatus`, `cloudBackupGetSyncStatus`, `gogSetupStatus`, `epicCaptureGameScreenshot`, `epicGetScreenshotHotkey` kaldırıldı.
+- **Optimizasyon:** ~30 `S.epicSummaries.find/some` çağrısı O(1) `summaryOf()`'a çevrildi; bildirim paneli imza korumalı hale getirildi; `vite.config.ts` vendor/icons chunk ayrımı + İngilizce yorumlar; `gogdl` mutex kilitleri zehirlenmeye dayanıklı (`unwrap_or_else(|e| e.into_inner())`).
+- **Doküman senkronu:** CODEBASE_MAP yeniden yazıldı (28 feature, 44 Rust dosyası, 1.361 anahtar), IPC_REFERENCE 143 komut + üretilen tam dizin + `cloud-sync-complete`/`screenshots-updated` olayları, REFACTOR_PLAN sayaçları; `open-free-game`/freegames referansları temizlendi.
+- **i18n:** 1.361 anahtar, 15 dil tam parite (TV Modu 8 anahtar + bulut 1 anahtar eklendi).
 
 

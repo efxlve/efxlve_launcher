@@ -136,36 +136,31 @@ cargo test            # Rust tarafı bozulmadı mı
 > Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
 > devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
 
-**Son güncelleme:** Modülerleştirme TAMAMLANDI (Faz 6 final). Tüm işler commit'li, `npm.cmd run build` + `cargo check` yeşil. **`main.ts` 11.422 → 113 satır.**
+**Son güncelleme (28.09.2026, v0.1.17):** Modülerleştirme tamamlandı; v0.1.17 denetim düzeltmeleri (ROADMAP §6.1-6.2) uygulandı. `npm.cmd run build` + `cargo test` yeşil. **`main.ts` 11.422 → 130 satır.**
 
 **Tamamlanan yapı:**
 ```
 src/
-├── main.ts                 113 satır (render/scheduleRender/closeAllModals + bootstrap)
-├── i18n.ts                 15 dilli çeviri motoru
-├── core/
-│   ├── types.ts, constants.ts, utils.ts, icons.ts
-│   ├── state.ts            S (tek paylaşılan durum nesnesi)
-│   ├── dom.ts              DOM kök referansları + closeModal
-│   ├── toast.ts, selectors.ts, game-view.ts
-│   ├── nav.ts              updateNavIndicator/Badge/Chrome/OfflineModeUi
-│   ├── recent.ts, window.ts
-│   ├── render.ts           render/HUD/openEpicModal/closeAllModals bus kancaları
-│   └── epic-actions.ts     epicPlay/Install/Cancel/Uninstall/refresh
-├── features/
-│   ├── auth, collections, context-menu, cover, dlc, downloads, drawer,
-│   ├── events (click-router, input-listeners, ipc-listeners),
-│   ├── gamepad, library, manage, move-game, onboarding, playtime,
-│   ├── profile, screenshots, settings, store
-├── styles/                 29 modül CSS + index.css
-└── locales/                15 dil JSON
+├── main.ts                 130 satır (render/scheduleRender/closeAllModals + bootstrap)
+├── i18n.ts                 15 dilli çeviri motoru (en/tr gömülü, 13 dil dinamik chunk)
+├── epic.ts / gog.ts        IPC barrel + tipler
+├── core/                   16 modül (types, constants, utils, icons, state, dom, toast,
+│                           selectors, game-view, epic-actions, epic-playtime, nav,
+│                           recent, render, window, collection-icons)
+├── features/               28 alt sistem (auth, library, drawer, downloads, profile,
+│                           settings, store, gamepad + tv-mode, screenshots, collections,
+│                           move-game, dlc, manage, cover, playtime, context-menu, events
+│                           + 8 işleyici, notifications, palette, presence, accounts,
+│                           cloud-backup, changelog, eos, install, storage, updates, onboarding)
+├── styles/                 12 CSS modülü (11 + index.css)
+└── locales/                15 dil JSON (1.361 anahtar, tam parite)
 ```
 
 **Kalan işler (opsiyonel, backlog):**
-1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 113 satır kabul edilebilir.
-2. **Olay router'ı** (`click-router.ts`, 1.938 → **662 satır**) ✅ TAMAMLANDI. Aksiyonlar sorumluluk bazlı 8 alt işleyiciye ayrıldı (`src/features/events/handlers/`: `auth`, `cloud-backup`, `collection`, `cover`, `downloads`, `drawer`, `manage`, `screenshot`).
-3. **Rust dosya boyutları:** `legendary/commands.rs` (~3.060 satır), `legendary/transfers.rs` (~2.700 satır), `main.rs` (~1.969 satır) kural sınırının üzerinde; sorumluluk bazlı modüllere bölünmesi planlanıyor.
-4. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması ✅, (b) optimizasyon/ölü kod temizliği ✅ (77 ölü anahtar + eski onboarding anahtarları silindi).
+1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 130 satır kabul edilebilir.
+2. **Olay router'ı** (`click-router.ts`, 1.938 → **647 satır**) ✅ TAMAMLANDI. Aksiyonlar sorumluluk bazlı 8 alt işleyiciye ayrıldı.
+3. **Rust dosya boyutları:** `legendary/commands.rs` **3.060**, `legendary/transfers.rs` **2.703**, `main.rs` **1.969**, `legendary/screenshots.rs` **1.353** satır — ~1.500 kuralının üzerinde; sorumluluk bazlı bölünmeleri backlog'da (ROADMAP §6.3). `legendary/profile.rs` 1.060, `eos.rs` 942, `move_game.rs` 961 sınıra yakın.
+4. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması ✅, (b) optimizasyon/ölü kod temizliği ✅ (v0.1.17'de ek olarak ~14 ölü handler dalı, ölü CSS blokları ve export'lar temizlendi).
 
 **Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()`/`openEpicModal()`/`closeAllModals()`/`updateGamepadHud()` gerektiren modüller `core/render.ts` bus'ından import eder; `main.ts`/`ipc-listeners.ts` gerçek implementasyonları kaydeder.
 

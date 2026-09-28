@@ -73,7 +73,6 @@
 .settings-note-warn { color: var(--warn); }
 .settings-range { width: 160px; accent-color: var(--accent); }
 .settings-range-val { font-size: 12px; font-variant-numeric: tabular-nums; min-width: 36px; }
-.settings-danger { margin-top: 28px; border-color: rgba(229, 72, 77, 0.3); }
 .app-update-status { color: var(--text-2); }
 .app-update-progress { flex: 1; }
 

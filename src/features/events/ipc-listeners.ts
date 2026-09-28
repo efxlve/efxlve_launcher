@@ -43,7 +43,7 @@ import { modalRoot } from "../../core/dom";
 import { refreshEpicInstalled } from "../../core/epic-actions";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
-import { libraryItemOf, rebuildAllGamesMap } from "../../core/selectors";
+import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall } from "../../core/recent";
@@ -301,7 +301,7 @@ export async function initApp(hooks: {
           rebuildAllGamesMap();
           if (S.view === "library") patchLibraryCardDom(id);
         }
-      } else if (S.epicSummaries.some((s) => s.appName === id)) {
+      } else if (Boolean(summaryOf(id))) {
         void refreshEpicInstalled().then(() => {
           if (S.view === "library") patchLibraryCardDom(id);
         });
@@ -323,7 +323,7 @@ export async function initApp(hooks: {
       S.diskHistory.fill(0);
       stopSpeedChartTimer();
       updateBadge();
-      const failTitle = libraryItemOf(event.payload.id)?.title ?? S.epicSummaries.find((s) => s.appName === event.payload.id)?.title ?? event.payload.id;
+      const failTitle = libraryItemOf(event.payload.id)?.title ?? summaryOf(event.payload.id)?.title ?? event.payload.id;
       pushNotification({
         kind: "error",
         title: t("notif.downloadFailed", { title: failTitle }),
@@ -428,7 +428,7 @@ export async function initApp(hooks: {
 
     await listen<GameStatusEvent>("game-status", (event) => {
       const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
-      const sum = S.epicSummaries.find((x) => x.appName === id);
+      const sum = summaryOf(id);
       const title = sum?.title || id;
 
       if (running) {
@@ -515,7 +515,7 @@ export async function initApp(hooks: {
       const { id, count } = event.payload;
       if (count > 0) {
         toast(t("ss.newCaptures", { count }), "ok");
-        const s = S.epicSummaries.find((x) => x.appName === id);
+        const s = summaryOf(id);
         const title = s ? s.title : id;
         void fetchAndRenderScreenshots(id, title, true);
       }
@@ -525,7 +525,7 @@ export async function initApp(hooks: {
       "screenshot-shutter",
       (event) => {
         playScreenshotShutterSound();
-        const sum = S.epicSummaries.find((x) => x.appName === event.payload.id);
+        const sum = summaryOf(event.payload.id);
         const title = sum?.title || event.payload.title || "Oyun";
         toast(t("ss.capturingTitle", { title }), "ok");
       }
@@ -552,7 +552,7 @@ export async function initApp(hooks: {
 
           if (S.activeDrawerTab === "screenshots") {
             const contentEl = document.getElementById("drawer-tab-content");
-            const curSummary = S.epicSummaries.find((x) => x.appName === id);
+            const curSummary = summaryOf(id);
             if (contentEl && curSummary) {
               contentEl.innerHTML = renderDrawerScreenshots(curSummary);
             }

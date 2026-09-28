@@ -10,7 +10,6 @@
   display: flex; flex-direction: column; gap: 12px;
   padding: 14px 16px 16px; border-top: 1px solid var(--line);
 }
-.acc-card-soon { opacity: 0.6; }
 .acc-store-mark {
   width: 34px; height: 34px; border-radius: var(--r-sm); flex-shrink: 0;
   display: grid; place-items: center; background: var(--surface-3);

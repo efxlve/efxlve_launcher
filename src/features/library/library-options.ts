@@ -6,7 +6,7 @@
  * library keeps its progressive chunk rendering.
  */
 
-import { COVER_TITLES_KEY, LIB_PAGE_SIZE_KEY, LIB_PAGINATION_KEY, normalizeLibraryPageSize } from "../../core/constants";
+import { COVER_TITLES_KEY, LIB_PAGINATION_KEY } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
@@ -22,13 +22,6 @@ export function setLibraryPaginationEnabled(on: boolean): void {
   S.libPagination = on;
   S.libPage = 1;
   localStorage.setItem(LIB_PAGINATION_KEY, String(on));
-}
-
-/** Persist the page size and return to the first page. */
-export function setLibraryPageSize(size: number): void {
-  S.libPageSize = normalizeLibraryPageSize(size);
-  S.libPage = 1;
-  localStorage.setItem(LIB_PAGE_SIZE_KEY, String(S.libPageSize));
 }
 
 /**

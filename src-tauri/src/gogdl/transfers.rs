@@ -1,4 +1,4 @@
-//! GOG game download, update, and transfer management via `gogdl` CLI.
+﻿//! GOG game download, update, and transfer management via `gogdl` CLI.
 
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -226,7 +226,7 @@ pub async fn gog_install_game(
 
     // Reset state and notify UI that download is queued/starting
     {
-        let mut state_guard = GOG_DL_STATE.lock().unwrap();
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         *state_guard = Some(GogDlState {
             active_game_id: Some(composite_id.clone()),
             child_pid: None,
@@ -289,7 +289,7 @@ pub async fn gog_install_game(
         };
 
         if let Some(pid) = child.id() {
-            let mut state_guard = GOG_DL_STATE.lock().unwrap();
+            let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref mut st) = *state_guard {
                 st.child_pid = Some(pid);
             }
@@ -353,7 +353,7 @@ pub async fn gog_install_game(
         }
 
         let status = child.wait().await;
-        let mut state_guard = GOG_DL_STATE.lock().unwrap();
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         *state_guard = None;
 
         match status {
@@ -420,7 +420,7 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
     let composite_id = format!("gog::{clean_id}");
 
     let pid_to_kill = {
-        let state_guard = GOG_DL_STATE.lock().unwrap();
+        let state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ref st) = *state_guard {
             if st.active_game_id.as_deref() == Some(&composite_id) {
                 st.child_pid
@@ -444,7 +444,7 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
     }
 
     {
-        let mut state_guard = GOG_DL_STATE.lock().unwrap();
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         *state_guard = None;
     }
 
@@ -521,7 +521,7 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
     let mut installed_map = load_installed_games(&app);
     let info = installed_map
         .remove(&clean_id)
-        .ok_or_else(|| "Oyun kurulu değil.".to_string())?;
+        .ok_or_else(|| "Oyun kurulu deÄŸil.".to_string())?;
 
     let path_str = info.install_path.trim();
     if !path_str.is_empty() {
@@ -536,7 +536,7 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
     save_installed_games(&app, &installed_map)
         .map_err(|e| format!("installed.json kaydedilemedi: {e}"))?;
 
-    Ok("Oyun başarıyla kaldırıldı.".to_string())
+    Ok("Oyun baÅŸarÄ±yla kaldÄ±rÄ±ldÄ±.".to_string())
 }
 
 /// Imports an existing local GOG game installation into `installed.json`.
@@ -549,7 +549,7 @@ pub async fn gog_import_game(
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let target = PathBuf::from(install_path.trim());
     if !target.is_dir() {
-        return Err("Belirtilen klasör mevcut değil veya bir dizin değil.".to_string());
+        return Err("Belirtilen klasÃ¶r mevcut deÄŸil veya bir dizin deÄŸil.".to_string());
     }
 
     let mut info = scan_gog_info(&target, &clean_id).unwrap_or_else(|| GogInstalledInfo {
@@ -581,28 +581,28 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<String, 
     let mut installed_map = load_installed_games(&app);
     let info = installed_map
         .get_mut(&clean_id)
-        .ok_or_else(|| "Oyun kurulu olarak bulunamadı.".to_string())?;
+        .ok_or_else(|| "Oyun kurulu olarak bulunamadÄ±.".to_string())?;
 
     let p = Path::new(&info.install_path);
     if !p.is_dir() {
-        return Err("Oyun kurulum dizini diskte bulunamadı.".to_string());
+        return Err("Oyun kurulum dizini diskte bulunamadÄ±.".to_string());
     }
 
     if let Some(ref exe) = info.executable {
         let exe_path = p.join(exe);
         if !exe_path.is_file() {
-            return Err(format!("Ana çalıştırılabilir dosya bulunamadı: {exe}"));
+            return Err(format!("Ana Ã§alÄ±ÅŸtÄ±rÄ±labilir dosya bulunamadÄ±: {exe}"));
         }
     } else if let Some(fb) = find_fallback_exe(p) {
         info.executable = Some(fb);
     } else {
-        return Err("Kurulum dizininde çalıştırılabilir dosya bulunamadı.".to_string());
+        return Err("Kurulum dizininde Ã§alÄ±ÅŸtÄ±rÄ±labilir dosya bulunamadÄ±.".to_string());
     }
 
     info.install_size = calculate_dir_size(p);
     let _ = save_installed_games(&app, &installed_map);
 
-    Ok("Oyun dosyaları başarıyla doğrulandı.".to_string())
+    Ok("Oyun dosyalarÄ± baÅŸarÄ±yla doÄŸrulandÄ±.".to_string())
 }
 
 #[cfg(test)]

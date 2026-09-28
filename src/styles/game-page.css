@@ -21,9 +21,6 @@
 .gp-hero-top { position: absolute; top: 16px; left: 32px; right: 32px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
 .gp-hero-nav { display: flex; align-items: center; gap: 6px; }
 .gp-hero-nav .icon-btn:disabled { opacity: 0.35; }
-.gp-back { background: rgba(14, 15, 18, 0.7); border-color: transparent; }
-.gp-back:hover { background: rgba(14, 15, 18, 0.9); }
-.gp-back .kbd { margin-left: 4px; }
 .gp-hero-tool { background: rgba(14, 15, 18, 0.7); color: var(--text); }
 .gp-hero-bottom { position: absolute; left: 32px; right: 32px; bottom: 64px; z-index: 1; }
 .gp-title {
@@ -97,11 +94,6 @@
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }
-.hub-card-link {
-  display: inline-flex; align-items: center; gap: 4px; border: none; background: none; padding: 4px 6px; border-radius: 4px;
-  color: var(--text-2); font-size: 12px; font-family: inherit; cursor: pointer;
-}
-.hub-card-link:hover { color: var(--text); background: var(--surface-2); }
 
 /* Critic */
 .critic-tier-pill { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); }

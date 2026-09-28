@@ -283,14 +283,6 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       }
       return true;
 
-    case "reset-custom-cover":
-      if (id) {
-        resetCustomCover(id);
-        closeCustomCoverModal();
-        toast(i18nT("cover.originalRestored"), "ok");
-      }
-      return true;
-
     default:
       return false;
   }

@@ -72,7 +72,6 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
   if (!S.showInstalledIcon || !installed) return "";
   return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
 }
-export const libraryCoverPlayBtn = libraryInstalledIcon;
 
 /**
  * Patch visible library items (grid cards and list rows) in place: badge,

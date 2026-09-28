@@ -1,3 +1,4 @@
+import { summaryOf } from "../../core/selectors";
 /**
  * Cross-drive move modal: pure render and in-place update helpers.
  *
@@ -34,7 +35,7 @@ function moveStageLabel(stage: string): string {
 /** Recompute and paint the free-space badge + start button state in place. */
 export function updateMoveSpaceBadgeInPlace(): void {
   if (!S.activeMoveModalAppName) return;
-  const s = S.epicSummaries.find((x) => x.appName === S.activeMoveModalAppName);
+  const s = summaryOf(S.activeMoveModalAppName);
   if (!s) return;
 
   const curPath = s.installPath || "";
@@ -131,7 +132,7 @@ export function updateMoveProgressInPlace(p: MoveGameProgress): void {
 export function renderMoveGameModalFrame(): void {
   const root = moveModalRoot || document.getElementById("move-modal-root");
   if (!root || !S.activeMoveModalAppName) return;
-  const s = S.epicSummaries.find((x) => x.appName === S.activeMoveModalAppName);
+  const s = summaryOf(S.activeMoveModalAppName);
   if (!s) return;
 
   const title = s.title;

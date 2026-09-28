@@ -19,11 +19,6 @@ export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
 }
 
-/** Format megabytes as MB/GB. */
-export function fmtSize(mb: number): string {
-  return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb} MB`;
-}
-
 /**
  * Format a transfer rate. When `bits` is true the value is shown in bits per
  * second (Mbps/Kbps), which some users prefer over bytes (MB/s).

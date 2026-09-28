@@ -46,6 +46,6 @@ PowerShell, depo kökü `C:\Users\Efe\Desktop\efxlve_launcher`:
 
 ## Dokunma
 
-- TV Modu yayınlanmadı. `src/features/gamepad/gamepad.ts` masaüstü kumanda ipucudur. TV modu diye genişletme.
+- TV Modu var: `src/features/gamepad/tv-mode.ts` (+ `src/styles/tv-mode.css`). Masaüstü kabuğa kumanda öğesi karıştırma; değişiklikleri TV Modu içinde tut.
 - `egl-sync --export-only` çağırma.
 - Rockstar `Play*.exe` sapını doğrudan açma. Epic kaydı varsa başlatma Epic üzerinden gider.

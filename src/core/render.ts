@@ -45,11 +45,6 @@ export function registerNavHistoryPush(fn: (item: { view: any; appName?: string 
   navHistoryPushImpl = fn;
 }
 
-/** Push a view or item into navigation history if registered. */
-export function recordNavHistory(item: { view: any; appName?: string | null }): void {
-  navHistoryPushImpl?.(item);
-}
-
 /** Open (or refresh) the game detail drawer. No-op until registered. */
 export function openEpicModal(appName: string, isInitialOpen = true, animateTabContent = true): void {
   if (isInitialOpen) {

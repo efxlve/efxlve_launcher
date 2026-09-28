@@ -22,11 +22,12 @@ import {
 } from "../../epic";
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { renderMoveGameModalFrame } from "./move-game-view";
+import { summaryOf } from "../../core/selectors";
 export function applyMovedGamePath(appName: string, newPath: string): void {
   if (!appName || !newPath) return;
 
   // 1. Update the game's installPath in the epicSummaries list immediately.
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   if (s) {
     s.installPath = newPath;
   }
@@ -65,7 +66,7 @@ export async function openMoveGameModal(appName: string): Promise<void> {
     toast(t("move.busy"), "");
     return;
   }
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   if (!s || !s.installed) {
     toast(t("move.notInstalled"), "err");
     return;
@@ -130,7 +131,7 @@ export async function browseMoveTarget(): Promise<void> {
 
 export async function startMoveGame(appName: string): Promise<void> {
   if (S.isMovingGame) return;
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   if (!s) return;
 
   if (S.runningGames.has(appName)) {

@@ -8,7 +8,7 @@
 import { playtimeRoot } from "../../core/dom";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { lastPlayedLabel } from "../../core/selectors";
+import { lastPlayedLabel, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtPlaytime } from "../../core/utils";
@@ -21,7 +21,7 @@ export function closeEditPlaytimeModal(): void {
 
 export function openEditPlaytimeModal(appName: string): void {
   if (!playtimeRoot) return;
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   const dl = S.downloads.get(appName);
   const title = s?.title || dl?.title || appName;
 

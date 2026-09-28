@@ -58,48 +58,32 @@
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 .icon-btn.danger:hover { background: var(--err-tint); color: var(--err); }
 .icon-btn svg { width: 16px; height: 16px; }
-
-/* Migration aliases: older markup still emits these names. They render with
-   the canonical button styles above; new code must use .btn / .icon-btn. */
-.ps5-btn, .apple-pill-btn {
+.apple-pill-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   height: 32px; padding: 0 14px; border: 1px solid transparent; border-radius: var(--r-sm);
   background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 500;
   font-family: inherit; white-space: nowrap; cursor: pointer;
   transition: background-color var(--ease), border-color var(--ease);
 }
-.ps5-btn:hover, .apple-pill-btn:hover { background: var(--surface-3); }
-.ps5-btn:disabled, .apple-pill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.ps5-btn svg, .apple-pill-btn svg { width: 15px; height: 15px; }
-.ps5-btn.primary, .apple-pill-btn.primary, .ps5-btn.install, .ps5-btn.play { background: var(--accent); color: var(--on-accent); }
-.ps5-btn.primary:hover, .apple-pill-btn.primary:hover, .ps5-btn.install:hover { background: var(--accent-hover); }
-.ps5-btn.update, .apple-pill-btn.update { background: var(--warn-tint); color: var(--warn); }
-.ps5-btn.danger, .apple-pill-btn.danger { background: var(--err-tint); color: var(--err); }
-.ps5-btn.ghost, .ps5-btn.secondary, .apple-pill-btn.secondary { background: transparent; border-color: var(--line-strong); }
-.ps5-btn.ghost:hover, .ps5-btn.secondary:hover, .apple-pill-btn.secondary:hover { background: var(--surface-2); }
-.ps5-btn.small, .apple-pill-btn.small { height: 28px; padding: 0 10px; font-size: 12px; }
+.apple-pill-btn:hover { background: var(--surface-3); }
+.apple-pill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.apple-pill-btn svg { width: 15px; height: 15px; }
+.apple-pill-btn.primary { background: var(--accent); color: var(--on-accent); }
+.apple-pill-btn.primary:hover { background: var(--accent-hover); }
+.apple-pill-btn.update { background: var(--warn-tint); color: var(--warn); }
+.apple-pill-btn.danger { background: var(--err-tint); color: var(--err); }
+.apple-pill-btn.secondary { background: transparent; border-color: var(--line-strong); }
+.apple-pill-btn.secondary:hover { background: var(--surface-2); }
+.apple-pill-btn.small { height: 28px; padding: 0 10px; font-size: 12px; }
 .apple-pill-btn.icon-only { width: 28px; padding: 0; }
-.ps5-btn-icon, .apple-icon-btn {
-  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
-  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
-}
-.ps5-btn-icon:hover, .apple-icon-btn:hover { background: var(--surface-2); color: var(--text); }
-.apple-icon-btn.danger:hover { background: var(--err-tint); color: var(--err); }
-.ps5-page { max-width: 1600px; margin: 0 auto; width: 100%; }
-.ps5-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-.ps5-header-kicker { display: none; }
-.ps5-header-title { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-.ps5-header-subtitle { font-size: 13px; color: var(--text-2); margin: 2px 0 0; }
-.ps5-header-actions { display: flex; gap: 8px; }
-
 /* --- Inputs --- */
-.input, .ps5-input, .text-input {
+.input, .text-input {
   height: 32px; padding: 0 10px;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
   color: var(--text); font-size: 13px; font-family: inherit;
   transition: border-color var(--ease);
 }
-.input:focus, .ps5-input:focus, .text-input:focus { outline: none; border-color: var(--accent); }
+.input:focus, .text-input:focus { outline: none; border-color: var(--accent); }
 .input::placeholder { color: var(--text-3); }
 .search {
   display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
@@ -118,21 +102,20 @@
 }
 select { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); height: 32px; padding: 0 8px; font-family: inherit; }
 select option { background: var(--surface-1); color: var(--text); }
-
 /* --- Toggle switch (both historic markups) --- */
-.switch, .toggle-switch { position: relative; display: inline-block; width: 34px; height: 20px; flex-shrink: 0; }
-.switch input, .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-.switch .track, .toggle-slider {
+.switch { position: relative; display: inline-block; width: 34px; height: 20px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .track {
   position: absolute; inset: 0; cursor: pointer; border-radius: 10px;
   background: var(--surface-3); transition: background-color var(--ease);
 }
-.switch .track::before, .toggle-slider::before {
+.switch .track::before {
   content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px;
   border-radius: 50%; background: #fff; transition: transform var(--ease);
 }
-.switch input:checked + .track, .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
-.switch input:checked + .track::before, .toggle-switch input:checked + .toggle-slider::before { background: var(--on-accent); }
-.switch input:checked + .track::before, .toggle-switch input:checked + .toggle-slider::before { transform: translateX(14px); }
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track::before { background: var(--on-accent); }
+.switch input:checked + .track::before { transform: translateX(14px); }
 
 /* --- Tabs: text tabs with an accent underline --- */
 .tabs { display: flex; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); }
@@ -148,26 +131,19 @@ select option { background: var(--surface-1); color: var(--text); }
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent);
 }
 .tab .count { color: var(--text-3); font-variant-numeric: tabular-nums; }
-
 /* Segmented control (kept for small binary choices: list/grid, CDN) */
-.seg, .apple-segmented-rail {
+.seg {
   display: inline-flex; gap: 2px; padding: 2px; height: 32px;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
 }
-.seg > button, .apple-segment {
+.seg > button {
   display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
   border: none; border-radius: 4px; background: transparent; color: var(--text-2);
   font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; white-space: nowrap;
 }
-.seg > button:hover, .apple-segment:hover { color: var(--text); }
-.seg > button.active, .apple-segment.active { background: var(--surface-3); color: var(--text); }
+.seg > button:hover { color: var(--text); }
+.seg > button.active { background: var(--surface-3); color: var(--text); }
 .seg > button svg { width: 14px; height: 14px; }
-.apple-search-box {
-  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; width: 240px;
-  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text-3);
-}
-.apple-search-box:focus-within { border-color: var(--accent); }
-.apple-search-box input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; }
 
 /* --- Chips & badges --- */
 .chip {
@@ -188,7 +164,6 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;
 }
 .card-title { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
-.card-sub { font-size: 12px; color: var(--text-2); margin: 0; }
 .list {
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden;
 }
@@ -230,9 +205,8 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 
 /* Skeleton placeholder: static tint, no shimmer loop. */
 .skeleton, .skel { background: var(--surface-2); border-radius: var(--r-sm); }
-
 /* --- Modal --- */
-.modal-backdrop, .modal-overlay {
+.modal-backdrop {
   position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, 0.6); padding: 24px;
 }
@@ -249,9 +223,8 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
 }
 .manage-head-close:hover { background: var(--surface-2); color: var(--text); }
-
 /* --- Context menu --- */
-.ps5-context-menu, .ctx-menu {
+.ps5-context-menu {
   position: fixed; top: 0; left: 0; z-index: 10000; min-width: 220px; max-width: 320px; padding: 4px;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -289,14 +262,3 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 }
 #totop.show { display: flex; }
 #totop:hover { color: var(--text); background: var(--surface-3); }
-
-/* --- Third-party launcher cards (EA / Ubisoft / Rockstar) --- */
-.tpl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
-.tpl-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }
-.tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.tpl-name { font-size: 13px; font-weight: 600; }
-.tpl-status { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
-.tpl-status.on { color: var(--ok); background: var(--ok-tint); }
-.tpl-status.off { color: var(--text-3); background: var(--surface-2); }
-.tpl-path { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tpl-actions { margin-top: auto; }

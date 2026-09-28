@@ -7,6 +7,7 @@
 import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
+import { summaryOf } from "../../../core/selectors";
 import {
   epicDeleteGameScreenshot,
   epicOpenGameScreenshotsFolder,
@@ -31,7 +32,7 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
   switch (act) {
     case "open-screenshots-folder":
       if (id) {
-        const s = S.epicSummaries.find((x) => x.appName === id);
+        const s = summaryOf(id);
         const title = t.dataset.title || (s ? s.title : id);
         void epicOpenGameScreenshotsFolder(id, title);
       }
@@ -59,7 +60,7 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
           .then((success) => {
             if (success) {
               toast(i18nT("ss.deleted"), "ok");
-              const s = S.epicSummaries.find((x) => x.appName === pending.appName);
+              const s = summaryOf(pending.appName);
               const title = s ? s.title : pending.appName;
               if (pending.lightbox) closeScreenshotLightbox();
               void fetchAndRenderScreenshots(pending.appName, title, true);
@@ -131,7 +132,7 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
 
     case "do-open-folder":
       if (S.activeShareScreenshot) {
-        const s = S.epicSummaries.find((x) => x.appName === S.activeShareScreenshot?.appName);
+        const s = summaryOf(S.activeShareScreenshot?.appName);
         const title = s ? s.title : S.activeShareScreenshot.appName;
         void epicOpenGameScreenshotsFolder(S.activeShareScreenshot.appName, title);
         closeShareModal();

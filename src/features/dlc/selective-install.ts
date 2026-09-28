@@ -17,8 +17,9 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import { epicGetInstallOptions, epicGetQueue, epicInstallWithOptions } from "../../epic";
+import { summaryOf } from "../../core/selectors";
 export async function openSelectiveModal(appName: string): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   if (s?.installed) {
     // Installed game: run update/repair directly.
     void epicInstall(appName);
@@ -41,7 +42,7 @@ export async function openSelectiveModal(appName: string): Promise<void> {
 }
 
 export async function applySelectiveInstall(appName: string, tags: string[], dlcs: string[]): Promise<void> {
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   const title = s ? s.title : appName;
   const installDir = S.selectiveInstallDir;
   closeSelectiveModal();

@@ -175,7 +175,6 @@ export const S = {
   loadingScreenshotsFor: (null) as string | null,
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,
-  activeAchScope: ("all") as "all" | "base" | "dlc",
   activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden",
   achSearchQuery: "",
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",

@@ -1,3 +1,4 @@
+import { summaryOf } from "../../core/selectors";
 /**
  * Non-click global listeners: wheel zoom guard, resize, keyboard shortcuts,
  * form change/input delegation and the scroll-to-top button.
@@ -359,7 +360,7 @@ document.addEventListener("input", (e) => {
     const container = document.getElementById("ach-list-container");
     if (container) {
       const data = S.loadedAchievements.get(S.currentModalAppName);
-      const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
+      const s = summaryOf(S.currentModalAppName);
       if (data && s) {
         enrichAchievementsData(s.appName, data);
         const query = S.achSearchQuery.trim().toLowerCase();
@@ -436,7 +437,7 @@ document.addEventListener("input", (e) => {
   }
   if (t.id === "dlc-drawer-search" && S.currentModalAppName) {
     S.dlcSearchQuery = (t as HTMLInputElement).value;
-    const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
+    const s = summaryOf(S.currentModalAppName);
     const contentEl = document.getElementById("drawer-tab-content");
     if (s && contentEl && S.activeDrawerTab === "dlcs") {
       contentEl.innerHTML = renderDrawerDlcs(s);

@@ -2,6 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
+> **Last synced:** 28.09.2026 (v0.1.17 tree: 15 locales × 1.361 keys, 143 Tauri commands, 44 Rust files).
 
 ---
 
@@ -10,146 +11,105 @@
 ```
 efxlve_launcher/
 ├── src/                               # Frontend Application (Vite 6 + TypeScript 5.6)
-│   ├── main.ts                        # Minimal orchestrator & bootstrap (~113 lines)
-│   ├── epic.ts                        # Tauri invoke wrappers & TypeScript IPC models (~1.200 lines)
-│   ├── i18n.ts                        # Localization engine & translation lookup (~128 lines)
-│   ├── vite-env.d.ts                  # Vite client type definitions
-│   ├── core/                          # Fundamental Shared Infrastructure (15 modules)
-│   │   ├── state.ts                   # Central reactive state 'S' & O(1) accessor helpers
-│   │   ├── render.ts                  # Render bus (main.ts registers render/scheduleRender/notify)
-│   │   ├── dom.ts                     # DOM caching and safe query selectors
-│   │   ├── nav.ts                     # Sidebar shell: active item, download counter, installed-games list, history
-│   │   ├── toast.ts                   # PlayStation 5 toast notification system
-│   │   ├── selectors.ts               # Filter, sort, collection & advanced search logic
-│   │   ├── epic-actions.ts            # Core game action dispatchers (play, install, cancel)
-│   │   ├── game-view.ts               # Common game presentation helpers
-│   │   ├── recent.ts                  # Recently played games registry
-│   │   ├── window.ts                  # Window controls (minimize, maximize, close-to-tray)
-│   │   ├── icons.ts                   # Zero-emoji vector SVG icon generator
-│   │   ├── collection-icons.ts        # Built-in collection vector icon lookup
-│   │   ├── utils.ts                   # Formatting helpers (bytes, time, string escaping)
-│   │   ├── constants.ts               # Default configurations, thresholds, limits
-│   │   └── types.ts                   # Core frontend type definitions
-│   ├── features/                      # Modular Feature Domains (24 subsystems)
-│   │   ├── auth/                      # Login, EGL import, progressive sync, account switcher
-│   │   │   ├── auth-actions.ts        # Boot, progressive login, logout, library sync
-│   │   │   └── account-switcher.ts    # Saved-account vault: switch / add / remove / cancel
-│   │   ├── collections/               # Category & collection management, EGL import
-│   │   │   └── collections-view.ts
-│   │   ├── context-menu/              # Desktop PS5 right-click context menu
-│   │   │   └── context-menu.ts
-│   │   ├── cover/                     # Custom cover selector & SteamGridDB browser
-│   │   │   └── cover-view.ts
+│   ├── main.ts                        # Minimal orchestrator & bootstrap (130 lines: render/scheduleRender/closeAllModals)
+│   ├── epic.ts                        # Tauri invoke wrappers & TypeScript IPC models (~1.340 lines)
+│   ├── gog.ts                         # GOG-specific IPC wrappers & models
+│   ├── i18n.ts                        # Localization engine (dynamic chunk per language, en/tr bundled)
+│   ├── core/                          # Fundamental shared infrastructure (16 modules)
+│   │   ├── state.ts                   # Central reactive state 'S'
+│   │   ├── render.ts                  # Render bus (main.ts registers the real implementations)
+│   │   ├── dom.ts                     # DOM root references and safe queries
+│   │   ├── nav.ts                     # Sidebar shell: active item, badges, recent list, account switcher popover, nav history
+│   │   ├── toast.ts                   # Console toast notification system
+│   │   ├── selectors.ts               # O(1) lookup maps (`epicSummariesMap`, `allGamesMap`) + summary/raw accessors
+│   │   ├── epic-actions.ts            # Game action dispatchers (play, install, cancel, uninstall, updates)
+│   │   ├── game-view.ts               # Shared game presentation helpers + `patchLibraryCardDom`
+│   │   ├── epic-playtime.ts           # Epic server playtime merge (never lowers local values)
+│   │   ├── recent.ts                  # Recently played registry
+│   │   ├── window.ts                  # Window controls and resize handling
+│   │   ├── icons.ts                   # Zero-emoji vector SVG icon generator + empty states
+│   │   ├── collection-icons.ts        # Built-in collection marker icons
+│   │   ├── utils.ts                   # Formatting/escaping helpers
+│   │   ├── constants.ts               # Thresholds, localStorage keys, chunk sizes
+│   │   └── types.ts                   # Core frontend types (`View` includes `"tv"`)
+│   ├── features/                      # Modular feature domains (28 subsystems)
+│   │   ├── accounts/                  # Accounts page: Epic + GOG cards, switchers, sign-in blocks
+│   │   ├── auth/                      # Epic/GOG login, EGL import, progressive sync, account vaults
+│   │   ├── changelog/                 # Changelog modal (TR/EN release notes, 1:1 with GitHub Releases)
+│   │   ├── cloud-backup/              # Cloud save backup (WebDAV & Google Drive) actions + views
+│   │   ├── collections/               # Collection editor, tags, EGL import
+│   │   ├── context-menu/              # Custom right-click menu
+│   │   ├── cover/                     # Custom cover/hero manager + SteamGridDB picker
 │   │   ├── dlc/                       # Selective install tags (languages, packs, DLCs)
-│   │   │   └── selective-install.ts
-│   │   ├── downloads/                 # Downloads hub, speed canvas & auto-update scheduler
-│   │   │   ├── downloads-view.ts
-│   │   │   └── auto-update.ts
-│   │   ├── drawer/                    # Full-page game page (hero, tabs: Overview, Trophy, DLC, Specs)
-│   │   │   ├── drawer-view.ts
-│   │   │   └── drawer-widgets.ts
-│   │   ├── events/                    # Central event bus (click-router, inputs, IPC)
-│   │   │   ├── click-router.ts        # [data-act] / [data-view] event delegation
-│   │   │   ├── input-listeners.ts     # Keyboard, search, mouse & gamepad shortcuts
-│   │   │   └── ipc-listeners.ts       # Tauri event listeners & app bootstrap (initApp)
-│   │   ├── freegames/                 # Weekly free games shelf & claim navigation
-│   │   │   └── freegames.ts
+│   │   ├── downloads/                 # Downloads hub, speed chart, scheduled auto-update
+│   │   ├── drawer/                    # Full-page game page (overview, achievements, DLC, screenshots, manage, specs)
+│   │   ├── eos/                       # EOS overlay detection + installer helper
+│   │   ├── events/                    # click-router + 8 domain handlers, input listeners, IPC listeners (initApp)
 │   │   ├── gamepad/                   # Controller polling/HUD + separate TV Mode view
-│   │   │   ├── gamepad.ts
-│   │   │   └── tv-mode.ts             # Full-screen controller-first view (hero + cover rows)
-│   │   ├── install/                   # Epic-style install location dialog
-│   │   │   └── install-dialog.ts
-│   │   ├── library/                   # Main library grid, shelves & progressive chunking
-│   │   │   └── library-view.ts
-│   │   ├── manage/                    # Game properties, executable paths & env/wrappers
-│   │   │   └── manage-view.ts
-│   │   ├── move-game/                 # Drive migration wizard with live transfer rates
-│   │   │   ├── move-game-view.ts
-│   │   │   └── move-game-actions.ts
-│   │   ├── notifications/             # Notification center drawer & system alerts
-│   │   │   └── notifications.ts
-│   │   ├── onboarding/                # Auth screen, progressive loading & setup wizard
-│   │   │   └── onboarding-view.ts
-│   │   ├── palette/                   # Ctrl+K command palette (games, pages, actions)
-│   │   │   └── palette.ts
-│   │   ├── playtime/                  # Playtime tracking, history & manual editing
-│   │   │   └── playtime-view.ts
-│   │   ├── presence/                  # Discord Rich Presence toggle & status sync
-│   │   │   └── presence.ts
-│   │   ├── profile/                   # PS5 trophy showcase, levels, friends & most played
-│   │   │   ├── profile-view.ts
-│   │   │   └── profile-avatar.ts      # Account-specific local avatar (WebP crop)
-│   │   ├── screenshots/               # F12 capture gallery, lightbox & format conversion
-│   │   │   └── screenshots-view.ts
-│   │   ├── settings/                  # Settings view (Account, Downloads, Integrations...)
-│   │   │   └── settings-view.ts
-│   │   ├── storage/                   # Drive storage breakdown & disk visualization
-│   │   │   └── storage-view.ts
-│   │   ├── store/                     # Embedded Epic Games Store child webview manager
-│   │   │   └── store-view.ts
+│   │   ├── install/                   # Install location dialog
+│   │   ├── library/                   # Grid/list library, pagination, hide-games modal, library options
+│   │   ├── manage/                    # Manage popup: verify, location, saves, cloud row, launch flags, uninstall
+│   │   ├── move-game/                 # Cross-drive game mover dialog
+│   │   ├── notifications/             # Notification center (bell, unread badge, persisted history)
+│   │   ├── onboarding/                # Login screen + progressive loading sequence
+│   │   ├── palette/                   # Ctrl+K command palette
+│   │   ├── playtime/                  # Manual playtime editor
+│   │   ├── presence/                  # Discord Rich Presence sync
+│   │   ├── profile/                   # Profile, avatar upload, hide-achievements modal
+│   │   ├── screenshots/               # Screenshot gallery, lightbox, share, batch compression
+│   │   ├── settings/                  # Settings view (Account, Downloads, Integrations, Appearance, Screenshots, System, About)
+│   │   ├── storage/                   # Storage manager (per-drive sizes)
+│   │   ├── store/                     # Embedded Epic/GOG store child webview manager
 │   │   └── updates/                   # Launcher self-update (check/download/install gating)
-│   │       └── update-manager.ts
-├── .github/
-│   └── workflows/
-│       └── release.yml                # Tag-driven signed build + GitHub Release + latest.json
-│   ├── locales/                       # 15 Language Localization Dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (Primary, 1.173 keys)
-│   │   ├── en.json                    # English (Primary, 1.173 keys, full parity)
-│   │   └── ...                        # ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant (core keys, fall back to en)
-│   └── styles/                        # 11 stylesheets + index.css (docs/DESIGN_SYSTEM.md)
-│       ├── index.css                  # Master CSS entry point (imports all modules)
+│   ├── locales/                       # 15 language dictionaries (flat dotted keys)
+│   │   ├── tr.json                    # Turkish (primary, 1.361 keys)
+│   │   ├── en.json                    # English (1.361 keys, full parity)
+│   │   └── ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant  # all at full parity
+│   └── styles/                        # 12 stylesheets (11 modules + index.css)
+│       ├── index.css                  # Master CSS entry (imports every module in cascade order)
 │       ├── tokens.css                 # Flat palette, single accent, radii, reset
-│       ├── components.css             # Buttons, inputs, tabs, chips, rows, modal, empty state, toasts
-│       ├── shell.css                  # Sidebar, window bar, notification panel, command palette
-│       ├── library.css                # Cover grid, list view, toolbar, collections gallery
-│       ├── game-page.css              # Game page hero, tabs, overview, achievements, manage, screenshots
-│       ├── downloads.css              # Active download card, speed chart, list sections
-│       ├── settings.css               # Settings sub-nav and list-row panels
-│       ├── profile.css                # Profile header, progress list, friends
-│       ├── modals.css                 # Shared modal frame + every dialog layout
-│       ├── auth.css                   # Sign-in split layout and loading steps
-│       └── tv-mode.css                # TV Mode and controller hint bar
+│       ├── components.css             # Buttons, inputs, tabs, chips, rows, modal frame, toasts
+│       ├── shell.css                  # Window bar, sidebar, notification panel, store switcher
+│       ├── library.css                # Cover grid, list view, toolbar, dropdowns, pager
+│       ├── game-page.css              # Game page hero, tabs, achievements, manage, screenshots
+│       ├── downloads.css              # Download card, speed chart, grouped lists
+│       ├── settings.css               # Settings sub-nav and row panels
+│       ├── profile.css                # Profile header, showcase, progress lists
+│       ├── modals.css                 # Shared modal frame + dialog layouts
+│       ├── accounts.css               # Accounts page cards
+│       └── tv-mode.css                # TV Mode full-screen shell
 ├── src-tauri/                         # Rust Backend (Tauri v2 + Tokio)
-│   ├── Cargo.toml                     # Rust dependencies (serde, tokio, reqwest, tauri 2.x)
-│   ├── tauri.conf.json                # Tauri v2 configuration & window permissions
-│   └── src/
-│       ├── main.rs                    # App builder, child webview hooks, tray & IPC table (98 commands)
-│       ├── presence.rs                # Discord Rich Presence IPC socket client
-│       └── legendary/                 # Backend Subsystem Modules (21 files)
-│           ├── mod.rs                 # Subsystem module exports
-│           ├── commands.rs            # 55+ #[tauri::command] IPC bridge handlers
-│           ├── accounts.rs            # Account switcher vault (archive/activate/remove sessions)
-│           ├── models.rs              # Serde data transfer models for Legendary & Epic
-│           ├── client.rs              # Legendary CLI process execution & flag builder
-│           ├── cache.rs               # NVMe cache reader & library snapshot generator
-│           ├── transfers.rs           # Download queue, install/uninstall & progress reader
-│           ├── downloader.rs          # Asynchronous asset streaming downloader
-│           ├── screenshots.rs         # Low-level VK_F12 keyboard hook & image compressor
-│           ├── profile.rs             # Epic GraphQL trophy XP & level parser
-│           ├── friends.rs             # Epic Online Services friends list reader
-│           ├── freegames.rs           # Epic Store weekly free promotional game parser
-│           ├── steamgrid.rs           # SteamGridDB REST client for high-res artwork
-│           ├── playtime.rs            # Per-game playtime tracker & session database
-│           ├── move_game.rs           # Multi-drive game installation mover
-│           ├── backup.rs              # Automatic game save backup on process termination
-│           ├── skip.rs                # 401 catalog item skipping & stub manifest generator
-│           ├── hltb.rs                # HowLongToBeat completion stats scraper
-│           ├── critic.rs              # OpenCritic review aggregator & score tier parser
-│           ├── collections.rs         # Custom collections store & EGL import parser
-│           └── paths.rs               # File system paths resolver for Legendary configs
-├── docs/                              # Architecture, Design & Operations Documentation
-│   ├── AGENTS.md                      # Core operational rules, invariants & recent log
-│   ├── ARCHITECTURE.md                # System architecture diagrams & data flow
-│   ├── CODEBASE_MAP.md                # Symbol & file index (this file)
-│   ├── DESIGN_SYSTEM.md               # Single desktop design language (sidebar, one accent) + TV Mode
-│   ├── TAURI_IPC_REFERENCE.md         # Tauri IPC command dictionary & signatures (98 commands)
-│   ├── AI_DEVELOPER_GUIDE.md          # Onboarding guide & mental models for AI/devs
-│   ├── REFACTOR_PLAN.md               # Completed modularization plan & design history
-│   ├── ROADMAP.md                     # Feature roadmap & tracked bug backlog
-│   ├── CROSS_PLATFORM.md              # Linux/macOS Wine & Proton research guide
-│   └── CHANGELOG_INTERNAL.md          # Release logs & development history (§1–166)
-├── README.md                          # Open-source public repository presentation
-└── CONTRIBUTING.md                    # Community contribution & coding standards
+│   ├── Cargo.toml
+│   ├── tauri.conf.json                # Window, bundle, updater endpoint & public key
+│   └── src/                           # 44 Rust files
+│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (143 commands)
+│       ├── presence.rs                # Discord Rich Presence worker
+│       ├── eos.rs                     # Epic Online Services overlay detection
+│       ├── legendary/                 # Epic backend (25 files)
+│       │   ├── commands.rs            # 55+ #[tauri::command] entry points
+│       │   ├── transfers.rs           # Install/update/uninstall, queue, progress parsing, EGL manifest sync
+│       │   ├── accounts.rs            # Epic account vault (archive/activate/remove sessions)
+│       │   ├── cache.rs               # Disk readers, library snapshot, EGL `.item` helpers
+│       │   ├── import_installed.rs    # Portable-folder game scanner & import
+│       │   ├── download_resume.rs     # Partial download resume records
+│       │   ├── playtime.rs / playtime_session.rs / library_playtime.rs  # Local + server playtime
+│       │   ├── profile.rs / friends.rs# Epic GraphQL profile & friends
+│       │   ├── screenshots.rs         # Hotkey hook, capture, compression
+│       │   ├── backup.rs              # Local save backup/restore
+│       │   ├── move_game.rs           # Cross-drive mover + EGL/legendary manifest updates
+│       │   ├── collections.rs / skip.rs / hltb.rs / critic.rs / steamgrid.rs / wiki.rs
+│       │   └── models.rs / client.rs / downloader.rs / paths.rs / mod.rs
+│       ├── gogdl/                     # GOG backend (9 files: api_client, accounts, cache, commands, launcher, paths, transfers, models, mod)
+│       └── cloud_backup/              # Cloud saves (7 files: manager, archive, webdav, gdrive, commands, models, mod)
+├── docs/                              # Architecture, design & operations documentation
+│   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
+│   ├── CHANGELOG_INTERNAL.md          # Development history (§1–174)
+│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (143 commands)
+│   ├── REFACTOR_PLAN.md               # Modularization record + remaining splits
+│   ├── DESIGN_SYSTEM.md               # Single desktop design language
+│   └── CROSS_PLATFORM.md              # Linux/macOS research
+├── README.md
+└── CONTRIBUTING.md
 ```
 
 ---
@@ -158,20 +118,21 @@ efxlve_launcher/
 
 | Module | Primary Responsibilities | Key Exported Symbols |
 |---|---|---|
-| `state.ts` | Single reactive state store `S` and deterministic O(1) lookup helpers. | `S`, `getCustomAvatar()`, `setEpicGamesRaw(list)`, `setEpicSummaries(list)` |
-| `render.ts` | Render bus: `main.ts` registers the real implementations at startup. | `registerRender()`, `render()`, `scheduleRender()`, `notify()`, `openEpicModal()`, `closeAllModals()` |
-| `nav.ts` | Sidebar shell: active item, download counter, installed-games list (signature-gated repaint), history. | `updateChrome()`, `updateSidebarActive()`, `updateSidebarGames()`, `updateBadge()`, `navGoBack()`, `navGoForward()` |
-| `selectors.ts` | Filter state, sort algorithms (`trCollator`), collection and advanced search queries (`dev:`, `is:`). | `epicVisibleSummaries()`, `trCollator`, `summaryOf()`, `rawOf()`, `lastPlayedLabel()` |
-| `epic-actions.ts` | Dispatching high-level game actions to Tauri backend with optimistic UI updates. | `epicPlay()`, `epicInstall()`, `epicCancel()`, `refreshUpdates()` |
-| `toast.ts` | PlayStation 5 console toast notification banner dispatch. | `toast(message, type, duration)` |
-| `dom.ts` | Safe DOM lookup and cached query selectors. | `viewEl`, `modalRoot`, `$id(id)`, `closeModal()` |
-| `icons.ts` | Zero-emoji vector SVG generator plus shared empty/loading states. | `icon(name, size)`, `emptyState()`, `loadingState()`, `IconName` |
-| `collection-icons.ts` | Vector icon mapper for user and system collections. | `collectionMarker()`, `isCollectionIcon()` |
-| `recent.ts` | Recently played games persistent stack (max 8 entries). | `pushRecent(appName)`, `getRecentApps()`, `pruneRecent()` |
-| `window.ts` | Native window operations and system tray minimize integration. | `handleWindowResize()`, `updateMaxIcon()` |
-| `utils.ts` | Pure formatting utilities for bytes, playtimes, dates, and HTML sanitization. | `fmtBytes(bytes)`, `fmtPlaytime(mins)`, `esc(string)`, `parseEnvText()` |
-| `constants.ts` | Static configuration values, thresholds, localStorage keys and chunking parameters. | `isTauri`, `NO_DESC`, `INITIAL_CARD_CHUNK` (48), `MORE_CARD_CHUNK` (36), `SEARCH_DEBOUNCE_MS` (120) |
-| `types.ts` | Shared TypeScript interfaces and union declarations. | `View` (incl. `"tv"`), `DrawerTab`, `EpicSort`, `EpicFilter`, `EpicViewMode` (`grid`/`list`), `SavedAccount` |
+| `state.ts` | Single state store `S` plus the custom-avatar resolver. | `S`, `getCustomAvatar()` |
+| `render.ts` | Render bus; `main.ts`/`ipc-listeners.ts` register the real implementations. | `registerRender()`, `render()`, `scheduleRender()`, `notify()`, `openEpicModal()`, `closeAllModals()`, `presenceSync()` |
+| `nav.ts` | Sidebar shell: active item, download/update badge, recent list (signature-gated), account popover, nav history. | `updateChrome()`, `updateSidebarActive()`, `updateBadge()`, `updatePageHeader()`, `navGoBack()`, `navGoForward()`, `updateSidebarAccountSwitcher()` |
+| `selectors.ts` | O(1) maps + filtering helpers. | `summaryOf()`, `rawOf()`, `libraryItemOf()`, `epicVisibleSummaries()` (library-view), `gameStoresLabel()`, `totalLibraryGamesCount()`, `setEpicSummaries()`, `setGogSummaries()` |
+| `epic-actions.ts` | Game actions with optimistic UI + `S.libraryDataRev` bumps. | `epicPlay()`, `epicInstall()`, `epicCancel()`, `epicUninstall()`, `refreshEpicInstalled()`, `refreshUpdates()` |
+| `epic-playtime.ts` | Merge Epic server playtime without lowering local values. | `syncEpicServerPlaytimes()` |
+| `game-view.ts` | Shared markup for cards, badges, download bars, action buttons. | `patchLibraryCardDom()`, `epicActionButtons()`, `epicArt()`, `libraryCoverStats()`, `achSummaryOf()`, `toggleFav()` |
+| `toast.ts` | Console toast banners. | `toast(message, type, duration)` |
+| `dom.ts` | Root element references and modal close helper. | `viewEl`, `modalRoot`, `toastsEl`, `manageRoot`, `closeModal()` |
+| `icons.ts` | Zero-emoji SVG generator + empty/loading states. | `icon(name, size)`, `emptyState()`, `IconName` |
+| `recent.ts` | Recently played stack (8 entries, installed-only pruning). | `pushRecent()`, `getRecentApps()`, `pruneRecent()` |
+| `window.ts` | Window controls and resize handling. | `handleWindowResize()`, `updateMaxIcon()` |
+| `utils.ts` | Formatting & escaping. | `fmtBytes()`, `fmtPlaytime()`, `esc()`, `parseEnvText()`, `cleanStoreDescription()` |
+| `constants.ts` | Thresholds and persisted keys. | `isTauri`, `INITIAL_CARD_CHUNK` (48), `MORE_CARD_CHUNK` (36), `HIGHLIGHT_INSTALLED_KEY`, `IGNORED_UPDATES_KEY` |
+| `types.ts` | Shared unions. | `View` (incl. `"tv"`), `DrawerTab`, `EpicSort`, `EpicFilter`, `EpicViewMode`, `NotifKind` |
 
 ---
 
@@ -179,31 +140,34 @@ efxlve_launcher/
 
 | Feature Directory | Module Files | Responsibilities |
 |---|---|---|
-| `auth/` | `auth-actions.ts`, `account-switcher.ts` | Legendary boot, instant cache hydration, progressive login/import sequence, logout, saved-account vault (switch/add/cancel/remove). |
-| `library/` | `library-view.ts` | Cover grid (caption, dimmed uninstalled) or dense list view, text filters, progressive chunking via `#lib-scroll-sentinel`. In-place patches via `data-lib-item`. |
-| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Full-page game page next to the sidebar: hero, primary action, stats, tabs (overview, achievements, DLC, screenshots, manage, specs). |
-| `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download card with speed chart, queue/updates/recent list rows, scheduled auto-update timer. |
-| `profile/` | `profile-view.ts`, `profile-avatar.ts` | Identity header with real totals, achievement progress list, recent grid, friends, local avatar crop/upload. |
-| `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) and hint bar; TV Mode view with hero + cover rows. |
-| `palette/` | `palette.ts` | Ctrl+K command palette routed through the global click router. |
-| `events/` | `click-router.ts`, `input-listeners.ts`, `ipc-listeners.ts` | Central `[data-act]` delegation, keyboard/search/mouse shortcuts, Tauri IPC listeners and `initApp()` bootstrap. |
-| `store/` | `store-view.ts` | Embedded Epic Games Store native child webview lifecycle, resizing and idle cleanup. |
-| `settings/` | `settings-view.ts` | Settings sidebar (Account, Downloads, Integrations, Appearance, Screenshots, System, About), language switch, account switcher UI. |
-| `notifications/` | `notifications.ts` | Slide-in notification center, unread badge and historical activity alerts. |
-| `freegames/` | `freegames.ts` | Epic Weekly Free Games as a Library filter grid (current and upcoming, mobile filtered). |
-| `context-menu/` | `context-menu.ts` | Custom PS5 desktop right-click menu (Play, Properties, Move, Favorite, Uninstall). |
-| `manage/` | `manage-view.ts` | Game page Manage tab (verify, location, saves, launch flags, wrapper/env, playtime, uninstall) and its in-place updates. |
-| `move-game/` | `move-game-view.ts`, `move-game-actions.ts` | Multi-drive installation mover dialog with real-time transfer progress and drive free-space checks. |
-| `screenshots/` | `screenshots-view.ts` | In-game F12 screenshot gallery, fullscreen lightbox, format conversion, clipboard copy and share modal. |
-| `collections/` | `collections-view.ts` | Custom user categories, tags, EGL collection importer and shelf filters. |
-| `cover/` | `cover-view.ts` | Custom game artwork manager and SteamGridDB high-resolution cover art picker. |
-| `dlc/` | `selective-install.ts` | Selective install-tag picker (languages, packs, DLCs). DLC toggles live on the game page DLC tab. |
-| `install/` | `install-dialog.ts` | Epic-style install location dialog: base folder picker, sizes, auto-update and shortcut preferences; chains into the selective modal. |
-| `playtime/` | `playtime-view.ts` | Game session duration display, playtime synchronization and manual time editor. |
-| `presence/` | `presence.ts` | Discord Rich Presence state synchronization and game title broadcasting. |
-| `storage/` | `storage-view.ts` | Storage management dashboard showing per-drive installation sizes and capacity bars. |
-| `onboarding/` | `onboarding-view.ts` | Login screen, progressive loading sequence and first-run Legendary binary setup. |
-| `updates/` | `update-manager.ts` | Launcher self-update: startup/focus/manual checks, silent background download, notification action and install gating (never while a game download or session runs). |
+| `accounts/` | `accounts-view.ts` | Epic + GOG account cards, saved-account rows, copyable account-id chip, sign-in blocks. |
+| `auth/` | `auth-actions.ts`, `account-switcher.ts`, `gog-auth-actions.ts`, `gog-account-switcher.ts` | Epic/GOG login (web login + code paste + EGL import), progressive sync, account vault switching. |
+| `changelog/` | `changelog-view.ts` | `CHANGELOG_DATA` (TR/EN, 1:1 with GitHub Releases) + modal. |
+| `cloud-backup/` | `cloud-backup-actions.ts`, `cloud-backup-view.ts` | WebDAV/Google Drive settings card, manage-row upload/sync/restore/delete. |
+| `collections/` | `collections-view.ts` | Collection editor, tags, EGL import, in-place game list updates. |
+| `context-menu/` | `context-menu.ts` | Custom right-click menu (play, properties, move, favorite, hide, uninstall). |
+| `cover/` | `cover-view.ts` | Custom cover/hero manager and SteamGridDB picker. |
+| `dlc/` | `selective-install.ts` | Selective install tags modal (languages, packs, DLCs). |
+| `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download card, speed chart, queue/updates/recent lists, scheduled auto-update. |
+| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Game page: hero, action bar, tabs, achievements, specs, screenshots, HLTB/critic widgets. Store text wins over the Wikipedia fallback (gated fetch). |
+| `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
+| `events/` | `click-router.ts`, `handlers/*` (8 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
+| `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
+| `install/` | `install-dialog.ts` | Install location dialog (sizes, folder picker, auto-update/shortcut). |
+| `library/` | `library-view.ts`, `library-options.ts`, `hide-games.ts` | Grid/list rendering with progressive chunks and pagination, filter/sort UI, hidden-games modal. |
+| `manage/` | `manage-view.ts` | Manage popup sections and in-place updates (verify, save folder, paths, launch extras, cloud row). |
+| `move-game/` | `move-game-view.ts`, `move-game-actions.ts` | Cross-drive mover dialog with live progress and free-space checks. |
+| `notifications/` | `notifications.ts` | Bell, unread badge, capped persisted history, panel rendering with signature guard. |
+| `onboarding/` | `onboarding-view.ts` | Login screen, progressive loading stages, EGL import bridge. |
+| `palette/` | `palette.ts` | Ctrl+K palette (pages, actions incl. TV Mode, game search). |
+| `playtime/` | `playtime-view.ts` | Manual playtime editor modal. |
+| `presence/` | `presence.ts` | Discord Rich Presence context builder + sync (opt-in). |
+| `profile/` | `profile-view.ts`, `profile-avatar.ts`, `hide-achievements.ts` | Profile showcase, local avatar crop/upload, hidden-achievement modal. |
+| `screenshots/` | `screenshots-view.ts` | Gallery, lightbox, share modal, delete confirm, batch compression. |
+| `settings/` | `settings-view.ts` | Settings sections, language switch, screenshot/tv/system cards, download profiles and CDN rail. |
+| `storage/` | `storage-view.ts` | Storage manager with per-drive sizes, move/uninstall actions. |
+| `store/` | `store-view.ts` | Embedded Epic/GOG store child webview lifecycle, bounds sync, loading screen. |
+| `updates/` | `update-manager.ts` | Self-update checks (startup/focus/manual), silent download, install gating. |
 
 ---
 
@@ -211,42 +175,50 @@ efxlve_launcher/
 
 | File / Subsystem | Primary Responsibilities |
 |---|---|
-| `main.rs` | Application entry point, window event dispatcher (`WindowEvent::Resized`), system tray setup, child webview lifecycle, and the Tauri command registration table (98 commands). |
-| `presence.rs` | Discord Rich Presence IPC client (`discord-rich-presence`). Updates playing status, elapsed time, and cover keys. |
-| `legendary/commands.rs` | 55+ Tauri IPC entry points (`#[tauri::command]`). Bridges frontend invoke calls to backend services. |
-| `legendary/accounts.rs` | Account switcher vault: archives `user.json` + library snapshot per account, activates sessions and prunes credentials. |
-| `legendary/cache.rs` | Instant disk manifest reader (`%USERPROFILE%\.config\legendary`) and snapshot cache (`efxlve_library_snapshot.json`). |
-| `legendary/client.rs` | Child process spawner for `legendary.exe` CLI with arguments, environment, and stream redirection. |
-| `legendary/transfers.rs` | Game installation, uninstallation, process monitoring, download queue execution, and stderr speed/progress parsing. |
-| `legendary/downloader.rs` | HTTP streaming asset downloader for remote images and cover art. |
-| `legendary/screenshots.rs` | Windows low-level keyboard hook (`VK_F12`), background frame capture, and WebP/AVIF compression worker. |
-| `legendary/profile.rs` | Authenticated Epic Games GraphQL client for player profile, levels, and trophy XP calculation. |
-| `legendary/friends.rs` | Epic Online Services friends list scraper and presence parser. |
-| `legendary/freegames.rs` | Epic Games Store promotional free games parser (filters mobile offers and computes accurate claim windows). |
-| `legendary/steamgrid.rs` | SteamGridDB REST client for high-res grid covers, hero banners, and transparent logos. |
-| `legendary/playtime.rs` | Per-game playtime tracker database (`playtimes.json`) and session recording. |
-| `legendary/move_game.rs` | Cross-drive game folder relocation engine with copy progress calculation and manifest updates. |
-| `legendary/backup.rs` | Automated save game state backup triggered when game processes exit. |
-| `legendary/skip.rs` | Permanent 401 error handler for delisted/unowned games; generates stub manifests in `skipped.json`. |
-| `legendary/hltb.rs` | HowLongToBeat completion statistics scraper and cache. |
-| `legendary/critic.rs` | OpenCritic review aggregator, score parsing, and tier determination. |
-| `legendary/collections.rs` | Custom collections store (`collections.json`) and Epic Games Launcher EGL collection importer. |
-| `legendary/paths.rs` | Reliable resolution of Legendary configuration, cache, and metadata directory paths. |
-| `legendary/models.rs` | Serde data transfer models for Legendary CLI outputs, Epic API responses, and frontend payloads. |
+| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (143 commands). |
+| `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
+| `eos.rs` | Epic Online Services overlay detection & install state. |
+| `legendary/commands.rs` | Epic IPC entry points (library, install, verify, move, settings, EGL, shortcuts). |
+| `legendary/transfers.rs` | Install/update/uninstall pipelines, queue, progress parsing, **EGL `.item` version sync on success**, playtime session hooks. |
+| `legendary/cache.rs` | Disk readers, library snapshot, EGL manifest helpers (`sync_egl_manifest_version`, `remove_egl_manifests_for_game`). |
+| `legendary/accounts.rs` | Epic account vault (archive `user.json` + snapshot, activate, remove). |
+| `legendary/import_installed.rs` | Portable folder scan/import, `.item` rewrite helpers. |
+| `legendary/download_resume.rs` | Partial download records and cleanup rules. |
+| `legendary/playtime.rs`, `playtime_session.rs`, `library_playtime.rs` | Local session tracking, crash recovery marker, Epic server playtime. |
+| `legendary/profile.rs`, `friends.rs` | Epic GraphQL profile/XP and friends list. |
+| `legendary/screenshots.rs` | Hotkey hook, capture, compression worker. |
+| `legendary/backup.rs` | Local save backup/restore. |
+| `legendary/move_game.rs` | Cross-drive relocation + EGL/legendary manifest path updates. |
+| `legendary/collections.rs`, `skip.rs`, `hltb.rs`, `critic.rs`, `steamgrid.rs`, `wiki.rs` | Collections, 401 skipping, HLTB, OpenCritic, SteamGridDB, Wikipedia fallback. |
+| `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
+| `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts. |
+| `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
 
 ---
 
 ## 5. Event Delegation Architecture (`data-act`)
 
-Instead of attaching inline `onclick` handlers, the application routes all interactions through centralized event delegation in `src/features/events/click-router.ts`:
+All interactions route through centralized delegation in `src/features/events/click-router.ts`, which dispatches to eight domain handlers:
+
+```
+src/features/events/handlers/
+├── auth-handlers.ts        # Epic/GOG login, account switching, library refresh (both stores)
+├── cloud-backup-handlers.ts# Provider, upload, sync, restore, delete
+├── collection-handlers.ts  # Collection editor modal actions
+├── cover-handlers.ts       # Cover/hero picker actions
+├── downloads-handlers.ts   # Queue, pause/resume, priority, CDN, install dir
+├── drawer-handlers.ts      # Game page tabs, DLCs, requirements, store links
+├── manage-handlers.ts      # Verify, saves, cross-drive move, launch extras, playtime
+└── screenshot-handlers.ts  # Gallery, lightbox, share, compression
+```
 
 ```html
 <button data-act="epic-play" data-id="AppName">Play</button>
 <button data-act="epic-install" data-id="AppName">Install</button>
 <button data-act="drawer-tab" data-tab="achievements">Achievements</button>
-<button data-act="nav-tab" data-view="downloads">Downloads</button>
+<button data-view="downloads">Downloads</button>
 ```
 
 To locate the execution logic for any UI element:
 1. Identify its `data-act` attribute in the HTML template.
-2. Open `src/features/events/click-router.ts` and locate the matching `case "your-data-act":` or `if (act === "your-data-act")` block.
+2. Check `click-router.ts` (nav/modals/settings toggles) and then the matching `handlers/*.ts` case.

@@ -92,7 +92,7 @@ Bunlar bu deponun dışında, bir kez yapılır. API anahtarını bu repoya yazm
 
 - `egl-sync --export-only` ekleme.
 - Rockstar oyununu `Play*.exe` ile doğrudan başlatma. Epic kaydı varsa başlatma Epic üzerinden gider.
-- TV Modu yayınlanmadı (coming soon). Varmış gibi yazma veya genişletme.
+- TV Modu **v0.1.17'de geri getirildi** (`src/features/gamepad/tv-mode.ts` + `src/styles/tv-mode.css`, Ayarlar > Görünüm / Ctrl+K ile açılır). Yeni özellik eklerken bu dosyayı bozma; masaüstü kabuğuna kumanda öğesi karıştırma (Kural §4.5).
 
 ## Sürüm
 

@@ -169,11 +169,6 @@ export function toEpicSlug(title: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function epicStorePageUrl(title: string): string {
-  const slug = toEpicSlug(title);
-  return slug ? `https://store.epicgames.com/p/${slug}` : EPIC_STORE_URL;
-}
-
 export function epicStoreSearch(title: string): string {
   return `https://store.epicgames.com/browse?q=${encodeURIComponent(title)}`;
 }
@@ -510,7 +505,6 @@ export function summarize(
 
 export const epicSetupStatus = () => invoke<SetupStatus>("epic_setup_status");
 export const epicEnsureBinary = () => invoke<string>("epic_ensure_binary");
-export const epicStatus = () => invoke<EpicStatus>("epic_status");
 export const epicListGames = () => invoke<EpicGame[]>("epic_list_games");
 export const epicListInstalled = () => invoke<EpicInstalled[]>("epic_list_installed");
 export const epicLoginWithCode = (code: string) =>
@@ -1190,9 +1184,6 @@ export interface GameScreenshotItem {
 export const epicGetGameScreenshots = (appName: string, title: string) =>
   invoke<GameScreenshotItem[]>("epic_get_game_screenshots", { appName, title });
 
-export const epicCaptureGameScreenshot = (appName: string, title: string) =>
-  invoke<GameScreenshotItem>("epic_capture_game_screenshot", { appName, title });
-
 export const epicDeleteGameScreenshot = (filePath: string) =>
   invoke<boolean>("epic_delete_game_screenshot", { filePath });
 
@@ -1201,9 +1192,6 @@ export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
 
 export const epicSetScreenshotHotkey = (vkey: number) =>
   invoke<void>("epic_set_screenshot_hotkey", { vkey });
-
-export const epicGetScreenshotHotkey = () =>
-  invoke<number>("epic_get_screenshot_hotkey");
 
 /** Effective screenshots root (configured folder, or the default Pictures path). */
 export const epicGetScreenshotDir = () =>
@@ -1351,9 +1339,3 @@ export const cloudBackupDownloadGame = (appName: string, remoteId: string, backu
 
 export const cloudBackupDeleteRemote = (remoteId: string) =>
   invoke<void>("cloud_backup_delete_remote", { remoteId });
-
-export const cloudBackupGetSyncStatus = (appName: string) =>
-  invoke<CloudSyncStatus>("cloud_backup_get_sync_status", { appName });
-
-
-

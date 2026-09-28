@@ -175,18 +175,6 @@ export function libraryItemOf(keyOrId: string, source?: GameSource): LibraryItem
   return S.allGamesMap.get(keyOrId) || S.allGamesMap.get(`epic::${keyOrId}`) || S.allGamesMap.get(`gog::${keyOrId}`);
 }
 
-/** Returns all library items across all enabled sources according to the active source filter. */
-export function getAllLibraryItems(): LibraryItem[] {
-  const items: LibraryItem[] = [];
-  if (S.sourceFilter === "all" || S.sourceFilter === "epic") {
-    items.push(...S.epicSummaries.map(epicToLibraryItem));
-  }
-  if (S.sourceFilter === "all" || S.sourceFilter === "gog") {
-    items.push(...S.gogSummaries);
-  }
-  return items;
-}
-
 /** O(1) raw metadata lookup by app name. */
 export function rawOf(appName: string): EpicGame | undefined {
   return S.epicGamesRawMap.get(appName);

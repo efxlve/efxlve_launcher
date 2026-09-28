@@ -55,7 +55,6 @@ import {
   epicSetAutoDesktopShortcut,
   epicSetNetworkProfile,
   epicSetOfflineMode,
-  epicStorePageUrl,
   epicSyncEglInstalled,
   epicThirdPartyLaunchers,
 } from "../../epic";
@@ -71,9 +70,10 @@ import {
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
+import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { loadFriends, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView } from "../store/store-view";
+import { loadFriends, loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -250,13 +250,6 @@ document.addEventListener("click", (e) => {
     closeAllModals();
     setView("library");
     render();
-  } else if (act === "open-free-game") {
-    const title = t.dataset.title;
-    const slug = t.dataset.slug;
-    if (title) {
-      const url = slug ? `https://store.epicgames.com/p/${slug}` : epicStorePageUrl(title);
-      void openStoreUrl(url, "store");
-    }
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
@@ -381,9 +374,6 @@ document.addEventListener("click", (e) => {
       resetCardChunk();
       render();
     }
-  } else if (act === "epic-filter" && t.dataset.val) {
-    S.epicFilter = t.dataset.val as typeof S.epicFilter;
-    if (!updateLibraryFilterInPlace()) render();
   } else if (act === "quick-tab" && t.dataset.tab) {
     const tab = t.dataset.tab;
     const hadCustomCol = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
@@ -442,20 +432,12 @@ document.addEventListener("click", (e) => {
       resetCardChunk();
       render();
     }
-  } else if (act === "open-collection") {
-    const colId = t.dataset.colId;
-    if (colId) {
-      S.activeCollectionId = colId;
-      S.epicFilter = "collections";
-      resetCardChunk();
-      render();
-    }
-  } else if (act === "back-to-collections") {
-    S.activeCollectionId = null;
-    resetCardChunk();
-    render();
   } else if (act === "open-palette") {
     openPalette();
+  } else if (act === "open-tv-mode") {
+    openTvMode();
+  } else if (act === "close-tv-mode") {
+    closeTvMode();
   } else if (act === "lib-clear-search") {
     S.query = "";
     const input = document.getElementById("search") as HTMLInputElement | null;
@@ -490,9 +472,9 @@ document.addEventListener("click", (e) => {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
-  } else if ((act === "epic-play" || act === "play") && id) {
+  } else if (act === "epic-play" && id) {
     void epicPlay(id);
-  } else if ((act === "epic-stop" || act === "stop") && id) {
+  } else if (act === "epic-stop" && id) {
     void epicStop(id);
   } else if (act === "epic-sync-egl") {
     if (S.eglSyncing) return;

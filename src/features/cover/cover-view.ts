@@ -8,7 +8,7 @@
 import { CUSTOM_COVERS_KEY, CUSTOM_HEROES_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { openEpicModal, render } from "../../core/render";
-import { epicWideArt, rawOf } from "../../core/selectors";
+import { epicWideArt, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 
 import { esc } from "../../core/utils";
@@ -113,7 +113,7 @@ export function openCustomCoverModal(appName: string, initialTarget: "cover" | "
   }
   S.activeCustomCoverAppName = appName;
   S.activeCoverTarget = initialTarget;
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   const title = s?.title || appName;
 
   S.sgdbSearchQuery = cleanSteamGridSearchTerm(title);
@@ -138,7 +138,7 @@ export function openCustomCoverModal(appName: string, initialTarget: "cover" | "
 export function renderCustomCoverModalFrame(appName: string): void {
   const coverRoot = document.getElementById("cover-modal-root");
   if (!coverRoot) return;
-  const s = S.epicSummaries.find((x) => x.appName === appName);
+  const s = summaryOf(appName);
   const title = s?.title || appName;
   const g = rawOf(appName);
   const devRaw = g ? g.metadata?.developer : undefined;

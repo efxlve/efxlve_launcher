@@ -110,7 +110,6 @@
   .pgrid > .pcard:hover .pcard-art, .pgrid > .pcard:focus-visible .pcard-art { transform: none; }
   .pcard-play-btn { transition: none !important; }
 }
-.pcard-meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Optional caption under the cover (Settings > Appearance). */
 .pcard-caption {
   margin-top: 10px;

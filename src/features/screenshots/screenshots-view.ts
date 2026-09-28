@@ -1,3 +1,4 @@
+import { summaryOf } from "../../core/selectors";
 /**
  * In-game screenshot gallery, lightbox, sharing and compression.
  *
@@ -42,7 +43,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
         if (S.activeDrawerTab === "screenshots") {
           const contentEl = document.getElementById("drawer-tab-content");
           if (contentEl) {
-            const curSummary = S.epicSummaries.find((x) => x.appName === appName);
+            const curSummary = summaryOf(appName);
             if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
           }
         }
@@ -223,7 +224,7 @@ async function compressScreenshotNow(
 
     if (S.currentModalAppName === appName && S.activeDrawerTab === "screenshots") {
       const contentEl = document.getElementById("drawer-tab-content");
-      const curSummary = S.epicSummaries.find((x) => x.appName === appName);
+      const curSummary = summaryOf(appName);
       if (contentEl && curSummary) {
         contentEl.innerHTML = renderDrawerScreenshots(curSummary);
       }

@@ -12,9 +12,7 @@ import { S } from "./state";
 
 /** Drop entries that are no longer installed. */
 export function pruneRecent(): void {
-  S.epicRecent = S.epicRecent.filter((id) =>
-    S.epicSummaries.some((s) => s.appName === id && s.installed),
-  );
+  S.epicRecent = S.epicRecent.filter((id) => Boolean(summaryOf(id)?.installed));
   localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
 }
 

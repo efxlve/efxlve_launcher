@@ -1,13 +1,10 @@
 /**
  * Click delegation handlers for the game drawer tabs (achievements, DLCs, specs,
- * screenshots, manage), store URLs, selective install, and demo platinum toggle.
+ * screenshots, manage), store URLs and selective install.
  */
 
-import { toast } from "../../../core/toast";
-import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
-import { DEMO_PLAT_KEY } from "../../../core/constants";
-import { openEpicModal, render } from "../../../core/render";
+import { openEpicModal } from "../../../core/render";
 import { summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { openStoreUrl } from "../../store/store-view";
@@ -26,30 +23,6 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
   if (!act) return false;
 
   switch (act) {
-    case "open-dlc-manager":
-      if (id) {
-        S.activeDrawerTab = "dlcs";
-        if (!S.dlcCache.has(id) && !S.dlcLoading) {
-          S.dlcLoading = true;
-          epicGetGameDlcs(id)
-            .then((res) => {
-              S.dlcCache.set(id, res);
-              if (S.activeDrawerTab === "dlcs" && S.currentModalAppName === id) {
-                openEpicModal(id, false);
-              }
-            })
-            .catch(() => {})
-            .finally(() => {
-              S.dlcLoading = false;
-              if (S.activeDrawerTab === "dlcs" && S.currentModalAppName === id) {
-                openEpicModal(id, false);
-              }
-            });
-        }
-        openEpicModal(id, false);
-      }
-      return true;
-
     case "selective-close":
       closeSelectiveModal();
       return true;
@@ -78,7 +51,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           const url = `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
           void openStoreUrl(url, "store");
         } else {
-          const s = S.epicSummaries.find((x) => x.appName === id);
+          const s = summaryOf(id);
           const title = s ? s.title : id;
           void openStoreUrl(epicStorePageUrlForGame(S.epicGamesRawMap.get(id), title), "store");
         }
@@ -131,12 +104,12 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           }
         } else if (tab === "screenshots") {
           if (!S.loadedScreenshots.has(S.currentModalAppName)) {
-            const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
+            const s = summaryOf(S.currentModalAppName);
             if (s) void fetchAndRenderScreenshots(S.currentModalAppName, s.title);
           }
         } else if (tab === "specs") {
           if (!S.loadedRequirements.has(S.currentModalAppName)) {
-            const s = S.epicSummaries.find((x) => x.appName === S.currentModalAppName);
+            const s = summaryOf(S.currentModalAppName);
             if (s) void fetchAndRenderRequirements(S.currentModalAppName, s.title);
           }
         }
@@ -193,16 +166,6 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
     }
 
-    case "ach-scope": {
-      const val = t.dataset.val as "all" | "base" | "dlc";
-      if (val && S.currentModalAppName) {
-        if (S.activeAchScope === val) return true;
-        S.activeAchScope = val;
-        openEpicModal(S.currentModalAppName, false, false);
-      }
-      return true;
-    }
-
     case "ach-reveal": {
       const achName = t.dataset.ach;
       if (achName && S.currentModalAppName) {
@@ -216,22 +179,6 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       }
       return true;
     }
-
-    case "toggle-demo-platinum":
-      if (id) {
-        if (S.demoPlatinumApps.has(id)) {
-          S.demoPlatinumApps.delete(id);
-          toast(i18nT("platinum.removed"), "");
-        } else {
-          S.demoPlatinumApps.add(id);
-          toast(i18nT("platinum.added"), "ok");
-        }
-        localStorage.setItem(DEMO_PLAT_KEY, JSON.stringify([...S.demoPlatinumApps]));
-        S.libraryDataRev++;
-        if (S.view === "library") render();
-        if (S.currentModalAppName === id) openEpicModal(id, false, false);
-      }
-      return true;
 
     case "ach-refresh":
       if (id) void fetchAndRenderAchievements(id, true);

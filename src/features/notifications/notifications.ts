@@ -140,17 +140,28 @@ function relTime(ts: number): string {
   return t("notif.daysAgo", { n: Math.floor(hours / 24) });
 }
 
+/** Signature of the last painted panel; renders stay no-op while nothing changes. */
+let notifPanelSig = "";
+
 /** Renders the dropdown into #notif-root (or clears it when closed). */
 export function renderNotificationPanel(): void {
   const root = document.getElementById("notif-root");
   updateNotifBadge();
   if (!root) return;
   if (!S.notifOpen) {
+    notifPanelSig = "";
     if (root.firstChild) root.innerHTML = "";
     return;
   }
 
   const unread = unreadCount();
+  // `render()` runs on every download progress event; rebuilding the open panel
+  // each time was pure DOM churn. Skip when the visible content is unchanged.
+  const first = S.notifications[0];
+  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}`;
+  if (sig === notifPanelSig && root.firstChild) return;
+  notifPanelSig = sig;
+
   const items = S.notifications
     .map((n) => {
       const action = n.action
