@@ -70,7 +70,7 @@ export function libraryDlBar(appName: string, p: number | null): string {
 /** Instant play button overlaid on the cover for installed games. */
 export function libraryCoverPlayBtn(appName: string, installed: boolean): string {
   if (!S.showInstalledIcon || !installed) return "";
-  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" title="${t("palette.play")}" aria-label="${t("palette.play")}">${icon("play", 14)}</button>`;
+  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 13)}</button>`;
 }
 
 /**
