@@ -322,8 +322,8 @@ export async function loadFriendsView(force = false): Promise<void> {
   await Promise.allSettled([epicPromise, gogPromise]);
   refreshFriendsListInPlace();
   startPresenceTimer();
-  // Epic last-online arrived with the friend list; only GOG presence is missing.
-  void refreshFriendsPresence(false, true);
+  // Refresh both sources so the "Updated" line is accurate on first paint too.
+  void refreshFriendsPresence();
 }
 
 /** Accepts or ignores an incoming Epic friend request. */
