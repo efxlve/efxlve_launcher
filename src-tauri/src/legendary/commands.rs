@@ -1726,6 +1726,12 @@ pub struct GameLocalSettings {
     /// Extra environment variables exported to the game process.
     #[serde(default)]
     pub env_vars: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    pub save_path: Option<String>,
+    #[serde(default)]
+    pub custom_save_path: Option<String>,
+    #[serde(default)]
+    pub detected_save_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -1737,6 +1743,7 @@ pub struct GameCustomConfig {
     pub last_cloud_sync: Option<String>,
     pub wrapper: Option<String>,
     pub env_vars: Option<std::collections::HashMap<String, String>>,
+    pub custom_save_path: Option<String>,
 }
 
 pub fn load_all_game_custom_configs() -> std::collections::HashMap<String, GameCustomConfig> {
@@ -1824,6 +1831,13 @@ pub fn epic_get_game_settings(app_name: String) -> Result<GameLocalSettings, Str
         version: entry.as_ref().map(|e| e.version.clone()).unwrap_or_default(),
         wrapper: cfg.and_then(|c| c.wrapper.clone()).unwrap_or_default(),
         env_vars: cfg.and_then(|c| c.env_vars.clone()).unwrap_or_default(),
+        save_path: entry.as_ref().and_then(|e| e.save_path.clone()),
+        custom_save_path: cfg.and_then(|c| c.custom_save_path.clone()),
+        detected_save_path: {
+            let title = entry.as_ref().map(|e| e.title.as_str());
+            let ip = entry.as_ref().map(|e| e.install_path.as_str());
+            super::backup::detect_save_path(&app_name, title, ip)
+        },
     })
 }
 
@@ -1855,8 +1869,19 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
             last_cloud_sync: settings.last_cloud_sync,
             wrapper: Some(settings.wrapper.trim().to_string()),
             env_vars: Some(settings.env_vars),
+            custom_save_path: settings.custom_save_path,
         },
     );
+    save_all_game_custom_configs(&cfgs);
+    Ok(())
+}
+
+/// Sets or clears the custom save directory for a specific game.
+#[tauri::command]
+pub fn epic_set_custom_save_path(app_name: String, save_path: Option<String>) -> Result<(), String> {
+    let mut cfgs = load_all_game_custom_configs();
+    let entry = cfgs.entry(app_name).or_default();
+    entry.custom_save_path = save_path.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
     save_all_game_custom_configs(&cfgs);
     Ok(())
 }
@@ -2633,10 +2658,15 @@ pub fn epic_set_auto_desktop_shortcut(app: AppHandle, enabled: bool) -> Result<(
 
 /// Backs up a game's saves.
 #[tauri::command]
-pub async fn epic_backup_save(app_name: String) -> Result<super::backup::SaveBackupInfo, String> {
-    tauri::async_runtime::spawn_blocking(move || super::backup::create_backup(&app_name, None))
-        .await
-        .map_err(|e| e.to_string())?
+pub async fn epic_backup_save(
+    app_name: String,
+    save_path_override: Option<String>,
+) -> Result<super::backup::SaveBackupInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        super::backup::create_backup(&app_name, save_path_override.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Bir oyunun mevcut yedeklerini listeler.

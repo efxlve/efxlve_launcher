@@ -760,6 +760,9 @@ export interface GameLocalSettings {
   version: string;
   wrapper: string;
   envVars: Record<string, string>;
+  savePath?: string | null;
+  customSavePath?: string | null;
+  detectedSavePath?: string | null;
 }
 
 export interface VerifyProgressEvent {
@@ -971,8 +974,11 @@ export interface SaveBackupInfo {
   save_path: string;
 }
 
-export const epicBackupSave = (appName: string) =>
-  invoke<SaveBackupInfo>("epic_backup_save", { appName });
+export const epicBackupSave = (appName: string, savePathOverride?: string) =>
+  invoke<SaveBackupInfo>("epic_backup_save", { appName, savePathOverride: savePathOverride ?? null });
+
+export const epicSetCustomSavePath = (appName: string, savePath: string | null) =>
+  invoke<void>("epic_set_custom_save_path", { appName, savePath });
 
 export const epicListBackups = (appName: string) =>
   invoke<SaveBackupInfo[]>("epic_list_backups", { appName });

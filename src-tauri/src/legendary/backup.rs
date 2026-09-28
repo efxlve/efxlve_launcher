@@ -59,16 +59,138 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
     Ok((total_bytes, file_count))
 }
 
+/// Attempts to automatically discover the local save directory for a game
+/// across standard Windows locations (Unreal Engine LocalAppData, Saved Games, Documents, etc.).
+pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Option<&str>) -> Option<String> {
+    let mut names: Vec<String> = Vec::new();
+    if !app_name.trim().is_empty() {
+        names.push(app_name.trim().to_string());
+        names.push(app_name.trim().replace(' ', ""));
+        names.push(app_name.trim().replace([':', '-', '_', '\''], ""));
+    }
+    if let Some(t) = title {
+        let t_trim = t.trim();
+        if !t_trim.is_empty() {
+            names.push(t_trim.to_string());
+            names.push(t_trim.replace(' ', ""));
+            names.push(t_trim.replace([':', '-', '_', '\''], ""));
+        }
+    }
+    names.dedup();
+
+    // 1. %LOCALAPPDATA% (Unreal Engine games, Unity, indie games)
+    if let Ok(local_app) = std::env::var("LOCALAPPDATA") {
+        let base = Path::new(&local_app);
+        for name in &names {
+            let candidate_saved = base.join(name).join("Saved").join("SaveGames");
+            if candidate_saved.is_dir() {
+                return Some(candidate_saved.to_string_lossy().to_string());
+            }
+            let candidate_saved_root = base.join(name).join("Saved");
+            if candidate_saved_root.is_dir() {
+                return Some(candidate_saved_root.to_string_lossy().to_string());
+            }
+            let candidate_direct = base.join(name);
+            if candidate_direct.is_dir() && has_save_like_files(&candidate_direct) {
+                return Some(candidate_direct.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // 2. %USERPROFILE%\Saved Games
+    if let Ok(user_profile) = std::env::var("USERPROFILE") {
+        let base = Path::new(&user_profile);
+        let saved_games_dir = base.join("Saved Games");
+        if saved_games_dir.is_dir() {
+            for name in &names {
+                let candidate = saved_games_dir.join(name);
+                if candidate.is_dir() {
+                    return Some(candidate.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        // 3. %USERPROFILE%\Documents\My Games
+        let my_games = base.join("Documents").join("My Games");
+        if my_games.is_dir() {
+            for name in &names {
+                let candidate = my_games.join(name);
+                if candidate.is_dir() {
+                    return Some(candidate.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        // 4. %USERPROFILE%\Documents\<Name>
+        let docs = base.join("Documents");
+        if docs.is_dir() {
+            for name in &names {
+                let candidate = docs.join(name);
+                if candidate.is_dir() && has_save_like_files(&candidate) {
+                    return Some(candidate.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    // 5. %APPDATA%
+    if let Ok(roaming) = std::env::var("APPDATA") {
+        let base = Path::new(&roaming);
+        for name in &names {
+            let candidate = base.join(name);
+            if candidate.is_dir() && has_save_like_files(&candidate) {
+                return Some(candidate.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // 6. Inside install_path
+    if let Some(ip) = install_path {
+        let p = Path::new(ip);
+        if p.is_dir() {
+            for sub in ["Saved\\SaveGames", "Saved", "Saves"] {
+                let candidate = p.join(sub);
+                if candidate.is_dir() {
+                    return Some(candidate.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Helper that checks if a directory contains save-related files or subdirectories
+fn has_save_like_files(dir: &Path) -> bool {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            let name_low = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+            if name_low.contains("save") || name_low.ends_with(".sav") || name_low.ends_with(".dat") {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result<SaveBackupInfo, String> {
-    let save_path_str = if let Some(sp) = save_path_override {
-        sp.to_string()
+    let installed = super::cache::read_installed(&super::skip::default_config_dir());
+    let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
+
+    let cfgs = super::commands::load_all_game_custom_configs();
+    let cfg = cfgs.get(app_name);
+
+    let save_path_str = if let Some(sp) = save_path_override.filter(|s| !s.trim().is_empty()) {
+        sp.trim().to_string()
+    } else if let Some(csp) = cfg.and_then(|c| c.custom_save_path.as_deref()).filter(|s| !s.trim().is_empty()) {
+        csp.trim().to_string()
+    } else if let Some(sp) = installed_game.as_ref().and_then(|g| g.save_path.as_deref()).filter(|s| !s.trim().is_empty()) {
+        sp.trim().to_string()
     } else {
-        // installed.json'dan save_path oku
-        let installed = super::cache::read_installed(&super::skip::default_config_dir());
-        installed
-            .into_iter()
-            .find(|g| g.app_name == app_name)
-            .and_then(|g| g.save_path)
+        let title = installed_game.as_ref().map(|g| g.title.as_str());
+        let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
+        detect_save_path(app_name, title, install_path)
             .ok_or_else(|| "@t:backup.noSaveDir".to_string())?
     };
 
@@ -185,5 +307,19 @@ mod tests {
         let parsed: SaveBackupInfo = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.id, "12345");
         assert_eq!(parsed.file_count, 3);
+    }
+
+    #[test]
+    fn test_detect_save_path_candidates() {
+        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_save_detect_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        let save_dir = temp_dir.join("Saved").join("SaveGames");
+        std::fs::create_dir_all(&save_dir).unwrap();
+
+        let detected = detect_save_path("SampleGame", Some("Sample Game"), Some(&temp_dir.to_string_lossy()));
+        assert!(detected.is_some());
+        assert_eq!(detected.unwrap(), save_dir.to_string_lossy().to_string());
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }

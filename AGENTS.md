@@ -128,6 +128,12 @@ Bu kurallar, projenin **Steam, PlayStation 5 veya Xbox seviyesinde** bir konsol 
 
 ## 9. Son Çalışma Özeti
 
+- **Yerel Kayıt Yedekleme (Save Backup) İyileştirmeleri & Otomatik Klasör Tespiti / Seçimi:**
+  1. **Otomatik Kayıt Klasörü Tespiti (`detect_save_path`):** Unreal Engine oyunları (`%LOCALAPPDATA%\<OyunAdı>\Saved\SaveGames` ve `\Saved`), `%USERPROFILE%\Saved Games`, `Documents\My Games`, `Documents\<OyunAdı>`, `%APPDATA%` ve oyun kurulum dizini içindeki `Saved`/`Saves` yolları taranarak resmi Epic bulut kayıt meta verisi bulunmayan oyunlar (örn: *Ready or Not*, *Fortnite* vb.) için kayıt klasörü otomatik tespit edilir.
+  2. **Özel Kayıt Klasörü Seçimi (`epic_set_custom_save_path`):** Oyun Yönetim (Manage) sekmesinde kayıt klasörü konumu gösterilir (`.mg-path`); kullanıcı isterse native klasör diyaloğu (`epicSelectFolderDialog`) ile kayıt klasörünü değiştirebilir veya varsayılana sıfırlayabilir.
+  3. **Kayıt Yedekleme Hatası & Otomatik Seçim Fallback'i:** `epic_backup_save` çalıştırıldığında kayıt dizini bulunamazsa kullanıcıya bilgilendirme yapılarak anında klasör seçim penceresi açılır; klasör seçildiğinde yol kaydedilip yedekleme otomatik olarak anında tamamlanır.
+  4. **15 Dil Paritesi & Birim Testleri:** `manage.saveFolderTitle`, `manage.chooseSaveFolder`, `manage.resetSaveFolder`, `backup.selectFolderPrompt` vb. anahtarlar 15 dilde eksiksiz tanımlandı; `test_detect_save_path_candidates` birim testi ile 117 Rust testinin tamamı başarıyla geçti.
+
 > ⚠️ **NOT (UX Sadeleştirme Backlog):** "Dim uninstalled games" (Kapak/liste soluklaştırma) ve "Highlight installed titles" (Başlık kontrastı) ayarları iki ayrı toggle olarak arayüzü kalabalıklaştırdı ve biraz karmaşık oldu. Kullanıcı geri bildirimi doğrultusunda bu iki özellik ilerleyen güncellemelerde birleştirilerek / sadeleştirilerek tek bir şık UX çatısı altında tekrardan düşünülüp yeniden düzenlenecektir (bkz. `docs/ROADMAP.md` §5).
 
 - **Oyun Kaldırma (Uninstall) & İndirilenlerde Güncelleme Kalma Hatası Düzeltmesi (EGL Manifest & Dosya Temizliği):**

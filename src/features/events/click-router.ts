@@ -26,7 +26,7 @@ import { cdnShortLabel, esc, fmtBytes, parseEnvText } from "../../core/utils";
 import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { currentLanguage, localizeMessage, setLanguage, t as i18nT } from "../../i18n";
-import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
+import { EPIC_LOGIN_URL, epicAchievementsUrl, epicBackupSave, epicCaptureGameScreenshot, epicCleanupCache, epicCreateDesktopShortcut, epicDeleteBackup, epicDeleteGameScreenshot, epicDetectEglGames, epicGetGameDlcs, epicGetQueue, epicImportEglCollections, epicImportInstalledFolder, epicListBackups, epicMeasureCdns, epicSetAutoDesktopShortcut, epicSetCustomSavePath, epicSetInstallDir, epicSetPreferredCdn, epicSyncEglInstalled, epicOpenBackupFolder, epicOpenGameScreenshotsFolder, epicPauseDownload, epicReorderQueue, epicRestoreBackup, epicResumeDownload, epicSaveGameSettings, epicSelectFolderDialog, epicSetNetworkProfile, epicSetOfflineMode, epicSetSteamGridKey, epicStorePageUrl, epicStorePageUrlForGame, epicSyncSaves, epicTestSteamGridKey, epicThirdPartyLaunchers, epicVerifyGame, epicOpenFolderPath, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSettings } from "../../epic";
 import { allStoreSummaries, rawOf, summaryOf } from "../../core/selectors";
 import { bootEpic, epicDoImport, epicDoLogin, epicDoLogout, epicDownload, extractAuthCode, refreshEpic, syncEpicLibrary, } from "../auth/auth-actions";
 import { cancelAddAccount, loadSavedAccounts, promptAddAccount, removeSavedAccount, switchAccount } from "../auth/account-switcher";
@@ -72,7 +72,7 @@ import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-ac
 import { consumeCollectionDragClick, refreshLibraryResultsInPlace, resetCardChunk, updateLibraryFilterInPlace } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { openPalette } from "../palette/palette";
-import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { closeManagePopup, openManagePopup, resetVerifyInPlace, updateVerifyProgressInPlace, updateManageModalInputsInPlace } from "../manage/manage-view";
 import { browseMoveTarget, cancelMoveGame, closeMoveGameModal, openMoveGameModal, startMoveGame, } from "../move-game/move-game-actions";
 import { renderMoveGameModalFrame } from "../move-game/move-game-view";
 import { applyPresenceSettings } from "../presence/presence";
@@ -1296,6 +1296,40 @@ document.addEventListener("click", (e) => {
     epicCreateDesktopShortcut(id)
       .then((msg) => toast(msg, "ok"))
       .catch((err) => toast(i18nT("manage.shortcutFailed", { msg: String(err) }), "err"));
+  } else if (act === "manage-open-save-folder" && id) {
+    const activePath = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath;
+    if (activePath) {
+      epicOpenFolderPath(activePath).catch((err) => toast(i18nT("manage.folderOpenFailed", { a1: String(err) }), "err"));
+    }
+  } else if (act === "manage-choose-save-folder" && id) {
+    void (async () => {
+      const current = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath || null;
+      const chosen = await epicSelectFolderDialog(current, i18nT("manage.chooseSaveFolderTitle")).catch(() => null);
+      if (!chosen) return;
+      try {
+        await epicSetCustomSavePath(id, chosen);
+        if (S.activeManageSettings && S.activeManageSettings.appName === id) {
+          S.activeManageSettings.customSavePath = chosen;
+          updateManageModalInputsInPlace(S.activeManageSettings);
+        }
+        toast(i18nT("manage.saveFolderUpdated"), "ok");
+      } catch (err) {
+        toast(String(err), "err");
+      }
+    })();
+  } else if (act === "manage-reset-save-folder" && id) {
+    void (async () => {
+      try {
+        await epicSetCustomSavePath(id, null);
+        if (S.activeManageSettings && S.activeManageSettings.appName === id) {
+          S.activeManageSettings.customSavePath = null;
+          updateManageModalInputsInPlace(S.activeManageSettings);
+        }
+        toast(i18nT("manage.saveFolderReset"), "ok");
+      } catch (err) {
+        toast(String(err), "err");
+      }
+    })();
   } else if (act === "manage-create-backup" && id && !S.isBackingUp) {
     S.isBackingUp = true;
     const createBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
@@ -1309,7 +1343,33 @@ document.addEventListener("click", (e) => {
         const listEl = document.getElementById("manage-backup-list");
         if (listEl) listEl.innerHTML = renderBackupListHtml(id);
       })
-      .catch((err) => toast(i18nT("backup.failed", { msg: localizeMessage(String(err)) }), "err"))
+      .catch(async (err) => {
+        const errStr = String(err);
+        if (errStr.includes("backup.noSaveDir")) {
+          toast(i18nT("backup.selectFolderPrompt"), "err");
+          const current = S.activeManageSettings?.customSavePath || S.activeManageSettings?.savePath || S.activeManageSettings?.detectedSavePath || null;
+          const chosen = await epicSelectFolderDialog(current, i18nT("manage.chooseSaveFolderTitle")).catch(() => null);
+          if (chosen) {
+            try {
+              await epicSetCustomSavePath(id, chosen);
+              if (S.activeManageSettings && S.activeManageSettings.appName === id) {
+                S.activeManageSettings.customSavePath = chosen;
+                updateManageModalInputsInPlace(S.activeManageSettings);
+              }
+              const b = await epicBackupSave(id, chosen);
+              toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
+              const cur = S.gameBackupsMap.get(id) || [];
+              S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
+              const listEl = document.getElementById("manage-backup-list");
+              if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+            } catch (innerErr) {
+              toast(i18nT("backup.failed", { msg: localizeMessage(String(innerErr)) }), "err");
+            }
+          }
+        } else {
+          toast(i18nT("backup.failed", { msg: localizeMessage(errStr) }), "err");
+        }
+      })
       .finally(() => {
         S.isBackingUp = false;
         const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');

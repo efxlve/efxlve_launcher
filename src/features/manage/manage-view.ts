@@ -70,6 +70,18 @@ export function openManagePopup(appName: string): void {
     </div>`;
 }
 
+/** Renders action buttons for the save directory row. */
+export function renderSavePathActions(id: string, activeSavePath: string, isCustom: boolean): string {
+  const openBtn = activeSavePath
+    ? `<button class="btn ghost small" data-act="manage-open-save-folder" data-id="${id}" title="${t("manage.openSaveFolder")}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`
+    : "";
+  const resetBtn = isCustom
+    ? `<button class="btn ghost small" data-act="manage-reset-save-folder" data-id="${id}" title="${t("manage.resetSaveFolder")}">${icon("refresh", 13)}</button>`
+    : "";
+  const chooseBtn = `<button class="btn ghost small" data-act="manage-choose-save-folder" data-id="${id}" title="${t("manage.chooseSaveFolderTitle")}">${icon("edit", 13)} ${t("manage.chooseSaveFolder")}</button>`;
+  return `${openBtn}${resetBtn}${chooseBtn}`;
+}
+
 /** Renders the Manage tab for an installed game. */
 export function renderDrawerManage(s: EpicSummary): string {
   if (!S.activeManageSettings || S.activeManageSettings.appName !== s.appName) {
@@ -98,9 +110,11 @@ export function renderDrawerManage(s: EpicSummary): string {
   }
   const st = S.activeManageSettings;
   const id = st.appName;
-  const partner = getThirdPartyLauncher(rawOf(s.appName));
+  const rawGame = rawOf(s.appName);
+  const partner = getThirdPartyLauncher(rawGame);
   const blockedMove = requiresThirdPartyLauncher(partner);
   const partnerSaves = partner?.type === "ea" || partner?.type === "ubisoft" || partner?.type === "rockstar";
+  const activeSavePath = st.customSavePath || st.savePath || st.detectedSavePath || "";
   const v = S.verifyingMap.get(id);
   const pt = S.playtimeMap.get(id);
   const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
@@ -139,6 +153,13 @@ export function renderDrawerManage(s: EpicSummary): string {
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
               "", "manage-cloud-subtitle")}
+            <div class="row mg-row">
+              <div class="row-main">
+                <div class="mg-title">${t("manage.saveFolderTitle")}</div>
+                <div class="mg-desc"><span id="manage-save-path" class="mg-path">${esc(activeSavePath || t("manage.noSaveDirDetected"))}</span></div>
+              </div>
+              <div id="manage-save-path-actions" class="row-actions">${renderSavePathActions(id, activeSavePath, Boolean(st.customSavePath))}</div>
+            </div>
             ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
               `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
@@ -227,6 +248,16 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   document.querySelectorAll("#manage-install-path").forEach((el) => {
     el.textContent = st.installPath || t("manage.unspecified");
   });
+
+  const activeSavePath = st.customSavePath || st.savePath || st.detectedSavePath || "";
+  document.querySelectorAll("#manage-save-path").forEach((el) => {
+    el.textContent = activeSavePath || t("manage.noSaveDirDetected");
+  });
+
+  const actionsEl = document.getElementById("manage-save-path-actions");
+  if (actionsEl) {
+    actionsEl.innerHTML = renderSavePathActions(st.appName, activeSavePath, Boolean(st.customSavePath));
+  }
 }
 
 /** Update the verify progress bar and button without re-rendering the drawer. */

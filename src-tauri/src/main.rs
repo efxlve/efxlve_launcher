@@ -1808,6 +1808,7 @@ fn main() {
             legendary::commands::epic_verify_game,
             legendary::commands::epic_get_game_settings,
             legendary::commands::epic_save_game_settings,
+            legendary::commands::epic_set_custom_save_path,
             legendary::commands::epic_sync_saves,
             legendary::commands::epic_create_desktop_shortcut,
             legendary::commands::epic_get_game_dlcs,
