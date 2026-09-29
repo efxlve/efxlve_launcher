@@ -18,8 +18,8 @@ import {
   submitSteamGuardCode,
   syncSteamOwnedGames,
 } from "../../auth/steam-auth-actions";
-import { refreshSteamStatus } from "../../library/steam-library";
-import { loadIntegrationsView, loadSettingsView } from "../../settings/settings-view";
+import { loadSteamLibrary, refreshSteamStatus, scheduleSteamLibraryResync } from "../../library/steam-library";
+import { loadSettingsView } from "../../settings/settings-view";
 import {
   removeSavedSteamAccount,
   switchSteamAccount,
@@ -37,7 +37,12 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         : "launch";
       if (id) {
         void steamGameAction(id, mode)
-          .then(() => toast(i18nT("steam.opening"), ""))
+          .then(() => {
+            toast(i18nT("steam.opening"), "");
+            // Install/uninstall/validate finish inside the Steam client, so the
+            // grid is re-read once instead of trusting the instant hand-off.
+            if (mode !== "launch") scheduleSteamLibraryResync();
+          })
           .catch((e: unknown) => toast(String(e), "err"));
       }
       return true;
@@ -67,8 +72,11 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
     }
 
     case "steam-refresh":
+      // The Steam hydrator also fills S.steamGames / S.steamStatus for this
+      // card, so one light pass keeps the Settings list and the grid in step
+      // (a full integrations pass would re-scan EA/Ubisoft/Xbox as well).
       S.steamStatus = null;
-      void loadIntegrationsView(true);
+      void loadSteamLibrary().then(() => render());
       return true;
 
     case "steam-scan":

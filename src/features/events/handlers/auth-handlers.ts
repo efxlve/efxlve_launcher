@@ -41,6 +41,7 @@ import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
 import { pushNavHistory, updateSidebarAccountSwitcher } from "../../../core/nav";
 import { closeAllModals, render } from "../../../core/render";
 import { setView } from "../../store/store-view";
+import { loadSteamLibrary } from "../../library/steam-library";
 
 export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: string): boolean {
   if (!act) return false;
@@ -88,9 +89,11 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
       return true;
 
     case "epic-refresh":
-      // One refresh entry point keeps both store libraries in step.
+      // One refresh entry point keeps every store library in step.
       void syncEpicLibrary(true);
       if (S.gogAccount) void syncGogLibrary(true);
+      // Steam reads its own manifests and the owned list, so it refreshes too.
+      void loadSteamLibrary();
       return true;
 
     case "epic-retry":

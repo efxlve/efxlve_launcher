@@ -596,7 +596,9 @@ export function renderEpic(): string {
   if (!isTauri) {
     return emptyState("zap", t("lib.epicIntegration"), t("lib.desktopOnly"));
   }
-  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0;
+  // Every store counts: a Steam-only player (no Epic/GOG account) must still
+  // see the grid instead of the "connect an account" empty state.
+  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.steamSummaries.length > 0;
   const isAnyConnected = (S.epicPhase === "library" && Boolean(S.epicAccount)) || (S.gogPhase === "library" && Boolean(S.gogAccount));
 
   if (S.epicPhase === "checking" && S.gogPhase === "checking") {

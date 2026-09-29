@@ -737,6 +737,13 @@ fn now_secs() -> u64 {
         .unwrap_or(0)
 }
 
+/// Transport errors from `reqwest` print the request URL in their `Display`
+/// output, and the achievement endpoints carry the Web API key inside that URL,
+/// so every message handed to the UI drops the URL first.
+fn transport_error(context: &str, error: reqwest::Error) -> String {
+    format!("{context}: {}", error.without_url())
+}
+
 /// Store description, developer and requirements for one game.
 ///
 /// The Steam store API is rate limited, so a 6 hour disk cache answers repeated
@@ -775,10 +782,10 @@ pub async fn steam_get_game_details(
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("Steam store could not be reached: {e}"))?
+        .map_err(|e| transport_error("Steam store could not be reached", e))?
         .json()
         .await
-        .map_err(|e| format!("Steam store answered with an unexpected payload: {e}"))?;
+        .map_err(|e| transport_error("Steam store answered with an unexpected payload", e))?;
     let entry = payload.get(&app_id).ok_or("Steam store has no record for this app")?;
     if entry.get("success").and_then(|v| v.as_bool()) != Some(true) {
         return Err("Steam store has no record for this app".into());
@@ -1279,10 +1286,10 @@ pub async fn steam_get_achievements(
         .get(&schema_url)
         .send()
         .await
-        .map_err(|e| format!("Steam could not be reached: {e}"))?
+        .map_err(|e| transport_error("Steam could not be reached", e))?
         .json()
         .await
-        .map_err(|e| format!("Steam answered with an unexpected payload: {e}"))?;
+        .map_err(|e| transport_error("Steam answered with an unexpected payload", e))?;
     let entries = schema
         .get("game")
         .and_then(|g| g.get("availableGameStats"))
@@ -1302,10 +1309,10 @@ pub async fn steam_get_achievements(
         .get(&player_url)
         .send()
         .await
-        .map_err(|e| format!("Steam could not be reached: {e}"))?
+        .map_err(|e| transport_error("Steam could not be reached", e))?
         .json()
         .await
-        .map_err(|e| format!("Steam answered with an unexpected payload: {e}"))?;
+        .map_err(|e| transport_error("Steam answered with an unexpected payload", e))?;
     let stats = player.get("playerstats");
     if stats.and_then(|s| s.get("success")).and_then(|v| v.as_bool()) != Some(true) {
         return Err("Steam does not share this profile's achievements; make the profile public".into());

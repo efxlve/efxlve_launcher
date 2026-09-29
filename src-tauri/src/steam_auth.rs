@@ -771,6 +771,14 @@ fn vault_path(dir: &Path, steam_id: &str) -> PathBuf {
     dir.join("accounts").join(format!("{steam_id}.bin"))
 }
 
+/// Ids coming back from the frontend address files inside the vault, so they
+/// must be plain SteamID64 digits: anything else (`..\..\x`, names, empty)
+/// could climb out of the accounts directory. `steam.rs` applies the same rule
+/// to app ids before they reach a URL.
+fn valid_steam_id(steam_id: &str) -> bool {
+    !steam_id.is_empty() && steam_id.len() <= 20 && steam_id.chars().all(|c| c.is_ascii_digit())
+}
+
 fn meta_path(dir: &Path) -> PathBuf {
     dir.join("accounts_meta.json")
 }
@@ -1324,6 +1332,9 @@ pub fn steam_get_saved_accounts(app: tauri::AppHandle) -> Vec<SteamSavedAccount>
 /// Switches the launcher session to another saved Steam account.
 #[tauri::command]
 pub fn steam_switch_account(app: tauri::AppHandle, steam_id: String) -> Result<SteamLoginStatus, String> {
+    if !valid_steam_id(&steam_id) {
+        return Err("@t:steam.err.account".to_string());
+    }
     let Some(session) = read_vault_session(&app, &steam_id) else {
         return Err("@t:steam.err.notSignedIn".to_string());
     };
@@ -1346,6 +1357,10 @@ pub fn steam_switch_account(app: tauri::AppHandle, steam_id: String) -> Result<S
 /// Removes one saved account; the active session is dropped when it matches.
 #[tauri::command]
 pub fn steam_remove_saved_account(app: tauri::AppHandle, steam_id: String) {
+    // Refuse anything that is not a SteamID64 before it becomes a file path.
+    if !valid_steam_id(&steam_id) {
+        return;
+    }
     let _ = std::fs::remove_file(vault_path(&auth_dir(&app), &steam_id));
     let mut accounts = load_meta(&auth_dir(&app));
     accounts.retain(|account| account.steam_id != steam_id);
@@ -1731,6 +1746,26 @@ mod tests {
             println!("finalize result: {:?}", finalize);
             assert!(finalize.is_err(), "a dummy refresh token must not mint a token");
         });
+    }
+
+    #[test]
+    fn vault_ids_must_be_steamid64_digits() {
+        assert!(valid_steam_id("76561199140017878"));
+        // Anything else could climb out of the vault directory once it is joined
+        // into a file path, so the command boundary rejects it.
+        assert!(!valid_steam_id("..\\..\\x"));
+        assert!(!valid_steam_id("../x"));
+        assert!(!valid_steam_id(""));
+        assert!(!valid_steam_id("7656119914001787a"));
+        assert!(!valid_steam_id(&"9".repeat(21)));
+    }
+
+    #[test]
+    fn vault_paths_stay_inside_the_accounts_directory() {
+        let dir = std::env::temp_dir().join("efxlve_steam_vault_path_test");
+        let path = vault_path(&dir, "76561199140017878");
+        assert_eq!(path, dir.join("accounts").join("76561199140017878.bin"));
+        assert!(path.starts_with(dir.join("accounts")));
     }
 
     #[test]

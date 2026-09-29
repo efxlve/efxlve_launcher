@@ -188,3 +188,19 @@ export async function loadSteamLibrary(): Promise<string | null> {
   scheduleRender();
   return error;
 }
+
+/**
+ * One-shot resync after an action was handed to the Steam client. Steam creates
+ * the download folder or drops the manifest a few seconds after the hand-off,
+ * so the grid is re-read once; a single timer keeps the idle launcher free of
+ * polling (the client stays the source of truth for progress).
+ */
+let steamResyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function scheduleSteamLibraryResync(delayMs = 6000): void {
+  if (steamResyncTimer !== null) clearTimeout(steamResyncTimer);
+  steamResyncTimer = setTimeout(() => {
+    steamResyncTimer = null;
+    void loadSteamLibrary();
+  }, delayMs);
+}
