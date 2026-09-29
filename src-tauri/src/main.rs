@@ -270,6 +270,64 @@ fn remember_applied_bounds(x: f64, y: f64, width: f64, height: f64) {
 
 static ACTIVE_STORE_LABEL: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
 
+/// Storefront hosted in the embedded store view. `epic` additionally gets the
+/// owned-library decoration; every other storefront is a plain web storefront.
+fn store_id_for_url(url: &str) -> &'static str {
+    let url = url.to_ascii_lowercase();
+    if url.contains("gog.com") {
+        "gog"
+    } else if url.contains("steampowered.com") {
+        "steam"
+    } else if url.contains("ubisoft.com") {
+        "ubisoft"
+    } else if url.contains("ea.com") {
+        "ea"
+    } else if url.contains("xbox.com") || url.contains("microsoft.com") {
+        "xbox"
+    } else {
+        "epic"
+    }
+}
+
+/// Store label (`store-view-<id>`) back to its store id.
+fn store_id_for_label(label: &str) -> String {
+    label.strip_prefix("store-view-").unwrap_or(label).to_string()
+}
+
+/// How many storefronts may stay alive at once. Each one is a renderer process
+/// (measured at roughly 60-260 MB working set), so the least recently used
+/// storefronts are closed instead of holding all of them in RAM.
+const MAX_WARM_STORES: usize = 3;
+
+/// Alive storefront labels, most recently used first.
+static STORE_WARM_ORDER: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Marks one storefront as recently used.
+fn touch_store_warm(label: &str) {
+    if let Ok(mut order) = STORE_WARM_ORDER.lock() {
+        order.retain(|entry| entry != label);
+        order.insert(0, label.to_string());
+    }
+}
+
+/// Closes the storefronts beyond `MAX_WARM_STORES` and returns their ids.
+fn prune_store_views() -> Vec<String> {
+    let mut closed = Vec::new();
+    let labels: Vec<String> = match STORE_WARM_ORDER.lock() {
+        Ok(mut order) => {
+            if order.len() <= MAX_WARM_STORES {
+                return closed;
+            }
+            order.split_off(MAX_WARM_STORES)
+        }
+        Err(_) => return closed,
+    };
+    for label in labels {
+        closed.push(store_id_for_label(&label));
+    }
+    closed
+}
+
 /// One position+size update. `set_position` then `set_size` reads the parked
 /// 1x1 size back and collapses the webview after it has just been shown.
 fn move_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
@@ -405,6 +463,47 @@ fn get_owned_games_json() -> String {
         }));
     }
     serde_json::to_string(&list).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Cached owned-library payload plus the snapshot stamp it was built from.
+static OWNED_GAMES_CACHE: std::sync::Mutex<Option<((u64, u64), String)>> = std::sync::Mutex::new(None);
+
+/// Modification time and size of the library snapshot; any library sync replaces
+/// the file, so the stamp changes with it.
+fn snapshot_stamp(config_dir: &std::path::Path) -> (u64, u64) {
+    let path = config_dir.join("efxlve_library_snapshot.json");
+    match std::fs::metadata(&path) {
+        Ok(meta) => {
+            let modified = meta
+                .modified()
+                .ok()
+                .and_then(|time| time.duration_since(std::time::SystemTime::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            (modified, meta.len())
+        }
+        Err(_) => (0, 0),
+    }
+}
+
+/// The owned-library payload for the Epic storefront, rebuilt only when the
+/// snapshot changes. Building it reads and slugifies every owned game (820 games
+/// measured at ~87 KB of JSON), which must not run on every store open.
+fn owned_games_payload() -> String {
+    let config_dir = legendary::skip::default_config_dir();
+    let stamp = snapshot_stamp(&config_dir);
+    if let Ok(cache) = OWNED_GAMES_CACHE.lock() {
+        if let Some((cached_stamp, payload)) = cache.as_ref() {
+            if *cached_stamp == stamp {
+                return payload.clone();
+            }
+        }
+    }
+    let payload = get_owned_games_json();
+    if let Ok(mut cache) = OWNED_GAMES_CACHE.lock() {
+        *cache = Some((stamp, payload.clone()));
+    }
+    payload
 }
 
 const STORE_EXTENSION_SCRIPT: &str = r#"
@@ -1055,6 +1154,9 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     var isScanning = false;
     function scanAndDecorate() {
         if (isScanning) return;
+        // A parked storefront is hidden: scanning its DOM only burns CPU while the
+        // player is somewhere else in the launcher.
+        if (document.visibilityState === 'hidden') return;
         isScanning = true;
         try {
             injectStyle();
@@ -1106,22 +1208,28 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
                                 '</span>';
                         }
 
-                        // On discounted cards, definitively hide old discount badges (-95%) and strikethrough prices
-                        var leftovers = card.querySelectorAll('[class*="discount" i], [class*="Discount" i], s, del, [class*="strike" i], [class*="original" i]');
-                        for (var d = 0; d < leftovers.length; d++) {
-                            if (leftovers[d] !== priceContainer && !priceContainer.contains(leftovers[d])) {
-                                leftovers[d].style.setProperty('display', 'none', 'important');
+                        // On discounted cards, definitively hide old discount badges (-95%) and strikethrough prices.
+                        // This walks every text node in the card, so it runs once per card DOM node: a
+                        // re-rendered card arrives as a new node and is swept again, while repeated scans of
+                        // the same card stay cheap.
+                        if (!card.dataset || card.dataset.efxlveSwept !== '1') {
+                            if (card.dataset) card.dataset.efxlveSwept = '1';
+                            var leftovers = card.querySelectorAll('[class*="discount" i], [class*="Discount" i], s, del, [class*="strike" i], [class*="original" i]');
+                            for (var d = 0; d < leftovers.length; d++) {
+                                if (leftovers[d] !== priceContainer && !priceContainer.contains(leftovers[d])) {
+                                    leftovers[d].style.setProperty('display', 'none', 'important');
+                                }
                             }
-                        }
-                        var allDesc = card.querySelectorAll('span, div, p');
-                        for (var ad = 0; ad < allDesc.length; ad++) {
-                            var elDesc = allDesc[ad];
-                            if (elDesc === priceContainer || priceContainer.contains(elDesc)) continue;
-                            var dtxt = (elDesc.textContent || '').trim();
-                            if (/^-\s*%?\s*\d+%?$/.test(dtxt)) {
-                                elDesc.style.setProperty('display', 'none', 'important');
-                            } else if (/\*\s*$/.test(dtxt) && /^[₺$€£]|\d+[,.]\d{2}/.test(dtxt)) {
-                                elDesc.style.setProperty('display', 'none', 'important');
+                            var allDesc = card.querySelectorAll('span, div, p');
+                            for (var ad = 0; ad < allDesc.length; ad++) {
+                                var elDesc = allDesc[ad];
+                                if (elDesc === priceContainer || priceContainer.contains(elDesc)) continue;
+                                var dtxt = (elDesc.textContent || '').trim();
+                                if (/^-\s*%?\s*\d+%?$/.test(dtxt)) {
+                                    elDesc.style.setProperty('display', 'none', 'important');
+                                } else if (/\*\s*$/.test(dtxt) && /^[₺$€£]|\d+[.,]\d{2}/.test(dtxt)) {
+                                    elDesc.style.setProperty('display', 'none', 'important');
+                                }
                             }
                         }
                     }
@@ -1260,7 +1368,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     var debounceTimer = null;
     function scheduleScan() {
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(scanAndDecorate, 200);
+        debounceTimer = setTimeout(scanAndDecorate, 350);
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1290,9 +1398,16 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         }
     } catch(e) {}
 
+    // Slow safety net for storefronts that swap content without adding nodes; it
+    // is skipped while the store is parked (hidden), so an idle launcher does no
+    // work at all, and a storefront coming back on screen rescans immediately.
     setInterval(function() {
-        scanAndDecorate();
-    }, 1500);
+        if (document.visibilityState === 'visible') scanAndDecorate();
+    }, 3000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') scheduleScan();
+    });
 
     try {
         var obs = new MutationObserver(function(mutations) {
@@ -1342,19 +1457,12 @@ async fn show_store_view(
     let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
 
-    let store_id = if url.contains("gog.com") {
-        "gog"
-    } else if url.contains("steampowered.com") {
-        "steam"
-    } else {
-        "epic"
-    };
+    let store_id = store_id_for_url(&url);
     // Only the Epic storefront is decorated with the owned library, and building
     // that payload reads and serialises every owned game: the other storefronts
-    // (and every warm switch on a warm Epic view) skip it. The empty array keeps
-    // the injected script valid.
+    // skip it entirely. The empty array keeps the injected script valid.
     let owned_games = if store_id == "epic" {
-        get_owned_games_json()
+        owned_games_payload()
     } else {
         "[]".to_string()
     };
@@ -1362,6 +1470,18 @@ async fn show_store_view(
     let target_label = format!("store-view-{store_id}");
     if let Ok(mut active) = ACTIVE_STORE_LABEL.lock() {
         *active = target_label.clone();
+    }
+    touch_store_warm(&target_label);
+    // Every alive storefront is a renderer process, so only the three most recent
+    // ones survive; the frontend is told which storefronts went away (it tracks
+    // the warm set for its loading screen).
+    for closed_id in prune_store_views() {
+        let closed_label = format!("store-view-{closed_id}");
+        if let Some(view) = store_views(&window).into_iter().find(|w| w.label() == closed_label) {
+            let _ = view.close();
+        }
+        use tauri::Emitter;
+        let _ = app.emit("efxlve-store-closed", serde_json::json!({ "store": closed_id }));
     }
 
     // Park & hide any other store webviews so only the active store view is
@@ -1391,7 +1511,10 @@ async fn show_store_view(
             if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {
                 STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
                 let _ = park_store_offscreen(&window);
-                return Ok("@t:win.focused".into());
+                // The player already left the store: report honestly so the frontend
+                // keeps (or repaints) its loading screen instead of trusting a view
+                // that is parked off-screen.
+                return Ok("@t:store.pending".into());
             }
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
@@ -1408,7 +1531,10 @@ async fn show_store_view(
             }
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
+                return Ok("@t:store.pending".into());
             }
+            // Still waiting for its first paint: the launcher keeps its loading
+            // screen up, and the page-load event (or the safety timer) reveals it.
             return Ok("@t:win.focused".into());
         }
     } else {
@@ -1423,18 +1549,24 @@ async fn show_store_view(
         _ => return Err("@t:win.onlyHttp".to_string()),
     }
 
-    let init_script = format!(
-        "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
-    );
-
     let app_nav = app.clone();
-    let builder = WebviewBuilder::new(
-        target_label,
+    let mut builder = WebviewBuilder::new(
+        target_label.clone(),
         WebviewUrl::External(parsed),
     )
     // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
     .background_color(tauri::webview::Color(14, 15, 18, 255))
-    .initialization_script(&init_script)
+    .on_page_load(move |webview, payload| {
+        if payload.event() != tauri::webview::PageLoadEvent::Finished {
+            return;
+        }
+        // The storefront painted: the frontend can drop its progress sweep.
+        use tauri::Emitter;
+        let _ = webview.app_handle().emit(
+            "efxlve-store-ready",
+            serde_json::json!({ "store": store_id_for_label(webview.label()) }),
+        );
+    })
     .on_navigation(move |url| {
         if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
             let query: std::collections::HashMap<_, _> = url.query_pairs().into_owned().collect();
@@ -1454,12 +1586,20 @@ async fn show_store_view(
         }
         true
     });
+    // The 44 KB storefront decoration only exists for the Epic store: injecting it
+    // into the other storefronts meant parsing and running a script that finds
+    // nothing, on every document load.
+    if store_id == "epic" {
+        let init_script = format!(
+            "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
+        );
+        builder = builder.initialization_script(&init_script);
+    }
     // add_child posts work to the main thread and waits; to avoid locking the UI
     // on a possible hang, it runs on a separate thread with a timeout.
     let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {
-            eprintln!("[store-view] child created");
             let window = app
                 .get_window("main")
                 .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
@@ -1577,6 +1717,10 @@ fn destroy_store_view(app: AppHandle) -> Result<String, String> {
     STORE_VISIBLE.store(false, std::sync::atomic::Ordering::Relaxed);
     if let Ok(mut active) = ACTIVE_STORE_LABEL.lock() {
         active.clear();
+    }
+    // Nothing is alive any more, so nothing is warm or waiting for a first paint.
+    if let Ok(mut order) = STORE_WARM_ORDER.lock() {
+        order.clear();
     }
     for v in store_views(&window) {
         let _ = v.close();
@@ -2081,5 +2225,69 @@ mod tests {
         // Left the store while the palette was open: clear the hold, stay hidden.
         assert_eq!(store_hold_effect(true, false, false, true), StoreHoldEffect::ReleaseHidden);
         assert_eq!(store_hold_effect(true, true, false, false), StoreHoldEffect::ReleaseHidden);
+    }
+
+    #[test]
+    fn storefronts_are_recognised_from_their_url() {
+        assert_eq!(super::store_id_for_url("https://store.epicgames.com/p/x"), "epic");
+        assert_eq!(super::store_id_for_url("https://www.gog.com/en/game/x"), "gog");
+        assert_eq!(super::store_id_for_url("https://store.steampowered.com/app/620"), "steam");
+        assert_eq!(super::store_id_for_url("https://store.ubisoft.com/tr/home"), "ubisoft");
+        assert_eq!(super::store_id_for_url("https://www.ea.com/games"), "ea");
+        assert_eq!(super::store_id_for_url("https://www.xbox.com/games/browse"), "xbox");
+        // Case does not matter, and unknown hosts fall back to the Epic storefront.
+        assert_eq!(super::store_id_for_url("HTTPS://STORE.STEAMPOWERED.COM/app/620"), "steam");
+        assert_eq!(super::store_id_for_url("https://example.com/"), "epic");
+    }
+
+    #[test]
+    fn storefront_labels_carry_the_id_back() {
+        assert_eq!(super::store_id_for_label("store-view-ubisoft"), "ubisoft");
+        // A legacy label keeps working instead of losing its id.
+        assert_eq!(super::store_id_for_label("epic-store-view"), "epic-store-view");
+    }
+
+    #[test]
+    fn only_the_most_recent_storefronts_stay_warm() {
+        let reset = |order: Vec<&str>| {
+            if let Ok(mut warm) = super::STORE_WARM_ORDER.lock() {
+                *warm = order.into_iter().map(str::to_string).collect();
+            }
+        };
+        reset(vec!["store-view-epic", "store-view-gog", "store-view-steam"]);
+        assert!(super::prune_store_views().is_empty(), "three storefronts fit");
+
+        // Visiting a fourth closes the oldest one (the tail of the list).
+        super::touch_store_warm("store-view-ubisoft");
+        assert_eq!(super::prune_store_views(), vec!["steam".to_string()]);
+        let order = super::STORE_WARM_ORDER.lock().map(|o| o.clone()).unwrap_or_default();
+        assert_eq!(order.first().map(String::as_str), Some("store-view-ubisoft"));
+
+        // Revisiting moves a storefront to the front instead of duplicating it.
+        super::touch_store_warm("store-view-gog");
+        let order = super::STORE_WARM_ORDER.lock().map(|o| o.clone()).unwrap_or_default();
+        assert_eq!(order.first().map(String::as_str), Some("store-view-gog"));
+        assert_eq!(order.iter().filter(|entry| entry.as_str() == "store-view-gog").count(), 1);
+        reset(Vec::new());
+    }
+
+    #[test]
+    fn snapshot_stamp_follows_the_library_snapshot() {
+        let dir = std::env::temp_dir().join("efxlve_store_stamp_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        // No snapshot yet: the stamp stays zero so the first build always happens.
+        assert_eq!(super::snapshot_stamp(&dir), (0, 0));
+
+        let path = dir.join("efxlve_library_snapshot.json");
+        std::fs::write(&path, b"[]").expect("write snapshot");
+        let (_, size) = super::snapshot_stamp(&dir);
+        assert_eq!(size, 2);
+
+        // A rewrite with more games changes the stamp, so the payload is rebuilt.
+        std::fs::write(&path, b"[{\"app_name\":\"x\"}]").expect("rewrite snapshot");
+        let (_, size) = super::snapshot_stamp(&dir);
+        assert_eq!(size, 18);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

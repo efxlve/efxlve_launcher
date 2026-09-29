@@ -409,13 +409,17 @@
 .store-tabs {
   display: flex;
   align-items: stretch;
-  gap: 22px;
+  gap: 18px;
   height: 100%;
   margin-left: 18px;
   margin-right: auto;
   contain: layout;
   user-select: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
+.store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
 /* The underline rides just above the header hairline instead of hanging below it. */
 .store-tabs .tab { height: 100%; }

@@ -97,7 +97,7 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam",
+  activeStore: ("epic") as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox",
   epicPhase: "checking" as EpicPhase,
   activeDrawerTab: "overview" as DrawerTab,
   epicBooted: false,

@@ -7,6 +7,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
 import { closeAllModals, render } from "../../core/render";
 import { S } from "../../core/state";
@@ -134,32 +135,62 @@ export function releaseStoreForPalette(): void {
   });
 }
 
+/** Storefront the loading screen names; the child stays hidden until it paints. */
+let loadingStoreId: StoreId = "epic";
+
 export function renderStoreLoadingScreen(): string {
-  return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${t("store.starting")}</span></div>`;
+  const name = STORE_LABELS[loadingStoreId] ?? STORE_LABELS.epic;
+  return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${name} · ${t("store.starting")}</span></div>`;
 }
 
-/** Storefronts that can live in the embedded store webview. */
-export type StoreId = "epic" | "gog" | "steam";
+/** Storefronts that can live in the embedded store webview, in menu order. */
+export type StoreId = "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox";
+
+/** Brand names are not translated: they read the same in every locale. */
+export const STORE_LABELS: Record<StoreId, string> = {
+  epic: "Epic Games",
+  gog: "GOG",
+  steam: "Steam",
+  ubisoft: "Ubisoft",
+  ea: "EA",
+  xbox: "Xbox",
+};
 
 export const GOG_STORE_URL = "https://www.gog.com/";
 export const STEAM_STORE_URL = "https://store.steampowered.com/";
+export const UBISOFT_STORE_URL = "https://store.ubisoft.com/";
+export const EA_STORE_URL = "https://www.ea.com/games";
+export const XBOX_STORE_URL = "https://www.xbox.com/games/browse";
+
+const STORE_URLS: Record<StoreId, string> = {
+  epic: EPIC_STORE_URL,
+  gog: GOG_STORE_URL,
+  steam: STEAM_STORE_URL,
+  ubisoft: UBISOFT_STORE_URL,
+  ea: EA_STORE_URL,
+  xbox: XBOX_STORE_URL,
+};
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
 export function storeIdForUrl(url: string): StoreId {
-  if (url.includes("gog.com")) return "gog";
-  if (url.includes("steampowered.com")) return "steam";
+  const lower = url.toLowerCase();
+  if (lower.includes("gog.com")) return "gog";
+  if (lower.includes("steampowered.com")) return "steam";
+  if (lower.includes("ubisoft.com")) return "ubisoft";
+  if (lower.includes("ea.com")) return "ea";
+  if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
   return "epic";
 }
 
 /** Home URL of a storefront. */
 export function storeUrlFor(store: StoreId): string {
-  return store === "gog" ? GOG_STORE_URL : store === "steam" ? STEAM_STORE_URL : EPIC_STORE_URL;
+  return STORE_URLS[store] ?? EPIC_STORE_URL;
 }
 
 /**
  * Storefronts whose child webview is already alive. Returning to one of them is
  * a show, not a load, so the loading screen and the progress sweep stay out of
- * the way (the idle destroy clears the set again).
+ * the way; Rust reports the ones it closes to stay inside its memory budget.
  */
 const warmStores = new Set<StoreId>();
 
@@ -168,13 +199,35 @@ export function isStoreWarm(url: string): boolean {
   return warmStores.has(storeIdForUrl(url));
 }
 
+/**
+ * Rust keeps only a few storefronts alive (each one is a renderer process) and
+ * reports the rest, plus tells us when a cold storefront has painted.
+ */
+if (isTauri) {
+  void listen<{ store: StoreId }>("efxlve-store-closed", (event) => {
+    warmStores.delete(event.payload.store);
+  });
+  void listen<{ store: StoreId }>("efxlve-store-ready", (event) => {
+    // The storefront painted (or waited long enough) and is now on screen.
+    warmStores.add(event.payload.store);
+    if (S.view === "store" && S.activeStore === event.payload.store) {
+      S.storeShown = true;
+      setStoreProgress(false);
+    }
+  });
+}
+
 export async function openStore(store: StoreId = "epic"): Promise<void> {
   S.activeStore = store;
   await openStoreUrl(storeUrlFor(store), "store");
 }
 
-/** After this long away from the store, its webview is destroyed to free RAM. */
-const STORE_IDLE_DESTROY_MS = 3 * 60 * 1000;
+/**
+ * After this long away from the store, its webviews are destroyed to free RAM.
+ * Long enough that coming back from a game session or the library usually finds
+ * the storefront still warm; the disk cache covers the rest.
+ */
+const STORE_IDLE_DESTROY_MS = 15 * 60 * 1000;
 /** Invalidates an in-flight show once the user has left the store. */
 let storeOpenEpoch = 0;
 
@@ -209,6 +262,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   cancelStoreDestroy();
   const store = storeIdForUrl(url);
   S.activeStore = store;
+  loadingStoreId = store;
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   const epoch = ++storeOpenEpoch;
   // A warm storefront is on screen within a frame; only a cold one needs the
@@ -220,16 +274,24 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   setStoreProgress(!warm);
   render();
   try {
-    await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
+    const result = await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
       S.storeShown = false;
       setStoreProgress(false);
       if (isTauri) invoke<string>("hide_store_view").catch(() => {});
       return;
     }
-    S.storeShown = true;
-    warmStores.add(store);
-    if (warm) {
+    // `@t:store.opened` (fresh child) and `@t:win.focused` (warm show) both mean the
+    // storefront is on screen. `@t:store.pending` means Rust parked it (the palette
+    // is open, or the player already left), so the loading screen must stay.
+    const shown = result === "@t:win.focused" || result === "@t:store.opened";
+    S.storeShown = shown;
+    if (shown) {
+      warmStores.add(store);
+    } else {
+      render();
+    }
+    if (warm && shown) {
       setStoreProgress(false);
     } else {
       window.setTimeout(() => {
