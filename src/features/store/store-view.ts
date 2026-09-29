@@ -8,7 +8,6 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../../core/constants";
-import { viewEl } from "../../core/dom";
 import { closeAllModals, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -139,12 +138,39 @@ export function renderStoreLoadingScreen(): string {
   return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${t("store.starting")}</span></div>`;
 }
 
-export const GOG_STORE_URL = "https://www.gog.com/";
+/** Storefronts that can live in the embedded store webview. */
+export type StoreId = "epic" | "gog" | "steam";
 
-export async function openStore(store: "epic" | "gog" = "epic"): Promise<void> {
+export const GOG_STORE_URL = "https://www.gog.com/";
+export const STEAM_STORE_URL = "https://store.steampowered.com/";
+
+/** Storefront a URL belongs to (drives the header tabs and the warm cache). */
+export function storeIdForUrl(url: string): StoreId {
+  if (url.includes("gog.com")) return "gog";
+  if (url.includes("steampowered.com")) return "steam";
+  return "epic";
+}
+
+/** Home URL of a storefront. */
+export function storeUrlFor(store: StoreId): string {
+  return store === "gog" ? GOG_STORE_URL : store === "steam" ? STEAM_STORE_URL : EPIC_STORE_URL;
+}
+
+/**
+ * Storefronts whose child webview is already alive. Returning to one of them is
+ * a show, not a load, so the loading screen and the progress sweep stay out of
+ * the way (the idle destroy clears the set again).
+ */
+const warmStores = new Set<StoreId>();
+
+/** True when this URL's storefront can be shown immediately. */
+export function isStoreWarm(url: string): boolean {
+  return warmStores.has(storeIdForUrl(url));
+}
+
+export async function openStore(store: StoreId = "epic"): Promise<void> {
   S.activeStore = store;
-  const url = store === "gog" ? GOG_STORE_URL : EPIC_STORE_URL;
-  await openStoreUrl(url, "store");
+  await openStoreUrl(storeUrlFor(store), "store");
 }
 
 /** After this long away from the store, its webview is destroyed to free RAM. */
@@ -166,6 +192,8 @@ function scheduleStoreDestroy(): void {
   S.storeDestroyTimer = window.setTimeout(() => {
     S.storeDestroyTimer = null;
     if (!S.storeShown && isTauri) {
+      // Every storefront goes away, so nothing is warm until one loads again.
+      warmStores.clear();
       invoke<string>("destroy_store_view").catch(() => {});
     }
   }, STORE_IDLE_DESTROY_MS);
@@ -179,18 +207,17 @@ function setStoreProgress(visible: boolean): void {
 export async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
   closeAllModals();
   cancelStoreDestroy();
-  if (url.includes("gog.com")) {
-    S.activeStore = "gog";
-  } else if (url.includes("epicgames.com")) {
-    S.activeStore = "epic";
-  }
+  const store = storeIdForUrl(url);
+  S.activeStore = store;
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   const epoch = ++storeOpenEpoch;
+  // A warm storefront is on screen within a frame; only a cold one needs the
+  // loading screen and the progress sweep.
+  const warm = warmStores.has(store);
   S.lastStoreUrl = url;
   S.storeMode = mode;
   S.view = "store";
-  viewEl.innerHTML = renderStoreLoadingScreen();
-  setStoreProgress(true);
+  setStoreProgress(!warm);
   render();
   try {
     await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
@@ -201,9 +228,14 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
       return;
     }
     S.storeShown = true;
-    window.setTimeout(() => {
-      if (epoch === storeOpenEpoch) setStoreProgress(false);
-    }, 250);
+    warmStores.add(store);
+    if (warm) {
+      setStoreProgress(false);
+    } else {
+      window.setTimeout(() => {
+        if (epoch === storeOpenEpoch) setStoreProgress(false);
+      }, 250);
+    }
     window.setTimeout(syncStoreViewSize, 50);
     window.setTimeout(syncStoreViewSize, 200);
   } catch (e) {

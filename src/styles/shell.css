@@ -405,86 +405,23 @@
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* --- Store switcher (Header) --- */
-.store-switcher {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  height: 34px;
-  margin-left: 14px;
+/* --- Store tabs (Header): the shared .tab look, sized to the header rule --- */
+.store-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  height: 100%;
+  margin-left: 18px;
   margin-right: auto;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
   contain: layout;
   user-select: none;
 }
-.store-switcher[hidden] { display: none !important; }
+.store-tabs[hidden] { display: none !important; }
+/* The underline rides just above the header hairline instead of hanging below it. */
+.store-tabs .tab { height: 100%; }
+.store-tabs .tab.active::after { bottom: 0; }
 
-.store-switcher-glider {
-  position: absolute;
-  top: 3px;
-  left: 0;
-  height: calc(100% - 6px);
-  border-radius: 4px;
-  background: var(--surface-3);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  pointer-events: none;
-  opacity: 0;
-  z-index: 1;
-  transition: transform 140ms cubic-bezier(0, 0, 0.2, 1),
-              width 140ms cubic-bezier(0, 0, 0.2, 1),
-              opacity 100ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .store-switcher-glider {
-    transition: none;
-  }
-}
-
-.store-switcher-btn {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 26px;
-  padding: 0 14px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 140ms ease-out, transform 100ms ease-out;
-}
-
-.store-switcher-btn:hover {
-  color: var(--text);
-}
-
-.store-switcher-btn.active {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.store-switcher-btn:active {
-  transform: scale(0.98);
-}
-
-.store-switcher:not(.has-glider) .store-switcher-btn.active {
-  background: var(--surface-3);
-}
-
-#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(.store-switcher:not([hidden]))) .page-header-title { flex: 1; }
+#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-switcher:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
 .store-progress-line {
   position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;

@@ -64,11 +64,11 @@
             </button>
             <h1 id="page-title" class="page-header-title"></h1>
             <span id="lib-heading-count" class="page-header-count" hidden></span>
-            <div id="store-switcher" class="store-switcher" hidden>
-              <div class="store-switcher-glider" aria-hidden="true"></div>
-              <button type="button" class="store-switcher-btn active" data-act="open-store" data-store="epic">Epic Games</button>
-              <button type="button" class="store-switcher-btn" data-act="open-store" data-store="gog">GOG</button>
-            </div>
+            <nav id="store-switcher" class="store-tabs" aria-label="Stores" hidden>
+              <button type="button" class="tab active" data-act="open-store" data-store="epic" aria-current="page">Epic Games</button>
+              <button type="button" class="tab" data-act="open-store" data-store="gog">GOG</button>
+              <button type="button" class="tab" data-act="open-store" data-store="steam">Steam</button>
+            </nav>
             <button class="page-search" data-act="open-palette" data-i18n-title="palette.open" title="Search (Ctrl+K)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <span data-i18n="palette.searchGames">Search games</span>

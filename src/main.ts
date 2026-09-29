@@ -33,7 +33,7 @@ import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } 
 import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
-import { hideStore, renderStoreLoadingScreen } from "./features/store/store-view";
+import { hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
@@ -72,8 +72,9 @@ function render(): void {
 
   if (S.view === "store") {
     // Only paint the loading screen until the native store webview is shown; a
-    // re-render afterwards would restart the animation for nothing.
-    if (!S.storeShown) viewEl.innerHTML = renderStoreLoadingScreen();
+    // re-render afterwards would restart the animation for nothing. A storefront
+    // that is still warm appears within a frame, so it skips the screen entirely.
+    if (!S.storeShown && !isStoreWarm(S.lastStoreUrl)) viewEl.innerHTML = renderStoreLoadingScreen();
     updateChrome();
     renderNotificationPanel();
     presenceSync();

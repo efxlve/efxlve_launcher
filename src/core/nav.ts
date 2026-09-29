@@ -93,40 +93,14 @@ export function updatePageHeader(): void {
     switcher.hidden = S.view !== "store";
     if (S.view === "store") {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
-        btn.classList.toggle("active", (btn.dataset.store || "epic") === (S.activeStore || "epic"));
+        const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-current", active ? "page" : "false");
       });
-      syncStoreSwitcherIndicator();
-      requestAnimationFrame(() => syncStoreSwitcherIndicator());
-      if (!storeSwitcherObserver && typeof ResizeObserver !== "undefined") {
-        storeSwitcherObserver = new ResizeObserver(() => syncStoreSwitcherIndicator());
-        storeSwitcherObserver.observe(switcher);
-      }
     }
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
-}
-
-let storeSwitcherObserver: ResizeObserver | null = null;
-
-/** Synchronizes the sliding indicator on the active store switcher button. */
-export function syncStoreSwitcherIndicator(): void {
-  const switcher = document.getElementById("store-switcher");
-  if (!switcher || switcher.hidden) return;
-  const activeBtn =
-    switcher.querySelector<HTMLElement>(".store-switcher-btn.active") ||
-    switcher.querySelector<HTMLElement>("[data-store].active");
-  const glider = switcher.querySelector<HTMLElement>(".store-switcher-glider");
-  if (!activeBtn || !glider) return;
-
-  const w = activeBtn.offsetWidth;
-  const x = activeBtn.offsetLeft;
-  if (w > 0) {
-    glider.style.width = `${w}px`;
-    glider.style.transform = `translateX(${x}px)`;
-    glider.style.opacity = "1";
-    switcher.classList.add("has-glider");
-  }
 }
 
 let sidebarGamesSig = "";

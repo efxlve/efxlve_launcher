@@ -282,7 +282,11 @@ fn move_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height:
     }
     let active = ACTIVE_STORE_LABEL.lock().map(|l| l.clone()).unwrap_or_default();
     let rect = webview_rect(x, y, width, height);
-    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
+    // Parked at the content size, not 1x1: a 1x1 viewport makes the store page
+    // reflow to a mobile breakpoint, so every switch back would repaint the whole
+    // page. Off-screen + hidden costs nothing while the user browses stores;
+    // leaving the store still shrinks everything through `park_store_offscreen`.
+    let offscreen = webview_rect(-10000.0, -10000.0, width, height);
     for v in &views {
         if active.is_empty() || v.label() == active {
             v.set_bounds(rect).map_err(|e| e.to_string())?;
@@ -326,7 +330,7 @@ fn show_store_bounds(window: &tauri::Window, x: f64, y: f64, width: f64, height:
     }
     let active = ACTIVE_STORE_LABEL.lock().map(|l| l.clone()).unwrap_or_default();
     let rect = webview_rect(x, y, width, height);
-    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
+    let offscreen = webview_rect(-10000.0, -10000.0, width, height);
     if !bounds_already_applied(x, y, width, height) {
         for v in &views {
             if active.is_empty() || v.label() == active {
@@ -1328,7 +1332,6 @@ async fn show_store_view(
     owned_label: Option<String>,
 ) -> Result<String, String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size, WebviewBuilder, WebviewUrl};
-    eprintln!("[store-view] show url={url} recreate={recreate}");
 
     let window = app
         .get_window("main")
@@ -1339,17 +1342,32 @@ async fn show_store_view(
     let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
 
-    let owned_games = get_owned_games_json();
+    let store_id = if url.contains("gog.com") {
+        "gog"
+    } else if url.contains("steampowered.com") {
+        "steam"
+    } else {
+        "epic"
+    };
+    // Only the Epic storefront is decorated with the owned library, and building
+    // that payload reads and serialises every owned game: the other storefronts
+    // (and every warm switch on a warm Epic view) skip it. The empty array keeps
+    // the injected script valid.
+    let owned_games = if store_id == "epic" {
+        get_owned_games_json()
+    } else {
+        "[]".to_string()
+    };
     let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
-
-    let store_id = if url.contains("gog.com") { "gog" } else { "epic" };
     let target_label = format!("store-view-{store_id}");
     if let Ok(mut active) = ACTIVE_STORE_LABEL.lock() {
         *active = target_label.clone();
     }
 
-    // Park & hide any other store webviews so only the active store view is visible
-    let offscreen = webview_rect(-10000.0, -10000.0, 1.0, 1.0);
+    // Park & hide any other store webviews so only the active store view is
+    // visible. Parking keeps the desktop viewport size (see `move_store_bounds`),
+    // so the inactive store does not reflow to a mobile layout while it waits.
+    let offscreen = webview_rect(-10000.0, -10000.0, width.max(100.0), height.max(100.0));
     for v in store_views(&window) {
         if v.label() != target_label {
             let _ = v.set_bounds(offscreen);
@@ -1364,8 +1382,10 @@ async fn show_store_view(
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
             } else {
-                let _ = v.set_position(pos);
-                let _ = v.set_size(size);
+                // One position+size update: a split move leaves the parked size
+                // applied for a frame and folds the webview back to its old box.
+                let _ = v.set_bounds(webview_rect(x, y, width.max(100.0), height.max(100.0)));
+                remember_applied_bounds(x, y, width.max(100.0), height.max(100.0));
                 v.show().map_err(|e| e.to_string())?;
             }
             if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {

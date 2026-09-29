@@ -32,6 +32,7 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 ```
 
 - `--sidebar-w: 252px`, `--winbar-h: 34px`. The embedded store webview is positioned from the live content box, not a hardcoded inset. The active sidebar row is a 2px left rule, not a filled pill.
+- The page header owns exactly one control besides the back button, the title and the search field: the storefront tabs, visible only on the store view. Segmented pills, sliding gliders and drop shadows are not used there (see §4).
 - Pages use `.page` (padding 24px 32px) with an optional `.page-head` (title + actions on one line).
 - The game page replaces the view area (it is not a side drawer).
 
@@ -65,7 +66,7 @@ Defined once, reused everywhere:
 - **Icon button** `.icon-btn` — 32x32, transparent until hover.
 - **Input / select / search** `.input` — 32px, surface-2, accent border on focus.
 - **Toggle** `.switch` — 34x20 track.
-- **Tabs** `.tabs > .tab` — text tabs with a 2px accent underline on the active tab. Used for library filters, game page sections and settings sub-sections.
+- **Tabs** `.tabs > .tab` — text tabs with a 2px accent underline on the active tab. Used for library filters, game page sections and settings sub-sections. The storefront switcher in the page header (`#store-switcher.store-tabs`) is the same `.tab` item stretched to the full header height, with its underline sitting on the header hairline (`bottom: 0`) instead of hanging below it. Brand names stay in Latin script in every locale (Epic Games / GOG / Steam); the header carries no other control, and the storefront row is the only switcher — never add a second segmented control next to it.
 - **Chip / badge** `.chip` — 20px, `--r-sm`, tinted by state only.
 - **Card** `.card` — surface-1, `--line` border, `--r-md`, 16px padding.
 - **List row** `.row` — 48–56px, hover surface-2; the only list pattern (downloads, queue, updates, settings rows).
