@@ -709,4 +709,49 @@ Mevcut `src/features/dlc/selective-install.ts` zaten çalışıyor: zorunlu ana 
 - Hafif alternatif: kullanıcı oyunu Steam'e "Steam dışı oyun" olarak ekleyip Steam Input'u açar; launcher bunu tek tıkla yapmayı **önerebilir** (`shortcuts.vdf` yazımı riskli → yalnız rehber + bağlantı).
 - **Karar:** Faz 2 backlog'a alındı; Faz 1 kullanıcıya doğru yolu (ViGEmBus + DS4Windows veya Steam Input) gösteriyor ve köprüyü algılıyor.
 
+---
+
+## 13. Steam Hesap Girişi (B planı — Galaxy eşdeğeri, kullanıcı kararı 29.09.2026)
+
+**Neden:** GOG Galaxy'in Steam eklentisi Steam'in gerçek auth akışını kullanır (SteamKit'ten ilham alan yeni akış, PR #171) ve **sahip olunan tüm oyunları** okur. Bizim mevcut okuma yalnızca **kurulu** oyunları verir (yerel manifest'ler), bu yüzden kullanıcının diğer Steam oyunları görünmüyor. Kullanıcı kararı: **tam çalışan + tam güvenli** hesap girişi uygulanacak.
+
+### 13.1. Rust auth çekirdeği (`src-tauri/src/steam_auth.rs`)
+
+`IAuthenticationService` (HTTPS POST, `api.steampowered.com`):
+
+1. `GetPasswordRSAPublicKey/v1` — `account_name` → `publickey_mod` + `publickey_exp` + `timestamp`.
+2. Parola **RSA PKCS#1 v1.5** ile şifrelenir (`rsa` crate, saf Rust) → `BeginAuthSessionViaCredentials/v1` (`account_name`, `encrypted_password`, `encryption_timestamp`, `persistence=1`, `website_id="Community"`, `device_details{device_friendly_name, platform_type, os_type}`, `guard_data` alanı Steam Guard için).
+   - Yanıt: `client_id`, `request_id`, `steamid`, `allowed_confirmations[]`, `interval`.
+3. Onay: cihaz kodu gerekiyorsa `UpdateAuthSessionWithSteamGuardCode/v1` (client_id, steamid, code, code_type=3); ardından `PollAuthSessionStatus/v1` (`client_id`, `request_id`) → `refresh_token` + `access_token`.
+4. Token yenileme: `GenerateAccessTokenForApp/v1` (`refresh_token`, `steamid`) — süresi geçen erişim token'ı sessizce yenilenir.
+
+Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games`.
+
+### 13.2. Güvenlik (tam koruma)
+
+- **Parola asla saklanmaz**: yalnız istek gövdesinde kullanılır, sonra `zeroize` ile bellekten silinir; log'a/toast'a/hata mesajına yazılmaz.
+- **Refresh token DPAPI ile şifrelenir** (`CryptProtectData`/`CryptUnprotectData`, crypt32 FFI; Windows kullanıcı hesabına bağlı) → `<appdata>/steam/auth.bin`. Kopyalansa başka makinede/kullanıcıda açılamaz.
+- "Bu cihazda oturumu koru" kapalıysa token yalnız bellekte tutulur (süreç kapanınca gider).
+- Yalnız HTTPS + 12 sn zaman aşımı; hata eşlemesi sade ("parola hatalı", "Steam Guard kodu geçersiz", "çok fazla deneme, sonra tekrar dene"), ham yanıt gösterilmez.
+- `access_token` yalnız sorgu parametresi olarak (Steam'in kendi istemcileri gibi) ve asla diske yazılmaz.
+
+### 13.3. Sahip olunan tüm oyunlar
+
+- `IPlayerService/GetOwnedGames/v1?access_token=…&include_appinfo=1&include_played_free_games=1` → tüm kütüphane (ad, appid, `playtime_forever` dakika, `img_icon_url`).
+- Kütüphanede **kurulu olmayanlar** da listelenir: `installed=false`, kapak Steam CDN'den, eylem **Kur** → `steam://install/<id>`; kurulu olanlar mevcut akışı korur (başlat/doğrula/kaldır).
+- Oynanış süresi API'den (yerel `localconfig` değerini asla düşürmez), `playtime_2weeks` eklenebilir.
+
+### 13.4. Arayüz
+
+- Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard kodu** adımları; giriş yapılmışsa hesap adı + oyun sayısı + "Çıkış Yap".
+- İstemciden algılanan durum ayrı satır olarak kalır (istemci kurulu olmasa da hesap girişi kütüphaneyi getirir).
+- Ayarlar'daki Web API anahtarı satırı **alternatif** olarak kalır (giriş istemeyenler başarımlar için kullanır).
+
+### 13.5. Doğrulama
+
+- Birim testleri: RSA şifreleme vektörü, DPAPI round-trip, token yenileme yolu, hata eşlemesi, `GetOwnedGames` ayrıştırma (fixture JSON).
+- Canlı testler `#[ignore]`: gerçek hesapla giriş (kullanıcı Steam Guard kodunu verir), sahip olunan oyun sayısı, token yenileme.
+- 15 dil, IPC referansı, ROADMAP/AGENTS güncellemesi, sürüm notu.
+
+
 
