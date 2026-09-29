@@ -564,11 +564,14 @@ document.addEventListener("click", (e) => {
     void externalDetectGames(store)
       .then((games) => {
         S.externalGames = { ...S.externalGames, [store]: games };
+        S.externalGamesScanned = true;
         render();
       })
       .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "external-launch" && id && t.dataset.store) {
-    void externalLaunchGame(t.dataset.store as ExternalStore, id).catch((e: unknown) => toast(String(e), "err"));
+    void externalLaunchGame(t.dataset.store as ExternalStore, id)
+      .then(() => toast(i18nT("dl.launching"), ""))
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";

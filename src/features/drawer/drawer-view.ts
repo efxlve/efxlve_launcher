@@ -18,6 +18,7 @@ import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from 
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { ensureExternalVersionsLoaded, storeVersionLabel } from "./external-versions";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -386,16 +387,24 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat ${attrs ? "clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
 
+  // The store selector lists every store this game is owned on: Epic / GOG /
+  // Steam switch to that store's page, EA App / Ubisoft Connect / XBOX hand the
+  // launch over to their own client (detected installs only).
+  ensureExternalVersionsLoaded();
   const versions = gameVersionsOf(appName);
   const versionSwitcher = versions.length > 1
     ? `<div class="gp-version-switch" title="${t("drawer.switchVersion")}">
         <span class="gp-version-label">${t("drawer.version")}:</span>
         <div class="seg gp-version-seg">
-          ${versions.map((v) => `
-            <button type="button" class="${v.appName === appName ? "active" : ""}" data-act="switch-drawer-version" data-id="${esc(v.appName)}">
-              ${v.source === "epic" ? "Epic Games" : v.source === "steam" ? "Steam" : "GOG"}${v.installed ? ` (${t("common.installed")})` : ""}
-            </button>
-          `).join("")}
+          ${versions.map((v) => {
+            const external = v.source === "ea" || v.source === "ubisoft" || v.source === "xbox";
+            const label = storeVersionLabel(v.source);
+            const attrs = external
+              ? `data-act="external-launch" data-store="${v.source}" data-id="${esc(v.externalId)}" title="${esc(t("common.launchWith", { name: label }))}"`
+              : `data-act="switch-drawer-version" data-id="${esc(v.appName)}"`;
+            const installedMark = v.installed && !external ? ` (${t("common.installed")})` : "";
+            return `<button type="button" class="${!external && v.appName === appName ? "active" : ""}" ${attrs}>${label}${installedMark}</button>`;
+          }).join("")}
         </div>
       </div>`
     : "";

@@ -7,6 +7,7 @@
  */
 
 import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
+import type { ExternalStore } from "../external-stores";
 import { t } from "../i18n";
 import { S } from "./state";
 import type { GameSource, LibraryItem } from "./types";
@@ -288,9 +289,15 @@ export function rawOf(appName: string): EpicGame | undefined {
   return S.epicGamesRawMap.get(appName);
 }
 
+/** Stores shown in the game page version selector. */
+export type GameVersionSource = GameSource | ExternalStore;
+
 export interface GameVersion {
-  source: GameSource;
+  source: GameVersionSource;
+  /** Library key for managed stores; empty for external hand-off versions. */
   appName: string;
+  /** External store game id (EA App / Ubisoft Connect / XBOX) when external. */
+  externalId: string;
   title: string;
   installed: boolean;
   version: string | null;
@@ -321,6 +328,7 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
       versions.push({
         source: "epic",
         appName: s.appName,
+        externalId: "",
         title: s.title,
         installed: s.installed,
         version: s.version,
@@ -335,6 +343,7 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
       versions.push({
         source: "gog",
         appName: g.key,
+        externalId: "",
         title: g.title,
         installed: g.installed,
         version: g.version,
@@ -349,12 +358,33 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
       versions.push({
         source: "steam",
         appName: g.key,
+        externalId: "",
         title: g.title,
         installed: g.installed,
         version: g.version,
         installPath: g.installPath || null,
       });
       break;
+    }
+  }
+
+  // EA App / Ubisoft Connect / XBOX licence their games in their own clients,
+  // so a detected install joins the selector as a launch hand-off version.
+  const externalStores: ExternalStore[] = ["ea", "ubisoft", "xbox"];
+  for (const store of externalStores) {
+    for (const g of S.externalGames[store] ?? []) {
+      if (canonicalGameTitle(g.title) === canon) {
+        versions.push({
+          source: store,
+          appName: "",
+          externalId: g.id,
+          title: g.title,
+          installed: true,
+          version: null,
+          installPath: g.installPath || null,
+        });
+        break;
+      }
     }
   }
 

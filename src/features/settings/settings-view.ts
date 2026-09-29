@@ -652,6 +652,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.steamStatus = steamState;
     S.steamGames = steamGames;
     S.externalGames = { ea: eaGames, ubisoft: ubisoftGames, xbox: xboxGames };
+    S.externalGamesScanned = true;
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

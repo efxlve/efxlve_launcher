@@ -376,6 +376,8 @@ export const S = {
     import("../external-stores").ExternalStore,
     import("../external-stores").ExternalGame[]
   >,
+  /** True once the EA/Ubisoft/XBOX registry scan has run in this session. */
+  externalGamesScanned: false,
   appVersion: "0.1.17",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",

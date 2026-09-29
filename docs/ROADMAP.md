@@ -747,6 +747,7 @@ Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_
 ### 13.4. Arayüz
 
 - Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard** adımları; Steam mobil onay sunduğunda varsayılan görünüm tek dokunuşlu onay bekleme ekranıdır ("Kodu kullan" ile kod alanı açılır), yalnız kod/yalnız e-posta guard'ında kod alanı doğrudan gösterilir. Giriş yapılmışsa hesap adı + oyun sayısı + "Çıkış Yap".
+- Oyun sayfasındaki **mağaza seçici**: Epic/GOG/Steam sürümleri arasında geçiş yapar; algılanan **EA App / Ubisoft Connect / XBOX** kurulumları kendi istemcilerinde başlatılır (başlık eşleşmesi kanonik ada göre; tarama yalnız oyun sayfası açılınca ve oturum başına bir kez). "Tümü" görünümünde aynı oyun tek kartta kalır (versiyonlar bu seçiciyle erişilir).
 - İstemciden algılanan durum ayrı satır olarak kalır (istemci kurulu olmasa da hesap girişi kütüphaneyi getirir).
 - Ayarlar'daki Web API anahtarı satırı **alternatif** olarak kalır (giriş istemeyenler başarımlar için kullanır).
 

@@ -147,7 +147,7 @@ efxlve_launcher/
 | `cover/` | `cover-view.ts` | Custom cover/hero manager and SteamGridDB picker. |
 | `dlc/` | `selective-install.ts` | Selective install tags modal (languages, packs, DLCs). |
 | `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download card, speed chart, queue/updates/recent lists, scheduled auto-update. |
-| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Game page: hero, action bar, tabs, achievements, specs, screenshots, HLTB/critic widgets. Store text wins over the Wikipedia fallback (gated fetch). |
+| `drawer/` | `drawer-view.ts`, `drawer-widgets.ts`, `external-versions.ts` | Game page: hero, action bar, tabs, achievements, specs, screenshots, HLTB/critic widgets. Store selector (Epic/GOG/Steam switch + EA App/Ubisoft Connect/XBOX launch hand-off). Store text wins over the Wikipedia fallback (gated fetch). |
 | `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
 | `events/` | `click-router.ts`, `handlers/*` (9 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
 | `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
