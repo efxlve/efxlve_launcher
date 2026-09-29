@@ -216,9 +216,12 @@ export function epicActionButtons(
   if (sharedOwner) {
     return `<button class="btn ghost${btn}" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 14)} ${t("shared.switch")}</button>`;
   }
-  // Steam games belong to the Steam client: play and update both go through it.
+  // Steam games belong to the Steam client: play/install/update all go through it.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
+    if (!s.installed) {
+      return `<button class="btn install${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.install")}">${icon("download", 14)} ${t("common.install")}</button>`;
+    }
     if (s.updateAvailable) {
       return `<button class="btn update${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.updateRequired")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }

@@ -1,10 +1,14 @@
 /**
- * Steam integration API — detection and hand-off only.
+ * Steam integration API.
  *
  * Steamworks DRM means a game cannot run without the Steam client, so the
  * launcher reads the client's own metadata from disk (install path, library
- * folders, app manifests) and hands every action back to Steam through its
- * `steam://` protocol. No game files are touched, no network is used.
+ * folders, app manifests) and hands every game action back to Steam through
+ * its `steam://` protocol. No game files are touched.
+ *
+ * The optional account sign-in (ROADMAP §13) additionally reads the owned
+ * library through Steam's own auth service; the password is never stored and
+ * the refresh token is sealed with Windows DPAPI.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -74,3 +78,50 @@ export const steamGetAchievements = (appId: string, force = false) =>
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
+
+/* ---------- Account sign-in (ROADMAP §13, the web auth flow) ---------- */
+
+/** Sign-in state from `steam_login_begin` / `steam_login_code` / `steam_login_status`. */
+export interface SteamLoginStatus {
+  /** `idle` | `code` | `confirm` | `pending` | `signed_in` */
+  state: "idle" | "code" | "confirm" | "pending" | "signed_in";
+  accountName: string;
+  steamId: string;
+  /** Email domain hint when Steam Guard sent a code by mail. */
+  emailHint: string;
+  /** Poll interval suggested by Steam, in seconds. */
+  interval: number;
+}
+
+/** One owned Steam game read through `IPlayerService/GetOwnedGames`. */
+export interface SteamOwnedGame {
+  appId: string;
+  name: string;
+  /** Total playtime in minutes (Steam's own unit). */
+  playtimeForever: number;
+  playtimeTwoWeeks: number;
+  iconUrl: string;
+}
+
+export interface SteamOwnedGames {
+  gameCount: number;
+  games: SteamOwnedGame[];
+}
+
+/**
+ * Starts a sign-in: the password is sent RSA encrypted for this one request and
+ * is never stored. `remember` seals the refresh token with Windows DPAPI.
+ */
+export const steamLoginBegin = (accountName: string, password: string, remember: boolean) =>
+  invoke<SteamLoginStatus>("steam_login_begin", { accountName, password, remember });
+/** Submits the Steam Guard code (email or mobile authenticator). */
+export const steamLoginCode = (code: string) => invoke<SteamLoginStatus>("steam_login_code", { code });
+/**
+ * Reports the current session, and polls the pending sign-in while one exists
+ * (no login in flight means no network request at all).
+ */
+export const steamLoginStatus = () => invoke<SteamLoginStatus>("steam_login_status");
+/** Drops the session from memory and deletes the sealed token file. */
+export const steamLogout = () => invoke<void>("steam_logout");
+/** Every owned game (installed or not); refreshes the access token silently. */
+export const steamOwnedGames = () => invoke<SteamOwnedGames>("steam_owned_games");

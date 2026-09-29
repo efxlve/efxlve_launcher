@@ -715,15 +715,18 @@ Mevcut `src/features/dlc/selective-install.ts` zaten çalışıyor: zorunlu ana 
 
 **Neden:** GOG Galaxy'in Steam eklentisi Steam'in gerçek auth akışını kullanır (SteamKit'ten ilham alan yeni akış, PR #171) ve **sahip olunan tüm oyunları** okur. Bizim mevcut okuma yalnızca **kurulu** oyunları verir (yerel manifest'ler), bu yüzden kullanıcının diğer Steam oyunları görünmüyor. Kullanıcı kararı: **tam çalışan + tam güvenli** hesap girişi uygulanacak.
 
+**Durum (29.09.2026): Faz 1 uygulandı.** `steam_auth.rs` + DPAPI + `GetOwnedGames` + Hesaplar sayfası giriş akışı tamam; kütüphanede kurulu olmayan Steam oyunları da "Kur" eylemiyle listeleniyor. Canlı doğrulama: RSA anahtarı çekildi ve `BeginAuthSessionViaCredentials` isteği Steam tarafından kabul edildi (yanlış parola → `eresult 5`); tam giriş kullanıcının kendi hesabı ve Steam Guard koduyla yapılacak. Kalan bilinçli işler: hesap bazlı başarım/süre ayrımı, çoklu Steam hesabı, QR ile giriş ve Steam ekran görüntüleri.
+
 ### 13.1. Rust auth çekirdeği (`src-tauri/src/steam_auth.rs`)
 
 `IAuthenticationService` (HTTPS POST, `api.steampowered.com`):
 
 1. `GetPasswordRSAPublicKey/v1` — `account_name` → `publickey_mod` + `publickey_exp` + `timestamp`.
-2. Parola **RSA PKCS#1 v1.5** ile şifrelenir (`rsa` crate, saf Rust) → `BeginAuthSessionViaCredentials/v1` (`account_name`, `encrypted_password`, `encryption_timestamp`, `persistence=1`, `website_id="Community"`, `device_details{device_friendly_name, platform_type, os_type}`, `guard_data` alanı Steam Guard için).
+2. Parola **RSA PKCS#1 v1.5** ile şifrelenir (`rsa` crate, saf Rust) → `BeginAuthSessionViaCredentials/v1` (`remember_login`, `persistence`, `website_id="Community"`, `platform_type=2`, `device_details`).
+   - **Uygulama notu (canlı doğrulandı):** iç içe `device_details` mesajı form alanı olarak gönderilince Steam **HTTP 400** veriyor; bu yüzden istek SteamKit'in yaptığı gibi `input_protobuf_encoded` (base64 protobuf) olarak gönderilir (modüldeki küçük protobuf yazıcı; alan numaraları `steammessages_auth.steamclient.proto` ile birebir). Diğer çağrılar skaler form alanlarıdır.
    - Yanıt: `client_id`, `request_id`, `steamid`, `allowed_confirmations[]`, `interval`.
 3. Onay: cihaz kodu gerekiyorsa `UpdateAuthSessionWithSteamGuardCode/v1` (client_id, steamid, code, code_type=3); ardından `PollAuthSessionStatus/v1` (`client_id`, `request_id`) → `refresh_token` + `access_token`.
-4. Token yenileme: `GenerateAccessTokenForApp/v1` (`refresh_token`, `steamid`) — süresi geçen erişim token'ı sessizce yenilenir.
+4. Erişim token'ı: `login.steampowered.com/jwt/finalizelogin` (`nonce=refresh_token`, `sessionid`, `redir`) → `transfer_info` içindeki `steamcommunity.com/login/settoken` aktarımı `steamLoginSecure=<steamid>||<access_token>` çerezini kurar; web erişim token'ı buradan alınır (canlı doğrulandı: finalizelogin geçersiz token'da yapısal JSON hatası döndürüyor). **Not:** Steam'in 30.04.2025 değişikliğiyle `GenerateAccessTokenForApp` WebBrowser yenileme token'larını `AccessDenied` ile reddediyor; bu çağrı yalnızca yedek yol olarak koda bırakıldı.
 
 Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games`.
 

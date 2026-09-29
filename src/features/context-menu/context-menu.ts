@@ -51,8 +51,8 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${shared
       ? `<button class="ps5-context-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
       : isSteam
-        ? `${s.updateAvailable ? steamItem("install", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
-    ${steamItem("validate", t("steam.validate"), "shield")}
+        ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("install", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
+    ${s.installed ? steamItem("validate", t("steam.validate"), "shield") : ""}
     ${item("manage-game", t("common.manage"), "settings")}`
         : `${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
     ${item("manage-game", t("common.manage"), "settings")}`}

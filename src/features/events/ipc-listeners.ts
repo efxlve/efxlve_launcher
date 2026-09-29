@@ -65,6 +65,7 @@ import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
+import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
@@ -171,6 +172,7 @@ export async function initApp(hooks: {
   initGamepadSupport();
   void bootEpic();
   void initGogSession();
+  void hydrateSteamAuth();
   void loadSavedAccounts();
 
   if (isTauri) {

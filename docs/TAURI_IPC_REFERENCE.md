@@ -1,7 +1,7 @@
-# TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
+# TAURI_IPC_REFERENCE.md — Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 153 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 158 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. §2.1–§2.17 document the most-used groups in detail; §4 holds the generated complete index.
 
 ---
 
@@ -191,7 +191,7 @@
 | `eos_overlay_status` | `() => Promise<EosOverlayStatus>` | `main.rs` | Reports the system-wide EOS Overlay state (`{ installed, path, version, overlaySupported }`); version/support flags are read from the EOS service registry key. |
 | `epic_detect_eos` | `(installPath: string) => Promise<boolean>` | `main.rs` | Bounded scan of a game's install directory for the EOS SDK runtime (`EOSSDK-*.dll` / `EpicOnlineServices`). Runs on a blocking thread; the frontend caches the result per game. |
 
-> The EOS Social Overlay is an Epic service injected into **game** processes (Shift+F3), not into our webview. It is installed system-wide by the Epic Games Launcher, so the launcher only detects its presence and links to the folder â€” it cannot host Epic's social UI itself.
+> The EOS Social Overlay is an Epic service injected into **game** processes (Shift+F3), not into our webview. It is installed system-wide by the Epic Games Launcher, so the launcher only detects its presence and links to the folder — it cannot host Epic's social UI itself.
 
 ### 2.14. GOG.COM Integration (OAuth, Library, Achievements, Transfers)
 
@@ -265,6 +265,11 @@
 | `steam_get_api_key` / `steam_set_api_key` | `() => Promise<string \| null>` / `(apiKey: string) => Promise<void>` | `steam.rs` | Opt-in Steam Web API key, stored in `settings.json` next to the SteamGridDB key. Needed for achievements only. |
 | `steam_get_achievements` | `(appId: string, force?: boolean) => Promise<EpicAchievementsData>` | `steam.rs` | Schema (names, descriptions, icons) + the player's unlocks + global unlock rates for rarity, merged into the shared achievement shape and cached for an hour. Resolves the SteamID64 from `loginusers.vdf`. |
 | `steam_get_achievements_summary` | `() => Promise<Record<string, EpicAchievementSummary>>` | `steam.rs` | Cached achievement summaries for the library covers; disk only, no network and no key needed. |
+| `steam_login_begin` | `(accountName: string, password: string, remember: boolean) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Starts the web sign-in: fetches the per-account RSA key, sends the password RSA PKCS#1 v1.5 encrypted as a protobuf payload (`BeginAuthSessionViaCredentials`) and keeps the pending session in memory. The password is wiped right after the request. |
+| `steam_login_code` | `(code: string) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Submits the Steam Guard code (mobile authenticator preferred, email fallback) for the pending sign-in. |
+| `steam_login_status` | `() => Promise<SteamLoginStatus>` | `steam_auth.rs` | Reports the current session (a sealed DPAPI token is loaded lazily) and polls `PollAuthSessionStatus` while a sign-in is pending; no login in flight means no network call. |
+| `steam_logout` | `() => Promise<void>` | `steam_auth.rs` | Clears the in-memory session (refresh/access tokens zeroized) and deletes `<app_data>/steam/auth.bin`. |
+| `steam_owned_games` | `() => Promise<SteamOwnedGames>` | `steam_auth.rs` | Every owned game through `IPlayerService/GetOwnedGames` (installed or not, playtime included). The web access token is minted through `login.steampowered.com/jwt/finalizelogin` → `steamLoginSecure` cookie (Valve rejects WebBrowser tokens in `GenerateAccessTokenForApp` since 2025-04-30; that call stays as a fallback), cached in memory and retried once on 401. |
 
 ### 2.20. Shared Library (All Accounts)
 
@@ -286,7 +291,7 @@
 Tauri emits events to the webview asynchronously. Listen to them using `listen<T>(eventName, handler)`.
 
 ### 3.1. `download-progress`
-Emitted by `transfers.rs` every ~250â€“500ms during an active download/installation.
+Emitted by `transfers.rs` every ~250–500ms during an active download/installation.
 
 ```typescript
 export interface DlProgressEvent {
@@ -419,6 +424,7 @@ export interface ScreenshotsUpdatedEvent {
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 | `shared_library.rs` | 1 | `shared_library_index` |
 | `steam.rs` | 9 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary` |
+| `steam_auth.rs` | 5 | `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games` |
 
-**Total: 153 commands**
+**Total: 158 commands**
 

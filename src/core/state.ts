@@ -361,6 +361,15 @@ export const S = {
   steamGames: [] as import("../steam").SteamGame[],
   steamApiKey: (null) as string | null,
   steamDetails: (new Map()) as Map<string, import("../steam").SteamGameDetails>,
+  /** Steam account sign-in (ROADMAP §13). `null` until the first status call. */
+  steamAuth: (null) as import("../steam").SteamLoginStatus | null,
+  /** UI step of the Steam card: idle → credentials → code/confirm → pending → signed_in. */
+  steamAuthStep: ("idle") as "idle" | "credentials" | "code" | "confirm" | "pending" | "signed_in",
+  steamAuthBusy: false,
+  /** Account name while a sign-in is in flight (shown in the code step). */
+  steamAuthUser: "",
+  steamOwnedCount: 0,
+  steamLibrarySyncing: false,
   externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<
     import("../external-stores").ExternalStore,
     import("../external-stores").ExternalGame[]

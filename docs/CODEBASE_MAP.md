@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 28.09.2026 (v0.1.17 tree: 15 locales × 1.361 keys, 143 Tauri commands, 44 Rust files).
+> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.406 keys, 158 Tauri commands, 53 Rust files).
 
 ---
 
@@ -80,8 +80,8 @@ efxlve_launcher/
 ├── src-tauri/                         # Rust Backend (Tauri v2 + Tokio)
 │   ├── Cargo.toml
 │   ├── tauri.conf.json                # Window, bundle, updater endpoint & public key
-│   └── src/                           # 47 Rust files
-│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (143 commands)
+│   └── src/                           # 53 Rust files
+│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (158 commands)
 │       ├── presence.rs                # Discord Rich Presence worker
 │       ├── eos.rs                     # Epic Online Services overlay detection
 │       ├── legendary/                 # Epic backend (25 files)
@@ -102,7 +102,7 @@ efxlve_launcher/
 ├── docs/                              # Architecture, design & operations documentation
 │   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
 │   ├── CHANGELOG_INTERNAL.md          # Development history (§1–174)
-│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (143 commands)
+│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (158 commands)
 │   ├── REFACTOR_PLAN.md               # Modularization record + remaining splits
 │   ├── DESIGN_SYSTEM.md               # Single desktop design language
 │   └── CROSS_PLATFORM.md              # Linux/macOS research
@@ -138,8 +138,8 @@ efxlve_launcher/
 
 | Feature Directory | Module Files | Responsibilities |
 |---|---|---|
-| `accounts/` | `accounts-view.ts` | Epic + GOG account cards, saved-account rows, copyable account-id chip, sign-in blocks. |
-| `auth/` | `auth-actions.ts`, `account-switcher.ts`, `gog-auth-actions.ts`, `gog-account-switcher.ts` | Epic/GOG login (web login + code paste + EGL import), progressive sync, account vault switching. |
+| `accounts/` | `accounts-view.ts` | Epic + GOG + Steam account cards, saved-account rows, copyable account-id chip, sign-in blocks. |
+| `auth/` | `auth-actions.ts`, `account-switcher.ts`, `gog-auth-actions.ts`, `gog-account-switcher.ts`, `steam-auth-actions.ts` | Epic/GOG login (web login + code paste + EGL import), Steam web sign-in (password + Steam Guard + polling), progressive sync, account vault switching. |
 | `changelog/` | `changelog-view.ts` | `CHANGELOG_DATA` (TR/EN, 1:1 with GitHub Releases) + modal. |
 | `cloud-backup/` | `cloud-backup-actions.ts`, `cloud-backup-view.ts` | WebDAV/Google Drive settings card, manage-row upload/sync/restore/delete. |
 | `collections/` | `collections-view.ts` | Collection editor, tags, EGL import, in-place game list updates. |
@@ -149,7 +149,7 @@ efxlve_launcher/
 | `downloads/` | `downloads-view.ts`, `auto-update.ts` | Active download card, speed chart, queue/updates/recent lists, scheduled auto-update. |
 | `drawer/` | `drawer-view.ts`, `drawer-widgets.ts` | Game page: hero, action bar, tabs, achievements, specs, screenshots, HLTB/critic widgets. Store text wins over the Wikipedia fallback (gated fetch). |
 | `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
-| `events/` | `click-router.ts`, `handlers/*` (8 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
+| `events/` | `click-router.ts`, `handlers/*` (9 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
 | `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
 | `install/` | `install-dialog.ts` | Install location dialog (sizes, folder picker, auto-update/shortcut). |
 | `library/` | `library-view.ts`, `library-options.ts`, `hide-games.ts` | Grid/list rendering with progressive chunks and pagination, filter/sort UI, hidden-games modal. |
@@ -173,7 +173,7 @@ efxlve_launcher/
 
 | File / Subsystem | Primary Responsibilities |
 |---|---|
-| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (143 commands). |
+| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (158 commands). |
 | `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
 | `eos.rs` | Epic Online Services overlay detection & install state. |
 | `legendary/commands.rs` | Epic IPC entry points (library, install, verify, move, settings, EGL, shortcuts). |
@@ -191,12 +191,15 @@ efxlve_launcher/
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
 | `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **online heartbeat** (`presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
+| `steam.rs` | Steam client detection (VDF parser, library folders, app manifests), `steam://` hand-off, local playtime, store details and opt-in achievements. |
+| `steam_auth.rs` | Steam account sign-in (RSA-encrypted password, Steam Guard, poll, token refresh), DPAPI-sealed refresh token (`<app_data>/steam/auth.bin`), `GetOwnedGames`, `steam_login_*` / `steam_owned_games` / `steam_logout` commands. |
+| `external_stores.rs`, `controller.rs`, `winreg.rs` | EA/Ubisoft/Xbox detection & launch hand-off, controller bridge probe, shared registry helper. |
 
 ---
 
 ## 5. Event Delegation Architecture (`data-act`)
 
-All interactions route through centralized delegation in `src/features/events/click-router.ts`, which dispatches to eight domain handlers:
+All interactions route through centralized delegation in `src/features/events/click-router.ts`, which dispatches to nine domain handlers:
 
 ```
 src/features/events/handlers/
@@ -207,7 +210,8 @@ src/features/events/handlers/
 ├── downloads-handlers.ts   # Queue, pause/resume, priority, CDN, install dir
 ├── drawer-handlers.ts      # Game page tabs, DLCs, requirements, store links
 ├── manage-handlers.ts      # Verify, saves, cross-drive move, launch extras, playtime
-└── screenshot-handlers.ts  # Gallery, lightbox, share, compression
+├── screenshot-handlers.ts  # Gallery, lightbox, share, compression
+└── steam-handlers.ts       # Steam sign-in/sign-out, owned refresh, client hand-off
 ```
 
 ```html

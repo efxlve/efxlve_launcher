@@ -9,6 +9,7 @@ mod cloud_backup;
 mod shared_library;
 mod controller;
 mod steam;
+mod steam_auth;
 mod external_stores;
 mod winreg;
 
@@ -1947,6 +1948,11 @@ fn main() {
             steam::steam_set_api_key,
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
+            steam_auth::steam_login_begin,
+            steam_auth::steam_login_code,
+            steam_auth::steam_login_status,
+            steam_auth::steam_logout,
+            steam_auth::steam_owned_games,
             external_stores::external_detect_games,
             external_stores::external_launch_game,
             epic_detect_eos,

@@ -242,31 +242,122 @@ function gogCard(): string {
     </section>`;
 }
 
+/** Client detection row: installed games and the Steam hand-off (no sign-in needed). */
+function steamClientBlock(): string {
+  const status = S.steamStatus;
+  if (!status?.installed) return "";
+  const meta = status.userName ? t("steam.signedInAs", { name: status.userName }) : esc(status.path);
+  return `
+    <div class="list">
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">${t("steam.games", { count: status.games })}</div>
+          <div class="row-meta" title="${esc(status.path)}">${esc(meta)}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>
+          <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+/** Signed-in block: the account, its owned library and the sign-out. */
+function steamAccountBlock(): string {
+  const name = S.steamAuth?.accountName || "Steam";
+  return `
+    <div class="list acc-accounts">
+      <div class="row">
+        <span class="settings-avatar">${esc((name.trim()[0] || "S").toUpperCase())}</span>
+        <div class="row-main">
+          <div class="row-title">${esc(name)}</div>
+          <div class="row-meta tabular-nums">${t("steam.ownedGames", { count: S.steamOwnedCount })}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost small" data-act="steam-owned-refresh" ${S.steamLibrarySyncing ? "disabled" : ""}>${icon("refresh", 13)} ${t("steam.refreshLibrary")}</button>
+          <button class="btn ghost danger small" data-act="steam-logout">${t("steam.logout")}</button>
+        </div>
+      </div>
+    </div>
+    <p class="acc-hint">${t("steam.secureNote")}</p>`;
+}
+
 /**
- * Steam card: no sign-in exists here on purpose — the Steam client owns the
- * session, so the launcher only reports what that client has installed.
+ * Steam sign-in flow: account name + password, then the Steam Guard code or the
+ * mobile approval. Passwords are used once and never stored.
  */
+function steamSignInBlock(): string {
+  const step = S.steamAuthStep;
+  if (step === "code" || step === "confirm" || step === "pending") {
+    const lead = step === "code"
+      ? (S.steamAuth?.emailHint ? t("steam.guardEmail", { email: S.steamAuth.emailHint }) : t("steam.guardDevice"))
+      : step === "confirm"
+        ? t("steam.guardConfirm")
+        : t("steam.waiting");
+    const codeRow = step === "code"
+      ? `<div class="auth-code">
+           <input id="steam-guard" class="input" placeholder="${t("steam.guardPlaceholder")}" autocomplete="one-time-code" spellcheck="false" />
+           <button class="btn primary" data-act="steam-login-code" ${S.steamAuthBusy ? "disabled" : ""}>${icon("check", 14)} ${t("steam.guardSubmit")}</button>
+         </div>`
+      : "";
+    return `
+      <div class="acc-signin">
+        <p class="acc-lead">${esc(lead)}</p>
+        ${S.steamAuthUser ? `<p class="acc-hint">${esc(S.steamAuthUser)}</p>` : ""}
+        ${codeRow}
+        <div class="acc-actions">
+          ${step === "pending" || step === "confirm" ? `<span class="chip">${t("steam.waiting")}</span>` : ""}
+          <span class="acc-spacer"></span>
+          <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
+        </div>
+      </div>`;
+  }
+  if (step === "credentials") {
+    return `
+      <div class="acc-signin">
+        <p class="acc-lead">${t("steam.signInDesc")}</p>
+        <div class="auth-code">
+          <input id="steam-user" class="input" placeholder="${t("steam.userPlaceholder")}" value="${esc(S.steamAuthUser)}" autocomplete="username" spellcheck="false" />
+        </div>
+        <div class="auth-code">
+          <input id="steam-pass" type="password" class="input" placeholder="${t("steam.passPlaceholder")}" autocomplete="current-password" spellcheck="false" />
+        </div>
+        <label class="acc-check">
+          <input id="steam-remember" type="checkbox" checked />
+          <span>${t("steam.remember")}</span>
+        </label>
+        <div class="acc-actions">
+          <button class="btn primary" data-act="steam-login-submit" ${S.steamAuthBusy ? "disabled" : ""}>${icon("arrow-right", 14)} ${S.steamAuthBusy ? t("steam.waiting") : t("steam.signInBtn")}</button>
+          <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
+        </div>
+        <p class="acc-hint">${t("steam.secureNote")}</p>
+      </div>`;
+  }
+  return `
+    <p class="acc-lead">${t("steam.signInDesc")}</p>
+    <div class="acc-actions">
+      <button class="btn primary" data-act="steam-login-start">${icon("user", 14)} ${t("steam.signInCta")}</button>
+      <button class="btn ghost small" data-act="steam-scan">${icon("refresh", 13)} ${t("settings.rescan")}</button>
+      <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
+    </div>`;
+}
+
+/** Steam card: detection plus the optional account sign-in (ROADMAP §13). */
 function steamCard(): string {
   const status = S.steamStatus;
   const installed = status?.installed ?? false;
-  const statusChip = installed
-    ? `<span class="chip ok">${t("steam.detected")}</span>`
-    : `<span class="chip">${t("settings.notInstalled")}</span>`;
-  const meta = installed
-    ? (status?.userName ? t("steam.signedInAs", { name: status.userName }) : t("steam.cardDesc"))
-    : t("steam.cardDesc");
-  const body = installed
-    ? `<p class="acc-lead">${t("steam.noSignIn")}</p>
-       <div class="list">
-         <div class="row"><div class="row-main"><div class="row-title">${t("steam.games", { count: status?.games ?? 0 })}</div>
-           <div class="row-meta" title="${esc(status?.path || "")}">${esc(status?.path || "")}</div></div>
-           <div class="row-actions">
-             <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>
-             <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
-           </div>
-         </div>
-       </div>`
-    : `<p class="acc-lead">${t("steam.noSignIn")}</p>`;
+  const signedIn = S.steamAuthStep === "signed_in";
+  const statusChip = signedIn
+    ? `<span class="chip ok">${t("accounts.connected")}</span>`
+    : installed
+      ? `<span class="chip ok">${t("steam.detected")}</span>`
+      : `<span class="chip">${t("settings.notInstalled")}</span>`;
+  const meta = signedIn && S.steamAuth?.accountName
+    ? t("steam.signedInAs", { name: S.steamAuth.accountName })
+    : installed && status?.userName
+      ? t("steam.signedInAs", { name: status.userName })
+      : t("accounts.steamDesc");
+  const body = `${signedIn ? steamAccountBlock() : steamSignInBlock()}${installed ? steamClientBlock() : ""}`;
   return `
     <section class="card acc-card">
       <div class="acc-card-head">

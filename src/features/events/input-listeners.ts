@@ -53,6 +53,7 @@ import {
 } from "../screenshots/screenshots-view";
 import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
+import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   const target = e.target as HTMLElement | null;
@@ -616,6 +617,12 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       const input = t as HTMLInputElement;
       void gogLoginWithCode(input.value);
+    } else if (t && (t.id === "steam-user" || t.id === "steam-pass")) {
+      e.preventDefault();
+      void submitSteamCredentials();
+    } else if (t && t.id === "steam-guard") {
+      e.preventDefault();
+      void submitSteamGuardCode();
     }
   }
 });

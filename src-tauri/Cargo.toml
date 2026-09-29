@@ -26,6 +26,9 @@ flate2 = "1"
 tar = "0.4"
 sha2 = "0.10"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
+rsa = "0.9"
+zeroize = "1"
+rand = "0.8"
 
 [features]
 default = ["custom-protocol"]

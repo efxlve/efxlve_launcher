@@ -72,7 +72,6 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { steamGameAction, steamOpenClient, steamSetApiKey } from "../../steam";
 import { externalDetectGames, externalLaunchGame, type ExternalStore } from "../../external-stores";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
@@ -103,6 +102,7 @@ import { handleDownloadsAction } from "./handlers/downloads-handlers";
 import { handleDrawerAction } from "./handlers/drawer-handlers";
 import { handleManageAction } from "./handlers/manage-handlers";
 import { handleScreenshotAction } from "./handlers/screenshot-handlers";
+import { handleSteamAction } from "./handlers/steam-handlers";
 
 document.addEventListener("click", (e) => {
   const targetEl = e.target as HTMLElement;
@@ -238,6 +238,7 @@ document.addEventListener("click", (e) => {
   if (handleManageAction(act, t, id, targetEl)) return;
   if (handleDrawerAction(act, t, id, targetEl)) return;
   if (handleScreenshotAction(act, t, id, targetEl)) return;
+  if (handleSteamAction(act, t, id)) return;
 
   // Global Navigation & Modal Controls
   if (act === "close") {
@@ -558,30 +559,6 @@ document.addEventListener("click", (e) => {
     if (S.settingsSection === "controller") void loadControllerView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
-  } else if (act === "steam-refresh") {
-    S.steamStatus = null;
-    void loadIntegrationsView(true);
-  } else if (act === "steam-action" && id) {
-    const mode = t.dataset.mode === "install" || t.dataset.mode === "uninstall" || t.dataset.mode === "validate"
-      ? t.dataset.mode
-      : "launch";
-    void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "steam-open-client") {
-    void steamOpenClient().catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "steam-open-settings") {
-    S.view = "settings";
-    S.settingsSection = "integrations";
-    void loadSettingsView();
-  } else if (act === "save-steam-key") {
-    const input = document.getElementById("settings-steam-key-input") as HTMLInputElement | null;
-    const key = input?.value.trim() || "";
-    void steamSetApiKey(key)
-      .then(() => {
-        S.steamApiKey = key || null;
-        toast(key ? i18nT("cover.keySaved") : i18nT("cover.keyRemoved"), "ok");
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "external-scan" && t.dataset.store) {
     const store = t.dataset.store as ExternalStore;
     void externalDetectGames(store)

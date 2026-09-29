@@ -106,6 +106,26 @@ export function renderDrawerManage(s: EpicSummary): string {
     const steamId = s.appName.slice(7);
     const ptSteam = S.playtimeMap.get(s.appName);
     const playtimeSteam = ptSteam?.total_seconds ? fmtPlaytime(ptSteam.total_seconds) : t("playtime.notPlayed");
+    // An owned-but-not-installed Steam game has no files of ours to manage:
+    // the panel only hands the install request to the client.
+    if (!s.installed) {
+      return `
+        <div class="manage-tab-content">
+          <div class="section-title">${t("manage.groupFiles")}</div>
+          <div class="list">
+            ${row(t("steam.managedBy"), t("steam.managedByDesc"),
+              `<button class="btn primary small" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 13)} ${t("common.install")}</button>`)}
+          </div>
+          <div class="section-title">${t("manage.groupPlaytime")}</div>
+          <div class="list">
+            ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
+          </div>
+          <div class="list">
+            ${row(t("manage.hideTitle"), t("manage.hideDesc"),
+              `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
+          </div>
+        </div>`;
+    }
     return `
       <div class="manage-tab-content">
         <div class="section-title">${t("manage.groupFiles")}</div>
