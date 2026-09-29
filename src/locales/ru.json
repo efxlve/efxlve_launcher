@@ -684,6 +684,8 @@
   "steam.waiting": "Ожидание подтверждения Steam…",
   "steam.ownedGames": "Игр Steam: {count}",
   "steam.opening": "Открывается Steam…",
+  "steam.downloading": "Загрузка в Steam",
+  "steam.downloadingHint": "Прогресс виден в клиенте Steam; лаунчер не трогает файлы.",
   "steam.libraryErrorTitle": "Не удалось загрузить библиотеку Steam",
   "steam.refreshLibrary": "Обновить библиотеку",
   "steam.libraryRefreshed": "Библиотека Steam обновлена.",

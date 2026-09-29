@@ -684,6 +684,8 @@
   "steam.waiting": "Oczekiwanie na potwierdzenie Steam…",
   "steam.ownedGames": "{count} gier Steam",
   "steam.opening": "Otwieranie Steam…",
+  "steam.downloading": "Pobieranie w Steam",
+  "steam.downloadingHint": "Postęp widać w kliencie Steam; launcher nie dotyka plików.",
   "steam.libraryErrorTitle": "Nie udało się wczytać biblioteki Steam",
   "steam.refreshLibrary": "Odśwież bibliotekę",
   "steam.libraryRefreshed": "Biblioteka Steam odświeżona.",

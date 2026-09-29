@@ -684,6 +684,8 @@
   "steam.waiting": "En attente de la confirmation de Steam…",
   "steam.ownedGames": "{count} jeux Steam",
   "steam.opening": "Ouverture de Steam…",
+  "steam.downloading": "Téléchargement dans Steam",
+  "steam.downloadingHint": "La progression s’affiche dans le client Steam ; le launcher ne touche pas aux fichiers.",
   "steam.libraryErrorTitle": "La bibliothèque Steam n’a pas pu être chargée",
   "steam.refreshLibrary": "Actualiser la bibliothèque",
   "steam.libraryRefreshed": "Bibliothèque Steam actualisée.",

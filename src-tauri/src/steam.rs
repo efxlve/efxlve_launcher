@@ -195,6 +195,8 @@ pub struct SteamGame {
     pub state_flags: u32,
     /// Library folder that holds the game.
     pub library: String,
+    /// True while the Steam client is downloading this app (`steamapps/downloading/<id>`).
+    pub downloading: bool,
 }
 
 /// Parses one `appmanifest_<id>.acf` file.
@@ -217,6 +219,7 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         .and_then(Vdf::as_str)
         .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(0);
+    let downloading = library.join("downloading").join(&app_id).is_dir();
     Some(SteamGame {
         app_id,
         name,
@@ -224,6 +227,7 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         size_bytes,
         state_flags,
         library: library.to_string_lossy().to_string(),
+        downloading,
     })
 }
 
@@ -997,6 +1001,26 @@ fn steam_icon_url(app_id: &str, file: &str) -> String {
     }
 }
 
+/// `group:bit` → unlock time, straight from the client's stats file.
+fn read_unlock_times(steam: &Path, app_id: &str) -> std::collections::HashMap<String, i64> {
+    let mut unlock_times = std::collections::HashMap::new();
+    let Some(account) = steam_account_id(steam) else { return unlock_times };
+    let user_file = stats_dir(steam).join(format!("UserGameStats_{account}_{app_id}.bin"));
+    let Ok(bytes) = std::fs::read(user_file) else { return unlock_times };
+    let Some(user) = parse_binary_vdf(&bytes) else { return unlock_times };
+    if let Some(cache) = user.get("cache") {
+        for (group_id, group) in cache.entries() {
+            if let Some(times) = group.get("AchievementTimes") {
+                for (bit_id, time) in times.entries() {
+                    let value = time.as_str().and_then(|v| v.parse::<i64>().ok()).unwrap_or(0);
+                    unlock_times.insert(format!("{group_id}:{bit_id}"), value);
+                }
+            }
+        }
+    }
+    unlock_times
+}
+
 /// Achievements straight from the Steam client's own cache:
 /// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
 /// `UserGameStats_<account>_<app>.bin` (unlock times). Works offline, needs no
@@ -1005,28 +1029,7 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
     let schema_bytes = std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
     let schema = parse_binary_vdf(&schema_bytes)?;
     let stats = schema.get(app_id)?.get("stats")?;
-
-    // group:bit → unlock time; a missing file means nothing was unlocked yet.
-    let mut unlock_times: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
-    if let Some(account) = steam_account_id(steam) {
-        let user_file = stats_dir(steam).join(format!("UserGameStats_{account}_{app_id}.bin"));
-        if let Ok(bytes) = std::fs::read(user_file) {
-            if let Some(user) = parse_binary_vdf(&bytes) {
-                if let Some(cache) = user.get("cache") {
-                    for (group_id, group) in cache.entries() {
-                        if let Some(times) = group.get("AchievementTimes") {
-                            for (bit_id, time) in times.entries() {
-                                let value = time.as_str().and_then(|v| v.parse::<i64>().ok()).unwrap_or(0);
-                                if value > 0 {
-                                    unlock_times.insert(format!("{group_id}:{bit_id}"), value);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let unlock_times = read_unlock_times(steam, app_id);
 
     let mut groups: Vec<&(String, Vdf)> = stats.entries().iter().collect();
     groups.sort_by_key(|(id, _)| id.parse::<u32>().unwrap_or(u32::MAX));
@@ -1109,8 +1112,12 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
     })
 }
 
-/// Unlocked/total counts from the client's stats files: one small file per
-/// played game, so the library covers get progress without opening a page.
+/// Unlocked/total counts for every game the client keeps stats for.
+///
+/// The total comes from the schema's bit definitions: the stats file's
+/// `AchievementTimes` only holds entries that have a recorded time and can even
+/// carry leftovers from a predecessor app (CS:GO bits under CS2), so using it
+/// as the total made every game look 100% complete.
 fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u32)> {
     let Some(account) = steam_account_id(steam) else { return Vec::new() };
     let Ok(entries) = std::fs::read_dir(stats_dir(steam)) else { return Vec::new() };
@@ -1123,15 +1130,25 @@ fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u32)> {
         if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
             continue;
         }
-        let Ok(bytes) = std::fs::read(entry.path()) else { continue };
-        let Some(root) = parse_binary_vdf(&bytes) else { continue };
-        let Some(cache) = root.get("cache") else { continue };
+        let Ok(schema_bytes) =
+            std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin")))
+        else {
+            continue;
+        };
+        let Some(schema) = parse_binary_vdf(&schema_bytes) else { continue };
+        let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else { continue };
+        let unlock_times = read_unlock_times(steam, app_id);
+
         let (mut total, mut unlocked) = (0u32, 0u32);
-        for (_, group) in cache.entries() {
-            let Some(times) = group.get("AchievementTimes") else { continue };
-            for (_, time) in times.entries() {
+        for (group_id, group) in stats.entries() {
+            let Some(bits) = group.get("bits") else { continue };
+            for (bit_id, _) in bits.entries() {
                 total += 1;
-                if time.as_str().and_then(|v| v.parse::<i64>().ok()).unwrap_or(0) > 0 {
+                if unlock_times
+                    .get(&format!("{group_id}:{bit_id}"))
+                    .map(|time| *time > 0)
+                    .unwrap_or(false)
+                {
                     unlocked += 1;
                 }
             }
@@ -1340,6 +1357,19 @@ pub async fn steam_get_achievements(
     Ok(response)
 }
 
+/// How long the local totals scan stays fresh (parsing 150+ schemas is I/O heavy).
+const ACH_TOTALS_TTL_SECS: u64 = 30 * 60;
+
+#[derive(Serialize, Deserialize)]
+struct CachedTotals {
+    fetched_at: u64,
+    totals: Vec<(String, u32, u32)>,
+}
+
+fn totals_cache_path(app: &tauri::AppHandle) -> PathBuf {
+    achievements_cache_dir(app).with_file_name("achievement_totals.json")
+}
+
 /// Achievement summaries for the library covers: the per-game disk cache plus
 /// the Steam client's own stats files (offline, no network, no key).
 #[tauri::command]
@@ -1374,24 +1404,41 @@ pub fn steam_get_achievements_summary(
 
     // The client's stats files cover games whose page was never opened; the
     // cache above wins when both exist.
-    if let Some(steam) = steam_install_path() {
-        for (app_id, unlocked, total) in read_local_achievement_totals(&steam) {
-            let key = format!("steam::{app_id}");
-            if out.contains_key(&key) {
-                continue;
+    let cache_path = totals_cache_path(&app);
+    let cached = std::fs::read_to_string(&cache_path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<CachedTotals>(&text).ok())
+        .filter(|cached| now_secs().saturating_sub(cached.fetched_at) < ACH_TOTALS_TTL_SECS);
+    let totals = match cached {
+        Some(cached) => cached.totals,
+        None => match steam_install_path() {
+            Some(steam) => {
+                let totals = read_local_achievement_totals(&steam);
+                let fresh = CachedTotals { fetched_at: now_secs(), totals: totals.clone() };
+                if let Ok(text) = serde_json::to_string(&fresh) {
+                    let _ = std::fs::write(&cache_path, text);
+                }
+                totals
             }
-            out.insert(
-                key.clone(),
-                GameAchievementSummary {
-                    app_name: key,
-                    user_unlocked: unlocked,
-                    total_achievements: total,
-                    is_platinum: unlocked == total,
-                    supported: true,
-                    ..Default::default()
-                },
-            );
+            None => Vec::new(),
+        },
+    };
+    for (app_id, unlocked, total) in totals {
+        let key = format!("steam::{app_id}");
+        if out.contains_key(&key) {
+            continue;
         }
+        out.insert(
+            key.clone(),
+            GameAchievementSummary {
+                app_name: key,
+                user_unlocked: unlocked,
+                total_achievements: total,
+                is_platinum: unlocked == total,
+                supported: true,
+                ..Default::default()
+            },
+        );
     }
     out
 }
@@ -1770,10 +1817,17 @@ mod tests {
             ),
             None => println!("319630: no local schema"),
         }
+        let started = std::time::Instant::now();
         let totals = read_local_achievement_totals(&steam);
-        println!("games with local achievement stats: {}", totals.len());
-        for (app_id, unlocked, total) in totals.iter().take(10) {
-            println!("  {app_id}: {unlocked}/{total}");
+        println!(
+            "games with local achievement stats: {} in {} ms",
+            totals.len(),
+            started.elapsed().as_millis()
+        );
+        for app in ["730", "1240440", "319630", "620", "1097150", "227300"] {
+            if let Some((_, unlocked, total)) = totals.iter().find(|(id, _, _)| id == app) {
+                println!("  {app}: {unlocked}/{total}");
+            }
         }
     }
 

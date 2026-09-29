@@ -460,6 +460,8 @@ export interface EpicSummary {
   installSize: number;
   installedVersion: string | null;
   updateAvailable: boolean;
+  /** True while the owning store (today: Steam) is downloading this game. */
+  downloading?: boolean;
 }
 
 /** Filters out DLCs and skipped broken items, merging in installed info. */

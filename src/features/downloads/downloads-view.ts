@@ -10,7 +10,7 @@
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
-import { epicWideArt, gogToEpicSummary, rawOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
@@ -325,6 +325,16 @@ export function renderDownloads(): string {
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
+  // Steam owns its download queue and never exposes progress on disk, so the
+  // page reports the state only (the client shows the numbers).
+  const steamDownloading = S.steamGames.filter((g) => g.downloading);
+  const steamRows = steamDownloading.map((g) => gameRow(
+    summaryOf(`steam::${g.appId}`),
+    `steam::${g.appId}`,
+    t("steam.downloadingHint"),
+    `<button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
+  )).join("");
+
   return `
     <div class="page dl-page">
       <div class="page-head dl-head">
@@ -335,6 +345,7 @@ export function renderDownloads(): string {
       </div>
       ${active ? renderActiveCard(active) : idle}
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
+      ${steamRows ? section(t("steam.downloading"), steamDownloading.length, steamRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${installedRows ? section(t("downloads.installedTitle"), installed.length, installedRows, `<span class="dl-installed-total">${fmtBytes(installedBytes)}</span>`) : ""}
     </div>`;

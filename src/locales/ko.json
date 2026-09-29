@@ -684,6 +684,8 @@
   "steam.waiting": "Steam 확인을 기다리는 중…",
   "steam.ownedGames": "Steam 게임 {count}개",
   "steam.opening": "Steam을 여는 중…",
+  "steam.downloading": "Steam에서 다운로드 중",
+  "steam.downloadingHint": "진행 상황은 Steam 클라이언트에 표시됩니다. 런처는 파일을 건드리지 않습니다.",
   "steam.libraryErrorTitle": "Steam 라이브러리를 불러오지 못했습니다",
   "steam.refreshLibrary": "라이브러리 새로 고침",
   "steam.libraryRefreshed": "Steam 라이브러리를 새로 고쳤습니다.",

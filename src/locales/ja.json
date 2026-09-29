@@ -684,6 +684,8 @@
   "steam.waiting": "Steamの確認を待っています…",
   "steam.ownedGames": "Steamゲーム {count} 本",
   "steam.opening": "Steamを開いています…",
+  "steam.downloading": "Steamでダウンロード中",
+  "steam.downloadingHint": "進行状況はSteamクライアントに表示されます。ランチャーはファイルに触れません。",
   "steam.libraryErrorTitle": "Steamライブラリを読み込めませんでした",
   "steam.refreshLibrary": "ライブラリを更新",
   "steam.libraryRefreshed": "Steamライブラリを更新しました。",

@@ -219,6 +219,9 @@ export function epicActionButtons(
   // Steam games belong to the Steam client: play/install/update all go through it.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
+    if (s.downloading) {
+      return `<span class="chip warn" title="${esc(t("steam.downloadingHint"))}">${icon("download", 12)} ${t("steam.downloading")}</span>`;
+    }
     if (!s.installed) {
       return `<button class="btn install${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.install")}">${icon("download", 14)} ${t("common.install")}</button>`;
     }

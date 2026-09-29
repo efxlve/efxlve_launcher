@@ -684,6 +684,8 @@
   "steam.waiting": "Steam onayı bekleniyor…",
   "steam.ownedGames": "{count} Steam oyunu",
   "steam.opening": "Steam açılıyor…",
+  "steam.downloading": "Steam'de indiriliyor",
+  "steam.downloadingHint": "İlerleme Steam istemcisinde görünür; launcher dosyalara dokunmaz.",
   "steam.libraryErrorTitle": "Steam kütüphanesi alınamadı",
   "steam.refreshLibrary": "Kütüphaneyi yenile",
   "steam.libraryRefreshed": "Steam kütüphanesi yenilendi.",

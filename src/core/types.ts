@@ -114,6 +114,8 @@ export interface LibraryItem {
   description: string;
   /** Whether an update is available on the remote store. */
   updateAvailable: boolean;
+  /** True while the owning store (today: Steam) is downloading this game. */
+  downloading?: boolean;
   /** Whether the game supports remote cloud save synchronization. */
   cloudSavesSupported: boolean;
   /** Total number of DLC expansions or add-ons owned. */

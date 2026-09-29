@@ -684,6 +684,8 @@
   "steam.waiting": "กำลังรอการยืนยันจาก Steam…",
   "steam.ownedGames": "เกม Steam {count} เกม",
   "steam.opening": "กำลังเปิด Steam…",
+  "steam.downloading": "กำลังดาวน์โหลดใน Steam",
+  "steam.downloadingHint": "ความคืบหน้าแสดงในไคลเอนต์ Steam ตัวเรียกใช้งานไม่แตะไฟล์",
   "steam.libraryErrorTitle": "โหลดคลังเกม Steam ไม่ได้",
   "steam.refreshLibrary": "รีเฟรชคลังเกม",
   "steam.libraryRefreshed": "รีเฟรชคลังเกม Steam แล้ว",

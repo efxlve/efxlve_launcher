@@ -684,6 +684,8 @@
   "steam.waiting": "正在等待 Steam 確認…",
   "steam.ownedGames": "{count} 款 Steam 遊戲",
   "steam.opening": "正在開啟 Steam…",
+  "steam.downloading": "正在 Steam 中下載",
+  "steam.downloadingHint": "進度顯示在 Steam 用戶端中；啟動器不會碰觸遊戲檔案。",
   "steam.libraryErrorTitle": "無法載入 Steam 媒體庫",
   "steam.refreshLibrary": "重新整理媒體庫",
   "steam.libraryRefreshed": "Steam 媒體庫已重新整理。",

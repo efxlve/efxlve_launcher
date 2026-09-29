@@ -30,6 +30,8 @@ export interface SteamGame {
   /** Steam StateFlags: 4 = fully installed, 2 = update required. */
   stateFlags: number;
   library: string;
+  /** True while the Steam client is downloading this app. */
+  downloading: boolean;
 }
 
 /** Playtime from the Steam client's own local config, in seconds. */

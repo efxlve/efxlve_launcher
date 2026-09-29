@@ -684,6 +684,8 @@
   "steam.waiting": "Warten auf Steam-Bestätigung…",
   "steam.ownedGames": "{count} Steam-Spiele",
   "steam.opening": "Steam wird geöffnet…",
+  "steam.downloading": "Wird in Steam heruntergeladen",
+  "steam.downloadingHint": "Der Fortschritt steht im Steam-Client; der Launcher fasst die Dateien nicht an.",
   "steam.libraryErrorTitle": "Steam-Bibliothek konnte nicht geladen werden",
   "steam.refreshLibrary": "Bibliothek aktualisieren",
   "steam.libraryRefreshed": "Steam-Bibliothek aktualisiert.",

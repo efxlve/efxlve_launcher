@@ -49,6 +49,7 @@ export function steamGameToItem(g: SteamGame): LibraryItem {
     description: "",
     // Steam sets bit 2 in StateFlags when an update is waiting.
     updateAvailable: (g.stateFlags & 2) !== 0,
+    downloading: g.downloading,
     cloudSavesSupported: false,
     dlcCount: 0,
   };

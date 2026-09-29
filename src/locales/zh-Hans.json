@@ -684,6 +684,8 @@
   "steam.waiting": "正在等待 Steam 确认…",
   "steam.ownedGames": "{count} 款 Steam 游戏",
   "steam.opening": "正在打开 Steam…",
+  "steam.downloading": "正在 Steam 中下载",
+  "steam.downloadingHint": "进度显示在 Steam 客户端中；启动器不会触碰游戏文件。",
   "steam.libraryErrorTitle": "无法加载 Steam 库",
   "steam.refreshLibrary": "刷新库",
   "steam.libraryRefreshed": "Steam 库已刷新。",

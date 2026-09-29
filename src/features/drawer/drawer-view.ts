@@ -110,11 +110,13 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   // hand off through it, and nothing is installed by the launcher itself.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
-    const primary = !s.installed
-      ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
-      : s.updateAvailable
-        ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.update")}</button>`
-        : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
+    const primary = s.downloading
+      ? `<span class="chip warn" title="${esc(t("steam.downloadingHint"))}">${icon("download", 13)} ${t("steam.downloading")}</span>`
+      : !s.installed
+        ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
+        : s.updateAvailable
+          ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.update")}</button>`
+          : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
     const validate = s.installed
       ? `<button class="btn ghost lg" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 16)} ${t("steam.validate")}</button>`
       : "";

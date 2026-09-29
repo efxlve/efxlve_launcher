@@ -202,6 +202,7 @@ export function libraryItemToSummary(g: LibraryItem): EpicSummary {
     installSize: g.installSize,
     installedVersion: g.installedVersion,
     updateAvailable: g.updateAvailable,
+    downloading: g.downloading ?? false,
   };
 }
 
