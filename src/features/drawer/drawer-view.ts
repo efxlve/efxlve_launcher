@@ -870,7 +870,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
   if (!isTauri || S.loadingReqFor === appName) return;
   // Steam: one store call carries the description, the hero art and the specs.
   if (appName.startsWith("steam::")) {
-    await loadSteamDetails(appName);
+    await loadSteamDetails(appName, forceRefresh);
     return;
   }
   S.loadingReqFor = appName;
@@ -933,12 +933,12 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
  * Steam store details arrive in a single call: description, developer, hero art
  * and the requirement bullets. The Rust side caches the payload for six hours.
  */
-async function loadSteamDetails(appName: string): Promise<void> {
+async function loadSteamDetails(appName: string, force = false): Promise<void> {
   const s = summaryOf(appName);
   if (!s) return;
   S.loadingReqFor = appName;
   try {
-    const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage));
+    const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage), force);
     S.steamDetails.set(appName, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     if (S.currentModalAppName === appName) {
@@ -946,8 +946,15 @@ async function loadSteamDetails(appName: string): Promise<void> {
         s.description = details.description || details.shortDescription;
         paintAboutText(s);
       }
+      // Never downgrade the hero: `library_hero.jpg` is 1920×620 while the
+      // store header is only 460×215, so swapping it in later looked pixelated.
+      // It is used only when the hero art itself fails to load.
       const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
-      if (heroEl && details.headerImage) heroEl.src = details.headerImage;
+      if (heroEl && details.headerImage) {
+        const fallback = details.headerImage;
+        heroEl.addEventListener("error", () => { heroEl.src = fallback; }, { once: true });
+        if (heroEl.complete && heroEl.naturalWidth === 0) heroEl.src = fallback;
+      }
       if (details.developers.length > 0) {
         const devEl = modalRoot.querySelector(".gp-meta > span:first-child");
         if (devEl) devEl.textContent = details.developers[0];

@@ -421,9 +421,15 @@ pub struct SteamGameDetails {
 
 #[derive(Serialize, Deserialize)]
 struct CachedDetails {
+    /// Cache shape version; older files are ignored after a parser fix.
+    #[serde(default)]
+    version: u32,
     fetched_at: u64,
     details: SteamGameDetails,
 }
+
+/// Bump whenever the parsed shape changes so stale entries refetch once.
+const DETAILS_CACHE_VERSION: u32 = 2;
 
 /// Drops tags and decodes the few entities Steam actually uses.
 pub fn strip_html(html: &str) -> String {
@@ -481,6 +487,25 @@ fn string_list(value: &serde_json::Value, key: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// `strip_html` turns `<strong>OS:</strong> Windows 10` into two lines; a
+/// label-only line is joined back with the value that follows so the spec rows
+/// keep their "OS: Windows 10" shape. A run of labels ("Minimum:", "OS:") is
+/// left alone because the next label line also ends with a colon.
+pub fn join_label_lines(lines: Vec<String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for line in lines {
+        if let Some(prev) = out.last_mut() {
+            if prev.ends_with(':') && !line.ends_with(':') {
+                prev.push(' ');
+                prev.push_str(&line);
+                continue;
+            }
+        }
+        out.push(line);
+    }
+    out
+}
+
 /// Turns one `appdetails` payload into the flat structure the game page uses.
 pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDetails {
     let requirements = data.get("pc_requirements").cloned().unwrap_or(serde_json::Value::Null);
@@ -521,8 +546,8 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .and_then(|v| v.as_array())
             .map(|a| a.iter().map(|v| v.to_string()).collect())
             .unwrap_or_default(),
-        requirements_min: html_lines(&requirements, "minimum"),
-        requirements_rec: html_lines(&requirements, "recommended"),
+        requirements_min: join_label_lines(html_lines(&requirements, "minimum")),
+        requirements_rec: join_label_lines(html_lines(&requirements, "recommended")),
     }
 }
 
@@ -554,16 +579,21 @@ pub async fn steam_get_game_details(
     app: tauri::AppHandle,
     app_id: String,
     language: Option<String>,
+    force: Option<bool>,
 ) -> Result<SteamGameDetails, String> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
     }
     let language = language.unwrap_or_else(|| "english".into());
     let cache = details_cache_path(&app, &app_id, &language);
-    if let Ok(text) = std::fs::read_to_string(&cache) {
-        if let Ok(cached) = serde_json::from_str::<CachedDetails>(&text) {
-            if now_secs().saturating_sub(cached.fetched_at) < DETAILS_TTL_SECS {
-                return Ok(cached.details);
+    if force != Some(true) {
+        if let Ok(text) = std::fs::read_to_string(&cache) {
+            if let Ok(cached) = serde_json::from_str::<CachedDetails>(&text) {
+                if cached.version == DETAILS_CACHE_VERSION
+                    && now_secs().saturating_sub(cached.fetched_at) < DETAILS_TTL_SECS
+                {
+                    return Ok(cached.details);
+                }
             }
         }
     }
@@ -588,7 +618,11 @@ pub async fn steam_get_game_details(
     }
     let data = entry.get("data").ok_or("Steam store returned no data")?;
     let details = parse_app_details(&app_id, data);
-    let cached = CachedDetails { fetched_at: now_secs(), details: details.clone() };
+    let cached = CachedDetails {
+        version: DETAILS_CACHE_VERSION,
+        fetched_at: now_secs(),
+        details: details.clone(),
+    };
     if let Ok(text) = serde_json::to_string(&cached) {
         let _ = std::fs::write(&cache, text);
     }
@@ -874,6 +908,9 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 unlock_date: if unlocked { Some(unix_date(unlock_time)) } else { None },
                 icon_link: steam_icon_url(app_id, file),
                 hidden,
+                // The local schema does not mark base/DLC groups; Steam
+                // achievements are presented as one base-game set.
+                is_base: true,
                 ..Default::default()
             };
             if hidden {
@@ -1103,6 +1140,8 @@ pub async fn steam_get_achievements(
             tier: percent.map(tier_for_percent),
             rarity: percent.map(|p| AchievementRarity { percent: Some(p) }),
             hidden: hidden_flag,
+            // The Web API does not mark base/DLC groups either.
+            is_base: true,
             ..Default::default()
         };
         if hidden_flag {
@@ -1267,6 +1306,33 @@ mod tests {
         let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li>OS: Windows 10</li><li>Memory: 8 GB &amp; up</li></ul>";
         assert_eq!(strip_html(html), "Minimum:\nOS: Windows 10\nMemory: 8 GB & up");
         assert_eq!(strip_html(""), "");
+    }
+
+    #[test]
+    fn label_only_requirement_lines_join_with_their_values() {
+        // Real Steam pages use `<strong>OS:</strong> Windows 10`; strip_html
+        // splits that into "OS:" and "Windows 10".
+        let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li><strong>OS:</strong> Windows® 10<br></li>\
+            <li><strong>Processor:</strong> 4 hardware CPU threads - Intel® Core™ i5 750 or higher<br></li>\
+            <li><strong>Additional Notes:</strong> <br></li></ul>";
+        let raw: Vec<String> = strip_html(html)
+            .lines()
+            .map(|l| l.trim().to_string())
+            .filter(|l| !l.is_empty())
+            .collect();
+        let lines = join_label_lines(raw);
+        assert_eq!(lines[0], "Minimum:");
+        assert_eq!(lines[1], "OS: Windows® 10");
+        assert_eq!(lines[2], "Processor: 4 hardware CPU threads - Intel® Core™ i5 750 or higher");
+        assert_eq!(lines[3], "Additional Notes:");
+
+        let data = serde_json::json!({
+            "name": "Counter-Strike 2",
+            "pc_requirements": { "minimum": html }
+        });
+        let details = parse_app_details("730", &data);
+        assert!(details.requirements_min.iter().any(|l| l.starts_with("OS: ")));
+        assert!(details.requirements_min.iter().any(|l| l.starts_with("Processor: ")));
     }
 
     #[test]

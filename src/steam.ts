@@ -65,8 +65,8 @@ export const steamGameAction = (appId: string, action: "launch" | "install" | "u
   invoke<void>("steam_game_action", { appId, action });
 export const steamSyncPlaytime = () =>
   invoke<Record<string, SteamPlaytime>>("steam_sync_playtime");
-export const steamGetGameDetails = (appId: string, language?: string) =>
-  invoke<SteamGameDetails>("steam_get_game_details", { appId, language: language ?? null });
+export const steamGetGameDetails = (appId: string, language?: string, force = false) =>
+  invoke<SteamGameDetails>("steam_get_game_details", { appId, language: language ?? null, force });
 
 /* ---------- Achievements (opt-in: needs a Steam Web API key) ---------- */
 
