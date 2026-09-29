@@ -41,12 +41,18 @@
 .gp-actions .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
 .gp-actions .btn.ghost.active { background: var(--surface-2); color: var(--text); }
-.gp-version-switch { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gp-version-switch { display: inline-flex; align-items: center; gap: 8px; }
 .gp-version-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-/* With up to six stores (Epic, GOG, Steam, EA App, Ubisoft, XBOX) the control
-   must wrap instead of overflowing the action bar. */
-.gp-version-seg.seg { height: auto; min-height: 44px; flex-wrap: wrap; }
-.gp-version-seg.seg > button { height: 38px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+/* Store selector: a dropdown list of every store this game lives on. */
+.gp-version-dropdown { position: relative; }
+.gp-version-trigger { height: 38px; padding: 0 12px; font-size: 13px; font-weight: 600; }
+.gp-version-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 230px; padding: 6px;
+  background: #141414; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); display: none;
+}
+.gp-version-menu.show { display: block; }
+.gp-version-menu .sort-menu-item-btn { height: 34px; font-size: 13px; }
 .gp-stats {
   display: flex; align-items: stretch; gap: 0;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 4px;

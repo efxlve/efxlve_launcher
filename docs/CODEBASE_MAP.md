@@ -157,7 +157,7 @@ efxlve_launcher/
 | `move-game/` | `move-game-view.ts`, `move-game-actions.ts` | Cross-drive mover dialog with live progress and free-space checks. |
 | `notifications/` | `notifications.ts` | Bell, unread badge, capped persisted history, panel rendering with signature guard. |
 | `onboarding/` | `onboarding-view.ts` | Login screen, progressive loading stages, EGL import bridge. |
-| `palette/` | `palette.ts` | Ctrl+K palette (pages, actions incl. TV Mode, game search). |
+| `palette/` | `palette.ts` | Ctrl+K palette (pages, actions incl. TV Mode, game search across Epic + GOG + Steam + shared accounts). |
 | `playtime/` | `playtime-view.ts` | Manual playtime editor modal. |
 | `presence/` | `presence.ts` | Discord Rich Presence context builder + sync (opt-in). |
 | `profile/` | `profile-view.ts`, `profile-avatar.ts`, `hide-achievements.ts` | Profile showcase, local avatar crop/upload, hidden-achievement modal. |

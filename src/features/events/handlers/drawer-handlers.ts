@@ -88,7 +88,14 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
 
     case "switch-drawer-version":
+      S.isVersionDropdownOpen = false;
       if (id) openEpicModal(id, false);
+      return true;
+
+    case "toggle-version-dropdown":
+      S.isVersionDropdownOpen = !S.isVersionDropdownOpen;
+      document.getElementById("version-dropdown-menu")?.classList.toggle("show", S.isVersionDropdownOpen);
+      document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", String(S.isVersionDropdownOpen));
       return true;
 
     case "drawer-tab": {

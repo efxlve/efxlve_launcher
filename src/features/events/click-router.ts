@@ -128,6 +128,13 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.remove("show");
   }
 
+  // Close the game page store dropdown when clicking outside it.
+  if (S.isVersionDropdownOpen && !targetEl.closest(".gp-version-dropdown")) {
+    S.isVersionDropdownOpen = false;
+    document.getElementById("version-dropdown-menu")?.classList.remove("show");
+    document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
+  }
+
   // Close the sidebar account switcher when clicking outside it.
   if (S.isAccountSwitcherOpen && !targetEl.closest("#sb-account-host")) {
     S.isAccountSwitcherOpen = false;
@@ -569,6 +576,8 @@ document.addEventListener("click", (e) => {
       })
       .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "external-launch" && id && t.dataset.store) {
+    S.isVersionDropdownOpen = false;
+    document.getElementById("version-dropdown-menu")?.classList.remove("show");
     void externalLaunchGame(t.dataset.store as ExternalStore, id)
       .then(() => toast(i18nT("dl.launching"), ""))
       .catch((e: unknown) => toast(String(e), "err"));

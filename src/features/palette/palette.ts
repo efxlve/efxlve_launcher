@@ -7,7 +7,7 @@
  * after MAX_GAMES hits, which stays well under a millisecond for 500+ games.
  */
 
-import { rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
@@ -58,7 +58,9 @@ function gameItem(appName: string, title: string, installed: boolean, idx: numbe
   const action = shared
     ? `<button class="btn ghost small" data-act="shared-switch" data-id="${esc(shared.ownerKey)}" tabindex="-1" title="${t("shared.detailNote", { name: esc(shared.ownerName) })}">${t("shared.switch")}</button>`
     : steam
-      ? `<button class="btn play small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" tabindex="-1">${t("palette.play")}</button>`
+      ? installed
+        ? `<button class="btn play small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" tabindex="-1">${t("palette.play")}</button>`
+        : `<button class="btn install small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="install" tabindex="-1">${t("common.install")}</button>`
       : installed
         ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
         : "";
@@ -76,9 +78,12 @@ function renderResults(query: string): void {
   if (!list) return;
   const q = query.trim().toLowerCase();
 
-  // The palette searches the same union the library shows, so games from other
-  // saved accounts are findable (they open the detail page with the switch button).
-  const pool: EpicSummary[] = S.showSharedLibrary ? [...S.epicSummaries, ...sharedSummaries()] : S.epicSummaries;
+  // The palette searches the same union the library shows — Epic, GOG and the
+  // whole owned Steam library — plus games from other saved accounts when the
+  // shared library is enabled.
+  const pool: EpicSummary[] = S.showSharedLibrary
+    ? [...allStoreSummaries(), ...sharedSummaries()]
+    : allStoreSummaries();
 
   const games: string[] = [];
   let idx = 0;

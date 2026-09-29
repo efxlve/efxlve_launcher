@@ -320,6 +320,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (!s) return;
   const isSameApp = S.currentModalAppName === appName;
   S.currentModalAppName = appName;
+  S.isVersionDropdownOpen = false;
   if (isInitialOpen) {
     S.activeDrawerTab = "overview";
     S.activeAchFilter = "all";
@@ -392,19 +393,34 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   // launch over to their own client (detected installs only).
   ensureExternalVersionsLoaded();
   const versions = gameVersionsOf(appName);
+  const activeVersion = versions.find((v) => v.appName === appName);
+  const versionRow = (v: (typeof versions)[number]): string => {
+    const external = v.source === "ea" || v.source === "ubisoft" || v.source === "xbox";
+    const label = storeVersionLabel(v.source);
+    const active = !external && v.appName === appName;
+    const attrs = external
+      ? `data-act="external-launch" data-store="${v.source}" data-id="${esc(v.externalId)}" title="${esc(t("common.launchWith", { name: label }))}"`
+      : `data-act="switch-drawer-version" data-id="${esc(v.appName)}"`;
+    const trailing = active
+      ? icon("check", 13)
+      : external
+        ? icon("external", 12)
+        : v.installed
+          ? `<span class="store-option-count">${t("common.installed")}</span>`
+          : "";
+    return `<button type="button" class="sort-menu-item-btn store-menu-item ${active ? "selected" : ""}" role="option" aria-selected="${active}" ${attrs}><span>${label}</span>${trailing}</button>`;
+  };
   const versionSwitcher = versions.length > 1
-    ? `<div class="gp-version-switch" title="${t("drawer.switchVersion")}">
-        <span class="gp-version-label">${t("drawer.version")}:</span>
-        <div class="seg gp-version-seg">
-          ${versions.map((v) => {
-            const external = v.source === "ea" || v.source === "ubisoft" || v.source === "xbox";
-            const label = storeVersionLabel(v.source);
-            const attrs = external
-              ? `data-act="external-launch" data-store="${v.source}" data-id="${esc(v.externalId)}" title="${esc(t("common.launchWith", { name: label }))}"`
-              : `data-act="switch-drawer-version" data-id="${esc(v.appName)}"`;
-            const installedMark = v.installed && !external ? ` (${t("common.installed")})` : "";
-            return `<button type="button" class="${!external && v.appName === appName ? "active" : ""}" ${attrs}>${label}${installedMark}</button>`;
-          }).join("")}
+    ? `<div class="gp-version-switch">
+        <span class="gp-version-label">${t("lib.storeBy")}</span>
+        <div class="gp-version-dropdown">
+          <button type="button" class="btn ghost small gp-version-trigger" data-act="toggle-version-dropdown" aria-haspopup="listbox" aria-expanded="${S.isVersionDropdownOpen}">
+            <span>${esc(storeVersionLabel(activeVersion?.source ?? "epic"))}</span>
+            ${icon(S.isVersionDropdownOpen ? "chevron-up" : "chevron-down", 14)}
+          </button>
+          <div id="version-dropdown-menu" class="gp-version-menu ${S.isVersionDropdownOpen ? "show" : ""}" role="listbox">
+            ${versions.map(versionRow).join("")}
+          </div>
         </div>
       </div>`
     : "";

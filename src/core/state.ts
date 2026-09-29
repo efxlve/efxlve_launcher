@@ -237,7 +237,6 @@ export const S = {
   storeResizeTimer: 0,
   storeDestroyTimer: (null) as number | null,
   query: "",
-  libSearchTimer: (null) as number | null,
   downloads: new Map<string, { progress: number; done: boolean; title: string }>(),
   installDialogAppName: (null) as string | null,
   installDialogDir: "",
@@ -370,6 +369,8 @@ export const S = {
   steamAuthUser: "",
   /** True when the user chose the code input over the mobile-app approval. */
   steamAuthCodeMode: false,
+  /** Game page store selector: dropdown list open state. */
+  isVersionDropdownOpen: false,
   steamOwnedCount: 0,
   steamLibrarySyncing: false,
   externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<

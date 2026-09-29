@@ -38,7 +38,6 @@ import {
 import { renderAchievementSections } from "../drawer/drawer-widgets";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { updateInstallFinalPath } from "../install/install-dialog";
-import { renderEpicItems, resetCardChunk, setupLibScrollObserver } from "../library/library-view";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup } from "../manage/manage-view";
@@ -417,23 +416,6 @@ document.addEventListener("input", (e) => {
   }
   if (t.id === "sgdb-search-input") {
     S.sgdbSearchQuery = (t as HTMLInputElement).value;
-    return;
-  }
-  if (t.id === "search") {
-    const val = (t as HTMLInputElement).value;
-    if (S.libSearchTimer !== null) {
-      window.clearTimeout(S.libSearchTimer);
-    }
-    S.libSearchTimer = window.setTimeout(() => {
-      S.libSearchTimer = null;
-      S.query = val;
-      resetCardChunk();
-      const box = document.getElementById("lib-results");
-      if (box) {
-        box.innerHTML = renderEpicItems();
-        setupLibScrollObserver();
-      }
-    }, 120);
     return;
   }
   if (t.id === "dlc-drawer-search" && S.currentModalAppName) {
