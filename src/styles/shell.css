@@ -407,6 +407,7 @@
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* --- Store tabs (Header): the shared .tab look, sized to the header rule --- */
 .store-tabs {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 18px;
@@ -424,6 +425,36 @@
 /* The underline rides just above the header hairline instead of hanging below it. */
 .store-tabs .tab { height: 100%; }
 .store-tabs .tab.active::after { bottom: 0; }
+/* One sliding underline instead of a per-tab line: the movement itself shows which
+   storefront was just selected. Positions come from nav.ts (no observer, no loop). */
+.store-tabs-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--ease), width var(--ease), opacity 100ms ease-out;
+}
+.store-tabs.has-underline .store-tabs-underline { opacity: 1; }
+.store-tabs.has-underline .tab.active::after { display: none; }
+/* A cold storefront loads for seconds; the active tab says so with the launcher's
+   own spinner instead of leaving the header looking idle. */
+.store-tabs .tab.is-loading::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-3);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .store-tabs-underline { transition: none; }
+  .store-tabs .tab.is-loading::before { animation: none; }
+}
 
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-switcher:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }

@@ -96,11 +96,31 @@ export function updatePageHeader(): void {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");
         btn.classList.toggle("active", active);
         btn.setAttribute("aria-current", active ? "page" : "false");
+        btn.classList.toggle("is-loading", active && S.storeLoading);
       });
+      syncStoreTabsUnderline();
     }
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
+}
+
+/**
+ * Slides the storefront underline under the active tab. Called from the header
+ * sync and from the window resize path while the store view is open, so no
+ * observer or animation loop is needed.
+ */
+export function syncStoreTabsUnderline(): void {
+  const switcher = document.getElementById("store-switcher");
+  if (!switcher || switcher.hidden) return;
+  const active = switcher.querySelector<HTMLElement>(".tab.active");
+  const underline = switcher.querySelector<HTMLElement>(".store-tabs-underline");
+  if (!active || !underline) return;
+  const width = active.offsetWidth;
+  if (width <= 0) return;
+  underline.style.width = `${width}px`;
+  underline.style.transform = `translateX(${active.offsetLeft}px)`;
+  switcher.classList.add("has-underline");
 }
 
 let sidebarGamesSig = "";

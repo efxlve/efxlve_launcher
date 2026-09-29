@@ -9,7 +9,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
-import { closeAllModals, render } from "../../core/render";
+import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
@@ -160,7 +160,14 @@ export const GOG_STORE_URL = "https://www.gog.com/";
 export const STEAM_STORE_URL = "https://store.steampowered.com/";
 export const UBISOFT_STORE_URL = "https://store.ubisoft.com/";
 export const EA_STORE_URL = "https://www.ea.com/games";
-export const XBOX_STORE_URL = "https://www.xbox.com/games/browse";
+/**
+ * The Xbox browse page defaults to every platform, so the PC filter is part of
+ * the URL: `PlayWith=PC` is the store's own (locale-independent) filter id — the
+ * visible label changes per language ("Bilgisayar", "PC", …) but the id does not.
+ * Without it, a console-only game can be bought by accident, and that cannot be
+ * undone from the launcher.
+ */
+export const XBOX_STORE_URL = "https://www.xbox.com/games/browse?PlayWith=PC";
 
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
@@ -208,13 +215,36 @@ if (isTauri) {
     warmStores.delete(event.payload.store);
   });
   void listen<{ store: StoreId }>("efxlve-store-ready", (event) => {
-    // The storefront painted (or waited long enough) and is now on screen.
+    // The storefront painted and is now on screen.
     warmStores.add(event.payload.store);
     if (S.view === "store" && S.activeStore === event.payload.store) {
       S.storeShown = true;
+      S.storeLoading = false;
       setStoreProgress(false);
+      scheduleRender();
     }
   });
+}
+
+/**
+ * Spinner guard: a storefront that never reports a finished load (a captive
+ * portal, a page that keeps streaming) must not leave the tab spinning forever.
+ */
+let storeLoadingTimer: number | null = null;
+
+function armStoreLoadingGuard(store: StoreId): void {
+  if (storeLoadingTimer !== null) window.clearTimeout(storeLoadingTimer);
+  if (!S.storeLoading) {
+    storeLoadingTimer = null;
+    return;
+  }
+  storeLoadingTimer = window.setTimeout(() => {
+    storeLoadingTimer = null;
+    if (S.activeStore === store) {
+      S.storeLoading = false;
+      scheduleRender();
+    }
+  }, 25 * 1000);
 }
 
 export async function openStore(store: StoreId = "epic"): Promise<void> {
@@ -276,16 +306,25 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   try {
     const result = await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
-      S.storeShown = false;
       setStoreProgress(false);
-      if (isTauri) invoke<string>("hide_store_view").catch(() => {});
+      // Only the player leaving the store takes it down. A newer openStoreUrl owns
+      // the view otherwise: hiding here would park the storefront that call just
+      // showed, leaving the header pointing at a store that is no longer on screen
+      // (the "all storefronts stopped opening" case after clicking two tabs fast).
+      if (S.view !== "store") {
+        S.storeShown = false;
+        if (isTauri) invoke<string>("hide_store_view").catch(() => {});
+      }
       return;
     }
-    // `@t:store.opened` (fresh child) and `@t:win.focused` (warm show) both mean the
-    // storefront is on screen. `@t:store.pending` means Rust parked it (the palette
-    // is open, or the player already left), so the loading screen must stay.
-    const shown = result === "@t:win.focused" || result === "@t:store.opened";
+    // `@t:store.pending` means Rust parked the webview (palette open, or the player
+    // already left); anything else means a storefront is on screen.
+    const shown = result !== "@t:store.pending";
     S.storeShown = shown;
+    // Only a storefront that was already painted is instant. Every fresh load keeps
+    // the launcher's spinner on the active tab until the page reports it loaded.
+    S.storeLoading = result !== "@t:win.focused";
+    armStoreLoadingGuard(store);
     if (shown) {
       warmStores.add(store);
     } else {
@@ -304,6 +343,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
     if (epoch !== storeOpenEpoch) return;
     setStoreProgress(false);
     S.storeShown = false;
+    S.storeLoading = false;
     S.view = S.lastNonStoreView;
     render();
     toast(String(e), "err");

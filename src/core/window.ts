@@ -10,6 +10,7 @@ import { isTauri } from "./constants";
 import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
 import { syncStoreViewSize } from "../features/store/store-view";
+import { syncStoreTabsUnderline } from "./nav";
 export function updateMaxIcon(isMax?: boolean): void {
   const iconEl = document.getElementById("win-max-icon");
   if (!iconEl) return;
@@ -34,6 +35,8 @@ export function handleWindowResize(): void {
   }
   if (S.view === "store") {
     syncStoreViewSize();
+    // The storefront tabs sit in the header, so a resize moves their underline.
+    syncStoreTabsUnderline();
     window.clearTimeout(S.storeResizeTimer);
     S.storeResizeTimer = window.setTimeout(() => {
       syncStoreViewSize();

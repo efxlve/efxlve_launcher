@@ -98,6 +98,8 @@ export const S = {
   accountsAddMode: false,
   storeShown: false,
   activeStore: ("epic") as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox",
+  /** True while the active storefront webview is still loading its first page. */
+  storeLoading: false,
   epicPhase: "checking" as EpicPhase,
   activeDrawerTab: "overview" as DrawerTab,
   epicBooted: false,

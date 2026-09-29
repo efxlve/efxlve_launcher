@@ -1430,6 +1430,7 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
 })();
 "#;
 
+
 fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
@@ -1533,8 +1534,7 @@ async fn show_store_view(
                 let _ = park_store_offscreen(&window);
                 return Ok("@t:store.pending".into());
             }
-            // Still waiting for its first paint: the launcher keeps its loading
-            // screen up, and the page-load event (or the safety timer) reveals it.
+            // The storefront is on screen: the frontend may drop its loading screen.
             return Ok("@t:win.focused".into());
         }
     } else {
