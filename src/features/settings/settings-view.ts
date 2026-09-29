@@ -464,7 +464,10 @@ function renderAbout(): string {
     )}
     <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
     <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
-    <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
+    <p class="settings-about-text">${t("settings.aboutLogos")}</p>
+    <p class="settings.about-text">${t("settings.aboutDrmNotice")}</p>
+    <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
+    <p class="settings-about-text">${t("settings.aboutPrivacy")}</p>
     <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>`;
 }
 

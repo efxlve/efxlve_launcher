@@ -8,9 +8,13 @@
  */
 
 import { emptyState, icon } from "../../core/icons";
+import { render } from "../../core/render";
 import { avatarFor, getCustomAvatar, S } from "../../core/state";
 import { esc } from "../../core/utils";
+import { externalDetectGames, type ExternalGame, type ExternalStore } from "../../external-stores";
 import { t } from "../../i18n";
+import { storeLogo } from "../store/store-logos";
+import type { StoreId } from "../store/store-view";
 
 /** Progress thresholds for the four post-login steps. */
 const STEP_DONE_AT = [40, 72, 90, 100];
@@ -149,7 +153,7 @@ function epicCard(): string {
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
-        <span class="acc-store-mark">E</span>
+        <span class="acc-store-mark">${storeLogo("epic")}</span>
         <div class="row-main"><div class="acc-store-name">Epic Games</div><div class="row-meta">${connected ? esc(S.epicAccount) : t("accounts.epicShort")}</div></div>
         ${status}
       </div>
@@ -231,7 +235,7 @@ function gogCard(): string {
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
-        <span class="acc-store-mark">G</span>
+        <span class="acc-store-mark">${storeLogo("gog")}</span>
         <div class="row-main">
           <div class="acc-store-name">GOG.COM</div>
           <div class="row-meta">${connected ? esc(currentName) : t("accounts.gogDesc")}</div>
@@ -433,7 +437,7 @@ function steamCard(): string {
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
-        <span class="acc-store-mark">S</span>
+        <span class="acc-store-mark">${storeLogo("steam")}</span>
         <div class="row-main">
           <div class="acc-store-name">Steam</div>
           <div class="row-meta">${esc(meta)}</div>
@@ -444,14 +448,88 @@ function steamCard(): string {
     </section>`;
 }
 
+/**
+ * One-shot detection scan so the embedded cards can say what is installed. The
+ * Integrations tab runs the same scan; whichever runs first wins, and the promise
+ * guard stops a re-render from starting it twice. No polling: one pass per session.
+ */
+let embeddedScan: Promise<void> | null = null;
+
+function ensureEmbeddedStoreScan(): void {
+  if (S.externalGamesScanned || embeddedScan) return;
+  embeddedScan = (async () => {
+    try {
+      const [ea, ubisoft, xbox] = await Promise.all(
+        (["ea", "ubisoft", "xbox"] as ExternalStore[]).map((store) =>
+          externalDetectGames(store).catch(() => [] as ExternalGame[])),
+      );
+      S.externalGames = { ea, ubisoft, xbox };
+    } catch {
+      // Cards keep the honest "nothing found" line; do not scan again this session.
+    } finally {
+      S.externalGamesScanned = true;
+      render();
+    }
+  })();
+}
+
+/**
+ * Stores the launcher opens as an embedded page: they sign in inside their own
+ * page and licence their games through their own client, so their card offers
+ * exactly what exists — open the storefront, plus the games the launcher can find
+ * on this PC for the clients it can read. The order follows the header tabs.
+ */
+const EMBEDDED_STORES: Array<{ id: StoreId; label: string; detectable: boolean }> = [
+  { id: "xbox", label: "Xbox", detectable: true },
+  { id: "battlenet", label: "Battle.net", detectable: false },
+  { id: "ubisoft", label: "Ubisoft", detectable: true },
+  { id: "ea", label: "EA", detectable: true },
+];
+
+function embeddedStoreCard(store: (typeof EMBEDDED_STORES)[number]): string {
+  const games = store.detectable ? (S.externalGames[store.id as ExternalStore] ?? []) : [];
+  const meta = !store.detectable
+    ? t("accounts.noDetection")
+    : games.length > 0
+      ? t("accounts.detectedGames", { count: games.length })
+      : t("accounts.noGamesDetected");
+  const rescan = store.detectable
+    ? `<button class="btn ghost small" data-act="external-scan" data-store="${store.id}">${icon("refresh", 13)} ${t("settings.rescan")}</button>`
+    : "";
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo(store.id)}</span>
+        <div class="row-main">
+          <div class="acc-store-name">${esc(store.label)}</div>
+          <div class="row-meta">${esc(meta)}</div>
+        </div>
+        <span class="chip">${t("accounts.embeddedStore")}</span>
+      </div>
+      <div class="acc-card-body">
+        <p class="acc-lead">${t("accounts.embeddedDesc")}</p>
+        <div class="acc-actions">
+          <button class="btn ghost small" data-act="open-store" data-store="${store.id}">${icon("external", 13)} ${t("accounts.openStore")}</button>
+          ${rescan}
+        </div>
+      </div>
+    </section>`;
+}
+
+/** The three connector cards, then the embedded storefronts, in the tab order. */
+function accountCards(): string {
+  ensureEmbeddedStoreScan();
+  return `
+    ${epicCard()}
+    ${gogCard()}
+    ${steamCard()}
+    <h3 class="section-title acc-group-title">${t("accounts.embeddedSection")}</h3>
+    ${EMBEDDED_STORES.map(embeddedStoreCard).join("")}`;
+}
+
 /** Account list, switch, add and sign-out, embedded in Settings. */
 export function renderAccountSettings(): string {
-  return `
-    <div class="settings-accounts">
-      ${epicCard()}
-      ${gogCard()}
-      ${steamCard()}
-    </div>`;
+  return `<div class="settings-accounts">${accountCards()}</div>`;
 }
 
 export function renderAccounts(): string {
@@ -459,8 +537,6 @@ export function renderAccounts(): string {
   return `
     <div class="page acc-page">
       <p class="page-sub acc-intro">${t("accounts.subtitle")}</p>
-      ${epicCard()}
-      ${gogCard()}
-      ${steamCard()}
+      ${accountCards()}
     </div>`;
 }
