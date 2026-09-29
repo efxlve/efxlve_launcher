@@ -255,7 +255,10 @@ async fn post_form(
     method: &str,
     form: &[(String, String)],
 ) -> Result<ApiCall, String> {
-    let url = format!("{API_BASE}/{method}/v1/");
+    // `format=json` is mandatory here: a protobuf request otherwise gets a
+    // binary protobuf response (`application/octet-stream`), which the JSON
+    // parser below would reject even on success.
+    let url = format!("{API_BASE}/{method}/v1/?format=json");
     let response = client
         .post(url)
         .form(form)
@@ -277,7 +280,9 @@ async fn post_form(
         {
             "@t:steam.err.sessionExpired".to_string()
         } else {
-            "@t:steam.err.steam".to_string()
+            // The status code is kept in the message so a user screenshot is
+            // enough to diagnose; no Steam payload ever reaches the UI.
+            format!("@t:steam.err.steam\u{1f}HTTP {status}")
         });
     }
     Ok(ApiCall { eresult, body: payload })
@@ -363,6 +368,29 @@ fn put_number(out: &mut Vec<u8>, field: u32, value: u64) {
     put_varint(out, value);
 }
 
+/// `fixed64` fields (`steamid`) are 8 little-endian bytes on the wire.
+fn put_fixed64(out: &mut Vec<u8>, field: u32, value: u64) {
+    put_varint(out, u64::from(field << 3 | 1));
+    out.extend_from_slice(&value.to_le_bytes());
+}
+
+/// One `input_protobuf_encoded` form body, the way Steam's clients send it.
+fn protobuf_payload(bytes: &[u8]) -> Vec<(String, String)> {
+    vec![(
+        "input_protobuf_encoded".to_string(),
+        base64::engine::general_purpose::STANDARD.encode(bytes),
+    )]
+}
+
+/// Protobuf JSON encodes `bytes` as base64; URL-safe input is tolerated.
+fn decode_base64_bytes(value: &str) -> Vec<u8> {
+    use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
+    STANDARD
+        .decode(value)
+        .or_else(|_| URL_SAFE_NO_PAD.decode(value))
+        .unwrap_or_default()
+}
+
 /// `CAuthentication_BeginAuthSessionViaCredentials_Request` (see
 /// `steammessages_auth.steamclient.proto` field numbers).
 fn encode_begin_request(
@@ -386,19 +414,49 @@ fn encode_begin_request(
     out
 }
 
-/// Friendly translation key for a Steam `EResult`.
+/// `CAuthentication_PollAuthSessionStatus_Request`. `request_id` must be the
+/// exact raw bytes Steam issued, so it cannot travel as a form string.
+fn encode_poll_request(client_id: &str, request_id: &[u8]) -> Vec<u8> {
+    let mut out = Vec::new();
+    put_number(&mut out, 1, client_id.parse::<u64>().unwrap_or(0));
+    put_bytes(&mut out, 2, request_id);
+    out
+}
+
+/// `CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request`.
+fn encode_guard_code_request(client_id: &str, steam_id: &str, code: &str, code_type: i64) -> Vec<u8> {
+    let mut out = Vec::new();
+    put_number(&mut out, 1, client_id.parse::<u64>().unwrap_or(0));
+    put_fixed64(&mut out, 2, steam_id.parse::<u64>().unwrap_or(0));
+    put_string(&mut out, 3, code);
+    put_number(&mut out, 4, code_type as u64);
+    out
+}
+
+/// `CAuthentication_AccessToken_GenerateForApp_Request`.
+fn encode_generate_request(refresh_token: &str, steam_id: &str) -> Vec<u8> {
+    let mut out = Vec::new();
+    put_string(&mut out, 1, refresh_token);
+    put_fixed64(&mut out, 2, steam_id.parse::<u64>().unwrap_or(0));
+    out
+}
+
+/// Friendly translation key for a Steam `EResult`. Unknown codes keep their
+/// number in the message: a screenshot is then enough to diagnose without any
+/// raw Steam payload reaching the UI.
 fn eresult_error(eresult: i64) -> String {
     match eresult {
-        5 => "@t:steam.err.invalidPassword",
-        63 | 66 | 74 => "@t:steam.err.guardNeeded",
-        65 | 71 | 88 => "@t:steam.err.guardInvalid",
-        84 | 87 => "@t:steam.err.throttled",
-        85 => "@t:steam.err.need2fa",
-        101 => "@t:steam.err.captcha",
-        17 | 43 | 73 | 114 => "@t:steam.err.account",
-        _ => "@t:steam.err.steam",
+        5 => "@t:steam.err.invalidPassword".to_string(),
+        63 | 66 | 74 => "@t:steam.err.guardNeeded".to_string(),
+        65 | 71 | 88 => "@t:steam.err.guardInvalid".to_string(),
+        84 | 87 => "@t:steam.err.throttled".to_string(),
+        85 => "@t:steam.err.need2fa".to_string(),
+        101 => "@t:steam.err.captcha".to_string(),
+        17 | 43 | 73 | 114 => "@t:steam.err.account".to_string(),
+        3 | 16 | 20 | 35 | 36 => "@t:steam.err.network".to_string(),
+        9 => "@t:steam.err.sessionNotFound".to_string(),
+        _ => format!("@t:steam.err.steam\u{1f}{eresult}"),
     }
-    .to_string()
 }
 
 /* ---------- Response parsing (pure, unit tested) ---------- */
@@ -858,10 +916,7 @@ async fn generate_access_token(
     refresh_token: &str,
     steam_id: &str,
 ) -> Result<String, String> {
-    let form = vec![
-        ("refresh_token".to_string(), refresh_token.to_string()),
-        ("steamid".to_string(), steam_id.to_string()),
-    ];
+    let form = protobuf_payload(&encode_generate_request(refresh_token, steam_id));
     let call = post_form(client, "GenerateAccessTokenForApp", &form).await?;
     if call.eresult != 1 {
         return Err(eresult_error(call.eresult));
@@ -937,14 +992,10 @@ pub async fn steam_login_begin(
     };
     password.zeroize();
 
-    // Nested `device_details` forces the protobuf payload form; scalar-only
-    // calls below stay plain form fields.
+    // Nested `device_details` forces the protobuf payload form; the other auth
+    // calls need it too, because `request_id` is a raw byte field.
     let request = encode_begin_request(&account_name, &encrypted, &timestamp, remember);
-    let form = vec![(
-        "input_protobuf_encoded".to_string(),
-        base64::engine::general_purpose::STANDARD.encode(request),
-    )];
-    let call = post_form(&client, "BeginAuthSessionViaCredentials", &form).await?;
+    let call = post_form(&client, "BeginAuthSessionViaCredentials", &protobuf_payload(&request)).await?;
     if call.eresult != 1 {
         return Err(eresult_error(call.eresult));
     }
@@ -963,13 +1014,13 @@ pub async fn steam_login_code(code: String) -> Result<SteamLoginStatus, String> 
     }
     let pending = lock().pending.clone().ok_or_else(|| "@t:steam.err.noSession".to_string())?;
     let client = http_client()?;
-    let form = vec![
-        ("client_id".to_string(), pending.client_id.clone()),
-        ("steamid".to_string(), pending.steam_id.clone()),
-        ("code".to_string(), code),
-        ("code_type".to_string(), pending.code_type().to_string()),
-    ];
-    let call = post_form(&client, "UpdateAuthSessionWithSteamGuardCode", &form).await?;
+    let request = encode_guard_code_request(
+        &pending.client_id,
+        &pending.steam_id,
+        &code,
+        pending.code_type(),
+    );
+    let call = post_form(&client, "UpdateAuthSessionWithSteamGuardCode", &protobuf_payload(&request)).await?;
     if call.eresult != 1 {
         return Err(eresult_error(call.eresult));
     }
@@ -996,12 +1047,17 @@ pub async fn steam_login_status(app: tauri::AppHandle) -> Result<SteamLoginStatu
     };
 
     let client = http_client()?;
-    let form = vec![
-        ("client_id".to_string(), pending.client_id.clone()),
-        ("request_id".to_string(), pending.request_id.clone()),
-    ];
-    let call = post_form(&client, "PollAuthSessionStatus", &form).await?;
+    let request_id = decode_base64_bytes(&pending.request_id);
+    if request_id.is_empty() {
+        return Err("@t:steam.err.sessionNotFound".to_string());
+    }
+    let request = encode_poll_request(&pending.client_id, &request_id);
+    let call = post_form(&client, "PollAuthSessionStatus", &protobuf_payload(&request)).await?;
     if call.eresult != 1 {
+        // 22 (Pending) is not an error: the user has not approved yet.
+        if call.eresult == 22 {
+            return Ok(pending.status());
+        }
         return Err(eresult_error(call.eresult));
     }
     match parse_poll_response(call.response(), &pending) {
@@ -1254,7 +1310,8 @@ mod tests {
         assert_eq!(eresult_error(88), "@t:steam.err.guardInvalid");
         assert_eq!(eresult_error(84), "@t:steam.err.throttled");
         assert_eq!(eresult_error(101), "@t:steam.err.captcha");
-        assert_eq!(eresult_error(999), "@t:steam.err.steam");
+        assert_eq!(eresult_error(9), "@t:steam.err.sessionNotFound");
+        assert_eq!(eresult_error(999), "@t:steam.err.steam\u{1f}999");
     }
 
     #[test]
@@ -1291,6 +1348,45 @@ mod tests {
             ]
         );
         assert!(settoken_transfer(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn auth_requests_encode_the_expected_wire_fields() {
+        // Poll: field 1 varint client_id, field 2 length-delimited request_id.
+        let poll = encode_poll_request("42", &[0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(poll[0], 0x08);
+        assert_eq!(poll[1], 42);
+        assert_eq!(poll[2], 0x12);
+        assert_eq!(poll[3], 4);
+        assert_eq!(&poll[4..], &[0xde, 0xad, 0xbe, 0xef]);
+
+        // Guard code: field 2 is fixed64, then the code and its type.
+        let update = encode_guard_code_request("7", "76561199140017878", "ABC12", GUARD_DEVICE_CODE);
+        assert_eq!(update[0], 0x08);
+        assert_eq!(update[1], 7);
+        assert_eq!(update[2], 0x11);
+        assert_eq!(&update[3..11], &76561199140017878u64.to_le_bytes());
+        assert_eq!(update[11], 0x1a);
+        assert_eq!(update[12], 5);
+        assert_eq!(&update[13..18], b"ABC12");
+        assert_eq!(update[18], 0x20);
+        assert_eq!(update[19], 3);
+
+        // Generate: refresh token string, steamid fixed64.
+        let generate = encode_generate_request("tok", "5");
+        assert_eq!(generate[0], 0x0a);
+        assert_eq!(generate[1], 3);
+        assert_eq!(&generate[2..5], b"tok");
+        assert_eq!(generate[5], 0x11);
+        assert_eq!(&generate[6..14], &5u64.to_le_bytes());
+    }
+
+    #[test]
+    fn byte_fields_decode_from_base64() {
+        let raw = [0x01u8, 0x02, 0x03];
+        let encoded = base64::engine::general_purpose::STANDARD.encode(raw);
+        assert_eq!(decode_base64_bytes(&encoded), raw);
+        assert!(decode_base64_bytes("!!!not-base64!!!").is_empty());
     }
 
     #[test]
@@ -1369,6 +1465,76 @@ mod tests {
             let finalize = finalize_web_login(&client, "not-a-real-refresh-token", "76561199140017878").await;
             println!("finalize result: {:?}", finalize);
             assert!(finalize.is_err(), "a dummy refresh token must not mint a token");
+        });
+    }
+
+    /// Live probe that validates the whole poll path without credentials:
+    /// `BeginAuthSessionViaQR` creates a real session, then the protobuf
+    /// `PollAuthSessionStatus` must answer `eresult 1` (still pending).
+    /// Run: `cargo test live_steam_qr_poll_probe -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_qr_poll_probe() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let client = http_client().unwrap();
+
+            // CAuthentication_BeginAuthSessionViaQR_Request: name, platform, device, site.
+            let mut device = Vec::new();
+            put_string(&mut device, 1, DEVICE_NAME);
+            put_number(&mut device, 2, PLATFORM_TYPE_WEB as u64);
+            let mut request = Vec::new();
+            put_string(&mut request, 1, DEVICE_NAME);
+            put_number(&mut request, 2, PLATFORM_TYPE_WEB as u64);
+            put_bytes(&mut request, 3, &device);
+            put_string(&mut request, 4, WEBSITE_ID);
+            let call = post_form(&client, "BeginAuthSessionViaQR", &protobuf_payload(&request))
+                .await
+                .unwrap();
+            println!("qr begin eresult: {}", call.eresult);
+            let keys: Vec<String> = call
+                .response()
+                .as_object()
+                .map(|obj| obj.keys().cloned().collect())
+                .unwrap_or_default();
+            // Redact the challenge URL before printing anything.
+            let mut safe = call.body.clone();
+            if let Some(response) = safe.get_mut("response").and_then(|r| r.as_object_mut()) {
+                if response.contains_key("challenge_url") {
+                    response.insert("challenge_url".into(), Value::String("[redacted]".into()));
+                }
+            }
+            println!(
+                "body preview: {}",
+                serde_json::to_string(&safe).unwrap_or_default().chars().take(400).collect::<String>()
+            );
+            println!("response keys: {keys:?}");
+            assert_eq!(call.eresult, 1, "QR begin must succeed");
+
+            let client_id = field_str(call.response(), "client_id", "clientId");
+            let request_b64 = field_str(call.response(), "request_id", "requestId");
+            let request_id = decode_base64_bytes(&request_b64);
+            println!(
+                "client_id: {} digits, request_id: {} base64 chars -> {} bytes, interval: {:?}",
+                client_id.len(),
+                request_b64.len(),
+                request_id.len(),
+                call.response().get("interval")
+            );
+            assert!(!client_id.is_empty(), "client_id must be present");
+            assert!(!request_id.is_empty(), "request_id must decode");
+
+            let poll = encode_poll_request(&client_id, &request_id);
+            let result = post_form(&client, "PollAuthSessionStatus", &protobuf_payload(&poll))
+                .await
+                .unwrap();
+            let poll_keys: Vec<String> = result
+                .response()
+                .as_object()
+                .map(|obj| obj.keys().cloned().collect())
+                .unwrap_or_default();
+            println!("poll eresult: {} keys: {poll_keys:?}", result.eresult);
+            assert_eq!(result.eresult, 1, "a fresh session must poll OK");
         });
     }
 }

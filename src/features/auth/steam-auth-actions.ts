@@ -16,8 +16,26 @@ import { loadSteamLibrary } from "../library/steam-library";
 
 /** A pending sign-in is abandoned after this long (Steam sessions expire, too). */
 const POLL_DEADLINE_MS = 5 * 60 * 1000;
-const POLL_MIN_MS = 2500;
-const POLL_MAX_MS = 8000;
+const POLL_MIN_MS = 4000;
+const POLL_MAX_MS = 10000;
+
+/**
+ * Poll errors that mean the attempt is over: retrying cannot help. Anything
+ * else (network, throttling, a temporary Steam refusal) keeps polling until the
+ * deadline, because the user may still be approving on their phone.
+ */
+const DEFINITIVE_POLL_ERRORS = [
+  "steam.err.sessionNotFound",
+  "steam.err.sessionExpired",
+  "steam.err.expired",
+  "steam.err.noSession",
+  "steam.err.invalidPassword",
+  "steam.err.guardInvalid",
+  "steam.err.guardNeeded",
+  "steam.err.account",
+  "steam.err.captcha",
+  "steam.err.need2fa",
+];
 
 let pollTimer: number | null = null;
 let pollDeadline = 0;
@@ -105,7 +123,9 @@ export async function submitSteamCredentials(): Promise<void> {
     const status = await steamLoginBegin(user, pass, remember);
     S.steamAuthBusy = false;
     applySteamStatus(status);
-    if (status.state === "pending" || status.state === "confirm") startSteamPoll();
+    // Poll from the start: Steam allows approving on the mobile app even while
+    // the code field is shown, and that approval completes the session.
+    if (status.state !== "signed_in") startSteamPoll();
   } catch (e) {
     S.steamAuthBusy = false;
     toast(localizeMessage(String(e)), "err");
@@ -144,9 +164,19 @@ function startSteamPoll(): void {
   stopSteamPoll();
   pollDeadline = Date.now() + POLL_DEADLINE_MS;
 
+  // Steam suggests ~5 s; slower avoids rate limits, and the deadline keeps a
+  // forgotten attempt from polling forever.
   const nextDelay = (): number => {
     const seconds = S.steamAuth?.interval ?? 0;
-    return Math.min(POLL_MAX_MS, Math.max(POLL_MIN_MS, Math.round((seconds > 0 ? seconds : 3) * 1000)));
+    return Math.min(POLL_MAX_MS, Math.max(POLL_MIN_MS, Math.round((seconds > 0 ? seconds : 5) * 1000)));
+  };
+
+  const giveUp = (message: string): void => {
+    stopSteamPoll();
+    S.steamAuthBusy = false;
+    S.steamAuthStep = "idle";
+    toast(message, "err");
+    if (S.view === "accounts") render();
   };
 
   const tick = async (): Promise<void> => {
@@ -167,10 +197,19 @@ function startSteamPoll(): void {
         return;
       }
     } catch (e) {
-      stopSteamPoll();
-      S.steamAuthBusy = false;
-      toast(localizeMessage(String(e)), "err");
-      if (S.view === "accounts") render();
+      const message = String(e);
+      const definitive = DEFINITIVE_POLL_ERRORS.some((key) => message.includes(key));
+      if (definitive) {
+        giveUp(localizeMessage(message));
+        return;
+      }
+      // A network hiccup or a temporary Steam refusal must not kill the
+      // attempt: keep waiting until the deadline and report only then.
+      if (Date.now() > pollDeadline) {
+        giveUp(localizeMessage(message));
+        return;
+      }
+      pollTimer = window.setTimeout(() => void tick(), nextDelay());
       return;
     }
     pollTimer = window.setTimeout(() => void tick(), nextDelay());

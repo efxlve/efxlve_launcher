@@ -309,7 +309,8 @@ function steamSignInBlock(): string {
       ? `<div class="auth-code">
            <input id="steam-guard" class="input" placeholder="${t("steam.guardPlaceholder")}" autocomplete="one-time-code" spellcheck="false" />
            <button class="btn primary" data-act="steam-login-code" ${S.steamAuthBusy ? "disabled" : ""}>${icon("check", 14)} ${t("steam.guardSubmit")}</button>
-         </div>`
+         </div>
+         <p class="acc-hint">${t("steam.guardHint")}</p>`
       : "";
     return `
       ${steamSectionHead(t("steam.accountTitle"))}
