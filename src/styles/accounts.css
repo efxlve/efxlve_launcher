@@ -23,6 +23,10 @@
 .acc-signin { display: flex; flex-direction: column; gap: 12px; }
 .acc-accounts .row { padding: 10px 12px; }
 
+/* Section captions inside a connector card (e.g. Steam account vs Steam client). */
+.acc-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.acc-section-title { margin: 0; }
+
 .settings-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
   display: grid; place-items: center; background: var(--surface-3); font-size: 13px; font-weight: 600;

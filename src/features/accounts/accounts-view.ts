@@ -242,12 +242,21 @@ function gogCard(): string {
     </section>`;
 }
 
-/** Client detection row: installed games and the Steam hand-off (no sign-in needed). */
+/** Small section caption: keeps "account" and "client" visually separate. */
+function steamSectionHead(title: string, chip = ""): string {
+  return `<div class="acc-section-head"><h3 class="section-title acc-section-title">${esc(title)}</h3>${chip}</div>`;
+}
+
+/**
+ * Steam client detection: the installed games belong to the Steam app on this
+ * PC, independent of the launcher's own account session above.
+ */
 function steamClientBlock(): string {
   const status = S.steamStatus;
   if (!status?.installed) return "";
-  const meta = status.userName ? t("steam.signedInAs", { name: status.userName }) : esc(status.path);
+  const meta = status.userName ? t("steam.clientSession", { name: status.userName }) : esc(status.path);
   return `
+    ${steamSectionHead(t("steam.clientTitle"), `<span class="chip ok">${t("steam.detected")}</span>`)}
     <div class="list">
       <div class="row">
         <div class="row-main">
@@ -255,17 +264,18 @@ function steamClientBlock(): string {
           <div class="row-meta" title="${esc(status.path)}">${esc(meta)}</div>
         </div>
         <div class="row-actions">
+          <button class="btn ghost small" data-act="steam-scan">${icon("refresh", 13)} ${t("settings.rescan")}</button>
           <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>
-          <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
         </div>
       </div>
     </div>`;
 }
 
-/** Signed-in block: the account, its owned library and the sign-out. */
+/** Signed-in block: the launcher's Steam account, its owned library and sign-out. */
 function steamAccountBlock(): string {
   const name = S.steamAuth?.accountName || "Steam";
   return `
+    ${steamSectionHead(t("steam.accountTitle"))}
     <div class="list acc-accounts">
       <div class="row">
         <span class="settings-avatar">${esc((name.trim()[0] || "S").toUpperCase())}</span>
@@ -275,6 +285,7 @@ function steamAccountBlock(): string {
         </div>
         <div class="row-actions">
           <button class="btn ghost small" data-act="steam-owned-refresh" ${S.steamLibrarySyncing ? "disabled" : ""}>${icon("refresh", 13)} ${t("steam.refreshLibrary")}</button>
+          <button class="btn ghost small icon-only" data-act="steam-open-settings" title="${t("steam.openSettings")}" aria-label="${t("steam.openSettings")}">${icon("settings", 13)}</button>
           <button class="btn ghost danger small" data-act="steam-logout">${t("steam.logout")}</button>
         </div>
       </div>
@@ -301,6 +312,7 @@ function steamSignInBlock(): string {
          </div>`
       : "";
     return `
+      ${steamSectionHead(t("steam.accountTitle"))}
       <div class="acc-signin">
         <p class="acc-lead">${esc(lead)}</p>
         ${S.steamAuthUser ? `<p class="acc-hint">${esc(S.steamAuthUser)}</p>` : ""}
@@ -314,6 +326,7 @@ function steamSignInBlock(): string {
   }
   if (step === "credentials") {
     return `
+      ${steamSectionHead(t("steam.accountTitle"))}
       <div class="acc-signin">
         <p class="acc-lead">${t("steam.signInDesc")}</p>
         <div class="auth-code">
@@ -334,29 +347,26 @@ function steamSignInBlock(): string {
       </div>`;
   }
   return `
+    ${steamSectionHead(t("steam.accountTitle"))}
     <p class="acc-lead">${t("steam.signInDesc")}</p>
     <div class="acc-actions">
       <button class="btn primary" data-act="steam-login-start">${icon("user", 14)} ${t("steam.signInCta")}</button>
-      <button class="btn ghost small" data-act="steam-scan">${icon("refresh", 13)} ${t("settings.rescan")}</button>
       <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
     </div>`;
 }
 
-/** Steam card: detection plus the optional account sign-in (ROADMAP §13). */
+/** Steam card: the launcher account session on top, client detection below. */
 function steamCard(): string {
-  const status = S.steamStatus;
-  const installed = status?.installed ?? false;
+  const installed = S.steamStatus?.installed ?? false;
   const signedIn = S.steamAuthStep === "signed_in";
   const statusChip = signedIn
     ? `<span class="chip ok">${t("accounts.connected")}</span>`
-    : installed
-      ? `<span class="chip ok">${t("steam.detected")}</span>`
-      : `<span class="chip">${t("settings.notInstalled")}</span>`;
+    : `<span class="chip">${t("accounts.notConnected")}</span>`;
+  // The header describes the launcher's own session; the Steam client's persona
+  // is only shown in the client section below.
   const meta = signedIn && S.steamAuth?.accountName
     ? t("steam.signedInAs", { name: S.steamAuth.accountName })
-    : installed && status?.userName
-      ? t("steam.signedInAs", { name: status.userName })
-      : t("accounts.steamDesc");
+    : t("accounts.steamDesc");
   const body = `${signedIn ? steamAccountBlock() : steamSignInBlock()}${installed ? steamClientBlock() : ""}`;
   return `
     <section class="card acc-card">
