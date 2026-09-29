@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 149 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 153 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -261,7 +261,10 @@
 | `steam_list_installed` | `() => Promise<SteamGame[]>` | `steam.rs` | Reads every `steamapps/appmanifest_*.acf` across all library folders (`libraryfolders.vdf`), deduplicated by app id. |
 | `steam_launch_game` → `steam_game_action` | `(appId: string, action: "launch" \| "install" \| "uninstall" \| "validate") => Promise<void>` | `steam.rs` | Hands the action to the Steam client via the matching `steam://` URL; non-numeric ids and unknown actions are rejected. The launcher never starts Steam executables itself. |
 | `steam_sync_playtime` | `() => Promise<Record<string, SteamPlaytime>>` | `steam.rs` | Reads the newest `userdata/<id>/config/localconfig.vdf` and maps app ids to playtime (seconds) + last played. |
-| `steam_get_game_details` | `(appId: string, language?: string) => Promise<SteamGameDetails>` | `steam.rs` | Steam store description, developer, hero art, screenshots and requirement bullets (HTML flattened), cached on disk for six hours. |
+| `steam_get_game_details` | `(appId: string, language?: string) => Promise<SteamGameDetails>` | `steam.rs` | Steam store description, developer, hero art, add-on ids and requirement bullets (HTML flattened), cached on disk for six hours. |
+| `steam_get_api_key` / `steam_set_api_key` | `() => Promise<string \| null>` / `(apiKey: string) => Promise<void>` | `steam.rs` | Opt-in Steam Web API key, stored in `settings.json` next to the SteamGridDB key. Needed for achievements only. |
+| `steam_get_achievements` | `(appId: string, force?: boolean) => Promise<EpicAchievementsData>` | `steam.rs` | Schema (names, descriptions, icons) + the player's unlocks + global unlock rates for rarity, merged into the shared achievement shape and cached for an hour. Resolves the SteamID64 from `loginusers.vdf`. |
+| `steam_get_achievements_summary` | `() => Promise<Record<string, EpicAchievementSummary>>` | `steam.rs` | Cached achievement summaries for the library covers; disk only, no network and no key needed. |
 
 ### 2.20. Shared Library (All Accounts)
 
@@ -415,7 +418,7 @@ export interface ScreenshotsUpdatedEvent {
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 | `shared_library.rs` | 1 | `shared_library_index` |
-| `steam.rs` | 5 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details` |
+| `steam.rs` | 9 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary` |
 
-**Total: 149 commands**
+**Total: 153 commands**
 
