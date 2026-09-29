@@ -12,7 +12,7 @@ import { epicActionButtons, epicArt } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { closeModal } from "../../core/dom";
 import { openEpicModal, render } from "../../core/render";
-import { epicWideArt, gogToEpicSummary, summaryOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, libraryItemToSummary, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
@@ -26,7 +26,7 @@ let rows: { title: string; apps: string[] }[] = [];
 let focusRow = 0;
 let focusCol = 0;
 
-/** Every playable library item (Epic + GOG); hidden games stay out. */
+/** Every playable library item (Epic + GOG + Steam); hidden games stay out. */
 function allItems(): EpicSummary[] {
   const out: EpicSummary[] = [];
   for (const s of S.epicSummaries) {
@@ -34,6 +34,10 @@ function allItems(): EpicSummary[] {
   }
   for (const g of S.gogSummaries) {
     if (!S.hiddenGames.has(g.key)) out.push(gogToEpicSummary(g));
+  }
+  // Steam games are installed and playable, so the couch view includes them.
+  for (const g of S.steamSummaries) {
+    if (!S.hiddenGames.has(g.key)) out.push(libraryItemToSummary(g));
   }
   return out;
 }

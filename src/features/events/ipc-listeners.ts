@@ -464,7 +464,8 @@ export async function initApp(hooks: {
             last_played_timestamp: lastPlayedTimestamp,
           });
           // Pull Epic's fresh total now; max() keeps it safe if Epic lags behind.
-          void syncEpicServerPlaytimes(true);
+          // GOG and Steam hours come from their own local sources below/at boot.
+          if (!id.startsWith("gog::") && !id.startsWith("steam::")) void syncEpicServerPlaytimes(true);
           // GOG hours live in Galaxy's local database (read-only import).
           if (id.startsWith("gog::")) void syncGogPlaytime();
         }
