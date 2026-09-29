@@ -683,6 +683,7 @@
   "steam.useCode": "Use a code",
   "steam.waiting": "Waiting for Steam to confirm…",
   "steam.ownedGames": "{count} Steam games",
+  "steam.libraryErrorTitle": "Steam library could not be loaded",
   "steam.refreshLibrary": "Refresh library",
   "steam.libraryRefreshed": "Steam library refreshed.",
   "steam.secureNote": "The password is never stored; the refresh token is sealed with Windows DPAPI for this user only.",

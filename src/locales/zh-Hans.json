@@ -683,6 +683,7 @@
   "steam.useCode": "使用验证码",
   "steam.waiting": "正在等待 Steam 确认…",
   "steam.ownedGames": "{count} 款 Steam 游戏",
+  "steam.libraryErrorTitle": "无法加载 Steam 库",
   "steam.refreshLibrary": "刷新库",
   "steam.libraryRefreshed": "Steam 库已刷新。",
   "steam.secureNote": "密码绝不保存；刷新令牌仅为此 Windows 用户经 DPAPI 加密保存。",

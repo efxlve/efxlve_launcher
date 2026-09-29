@@ -683,6 +683,7 @@
   "steam.useCode": "استخدام رمز",
   "steam.waiting": "في انتظار تأكيد Steam…",
   "steam.ownedGames": "{count} لعبة على Steam",
+  "steam.libraryErrorTitle": "تعذّر تحميل مكتبة Steam",
   "steam.refreshLibrary": "تحديث المكتبة",
   "steam.libraryRefreshed": "تم تحديث مكتبة Steam.",
   "steam.secureNote": "لا تُحفظ كلمة المرور؛ ويُشفَّر رمز التجديد عبر DPAPI في Windows لهذا المستخدم فقط.",

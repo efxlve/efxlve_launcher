@@ -683,6 +683,7 @@
   "steam.useCode": "Użyj kodu",
   "steam.waiting": "Oczekiwanie na potwierdzenie Steam…",
   "steam.ownedGames": "{count} gier Steam",
+  "steam.libraryErrorTitle": "Nie udało się wczytać biblioteki Steam",
   "steam.refreshLibrary": "Odśwież bibliotekę",
   "steam.libraryRefreshed": "Biblioteka Steam odświeżona.",
   "steam.secureNote": "Hasło nie jest zapisywane; token odświeżania jest zapieczętowany przez DPAPI systemu Windows tylko dla tego użytkownika.",

@@ -683,6 +683,7 @@
   "steam.useCode": "使用驗證碼",
   "steam.waiting": "正在等待 Steam 確認…",
   "steam.ownedGames": "{count} 款 Steam 遊戲",
+  "steam.libraryErrorTitle": "無法載入 Steam 媒體庫",
   "steam.refreshLibrary": "重新整理媒體庫",
   "steam.libraryRefreshed": "Steam 媒體庫已重新整理。",
   "steam.secureNote": "密碼絕不儲存；重新整理權杖僅為此 Windows 使用者經 DPAPI 加密保存。",

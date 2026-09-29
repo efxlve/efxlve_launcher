@@ -683,6 +683,7 @@
   "steam.useCode": "Usar un código",
   "steam.waiting": "Esperando la confirmación de Steam…",
   "steam.ownedGames": "{count} juegos de Steam",
+  "steam.libraryErrorTitle": "No se pudo cargar la biblioteca de Steam",
   "steam.refreshLibrary": "Actualizar biblioteca",
   "steam.libraryRefreshed": "Biblioteca de Steam actualizada.",
   "steam.secureNote": "La contraseña nunca se guarda; el token de sesión se sella con DPAPI de Windows solo para este usuario.",

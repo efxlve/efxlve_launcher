@@ -683,6 +683,7 @@
   "steam.useCode": "ใช้รหัส",
   "steam.waiting": "กำลังรอการยืนยันจาก Steam…",
   "steam.ownedGames": "เกม Steam {count} เกม",
+  "steam.libraryErrorTitle": "โหลดคลังเกม Steam ไม่ได้",
   "steam.refreshLibrary": "รีเฟรชคลังเกม",
   "steam.libraryRefreshed": "รีเฟรชคลังเกม Steam แล้ว",
   "steam.secureNote": "รหัสผ่านไม่ถูกจัดเก็บ โทเคนรีเฟรชถูกผนึกด้วย DPAPI ของ Windows สำหรับผู้ใช้นี้เท่านั้น",

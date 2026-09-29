@@ -683,6 +683,7 @@
   "steam.useCode": "Utiliser un code",
   "steam.waiting": "En attente de la confirmation de Steam…",
   "steam.ownedGames": "{count} jeux Steam",
+  "steam.libraryErrorTitle": "La bibliothèque Steam n’a pas pu être chargée",
   "steam.refreshLibrary": "Actualiser la bibliothèque",
   "steam.libraryRefreshed": "Bibliothèque Steam actualisée.",
   "steam.secureNote": "Le mot de passe n’est jamais stocké ; le jeton est scellé avec DPAPI Windows pour cet utilisateur uniquement.",

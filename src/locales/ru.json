@@ -683,6 +683,7 @@
   "steam.useCode": "Использовать код",
   "steam.waiting": "Ожидание подтверждения Steam…",
   "steam.ownedGames": "Игр Steam: {count}",
+  "steam.libraryErrorTitle": "Не удалось загрузить библиотеку Steam",
   "steam.refreshLibrary": "Обновить библиотеку",
   "steam.libraryRefreshed": "Библиотека Steam обновлена.",
   "steam.secureNote": "Пароль не сохраняется; токен обновления защищён DPAPI Windows только для этого пользователя.",

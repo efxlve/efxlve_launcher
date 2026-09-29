@@ -630,6 +630,11 @@ export function renderEpic(): string {
 
   const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
   const hasSteam = S.steamSummaries.length > 0;
+  // Per-store counts make a store's games (e.g. a freshly signed-in Steam
+  // library) discoverable from the store dropdown itself.
+  const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
+  const storeOption = (value: string, label: string, count: number): string =>
+    `<button class="sort-menu-item-btn store-menu-item ${S.sourceFilter === value ? "selected" : ""}" data-act="source-filter" data-val="${value}">${esc(label)}<span class="store-option-count tabular-nums">${count}</span></button>`;
   const currentStoreLabel =
     S.sourceFilter === "epic"
       ? t("source.epic")
@@ -648,10 +653,10 @@ export function renderEpic(): string {
         ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>
       <div id="store-dropdown-menu" class="sort-dropdown-menu ${S.isStoreDropdownOpen ? "show" : ""}">
-        <button class="sort-menu-item-btn ${S.sourceFilter === "all" ? "selected" : ""}" data-act="source-filter" data-val="all">${esc(t("source.all"))}</button>
-        <button class="sort-menu-item-btn ${S.sourceFilter === "epic" ? "selected" : ""}" data-act="source-filter" data-val="epic">${esc(t("source.epic"))}</button>
-        <button class="sort-menu-item-btn ${S.sourceFilter === "gog" ? "selected" : ""}" data-act="source-filter" data-val="gog">${esc(t("source.gog"))}</button>
-        ${hasSteam ? `<button class="sort-menu-item-btn ${S.sourceFilter === "steam" ? "selected" : ""}" data-act="source-filter" data-val="steam">${esc(t("source.steam"))}</button>` : ""}
+        ${storeOption("all", t("source.all"), totalLibraryGamesCount())}
+        ${storeOption("epic", t("source.epic"), visibleCount(S.epicSummaries.map((s) => s.appName)))}
+        ${storeOption("gog", t("source.gog"), visibleCount(S.gogSummaries.map((g) => g.key)))}
+        ${hasSteam ? storeOption("steam", t("source.steam"), visibleCount(S.steamSummaries.map((g) => g.key))) : ""}
       </div>
     </div>`
     : "";

@@ -11,9 +11,10 @@
  */
 
 import { setSteamSummaries } from "../../core/selectors";
-import { scheduleRender } from "../../core/render";
+import { notify, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
+import { localizeMessage, t } from "../../i18n";
 import {
   steamListInstalled,
   steamLoginStatus,
@@ -26,6 +27,9 @@ import {
 } from "../../steam";
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
+
+/** One visible report per run when the owned list cannot be fetched. */
+let ownedErrorNotified = false;
 
 /** Maps one manifest entry to a library item (a manifest means installed). */
 export function steamGameToItem(g: SteamGame): LibraryItem {
@@ -170,8 +174,13 @@ export async function loadSteamLibrary(): Promise<string | null> {
     }
     setSteamSummaries(items);
   } catch (e) {
-    // Offline or an expired session: installed games stay on screen.
+    // Offline or an expired session: installed games stay on screen, but a
+    // failure must not make a signed-in Steam library look empty.
     error = String(e);
+    if (!ownedErrorNotified && error !== "@t:steam.err.notSignedIn") {
+      ownedErrorNotified = true;
+      notify({ kind: "error", title: t("steam.libraryErrorTitle"), body: localizeMessage(error) });
+    }
   } finally {
     S.steamLibrarySyncing = false;
   }

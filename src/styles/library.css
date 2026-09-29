@@ -42,6 +42,9 @@
 }
 .sort-menu-item-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
 .sort-menu-item-btn.selected { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+/* Store dropdown rows carry a right-aligned game count. */
+.store-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.store-option-count { color: var(--text-3); font-size: 12px; }
 
 /* --- Collections dropdown in filter bar --- */
 .col-dropdown-container { position: relative; display: inline-flex; align-items: center; }
