@@ -72,7 +72,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { steamGameAction, steamSetApiKey } from "../../steam";
+import { steamGameAction, steamOpenClient, steamSetApiKey } from "../../steam";
 import { externalDetectGames, externalLaunchGame, type ExternalStore } from "../../external-stores";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
@@ -566,6 +566,12 @@ document.addEventListener("click", (e) => {
       ? t.dataset.mode
       : "launch";
     void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "steam-open-client") {
+    void steamOpenClient().catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "steam-open-settings") {
+    S.view = "settings";
+    S.settingsSection = "integrations";
+    void loadSettingsView();
   } else if (act === "save-steam-key") {
     const input = document.getElementById("settings-steam-key-input") as HTMLInputElement | null;
     const key = input?.value.trim() || "";

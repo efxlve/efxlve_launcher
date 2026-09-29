@@ -242,12 +242,52 @@ function gogCard(): string {
     </section>`;
 }
 
+/**
+ * Steam card: no sign-in exists here on purpose — the Steam client owns the
+ * session, so the launcher only reports what that client has installed.
+ */
+function steamCard(): string {
+  const status = S.steamStatus;
+  const installed = status?.installed ?? false;
+  const statusChip = installed
+    ? `<span class="chip ok">${t("steam.detected")}</span>`
+    : `<span class="chip">${t("settings.notInstalled")}</span>`;
+  const meta = installed
+    ? (status?.userName ? t("steam.signedInAs", { name: status.userName }) : t("steam.cardDesc"))
+    : t("steam.cardDesc");
+  const body = installed
+    ? `<p class="acc-lead">${t("steam.noSignIn")}</p>
+       <div class="list">
+         <div class="row"><div class="row-main"><div class="row-title">${t("steam.games", { count: status?.games ?? 0 })}</div>
+           <div class="row-meta" title="${esc(status?.path || "")}">${esc(status?.path || "")}</div></div>
+           <div class="row-actions">
+             <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>
+             <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
+           </div>
+         </div>
+       </div>`
+    : `<p class="acc-lead">${t("steam.noSignIn")}</p>`;
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">S</span>
+        <div class="row-main">
+          <div class="acc-store-name">Steam</div>
+          <div class="row-meta">${esc(meta)}</div>
+        </div>
+        ${statusChip}
+      </div>
+      <div class="acc-card-body">${body}</div>
+    </section>`;
+}
+
 /** Account list, switch, add and sign-out, embedded in Settings. */
 export function renderAccountSettings(): string {
   return `
     <div class="settings-accounts">
       ${epicCard()}
       ${gogCard()}
+      ${steamCard()}
     </div>`;
 }
 
@@ -258,5 +298,6 @@ export function renderAccounts(): string {
       <p class="page-sub acc-intro">${t("accounts.subtitle")}</p>
       ${epicCard()}
       ${gogCard()}
+      ${steamCard()}
     </div>`;
 }

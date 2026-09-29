@@ -1938,6 +1938,7 @@ fn main() {
             shared_library::shared_library_index,
             controller::controller_support_status,
             steam::steam_status,
+            steam::steam_open_client,
             steam::steam_list_installed,
             steam::steam_game_action,
             steam::steam_sync_playtime,

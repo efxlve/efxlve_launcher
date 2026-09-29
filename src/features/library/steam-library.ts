@@ -9,7 +9,7 @@ import { setSteamSummaries } from "../../core/selectors";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
-import { steamListInstalled, steamSyncPlaytime, type SteamGame, type SteamPlaytime } from "../../steam";
+import { steamListInstalled, steamStatus, steamSyncPlaytime, type SteamGame, type SteamPlaytime } from "../../steam";
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 
@@ -54,8 +54,14 @@ function mergeSteamPlaytimes(records: Record<string, SteamPlaytime>): void {
 /** Reads the installed Steam games plus their playtime and repaints the library. */
 export async function loadSteamLibrary(): Promise<void> {
   try {
-    const [games, playtimes] = await Promise.all([steamListInstalled(), steamSyncPlaytime()]);
+    const [games, playtimes, status] = await Promise.all([
+      steamListInstalled(),
+      steamSyncPlaytime(),
+      // The client status also feeds the Accounts page (no sign-in needed there).
+      steamStatus().catch(() => null),
+    ]);
     S.steamGames = games;
+    S.steamStatus = status;
     mergeSteamPlaytimes(playtimes);
     setSteamSummaries(games.map(steamGameToItem));
   } catch {

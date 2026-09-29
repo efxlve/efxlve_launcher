@@ -13,6 +13,8 @@ export interface SteamStatus {
   installed: boolean;
   path: string;
   games: number;
+  /** Persona name signed in to the Steam client (empty when unknown). */
+  userName: string;
 }
 
 /** One installed Steam game read from `appmanifest_<id>.acf`. */
@@ -51,6 +53,8 @@ export interface SteamGameDetails {
 }
 
 export const steamStatus = () => invoke<SteamStatus>("steam_status");
+/** Opens the Steam client itself (no game launch). */
+export const steamOpenClient = () => invoke<void>("steam_open_client");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
 /** Hands an action (launch/install/uninstall/validate) to the Steam client. */
 export const steamGameAction = (appId: string, action: "launch" | "install" | "uninstall" | "validate") =>

@@ -252,13 +252,15 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
     games
 }
 
-/// Status shown in Settings > Integrations.
+/// Status shown in Settings > Integrations and on the Accounts page.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SteamStatus {
     pub installed: bool,
     pub path: String,
     pub games: usize,
+    /// Persona name of the account signed in to the Steam client (empty when unknown).
+    pub user_name: String,
 }
 
 #[tauri::command]
@@ -266,19 +268,47 @@ pub fn steam_status() -> SteamStatus {
     match steam_install_path() {
         Some(path) => {
             let games = installed_games(&path).len();
+            let user_name = active_steam_user(&path).map(|(_, name)| name).unwrap_or_default();
             SteamStatus {
                 installed: true,
                 path: path.to_string_lossy().to_string(),
                 games,
+                user_name,
             }
         }
-        None => SteamStatus { installed: false, path: String::new(), games: 0 },
+        None => SteamStatus {
+            installed: false,
+            path: String::new(),
+            games: 0,
+            user_name: String::new(),
+        },
     }
+}
+
+/// Opens the Steam client itself (`steam://open/main`).
+#[tauri::command]
+pub fn steam_open_client() -> Result<(), String> {
+    spawn_uri("steam://open/main")
 }
 
 #[tauri::command]
 pub fn steam_list_installed() -> Vec<SteamGame> {
     steam_install_path().map(|p| installed_games(&p)).unwrap_or_default()
+}
+
+/// Opens a `steam://` URL without a console window.
+fn spawn_uri(target: &str) -> Result<(), String> {
+    let mut command = Command::new("cmd");
+    command.args(["/C", "start", "", target]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Steam could not be opened: {e}"))
 }
 
 /// Actions handed back to the Steam client. Steam owns the game process and
@@ -299,17 +329,7 @@ pub fn steam_game_action(app_id: String, action: String) -> Result<(), String> {
         "uninstall" => format!("steam://uninstall/{app_id}"),
         _ => format!("steam://validate/{app_id}"),
     };
-    let mut command = Command::new("cmd");
-    command.args(["/C", "start", "", &url]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-    command
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| format!("Steam could not be opened: {e}"))
+    spawn_uri(&url)
 }
 
 /// Playtime from the Steam client's own local config, in seconds.
@@ -597,21 +617,34 @@ pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), S
     Ok(())
 }
 
-/// SteamID64 of the most recently used account (`loginusers.vdf`).
-pub fn active_steam_id(steam: &Path) -> Option<String> {
+/// SteamID64 + persona of the most recently used account (`loginusers.vdf`).
+pub fn active_steam_user(steam: &Path) -> Option<(String, String)> {
     let text = std::fs::read_to_string(steam.join("config").join("loginusers.vdf")).ok()?;
     let root = parse_vdf(&text);
     let users = root.get("users")?;
-    let mut fallback = None;
+    let mut fallback: Option<(String, String)> = None;
     for (id, node) in users.entries() {
-        if fallback.is_none() && id.chars().all(|c| c.is_ascii_digit()) {
-            fallback = Some(id.clone());
+        if !id.chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let name = node
+            .get("PersonaName")
+            .and_then(Vdf::as_str)
+            .unwrap_or("")
+            .to_string();
+        if fallback.is_none() {
+            fallback = Some((id.clone(), name.clone()));
         }
         if node.get("MostRecent").and_then(Vdf::as_str) == Some("1") {
-            return Some(id.clone());
+            return Some((id.clone(), name));
         }
     }
     fallback
+}
+
+/// SteamID64 of the most recently used account.
+pub fn active_steam_id(steam: &Path) -> Option<String> {
+    active_steam_user(steam).map(|(id, _)| id)
 }
 
 /// Unix seconds → `YYYY-MM-DD` (civil date, no date crate needed).
@@ -1049,6 +1082,36 @@ mod tests {
             path_key(Path::new(r"C:/Program Files (x86)/Steam/steamapps/")),
             path_key(Path::new(r"c:\program files (x86)\steam\steamapps"))
         );
+    }
+
+    #[test]
+    fn login_users_resolve_to_the_most_recent_persona() {
+        let text = r#"
+"users"
+{
+	"76561199140017878"
+	{
+		"AccountName"		"efxlve"
+		"PersonaName"		"Efxlve"
+		"MostRecent"		"1"
+		"Timestamp"		"1700000000"
+	}
+	"76561198000000000"
+	{
+		"PersonaName"		"Other"
+		"MostRecent"		"0"
+	}
+}
+"#;
+        let root = parse_vdf(text);
+        let users = root.get("users").expect("users node");
+        let mut persona = String::new();
+        for (id, node) in users.entries() {
+            if node.get("MostRecent").and_then(Vdf::as_str) == Some("1") {
+                persona = format!("{id}:{}", node.get("PersonaName").and_then(Vdf::as_str).unwrap_or(""));
+            }
+        }
+        assert_eq!(persona, "76561199140017878:Efxlve");
     }
 
     #[test]
