@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md â€” Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 147 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 149 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. Â§2.1â€“Â§2.17 document the most-used groups in detail; Â§4 holds the generated complete index.
 
 ---
 
@@ -269,6 +269,13 @@
 |---|---|---|---|
 | `shared_library_index` | `() => Promise<SharedLibraryIndex>` | `shared_library.rs` | Union of every saved account's disk snapshot, excluding the active account's games and non-game entries (DLCs, UE/Fab assets, mobile-only). Owner is reported per game for the one-click switch. |
 
+### 2.21. External Stores (EA App / Ubisoft Connect / Xbox)
+
+| Command Name | TypeScript Signature | Rust Handler Location | Description |
+|---|---|---|---|
+| `external_detect_games` | `(store: "ea" \| "ubisoft" \| "xbox") => Promise<ExternalGame[]>` | `external_stores.rs` | Detects games installed by that store: EA registry keys + `installerdata.xml` content id, Ubisoft product ids (missing folders are skipped) and Xbox `MicrosoftGame.config` titles with the package family name resolved through one PowerShell call. Registry/disk only. |
+| `external_launch_game` | `(store: string, id: string) => Promise<void>` | `external_stores.rs` | Hands the launch to the store: `link2ea://launchgame/<id>` (or the EA App itself), `uplay://launch/<id>/0`, or `shell:appsFolder\<PackageFamilyName>!App`. Ids are validated; unknown stores are rejected. |
+
 ---
 
 ## 3. Background IPC Event Payloads
@@ -395,6 +402,7 @@ export interface ScreenshotsUpdatedEvent {
 | `cloud_backup/commands.rs` | 9 | `cloud_backup_get_settings`, `cloud_backup_save_settings`, `cloud_backup_test_connection`, `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`, `cloud_backup_upload_game`, `cloud_backup_list_game`, `cloud_backup_download_game`, `cloud_backup_delete_remote` |
 | `controller.rs` | 1 | `controller_support_status` |
 | `eos.rs` | 2 | `eos_overlay_status`, `eos_install_redistributable` |
+| `external_stores.rs` | 2 | `external_detect_games`, `external_launch_game` |
 | `gogdl/commands.rs` | 17 | `gog_auth_status`, `gog_auth_code`, `gog_logout`, `gog_cached_library`, `gog_list_games`, `gog_get_game_details`, `gog_get_achievements`, `gog_get_achievements_summary`, `gog_sync_achievements`, `gog_get_system_requirements`, `gog_get_saved_accounts`, `gog_switch_account`, `gog_remove_saved_account`, `gog_detect_galaxy_games`, `gog_sync_galaxy_installed`, `gog_check_updates`, `gog_sync_playtime` |
 | `gogdl/launcher.rs` | 2 | `gog_launch_game`, `gog_stop_game` |
 | `gogdl/transfers.rs` | 5 | `gog_install_game`, `gog_cancel_download`, `gog_uninstall_game`, `gog_import_game`, `gog_verify_game` |
@@ -409,5 +417,5 @@ export interface ScreenshotsUpdatedEvent {
 | `shared_library.rs` | 1 | `shared_library_index` |
 | `steam.rs` | 5 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details` |
 
-**Total: 147 commands**
+**Total: 149 commands**
 

@@ -667,6 +667,16 @@ Kullanıcı talimatı: "Launcher'sız yapabilirsen yap; yapamazsan Launcher'lı 
 - Her biri için ortak desen: algılama (registry/dosya, ağsız) → Ayarlar > Entegrasyonlar kartı → "Kütüphaneye Aktar" → kapak → başlatma protokolü → "X uygulamasında aç" eylemleri → 15 dil. Bizim tarafımızda **dosya işlemi yok**.
 - Mevcut `ThirdPartyLauncher` + `requiresThirdPartyLauncher` altyapısı genişletilir (EA/Ubisoft zaten tanınıyor).
 
+### 10.5. Uygulama durumu
+
+- **Faz 1 — algılama + kart + başlatma ✅ uygulandı (29.09.2026):** `src-tauri/src/external_stores.rs` (ağsız):
+  - **EA:** `HKLM\...\Electronic Arts\EA Games\*` alt anahtarları → `Install Dir`; kimlik olarak `__Installer\installerdata.xml` içindeki `content id` tercih edilir (yoksa anahtar adı). İstemci yolu (`EADesktop.exe`) kayıt defterinden okunur ve kimlik çözülemezse EA App açılır. Başlatma: `link2ea://launchgame/<id>`.
+  - **Ubisoft:** `HKLM\...\Ubisoft\Launcher\Installs\<id>` (ve `HKCU` eşdeğeri) → `InstallDir`; başlık klasör adından (`Watch_Dogs` → "Watch Dogs"). **Var olmayan klasörler atlanır** (bayat kayıtlar). Başlatma: `uplay://launch/<id>/0`.
+  - **Xbox:** `C:\XboxGames\*\Content\MicrosoftGame.config` (büyük/küçük harf duyarsız) → başlık `DefaultDisplayName`'den; paket kimliği `<Identity Name>`'den. Paket aile adı **tek PowerShell çağrısıyla** (`Get-AppxPackage`, `$_.Name` sözdizimi şart) çözülür → `shell:appsFolder\<PFN>!App` ile başlatılır; çözülemezse kart "başlatılamaz" gösterir.
+  - Arayüz: Ayarlar > Entegrasyonlar'da **EA App / Ubisoft Connect / Xbox** kartları (bulunan oyun sayısı, liste, satır başına "Oyna", "Yeniden Tara") + `src/external-stores.ts`. 9 yeni anahtar × 15 dil.
+  - **Canlı doğrulama:** EA istemcisi bulundu (0 oyun — bu makinede EA'ya ait oyun yok), Ubisoft'ta **bayat kayıt doğru şekilde atlandı**, Xbox'ta **4 oyun** kimlikleriyle çözüldü (Minecraft for Windows / Launcher / Java Edition, No Man's Sky).
+- **Faz 2 (plan):** bu oyunları kütüphaneye kaynak olarak ekleme (kapak, süre, favori/koleksiyon/gizleme) — Steam'deki `steam::<id>` deseninin `ea::` / `ubisoft::` / `xbox::` karşılığı; Xbox'ta süre/başarım verisi yerel API'de yok.
+
 ---
 
 ## 11. Epic Tarzı "Yükleme Seçenekleri" Diyaloğu (29.09.2026)
