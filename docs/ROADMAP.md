@@ -741,6 +741,7 @@ Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_
 ### 13.3. Sahip olunan tüm oyunlar
 
 - `IPlayerService/GetOwnedGames/v1?access_token=…&steamid=…&include_appinfo=1&include_played_free_games=1` → tüm kütüphane (ad, appid, `playtime_forever` dakika, `img_icon_url`). **Not:** erişim token'ıyla `steamid` zorunludur; yoksa API HTTP 400 "Missing required routing parameter" döndürür (canlı doğrulandı).
+- **Başarımlar anahtarsız:** Steam istemcisinin yerel `appcache/stats` ikili KeyValues dosyaları okunur (şema + açılma zamanları); Web API anahtarı yalnızca yerel şeması olmayan oyunlar için yedek. `ISteamUserStats` uçları erişim token'ını kabul etmiyor ("Required parameter 'key' is missing", canlı doğrulandı).
 - Kütüphanede **kurulu olmayanlar** da listelenir: `installed=false`, kapak Steam CDN'den, eylem **Kur** → `steam://install/<id>`; kurulu olanlar mevcut akışı korur (başlat/doğrula/kaldır).
 - Oynanış süresi API'den (yerel `localconfig` değerini asla düşürmez), `playtime_2weeks` eklenebilir.
 

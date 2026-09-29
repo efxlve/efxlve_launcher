@@ -30,7 +30,11 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         || target.dataset.mode === "validate"
         ? target.dataset.mode
         : "launch";
-      if (id) void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
+      if (id) {
+        void steamGameAction(id, mode)
+          .then(() => toast(i18nT("steam.opening"), ""))
+          .catch((e: unknown) => toast(String(e), "err"));
+      }
       return true;
     }
 

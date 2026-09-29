@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.413 keys, 158 Tauri commands, 53 Rust files).
+> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.414 keys, 158 Tauri commands, 53 Rust files).
 
 ---
 
@@ -191,7 +191,7 @@ efxlve_launcher/
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
 | `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **online heartbeat** (`presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
-| `steam.rs` | Steam client detection (VDF parser, library folders, app manifests), `steam://` hand-off, local playtime, store details and opt-in achievements. |
+| `steam.rs` | Steam client detection (text VDF parser, library folders, app manifests), `steam://` hand-off, local playtime, store details and achievements from the client's own **binary KeyValues** cache (Web API key only as a fallback). |
 | `steam_auth.rs` | Steam account sign-in (RSA-encrypted password, Steam Guard, poll, token refresh), DPAPI-sealed refresh token (`<app_data>/steam/auth.bin`), `GetOwnedGames`, `steam_login_*` / `steam_owned_games` / `steam_logout` commands. |
 | `external_stores.rs`, `controller.rs`, `winreg.rs` | EA/Ubisoft/Xbox detection & launch hand-off, controller bridge probe, shared registry helper. |
 
