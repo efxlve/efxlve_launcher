@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::winreg;
 
@@ -281,14 +281,24 @@ pub fn steam_list_installed() -> Vec<SteamGame> {
     steam_install_path().map(|p| installed_games(&p)).unwrap_or_default()
 }
 
-/// Hands the launch to the Steam client. Steam owns the game process, so the
-/// launcher never starts the executable itself.
+/// Actions handed back to the Steam client. Steam owns the game process and
+/// every file operation, so the launcher only opens the matching protocol URL.
+const STEAM_ACTIONS: [&str; 4] = ["launch", "install", "uninstall", "validate"];
+
 #[tauri::command]
-pub fn steam_launch_game(app_id: String) -> Result<(), String> {
+pub fn steam_game_action(app_id: String, action: String) -> Result<(), String> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
     }
-    let url = format!("steam://rungameid/{app_id}");
+    if !STEAM_ACTIONS.contains(&action.as_str()) {
+        return Err("Unsupported Steam action".into());
+    }
+    let url = match action.as_str() {
+        "launch" => format!("steam://rungameid/{app_id}"),
+        "install" => format!("steam://install/{app_id}"),
+        "uninstall" => format!("steam://uninstall/{app_id}"),
+        _ => format!("steam://validate/{app_id}"),
+    };
     let mut command = Command::new("cmd");
     command.args(["/C", "start", "", &url]);
     #[cfg(windows)]
@@ -300,6 +310,274 @@ pub fn steam_launch_game(app_id: String) -> Result<(), String> {
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("Steam could not be opened: {e}"))
+}
+
+/// Playtime from the Steam client's own local config, in seconds.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamPlaytime {
+    pub seconds: i64,
+    /// Unix seconds of the last session, when Steam recorded one.
+    pub last_played: Option<i64>,
+}
+
+/// Reads `userdata/<id>/config/localconfig.vdf` for the most recently used
+/// Steam account and maps `<appid>` to playtime (minutes in the file).
+pub fn read_playtimes(steam: &Path) -> std::collections::HashMap<String, SteamPlaytime> {
+    let mut result = std::collections::HashMap::new();
+    let userdata = steam.join("userdata");
+    let Ok(entries) = std::fs::read_dir(&userdata) else { return result };
+    let mut newest: Option<(std::time::SystemTime, PathBuf)> = None;
+    for entry in entries.flatten() {
+        let config = entry.path().join("config").join("localconfig.vdf");
+        let Ok(meta) = std::fs::metadata(&config) else { continue };
+        let modified = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+        if newest.as_ref().map(|(t, _)| modified > *t).unwrap_or(true) {
+            newest = Some((modified, config));
+        }
+    }
+    let Some((_, path)) = newest else { return result };
+    let Ok(text) = std::fs::read_to_string(&path) else { return result };
+    let root = parse_vdf(&text);
+    let apps = root
+        .get("UserLocalConfigStore")
+        .and_then(|n| n.get("Software"))
+        .and_then(|n| n.get("Valve"))
+        .and_then(|n| n.get("Steam"))
+        .and_then(|n| n.get("apps"));
+    let Some(apps) = apps else { return result };
+    for (app_id, node) in apps.entries() {
+        if !app_id.chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let minutes = node
+            .get("Playtime")
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(0);
+        if minutes <= 0 {
+            continue;
+        }
+        let last_played = node
+            .get("LastPlayed")
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok())
+            .filter(|v| *v > 0);
+        result.insert(app_id.clone(), SteamPlaytime { seconds: minutes * 60, last_played });
+    }
+    result
+}
+
+#[tauri::command]
+pub fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime> {
+    steam_install_path().map(|p| read_playtimes(&p)).unwrap_or_default()
+}
+
+/* ---------- Store details (network, cached on disk) ---------- */
+
+/// How long a store description stays fresh.
+const DETAILS_TTL_SECS: u64 = 6 * 60 * 60;
+
+/// Store metadata shown on the game page.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamGameDetails {
+    pub app_id: String,
+    pub name: String,
+    pub short_description: String,
+    pub description: String,
+    pub developers: Vec<String>,
+    pub publishers: Vec<String>,
+    pub genres: Vec<String>,
+    pub release_date: String,
+    pub header_image: String,
+    pub website: String,
+    pub screenshots: Vec<String>,
+    /// Requirement bullets (tags stripped, one per line).
+    pub requirements_min: Vec<String>,
+    pub requirements_rec: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedDetails {
+    fetched_at: u64,
+    details: SteamGameDetails,
+}
+
+/// Drops tags and decodes the few entities Steam actually uses.
+pub fn strip_html(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for ch in html.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                out.push('\n');
+            }
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    let decoded = out
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&nbsp;", " ");
+    decoded
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn html_lines(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(|html| {
+            strip_html(html)
+                .lines()
+                .map(|l| l.to_string())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn string_list(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|item| item.get("description").and_then(|d| d.as_str()))
+                .map(|s| s.to_string())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Turns one `appdetails` payload into the flat structure the game page uses.
+pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDetails {
+    let screenshots = data
+        .get("screenshots")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|s| s.get("path_full").and_then(|p| p.as_str()))
+                .map(|s| s.to_string())
+                .collect()
+        })
+        .unwrap_or_default();
+    let requirements = data.get("pc_requirements").cloned().unwrap_or(serde_json::Value::Null);
+    SteamGameDetails {
+        app_id: app_id.to_string(),
+        name: data.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        short_description: data
+            .get("short_description")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        description: data
+            .get("detailed_description")
+            .and_then(|v| v.as_str())
+            .map(strip_html)
+            .unwrap_or_default(),
+        developers: data
+            .get("developers")
+            .and_then(|v| v.as_array())
+            .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+            .unwrap_or_default(),
+        publishers: data
+            .get("publishers")
+            .and_then(|v| v.as_array())
+            .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+            .unwrap_or_default(),
+        genres: string_list(data, "genres"),
+        release_date: data
+            .get("release_date")
+            .and_then(|v| v.get("date"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        header_image: data.get("header_image").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        website: data.get("website").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        screenshots,
+        requirements_min: html_lines(&requirements, "minimum"),
+        requirements_rec: html_lines(&requirements, "recommended"),
+    }
+}
+
+fn details_cache_path(app: &tauri::AppHandle, app_id: &str, language: &str) -> PathBuf {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("steam")
+        .join("details");
+    let _ = std::fs::create_dir_all(&dir);
+    dir.join(format!("{app_id}_{language}.json"))
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Store description, developer and requirements for one game.
+///
+/// The Steam store API is rate limited, so a 6 hour disk cache answers repeated
+/// opens and the request only runs when the page actually asks for it.
+#[tauri::command]
+pub async fn steam_get_game_details(
+    app: tauri::AppHandle,
+    app_id: String,
+    language: Option<String>,
+) -> Result<SteamGameDetails, String> {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Invalid Steam app id".into());
+    }
+    let language = language.unwrap_or_else(|| "english".into());
+    let cache = details_cache_path(&app, &app_id, &language);
+    if let Ok(text) = std::fs::read_to_string(&cache) {
+        if let Ok(cached) = serde_json::from_str::<CachedDetails>(&text) {
+            if now_secs().saturating_sub(cached.fetched_at) < DETAILS_TTL_SECS {
+                return Ok(cached.details);
+            }
+        }
+    }
+
+    let url = format!("https://store.steampowered.com/api/appdetails?appids={app_id}&l={language}");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(12))
+        .user_agent("efxlve-launcher")
+        .build()
+        .map_err(|e| e.to_string())?;
+    let payload: serde_json::Value = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Steam store could not be reached: {e}"))?
+        .json()
+        .await
+        .map_err(|e| format!("Steam store answered with an unexpected payload: {e}"))?;
+    let entry = payload.get(&app_id).ok_or("Steam store has no record for this app")?;
+    if entry.get("success").and_then(|v| v.as_bool()) != Some(true) {
+        return Err("Steam store has no record for this app".into());
+    }
+    let data = entry.get("data").ok_or("Steam store returned no data")?;
+    let details = parse_app_details(&app_id, data);
+    let cached = CachedDetails { fetched_at: now_secs(), details: details.clone() };
+    if let Ok(text) = serde_json::to_string(&cached) {
+        let _ = std::fs::write(&cache, text);
+    }
+    Ok(details)
 }
 
 #[cfg(test)]
@@ -373,9 +651,93 @@ mod tests {
     }
 
     #[test]
-    fn launch_rejects_non_numeric_app_ids() {
-        assert!(steam_launch_game("620; rm -rf".into()).is_err());
-        assert!(steam_launch_game(String::new()).is_err());
+    fn actions_reject_bad_input() {
+        assert!(steam_game_action("620; rm -rf".into(), "launch".into()).is_err());
+        assert!(steam_game_action(String::new(), "launch".into()).is_err());
+        assert!(steam_game_action("620".into(), "delete-everything".into()).is_err());
+    }
+
+    #[test]
+    fn html_is_flattened_into_clean_lines() {
+        let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li>OS: Windows 10</li><li>Memory: 8 GB &amp; up</li></ul>";
+        assert_eq!(strip_html(html), "Minimum:\nOS: Windows 10\nMemory: 8 GB & up");
+        assert_eq!(strip_html(""), "");
+    }
+
+    #[test]
+    fn app_details_map_to_the_game_page_shape() {
+        let data = serde_json::json!({
+            "name": "Portal 2",
+            "short_description": "Puzzle platformer",
+            "detailed_description": "<p>Think with portals</p>",
+            "developers": ["Valve"],
+            "publishers": ["Valve"],
+            "genres": [{ "description": "Action" }, { "description": "Adventure" }],
+            "release_date": { "date": "18 Apr, 2011" },
+            "header_image": "https://cdn/header.jpg",
+            "website": "https://thinkwithportals.com",
+            "screenshots": [{ "path_full": "https://cdn/1.jpg" }],
+            "pc_requirements": { "minimum": "<li>OS: Windows 7</li>", "recommended": "<li>OS: Windows 10</li>" }
+        });
+        let details = parse_app_details("620", &data);
+        assert_eq!(details.name, "Portal 2");
+        assert_eq!(details.description, "Think with portals");
+        assert_eq!(details.genres, vec!["Action", "Adventure"]);
+        assert_eq!(details.release_date, "18 Apr, 2011");
+        assert_eq!(details.screenshots, vec!["https://cdn/1.jpg"]);
+        assert_eq!(details.requirements_min, vec!["OS: Windows 7"]);
+        assert_eq!(details.requirements_rec, vec!["OS: Windows 10"]);
+    }
+
+    #[test]
+    fn playtimes_are_read_from_the_newest_local_config() {
+        let text = r#"
+"UserLocalConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"620"
+					{
+						"LastPlayed"		"1700000000"
+						"Playtime"		"90"
+					}
+					"730"
+					{
+						"Playtime"		"0"
+					}
+				}
+			}
+		}
+	}
+}
+"#;
+        let root = parse_vdf(text);
+        let apps = root
+            .get("UserLocalConfigStore")
+            .and_then(|n| n.get("Software"))
+            .and_then(|n| n.get("Valve"))
+            .and_then(|n| n.get("Steam"))
+            .and_then(|n| n.get("apps"))
+            .expect("apps node");
+        let minutes = apps
+            .get("620")
+            .and_then(|n| n.get("Playtime"))
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(0);
+        assert_eq!(minutes * 60, 5400);
+        let last = apps
+            .get("620")
+            .and_then(|n| n.get("LastPlayed"))
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok());
+        assert_eq!(last, Some(1_700_000_000));
     }
 
     #[test]
@@ -387,7 +749,7 @@ mod tests {
     }
 
     /// Live check against this machine's Steam install.
-    /// Run: `cargo test live_steam_detection -- --ignored --nocapture`
+    /// Run: `cargo test live_steam -- --ignored --nocapture`
     #[test]
     #[ignore]
     fn live_steam_detection() {
@@ -412,5 +774,45 @@ mod tests {
                 game.state_flags
             );
         }
+    }
+
+    /// Live check for playtime + store details (network).
+    /// Run: `cargo test live_steam_playtime_and_details -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_playtime_and_details() {
+        let Some(path) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        let playtimes = read_playtimes(&path);
+        println!("playtime records: {}", playtimes.len());
+        for (app_id, record) in playtimes.iter().take(10) {
+            println!("  {app_id} | {} min | last {:?}", record.seconds / 60, record.last_played);
+        }
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let details = rt.block_on(async {
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(15))
+                .user_agent("efxlve-launcher")
+                .build()
+                .unwrap();
+            let payload: serde_json::Value = client
+                .get("https://store.steampowered.com/api/appdetails?appids=620&l=english")
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            parse_app_details("620", payload.get("620").unwrap().get("data").unwrap())
+        });
+        println!(
+            "details: {} | {} | genres {:?} | min req {} lines",
+            details.name,
+            details.release_date,
+            details.genres,
+            details.requirements_min.len()
+        );
     }
 }

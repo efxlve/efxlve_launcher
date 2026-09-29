@@ -72,7 +72,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { steamLaunchGame } from "../../steam";
+import { steamGameAction } from "../../steam";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
@@ -561,7 +561,7 @@ document.addEventListener("click", (e) => {
     S.steamStatus = null;
     void loadIntegrationsView(true);
   } else if (act === "steam-launch" && id) {
-    void steamLaunchGame(id).catch((e: unknown) => toast(String(e), "err"));
+    void steamGameAction(id, "launch").catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";

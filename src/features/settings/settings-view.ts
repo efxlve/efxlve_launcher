@@ -41,8 +41,7 @@ import {
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
-import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";
-import type { ControllerKind } from "../../core/types";
+import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [

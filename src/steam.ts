@@ -26,6 +26,35 @@ export interface SteamGame {
   library: string;
 }
 
+/** Playtime from the Steam client's own local config, in seconds. */
+export interface SteamPlaytime {
+  seconds: number;
+  lastPlayed: number | null;
+}
+
+/** Store metadata shown on the game page (cached on disk for 6 hours). */
+export interface SteamGameDetails {
+  appId: string;
+  name: string;
+  shortDescription: string;
+  description: string;
+  developers: string[];
+  publishers: string[];
+  genres: string[];
+  releaseDate: string;
+  headerImage: string;
+  website: string;
+  screenshots: string[];
+  requirementsMin: string[];
+  requirementsRec: string[];
+}
+
 export const steamStatus = () => invoke<SteamStatus>("steam_status");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
-export const steamLaunchGame = (appId: string) => invoke<void>("steam_launch_game", { appId });
+/** Hands an action (launch/install/uninstall/validate) to the Steam client. */
+export const steamGameAction = (appId: string, action: "launch" | "install" | "uninstall" | "validate") =>
+  invoke<void>("steam_game_action", { appId, action });
+export const steamSyncPlaytime = () =>
+  invoke<Record<string, SteamPlaytime>>("steam_sync_playtime");
+export const steamGetGameDetails = (appId: string, language?: string) =>
+  invoke<SteamGameDetails>("steam_get_game_details", { appId, language: language ?? null });
