@@ -740,13 +740,13 @@ Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_
 
 ### 13.3. Sahip olunan tüm oyunlar
 
-- `IPlayerService/GetOwnedGames/v1?access_token=…&include_appinfo=1&include_played_free_games=1` → tüm kütüphane (ad, appid, `playtime_forever` dakika, `img_icon_url`).
+- `IPlayerService/GetOwnedGames/v1?access_token=…&steamid=…&include_appinfo=1&include_played_free_games=1` → tüm kütüphane (ad, appid, `playtime_forever` dakika, `img_icon_url`). **Not:** erişim token'ıyla `steamid` zorunludur; yoksa API HTTP 400 "Missing required routing parameter" döndürür (canlı doğrulandı).
 - Kütüphanede **kurulu olmayanlar** da listelenir: `installed=false`, kapak Steam CDN'den, eylem **Kur** → `steam://install/<id>`; kurulu olanlar mevcut akışı korur (başlat/doğrula/kaldır).
 - Oynanış süresi API'den (yerel `localconfig` değerini asla düşürmez), `playtime_2weeks` eklenebilir.
 
 ### 13.4. Arayüz
 
-- Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard kodu** adımları; giriş yapılmışsa hesap adı + oyun sayısı + "Çıkış Yap".
+- Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard** adımları; Steam mobil onay sunduğunda varsayılan görünüm tek dokunuşlu onay bekleme ekranıdır ("Kodu kullan" ile kod alanı açılır), yalnız kod/yalnız e-posta guard'ında kod alanı doğrudan gösterilir. Giriş yapılmışsa hesap adı + oyun sayısı + "Çıkış Yap".
 - İstemciden algılanan durum ayrı satır olarak kalır (istemci kurulu olmasa da hesap girişi kütüphaneyi getirir).
 - Ayarlar'daki Web API anahtarı satırı **alternatif** olarak kalır (giriş istemeyenler başarımlar için kullanır).
 

@@ -368,6 +368,8 @@ export const S = {
   steamAuthBusy: false,
   /** Account name while a sign-in is in flight (shown in the code step). */
   steamAuthUser: "",
+  /** True when the user chose the code input over the mobile-app approval. */
+  steamAuthCodeMode: false,
   steamOwnedCount: 0,
   steamLibrarySyncing: false,
   externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<

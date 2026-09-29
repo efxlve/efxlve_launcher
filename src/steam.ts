@@ -91,6 +91,11 @@ export interface SteamLoginStatus {
   emailHint: string;
   /** Poll interval suggested by Steam, in seconds. */
   interval: number;
+  /**
+   * Steam also accepts a one-tap approval in the mobile app (or an email link)
+   * for this session, so the code is optional.
+   */
+  confirm: boolean;
 }
 
 /** One owned Steam game read through `IPlayerService/GetOwnedGames`. */

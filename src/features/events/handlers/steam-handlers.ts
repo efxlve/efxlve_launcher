@@ -11,6 +11,7 @@ import { steamGameAction, steamOpenClient, steamSetApiKey } from "../../../steam
 import {
   cancelSteamLogin,
   logoutSteam,
+  promptSteamCodeMode,
   promptSteamLogin,
   submitSteamCredentials,
   submitSteamGuardCode,
@@ -75,6 +76,10 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
 
     case "steam-login-code":
       void submitSteamGuardCode();
+      return true;
+
+    case "steam-login-code-mode":
+      promptSteamCodeMode();
       return true;
 
     case "steam-login-cancel":

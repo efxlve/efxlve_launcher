@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.411 keys, 158 Tauri commands, 53 Rust files).
+> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.412 keys, 158 Tauri commands, 53 Rust files).
 
 ---
 

@@ -300,17 +300,23 @@ function steamAccountBlock(): string {
 function steamSignInBlock(): string {
   const step = S.steamAuthStep;
   if (step === "code" || step === "confirm" || step === "pending") {
-    const lead = step === "code"
+    // Steam Guard is not code-only: the mobile app (or an email link) can
+    // approve the request with one tap, so that is the default view whenever
+    // Steam offers it; the code input is one click away.
+    const canApprove = Boolean(S.steamAuth?.confirm);
+    const showCodeInput = step === "code" && (!canApprove || S.steamAuthCodeMode);
+    const showAppApproval = !showCodeInput;
+    const lead = showCodeInput
       ? (S.steamAuth?.emailHint ? t("steam.guardEmail", { email: S.steamAuth.emailHint }) : t("steam.guardDevice"))
-      : step === "confirm"
-        ? t("steam.guardConfirm")
-        : t("steam.waiting");
-    const codeRow = step === "code"
+      : step === "pending"
+        ? t("steam.waiting")
+        : t("steam.guardConfirm");
+    const codeRow = showCodeInput
       ? `<div class="auth-code">
            <input id="steam-guard" class="input" placeholder="${t("steam.guardPlaceholder")}" autocomplete="one-time-code" spellcheck="false" />
            <button class="btn primary" data-act="steam-login-code" ${S.steamAuthBusy ? "disabled" : ""}>${icon("check", 14)} ${t("steam.guardSubmit")}</button>
          </div>
-         <p class="acc-hint">${t("steam.guardHint")}</p>`
+         ${canApprove ? `<p class="acc-hint">${t("steam.guardHint")}</p>` : ""}`
       : "";
     return `
       ${steamSectionHead(t("steam.accountTitle"))}
@@ -319,8 +325,9 @@ function steamSignInBlock(): string {
         ${S.steamAuthUser ? `<p class="acc-hint">${esc(S.steamAuthUser)}</p>` : ""}
         ${codeRow}
         <div class="acc-actions">
-          ${step === "pending" || step === "confirm" ? `<span class="chip">${t("steam.waiting")}</span>` : ""}
+          ${showAppApproval ? `<span class="chip">${t("steam.waiting")}</span>` : ""}
           <span class="acc-spacer"></span>
+          ${!showCodeInput ? `<button class="btn ghost small" data-act="steam-login-code-mode">${t("steam.useCode")}</button>` : ""}
           <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
         </div>
       </div>`;

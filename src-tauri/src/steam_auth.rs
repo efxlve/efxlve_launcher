@@ -97,6 +97,7 @@ impl PendingLogin {
             steam_id: self.steam_id.clone(),
             email_hint: self.email_hint.clone(),
             interval: self.interval,
+            confirm: self.needs_confirmation(),
         }
     }
 }
@@ -160,6 +161,9 @@ pub struct SteamLoginStatus {
     pub steam_id: String,
     pub email_hint: String,
     pub interval: f32,
+    /// Steam also accepts a one-tap approval in the mobile app (or an email
+    /// link) for this session, so the code is optional.
+    pub confirm: bool,
 }
 
 impl SteamLoginStatus {
@@ -170,6 +174,7 @@ impl SteamLoginStatus {
             steam_id: String::new(),
             email_hint: String::new(),
             interval: 0.0,
+            confirm: false,
         }
     }
 
@@ -180,6 +185,7 @@ impl SteamLoginStatus {
             steam_id: session.steam_id.clone(),
             email_hint: String::new(),
             interval: 0.0,
+            confirm: false,
         }
     }
 }
@@ -928,15 +934,19 @@ async fn generate_access_token(
     Ok(token)
 }
 
-/// Every owned game (installed or not), with Steam's own playtime.
+/// Every owned game (installed or not), with Steam's own playtime. The
+/// `steamid` parameter is mandatory with an access token: Steam's gateway
+/// rejects the request with "Missing required routing parameter" without it.
 async fn fetch_owned_games(
     client: &reqwest::Client,
     access_token: &str,
+    steam_id: &str,
 ) -> Result<SteamOwnedGames, String> {
     let response = client
         .get(OWNED_GAMES_URL)
         .query(&[
             ("access_token", access_token),
+            ("steamid", steam_id),
             ("include_appinfo", "1"),
             ("include_played_free_games", "1"),
             ("format", "json"),
@@ -1119,12 +1129,12 @@ pub fn steam_logout(app: tauri::AppHandle) {
 pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames, String> {
     ensure_disk_checked(&app);
 
-    let cached = {
+    let (steam_id, cached) = {
         let state = lock();
         let Some(session) = state.session.as_ref() else {
             return Err("@t:steam.err.notSignedIn".to_string());
         };
-        session.access_token_valid().map(str::to_string)
+        (session.steam_id.clone(), session.access_token_valid().map(str::to_string))
     };
 
     let client = http_client()?;
@@ -1133,10 +1143,10 @@ pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames,
         None => refresh_access_token(&client).await?,
     };
 
-    match fetch_owned_games(&client, &token).await {
+    match fetch_owned_games(&client, &token, &steam_id).await {
         Err(err) if err == "@t:steam.err.sessionExpired" => {
             let fresh = refresh_access_token(&client).await?;
-            fetch_owned_games(&client, &fresh).await
+            fetch_owned_games(&client, &fresh, &steam_id).await
         }
         other => other,
     }
@@ -1194,6 +1204,7 @@ mod tests {
         assert_eq!(pending.code_type(), GUARD_DEVICE_CODE);
         assert!(pending.needs_code());
         assert!(pending.needs_confirmation());
+        assert!(pending.status().confirm, "the app approval stays available");
         assert_eq!(pending.status().state, "code");
     }
 
@@ -1302,6 +1313,19 @@ mod tests {
         assert_eq!(owned.games[1].app_id, "730");
         assert_eq!(owned.games[1].playtime_two_weeks, 12);
         assert!(parse_owned_games(&serde_json::json!({})).games.is_empty());
+    }
+
+    #[test]
+    fn email_only_guard_has_no_app_approval() {
+        let payload = serde_json::json!({
+            "client_id": "1",
+            "request_id": "AA==",
+            "allowed_confirmations": [{ "confirmation_type": 2, "associated_message": "example.com" }]
+        });
+        let pending = parse_begin_response("x", false, &payload).expect("pending");
+        assert_eq!(pending.status().state, "code");
+        assert_eq!(pending.status().email_hint, "example.com");
+        assert!(!pending.status().confirm, "no mobile confirmation was offered");
     }
 
     #[test]
@@ -1535,6 +1559,51 @@ mod tests {
                 .unwrap_or_default();
             println!("poll eresult: {} keys: {poll_keys:?}", result.eresult);
             assert_eq!(result.eresult, 1, "a fresh session must poll OK");
+        });
+    }
+
+    /// Live probe for the owned-library path using the launcher's own sealed
+    /// session (`%APPDATA%\com.efxlve.launcher\steam\auth.bin`, same Windows
+    /// user). Prints counts only, never tokens.
+    /// Run: `cargo test live_steam_owned_probe -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_owned_probe() {
+        use zeroize::Zeroizing;
+        let appdata = std::env::var("APPDATA").expect("APPDATA");
+        let path = PathBuf::from(appdata)
+            .join("com.efxlve.launcher")
+            .join("steam")
+            .join("auth.bin");
+        let sealed = std::fs::read(&path).expect("sealed session file");
+        let plain = Zeroizing::new(dpapi::unprotect(&sealed).expect("dpapi open"));
+        let stored: StoredSession = serde_json::from_slice(&plain).expect("stored session");
+        println!(
+            "account: {}, steam_id: {} chars, saved_at: {}",
+            stored.account_name,
+            stored.steam_id.len(),
+            stored.saved_at
+        );
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let client = http_client().unwrap();
+            let token = finalize_web_login(&client, &stored.refresh_token, &stored.steam_id).await;
+            match &token {
+                Ok(token) => println!("access token: {} chars", token.len()),
+                Err(err) => println!("finalize error: {err}"),
+            }
+            let Ok(token) = token else { return };
+            match fetch_owned_games(&client, &token, &stored.steam_id).await {
+                Ok(owned) => {
+                    println!("owned: {} games", owned.game_count);
+                    for game in owned.games.iter().take(3) {
+                        println!("  {} {}", game.app_id, game.name);
+                    }
+                    assert!(owned.game_count > 0, "the account owns games");
+                }
+                Err(err) => panic!("owned request failed: {err}"),
+            }
         });
     }
 }

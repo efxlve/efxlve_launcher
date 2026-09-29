@@ -96,6 +96,13 @@ export function promptSteamLogin(): void {
   stopSteamPoll();
   S.steamAuthStep = "credentials";
   S.steamAuthBusy = false;
+  S.steamAuthCodeMode = false;
+  render();
+}
+
+/** Switches the Steam Guard step from app approval to the code input. */
+export function promptSteamCodeMode(): void {
+  S.steamAuthCodeMode = true;
   render();
 }
 
@@ -104,6 +111,7 @@ export function cancelSteamLogin(): void {
   stopSteamPoll();
   S.steamAuthStep = S.steamAuth?.state === "signed_in" ? "signed_in" : "idle";
   S.steamAuthBusy = false;
+  S.steamAuthCodeMode = false;
   render();
 }
 
