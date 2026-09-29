@@ -359,6 +359,10 @@ export const S = {
   controllerBridge: (null) as ControllerSupportStatus | null,
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],
+  externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<
+    import("../external-stores").ExternalStore,
+    import("../external-stores").ExternalGame[]
+  >,
   appVersion: "0.1.17",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",

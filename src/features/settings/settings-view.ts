@@ -41,7 +41,8 @@ import {
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
-import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";import type { ControllerKind } from "../../core/types";
+import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";
+import { externalDetectGames, type ExternalGame, type ExternalStore } from "../../external-stores";import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
@@ -188,6 +189,9 @@ function renderIntegrations(): string {
   return (
     renderCloudBackupSettingsGroup() +
     renderSteamGroup() +
+    renderExternalStoreGroup("ea", "external.eaTitle", "external.eaDesc") +
+    renderExternalStoreGroup("ubisoft", "external.ubisoftTitle", "external.ubisoftDesc") +
+    renderExternalStoreGroup("xbox", "external.xboxTitle", "external.xboxDesc") +
     group(eglGroup, t("settings.eglTitle")) +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     group(tplRows, t("settings.thirdPartyTitle")) +
@@ -247,6 +251,40 @@ function renderController(): string {
   );
 
   return group(padRows, t("controller.padsTitle")) + group(bridge, t("settings.secController"));
+}
+
+/**
+ * EA / Ubisoft / Xbox card: detected games with hand-off launching. These
+ * stores licence their games in their own client, so the launcher only reads
+ * their metadata and never installs, moves or removes anything.
+ */
+function renderExternalStoreGroup(
+  store: ExternalStore,
+  titleKey: string,
+  descKey: string,
+): string {
+  const games = S.externalGames[store] ?? [];
+  const rescan = `<button class="btn ghost small" data-act="external-scan" data-store="${store}">${t("settings.rescan")}</button>`;
+  const MAX_ROWS = 40;
+  const rows = games.length === 0
+    ? `<div class="row"><div class="row-meta">${t("external.none")}</div></div>`
+    : games.slice(0, MAX_ROWS).map((g) => `
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">${esc(g.title)}</div>
+          <div class="row-meta" title="${esc(g.installPath)}">${esc(g.installPath)}</div>
+        </div>
+        ${g.id
+          ? `<button class="btn ghost small" data-act="external-launch" data-store="${store}" data-id="${esc(g.id)}">${icon("play", 13)} ${t("common.play")}</button>`
+          : `<span class="chip">${t("external.notLaunchable")}</span>`}
+      </div>`).join("");
+  const more = games.length > MAX_ROWS
+    ? `<div class="row"><div class="row-meta">${t("steam.more", { count: games.length - MAX_ROWS })}</div></div>`
+    : "";
+  return group(
+    row(t("external.count", { count: games.length }), t(descKey), rescan) + rows + more,
+    t(titleKey),
+  );
 }
 
 /** Steam card: detected client, installed games and the Steam hand-off. */
@@ -586,13 +624,16 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, thirdParty, eos, galaxyList, steamState, steamGames] = await Promise.all([
+    const [eglList, thirdParty, eos, galaxyList, steamState, steamGames, eaGames, ubisoftGames, xboxGames] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
       steamListInstalled().catch(() => [] as SteamGame[]),
+      externalDetectGames("ea").catch(() => [] as ExternalGame[]),
+      externalDetectGames("ubisoft").catch(() => [] as ExternalGame[]),
+      externalDetectGames("xbox").catch(() => [] as ExternalGame[]),
     ]);
     S.eglDetectedList = eglList;
     S.thirdPartyLaunchers = thirdParty;
@@ -600,6 +641,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.gogGalaxyDetected = galaxyList;
     S.steamStatus = steamState;
     S.steamGames = steamGames;
+    S.externalGames = { ea: eaGames, ubisoft: ubisoftGames, xbox: xboxGames };
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

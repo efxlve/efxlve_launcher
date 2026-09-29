@@ -9,6 +9,7 @@ mod cloud_backup;
 mod shared_library;
 mod controller;
 mod steam;
+mod external_stores;
 mod winreg;
 
 use std::sync::Mutex;
@@ -1938,6 +1939,8 @@ fn main() {
             steam::steam_game_action,
             steam::steam_sync_playtime,
             steam::steam_get_game_details,
+            external_stores::external_detect_games,
+            external_stores::external_launch_game,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,

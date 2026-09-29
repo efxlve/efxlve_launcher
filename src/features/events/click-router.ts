@@ -73,6 +73,7 @@ import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { steamGameAction } from "../../steam";
+import { externalDetectGames, externalLaunchGame, type ExternalStore } from "../../external-stores";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
@@ -565,6 +566,16 @@ document.addEventListener("click", (e) => {
       ? t.dataset.mode
       : "launch";
     void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "external-scan" && t.dataset.store) {
+    const store = t.dataset.store as ExternalStore;
+    void externalDetectGames(store)
+      .then((games) => {
+        S.externalGames = { ...S.externalGames, [store]: games };
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "external-launch" && id && t.dataset.store) {
+    void externalLaunchGame(t.dataset.store as ExternalStore, id).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";
