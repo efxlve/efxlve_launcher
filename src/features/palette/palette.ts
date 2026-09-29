@@ -53,12 +53,15 @@ function commands(): Command[] {
 function gameItem(appName: string, title: string, installed: boolean, idx: number): string {
   const raw = rawOf(appName);
   const shared = sharedOwnerOf(appName);
-  const cover = S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || shared?.cover || null;
+  const steam = appName.startsWith("steam::");
+  const cover = S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || shared?.cover || summaryOf(appName)?.cover || null;
   const action = shared
     ? `<button class="btn ghost small" data-act="shared-switch" data-id="${esc(shared.ownerKey)}" tabindex="-1" title="${t("shared.detailNote", { name: esc(shared.ownerName) })}">${t("shared.switch")}</button>`
-    : installed
-      ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
-      : "";
+    : steam
+      ? `<button class="btn play small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" tabindex="-1">${t("palette.play")}</button>`
+      : installed
+        ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
+        : "";
   return `
     <div class="palette-item" data-idx="${idx}" data-act="epic-detail" data-id="${esc(appName)}" role="option">
       ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="palette-thumb"></span>`}

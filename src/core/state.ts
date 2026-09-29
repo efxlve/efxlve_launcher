@@ -139,6 +139,8 @@ export const S = {
   sourceFilter: ("all") as SourceFilter,
   gogSummaries: ([]) as LibraryItem[],
   gogSummariesMap: (new Map()) as Map<string, LibraryItem>,
+  steamSummaries: ([]) as LibraryItem[],
+  steamSummariesMap: (new Map()) as Map<string, LibraryItem>,
   gogGamesRaw: ([]) as unknown[],
   gogGamesRawMap: (new Map()) as Map<string, unknown>,
   allGamesMap: (new Map()) as Map<string, LibraryItem>,

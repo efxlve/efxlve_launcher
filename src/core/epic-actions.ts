@@ -24,6 +24,7 @@ import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
+import { steamGameAction } from "../steam";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -48,6 +49,17 @@ export async function epicStop(appName: string): Promise<void> {
 }
 
 export async function epicPlay(appName: string): Promise<void> {
+  // Steam games belong to the Steam client: hand the launch over to it.
+  if (appName.startsWith("steam::")) {
+    pushRecent(appName);
+    toast(t("dl.launching"), "");
+    try {
+      await steamGameAction(appName.slice(7), "launch");
+    } catch (e) {
+      toast(String(e), "err");
+    }
+    return;
+  }
   pushRecent(appName);
   toast(t("dl.launching"), "");
   try {

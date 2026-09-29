@@ -70,6 +70,10 @@ export function libraryDlBar(appName: string, p: number | null): string {
 /** Simple, elegant play button / installed badge next to the game title. */
 export function libraryInstalledIcon(appName: string, installed: boolean): string {
   if (!S.showInstalledIcon || !installed) return "";
+  // Steam games are launched by the client, never by our own launch path.
+  if (appName.startsWith("steam::")) {
+    return `<button type="button" class="pcard-play-btn" data-act="steam-action" data-id="${appName.slice(7)}" data-mode="launch" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
+  }
   return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
 }
 
@@ -211,6 +215,14 @@ export function epicActionButtons(
   const sharedOwner = sharedOwnerOf(s.appName);
   if (sharedOwner) {
     return `<button class="btn ghost${btn}" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 14)} ${t("shared.switch")}</button>`;
+  }
+  // Steam games belong to the Steam client: play and update both go through it.
+  if (s.appName.startsWith("steam::")) {
+    const steamId = s.appName.slice(7);
+    if (s.updateAvailable) {
+      return `<button class="btn update${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.updateRequired")}">${icon("download", 14)} ${t("common.update")}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
   const p = epicDlProgress(s.appName);
   if (p !== null) {

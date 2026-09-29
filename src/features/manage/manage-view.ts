@@ -100,6 +100,46 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
 
 /** Renders the Manage tab for an installed game. */
 export function renderDrawerManage(s: EpicSummary): string {
+  // Steam games are maintained by the Steam client: only hand-off actions here,
+  // never file moves, verification loops or save backups of our own.
+  if (s.appName.startsWith("steam::")) {
+    const steamId = s.appName.slice(7);
+    const ptSteam = S.playtimeMap.get(s.appName);
+    const playtimeSteam = ptSteam?.total_seconds ? fmtPlaytime(ptSteam.total_seconds) : t("playtime.notPlayed");
+    return `
+      <div class="manage-tab-content">
+        <div class="section-title">${t("manage.groupFiles")}</div>
+        <div class="list">
+          ${row(t("steam.managedBy"), t("steam.managedByDesc"), "")}
+          ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
+            `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
+          ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
+            `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
+        </div>
+
+        <div class="section-title">${t("manage.groupCover")}</div>
+        <div class="list">
+          ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+            `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
+        </div>
+
+        <div class="section-title">${t("manage.groupPlaytime")}</div>
+        <div class="list">
+          ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
+        </div>
+
+        <div class="list">
+          ${row(t("manage.hideTitle"), t("manage.hideDesc"),
+            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
+        </div>
+
+        <div class="list mg-danger">
+          ${row(t("manage.dangerTitle"), t("steam.uninstallDesc"),
+            `<button class="btn danger small" data-act="steam-action" data-id="${steamId}" data-mode="uninstall">${icon("trash", 13)} ${t("steam.uninstall")}</button>`)}
+        </div>
+      </div>`;
+  }
+
   if (!S.activeManageSettings || S.activeManageSettings.appName !== s.appName) {
     S.activeManageSettings = {
       appName: s.appName,

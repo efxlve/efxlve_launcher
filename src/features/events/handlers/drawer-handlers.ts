@@ -8,6 +8,7 @@ import { openEpicModal } from "../../../core/render";
 import { summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { openStoreUrl } from "../../store/store-view";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
@@ -75,6 +76,9 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           const title = s ? s.title : id.slice(5);
           const url = `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
           void openStoreUrl(url, "store");
+        } else if (id.startsWith("steam::")) {
+          // Steam has no embedded store view: the browser gets the real page.
+          void openUrl(`https://store.steampowered.com/app/${id.slice(7)}`);
         } else {
           const s = summaryOf(id);
           const title = s ? s.title : id;

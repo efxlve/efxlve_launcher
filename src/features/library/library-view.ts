@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, rawOf, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -37,6 +37,9 @@ export function studioOf(s: EpicSummary): string {
     const rawId = s.appName.slice(5);
     const item = S.gogSummariesMap.get(rawId) || S.allGamesMap.get(s.appName);
     return item?.developer || "";
+  }
+  if (s.appName.startsWith("steam::")) {
+    return S.steamSummariesMap.get(s.appName)?.developer || "";
   }
   const g = rawOf(s.appName);
   const d = g?.metadata?.developer;
@@ -176,6 +179,12 @@ export function epicVisibleSummaries(): EpicSummary[] {
       }
     }
 
+    // Steam games installed on this PC (they never shadow an owned copy either).
+    for (const g of S.steamSummaries) {
+      const c = canonicalGameTitle(g.title);
+      if (!canonMap.has(c)) canonMap.set(c, libraryItemToSummary(g));
+    }
+
     // Games from other saved accounts (they never shadow an owned copy).
     for (const s of sharedSummaries()) {
       const c = canonicalGameTitle(s.title);
@@ -203,11 +212,17 @@ export function epicVisibleSummaries(): EpicSummary[] {
       });
     }
     baseItems.push(...sharedSummaries().filter((s) => s.appName.startsWith("gog::")));
+  } else if (S.sourceFilter === "steam") {
+    for (const g of S.steamSummaries) {
+      baseItems.push(libraryItemToSummary(g));
+    }
   }
 
   const list = baseItems.filter((s) => {
     if (query.source === "epic" && s.appName.startsWith("gog::")) return false;
+    if (query.source === "epic" && s.appName.startsWith("steam::")) return false;
     if (query.source === "gog" && !s.appName.startsWith("gog::")) return false;
+    if (query.source === "steam" && !s.appName.startsWith("steam::")) return false;
 
     if (S.hiddenGames.has(s.appName)) return false;
     if (S.activeCollectionId === "fav") {
@@ -324,9 +339,9 @@ export function epicCardPortrait(s: EpicSummary): string {
       </div>`
     : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
-  const isGog = s.appName.startsWith("gog::");
+  const source = sourceOfKey(s.appName);
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
         ${libraryCoverStats(s.appName)}
@@ -341,13 +356,13 @@ export function epicCardPortrait(s: EpicSummary): string {
 function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
-  const isGog = s.appName.startsWith("gog::");
+  const source = sourceOfKey(s.appName);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   return `
-    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${isGog ? "gog" : "epic"}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
@@ -614,14 +629,17 @@ export function renderEpic(): string {
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
   const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
+  const hasSteam = S.steamSummaries.length > 0;
   const currentStoreLabel =
     S.sourceFilter === "epic"
       ? t("source.epic")
       : S.sourceFilter === "gog"
         ? t("source.gog")
-        : t("source.all");
+        : S.sourceFilter === "steam"
+          ? t("source.steam")
+          : t("source.all");
 
-  const sourceDropdown = hasGog
+  const sourceDropdown = hasGog || hasSteam
     ? `
     <div class="store-dropdown-container">
       <button class="btn ghost lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
@@ -633,6 +651,7 @@ export function renderEpic(): string {
         <button class="sort-menu-item-btn ${S.sourceFilter === "all" ? "selected" : ""}" data-act="source-filter" data-val="all">${esc(t("source.all"))}</button>
         <button class="sort-menu-item-btn ${S.sourceFilter === "epic" ? "selected" : ""}" data-act="source-filter" data-val="epic">${esc(t("source.epic"))}</button>
         <button class="sort-menu-item-btn ${S.sourceFilter === "gog" ? "selected" : ""}" data-act="source-filter" data-val="gog">${esc(t("source.gog"))}</button>
+        ${hasSteam ? `<button class="sort-menu-item-btn ${S.sourceFilter === "steam" ? "selected" : ""}" data-act="source-filter" data-val="steam">${esc(t("source.steam"))}</button>` : ""}
       </div>
     </div>`
     : "";

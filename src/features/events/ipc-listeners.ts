@@ -43,6 +43,7 @@ import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
+import { loadSteamLibrary } from "../library/steam-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -615,6 +616,9 @@ export async function initApp(hooks: {
     // Other accounts' games come from disk snapshots (no network) so the shared
     // library is ready as soon as the shell paints.
     void loadSharedLibrary();
+
+    // Steam games come from the Steam client's own manifests on this PC.
+    void loadSteamLibrary();
 
     // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
     // same play path as the Play button once the shell is up.

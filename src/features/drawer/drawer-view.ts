@@ -17,12 +17,14 @@ import { epicDlProgress, isAppPlatinum, patchLibraryCardDom } from "../../core/g
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
+import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
+import { steamGetGameDetails } from "../../steam";
+import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
@@ -100,6 +102,18 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>`;
+  }
+
+  // Steam games are owned by the Steam client: play, update and verify all
+  // hand off through it, and nothing is installed by the launcher itself.
+  if (s.appName.startsWith("steam::")) {
+    const steamId = s.appName.slice(7);
+    const update = s.updateAvailable;
+    return `
+      <button class="btn ${update ? "update" : "play"} lg" data-act="steam-action" data-id="${steamId}" data-mode="${update ? "install" : "launch"}">${icon(update ? "download" : "play", 16)} ${update ? t("common.update") : t("common.play")}</button>
+      <button class="btn ghost lg" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 16)} ${t("steam.validate")}</button>
+      <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
+      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitleSteam")}">${icon("external", 16)}</button>`;
   }
 
   const p = epicDlProgress(s.appName);
@@ -197,12 +211,13 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
   }
 }
 
-/** Source note under the description: Epic's/GOG's store, or the Wikipedia fallback. */
-function aboutSourceText(storeDesc: string, wikiText: string, isGog = false): string {
-  const storeName = isGog ? "GOG" : "Epic Games Store";
-  return !storeDesc && wikiText
-    ? t("drawer.wikiSource", { store: storeName })
-    : (isGog ? t("drawer.sourceGog") : t("drawer.sourceEpic"));
+/** Source note under the description: the game's own store, or the Wikipedia fallback. */
+function aboutSourceText(storeDesc: string, wikiText: string, source: "epic" | "gog" | "steam"): string {
+  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : "Epic Games Store";
+  if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
+  if (source === "gog") return t("drawer.sourceGog");
+  if (source === "steam") return t("drawer.sourceSteam");
+  return t("drawer.sourceEpic");
 }
 
 /** Paints the About box and its source note from the current sources. */
@@ -217,7 +232,7 @@ function paintAboutText(s: EpicSummary): void {
   const srcEl = document.getElementById("hub-desc-source");
   if (srcEl) {
     srcEl.hidden = !text;
-    srcEl.textContent = aboutSourceText(storeDesc, wikiText, s.appName.startsWith("gog::"));
+    srcEl.textContent = aboutSourceText(storeDesc, wikiText, sourceOfKey(s.appName));
   }
 }
 
@@ -372,7 +387,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="seg gp-version-seg">
           ${versions.map((v) => `
             <button type="button" class="${v.appName === appName ? "active" : ""}" data-act="switch-drawer-version" data-id="${esc(v.appName)}">
-              ${v.source === "epic" ? "Epic Games" : "GOG"}${v.installed ? ` (${t("common.installed")})` : ""}
+              ${v.source === "epic" ? "Epic Games" : v.source === "steam" ? "Steam" : "GOG"}${v.installed ? ` (${t("common.installed")})` : ""}
             </button>
           `).join("")}
         </div>
@@ -489,7 +504,7 @@ export function renderDrawerOverview(
   const effectiveDesc = epicDesc || wikiText || null;
   const aboutResolved = aboutCache.has(key);
   const aboutLoading = !effectiveDesc && !aboutResolved && (S.loadingReqFor === s.appName || S.loadingAboutFor === key);
-  const sourceText = aboutSourceText(epicDesc, wikiText);
+  const sourceText = aboutSourceText(epicDesc, wikiText, sourceOfKey(s.appName));
   const sourceHidden = !effectiveDesc;
 
   return `
@@ -787,13 +802,18 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
       <div class="page-actions">
         <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : "sys.openEpicStore")}</button>
+        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : "sys.openEpicStore")}</button>
       </div>
     </div>`;
 }
 
 export async function fetchAndRenderRequirements(appName: string, title: string, forceRefresh = false): Promise<void> {
   if (!isTauri || S.loadingReqFor === appName) return;
+  // Steam: one store call carries the description, the hero art and the specs.
+  if (appName.startsWith("steam::")) {
+    await loadSteamDetails(appName);
+    return;
+  }
   S.loadingReqFor = appName;
   try {
     const isGog = appName.startsWith("gog::");
@@ -847,6 +867,41 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       if (settled) maybeLoadWikiAbout(settled);
     }
     if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") openEpicModal(appName, false);
+  }
+}
+
+/**
+ * Steam store details arrive in a single call: description, developer, hero art
+ * and the requirement bullets. The Rust side caches the payload for six hours.
+ */
+async function loadSteamDetails(appName: string): Promise<void> {
+  const s = summaryOf(appName);
+  if (!s) return;
+  S.loadingReqFor = appName;
+  try {
+    const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage));
+    S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
+    if (S.currentModalAppName === appName) {
+      if (details.description || details.shortDescription) {
+        s.description = details.description || details.shortDescription;
+        paintAboutText(s);
+      }
+      const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
+      if (heroEl && details.headerImage) heroEl.src = details.headerImage;
+      if (details.developers.length > 0) {
+        const devEl = modalRoot.querySelector(".gp-meta > span:first-child");
+        if (devEl) devEl.textContent = details.developers[0];
+      }
+    }
+  } catch {
+    S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
+  } finally {
+    S.loadingReqFor = null;
+    storeAboutSettled.add(appName);
+    maybeLoadWikiAbout(s);
+    if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
+      openEpicModal(appName, false, false);
+    }
   }
 }
 

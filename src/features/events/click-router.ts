@@ -560,8 +560,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "steam-refresh") {
     S.steamStatus = null;
     void loadIntegrationsView(true);
-  } else if (act === "steam-launch" && id) {
-    void steamGameAction(id, "launch").catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "steam-action" && id) {
+    const mode = t.dataset.mode === "install" || t.dataset.mode === "uninstall" || t.dataset.mode === "validate"
+      ? t.dataset.mode
+      : "launch";
+    void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";

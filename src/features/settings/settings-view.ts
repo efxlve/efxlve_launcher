@@ -265,7 +265,7 @@ function renderSteamGroup(): string {
         <div class="row-title">${esc(g.name)}</div>
         <div class="row-meta">${fmtBytes(g.sizeBytes)}${g.stateFlags === 4 ? "" : ` · ${t("steam.updateRequired")}`}</div>
       </div>
-      <button class="btn ghost small" data-act="steam-launch" data-id="${esc(g.appId)}">${icon("play", 13)} ${t("steam.launch")}</button>
+      <button class="btn ghost small" data-act="steam-action" data-id="${esc(g.appId)}" data-mode="launch">${icon("play", 13)} ${t("steam.launch")}</button>
     </div>`).join("");
   const more = games.length > MAX_ROWS
     ? `<div class="row"><div class="row-meta">${t("steam.more", { count: games.length - MAX_ROWS })}</div></div>`

@@ -9,10 +9,10 @@
 export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "tv";
 
 /** Store or catalog provider source for a game. */
-export type GameSource = "epic" | "gog";
+export type GameSource = "epic" | "gog" | "steam";
 
 /** Active catalog source filter in the library toolbar. */
-export type SourceFilter = "all" | "epic" | "gog";
+export type SourceFilter = "all" | "epic" | "gog" | "steam";
 
 /** Account/setup lifecycle phase for GOG.COM. */
 export type GogPhase = "checking" | "setup" | "login" | "library" | "error";

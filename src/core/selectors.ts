@@ -106,6 +106,20 @@ export function rebuildAllGamesMap(): void {
       set.add("GOG");
     }
   }
+  // Steam games installed on this PC join the unified map under `steam::<id>`.
+  for (const g of S.steamSummaries) {
+    map.set(g.key, g);
+    const c = canonicalGameTitle(g.title);
+    if (c) {
+      let set = storeSets.get(c);
+      if (!set) {
+        set = new Set();
+        storeSets.set(c, set);
+      }
+      set.add("Steam");
+    }
+  }
+
   // Other accounts' games stay searchable/detail-openable through the same map
   // while the shared library is enabled.
   if (S.showSharedLibrary) {
@@ -165,8 +179,16 @@ export function setGogSummaries(items: LibraryItem[]): void {
   S.libraryDataRev++;
 }
 
-/** Converts a GOG LibraryItem into an EpicSummary structure for legacy views. */
-export function gogToEpicSummary(g: LibraryItem): EpicSummary {
+/** Replace the Steam library item list (installed games on this PC). */
+export function setSteamSummaries(items: LibraryItem[]): void {
+  S.steamSummaries = items;
+  S.steamSummariesMap = new Map(items.map((item) => [`steam::${item.id}`, item]));
+  rebuildAllGamesMap();
+  S.libraryDataRev++;
+}
+
+/** Converts any store's LibraryItem into an EpicSummary structure for legacy views. */
+export function libraryItemToSummary(g: LibraryItem): EpicSummary {
   return {
     appName: g.key,
     title: g.title,
@@ -182,18 +204,30 @@ export function gogToEpicSummary(g: LibraryItem): EpicSummary {
   };
 }
 
-/** Returns all games across all stores as EpicSummary items. */
-export function allStoreSummaries(): EpicSummary[] {
-  if (S.gogSummaries.length === 0) return S.epicSummaries;
-  return [...S.epicSummaries, ...S.gogSummaries.map(gogToEpicSummary)];
+/** Converts a GOG LibraryItem into an EpicSummary structure for legacy views. */
+export function gogToEpicSummary(g: LibraryItem): EpicSummary {
+  return libraryItemToSummary(g);
 }
 
-/** O(1) summary lookup by app name (Epic or GOG). */
+/** Returns all games across all stores as EpicSummary items. */
+export function allStoreSummaries(): EpicSummary[] {
+  const items = S.epicSummaries;
+  const gog = S.gogSummaries.length > 0 ? S.gogSummaries.map(libraryItemToSummary) : [];
+  const steam = S.steamSummaries.length > 0 ? S.steamSummaries.map(libraryItemToSummary) : [];
+  if (gog.length === 0 && steam.length === 0) return items;
+  return [...items, ...gog, ...steam];
+}
+
+/** O(1) summary lookup by app name (Epic or GOG or Steam). */
 export function summaryOf(appName: string): EpicSummary | undefined {
   if (appName.startsWith("gog::")) {
     const cleanId = appName.slice(5);
     const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
     if (g) return gogToEpicSummary(g);
+  }
+  if (appName.startsWith("steam::")) {
+    const item = S.steamSummariesMap.get(appName);
+    if (item) return libraryItemToSummary(item);
   }
   const own = S.epicSummariesMap.get(appName);
   if (own) return own;
@@ -207,6 +241,13 @@ export function summaryOf(appName: string): EpicSummary | undefined {
 /** Owner of a game that belongs to another saved account (shared library). */
 export function sharedOwnerOf(key: string): import("../epic").SharedGame | undefined {
   return S.sharedOwners.get(key);
+}
+
+/** Store of a library key: `epic` (no prefix), `gog::<id>` or `steam::<id>`. */
+export function sourceOfKey(key: string): import("./types").GameSource {
+  if (key.startsWith("gog::")) return "gog";
+  if (key.startsWith("steam::")) return "steam";
+  return "epic";
 }
 
 /** Minimal summary for a shared (other-account) game. */
@@ -234,7 +275,12 @@ export function libraryItemOf(keyOrId: string, source?: GameSource): LibraryItem
   if (source) {
     return S.allGamesMap.get(`${source}::${keyOrId}`);
   }
-  return S.allGamesMap.get(keyOrId) || S.allGamesMap.get(`epic::${keyOrId}`) || S.allGamesMap.get(`gog::${keyOrId}`);
+  return (
+    S.allGamesMap.get(keyOrId) ||
+    S.allGamesMap.get(`epic::${keyOrId}`) ||
+    S.allGamesMap.get(`gog::${keyOrId}`) ||
+    S.allGamesMap.get(`steam::${keyOrId}`)
+  );
 }
 
 /** O(1) raw metadata lookup by app name. */
@@ -298,6 +344,20 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
     }
   }
 
+  for (const g of S.steamSummaries) {
+    if (canonicalGameTitle(g.title) === canon) {
+      versions.push({
+        source: "steam",
+        appName: g.key,
+        title: g.title,
+        installed: g.installed,
+        version: g.version,
+        installPath: g.installPath || null,
+      });
+      break;
+    }
+  }
+
   return versions;
 }
 
@@ -306,6 +366,7 @@ export function gameStoresLabel(appNameOrTitle: string): string {
   const canon = canonicalGameTitle(appNameOrTitle);
   const found = canonStoresMap.get(canon);
   if (found) return found;
+  if (appNameOrTitle.startsWith("steam::") || S.steamSummariesMap.has(appNameOrTitle)) return "Steam";
   if (appNameOrTitle.startsWith("gog::") || S.gogSummariesMap.has(appNameOrTitle)) return "GOG";
   return "Epic";
 }
@@ -320,6 +381,14 @@ export function totalLibraryGamesCount(): number {
     count++;
   }
   for (const g of S.gogSummaries) {
+    if (S.hiddenGames.has(g.key)) continue;
+    const canon = canonicalGameTitle(g.title);
+    if (seenTitles.has(canon)) continue;
+    seenTitles.add(canon);
+    count++;
+  }
+  // Steam games live on this PC and join the count like any owned game.
+  for (const g of S.steamSummaries) {
     if (S.hiddenGames.has(g.key)) continue;
     const canon = canonicalGameTitle(g.title);
     if (seenTitles.has(canon)) continue;
@@ -360,6 +429,14 @@ export function epicWideArt(s: EpicSummary): string | null {
   if (customHero) return customHero;
   const cached = wideArtCache.get(s.appName);
   if (cached !== undefined) return cached;
+
+  if (s.appName.startsWith("steam::")) {
+    const item = S.steamSummariesMap.get(s.appName);
+    if (item?.heroUrl) {
+      wideArtCache.set(s.appName, item.heroUrl);
+      return item.heroUrl;
+    }
+  }
 
   if (s.appName.startsWith("gog::")) {
     const rawId = s.appName.slice(5);

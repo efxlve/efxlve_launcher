@@ -41,6 +41,8 @@ function pendingUpdateCount(): number {
     if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
     if (g.installed && g.updateAvailable) n++;
   }
+  // Steam updates belong to the Steam client: they show on the card and in the
+  // Updates filter, never in our own download badge.
   return n;
 }
 
