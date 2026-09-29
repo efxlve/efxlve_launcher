@@ -429,7 +429,170 @@ struct CachedDetails {
 }
 
 /// Bump whenever the parsed shape changes so stale entries refetch once.
-const DETAILS_CACHE_VERSION: u32 = 2;
+const DETAILS_CACHE_VERSION: u32 = 3;
+
+/* ---------- appinfo.vdf: the Steam client's own app metadata ---------- */
+
+/// Magic of the 2023+ appinfo format (no string table) and the newer one.
+const APPINFO_MAGIC_V40: u32 = 0x0756_4428;
+const APPINFO_MAGIC_V41: u32 = 0x0756_4429;
+
+fn read_u32_at(data: &[u8], pos: usize) -> Option<u32> {
+    Some(u32::from_le_bytes(data.get(pos..pos + 4)?.try_into().ok()?))
+}
+
+/// The client string table: a u32 count followed by that many C strings.
+fn parse_appinfo_strings(data: &[u8], offset: usize) -> Option<Vec<String>> {
+    let count = read_u32_at(data, offset)? as usize;
+    if count == 0 || count > 2_000_000 {
+        return None;
+    }
+    let mut pos = offset + 4;
+    let mut strings = Vec::with_capacity(count);
+    for _ in 0..count {
+        let start = pos;
+        while pos < data.len() && data[pos] != 0 {
+            pos += 1;
+        }
+        if pos >= data.len() {
+            return None;
+        }
+        strings.push(String::from_utf8_lossy(&data[start..pos]).into_owned());
+        pos += 1;
+    }
+    Some(strings)
+}
+
+/// Walks one appinfo KV blob and returns the first string value stored under
+/// `wanted`. Keys are string-table indices in v41 and C strings in v40.
+fn appinfo_find_string(data: &[u8], table: &Option<Vec<String>>, wanted: &str) -> Option<String> {
+    struct Reader<'a> {
+        data: &'a [u8],
+        pos: usize,
+        table: &'a Option<Vec<String>>,
+    }
+    impl Reader<'_> {
+        fn read_key(&mut self) -> Option<String> {
+            if let Some(table) = self.table {
+                let index = read_u32_at(self.data, self.pos)? as usize;
+                self.pos += 4;
+                table.get(index).cloned()
+            } else {
+                self.read_cstring()
+            }
+        }
+
+        fn read_cstring(&mut self) -> Option<String> {
+            let start = self.pos;
+            while self.pos < self.data.len() && self.data[self.pos] != 0 {
+                self.pos += 1;
+            }
+            if self.pos >= self.data.len() {
+                return None;
+            }
+            let text = String::from_utf8_lossy(&self.data[start..self.pos]).into_owned();
+            self.pos += 1;
+            Some(text)
+        }
+
+        fn find(&mut self, wanted: &str) -> Option<String> {
+            loop {
+                let tag = *self.data.get(self.pos)?;
+                self.pos += 1;
+                if tag == 8 {
+                    return None;
+                }
+                let key = self.read_key()?;
+                match tag {
+                    0 => {
+                        if let Some(found) = self.find(wanted) {
+                            return Some(found);
+                        }
+                    }
+                    1 => {
+                        let value = self.read_cstring()?;
+                        if key == wanted {
+                            return Some(value);
+                        }
+                    }
+                    2 | 3 | 4 | 6 => self.pos += 4,
+                    5 => {
+                        while self.pos + 1 < self.data.len()
+                            && u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]]) != 0
+                        {
+                            self.pos += 2;
+                        }
+                        self.pos += 2;
+                    }
+                    7 => self.pos += 8,
+                    _ => return None,
+                }
+            }
+        }
+    }
+
+    let mut reader = Reader { data, pos: 0, table };
+    reader.find(wanted)
+}
+
+/// DLC app ids from the client's own `appcache/appinfo.vdf`.
+///
+/// The store API only lists DLCs that are still on sale, so delisted episode
+/// packs (for example Life is Strange's) would otherwise disappear; the client
+/// keeps them in `extended.listofdlc`.
+pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
+    let Some(magic) = read_u32_at(data, 0) else { return Vec::new() };
+    let (table, mut pos, apps_end) = match magic {
+        APPINFO_MAGIC_V41 => {
+            let Some(offset) = data
+                .get(8..16)
+                .and_then(|b| b.try_into().ok())
+                .map(u64::from_le_bytes)
+                .map(|v| v as usize)
+            else {
+                return Vec::new();
+            };
+            if offset >= data.len() {
+                return Vec::new();
+            }
+            (parse_appinfo_strings(data, offset), 16usize, offset)
+        }
+        APPINFO_MAGIC_V40 => (None, 8usize, data.len()),
+        _ => return Vec::new(),
+    };
+    let Ok(target) = app_id.parse::<u32>() else { return Vec::new() };
+
+    while pos + 68 <= apps_end {
+        let Some(entry_id) = read_u32_at(data, pos) else { break };
+        if entry_id == 0 {
+            break;
+        }
+        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else { break };
+        if size < 60 || pos + 8 + size > data.len() {
+            break;
+        }
+        if entry_id == target {
+            let blob = &data[pos + 68..pos + 8 + size];
+            let list = appinfo_find_string(blob, &table, "listofdlc").unwrap_or_default();
+            return list
+                .split(',')
+                .map(|v| v.trim())
+                .filter(|v| !v.is_empty() && v.chars().all(|c| c.is_ascii_digit()))
+                .map(str::to_string)
+                .collect();
+        }
+        pos += 8 + size;
+    }
+    Vec::new()
+}
+
+/// Reads the client's DLC ids for one app from disk (empty when unavailable).
+pub fn read_client_dlc_ids(steam: &Path, app_id: &str) -> Vec<String> {
+    let Ok(data) = std::fs::read(steam.join("appcache").join("appinfo.vdf")) else {
+        return Vec::new();
+    };
+    parse_appinfo_dlc_ids(&data, app_id)
+}
 
 /// Drops tags and decodes the few entities Steam actually uses.
 pub fn strip_html(html: &str) -> String {
@@ -617,7 +780,16 @@ pub async fn steam_get_game_details(
         return Err("Steam store has no record for this app".into());
     }
     let data = entry.get("data").ok_or("Steam store returned no data")?;
-    let details = parse_app_details(&app_id, data);
+    let mut details = parse_app_details(&app_id, data);
+    // The store only lists DLCs that are still on sale; the client's own cache
+    // also keeps delisted packs (episodic releases from older games).
+    if let Some(steam) = steam_install_path() {
+        for dlc in read_client_dlc_ids(&steam, &app_id) {
+            if !details.dlc.contains(&dlc) {
+                details.dlc.push(dlc);
+            }
+        }
+    }
     let cached = CachedDetails {
         version: DETAILS_CACHE_VERSION,
         fetched_at: now_secs(),
@@ -1309,6 +1481,44 @@ mod tests {
     }
 
     #[test]
+    fn appinfo_dlc_ids_come_from_the_client_cache() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // "appinfo"
+        vdf.push(0);
+        vdf.extend_from_slice(&key(1)); // "extended"
+        vdf.push(1);
+        vdf.extend_from_slice(&key(2)); // "listofdlc"
+        vdf.extend_from_slice(b"329880,329910,432670\0");
+        vdf.push(8);
+        vdf.push(8);
+        vdf.push(8);
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&319630u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&3u32.to_le_bytes());
+        data.extend_from_slice(b"appinfo\0extended\0listofdlc\0");
+
+        assert_eq!(
+            parse_appinfo_dlc_ids(&data, "319630"),
+            vec!["329880", "329910", "432670"]
+        );
+        assert!(parse_appinfo_dlc_ids(&data, "730").is_empty());
+        assert!(parse_appinfo_dlc_ids(b"junk", "730").is_empty());
+    }
+
+    #[test]
     fn label_only_requirement_lines_join_with_their_values() {
         // Real Steam pages use `<strong>OS:</strong> Windows 10`; strip_html
         // splits that into "OS:" and "Windows 10".
@@ -1564,6 +1774,21 @@ mod tests {
         println!("games with local achievement stats: {}", totals.len());
         for (app_id, unlocked, total) in totals.iter().take(10) {
             println!("  {app_id}: {unlocked}/{total}");
+        }
+    }
+
+    /// Live check for the client's own DLC list (`appcache/appinfo.vdf`).
+    /// Run: `cargo test live_steam_client_dlc -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_client_dlc() {
+        let Some(steam) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        for app in ["319630", "730", "620"] {
+            let ids = read_client_dlc_ids(&steam, app);
+            println!("{app}: {} dlc -> {ids:?}", ids.len());
         }
     }
 

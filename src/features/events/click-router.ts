@@ -351,7 +351,7 @@ document.addEventListener("click", (e) => {
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
     const val = t.dataset.val as SourceFilter;
-    if (val === "all" || val === "epic" || val === "gog") {
+    if (val === "all" || val === "epic" || val === "gog" || val === "steam") {
       S.sourceFilter = val;
       S.isStoreDropdownOpen = false;
       const menu = document.getElementById("store-dropdown-menu");
