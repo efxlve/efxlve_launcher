@@ -24,6 +24,7 @@ import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
 import { steamGetGameDetails } from "../../steam";
+import { steamGetAchievements } from "../../steam";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
@@ -549,6 +550,29 @@ function renderDrawerFeatures(
 }
 
 export function renderDrawerDlcs(s: EpicSummary): string {
+  // Steam lists DLC ids only; names would need one store call per add-on, so the
+  // tab reports the count and hands the browsing over to Steam.
+  if (s.appName.startsWith("steam::")) {
+    const details = S.steamDetails.get(s.appName);
+    if (!details && S.loadingReqFor !== s.appName) {
+      void fetchAndRenderRequirements(s.appName, s.title);
+      return loadingState(t("dlc.scanning"));
+    }
+    const count = details?.dlc.length ?? 0;
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    return `
+      <div class="dlc-tab-content">
+        <div class="row">
+          <div class="row-main">
+            <div class="row-title">${t("steam.dlcCount", { count })}</div>
+            <div class="row-meta">${t("steam.dlcDesc")}</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.storeTitleSteam")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
   const dlcRes = S.dlcCache.get(s.appName);
   if (S.dlcLoading && !dlcRes) return loadingState(t("dlc.scanning"));
   const allDlcs = dlcRes?.dlcs || [];
@@ -724,8 +748,13 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
   if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
   try {
     const isGog = appName.startsWith("gog::");
+    const isSteam = appName.startsWith("steam::");
     const rawId = isGog ? appName.slice(5) : appName;
-    const data = isGog ? await gogGetAchievements(rawId) : await epicGetAchievements(appName, forceRefresh);
+    const data = isGog
+      ? await gogGetAchievements(rawId)
+      : isSteam
+        ? await steamGetAchievements(appName.slice(7), forceRefresh)
+        : await epicGetAchievements(appName, forceRefresh);
     S.loadedAchievements.set(appName, data);
     const summary: EpicAchievementSummary = {
       app_name: appName,
@@ -880,6 +909,7 @@ async function loadSteamDetails(appName: string): Promise<void> {
   S.loadingReqFor = appName;
   try {
     const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage));
+    S.steamDetails.set(appName, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     if (S.currentModalAppName === appName) {
       if (details.description || details.shortDescription) {

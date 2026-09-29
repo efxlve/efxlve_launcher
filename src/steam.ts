@@ -44,7 +44,8 @@ export interface SteamGameDetails {
   releaseDate: string;
   headerImage: string;
   website: string;
-  screenshots: string[];
+  /** DLC app ids listed by the store (names would need one call each). */
+  dlc: string[];
   requirementsMin: string[];
   requirementsRec: string[];
 }
@@ -58,3 +59,14 @@ export const steamSyncPlaytime = () =>
   invoke<Record<string, SteamPlaytime>>("steam_sync_playtime");
 export const steamGetGameDetails = (appId: string, language?: string) =>
   invoke<SteamGameDetails>("steam_get_game_details", { appId, language: language ?? null });
+
+/* ---------- Achievements (opt-in: needs a Steam Web API key) ---------- */
+
+export const steamGetApiKey = () => invoke<string | null>("steam_get_api_key");
+export const steamSetApiKey = (apiKey: string) => invoke<void>("steam_set_api_key", { apiKey });
+/** Schema + the player's unlocks + global rarity; cached on disk for an hour. */
+export const steamGetAchievements = (appId: string, force = false) =>
+  invoke<import("./epic").EpicAchievementsData>("steam_get_achievements", { appId, force });
+/** Cached summaries for library covers (disk only, no network). */
+export const steamGetAchievementsSummary = () =>
+  invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");

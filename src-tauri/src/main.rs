@@ -98,6 +98,9 @@ pub struct EpicSettings {
     pub offline_mode: Option<bool>,
     #[serde(default)]
     pub steamgrid_api_key: Option<String>,
+    /// Steam Web API key (opt-in): unlocks achievement reading for Steam games.
+    #[serde(default)]
+    pub steam_api_key: Option<String>,
     #[serde(default)]
     pub presence_enabled: Option<bool>,
     #[serde(default)]
@@ -1939,6 +1942,10 @@ fn main() {
             steam::steam_game_action,
             steam::steam_sync_playtime,
             steam::steam_get_game_details,
+            steam::steam_get_api_key,
+            steam::steam_set_api_key,
+            steam::steam_get_achievements,
+            steam::steam_get_achievements_summary,
             external_stores::external_detect_games,
             external_stores::external_launch_game,
             epic_detect_eos,

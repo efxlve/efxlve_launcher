@@ -72,7 +72,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { steamGameAction } from "../../steam";
+import { steamGameAction, steamSetApiKey } from "../../steam";
 import { externalDetectGames, externalLaunchGame, type ExternalStore } from "../../external-stores";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
@@ -566,6 +566,16 @@ document.addEventListener("click", (e) => {
       ? t.dataset.mode
       : "launch";
     void steamGameAction(id, mode).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "save-steam-key") {
+    const input = document.getElementById("settings-steam-key-input") as HTMLInputElement | null;
+    const key = input?.value.trim() || "";
+    void steamSetApiKey(key)
+      .then(() => {
+        S.steamApiKey = key || null;
+        toast(key ? i18nT("cover.keySaved") : i18nT("cover.keyRemoved"), "ok");
+        render();
+      })
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "external-scan" && t.dataset.store) {
     const store = t.dataset.store as ExternalStore;
     void externalDetectGames(store)

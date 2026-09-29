@@ -41,7 +41,7 @@ import {
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
-import { steamListInstalled, steamStatus, type SteamGame } from "../../steam";
+import { steamListInstalled, steamGetApiKey, steamStatus, type SteamGame } from "../../steam";
 import { externalDetectGames, type ExternalGame, type ExternalStore } from "../../external-stores";import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
@@ -297,6 +297,14 @@ function renderSteamGroup(): string {
   }
   const games = S.steamGames;
   const MAX_ROWS = 60;
+  const apiRow = row(
+    t("settings.steamApiTitle"),
+    `${t("settings.steamApiDesc")} <span class="chip ${S.steamApiKey ? "ok" : ""}">${S.steamApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    `<input id="settings-steam-key-input" type="password" class="input settings-path-input" placeholder="${t("settings.steamApiPlaceholder")}" value="${esc(S.steamApiKey || "")}" spellcheck="false" autocomplete="off" />
+     <button class="btn primary small" data-act="save-steam-key">${t("common.save")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://steamcommunity.com/dev/apikey">${t("settings.getFreeKey")}</button>`,
+    true,
+  );
   const gameRows = games.slice(0, MAX_ROWS).map((g: SteamGame) => `
     <div class="row">
       <div class="row-main">
@@ -312,7 +320,7 @@ function renderSteamGroup(): string {
     ? `<div class="row"><div class="row-meta">${t("steam.empty")}</div></div>`
     : "";
   return group(
-    row(t("steam.games", { count: games.length }), esc(status.path), rescan) + gameRows + more + empty,
+    row(t("steam.games", { count: games.length }), esc(status.path), rescan) + apiRow + gameRows + more + empty,
     "Steam",
   );
 }
@@ -568,17 +576,19 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
         loadSavedAccounts().catch(() => []),
         epicGetScreenshotDir().catch(() => ""),
+        steamGetApiKey().catch(() => null),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
       S.steamGridApiKey = sgdbKey;
       S.screenshotDir = ssDir || "";
+      S.steamApiKey = steamKey;
     } catch {
       // Silent: keep the last cached values.
     }

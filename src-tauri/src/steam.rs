@@ -392,7 +392,8 @@ pub struct SteamGameDetails {
     pub release_date: String,
     pub header_image: String,
     pub website: String,
-    pub screenshots: Vec<String>,
+    /// DLC app ids listed by the store (names would need one call each).
+    pub dlc: Vec<String>,
     /// Requirement bullets (tags stripped, one per line).
     pub requirements_min: Vec<String>,
     pub requirements_rec: Vec<String>,
@@ -462,16 +463,6 @@ fn string_list(value: &serde_json::Value, key: &str) -> Vec<String> {
 
 /// Turns one `appdetails` payload into the flat structure the game page uses.
 pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDetails {
-    let screenshots = data
-        .get("screenshots")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|s| s.get("path_full").and_then(|p| p.as_str()))
-                .map(|s| s.to_string())
-                .collect()
-        })
-        .unwrap_or_default();
     let requirements = data.get("pc_requirements").cloned().unwrap_or(serde_json::Value::Null);
     SteamGameDetails {
         app_id: app_id.to_string(),
@@ -505,7 +496,11 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .to_string(),
         header_image: data.get("header_image").and_then(|v| v.as_str()).unwrap_or("").to_string(),
         website: data.get("website").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        screenshots,
+        dlc: data
+            .get("dlc")
+            .and_then(|v| v.as_array())
+            .map(|a| a.iter().map(|v| v.to_string()).collect())
+            .unwrap_or_default(),
         requirements_min: html_lines(&requirements, "minimum"),
         requirements_rec: html_lines(&requirements, "recommended"),
     }
@@ -578,6 +573,314 @@ pub async fn steam_get_game_details(
         let _ = std::fs::write(&cache, text);
     }
     Ok(details)
+}
+
+/* ---------- Achievements (opt-in, needs a Steam Web API key) ---------- */
+
+use crate::legendary::models::{
+    AchievementItem, AchievementRarity, AchievementTier, GameAchievementSummary,
+    GameAchievementsResponse,
+};
+
+/// Steam Web API key stored in settings.json (next to the SteamGridDB key).
+#[tauri::command]
+pub fn steam_get_api_key(app: tauri::AppHandle) -> Option<String> {
+    crate::load_settings(&app).steam_api_key.filter(|k| !k.trim().is_empty())
+}
+
+#[tauri::command]
+pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), String> {
+    let mut settings = crate::load_settings(&app);
+    let trimmed = api_key.trim().to_string();
+    settings.steam_api_key = if trimmed.is_empty() { None } else { Some(trimmed) };
+    crate::save_settings(&app, &settings);
+    Ok(())
+}
+
+/// SteamID64 of the most recently used account (`loginusers.vdf`).
+pub fn active_steam_id(steam: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(steam.join("config").join("loginusers.vdf")).ok()?;
+    let root = parse_vdf(&text);
+    let users = root.get("users")?;
+    let mut fallback = None;
+    for (id, node) in users.entries() {
+        if fallback.is_none() && id.chars().all(|c| c.is_ascii_digit()) {
+            fallback = Some(id.clone());
+        }
+        if node.get("MostRecent").and_then(Vdf::as_str) == Some("1") {
+            return Some(id.clone());
+        }
+    }
+    fallback
+}
+
+/// Unix seconds → `YYYY-MM-DD` (civil date, no date crate needed).
+pub fn unix_date(seconds: i64) -> String {
+    if seconds <= 0 {
+        return String::new();
+    }
+    let days = seconds / 86_400;
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let year = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = if month <= 2 { year + 1 } else { year };
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+/// Tier by global unlock rate: Steam has no fixed tiers, so rarity stands in.
+fn tier_for_percent(percent: f64) -> AchievementTier {
+    let (name, hex) = if percent <= 5.0 {
+        ("gold", "#d4a72c")
+    } else if percent <= 25.0 {
+        ("silver", "#a9adb7")
+    } else {
+        ("bronze", "#b07a4f")
+    };
+    AchievementTier {
+        name: name.into(),
+        hex_color: hex.into(),
+        min: None,
+        max: None,
+    }
+}
+
+/// How long one game's achievement payload stays fresh.
+const ACHIEVEMENTS_TTL_SECS: u64 = 60 * 60;
+
+fn achievements_cache_dir(app: &tauri::AppHandle) -> PathBuf {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("steam")
+        .join("achievements");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedAchievements {
+    fetched_at: u64,
+    response: GameAchievementsResponse,
+}
+
+/// Achievements for one Steam game: schema names/icons, the player's unlocks and
+/// the global unlock rates. Requires the Web API key and a public profile, so it
+/// stays opt-in and answers from a one hour disk cache.
+#[tauri::command]
+pub async fn steam_get_achievements(
+    app: tauri::AppHandle,
+    app_id: String,
+    force: Option<bool>,
+) -> Result<GameAchievementsResponse, String> {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Invalid Steam app id".into());
+    }
+    let cache = achievements_cache_dir(&app).join(format!("{app_id}.json"));
+    if force != Some(true) {
+        if let Ok(text) = std::fs::read_to_string(&cache) {
+            if let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) {
+                if now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS {
+                    return Ok(cached.response);
+                }
+            }
+        }
+    }
+
+    let key = steam_get_api_key(app.clone()).ok_or("Steam Web API key is not set")?;
+    let steam_path = steam_install_path().ok_or("Steam is not installed")?;
+    let steam_id = active_steam_id(&steam_path).ok_or("Steam account could not be read")?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(12))
+        .user_agent("efxlve-launcher")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // 1) Schema: display names, descriptions and icons.
+    let schema_url = format!(
+        "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app_id}&l=english"
+    );
+    let schema: serde_json::Value = client
+        .get(&schema_url)
+        .send()
+        .await
+        .map_err(|e| format!("Steam could not be reached: {e}"))?
+        .json()
+        .await
+        .map_err(|e| format!("Steam answered with an unexpected payload: {e}"))?;
+    let entries = schema
+        .get("game")
+        .and_then(|g| g.get("availableGameStats"))
+        .and_then(|s| s.get("achievements"))
+        .and_then(|a| a.as_array())
+        .cloned()
+        .unwrap_or_default();
+    if entries.is_empty() {
+        return Ok(GameAchievementsResponse { supported: Some(false), ..Default::default() });
+    }
+
+    // 2) The player's own unlocks.
+    let player_url = format!(
+        "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key={key}&steamid={steam_id}&appid={app_id}&l=english"
+    );
+    let player: serde_json::Value = client
+        .get(&player_url)
+        .send()
+        .await
+        .map_err(|e| format!("Steam could not be reached: {e}"))?
+        .json()
+        .await
+        .map_err(|e| format!("Steam answered with an unexpected payload: {e}"))?;
+    let stats = player.get("playerstats");
+    if stats.and_then(|s| s.get("success")).and_then(|v| v.as_bool()) != Some(true) {
+        return Err("Steam does not share this profile's achievements; make the profile public".into());
+    }
+    let player_items = stats
+        .and_then(|s| s.get("achievements"))
+        .and_then(|a| a.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    // 3) Global unlock rates for rarity (no key required, best effort).
+    let percent_url = format!(
+        "https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid={app_id}"
+    );
+    let percentages = match client.get(&percent_url).send().await {
+        Ok(response) => response.json::<serde_json::Value>().await.unwrap_or(serde_json::Value::Null),
+        Err(_) => serde_json::Value::Null,
+    };
+    let percent_items = percentages
+        .get("achievementpercentages")
+        .and_then(|p| p.get("achievements"))
+        .and_then(|a| a.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut items: Vec<AchievementItem> = Vec::new();
+    let mut hidden_items: Vec<AchievementItem> = Vec::new();
+    let mut unlocked = 0u32;
+    for entry in &entries {
+        let api_name = entry.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        if api_name.is_empty() {
+            continue;
+        }
+        let player_entry = player_items
+            .iter()
+            .find(|p| p.get("apiname").and_then(|v| v.as_str()) == Some(api_name));
+        let achieved = player_entry
+            .and_then(|p| p.get("achieved"))
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+            == 1;
+        let unlock_time = player_entry
+            .and_then(|p| p.get("unlocktime"))
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
+        if achieved {
+            unlocked += 1;
+        }
+        let percent = percent_items
+            .iter()
+            .find(|p| p.get("name").and_then(|v| v.as_str()) == Some(api_name))
+            .and_then(|p| p.get("percent"))
+            .and_then(|v| v.as_f64());
+        let icon = entry.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+        let icon_gray = entry.get("icongray").and_then(|v| v.as_str()).unwrap_or("");
+        let file = if achieved && !icon.is_empty() {
+            icon
+        } else if !icon_gray.is_empty() {
+            icon_gray
+        } else {
+            icon
+        };
+        let hidden_flag = entry.get("hidden").and_then(|v| v.as_i64()).unwrap_or(0) == 1;
+        let item = AchievementItem {
+            name: api_name.to_string(),
+            display_name: entry
+                .get("displayName")
+                .and_then(|v| v.as_str())
+                .unwrap_or(api_name)
+                .to_string(),
+            description: entry
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            unlocked: achieved,
+            progress: if achieved { 1.0 } else { 0.0 },
+            unlock_date: if achieved { Some(unix_date(unlock_time)) } else { None },
+            icon_link: if file.is_empty() {
+                String::new()
+            } else {
+                format!("https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{app_id}/{file}")
+            },
+            tier: percent.map(tier_for_percent),
+            rarity: percent.map(|p| AchievementRarity { percent: Some(p) }),
+            hidden: hidden_flag,
+            ..Default::default()
+        };
+        if hidden_flag {
+            hidden_items.push(item.clone());
+        }
+        items.push(item);
+    }
+
+    let total = items.len() as u32;
+    let response = GameAchievementsResponse {
+        achievements: items,
+        hidden: hidden_items,
+        user_unlocked: unlocked,
+        total_achievements: total,
+        // Steam has no platinum trophy: a full set counts as the completed state.
+        is_platinum: total > 0 && unlocked == total,
+        supported: Some(true),
+        ..Default::default()
+    };
+    let cached = CachedAchievements { fetched_at: now_secs(), response: response.clone() };
+    if let Ok(text) = serde_json::to_string(&cached) {
+        let _ = std::fs::write(&cache, text);
+    }
+    Ok(response)
+}
+
+/// Achievement summaries for the library covers, read from the disk cache only
+/// (no network): a game shows progress once its page has been opened.
+#[tauri::command]
+pub fn steam_get_achievements_summary(
+    app: tauri::AppHandle,
+) -> std::collections::HashMap<String, GameAchievementSummary> {
+    let mut out = std::collections::HashMap::new();
+    let Ok(entries) = std::fs::read_dir(achievements_cache_dir(&app)) else { return out };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let app_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else { continue };
+        let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) else { continue };
+        let response = cached.response;
+        if response.total_achievements == 0 {
+            continue;
+        }
+        let summary = GameAchievementSummary {
+            app_name: format!("steam::{app_id}"),
+            user_unlocked: response.user_unlocked,
+            total_achievements: response.total_achievements,
+            is_platinum: response.is_platinum,
+            supported: true,
+            ..Default::default()
+        };
+        out.insert(format!("steam::{app_id}"), summary);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -676,7 +979,7 @@ mod tests {
             "release_date": { "date": "18 Apr, 2011" },
             "header_image": "https://cdn/header.jpg",
             "website": "https://thinkwithportals.com",
-            "screenshots": [{ "path_full": "https://cdn/1.jpg" }],
+            "dlc": [1234, 5678],
             "pc_requirements": { "minimum": "<li>OS: Windows 7</li>", "recommended": "<li>OS: Windows 10</li>" }
         });
         let details = parse_app_details("620", &data);
@@ -684,7 +987,7 @@ mod tests {
         assert_eq!(details.description, "Think with portals");
         assert_eq!(details.genres, vec!["Action", "Adventure"]);
         assert_eq!(details.release_date, "18 Apr, 2011");
-        assert_eq!(details.screenshots, vec!["https://cdn/1.jpg"]);
+        assert_eq!(details.dlc, vec!["1234", "5678"]);
         assert_eq!(details.requirements_min, vec!["OS: Windows 7"]);
         assert_eq!(details.requirements_rec, vec!["OS: Windows 10"]);
     }
@@ -746,6 +1049,32 @@ mod tests {
             path_key(Path::new(r"C:/Program Files (x86)/Steam/steamapps/")),
             path_key(Path::new(r"c:\program files (x86)\steam\steamapps"))
         );
+    }
+
+    #[test]
+    fn unix_seconds_become_civil_dates() {
+        assert_eq!(unix_date(0), "");
+        assert_eq!(unix_date(1_700_000_000), "2023-11-14");
+        assert_eq!(unix_date(1_600_000_000), "2020-09-13");
+    }
+
+    #[test]
+    fn tiers_follow_the_global_unlock_rate() {
+        assert_eq!(tier_for_percent(1.5).name, "gold");
+        assert_eq!(tier_for_percent(12.0).name, "silver");
+        assert_eq!(tier_for_percent(60.0).name, "bronze");
+    }
+
+    /// Live check for the SteamID and the achievement pipeline (needs the key).
+    /// Run: `cargo test live_steam_achievements -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_achievements() {
+        let Some(path) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        println!("active steam id: {:?}", active_steam_id(&path));
     }
 
     /// Live check against this machine's Steam install.

@@ -359,6 +359,8 @@ export const S = {
   controllerBridge: (null) as ControllerSupportStatus | null,
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],
+  steamApiKey: (null) as string | null,
+  steamDetails: (new Map()) as Map<string, import("../steam").SteamGameDetails>,
   externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<
     import("../external-stores").ExternalStore,
     import("../external-stores").ExternalGame[]

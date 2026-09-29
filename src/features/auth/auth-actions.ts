@@ -38,6 +38,7 @@ import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadPlayerProfile } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
+import { steamGetAchievementsSummary } from "../../steam";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -111,11 +112,13 @@ export async function refreshEpic(forceSync = false): Promise<void> {
 export async function loadEpicAchSummaries(): Promise<void> {
   if (!isTauri) return;
   try {
-    const [epicSummaries, gogSummaries] = await Promise.all([
+    const [epicSummaries, gogSummaries, steamSummaries] = await Promise.all([
       epicGetAchievementsSummary().catch(() => ({})),
       gogGetAchievementsSummary().catch(() => ({})),
+      // Steam summaries come from the disk cache: no key or network needed.
+      steamGetAchievementsSummary().catch(() => ({})),
     ]);
-    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries };
+    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries };
     S.libraryDataRev++;
     if (S.view === "library") scheduleRender();
   } catch (e) {
