@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.418 keys, 159 Tauri commands, 53 Rust files).
+> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.421 keys, 165 Tauri commands, 53 Rust files).
 
 ---
 
@@ -81,7 +81,7 @@ efxlve_launcher/
 │   ├── Cargo.toml
 │   ├── tauri.conf.json                # Window, bundle, updater endpoint & public key
 │   └── src/                           # 53 Rust files
-│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (159 commands)
+│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (165 commands)
 │       ├── presence.rs                # Discord Rich Presence worker
 │       ├── eos.rs                     # Epic Online Services overlay detection
 │       ├── legendary/                 # Epic backend (25 files)
@@ -102,7 +102,7 @@ efxlve_launcher/
 ├── docs/                              # Architecture, design & operations documentation
 │   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
 │   ├── CHANGELOG_INTERNAL.md          # Development history (§1–174)
-│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (159 commands)
+│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (165 commands)
 │   ├── REFACTOR_PLAN.md               # Modularization record + remaining splits
 │   ├── DESIGN_SYSTEM.md               # Single desktop design language
 │   └── CROSS_PLATFORM.md              # Linux/macOS research
@@ -139,7 +139,7 @@ efxlve_launcher/
 | Feature Directory | Module Files | Responsibilities |
 |---|---|---|
 | `accounts/` | `accounts-view.ts` | Epic + GOG + Steam account cards, saved-account rows, copyable account-id chip, sign-in blocks. |
-| `auth/` | `auth-actions.ts`, `account-switcher.ts`, `gog-auth-actions.ts`, `gog-account-switcher.ts`, `steam-auth-actions.ts` | Epic/GOG login (web login + code paste + EGL import), Steam web sign-in (password + Steam Guard + polling), progressive sync, account vault switching. |
+| `auth/` | `auth-actions.ts`, `account-switcher.ts`, `gog-auth-actions.ts`, `gog-account-switcher.ts`, `steam-auth-actions.ts`, `steam-account-switcher.ts` | Epic/GOG login (web login + code paste + EGL import), Steam web sign-in (password + Steam Guard + QR + polling), progressive sync, account vault switching. |
 | `changelog/` | `changelog-view.ts` | `CHANGELOG_DATA` (TR/EN, 1:1 with GitHub Releases) + modal. |
 | `cloud-backup/` | `cloud-backup-actions.ts`, `cloud-backup-view.ts` | WebDAV/Google Drive settings card, manage-row upload/sync/restore/delete. |
 | `collections/` | `collections-view.ts` | Collection editor, tags, EGL import, in-place game list updates. |
@@ -173,7 +173,7 @@ efxlve_launcher/
 
 | File / Subsystem | Primary Responsibilities |
 |---|---|
-| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (159 commands). |
+| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (165 commands). |
 | `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
 | `eos.rs` | Epic Online Services overlay detection & install state. |
 | `legendary/commands.rs` | Epic IPC entry points (library, install, verify, move, settings, EGL, shortcuts). |
@@ -192,7 +192,7 @@ efxlve_launcher/
 | `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **online heartbeat** (`presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
 | `steam.rs` | Steam client detection (text VDF parser, library folders, app manifests), `steam://` hand-off, local playtime, store details (merged with the client's `appinfo.vdf` DLC list) and achievements from the client's own **binary KeyValues** cache (Web API key only as a fallback). |
-| `steam_auth.rs` | Steam account sign-in (RSA-encrypted password, Steam Guard, poll, token refresh), DPAPI-sealed refresh token (`<app_data>/steam/auth.bin`), `GetOwnedGames`, `steam_login_*` / `steam_owned_games` / `steam_logout` commands. |
+| `steam_auth.rs` | Steam account sign-in (RSA-encrypted password, Steam Guard code/one-tap approval, QR sign-in with inline SVG, poll, token refresh), **multi-account vault** (DPAPI-sealed refresh tokens at `<app_data>/steam/accounts/<steamid>.bin` + `accounts_meta.json`, legacy single-file migration), `GetOwnedGames`, `steam_login_*` / `steam_*_saved_account*` / `steam_switch_account` / `steam_owned_games` / `steam_logout` commands. |
 | `external_stores.rs`, `controller.rs`, `winreg.rs` | EA/Ubisoft/Xbox detection & launch hand-off, controller bridge probe, shared registry helper. |
 
 ---

@@ -363,16 +363,21 @@ export const S = {
   /** Steam account sign-in (ROADMAP §13). `null` until the first status call. */
   steamAuth: (null) as import("../steam").SteamLoginStatus | null,
   /** UI step of the Steam card: idle → credentials → code/confirm → pending → signed_in. */
-  steamAuthStep: ("idle") as "idle" | "credentials" | "code" | "confirm" | "pending" | "signed_in",
+  steamAuthStep: ("idle") as "idle" | "credentials" | "code" | "confirm" | "pending" | "qr" | "signed_in",
   steamAuthBusy: false,
   /** Account name while a sign-in is in flight (shown in the code step). */
   steamAuthUser: "",
+  /** QR sign-in: inline SVG + challenge URL while the phone approves. */
+  steamQrSvg: "",
+  steamQrUrl: "",
   /** True when the user chose the code input over the mobile-app approval. */
   steamAuthCodeMode: false,
   /** Game page store selector: dropdown list open state. */
   isVersionDropdownOpen: false,
   steamOwnedCount: 0,
   steamLibrarySyncing: false,
+  /** Saved Steam accounts in the sealed vault (switcher rows). */
+  steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
   externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<
     import("../external-stores").ExternalStore,
     import("../external-stores").ExternalGame[]

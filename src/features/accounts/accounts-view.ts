@@ -271,26 +271,47 @@ function steamClientBlock(): string {
     </div>`;
 }
 
-/** Signed-in block: the launcher's Steam account, its owned library and sign-out. */
+/** Signed-in block: every saved Steam account with switch/remove, plus actions. */
 function steamAccountBlock(): string {
+  const sessionId = S.steamAuth?.steamId || "";
+  const rows = (S.steamSavedAccounts || []).map((acc) => {
+    const isCurrent = acc.isActive || acc.steamId === sessionId;
+    const actions = isCurrent
+      ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
+      : `<button class="btn small" data-act="steam-account-switch" data-id="${esc(acc.steamId)}">${t("settings.accountSwitchBtn")}</button>
+         <button class="icon-btn danger" data-act="steam-account-remove" data-id="${esc(acc.steamId)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
+    return `
+      <div class="row">
+        <span class="settings-avatar">${esc((acc.accountName.trim()[0] || "S").toUpperCase())}</span>
+        <div class="row-main">
+          <div class="row-title">${esc(acc.accountName)}</div>
+          ${isCurrent ? `<div class="row-meta tabular-nums">${t("steam.ownedGames", { count: S.steamOwnedCount })}</div>` : ""}
+        </div>
+        <div class="row-actions">${actions}</div>
+      </div>`;
+  }).join("");
+  // The vault may not be loaded yet (or the session came from a one-off login).
   const name = S.steamAuth?.accountName || "Steam";
+  const singleRow = `
+    <div class="row">
+      <span class="settings-avatar">${esc((name.trim()[0] || "S").toUpperCase())}</span>
+      <div class="row-main">
+        <div class="row-title">${esc(name)}</div>
+        <div class="row-meta tabular-nums">${t("steam.ownedGames", { count: S.steamOwnedCount })}</div>
+      </div>
+      <div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div>
+    </div>`;
   return `
     ${steamSectionHead(t("steam.accountTitle"))}
-    <div class="list acc-accounts">
-      <div class="row">
-        <span class="settings-avatar">${esc((name.trim()[0] || "S").toUpperCase())}</span>
-        <div class="row-main">
-          <div class="row-title">${esc(name)}</div>
-          <div class="row-meta tabular-nums">${t("steam.ownedGames", { count: S.steamOwnedCount })}</div>
-        </div>
-        <div class="row-actions">
-          <button class="btn ghost small" data-act="steam-owned-refresh" ${S.steamLibrarySyncing ? "disabled" : ""}>${icon("refresh", 13)} ${t("steam.refreshLibrary")}</button>
-          <button class="btn ghost small icon-only" data-act="steam-open-settings" title="${t("steam.openSettings")}" aria-label="${t("steam.openSettings")}">${icon("settings", 13)}</button>
-          <button class="btn ghost danger small" data-act="steam-logout">${t("steam.logout")}</button>
-        </div>
-      </div>
-    </div>
-    <p class="acc-hint">${t("steam.secureNote")}</p>`;
+    <div class="list acc-accounts">${rows || singleRow}</div>
+    <p class="acc-hint">${t("steam.secureNote")}</p>
+    <div class="acc-actions">
+      <button class="btn ghost small" data-act="steam-account-add">${icon("plus", 13)} ${t("settings.accountAdd")}</button>
+      <span class="acc-spacer"></span>
+      <button class="btn ghost small" data-act="steam-owned-refresh" ${S.steamLibrarySyncing ? "disabled" : ""}>${icon("refresh", 13)} ${t("steam.refreshLibrary")}</button>
+      <button class="btn ghost small icon-only" data-act="steam-open-settings" title="${t("steam.openSettings")}" aria-label="${t("steam.openSettings")}">${icon("settings", 13)}</button>
+      <button class="btn ghost danger small" data-act="steam-logout">${t("steam.logout")}</button>
+    </div>`;
 }
 
 /**
@@ -354,13 +375,42 @@ function steamSignInBlock(): string {
         <p class="acc-hint">${t("steam.secureNote")}</p>
       </div>`;
   }
+  if (step === "qr") {
+    return `
+      ${steamSectionHead(t("steam.accountTitle"))}
+      <div class="acc-signin">
+        <p class="acc-lead">${t("steam.qrHint")}</p>
+        <div class="acc-qr-box">${S.steamQrSvg || `<span class="spinner"></span>`}</div>
+        <div class="acc-actions">
+          <span class="chip">${t("steam.waiting")}</span>
+          <span class="acc-spacer"></span>
+          ${S.steamQrUrl ? `<button class="btn ghost small" data-act="steam-qr-copy">${icon("copy", 13)} ${t("steam.qrCopy")}</button>` : ""}
+          <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
+        </div>
+      </div>`;
+  }
   return `
     ${steamSectionHead(t("steam.accountTitle"))}
     <p class="acc-lead">${t("steam.signInDesc")}</p>
     <div class="acc-actions">
       <button class="btn primary" data-act="steam-login-start">${icon("user", 14)} ${t("steam.signInCta")}</button>
+      <button class="btn ghost small" data-act="steam-login-qr">${icon("qr-code", 13)} ${t("steam.qrLogin")}</button>
       <button class="btn ghost small" data-act="steam-open-settings">${icon("settings", 13)} ${t("steam.openSettings")}</button>
     </div>`;
+}
+
+/** Saved (inactive) accounts when signed out: one click brings them back. */
+function steamSavedAccountsBlock(): string {
+  const rows = (S.steamSavedAccounts || []).map((acc) => `
+    <div class="row">
+      <span class="settings-avatar">${esc((acc.accountName.trim()[0] || "S").toUpperCase())}</span>
+      <div class="row-main"><div class="row-title">${esc(acc.accountName)}</div></div>
+      <div class="row-actions">
+        <button class="btn small" data-act="steam-account-switch" data-id="${esc(acc.steamId)}">${t("settings.accountSwitchBtn")}</button>
+        <button class="icon-btn danger" data-act="steam-account-remove" data-id="${esc(acc.steamId)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>
+      </div>
+    </div>`).join("");
+  return `${steamSectionHead(t("steam.accountTitle"))}<div class="list acc-accounts">${rows}</div>`;
 }
 
 /** Steam card: the launcher account session on top, client detection below. */
@@ -375,7 +425,11 @@ function steamCard(): string {
   const meta = signedIn && S.steamAuth?.accountName
     ? t("steam.signedInAs", { name: S.steamAuth.accountName })
     : t("accounts.steamDesc");
-  const body = `${signedIn ? steamAccountBlock() : steamSignInBlock()}${installed ? steamClientBlock() : ""}`;
+  // Saved rows only on the idle step: sign-in flows stay focused on the form.
+  const savedRows = (S.steamSavedAccounts || []).length > 0 && !signedIn && S.steamAuthStep === "idle"
+    ? steamSavedAccountsBlock()
+    : "";
+  const body = `${signedIn ? steamAccountBlock() : savedRows + steamSignInBlock()}${installed ? steamClientBlock() : ""}`;
   return `
     <section class="card acc-card">
       <div class="acc-card-head">

@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md — Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 159 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. §2.1–§2.17 document the most-used groups in detail; §4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 165 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. §2.1–§2.17 document the most-used groups in detail; §4 holds the generated complete index.
 
 ---
 
@@ -258,6 +258,7 @@
 |---|---|---|---|
 | `controller_support_status` | `() => Promise<ControllerSupportStatus>` | `controller.rs` | Reports whether an XInput bridge (ViGEmBus service) and the Steam client are present, with the Steam install path. Registry only, no network. |
 | `steam_status` | `() => Promise<SteamStatus>` | `steam.rs` | Steam client presence, install path and the number of games found in its app manifests. |
+| `steam_open_client` | `() => Promise<void>` | `steam.rs` | Brings the Steam client itself to the front (`steam://open/main`). |
 | `steam_list_installed` | `() => Promise<SteamGame[]>` | `steam.rs` | Reads every `steamapps/appmanifest_*.acf` across all library folders (`libraryfolders.vdf`), deduplicated by app id. |
 | `steam_launch_game` → `steam_game_action` | `(appId: string, action: "launch" \| "install" \| "uninstall" \| "validate") => Promise<void>` | `steam.rs` | Hands the action to the Steam client via the matching `steam://` URL; non-numeric ids and unknown actions are rejected. The launcher never starts Steam executables itself. |
 | `steam_sync_playtime` | `() => Promise<Record<string, SteamPlaytime>>` | `steam.rs` | Reads the newest `userdata/<id>/config/localconfig.vdf` and maps app ids to playtime (seconds) + last played. |
@@ -267,9 +268,13 @@
 | `steam_get_achievements_summary` | `() => Promise<Record<string, EpicAchievementSummary>>` | `steam.rs` | Cached achievement summaries for the library covers; disk only, no network and no key needed. |
 | `steam_get_game_screenshots` | `(appId: string) => Promise<GameScreenshotItem[]>` | `steam.rs` | Screenshots taken by the Steam client (`userdata/<account>/760/remote/<app>/screenshots`), newest first. The gallery shows the client's thumbnails (`data_url`) while the lightbox/clipboard use the original (`full_data_url`); the list is read-only. |
 | `steam_login_begin` | `(accountName: string, password: string, remember: boolean) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Starts the web sign-in: fetches the per-account RSA key, sends the password RSA PKCS#1 v1.5 encrypted as a protobuf payload (`BeginAuthSessionViaCredentials`) and keeps the pending session in memory. The password is wiped right after the request. |
+| `steam_login_qr_begin` | `() => Promise<SteamQrLogin>` | `steam_auth.rs` | Opens a QR sign-in (`BeginAuthSessionViaQR`): returns the challenge URL plus an inline SVG QR code. The phone approves and `steam_login_status` completes the session; no password is involved. |
 | `steam_login_code` | `(code: string) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Submits the Steam Guard code (mobile authenticator preferred, email fallback) for the pending sign-in. |
-| `steam_login_status` | `() => Promise<SteamLoginStatus>` | `steam_auth.rs` | Reports the current session (a sealed DPAPI token is loaded lazily) and polls `PollAuthSessionStatus` while a sign-in is pending; no login in flight means no network call. |
-| `steam_logout` | `() => Promise<void>` | `steam_auth.rs` | Clears the in-memory session (refresh/access tokens zeroized) and deletes `<app_data>/steam/auth.bin`. |
+| `steam_login_status` | `() => Promise<SteamLoginStatus>` | `steam_auth.rs` | Reports the current session (the active sealed DPAPI token is loaded lazily) and polls `PollAuthSessionStatus` while a sign-in is pending; no login in flight means no network call. |
+| `steam_logout` | `() => Promise<void>` | `steam_auth.rs` | Clears the in-memory session (tokens zeroized) and marks the vault entry inactive; the sealed account stays so it can be switched back to. |
+| `steam_get_saved_accounts` | `() => Promise<SteamSavedAccount[]>` | `steam_auth.rs` | Saved Steam accounts from the vault (`<app_data>/steam/accounts/<steamid>.bin` + `accounts_meta.json`); migrates the legacy single-session file once. |
+| `steam_switch_account` | `(steamId: string) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Activates another saved Steam account: loads its sealed token, marks the vault row active and returns the signed-in status. |
+| `steam_remove_saved_account` | `(steamId: string) => Promise<void>` | `steam_auth.rs` | Deletes one sealed vault entry (and drops the in-memory session when it was the active account). |
 | `steam_owned_games` | `() => Promise<SteamOwnedGames>` | `steam_auth.rs` | Every owned game through `IPlayerService/GetOwnedGames` (installed or not, playtime included). The web access token is minted through `login.steampowered.com/jwt/finalizelogin` → `steamLoginSecure` cookie (Valve rejects WebBrowser tokens in `GenerateAccessTokenForApp` since 2025-04-30; that call stays as a fallback), cached in memory and retried once on 401. |
 
 ### 2.20. Shared Library (All Accounts)
@@ -421,11 +426,11 @@ export interface ScreenshotsUpdatedEvent {
 | `legendary/steamgrid.rs` | 5 | `epic_get_steamgrid_key`, `epic_set_steamgrid_key`, `epic_test_steamgrid_key`, `epic_search_steamgrid`, `epic_get_steamgrid_covers` |
 | `legendary/transfers.rs` | 13 | `epic_install_game`, `epic_install_with_options`, `epic_resume_pending_download`, `epic_cancel_download`, `epic_pause_download`, `epic_resume_download`, `epic_reorder_queue`, `epic_get_queue`, `epic_uninstall_game`, `epic_default_install_dir`, `epic_set_install_dir`, `epic_launch_game`, `epic_stop_game` |
 | `legendary/wiki.rs` | 1 | `epic_get_wiki_about` |
-| `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
+| `main.rs` | 16 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `epic_take_pending_launch`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 | `shared_library.rs` | 1 | `shared_library_index` |
-| `steam.rs` | 10 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary`, `steam_get_game_screenshots` |
-| `steam_auth.rs` | 5 | `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games` |
+| `steam.rs` | 11 | `steam_status`, `steam_open_client`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary`, `steam_get_game_screenshots` |
+| `steam_auth.rs` | 9 | `steam_login_begin`, `steam_login_qr_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_get_saved_accounts`, `steam_switch_account`, `steam_remove_saved_account`, `steam_owned_games` |
 
-**Total: 159 commands**
+**Total: 165 commands**
 

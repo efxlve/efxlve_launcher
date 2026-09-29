@@ -127,6 +127,14 @@ export interface SteamOwnedGames {
  */
 export const steamLoginBegin = (accountName: string, password: string, remember: boolean) =>
   invoke<SteamLoginStatus>("steam_login_begin", { accountName, password, remember });
+/** QR sign-in: the phone scans the code; no password is involved. */
+export interface SteamQrLogin {
+  challengeUrl: string;
+  /** Inline SVG markup for the QR code. */
+  svg: string;
+  interval: number;
+}
+export const steamLoginQrBegin = () => invoke<SteamQrLogin>("steam_login_qr_begin");
 /** Submits the Steam Guard code (email or mobile authenticator). */
 export const steamLoginCode = (code: string) => invoke<SteamLoginStatus>("steam_login_code", { code });
 /**
@@ -134,7 +142,21 @@ export const steamLoginCode = (code: string) => invoke<SteamLoginStatus>("steam_
  * (no login in flight means no network request at all).
  */
 export const steamLoginStatus = () => invoke<SteamLoginStatus>("steam_login_status");
-/** Drops the session from memory and deletes the sealed token file. */
+/** Drops the session from memory and deactivates the sealed token file. */
 export const steamLogout = () => invoke<void>("steam_logout");
+
+/** One saved Steam account in the vault (sealed refresh token). */
+export interface SteamSavedAccount {
+  steamId: string;
+  accountName: string;
+  lastUsed: number;
+  isActive: boolean;
+}
+
+export const steamGetSavedAccounts = () => invoke<SteamSavedAccount[]>("steam_get_saved_accounts");
+export const steamSwitchAccount = (steamId: string) =>
+  invoke<SteamLoginStatus>("steam_switch_account", { steamId });
+export const steamRemoveSavedAccount = (steamId: string) =>
+  invoke<void>("steam_remove_saved_account", { steamId });
 /** Every owned game (installed or not); refreshes the access token silently. */
 export const steamOwnedGames = () => invoke<SteamOwnedGames>("steam_owned_games");

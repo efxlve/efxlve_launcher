@@ -11,7 +11,8 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { localizeMessage, t } from "../../i18n";
-import { steamLoginBegin, steamLoginCode, steamLoginStatus, steamLogout, type SteamLoginStatus } from "../../steam";
+import { steamLoginBegin, steamLoginCode, steamLoginQrBegin, steamLoginStatus, steamLogout, type SteamLoginStatus } from "../../steam";
+import { loadSavedSteamAccounts } from "./steam-account-switcher";
 import { loadSteamLibrary } from "../library/steam-library";
 
 /** A pending sign-in is abandoned after this long (Steam sessions expire, too). */
@@ -65,11 +66,12 @@ export function applySteamStatus(status: SteamLoginStatus, paint = true): void {
     S.steamAuthStep = "signed_in";
     S.steamAuthBusy = false;
   } else if (status.state === "code") {
-    S.steamAuthStep = "code";
+    if (S.steamAuthStep !== "qr") S.steamAuthStep = "code";
   } else if (status.state === "confirm") {
-    S.steamAuthStep = "confirm";
+    if (S.steamAuthStep !== "qr") S.steamAuthStep = "confirm";
   } else if (status.state === "pending") {
-    S.steamAuthStep = "pending";
+    // The QR view keeps showing the code while the phone approves.
+    if (S.steamAuthStep !== "qr") S.steamAuthStep = "pending";
   } else if (S.steamAuthStep !== "credentials") {
     S.steamAuthStep = "idle";
   }
@@ -86,6 +88,8 @@ export async function hydrateSteamAuth(): Promise<void> {
   try {
     const status = await steamLoginStatus();
     applySteamStatus(status, false);
+    // The switcher rows come from the sealed vault (disk only).
+    void loadSavedSteamAccounts();
   } catch {
     // Stay signed out; the Accounts card offers the sign-in.
   }
@@ -106,12 +110,45 @@ export function promptSteamCodeMode(): void {
   render();
 }
 
+/** QR sign-in: fetch the challenge, show the code and poll for approval. */
+export async function beginSteamQrLogin(): Promise<void> {
+  stopSteamPoll();
+  S.steamAuthStep = "qr";
+  S.steamAuthBusy = true;
+  S.steamQrSvg = "";
+  S.steamQrUrl = "";
+  render();
+  try {
+    const qr = await steamLoginQrBegin();
+    S.steamQrSvg = qr.svg;
+    S.steamQrUrl = qr.challengeUrl;
+    S.steamAuthBusy = false;
+    S.steamAuth = {
+      state: "pending",
+      accountName: "",
+      steamId: "",
+      emailHint: "",
+      interval: qr.interval,
+      confirm: true,
+    };
+    render();
+    startSteamPoll();
+  } catch (e) {
+    S.steamAuthBusy = false;
+    S.steamAuthStep = "idle";
+    toast(localizeMessage(String(e)), "err");
+    render();
+  }
+}
+
 /** Leaves the sign-in flow; a server-side session is simply abandoned. */
 export function cancelSteamLogin(): void {
   stopSteamPoll();
   S.steamAuthStep = S.steamAuth?.state === "signed_in" ? "signed_in" : "idle";
   S.steamAuthBusy = false;
   S.steamAuthCodeMode = false;
+  S.steamQrSvg = "";
+  S.steamQrUrl = "";
   render();
 }
 
@@ -242,7 +279,7 @@ export async function syncSteamOwnedGames(notify = false): Promise<void> {
   }
 }
 
-/** Sign out: clears memory, deletes the sealed token and drops owned games. */
+/** Sign out: clears memory, deactivates the vault entry and drops owned games. */
 export async function logoutSteam(): Promise<void> {
   stopSteamPoll();
   try {
@@ -254,6 +291,7 @@ export async function logoutSteam(): Promise<void> {
   S.steamAuthStep = "idle";
   S.steamAuthUser = "";
   S.steamOwnedCount = 0;
+  void loadSavedSteamAccounts();
   void loadSteamLibrary();
   render();
 }

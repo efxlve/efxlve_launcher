@@ -21,7 +21,7 @@
 //!   * Errors are mapped to short translation keys (`@t:steam.err.*`); raw
 //!     Steam responses never reach the UI.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -62,6 +62,8 @@ struct PendingLogin {
     remember: bool,
     /// True once a guard code has been submitted; polling stays silent until then.
     code_sent: bool,
+    /// True for the QR flow: the phone approves, so there is no local code step.
+    qr: bool,
 }
 
 impl PendingLogin {
@@ -84,9 +86,11 @@ impl PendingLogin {
     }
 
     fn status(&self) -> SteamLoginStatus {
-        let state = if !self.code_sent && self.needs_code() {
+        let state = if self.qr || self.code_sent {
+            "pending"
+        } else if self.needs_code() {
             "code"
-        } else if !self.code_sent && self.needs_confirmation() {
+        } else if self.needs_confirmation() {
             "confirm"
         } else {
             "pending"
@@ -420,6 +424,20 @@ fn encode_begin_request(
     out
 }
 
+/// `CAuthentication_BeginAuthSessionViaQR_Request`. The QR flow approves on the
+/// phone, so no password or guard code is involved.
+fn encode_qr_begin_request() -> Vec<u8> {
+    let mut out = Vec::new();
+    put_string(&mut out, 1, DEVICE_NAME);
+    put_number(&mut out, 2, PLATFORM_TYPE_WEB as u64);
+    let mut device_details = Vec::new();
+    put_string(&mut device_details, 1, DEVICE_NAME);
+    put_number(&mut device_details, 2, PLATFORM_TYPE_WEB as u64);
+    put_bytes(&mut out, 3, &device_details);
+    put_string(&mut out, 4, WEBSITE_ID);
+    out
+}
+
 /// `CAuthentication_PollAuthSessionStatus_Request`. `request_id` must be the
 /// exact raw bytes Steam issued, so it cannot travel as a form string.
 fn encode_poll_request(client_id: &str, request_id: &[u8]) -> Vec<u8> {
@@ -503,6 +521,7 @@ fn parse_begin_response(
         interval,
         remember,
         code_sent: false,
+        qr: false,
     })
 }
 
@@ -533,10 +552,14 @@ fn parse_poll_response(response: &Value, pending: &PendingLogin) -> PollOutcome 
             },
             steam_id: {
                 let id = field_str(response, "steamid", "steamId");
-                if id.is_empty() {
+                if !id.is_empty() {
+                    id
+                } else if !pending.steam_id.is_empty() {
                     pending.steam_id.clone()
                 } else {
-                    id
+                    // QR sessions never see a steamid before approval; the
+                    // refresh token carries it in its `sub` claim.
+                    jwt_sub(&refresh_token).unwrap_or_default()
                 }
             },
             refresh_token,
@@ -584,12 +607,21 @@ pub fn parse_owned_games(response: &Value) -> SteamOwnedGames {
 
 /// Expiry of a JWT access token, in Unix seconds (0 when unreadable).
 fn token_exp_secs(token: &str) -> u64 {
-    let Some(payload) = token.split('.').nth(1) else { return 0 };
-    let Ok(bytes) = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload) else {
-        return 0;
-    };
-    let Ok(value) = serde_json::from_slice::<Value>(&bytes) else { return 0 };
-    value.get("exp").and_then(Value::as_u64).unwrap_or(0)
+    jwt_claim(token, "exp").and_then(|v| v.as_u64()).unwrap_or(0)
+}
+
+/// Subject (`sub`) claim of a JWT — the SteamID64 a token belongs to.
+fn jwt_sub(token: &str) -> Option<String> {
+    jwt_claim(token, "sub").and_then(|v| v.as_str().map(str::to_string))
+}
+
+/// One claim from a JWT payload (base64url, no signature check needed: Steam
+/// issued the token and the API rejects invalid ones).
+fn jwt_claim(token: &str, claim: &str) -> Option<Value> {
+    let payload = token.split('.').nth(1)?;
+    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload).ok()?;
+    let value = serde_json::from_slice::<Value>(&bytes).ok()?;
+    value.get(claim).cloned()
 }
 
 /* ---------- DPAPI sealed storage ---------- */
@@ -724,12 +756,41 @@ fn auth_dir(app: &tauri::AppHandle) -> PathBuf {
     dir
 }
 
-fn token_path(app: &tauri::AppHandle) -> PathBuf {
-    auth_dir(app).join("auth.bin")
+/// One saved Steam account in the vault (sealed file per SteamID64).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamSavedAccount {
+    pub steam_id: String,
+    pub account_name: String,
+    pub last_used: u64,
+    pub is_active: bool,
 }
 
-/// Seals the refresh token to disk (DPAPI). Failures are non-fatal: the session
-/// stays usable in memory for this run.
+/// Paths and meta I/O are path-based so they stay unit-testable.
+fn vault_path(dir: &Path, steam_id: &str) -> PathBuf {
+    dir.join("accounts").join(format!("{steam_id}.bin"))
+}
+
+fn meta_path(dir: &Path) -> PathBuf {
+    dir.join("accounts_meta.json")
+}
+
+fn load_meta(dir: &Path) -> Vec<SteamSavedAccount> {
+    std::fs::read_to_string(meta_path(dir))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+fn save_meta(dir: &Path, accounts: &[SteamSavedAccount]) {
+    let _ = std::fs::create_dir_all(dir.join("accounts"));
+    if let Ok(text) = serde_json::to_string(accounts) {
+        let _ = std::fs::write(meta_path(dir), text);
+    }
+}
+
+/// Seals the refresh token into the account vault (DPAPI) and marks that
+/// account active. Failures are non-fatal: the session stays usable in memory.
 fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
     use zeroize::Zeroizing;
     let stored = StoredSession {
@@ -740,20 +801,41 @@ fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
     };
     let Ok(json) = serde_json::to_vec(&stored).map(Zeroizing::new) else { return };
     let Ok(mut sealed) = dpapi::protect(&json) else { return };
-    let path = token_path(app);
-    let _ = std::fs::write(&path, &sealed);
+    let _ = std::fs::write(vault_path(&auth_dir(app), &session.steam_id), &sealed);
     sealed.zeroize();
+
+    let mut accounts = load_meta(&auth_dir(app));
+    for account in accounts.iter_mut() {
+        account.is_active = account.steam_id == session.steam_id;
+    }
+    match accounts.iter_mut().find(|account| account.steam_id == session.steam_id) {
+        Some(account) => {
+            account.account_name = session.account_name.clone();
+            account.last_used = now_secs();
+        }
+        None => accounts.push(SteamSavedAccount {
+            steam_id: session.steam_id.clone(),
+            account_name: session.account_name.clone(),
+            last_used: now_secs(),
+            is_active: true,
+        }),
+    }
+    save_meta(&auth_dir(app), &accounts);
 }
 
-fn remove_stored_session(app: &tauri::AppHandle) {
-    let _ = std::fs::remove_file(token_path(app));
+/// Marks every vault entry inactive without deleting it: signing out keeps the
+/// row so the account can be switched back to.
+fn deactivate_vault(app: &tauri::AppHandle) {
+    let mut accounts = load_meta(&auth_dir(app));
+    for account in accounts.iter_mut() {
+        account.is_active = false;
+    }
+    save_meta(&auth_dir(app), &accounts);
 }
 
-/// Reads the sealed session back; `None` covers "no file", "another user" and
-/// "tampered file".
-fn load_stored_session(app: &tauri::AppHandle) -> Option<SteamSession> {
+fn read_vault_session(app: &tauri::AppHandle, steam_id: &str) -> Option<SteamSession> {
     use zeroize::Zeroizing;
-    let sealed = std::fs::read(token_path(app)).ok()?;
+    let sealed = std::fs::read(vault_path(&auth_dir(app), steam_id)).ok()?;
     let plain = Zeroizing::new(dpapi::unprotect(&sealed).ok()?);
     let stored: StoredSession = serde_json::from_slice(&plain).ok()?;
     if stored.refresh_token.trim().is_empty() {
@@ -768,11 +850,47 @@ fn load_stored_session(app: &tauri::AppHandle) -> Option<SteamSession> {
     })
 }
 
+/// Reads the active sealed session back; `None` covers "no file", "another
+/// user" and "tampered file".
+fn load_stored_session(app: &tauri::AppHandle) -> Option<SteamSession> {
+    let steam_id = load_meta(&auth_dir(app))
+        .into_iter()
+        .find(|account| account.is_active)?
+        .steam_id;
+    read_vault_session(app, &steam_id)
+}
+
+/// One-time migration from the old single-session file (`steam/auth.bin`).
+fn migrate_legacy_session(app: &tauri::AppHandle) {
+    let legacy = auth_dir(app).join("auth.bin");
+    if !legacy.is_file() || !load_meta(&auth_dir(app)).is_empty() {
+        return;
+    }
+    let Ok(sealed) = std::fs::read(&legacy) else { return };
+    let Ok(plain) = dpapi::unprotect(&sealed) else { return };
+    let Ok(stored) = serde_json::from_slice::<StoredSession>(&plain) else { return };
+    if stored.steam_id.is_empty() {
+        return;
+    }
+    persist_session(
+        app,
+        &SteamSession {
+            account_name: stored.account_name,
+            steam_id: stored.steam_id,
+            refresh_token: stored.refresh_token,
+            access_token: None,
+            access_token_exp: 0,
+        },
+    );
+    let _ = std::fs::remove_file(&legacy);
+}
+
 /// Loads the sealed session once per process, without ever blocking the UI.
 fn ensure_disk_checked(app: &tauri::AppHandle) {
     if lock().disk_checked {
         return;
     }
+    migrate_legacy_session(app);
     let stored = load_stored_session(app);
     let mut state = lock();
     state.disk_checked = true;
@@ -970,6 +1088,78 @@ async fn fetch_owned_games(
 
 /* ---------- Commands ---------- */
 
+/// Sign-in shape for the QR flow: the challenge URL plus an inline SVG QR code.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamQrLogin {
+    pub challenge_url: String,
+    /// Ready-to-embed SVG markup (black modules on white, for reliable scanning).
+    pub svg: String,
+    pub interval: f32,
+}
+
+/// Opens a QR sign-in: the phone scans the code, approves, and the poll below
+/// completes the session. No password is involved.
+#[tauri::command]
+pub async fn steam_login_qr_begin() -> Result<SteamQrLogin, String> {
+    let client = http_client()?;
+    let call = post_form(
+        &client,
+        "BeginAuthSessionViaQR",
+        &protobuf_payload(&encode_qr_begin_request()),
+    )
+    .await?;
+    if call.eresult != 1 {
+        return Err(eresult_error(call.eresult));
+    }
+    let response = call.response();
+    let client_id = field_str(response, "client_id", "clientId");
+    let request_id = field_str(response, "request_id", "requestId");
+    let challenge_url = field_str(response, "challenge_url", "challengeUrl");
+    if client_id.is_empty() || request_id.is_empty() || challenge_url.is_empty() {
+        return Err("@t:steam.err.steam".to_string());
+    }
+    let mut guard_types = Vec::new();
+    if let Some(confirmations) =
+        field(response, "allowed_confirmations", "allowedConfirmations").and_then(Value::as_array)
+    {
+        for entry in confirmations {
+            guard_types.push(field_i64(entry, "confirmation_type", "confirmationType"));
+        }
+    }
+    let interval = field(response, "interval", "interval")
+        .and_then(Value::as_f64)
+        .unwrap_or(5.0) as f32;
+    lock().pending = Some(PendingLogin {
+        account_name: String::new(),
+        client_id,
+        request_id,
+        steam_id: String::new(),
+        guard_types,
+        email_hint: String::new(),
+        interval,
+        remember: true,
+        code_sent: true,
+        qr: true,
+    });
+    Ok(SteamQrLogin {
+        svg: qr_svg(&challenge_url)?,
+        challenge_url,
+        interval,
+    })
+}
+
+/// QR code as inline SVG. Kept black-on-white: inverted codes are not scanned
+/// reliably by every mobile client.
+fn qr_svg(url: &str) -> Result<String, String> {
+    let code = qrcode::QrCode::new(url.as_bytes()).map_err(|_| "@t:steam.err.steam".to_string())?;
+    Ok(code
+        .render::<qrcode::render::svg::Color>()
+        .min_dimensions(180, 180)
+        .quiet_zone(true)
+        .build())
+}
+
 /// Step 1–2: fetch the RSA key, encrypt the password, open the auth session.
 #[tauri::command]
 pub async fn steam_login_begin(
@@ -1086,7 +1276,7 @@ pub async fn steam_login_status(app: tauri::AppHandle) -> Result<SteamLoginStatu
                 persist_session(&app, &session);
             } else {
                 // A one-off session must not resurrect an older sealed token.
-                remove_stored_session(&app);
+                deactivate_vault(&app);
             }
             let status = SteamLoginStatus::signed_in(&session);
             let mut state = lock();
@@ -1107,7 +1297,8 @@ pub async fn steam_login_status(app: tauri::AppHandle) -> Result<SteamLoginStatu
     }
 }
 
-/// Drops the session: memory first, then the sealed file.
+/// Signs out: clears memory and marks the vault entry inactive (the sealed
+/// account stays, so it can be switched back to later).
 #[tauri::command]
 pub fn steam_logout(app: tauri::AppHandle) {
     let mut state = lock();
@@ -1120,7 +1311,57 @@ pub fn steam_logout(app: tauri::AppHandle) {
     }
     state.disk_checked = true;
     drop(state);
-    remove_stored_session(&app);
+    deactivate_vault(&app);
+}
+
+/// Saved Steam accounts (sealed refresh tokens; passwords are never stored).
+#[tauri::command]
+pub fn steam_get_saved_accounts(app: tauri::AppHandle) -> Vec<SteamSavedAccount> {
+    migrate_legacy_session(&app);
+    load_meta(&auth_dir(&app))
+}
+
+/// Switches the launcher session to another saved Steam account.
+#[tauri::command]
+pub fn steam_switch_account(app: tauri::AppHandle, steam_id: String) -> Result<SteamLoginStatus, String> {
+    let Some(session) = read_vault_session(&app, &steam_id) else {
+        return Err("@t:steam.err.notSignedIn".to_string());
+    };
+    let mut accounts = load_meta(&auth_dir(&app));
+    for account in accounts.iter_mut() {
+        account.is_active = account.steam_id == steam_id;
+        if account.is_active {
+            account.last_used = now_secs();
+        }
+    }
+    save_meta(&auth_dir(&app), &accounts);
+    let status = SteamLoginStatus::signed_in(&session);
+    let mut state = lock();
+    state.pending = None;
+    state.session = Some(session);
+    state.disk_checked = true;
+    Ok(status)
+}
+
+/// Removes one saved account; the active session is dropped when it matches.
+#[tauri::command]
+pub fn steam_remove_saved_account(app: tauri::AppHandle, steam_id: String) {
+    let _ = std::fs::remove_file(vault_path(&auth_dir(&app), &steam_id));
+    let mut accounts = load_meta(&auth_dir(&app));
+    accounts.retain(|account| account.steam_id != steam_id);
+    save_meta(&auth_dir(&app), &accounts);
+
+    let mut state = lock();
+    let is_active = state
+        .session
+        .as_ref()
+        .map(|session| session.steam_id == steam_id)
+        .unwrap_or(false);
+    if is_active {
+        if let Some(mut session) = state.session.take() {
+            session.refresh_token.zeroize();
+        }
+    }
 }
 
 /// Every owned game on the signed-in account. The access token is refreshed
@@ -1492,6 +1733,58 @@ mod tests {
         });
     }
 
+    #[test]
+    fn saved_accounts_meta_round_trips() {
+        let dir = std::env::temp_dir().join("efxlve_steam_accounts_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("temp dir");
+
+        let accounts = vec![
+            SteamSavedAccount {
+                steam_id: "76561199140017878".into(),
+                account_name: "efxlve".into(),
+                last_used: 1_790_000_000,
+                is_active: true,
+            },
+            SteamSavedAccount {
+                steam_id: "76561198000000000".into(),
+                account_name: "other".into(),
+                last_used: 1_780_000_000,
+                is_active: false,
+            },
+        ];
+        save_meta(&dir, &accounts);
+        let loaded = load_meta(&dir);
+        assert_eq!(loaded.len(), 2);
+        assert!(loaded[0].is_active);
+        assert_eq!(loaded[0].account_name, "efxlve");
+        assert_eq!(loaded[1].steam_id, "76561198000000000");
+
+        // Vault paths are namespaced per SteamID64.
+        assert!(vault_path(&dir, "76561199140017878")
+            .to_string_lossy()
+            .ends_with("accounts\\76561199140017878.bin"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn qr_codes_render_inline_svg() {
+        let svg = qr_svg("https://s.team/q/1/123456789").expect("qr svg");
+        assert!(svg.contains("<svg"), "expected SVG markup, got: {}", &svg[..svg.len().min(60)]);
+        assert!(svg.contains("</svg>"));
+        assert!(svg.len() > 200);
+        assert!(qr_svg("").is_ok(), "an empty payload still renders");
+    }
+
+    #[test]
+    fn jwt_subject_is_read_from_the_payload() {
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_vec(&serde_json::json!({ "sub": "76561199140017878" })).unwrap());
+        let token = format!("header.{payload}.signature");
+        assert_eq!(jwt_sub(&token).as_deref(), Some("76561199140017878"));
+        assert!(jwt_sub("not-a-jwt").is_none());
+    }
+
     /// Live probe that validates the whole poll path without credentials:
     /// `BeginAuthSessionViaQR` creates a real session, then the protobuf
     /// `PollAuthSessionStatus` must answer `eresult 1` (still pending).
@@ -1503,18 +1796,13 @@ mod tests {
         rt.block_on(async {
             let client = http_client().unwrap();
 
-            // CAuthentication_BeginAuthSessionViaQR_Request: name, platform, device, site.
-            let mut device = Vec::new();
-            put_string(&mut device, 1, DEVICE_NAME);
-            put_number(&mut device, 2, PLATFORM_TYPE_WEB as u64);
-            let mut request = Vec::new();
-            put_string(&mut request, 1, DEVICE_NAME);
-            put_number(&mut request, 2, PLATFORM_TYPE_WEB as u64);
-            put_bytes(&mut request, 3, &device);
-            put_string(&mut request, 4, WEBSITE_ID);
-            let call = post_form(&client, "BeginAuthSessionViaQR", &protobuf_payload(&request))
-                .await
-                .unwrap();
+            let call = post_form(
+                &client,
+                "BeginAuthSessionViaQR",
+                &protobuf_payload(&encode_qr_begin_request()),
+            )
+            .await
+            .unwrap();
             println!("qr begin eresult: {}", call.eresult);
             let keys: Vec<String> = call
                 .response()
@@ -1538,6 +1826,7 @@ mod tests {
             let client_id = field_str(call.response(), "client_id", "clientId");
             let request_b64 = field_str(call.response(), "request_id", "requestId");
             let request_id = decode_base64_bytes(&request_b64);
+            let challenge_url = field_str(call.response(), "challenge_url", "challengeUrl");
             println!(
                 "client_id: {} digits, request_id: {} base64 chars -> {} bytes, interval: {:?}",
                 client_id.len(),
@@ -1547,6 +1836,11 @@ mod tests {
             );
             assert!(!client_id.is_empty(), "client_id must be present");
             assert!(!request_id.is_empty(), "request_id must decode");
+
+            // The sign-in card embeds exactly this markup.
+            let svg = qr_svg(&challenge_url).expect("qr svg");
+            println!("challenge url: {} chars, svg: {} bytes", challenge_url.len(), svg.len());
+            assert!(svg.contains("<svg"), "QR markup must render");
 
             let poll = encode_poll_request(&client_id, &request_id);
             let result = post_form(&client, "PollAuthSessionStatus", &protobuf_payload(&poll))
@@ -1563,19 +1857,27 @@ mod tests {
     }
 
     /// Live probe for the owned-library path using the launcher's own sealed
-    /// session (`%APPDATA%\com.efxlve.launcher\steam\auth.bin`, same Windows
-    /// user). Prints counts only, never tokens.
+    /// session (`%APPDATA%\com.efxlve.launcher\steam\accounts\<steamid>.bin`,
+    /// same Windows user). Prints counts only, never tokens.
     /// Run: `cargo test live_steam_owned_probe -- --ignored --nocapture`
     #[test]
     #[ignore]
     fn live_steam_owned_probe() {
         use zeroize::Zeroizing;
         let appdata = std::env::var("APPDATA").expect("APPDATA");
-        let path = PathBuf::from(appdata)
+        let steam_dir = PathBuf::from(appdata)
             .join("com.efxlve.launcher")
-            .join("steam")
-            .join("auth.bin");
-        let sealed = std::fs::read(&path).expect("sealed session file");
+            .join("steam");
+        // The vault keeps one sealed file per SteamID64; the active row wins,
+        // otherwise the first saved account is used.
+        let accounts = load_meta(&steam_dir);
+        let steam_id = accounts
+            .iter()
+            .find(|account| account.is_active)
+            .or_else(|| accounts.first())
+            .map(|account| account.steam_id.clone())
+            .expect("a saved Steam account");
+        let sealed = std::fs::read(vault_path(&steam_dir, &steam_id)).expect("sealed session file");
         let plain = Zeroizing::new(dpapi::unprotect(&sealed).expect("dpapi open"));
         let stored: StoredSession = serde_json::from_slice(&plain).expect("stored session");
         println!(

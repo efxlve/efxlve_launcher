@@ -29,6 +29,7 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 rsa = "0.9"
 zeroize = "1"
 rand = "0.8"
+qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 
 [features]
 default = ["custom-protocol"]

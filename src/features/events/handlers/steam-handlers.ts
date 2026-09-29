@@ -9,6 +9,7 @@ import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { steamGameAction, steamOpenClient, steamSetApiKey } from "../../../steam";
 import {
+  beginSteamQrLogin,
   cancelSteamLogin,
   logoutSteam,
   promptSteamCodeMode,
@@ -19,6 +20,10 @@ import {
 } from "../../auth/steam-auth-actions";
 import { refreshSteamStatus } from "../../library/steam-library";
 import { loadIntegrationsView, loadSettingsView } from "../../settings/settings-view";
+import {
+  removeSavedSteamAccount,
+  switchSteamAccount,
+} from "../../auth/steam-account-switcher";
 
 export function handleSteamAction(act: string | undefined, target: HTMLElement, id?: string): boolean {
   if (!act) return false;
@@ -74,6 +79,19 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
       promptSteamLogin();
       return true;
 
+    case "steam-login-qr":
+      void beginSteamQrLogin();
+      return true;
+
+    case "steam-qr-copy":
+      if (S.steamQrUrl) {
+        void navigator.clipboard
+          .writeText(S.steamQrUrl)
+          .then(() => toast(i18nT("steam.qrCopy"), "ok"))
+          .catch(() => toast(S.steamQrUrl, ""));
+      }
+      return true;
+
     case "steam-login-submit":
       void submitSteamCredentials();
       return true;
@@ -96,6 +114,18 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
 
     case "steam-owned-refresh":
       void syncSteamOwnedGames(true);
+      return true;
+
+    case "steam-account-add":
+      promptSteamLogin();
+      return true;
+
+    case "steam-account-switch":
+      if (id) void switchSteamAccount(id);
+      return true;
+
+    case "steam-account-remove":
+      if (id) void removeSavedSteamAccount(id);
       return true;
 
     default:

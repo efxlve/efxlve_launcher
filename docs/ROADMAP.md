@@ -715,7 +715,7 @@ Mevcut `src/features/dlc/selective-install.ts` zaten çalışıyor: zorunlu ana 
 
 **Neden:** GOG Galaxy'in Steam eklentisi Steam'in gerçek auth akışını kullanır (SteamKit'ten ilham alan yeni akış, PR #171) ve **sahip olunan tüm oyunları** okur. Bizim mevcut okuma yalnızca **kurulu** oyunları verir (yerel manifest'ler), bu yüzden kullanıcının diğer Steam oyunları görünmüyor. Kullanıcı kararı: **tam çalışan + tam güvenli** hesap girişi uygulanacak.
 
-**Durum (29.09.2026): Faz 1 uygulandı.** `steam_auth.rs` + DPAPI + `GetOwnedGames` + Hesaplar sayfası giriş akışı tamam; kütüphanede kurulu olmayan Steam oyunları da "Kur" eylemiyle listeleniyor. Ek turlar: başarımlar **istemcinin ikili KeyValues önbelleğinden** (şema + istatistik) anahtarsız okunur, **nadirlik/kademe** herkese açık yüzde API'sinden gelir; **Steam ekran görüntüleri** galeriye bağlandı (salt okunur); **DLC listesi** istemcinin `appinfo.vdf` alanıyla birleştirilir; **indirme durumu** `steamapps/downloading` üzerinden gösterilir. Canlı doğrulama: RSA + `BeginAuthSessionViaCredentials` kabul edildi (yanlış parola → `eresult 5`), `GetOwnedGames` 122 oyun, Life is Strange 60/60, DLC 1 → 6, ekran görüntüsü listesi. Kalan bilinçli işler: hesap bazlı başarım/süre ayrımı, çoklu Steam hesabı ve QR ile giriş.
+**Durum (29.09.2026): Tamamlandı.** `steam_auth.rs` + DPAPI + `GetOwnedGames` + Hesaplar sayfası giriş akışı tamam; kütüphanede kurulu olmayan Steam oyunları da "Kur" eylemiyle listeleniyor. Ek turlar: başarımlar **istemcinin ikili KeyValues önbelleğinden** (şema + istatistik) anahtarsız okunur, **nadirlik/kademe** herkese açık yüzde API'sinden gelir; **Steam ekran görüntüleri** galeriye bağlandı (salt okunur); **DLC listesi** istemcinin `appinfo.vdf` alanıyla birleştirilir; **indirme durumu** `steamapps/downloading` üzerinden gösterilir. Son tur: **QR ile giriş** (`BeginAuthSessionViaQR`; Rust `qrcode` crate ile satır içi SVG, telefon onayı poll ile tamamlanır) ve **çoklu Steam hesabı** (DPAPI mühürlü hesap kasası: `steam/accounts/<steamid>.bin` + `accounts_meta.json`, `steam_switch_account` / `steam_remove_saved_account` / `steam_get_saved_accounts`, eski `auth.bin` otomatik göç eder; çıkış hesap satırını silmez, yalnız pasifleştirir). Canlı doğrulama: RSA + `BeginAuthSessionViaCredentials` kabul edildi (yanlış parola → `eresult 5`), `GetOwnedGames` 122 oyun, Life is Strange 60/60, DLC 1 → 6, ekran görüntüsü listesi, QR challenge URL + SVG üretimi. **Kalan tek bilinçli sınır:** hesap bazlı başarım/süre ayrımı — yerel veriler (başarımlar, ekran görüntüleri, oynanış süresi) Windows'taki **Steam istemcisinin** aktif hesabına aittir, launcher oturumundaki hesaba değil; API verisi (sahip olunan oyunlar) her zaman launcher'ın aktif hesabından gelir (aşağıda §13.6).
 
 ### 13.1. Rust auth çekirdeği (`src-tauri/src/steam_auth.rs`)
 
@@ -728,12 +728,12 @@ Mevcut `src/features/dlc/selective-install.ts` zaten çalışıyor: zorunlu ana 
 3. Onay: cihaz kodu gerekiyorsa `UpdateAuthSessionWithSteamGuardCode/v1` (client_id, steamid, code, code_type=3); ardından `PollAuthSessionStatus/v1` (`client_id`, `request_id`) → `refresh_token` + `access_token`.
 4. Erişim token'ı: `login.steampowered.com/jwt/finalizelogin` (`nonce=refresh_token`, `sessionid`, `redir`) → `transfer_info` içindeki `steamcommunity.com/login/settoken` aktarımı `steamLoginSecure=<steamid>||<access_token>` çerezini kurar; web erişim token'ı buradan alınır (canlı doğrulandı: finalizelogin geçersiz token'da yapısal JSON hatası döndürüyor). **Not:** Steam'in 30.04.2025 değişikliğiyle `GenerateAccessTokenForApp` WebBrowser yenileme token'larını `AccessDenied` ile reddediyor; bu çağrı yalnızca yedek yol olarak koda bırakıldı.
 
-Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games`.
+Komutlar: `steam_login_begin`, `steam_login_qr_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_get_saved_accounts`, `steam_switch_account`, `steam_remove_saved_account`, `steam_owned_games`.
 
 ### 13.2. Güvenlik (tam koruma)
 
 - **Parola asla saklanmaz**: yalnız istek gövdesinde kullanılır, sonra `zeroize` ile bellekten silinir; log'a/toast'a/hata mesajına yazılmaz.
-- **Refresh token DPAPI ile şifrelenir** (`CryptProtectData`/`CryptUnprotectData`, crypt32 FFI; Windows kullanıcı hesabına bağlı) → `<appdata>/steam/auth.bin`. Kopyalansa başka makinede/kullanıcıda açılamaz.
+- **Refresh token DPAPI ile şifrelenir** (`CryptProtectData`/`CryptUnprotectData`, crypt32 FFI; Windows kullanıcı hesabına bağlı) → hesap kasası `<appdata>/steam/accounts/<steamid>.bin` + `accounts_meta.json` (çoklu hesap; eski tek dosyalı `steam/auth.bin` ilk kullanımda otomatik göç eder ve silinir). Kopyalansa başka makinede/kullanıcıda açılamaz.
 - "Bu cihazda oturumu koru" kapalıysa token yalnız bellekte tutulur (süreç kapanınca gider).
 - Yalnız HTTPS + 12 sn zaman aşımı; hata eşlemesi sade ("parola hatalı", "Steam Guard kodu geçersiz", "çok fazla deneme, sonra tekrar dene"), ham yanıt gösterilmez.
 - `access_token` yalnız sorgu parametresi olarak (Steam'in kendi istemcileri gibi) ve asla diske yazılmaz.
@@ -747,16 +747,23 @@ Komutlar: `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_
 
 ### 13.4. Arayüz
 
-- Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard** adımları; Steam mobil onay sunduğunda varsayılan görünüm tek dokunuşlu onay bekleme ekranıdır ("Kodu kullan" ile kod alanı açılır), yalnız kod/yalnız e-posta guard'ında kod alanı doğrudan gösterilir. Giriş yapılmışsa hesap adı + oyun sayısı + "Çıkış Yap".
+- Hesaplar sayfasındaki Steam kartı: **"Steam'e Giriş Yap"** → kullanıcı adı → parola → **Steam Guard** adımları; Steam mobil onay sunduğunda varsayılan görünüm tek dokunuşlu onay bekleme ekranıdır ("Kodu kullan" ile kod alanı açılır), yalnız kod/yalnız e-posta guard'ında kod alanı doğrudan gösterilir. **"QR ile Giriş"** seçeneği telefonla taramalık kodu (satır içi SVG) ve "Bağlantıyı kopyala" düğmesini gösterir; onay poll ile algılanır. Giriş yapılmışsa **kayıtlı hesaplar satır satır** listelenir (aktif rozeti, "Bu Hesaba Geç", kaldır) + "Yeni Hesap Ekle", kitaplığı yenile ve "Çıkış Yap"; çıkışta satırlar korunur ve tek tıkla geri dönülür.
 - Oyun sayfasındaki **mağaza seçici** (açılır liste): Epic/GOG/Steam sürümleri arasında geçiş yapar; algılanan **EA App / Ubisoft Connect / XBOX** kurulumları kendi istemcilerinde başlatılır (başlık eşleşmesi kanonik ada göre; tarama yalnız oyun sayfası açılınca ve oturum başına bir kez). "Tümü" görünümünde aynı oyun tek kartta kalır (versiyonlar bu seçiciyle erişilir).
 - İstemciden algılanan durum ayrı satır olarak kalır (istemci kurulu olmasa da hesap girişi kütüphaneyi getirir).
 - Ayarlar'daki Web API anahtarı satırı **alternatif** olarak kalır (giriş istemeyenler başarımlar için kullanır).
 
 ### 13.5. Doğrulama
 
-- Birim testleri: RSA şifreleme vektörü, DPAPI round-trip, token yenileme yolu, hata eşlemesi, `GetOwnedGames` ayrıştırma (fixture JSON).
-- Canlı testler `#[ignore]`: gerçek hesapla giriş (kullanıcı Steam Guard kodunu verir), sahip olunan oyun sayısı, token yenileme.
+- Birim testleri: RSA şifreleme vektörü, DPAPI round-trip, token yenileme yolu, hata eşlemesi, `GetOwnedGames` ayrıştırma (fixture JSON), ikili KeyValues ayrıştırıcı, appinfo.vdf DLC ayrıştırıcı, global yüzde → kademe, gereksinim satırı birleştirme, JWT `exp`/`sub`, `steamLoginSecure` çerezi, protobuf alan kodlamaları, **hesap kasası meta round-trip**, **QR SVG üretimi**.
+- Canlı testler `#[ignore]`: gerçek hesapla giriş (kullanıcı Steam Guard kodunu verir), sahip olunan oyun sayısı, token yenileme, yerel başarımlar, istemci DLC listesi, ekran görüntüleri.
 - 15 dil, IPC referansı, ROADMAP/AGENTS güncellemesi, sürüm notu.
+
+### 13.6. Bilinçli sınır: yerel veri = Windows'taki istemci hesabı
+
+Steam'in başarım, ekran görüntüsü ve oynanış süresi dosyaları **Steam istemcisinin** (Windows'ta en son oturum açan hesabın) `userdata` klasöründe durur; launcher'ın kasa hesabı bunları değiştirmez. Çoklu hesap desteklendiğinde:
+- **API verisi** (sahip olunan oyunlar, mağaza detayı, kütüphane) her zaman launcher'ın **aktif** hesabından gelir.
+- **Yerel veri** (başarımlar, kupalar, ekran görüntüleri, `localconfig` süreleri) istemcinin o anki hesabına aittir; launcher'dan hesap değiştirmek istemcinin oturumunu değiştirmez.
+- Kullanıcı istemcide de hesap değiştirirse yerel veriler o hesabın klasöründen okunur. Bu bir hata değil, Steam'in veri modelidir; Epic/GOG'daki gibi hesap başına ayrı sunucu verisi yoktur.
 
 
 
