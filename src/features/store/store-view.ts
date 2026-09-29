@@ -144,7 +144,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox";
+export type StoreId = "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -154,6 +154,7 @@ export const STORE_LABELS: Record<StoreId, string> = {
   ubisoft: "Ubisoft",
   ea: "EA",
   xbox: "Xbox",
+  battlenet: "Battle.net",
 };
 
 export const GOG_STORE_URL = "https://www.gog.com/";
@@ -168,6 +169,8 @@ export const EA_STORE_URL = "https://www.ea.com/games";
  * undone from the launcher.
  */
 export const XBOX_STORE_URL = "https://www.xbox.com/games/browse?PlayWith=PC";
+/** Battle.net's own shop; it localizes itself, so one URL serves every locale. */
+export const BATTLENET_STORE_URL = "https://shop.battle.net/";
 
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
@@ -176,6 +179,7 @@ const STORE_URLS: Record<StoreId, string> = {
   ubisoft: UBISOFT_STORE_URL,
   ea: EA_STORE_URL,
   xbox: XBOX_STORE_URL,
+  battlenet: BATTLENET_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -186,6 +190,7 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("ubisoft.com")) return "ubisoft";
   if (lower.includes("ea.com")) return "ea";
   if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
+  if (lower.includes("battle.net")) return "battlenet";
   return "epic";
 }
 

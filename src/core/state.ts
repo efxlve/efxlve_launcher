@@ -97,7 +97,7 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox",
+  activeStore: ("epic") as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet",
   /** True while the active storefront webview is still loading its first page. */
   storeLoading: false,
   epicPhase: "checking" as EpicPhase,

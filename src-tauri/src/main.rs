@@ -284,6 +284,8 @@ fn store_id_for_url(url: &str) -> &'static str {
         "ea"
     } else if url.contains("xbox.com") || url.contains("microsoft.com") {
         "xbox"
+    } else if url.contains("battle.net") {
+        "battlenet"
     } else {
         "epic"
     }
@@ -2235,6 +2237,7 @@ mod tests {
         assert_eq!(super::store_id_for_url("https://store.ubisoft.com/tr/home"), "ubisoft");
         assert_eq!(super::store_id_for_url("https://www.ea.com/games"), "ea");
         assert_eq!(super::store_id_for_url("https://www.xbox.com/games/browse"), "xbox");
+        assert_eq!(super::store_id_for_url("https://shop.battle.net/"), "battlenet");
         // Case does not matter, and unknown hosts fall back to the Epic storefront.
         assert_eq!(super::store_id_for_url("HTTPS://STORE.STEAMPOWERED.COM/app/620"), "steam");
         assert_eq!(super::store_id_for_url("https://example.com/"), "epic");

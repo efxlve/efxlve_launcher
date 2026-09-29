@@ -267,7 +267,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    const store = (t.dataset.store as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox") || S.activeStore || "epic";
+    const store = (t.dataset.store as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet") || S.activeStore || "epic";
     if (S.activeStore !== store) {
       S.activeStore = store;
       updatePageHeader();
