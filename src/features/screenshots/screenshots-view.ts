@@ -20,10 +20,20 @@ import {
   type EpicSummary,
   type GameScreenshotItem,
 } from "../../epic";
+import { steamGetGameScreenshots } from "../../steam";
+
+/** Steam keeps its screenshots in the client's own folder: gallery is read-only. */
+function isSteamApp(appName: string): boolean {
+  return appName.startsWith("steam::");
+}
+
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
   if (!force && S.loadedScreenshots.has(appName)) return;
   S.loadingScreenshotsFor = appName;
-  epicGetGameScreenshots(appName, title)
+  const request = isSteamApp(appName)
+    ? steamGetGameScreenshots(appName.slice(7))
+    : epicGetGameScreenshots(appName, title);
+  request
     .then((items) => {
       S.loadedScreenshots.set(appName, items);
       S.loadingScreenshotsFor = null;
@@ -95,7 +105,7 @@ export async function copyScreenshotImageToClipboard(item: GameScreenshotItem): 
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = item.data_url;
+    img.src = item.full_data_url || item.data_url;
     await new Promise((res, rej) => {
       img.onload = res;
       img.onerror = () => rej(new Error("Image could not be loaded"));
@@ -252,12 +262,13 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
     document.body.appendChild(shareRoot);
   }
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+  const readOnly = isSteamApp(appName);
   shareRoot.innerHTML = `
     <div class="ss-share-backdrop" data-act="close-share-modal">
       <div class="ss-share-card" role="dialog" aria-modal="true">
         <div class="ss-share-head">
           <div class="ss-share-preview-thumb">
-            <img src="${item.data_url}" alt="${esc(item.file_name)}" />
+            <img src="${item.full_data_url || item.data_url}" alt="${esc(item.file_name)}" />
           </div>
           <div class="ss-share-meta">
             <h3 class="ss-share-title">${t("ss.shareTitle")}</h3>
@@ -298,7 +309,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
             </div>
           </button>
 
-          ${!isAvifOrWebp ? `
+          ${!isAvifOrWebp && !readOnly ? `
             <button class="ss-share-btn" data-act="do-compress-from-share">
               <div class="ss-share-btn-icon">${icon("minimize-2", 18)}</div>
               <div class="ss-share-btn-text">
@@ -345,6 +356,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   }
 
   const hasUncompressed = screenshots.some(item => !item.file_name.endsWith(".avif") && !item.file_name.endsWith(".webp"));
+  const readOnly = isSteamApp(s.appName);
 
   const headerHtml = `
     <div class="screenshots-gallery-head">
@@ -353,7 +365,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
         <span class="screenshots-count-chip">${t("ss.photoCount", { count: screenshots.length })}</span>
       </div>
       ${screenshots.length === 0 ? "" : `<div class="screenshots-head-actions">
-        ${hasUncompressed ? `
+        ${hasUncompressed && !readOnly ? `
           <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="${t("ss.compressAllTip")}">
             ${icon("minimize-2", 13)} ${t("ss.compressAll")}
           </button>
@@ -373,7 +385,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
           <div class="screenshots-empty-icon">${icon("image", 44)}</div>
           <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
           <p class="screenshots-empty-desc">
-            ${t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
+            ${readOnly ? t("ss.steamEmptyDesc") : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </p>
         </div>
       </div>
@@ -398,16 +410,21 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
             <button class="ss-share-btn" data-act="share-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.shareTip")}">
               ${icon("share-2", 12)} ${t("ss.share")}
             </button>
-            ${!isAvifOrWebp ? `
+            ${readOnly
+              ? `<span class="ss-compressed-tag" title="${t("ss.steamReadOnly")}">STEAM</span>`
+              : !isAvifOrWebp
+                ? `
               <button class="ss-compress-btn" data-act="compress-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.compressTip")}">
                 ${icon("minimize-2", 12)}
               </button>
-            ` : `
+            `
+                : `
               <span class="ss-compressed-tag" title="${t("ss.compressedFormatTip")}">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
             `}
+            ${readOnly ? "" : `
             <button class="ss-delete-btn" data-act="delete-screenshot" data-id="${s.appName}" data-path="${esc(item.file_path)}" title="${t("common.delete")}">
               ${icon("trash", 12)}
-            </button>
+            </button>`}
           </div>
         </div>
       </div>
@@ -437,6 +454,8 @@ export function renderScreenshotLightbox(appName: string, index: number): string
   if (!item) return "";
 
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+  const readOnly = isSteamApp(appName);
+  const fullSrc = item.full_data_url || item.data_url;
 
   return `
     <div class="screenshot-lightbox-overlay" data-act="close-screenshot-lightbox-backdrop">
@@ -450,19 +469,24 @@ export function renderScreenshotLightbox(appName: string, index: number): string
             <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.shareTip2")}">
               ${icon("share-2", 13)} ${t("ss.share")}
             </button>
-            ${!isAvifOrWebp ? `
+            ${readOnly
+              ? `<span class="lightbox-badge-avif" title="${t("ss.steamReadOnly")}">STEAM</span>`
+              : !isAvifOrWebp
+                ? `
               <button class="btn ghost small" data-act="compress-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.compressTip2")}">
                 ${icon("minimize-2", 13)} ${t("ss.compress")}
               </button>
-            ` : `
+            `
+                : `
               <span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>
             `}
             <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${appName}" title="${t("ss.showInFolder")}">
               ${icon("folder", 12)} ${t("ss.showInFolderShort")}
             </button>
+            ${readOnly ? "" : `
             <button class="btn ghost danger small" data-act="delete-screenshot" data-id="${appName}" data-path="${esc(item.file_path)}" data-lightbox="true" title="${t("ss.deleteTip")}">
               ${icon("trash", 12)} ${t("common.delete")}
-            </button>
+            </button>`}
             <button class="btn ghost small" data-act="close-screenshot-lightbox" title="${t("common.close")} (ESC)">
               ${icon("x", 14)}
             </button>
@@ -481,7 +505,7 @@ export function renderScreenshotLightbox(appName: string, index: number): string
           }
 
           <div class="lightbox-img-container">
-            <img src="${item.data_url}" alt="${esc(item.file_name)}" />
+            <img src="${fullSrc}" alt="${esc(item.file_name)}" />
           </div>
 
           ${

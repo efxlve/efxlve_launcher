@@ -1,7 +1,7 @@
 # TAURI_IPC_REFERENCE.md — Efxlve Launcher Backend IPC Reference
 
 > **Primary Audience:** AI Agents & Core Developers.  
-> **Purpose:** Exhaustive catalog of all 158 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. §2.1–§2.17 document the most-used groups in detail; §4 holds the generated complete index.
+> **Purpose:** Exhaustive catalog of all 159 Tauri backend commands, argument naming conventions, return types, and emitted background event payloads. §2.1–§2.17 document the most-used groups in detail; §4 holds the generated complete index.
 
 ---
 
@@ -265,6 +265,7 @@
 | `steam_get_api_key` / `steam_set_api_key` | `() => Promise<string \| null>` / `(apiKey: string) => Promise<void>` | `steam.rs` | Opt-in Steam Web API key, stored in `settings.json` next to the SteamGridDB key. Needed for achievements only. |
 | `steam_get_achievements` | `(appId: string, force?: boolean) => Promise<EpicAchievementsData>` | `steam.rs` | Schema (names, descriptions, icons) + the player's unlocks + global unlock rates for rarity, merged into the shared achievement shape and cached for an hour. Resolves the SteamID64 from `loginusers.vdf`. |
 | `steam_get_achievements_summary` | `() => Promise<Record<string, EpicAchievementSummary>>` | `steam.rs` | Cached achievement summaries for the library covers; disk only, no network and no key needed. |
+| `steam_get_game_screenshots` | `(appId: string) => Promise<GameScreenshotItem[]>` | `steam.rs` | Screenshots taken by the Steam client (`userdata/<account>/760/remote/<app>/screenshots`), newest first. The gallery shows the client's thumbnails (`data_url`) while the lightbox/clipboard use the original (`full_data_url`); the list is read-only. |
 | `steam_login_begin` | `(accountName: string, password: string, remember: boolean) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Starts the web sign-in: fetches the per-account RSA key, sends the password RSA PKCS#1 v1.5 encrypted as a protobuf payload (`BeginAuthSessionViaCredentials`) and keeps the pending session in memory. The password is wiped right after the request. |
 | `steam_login_code` | `(code: string) => Promise<SteamLoginStatus>` | `steam_auth.rs` | Submits the Steam Guard code (mobile authenticator preferred, email fallback) for the pending sign-in. |
 | `steam_login_status` | `() => Promise<SteamLoginStatus>` | `steam_auth.rs` | Reports the current session (a sealed DPAPI token is loaded lazily) and polls `PollAuthSessionStatus` while a sign-in is pending; no login in flight means no network call. |
@@ -423,8 +424,8 @@ export interface ScreenshotsUpdatedEvent {
 | `main.rs` | 15 | `app_set_minimize_to_tray`, `library_dir`, `show_store_view`, `resize_store_view`, `hide_store_view`, `set_store_palette_hold`, `destroy_store_view`, `open_folder`, `epic_detect_eos`, `app_minimize`, `app_toggle_maximize`, `app_is_maximized`, `app_close`, `app_set_decorations`, `app_set_tray_labels` |
 | `presence.rs` | 3 | `epic_presence_configure`, `epic_presence_update`, `epic_presence_clear` |
 | `shared_library.rs` | 1 | `shared_library_index` |
-| `steam.rs` | 9 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary` |
+| `steam.rs` | 10 | `steam_status`, `steam_list_installed`, `steam_game_action`, `steam_sync_playtime`, `steam_get_game_details`, `steam_get_api_key`, `steam_set_api_key`, `steam_get_achievements`, `steam_get_achievements_summary`, `steam_get_game_screenshots` |
 | `steam_auth.rs` | 5 | `steam_login_begin`, `steam_login_code`, `steam_login_status`, `steam_logout`, `steam_owned_games` |
 
-**Total: 158 commands**
+**Total: 159 commands**
 

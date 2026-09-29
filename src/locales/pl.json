@@ -478,6 +478,8 @@
   "ss.openFolder": "Otwórz folder",
   "ss.emptyTitle": "Brak zrzutów ekranu",
   "ss.emptyDesc": "Podczas gry naciśnij {hotkey} albo Win + Alt + PrtScn, aby zrobić zrzut. Zrzuty trafiają tutaj automatycznie.",
+  "ss.steamEmptyDesc": "Brak zrzutów ekranu tej gry w Steam. Zrzuty wykonane klawiszem F12 w kliencie Steam pojawią się tutaj.",
+  "ss.steamReadOnly": "Zrzuty Steam są tutaj tylko do odczytu; zarządzaj nimi w kliencie Steam.",
   "ss.zoom": "Powiększ",
   "ss.shareTip": "Udostępnij / kopiuj do schowka",
   "ss.share": "Udostępnij",

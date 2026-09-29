@@ -478,6 +478,8 @@
   "ss.openFolder": "Apri cartella",
   "ss.emptyTitle": "Nessuna schermata",
   "ss.emptyDesc": "Durante il gioco premi {hotkey} o Win + Alt + Stamp per catturare una schermata. Le catture vengono raccolte qui.",
+  "ss.steamEmptyDesc": "Nessuno screenshot di questo gioco su Steam. Le catture fatte con F12 nel client Steam appaiono qui.",
+  "ss.steamReadOnly": "Gli screenshot di Steam sono di sola lettura qui; gestiscili nel client Steam.",
   "ss.zoom": "Ingrandisci",
   "ss.shareTip": "Condividi / copia negli appunti",
   "ss.share": "Condividi",

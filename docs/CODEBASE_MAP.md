@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.416 keys, 158 Tauri commands, 53 Rust files).
+> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.418 keys, 159 Tauri commands, 53 Rust files).
 
 ---
 
@@ -81,7 +81,7 @@ efxlve_launcher/
 │   ├── Cargo.toml
 │   ├── tauri.conf.json                # Window, bundle, updater endpoint & public key
 │   └── src/                           # 53 Rust files
-│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (158 commands)
+│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (159 commands)
 │       ├── presence.rs                # Discord Rich Presence worker
 │       ├── eos.rs                     # Epic Online Services overlay detection
 │       ├── legendary/                 # Epic backend (25 files)
@@ -102,7 +102,7 @@ efxlve_launcher/
 ├── docs/                              # Architecture, design & operations documentation
 │   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
 │   ├── CHANGELOG_INTERNAL.md          # Development history (§1–174)
-│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (158 commands)
+│   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (159 commands)
 │   ├── REFACTOR_PLAN.md               # Modularization record + remaining splits
 │   ├── DESIGN_SYSTEM.md               # Single desktop design language
 │   └── CROSS_PLATFORM.md              # Linux/macOS research
@@ -173,7 +173,7 @@ efxlve_launcher/
 
 | File / Subsystem | Primary Responsibilities |
 |---|---|
-| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (158 commands). |
+| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (159 commands). |
 | `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
 | `eos.rs` | Epic Online Services overlay detection & install state. |
 | `legendary/commands.rs` | Epic IPC entry points (library, install, verify, move, settings, EGL, shortcuts). |

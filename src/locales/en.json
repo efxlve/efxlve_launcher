@@ -478,6 +478,8 @@
   "ss.openFolder": "Open Folder",
   "ss.emptyTitle": "No Screenshots Yet",
   "ss.emptyDesc": "While playing, press {hotkey} or Win + Alt + PrtScn to capture a screenshot. Captures are collected here automatically.",
+  "ss.steamEmptyDesc": "No screenshots for this game in Steam. Shots taken with F12 in the Steam client appear here.",
+  "ss.steamReadOnly": "Steam screenshots are read-only here; manage them in the Steam client.",
   "ss.zoom": "Enlarge",
   "ss.shareTip": "Share / Copy to Clipboard",
   "ss.share": "Share",

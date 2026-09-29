@@ -80,6 +80,12 @@ export const steamGetAchievements = (appId: string, force = false) =>
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
+/**
+ * Screenshots taken by the Steam client for one app (read-only gallery: the
+ * files belong to the client, so they are never edited or deleted here).
+ */
+export const steamGetGameScreenshots = (appId: string) =>
+  invoke<import("./epic").GameScreenshotItem[]>("steam_get_game_screenshots", { appId });
 
 /* ---------- Account sign-in (ROADMAP §13, the web auth flow) ---------- */
 

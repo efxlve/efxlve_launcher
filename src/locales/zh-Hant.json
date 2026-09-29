@@ -478,6 +478,8 @@
   "ss.openFolder": "開啟資料夾",
   "ss.emptyTitle": "還沒有螢幕截圖",
   "ss.emptyDesc": "遊玩時按 {hotkey} 或 Win + Alt + PrtScn 截圖。截圖會自動收集到這裡。",
+  "ss.steamEmptyDesc": "Steam 中此遊戲沒有螢幕擷取畫面。在 Steam 用戶端用 F12 擷取的圖片會顯示在這裡。",
+  "ss.steamReadOnly": "Steam 螢幕擷取畫面在此為唯讀；請在 Steam 用戶端中管理。",
   "ss.zoom": "放大",
   "ss.shareTip": "分享 / 複製到剪貼簿",
   "ss.share": "分享",

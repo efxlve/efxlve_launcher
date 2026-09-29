@@ -478,6 +478,8 @@
   "ss.openFolder": "Ordner öffnen",
   "ss.emptyTitle": "Noch keine Screenshots",
   "ss.emptyDesc": "Drücke beim Spielen {hotkey} oder Win + Alt + PrtScn, um einen Screenshot aufzunehmen. Aufnahmen werden hier automatisch gesammelt.",
+  "ss.steamEmptyDesc": "Keine Screenshots für dieses Spiel in Steam. Mit F12 im Steam-Client aufgenommene Bilder erscheinen hier.",
+  "ss.steamReadOnly": "Steam-Screenshots sind hier schreibgeschützt; verwalte sie im Steam-Client.",
   "ss.zoom": "Vergrößern",
   "ss.shareTip": "Teilen / in die Zwischenablage kopieren",
   "ss.share": "Teilen",

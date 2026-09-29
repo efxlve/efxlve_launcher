@@ -478,6 +478,8 @@
   "ss.openFolder": "폴더 열기",
   "ss.emptyTitle": "스크린샷 없음",
   "ss.emptyDesc": "플레이 중 {hotkey} 또는 Win + Alt + PrtScn으로 스크린샷을 찍으세요. 찍은 이미지는 여기에 자동으로 모입니다.",
+  "ss.steamEmptyDesc": "Steam에 이 게임의 스크린샷이 없습니다. Steam 클라이언트에서 F12로 찍은 이미지가 여기에 표시됩니다.",
+  "ss.steamReadOnly": "Steam 스크린샷은 여기서 읽기 전용입니다. Steam 클라이언트에서 관리하세요.",
   "ss.zoom": "확대",
   "ss.shareTip": "공유 / 클립보드에 복사",
   "ss.share": "공유",

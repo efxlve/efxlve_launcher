@@ -992,6 +992,64 @@ fn stats_dir(steam: &Path) -> PathBuf {
     steam.join("appcache").join("stats")
 }
 
+/// Public global unlock rates (no Web API key needed) → `name` → percent.
+fn parse_global_percentages(payload: &serde_json::Value) -> std::collections::HashMap<String, f64> {
+    let mut out = std::collections::HashMap::new();
+    let Some(items) = payload
+        .get("achievementpercentages")
+        .and_then(|p| p.get("achievements"))
+        .and_then(|a| a.as_array())
+    else {
+        return out;
+    };
+    for entry in items {
+        let Some(name) = entry.get("name").and_then(|v| v.as_str()) else { continue };
+        // Valve returns the rate as a number or as a string, depending on the app.
+        let percent = entry
+            .get("percent")
+            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())));
+        if let Some(percent) = percent {
+            out.insert(name.to_string(), percent);
+        }
+    }
+    out
+}
+
+/// Best-effort rarity for the local path: the endpoint is public but optional,
+/// so a failure (offline, rate limit) simply leaves tiers unset.
+async fn fetch_global_percentages(app_id: &str) -> std::collections::HashMap<String, f64> {
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .user_agent("efxlve-launcher")
+        .build()
+    else {
+        return std::collections::HashMap::new();
+    };
+    let url = format!(
+        "https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid={app_id}"
+    );
+    let Ok(response) = client.get(&url).send().await else {
+        return std::collections::HashMap::new();
+    };
+    let Ok(payload) = response.json::<serde_json::Value>().await else {
+        return std::collections::HashMap::new();
+    };
+    parse_global_percentages(&payload)
+}
+
+/// Applies rarity/tier to an already-built achievement list.
+fn apply_rarity(
+    response: &mut GameAchievementsResponse,
+    percentages: &std::collections::HashMap<String, f64>,
+) {
+    for item in response.achievements.iter_mut().chain(response.hidden.iter_mut()) {
+        if let Some(percent) = percentages.get(&item.name) {
+            item.tier = Some(tier_for_percent(*percent));
+            item.rarity = Some(AchievementRarity { percent: Some(*percent) });
+        }
+    }
+}
+
 /// Achievement icon file name → the community CDN URL the Web API path also uses.
 fn steam_icon_url(app_id: &str, file: &str) -> String {
     if file.is_empty() {
@@ -1190,7 +1248,12 @@ pub async fn steam_get_achievements(
     }
 
     // 1) The Steam client's own cache: instant, offline, no key, no rate limit.
-    if let Some(response) = steam_install_path().and_then(|path| read_local_achievements(&path, &app_id)) {
+    if let Some(mut response) = steam_install_path().and_then(|path| read_local_achievements(&path, &app_id)) {
+        // Global unlock rates are public, so even the local path gets rarity.
+        let percentages = fetch_global_percentages(&app_id).await;
+        if !percentages.is_empty() {
+            apply_rarity(&mut response, &percentages);
+        }
         let cached = CachedAchievements { fetched_at: now_secs(), response: response.clone() };
         if let Ok(text) = serde_json::to_string(&cached) {
             let _ = std::fs::write(&cache, text);
@@ -1443,6 +1506,79 @@ pub fn steam_get_achievements_summary(
     out
 }
 
+use crate::legendary::screenshots::{
+    file_to_data_url, format_bytes, get_file_local_datetime_str, GameScreenshotItem,
+};
+
+/// Screenshots taken by the Steam client for one app
+/// (`userdata/<account>/760/remote/<app>/screenshots`).
+///
+/// Read-only: the files belong to the Steam client, so the gallery shows its
+/// thumbnails and opens the originals, but never edits or deletes them.
+#[tauri::command]
+pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Vec::new();
+    }
+    let Some(steam) = steam_install_path() else { return Vec::new() };
+    let Some(account) = steam_account_id(&steam) else { return Vec::new() };
+    let root = steam
+        .join("userdata")
+        .join(account.to_string())
+        .join("760")
+        .join("remote")
+        .join(&app_id)
+        .join("screenshots");
+    let Ok(entries) = std::fs::read_dir(&root) else { return Vec::new() };
+
+    let mut items = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()).map(str::to_string) else {
+            continue;
+        };
+        let lower = file_name.to_lowercase();
+        if !(lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")) {
+            continue;
+        }
+        let Ok(metadata) = std::fs::metadata(&path) else { continue };
+        let timestamp = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let date_str = get_file_local_datetime_str(&path, &metadata, timestamp);
+        // The gallery stays light with the client's thumbnail; the lightbox and
+        // clipboard use the original.
+        let thumb = root.join("thumbnails").join(&file_name);
+        let preview = if thumb.is_file() { thumb } else { path.clone() };
+        let Some(data_url) = file_to_data_url(&preview) else { continue };
+        let full_data_url = if preview == path {
+            String::new()
+        } else {
+            file_to_data_url(&path).unwrap_or_default()
+        };
+        let size_bytes = metadata.len();
+        items.push(GameScreenshotItem {
+            id: format!("{file_name}_{timestamp}"),
+            file_path: path.to_string_lossy().to_string(),
+            file_name,
+            date_str,
+            timestamp,
+            size_bytes,
+            size_str: format_bytes(size_bytes),
+            data_url,
+            full_data_url,
+        });
+    }
+    items.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    items
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1563,6 +1699,38 @@ mod tests {
         );
         assert!(parse_appinfo_dlc_ids(&data, "730").is_empty());
         assert!(parse_appinfo_dlc_ids(b"junk", "730").is_empty());
+    }
+
+    #[test]
+    fn global_percentages_apply_rarity_to_local_achievements() {
+        let payload = serde_json::json!({
+            "achievementpercentages": {
+                "achievements": [
+                    { "name": "AC_1", "percent": 3.5 },
+                    { "name": "AC_2", "percent": "40.0" }
+                ]
+            }
+        });
+        let percentages = parse_global_percentages(&payload);
+        assert_eq!(percentages.get("AC_1"), Some(&3.5));
+        assert_eq!(percentages.get("AC_2"), Some(&40.0));
+
+        let mut response = GameAchievementsResponse {
+            achievements: vec![
+                AchievementItem { name: "AC_1".into(), ..Default::default() },
+                AchievementItem { name: "AC_2".into(), ..Default::default() },
+                AchievementItem { name: "AC_3".into(), ..Default::default() },
+            ],
+            ..Default::default()
+        };
+        apply_rarity(&mut response, &percentages);
+        assert_eq!(response.achievements[0].tier.as_ref().map(|t| t.name.as_str()), Some("gold"));
+        assert_eq!(response.achievements[1].tier.as_ref().map(|t| t.name.as_str()), Some("bronze"));
+        assert_eq!(
+            response.achievements[1].rarity.as_ref().and_then(|r| r.percent),
+            Some(40.0)
+        );
+        assert!(response.achievements[2].tier.is_none());
     }
 
     #[test]
@@ -1843,6 +2011,27 @@ mod tests {
         for app in ["319630", "730", "620"] {
             let ids = read_client_dlc_ids(&steam, app);
             println!("{app}: {} dlc -> {ids:?}", ids.len());
+        }
+    }
+
+    /// Live check for the client's own screenshots.
+    /// Run: `cargo test live_steam_screenshots -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_screenshots() {
+        for app in ["730", "359550", "381210"] {
+            let items = steam_get_game_screenshots(app.to_string());
+            println!("{app}: {} screenshots", items.len());
+            for item in items.iter().take(3) {
+                println!(
+                    "  {} | {} | {} | thumb {} | full {}",
+                    item.file_name,
+                    item.date_str,
+                    item.size_str,
+                    item.data_url.len(),
+                    item.full_data_url.len()
+                );
+            }
         }
     }
 

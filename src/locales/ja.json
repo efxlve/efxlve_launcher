@@ -478,6 +478,8 @@
   "ss.openFolder": "フォルダーを開く",
   "ss.emptyTitle": "スクリーンショットはまだありません",
   "ss.emptyDesc": "プレイ中に {hotkey} または Win + Alt + PrtScn でスクリーンショットを撮れます。撮影したものは自動でここに集まります。",
+  "ss.steamEmptyDesc": "Steamにこのゲームのスクリーンショットはありません。SteamクライアントでF12で撮影した画像がここに表示されます。",
+  "ss.steamReadOnly": "Steamのスクリーンショットはここでは読み取り専用です。Steamクライアントで管理してください。",
   "ss.zoom": "拡大",
   "ss.shareTip": "共有 / クリップボードにコピー",
   "ss.share": "共有",

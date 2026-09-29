@@ -1180,6 +1180,8 @@ export interface GameScreenshotItem {
   size_bytes: number;
   size_str: string;
   data_url: string;
+  /** Full-resolution data URL when `data_url` is only a thumbnail (Steam). */
+  full_data_url: string;
 }
 
 export const epicGetGameScreenshots = (appName: string, title: string) =>

@@ -10,6 +10,7 @@ import { S } from "../../../core/state";
 import { summaryOf } from "../../../core/selectors";
 import {
   epicDeleteGameScreenshot,
+  epicOpenFolderPath,
   epicOpenGameScreenshotsFolder,
 } from "../../../epic";
 import {
@@ -26,6 +27,26 @@ import {
   takePendingScreenshotDelete,
 } from "../../screenshots/screenshots-view";
 
+/** True for the Steam client's own screenshots: shown read-only. */
+function isSteamShots(appName: string): boolean {
+  return appName.startsWith("steam::");
+}
+
+/** Opens the folder that holds the game's screenshots (Steam has its own). */
+function openScreenshotFolder(appName: string, title: string): void {
+  if (!isSteamShots(appName)) {
+    void epicOpenGameScreenshotsFolder(appName, title);
+    return;
+  }
+  const first = (S.loadedScreenshots.get(appName) || [])[0];
+  if (!first) {
+    toast(i18nT("ss.emptyTitle"), "");
+    return;
+  }
+  const dir = first.file_path.replace(/[\\/][^\\/]*$/, "");
+  void epicOpenFolderPath(dir).catch((e: unknown) => toast(String(e), "err"));
+}
+
 export function handleScreenshotAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
 
@@ -34,12 +55,16 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
       if (id) {
         const s = summaryOf(id);
         const title = t.dataset.title || (s ? s.title : id);
-        void epicOpenGameScreenshotsFolder(id, title);
+        openScreenshotFolder(id, title);
       }
       return true;
 
     case "delete-screenshot":
       if (id) {
+        if (isSteamShots(id)) {
+          toast(i18nT("ss.steamReadOnly"), "");
+          return true;
+        }
         const filePath = t.dataset.path;
         if (filePath) openScreenshotDeleteConfirm(id, filePath, t.dataset.lightbox === "true");
       }
@@ -132,9 +157,10 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
 
     case "do-open-folder":
       if (S.activeShareScreenshot) {
-        const s = summaryOf(S.activeShareScreenshot?.appName);
-        const title = s ? s.title : S.activeShareScreenshot.appName;
-        void epicOpenGameScreenshotsFolder(S.activeShareScreenshot.appName, title);
+        const appName = S.activeShareScreenshot.appName;
+        const s = summaryOf(appName);
+        const title = s ? s.title : appName;
+        openScreenshotFolder(appName, title);
         closeShareModal();
       }
       return true;
@@ -142,6 +168,10 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
     case "do-compress-from-share":
       if (S.activeShareScreenshot) {
         const { appName, item } = S.activeShareScreenshot;
+        if (isSteamShots(appName)) {
+          toast(i18nT("ss.steamReadOnly"), "");
+          return true;
+        }
         closeShareModal();
         void compressScreenshotItem(appName, item);
       }
@@ -160,6 +190,10 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
 
     case "compress-screenshot":
       if (id) {
+        if (isSteamShots(id)) {
+          toast(i18nT("ss.steamReadOnly"), "");
+          return true;
+        }
         const idx = parseInt(t.dataset.idx || "0", 10);
         const list = S.loadedScreenshots.get(id) || [];
         const item = list[idx];
@@ -171,6 +205,10 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
 
     case "compress-all-screenshots":
       if (id) {
+        if (isSteamShots(id)) {
+          toast(i18nT("ss.steamReadOnly"), "");
+          return true;
+        }
         const list = S.loadedScreenshots.get(id) || [];
         const uncompressed = list.filter((x) => !x.file_name.endsWith(".avif") && !x.file_name.endsWith(".webp"));
         if (uncompressed.length === 0) {

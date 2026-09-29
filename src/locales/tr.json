@@ -478,6 +478,8 @@
   "ss.openFolder": "Klasörü Aç",
   "ss.emptyTitle": "Henüz Ekran Görüntüsü Yok",
   "ss.emptyDesc": "Oyun oynarken {hotkey} veya Win + Alt + PrtScn tuşlarına basarak ekran görüntüsü yakalayabilirsiniz. Alınan görüntüler otomatik olarak burada toplanır.",
+  "ss.steamEmptyDesc": "Steam'de bu oyun için ekran görüntüsü yok. Steam'de F12 ile çektiğin görüntüler burada görünür.",
+  "ss.steamReadOnly": "Steam ekran görüntüleri salt okunurdur; Steam istemcisinden yönetilir.",
   "ss.zoom": "Büyüt",
   "ss.shareTip": "Paylaş / Panoya Kopyala",
   "ss.share": "Paylaş",

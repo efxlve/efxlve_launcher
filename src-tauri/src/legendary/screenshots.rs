@@ -94,6 +94,10 @@ pub struct GameScreenshotItem {
     pub size_bytes: u64,
     pub size_str: String,
     pub data_url: String,
+    /// Full-resolution data URL when `data_url` holds a thumbnail (Steam's own
+    /// screenshots ship both); empty means `data_url` is already full size.
+    #[serde(default)]
+    pub full_data_url: String,
 }
 
 pub fn clean_folder_name(name: &str) -> String {
@@ -156,7 +160,7 @@ pub fn game_screenshots_dir(clean_title: &str) -> PathBuf {
     screenshots_root().join(clean_title)
 }
 
-fn format_bytes(bytes: u64) -> String {
+pub fn format_bytes(bytes: u64) -> String {
     if bytes >= 1024 * 1024 {
         format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
     } else if bytes >= 1024 {
@@ -166,7 +170,7 @@ fn format_bytes(bytes: u64) -> String {
     }
 }
 
-fn file_to_data_url(path: &Path) -> Option<String> {
+pub fn file_to_data_url(path: &Path) -> Option<String> {
     let bytes = std::fs::read(path).ok()?;
     let ext = path
         .extension()
@@ -283,6 +287,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
         size_bytes,
         size_str,
         data_url,
+        full_data_url: String::new(),
     })
 }
 

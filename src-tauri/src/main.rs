@@ -1948,6 +1948,7 @@ fn main() {
             steam::steam_set_api_key,
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
+            steam::steam_get_game_screenshots,
             steam_auth::steam_login_begin,
             steam_auth::steam_login_code,
             steam_auth::steam_login_status,

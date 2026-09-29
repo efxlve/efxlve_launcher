@@ -478,6 +478,8 @@
   "ss.openFolder": "Abrir pasta",
   "ss.emptyTitle": "Nenhuma captura de tela",
   "ss.emptyDesc": "Durante o jogo, pressione {hotkey} ou Win + Alt + PrtScn para capturar a tela. As capturas aparecem aqui automaticamente.",
+  "ss.steamEmptyDesc": "Não há capturas deste jogo na Steam. As capturas feitas com F12 no cliente Steam aparecem aqui.",
+  "ss.steamReadOnly": "As capturas da Steam são somente leitura aqui; gerencie-as no cliente Steam.",
   "ss.zoom": "Ampliar",
   "ss.shareTip": "Compartilhar / copiar para a área de transferência",
   "ss.share": "Compartilhar",

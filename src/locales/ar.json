@@ -478,6 +478,8 @@
   "ss.openFolder": "فتح المجلد",
   "ss.emptyTitle": "لا توجد لقطات شاشة بعد",
   "ss.emptyDesc": "أثناء اللعب، اضغط {hotkey} أو Win + Alt + PrtScn لالتقاط لقطة شاشة. تُجمع اللقطات هنا تلقائيًا.",
+  "ss.steamEmptyDesc": "لا توجد لقطات لهذه اللعبة في Steam. تظهر هنا اللقطات الملتقطة بالمفتاح F12 في عميل Steam.",
+  "ss.steamReadOnly": "لقطات Steam للقراءة فقط هنا؛ أدرها من عميل Steam.",
   "ss.zoom": "تكبير",
   "ss.shareTip": "مشاركة / نسخ إلى الحافظة",
   "ss.share": "مشاركة",
