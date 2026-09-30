@@ -180,15 +180,15 @@ export function updateGamepadHud(active = true): void {
         hudItem(faceGlyph(kind, "a"), t("common.play")),
         hudItem(faceGlyph(kind, "b"), t("common.back")),
         hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
-        hudItem(bumperGlyphs(kind), t("gamepad.navigate")),
+        hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
       ].join("");
     } else {
       hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("tv.hudOpen")),
-        hudItem(faceGlyph(kind, "b"), t("tv.exit")),
+        hudItem(faceGlyph(kind, "a"), t("tv.hudPlay")),
+        hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
         hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
-        hudItem(bumperGlyphs(kind), t("gamepad.rows")),
-        hudItem(dpad, t("gamepad.navigate")),
+        hudItem(bumperGlyphs(kind), t("tv.hudCategories")),
+        hudItem(faceGlyph(kind, "b"), t("tv.exit")),
       ].join("");
     }
   } else if (S.view === "profile") {

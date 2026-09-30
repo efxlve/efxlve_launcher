@@ -86,6 +86,8 @@ export type IconName =
   | "user"
   | "qr-code"
   | "arrow-left-right"
+  | "battery"
+  | "battery-charging"
   | "unlock";
 
 /** SVG path bodies keyed by icon name. */
@@ -227,6 +229,10 @@ const ICON_PATHS: Record<string, string> = {
     '<path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><line x1="2" x2="22" y1="2" y2="22"/>',
   star:
     '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  battery:
+    '<rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/>',
+  "battery-charging":
+    '<path d="m11 7-3 5h4l-3 5"/><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/>',
 };
 
 /** Render an inline SVG icon. */
