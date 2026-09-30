@@ -1845,12 +1845,46 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
     window.is_maximized().map_err(|e| e.to_string())
 }
 
+/// Windows 11 draws an accent-colored border on borderless windows. On the
+/// pure-black TV shell that border shows up as a light blue line along the
+/// bottom edge. Paint it black so it disappears into the background.
+#[cfg(windows)]
+fn hide_accent_border(window: &tauri::Window) {
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    #[link(name = "dwmapi")]
+    extern "system" {
+        fn DwmSetWindowAttribute(
+            hwnd: *mut core::ffi::c_void,
+            dw_attribute: u32,
+            pv_attribute: *const core::ffi::c_void,
+            cb_attribute: u32,
+        ) -> i32;
+    }
+    const DWMWA_BORDER_COLOR: u32 = 34;
+    // COLORREF black (0x00BBGGRR).
+    let color: u32 = 0;
+    unsafe {
+        let _ = DwmSetWindowAttribute(
+            hwnd.0,
+            DWMWA_BORDER_COLOR,
+            &color as *const u32 as *const core::ffi::c_void,
+            std::mem::size_of::<u32>() as u32,
+        );
+    }
+}
+
+#[cfg(not(windows))]
+fn hide_accent_border(_window: &tauri::Window) {}
+
 #[tauri::command]
 fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     window.set_fullscreen(enabled).map_err(|e| e.to_string())?;
+    hide_accent_border(&window);
     Ok(enabled)
 }
 
@@ -1977,6 +2011,7 @@ fn main() {
         .setup(|app| {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
+                hide_accent_border(&win);
             }
             // A marker left behind by a killed/restarted launcher becomes real
             // playtime before anything else reads the store.

@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
-  <img src="https://img.shields.io/badge/version-0.1.17-222" alt="Version 0.1.17" />
+  <img src="https://img.shields.io/badge/version-0.1.18-222" alt="Version 0.1.18" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
@@ -38,7 +38,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.17**.
+The current release is **v0.1.18**.
 
 1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
 2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).

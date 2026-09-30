@@ -10,7 +10,7 @@ import { isTauri } from "./constants";
 import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
 import { positionNotifPanel } from "../features/notifications/notifications";
-import { syncStoreViewSize } from "../features/store/store-view";
+import { embeddedStoreHeld, syncStoreViewSize } from "../features/store/store-view";
 import { syncStoreTabsUnderline } from "./nav";
 export function updateMaxIcon(isMax?: boolean): void {
   const iconEl = document.getElementById("win-max-icon");
@@ -36,7 +36,7 @@ export function handleWindowResize(): void {
   }
   // The open notification panel is anchored to the bell: keep it there on resize.
   if (S.notifOpen) positionNotifPanel();
-  if (S.view === "store") {
+  if (S.view === "store" || embeddedStoreHeld()) {
     syncStoreViewSize();
     // The storefront tabs sit in the header, so a resize moves their underline.
     syncStoreTabsUnderline();

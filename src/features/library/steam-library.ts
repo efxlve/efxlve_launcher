@@ -43,14 +43,11 @@ const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 const STEAM_TOOL_IDS = new Set(["228980"]);
 
 const STEAM_STATE_UPDATE_REQUIRED = 2;
-const STEAM_STATE_UPDATE_RUNNING = 256;
-const STEAM_STATE_UPDATE_STARTED = 1024;
 
-/** True when Steam reports a pending store update, not a leftover mid-patch ACF. */
-export function steamUpdatePending(stateFlags: number): boolean {
-  return (stateFlags & STEAM_STATE_UPDATE_REQUIRED) !== 0
-    && (stateFlags & STEAM_STATE_UPDATE_RUNNING) === 0
-    && (stateFlags & STEAM_STATE_UPDATE_STARTED) === 0;
+/** True when Steam reports a pending update and the game is not actively downloading. */
+export function steamUpdatePending(stateFlags: number, downloading = false): boolean {
+  if (downloading) return false;
+  return (stateFlags & STEAM_STATE_UPDATE_REQUIRED) !== 0;
 }
 
 export function isSteamLibraryNoise(appId: string, name = ""): boolean {
@@ -85,9 +82,7 @@ export function steamGameToItem(g: SteamGame): LibraryItem {
     coverUrl: `${STEAM_CDN}/${g.appId}/library_600x900.jpg`,
     heroUrl: `${STEAM_CDN}/${g.appId}/library_hero.jpg`,
     description: "",
-    // Bit 2 = update required. Bits 256/1024 mean a download already started
-    // (or was left behind after Steam quit) and must not look like a store update.
-    updateAvailable: steamUpdatePending(g.stateFlags),
+    updateAvailable: steamUpdatePending(g.stateFlags, g.downloading),
     downloading: g.downloading,
     bytesDownloaded: g.bytesDownloaded,
     bytesToDownload: g.bytesToDownload,
@@ -228,6 +223,7 @@ export async function loadSteamLibrary(): Promise<string | null> {
     S.steamLibrarySyncing = false;
   }
   scheduleRender();
+  checkAndPollSteamDownloads();
   return error;
 }
 
@@ -274,34 +270,34 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
       }
       continue;
     }
-    const updateAvailable = steamUpdatePending(g.stateFlags);
     const downloading = g.downloading;
+    const updateAvailable = steamUpdatePending(g.stateFlags, downloading);
     const installed = g.installDir.length > 0 || (g.stateFlags & 4) !== 0;
     const titleChanged = !/^\d+$/.test(g.name) && item.title !== g.name;
+    // Size and byte counters move on every Steam write during an update.
+    // They must not rebuild the 800+ game library or wipe the grid.
     const sizeChanged = g.sizeBytes > 0 && item.installSize !== g.sizeBytes;
     const stateChanged = item.installed !== installed
       || item.downloading !== downloading
       || item.updateAvailable !== updateAvailable
-      || sizeChanged
       || titleChanged;
-    const bytesChanged = item.bytesDownloaded !== g.bytesDownloaded
+    const progressChanged = sizeChanged
+      || item.bytesDownloaded !== g.bytesDownloaded
       || item.bytesToDownload !== g.bytesToDownload;
-    if (stateChanged || bytesChanged) {
+    if (stateChanged || progressChanged) {
       if (!item.updateAvailable && updateAvailable) {
         notify({ kind: "update", title: t("notif.updateAvailable", { title: item.title }), appName: item.key });
       }
       changed = true;
       if (stateChanged) structural = true;
-      next.push({
-        ...item,
-        installed,
-        downloading,
-        bytesDownloaded: g.bytesDownloaded,
-        bytesToDownload: g.bytesToDownload,
-        updateAvailable,
-        installSize: g.sizeBytes || item.installSize,
-        title: /^\d+$/.test(g.name) ? item.title : g.name,
-      });
+      item.installed = installed;
+      item.downloading = downloading;
+      item.bytesDownloaded = g.bytesDownloaded;
+      item.bytesToDownload = g.bytesToDownload;
+      item.updateAvailable = updateAvailable;
+      if (g.sizeBytes > 0) item.installSize = g.sizeBytes;
+      if (!/^\d+$/.test(g.name)) item.title = g.name;
+      next.push(item);
     } else {
       next.push(item);
     }
@@ -315,8 +311,14 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
     structural = true;
   }
 
-  if (!changed) return false;
-  setSteamSummaries(next);
+  if (!changed) {
+    checkAndPollSteamDownloads();
+    return false;
+  }
+  // Progress-only writes keep the existing objects (already mutated above).
+  // Replacing the list rebuilds every store map and throws away the library
+  // sort cache, which hitch the UI on every manifest write.
+  if (structural) setSteamSummaries(next);
   updateBadge();
   if (structural) {
     scheduleRender();
@@ -333,7 +335,20 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
         : null;
       const label = pct !== null ? t("common.downloading", { p: pct }) : t("steam.downloading");
       document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((el) => {
-        el.textContent = label;
+        const span = el.querySelector("span");
+        if (span) {
+          span.textContent = label;
+        } else {
+          const svg = el.querySelector("svg");
+          if (svg) {
+            el.innerHTML = `${svg.outerHTML} ${label}`;
+          } else {
+            el.textContent = label;
+          }
+        }
+      });
+      document.querySelectorAll<HTMLElement>(`[data-tv-dlbar="${id}"]`).forEach((bar) => {
+        if (pct !== null) bar.style.width = `${pct}%`;
       });
       const meta = document.querySelector(`[data-steam-dl="${g.appId}"]`);
       if (meta) {
@@ -342,18 +357,63 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
           : "";
         meta.textContent = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
       }
+      const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
+      if (chip && !(S.activeDlMetrics && !S.activeDlMetrics.done && S.activeDlMetrics.speedBytes > 0)) {
+        chip.textContent = pct !== null ? `%${pct}` : t("steam.downloading");
+      }
     }
   }
+  checkAndPollSteamDownloads();
   return true;
 }
 
-/** Re-reads local Steam manifests after the client writes an update or download. */
-export async function refreshSteamInstalled(): Promise<void> {
-  try {
-    applySteamInstalledSnapshot(await steamListInstalled());
-  } catch {
-    // Keep the last snapshot.
+/**
+ * Lightweight active-download poller.
+ * Runs ONLY while at least one Steam game is actively downloading, stopping
+ * immediately when downloads finish so the idle launcher uses 0 CPU.
+ */
+let steamActiveDlPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function checkAndPollSteamDownloads(): void {
+  const hasDownloading = S.steamGames.some((g) => g.downloading);
+  if (!hasDownloading) {
+    if (steamActiveDlPollTimer !== null) {
+      clearTimeout(steamActiveDlPollTimer);
+      steamActiveDlPollTimer = null;
+    }
+    return;
   }
+  if (steamActiveDlPollTimer !== null) return;
+
+  const poll = async () => {
+    steamActiveDlPollTimer = null;
+    if (!S.steamGames.some((g) => g.downloading)) return;
+
+    await refreshSteamInstalled();
+    // applySteamInstalledSnapshot already arms the next tick. Arming another
+    // one here leaked a timer on every pass and the scans piled up.
+    if (steamActiveDlPollTimer === null) checkAndPollSteamDownloads();
+  };
+
+  steamActiveDlPollTimer = setTimeout(poll, 1500);
+}
+
+/** One scan at a time. The file watcher and the download poller both call this. */
+let steamScanInFlight: Promise<void> | null = null;
+
+/** Re-reads local Steam manifests after the client writes an update or download. */
+export function refreshSteamInstalled(): Promise<void> {
+  if (steamScanInFlight) return steamScanInFlight;
+  steamScanInFlight = (async () => {
+    try {
+      applySteamInstalledSnapshot(await steamListInstalled());
+    } catch {
+      // Keep the last snapshot.
+    } finally {
+      steamScanInFlight = null;
+    }
+  })();
+  return steamScanInFlight;
 }
 
 export function startSteamLibraryWatch(): void {

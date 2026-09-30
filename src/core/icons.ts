@@ -255,33 +255,36 @@ export function loadingState(label: string): string {
 }
 
 /**
- * Custom PlayStation-inspired platinum trophy artwork (purple flame + gems).
- * Not a copy of any Sony trademark; an original vector in the launcher identity.
+ * Master Championship Trophy Cup artwork for 100% completions / Platinum achievements.
+ *
+ * Clean, unmistakable trophy cup with elegant curved dual handles, deep chalice,
+ * etched mastery star, slender stem, and tiered pedestal base.
+ * Rendered in platinum metallic silver and pure white to match the console dark theme.
  */
 export function epicPlatinumIcon(size = 18): string {
-  const h = Math.round(size * 1.16);
-  return `<svg width="${size}" height="${h}" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg" class="epic-plat-cup-svg">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="epic-plat-cup-svg">
     <defs>
-      <linearGradient id="epFlm" x1="12" y1="1" x2="12" y2="13" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#f5d0fe"/>
-        <stop offset="35%" stop-color="#c084fc"/>
-        <stop offset="75%" stop-color="#9333ea"/>
-        <stop offset="100%" stop-color="#6b21a8"/>
-      </linearGradient>
-      <linearGradient id="epCup" x1="12" y1="10" x2="12" y2="25" gradientUnits="userSpaceOnUse">
+      <linearGradient id="epPlatCup" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
         <stop offset="0%" stop-color="#ffffff"/>
-        <stop offset="45%" stop-color="#f3e8ff"/>
-        <stop offset="85%" stop-color="#d8b4fe"/>
-        <stop offset="100%" stop-color="#a855f7"/>
+        <stop offset="40%" stop-color="#f1f5f9"/>
+        <stop offset="80%" stop-color="#cbd5e1"/>
+        <stop offset="100%" stop-color="#94a3b8"/>
       </linearGradient>
     </defs>
-    <path d="M12 1.5C14.6 3.6 15.4 5.7 15.4 7.6C15.4 9.6 13.9 11 12 11C10.1 11 8.6 9.6 8.6 7.6C8.6 5.7 9.4 3.6 12 1.5Z" fill="url(#epFlm)"/>
-    <path d="M12 4.6C13 5.8 13.4 6.9 13.4 7.9C13.4 8.9 12.8 9.6 12 9.6C11.2 9.6 10.6 8.9 10.6 7.9C10.6 6.9 11 5.8 12 4.6Z" fill="#faf5ff"/>
-    <path d="M4.5 11.5C4.5 11 5 10.5 5.5 10.5H18.5C19 10.5 19.5 11 19.5 11.5C19.5 15.8 16 18.8 13.5 19.2V22.5H16.8C17.2 22.5 17.5 22.8 17.5 23.2C17.5 23.7 17.2 24.5 16.5 24.5H7.5C6.8 24.5 6.5 23.7 6.5 23.2C6.5 22.8 6.8 22.5 7.2 22.5H10.5V19.2C8 18.8 4.5 15.8 4.5 11.5Z" fill="url(#epCup)" stroke="#c084fc" stroke-width="0.8"/>
-    <path d="M4 11.5C4 11 4.5 10.5 5.2 10.5H18.8C19.5 10.5 20 11 20 11.5C20 12 19.5 12.5 18.8 12.5H5.2C4.5 12.5 4 12 4 11.5Z" fill="#ffffff" stroke="#a855f7" stroke-width="0.6"/>
-    <circle cx="7.5" cy="14.5" r="1.1" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
-    <circle cx="10.5" cy="15.2" r="1.15" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
-    <circle cx="13.5" cy="15.2" r="1.15" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
-    <circle cx="16.5" cy="14.5" r="1.1" fill="#7e22ce" stroke="#d8b4fe" stroke-width="0.5"/>
+    <!-- Left Handle -->
+    <path d="M6 5.5H4C2.9 5.5 2 6.4 2 7.5C2 9.5 3.3 11 5 11.4C5.6 11.5 6.3 11.6 7 11.7" stroke="url(#epPlatCup)" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Right Handle -->
+    <path d="M18 5.5H20C21.1 5.5 22 6.4 22 7.5C22 9.5 20.7 11 19 11.4C18.4 11.5 17.7 11.6 17 11.7" stroke="url(#epPlatCup)" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Cup Body -->
+    <path d="M5.5 3.5H18.5V9.5C18.5 13.1 15.6 16 12 16C8.4 16 5.5 13.1 5.5 9.5V3.5Z" fill="url(#epPlatCup)" stroke="#ffffff" stroke-width="0.7"/>
+    <!-- Rim Highlight -->
+    <path d="M5 3.5H19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Center Mastery Star -->
+    <path d="M12 6.4L12.8 8.1L14.7 8.3L13.3 9.7L13.7 11.6L12 10.7L10.3 11.6L10.7 9.7L9.3 8.3L11.2 8.1L12 6.4Z" fill="#0f172a"/>
+    <!-- Stem -->
+    <path d="M12 16V19" stroke="url(#epPlatCup)" stroke-width="2.6" stroke-linecap="round"/>
+    <!-- Tiered Base -->
+    <path d="M8.5 19H15.5" stroke="url(#epPlatCup)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M6.5 21.5H17.5" stroke="url(#epPlatCup)" stroke-width="2.6" stroke-linecap="round"/>
   </svg>`;
 }

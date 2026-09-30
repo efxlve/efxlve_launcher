@@ -176,6 +176,7 @@ pub async fn gog_stop_game(app: AppHandle, game_id: String) -> Result<String, St
     }
 
     crate::legendary::playtime_session::finish();
+    crate::legendary::transfers::wake_main_window(&app);
 
     let _ = app.emit(
         "game-status",

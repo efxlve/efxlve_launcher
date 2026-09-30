@@ -34,7 +34,7 @@ import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } 
 import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
-import { hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
+import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
@@ -62,7 +62,8 @@ function render(): void {
   document.body.classList.toggle("tv-mode", S.view === "tv");
 
   // When leaving the store, hard-hide the native webview to avoid overlap.
-  if (S.view !== "store" && S.storeShown) hideStore();
+  // TV Mode keeps the child on screen while its store panel is open.
+  if (S.view !== "store" && S.storeShown && !embeddedStoreHeld()) hideStore();
 
   // Page-enter animation only when the view actually changes; regular
   // re-renders of the same view must not replay it.

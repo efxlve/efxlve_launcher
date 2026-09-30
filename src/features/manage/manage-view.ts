@@ -116,6 +116,17 @@ export function renderDrawerManage(s: EpicSummary): string {
             ${row(t("steam.managedBy"), t("steam.managedByDesc"),
               `<button class="btn primary small" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 13)} ${t("common.install")}</button>`)}
           </div>
+          <div class="section-title">${t("manage.groupSaves")}</div>
+          <div class="list">
+            <div class="row mg-row stack mg-callout">
+              <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
+              <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
+              <div class="mg-inline" style="margin-top: 8px;">
+                <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+              </div>
+            </div>
+            ${renderManageCloudBackupRow(s.appName)}
+          </div>
           <div class="section-title">${t("manage.groupPlaytime")}</div>
           <div class="list">
             ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
@@ -135,6 +146,18 @@ export function renderDrawerManage(s: EpicSummary): string {
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
+        </div>
+
+        <div class="section-title">${t("manage.groupSaves")}</div>
+        <div class="list">
+          <div class="row mg-row stack mg-callout">
+            <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
+            <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
+            <div class="mg-inline" style="margin-top: 8px;">
+              <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+            </div>
+          </div>
+          ${renderManageCloudBackupRow(s.appName)}
         </div>
 
         <div class="section-title">${t("manage.groupCover")}</div>
@@ -163,9 +186,6 @@ export function renderDrawerManage(s: EpicSummary): string {
   if (s.appName.startsWith("gog::")) {
     const ptGog = S.playtimeMap.get(s.appName);
     const playtimeGog = ptGog?.total_seconds ? fmtPlaytime(ptGog.total_seconds) : t("playtime.notPlayed");
-    const cloud = S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported
-      ? row(t("feat.gogCloud"), t("feat.gogCloudTip"), "")
-      : "";
     return `
       <div class="manage-tab-content">
         <div class="section-title">${t("manage.groupFiles")}</div>
@@ -177,7 +197,17 @@ export function renderDrawerManage(s: EpicSummary): string {
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
         </div>
-        ${cloud}
+        <div class="section-title">${t("manage.groupSaves")}</div>
+        <div class="list">
+          <div class="row mg-row stack mg-callout">
+            <div class="mg-title">${icon("cloud", 14)} ${t("gog.cloudNoticeTitle")}</div>
+            <div class="mg-desc">${t("gog.cloudNoticeDesc")}</div>
+            <div class="mg-inline" style="margin-top: 8px;">
+              <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+            </div>
+          </div>
+          ${renderManageCloudBackupRow(s.appName)}
+        </div>
         <div class="section-title">${t("manage.groupCover")}</div>
         <div class="list">
           ${row(t("manage.coverTitle"), t("manage.coverDesc"),
@@ -266,7 +296,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-              "", "manage-cloud-subtitle")}
+              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>`, "manage-cloud-subtitle")}
             <div class="row mg-row">
               <div class="row-main">
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>

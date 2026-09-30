@@ -69,7 +69,7 @@ export function libraryDlBar(appName: string, p: number | null): string {
 
 function storeHasPendingUpdate(appName: string): boolean {
   const s = summaryOf(appName);
-  if (!s) return false;
+  if (!s || s.downloading) return false;
   return Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
 }
 
@@ -84,24 +84,55 @@ function libraryUpdateTarget(appName: string): string | null {
   return null;
 }
 
-/** Play chip next to the cover title; swaps to Update when that copy (or a sibling) has a pending update. */
+/** True when the game has an active download, queue entry, or Steam downloading state. */
+export function isAppDownloading(appName: string): boolean {
+  if (epicDlProgress(appName) !== null) return true;
+  if (S.dlQueueStatus.active === appName || S.dlQueueStatus.queue.includes(appName)) return true;
+  const dl = S.downloads.get(appName);
+  if (dl && !dl.done) return true;
+  const s = summaryOf(appName);
+  if (s?.downloading) return true;
+  if (appName.startsWith("steam::")) {
+    const steamId = appName.slice(7);
+    const sg = S.steamGames.find((g) => g.appId === steamId);
+    if (sg?.downloading) return true;
+  }
+  return false;
+}
+
+/** Play chip next to the cover title; swaps to Downloading or Update when active. */
 export function libraryInstalledIcon(appName: string, installed: boolean): string {
-  if (!S.showInstalledIcon || !installed) return "";
+  if (!S.showInstalledIcon) return "";
+
+  if (isAppDownloading(appName)) {
+    const p = epicDlProgress(appName);
+    const label = p !== null ? t("common.downloading", { p }) : t("steam.downloading");
+    const glyph = icon("download", 9);
+    return `<button type="button" class="pcard-play-btn is-downloading" data-view="downloads" data-id="${esc(appName)}" aria-label="${esc(label)}" title="${esc(label)}">${glyph}</button>`;
+  }
+
+  if (!installed) return "";
+
+  if (S.runningGames.has(appName)) {
+    const stopLabel = t("common.stop");
+    return `<button type="button" class="pcard-play-btn is-running" data-act="epic-stop" data-id="${esc(appName)}" aria-label="${esc(stopLabel)}" title="${esc(stopLabel)}">${icon("square", 8)}</button>`;
+  }
+
   const updateId = libraryUpdateTarget(appName);
   if (updateId) {
     const label = t("common.update");
     const glyph = icon("download", 9);
     if (updateId.startsWith("steam::")) {
-      return `<button type="button" class="pcard-play-btn is-update" data-act="steam-action" data-id="${esc(updateId.slice(7))}" data-mode="update" aria-label="${esc(label)}">${glyph}</button>`;
+      return `<button type="button" class="pcard-play-btn is-update" data-act="steam-action" data-id="${esc(updateId.slice(7))}" data-mode="update" aria-label="${esc(label)}" title="${esc(label)}">${glyph}</button>`;
     }
-    return `<button type="button" class="pcard-play-btn is-update" data-act="epic-install" data-id="${esc(updateId)}" aria-label="${esc(label)}">${glyph}</button>`;
+    return `<button type="button" class="pcard-play-btn is-update" data-act="epic-install" data-id="${esc(updateId)}" aria-label="${esc(label)}" title="${esc(label)}">${glyph}</button>`;
   }
   const playLabel = t("palette.play");
   // Steam games are launched by the client, never by our own launch path.
   if (appName.startsWith("steam::")) {
-    return `<button type="button" class="pcard-play-btn" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" aria-label="${esc(playLabel)}">${icon("play", 9)}</button>`;
+    return `<button type="button" class="pcard-play-btn" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" aria-label="${esc(playLabel)}" title="${esc(playLabel)}">${icon("play", 9)}</button>`;
   }
-  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${esc(appName)}" aria-label="${esc(playLabel)}">${icon("play", 9)}</button>`;
+  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${esc(appName)}" aria-label="${esc(playLabel)}" title="${esc(playLabel)}">${icon("play", 9)}</button>`;
 }
 
 function patchCoverPlayChip(item: HTMLElement, cardAppName: string, installed: boolean): void {
@@ -130,10 +161,11 @@ export function patchLibraryCardDom(appName: string): boolean {
     `[data-lib-item="${appName}"], [data-lib-item="gog::${clean}"], [data-lib-item="${clean}"]`
   );
   const p = epicDlProgress(appName);
+  const isDl = isAppDownloading(appName);
   const badgeHtml = libraryCardBadge(s);
   const actions = epicActionButtons(s, "full", { primaryOnly: true });
   items.forEach((item) => {
-    const dim = item.classList.contains("lrow") ? libraryListDimmed(s) : !s.installed;
+    const dim = !isDl && (item.classList.contains("lrow") ? libraryListDimmed(s) : !s.installed);
     item.classList.toggle("not-installed", dim);
     const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
     const badge = badgeHost?.querySelector(".pbadge");
@@ -205,7 +237,7 @@ export function epicDlProgress(appName: string): number | null {
     const total = item.bytesToDownload ?? 0;
     const got = item.bytesDownloaded ?? 0;
     if (total > 0) return Math.min(100, Math.round((got / total) * 100));
-    return 0;
+    return null;
   }
   return null;
 }
@@ -282,9 +314,10 @@ export function epicActionButtons(
     }
     return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
-  const p = epicDlProgress(s.appName);
-  if (p !== null) {
-    const main = `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
+  if (isAppDownloading(s.appName)) {
+    const p = epicDlProgress(s.appName);
+    const label = p !== null ? t("common.downloading", { p }) : t("steam.downloading");
+    const main = `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 12)} ${label}</button>`;
     if (opts.primaryOnly) return main;
     return `${main}
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancelShort")}</button>`;

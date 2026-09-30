@@ -222,8 +222,11 @@ export const S = {
   playerProfileData: (null) as EpicPlayerProfile | null,
   profileLoading: false,
   profileError: "",
+  profileTab: ("overview") as "overview" | "achievements" | "accounts",
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
+  /** Overview only: which store's achievements and totals the list is showing. */
+  profileStore: ("all") as "all" | "epic" | "gog" | "steam",
   profileSearchQuery: "",
   offlineMode: false,
   networkProfile: ("balanced") as string,
@@ -397,7 +400,7 @@ export const S = {
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
-  appVersion: "0.1.17",
+  appVersion: "0.1.18",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",
@@ -412,9 +415,9 @@ export const S = {
 /**
  * Resolves the custom avatar for the given key.
  *
- * Keys are namespaced: `global` (the combined profile), `epic:<accountId>` and
- * `gog:<userId>`. Legacy raw ids and the retired `default` key still resolve so
- * existing photos survive the migration.
+ * Keys are namespaced: `global` (the combined profile), `epic:<accountId>`,
+ * `gog:<userId>` and `steam:<steamId>`. Legacy raw ids and the retired
+ * `default` key still resolve so existing photos survive the migration.
  */
 export function avatarFor(key: string): string | null {
   if (!key) return null;

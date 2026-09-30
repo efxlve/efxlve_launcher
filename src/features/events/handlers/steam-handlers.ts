@@ -18,7 +18,13 @@ import {
   submitSteamGuardCode,
   syncSteamOwnedGames,
 } from "../../auth/steam-auth-actions";
-import { loadSteamLibrary, refreshSteamStatus, scheduleSteamLibraryResync } from "../../library/steam-library";
+import {
+  checkAndPollSteamDownloads,
+  loadSteamLibrary,
+  refreshSteamInstalled,
+  refreshSteamStatus,
+  scheduleSteamLibraryResync,
+} from "../../library/steam-library";
 import { loadSettingsView } from "../../settings/settings-view";
 import {
   removeSavedSteamAccount,
@@ -43,9 +49,19 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
             if (mode === "launch" && S.steamExitAfterPlay) {
               void steamWatchSession(id).catch(() => {});
             }
+            if (mode === "update") {
+              setTimeout(() => {
+                void steamOpenDownloads().catch(() => {});
+              }, 1000);
+            }
+            if (mode === "update" || mode === "install") {
+              setTimeout(() => {
+                void refreshSteamInstalled().then(() => checkAndPollSteamDownloads());
+              }, 1200);
+            }
             // Install/uninstall/validate finish inside the Steam client, so the
             // grid is re-read once instead of trusting the instant hand-off.
-            if (mode !== "launch") scheduleSteamLibraryResync();
+            if (mode !== "launch") scheduleSteamLibraryResync(mode === "update" ? 2500 : 6000);
           })
           .catch((e: unknown) => toast(String(e), "err"));
       }

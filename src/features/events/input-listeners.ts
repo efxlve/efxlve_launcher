@@ -43,7 +43,7 @@ import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
-import { filteredProfileGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
+import { filteredProfileGames, profileListGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
@@ -431,9 +431,9 @@ document.addEventListener("input", (e) => {
   if (t.id === "profile-search") {
     S.profileSearchQuery = (t as HTMLInputElement).value;
     const grid = document.getElementById("profile-games-grid");
-    if (grid && S.playerProfileData) {
+    if (grid) {
       resetProfileCards();
-      grid.innerHTML = renderProfileGrid(filteredProfileGames(S.playerProfileData.games || []));
+      grid.innerHTML = renderProfileGrid(filteredProfileGames(profileListGames()));
     }
     return;
   }

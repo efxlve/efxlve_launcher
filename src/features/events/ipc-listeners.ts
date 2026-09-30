@@ -112,8 +112,13 @@ function applyDlDomUpdate(id: string): void {
   document.querySelectorAll(`[data-dlbar="${id}"]`).forEach((b) => {
     (b as HTMLElement).style.width = `${progress}%`;
   });
+  const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
+  if (chip) {
+    const speed = S.activeDlMetrics?.speedBytes ?? 0;
+    chip.textContent = speed > 0 ? `${fmtBytes(speed)}/s` : `%${Math.round(progress)}`;
+  }
 
-  if (S.view !== "downloads") return;
+  if (S.view !== "downloads" && !document.getElementById("tv-dl-list")) return;
   const pctEl = document.getElementById("dl-hero-pct");
   if (pctEl) pctEl.textContent = `%${Math.round(progress)}`;
   const fillEl = document.getElementById("dl-hero-fill");
@@ -511,12 +516,15 @@ export async function initApp(hooks: {
       }
 
       // Update buttons and badges.
-      document.querySelectorAll<HTMLElement>(`[data-id="${id}"]`).forEach((el) => {
-        if (el.dataset.act === "epic-play") {
+      document.querySelectorAll<HTMLButtonElement>(`button[data-act="epic-play"][data-id="${CSS.escape(id)}"], button[data-act="epic-stop"][data-id="${CSS.escape(id)}"]`).forEach((el) => {
+        if (el.classList.contains("pcard-play-btn")) return;
+        if (el.dataset.act === "epic-play" || el.dataset.act === "epic-stop") {
           if (running) {
+            el.dataset.act = "epic-stop";
             el.classList.add("running");
             el.innerHTML = `<span class="running-dot"></span> ${t("common.playing")}`;
           } else {
+            el.dataset.act = "epic-play";
             el.classList.remove("running");
             el.innerHTML = `${icon("play", 14)} ${t("common.play")}`;
           }

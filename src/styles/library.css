@@ -94,7 +94,8 @@
   position: relative; aspect-ratio: 3 / 4; border-radius: var(--r-md); overflow: hidden;
   background: var(--surface-2); outline: 1px solid var(--line); outline-offset: -1px;
   transform-origin: center center;
-  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
+  /* Transform only. Animating box-shadow repaints the grid on every hover frame. */
+  transition: transform 140ms ease-out;
 }
 .pgrid > .pcard:hover .pcard-art,
 .pgrid > .pcard:focus-visible .pcard-art {
@@ -140,7 +141,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.35;
+  padding-bottom: 2px;
 }
 .pcard-play-btn {
   display: inline-flex;
@@ -148,6 +150,8 @@
   justify-content: center;
   width: 18px;
   height: 18px;
+  min-width: 18px;
+  max-width: 18px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
@@ -159,6 +163,8 @@
   position: relative;
   z-index: 3;
   line-height: 1;
+  overflow: hidden;
+  box-sizing: border-box;
   transition:
     background-color var(--ease),
     color var(--ease),
@@ -171,6 +177,17 @@
   height: 9px;
   fill: currentColor;
 }
+.pcard-play-btn.is-running {
+  color: #ff6b6b;
+  border-color: rgba(229, 72, 77, 0.5);
+  background: rgba(229, 72, 77, 0.16);
+}
+.pcard-play-btn.is-running svg {
+  margin-left: 0;
+  width: 8px;
+  height: 8px;
+  fill: currentColor;
+}
 .pcard-play-btn.is-update {
   color: var(--warn);
   border-color: rgba(224, 163, 46, 0.45);
@@ -180,15 +197,54 @@
   margin-left: 0;
   fill: none;
 }
+.pcard-play-btn.is-downloading {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+}
+.pcard-play-btn.is-downloading svg {
+  margin-left: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  animation: pcard-dl-pulse 1.4s ease-in-out infinite;
+}
+.pcard-play-btn.is-downloading::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: #ffffff;
+  border-right-color: rgba(255, 255, 255, 0.4);
+  animation: pcard-spin 0.9s linear infinite;
+}
+@keyframes pcard-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pcard-dl-pulse {
+  0%, 100% { transform: translateY(0); opacity: 0.95; }
+  50% { transform: translateY(1.5px); opacity: 0.55; }
+}
 .pcard:hover .pcard-play-btn {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.38);
   background: rgba(255, 255, 255, 0.16);
 }
+.pcard:hover .pcard-play-btn.is-running {
+  color: #ff8585;
+  border-color: rgba(229, 72, 77, 0.7);
+  background: rgba(229, 72, 77, 0.25);
+}
 .pcard:hover .pcard-play-btn.is-update {
   color: var(--warn);
   border-color: rgba(224, 163, 46, 0.7);
   background: rgba(224, 163, 46, 0.22);
+}
+.pcard:hover .pcard-play-btn.is-downloading {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.2);
 }
 .pcard-play-btn:hover {
   background: var(--accent);
@@ -196,10 +252,25 @@
   border-color: var(--accent);
   transform: scale(1.15);
 }
+.pcard-play-btn.is-running:hover {
+  background: var(--err, #e5484d);
+  color: #ffffff;
+  border-color: var(--err, #e5484d);
+  transform: scale(1.15);
+}
 .pcard-play-btn.is-update:hover {
   background: var(--warn);
   color: #000;
   border-color: var(--warn);
+}
+.pcard-play-btn.is-downloading:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.pcard-play-btn.is-downloading:hover::after {
+  border-top-color: var(--on-accent);
+  border-right-color: rgba(0, 0, 0, 0.3);
 }
 .pcard-play-btn:active {
   transform: scale(0.92);
@@ -292,7 +363,7 @@
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-art img { opacity: 0.45; filter: grayscale(1); }
 .lrow-main { min-width: 0; }
 .lrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.lrow-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; padding-bottom: 2px; }
 .lib-list.highlight-installed .lrow.not-installed .lrow-name,
 .lib-list.highlight-installed .lrow.not-installed .lrow-meta,
 .lib-list.highlight-installed .lrow.not-installed .lrow-col,

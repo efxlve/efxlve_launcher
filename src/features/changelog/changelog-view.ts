@@ -26,9 +26,47 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.18",
+    date: "2026-10-01",
+    isCurrent: true,
+    items: [
+      {
+        en: "Steam: sign in with your password, Steam Guard or a QR code, then browse the whole owned library — covers, playtime, achievements, add-ons, screenshots and downloads — and switch saved accounts without signing in again.",
+        tr: "Steam: parola, Steam Guard veya QR koduyla giriş yapın ve sahip olduğunuz kütüphanenin tamamına bakın — kapaklar, oynama süresi, başarımlar, eklentiler, ekran görüntüleri ve indirmeler — kayıtlı hesaplar arasında yeniden giriş yapmadan geçin.",
+      },
+      {
+        en: "TV Mode is back as a fullscreen console shell: controller navigation, an on-screen keyboard, a profile dashboard, and the app icon on the boot screen.",
+        tr: "TV Modu tam ekran bir konsol kabuğu olarak geri döndü: kontrolcüyle gezinme, ekran klavyesi, profil paneli ve açılışta uygulama ikonu.",
+      },
+      {
+        en: "Seven storefronts in one window: Epic Games, GOG, Steam, Xbox (PC games only), Battle.net, Ubisoft and EA, with each store's own logo on the Accounts page.",
+        tr: "Tek pencerede yedi mağaza: Epic Games, GOG, Steam, Xbox (yalnız PC oyunları), Battle.net, Ubisoft ve EA; Hesaplar sayfasında her mağazanın kendi logosu.",
+      },
+      {
+        en: "EA App, Ubisoft Connect and Xbox installs are detected, and launching them is handed to those clients.",
+        tr: "EA App, Ubisoft Connect ve Xbox kurulumları tespit edilir; başlatma o istemcilere bırakılır.",
+      },
+      {
+        en: "Games from every saved account show up in one library, with a one-click switch to the account that owns them.",
+        tr: "Kayıtlı her hesabın oyunları tek kütüphanede görünür; oyunun sahibi olan hesaba tek tıkla geçilir.",
+      },
+      {
+        en: "Startup is much faster on large libraries, and the controller hint bar follows the pad you actually have plugged in.",
+        tr: "Büyük kütüphanelerde açılış çok daha hızlı, kontrolcü ipucu çubuğu ise takılı olan pad'e göre değişiyor.",
+      },
+      {
+        en: "Fixes: stopping a game no longer blanks the launcher, and the light blue line along the bottom of TV Mode is gone.",
+        tr: "Düzeltmeler: bir oyunu durdurmak başlatıcıyı artık boşaltmıyor ve TV Modu'nun altındaki açık mavi çizgi kalktı.",
+      },
+      {
+        en: "More bugs added.",
+        tr: "Daha fazla hata eklendi.",
+      },
+    ],
+  },
+  {
     version: "0.1.17",
     date: "2026-09-28",
-    isCurrent: true,
     items: [
       {
         en: "GOG.COM support: connect your account under Accounts and use one library for both stores — install, verify, import, uninstall and launch DRM-free GOG games, with official store descriptions, hero art, covers and achievements.",

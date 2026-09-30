@@ -7,7 +7,7 @@
  * without spamming the IPC channel.
  */
 
-import { summaryOf } from "../../core/selectors";
+import { summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { epicGetSettings, epicPresenceClear, epicPresenceConfigure, epicPresenceUpdate } from "../../epic";
 import { t } from "../../i18n";
@@ -119,7 +119,7 @@ function presenceContext(): { details: string; state: string; image: string; hov
   }
   return {
     details: t("presence.library"),
-    state: t("presence.libraryState", { count: S.epicSummaries.length }),
+    state: t("presence.libraryState", { count: totalLibraryGamesCount() }),
     image: LAUNCHER_ICON,
     hover: "Efxlve Launcher",
     small: "",

@@ -122,7 +122,7 @@ export async function loadEpicAchSummaries(): Promise<void> {
     ]);
     S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries };
     S.libraryDataRev++;
-    if (S.view === "library") scheduleRender();
+    if (S.view === "library" || S.view === "profile") scheduleRender();
   } catch (e) {
     console.warn("Achievement summaries could not be fetched:", e);
   }

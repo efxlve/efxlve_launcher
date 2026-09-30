@@ -214,7 +214,8 @@ document.addEventListener("click", (e) => {
       return;
     }
     if (S.view === "settings") {
-      S.settingsSection = "account";
+      const section = t.dataset.settingsSection as import("../../core/types").SettingsSection | undefined;
+      S.settingsSection = section || "account";
       render();
       void loadSettingsView();
       return;
@@ -323,11 +324,29 @@ document.addEventListener("click", (e) => {
     S.profileAccount = t.dataset.key;
     resetProfileCards();
     render();
+  } else if (act === "profile-tab" && t.dataset.tab) {
+    const tab = t.dataset.tab;
+    if (tab === "overview" || tab === "achievements" || tab === "accounts") {
+      S.profileTab = tab;
+      resetProfileCards();
+      render();
+    }
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
+    if (t.dataset.tab === "achievements") {
+      S.profileTab = "achievements";
+    }
     S.profileShowHidden = false;
     resetProfileCards();
     render();
+  } else if (act === "profile-store" && t.dataset.val) {
+    const store = t.dataset.val;
+    if (store === "all" || store === "epic" || store === "gog" || store === "steam") {
+      S.profileStore = store;
+      S.profileAccount = "overview";
+      resetProfileCards();
+      render();
+    }
   } else if (act === "profile-show-more") {
     S.profileCardCount += PROFILE_CARD_CHUNK;
     render();

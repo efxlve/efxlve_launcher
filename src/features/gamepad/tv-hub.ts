@@ -123,31 +123,35 @@ function storeBadgeHtml(appName: string): string {
 }
 
 /** Primary CTA button (Play / Update / Install / Stop). */
-export function tvHubPrimaryAction(s: EpicSummary): string {
+export function tvHubPrimaryAction(s: EpicSummary, focused = false): string {
   const p = epicDlProgress(s.appName);
+  const fCls = focused ? " focused" : "";
   if (p !== null) {
-    return `<button type="button" class="tv-btn-primary tv-action-btn" data-view="downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.downloading", { p })}</span></button>`;
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-view="downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.downloading", { p })}</span></button>`;
+  }
+  if (s.downloading) {
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-view="downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("steam.downloading")}</span></button>`;
   }
   if (S.runningGames.has(s.appName)) {
-    return `<button type="button" class="tv-btn-primary is-stop tv-action-btn" data-act="epic-stop" data-id="${esc(s.appName)}">${icon("square", 18)} <span>${t("common.stop")}</span></button>`;
+    return `<button type="button" class="tv-btn-primary is-stop tv-action-btn${fCls}" data-act="epic-stop" data-id="${esc(s.appName)}">${icon("square", 18)} <span>${t("common.stop")}</span></button>`;
   }
   if (s.installed) {
     const hasUpdate = Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
     if (hasUpdate) {
       if (s.appName.startsWith("steam::")) {
-        return `<button type="button" class="tv-btn-primary is-update tv-action-btn" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update">${icon("download", 18)} <span>${t("common.update")}</span></button>`;
+        return `<button type="button" class="tv-btn-primary is-update tv-action-btn${fCls}" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update">${icon("download", 18)} <span>${t("common.update")}</span></button>`;
       }
-      return `<button type="button" class="tv-btn-primary is-update tv-action-btn" data-act="epic-install" data-id="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.update")}</span></button>`;
+      return `<button type="button" class="tv-btn-primary is-update tv-action-btn${fCls}" data-act="epic-install" data-id="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.update")}</span></button>`;
     }
     if (s.appName.startsWith("steam::")) {
-      return `<button type="button" class="tv-btn-primary tv-action-btn" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch">${icon("play", 18)} <span>${t("common.playNow")}</span></button>`;
+      return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch">${icon("play", 18)} <span>${t("common.playNow")}</span></button>`;
     }
-    return `<button type="button" class="tv-btn-primary tv-action-btn" data-act="epic-play" data-id="${esc(s.appName)}">${icon("play", 18)} <span>${t("common.playNow")}</span></button>`;
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="epic-play" data-id="${esc(s.appName)}">${icon("play", 18)} <span>${t("common.playNow")}</span></button>`;
   }
   if (s.appName.startsWith("steam::")) {
-    return `<button type="button" class="tv-btn-primary is-install tv-action-btn" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="install">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
+    return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="install">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
   }
-  return `<button type="button" class="tv-btn-primary is-install tv-action-btn" data-act="epic-install" data-id="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
+  return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="epic-install" data-id="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
 }
 
 /** PS5 console style quick stat tiles. */
@@ -230,11 +234,11 @@ export function renderConsoleStatCards(s: EpicSummary): string {
           ${criticSub ? `<span class="tv-stat-sub">${esc(criticSub)}</span>` : ""}
         </div>
       </div>
-
+      ${!s.appName.startsWith("steam::") && !s.appName.startsWith("gog::") ? `
       <div class="tv-stat-card">
         <span class="tv-stat-title">${icon("cloud", 13)} ${t("drawer.statCloud")}</span>
         <span class="tv-stat-value ${cloudTone}">${esc(cloudVal)}</span>
-      </div>
+      </div>` : ""}
     </div>`;
 }
 

@@ -1998,6 +1998,7 @@ pub async fn epic_stop_game(app: AppHandle, app_name: String) -> Result<String, 
         }
     }
     super::screenshots::clear_active_running_game(&app_name);
+    wake_main_window(&app);
     let _ = app.emit(
         "game-status",
         serde_json::json!({ "id": app_name, "running": false }),
@@ -2072,6 +2073,63 @@ fn scan_dir_for_exes(
             }
         }
     }
+}
+
+/// True when `image` is the install directory itself or a file inside it.
+/// A drive root (`C:\`) is rejected so a bad path cannot match every process.
+pub fn image_inside_install(image: &str, install: &str) -> bool {
+    let image = image.replace('/', "\\").trim_end_matches('\\').to_lowercase();
+    let install = install.replace('/', "\\").trim_end_matches('\\').to_lowercase();
+    if install.len() < 4 || !install.contains('\\') {
+        return false;
+    }
+    image == install || image.starts_with(&(install + "\\"))
+}
+
+/// Host processes that must never be stopped just because a game folder
+/// happens to contain a file with the same name.
+fn shared_host_exe(name: &str) -> bool {
+    matches!(
+        name,
+        "msedgewebview2.exe"
+            | "msedge.exe"
+            | "chrome.exe"
+            | "conhost.exe"
+            | "cmd.exe"
+            | "powershell.exe"
+            | "pwsh.exe"
+            | "runtimebroker.exe"
+            | "dllhost.exe"
+            | "svchost.exe"
+            | "explorer.exe"
+            | "efxlve-launcher.exe"
+            | "legendary.exe"
+            | "crashpad_handler.exe"
+            | "wwahost.exe"
+    )
+}
+
+/// WebView2 goes blank after a fullscreen game is killed. Nudging the window
+/// size forces the surface to composite again.
+pub fn wake_main_window(app: &AppHandle) {
+    let Some(window) = app.get_window("main") else {
+        return;
+    };
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+    if window.is_fullscreen().unwrap_or(false) || window.is_maximized().unwrap_or(false) {
+        return;
+    }
+    let Ok(size) = window.inner_size() else {
+        return;
+    };
+    let nudged = tauri::PhysicalSize {
+        width: size.width,
+        height: size.height.saturating_sub(1).max(1),
+    };
+    let _ = window.set_size(tauri::Size::Physical(nudged));
+    let _ = window.set_size(tauri::Size::Physical(size));
 }
 
 #[cfg(target_os = "windows")]
@@ -2150,6 +2208,11 @@ mod win_process {
             }
 
             let mut pids = Vec::new();
+            let self_pid = std::process::id();
+            let self_exe = std::env::current_exe().ok().and_then(|p| {
+                p.to_str()
+                    .map(|s| s.replace('/', "\\").trim_end_matches('\\').to_lowercase())
+            });
 
             loop {
                 let len = entry
@@ -2158,32 +2221,47 @@ mod win_process {
                     .position(|&c| c == 0)
                     .unwrap_or(entry.sz_exe_file.len());
                 let exe_name = String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase();
-                let mut matched = !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name);
-
-                if !matched {
-                    if let Some(ref inst) = norm_install_path {
-                        let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
-                        if !h_proc.is_null() {
-                            let mut buf = [0u16; 1024];
-                            let mut size = buf.len() as DWORD;
-                            if QueryFullProcessImageNameW(h_proc, 0, buf.as_mut_ptr(), &mut size) != 0 {
-                                let full_path = String::from_utf16_lossy(&buf[..size as usize])
-                                    .replace('/', "\\")
-                                    .to_lowercase();
-                                if full_path.starts_with(inst) {
-                                    let is_ignored = full_path.contains("crashreportclient")
-                                        || full_path.contains("vc_redist")
-                                        || full_path.contains("vcredist")
-                                        || full_path.contains("dxsetup");
-                                    if !is_ignored {
-                                        matched = true;
-                                    }
-                                }
-                            }
-                            CloseHandle(h_proc);
-                        }
+                let mut full_path: Option<String> = None;
+                let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
+                if !h_proc.is_null() {
+                    let mut buf = [0u16; 1024];
+                    let mut size = buf.len() as DWORD;
+                    if QueryFullProcessImageNameW(h_proc, 0, buf.as_mut_ptr(), &mut size) != 0 {
+                        full_path = Some(
+                            String::from_utf16_lossy(&buf[..size as usize])
+                                .replace('/', "\\")
+                                .to_lowercase(),
+                        );
                     }
+                    CloseHandle(h_proc);
                 }
+
+                let is_self = entry.th32_process_id == self_pid
+                    || full_path.as_ref().is_some_and(|p| self_exe.as_ref() == Some(p));
+                let inside = full_path.as_deref().is_some_and(|p| {
+                    norm_install_path
+                        .as_deref()
+                        .is_some_and(|inst| super::image_inside_install(p, inst))
+                });
+                let ignored = full_path.as_deref().is_some_and(|p| {
+                    p.contains("crashreportclient")
+                        || p.contains("vc_redist")
+                        || p.contains("vcredist")
+                        || p.contains("dxsetup")
+                        || p.contains("unrealcefsubprocess")
+                        || p.contains("msedgewebview2.exe")
+                });
+                let name_hit =
+                    !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name);
+                // A readable path outside the install folder is never the game.
+                // Matching on the file name alone used to kill WebView2 (and blank
+                // this window) when the game shipped a helper with the same name.
+                let matched = !is_self
+                    && if full_path.is_some() {
+                        inside && !ignored
+                    } else {
+                        name_hit && !super::shared_host_exe(&exe_name)
+                    };
 
                 if matched {
                     pids.push(entry.th32_process_id);
@@ -2481,6 +2559,7 @@ async fn spawn_launched(
             );
         }
 
+        wake_main_window(&app_bg);
         let _ = app_bg.emit(
             "game-status",
             serde_json::json!({
@@ -2542,6 +2621,22 @@ async fn spawn_launched(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn install_path_does_not_match_a_drive_root_or_a_sibling() {
+        assert!(!super::image_inside_install(
+            r"C:\Users\Efe\AppData\Local\efxlve\efxlve-launcher.exe",
+            r"C:\"
+        ));
+        assert!(!super::image_inside_install(
+            r"C:\Games\Other\game.exe",
+            r"C:\Games\WuWa"
+        ));
+        assert!(super::image_inside_install(
+            r"C:\Games\WuWa\Client\Binaries\Win64\Client-Win64-Shipping.exe",
+            r"C:\Games\WuWa"
+        ));
+    }
 
     #[test]
     fn parses_progress_percent_line() {

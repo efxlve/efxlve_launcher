@@ -2409,3 +2409,13 @@ Kullanıcı isteği: sidebar'ın sol altındaki **Account Switch** düğmesini k
 - 15 locale'e `nav.friends`, `friends.unavailableTitle`, `friends.unavailableDesc` eklendi; sidebar'a özel ölü `accounts.switchAccountTitle` anahtarı kaldırıldı. Tüm locale dosyalarında **1.435 anahtar** tam paritede.
 - `DESIGN_SYSTEM.md` sidebar düzeni, `CODEBASE_MAP.md` Friends view, README profil açıklaması ve `AGENTS.md` çalışma özeti güncellendi.
 
+## 185. v0.1.18 Yayını
+
+v0.1.17'den bu yana Steam hesabı ve sahip olunan kütüphane, yedi gömülü mağaza, TV Modu konsol kabuğu ve paylaşılan kütüphane ana dala girdi. Sürüm numarası **0.1.18** oldu (`package.json`, `package-lock.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`, `index.html` hapı, `state.ts`). `CHANGELOG_DATA` 0.1.18 kaydı `isCurrent`.
+
+- **Steam:** parola / Steam Guard / QR girişi, DPAPI kasası, çoklu hesap, sahip olunan kütüphane, kapak, süre, başarım, DLC, ekran görüntüsü ve indirme; kütüphane ve kasa sertleştirmesi.
+- **Mağazalar:** Epic, GOG, Steam, Xbox (PC filtresi), Battle.net, Ubisoft, EA gömülü görünüm; resmi logolar; EA/Ubisoft/Xbox kurulum tespiti ve başlatma devri; açılış süresi büyük kütüphanede kısaldı.
+- **TV Modu:** tam ekran Big Picture kabuğu, ekran klavyesi, profil, paneller; açılışta "Efxlve" yazısı yerine uygulama ikonu; alttaki Windows vurgu kenarlığı siyaha çekildi (`DWMWA_BORDER_COLOR`).
+- **Stop:** oyun süreci artık yalnızca kurulum klasörünün içinden eşleşiyor; WebView2 ve başlatıcının kendi süreci öldürülmüyor. Kapanıştan sonra pencere yeniden çiziliyor.
+- **Yayın:** `v0.1.18` etiketi `.github/workflows/release.yml` ile imzalı kurulumu ve `latest.json` dosyasını GitHub Releases'a bırakır.
+

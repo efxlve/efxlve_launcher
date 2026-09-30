@@ -24,20 +24,25 @@ import {
 import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
 import {
+  isTvProfileOpen,
   markDeckChrome,
   onControllerConnected,
   toggleTvMode,
   tvActivate,
   tvBack,
+  tvCloseProfile,
   tvDetailOpen,
   tvFavorite,
   tvMove,
   tvNeighbor,
   tvOpenDetails,
+  tvOpenProfile,
   tvRowJump,
   tvSkip,
 } from "./tv-mode";
-import { setView } from "../store/store-view";
+import { embeddedStoreHeld, setView, syncStoreViewSize } from "../store/store-view";
+import { tvPanel } from "./tv-panels";
+import { openTvKeyboard, tvKeyboardOpen } from "./tv-keyboard";
 
 const STICK_DEADZONE = 0.42;
 const TRIGGER_DEADZONE = 0.55;
@@ -151,6 +156,7 @@ export function updateGamepadHud(active = true): void {
   const hud = ensureGamepadHud();
   if (!active || !S.gamepadPolling) {
     hud.classList.add("hidden");
+    if (embeddedStoreHeld()) requestAnimationFrame(() => syncStoreViewSize());
     return;
   }
 
@@ -159,7 +165,7 @@ export function updateGamepadHud(active = true): void {
 
   const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(S.currentModalAppName);
 
-  const hudKey = `${modalOpen ? "modal" : S.view}|${tvDetailOpen() ? "d" : "h"}|${S.appLanguage}|${S.gamepadKind}`;
+  const hudKey = `${modalOpen ? "modal" : S.view}|${tvKeyboardOpen() ? "k" : isTvProfileOpen() ? "p" : tvDetailOpen() ? "d" : tvPanel() ?? "h"}|${S.appLanguage}|${S.gamepadKind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
@@ -175,20 +181,46 @@ export function updateGamepadHud(active = true): void {
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   } else if (S.view === "tv") {
-    if (tvDetailOpen()) {
+    if (tvKeyboardOpen()) {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+        hudItem(faceGlyph(kind, "b"), t("common.back")),
+        hudItem(dpad, t("gamepad.navigate")),
+      ].join("");
+    } else if (isTvProfileOpen()) {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+        hudItem(faceGlyph(kind, "b"), t("common.back")),
+        hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
+        hudItem(bumperGlyphs(kind), t("tv.hudShelves")),
+        hudItem(dpad, t("gamepad.navigate")),
+      ].join("");
+    } else if (tvDetailOpen()) {
       hud.innerHTML = [
         hudItem(faceGlyph(kind, "a"), t("common.play")),
         hudItem(faceGlyph(kind, "b"), t("common.back")),
         hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
         hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
       ].join("");
+    } else if (tvPanel() === "stores") {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "b"), t("common.back")),
+        hudItem(bumperGlyphs(kind), t("nav.store")),
+        hudItem(dpad, t("gamepad.navigate")),
+      ].join("");
+    } else if (tvPanel() === "downloads") {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+        hudItem(faceGlyph(kind, "b"), t("common.back")),
+        hudItem(dpad, t("gamepad.navigate")),
+      ].join("");
     } else {
       hud.innerHTML = [
         hudItem(faceGlyph(kind, "a"), t("tv.hudPlay")),
         hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
-        hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
+        hudItem(faceGlyph(kind, "y"), t("common.search")),
         hudItem(bumperGlyphs(kind), t("tv.hudCategories")),
-        hudItem(faceGlyph(kind, "b"), t("tv.exit")),
+        hudItem(dpad, t("gamepad.navigate")),
       ].join("");
     }
   } else if (S.view === "profile") {
@@ -210,6 +242,7 @@ export function updateGamepadHud(active = true): void {
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   }
+  if (embeddedStoreHeld()) requestAnimationFrame(() => syncStoreViewSize());
 }
 
 function bindPad(gp: Gamepad): void {
@@ -379,6 +412,15 @@ export function gamepadLoop(): void {
   if (S.gamepadHudEl) S.gamepadHudEl.classList.remove("dimmed");
 
   if (justPressed(mask, BTN_START) || justPressed(mask, BTN_GUIDE)) {
+    if (S.view === "tv") {
+      // In TV Mode: Start opens Game Hub for focused game, never exits to desktop!
+      if (!tvDetailOpen() && !tvKeyboardOpen() && !isTvProfileOpen() && !tvPanel()) {
+        tvOpenDetails();
+      }
+      prevButtons = mask;
+      scheduleGamepadLoop(false);
+      return;
+    }
     toggleTvMode();
     lastHudKey = "";
     updateGamepadHud(true);
@@ -388,6 +430,15 @@ export function gamepadLoop(): void {
   }
 
   if (justPressed(mask, BTN_SELECT)) {
+    if (S.view === "tv") {
+      if (isTvProfileOpen()) tvCloseProfile();
+      else tvOpenProfile();
+      lastHudKey = "";
+      updateGamepadHud(true);
+      prevButtons = mask;
+      scheduleGamepadLoop(false);
+      return;
+    }
     if (isPaletteOpen()) closePalette();
     else openPalette();
     prevButtons = mask;
@@ -406,11 +457,16 @@ export function gamepadLoop(): void {
     if (justPressed(mask, BTN_B)) tvBack();
     else if (justPressed(mask, BTN_A)) tvActivate();
     else if (justPressed(mask, BTN_X) || justPressed(mask, BTN_R4)) {
-      if (tvDetailOpen()) tvActivate();
+      if (isTvProfileOpen()) tvActivate();
+      else if (tvDetailOpen()) tvActivate();
       else tvOpenDetails();
     }
-    else if (justPressed(mask, BTN_Y) || justPressed(mask, BTN_L4)) tvFavorite();
-    else if (tvDetailOpen() && (buttonBit(gp, BTN_LB) || buttonBit(gp, BTN_RB))) {
+    else if (justPressed(mask, BTN_Y) || justPressed(mask, BTN_L4)) {
+      if (isTvProfileOpen()) tvCloseProfile();
+      else if (tvDetailOpen()) tvFavorite();
+      else openTvKeyboard();
+    }
+    else if ((isTvProfileOpen() || tvDetailOpen()) && (buttonBit(gp, BTN_LB) || buttonBit(gp, BTN_RB))) {
       if (consumeHold(buttonBit(gp, BTN_RB) ? "n+" : "n-", now)) tvNeighbor(buttonBit(gp, BTN_RB) ? 1 : -1);
     } else if (buttonBit(gp, BTN_LT) || buttonBit(gp, BTN_RT)) {
       if (consumeHold(buttonBit(gp, BTN_RT) ? "skip+" : "skip-", now)) tvSkip(buttonBit(gp, BTN_RT) ? 1 : -1);

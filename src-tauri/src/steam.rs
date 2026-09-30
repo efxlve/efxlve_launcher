@@ -7,6 +7,8 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
@@ -159,19 +161,47 @@ fn parse_steam_pid(raw: &str) -> Option<u32> {
     (pid != 0).then_some(pid)
 }
 
+/// Last process probe. `installed_games` runs on every manifest write; a missing
+/// `steam.pid` (Steam is open but never wrote the file) must not snapshot every
+/// process on the machine each time.
+static STEAM_RUNNING_CACHE: Mutex<Option<(Instant, bool)>> = Mutex::new(None);
+
 /// True while the Steam client process from `steam.pid` is still alive.
 ///
 /// ACF `StateFlags` and leftover `downloading/` folders survive after Steam
 /// exits, so live-download UI must not trust those files unless the client is
 /// actually running.
 fn steam_client_running(steam: &Path) -> bool {
-    let Ok(raw) = std::fs::read_to_string(steam.join("steam.pid")) else {
-        return false;
-    };
-    let Some(pid) = parse_steam_pid(&raw) else {
-        return false;
-    };
-    pid_is_alive(pid)
+    if let Ok(slot) = STEAM_RUNNING_CACHE.lock() {
+        if let Some((at, running)) = *slot {
+            if at.elapsed() < Duration::from_secs(2) {
+                return running;
+            }
+        }
+    }
+    let running = steam_client_running_now(steam);
+    if let Ok(mut slot) = STEAM_RUNNING_CACHE.lock() {
+        *slot = Some((Instant::now(), running));
+    }
+    running
+}
+
+fn steam_client_running_now(steam: &Path) -> bool {
+    if let Ok(raw) = std::fs::read_to_string(steam.join("steam.pid")) {
+        if let Some(pid) = parse_steam_pid(&raw) {
+            if pid_is_alive(pid) {
+                return true;
+            }
+        }
+    }
+    #[cfg(windows)]
+    {
+        crate::legendary::transfers::is_game_process_running(None, &["steam.exe".to_string()])
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
 }
 
 #[cfg(windows)]
@@ -283,14 +313,24 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         .and_then(Vdf::as_str)
         .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(0);
-    let bytes_to_download = acf_u64(state, "BytesToDownload");
+    let mut bytes_to_download = acf_u64(state, "BytesToDownload");
     let mut bytes_downloaded = acf_u64(state, "BytesDownloaded");
     let dl_dir = library.join("downloading").join(&app_id);
     // Only a live `downloading/<id>` folder means Steam is transferring files.
-    // StateFlags bit 2 + leftover byte counters stay set after Steam quits.
-    let downloading = dl_dir.is_dir();
-    if downloading && bytes_downloaded == 0 {
-        bytes_downloaded = dir_size(&dl_dir);
+    // If paused (bit 512 = 0x200), it is not actively downloading.
+    // Byte counters come from the manifest. Walking the download folder to sum
+    // file sizes blocks the UI for the whole transfer (tens of GB, constantly
+    // rewritten while the poller is running).
+    let paused = (state_flags & 512) != 0;
+    let downloading = dl_dir.is_dir() && !paused;
+    if downloading && bytes_to_download == 0 {
+        let stage_to = acf_u64(state, "BytesToStage");
+        if stage_to > 0 {
+            bytes_to_download = stage_to;
+            if bytes_downloaded == 0 {
+                bytes_downloaded = acf_u64(state, "BytesStaged");
+            }
+        }
     }
     Some(SteamGame {
         app_id,
@@ -346,7 +386,6 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                     continue;
                 }
                 if seen.insert(id.clone()) {
-                    let bytes_downloaded = dir_size(&entry.path());
                     games.push(SteamGame {
                         app_id: id.clone(),
                         name: id,
@@ -355,7 +394,7 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                         state_flags: 0,
                         library: folder.to_string_lossy().to_string(),
                         downloading: true,
-                        bytes_downloaded,
+                        bytes_downloaded: 0,
                         bytes_to_download: 0,
                     });
                 }
@@ -449,24 +488,6 @@ fn acf_u64(state: &Vdf, key: &str) -> u64 {
         .and_then(Vdf::as_str)
         .and_then(|v| v.parse().ok())
         .unwrap_or(0)
-}
-
-fn dir_size(root: &Path) -> u64 {
-    let mut total = 0u64;
-    let mut stack = vec![root.to_path_buf()];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
-        for entry in entries.flatten() {
-            if let Ok(meta) = entry.metadata() {
-                if meta.is_file() {
-                    total = total.saturating_add(meta.len());
-                } else if meta.is_dir() {
-                    stack.push(entry.path());
-                }
-            }
-        }
-    }
-    total
 }
 
 fn account_id_from_steam64(id: &str) -> Option<String> {
@@ -565,8 +586,8 @@ fn spawn_uri(target: &str) -> Result<(), String> {
 
 fn steam_action_url(app_id: &str, action: &str) -> Option<String> {
     match action {
-        "launch" => Some(format!("steam://rungameid/{app_id}")),
-        "install" | "update" => Some(format!("steam://install/{app_id}")),
+        "launch" | "update" => Some(format!("steam://rungameid/{app_id}")),
+        "install" => Some(format!("steam://install/{app_id}")),
         "uninstall" => Some(format!("steam://uninstall/{app_id}")),
         "validate" => Some(format!("steam://validate/{app_id}")),
         _ => None,
@@ -2009,6 +2030,50 @@ mod tests {
     }
 
     #[test]
+    fn paused_download_is_not_marked_downloading() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-paused-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let paused_vdf = r#"
+"AppState"
+{
+	"appid"		"730"
+	"name"		"Counter-Strike 2"
+	"StateFlags"		"1538"
+	"BytesToDownload"		"4000"
+	"BytesDownloaded"		"1000"
+}
+"#;
+        let game = parse_app_manifest(paused_vdf, &tmp).expect("game");
+        assert!(!game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn staging_bytes_used_when_download_bytes_zero() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-staging-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let staging_vdf = r#"
+"AppState"
+{
+	"appid"		"730"
+	"name"		"Counter-Strike 2"
+	"StateFlags"		"1026"
+	"BytesToDownload"		"0"
+	"BytesDownloaded"		"0"
+	"BytesToStage"		"8000"
+	"BytesStaged"		"4000"
+}
+"#;
+        let game = parse_app_manifest(staging_vdf, &tmp).expect("game");
+        assert!(game.downloading);
+        assert_eq!(game.bytes_to_download, 8000);
+        assert_eq!(game.bytes_downloaded, 4000);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn steam_pid_file_ignores_junk() {
         assert_eq!(parse_steam_pid("1234\r\n"), Some(1234));
         assert_eq!(parse_steam_pid("0"), None);
@@ -2043,7 +2108,7 @@ mod tests {
         );
         assert_eq!(
             steam_action_url("730", "update").as_deref(),
-            Some("steam://install/730")
+            Some("steam://rungameid/730")
         );
         assert_eq!(
             steam_action_url("730", "launch").as_deref(),

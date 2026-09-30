@@ -10,6 +10,7 @@
  * - Integrated TV Game Hub for in-depth trophies, DLCs, screenshots, and management
  */
 
+import launcherIcon from "../../../src-tauri/icons/icon.png";
 import { invoke } from "@tauri-apps/api/core";
 import { isSteamDeckDevice, isTauri, NO_DESC } from "../../core/constants";
 import { toastsEl } from "../../core/dom";
@@ -18,14 +19,15 @@ import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { closeModal } from "../../core/dom";
 import { render } from "../../core/render";
 import { epicWideArt, gogToEpicSummary, libraryItemToSummary, sourceOfKey, summaryOf } from "../../core/selectors";
-import { S } from "../../core/state";
+import { globalAvatar, S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { handleWindowResize } from "../../core/window";
 import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
-import { setView } from "../store/store-view";
+import { setView, storeUrlFor } from "../store/store-view";
 import { storeLogo } from "../store/store-logos";
 import { storeVersionLabel } from "../drawer/external-versions";
+import { accountAvatar, profileSelection } from "../profile/profile-view";
 import {
   ensureGameHubData,
   renderTvGameHub,
@@ -33,8 +35,41 @@ import {
   tvHubPrimaryAction,
   type TvHubTab,
 } from "./tv-hub";
+import {
+  applyTvProfileFocus,
+  renderTvProfile,
+  resetTvProfileFocus,
+  tvProfileActivate,
+  tvProfileMove,
+  tvProfileShelfJump,
+} from "./tv-profile";
+import {
+  openTvKeyboard,
+  tvControllerConnected,
+  tvKeyboardActivate,
+  tvKeyboardBackspace,
+  tvKeyboardClose,
+  tvKeyboardInsert,
+  tvKeyboardMove,
+  tvKeyboardOpen,
+} from "./tv-keyboard";
+import {
+  hydrateTvPanel,
+  renderTvDownloads,
+  renderTvStores,
+  tvClosePanel,
+  tvDismissPanels,
+  tvFocusDownloadRow,
+  tvOpenDownloadsPanel,
+  tvOpenStoresPanel,
+  tvPanel,
+  tvPanelActivate,
+  tvPanelMove,
+  tvSelectStore,
+  tvStoreUrlForApp,
+} from "./tv-panels";
 
-export { isSteamDeckDevice };
+export { isSteamDeckDevice, tvProfileShelfJump };
 
 const SKIP = 5;
 const BOOT_MS = 1700;
@@ -47,17 +82,71 @@ interface CategoryMeta {
   apps: string[];
 }
 
+export type TvHomeSection = "header" | "stage" | "shelf";
+
 let categories: CategoryMeta[] = [];
 let activeCatIndex = 0;
 let focusCol = 0;
-let headerFocused = false;
+let focusSection: TvHomeSection = "shelf";
+let headerFocusIndex = 0;
+let stageActionIndex = 0;
 let autoEntered = false;
 let lastBgUrl = "";
 let detailApp: string | null = null;
+let tvProfileOpenState = false;
+let openedDetailsFromProfile = false;
 let activeHubTab: TvHubTab = "overview";
 let bootTimer = 0;
 let clockTimer = 0;
 let searchQuery = "";
+
+export function getTvSearchQuery(): string {
+  return searchQuery;
+}
+
+export function setTvSearchQuery(q: string): void {
+  searchQuery = q;
+  focusCol = 0;
+  paintShelf();
+  paintStage();
+  const searchLabel = document.querySelector(".tv-search-chip-text");
+  if (searchLabel) searchLabel.textContent = q || t("common.search");
+  document.querySelector(".tv-status-chip.is-search")?.classList.toggle("is-active", Boolean(q.trim()));
+}
+
+function enterTvDownloads(): void {
+  tvProfileOpenState = false;
+  detailApp = null;
+  tvOpenDownloadsPanel();
+}
+
+function enterTvStores(url?: string): void {
+  tvProfileOpenState = false;
+  detailApp = null;
+  tvOpenStoresPanel(url);
+}
+
+export function tvOpenProfile(): void {
+  tvDismissPanels();
+  tvProfileOpenState = true;
+  detailApp = null;
+  resetTvProfileFocus();
+  render();
+  bumpHud();
+  requestAnimationFrame(applyTvProfileFocus);
+}
+
+export function tvCloseProfile(): void {
+  tvProfileOpenState = false;
+  openedDetailsFromProfile = false;
+  render();
+  bumpHud();
+  requestAnimationFrame(applyFocus);
+}
+
+export function isTvProfileOpen(): boolean {
+  return tvProfileOpenState;
+}
 
 interface BatteryManager extends EventTarget {
   charging: boolean;
@@ -115,6 +204,7 @@ function allItems(): EpicSummary[] {
 }
 
 function hasPendingUpdate(s: EpicSummary): boolean {
+  if (s.downloading) return false;
   return Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
 }
 
@@ -200,15 +290,57 @@ function paintBg(url: string): void {
   else hidden.onload = reveal;
 }
 
-function downloadsChipHtml(): string {
-  const hasDl = S.downloads.size > 0 || Boolean(S.activeDlMetrics?.speedBytes);
-  if (!hasDl) return "";
-  const speed = S.activeDlMetrics?.speedBytes ?? 0;
-  const speedText = speed > 0 ? `${fmtBytes(speed)}/s` : t("steam.downloading");
+function searchChipHtml(): string {
+  const isFocused = focusSection === "header" && headerFocusIndex === categories.length;
+  const hasQuery = Boolean(searchQuery.trim());
   return `
-    <button type="button" class="tv-status-chip is-dl" data-view="downloads" title="${esc(t("nav.downloads"))}">
+    <button type="button"
+      class="tv-status-chip is-search${hasQuery ? " is-active" : ""}${isFocused ? " focused" : ""}"
+      data-act="tv-open-search"
+      title="${esc(t("common.search"))}">
+      ${icon("search", 13)}
+      <span class="tv-search-chip-text">${hasQuery ? esc(searchQuery) : esc(t("common.search"))}</span>
+      ${hasQuery
+        ? `<span class="tv-search-clear-inline" data-act="tv-clear-search" title="${esc(t("common.clear"))}">${icon("x", 11)}</span>`
+        : `<span class="tv-bumper-glyph tv-key-glyph">Y</span>`}
+    </button>`;
+}
+
+function downloadsChipHtml(): string {
+  const isFocused = focusSection === "header" && headerFocusIndex === categories.length + 3;
+  const steamDl = S.steamGames.find((g) => g.downloading);
+  let epicActive = false;
+  for (const d of S.downloads.values()) {
+    if (!d.done) {
+      epicActive = true;
+      break;
+    }
+  }
+  const hasDl = epicActive || Boolean(S.activeDlMetrics && !S.activeDlMetrics.done) || Boolean(steamDl);
+  let speedText = t("nav.downloads");
+  if (hasDl) {
+    const speed = S.activeDlMetrics?.speedBytes ?? 0;
+    speedText = speed > 0 ? `${fmtBytes(speed)}/s` : t("steam.downloading");
+    if (steamDl && !speed) {
+      const pct = steamDl.bytesToDownload > 0
+        ? Math.min(100, Math.round((steamDl.bytesDownloaded / steamDl.bytesToDownload) * 100))
+        : null;
+      speedText = pct !== null ? `%${pct}` : t("steam.downloading");
+    }
+  }
+  return `
+    <button type="button" class="tv-status-chip${hasDl ? " is-dl" : ""}${isFocused ? " focused" : ""}" data-act="tv-open-downloads" title="${esc(t("nav.downloads"))}">
       ${icon("download", 13)}
       <span class="tv-dl-speed tabular-nums">${esc(speedText)}</span>
+    </button>`;
+}
+
+function storesChipHtml(): string {
+  const isFocused = focusSection === "header" && headerFocusIndex === categories.length + 2;
+  return `
+    <button type="button" class="tv-status-chip${isFocused ? " focused" : ""}" data-act="tv-open-stores" title="${esc(t("nav.store"))}">
+      ${icon("globe", 13)}
+      <span>${esc(t("nav.store"))}</span>
     </button>`;
 }
 
@@ -228,15 +360,40 @@ function clockChipHtml(): string {
   return `<div class="tv-status-clock tabular-nums" id="tv-clock">${timeStr}</div>`;
 }
 
+function profileChipHtml(): string {
+  const isFocused = focusSection === "header" && headerFocusIndex === categories.length + 1;
+  const sel = profileSelection();
+  const isCombined = sel.mode === "combined";
+  const name = isCombined
+    ? (S.epicAccount || S.steamAuth?.accountName || S.gogAccount || t("profile.player"))
+    : sel.account.name;
+  const avatar = isCombined ? globalAvatar() : accountAvatar(sel.account);
+  const initial = (name.trim().charAt(0) || "E").toUpperCase();
+  return `
+    <button type="button" class="tv-status-chip is-profile${isFocused ? " focused" : ""}" data-act="tv-open-profile" title="${esc(t("nav.profile"))}">
+      <span class="tv-status-avatar">${avatar ? `<img src="${esc(avatar)}" alt="" />` : `<span class="tv-avatar-initial">${esc(initial)}</span>`}</span>
+      <span class="tv-status-username">${esc(name)}</span>
+    </button>`;
+}
+
+function exitBtnHtml(): string {
+  const isFocused = focusSection === "header" && headerFocusIndex === categories.length + 4;
+  return `
+    <button type="button" class="tv-exit-btn${isFocused ? " focused" : ""}" data-act="close-tv-mode" title="${esc(t("tv.exit"))}">
+      ${icon("x", 14)} <span>${t("tv.exit")}</span>
+    </button>`;
+}
+
 function statusClusterHtml(): string {
   return `
     <div class="tv-status-cluster" id="tv-status-cluster">
+      ${searchChipHtml()}
+      ${profileChipHtml()}
+      ${storesChipHtml()}
       ${downloadsChipHtml()}
       ${batteryChipHtml()}
       ${clockChipHtml()}
-      <button type="button" class="tv-exit-btn" data-act="close-tv-mode" title="${esc(t("tv.exit"))}">
-        ${icon("x", 14)} <span>${t("tv.exit")}</span>
-      </button>
+      ${exitBtnHtml()}
     </div>`;
 }
 
@@ -264,23 +421,31 @@ function homeStageHtml(s: EpicSummary | undefined): string {
   const updateAvail = hasPendingUpdate(s);
   const source = sourceOfKey(s.appName);
 
-  const statusLabel = s.installed
-    ? updateAvail
-      ? t("common.update")
-      : t("common.installed")
-    : t("common.notInstalled");
+  const statusLabel = s.downloading
+    ? t("steam.downloading")
+    : s.installed
+      ? updateAvail
+        ? t("common.update")
+        : t("common.installed")
+      : t("common.notInstalled");
 
-  const statusTone = s.installed
-    ? updateAvail
-      ? "status-update"
-      : "status-installed"
-    : "";
+  const statusTone = s.downloading
+    ? "status-update"
+    : s.installed
+      ? updateAvail
+        ? "status-update"
+        : "status-installed"
+      : "";
 
   let trophyText = "";
   if (ach && ach.total_achievements > 0) {
     const pct = Math.round((ach.user_unlocked / ach.total_achievements) * 100);
     trophyText = `${ach.user_unlocked}/${ach.total_achievements} (%${pct})`;
   }
+
+  const isCtaFocused = focusSection === "stage" && stageActionIndex === 0;
+  const isDetailsFocused = focusSection === "stage" && stageActionIndex === 1;
+  const isFavFocused = focusSection === "stage" && stageActionIndex === 2;
 
   return `
     <div class="tv-stage-content">
@@ -293,11 +458,11 @@ function homeStageHtml(s: EpicSummary | undefined): string {
       </div>
 
       <div class="tv-stage-actions">
-        ${tvHubPrimaryAction(s)}
-        <button type="button" class="tv-btn-secondary" data-act="tv-open-details" data-id="${esc(s.appName)}" title="${esc(t("tv.hudDetails"))}">
+        ${tvHubPrimaryAction(s, isCtaFocused)}
+        <button type="button" class="tv-btn-secondary${isDetailsFocused ? " focused" : ""}" data-act="tv-open-details" data-id="${esc(s.appName)}" title="${esc(t("tv.hudDetails"))}">
           ${icon("info", 16)} <span>${t("tv.hudDetails")}</span>
         </button>
-        <button type="button" class="tv-btn-secondary${faved ? " faved" : ""}" data-act="epic-fav" data-id="${esc(s.appName)}" title="${esc(t("drawer.favTitle"))}">
+        <button type="button" class="tv-btn-secondary${faved ? " faved" : ""}${isFavFocused ? " focused" : ""}" data-act="epic-fav" data-id="${esc(s.appName)}" title="${esc(t("drawer.favTitle"))}">
           ${icon("heart", 16)} <span>${faved ? t("common.favorited") : t("common.favorite")}</span>
         </button>
       </div>
@@ -314,7 +479,7 @@ function shelfCardsHtml(): string {
     .map((id, c) => {
       const s = summaryOf(id);
       if (!s) return "";
-      const focused = !headerFocused && c === focusCol;
+      const focused = focusSection === "shelf" && c === focusCol;
       const isRunning = S.runningGames.has(s.appName);
       const isUpdate = hasPendingUpdate(s);
       const p = epicDlProgress(s.appName);
@@ -329,7 +494,7 @@ function shelfCardsHtml(): string {
         ${epicArt(s)}
         ${isRunning ? `<span class="tv-card-badge is-running">${t("lib.running")}</span>` : ""}
         ${!isRunning && isUpdate ? `<span class="tv-card-badge is-update">${t("common.update")}</span>` : ""}
-        ${p !== null ? `<div class="tv-card-dl-track"><div class="tv-card-dl-bar" style="width:${p}%"></div></div>` : ""}
+        ${p !== null ? `<div class="tv-card-dl-track"><div class="tv-card-dl-bar" data-tv-dlbar="${esc(id)}" style="width:${p}%"></div></div>` : ""}
       </button>`;
     })
     .join("");
@@ -339,7 +504,7 @@ function categoryTabsHtml(): string {
   return categories
     .map((cat, i) => {
       const active = i === activeCatIndex;
-      const focused = headerFocused && i === activeCatIndex;
+      const focused = focusSection === "header" && i === headerFocusIndex;
       const count = cat.apps.length;
       return `
       <button type="button"
@@ -371,16 +536,52 @@ function paintHeaderTabs(): void {
 function applyFocus(): void {
   if (detailApp) return;
 
-  // Header vs Shelf focus
-  document.querySelectorAll<HTMLElement>(".tv-card.focused, .tv-cat-btn.focused").forEach((el) => el.classList.remove("focused"));
+  const game = focusedGame();
+  paintBg(artUrl(game));
+  paintStage();
+  paintHeaderTabs();
+  paintStatusCluster();
 
-  if (headerFocused) {
-    const tab = document.querySelector<HTMLElement>(`.tv-cat-btn[data-tv-cat="${activeCatIndex}"]`);
-    if (tab) {
-      tab.classList.add("focused");
-      tab.focus({ preventScroll: true });
+  document.querySelectorAll<HTMLElement>(
+    ".tv-card.focused, .tv-cat-btn.focused, .tv-stage-actions .focused, .tv-status-chip.focused, .tv-exit-btn.focused"
+  ).forEach((el) => el.classList.remove("focused"));
+
+  if (focusSection === "header") {
+    if (headerFocusIndex < categories.length) {
+      const tab = document.querySelector<HTMLElement>(`.tv-cat-btn[data-tv-cat="${headerFocusIndex}"]`);
+      if (tab) {
+        tab.classList.add("focused");
+        tab.focus({ preventScroll: true });
+        tab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    } else {
+      const relIdx = headerFocusIndex - categories.length;
+      const statusMap = [
+        '[data-act="tv-open-search"]',
+        '[data-act="tv-open-profile"]',
+        '[data-act="tv-open-stores"]',
+        '[data-act="tv-open-downloads"]',
+        '[data-act="close-tv-mode"]',
+      ];
+      const targetSel = statusMap[relIdx];
+      if (targetSel) {
+        const item = document.querySelector<HTMLElement>(targetSel);
+        if (item) {
+          item.classList.add("focused");
+          item.focus({ preventScroll: true });
+        }
+      }
+    }
+  } else if (focusSection === "stage") {
+    const stageButtons = Array.from(document.querySelectorAll<HTMLElement>(".tv-stage-actions button"));
+    if (stageButtons.length > 0) {
+      const idx = Math.min(stageActionIndex, stageButtons.length - 1);
+      const btn = stageButtons[idx];
+      btn.classList.add("focused");
+      btn.focus({ preventScroll: true });
     }
   } else {
+    // Shelf
     const card = document.querySelector<HTMLElement>(`.tv-card[data-col="${focusCol}"]`);
     if (card) {
       card.classList.add("focused");
@@ -388,10 +589,6 @@ function applyFocus(): void {
       card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
   }
-
-  const game = focusedGame();
-  paintBg(artUrl(game));
-  paintStage();
 }
 
 export function renderTvMode(): string {
@@ -399,10 +596,21 @@ export function renderTvMode(): string {
   initBatteryMonitoring();
   startClockTimer();
 
+  if (tvProfileOpenState && !detailApp) {
+    tvKeyboardClose();
+    return renderTvProfile();
+  }
+
   if (detailApp) {
+    tvKeyboardClose();
     const s = summaryOf(detailApp);
     if (s) return renderTvGameHub(s, activeHubTab);
     detailApp = null;
+  }
+
+  if (tvPanel() === "downloads" || tvPanel() === "stores") {
+    tvKeyboardClose();
+    return tvPanel() === "downloads" ? renderTvDownloads() : renderTvStores();
   }
 
   lastBgUrl = "";
@@ -424,19 +632,6 @@ export function renderTvMode(): string {
           <span class="tv-bumper-glyph">R1</span>
         </nav>
 
-        <div class="tv-header-center">
-          <label class="tv-search-wrap">
-            ${icon("search", 14)}
-            <input type="text"
-              class="tv-search-input"
-              id="tv-search-input"
-              placeholder="${esc(t("tv.searchPlaceholder"))}"
-              value="${esc(searchQuery)}"
-              autocomplete="off" />
-            ${searchQuery ? `<button type="button" class="tv-search-clear" data-act="tv-clear-search">${icon("x", 12)}</button>` : ""}
-          </label>
-        </div>
-
         ${statusClusterHtml()}
       </header>
 
@@ -456,6 +651,11 @@ export function renderTvMode(): string {
 
 export function hydrateTvMode(): void {
   lastBgUrl = "";
+  if (!detailApp && !tvProfileOpenState && hydrateTvPanel()) return;
+  if (tvProfileOpenState && !detailApp) {
+    applyTvProfileFocus();
+    return;
+  }
   if (detailApp) {
     const s = summaryOf(detailApp);
     if (s) {
@@ -471,39 +671,88 @@ export function hydrateTvMode(): void {
 }
 
 export function tvMove(dir: "up" | "down" | "left" | "right"): void {
+  if (tvKeyboardOpen()) {
+    tvKeyboardMove(dir);
+    return;
+  }
+  if (tvProfileOpenState && !detailApp) {
+    tvProfileMove(dir);
+    return;
+  }
+
   if (detailApp) {
     if (dir === "left" || dir === "right") {
       tvNeighbor(dir === "right" ? 1 : -1);
+    } else if (dir === "down") {
+      document.getElementById("tv-hub-body")?.scrollBy({ top: 160, behavior: "smooth" });
+    } else if (dir === "up") {
+      document.getElementById("tv-hub-body")?.scrollBy({ top: -160, behavior: "smooth" });
     }
     return;
   }
 
+  if (tvPanel()) {
+    tvPanelMove(dir);
+    return;
+  }
+
   const apps = activeCategoryApps();
-  if (dir === "up") {
-    if (!headerFocused) {
-      headerFocused = true;
+  const totalHeaderItems = categories.length + 5;
+
+  if (focusSection === "shelf") {
+    if (dir === "up") {
+      if (apps.length > 0) {
+        focusSection = "stage";
+        stageActionIndex = 0;
+      } else {
+        focusSection = "header";
+        headerFocusIndex = Math.min(activeCatIndex, categories.length - 1);
+      }
       applyFocus();
-    }
-  } else if (dir === "down") {
-    if (headerFocused) {
-      headerFocused = false;
-      applyFocus();
-    } else {
-      // Down on focused card opens Game Hub (PS5 pattern)
-      tvOpenDetails();
-    }
-  } else if (dir === "left") {
-    if (headerFocused) {
-      tvCategoryJump(-1);
-    } else {
+    } else if (dir === "left") {
       focusCol = Math.max(0, focusCol - 1);
       applyFocus();
+    } else if (dir === "right") {
+      focusCol = Math.min(Math.max(0, apps.length - 1), focusCol + 1);
+      applyFocus();
     }
-  } else if (dir === "right") {
-    if (headerFocused) {
-      tvCategoryJump(1);
-    } else {
-      focusCol = Math.min(apps.length - 1, focusCol + 1);
+  } else if (focusSection === "stage") {
+    if (dir === "down") {
+      focusSection = "shelf";
+      applyFocus();
+    } else if (dir === "up") {
+      focusSection = "header";
+      headerFocusIndex = Math.min(activeCatIndex, categories.length - 1);
+      applyFocus();
+    } else if (dir === "left") {
+      stageActionIndex = Math.max(0, stageActionIndex - 1);
+      applyFocus();
+    } else if (dir === "right") {
+      stageActionIndex = Math.min(2, stageActionIndex + 1);
+      applyFocus();
+    }
+  } else if (focusSection === "header") {
+    if (dir === "down") {
+      if (apps.length > 0) {
+        focusSection = "stage";
+        stageActionIndex = 0;
+      } else {
+        focusSection = "shelf";
+      }
+      applyFocus();
+    } else if (dir === "left") {
+      headerFocusIndex = Math.max(0, headerFocusIndex - 1);
+      if (headerFocusIndex < categories.length && headerFocusIndex !== activeCatIndex) {
+        activeCatIndex = headerFocusIndex;
+        focusCol = 0;
+      }
+      applyFocus();
+    } else if (dir === "right") {
+      headerFocusIndex = Math.min(totalHeaderItems - 1, headerFocusIndex + 1);
+      if (headerFocusIndex < categories.length && headerFocusIndex !== activeCatIndex) {
+        activeCatIndex = headerFocusIndex;
+        focusCol = 0;
+      }
       applyFocus();
     }
   }
@@ -512,8 +761,10 @@ export function tvMove(dir: "up" | "down" | "left" | "right"): void {
 export function tvCategoryJump(step: number): void {
   if (categories.length === 0) return;
   activeCatIndex = (activeCatIndex + step + categories.length) % categories.length;
+  if (focusSection === "header") {
+    headerFocusIndex = activeCatIndex;
+  }
   focusCol = 0;
-  headerFocused = false;
   paintHeaderTabs();
   paintShelf();
   applyFocus();
@@ -521,6 +772,18 @@ export function tvCategoryJump(step: number): void {
 }
 
 export function tvRowJump(step: number): void {
+  if (tvKeyboardOpen()) {
+    tvKeyboardMove(step > 0 ? "right" : "left");
+    return;
+  }
+  if (tvPanel() && !detailApp && !tvProfileOpenState) {
+    tvPanelMove(step > 0 ? "right" : "left");
+    return;
+  }
+  if (tvProfileOpenState && !detailApp) {
+    tvProfileShelfJump(step > 0 ? 1 : -1);
+    return;
+  }
   if (detailApp) {
     tvNeighbor(step);
     return;
@@ -529,7 +792,7 @@ export function tvRowJump(step: number): void {
 }
 
 export function tvSkip(dir: 1 | -1): void {
-  if (detailApp) return;
+  if (detailApp || tvProfileOpenState || tvPanel() || tvKeyboardOpen()) return;
   const apps = activeCategoryApps();
   focusCol = Math.max(0, Math.min(apps.length - 1, focusCol + dir * SKIP));
   applyFocus();
@@ -537,6 +800,10 @@ export function tvSkip(dir: 1 | -1): void {
 
 /** Step through tabs in Game Hub or step to next card. */
 export function tvNeighbor(step: number): void {
+  if (tvProfileOpenState && !detailApp) {
+    tvProfileShelfJump(step > 0 ? 1 : -1);
+    return;
+  }
   if (detailApp) {
     const s = summaryOf(detailApp);
     if (!s) return;
@@ -559,11 +826,61 @@ export function tvNeighbor(step: number): void {
 
 /** A button: Play if installed, install/details if not. */
 export function tvActivate(): void {
+  if (tvKeyboardOpen()) {
+    tvKeyboardActivate();
+    return;
+  }
   if (detailApp) {
-    const s = summaryOf(detailApp);
-    if (!s) return;
     const primaryBtn = document.querySelector<HTMLElement>("#tv-hub .tv-action-btn");
     primaryBtn?.click();
+    return;
+  }
+
+  if (tvProfileOpenState) {
+    tvProfileActivate();
+    return;
+  }
+
+  if (tvPanel()) {
+    tvPanelActivate();
+    return;
+  }
+
+  if (focusSection === "header") {
+    if (headerFocusIndex < categories.length) {
+      activeCatIndex = headerFocusIndex;
+      focusCol = 0;
+      focusSection = "shelf";
+      applyFocus();
+      return;
+    }
+    const relIdx = headerFocusIndex - categories.length;
+    if (relIdx === 0) {
+      openTvKeyboard();
+    } else if (relIdx === 1) {
+      tvOpenProfile();
+    } else if (relIdx === 2) {
+      enterTvStores();
+    } else if (relIdx === 3) {
+      enterTvDownloads();
+    } else if (relIdx === 4) {
+      closeTvMode();
+    }
+    return;
+  }
+
+  if (focusSection === "stage") {
+    const s = focusedGame();
+    if (!s) return;
+    if (stageActionIndex === 0) {
+      const playBtn = document.querySelector<HTMLElement>("#tv-stage .tv-action-btn");
+      if (playBtn) playBtn.click();
+      else tvOpenDetails();
+    } else if (stageActionIndex === 1) {
+      tvOpenDetails();
+    } else if (stageActionIndex === 2) {
+      tvFavorite();
+    }
     return;
   }
 
@@ -580,6 +897,8 @@ export function tvActivate(): void {
 }
 
 export function tvOpenDetails(appName?: string): void {
+  if (tvKeyboardOpen()) return;
+  if (tvPanel() && !appName) return;
   const targetId = appName || focusedGame()?.appName;
   if (!targetId) return;
   const s = summaryOf(targetId);
@@ -596,10 +915,16 @@ export function tvCloseDetails(): void {
   activeHubTab = "overview";
   render();
   bumpHud();
-  requestAnimationFrame(applyFocus);
+  if (tvProfileOpenState) {
+    requestAnimationFrame(applyTvProfileFocus);
+  } else {
+    requestAnimationFrame(applyFocus);
+  }
 }
 
 export function tvFavorite(): void {
+  if (tvKeyboardOpen()) return;
+  if (tvPanel() && !detailApp) return;
   const s = detailApp ? summaryOf(detailApp) : focusedGame();
   if (!s) return;
   toggleFav(s.appName);
@@ -615,15 +940,38 @@ export function tvFavorite(): void {
 }
 
 export function tvBack(): void {
+  if (tvKeyboardOpen()) {
+    tvKeyboardClose();
+    return;
+  }
   if (detailApp) {
     tvCloseDetails();
+    return;
+  }
+  if (tvProfileOpenState) {
+    tvCloseProfile();
+    return;
+  }
+  if (tvPanel()) {
+    tvClosePanel();
     return;
   }
   if (S.currentModalAppName) {
     closeModal();
     return;
   }
-  closeTvMode();
+  if (searchQuery.trim()) {
+    setTvSearchQuery("");
+    render();
+    applyFocus();
+    return;
+  }
+  if (focusSection !== "shelf") {
+    focusSection = "shelf";
+    applyFocus();
+    return;
+  }
+  // At root shelf: do nothing (never accidentally quit to desktop).
 }
 
 async function setOsFullscreen(on: boolean): Promise<void> {
@@ -651,7 +999,7 @@ function spawnBoot(): void {
   const el = document.createElement("div");
   el.id = "tv-boot";
   el.className = "tv-boot";
-  el.innerHTML = `<div class="tv-boot-line"></div><div class="tv-boot-mark">Efxlve</div>`;
+  el.innerHTML = `<div class="tv-boot-line"></div><div class="tv-boot-mark"><img src="${launcherIcon}" alt="" draggable="false" /></div>`;
   document.body.appendChild(el);
   const done = (): void => el.remove();
   el.addEventListener("animationend", (e) => {
@@ -674,12 +1022,16 @@ export function openTvMode(): void {
   if (S.view === "tv") return;
   activeCatIndex = 0;
   focusCol = 0;
-  headerFocused = false;
+  focusSection = "shelf";
+  headerFocusIndex = 0;
+  stageActionIndex = 0;
   detailApp = null;
   searchQuery = "";
   lastBgUrl = "";
+  tvDismissPanels();
   setView("tv");
   render();
+  bumpHud();
   spawnBoot();
   void setOsFullscreen(true);
   requestAnimationFrame(hydrateTvMode);
@@ -691,9 +1043,18 @@ export function closeTvMode(): void {
   stopClockTimer();
   document.getElementById("tv-boot")?.remove();
   detailApp = null;
+  tvProfileOpenState = false;
+  openedDetailsFromProfile = false;
   searchQuery = "";
+  focusSection = "shelf";
+  focusCol = 0;
+  headerFocusIndex = 0;
+  stageActionIndex = 0;
+  tvKeyboardClose();
+  tvDismissPanels();
   void setOsFullscreen(false);
   setView("library");
+  bumpHud();
   render();
 }
 
@@ -732,30 +1093,130 @@ document.addEventListener("click", (e) => {
   if (S.view !== "tv") return;
   const tEl = e.target as HTMLElement;
 
+  const viewBtn = tEl.closest<HTMLElement>("[data-view]");
+  if (viewBtn) {
+    const next = viewBtn.dataset.view;
+    if (next === "downloads" || next === "store") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (next === "downloads") enterTvDownloads();
+      else enterTvStores();
+      return;
+    }
+  }
+
+  const openSearch = tEl.closest<HTMLElement>("[data-act=\"tv-open-search\"]");
+  if (openSearch) {
+    e.preventDefault();
+    e.stopPropagation();
+    openTvKeyboard();
+    return;
+  }
+
+  const clearSearch = tEl.closest<HTMLElement>("[data-act=\"tv-clear-search\"]");
+  if (clearSearch) {
+    e.preventDefault();
+    e.stopPropagation();
+    setTvSearchQuery("");
+    render();
+    applyFocus();
+    return;
+  }
+
+  const openDl = tEl.closest<HTMLElement>("[data-act=\"tv-open-downloads\"]");
+  if (openDl) {
+    e.preventDefault();
+    e.stopPropagation();
+    enterTvDownloads();
+    return;
+  }
+
+  const openStores = tEl.closest<HTMLElement>("[data-act=\"tv-open-stores\"]");
+  if (openStores) {
+    e.preventDefault();
+    e.stopPropagation();
+    enterTvStores();
+    return;
+  }
+
+  const openStoreAct = tEl.closest<HTMLElement>("[data-act=\"open-store\"]");
+  if (openStoreAct) {
+    e.preventDefault();
+    e.stopPropagation();
+    const store = openStoreAct.dataset.store;
+    enterTvStores(store === "epic" || store === "gog" || store === "steam" ? storeUrlFor(store) : undefined);
+    return;
+  }
+
+  const storePage = tEl.closest<HTMLElement>("[data-act=\"epic-store-page\"]");
+  if (storePage?.dataset.id) {
+    e.preventDefault();
+    e.stopPropagation();
+    enterTvStores(tvStoreUrlForApp(storePage.dataset.id));
+    return;
+  }
+
+  const panelBack = tEl.closest<HTMLElement>("[data-act=\"tv-panel-back\"]");
+  if (panelBack) {
+    e.preventDefault();
+    e.stopPropagation();
+    tvClosePanel();
+    return;
+  }
+
+  const storeTab = tEl.closest<HTMLElement>("[data-tv-store]");
+  if (storeTab?.dataset.tvStore) {
+    e.preventDefault();
+    e.stopPropagation();
+    tvSelectStore(storeTab.dataset.tvStore);
+    return;
+  }
+
+  const dlRow = tEl.closest<HTMLElement>("[data-tv-dl-row]");
+  if (dlRow && !tEl.closest("[data-act]")) {
+    e.preventDefault();
+    tvFocusDownloadRow(Number(dlRow.dataset.tvDlRow));
+    return;
+  }
+
+  // TV Profile open / close
+  const openProfBtn = tEl.closest<HTMLElement>("[data-act=\"tv-open-profile\"]");
+  if (openProfBtn) {
+    e.preventDefault();
+    tvOpenProfile();
+    return;
+  }
+
+  const closeProfBtn = tEl.closest<HTMLElement>("[data-act=\"tv-close-profile\"]");
+  if (closeProfBtn) {
+    e.preventDefault();
+    tvCloseProfile();
+    return;
+  }
+
+  const openGameFromProf = tEl.closest<HTMLElement>("[data-act=\"tv-open-game-from-profile\"]");
+  if (openGameFromProf) {
+    e.preventDefault();
+    const id = openGameFromProf.dataset.id;
+    if (id) {
+      openedDetailsFromProfile = true;
+      tvOpenDetails(id);
+    }
+    return;
+  }
+
   // Category tab click
   const catBtn = tEl.closest<HTMLElement>("[data-tv-cat]");
   if (catBtn) {
     e.preventDefault();
     activeCatIndex = Number(catBtn.dataset.tvCat);
+    headerFocusIndex = activeCatIndex;
     focusCol = 0;
-    headerFocused = false;
+    focusSection = "shelf";
     paintHeaderTabs();
     paintShelf();
     applyFocus();
     bumpHud();
-    return;
-  }
-
-  // Clear search click
-  const clearBtn = tEl.closest<HTMLElement>("[data-act=\"tv-clear-search\"]");
-  if (clearBtn) {
-    e.preventDefault();
-    searchQuery = "";
-    const input = document.getElementById("tv-search-input") as HTMLInputElement | null;
-    if (input) input.value = "";
-    focusCol = 0;
-    paintShelf();
-    applyFocus();
     return;
   }
 
@@ -781,29 +1242,39 @@ document.addEventListener("click", (e) => {
   if (card) {
     e.preventDefault();
     e.stopPropagation();
-    focusCol = Number(card.dataset.col);
-    headerFocused = false;
-    applyFocus();
-    tvOpenDetails();
+    const c = Number(card.dataset.col);
+    if (!isNaN(c)) {
+      if (focusSection === "shelf" && focusCol === c) {
+        tvOpenDetails();
+      } else {
+        focusCol = c;
+        focusSection = "shelf";
+        applyFocus();
+      }
+    }
     return;
   }
 }, true);
 
-/** Input listener for live search filter. */
-document.addEventListener("input", (e) => {
-  if (S.view !== "tv") return;
-  const target = e.target as HTMLInputElement;
-  if (target?.id === "tv-search-input") {
-    searchQuery = target.value;
-    focusCol = 0;
-    paintShelf();
-    applyFocus();
-  }
-});
-
 /** Global keydown delegation for TV mode. */
 document.addEventListener("keydown", (e) => {
   if (S.view !== "tv" || document.getElementById("palette-root")?.firstElementChild) return;
+  if (tvKeyboardOpen()) {
+    const arrows: Record<string, "up" | "down" | "left" | "right"> = {
+      ArrowUp: "up",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+    };
+    e.preventDefault();
+    e.stopPropagation();
+    if (arrows[e.key]) tvKeyboardMove(arrows[e.key]);
+    else if (e.key === "Enter") tvKeyboardActivate();
+    else if (e.key === "Escape") tvKeyboardClose();
+    else if (e.key === "Backspace") tvKeyboardBackspace();
+    else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) tvKeyboardInsert(e.key);
+    return;
+  }
   const target = e.target as HTMLElement;
   const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
@@ -827,6 +1298,17 @@ document.addEventListener("keydown", (e) => {
     if (!isTyping || e.key === "Escape") {
       e.preventDefault();
       tvBack();
+    }
+  } else if (e.key === "/" || e.key === "s" || e.key === "S") {
+    if (!isTyping) {
+      e.preventDefault();
+      openTvKeyboard();
+    }
+  } else if (e.key === "p" || e.key === "P") {
+    if (!isTyping) {
+      e.preventDefault();
+      if (tvProfileOpenState) tvCloseProfile();
+      else tvOpenProfile();
     }
   } else if (e.key === "f" || e.key === "F") {
     if (!isTyping) {
@@ -852,13 +1334,13 @@ document.addEventListener("keydown", (e) => {
 
 /** Mouseover shelf card updates focus smoothly. */
 document.addEventListener("mouseover", (e) => {
-  if (S.view !== "tv" || detailApp) return;
+  if (S.view !== "tv" || detailApp || tvPanel() || tvKeyboardOpen()) return;
   const card = (e.target as HTMLElement).closest?.<HTMLElement>(".tv-card");
   if (!card) return;
   const c = Number(card.dataset.col);
-  if (c !== focusCol || headerFocused) {
+  if (c !== focusCol || focusSection !== "shelf") {
     focusCol = c;
-    headerFocused = false;
+    focusSection = "shelf";
     applyFocus();
   }
 }, { passive: true });

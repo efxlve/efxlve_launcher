@@ -12,11 +12,35 @@ import { isTauri } from "../../core/constants";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
+import { EPIC_STORE_URL, epicGetAchievementsSummary, epicGetPlayerProfile } from "../../epic";
+import { gogGetAchievementsSummary } from "../../gog";
+import { steamGetAchievementsSummary } from "../../steam";
 import { t } from "../../i18n";
 import type { View } from "../../core/types";
+export interface StoreRect {
+  [key: string]: unknown;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  bottom: number;
+}
+
+/** Bounds of the store child while TV Mode is showing a storefront in place. */
+let embeddedStoreRect: (() => StoreRect) | null = null;
+
+/** True while TV Mode owns the store child and a normal view change must not park it. */
+export function embeddedStoreHeld(): boolean {
+  return embeddedStoreRect !== null;
+}
+
+/** TV Mode registers the frame the child webview should cover. Null releases it. */
+export function setEmbeddedStoreRect(reader: (() => StoreRect) | null): void {
+  embeddedStoreRect = reader;
+}
+
 /** Store webview bounds: the #content area (right of the sidebar, between the header and the status bar). */
-export function storeRect(): { x: number; y: number; width: number; height: number; bottom: number } {
+export function storeRect(): StoreRect {
   const r = document.getElementById("content")?.getBoundingClientRect();
   const x = r ? r.left : 0;
   const y = r ? r.top : 0;
@@ -85,8 +109,10 @@ function watchCoversThenRelease(): void {
 export function syncStoreViewSize(): void {
   // A resize while the palette is open, or the echo of the single restore,
   // must not move or hide the child again.
-  if (S.view !== "store" || !S.storeShown || !isTauri || storeHeldForPalette || storeRestoreInFlight) return;
-  invoke<void>("resize_store_view", storeRect()).catch(() => undefined);
+  const embedded = embeddedStoreRect !== null;
+  if ((!embedded && S.view !== "store") || !S.storeShown || !isTauri || storeHeldForPalette || storeRestoreInFlight) return;
+  const rect = embedded ? embeddedStoreRect!() : storeRect();
+  invoke<void>("resize_store_view", rect).catch(() => undefined);
 }
 
 /**
@@ -205,11 +231,14 @@ if (isTauri) {
   void listen<{ store: StoreId }>("efxlve-store-ready", (event) => {
     // The storefront painted and is now on screen.
     warmStores.add(event.payload.store);
-    if (S.view === "store" && S.activeStore === event.payload.store) {
+    if (S.activeStore === event.payload.store && (S.view === "store" || embeddedStoreRect !== null)) {
       S.storeShown = true;
       S.storeLoading = false;
       setStoreProgress(false);
-      scheduleRender();
+      const pending = document.getElementById("tv-store-pending");
+      if (pending) pending.hidden = true;
+      if (S.view === "store") scheduleRender();
+      else syncStoreViewSize();
     }
   });
 }
@@ -355,11 +384,25 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
   } catch (e) {
     if (gen !== profileLoadGen) return;
     S.profileError = String(e);
-  } finally {
-    if (gen === profileLoadGen) {
-      S.profileLoading = false;
-      render();
-    }
+  }
+  if (gen !== profileLoadGen) return;
+  // Epic's profile payload does not include GOG or Steam. Refresh the shared
+  // achievement cache so the profile list matches the library covers.
+  try {
+    const [epicSummaries, gogSummaries, steamSummaries] = await Promise.all([
+      epicGetAchievementsSummary().catch(() => ({})),
+      gogGetAchievementsSummary().catch(() => ({})),
+      steamGetAchievementsSummary().catch(() => ({})),
+    ]);
+    if (gen !== profileLoadGen) return;
+    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries };
+    S.libraryDataRev++;
+  } catch {
+    // The page still renders whatever was already cached.
+  }
+  if (gen === profileLoadGen) {
+    S.profileLoading = false;
+    render();
   }
 }
 
@@ -373,8 +416,69 @@ export async function openProfile(): Promise<void> {
   render();
 }
 
+/**
+ * Shows a storefront in a caller-supplied rectangle without leaving the current
+ * view. TV Mode uses this so Epic, GOG and Steam stay inside the console shell.
+ */
+export async function showEmbeddedStore(url: string, rect: StoreRect): Promise<void> {
+  cancelStoreDestroy();
+  const store = storeIdForUrl(url);
+  S.activeStore = store;
+  loadingStoreId = store;
+  const epoch = ++storeOpenEpoch;
+  const warm = warmStores.has(store);
+  S.lastStoreUrl = url;
+  S.storeMode = "store";
+  S.storeLoading = !warm;
+  try {
+    const result = await invoke<string>("show_store_view", {
+      ...rect,
+      url,
+      recreate: false,
+      ownedLabel: t("store.inLibrary"),
+    });
+    if (epoch !== storeOpenEpoch || embeddedStoreRect === null) {
+      if (embeddedStoreRect === null && S.view !== "store") {
+        S.storeShown = false;
+        S.storeLoading = false;
+        if (isTauri) invoke<string>("hide_store_view").catch(() => {});
+      }
+      return;
+    }
+    const shown = result !== "@t:store.pending";
+    S.storeShown = shown;
+    S.storeLoading = result !== "@t:win.focused";
+    armStoreLoadingGuard(store);
+    if (shown) warmStores.add(store);
+    if (!S.storeLoading) {
+      document.getElementById("tv-store-pending")?.setAttribute("hidden", "");
+    }
+    window.setTimeout(syncStoreViewSize, 50);
+    window.setTimeout(syncStoreViewSize, 200);
+  } catch (e) {
+    if (epoch !== storeOpenEpoch) return;
+    S.storeShown = false;
+    S.storeLoading = false;
+    toast(String(e), "err");
+  }
+}
+
+/** Parks the child webview TV Mode was showing and forgets the embed frame. */
+export function releaseEmbeddedStore(): void {
+  embeddedStoreRect = null;
+  storeOpenEpoch += 1;
+  const wasShown = S.storeShown;
+  S.storeShown = false;
+  S.storeLoading = false;
+  if (isTauri && wasShown) {
+    invoke<string>("hide_store_view").catch(() => {});
+    scheduleStoreDestroy();
+  }
+}
+
 /** Atomically hides the embedded store webview; falls back to the last non-store view. */
 export function hideStore(): void {
+  embeddedStoreRect = null;
   storeOpenEpoch += 1;
   const wasShown = S.storeShown;
   S.storeShown = false;

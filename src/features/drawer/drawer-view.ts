@@ -13,7 +13,7 @@ import { isTauri, NO_DESC } from "../../core/constants";
 import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
-import { epicDlProgress, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
+import { epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
@@ -25,7 +25,7 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
-import { steamGetGameDetails, steamCloudStatus } from "../../steam";
+import { steamGetGameDetails } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
@@ -106,6 +106,8 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
 function paintGameCloud(s: EpicSummary): void {
   const el = document.getElementById("gp-stat-cloud-val");
   if (!el) return;
+  const isEpic = !s.appName.startsWith("gog::") && !s.appName.startsWith("steam::");
+  if (!isEpic) return;
   const g = rawOf(s.appName);
   const info = heroCloudStatus(s, g, gamePartner(s, g));
   el.textContent = info.label;
@@ -121,22 +123,11 @@ const cloudStampAsked = new Set<string>();
 function ensureCloudSyncStamp(s: EpicSummary): void {
   const appName = s.appName;
   if (cloudStampAsked.has(appName)) return;
-  if (appName.startsWith("gog::") || !s.installed) {
+  if (appName.startsWith("gog::") || appName.startsWith("steam::") || !s.installed) {
     cloudStampAsked.add(appName);
     return;
   }
   cloudStampAsked.add(appName);
-  if (appName.startsWith("steam::")) {
-    void steamCloudStatus(appName)
-      .then((st) => {
-        if (st.lastSync) {
-          rememberCloudSync(appName, new Date(st.lastSync * 1000).toLocaleString(currentLanguage()));
-        }
-        if (S.currentModalAppName === appName) paintGameCloud(s);
-      })
-      .catch(() => {});
-    return;
-  }
   void epicGetGameSettings(appName)
     .then((st) => {
       if (st.lastCloudSync) {
@@ -185,7 +176,10 @@ function ensureEosSupport(appName: string): void {
 
 function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLauncherInfo | null): string {
   if (p !== null) {
-    return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${t("common.downloading", { p })}</button>`;
+    return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("common.downloading", { p })}</button>`;
+  }
+  if (isAppDownloading(s.appName)) {
+    return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("steam.downloading")}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
@@ -249,30 +243,30 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   // hand off through it, and nothing is installed by the launcher itself.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
-    const steamPct = s.downloading ? epicDlProgress(s.appName) : null;
-    const primary = s.downloading
+    const isDl = isAppDownloading(s.appName);
+    const steamPct = isDl ? epicDlProgress(s.appName) : null;
+    const primary = isDl
       ? `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 16)} ${steamPct !== null ? t("common.downloading", { p: steamPct }) : t("steam.downloading")}</button>`
       : !s.installed
         ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
         : s.updateAvailable
           ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
           : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
-    const validate = s.installed
-      ? `<button class="btn ghost lg" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 16)} ${t("steam.validate")}</button>`
-      : "";
-    return `${primary}${validate}
+    return `${primary}
+      <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitleSteam")}">${icon("external", 16)}</button>
       ${sourceChipHtml(s.appName)}`;
   }
 
   const p = epicDlProgress(s.appName);
+  const isDl = isAppDownloading(s.appName);
   return `
     ${primaryAction(s, p, partner)}
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
-    ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
+    ${(p !== null || isDl) ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
     ${sourceChipHtml(s.appName)}`;
 }
 
@@ -514,6 +508,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   }
 
   const isGog = appName.startsWith("gog::");
+  const isSteam = appName.startsWith("steam::");
+  const isEpic = !isGog && !isSteam;
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const achSum = S.epicAchSummaries[appName];
   const pt = S.playtimeMap.get(appName);
@@ -553,7 +549,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-stats">
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone)}
+            ${isEpic ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}
           </div>
         </div>
 
