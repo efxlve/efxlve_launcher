@@ -7,7 +7,6 @@
  */
 
 import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
-import type { ExternalStore } from "../external-stores";
 import { t } from "../i18n";
 import { S } from "./state";
 import type { GameSource, LibraryItem } from "./types";
@@ -73,52 +72,61 @@ export function epicToLibraryItem(s: EpicSummary): LibraryItem {
 }
 
 let canonStoresMap = new Map<string, string>();
+let canonKeysMap = new Map<string, string[]>();
+const EMPTY_CANON_KEYS: readonly string[] = [];
+
+function rememberCanon(
+  storeSets: Map<string, Set<string>>,
+  keySets: Map<string, string[]>,
+  title: string,
+  store: string,
+  key: string,
+): void {
+  const c = canonicalGameTitle(title);
+  if (!c) return;
+  let set = storeSets.get(c);
+  if (!set) {
+    set = new Set();
+    storeSets.set(c, set);
+  }
+  set.add(store);
+  let keys = keySets.get(c);
+  if (!keys) {
+    keys = [];
+    keySets.set(c, keys);
+  }
+  keys.push(key);
+}
+
+/** O(1) store copies of a title (`epic appName`, `gog::id`, `steam::id`). */
+export function storeKeysForTitle(title: string): readonly string[] {
+  const canon = canonicalGameTitle(title);
+  if (!canon) return EMPTY_CANON_KEYS;
+  return canonKeysMap.get(canon) ?? EMPTY_CANON_KEYS;
+}
 
 /** Rebuilds the unified allGamesMap and store mapping from both epicSummaries and gogSummaries in O(N). */
 export function rebuildAllGamesMap(): void {
   const map = new Map<string, LibraryItem>();
   const storeSets = new Map<string, Set<string>>();
+  const keySets = new Map<string, string[]>();
 
   for (const s of S.epicSummaries) {
     const item = epicToLibraryItem(s);
     map.set(item.key, item);
     // Index by plain appName as well for seamless backward compatibility
     map.set(s.appName, item);
-    const c = canonicalGameTitle(s.title);
-    if (c) {
-      let set = storeSets.get(c);
-      if (!set) {
-        set = new Set();
-        storeSets.set(c, set);
-      }
-      set.add("Epic");
-    }
+    rememberCanon(storeSets, keySets, s.title, "Epic", s.appName);
   }
   for (const g of S.gogSummaries) {
     map.set(g.key, g);
     map.set(g.id, g);
-    const c = canonicalGameTitle(g.title);
-    if (c) {
-      let set = storeSets.get(c);
-      if (!set) {
-        set = new Set();
-        storeSets.set(c, set);
-      }
-      set.add("GOG");
-    }
+    rememberCanon(storeSets, keySets, g.title, "GOG", g.key);
   }
   // Steam games installed on this PC join the unified map under `steam::<id>`.
   for (const g of S.steamSummaries) {
     map.set(g.key, g);
-    const c = canonicalGameTitle(g.title);
-    if (c) {
-      let set = storeSets.get(c);
-      if (!set) {
-        set = new Set();
-        storeSets.set(c, set);
-      }
-      set.add("Steam");
-    }
+    rememberCanon(storeSets, keySets, g.title, "Steam", g.key);
   }
 
   // Other accounts' games stay searchable/detail-openable through the same map
@@ -144,15 +152,7 @@ export function rebuildAllGamesMap(): void {
         dlcCount: 0,
       };
       if (!map.has(item.key)) map.set(item.key, item);
-      const c = canonicalGameTitle(g.title);
-      if (c) {
-        let set = storeSets.get(c);
-        if (!set) {
-          set = new Set();
-          storeSets.set(c, set);
-        }
-        set.add(g.store === "gog" ? "GOG" : "Epic");
-      }
+      rememberCanon(storeSets, keySets, g.title, g.store === "gog" ? "GOG" : "Epic", g.key);
     }
   }
   S.allGamesMap = map;
@@ -162,6 +162,7 @@ export function rebuildAllGamesMap(): void {
     storesMap.set(canon, Array.from(set).sort().join(", "));
   }
   canonStoresMap = storesMap;
+  canonKeysMap = keySets;
 }
 
 /** Replace the parsed summary list and rebuild its lookup map. */
@@ -203,6 +204,8 @@ export function libraryItemToSummary(g: LibraryItem): EpicSummary {
     installedVersion: g.installedVersion,
     updateAvailable: g.updateAvailable,
     downloading: g.downloading ?? false,
+    bytesDownloaded: g.bytesDownloaded,
+    bytesToDownload: g.bytesToDownload,
   };
 }
 
@@ -291,14 +294,12 @@ export function rawOf(appName: string): EpicGame | undefined {
 }
 
 /** Stores shown in the game page version selector. */
-export type GameVersionSource = GameSource | ExternalStore;
+export type GameVersionSource = GameSource;
 
 export interface GameVersion {
   source: GameVersionSource;
-  /** Library key for managed stores; empty for external hand-off versions. */
+  /** Library key for managed stores. */
   appName: string;
-  /** External store game id (EA App / Ubisoft Connect / XBOX) when external. */
-  externalId: string;
   title: string;
   installed: boolean;
   version: string | null;
@@ -309,10 +310,48 @@ export interface GameVersion {
 export function canonicalGameTitle(title: string): string {
   if (!title) return "";
   let s = title.toLowerCase();
-  s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, "");
-  s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, "");
+  // "Enhanced Edition" is a SKU of the same game (Dying Light). Standalone
+  // "Enhanced" is a different product (GTA V Enhanced vs Legacy) and stays.
+  s = s.replace(/\benhanced edition\b/gi, "");
+  s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, "");
+  s = s.replace(/\b(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, "");
   s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, "");
   return s.replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Product family token so Enhanced / Legacy SKUs are not merged. */
+function productFamily(title: string): "enhanced" | "legacy" | "base" {
+  const s = title.toLowerCase();
+  if (/\benhanced\b/.test(s) && !/\benhanced edition\b/.test(s)) return "enhanced";
+  if (/\blegacy\b/.test(s) && !/\blegacy of\b/.test(s)) return "legacy";
+  return "base";
+}
+
+function pickStoreMatch<T>(
+  items: T[],
+  titleOf: (item: T) => string,
+  installedOf: (item: T) => boolean,
+  currentTitle: string,
+): T | undefined {
+  const canon = canonicalGameTitle(currentTitle);
+  if (!canon) return undefined;
+  const family = productFamily(currentTitle);
+  const matches = items.filter((item) => canonicalGameTitle(titleOf(item)) === canon);
+  if (matches.length === 0) return undefined;
+  let best = matches[0];
+  let bestScore = -1;
+  for (const item of matches) {
+    const title = titleOf(item);
+    let score = 0;
+    if (productFamily(title) === family) score += 10;
+    if (title.toLowerCase() === currentTitle.toLowerCase()) score += 5;
+    if (installedOf(item)) score += 1;
+    if (score > bestScore) {
+      best = item;
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 /** Finds all available store versions (e.g. Epic and GOG) of a given game. */
@@ -324,69 +363,40 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
 
   const versions: GameVersion[] = [];
 
-  for (const s of S.epicSummaries) {
-    if (canonicalGameTitle(s.title) === canon) {
-      versions.push({
-        source: "epic",
-        appName: s.appName,
-        externalId: "",
-        title: s.title,
-        installed: s.installed,
-        version: s.version,
-        installPath: s.installPath || null,
-      });
-      break;
-    }
+  const epicMatch = pickStoreMatch(S.epicSummaries, (s) => s.title, (s) => s.installed, title);
+  if (epicMatch) {
+    versions.push({
+      source: "epic",
+      appName: epicMatch.appName,
+      title: epicMatch.title,
+      installed: epicMatch.installed,
+      version: epicMatch.version,
+      installPath: epicMatch.installPath || null,
+    });
   }
 
-  for (const g of S.gogSummaries) {
-    if (canonicalGameTitle(g.title) === canon) {
-      versions.push({
-        source: "gog",
-        appName: g.key,
-        externalId: "",
-        title: g.title,
-        installed: g.installed,
-        version: g.version,
-        installPath: g.installPath || null,
-      });
-      break;
-    }
+  const gogMatch = pickStoreMatch(S.gogSummaries, (g) => g.title, (g) => g.installed, title);
+  if (gogMatch) {
+    versions.push({
+      source: "gog",
+      appName: gogMatch.key,
+      title: gogMatch.title,
+      installed: gogMatch.installed,
+      version: gogMatch.version,
+      installPath: gogMatch.installPath || null,
+    });
   }
 
-  for (const g of S.steamSummaries) {
-    if (canonicalGameTitle(g.title) === canon) {
-      versions.push({
-        source: "steam",
-        appName: g.key,
-        externalId: "",
-        title: g.title,
-        installed: g.installed,
-        version: g.version,
-        installPath: g.installPath || null,
-      });
-      break;
-    }
-  }
-
-  // EA App / Ubisoft Connect / XBOX licence their games in their own clients,
-  // so a detected install joins the selector as a launch hand-off version.
-  const externalStores: ExternalStore[] = ["ea", "ubisoft", "xbox"];
-  for (const store of externalStores) {
-    for (const g of S.externalGames[store] ?? []) {
-      if (canonicalGameTitle(g.title) === canon) {
-        versions.push({
-          source: store,
-          appName: "",
-          externalId: g.id,
-          title: g.title,
-          installed: true,
-          version: null,
-          installPath: g.installPath || null,
-        });
-        break;
-      }
-    }
+  const steamMatch = pickStoreMatch(S.steamSummaries, (g) => g.title, (g) => g.installed, title);
+  if (steamMatch) {
+    versions.push({
+      source: "steam",
+      appName: steamMatch.key,
+      title: steamMatch.title,
+      installed: steamMatch.installed,
+      version: steamMatch.version,
+      installPath: steamMatch.installPath || null,
+    });
   }
 
   return versions;

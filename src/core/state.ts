@@ -29,6 +29,7 @@ import {
   COVER_STATS_KEY,
   SURFACE_KEY,
   PAUSE_ON_PLAY_KEY,
+  STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
   RECENT_KEY,
   SS_COMPRESS_KEY,
@@ -39,6 +40,9 @@ import {
   SPEED_BITS_KEY,
   COVER_TITLES_KEY,
   STORE_BADGE_KEY,
+  COVER_STORE_ICONS_KEY,
+  TV_AUTO_KEY,
+  isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
   SHOW_SHARED_LIBRARY_KEY,
@@ -97,7 +101,7 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet",
+  activeStore: ("epic") as "epic" | "gog" | "steam",
   /** True while the active storefront webview is still loading its first page. */
   storeLoading: false,
   epicPhase: "checking" as EpicPhase,
@@ -273,7 +277,6 @@ export const S = {
   isSortDropdownOpen: false,
   isStoreDropdownOpen: false,
   isColDropdownOpen: false,
-  isAccountSwitcherOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,
@@ -281,11 +284,14 @@ export const S = {
   peakNetSpeedBytes: 0,
   speedInBits: (localStorage.getItem(SPEED_BITS_KEY) === "true") as boolean,
   pauseOnPlay: (localStorage.getItem(PAUSE_ON_PLAY_KEY) === "true") as boolean,
+  steamExitAfterPlay: (localStorage.getItem(STEAM_EXIT_AFTER_PLAY_KEY) === "true") as boolean,
   autoDesktopShortcut: (localStorage.getItem(AUTO_SHORTCUT_KEY) !== "false") as boolean,
   autoPausedDl: (null) as string | null,
   speedHistory: (new Array(60).fill(0)) as number[],
   diskHistory: (new Array(60).fill(0)) as number[],
   dlQueueStatus: ({ isPaused: false, queue: [] }) as DlQueueStatus,
+  /** True while the active GOG gogdl process is suspended. */
+  gogDlPaused: false,
   speedChartTimer: (null) as number | null,
   renderScheduled: false,
   trCollator: new Intl.Collator(initialLanguage(), { sensitivity: "base", numeric: true }),
@@ -309,6 +315,17 @@ export const S = {
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
+  showCoverStoreIcons: (localStorage.getItem(COVER_STORE_ICONS_KEY) === "true") as boolean,
+  tvAutoEnter: (() => {
+    try {
+      const v = localStorage.getItem(TV_AUTO_KEY);
+      if (v === "true") return true;
+      if (v === "false") return false;
+    } catch {
+      /* ignore */
+    }
+    return isSteamDeckDevice();
+  })() as boolean,
   showInstalledIcon: (localStorage.getItem(INSTALLED_ICON_KEY) === "true") as boolean,
   /** Games from other saved accounts (Steam family-sharing style). Default ON. */
   sharedOwners: new Map<string, import("../epic").SharedGame>(),
@@ -336,7 +353,7 @@ export const S = {
   libPage: 1,
   screenshotDir: "",
   surface: (localStorage.getItem(SURFACE_KEY) === "epic" ? "epic" : "black") as "black" | "epic",
-  autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) !== "false",
+  autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
   autoUpdateTime: (localStorage.getItem(AUTO_UPDATE_TIME_KEY) || "03:00") as string,
   epicDefaultDir: "",
@@ -380,12 +397,6 @@ export const S = {
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
-  externalGames: ({ ea: [], ubisoft: [], xbox: [] }) as Record<
-    import("../external-stores").ExternalStore,
-    import("../external-stores").ExternalGame[]
-  >,
-  /** True once the EA/Ubisoft/XBOX registry scan has run in this session. */
-  externalGamesScanned: false,
   appVersion: "0.1.17",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",

@@ -21,13 +21,16 @@ import {
   LANG_KEY,
   MINIMIZE_TRAY_KEY,
   PAUSE_ON_PLAY_KEY,
+  STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
   SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
+  COVER_STORE_ICONS_KEY,
   SURFACE_KEY,
+  TV_AUTO_KEY,
   isTauri,
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
@@ -40,13 +43,13 @@ import {
   updateNavHistoryUi,
   updateOfflineModeUi,
   updatePageHeader,
-  updateSidebarAccountSwitcher,
 } from "../../core/nav";
+import { toggleSidebarDrawer } from "../../core/sidebar-layout";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
-import { refreshEosStatus, startEosInstall } from "../eos/eos-install";
+import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { setLanguage, t as i18nT } from "../../i18n";
 import {
@@ -72,14 +75,13 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { externalDetectGames, externalLaunchGame, type ExternalStore } from "../../external-stores";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
+import { isHeaderStore, loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -133,12 +135,6 @@ document.addEventListener("click", (e) => {
     S.isVersionDropdownOpen = false;
     document.getElementById("version-dropdown-menu")?.classList.remove("show");
     document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
-  }
-
-  // Close the sidebar account switcher when clicking outside it.
-  if (S.isAccountSwitcherOpen && !targetEl.closest("#sb-account-host")) {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
   }
 
   // Marker palette closes when clicking outside it.
@@ -264,10 +260,13 @@ document.addEventListener("click", (e) => {
     closeAllModals();
     setView("library");
     render();
+  } else if (act === "toggle-sidebar") {
+    toggleSidebarDrawer();
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    const store = (t.dataset.store as "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet") || S.activeStore || "epic";
+    let store = (t.dataset.store as "epic" | "gog" | "steam") || S.activeStore || "epic";
+    if (!t.dataset.store && !isHeaderStore(store)) store = "epic";
     if (S.activeStore !== store) {
       S.activeStore = store;
       updatePageHeader();
@@ -286,12 +285,15 @@ document.addEventListener("click", (e) => {
     if (S.notifOpen) closeNotifPanel();
     else openNotifPanel();
   } else if (act === "notif-clear") {
+    if (S.notifications.some((n) => n.action === "install-eos")) declineEosOverlay();
     clearNotifications();
     renderNotificationPanel();
   } else if (act === "notif-read-all") {
     markAllRead();
     renderNotificationPanel();
   } else if (act === "notif-dismiss" && id) {
+    const note = S.notifications.find((n) => n.id === id);
+    if (note?.action === "install-eos") declineEosOverlay();
     dismissNotification(id);
     renderNotificationPanel();
   } else if (act === "notif-open" && id) {
@@ -566,21 +568,6 @@ document.addEventListener("click", (e) => {
     if (S.settingsSection === "controller") void loadControllerView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
-  } else if (act === "external-scan" && t.dataset.store) {
-    const store = t.dataset.store as ExternalStore;
-    void externalDetectGames(store)
-      .then((games) => {
-        S.externalGames = { ...S.externalGames, [store]: games };
-        S.externalGamesScanned = true;
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "external-launch" && id && t.dataset.store) {
-    S.isVersionDropdownOpen = false;
-    document.getElementById("version-dropdown-menu")?.classList.remove("show");
-    void externalLaunchGame(t.dataset.store as ExternalStore, id)
-      .then(() => toast(i18nT("dl.launching"), ""))
-      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";
@@ -600,6 +587,14 @@ document.addEventListener("click", (e) => {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
     scheduleRender();
+  } else if (act === "toggle-cover-store-icons") {
+    S.showCoverStoreIcons = !S.showCoverStoreIcons;
+    localStorage.setItem(COVER_STORE_ICONS_KEY, String(S.showCoverStoreIcons));
+    scheduleRender();
+  } else if (act === "toggle-tv-auto") {
+    S.tvAutoEnter = !S.tvAutoEnter;
+    localStorage.setItem(TV_AUTO_KEY, String(S.tvAutoEnter));
+    render();
   } else if (act === "toggle-shared-library") {
     S.showSharedLibrary = !S.showSharedLibrary;
     localStorage.setItem(SHOW_SHARED_LIBRARY_KEY, String(S.showSharedLibrary));
@@ -656,6 +651,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-pause-on-play") {
     S.pauseOnPlay = !S.pauseOnPlay;
     localStorage.setItem(PAUSE_ON_PLAY_KEY, String(S.pauseOnPlay));
+    render();
+  } else if (act === "toggle-steam-exit-after-play") {
+    S.steamExitAfterPlay = !S.steamExitAfterPlay;
+    localStorage.setItem(STEAM_EXIT_AFTER_PLAY_KEY, String(S.steamExitAfterPlay));
     render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;

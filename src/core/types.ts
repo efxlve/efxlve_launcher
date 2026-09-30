@@ -34,7 +34,7 @@ export type EpicViewMode = "grid" | "list";
 export type SettingsSection = "account" | "downloads" | "integrations" | "controller" | "appearance" | "screenshots" | "system" | "hidden" | "about";
 
 /** Controller family, used to pick the right button glyphs and hints. */
-export type ControllerKind = "playstation" | "xbox" | "switch" | "generic";
+export type ControllerKind = "playstation" | "xbox" | "switch" | "steamdeck" | "generic";
 
 /** Kind of an in-app notification (drives the icon and accent color). */
 export type NotifKind = "download" | "update" | "error" | "info" | "social";
@@ -116,6 +116,10 @@ export interface LibraryItem {
   updateAvailable: boolean;
   /** True while the owning store (today: Steam) is downloading this game. */
   downloading?: boolean;
+  /** Steam ACF `BytesDownloaded` while a Steam job is running. */
+  bytesDownloaded?: number;
+  /** Steam ACF `BytesToDownload` while a Steam job is running. */
+  bytesToDownload?: number;
   /** Whether the game supports remote cloud save synchronization. */
   cloudSavesSupported: boolean;
   /** Total number of DLC expansions or add-ons owned. */

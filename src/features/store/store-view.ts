@@ -144,42 +144,29 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "ubisoft" | "ea" | "xbox" | "battlenet";
+export type StoreId = "epic" | "gog" | "steam";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
   epic: "Epic Games",
   gog: "GOG",
   steam: "Steam",
-  ubisoft: "Ubisoft",
-  ea: "EA",
-  xbox: "Xbox",
-  battlenet: "Battle.net",
 };
+
+/** Storefronts shown in the Stores header. */
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam"];
+
+export function isHeaderStore(id: string): boolean {
+  return (HEADER_STORES as string[]).includes(id);
+}
 
 export const GOG_STORE_URL = "https://www.gog.com/";
 export const STEAM_STORE_URL = "https://store.steampowered.com/";
-export const UBISOFT_STORE_URL = "https://store.ubisoft.com/";
-export const EA_STORE_URL = "https://www.ea.com/games";
-/**
- * The Xbox browse page defaults to every platform, so the PC filter is part of
- * the URL: `PlayWith=PC` is the store's own (locale-independent) filter id — the
- * visible label changes per language ("Bilgisayar", "PC", …) but the id does not.
- * Without it, a console-only game can be bought by accident, and that cannot be
- * undone from the launcher.
- */
-export const XBOX_STORE_URL = "https://www.xbox.com/games/browse?PlayWith=PC";
-/** Battle.net's own shop; it localizes itself, so one URL serves every locale. */
-export const BATTLENET_STORE_URL = "https://shop.battle.net/";
 
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
   gog: GOG_STORE_URL,
   steam: STEAM_STORE_URL,
-  ubisoft: UBISOFT_STORE_URL,
-  ea: EA_STORE_URL,
-  xbox: XBOX_STORE_URL,
-  battlenet: BATTLENET_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -187,10 +174,6 @@ export function storeIdForUrl(url: string): StoreId {
   const lower = url.toLowerCase();
   if (lower.includes("gog.com")) return "gog";
   if (lower.includes("steampowered.com")) return "steam";
-  if (lower.includes("ubisoft.com")) return "ubisoft";
-  if (lower.includes("ea.com")) return "ea";
-  if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
-  if (lower.includes("battle.net")) return "battlenet";
   return "epic";
 }
 
@@ -407,7 +390,7 @@ export function hideStore(): void {
 export function setView(next: View): void {
   if (next !== "store") {
     hideStore();
-    S.lastNonStoreView = next;
+    if (next !== "tv") S.lastNonStoreView = next;
   }
   S.view = next;
 }

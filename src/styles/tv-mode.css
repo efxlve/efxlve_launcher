@@ -1,36 +1,235 @@
 /* ==========================================================================
-   TV Mode (controller-first, full screen).
-   Focus is a 3px accent ring; cards never scale, so rows never shift.
+   TV Mode: fullscreen Big Picture shell + gamepad HUD.
+   Home is a full-bleed hero; the game page is a second full-screen layer.
    ========================================================================== */
+body.tv-mode {
+  --winbar-h: 0px;
+  --header-h: 0px;
+}
+body.tv-mode #winbar,
 body.tv-mode #sidebar,
 body.tv-mode #page-header,
-body.tv-mode #totop { display: none !important; }
-body.tv-mode #main-col { padding: 0; }
-body.tv-mode #content { padding: 0; }
-body.tv-mode #view { padding: 0; overflow: hidden; }
+body.tv-mode #totop,
+body.tv-mode #btn-tv-mode { display: none !important; }
+body.tv-mode #app { height: 100vh; }
+body.tv-mode #body,
+body.tv-mode #main-col,
+body.tv-mode #content,
+body.tv-mode #view {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  min-height: 0;
+}
 
-.tv-screen { height: calc(100vh - var(--winbar-h)); display: flex; flex-direction: column; background: var(--bg); }
-.tv-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 48px; }
-.tv-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.tv-screen {
+  position: relative;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
 
-.tv-hero { position: relative; height: 42vh; min-height: 260px; margin: 0 48px; border-radius: var(--r-md); overflow: hidden; background: var(--surface-1); flex-shrink: 0; }
-.tv-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.tv-hero-body { position: absolute; left: 36px; right: 36px; bottom: 30px; }
-.tv-hero-title { margin: 0 0 6px; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tv-hero-meta { font-size: 16px; color: var(--text-2); margin-bottom: 16px; }
-.tv-hero-action .btn { height: 52px; min-width: 220px; padding: 0 28px; font-size: 17px; font-weight: 600; }
+.tv-bg { position: absolute; inset: 0; }
+.tv-bg-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0;
+  transition: opacity 480ms ease-out;
+}
+.tv-bg-img.is-show { opacity: 1; }
+.tv-bg-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.12) 28%, rgba(0,0,0,0.55) 58%, #000 100%);
+}
 
-.tv-rows { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 48px 90px; display: flex; flex-direction: column; gap: 22px; scrollbar-width: none; }
+.tv-exit {
+  position: absolute; top: 20px; right: 24px; z-index: 8;
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px; padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-sm);
+  background: transparent; color: var(--text-2);
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer;
+}
+.tv-exit:hover { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
+
+.tv-home {
+  position: relative; z-index: 1;
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0 56px 72px;
+}
+body.tv-detail-open .tv-home { visibility: hidden; }
+
+.tv-home-copy { margin-bottom: 28px; max-width: 820px; }
+.tv-home-title {
+  margin: 0 0 8px; font-size: 52px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.05; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tv-home-meta {
+  font-size: 15px; color: var(--text-2); margin-bottom: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.tv-home-cta .btn {
+  height: 56px; min-width: 220px; padding: 0 28px;
+  font-size: 17px; font-weight: 600;
+}
+
+.tv-rows {
+  display: flex; flex-direction: column; gap: 22px;
+  max-height: 42vh; overflow-y: auto; padding-bottom: 8px;
+  scrollbar-width: none;
+}
 .tv-rows::-webkit-scrollbar { display: none; }
-.tv-row-title { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
-.tv-row-track { display: flex; gap: 18px; overflow-x: auto; padding: 6px 4px 8px; scrollbar-width: none; }
+.tv-row-title { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: #fff; }
+.tv-row-track {
+  display: flex; gap: 16px; overflow-x: auto; padding: 10px 4px 14px;
+  scrollbar-width: none;
+}
 .tv-row-track::-webkit-scrollbar { display: none; }
 .tv-card {
-  flex: 0 0 170px; aspect-ratio: 3 / 4; padding: 0; border: none; border-radius: var(--r-md); overflow: hidden;
-  background: var(--surface-2); cursor: pointer; outline: 3px solid transparent; outline-offset: 3px;
-  transition: outline-color var(--ease); contain: layout paint;
+  flex: 0 0 188px; aspect-ratio: 3 / 4; padding: 0; border: none;
+  border-radius: var(--r-md); overflow: hidden;
+  background: var(--surface-2); cursor: pointer;
+  outline: 3px solid transparent; outline-offset: 3px;
+  transform: translateY(0);
+  transition: outline-color 140ms ease-out, transform 140ms ease-out;
+  contain: layout paint;
 }
 .tv-card img, .tv-card .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tv-card.focused { outline-color: var(--accent); }
+.tv-card.focused { outline-color: #fff; transform: translateY(-6px); }
 .tv-empty { color: var(--text-3); font-size: 16px; }
 .tv-prompt { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* --- Game page --- */
+.tv-detail {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; align-items: flex-end;
+}
+.tv-detail[hidden] { display: none !important; }
+.tv-detail-inner {
+  position: relative; z-index: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 48px;
+  align-items: end;
+  padding: 0 64px 80px;
+}
+.tv-detail-title {
+  margin: 0 0 10px; font-size: 56px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.05; color: #fff;
+}
+.tv-detail-meta {
+  font-size: 15px; color: var(--text-2); margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.tv-detail-blurb {
+  max-width: 640px; margin: 0 0 28px;
+  font-size: 16px; line-height: 1.55; color: var(--text-2);
+}
+.tv-detail-cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tv-detail-cta .btn {
+  height: 56px; min-width: 200px; padding: 0 28px;
+  font-size: 17px; font-weight: 600;
+}
+.tv-detail-cover {
+  width: 220px; aspect-ratio: 3 / 4; border-radius: var(--r-md);
+  overflow: hidden; background: var(--surface-2);
+}
+.tv-detail-cover img, .tv-detail-cover .pcover {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+
+/* --- Boot (Steam-like: line + wordmark, then fade) --- */
+.tv-boot {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  background: #000;
+  animation: tv-boot-fade 400ms 1200ms forwards;
+}
+.tv-boot-line {
+  height: 1px; width: 0; background: #fff;
+  animation: tv-boot-line 780ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.tv-boot-mark {
+  position: absolute;
+  font-size: 22px; font-weight: 600; letter-spacing: 0.16em; color: #fff;
+  opacity: 0;
+  animation: tv-boot-mark 420ms 240ms ease-out forwards;
+}
+@keyframes tv-boot-line {
+  0% { width: 0; opacity: 1; }
+  55% { width: 160px; opacity: 1; }
+  100% { width: 100vw; opacity: 0; }
+}
+@keyframes tv-boot-mark {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tv-boot-fade {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@media (max-height: 860px) {
+  .tv-home { padding: 0 28px 60px; }
+  .tv-home-title { font-size: 32px; }
+  .tv-home-cta .btn, .tv-detail-cta .btn { height: 44px; min-width: 160px; font-size: 15px; }
+  .tv-card { flex-basis: 118px; }
+  .tv-rows { max-height: 38vh; gap: 14px; }
+  .tv-detail-inner { grid-template-columns: 1fr; padding: 0 28px 64px; }
+  .tv-detail-cover { display: none; }
+  .tv-detail-title { font-size: 32px; }
+  .tv-exit { top: 12px; right: 12px; }
+}
+html.is-steam-deck .tv-card { flex-basis: 118px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-boot { display: none; }
+  .tv-bg-img, .tv-card { transition: none; }
+}
+
+/* --- Gamepad HUD --- */
+.gamepad-hud-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  height: 44px;
+  padding: 0 24px;
+  background: #000;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+.gamepad-hud-bar.hidden { display: none; }
+.gamepad-hud-bar.dimmed { opacity: 0.28; }
+.gp-hud-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.gp-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.gp-glyph svg { width: 11px; height: 11px; }
+body.tv-mode .gamepad-hud-bar { z-index: 46; }

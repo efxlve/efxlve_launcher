@@ -38,8 +38,12 @@ export const SS_QUALITY_KEY = "efxlve-ss-quality";
 export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Pause active downloads while a game is running. */
 export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
+/** Hide the Steam window on launch and quit Steam when the game closes. Default off. */
+export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
 /** Persisted in-app notification history. */
 export const NOTIF_KEY = "efxlve-notifications";
+/** User declined the optional EOS overlay install notice. */
+export const EOS_OVERLAY_DECLINE_KEY = "efxlve-eos-overlay-declined";
 /** Hide to the system tray on close instead of quitting. */
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 /** Playtime and achievement chips painted on library covers. On unless set to "false". */
@@ -48,6 +52,20 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
+/** Small Epic / GOG / Steam marks on library covers. Off unless set to "true". */
+export const COVER_STORE_ICONS_KEY = "efxlve-cover-store-icons";
+/** Enter TV Mode automatically when a controller connects. Missing = Steam Deck only. */
+export const TV_AUTO_KEY = "efxlve-tv-auto";
+
+/** Native Steam Deck LCD/OLED panel, or a WebView2 UA that names the device. */
+export function isSteamDeckDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("steamdeck") || ua.includes("steam deck") || ua.includes("neptune")) return true;
+  const a = Math.min(window.screen.width, window.screen.height);
+  const b = Math.max(window.screen.width, window.screen.height);
+  return a === 800 && b === 1280;
+}
 /** Show a quick Play button next to the title for installed games on covers. */
 export const INSTALLED_ICON_KEY = "efxlve-installed-icon";
 /** Highlight installed games by subtly dimming uninstalled covers and titles. Default ON. */
@@ -71,6 +89,10 @@ export function normalizeLibraryPageSize(raw: string | number | null | undefined
 }
 /** Shell surface: "black" (default) or "epic" (#101014). */
 export const SURFACE_KEY = "efxlve-surface";
+/** Persisted left-sidebar width in CSS pixels. */
+export const SIDEBAR_W_KEY = "efxlve-sidebar-w";
+/** Last expanded sidebar width, restored when the drawer opens. */
+export const SIDEBAR_EXPANDED_W_KEY = "efxlve-sidebar-expanded-w";
 /** How many profile trophy cards render before "show more". */
 export const PROFILE_CARD_CHUNK = 36;
 /** Automatically back up local saves when a game closes. */

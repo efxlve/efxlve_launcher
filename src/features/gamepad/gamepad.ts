@@ -2,10 +2,11 @@
  * Game controller (gamepad) polling, HUD and navigation.
  *
  * Polls the Gamepad API only while a controller is connected (80ms when idle).
- * On the desktop UI it uses spatial D-pad navigation. State lives in S.
+ * Face buttons fire on the edge so holding A cannot launch a game twice.
+ * D-pad / sticks repeat after an initial delay. State lives in S.
  */
 
-import { MORE_CARD_CHUNK } from "../../core/constants";
+import { MORE_CARD_CHUNK, isSteamDeckDevice } from "../../core/constants";
 import { closeModal } from "../../core/dom";
 import { toggleFav } from "../../core/game-view";
 import { icon } from "../../core/icons";
@@ -20,16 +21,62 @@ import {
   epicCardPortrait,
   epicVisibleSummaries,
 } from "../library/library-view";
+import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
-import { showTvPrompt, tvActivate, tvBack, tvMove, tvOpenDetails, tvRowJump } from "./tv-mode";
+import {
+  markDeckChrome,
+  onControllerConnected,
+  toggleTvMode,
+  tvActivate,
+  tvBack,
+  tvDetailOpen,
+  tvFavorite,
+  tvMove,
+  tvNeighbor,
+  tvOpenDetails,
+  tvRowJump,
+  tvSkip,
+} from "./tv-mode";
 import { setView } from "../store/store-view";
+
+const STICK_DEADZONE = 0.42;
+const TRIGGER_DEADZONE = 0.55;
+const REPEAT_FIRST_MS = 280;
+const REPEAT_NEXT_MS = 90;
+const IDLE_POLL_MS = 80;
+
+const BTN_A = 0;
+const BTN_B = 1;
+const BTN_X = 2;
+const BTN_Y = 3;
+const BTN_LB = 4;
+const BTN_RB = 5;
+const BTN_LT = 6;
+const BTN_RT = 7;
+const BTN_SELECT = 8;
+const BTN_START = 9;
+const BTN_UP = 12;
+const BTN_DOWN = 13;
+const BTN_LEFT = 14;
+const BTN_RIGHT = 15;
+const BTN_GUIDE = 16;
+const BTN_L4 = 17;
+const BTN_R4 = 18;
 
 /** Detects the controller family from the Gamepad API id string. */
 export function controllerKind(id: string): ControllerKind {
   const s = id.toLowerCase();
   if (s.includes("dualsense") || s.includes("dualshock") || s.includes("playstation") || s.includes("054c")) return "playstation";
+  if (
+    s.includes("steam deck") ||
+    s.includes("steamdeck") ||
+    s.includes("neptune") ||
+    s.includes("steam virtual gamepad") ||
+    s.includes("28de")
+  ) return "steamdeck";
   if (s.includes("xbox") || s.includes("xinput") || s.includes("045e")) return "xbox";
   if (s.includes("switch") || s.includes("nintendo") || s.includes("057e")) return "switch";
+  if (isSteamDeckDevice()) return "steamdeck";
   return "generic";
 }
 
@@ -42,10 +89,15 @@ function faceGlyph(kind: ControllerKind, btn: "a" | "b" | "x" | "y"): string {
   return `<span class="gp-glyph btn-${btn}">${btn.toUpperCase()}</span>`;
 }
 
-/** Shoulder glyphs: L1/R1 on PlayStation pads, LB/RB elsewhere. */
+/** Shoulder glyphs: L1/R1 on PlayStation and Steam Deck, LB/RB on Xbox. */
 function bumperGlyphs(kind: ControllerKind): string {
-  const [l, r] = kind === "playstation" ? ["L1", "R1"] : ["LB", "RB"];
+  const [l, r] = kind === "xbox" || kind === "generic" ? ["LB", "RB"] : ["L1", "R1"];
   return `<span class="gp-glyph btn-bumper">${l}</span><span class="gp-glyph btn-bumper">${r}</span>`;
+}
+
+function menuGlyph(kind: ControllerKind): string {
+  const label = kind === "playstation" ? "Options" : kind === "steamdeck" ? "Menu" : "Start";
+  return `<span class="gp-glyph btn-start">${label}</span>`;
 }
 
 function hudItem(glyphs: string, label: string): string {
@@ -107,8 +159,7 @@ export function updateGamepadHud(active = true): void {
 
   const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(S.currentModalAppName);
 
-  // Skip rebuilding the HUD markup when nothing that affects it changed.
-  const hudKey = `${modalOpen ? "modal" : S.view}|${S.appLanguage}|${S.gamepadKind}`;
+  const hudKey = `${modalOpen ? "modal" : S.view}|${tvDetailOpen() ? "d" : "h"}|${S.appLanguage}|${S.gamepadKind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
@@ -124,39 +175,62 @@ export function updateGamepadHud(active = true): void {
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   } else if (S.view === "tv") {
-    hud.innerHTML = [
-      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
-      hudItem(faceGlyph(kind, "b"), t("common.back")),
-      hudItem(faceGlyph(kind, "x"), t("gamepad.detail")),
-      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
-      hudItem(dpad, t("gamepad.navigate")),
-    ].join("");
+    if (tvDetailOpen()) {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "a"), t("common.play")),
+        hudItem(faceGlyph(kind, "b"), t("common.back")),
+        hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
+        hudItem(bumperGlyphs(kind), t("gamepad.navigate")),
+      ].join("");
+    } else {
+      hud.innerHTML = [
+        hudItem(faceGlyph(kind, "a"), t("tv.hudOpen")),
+        hudItem(faceGlyph(kind, "b"), t("tv.exit")),
+        hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
+        hudItem(bumperGlyphs(kind), t("gamepad.rows")),
+        hudItem(dpad, t("gamepad.navigate")),
+      ].join("");
+    }
   } else if (S.view === "profile") {
     hud.innerHTML = [
       hudItem(faceGlyph(kind, "a"), t("gamepad.inspectTrophies")),
       hudItem(faceGlyph(kind, "x"), t("profile.refresh")),
       hudItem(faceGlyph(kind, "y"), t("common.search")),
+      hudItem(menuGlyph(kind), t("tv.open")),
       hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   } else {
     hud.innerHTML = [
-      hudItem(faceGlyph(kind, "a"), t("gamepad.detail")),
+      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
       hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
       hudItem(faceGlyph(kind, "y"), t("common.search")),
+      hudItem(menuGlyph(kind), t("tv.open")),
       hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   }
 }
 
+function bindPad(gp: Gamepad): void {
+  const name = gp.id.split("(")[0].trim();
+  S.gamepadName = name;
+  S.gamepadKind = controllerKind(gp.id);
+  if (S.gamepadKind === "steamdeck") document.documentElement.classList.add("is-steam-deck");
+}
+
 export function initGamepadSupport(): void {
+  markDeckChrome();
+  document.addEventListener("efxlve-hud", () => {
+    lastHudKey = "";
+    updateGamepadHud(S.gamepadPolling);
+  });
+
   window.addEventListener("gamepadconnected", (e) => {
-    const name = e.gamepad.id.split("(")[0].trim();
-    S.gamepadName = name;
-    S.gamepadKind = controllerKind(e.gamepad.id);
-    if (!showTvPrompt(name)) toast(t("gamepad.connected", { name }), "ok");
+    bindPad(e.gamepad);
+    if (!onControllerConnected(S.gamepadName)) toast(t("gamepad.connected", { name: S.gamepadName }), "ok");
     void notifyPlaystationBridge();
+    lastHudKey = "";
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
@@ -179,27 +253,33 @@ export function initGamepadSupport(): void {
     }
   }, { passive: true });
 
-  // Is a controller already connected at startup?
   setTimeout(() => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const first = Array.from(gamepads).find((g) => g !== null && g.connected);
     if (first) {
-      S.gamepadName = first.id.split("(")[0].trim();
-      S.gamepadKind = controllerKind(first.id);
+      bindPad(first);
       if (!S.gamepadPolling) {
         S.gamepadPolling = true;
         updateGamepadHud(true);
         requestAnimationFrame(gamepadLoop);
       }
+      if (S.tvAutoEnter) void onControllerConnected(S.gamepadName);
     }
   }, 1000);
 }
 
+function axisPast(v: number, dz: number): boolean {
+  return Math.abs(v) > dz;
+}
+
 function gamepadHasActivity(gp: Gamepad): boolean {
   for (const b of gp.buttons) {
-    if (b.pressed) return true;
+    if (b.pressed || b.value > TRIGGER_DEADZONE) return true;
   }
-  return Math.abs(gp.axes[0] ?? 0) > 0.55 || Math.abs(gp.axes[1] ?? 0) > 0.55;
+  return axisPast(gp.axes[0] ?? 0, STICK_DEADZONE)
+    || axisPast(gp.axes[1] ?? 0, STICK_DEADZONE)
+    || axisPast(gp.axes[2] ?? 0, STICK_DEADZONE)
+    || axisPast(gp.axes[3] ?? 0, STICK_DEADZONE);
 }
 
 function scheduleGamepadLoop(idle: boolean): void {
@@ -207,10 +287,64 @@ function scheduleGamepadLoop(idle: boolean): void {
   if (idle) {
     window.setTimeout(() => {
       if (S.gamepadPolling) requestAnimationFrame(gamepadLoop);
-    }, 80);
+    }, IDLE_POLL_MS);
     return;
   }
   requestAnimationFrame(gamepadLoop);
+}
+
+let prevButtons = 0;
+let holdKey = "";
+let holdLast = 0;
+let holdCount = 0;
+
+function buttonBit(gp: Gamepad, i: number): boolean {
+  const b = gp.buttons[i];
+  if (!b) return false;
+  return b.pressed || b.value > TRIGGER_DEADZONE;
+}
+
+function justPressed(mask: number, i: number): boolean {
+  const bit = 1 << i;
+  return (mask & bit) !== 0 && (prevButtons & bit) === 0;
+}
+
+function currentMask(gp: Gamepad): number {
+  let mask = 0;
+  const n = Math.min(gp.buttons.length, 24);
+  for (let i = 0; i < n; i++) {
+    if (buttonBit(gp, i)) mask |= 1 << i;
+  }
+  return mask;
+}
+
+function consumeHold(key: string, now: number): boolean {
+  if (!key) {
+    holdKey = "";
+    holdCount = 0;
+    return false;
+  }
+  if (holdKey !== key) {
+    holdKey = key;
+    holdLast = now;
+    holdCount = 1;
+    return true;
+  }
+  const wait = holdCount === 1 ? REPEAT_FIRST_MS : REPEAT_NEXT_MS;
+  if (now - holdLast >= wait) {
+    holdLast = now;
+    holdCount++;
+    return true;
+  }
+  return false;
+}
+
+function focusedAppName(): string | null {
+  if (S.currentModalAppName) return S.currentModalAppName;
+  const el = document.activeElement as HTMLElement | null;
+  if (!el) return null;
+  const host = el.closest<HTMLElement>("[data-id]");
+  return host?.dataset.id || el.dataset.id || null;
 }
 
 export function gamepadLoop(): void {
@@ -220,89 +354,110 @@ export function gamepadLoop(): void {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = Array.from(gamepads).find((g) => g !== null && g.connected);
   if (!gp) {
+    prevButtons = 0;
     scheduleGamepadLoop(true);
     return;
   }
 
   const idle = !gamepadHasActivity(gp);
   if (idle) {
+    holdKey = "";
+    holdCount = 0;
+    prevButtons = 0;
     scheduleGamepadLoop(true);
     return;
   }
 
-  if (now - S.lastGamepadActionTime > 170) {
-    if (S.gamepadHudEl) S.gamepadHudEl.classList.remove("dimmed");
-    const btns = gp.buttons;
-    const axes = gp.axes;
+  const mask = currentMask(gp);
+  const axes = gp.axes;
+  const up = buttonBit(gp, BTN_UP) || (axes[1] ?? 0) < -STICK_DEADZONE || (axes[3] ?? 0) < -STICK_DEADZONE;
+  const down = buttonBit(gp, BTN_DOWN) || (axes[1] ?? 0) > STICK_DEADZONE || (axes[3] ?? 0) > STICK_DEADZONE;
+  const left = buttonBit(gp, BTN_LEFT) || (axes[0] ?? 0) < -STICK_DEADZONE || (axes[2] ?? 0) < -STICK_DEADZONE;
+  const right = buttonBit(gp, BTN_RIGHT) || (axes[0] ?? 0) > STICK_DEADZONE || (axes[2] ?? 0) > STICK_DEADZONE;
+  const dir = up ? "up" : down ? "down" : left ? "left" : right ? "right" : "";
 
-    // D-Pad or left analog stick directions
-    const up = btns[12]?.pressed || axes[1] < -0.55;
-    const down = btns[13]?.pressed || axes[1] > 0.55;
-    const left = btns[14]?.pressed || axes[0] < -0.55;
-    const right = btns[15]?.pressed || axes[0] > 0.55;
+  if (S.gamepadHudEl) S.gamepadHudEl.classList.remove("dimmed");
 
-    // Face buttons: 0: A, 1: B, 2: X, 3: Y, 4: LB, 5: RB
-    const btnA = btns[0]?.pressed;
-    const btnB = btns[1]?.pressed;
-    const btnX = btns[2]?.pressed;
-    const btnY = btns[3]?.pressed;
-    const btnLB = btns[4]?.pressed;
-    const btnRB = btns[5]?.pressed;
-
-    if (S.view === "tv") {
-      // TV Mode owns the whole controller: A selects, B goes back, X opens the
-      // game page, LB/RB jump rows and the D-Pad moves the focus.
-      if (btnA || btnB || btnX || btnLB || btnRB || up || down || left || right) {
-        S.lastGamepadActionTime = now;
-        if (btnB) tvBack();
-        else if (btnA) tvActivate();
-        else if (btnX) tvOpenDetails();
-        else if (btnLB || btnRB) tvRowJump(btnRB ? 1 : -1);
-        else tvMove(up ? "up" : down ? "down" : left ? "left" : "right");
-      }
-    } else if (btnB) {
-      // B / Circle: back / close
-      S.lastGamepadActionTime = now;
-      if (S.activeLightboxScreenshot) {
-        closeScreenshotLightbox();
-      } else if (S.currentModalAppName) {
-        closeModal();
-      } else if (S.view === "store") {
-        setView(S.lastNonStoreView);
-        render();
-      }
-    } else if (btnA) {
-      // A / Cross: Select / Click
-      S.lastGamepadActionTime = now;
-      const active = document.activeElement as HTMLElement | null;
-      if (active && typeof active.click === "function") {
-        active.click();
-      }
-    } else if (btnLB || btnRB) {
-      // L1/LB & R1/RB: switch tab / filter
-          S.lastGamepadActionTime = now;
-      handleGamepadTabSwitch(btnRB ? 1 : -1);
-    } else if (btnY) {
-      // Y / Triangle: focus the search box
-      S.lastGamepadActionTime = now;
-      const searchInput = (document.getElementById("ach-search-input") || document.getElementById("search")) as HTMLInputElement | null;
-      searchInput?.focus();
-    } else if (btnX) {
-      // X / Square: add / remove favorite
-      S.lastGamepadActionTime = now;
-      if (S.currentModalAppName) {
-        toggleFav(S.currentModalAppName);
-      }
-    } else if (up || down || left || right) {
-      S.lastGamepadActionTime = now;
-      if (S.activeLightboxScreenshot && (left || right)) {
-        navigateScreenshotLightbox(left ? "prev" : "next");
-      } else {
-        handleGamepadDirectionalMove(up ? "up" : down ? "down" : left ? "left" : "right");
-      }
-    }
+  if (justPressed(mask, BTN_START) || justPressed(mask, BTN_GUIDE)) {
+    toggleTvMode();
+    lastHudKey = "";
+    updateGamepadHud(true);
+    prevButtons = mask;
+    scheduleGamepadLoop(false);
+    return;
   }
 
+  if (justPressed(mask, BTN_SELECT)) {
+    if (isPaletteOpen()) closePalette();
+    else openPalette();
+    prevButtons = mask;
+    scheduleGamepadLoop(false);
+    return;
+  }
+
+  if (isPaletteOpen()) {
+    if (justPressed(mask, BTN_B)) closePalette();
+    prevButtons = mask;
+    scheduleGamepadLoop(false);
+    return;
+  }
+
+  if (S.view === "tv") {
+    if (justPressed(mask, BTN_B)) tvBack();
+    else if (justPressed(mask, BTN_A)) tvActivate();
+    else if (justPressed(mask, BTN_X) || justPressed(mask, BTN_R4)) {
+      if (tvDetailOpen()) tvActivate();
+      else tvOpenDetails();
+    }
+    else if (justPressed(mask, BTN_Y) || justPressed(mask, BTN_L4)) tvFavorite();
+    else if (tvDetailOpen() && (buttonBit(gp, BTN_LB) || buttonBit(gp, BTN_RB))) {
+      if (consumeHold(buttonBit(gp, BTN_RB) ? "n+" : "n-", now)) tvNeighbor(buttonBit(gp, BTN_RB) ? 1 : -1);
+    } else if (buttonBit(gp, BTN_LT) || buttonBit(gp, BTN_RT)) {
+      if (consumeHold(buttonBit(gp, BTN_RT) ? "skip+" : "skip-", now)) tvSkip(buttonBit(gp, BTN_RT) ? 1 : -1);
+    } else if (buttonBit(gp, BTN_LB) || buttonBit(gp, BTN_RB)) {
+      if (consumeHold(buttonBit(gp, BTN_RB) ? "row+" : "row-", now)) tvRowJump(buttonBit(gp, BTN_RB) ? 1 : -1);
+    } else if (dir) {
+      if (consumeHold(`d:${dir}`, now)) tvMove(dir as "up" | "down" | "left" | "right");
+    } else {
+      holdKey = "";
+      holdCount = 0;
+    }
+    prevButtons = mask;
+    scheduleGamepadLoop(false);
+    return;
+  }
+
+  if (justPressed(mask, BTN_B)) {
+    if (S.activeLightboxScreenshot) closeScreenshotLightbox();
+    else if (S.currentModalAppName) closeModal();
+    else if (S.view === "store") {
+      setView(S.lastNonStoreView);
+      render();
+    }
+  } else if (justPressed(mask, BTN_A)) {
+    const active = document.activeElement as HTMLElement | null;
+    if (active && typeof active.click === "function") active.click();
+  } else if (justPressed(mask, BTN_LB) || justPressed(mask, BTN_RB)) {
+    handleGamepadTabSwitch(justPressed(mask, BTN_RB) ? 1 : -1);
+  } else if (justPressed(mask, BTN_Y)) {
+    const searchInput = (document.getElementById("ach-search-input") || document.getElementById("search")) as HTMLInputElement | null;
+    searchInput?.focus();
+  } else if (justPressed(mask, BTN_X) || justPressed(mask, BTN_L4)) {
+    const id = focusedAppName();
+    if (id) toggleFav(id);
+  } else if (justPressed(mask, BTN_R4)) {
+    const id = focusedAppName();
+    if (id) openEpicModal(id);
+  } else if (S.activeLightboxScreenshot && (left || right)) {
+    if (consumeHold(left ? "ss-prev" : "ss-next", now)) navigateScreenshotLightbox(left ? "prev" : "next");
+  } else if (dir) {
+    if (consumeHold(`d:${dir}`, now)) handleGamepadDirectionalMove(dir as "up" | "down" | "left" | "right");
+  } else {
+    holdKey = "";
+    holdCount = 0;
+  }
+
+  prevButtons = mask;
   scheduleGamepadLoop(false);
 }
 
@@ -449,16 +604,20 @@ export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "righ
 
   if (bestCandidate) {
     bestCandidate.focus();
-    bestCandidate.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    bestCandidate.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 }
 
-/** LB/RB: cycles the top-level console tabs (Store → Library → Downloads). */
+/** LB/RB: cycles Store, Library and Downloads. */
 export function cycleTopView(step: number): void {
-  const order = ['[data-act="open-store"]', '[data-view="library"]', '[data-view="downloads"]'];
+  const order = [
+    '[data-act="open-store"]',
+    '[data-view="library"]',
+    '[data-view="downloads"]',
+  ];
   const current = S.view === "store" ? 0 : S.view === "downloads" ? 2 : 1;
   const next = (current + step + order.length) % order.length;
-  document.querySelector<HTMLElement>(`#nav ${order[next]}`)?.click();
+  document.querySelector<HTMLElement>(`#sidebar ${order[next]}`)?.click();
 }
 
 export function handleGamepadTabSwitch(step: number): void {

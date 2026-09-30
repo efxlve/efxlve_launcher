@@ -1,11 +1,21 @@
 /* ==========================================================================
    Design tokens (docs/DESIGN_SYSTEM.md §3) and global reset.
    ========================================================================== */
+
+/* Registered so --sidebar-w interpolates. Unregistered custom properties snap. */
+@property --sidebar-w {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 252px;
+}
+
 :root {
   color-scheme: dark;
 
   /* Shell geometry. main.rs positions the store webview from the same values. */
   --sidebar-w: 252px;
+  --sidebar-drawer-ms: 280ms;
+  --sidebar-drawer-ease: cubic-bezier(0.2, 0, 0, 1);
   --winbar-h: 34px;
   --header-h: 60px;
   --statusbar-h: 0px;

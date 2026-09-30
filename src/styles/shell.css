@@ -1,6 +1,6 @@
 /* ==========================================================================
-   App shell (Hydra layout): full-width window bar, sidebar with account +
-   nav + filtered game list, page header, content and a bottom status bar.
+   App shell (Hydra layout): full-width window bar, account chip, sidebar
+   navigation, recent games, bottom downloads dock, page header and content.
    ========================================================================== */
 #app { position: relative; display: flex; flex-direction: column; height: 100vh; }
 #body { flex: 1; min-height: 0; display: flex; }
@@ -73,6 +73,7 @@
 .net-chip.online .net-dot { background: var(--ok); }
 .net-chip.offline { color: var(--warn); }
 .net-chip.offline .net-dot { background: var(--warn); }
+#btn-tv-mode { margin-left: 2px; }
 .notif-badge { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); font-size: 0; pointer-events: none; }
 .notif-badge.warn { background: var(--warn); }
 .win-controls { display: flex; align-self: stretch; margin-left: 6px; -webkit-app-region: no-drag; }
@@ -85,264 +86,87 @@
 
 /* --- Sidebar --- */
 #sidebar {
-  width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
-  padding: 12px 0 8px; background: var(--bg); border-right: 1px solid rgba(255, 255, 255, 0.14);
-}
-.sb-profile { display: flex; align-items: center; gap: 2px; margin: 0 8px 10px; }
-.sb-account {
-  display: flex; align-items: center; gap: 10px; height: 48px; flex: 1; min-width: 0; padding: 0 8px;
-  border: none; border-radius: var(--r-sm); background: transparent; color: var(--text);
-  font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; text-align: left;
-  transition: background-color var(--ease);
-}
-.sb-notif { position: relative; width: 36px; height: 36px; flex-shrink: 0; color: var(--text-2); }
-.sb-notif .notif-badge { top: 6px; right: 6px; }
-.sb-account:hover, .sb-account.active { background: var(--surface-2); }
-.account-avatar {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-  display: grid; place-items: center; background: var(--surface-3); color: var(--text-2);
-}
-.account-avatar svg { width: 18px; height: 18px; }
-.account-avatar .avatar-img, .account-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.account-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.sb-nav { display: flex; flex-direction: column; gap: 0; flex-shrink: 0; }
-.sb-item {
-  position: relative; display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 18px;
-  border: none; border-radius: 0; background: transparent;
-  color: var(--text-2); font-size: 15px; font-weight: 500; font-family: inherit;
-  cursor: pointer; text-align: left;
-  transition: color var(--ease), background-color var(--ease);
-}
-.sb-item svg { width: 18px; height: 18px; flex-shrink: 0; }
-.sb-item span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.sb-item:hover { background: transparent; color: var(--text); }
-.sb-item.active { background: transparent; color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
-.sb-count {
-  min-width: 20px; height: 18px; padding: 0 6px; border-radius: 4px; margin-right: 6px;
-  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600;
-  line-height: 18px; text-align: center; font-variant-numeric: tabular-nums;
-}
-
-.sb-games { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
-.sb-games-label {
-  margin: 6px 16px 8px; padding-top: 14px; border-top: none;
-  font-size: 15px; font-weight: 600; color: var(--text-2);
-}
-.sb-game {
-  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; flex-shrink: 0;
-  border: none; border-radius: 0; background: transparent; color: var(--text-2);
-  font-size: 14px; font-family: inherit; cursor: pointer; text-align: left;
-  transition: background-color var(--ease), color var(--ease);
-}
-.sb-game:hover { background: var(--surface-1); color: var(--text); }
-.sb-game.active { background: transparent; color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
-.sb-game img, .sb-game-ph { width: 26px; height: 26px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: var(--surface-3); }
-.sb-game-ph { display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--text-3); }
-.sb-game-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sb-game-state { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.sb-game-state.running { background: var(--ok); }
-.sb-game-state.update { background: var(--warn); }
-.sb-game-state.dl { background: var(--accent); }
-
-/* --- Sidebar Account Switcher Host & Button --- */
-.sb-switcher-host {
   position: relative;
-  margin: 8px 8px 0;
+  width: var(--sidebar-w);
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 8px;
-}
-
-.sb-switcher-btn {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 48px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  color: var(--text);
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color var(--ease), border-color var(--ease), transform var(--ease);
-}
-.sb-switcher-btn:hover {
-  background: var(--surface-2);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.sb-switcher-btn:active {
-  transform: scale(0.98);
-}
-.sb-switcher-btn.active {
-  border-color: rgba(255, 255, 255, 0.32);
-  background: var(--surface-2);
-}
-
-/* Switcher row: a switch icon, an "Account Switcher" label and a count of
-   linked accounts. It never shows one account's name or photo. */
-.sb-switcher-btn > svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  color: var(--text-2);
-}
-.sb-switcher-btn:hover > svg,
-.sb-switcher-btn.active > svg {
-  color: var(--text);
-}
-.sb-switcher-label {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sb-switcher-count {
-  flex-shrink: 0;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  color: var(--text-2);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- Account Switcher Popover --- */
-.sb-popover {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px 0;
   background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: var(--r-md);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
-  padding: 10px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 420px;
-  overflow-y: auto;
-  animation: sbPopIn 130ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  overflow-x: hidden;
+  overflow-y: hidden;
+  contain: paint;
+  transition: width var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+html.sb-no-anim #sidebar,
+html.sb-resizing #sidebar,
+body.sb-resizing #sidebar {
+  transition: none !important;
+}
+.sb-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 8;
+  touch-action: none;
+  background: transparent;
+}
+.sb-resize:hover,
+body.sb-resizing .sb-resize {
+  background: rgba(255, 255, 255, 0.08);
+}
+.sb-resize:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+body.sb-resizing {
+  cursor: ew-resize;
+  user-select: none;
+}
+body.sb-resizing iframe {
+  pointer-events: none;
 }
 
-@keyframes sbPopIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.sb-popover-head {
+.sb-profile {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 4px 6px;
+  align-items: flex-start;
+  height: 52px;
+  margin: 4px 8px 8px;
+  padding: 0 0 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  transition: height var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
-.sb-popover-head .icon-btn {
-  width: 24px;
-  height: 24px;
+.sb-account {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  width: calc(100% - 44px);
   padding: 0;
-  color: var(--text-2);
-}
-.sb-popover-head .icon-btn:hover {
-  color: var(--text);
-  background: var(--surface-2);
-}
-.sb-popover-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-2);
-}
-
-.sb-pop-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.sb-pop-platform-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 4px;
-}
-.sb-pop-platform-badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: var(--text-3);
-}
-.sb-pop-add-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  background: var(--surface-1);
-  color: var(--text-2);
-  cursor: pointer;
-  padding: 0;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
-}
-.sb-pop-add-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.24);
-}
-
-.sb-pop-account-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.sb-pop-acc-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
   border: none;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background-color var(--ease);
+  transition: background-color var(--ease), width var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
-.sb-pop-acc-item:hover {
+.sb-account:hover,
+.sb-account.active {
   background: var(--surface-2);
 }
-.sb-pop-acc-item.active {
-  background: var(--surface-2);
-  font-weight: 600;
-}
-.sb-pop-acc-avatar {
-  width: 24px;
-  height: 24px;
+.account-avatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
@@ -350,51 +174,335 @@
   place-items: center;
   background: var(--surface-3);
   color: var(--text-2);
-  font-size: 11px;
-  font-weight: 600;
+  margin-left: 12px;
+  margin-right: 12px;
 }
-.sb-pop-acc-avatar img {
+.account-avatar svg {
+  width: 18px;
+  height: 18px;
+}
+.account-avatar .avatar-img,
+.account-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.sb-pop-acc-name {
+.account-name {
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease 60ms, transform 180ms ease 60ms;
 }
-.sb-pop-check {
-  color: var(--ok);
-  display: flex;
-  align-items: center;
+.sb-notif {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-}
-
-.sb-pop-empty-add {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+  border: none;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
   cursor: pointer;
-  text-align: left;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: top var(--sidebar-drawer-ms) var(--sidebar-drawer-ease),
+              right var(--sidebar-drawer-ms) var(--sidebar-drawer-ease),
+              background-color var(--ease),
+              color var(--ease);
 }
-.sb-pop-empty-add:hover {
-  background: var(--surface-1);
+.sb-notif:hover {
+  background: var(--surface-2);
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.24);
+}
+.sb-notif .notif-badge {
+  top: 6px;
+  right: 6px;
 }
 
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+}
+.sb-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 42px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--ease), background-color var(--ease);
+}
+.sb-item svg {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  flex-shrink: 0;
+  margin-left: 27px;
+  margin-right: 16px;
+}
+.sb-item span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease 60ms, transform 180ms ease 60ms;
+}
+.sb-item:hover {
+  background: transparent;
+  color: var(--text);
+}
+.sb-item.active {
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.sb-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: auto;
+  margin-right: 16px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #000;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.sb-count.hidden {
+  display: none !important;
+}
+
+.sb-games {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.sb-games-label {
+  margin: 0 0 10px 24px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  max-height: 20px;
+  transition: opacity 160ms ease,
+              max-height var(--sidebar-drawer-ms) var(--sidebar-drawer-ease),
+              margin var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+.sb-game {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  width: 100%;
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--ease), color var(--ease);
+}
+.sb-game:hover {
+  background: var(--surface-1);
+  color: var(--text);
+}
+.sb-game.active {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.sb-game img,
+.sb-game-ph {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-3);
+  margin-left: 23px;
+  margin-right: 14px;
+}
+.sb-game-ph {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.sb-game-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease 60ms, transform 180ms ease 60ms;
+}
+
+.sb-toggle {
+  position: relative;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  margin: 8px 12px 4px;
+  padding: 0;
+  flex-shrink: 0;
+  width: calc(100% - 24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  transition: width var(--sidebar-drawer-ms) var(--sidebar-drawer-ease),
+              background-color var(--ease),
+              color var(--ease),
+              border-color var(--ease);
+}
+.sb-toggle:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.sb-toggle-icon {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex-shrink: 0;
+  margin-left: 16px;
+  margin-right: 12px;
+  display: block;
+  transition: transform var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+.sb-toggle-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease 60ms, transform 180ms ease 60ms;
+}
+
+/* --- Narrow Icon Rail State (Collapsible sidebar) --- */
+html.sb-narrow .sb-profile {
+  height: 94px;
+}
+html.sb-narrow .sb-account {
+  width: 100%;
+  height: 40px;
+}
+html.sb-narrow .account-name {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+html.sb-narrow .sb-notif {
+  top: 48px;
+  right: calc(50% - 18px);
+}
+html.sb-narrow .sb-item span:first-of-type {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+html.sb-narrow .sb-count {
+  position: absolute;
+  left: 39px;
+  top: 9px;
+  margin: 0;
+  padding: 0;
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  border-radius: 50%;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+}
+html.sb-narrow .sb-games {
+  scrollbar-width: none;
+}
+html.sb-narrow .sb-games::-webkit-scrollbar {
+  display: none;
+}
+html.sb-narrow .sb-games-label {
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  margin-bottom: 0;
+}
+html.sb-narrow .sb-game-title {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+html.sb-narrow .sb-toggle {
+  width: 48px;
+}
+html.sb-narrow .sb-toggle-icon {
+  transform: rotate(180deg);
+}
+html.sb-narrow .sb-toggle-label {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
 /* --- Page header + content --- */
 #main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
 #page-header {
@@ -405,72 +513,37 @@
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* --- Store tabs (Header): the shared .tab look, sized to the header rule --- */
+/* --- Store switcher: compact segmented control, three storefronts --- */
 .store-tabs {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  gap: 18px;
-  height: 100%;
-  margin-left: 18px;
-  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  margin: 0 auto 0 16px;
+  padding: 3px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
   contain: layout;
   user-select: none;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
 }
-.store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
-/* The underline rides just above the header hairline instead of hanging below it. */
-.store-tabs .tab { height: 100%; }
-.store-tabs .tab.active::after { bottom: 0; }
-/* One sliding underline instead of a per-tab line: the movement itself shows which
-   storefront was just selected. Positions come from nav.ts (no observer, no loop). */
-.store-tabs-underline {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--accent);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform var(--ease), width var(--ease), opacity 100ms ease-out;
+.store-tabs .tab {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
 }
-.store-tabs.has-underline .store-tabs-underline { opacity: 1; }
-.store-tabs.has-underline .tab.active::after { display: none; }
-/* A cold storefront loads for seconds; the active tab says so with the launcher's
-   own spinner instead of leaving the header looking idle. */
-.store-tabs .tab.is-loading::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-3);
-  border-top-color: var(--accent);
-  animation: spin 0.8s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .store-tabs-underline { transition: none; }
-  .store-tabs .tab.is-loading::before { animation: none; }
-}
+.store-tabs .tab:hover { color: var(--text); background: var(--surface-2); }
+.store-tabs .tab.active { color: #fff; background: var(--surface-3); }
+.store-tabs .tab.active::after { display: none; }
+.store-tabs-underline { display: none; }
 
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-switcher:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
-.store-progress-line {
-  position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  background-size: 200% 100%;
-  animation: store-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  pointer-events: none;
-  z-index: 10;
-}
-.store-progress-line.hidden { display: none; }
-@keyframes store-sweep {
-  0% { background-position: -150% 0; }
-  100% { background-position: 150% 0; }
-}
+.store-progress-line { display: none !important; }
 .page-search {
   display: flex; align-items: center; gap: 8px; width: 260px; height: 36px; padding: 0 12px;
   border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);
@@ -483,11 +556,12 @@
 #view { flex: 1; overflow-y: auto; padding: 20px 28px 40px; }
 #view.view-enter > * { animation: page-in var(--ease-in) both; }
 
-/* Notification panel opens beside the profile bell, clear of the sidebar. */
+/* Notification panel: fixed dropdown positioned by JS under the sidebar bell. */
 #notif-root { position: relative; z-index: 400; }
 .notif-panel {
-  position: fixed; left: calc(var(--sidebar-w) + 8px); top: calc(var(--winbar-h) + 8px);
-  width: 360px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
+  position: fixed; left: 0; top: 0;
+  width: 360px; max-width: calc(100vw - 16px); max-height: 70vh;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
 }

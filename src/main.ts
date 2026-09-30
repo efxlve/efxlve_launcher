@@ -8,9 +8,10 @@
  */
 
 import "./styles/index.css";
+import { initSidebarLayout } from "./core/sidebar-layout";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
-import { updateChrome, updateNavHistoryUi, updateSidebarAccountSwitcher } from "./core/nav";
+import { updateChrome, updateNavHistoryUi } from "./core/nav";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
@@ -34,10 +35,11 @@ import { renderSettings } from "./features/settings/settings-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
-import { renderTvMode } from "./features/gamepad/tv-mode";
+import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
 document.documentElement.classList.add("ready");
+initSidebarLayout();
 
 let lastRenderedView: View | null = null;
 viewEl.addEventListener("animationend", (e) => {
@@ -93,6 +95,9 @@ function render(): void {
   if (S.view === "library") {
     setupLibScrollObserver();
   }
+  if (S.view === "tv") {
+    hydrateTvMode();
+  }
   if (S.view === "downloads") {
     startSpeedChartTimer();
     drawSpeedCanvas();
@@ -120,10 +125,6 @@ function closeAllModals(): void {
   closeInstallDialog();
   closeManagePopup();
   closeChangelogModal();
-  if (S.isAccountSwitcherOpen) {
-    S.isAccountSwitcherOpen = false;
-    updateSidebarAccountSwitcher();
-  }
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }
