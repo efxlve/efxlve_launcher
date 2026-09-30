@@ -1,13 +1,28 @@
 # ROADMAP.md — Efxlve Launcher Planlanan Geliştirmeler & Görev Listesi
 
 > **Amaç:** Projede tespit edilen hataların, kullanıcı geri bildirimlerinin ve planlanan tasarım/mimari yeniliklerin merkezi kayıt ve takip dokümanıdır.
+> **Vizyon:** "Universal Gaming Hub" (Epic Games + GOG + Steam birleşik, ultra hafif masaüstü merkezi).
 
 ---
 
-## 1. Öncelikli Aktif Görev (Kullanıcı Bildirimi)
+## 1. Aktif Öncelikli Görevler (P1 Denetim & Sağlamlaştırma Bulguları — 30.09.2026)
+
+Detaylı teknik arka plan ve satır numaraları için [`docs/PROJECT_AUDIT.md`](./PROJECT_AUDIT.md) dosyasına bakın:
+
+1. **[P1 - Performans] İndirme İlerlemesinde Sidebar CPU Yükü:**
+   - İndirme sırasında her karede tetiklenen `updateBadge()` çağrısı, `updateSidebarGames()` üzerinden 500+ oyunu tekrar filtreleyip sıralıyor. İlerleme olayı ile sidebar üyelik taraması ayrıştırılmalı.
+2. **[P1 - Güvenlik] IPC Hesap Kimlikleri Dosya Yolu Doğrulaması:**
+   - `legendary/commands.rs` ve `gogdl/commands.rs` içindeki `account_id`/`user_id` girdileri `Path::join` öncesi allowlist/regex ile doğrulanmalı (path traversal engelleme).
+3. **[P1 - Mantık] Steam QR Girişinde "Oturumu Koru" Tercihi:**
+   - QR ile giriş akışı kullanıcıya tercih sormadan oturumu DPAPI kasasına mühürlüyor. Normal giriş akışındaki `steam-remember` tercihi QR akışına da entegre edilmeli.
+4. **[P1 - Doğruluk] Hakkında Ekranı DPAPI Beyanı:**
+   - Hakkında metnindeki "tüm belirteçler DPAPI ile korunur" ifadesi mağaza bazında gerçek durumla (Steam DPAPI, Epic/GOG yerel profilde JSON) hizalanmalı.
+
+---
+
+## 2. Tamamlanan Önemli Dönüm Noktaları (Geçmiş)
 
 ### 📌 Üst Menü ("Mağaza", "Kütüphane") Webview Çakışma Bug'ı ve Üst Navigasyon UI Yenilemesi
-
 - **Durum:** ✅ `TAMAMLANDI` (Milestone 1 — bkz. CHANGELOG_INTERNAL.md §79)
 - **Etkilenen Dosyalar:**
   - `src/main.ts` (Titlebar render, `#nav`, `openStore`, `closeStore`, `updateNavIndicator`, click router)

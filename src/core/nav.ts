@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
-import { avatarFor, globalAvatar, S } from "./state";
+import { globalAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { icon } from "./icons";
@@ -41,8 +41,10 @@ function pendingUpdateCount(): number {
     if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
     if (g.installed && g.updateAvailable) n++;
   }
-  // Steam updates belong to the Steam client: they show on the card and in the
-  // Updates filter, never in our own download badge.
+  for (const g of S.steamSummaries) {
+    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    if (g.installed && g.updateAvailable && !g.downloading) n++;
+  }
   return n;
 }
 
@@ -61,9 +63,14 @@ function syncPageGameCount(): void {
 export function updateBadge(): void {
   let active = 0;
   for (const d of S.downloads.values()) if (!d.done) active++;
-  const count = active + S.dlQueueStatus.queue.length + pendingUpdateCount();
-  dlBadge.textContent = count > 0 ? String(count) : "";
+  let steamDl = 0;
+  for (const g of S.steamGames) if (g.downloading) steamDl++;
+  const count = active + S.dlQueueStatus.queue.length + pendingUpdateCount() + steamDl;
+  const label = count > 0 ? String(count) : "";
+  if (dlBadge.textContent !== label) dlBadge.textContent = label;
   dlBadge.classList.toggle("hidden", count === 0);
+  if (count > 0) dlBadge.title = label;
+  else dlBadge.removeAttribute("title");
   updateSidebarGames();
 }
 
@@ -96,9 +103,7 @@ export function updatePageHeader(): void {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");
         btn.classList.toggle("active", active);
         btn.setAttribute("aria-current", active ? "page" : "false");
-        btn.classList.toggle("is-loading", active && S.storeLoading);
       });
-      syncStoreTabsUnderline();
     }
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
@@ -106,22 +111,10 @@ export function updatePageHeader(): void {
 }
 
 /**
- * Slides the storefront underline under the active tab. Called from the header
- * sync and from the window resize path while the store view is open, so no
- * observer or animation loop is needed.
+ * Kept so a window resize while the store is open does not throw. The header
+ * switcher is a segmented control now, so there is no sliding underline to move.
  */
-export function syncStoreTabsUnderline(): void {
-  const switcher = document.getElementById("store-switcher");
-  if (!switcher || switcher.hidden) return;
-  const active = switcher.querySelector<HTMLElement>(".tab.active");
-  const underline = switcher.querySelector<HTMLElement>(".store-tabs-underline");
-  if (!active || !underline) return;
-  const width = active.offsetWidth;
-  if (width <= 0) return;
-  underline.style.width = `${width}px`;
-  underline.style.transform = `translateX(${active.offsetLeft}px)`;
-  switcher.classList.add("has-underline");
-}
+export function syncStoreTabsUnderline(): void {}
 
 let sidebarGamesSig = "";
 
@@ -156,15 +149,7 @@ export function updateSidebarGames(): void {
     .sort((a, b) => fillRank(a.appName) - fillRank(b.appName));
   const shown = played.concat(fillers).slice(0, SIDEBAR_RECENT_LIMIT);
 
-  const stateOf = (app: string, update: boolean): string =>
-    S.runningGames.has(app) ? "running" : S.downloads.has(app) && !S.downloads.get(app)?.done ? "dl" : update ? "update" : "";
-
-  const hasPendingUpdate = (app: string, update: boolean): boolean =>
-    update && !S.ignoredUpdates.has(app);
-
-  const sig = shown
-    .map((s) => `${s.appName}:${stateOf(s.appName, hasPendingUpdate(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName)))}`)
-    .join("|") + `|${S.appLanguage}`;
+  const sig = shown.map((s) => s.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 
@@ -176,12 +161,10 @@ export function updateSidebarGames(): void {
     .map((s) => {
       const raw = rawOf(s.appName);
       const cover = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
-      const state = stateOf(s.appName, hasPendingUpdate(s.appName, s.updateAvailable || S.availableUpdates.has(s.appName)));
       const thumb = cover
         ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
         : `<span class="sb-game-ph">${esc((s.title[0] || "?").toUpperCase())}</span>`;
-      const marker = state ? `<span class="sb-game-state ${state}"></span>` : "";
-      return `<button class="sb-game ${s.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(s.appName)}" title="${esc(s.title)}">${thumb}<span class="sb-game-title">${esc(s.title)}</span>${marker}</button>`;
+      return `<button class="sb-game ${s.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(s.appName)}" title="${esc(s.title)}">${thumb}<span class="sb-game-title">${esc(s.title)}</span></button>`;
     })
     .join("");
   host.innerHTML = `<div class="sb-games-label">${t("sidebar.recent")}</div>${rows}`;
@@ -198,154 +181,10 @@ export function updateOfflineModeUi(): void {
   btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
 }
 
-let sbSwitcherSig = "";
-
-/**
- * Bottom sidebar multi-platform account switcher button and floating popover menu.
- * Displays connected platforms (Epic, GOG), current user avatar/name, and allows
- * 1-click fast switching or adding new store accounts.
- */
-export function updateSidebarAccountSwitcher(): void {
-  const host = document.getElementById("sb-account-host");
-  if (!host) return;
-
-  // Fast signature check to avoid unnecessary DOM thrashing
-  const epicAccsSig = (S.savedAccounts || [])
-    .map((a) => `${a.account_id}:${a.display_name}:${a.is_active ? 1 : 0}`)
-    .join(",");
-  const gogAccsSig = (S.gogSavedAccounts || [])
-    .map((a) => `${a.user_id}:${a.username}:${a.is_active ? 1 : 0}`)
-    .join(",");
-  const sig = [
-    S.isAccountSwitcherOpen ? "1" : "0",
-    S.epicAccount,
-    S.epicAccountId || "",
-    S.gogAccount,
-    S.gogAccountId || "",
-    epicAccsSig,
-    gogAccsSig,
-    S.appLanguage,
-  ].join("|");
-
-  if (sig === sbSwitcherSig && host.firstElementChild) return;
-  sbSwitcherSig = sig;
-
-  // Icon-only button: with several linked accounts, showing one name/avatar
-  // would be ambiguous. The popover lists the accounts, their platforms and the
-  // active one (checkmark), so the button stays neutral.
-  const accountCount = (S.savedAccounts?.length || 0) + (S.gogSavedAccounts?.length || 0);
-
-  let popoverHtml = "";
-  if (S.isAccountSwitcherOpen) {
-    // Epic Section
-    const epicItems = (S.savedAccounts || [])
-      .map((acc) => {
-        const isActive =
-          acc.is_active ||
-          acc.account_id === S.epicAccountId ||
-          acc.display_name === S.epicAccount;
-        const av = avatarFor(`epic:${acc.account_id}`);
-        const avContent = av
-          ? `<img src="${esc(av)}" alt="" />`
-          : esc((acc.display_name.trim()[0] || "?").toUpperCase());
-        return `
-          <button type="button" class="sb-pop-acc-item ${isActive ? "active" : ""}" data-act="sb-switch-epic" data-id="${esc(acc.account_id)}" title="${esc(acc.display_name)}">
-            <span class="sb-pop-acc-avatar">${avContent}</span>
-            <span class="sb-pop-acc-name">${esc(acc.display_name)}</span>
-            ${isActive ? `<span class="sb-pop-check">${icon("check", 14)}</span>` : ""}
-          </button>
-        `;
-      })
-      .join("");
-
-    const epicSection = `
-      <div class="sb-pop-section">
-        <div class="sb-pop-platform-head">
-          <span class="sb-pop-platform-badge">EPIC GAMES</span>
-          <button type="button" class="sb-pop-add-btn" data-act="sb-add-epic" title="${t("settings.accountAdd")}">
-            ${icon("plus", 12)}
-          </button>
-        </div>
-        <div class="sb-pop-account-list">
-          ${
-            epicItems ||
-            `<button type="button" class="sb-pop-empty-add" data-act="sb-add-epic">
-              ${icon("plus", 13)}
-              <span>${t("nav.signIn")} (Epic)</span>
-            </button>`
-          }
-        </div>
-      </div>
-    `;
-
-    // GOG Section
-    const gogItems = (S.gogSavedAccounts || [])
-      .map((acc) => {
-        const isActive = acc.is_active || acc.user_id === S.gogAccountId;
-        const av = avatarFor(`gog:${acc.user_id}`);
-        const avContent = av
-          ? `<img src="${esc(av)}" alt="" />`
-          : esc((acc.username.trim()[0] || "?").toUpperCase());
-        return `
-          <button type="button" class="sb-pop-acc-item ${isActive ? "active" : ""}" data-act="sb-switch-gog" data-id="${esc(acc.user_id)}" title="${esc(acc.username)}">
-            <span class="sb-pop-acc-avatar">${avContent}</span>
-            <span class="sb-pop-acc-name">${esc(acc.username)}</span>
-            ${isActive ? `<span class="sb-pop-check">${icon("check", 14)}</span>` : ""}
-          </button>
-        `;
-      })
-      .join("");
-
-    const gogSection = `
-      <div class="sb-pop-section">
-        <div class="sb-pop-platform-head">
-          <span class="sb-pop-platform-badge">GOG.COM</span>
-          <button type="button" class="sb-pop-add-btn" data-act="sb-add-gog" title="${t("settings.accountAdd")}">
-            ${icon("plus", 12)}
-          </button>
-        </div>
-        <div class="sb-pop-account-list">
-          ${
-            gogItems ||
-            `<button type="button" class="sb-pop-empty-add" data-act="sb-add-gog">
-              ${icon("plus", 13)}
-              <span>${t("nav.signIn")} (GOG)</span>
-            </button>`
-          }
-        </div>
-      </div>
-    `;
-
-    popoverHtml = `
-      <div id="sb-account-popover" class="sb-popover" role="dialog" aria-label="${t("accounts.switchAccountTitle")}">
-        <div class="sb-popover-head">
-          <span class="sb-popover-title">${t("accounts.switchAccountTitle")}</span>
-          <button type="button" class="icon-btn tiny" data-act="open-accounts-settings" title="${t("accounts.manageAccounts")}">
-            ${icon("settings", 13)}
-          </button>
-        </div>
-        ${epicSection}
-        ${gogSection}
-      </div>
-    `;
-  }
-
-  const btnHtml = `
-    <button type="button" class="sb-switcher-btn ${S.isAccountSwitcherOpen ? "active" : ""}" data-act="toggle-account-switcher" aria-haspopup="true" aria-expanded="${S.isAccountSwitcherOpen}" title="${esc(t("accounts.switchAccountTitle"))}">
-      ${icon("arrow-left-right", 16)}
-      <span class="sb-switcher-label">${t("accounts.switchAccountTitle")}</span>
-      ${accountCount > 1 ? `<span class="sb-switcher-count tabular-nums">${accountCount}</span>` : ""}
-    </button>
-  `;
-
-  host.innerHTML = popoverHtml + btnHtml;
-}
-
 /** Refresh the account chip, the active sidebar item and the installed-games list. */
 export function updateChrome(): void {
   updateSidebarActive();
   updateSidebarGames();
-  updateSidebarAccountSwitcher();
   updatePageHeader();
   const acc = document.getElementById("account");
   if (acc) {

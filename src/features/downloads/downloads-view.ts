@@ -10,7 +10,7 @@
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
-import { epicWideArt, gogToEpicSummary, rawOf, summaryOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
@@ -214,7 +214,7 @@ function renderActiveCard(dl: DlMetrics): string {
   const s = S.epicSummariesMap.get(dl.id);
   const title = esc(s?.title || dl.title || dl.id);
   const art = s ? epicWideArt(s) || s.cover : null;
-  const paused = S.dlQueueStatus.isPaused;
+  const paused = dl.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused;
   const pct = Math.round(dl.progress);
   const metric = (label: string, id: string, value: string): string =>
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
@@ -229,8 +229,8 @@ function renderActiveCard(dl: DlMetrics): string {
           </div>
           <div class="row-actions">
             ${paused
-              ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
-              : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}
+                ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
+                : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}
             <button class="icon-btn" data-act="manage-game" data-id="${dl.id}" title="${t("common.manage")}">${icon("settings", 16)}</button>
             <button class="icon-btn danger" data-act="epic-cancel" data-id="${dl.id}" title="${t("common.cancel")}">${icon("x", 16)}</button>
           </div>
@@ -282,9 +282,13 @@ export function renderDownloads(): string {
 
   // GOG games with a newer public build join the same updates list.
   const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable).map(gogToEpicSummary);
+  const steamUpdates = S.steamSummaries
+    .filter((g) => g.installed && g.updateAvailable && !g.downloading)
+    .map((g) => libraryItemToSummary(g));
   const updates = [
     ...S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))),
     ...gogUpdates,
+    ...steamUpdates,
   ];
   const manageBtn = (id: string): string => `<button class="icon-btn" data-act="manage-game" data-id="${id}" title="${t("common.manage")}">${icon("settings", 16)}</button>`;
 
@@ -310,8 +314,11 @@ export function renderDownloads(): string {
     const meta = metaParts.join(" · ");
     const ignoreTip = isIgnored ? t("dl.restoreIndicatorTip") : t("dl.ignoreIndicatorTip");
     const ignoreBtn = `<button class="icon-btn${isIgnored ? " active" : ""}" data-act="toggle-ignore-update" data-id="${esc(s.appName)}" title="${esc(ignoreTip)}">${icon(isIgnored ? "bell" : "bell-off", 15)}</button>`;
+    const updateAct = s.appName.startsWith("steam::")
+      ? `<button class="btn update small" data-act="steam-action" data-id="${s.appName.slice(7)}" data-mode="update">${icon("download", 13)} ${t("common.update")}</button>`
+      : `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`;
     return gameRow(s, s.appName, meta || t("drawer.updateAvailable"),
-      `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>${ignoreBtn}${manageBtn(s.appName)}`);
+      `${updateAct}${ignoreBtn}${manageBtn(s.appName)}`);
   }).join("");
 
   const installed = installedGames();
@@ -321,19 +328,27 @@ export function renderDownloads(): string {
     return gameRow(s, s.appName, fmtBytes(s.installSize || 0), action + manageBtn(s.appName));
   }).join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && installed.length === 0
+  const steamDownloading = S.steamGames.filter((g) => g.downloading);
+  const steamRows = steamDownloading.map((g) => {
+    const pct = g.bytesToDownload > 0
+      ? Math.min(100, Math.round((g.bytesDownloaded / g.bytesToDownload) * 100))
+      : null;
+    const bytes = g.bytesDownloaded > 0
+      ? `${fmtBytes(g.bytesDownloaded)}${g.bytesToDownload > 0 ? ` / ${fmtBytes(g.bytesToDownload)}` : ""}`
+      : "";
+    const meta = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
+    return gameRow(
+      summaryOf(`steam::${g.appId}`),
+      `steam::${g.appId}`,
+      `<span class="tabular-nums" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>`,
+      `<button class="btn ghost small" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
+       <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
+    );
+  }).join("");
+
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && installed.length === 0 && steamDownloading.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
-
-  // Steam owns its download queue and never exposes progress on disk, so the
-  // page reports the state only (the client shows the numbers).
-  const steamDownloading = S.steamGames.filter((g) => g.downloading);
-  const steamRows = steamDownloading.map((g) => gameRow(
-    summaryOf(`steam::${g.appId}`),
-    `steam::${g.appId}`,
-    t("steam.downloadingHint"),
-    `<button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
-  )).join("");
 
   return `
     <div class="page dl-page">

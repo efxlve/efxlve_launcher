@@ -32,6 +32,8 @@ export interface SteamGame {
   library: string;
   /** True while the Steam client is downloading this app. */
   downloading: boolean;
+  bytesDownloaded: number;
+  bytesToDownload: number;
 }
 
 /** Playtime from the Steam client's own local config, in seconds. */
@@ -49,6 +51,8 @@ export interface SteamGameDetails {
   developers: string[];
   publishers: string[];
   genres: string[];
+  /** Store category ids (1 multi-player, 2 single-player, 9 co-op, 36 online PvP ...). */
+  categories: number[];
   releaseDate: string;
   headerImage: string;
   website: string;
@@ -56,15 +60,28 @@ export interface SteamGameDetails {
   dlc: string[];
   requirementsMin: string[];
   requirementsRec: string[];
+  /** Steam store field naming the third-party account / launcher, if any. */
+  extUserAccountNotice: string;
+  /** Steam store DRM / anti-cheat blurb (Easy Anti-Cheat, BattlEye, …). */
+  drmNotice: string;
+  metacriticScore?: number | null;
+  metacriticUrl?: string | null;
 }
 
 export const steamStatus = () => invoke<SteamStatus>("steam_status");
 /** Opens the Steam client itself (no game launch). */
 export const steamOpenClient = () => invoke<void>("steam_open_client");
+/** Opens Steam's own Downloads window (pause and queue live there). */
+export const steamOpenDownloads = () => invoke<void>("steam_open_downloads");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
+export const steamCloudStatus = (appId: string) =>
+  invoke<{ appId: string; lastSync: number | null }>("steam_cloud_status", { appId });
 /** Hands an action (launch/install/uninstall/validate) to the Steam client. */
-export const steamGameAction = (appId: string, action: "launch" | "install" | "uninstall" | "validate") =>
+export const steamGameAction = (appId: string, action: "launch" | "install" | "update" | "uninstall" | "validate") =>
   invoke<void>("steam_game_action", { appId, action });
+/** After a launch: hide Steam's window, then quit Steam when the game closes. */
+export const steamWatchSession = (appId: string) =>
+  invoke<void>("steam_watch_session", { appId });
 export const steamSyncPlaytime = () =>
   invoke<Record<string, SteamPlaytime>>("steam_sync_playtime");
 export const steamGetGameDetails = (appId: string, language?: string, force = false) =>
@@ -134,7 +151,8 @@ export interface SteamQrLogin {
   svg: string;
   interval: number;
 }
-export const steamLoginQrBegin = () => invoke<SteamQrLogin>("steam_login_qr_begin");
+export const steamLoginQrBegin = (remember = true) =>
+  invoke<SteamQrLogin>("steam_login_qr_begin", { remember });
 /** Submits the Steam Guard code (email or mobile authenticator). */
 export const steamLoginCode = (code: string) => invoke<SteamLoginStatus>("steam_login_code", { code });
 /**

@@ -1,6 +1,5 @@
 /**
- * Click delegation handlers for Epic and GOG authentication, account switching,
- * and sidebar account popover interactions.
+ * Click delegation handlers for Epic and GOG authentication and account actions.
  */
 
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -16,7 +15,6 @@ import {
 } from "../../auth/auth-actions";
 import {
   cancelAddAccount,
-  loadSavedAccounts,
   promptAddAccount,
   removeSavedAccount,
   switchAccount,
@@ -30,7 +28,6 @@ import {
 } from "../../auth/gog-auth-actions";
 import {
   cancelAddGogAccount,
-  loadSavedGogAccounts,
   promptAddGogAccount,
   removeSavedGogAccount,
   switchGogAccount,
@@ -38,9 +35,7 @@ import {
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
-import { pushNavHistory, updateSidebarAccountSwitcher } from "../../../core/nav";
-import { closeAllModals, render } from "../../../core/render";
-import { setView } from "../../store/store-view";
+import { render } from "../../../core/render";
 import { loadSteamLibrary } from "../../library/steam-library";
 
 export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: string): boolean {
@@ -188,56 +183,6 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
     case "account-add":
       promptAddAccount();
-      return true;
-
-    case "toggle-account-switcher":
-      S.isAccountSwitcherOpen = !S.isAccountSwitcherOpen;
-      if (S.isAccountSwitcherOpen) {
-        void loadSavedAccounts().then(() => updateSidebarAccountSwitcher());
-        void loadSavedGogAccounts().then(() => updateSidebarAccountSwitcher());
-      }
-      updateSidebarAccountSwitcher();
-      return true;
-
-    case "sb-switch-epic":
-      if (id) {
-        S.isAccountSwitcherOpen = false;
-        updateSidebarAccountSwitcher();
-        void switchAccount(id);
-      }
-      return true;
-
-    case "sb-switch-gog":
-      if (id) {
-        S.isAccountSwitcherOpen = false;
-        updateSidebarAccountSwitcher();
-        void switchGogAccount(id);
-      }
-      return true;
-
-    case "sb-add-epic":
-      S.isAccountSwitcherOpen = false;
-      updateSidebarAccountSwitcher();
-      closeAllModals();
-      promptAddAccount();
-      return true;
-
-    case "sb-add-gog":
-      S.isAccountSwitcherOpen = false;
-      updateSidebarAccountSwitcher();
-      closeAllModals();
-      setView("accounts");
-      pushNavHistory({ view: "accounts" });
-      promptAddGogAccount();
-      return true;
-
-    case "open-accounts-settings":
-      S.isAccountSwitcherOpen = false;
-      updateSidebarAccountSwitcher();
-      closeAllModals();
-      setView("accounts");
-      pushNavHistory({ view: "accounts" });
-      render();
       return true;
 
     default:

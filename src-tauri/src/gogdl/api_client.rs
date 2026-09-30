@@ -231,6 +231,13 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
 
                 let category = item["category"].as_str().map(String::from);
 
+                let dlc_count = item["dlcsCount"]
+                    .as_u64()
+                    .or_else(|| item["dlcCount"].as_u64())
+                    .map(|n| n as usize)
+                    .or_else(|| item["dlcs"].as_array().map(|a| a.len()))
+                    .unwrap_or(0);
+
                 games.push(GogGameSummary {
                     game_id: id,
                     title,
@@ -244,7 +251,7 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                     hero_url,
                     description: None,
                     cloud_saves_supported: item["isGalaxyCompatible"].as_bool().unwrap_or(false),
-                    dlc_count: 0,
+                    dlc_count,
                 });
             }
         }

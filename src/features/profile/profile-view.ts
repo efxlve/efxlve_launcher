@@ -112,13 +112,15 @@ function profileAccounts(): ProfileAccount[] {
   if (S.epicAccountId) pushEpic(S.epicAccountId, S.epicAccount, true);
   for (const acc of S.gogSavedAccounts || []) {
     const key = `gog:${acc.user_id}`;
-    if (!acc.user_id || seen.has(key)) continue;
+    if (!acc.user_id || acc.user_id === "46899977096215655" || seen.has(key)) continue;
     seen.add(key);
     out.push({ key, kind: "gog", id: acc.user_id, name: acc.username || "GOG User", active: acc.is_active || acc.user_id === S.gogAccountId });
   }
-  if (S.gogAccountId) {
+    if (S.gogAccountId) {
     const key = `gog:${S.gogAccountId}`;
-    if (!seen.has(key)) out.push({ key, kind: "gog", id: S.gogAccountId, name: S.gogAccount || "GOG User", active: true });
+    if (!seen.has(key) && S.gogAccountId !== "46899977096215655") {
+      out.push({ key, kind: "gog", id: S.gogAccountId, name: S.gogAccount || "GOG User", active: true });
+    }
   }
   return out;
 }

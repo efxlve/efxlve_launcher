@@ -1,10 +1,14 @@
 //! Google Drive integration for save backups (REST API v3 & AppData folder).
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use std::net::{Ipv4Addr, SocketAddr};
+
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
+use tokio::net::TcpSocket;
 use crate::cloud_backup::models::CloudBackupEntry;
 
 pub const GDRIVE_OAUTH_PORT: u16 = 54123;
@@ -56,13 +60,25 @@ pub fn generate_auth_url(client_id: &str) -> String {
 
 /// Listens on loopback port 54123 for Google's OAuth2 redirect callback and returns the auth code.
 pub async fn listen_for_auth_code() -> Result<String, String> {
-    let addr = format!("127.0.0.1:{GDRIVE_OAUTH_PORT}");
-    let listener = TcpListener::bind(&addr)
-        .await
-        .map_err(|e| format!("Failed to bind local OAuth listener on {addr}: {e}"))?;
+    static IN_FLIGHT: AtomicBool = AtomicBool::new(false);
+    if IN_FLIGHT.swap(true, Ordering::SeqCst) {
+        return Err("Google sign-in is already waiting in the browser. Finish that window first.".to_string());
+    }
+    struct Guard;
+    impl Drop for Guard {
+        fn drop(&mut self) {
+            IN_FLIGHT.store(false, Ordering::SeqCst);
+        }
+    }
+    let _guard = Guard;
 
-    // Wait for incoming HTTP request
-    let (mut stream, _) = listener.accept().await.map_err(|e| e.to_string())?;
+    let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, GDRIVE_OAUTH_PORT));
+    let listener = bind_oauth_listener(addr).await?;
+
+    let (mut stream, _) = tokio::time::timeout(Duration::from_secs(180), listener.accept())
+        .await
+        .map_err(|_| "Google sign-in timed out. Try Connect with Google again.".to_string())?
+        .map_err(|e| e.to_string())?;
 
     let mut buf = [0u8; 4096];
     let n = stream.read(&mut buf).await.map_err(|e| e.to_string())?;
@@ -72,7 +88,6 @@ pub async fn listen_for_auth_code() -> Result<String, String> {
     let _ = stream.write_all(html_success.as_bytes()).await;
     let _ = stream.flush().await;
 
-    // Extract `code=` parameter from query string
     if let Some(code_start) = req.find("code=") {
         let after = &req[code_start + 5..];
         let code_end = after.find(['&', ' ']).unwrap_or(after.len());
@@ -80,11 +95,39 @@ pub async fn listen_for_auth_code() -> Result<String, String> {
         return Ok(code.to_string());
     }
 
+    if req.contains("error=invalid_client") {
+        return Err("Google OAuth client was not found. The Desktop client ID is missing or revoked.".to_string());
+    }
+
     if req.contains("error=") {
         return Err("Authorization was cancelled or rejected by the user.".to_string());
     }
 
     Err("Invalid callback request received from browser.".to_string())
+}
+
+async fn bind_oauth_listener(addr: SocketAddr) -> Result<tokio::net::TcpListener, String> {
+    let mut last_err = String::new();
+    for attempt in 0..5 {
+        let socket = TcpSocket::new_v4().map_err(|e| e.to_string())?;
+        let _ = socket.set_reuseaddr(true);
+        match socket.bind(addr) {
+            Ok(()) => {
+                return socket
+                    .listen(8)
+                    .map_err(|e| format!("Failed to bind local OAuth listener on {addr}: {e}"));
+            }
+            Err(e) => {
+                last_err = e.to_string();
+                if attempt < 4 {
+                    tokio::time::sleep(Duration::from_millis(150 * (attempt as u64 + 1))).await;
+                }
+            }
+        }
+    }
+    Err(format!(
+        "Failed to bind local OAuth listener on {addr}: {last_err}. Close the previous Google sign-in tab and try again."
+    ))
 }
 
 /// Exchanges authorization code for refresh and access tokens.
@@ -111,6 +154,9 @@ pub async fn exchange_code_for_tokens(
 
     if let Some(err) = token_resp.error {
         let desc = token_resp.error_description.unwrap_or_default();
+        if err == "invalid_client" {
+            return Err("Google OAuth client was not found or is not a Desktop app. The stored client ID is missing or revoked.".to_string());
+        }
         return Err(format!("Token exchange failed: {err} ({desc})"));
     }
 

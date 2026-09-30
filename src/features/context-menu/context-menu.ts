@@ -51,7 +51,7 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${shared
       ? `<button class="ps5-context-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
       : isSteam
-        ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("install", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
+        ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("update", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
     ${s.installed ? steamItem("validate", t("steam.validate"), "shield") : ""}
     ${item("manage-game", t("common.manage"), "settings")}`
         : `${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
@@ -64,6 +64,7 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${!shared && installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
     ${!shared && !isSteam && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
+    ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam

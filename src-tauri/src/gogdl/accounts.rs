@@ -67,22 +67,37 @@ fn read_active_gog_user(gog_dir: &Path) -> Option<String> {
     None
 }
 
+fn dedup_saved_accounts(list: &mut Vec<SavedGogAccount>) {
+    const GOG_OAUTH_CLIENT_ID: &str = "46899977096215655";
+    let mut seen = std::collections::HashSet::new();
+    list.retain(|acc| {
+        if acc.user_id.is_empty() || acc.user_id == GOG_OAUTH_CLIENT_ID {
+            return false;
+        }
+        seen.insert(acc.user_id.clone())
+    });
+}
+
 fn read_accounts_meta(gog_dir: &Path) -> Vec<SavedGogAccount> {
     let path = accounts_meta_file(gog_dir);
     if !path.is_file() {
         return Vec::new();
     }
-    fs::read_to_string(&path)
+    let mut list: Vec<SavedGogAccount> = fs::read_to_string(&path)
         .ok()
         .and_then(|data| serde_json::from_str(&data).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    dedup_saved_accounts(&mut list);
+    list
 }
 
 fn write_accounts_meta(gog_dir: &Path, list: &[SavedGogAccount]) {
     let dir = accounts_dir(gog_dir);
     let _ = fs::create_dir_all(&dir);
     let path = accounts_meta_file(gog_dir);
-    if let Ok(serialized) = serde_json::to_string_pretty(list) {
+    let mut unique = list.to_vec();
+    dedup_saved_accounts(&mut unique);
+    if let Ok(serialized) = serde_json::to_string_pretty(&unique) {
         let _ = fs::write(&path, serialized);
     }
 }

@@ -153,6 +153,66 @@ pub fn steam_install_path() -> Option<PathBuf> {
     }
 }
 
+/// PID written by the Steam client into `steam.pid`. Zero / junk is ignored.
+fn parse_steam_pid(raw: &str) -> Option<u32> {
+    let pid = raw.trim().parse::<u32>().ok()?;
+    (pid != 0).then_some(pid)
+}
+
+/// True while the Steam client process from `steam.pid` is still alive.
+///
+/// ACF `StateFlags` and leftover `downloading/` folders survive after Steam
+/// exits, so live-download UI must not trust those files unless the client is
+/// actually running.
+fn steam_client_running(steam: &Path) -> bool {
+    let Ok(raw) = std::fs::read_to_string(steam.join("steam.pid")) else {
+        return false;
+    };
+    let Some(pid) = parse_steam_pid(&raw) else {
+        return false;
+    };
+    pid_is_alive(pid)
+}
+
+#[cfg(windows)]
+mod win_pid {
+    type HANDLE = *mut std::ffi::c_void;
+    type BOOL = i32;
+    type DWORD = u32;
+    const PROCESS_QUERY_LIMITED_INFORMATION: DWORD = 0x1000;
+    const STILL_ACTIVE: DWORD = 259;
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn OpenProcess(dwDesiredAccess: DWORD, bInheritHandle: BOOL, dwProcessId: DWORD) -> HANDLE;
+        fn GetExitCodeProcess(hProcess: HANDLE, lpExitCode: *mut DWORD) -> BOOL;
+        fn CloseHandle(hObject: HANDLE) -> BOOL;
+    }
+
+    pub fn is_alive(pid: u32) -> bool {
+        unsafe {
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if handle.is_null() {
+                return false;
+            }
+            let mut code: DWORD = 0;
+            let ok = GetExitCodeProcess(handle, &mut code) != 0;
+            CloseHandle(handle);
+            ok && code == STILL_ACTIVE
+        }
+    }
+}
+
+#[cfg(windows)]
+fn pid_is_alive(pid: u32) -> bool {
+    win_pid::is_alive(pid)
+}
+
+#[cfg(not(windows))]
+fn pid_is_alive(pid: u32) -> bool {
+    Path::new(&format!("/proc/{pid}")).is_dir()
+}
+
 /// Normalized path key for case-insensitive Windows comparisons.
 fn path_key(path: &Path) -> String {
     path.to_string_lossy()
@@ -197,6 +257,10 @@ pub struct SteamGame {
     pub library: String,
     /// True while the Steam client is downloading this app (`steamapps/downloading/<id>`).
     pub downloading: bool,
+    /// Bytes the client has already pulled (`BytesDownloaded`, else the downloading folder).
+    pub bytes_downloaded: u64,
+    /// Total bytes this job still reports (`BytesToDownload`). Zero when Steam has not written it.
+    pub bytes_to_download: u64,
 }
 
 /// Parses one `appmanifest_<id>.acf` file.
@@ -219,7 +283,15 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         .and_then(Vdf::as_str)
         .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(0);
-    let downloading = library.join("downloading").join(&app_id).is_dir();
+    let bytes_to_download = acf_u64(state, "BytesToDownload");
+    let mut bytes_downloaded = acf_u64(state, "BytesDownloaded");
+    let dl_dir = library.join("downloading").join(&app_id);
+    // Only a live `downloading/<id>` folder means Steam is transferring files.
+    // StateFlags bit 2 + leftover byte counters stay set after Steam quits.
+    let downloading = dl_dir.is_dir();
+    if downloading && bytes_downloaded == 0 {
+        bytes_downloaded = dir_size(&dl_dir);
+    }
     Some(SteamGame {
         app_id,
         name,
@@ -228,6 +300,8 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         state_flags,
         library: library.to_string_lossy().to_string(),
         downloading,
+        bytes_downloaded,
+        bytes_to_download,
     })
 }
 
@@ -235,6 +309,7 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
 pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
     let mut games: Vec<SteamGame> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let steam_running = steam_client_running(steam);
     for folder in library_folders(steam) {
         let Ok(entries) = std::fs::read_dir(&folder) else { continue };
         for entry in entries.flatten() {
@@ -244,16 +319,67 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                 continue;
             }
             let Ok(text) = std::fs::read_to_string(&path) else { continue };
-            if let Some(game) = parse_app_manifest(&text, &folder) {
+            if let Some(mut game) = parse_app_manifest(&text, &folder) {
+                if is_steam_library_noise(&game.app_id, &game.name) {
+                    continue;
+                }
+                if !steam_running {
+                    game.downloading = false;
+                }
                 // A game left behind in an old library folder must not appear twice.
                 if seen.insert(game.app_id.clone()) {
                     games.push(game);
                 }
             }
         }
+        // First-time installs create `downloading/<id>` before a full manifest.
+        if !steam_running {
+            continue;
+        }
+        if let Ok(dl_entries) = std::fs::read_dir(folder.join("downloading")) {
+            for entry in dl_entries.flatten() {
+                let id = entry.file_name().to_string_lossy().to_string();
+                if !entry.path().is_dir() || !id.chars().all(|c| c.is_ascii_digit()) {
+                    continue;
+                }
+                if is_steam_library_noise(&id, "") {
+                    continue;
+                }
+                if seen.insert(id.clone()) {
+                    let bytes_downloaded = dir_size(&entry.path());
+                    games.push(SteamGame {
+                        app_id: id.clone(),
+                        name: id,
+                        install_dir: String::new(),
+                        size_bytes: 0,
+                        state_flags: 0,
+                        library: folder.to_string_lossy().to_string(),
+                        downloading: true,
+                        bytes_downloaded,
+                        bytes_to_download: 0,
+                    });
+                }
+            }
+        }
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     games
+}
+
+/// Tools and SDKs Steam installs next to games (not playable titles).
+fn is_steam_library_noise(app_id: &str, name: &str) -> bool {
+    if app_id == "228980" {
+        return true;
+    }
+    let n = name.to_ascii_lowercase();
+    n.contains("steamworks common redistributables")
+        || n.contains("steamworks redistributable")
+        || n.starts_with("steam linux runtime")
+        || n.starts_with("proton ")
+        || n == "proton experimental"
+        || n.contains("steamworks sdk")
+        || n == "source sdk"
+        || n.starts_with("source sdk ")
 }
 
 /// Status shown in Settings > Integrations and on the Accounts page.
@@ -295,15 +421,137 @@ pub fn steam_open_client() -> Result<(), String> {
     spawn_uri("steam://open/main")
 }
 
+/// Opens Steam's own download manager (`steam://open/downloads`).
+#[tauri::command]
+pub fn steam_open_downloads() -> Result<(), String> {
+    spawn_uri("steam://open/downloads")
+}
+
 #[tauri::command]
 pub fn steam_list_installed() -> Vec<SteamGame> {
     steam_install_path().map(|p| installed_games(&p)).unwrap_or_default()
 }
 
-/// Opens a `steam://` URL without a console window.
+/// Last Steam Cloud write time for one app, read from `userdata/.../remotecache.vdf`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamCloudStatus {
+    pub app_id: String,
+    /// Unix seconds of the newest remotecache timestamp, if Steam wrote one.
+    pub last_sync: Option<i64>,
+}
+
+const STEAM64_BASE: u64 = 7_656_119_796_026_5728;
+
+fn acf_u64(state: &Vdf, key: &str) -> u64 {
+    state
+        .get(key)
+        .and_then(Vdf::as_str)
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0)
+}
+
+fn dir_size(root: &Path) -> u64 {
+    let mut total = 0u64;
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            if let Ok(meta) = entry.metadata() {
+                if meta.is_file() {
+                    total = total.saturating_add(meta.len());
+                } else if meta.is_dir() {
+                    stack.push(entry.path());
+                }
+            }
+        }
+    }
+    total
+}
+
+fn account_id_from_steam64(id: &str) -> Option<String> {
+    let n: u64 = id.parse().ok()?;
+    if n >= STEAM64_BASE {
+        Some((n - STEAM64_BASE).to_string())
+    } else {
+        Some(id.to_string())
+    }
+}
+
+fn max_sync_unix(node: &Vdf) -> Option<i64> {
+    let mut best: Option<i64> = None;
+    walk_sync_unix(node, &mut best);
+    best
+}
+
+fn walk_sync_unix(node: &Vdf, best: &mut Option<i64>) {
+    for (k, v) in node.entries() {
+        let key = k.to_ascii_lowercase();
+        if matches!(key.as_str(), "time" | "synctime" | "remotetime" | "localtime") {
+            if let Some(s) = v.as_str() {
+                if let Ok(n) = s.parse::<i64>() {
+                    if n > 1_000_000 {
+                        *best = Some(best.map_or(n, |b| b.max(n)));
+                    }
+                }
+            }
+        }
+        walk_sync_unix(v, best);
+    }
+}
+
+/// Reads Steam Cloud's last write for `app_id`, or `last_sync: null` when unknown.
+#[tauri::command]
+pub fn steam_cloud_status(app_id: String) -> SteamCloudStatus {
+    let id = app_id.trim().trim_start_matches("steam::").to_string();
+    let empty = SteamCloudStatus {
+        app_id: id.clone(),
+        last_sync: None,
+    };
+    let Some(steam) = steam_install_path() else {
+        return empty;
+    };
+    let Some(user) = active_steam_id(&steam) else {
+        return empty;
+    };
+    let account = account_id_from_steam64(&user).unwrap_or_else(|| user.clone());
+    let paths = [
+        steam.join("userdata").join(&account).join(&id).join("remotecache.vdf"),
+        steam.join("userdata").join(&user).join(&id).join("remotecache.vdf"),
+    ];
+    for path in paths {
+        let Ok(text) = std::fs::read_to_string(&path) else { continue };
+        if let Some(ts) = max_sync_unix(&parse_vdf(&text)) {
+            return SteamCloudStatus {
+                app_id: id,
+                last_sync: Some(ts),
+            };
+        }
+    }
+    empty
+}
+
+/// Opens a `steam://` URL through Steam's registered protocol handler.
+///
+/// `cmd start` eats `/` as switches. Passing the URI as a bare `steam.exe`
+/// argument also fails: the client only treats it as a protocol when it is
+/// preceded by `--` (the association is `steam.exe -- "%1"`).
 fn spawn_uri(target: &str) -> Result<(), String> {
+    if tauri_plugin_opener::open_url(target, None::<&str>).is_ok() {
+        return Ok(());
+    }
+    if let Some(exe) = steam_install_path().map(|p| p.join("steam.exe")) {
+        if exe.is_file() {
+            let mut command = Command::new(&exe);
+            command.arg("-silent").arg("--").arg(target);
+            return command
+                .spawn()
+                .map(|_| ())
+                .map_err(|e| format!("Steam could not be opened: {e}"));
+        }
+    }
     let mut command = Command::new("cmd");
-    command.args(["/C", "start", "", target]);
+    command.args(["/C", &format!("start \"\" \"{target}\"")]);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -315,23 +563,23 @@ fn spawn_uri(target: &str) -> Result<(), String> {
         .map_err(|e| format!("Steam could not be opened: {e}"))
 }
 
-/// Actions handed back to the Steam client. Steam owns the game process and
-/// every file operation, so the launcher only opens the matching protocol URL.
-const STEAM_ACTIONS: [&str; 4] = ["launch", "install", "uninstall", "validate"];
+fn steam_action_url(app_id: &str, action: &str) -> Option<String> {
+    match action {
+        "launch" => Some(format!("steam://rungameid/{app_id}")),
+        "install" | "update" => Some(format!("steam://install/{app_id}")),
+        "uninstall" => Some(format!("steam://uninstall/{app_id}")),
+        "validate" => Some(format!("steam://validate/{app_id}")),
+        _ => None,
+    }
+}
 
 #[tauri::command]
 pub fn steam_game_action(app_id: String, action: String) -> Result<(), String> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
     }
-    if !STEAM_ACTIONS.contains(&action.as_str()) {
+    let Some(url) = steam_action_url(&app_id, &action) else {
         return Err("Unsupported Steam action".into());
-    }
-    let url = match action.as_str() {
-        "launch" => format!("steam://rungameid/{app_id}"),
-        "install" => format!("steam://install/{app_id}"),
-        "uninstall" => format!("steam://uninstall/{app_id}"),
-        _ => format!("steam://validate/{app_id}"),
     };
     spawn_uri(&url)
 }
@@ -413,6 +661,10 @@ pub struct SteamGameDetails {
     pub developers: Vec<String>,
     pub publishers: Vec<String>,
     pub genres: Vec<String>,
+    /// Store category ids (1 multi-player, 2 single-player, 9 co-op, 36 online PvP ...).
+    /// Ids are used instead of the labels because the labels are localized.
+    #[serde(default)]
+    pub categories: Vec<u32>,
     pub release_date: String,
     pub header_image: String,
     pub website: String,
@@ -421,6 +673,17 @@ pub struct SteamGameDetails {
     /// Requirement bullets (tags stripped, one per line).
     pub requirements_min: Vec<String>,
     pub requirements_rec: Vec<String>,
+    /// Steam store field naming the third-party account / launcher, if any.
+    #[serde(default)]
+    pub ext_user_account_notice: String,
+    /// Steam store DRM / anti-cheat blurb (Easy Anti-Cheat, BattlEye, …).
+    #[serde(default)]
+    pub drm_notice: String,
+    /// Store Metacritic block (`score` + review URL) when Steam publishes one.
+    #[serde(default)]
+    pub metacritic_score: Option<u32>,
+    #[serde(default)]
+    pub metacritic_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -433,7 +696,7 @@ struct CachedDetails {
 }
 
 /// Bump whenever the parsed shape changes so stale entries refetch once.
-const DETAILS_CACHE_VERSION: u32 = 3;
+const DETAILS_CACHE_VERSION: u32 = 6;
 
 /* ---------- appinfo.vdf: the Steam client's own app metadata ---------- */
 
@@ -700,6 +963,16 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
             .unwrap_or_default(),
         genres: string_list(data, "genres"),
+        categories: data
+            .get("categories")
+            .and_then(|v| v.as_array())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|c| c.get("id").and_then(|id| id.as_u64()))
+                    .filter_map(|id| u32::try_from(id).ok())
+                    .collect()
+            })
+            .unwrap_or_default(),
         release_date: data
             .get("release_date")
             .and_then(|v| v.get("date"))
@@ -715,6 +988,22 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .unwrap_or_default(),
         requirements_min: join_label_lines(html_lines(&requirements, "minimum")),
         requirements_rec: join_label_lines(html_lines(&requirements, "recommended")),
+        ext_user_account_notice: data
+            .get("ext_user_account_notice")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        drm_notice: data.get("drm_notice").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        metacritic_score: data
+            .get("metacritic")
+            .and_then(|m| m.get("score"))
+            .and_then(|v| v.as_u64())
+            .and_then(|n| u32::try_from(n).ok()),
+        metacritic_url: data
+            .get("metacritic")
+            .and_then(|m| m.get("url"))
+            .and_then(|v| v.as_str())
+            .map(str::to_string),
     }
 }
 
@@ -1645,6 +1934,8 @@ mod tests {
         assert_eq!(game.install_dir, "Portal 2");
         assert_eq!(game.size_bytes, 12_345_678_901);
         assert_eq!(game.state_flags, 4);
+        assert_eq!(game.bytes_downloaded, 0);
+        assert_eq!(game.bytes_to_download, 0);
         assert!(game.library.ends_with("steamapps"));
     }
 
@@ -1656,11 +1947,109 @@ mod tests {
         assert_eq!(parse_app_manifest(APP_MANIFEST, Path::new("x")).unwrap().app_id, "620");
     }
 
+    const REMOTECACHE: &str = r#"
+"730"
+{
+	"save.dat"
+	{
+		"size"		"12"
+		"localtime"		"1700000000"
+		"time"		"1700000100"
+		"remotetime"		"1700000200"
+	}
+}
+"#;
+
+    const APP_MANIFEST_DOWNLOADING: &str = r#"
+"AppState"
+{
+	"appid"		"730"
+	"name"		"Counter-Strike 2"
+	"installdir"		"Counter-Strike Global Offensive"
+	"SizeOnDisk"		"100"
+	"StateFlags"		"1026"
+	"BytesToDownload"		"4000"
+	"BytesDownloaded"		"1000"
+}
+"#;
+
+    #[test]
+    fn remotecache_reads_newest_unix_time() {
+        let root = parse_vdf(REMOTECACHE);
+        assert_eq!(max_sync_unix(&root), Some(1_700_000_200));
+    }
+
+    #[test]
+    fn steamid64_becomes_account_id() {
+        assert_eq!(
+            account_id_from_steam64("76561197960265729").as_deref(),
+            Some("1")
+        );
+        assert_eq!(account_id_from_steam64("12345").as_deref(), Some("12345"));
+    }
+
+    #[test]
+    fn app_manifest_reads_download_bytes_without_treating_them_as_live() {
+        let game = parse_app_manifest(APP_MANIFEST_DOWNLOADING, Path::new("x")).expect("game");
+        assert_eq!(game.app_id, "730");
+        assert_eq!(game.bytes_downloaded, 1000);
+        assert_eq!(game.bytes_to_download, 4000);
+        assert_eq!(game.state_flags, 1026);
+        assert!(!game.downloading);
+    }
+
+    #[test]
+    fn downloading_folder_marks_a_live_download() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let game = parse_app_manifest(APP_MANIFEST_DOWNLOADING, &tmp).expect("game");
+        assert!(game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn steam_pid_file_ignores_junk() {
+        assert_eq!(parse_steam_pid("1234\r\n"), Some(1234));
+        assert_eq!(parse_steam_pid("0"), None);
+        assert_eq!(parse_steam_pid("nope"), None);
+        assert_eq!(parse_steam_pid(""), None);
+    }
+
+    #[test]
+    fn steamworks_redistributables_are_not_games() {
+        assert!(is_steam_library_noise("228980", "Anything"));
+        assert!(is_steam_library_noise(
+            "1",
+            "Steamworks Common Redistributables"
+        ));
+        assert!(is_steam_library_noise("0", "Proton 9.0"));
+        assert!(!is_steam_library_noise("730", "Counter-Strike 2"));
+        assert!(!is_steam_library_noise("2322010", "Grand Theft Auto V Enhanced"));
+    }
+
     #[test]
     fn actions_reject_bad_input() {
         assert!(steam_game_action("620; rm -rf".into(), "launch".into()).is_err());
         assert!(steam_game_action(String::new(), "launch".into()).is_err());
         assert!(steam_game_action("620".into(), "delete-everything".into()).is_err());
+    }
+
+    #[test]
+    fn steam_action_urls_keep_the_verb_and_app_id() {
+        assert_eq!(
+            steam_action_url("730", "install").as_deref(),
+            Some("steam://install/730")
+        );
+        assert_eq!(
+            steam_action_url("730", "update").as_deref(),
+            Some("steam://install/730")
+        );
+        assert_eq!(
+            steam_action_url("730", "launch").as_deref(),
+            Some("steam://rungameid/730")
+        );
+        assert!(steam_action_url("730", "delete-everything").is_none());
     }
 
     #[test]
@@ -1776,6 +2165,7 @@ mod tests {
             "developers": ["Valve"],
             "publishers": ["Valve"],
             "genres": [{ "description": "Action" }, { "description": "Adventure" }],
+            "categories": [{ "id": 2, "description": "Single-player" }, { "id": 9, "description": "Co-op" }],
             "release_date": { "date": "18 Apr, 2011" },
             "header_image": "https://cdn/header.jpg",
             "website": "https://thinkwithportals.com",
@@ -1786,10 +2176,43 @@ mod tests {
         assert_eq!(details.name, "Portal 2");
         assert_eq!(details.description, "Think with portals");
         assert_eq!(details.genres, vec!["Action", "Adventure"]);
+        assert_eq!(details.categories, vec![2, 9]);
         assert_eq!(details.release_date, "18 Apr, 2011");
         assert_eq!(details.dlc, vec!["1234", "5678"]);
         assert_eq!(details.requirements_min, vec!["OS: Windows 7"]);
         assert_eq!(details.requirements_rec, vec!["OS: Windows 10"]);
+        assert_eq!(details.ext_user_account_notice, "");
+        assert_eq!(details.drm_notice, "");
+    }
+
+    #[test]
+    fn app_details_keep_third_party_and_drm_notices() {
+        let data = serde_json::json!({
+            "name": "Battlefield 2042",
+            "developers": ["DICE"],
+            "publishers": ["Electronic Arts"],
+            "ext_user_account_notice": "EA App",
+            "drm_notice": "Easy Anti-Cheat"
+        });
+        let details = parse_app_details("1517290", &data);
+        assert_eq!(details.developers, vec!["DICE"]);
+        assert_eq!(details.ext_user_account_notice, "EA App");
+        assert_eq!(details.drm_notice, "Easy Anti-Cheat");
+        assert_eq!(details.metacritic_score, None);
+    }
+
+    #[test]
+    fn app_details_keep_metacritic_block() {
+        let data = serde_json::json!({
+            "name": "Portal 2",
+            "metacritic": { "score": 95, "url": "https://www.metacritic.com/game/pc/portal-2" }
+        });
+        let details = parse_app_details("620", &data);
+        assert_eq!(details.metacritic_score, Some(95));
+        assert_eq!(
+            details.metacritic_url.as_deref(),
+            Some("https://www.metacritic.com/game/pc/portal-2")
+        );
     }
 
     #[test]

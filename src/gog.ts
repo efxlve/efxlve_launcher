@@ -61,6 +61,14 @@ export async function gogCancelDownload(gameId: string): Promise<void> {
   return invoke<void>("gog_cancel_download", { gameId });
 }
 
+export async function gogPauseDownload(gameId: string): Promise<string> {
+  return invoke<string>("gog_pause_download", { gameId });
+}
+
+export async function gogResumeDownload(gameId: string): Promise<string> {
+  return invoke<string>("gog_resume_download", { gameId });
+}
+
 export async function gogLaunchGame(gameId: string): Promise<string> {
   return invoke<string>("gog_launch_game", { gameId });
 }
@@ -77,8 +85,8 @@ export async function gogImportGame(gameId: string, installPath: string): Promis
   return invoke<GogGameSummary>("gog_import_game", { gameId, installPath });
 }
 
-export async function gogVerifyGame(gameId: string): Promise<string> {
-  return invoke<string>("gog_verify_game", { gameId });
+export async function gogVerifyGame(gameId: string): Promise<void> {
+  return invoke<void>("gog_verify_game", { gameId });
 }
 
 export interface GogGameDetails {

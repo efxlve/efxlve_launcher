@@ -19,19 +19,19 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 +------------+---------------------------------------------+
 | sidebar    | window bar (drag region, 36px)          _ □ x|
 | 252px      +---------------------------------------------+
-|  search    |                                             |
-|  Store     |   #view (page content, max 1600px)          |
-|  Library   |                                             |
-|  Downloads |                                             |
+| account    |                                             |
+| Store      |   #view (page content, max 1600px)          |
+| Library    |                                             |
+| Friends    |                                             |
+| Settings   |                                             |
 |  --------  |                                             |
-|  games...  |                                             |
+| games...   |                                             |
 |  --------  |                                             |
-|  profile   |                                             |
-|  settings  |                                             |
+| Downloads  |                                             |
 +------------+---------------------------------------------+
 ```
 
-- `--sidebar-w: 252px`, `--winbar-h: 34px`. The embedded store webview is positioned from the live content box, not a hardcoded inset. The active sidebar row is a 2px left rule, not a filled pill.
+- `--sidebar-w: 252px`, `--winbar-h: 34px`. The sidebar has Store, Library, Friends and Settings in the primary list, Recently Played in the flexible middle, and Downloads pinned at the bottom. Account management stays on the account chip / Accounts page; there is no separate sidebar account-switcher panel. The embedded store webview is positioned from the live content box, not a hardcoded inset. The active sidebar row is a 2px left rule, not a filled pill.
 - The page header owns exactly one control besides the back button, the title and the search field: the storefront tabs, visible only on the store view. Segmented pills, sliding gliders and drop shadows are not used there (see §4).
 - Pages use `.page` (padding 24px 32px) with an optional `.page-head` (title + actions on one line).
 - The game page replaces the view area (it is not a side drawer).

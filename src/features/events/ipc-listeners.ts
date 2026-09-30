@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Settings, ShoppingBag, Store, Users, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -43,7 +43,7 @@ import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
-import { loadSteamLibrary } from "../library/steam-library";
+import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -63,6 +63,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
+import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
@@ -82,6 +83,7 @@ import {
   fetchAndRenderScreenshots,
   playScreenshotShutterSound,
   renderDrawerScreenshots,
+  renderMomentsStrip,
 } from "../screenshots/screenshots-view";
 import { setView } from "../store/store-view";
 
@@ -145,7 +147,7 @@ export async function initApp(hooks: {
 }): Promise<void> {
   updateMaxIcon();
   createIcons({
-    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Users },
+    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor },
   });
   loadNotifications();
   initAutoUpdate();
@@ -162,6 +164,7 @@ export async function initApp(hooks: {
   // The selected language may lazy-load a small local chunk (non-bundled locales).
   // tr/en are bundled, so this resolves without a real await for most users.
   await setLanguage(S.appLanguage);
+  refreshSidebarToggle();
 
   // FIRST PAINT: paint the shell (skeleton) before any slow IPC so the window is
   // never blank on startup.
@@ -199,6 +202,8 @@ export async function initApp(hooks: {
     });
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
+      if (id.startsWith("gog::") && done) S.gogDlPaused = false;
+      if (id.startsWith("gog::") && progress === 0 && !done) S.gogDlPaused = false;
       const title = libraryItemOf(id)?.title ?? S.epicSummariesMap.get(id)?.title ?? id;
       const now = performance.now();
       const sampleBytes = downloadedBytes ?? (
@@ -312,8 +317,9 @@ export async function initApp(hooks: {
         });
       }
     });
-    await listen<{ id: string }>("download-paused", (_event) => {
-      S.dlQueueStatus.isPaused = true;
+    await listen<{ id: string }>("download-paused", (event) => {
+      if (event.payload.id.startsWith("gog::")) S.gogDlPaused = true;
+      else S.dlQueueStatus.isPaused = true;
       lastDlSample = null;
       if (S.activeDlMetrics) {
         S.activeDlMetrics.speedBytes = 0;
@@ -321,7 +327,13 @@ export async function initApp(hooks: {
       }
       if (S.view === "downloads") render();
     });
+    await listen<{ id: string }>("download-resumed", (event) => {
+      if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
+      else S.dlQueueStatus.isPaused = false;
+      if (S.view === "downloads") render();
+    });
     await listen<DownloadFailedEvent>("download-failed", (event) => {
+      if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       S.speedHistory.fill(0);
@@ -343,6 +355,7 @@ export async function initApp(hooks: {
       });
     });
     await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
+      if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       S.speedHistory.fill(0);
@@ -487,7 +500,7 @@ export async function initApp(hooks: {
         // Opt-in: back up local saves when the game closes.
         if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
           void epicBackupSave(id)
-            .then(() => pushNotification({ kind: "info", title: t("notif.backupDone", { title }), appName: id }))
+            .then(() => pushNotification({ kind: "info", title: t("notif.backupLocalDone", { title }), appName: id }))
             .catch((err) => {
               const msg = String(err);
               // No recorded save folder is not a failed cloud sync.
@@ -564,6 +577,9 @@ export async function initApp(hooks: {
             if (contentEl && curSummary) {
               contentEl.innerHTML = renderDrawerScreenshots(curSummary);
             }
+          } else if (S.activeDrawerTab === "overview") {
+            const moments = document.getElementById("gp-moments");
+            if (moments) moments.outerHTML = renderMomentsStrip(id);
           }
         }
 
@@ -577,15 +593,23 @@ export async function initApp(hooks: {
 
     await listen<{ id: string; success: boolean; message?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
+      const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
       if (event.payload.success) {
         if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
+        // A successful upload is an event worth keeping; the toast alone vanishes.
+        if (title && event.payload.success && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
+          pushNotification({ kind: "info", title: t("notif.backupCloudDone", { title }), appName: event.payload.id });
+        }
         return;
       }
       // A failed automatic cloud upload must not vanish while the game closes.
       const detail = localizeMessage(event.payload.message || "");
       toast(detail || t("backup.failed", { msg: "" }), "err");
-      const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
-      if (title) pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), body: detail, appName: event.payload.id });
+      if (title) pushNotification({ kind: "error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
+    });
+
+    await listen("steam-library-changed", () => {
+      void refreshSteamInstalled();
     });
 
     try {
@@ -621,7 +645,7 @@ export async function initApp(hooks: {
     void loadSharedLibrary();
 
     // Steam games come from the Steam client's own manifests on this PC.
-    void loadSteamLibrary();
+    void loadSteamLibrary().then(() => startSteamLibraryWatch());
 
     // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
     // same play path as the Play button once the shell is up.

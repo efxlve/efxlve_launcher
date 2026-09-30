@@ -27,6 +27,25 @@ function isSteamApp(appName: string): boolean {
   return appName.startsWith("steam::");
 }
 
+/** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
+export function renderMomentsStrip(appName: string): string {
+  const items = S.loadedScreenshots.get(appName) || [];
+  if (items.length === 0) return `<div id="gp-moments"></div>`;
+  const shown = items.slice(0, 8);
+  const thumbs = shown.map((item, idx) => `
+    <button type="button" class="gp-moment" data-act="open-screenshot-lightbox" data-id="${esc(appName)}" data-idx="${idx}" title="${esc(item.file_name)}">
+      <img src="${item.data_url}" alt="" loading="lazy" />
+    </button>`).join("");
+  return `
+    <section id="gp-moments" class="gp-section gp-moments">
+      <div class="gp-progress-head">
+        <h3 class="gp-section-title">${icon("camera", 13)} ${t("drawer.moments")}</h3>
+        <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="screenshots" data-id="${esc(appName)}">${t("drawer.momentsAll")} (${items.length})</button>
+      </div>
+      <div class="gp-moments-strip">${thumbs}</div>
+    </section>`;
+}
+
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
   if (!force && S.loadedScreenshots.has(appName)) return;
   S.loadingScreenshotsFor = appName;
@@ -56,6 +75,9 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
             const curSummary = summaryOf(appName);
             if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
           }
+        } else if (S.activeDrawerTab === "overview") {
+          const moments = document.getElementById("gp-moments");
+          if (moments) moments.outerHTML = renderMomentsStrip(appName);
         }
       }
     })

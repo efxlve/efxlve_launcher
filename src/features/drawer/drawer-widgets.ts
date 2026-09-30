@@ -12,7 +12,7 @@ import { achSummaryOf } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes } from "../../core/utils";
+import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
@@ -211,6 +211,7 @@ export function detectControllerSupport(
   const titleLower = s.title.toLowerCase();
   const devRaw = (g?.metadata as { developer?: unknown } | undefined)?.developer;
   const devLower = typeof devRaw === "string" ? devRaw.toLowerCase() : "";
+  const cats = steamCategories(s.appName);
 
   // 1. Sony / PlayStation PC titles and games with native DualSense PC implementation
   const isDualSenseNative =
@@ -271,6 +272,40 @@ export function detectControllerSupport(
     };
   }
 
+  if (cats.length > 0) {
+    if (cats.includes(STEAM_CAT_FULL_PAD)) {
+      return {
+        label: i18nT("feat.xboxGamepad"),
+        tooltip: i18nT("feat.xboxGamepadTip"),
+        iconName: "gamepad-2",
+        className: "supported",
+      };
+    }
+    if (cats.includes(STEAM_CAT_PARTIAL_PAD)) {
+      return {
+        label: i18nT("feat.partialPad"),
+        tooltip: i18nT("feat.partialPadTip"),
+        iconName: "gamepad-2",
+        className: "muted",
+      };
+    }
+    return {
+      label: i18nT("feat.kbMouse"),
+      tooltip: i18nT("feat.kbMouseTip"),
+      iconName: "keyboard",
+      className: "muted",
+    };
+  }
+
+  if (s.appName.startsWith("steam::")) {
+    return {
+      label: i18nT("feat.kbMouse"),
+      tooltip: i18nT("feat.kbMouseTip"),
+      iconName: "keyboard",
+      className: "muted",
+    };
+  }
+
   // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, etc.)
   return {
     label: i18nT("feat.xboxGamepad"),
@@ -287,6 +322,12 @@ export function isOnlineOnlyGame(
 ): boolean {
   const titleLower = s.title.toLowerCase();
   const appLower = s.appName.toLowerCase();
+  const cats = steamCategories(s.appName);
+  if (cats.length > 0) {
+    const alwaysOnline = cats.includes(STEAM_CAT_ONLINE_PVP) || cats.includes(STEAM_CAT_MMO[0]);
+    const single = cats.includes(STEAM_CAT_SINGLE[0]);
+    if (alwaysOnline && !single) return true;
+  }
 
   // Known online-only titles (Brill = Dead by Daylight)
   if (
@@ -309,7 +350,11 @@ export function isOnlineOnlyGame(
     titleLower.includes("world of warships") ||
     titleLower.includes("paladins") ||
     titleLower.includes("smite") ||
-    titleLower.includes("rogue company")
+    titleLower.includes("rogue company") ||
+    titleLower.includes("counter-strike") ||
+    titleLower.includes("counter strike") ||
+    titleLower.includes("cs2") ||
+    titleLower.includes("cs:go")
   ) {
     return true;
   }
@@ -338,6 +383,286 @@ export function isOnlineOnlyGame(
   return false;
 }
 
+export type GameMode =
+  | "singlePlayer"
+  | "multiplayer"
+  | "coop"
+  | "singleCoop"
+  | "singleMulti"
+  | "multi4v1"
+  | "multiAsym"
+  | "battleRoyale"
+  | "mmo";
+
+/** Steam store category ids (stable across store languages). */
+const STEAM_CAT_SINGLE = [2];
+const STEAM_CAT_MULTI = [1, 27, 36, 37, 47, 49];
+const STEAM_CAT_COOP = [9, 38, 39, 48];
+const STEAM_CAT_MMO = [20];
+const STEAM_CAT_ONLINE_PVP = 36;
+const STEAM_CAT_CLOUD = 23;
+const STEAM_CAT_FULL_PAD = 28;
+const STEAM_CAT_PARTIAL_PAD = 18;
+const STEAM_CAT_VAC = 8;
+
+function steamCategories(appName: string): number[] {
+  return S.steamDetails.get(appName)?.categories ?? [];
+}
+
+function modeFromFlags(single: boolean, multi: boolean, coop: boolean): GameMode | null {
+  if (single && multi) return "singleMulti";
+  if (single && coop) return "singleCoop";
+  if (coop && !multi) return "coop";
+  if (multi || coop) return "multiplayer";
+  if (single) return "singlePlayer";
+  return null;
+}
+
+/**
+ * Game mode for the features list. Steam games use the store's category ids;
+ * other stores fall back to title / text heuristics. Returns null when there is
+ * no real evidence, so the page never guesses "Single-player".
+ */
+export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsResponse): GameMode | null {
+  const titleLower = s.title.toLowerCase();
+  if (s.appName.toLowerCase() === "brill" || titleLower.includes("dead by daylight")) return "multi4v1";
+
+  const cats = steamCategories(s.appName);
+  if (cats.length > 0) {
+    const has = (ids: number[]) => ids.some((id) => cats.includes(id));
+    if (has(STEAM_CAT_MMO)) return "mmo";
+    return modeFromFlags(has(STEAM_CAT_SINGLE), has(STEAM_CAT_MULTI), has(STEAM_CAT_COOP));
+  }
+
+  const gameCols = S.epicCollections.filter((c) =>
+    c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
+  );
+  // Hyphens are dropped so "Multi-player" / "Single-player" / "Co-op" match too.
+  const text = [
+    ...(reqData?.tags || []),
+    reqData?.shortDescription || "",
+    reqData?.description || "",
+    s.description || "",
+    ...gameCols.map((c) => c.name),
+  ].join(" ").toLowerCase().replace(/-/g, "");
+
+  if (text.includes("4vs1") || text.includes("4v1") || text.includes("asymmetric")) return "multiAsym";
+  if (text.includes("battle royale")) return "battleRoyale";
+  if (/\bmmo(rpg)?\b/.test(text)) return "mmo";
+
+  const knownSingleAndMulti = ["grand theft auto", "gta", "red dead", "battlefield", "call of duty", "halo", "forza"]
+    .some((name) => titleLower.includes(name));
+  if (knownSingleAndMulti) return "singleMulti";
+
+  const onlineOnly = isOnlineOnlyGame(s, undefined, reqData);
+  const coop = text.includes("coop") || text.includes("eşli");
+  const multi = onlineOnly || ["multiplayer", "çok oyunculu", "pvp"].some((k) => text.includes(k));
+  const explicitSingle = ["singleplayer", "single player", "single_player", "tek oyunculu", "tek kişilik", "campaign", "senaryo"]
+    .some((k) => text.includes(k));
+  // A HowLongToBeat story time also exists for many pure multiplayer games, so it
+  // only counts as single-player evidence when nothing points to multiplayer.
+  const hltb = S.loadedHltb.get(s.appName);
+  const single = explicitSingle || (Boolean(hltb?.main_story) && !multi && !coop);
+  return modeFromFlags(single, multi, coop);
+}
+
+/** True for games where a campaign length makes no sense (HLTB card is hidden). */
+export function isMultiplayerOnlyMode(mode: GameMode | null): boolean {
+  return mode === "multiplayer" || mode === "battleRoyale" || mode === "mmo" || mode === "multi4v1" || mode === "multiAsym";
+}
+
+export function renderProgressStrip(s: EpicSummary): string {
+  const reqData = S.loadedRequirements.get(s.appName);
+  if (isMultiplayerOnlyMode(detectGameMode(s, reqData))) return `<div id="gp-progress"></div>`;
+  const hltb = S.loadedHltb.get(s.appName);
+  if (S.loadingHltbFor === s.appName && !hltb) {
+    return `
+      <section id="gp-progress" class="gp-side-card gp-progress">
+        <h3 class="gp-section-title">${icon("timer", 13)} ${i18nT("drawer.progressStory")}</h3>
+        <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
+      </section>`;
+  }
+  const target = hltb?.supported ? (hltb.main_story || hltb.main_extra || hltb.completionist || 0) : 0;
+  if (!target) return `<div id="gp-progress"></div>`;
+  const playedSec = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const playedH = playedSec / 3600;
+  const pct = Math.min(100, Math.round((playedH / target) * 100));
+  const over = playedH >= target;
+  const extras = [
+    over ? i18nT("drawer.progressOver") : "",
+    hltb?.main_extra && hltb.main_extra !== target ? `${i18nT("hltb.mainExtra")} ${i18nT("hltb.hours", { n: hltb.main_extra })}` : "",
+    hltb?.completionist && hltb.completionist !== target ? `${i18nT("hltb.completionist")} ${i18nT("hltb.hours", { n: hltb.completionist })}` : "",
+  ].filter(Boolean).join(" · ");
+  return `
+    <section id="gp-progress" class="gp-side-card gp-progress">
+      <div class="gp-progress-head">
+        <h3 class="gp-section-title">${icon("timer", 13)} ${i18nT("drawer.progressStory")}</h3>
+        <span class="gp-progress-pct num">${pct}%</span>
+      </div>
+      <div class="gp-progress-track" title="${esc(i18nT("drawer.progressTypical"))}">
+        <span class="gp-progress-fill" style="width:${pct}%"></span>
+      </div>
+      <div class="gp-progress-meta">
+        <span class="num">${esc(fmtPlaytime(playedSec))}</span>
+        <span class="num">${i18nT("hltb.hours", { n: target })}</span>
+      </div>
+      ${extras ? `<p class="gp-progress-extra">${esc(extras)}</p>` : ""}
+    </section>`;
+}
+
+export function renderNextAchievements(appName: string): string {
+  const loading = S.loadingAchFor === appName && !S.loadedAchievements.has(appName);
+  if (loading) {
+    return `
+      <section id="gp-next-ach" class="gp-section gp-next">
+        <h3 class="gp-section-title">${i18nT("drawer.nextAchievements")}</h3>
+        <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("ach.loadingStore")}</div>
+      </section>`;
+  }
+  const data = S.loadedAchievements.get(appName);
+  if (!data || data.total_achievements === 0) return `<div id="gp-next-ach"></div>`;
+  const locked = data.achievements
+    .filter((a) => !a.unlocked && !a.hidden)
+    .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
+    .slice(0, 3);
+  if (locked.length === 0) return `<div id="gp-next-ach"></div>`;
+  const rows = locked.map((a) => {
+    const rarity = a.rarity?.percent;
+    return `
+      <button type="button" class="gp-next-row" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}" title="${esc(a.description || a.display_name)}">
+        ${a.icon_link ? `<img src="${esc(a.icon_link)}" alt="" />` : `<span class="gp-next-ph">${icon("trophy", 16)}</span>`}
+        <span class="gp-next-text">
+          <span class="gp-next-name">${esc(a.display_name || a.name)}</span>
+          ${rarity != null ? `<span class="gp-next-rarity num">${i18nT("drawer.nextAchRarity", { n: rarity.toFixed(1) })}</span>` : ""}
+        </span>
+      </button>`;
+  }).join("");
+  return `
+    <section id="gp-next-ach" class="gp-section gp-next">
+      <div class="gp-progress-head">
+        <h3 class="gp-section-title">${i18nT("drawer.nextAchievements")}</h3>
+        <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>
+      </div>
+      <div class="gp-next-list">${rows}</div>
+    </section>`;
+}
+
+export interface CloudSaveInfo {
+  label: string;
+  tooltip: string;
+  /** False for plain local saves. */
+  synced: boolean;
+}
+
+export interface HeroCloudStatus {
+  label: string;
+  tooltip: string;
+  /** True when Efxlve (or EOS / Steam remotecache) recorded a completed sync. */
+  synced: boolean;
+  /** True when the label is a provider name, not a yes/no status. */
+  neutral?: boolean;
+}
+
+const cloudSyncStamp = new Map<string, string>();
+
+function lastRecordedCloudSync(appName: string): string | null {
+  const remembered = cloudSyncStamp.get(appName);
+  if (remembered) return remembered;
+  if (S.activeManageSettings?.appName === appName && S.activeManageSettings.lastCloudSync) {
+    return S.activeManageSettings.lastCloudSync;
+  }
+  const latest = S.cloudBackupsMap.get(appName)?.[0];
+  if (latest?.formattedDate) return latest.formattedDate;
+  return null;
+}
+
+/** Records a completed cloud sync so the hero CLOUD chip can show Synced. */
+export function rememberCloudSync(appName: string, stamp: string): void {
+  if (appName && stamp) cloudSyncStamp.set(appName, stamp);
+}
+
+/** Hero CLOUD chip: recorded sync, or an honest provider name — never a guessed yes/no. */
+export function heroCloudStatus(
+  s: EpicSummary,
+  g: EpicGame | undefined,
+  partner: ThirdPartyLauncherInfo | null,
+  reqData?: GameRequirementsResponse,
+): HeroCloudStatus {
+  const recorded = lastRecordedCloudSync(s.appName);
+  if (recorded) {
+    return {
+      label: i18nT("drawer.cloudSynced"),
+      tooltip: i18nT("manage.lastSync", { time: recorded }),
+      synced: true,
+    };
+  }
+  if (isOnlineOnlyGame(s, g, reqData)) {
+    return {
+      label: i18nT("drawer.cloudSynced"),
+      tooltip: i18nT("drawer.cloudSynced"),
+      synced: true,
+    };
+  }
+  const cats = steamCategories(s.appName);
+  if (cats.includes(STEAM_CAT_CLOUD) || (s.appName.startsWith("steam::") && S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
+    return {
+      label: i18nT("feat.steamCloud"),
+      tooltip: i18nT("feat.steamCloudTip"),
+      synced: false,
+      neutral: true,
+    };
+  }
+  if (s.appName.startsWith("gog::") && S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported) {
+    return {
+      label: i18nT("feat.gogCloud"),
+      tooltip: i18nT("feat.gogCloudTip"),
+      synced: false,
+      neutral: true,
+    };
+  }
+  const provider = cloudSaveInfo(s, g, partner, reqData);
+  if (provider.synced) {
+    return {
+      label: i18nT("drawer.cloudNotSynced"),
+      tooltip: i18nT("drawer.cloudNotSyncedTip"),
+      synced: false,
+    };
+  }
+  return {
+    label: "—",
+    tooltip: i18nT("feat.localSaveTip"),
+    synced: false,
+  };
+}
+
+/** Where the game keeps its saves: server-side, Epic cloud, a partner cloud or local only. */
+export function cloudSaveInfo(
+  s: EpicSummary,
+  g: EpicGame | undefined,
+  partner: ThirdPartyLauncherInfo | null,
+  reqData?: GameRequirementsResponse,
+): CloudSaveInfo {
+  const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
+  const cats = steamCategories(s.appName);
+  if (cats.includes(STEAM_CAT_CLOUD) || (s.appName.startsWith("steam::") && S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
+    return { label: i18nT("feat.steamCloud"), tooltip: i18nT("feat.steamCloudTip"), synced: true };
+  }
+  if (s.appName.startsWith("gog::") && S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported) {
+    return { label: i18nT("feat.gogCloud"), tooltip: i18nT("feat.gogCloudTip"), synced: true };
+  }
+  const cloudFolder = customAttrs?.CloudSaveFolder?.value || customAttrs?.CloudIncludeList?.value;
+  const hasCloud = Boolean(cloudFolder || (S.activeManageSettings?.appName === s.appName && S.activeManageSettings.cloudSavesEnabled));
+  if (isOnlineOnlyGame(s, g, reqData)) {
+    return { label: i18nT("feat.onlineServerSave"), tooltip: i18nT("feat.onlineServerSaveTip"), synced: true };
+  }
+  if (hasCloud) return { label: i18nT("feat.epicCloud"), tooltip: i18nT("feat.epicCloudTip"), synced: true };
+  if (partner) {
+    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
+    return { label: i18nT("feat.partnerCloud", { name: pName }), tooltip: i18nT("feat.partnerCloudTip", { name: partner.name }), synced: true };
+  }
+  return { label: i18nT("feat.localSave"), tooltip: i18nT("feat.localSaveTip"), synced: false };
+}
+
 export function renderGameFeatures(
   s: EpicSummary,
   g?: EpicGame,
@@ -347,33 +672,15 @@ export function renderGameFeatures(
 ): string {
   const achSum = achSummaryOf(s.appName);
   const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
-  const cloudFolder = customAttrs?.CloudSaveFolder?.value || customAttrs?.CloudIncludeList?.value;
-  const hasCloud = Boolean(cloudFolder || (S.activeManageSettings?.appName === s.appName && S.activeManageSettings.cloudSavesEnabled));
   const canRunOffline = customAttrs?.CanRunOffline?.value === "true";
 
   const isOnlineOnly = isOnlineOnlyGame(s, g, reqData);
-
-  // 1. Controller support
   const ctrl = detectControllerSupport(s, g, reqData);
-
-  // 2. Cloud / server saves
-  let cloudVal = i18nT("feat.localSave");
-  let cloudClass = "";
-  let cloudTooltip = i18nT("feat.localSaveTip");
-  if (isOnlineOnly) {
-    cloudVal = i18nT("feat.onlineServerSave");
-    cloudClass = "supported";
-    cloudTooltip = i18nT("feat.onlineServerSaveTip");
-  } else if (hasCloud) {
-    cloudVal = i18nT("feat.epicCloud");
-    cloudClass = "supported";
-    cloudTooltip = i18nT("feat.epicCloudTip");
-  } else if (partner) {
-    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
-    cloudVal = i18nT("feat.partnerCloud", { name: pName });
-    cloudClass = "accent";
-    cloudTooltip = i18nT("feat.partnerCloudTip", { name: partner.name });
-  }
+  const cloud = cloudSaveInfo(s, g, partner, reqData);
+  const cats = steamCategories(s.appName);
+  const cheat = antiCheat || (cats.includes(STEAM_CAT_VAC) ? "VAC" : null);
+  const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
+  const versionOk = Boolean(versionInfo.display && /\d/.test(versionInfo.display));
 
   // 3. Achievement status
   let achVal = i18nT("feat.none");
@@ -407,97 +714,8 @@ export function renderGameFeatures(
     offlineClass = "supported";
   }
 
-  // 5. Oyun Modu Analizi
-  const gameCols = S.epicCollections.filter((c) =>
-    c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-  );
-  const textCorpus = [
-    ...(reqData?.tags || []),
-    reqData?.shortDescription || "",
-    reqData?.description || "",
-    s.description || "",
-    ...gameCols.map((c) => c.name),
-  ].join(" ").toLowerCase();
-
-  const titleLower = s.title.toLowerCase();
-  const appLower = s.appName.toLowerCase();
-
-  const hltb = S.loadedHltb.get(s.appName);
-  const hasHltbStory = Boolean(hltb?.main_story && hltb.main_story > 0);
-
-  const isKnownSingleAndMulti =
-    titleLower.includes("grand theft auto") ||
-    titleLower.includes("gta") ||
-    titleLower.includes("red dead") ||
-    titleLower.includes("battlefield") ||
-    titleLower.includes("call of duty") ||
-    titleLower.includes("halo") ||
-    titleLower.includes("forza");
-
-  const hasCoop = textCorpus.includes("coop") || textCorpus.includes("co-op") || textCorpus.includes("eşli");
-  const hasMultiplayer =
-    textCorpus.includes("multiplayer") ||
-    textCorpus.includes("çok oyunculu") ||
-    textCorpus.includes("online") ||
-    textCorpus.includes("pvp") ||
-    titleLower.includes("online");
-
-  const hasSinglePlayer =
-    hasHltbStory ||
-    isKnownSingleAndMulti ||
-    textCorpus.includes("single_player") ||
-    textCorpus.includes("singleplayer") ||
-    textCorpus.includes("single player") ||
-    textCorpus.includes("tek oyunculu") ||
-    textCorpus.includes("tek kişilik") ||
-    textCorpus.includes("campaign") ||
-    textCorpus.includes("senaryo") ||
-    textCorpus.includes("hikaye") ||
-    textCorpus.includes("story");
-
-  let modeVal = i18nT("feat.singlePlayer");
-  let modeClass = "supported";
-  let modeTooltip = i18nT("feat.singlePlayerStoryTip");
-
-  if (appLower === "brill" || titleLower.includes("dead by daylight")) {
-    modeVal = i18nT("feat.multi4v1");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.multi4v1Tip");
-  } else if (textCorpus.includes("4vs1") || textCorpus.includes("4v1") || textCorpus.includes("asymmetric")) {
-    modeVal = i18nT("feat.multiAsym");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.multiAsymTip");
-  } else if (textCorpus.includes("battle royale")) {
-    modeVal = i18nT("feat.battleRoyale");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.battleRoyaleTip");
-  } else if (textCorpus.includes("mmo") || textCorpus.includes("mmorpg")) {
-    modeVal = i18nT("feat.mmo");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.mmoTip");
-  } else if (isKnownSingleAndMulti || (hasSinglePlayer && (hasMultiplayer || isOnlineOnly))) {
-    modeVal = i18nT("feat.singleMulti");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.singleMultiTip");
-  } else if (hasCoop && hasSinglePlayer) {
-    modeVal = i18nT("feat.singleCoop");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.singleCoopTip");
-  } else if (hasCoop) {
-    modeVal = i18nT("feat.coop");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.coopTip");
-  } else if (hasMultiplayer || isOnlineOnly) {
-    modeVal = i18nT("feat.multiplayer");
-    modeClass = "accent";
-    modeTooltip = i18nT("feat.multiplayerTip");
-  } else {
-    modeVal = i18nT("feat.singlePlayer");
-    modeClass = "supported";
-    modeTooltip = i18nT("feat.singlePlayerTip");
-  }
-
-  const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
+  // 5. Game mode (row hidden when the mode cannot be determined)
+  const mode = detectGameMode(s, reqData);
 
   return `
     <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
@@ -508,12 +726,12 @@ export function renderGameFeatures(
       <div class="hub-feature-val ${ctrl.className}">${ctrl.label}</div>
     </div>
 
-    <div class="hub-feature-row" title="${esc(cloudTooltip)}">
+    <div class="hub-feature-row" title="${esc(cloud.tooltip)}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("cloud", 12)}</div>
         <span>${i18nT("feat.cloud")}</span>
       </div>
-      <div class="hub-feature-val ${cloudClass}">${cloudVal}</div>
+      <div class="hub-feature-val ${cloud.synced ? "supported" : ""}">${esc(cloud.label)}</div>
     </div>
 
     <div class="hub-feature-row">
@@ -532,13 +750,18 @@ export function renderGameFeatures(
       <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
     </div>
 
-    <div class="hub-feature-row" title="${esc(modeTooltip)}">
+    ${
+      mode
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT(`feat.${mode}Tip`))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("users", 12)}</div>
         <span>${i18nT("feat.mode")}</span>
       </div>
-      <div class="hub-feature-val ${modeClass}">${modeVal}</div>
-    </div>
+      <div class="hub-feature-val ${mode === "singlePlayer" ? "supported" : "accent"}">${i18nT(`feat.${mode}`)}</div>
+    </div>`
+        : ""
+    }
 
     ${
       partner
@@ -554,14 +777,14 @@ export function renderGameFeatures(
     }
 
     ${
-      antiCheat
+      cheat
         ? `
-    <div class="hub-feature-row" title="${esc(i18nT("feat.antiCheatTip", { name: antiCheat }))}">
+    <div class="hub-feature-row" title="${esc(i18nT("feat.antiCheatTip", { name: cheat }))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("shield", 12)}</div>
         <span>${i18nT("feat.antiCheat")}</span>
       </div>
-      <div class="hub-feature-val accent">${esc(antiCheat)}</div>
+      <div class="hub-feature-val accent">${esc(cheat)}</div>
     </div>`
         : ""
     }
@@ -587,21 +810,21 @@ export function renderGameFeatures(
       <div class="hub-feature-val supported">Windows (PC x64)</div>
     </div>
 
-    ${
-      s.installed && s.installSize
-        ? `
-    <div class="hub-feature-row" title="${i18nT("feat.installedSizeTip")}">
+    <div class="hub-feature-row" title="${esc(i18nT("feat.installedSizeTip"))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
         <span>${i18nT("feat.installedSize")}</span>
       </div>
       <div class="hub-feature-val">
-        <span class="hub-size-val">${fmtBytes(s.installSize)}</span>
-        ${versionInfo.display ? `<span class="hub-version-badge" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">${esc(versionInfo.display)}</span>` : ""}
+        ${
+          s.installed
+            ? `<span class="hub-size-val">${s.installSize ? fmtBytes(s.installSize) : i18nT("common.installed")}</span>${
+                versionOk ? `<span class="hub-version-badge" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">${esc(versionInfo.display)}</span>` : ""
+              }`
+            : i18nT("common.notInstalled")
+        }
       </div>
-    </div>`
-        : ""
-    }
+    </div>
   `;
 }
 

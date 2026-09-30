@@ -112,6 +112,7 @@ export function promptSteamCodeMode(): void {
 
 /** QR sign-in: fetch the challenge, show the code and poll for approval. */
 export async function beginSteamQrLogin(): Promise<void> {
+  const remember = (document.getElementById("steam-remember") as HTMLInputElement | null)?.checked ?? true;
   stopSteamPoll();
   S.steamAuthStep = "qr";
   S.steamAuthBusy = true;
@@ -119,7 +120,7 @@ export async function beginSteamQrLogin(): Promise<void> {
   S.steamQrUrl = "";
   render();
   try {
-    const qr = await steamLoginQrBegin();
+    const qr = await steamLoginQrBegin(remember);
     S.steamQrSvg = qr.svg;
     S.steamQrUrl = qr.challengeUrl;
     S.steamAuthBusy = false;

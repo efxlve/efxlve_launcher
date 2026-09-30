@@ -8,6 +8,7 @@
  */
 
 import { epicInstall } from "../../core/epic-actions";
+import { gogInstallGame } from "../../gog";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { pushNotification } from "../notifications/notifications";
@@ -45,14 +46,23 @@ export function scheduleAutoUpdate(): void {
 /** Queues every pending update (skips while a download is already running). */
 async function runAutoUpdate(): Promise<void> {
   if (S.activeDlMetrics || S.dlQueueStatus.queue.length > 0) return;
-  const updates = [...S.availableUpdates.values()];
-  if (updates.length === 0) return;
-  pushNotification({ kind: "info", title: t("sched.starting", { n: updates.length }) });
-  for (const u of updates) {
+  const epicUpdates = [...S.availableUpdates.values()];
+  const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable);
+  const n = epicUpdates.length + gogUpdates.length;
+  if (n === 0) return;
+  pushNotification({ kind: "info", title: t("sched.starting", { n }) });
+  for (const u of epicUpdates) {
     try {
       await epicInstall(u.appName);
     } catch {
       // Queue conflicts (another active download) are expected and harmless.
+    }
+  }
+  for (const g of gogUpdates) {
+    try {
+      await gogInstallGame(`gog::${g.id}`);
+    } catch {
+      /* same: another active download is expected */
     }
   }
 }

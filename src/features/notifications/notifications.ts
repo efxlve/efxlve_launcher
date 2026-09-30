@@ -2,12 +2,12 @@
  * In-app notification center.
  *
  * Keeps a capped, persisted history of notable events (download finished,
- * update available, errors, social...). The bell lives in the top nav; the
- * panel is a fixed dropdown anchored under it. Items are real buttons so the
+ * update available, errors, social...). The bell lives in the sidebar footer;
+ * the panel is a fixed dropdown anchored to it. Items are real buttons so the
  * 10-foot gamepad focus model keeps working.
  */
 
-import { NOTIF_KEY } from "../../core/constants";
+import { NOTIF_KEY, EOS_OVERLAY_DECLINE_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
@@ -17,6 +17,8 @@ import { t } from "../../i18n";
 const MAX = 50;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
 const DEDUPE_MS = 10 * 60 * 1000;
+/** Restored history older than this is dropped: it is news, not a mailbox. */
+const RESTORE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
   download: "download",
@@ -33,7 +35,15 @@ export function loadNotifications(): void {
     if (!raw) return;
     const parsed = JSON.parse(raw) as AppNotification[];
     if (Array.isArray(parsed)) {
-      S.notifications = parsed.filter((n) => n && typeof n.id === "string").slice(0, MAX);
+      const now = Date.now();
+      // A restored entry is history, not a new event: an unread badge that survived
+      // a restart announced old news (reported: "12 h ago" right after boot). Stale
+      // entries past the TTL are dropped so the bell never shows yesterday's count.
+      S.notifications = parsed
+        .filter((n) => n && typeof n.id === "string" && now - n.ts < RESTORE_TTL_MS)
+        .map((n) => ({ ...n, read: true }))
+        .slice(0, MAX);
+      if (!S.notifications.length) localStorage.removeItem(NOTIF_KEY);
     }
   } catch {
     // Corrupt history is not worth surfacing; start clean.
@@ -116,15 +126,15 @@ export function clearNotifications(): void {
 }
 
 /**
- * One dot on the sidebar bell. Missing EOS keeps it amber until the service
- * folder exists, even if the notice was cleared from the list. Amber replaces
- * the unread dot so the two never stack.
+ * One dot on the sidebar bell. A missing EOS overlay keeps it amber until the
+ * user installs it or dismisses the notice.
  */
 export function updateNotifBadge(): void {
   const badge = document.getElementById("notif-badge");
   if (!badge) return;
   const n = unreadCount();
-  const eosMissing = S.eosOverlay !== null && !S.eosOverlay.installed;
+  const eosMissing = S.eosOverlay !== null && !S.eosOverlay.installed
+    && localStorage.getItem(EOS_OVERLAY_DECLINE_KEY) !== "1";
   badge.textContent = n > 9 ? "9+" : String(n);
   badge.classList.toggle("warn", eosMissing);
   badge.classList.toggle("hidden", !eosMissing && n === 0);
@@ -187,6 +197,23 @@ export function renderNotificationPanel(): void {
       </div>
       ${body}
     </div>`;
+  positionNotifPanel();
+}
+
+/**
+ * Anchors the panel to the sidebar bell. Opens below the icon, or above
+ * when the window does not have room underneath.
+ */
+export function positionNotifPanel(): void {
+  const panel = document.querySelector<HTMLElement>("#notif-root .notif-panel");
+  const anchor = document.getElementById("notif-btn")?.getBoundingClientRect();
+  if (!panel || !anchor) return;
+  const left = Math.min(anchor.left, Math.max(8, window.innerWidth - panel.offsetWidth - 8));
+  panel.style.left = `${left}px`;
+  const gap = 8;
+  const spaceBelow = window.innerHeight - anchor.bottom;
+  const openUp = spaceBelow < panel.offsetHeight + gap + 8 && anchor.top > spaceBelow;
+  panel.style.top = `${openUp ? Math.max(8, anchor.top - panel.offsetHeight - gap) : anchor.bottom + gap}px`;
 }
 
 /** Opens the notification panel (and marks everything as read). */

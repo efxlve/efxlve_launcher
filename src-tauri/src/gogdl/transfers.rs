@@ -16,6 +16,7 @@ use super::cmd_error;
 pub struct GogDlState {
     pub active_game_id: Option<String>,
     pub child_pid: Option<u32>,
+    pub paused: bool,
 }
 
 pub static GOG_DL_STATE: Mutex<Option<GogDlState>> = Mutex::new(None);
@@ -47,6 +48,24 @@ struct DlCancelledPayload {
 #[derive(serde::Serialize, Clone)]
 struct DlFailedPayload {
     id: String,
+    message: String,
+}
+
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct VerifyProgressPayload {
+    id: String,
+    current: u64,
+    total: u64,
+    percent: f64,
+    speed: String,
+    detail: String,
+}
+
+#[derive(serde::Serialize, Clone)]
+struct VerifyCompletePayload {
+    id: String,
+    success: bool,
     message: String,
 }
 
@@ -232,6 +251,7 @@ pub async fn gog_install_game(
         *state_guard = Some(GogDlState {
             active_game_id: Some(composite_id.clone()),
             child_pid: None,
+            paused: false,
         });
     }
 
@@ -266,7 +286,6 @@ pub async fn gog_install_game(
             .arg(&target_dir_clone)
             .arg("--platform")
             .arg("windows")
-            .arg("--skip-dlcs")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
@@ -466,6 +485,61 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
     Ok(())
 }
 
+fn gog_pid_for(composite_id: &str) -> Option<(u32, bool)> {
+    let state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+    let st = state_guard.as_ref()?;
+    if st.active_game_id.as_deref() != Some(composite_id) {
+        return None;
+    }
+    Some((st.child_pid?, st.paused))
+}
+
+/// Pauses an in-progress GOG download by suspending the gogdl process tree.
+#[command]
+pub async fn gog_pause_download(app: AppHandle, game_id: String) -> Result<String, String> {
+    let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
+    let composite_id = format!("gog::{clean_id}");
+    let (pid, already) = gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
+    if already {
+        return Ok("@t:dl.paused".to_string());
+    }
+    #[cfg(windows)]
+    super::win_job::suspend_tree(pid)?;
+    {
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(ref mut st) = *state_guard {
+            if st.active_game_id.as_deref() == Some(composite_id.as_str()) {
+                st.paused = true;
+            }
+        }
+    }
+    let _ = app.emit("download-paused", DlCancelledPayload { id: composite_id });
+    Ok("@t:dl.paused".to_string())
+}
+
+/// Resumes a paused GOG download.
+#[command]
+pub async fn gog_resume_download(app: AppHandle, game_id: String) -> Result<String, String> {
+    let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
+    let composite_id = format!("gog::{clean_id}");
+    let (pid, paused) = gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
+    if !paused {
+        return Ok("@t:dl.resumed".to_string());
+    }
+    #[cfg(windows)]
+    super::win_job::resume_tree(pid)?;
+    {
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(ref mut st) = *state_guard {
+            if st.active_game_id.as_deref() == Some(composite_id.as_str()) {
+                st.paused = false;
+            }
+        }
+    }
+    let _ = app.emit("download-resumed", DlCancelledPayload { id: composite_id });
+    Ok("@t:dl.resumed".to_string())
+}
+
 /// Helper to calculate directory size iteratively.
 pub fn calculate_dir_size(root: &Path) -> u64 {
     let mut total = 0u64;
@@ -587,35 +661,133 @@ pub async fn gog_import_game(
     Ok(info)
 }
 
-/// Verifies that an installed GOG game's files and executable exist on disk.
+/// Verifies and repairs an installed GOG game through `gogdl repair`.
 #[command]
-pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<String, String> {
+pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), String> {
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
-    let mut installed_map = load_installed_games(&app);
-    let info = installed_map
-        .get_mut(&clean_id)
-        .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
+    let composite_id = format!("gog::{clean_id}");
 
-    let p = Path::new(&info.install_path);
-    if !p.is_dir() {
+    {
+        let state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if state_guard
+            .as_ref()
+            .and_then(|s| s.active_game_id.as_deref())
+            .is_some()
+        {
+            return Err("@t:gog.verifyBusy".to_string());
+        }
+    }
+
+    let installed_map = load_installed_games(&app);
+    let info = installed_map
+        .get(&clean_id)
+        .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
+    let target_dir = PathBuf::from(info.install_path.trim());
+    if !target_dir.is_dir() {
         return Err("@t:settings.importInstalledMissing".to_string());
     }
 
-    if let Some(ref exe) = info.executable {
-        let exe_path = p.join(exe);
-        if !exe_path.is_file() {
-            return Err("@t:dl.executableNotFound".to_string());
+    let bin_path = ensure_binary(&app).await.map_err(cmd_error)?;
+    let auth_path = auth_json_path(&app);
+    let app_clone = app.clone();
+    let id_clone = composite_id.clone();
+    let clean_clone = clean_id.clone();
+    let target_clone = target_dir.clone();
+
+    tokio::spawn(async move {
+        let mut cmd = tokio::process::Command::new(&bin_path);
+        cmd.arg("--auth-config-path")
+            .arg(&auth_path)
+            .arg("repair")
+            .arg(&clean_clone)
+            .arg("--path")
+            .arg(&target_clone)
+            .arg("--platform")
+            .arg("windows")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        #[cfg(windows)]
+        {
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
         }
-    } else if let Some(fb) = find_fallback_exe(p) {
-        info.executable = Some(fb);
-    } else {
-        return Err("@t:dl.executableNotFound".to_string());
-    }
 
-    info.install_size = calculate_dir_size(p);
-    let _ = save_installed_games(&app, &installed_map);
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = app_clone.emit(
+                    "verify-complete",
+                    VerifyCompletePayload {
+                        id: id_clone,
+                        success: false,
+                        message: e.to_string(),
+                    },
+                );
+                return;
+            }
+        };
 
-    Ok("@t:verify.success".to_string())
+        let stderr = child.stderr.take();
+        let mut last_progress = 0i32;
+        if let Some(err_stream) = stderr {
+            let mut lines = CrlfLines::new(err_stream);
+            while let Some(line) = lines.next_line().await {
+                if let Some(p) = parse_progress(&line) {
+                    if p == last_progress {
+                        continue;
+                    }
+                    last_progress = p;
+                    let _ = app_clone.emit(
+                        "verify-progress",
+                        VerifyProgressPayload {
+                            id: id_clone.clone(),
+                            current: p as u64,
+                            total: 100,
+                            percent: p as f64,
+                            speed: String::new(),
+                            detail: format!("{p}%"),
+                        },
+                    );
+                }
+            }
+        }
+
+        match child.wait().await {
+            Ok(status) if status.success() => {
+                let _ = app_clone.emit(
+                    "verify-complete",
+                    VerifyCompletePayload {
+                        id: id_clone,
+                        success: true,
+                        message: "@t:verify.success".to_string(),
+                    },
+                );
+            }
+            Ok(status) => {
+                let _ = app_clone.emit(
+                    "verify-complete",
+                    VerifyCompletePayload {
+                        id: id_clone,
+                        success: false,
+                        message: format!("gogdl repair exited with code {}", status.code().unwrap_or(-1)),
+                    },
+                );
+            }
+            Err(e) => {
+                let _ = app_clone.emit(
+                    "verify-complete",
+                    VerifyCompletePayload {
+                        id: id_clone,
+                        success: false,
+                        message: e.to_string(),
+                    },
+                );
+            }
+        }
+    });
+
+    Ok(())
 }
 
 #[cfg(test)]

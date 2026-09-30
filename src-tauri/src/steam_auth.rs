@@ -1109,7 +1109,7 @@ pub struct SteamQrLogin {
 /// Opens a QR sign-in: the phone scans the code, approves, and the poll below
 /// completes the session. No password is involved.
 #[tauri::command]
-pub async fn steam_login_qr_begin() -> Result<SteamQrLogin, String> {
+pub async fn steam_login_qr_begin(remember: Option<bool>) -> Result<SteamQrLogin, String> {
     let client = http_client()?;
     let call = post_form(
         &client,
@@ -1138,6 +1138,7 @@ pub async fn steam_login_qr_begin() -> Result<SteamQrLogin, String> {
     let interval = field(response, "interval", "interval")
         .and_then(Value::as_f64)
         .unwrap_or(5.0) as f32;
+    let remember = remember.unwrap_or(true);
     lock().pending = Some(PendingLogin {
         account_name: String::new(),
         client_id,
@@ -1146,7 +1147,7 @@ pub async fn steam_login_qr_begin() -> Result<SteamQrLogin, String> {
         guard_types,
         email_hint: String::new(),
         interval,
-        remember: true,
+        remember,
         code_sent: true,
         qr: true,
     });

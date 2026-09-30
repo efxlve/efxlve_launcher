@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 29.09.2026 (v0.1.17 tree: 15 locales × 1.421 keys, 165 Tauri commands, 53 Rust files).
+> **Last synced:** 30.09.2026 (v0.1.17 tree: 15 locales × 1.435 keys, 165 Tauri commands, 53 Rust files).
 
 ---
 
@@ -31,7 +31,7 @@ efxlve_launcher/
 │   │   ├── collection-icons.ts        # Built-in collection marker icons
 │   │   ├── utils.ts                   # Formatting/escaping helpers
 │   │   ├── constants.ts               # Thresholds, localStorage keys, chunk sizes
-│   ├── features/                      # Modular feature domains (27 subsystems)
+│   ├── features/                      # Modular feature domains (28 subsystems)
 │   │   ├── accounts/                  # Accounts page: Epic + GOG cards, switchers, sign-in blocks
 │   │   ├── auth/                      # Epic/GOG login, EGL import, progressive sync, account vaults
 │   │   ├── changelog/                 # Changelog modal (TR/EN release notes, 1:1 with GitHub Releases)
@@ -44,6 +44,7 @@ efxlve_launcher/
 │   │   ├── drawer/                    # Full-page game page (overview, achievements, DLC, screenshots, manage, specs)
 │   │   ├── eos/                       # EOS overlay detection + installer helper
 │   │   ├── events/                    # click-router + 8 domain handlers, input listeners, IPC listeners (initApp)
+│   │   ├── friends/                   # Friends destination and honest empty state; no social adapter is active
 │   │   ├── gamepad/                   # Controller polling/HUD + separate TV Mode view
 │   │   ├── install/                   # Install location dialog
 │   │   ├── library/                   # Grid/list library, pagination, hide-games modal, library options
@@ -61,8 +62,8 @@ efxlve_launcher/
 │   │   ├── store/                     # Embedded Epic/GOG store child webview manager
 │   │   └── updates/                   # Launcher self-update (check/download/install gating)
 │   ├── locales/                       # 15 language dictionaries (flat dotted keys)
-│   │   ├── tr.json                    # Turkish (primary, 1.307 keys)
-│   │   ├── en.json                    # English (1.307 keys, full parity)
+│   │   ├── tr.json                    # Turkish (primary, 1.435 keys)
+│   │   ├── en.json                    # English (1.435 keys, full parity)
 │   │   └── ar, de, es, fr, it, ja, ko, pl, pt-BR, ru, th, zh-Hans, zh-Hant  # all at full parity
 │   └── styles/                        # 12 stylesheets (11 modules + index.css)
 │       ├── index.css                  # Master CSS entry (imports every module in cascade order)
@@ -118,7 +119,7 @@ efxlve_launcher/
 |---|---|---|
 | `state.ts` | Single state store `S` plus the custom-avatar resolver. | `S`, `getCustomAvatar()` |
 | `render.ts` | Render bus; `main.ts`/`ipc-listeners.ts` register the real implementations. | `registerRender()`, `render()`, `scheduleRender()`, `notify()`, `openEpicModal()`, `closeAllModals()`, `presenceSync()` |
-| `nav.ts` | Sidebar shell: active item, download/update badge, recent list (signature-gated), account popover, nav history. | `updateChrome()`, `updateSidebarActive()`, `updateBadge()`, `updatePageHeader()`, `navGoBack()`, `navGoForward()`, `updateSidebarAccountSwitcher()` |
+| `nav.ts` | Sidebar shell: active item, download/update badge, recent list (signature-gated), account chip, nav history. | `updateChrome()`, `updateSidebarActive()`, `updateBadge()`, `updatePageHeader()`, `navGoBack()`, `navGoForward()` |
 | `selectors.ts` | O(1) maps + filtering helpers. | `summaryOf()`, `rawOf()`, `libraryItemOf()`, `epicVisibleSummaries()` (library-view), `gameStoresLabel()`, `totalLibraryGamesCount()`, `setEpicSummaries()`, `setGogSummaries()` |
 | `epic-actions.ts` | Game actions with optimistic UI + `S.libraryDataRev` bumps. | `epicPlay()`, `epicInstall()`, `epicCancel()`, `epicUninstall()`, `refreshEpicInstalled()`, `refreshUpdates()` |
 | `epic-playtime.ts` | Merge Epic server playtime without lowering local values. | `syncEpicServerPlaytimes()` |
@@ -130,7 +131,7 @@ efxlve_launcher/
 | `window.ts` | Window controls and resize handling. | `handleWindowResize()`, `updateMaxIcon()` |
 | `utils.ts` | Formatting & escaping. | `fmtBytes()`, `fmtPlaytime()`, `esc()`, `parseEnvText()`, `cleanStoreDescription()` |
 | `constants.ts` | Thresholds and persisted keys. | `isTauri`, `INITIAL_CARD_CHUNK` (48), `MORE_CARD_CHUNK` (36), `HIGHLIGHT_INSTALLED_KEY`, `IGNORED_UPDATES_KEY` |
-| `types.ts` | Shared unions. | `View` (incl. `"tv"`), `DrawerTab`, `EpicSort`, `EpicFilter`, `EpicViewMode`, `NotifKind` |
+| `types.ts` | Shared unions. | `View` (incl. `"friends"`, `"tv"`), `DrawerTab`, `EpicSort`, `EpicFilter`, `EpicViewMode`, `NotifKind` |
 
 ---
 
@@ -150,6 +151,7 @@ efxlve_launcher/
 | `drawer/` | `drawer-view.ts`, `drawer-widgets.ts`, `external-versions.ts` | Game page: hero, action bar, tabs, achievements, specs, screenshots, HLTB/critic widgets. Store selector (Epic/GOG/Steam switch + EA App/Ubisoft Connect/XBOX launch hand-off). Store text wins over the Wikipedia fallback (gated fetch). |
 | `eos/` | `eos-install.ts` | EOS overlay status card + installer helper. |
 | `events/` | `click-router.ts`, `handlers/*` (9 files), `input-listeners.ts`, `ipc-listeners.ts` | `[data-act]`/`[data-view]` delegation, keyboard/mouse shortcuts, IPC listeners, `initApp()` bootstrap. |
+| `friends/` | `friends-view.ts` | Friends page empty state; social integrations are not currently available. |
 | `gamepad/` | `gamepad.ts`, `tv-mode.ts` | Controller polling (only while connected) + HUD; TV Mode full-screen view with hero and cover rows. |
 | `install/` | `install-dialog.ts` | Install location dialog (sizes, folder picker, auto-update/shortcut). |
 | `library/` | `library-view.ts`, `library-options.ts`, `hide-games.ts` | Grid/list rendering with progressive chunks and pagination, filter/sort UI, hidden-games modal. |

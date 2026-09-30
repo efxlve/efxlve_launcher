@@ -46,7 +46,9 @@ pub async fn epic_setup_status(app: AppHandle) -> Result<SetupStatus, String> {
     let path = paths::resolve_binary(&app).ok();
     let mut version = None;
     if let Some(ref p) = path {
-        version = downloader::binary_version(p).await.ok();
+        // Cached: `legendary -V` boots a Python runtime (1.6 s measured) and its
+        // answer only changes when the binary is replaced.
+        version = downloader::binary_version_cached(p).await.ok();
     }
     let needs_download = version.is_none();
     Ok(SetupStatus {
@@ -242,20 +244,29 @@ pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
                 g
             }
         };
+        // The snapshot above already holds every catalog entry, so third-party
+        // detection does not re-read 820 metadata files (measured 3.0 s before).
+        let installed = cache::read_installed_with_catalog(&config, Some(&games));
+        let skipped: Vec<String> = skip::load_skipped(&app)
+            .into_iter()
+            .map(|s| s.app_name)
+            .collect();
+        let collections = super::collections::read_collections().unwrap_or_default();
         CachedLibrary {
             account,
             account_id,
             games,
-            installed: cache::read_installed(&config),
-            skipped: skip::load_skipped(&app)
-                .into_iter()
-                .map(|s| s.app_name)
-                .collect(),
-            collections: super::collections::read_collections().unwrap_or_default(),
+            installed,
+            skipped,
+            collections,
         }
     })
     .await
-    .unwrap_or_default()
+    .unwrap_or_else(|err| {
+        // A panicking scan must not hand the UI an empty library without a trace.
+        eprintln!("[library] cached library scan failed: {err}");
+        CachedLibrary::default()
+    })
 }
 
 #[tauri::command]

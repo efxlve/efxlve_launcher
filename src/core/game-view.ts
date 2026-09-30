@@ -11,7 +11,7 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { rawOf, sharedOwnerOf, summaryOf } from "./selectors";
+import { rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
@@ -67,14 +67,54 @@ export function libraryDlBar(appName: string, p: number | null): string {
     : "";
 }
 
-/** Simple, elegant play button / installed badge next to the game title. */
+function storeHasPendingUpdate(appName: string): boolean {
+  const s = summaryOf(appName);
+  if (!s) return false;
+  return Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
+}
+
+/** Store copy that should receive the cover Update chip, including cross-store siblings. */
+function libraryUpdateTarget(appName: string): string | null {
+  if (storeHasPendingUpdate(appName)) return appName;
+  const s = summaryOf(appName);
+  if (!s) return null;
+  for (const key of storeKeysForTitle(s.title)) {
+    if (key !== appName && storeHasPendingUpdate(key)) return key;
+  }
+  return null;
+}
+
+/** Play chip next to the cover title; swaps to Update when that copy (or a sibling) has a pending update. */
 export function libraryInstalledIcon(appName: string, installed: boolean): string {
   if (!S.showInstalledIcon || !installed) return "";
+  const updateId = libraryUpdateTarget(appName);
+  if (updateId) {
+    const label = t("common.update");
+    const glyph = icon("download", 9);
+    if (updateId.startsWith("steam::")) {
+      return `<button type="button" class="pcard-play-btn is-update" data-act="steam-action" data-id="${esc(updateId.slice(7))}" data-mode="update" aria-label="${esc(label)}">${glyph}</button>`;
+    }
+    return `<button type="button" class="pcard-play-btn is-update" data-act="epic-install" data-id="${esc(updateId)}" aria-label="${esc(label)}">${glyph}</button>`;
+  }
+  const playLabel = t("palette.play");
   // Steam games are launched by the client, never by our own launch path.
   if (appName.startsWith("steam::")) {
-    return `<button type="button" class="pcard-play-btn" data-act="steam-action" data-id="${appName.slice(7)}" data-mode="launch" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
+    return `<button type="button" class="pcard-play-btn" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" aria-label="${esc(playLabel)}">${icon("play", 9)}</button>`;
   }
-  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${appName}" aria-label="${t("palette.play")}">${icon("play", 9)}</button>`;
+  return `<button type="button" class="pcard-play-btn" data-act="epic-play" data-id="${esc(appName)}" aria-label="${esc(playLabel)}">${icon("play", 9)}</button>`;
+}
+
+function patchCoverPlayChip(item: HTMLElement, cardAppName: string, installed: boolean): void {
+  const titleRow = item.querySelector<HTMLElement>(".pcard-title-row");
+  if (!titleRow) return;
+  const playBtn = titleRow.querySelector<HTMLElement>(".pcard-play-btn");
+  const playBtnHtml = libraryInstalledIcon(cardAppName, installed);
+  if (playBtnHtml) {
+    if (playBtn) playBtn.outerHTML = playBtnHtml;
+    else titleRow.insertAdjacentHTML("beforeend", playBtnHtml);
+  } else if (playBtn) {
+    playBtn.remove();
+  }
 }
 
 /**
@@ -84,11 +124,11 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
  */
 export function patchLibraryCardDom(appName: string): boolean {
   const s = summaryOf(appName);
+  if (!s) return false;
   const clean = appName.replace(/^gog::/, "");
   const items = document.querySelectorAll<HTMLElement>(
     `[data-lib-item="${appName}"], [data-lib-item="gog::${clean}"], [data-lib-item="${clean}"]`
   );
-  if (!s || items.length === 0) return false;
   const p = epicDlProgress(appName);
   const badgeHtml = libraryCardBadge(s);
   const actions = epicActionButtons(s, "full", { primaryOnly: true });
@@ -112,14 +152,7 @@ export function patchLibraryCardDom(appName: string): boolean {
     } else if (stats) {
       stats.remove();
     }
-    const titleRow = item.querySelector<HTMLElement>(".pcard-title-row");
-    const playBtn = titleRow?.querySelector<HTMLElement>(".pcard-play-btn");
-    const playBtnHtml = libraryInstalledIcon(appName, s.installed);
-    if (titleRow && playBtnHtml) {
-      if (!playBtn) titleRow.insertAdjacentHTML("beforeend", playBtnHtml);
-    } else if (playBtn) {
-      playBtn.remove();
-    }
+    patchCoverPlayChip(item, appName, s.installed);
     const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
     if (achHost) achHost.innerHTML = listAchievementCell(appName);
     const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
@@ -134,7 +167,16 @@ export function patchLibraryCardDom(appName: string): boolean {
       track.remove();
     }
   });
-  return true;
+  // Merged tiles keep the other store's key; refresh their cover chip without rewriting the card.
+  const seen = new Set(items);
+  for (const key of storeKeysForTitle(s.title)) {
+    document.querySelectorAll<HTMLElement>(`[data-lib-item="${key}"]`).forEach((item) => {
+      if (seen.has(item)) return;
+      seen.add(item);
+      patchCoverPlayChip(item, key, Boolean(summaryOf(key)?.installed));
+    });
+  }
+  return seen.size > 0;
 }
 
 /**
@@ -157,6 +199,14 @@ export function epicDlProgress(appName: string): number | null {
   const dl = S.downloads.get(appName);
   if (dl && !dl.done) return dl.progress;
   if (S.dlQueueStatus.active === appName || S.dlQueueStatus.queue.includes(appName)) return 0;
+  if (appName.startsWith("steam::")) {
+    const item = S.steamSummariesMap.get(appName) || S.allGamesMap.get(appName);
+    if (!item?.downloading) return null;
+    const total = item.bytesToDownload ?? 0;
+    const got = item.bytesDownloaded ?? 0;
+    if (total > 0) return Math.min(100, Math.round((got / total) * 100));
+    return 0;
+  }
   return null;
 }
 
@@ -220,13 +270,15 @@ export function epicActionButtons(
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
     if (s.downloading) {
-      return `<span class="chip warn" title="${esc(t("steam.downloadingHint"))}">${icon("download", 12)} ${t("steam.downloading")}</span>`;
+      const p = epicDlProgress(s.appName);
+      const label = p !== null ? t("common.downloading", { p }) : t("steam.downloading");
+      return `<button class="btn primary${btn}" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 12)} ${label}</button>`;
     }
     if (!s.installed) {
       return `<button class="btn install${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.install")}">${icon("download", 14)} ${t("common.install")}</button>`;
     }
     if (s.updateAvailable) {
-      return `<button class="btn update${btn}" data-act="steam-action" data-id="${steamId}" data-mode="install" title="${t("steam.updateRequired")}">${icon("download", 14)} ${t("common.update")}</button>`;
+      return `<button class="btn update${btn}" data-act="steam-action" data-id="${steamId}" data-mode="update" title="${t("steam.updateRequired")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
   }

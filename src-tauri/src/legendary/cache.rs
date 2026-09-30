@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::models::{InstalledGame, LegendaryGame};
 
@@ -307,20 +308,125 @@ fn query_registry_path(_reg_path: &str, _reg_key: &str) -> Option<String> {
 }
 
 /// Scans the registry for games handed off to third-party launchers (Ubisoft Connect, EA App).
+///
+/// Only an entry's `customAttributes` decides whether it is a candidate, and walking
+/// `metadata/*.json` to rebuild that for ~800 games costs seconds on the boot path
+/// (measured: 3.0 s for 820 files). A caller that already holds the parsed catalog —
+/// the library snapshot — passes it in; the directory walk stays as the fallback for
+/// the first run, before any snapshot exists.
 pub fn read_third_party_installed_games(
     config: &Path,
     already_installed: &HashMap<String, InstalledGame>,
+    catalog: Option<&[LegendaryGame]>,
 ) -> Vec<InstalledGame> {
+    let candidates: Vec<(String, String, Option<Value>)> = match catalog {
+        Some(games) => games
+            .iter()
+            .map(|g| {
+                (
+                    g.app_name.trim().to_string(),
+                    g.app_title.trim().to_string(),
+                    g.metadata.get("customAttributes").cloned(),
+                )
+            })
+            .collect(),
+        None => metadata_candidates(config),
+    };
+
+    // Only entries that declare a registry location can be installed by another
+    // launcher; everything else is dropped before any work happens.
+    let jobs: Vec<(String, String, Option<Value>)> = candidates
+        .into_iter()
+        .filter(|(app_name, _, _)| !app_name.is_empty() && !already_installed.contains_key(app_name))
+        .collect();
+
+    // Each probe starts a `reg query` process (~30 ms here), so ~24 candidates cost
+    // 0.7 s of the boot path when run one by one. The probes are independent and
+    // IO-bound, so they are fanned out across a few threads and kept in input order.
+    let mut probes: Vec<Option<String>> = vec![None; jobs.len()];
+    std::thread::scope(|scope| {
+        let workers = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4)
+            .clamp(2, 8)
+            .min(jobs.len().max(1));
+        let chunk = jobs.len().div_ceil(workers).max(1);
+        let handles: Vec<_> = probes
+            .chunks_mut(chunk)
+            .zip(jobs.chunks(chunk))
+            .map(|(slot_chunk, job_chunk)| {
+                scope.spawn(move || {
+                    for (slot, (_, _, attrs)) in slot_chunk.iter_mut().zip(job_chunk) {
+                        *slot = attrs.as_ref().and_then(probe_install_location);
+                    }
+                })
+            })
+            .collect();
+        for handle in handles {
+            let _ = handle.join();
+        }
+    });
+
     let mut out = Vec::new();
-    let meta_dir = config.join("metadata");
-    if !meta_dir.is_dir() {
-        return out;
+    for ((app_name, title, _), install_path) in jobs.into_iter().zip(probes) {
+        let Some(install_path) = install_path else { continue };
+        out.push(InstalledGame {
+            title: if title.is_empty() { app_name.clone() } else { title },
+            app_name,
+            version: "1.0".to_string(),
+            install_path,
+            install_size: 0,
+            executable: String::new(),
+            can_run_offline: true,
+            egl_guid: String::new(),
+            launch_parameters: String::new(),
+            manifest_path: String::new(),
+            needs_verification: false,
+            platform: "Windows".to_string(),
+            prereq_info: None,
+            uninstaller: None,
+            requires_ot: false,
+            save_path: None,
+            is_preloaded: false,
+            is_dlc: false,
+            base_urls: vec![],
+            install_tags: vec![],
+        });
     }
 
+    out
+}
+
+/// Install folder declared by a catalog entry's registry attributes, when the key
+/// exists and still points at a folder on disk.
+fn probe_install_location(attrs: &Value) -> Option<String> {
+    let reg_path = attrs
+        .get("RegistryPath")
+        .and_then(|v| v.get("value"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    let reg_key = attrs
+        .get("RegistryKey")
+        .and_then(|v| v.get("value"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    if reg_path.is_empty() || reg_key.is_empty() {
+        return None;
+    }
+    let install_path = query_registry_path(reg_path, reg_key)?;
+    Path::new(&install_path).is_dir().then_some(install_path)
+}
+
+/// Fallback candidate source for `read_third_party_installed_games`: the raw
+/// `metadata/*.json` files, used only until a library snapshot exists.
+fn metadata_candidates(config: &Path) -> Vec<(String, String, Option<Value>)> {
+    let mut out = Vec::new();
+    let meta_dir = config.join("metadata");
     let Ok(entries) = std::fs::read_dir(meta_dir) else {
         return out;
     };
-
     for entry in entries.flatten() {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) != Some("json") {
@@ -332,71 +438,33 @@ pub fn read_third_party_installed_games(
         let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) else {
             continue;
         };
-
         let app_name = val.get("app_name").and_then(|v| v.as_str()).unwrap_or("").trim();
-        if app_name.is_empty() || already_installed.contains_key(app_name) {
+        if app_name.is_empty() {
             continue;
         }
-
-        // customAttributes kontrol et
-        if let Some(meta) = val.get("metadata") {
-            if let Some(attrs) = meta.get("customAttributes") {
-                let reg_path = attrs
-                    .get("RegistryPath")
-                    .and_then(|v| v.get("value"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim();
-                let reg_key = attrs
-                    .get("RegistryKey")
-                    .and_then(|v| v.get("value"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim();
-
-                if !reg_path.is_empty() && !reg_key.is_empty() {
-                    if let Some(inst_loc) = query_registry_path(reg_path, reg_key) {
-                        let p = Path::new(&inst_loc);
-                        if p.is_dir() {
-                            let title = val
-                                .get("app_title")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or(app_name)
-                                .trim();
-                            out.push(InstalledGame {
-                                app_name: app_name.to_string(),
-                                title: title.to_string(),
-                                version: "1.0".to_string(),
-                                install_path: inst_loc,
-                                install_size: 0,
-                                executable: String::new(),
-                                can_run_offline: true,
-                                egl_guid: String::new(),
-                                launch_parameters: String::new(),
-                                manifest_path: String::new(),
-                                needs_verification: false,
-                                platform: "Windows".to_string(),
-                                prereq_info: None,
-                                uninstaller: None,
-                                requires_ot: false,
-                                save_path: None,
-                                is_preloaded: false,
-                                is_dlc: false,
-                                base_urls: vec![],
-                                install_tags: vec![],
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        let title = val.get("app_title").and_then(|v| v.as_str()).unwrap_or("").trim();
+        let attrs = val.get("metadata").and_then(|m| m.get("customAttributes")).cloned();
+        out.push((app_name.to_string(), title.to_string(), attrs));
     }
-
     out
 }
 
 /// Read installed games: installed.json + EGL manifests + third-party registry.
 pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
+    // Third-party detection wants the catalog, and the snapshot is the consolidated
+    // copy of it: parsing that one file (~0.35 s for 820 games) is much cheaper than
+    // walking `metadata/*.json` (~1.6 s measured). The walk stays as the fallback for
+    // a first run, before any snapshot exists.
+    let snapshot = read_library_snapshot(config);
+    read_installed_with_catalog(config, snapshot.as_deref())
+}
+
+/// `read_installed` with an already-parsed catalog: see
+/// `read_third_party_installed_games` for why the boot path passes the snapshot in.
+pub fn read_installed_with_catalog(
+    config: &Path,
+    catalog: Option<&[LegendaryGame]>,
+) -> Vec<InstalledGame> {
     let installed_file = config.join("installed.json");
     let mut map: HashMap<String, InstalledGame> = HashMap::new();
     if let Ok(text) = std::fs::read_to_string(&installed_file) {
@@ -468,7 +536,7 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     // 2. Detect games installed via third-party launchers (Ubisoft Connect, EA, ...) from the registry
     // CAUTION: third-party games are NOT persisted to installed.json! (no legendary manifest -> python TypeError)
     let mut extra_tp = Vec::new();
-    for tp in read_third_party_installed_games(config, &map) {
+    for tp in read_third_party_installed_games(config, &map, catalog) {
         if !map.contains_key(&tp.app_name) {
             extra_tp.push(tp);
         }
@@ -670,5 +738,49 @@ mod tests {
         // An unknown version must not clobber whatever EGL already stored.
         assert!(!apply_installed_version(&mut val, "", 117213238008));
         assert_eq!(val["AppVersionString"], "2.32_hotfix");
+    }
+
+    /// A third-party probe needs BOTH registry halves; anything else is skipped
+    /// before a `reg query` process is ever started.
+    #[test]
+    fn third_party_probe_requires_both_registry_halves() {
+        let both = serde_json::json!({
+            "RegistryPath": { "value": "SOFTWARE\\Ubisoft\\Launcher\\Installs\\1234" },
+            "RegistryKey": { "value": "InstallDir" }
+        });
+        // A path that does not exist on any machine must return None, not panic.
+        assert_eq!(probe_install_location(&both), None);
+
+        let path_only = serde_json::json!({ "RegistryPath": { "value": "SOFTWARE\\X" } });
+        assert_eq!(probe_install_location(&path_only), None);
+        let key_only = serde_json::json!({ "RegistryKey": { "value": "InstallDir" } });
+        assert_eq!(probe_install_location(&key_only), None);
+        assert_eq!(probe_install_location(&serde_json::json!({})), None);
+    }
+
+    /// The metadata walk is the fallback before a snapshot exists: it must find the
+    /// `customAttributes` that decide third-party detection, and skip broken files.
+    #[test]
+    fn metadata_candidates_reads_registry_attributes_and_skips_broken_files() {
+        let dir = std::env::temp_dir().join(format!("efxlve_cache_test_{}", std::process::id()));
+        let meta = dir.join("metadata");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&meta).unwrap();
+        std::fs::write(
+            meta.join("game.json"),
+            r#"{"app_name":"Ubisoft1","app_title":"A Ubisoft Game","metadata":{"customAttributes":{"RegistryPath":{"value":"SOFTWARE\\Ubisoft"},"RegistryKey":{"value":"InstallDir"}}}}"#,
+        )
+        .unwrap();
+        std::fs::write(meta.join("broken.json"), "{not json").unwrap();
+        std::fs::write(meta.join("ignored.txt"), "not metadata").unwrap();
+
+        let found = metadata_candidates(&dir);
+        assert_eq!(found.len(), 1, "only the readable catalog entry counts");
+        let (app_name, title, attrs) = &found[0];
+        assert_eq!(app_name, "Ubisoft1");
+        assert_eq!(title, "A Ubisoft Game");
+        assert!(attrs.as_ref().unwrap().get("RegistryPath").is_some());
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

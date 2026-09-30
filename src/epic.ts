@@ -281,15 +281,18 @@ export function requiresThirdPartyLauncher(info: ThirdPartyLauncherInfo | null):
 }
 
 /** Third-party launcher detection (EA App, Ubisoft Connect, Rockstar Games, etc.). */
-export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPartyLauncherInfo | null {
-  if (!g?.metadata) return null;
-  const attrs = (g.metadata.customAttributes as Record<string, { value?: string }>) || {};
+export function getThirdPartyLauncher(
+  g: EpicGame | undefined | null,
+  titleHint = "",
+  developerHint = "",
+): ThirdPartyLauncherInfo | null {
+  const attrs = (g?.metadata?.customAttributes as Record<string, { value?: string }>) || {};
   const tpApp = attrs.ThirdPartyManagedApp?.value?.toLowerCase() || "";
   const tpProv = attrs.ThirdPartyManagedProvider?.value?.toLowerCase() || "";
   const pType = attrs.partnerLinkType?.value?.toLowerCase() || "";
   const reg = attrs.RegistryPath?.value?.toLowerCase() || "";
-  const dev = String(g.metadata.developer || "").toLowerCase();
-  const title = String(g.app_title || "").toLowerCase();
+  const dev = String(g?.metadata?.developer || developerHint || "").toLowerCase();
+  const title = String(g?.app_title || titleHint || "").toLowerCase();
   const folder = attrs.FolderName?.value?.toLowerCase() || "";
 
   if (
@@ -299,7 +302,10 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
     pType === "origin" ||
     reg.includes("ea games") ||
     reg.includes("respawn") ||
-    dev.includes("electronic arts")
+    dev.includes("electronic arts") ||
+    dev.includes("ea sports") ||
+    dev.includes("ea dice") ||
+    dev.includes("respawn")
   ) {
     return { name: "EA App", type: "ea", shortName: "EA App" };
   }
@@ -334,12 +340,16 @@ export function getThirdPartyLauncher(g: EpicGame | undefined | null): ThirdPart
   return null;
 }
 
-/** Hile koruma sistemi (Anti-Cheat) tespiti */
-export function getAntiCheat(g: EpicGame | undefined | null): string | null {
-  if (!g) return null;
-  const appName = g.app_name?.toLowerCase() || "";
-  const title = (g.app_title || "").toLowerCase();
-  const attrs = (g.metadata?.customAttributes as Record<string, { value?: string }>) || {};
+/** Anti-cheat from catalog metadata, the game title, or (for Steam) VAC. */
+export function getAntiCheat(
+  g: EpicGame | undefined | null,
+  titleHint = "",
+  appHint = "",
+): string | null {
+  const appName = (g?.app_name || appHint || "").toLowerCase();
+  const title = (g?.app_title || titleHint || "").toLowerCase();
+  if (!g && !title && !appName) return null;
+  const attrs = (g?.metadata?.customAttributes as Record<string, { value?: string }>) || {};
   const procNames = attrs.ProcessNames?.value || "";
   const extraArgs = Object.entries(attrs)
     .filter(([k]) => k.startsWith("extraLaunchOption") || k.startsWith("LaunchOption"))
@@ -434,6 +444,9 @@ export function getAntiCheat(g: EpicGame | undefined | null): string | null {
   if (appName === "bobcat" || title.includes("star wars squadrons") || title.includes("star wars: squadrons")) {
     return "Easy Anti-Cheat";
   }
+  if (title.includes("counter-strike") || title.includes("counter strike") || /\bcs:? ?go\b/.test(title) || title === "cs2") {
+    return "VAC";
+  }
 
   // 3. Generic customAttributes check
   for (const [k, v] of Object.entries(attrs)) {
@@ -462,6 +475,8 @@ export interface EpicSummary {
   updateAvailable: boolean;
   /** True while the owning store (today: Steam) is downloading this game. */
   downloading?: boolean;
+  bytesDownloaded?: number;
+  bytesToDownload?: number;
 }
 
 /** Filters out DLCs and skipped broken items, merging in installed info. */
@@ -624,7 +639,7 @@ export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_
 export const epicImportInstalledFolder = (path: string) =>
   invoke<{ imported: number; relinked: number }>("epic_import_installed_folder", { path });
 export const epicSetInstallDir = (dir: string | null) =>
-  invoke<EpicSettings>("epic_set_install_dir", { dir });
+  invoke<EpicSettings>("epic_set_install_dir", { path: dir });
 
 /* ---------- Achievements ---------- */
 

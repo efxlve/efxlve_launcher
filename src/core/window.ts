@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./constants";
 import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
+import { positionNotifPanel } from "../features/notifications/notifications";
 import { syncStoreViewSize } from "../features/store/store-view";
 import { syncStoreTabsUnderline } from "./nav";
 export function updateMaxIcon(isMax?: boolean): void {
@@ -33,6 +34,8 @@ export function handleWindowResize(): void {
   if (S.view === "downloads" && typeof drawSpeedCanvas === "function") {
     drawSpeedCanvas();
   }
+  // The open notification panel is anchored to the bell: keep it there on resize.
+  if (S.notifOpen) positionNotifPanel();
   if (S.view === "store") {
     syncStoreViewSize();
     // The storefront tabs sit in the header, so a resize moves their underline.

@@ -12,6 +12,8 @@ pub mod transfers;
 pub mod launcher;
 pub mod accounts;
 pub mod updates;
+#[cfg(windows)]
+pub mod win_job;
 
 use thiserror::Error;
 

@@ -17,21 +17,22 @@ import { epicDlProgress, isAppPlatinum, patchLibraryCardDom } from "../../core/g
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { epicWideArt, gameVersionsOf, isTurkishUser, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
-import { ensureExternalVersionsLoaded, storeVersionLabel } from "./external-versions";
+import { epicWideArt, gameVersionsOf, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { storeVersionLabel } from "./external-versions";
+import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
-import { steamGetGameDetails } from "../../steam";
+import { steamGetGameDetails, steamCloudStatus } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
-import { fetchAndRenderScreenshots, renderDrawerScreenshots } from "../screenshots/screenshots-view";
-import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, isMacSys, isWinSys, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard } from "./drawer-widgets";
+import { fetchAndRenderScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
+import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderNextAchievements, renderProgressStrip } from "./drawer-widgets";
 
 /** Scrolls a tab into view only when it is clipped (narrow windows). */
 export function ensureTabVisible(el: HTMLElement, container: HTMLElement): void {
@@ -39,6 +40,133 @@ export function ensureTabVisible(el: HTMLElement, container: HTMLElement): void 
   const right = left + el.offsetWidth;
   if (left < container.scrollLeft) container.scrollLeft = left - 16;
   else if (right > container.scrollLeft + container.clientWidth) container.scrollLeft = right - container.clientWidth + 16;
+}
+
+function steamStudioHints(appName: string): string {
+  const d = S.steamDetails.get(appName);
+  if (!d) return "";
+  return [...d.developers, ...d.publishers].join(" ");
+}
+
+function partnerFromSteamNotice(notice: string): ThirdPartyLauncherInfo | null {
+  const n = notice.trim();
+  if (!n) return null;
+  const lower = n.toLowerCase();
+  if (lower.includes("ea app") || lower.includes("origin") || (/\bea\b/.test(lower) && lower.includes("account"))) {
+    return { name: "EA App", type: "ea", shortName: "EA App" };
+  }
+  if (lower.includes("ubisoft")) {
+    return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
+  }
+  if (lower.includes("rockstar")) {
+    return { name: "Rockstar Games Launcher", type: "rockstar", shortName: "Rockstar" };
+  }
+  if (lower.includes("gog")) {
+    return { name: "GOG GALAXY", type: "gog", shortName: "GOG" };
+  }
+  return null;
+}
+
+function gamePartner(s: EpicSummary, g: ReturnType<typeof rawOf>): ThirdPartyLauncherInfo | null {
+  const notice = S.steamDetails.get(s.appName)?.extUserAccountNotice || "";
+  return partnerFromSteamNotice(notice) || getThirdPartyLauncher(g, s.title, steamStudioHints(s.appName));
+}
+
+function gameAntiCheat(s: EpicSummary, g: ReturnType<typeof rawOf>): string | null {
+  const named = getAntiCheat(g, s.title, s.appName);
+  if (named) return named;
+  const drm = (S.steamDetails.get(s.appName)?.drmNotice || "").toLowerCase();
+  if (drm.includes("easy anti-cheat") || drm.includes("easyanticheat")) return "Easy Anti-Cheat";
+  if (drm.includes("battleye")) return "BattlEye";
+  const cats = S.steamDetails.get(s.appName)?.categories ?? [];
+  if (cats.includes(8)) return "VAC";
+  return null;
+}
+
+function gameDeveloper(s: EpicSummary, g: ReturnType<typeof rawOf>): string {
+  if (s.appName.startsWith("gog::")) {
+    return S.gogSummariesMap.get(s.appName.slice(5))?.developer || "";
+  }
+  const epicDev = g?.metadata?.developer;
+  if (typeof epicDev === "string" && epicDev.trim()) return epicDev;
+  const d = S.steamDetails.get(s.appName);
+  return d?.developers[0] || d?.publishers[0] || "";
+}
+
+function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
+  const dev = gameDeveloper(s, rawOf(s.appName));
+  return [
+    dev ? `<span>${esc(dev)}</span>` : "",
+    s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
+    partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
+    antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
+  ].filter(Boolean).join("");
+}
+
+function paintGameCloud(s: EpicSummary): void {
+  const el = document.getElementById("gp-stat-cloud-val");
+  if (!el) return;
+  const g = rawOf(s.appName);
+  const info = heroCloudStatus(s, g, gamePartner(s, g));
+  el.textContent = info.label;
+  el.classList.toggle("ok", info.synced);
+  el.classList.toggle("warn", !info.synced && !info.neutral && info.label !== "—");
+  const wrap = el.closest(".gp-stat");
+  if (wrap) wrap.setAttribute("title", info.tooltip);
+}
+
+const cloudStampAsked = new Set<string>();
+
+/** Loads last-sync once so the hero CLOUD chip is a real status, not a guess. */
+function ensureCloudSyncStamp(s: EpicSummary): void {
+  const appName = s.appName;
+  if (cloudStampAsked.has(appName)) return;
+  if (appName.startsWith("gog::") || !s.installed) {
+    cloudStampAsked.add(appName);
+    return;
+  }
+  cloudStampAsked.add(appName);
+  if (appName.startsWith("steam::")) {
+    void steamCloudStatus(appName)
+      .then((st) => {
+        if (st.lastSync) {
+          rememberCloudSync(appName, new Date(st.lastSync * 1000).toLocaleString(currentLanguage()));
+        }
+        if (S.currentModalAppName === appName) paintGameCloud(s);
+      })
+      .catch(() => {});
+    return;
+  }
+  void epicGetGameSettings(appName)
+    .then((st) => {
+      if (st.lastCloudSync) {
+        rememberCloudSync(appName, st.lastCloudSync);
+        if (S.activeManageSettings?.appName === appName) {
+          S.activeManageSettings.lastCloudSync = st.lastCloudSync;
+        }
+      }
+      if (S.currentModalAppName === appName) paintGameCloud(s);
+    })
+    .catch(() => {});
+}
+
+function mergeSteamCritic(data: CriticData, appName: string): CriticData {
+  if (data.metacritic_score || !appName.startsWith("steam::")) return data;
+  const details = S.steamDetails.get(appName);
+  if (!details?.metacriticScore) return data;
+  return {
+    ...data,
+    supported: true,
+    metacritic_score: details.metacriticScore,
+    metacritic_url: details.metacriticUrl || data.metacritic_url,
+  };
+}
+
+function paintGameMeta(s: EpicSummary): void {
+  const el = document.getElementById("gp-meta");
+  if (!el) return;
+  const g = rawOf(s.appName);
+  el.innerHTML = gameMetaHtml(s, gamePartner(s, g), gameAntiCheat(s, g));
 }
 
 /// Detects whether the game bundles the EOS SDK, once per game (result cached).
@@ -53,24 +181,6 @@ function ensureEosSupport(appName: string): void {
       if (has && S.currentModalAppName === appName) openEpicModal(appName, false);
     })
     .catch(() => {});
-}
-
-function hltbLabel(appName: string): string {
-  const hltb = S.loadedHltb.get(appName);
-  const hours = hltb?.main_story || hltb?.main_extra;
-  return hours ? `~${hours} ${t("common.hoursShort")}` : "—";
-}
-
-/** Critic stat value + tier class (shared by the header stat and its live update). */
-function criticStat(data: CriticData | undefined): { text: string; cls: string; url: string } {
-  if (!data?.supported) return { text: "—", cls: "", url: "" };
-  const showGoygoy = isTurkishUser() && Boolean(data.goygoy_review);
-  const url = data.opencritic_url || data.metacritic_url || (showGoygoy ? data.goygoy_review?.url : "") || "";
-  const sc = data.opencritic_score || data.metacritic_score;
-  if (sc) return { text: data.tier ? `${sc} · ${data.tier}` : `${sc}`, cls: data.tier ? `tier-${data.tier.toLowerCase()}` : "", url };
-  if (showGoygoy && data.goygoy_review?.score) return { text: `${data.goygoy_review.score} · Goygoy`, cls: "tier-goygoy", url };
-  if (showGoygoy && data.goygoy_review) return { text: t("drawer.goygoyReview"), cls: "tier-goygoy", url };
-  return { text: "—", cls: "", url };
 }
 
 function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLauncherInfo | null): string {
@@ -90,6 +200,34 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     : `<button class="btn install lg" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
 }
 
+/** Store chip in the action row. A dropdown when the game is owned on several stores. */
+function sourceChipHtml(appName: string): string {
+  const versions = gameVersionsOf(appName);
+  const activeSource = versions.find((v) => v.appName === appName)?.source ?? sourceOfKey(appName);
+  const label = storeVersionLabel(activeSource);
+  const mark = `${storeLogo(activeSource, 18)}<span>${esc(label)}</span>`;
+  if (versions.length < 2) {
+    return `<div class="gp-source static" title="${esc(`${t("lib.storeBy")} ${label}`)}">${mark}</div>`;
+  }
+  const row = (v: (typeof versions)[number]): string => {
+    const name = storeVersionLabel(v.source);
+    const active = v.appName === appName;
+    return `<button type="button" class="gp-store-row ${active ? "selected" : ""}" role="option" aria-selected="${active}" data-act="switch-drawer-version" data-id="${esc(v.appName)}">
+      ${storeLogo(v.source, 28)}
+      <span class="gp-store-text"><span class="gp-store-name">${name}</span><span class="gp-store-sub ${v.installed ? "ok" : ""}">${esc(v.installed ? t("common.installed") : t("common.notInstalled"))}</span></span>
+      <span class="gp-store-trail">${active ? icon("check", 14) : ""}</span>
+    </button>`;
+  };
+  return `<div class="gp-version-dropdown">
+      <button type="button" class="gp-source gp-version-trigger" data-act="toggle-version-dropdown" aria-haspopup="listbox" aria-expanded="${S.isVersionDropdownOpen}" title="${esc(`${t("lib.storeBy")} ${label}`)}">
+        ${mark}${icon("chevron-down", 13)}
+      </button>
+      <div id="version-dropdown-menu" class="gp-version-menu ${S.isVersionDropdownOpen ? "show" : ""}" role="listbox">
+        ${versions.map(row).join("")}
+      </div>
+    </div>`;
+}
+
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const faved = S.epicFav.has(s.appName);
@@ -103,26 +241,29 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>`;
+      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
+      ${sourceChipHtml(s.appName)}`;
   }
 
   // Steam games are owned by the Steam client: play, update and verify all
   // hand off through it, and nothing is installed by the launcher itself.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
+    const steamPct = s.downloading ? epicDlProgress(s.appName) : null;
     const primary = s.downloading
-      ? `<span class="chip warn" title="${esc(t("steam.downloadingHint"))}">${icon("download", 13)} ${t("steam.downloading")}</span>`
+      ? `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 16)} ${steamPct !== null ? t("common.downloading", { p: steamPct }) : t("steam.downloading")}</button>`
       : !s.installed
         ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
         : s.updateAvailable
-          ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.update")}</button>`
+          ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
           : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
     const validate = s.installed
       ? `<button class="btn ghost lg" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 16)} ${t("steam.validate")}</button>`
       : "";
     return `${primary}${validate}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitleSteam")}">${icon("external", 16)}</button>`;
+      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitleSteam")}">${icon("external", 16)}</button>
+      ${sourceChipHtml(s.appName)}`;
   }
 
   const p = epicDlProgress(s.appName);
@@ -131,7 +272,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
-    ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}`;
+    ${p !== null ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
+    ${sourceChipHtml(s.appName)}`;
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
@@ -255,10 +397,8 @@ function ensureOverviewData(s: EpicSummary): void {
       .then((data) => {
         S.loadedHltb.set(appName, data);
         if (S.currentModalAppName !== appName) return;
-        const el = document.getElementById("drawer-hltb-container");
-        if (el) el.innerHTML = renderHltbCard(data);
-        const capEl = document.getElementById("hub-stat-hltb-val");
-        if (capEl) capEl.textContent = hltbLabel(appName);
+        const el = document.getElementById("gp-progress");
+        if (el) el.outerHTML = renderProgressStrip(s);
       })
       .catch(() => {})
       .finally(() => { S.loadingHltbFor = null; });
@@ -267,8 +407,9 @@ function ensureOverviewData(s: EpicSummary): void {
     S.loadingCriticFor = appName;
     epicGetCritic(s.title, appName)
       .then((data) => {
-        S.loadedCritic.set(appName, data);
-        if (S.currentModalAppName === appName) updateCriticUI(appName, data);
+        const merged = mergeSteamCritic(data, appName);
+        S.loadedCritic.set(appName, merged);
+        if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
       })
       .catch(() => {})
       .finally(() => { S.loadingCriticFor = null; });
@@ -292,8 +433,10 @@ function ensureOverviewData(s: EpicSummary): void {
           if (heroEl) heroEl.src = details.hero_url;
         }
         if (details.developer) {
-          const devEl = modalRoot.querySelector(".gp-meta > span:first-child");
-          if (devEl) devEl.textContent = details.developer;
+          const item = S.gogSummariesMap.get(rawId);
+          if (item) item.developer = details.developer;
+          paintGameMeta(s);
+          paintGameCloud(s);
         }
       })
       .catch(() => {});
@@ -330,12 +473,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     S.achSortOrder = "default";
   }
   const g = rawOf(appName);
-  const partner = getThirdPartyLauncher(g);
-  const antiCheat = getAntiCheat(g);
+  const partner = gamePartner(s, g);
+  const antiCheat = gameAntiCheat(s, g);
 
   ensureOverviewData(s);
+  ensureCloudSyncStamp(s);
   if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
   if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
+  if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
   ensureEosSupport(appName);
 
   const dlcRes = S.dlcCache.get(appName);
@@ -363,69 +508,25 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), dlcCount);
     const actions = modalRoot.querySelector(".gp-actions");
     if (actions) actions.innerHTML = actionsHtml(s, partner);
+    paintGameMeta(s);
+    paintGameCloud(s);
     return;
   }
 
   const isGog = appName.startsWith("gog::");
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
-  const devRaw = isGog
-    ? (S.gogSummariesMap.get(appName.slice(5))?.developer || "")
-    : (g ? g.metadata.developer : undefined);
-  const dev = typeof devRaw === "string" ? devRaw : "";
   const achSum = S.epicAchSummaries[appName];
   const pt = S.playtimeMap.get(appName);
-  const critic = criticStat(S.loadedCritic.get(appName));
   const achVal = achSum && achSum.total_achievements > 0
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`
     : "—";
 
-  const meta = [
-    dev ? `<span>${esc(dev)}</span>` : "",
-    isGog ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
-    partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
-    antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
-  ].filter(Boolean).join("");
+  const meta = gameMetaHtml(s, partner, antiCheat);
+  const cloud = heroCloudStatus(s, g, partner);
 
-  const loadingDot = `<span class="spinner gp-mini-spin"></span>`;
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
-    `<div class="gp-stat ${attrs ? "clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
-
-  // The store selector lists every store this game is owned on: Epic / GOG /
-  // Steam switch to that store's page, EA App / Ubisoft Connect / XBOX hand the
-  // launch over to their own client (detected installs only).
-  ensureExternalVersionsLoaded();
-  const versions = gameVersionsOf(appName);
-  const activeVersion = versions.find((v) => v.appName === appName);
-  const versionRow = (v: (typeof versions)[number]): string => {
-    const external = v.source === "ea" || v.source === "ubisoft" || v.source === "xbox";
-    const label = storeVersionLabel(v.source);
-    const active = !external && v.appName === appName;
-    const attrs = external
-      ? `data-act="external-launch" data-store="${v.source}" data-id="${esc(v.externalId)}" title="${esc(t("common.launchWith", { name: label }))}"`
-      : `data-act="switch-drawer-version" data-id="${esc(v.appName)}"`;
-    const trailing = active
-      ? icon("check", 13)
-      : external
-        ? icon("external", 12)
-        : v.installed
-          ? `<span class="store-option-count">${t("common.installed")}</span>`
-          : "";
-    return `<button type="button" class="sort-menu-item-btn store-menu-item ${active ? "selected" : ""}" role="option" aria-selected="${active}" ${attrs}><span>${label}</span>${trailing}</button>`;
-  };
-  const versionSwitcher = versions.length > 1
-    ? `<div class="gp-version-switch">
-        <span class="gp-version-label">${t("lib.storeBy")}</span>
-        <div class="gp-version-dropdown">
-          <button type="button" class="btn ghost small gp-version-trigger" data-act="toggle-version-dropdown" aria-haspopup="listbox" aria-expanded="${S.isVersionDropdownOpen}">
-            <span>${esc(storeVersionLabel(activeVersion?.source ?? "epic"))}</span>
-            ${icon(S.isVersionDropdownOpen ? "chevron-up" : "chevron-down", 14)}
-          </button>
-          <div id="version-dropdown-menu" class="gp-version-menu ${S.isVersionDropdownOpen ? "show" : ""}" role="listbox">
-            ${versions.map(versionRow).join("")}
-          </div>
-        </div>
-      </div>`
-    : "";
+    `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
+  const cloudTone = cloud.synced ? "ok" : (cloud.label !== "—" ? "warn" : "");
 
   modalRoot.innerHTML = `
     <div class="overlay">
@@ -441,23 +542,18 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           </div>
           <div class="gp-hero-bottom">
             <h1 class="gp-title">${esc(s.title)}</h1>
-            <div class="gp-meta">${meta}</div>
+            <div class="gp-meta" id="gp-meta">${meta}</div>
           </div>
         </div>
 
         <div class="gp-bar">
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
-            ${versionSwitcher}
           </div>
           <div class="gp-stats">
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${stat(t("drawer.statStory"), S.loadingHltbFor === appName ? loadingDot : hltbLabel(appName), "", "hub-stat-hltb-val")}
-            <div class="gp-stat ${critic.url ? "clickable" : ""}" id="hub-stat-critic-col" ${critic.url ? `data-act="open-critic-url" data-url="${esc(critic.url)}"` : ""} title="${t("drawer.criticScore")}">
-              <span class="gp-stat-label">${t("drawer.statReview")}</span>
-              <span class="gp-stat-val ${critic.cls}" id="hub-stat-critic-val">${S.loadingCriticFor === appName ? loadingDot : critic.text}</span>
-            </div>
+            ${stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone)}
           </div>
         </div>
 
@@ -496,21 +592,6 @@ export function updateCriticUI(appName: string, data: CriticData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-critic-container");
   if (container) container.innerHTML = renderCriticCard(data, false);
-  const valEl = document.getElementById("hub-stat-critic-val");
-  const colEl = document.getElementById("hub-stat-critic-col");
-  if (!valEl) return;
-  const c = criticStat(data);
-  valEl.textContent = c.text;
-  valEl.className = `gp-stat-val ${c.cls}`;
-  if (!colEl) return;
-  colEl.classList.toggle("clickable", Boolean(c.url));
-  if (c.url) {
-    colEl.setAttribute("data-act", "open-critic-url");
-    colEl.setAttribute("data-url", c.url);
-  } else {
-    colEl.removeAttribute("data-act");
-    colEl.removeAttribute("data-url");
-  }
 }
 
 /** Collection chips + add button shown under the game description. */
@@ -558,9 +639,11 @@ export function renderDrawerOverview(
           </p>
           <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
         </section>
+        ${renderMomentsStrip(s.appName)}
+        ${renderNextAchievements(s.appName)}
       </div>
       <aside class="hub-overview-sidebar">
-        <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
+        ${renderProgressStrip(s)}
         <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName)}</div>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>
@@ -601,6 +684,22 @@ export function renderDrawerDlcs(s: EpicSummary): string {
           </div>
           <div class="row-actions">
             <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.storeTitleSteam")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  if (s.appName.startsWith("gog::")) {
+    const count = s.dlcCount || S.allGamesMap.get(s.appName)?.dlcCount || 0;
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    return `
+      <div class="dlc-tab-content">
+        <div class="row">
+          <div class="row-main">
+            <div class="row-title">${t("gog.dlcCount", { count })}</div>
+            <div class="row-meta">${t("gog.dlcDesc")}</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.storeTitleGog")}</button>
           </div>
         </div>
       </div>`;
@@ -667,7 +766,7 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = S.demoPlatinumApps.has(s.appName);
-  const partner = getThirdPartyLauncher(rawOf(s.appName));
+  const partner = gamePartner(s, rawOf(s.appName));
 
   if (S.loadingAchFor === s.appName) return loadingState(t("ach.loadingStore"));
   const data = S.loadedAchievements.get(s.appName);
@@ -911,7 +1010,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       const featuresEl = document.getElementById("hub-features-list");
       if (featuresEl) {
         const g = rawOf(appName);
-        featuresEl.innerHTML = renderGameFeatures(cur, g, getThirdPartyLauncher(g), getAntiCheat(g), data);
+        featuresEl.innerHTML = renderGameFeatures(cur, g, gamePartner(cur, g), gameAntiCheat(cur, g), data);
       }
     }
   } catch (e) {
@@ -957,9 +1056,19 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
         heroEl.addEventListener("error", () => { heroEl.src = fallback; }, { once: true });
         if (heroEl.complete && heroEl.naturalWidth === 0) heroEl.src = fallback;
       }
-      if (details.developers.length > 0) {
-        const devEl = modalRoot.querySelector(".gp-meta > span:first-child");
-        if (devEl) devEl.textContent = details.developers[0];
+      paintGameMeta(s);
+      paintGameCloud(s);
+      const cloud = details.categories.includes(23);
+      const item = S.allGamesMap.get(appName) || S.steamSummariesMap.get(appName);
+      if (item) {
+        item.cloudSavesSupported = cloud;
+        item.dlcCount = details.dlc.length;
+      }
+      const critic = S.loadedCritic.get(appName);
+      if (critic) {
+        const merged = mergeSteamCritic(critic, appName);
+        S.loadedCritic.set(appName, merged);
+        updateCriticUI(appName, merged);
       }
     }
   } catch {

@@ -72,7 +72,14 @@ export async function testCloudConnectionAction(): Promise<void> {
   }
 }
 
+let gdriveAuthBusy = false;
+
 export async function startGoogleDriveAuthAction(): Promise<void> {
+  if (gdriveAuthBusy) {
+    toast(t("cloud.gdriveAlreadyOpen"), "");
+    return;
+  }
+  gdriveAuthBusy = true;
   toast(t("cloud.gdriveOpeningBrowser"), "");
   try {
     const email = await cloudBackupStartGdriveAuth();
@@ -81,6 +88,8 @@ export async function startGoogleDriveAuthAction(): Promise<void> {
     scheduleRender();
   } catch (err) {
     toast(String(err), "err");
+  } finally {
+    gdriveAuthBusy = false;
   }
 }
 

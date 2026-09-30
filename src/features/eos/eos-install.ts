@@ -2,17 +2,14 @@
  * Epic Online Services redistributable install.
  *
  * Checked once at startup and again when Settings opens or the user refreshes.
- * There is no background poll and no ignore path. Clearing the list does not
- * hide the notice: if EOS is still missing, it is added again on the next
- * startup check and when Settings opens. The notification and the Settings
- * button start the same download; nothing installs without that click. The
- * settings row keeps stating that EOS is required, and the sidebar bell keeps
- * an amber dot, until the service folder exists.
+ * The overlay is optional: a notification asks whether to install it. Dismiss
+ * or clear the notice to skip; Settings still offers the download later.
+ * Nothing installs without that click.
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri } from "../../core/constants";
+import { isTauri, EOS_OVERLAY_DECLINE_KEY } from "../../core/constants";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -28,6 +25,7 @@ import {
 } from "../notifications/notifications";
 
 const INSTALL_ACT = "install-eos";
+const DECLINE_KEY = EOS_OVERLAY_DECLINE_KEY;
 /** Older builds stored a dismissal here. It no longer suppresses the notice. */
 const LEGACY_DISMISS_KEY = "efxlve-eos-notice-dismissed";
 
@@ -111,6 +109,22 @@ function paintEosText(): void {
   if (desc) desc.innerHTML = eosDescHtml();
 }
 
+function eosDeclined(): boolean {
+  return localStorage.getItem(DECLINE_KEY) === "1";
+}
+
+/** User skipped the overlay notice; Settings still has the download button. */
+export function declineEosOverlay(): void {
+  localStorage.setItem(DECLINE_KEY, "1");
+  localStorage.removeItem(LEGACY_DISMISS_KEY);
+  removeEosNotifications();
+  updateNotifBadge();
+}
+
+function clearEosDecline(): void {
+  localStorage.removeItem(DECLINE_KEY);
+}
+
 function removeEosNotifications(): void {
   for (const n of [...S.notifications]) {
     if (n.action === INSTALL_ACT) dismissNotification(n.id);
@@ -121,8 +135,13 @@ function removeEosNotifications(): void {
 /** Shows the missing-EOS notice, or clears it when the service is back. */
 export function syncEosNotice(): void {
   if (!S.eosOverlay) return;
-  localStorage.removeItem(LEGACY_DISMISS_KEY);
   if (S.eosOverlay.installed) {
+    clearEosDecline();
+    removeEosNotifications();
+    updateNotifBadge();
+    return;
+  }
+  if (eosDeclined()) {
     removeEosNotifications();
     updateNotifBadge();
     return;
@@ -188,6 +207,7 @@ export async function startEosInstall(): Promise<void> {
     return;
   }
   closeNotifPanel();
+  clearEosDecline();
   phase = "downloading";
   progress = 0;
   patchEosControl();

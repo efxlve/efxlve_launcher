@@ -1,0 +1,33 @@
+﻿# Efxlve Launcher — Cursor Rules
+
+You are an expert systems & UI engineer working on Efxlve Launcher, a high-performance, console-grade Universal Gaming Hub for Windows.
+
+## 1. Project Identity & Vision
+- **Goal:** A lightweight, unified desktop game manager and launcher that makes separate client apps (Epic Games, GOG, Steam) unnecessary in the background.
+- **Tech Stack:** Tauri v2 (Rust backend, `unstable` feature for child webviews) + Vanilla TypeScript 5.6 (Vite 6) + native Windows WebView2.
+- **Performance Standard:** 120 FPS fluid UI, sub-100ms response, zero memory bloat, instant startup from disk cache (Heroic Principle).
+
+## 2. Inviolable Design & Code Invariants
+1. **Hydra Console UI & Art-First Discipline (NO UI BLOAT):**
+   - **Cover Hygiene:** Never plaster permanent badges (playtime `146h`, trophies `53/57`) on library covers. Covers are clean, high-impact poster artwork. Details belong on hover or inside the game page.
+   - **Zero Redundant Data:** Never display the same metric twice in one screen (e.g. HLTB or review scores shown in an action bar AND in separate bento boxes below).
+   - **Cinematic Game Detail Page:** Do NOT build cluttered database forms or multiple competing bento boxes. Deliver a wide, immersive hero fading to obsidian black, a prominent primary CTA (`Play Now` / `Install`), and a clean, spacious single/two-column content flow.
+2. **Zero-Emoji Policy (STRICT):** Never use OS emojis (🎮, 🚀, ✨, etc.) in UI, toasts, tabs, or badges. Always use inline SVGs (`icon("name", size)`) or clean ISO text (`TR`, `EN`).
+3. **Hydra Console Dark Aesthetic:** Pure black (`#000000`), 1px subtle hairline borders, single pure white accent (`--accent #ffffff`). Colors indicate STATUS only (green = online, amber = updating/idle, red = error/counter). No decorative rainbow gradients, no neon glowing shadows, no `backdrop-filter: blur`, no 999px pill shapes.
+4. **10-ft TV Mode & Controller Experience:**
+   - Maintain the dedicated TV Mode (`src/features/gamepad/tv-mode.ts`) for gamepad-driven couch gaming (A: Select, B: Back, LB/RB: Shelves).
+   - Vision: Virtual Controller Bridge (Steam Input equivalent) to translate DualSense/DirectInput into virtual XInput so PlayStation controllers work in games that only support Xbox controllers (e.g. Dead by Daylight).
+5. **Tabular Numerals:** Always apply `font-variant-numeric: tabular-nums` to speeds (MB/s), percentages, download bars, game playtimes, and trophy counters to prevent jitter.
+6. **No Full Re-renders:** Never destroy and re-render entire view DOM (`viewEl.innerHTML = ...`) on download progress or IPC events. Use in-place patching (`patchLibraryCardDom`, `data-dlbtn`, `data-dlbar`).
+7. **O(1) Data Access:** Never run linear `.find()` or `.some()` across 500+ game lists in hot loops. Always maintain and use `rawOf` and `summaryOf` hash maps.
+8. **Webview Rule:** NEVER pass `additional_browser_args` to `WebviewBuilder` (silently breaks child webview rendering).
+9. **English-Only Comments:** Write all code comments strictly in English.
+10. **Modularity:** Keep files under ~500-1000 lines. Separate domain logic into `src/features/<feature>/` or `src/core/`.
+
+## 3. Tooling & Platform Commands (Windows)
+- In PowerShell, ALWAYS use `npm.cmd` instead of `npm`:
+  - `npm.cmd run build` (runs `tsc --noEmit && vite build`)
+  - `cargo check` (validates Rust backend)
+  - `cargo test` (unit tests)
+- Tauri IPC parameters are camelCase in JS (`{ appName }`), matching Rust snake_case (`app_name: String`).
+- Do not commit or push unless explicitly instructed by the user.

@@ -1,48 +1,49 @@
-# Contributing
+# Contributing to Efxlve Launcher
 
-Efxlve Launcher is an open-source Epic Games launcher for Windows. The interface is TypeScript. The native side is Rust on Tauri 2. Installs and launches go through the `legendary` CLI.
+Efxlve Launcher is an open-source Universal Gaming Hub for Windows, aggregating Epic Games, GOG, and Steam in a single unified client. The frontend is frameworkless Vanilla TypeScript (Vite 6). The native backend is Rust on Tauri v2.
 
-Issues and pull requests are welcome. Read this file and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before changing the interface. If an AI assistant writes the patch, it should follow [AGENTS.md](./AGENTS.md).
+Issues and pull requests are welcome. Read this guide and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before making interface or architectural changes. If an AI assistant is assisting, it must adhere to [AGENTS.md](./AGENTS.md) and `.cursorrules`.
 
-The screenshots in the README are real windows of the app, stored in `docs/screenshots/`. Replace one when the screen it shows has changed. Do not add a mockup, a cropped marketing frame, or a shot that includes an account id.
+---
 
-## Look and behavior
+## 1. Design & UI Invariants
 
-The app has one visual language. A new screen uses the components already in `src/styles/`. Do not restyle one page so it resembles a different product.
+The application has a strict, uncompromising visual contract:
 
-- Background is true black (`#000`). The accent is white. Green, amber, and red mean status, not decoration.
-- No decorative gradients, neon glow, gradient text, or glass blur on repeated cards.
-- Do not turn every control into a full pill. Radius comes from the shared tokens.
-- No emoji in the interface. Use the existing SVG icons, or add one in `src/core/icons.ts`.
-- One line of text stays one line. Truncate with ellipsis. Descriptions clamp to two lines.
-- Speeds, sizes, percentages, and durations use tabular numbers so a changing value does not shove the row sideways.
-- Every control is keyboard-focusable and shows a visible focus ring. Do not scale a card on focus.
-- The desktop UI is for a mouse and keyboard. A full-screen TV Mode for a controller is coming soon. Do not add a second controller layout on the desktop screens, and do not document TV Mode as something the app already has.
-- Copy is short and plain. No hype, no exclamation marks.
-- Confirmations use the launcher's own dialog. Do not call `window.confirm` or `window.alert`. WebView2 shows those as a browser box titled with the page address.
+- **Surface & Palette:** True black background (`#000000`), subtle 1px hairline borders, and single pure white accent (`--accent #ffffff`). Colors convey status only (green = online, amber = update/idle, red = error/counter).
+- **No Decorative AI Glitz:** No decorative rainbow gradients, no neon glow (`box-shadow glow`), no gradient text, no glass blur on repeated items, and no turning every button into a 999px pill.
+- **Zero-Emoji Policy:** Never use OS emojis (🎮, 🚀, ✨, etc.) in buttons, notifications, toasts, or tabs. Always use clean inline SVG icons (`icon("name", size)`) or ISO language codes (`TR`, `EN`).
+- **Tabular Numerals:** Speeds (MB/s), percentages, download bars, game playtimes, and trophy counters must use `font-variant-numeric: tabular-nums` to prevent visual jitter.
+- **No Layout Shift on Focus:** Focus rings are 2px `--accent` with 2px offset. Do not scale cards (`transform: scale(...)`) on focus.
+- **Microcopy:** Short, calm, professional console language. No excessive exclamation marks or marketing hyperbole.
 
-## Code
+---
 
-- Comments are English and explain why something exists.
-- New interface work goes in `src/features/<name>/`. `src/main.ts` stays a thin bootstrap.
-- Keep a source file under about 1,500 lines. Split it by responsibility when it grows past that.
-- User-facing strings go through `src/locales/`. Add the key to every locale file. English is the source text. Turkish is a real translation. The other thirteen languages get a translation in the same change, so the catalogs stay aligned. If a key is missing at runtime, the UI falls back to English, then Turkish, then the key itself.
-- Tauri arguments are camelCase on the JavaScript side (`appName`, not `app_name`). A mismatch fails quietly.
-- Do not redraw the whole library when one card changes. Patch the card. Progress events update the button and the bar, not the grid.
-- On PowerShell, run npm as `npm.cmd`.
+## 2. Engineering Standards
 
-## Checks
+- **Code Comments:** Write all comments strictly in English. Explain the non-obvious *why*, not just the *what*.
+- **Modularity:** Keep files focused and under ~500–1000 lines. Place feature-specific UI in `src/features/<feature>/` and shared utilities in `src/core/`.
+- **Targeted DOM Mutation:** Never destroy and re-render the entire library (`viewEl.innerHTML = ...`) on download progress or IPC events. Use in-place card patching (`patchLibraryCardDom`, `data-dlbtn`, `data-dlbar`).
+- **O(1) Data Structures:** Maintain and use `rawOf` and `summaryOf` hash maps. Never use linear `.find()` in high-frequency rendering paths.
+- **Tauri IPC Naming:** Arguments are camelCase on the JavaScript side (`appName`), matching snake_case in Rust (`app_name: String`).
+- **Internationalization (i18n):** User-facing strings must use `t("key")`. All 15 locale JSON files in `src/locales/` must maintain 1:1 key parity.
+- **PowerShell Tooling:** Always use `npm.cmd` instead of `npm` on Windows PowerShell.
+
+---
+
+## 3. Required Verification
+
+Before submitting changes, ensure the following commands pass with zero errors:
 
 ```powershell
-npm.cmd run build
-cargo check
-cargo test
+npm.cmd run build          # Typecheck (tsc --noEmit) and Vite production build
+cargo check                # Rust backend validation
+cargo test                 # Rust unit tests
 ```
 
-`npm.cmd run build` must pass. New Rust behavior needs a unit test.
+---
 
-## Pull requests
+## 4. Commits & Pull Requests
 
-Use a short commit message that says why the change exists. `feat:`, `fix:`, `perf:`, `refactor:`, and `docs:` are fine. One concern per pull request is easier to review.
-
-Do not commit secrets, signing keys, account ids, or local launcher config. The updater signing key never goes in the repo.
+- Use standard English imperative commit messages (`feat: ...`, `fix: ...`, `refactor: ...`, `perf: ...`, `docs: ...`).
+- Never commit private keys, updater signing keys, secrets, or local configuration files.

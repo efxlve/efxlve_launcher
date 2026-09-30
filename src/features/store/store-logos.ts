@@ -6,23 +6,15 @@
  * for identification only (see src/assets/stores/README.md and Settings → About).
  */
 
-import battlenet from "../../assets/stores/battlenet.png";
-import ea from "../../assets/stores/ea.png";
 import epic from "../../assets/stores/epic.png";
 import gog from "../../assets/stores/gog.png";
 import steam from "../../assets/stores/steam.png";
-import ubisoft from "../../assets/stores/ubisoft.png";
-import xbox from "../../assets/stores/xbox.png";
 import type { StoreId } from "./store-view";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
   epic,
   gog,
   steam,
-  xbox,
-  battlenet,
-  ubisoft,
-  ea,
 };
 
 /** Logo markup for a store card: 24px mark, empty alt (the name is right next to it). */

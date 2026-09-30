@@ -160,6 +160,44 @@ export function renderDrawerManage(s: EpicSummary): string {
       </div>`;
   }
 
+  if (s.appName.startsWith("gog::")) {
+    const ptGog = S.playtimeMap.get(s.appName);
+    const playtimeGog = ptGog?.total_seconds ? fmtPlaytime(ptGog.total_seconds) : t("playtime.notPlayed");
+    const cloud = S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported
+      ? row(t("feat.gogCloud"), t("feat.gogCloudTip"), "")
+      : "";
+    return `
+      <div class="manage-tab-content">
+        <div class="section-title">${t("manage.groupFiles")}</div>
+        <div class="list">
+          ${row(t("gog.managedBy"), t("gog.managedByDesc"), "")}
+          ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
+            `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
+          ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
+            `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
+            `<div id="manage-verify-box-container"></div>`) : ""}
+        </div>
+        ${cloud}
+        <div class="section-title">${t("manage.groupCover")}</div>
+        <div class="list">
+          ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+            `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
+        </div>
+        <div class="section-title">${t("manage.groupPlaytime")}</div>
+        <div class="list">
+          ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "")}
+        </div>
+        <div class="list">
+          ${row(t("manage.hideTitle"), t("manage.hideDesc"),
+            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
+        </div>
+        ${s.installed ? `<div class="list mg-danger">
+          ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
+            `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)}
+        </div>` : ""}
+      </div>`;
+  }
+
   if (!S.activeManageSettings || S.activeManageSettings.appName !== s.appName) {
     S.activeManageSettings = {
       appName: s.appName,

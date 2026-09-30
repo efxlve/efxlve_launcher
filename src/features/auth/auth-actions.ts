@@ -68,13 +68,15 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     S.epicBusyMsg = "";
   }
   try {
-    S.setupInfo = await epicSetupStatus();
-    if (S.setupInfo.needsDownload) {
+    // Both are independent disk reads, so they travel together: fetching the setup
+    // status first and the library after it added a full round trip to every launch.
+    const [setup, cached] = await Promise.all([epicSetupStatus(), epicCachedLibrary()]);
+    S.setupInfo = setup;
+    if (setup.needsDownload) {
       S.epicPhase = "setup";
       render();
       return;
     }
-    const cached: CachedLibrary = await epicCachedLibrary();
     S.epicSkippedCount = cached.skipped.length;
     if (!cached.account) {
       S.epicAccount = "";

@@ -9,8 +9,9 @@ mod cloud_backup;
 mod shared_library;
 mod controller;
 mod steam;
+mod steam_watch;
 mod steam_auth;
-mod external_stores;
+mod steam_session;
 mod winreg;
 
 use std::sync::Mutex;
@@ -931,10 +932,11 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
         if (!title) return '';
         var s = normalizeText(title);
         // Remove edition / version phrases after a colon or dash
-        s = s.replace(/[:\-â€“â€”]\s*(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
+        s = s.replace(/\benhanced edition\b/gi, '');
+        s = s.replace(/[:\-â€“â€”]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
         
         // Remove edition words
-        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');
+        s = s.replace(/\b(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');
         s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, '');
 
         // Common game abbreviations (GTA V / GTA 5)
@@ -948,7 +950,8 @@ const STORE_EXTENSION_SCRIPT: &str = r#"
     function stripSlugEdition(slug) {
         if (!slug) return '';
         var s = slug.toLowerCase();
-        s = s.replace(/-(standard|deluxe|gold|premium|definitive|enhanced|ultimate|special|complete|anniversary|collectors|goty|game-of-the-year)(-(edition|surum|paketi))?$/i, '');
+        s = s.replace(/-(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|collectors|goty|game-of-the-year)(-(edition|surum|paketi))?$/i, '');
+        s = s.replace(/-enhanced-edition$/i, '');
         s = s.replace(/-(directors-cut|director-s-cut|remastered|remaster)$/i, '');
         s = s.replace(/-(edition|bundle|base-game)$/i, '');
         return s;
@@ -1843,6 +1846,15 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    window.set_fullscreen(enabled).map_err(|e| e.to_string())?;
+    Ok(enabled)
+}
+
+#[tauri::command]
 fn app_close(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_window("main")
@@ -2018,6 +2030,7 @@ fn main() {
             app_minimize,
             app_toggle_maximize,
             app_is_maximized,
+            app_set_fullscreen,
             app_close,
             app_set_decorations,
             app_set_minimize_to_tray,
@@ -2106,9 +2119,13 @@ fn main() {
             controller::controller_support_status,
             steam::steam_status,
             steam::steam_open_client,
+            steam::steam_open_downloads,
             steam::steam_list_installed,
+            steam_watch::steam_watch_library,
             steam::steam_game_action,
+            steam_session::steam_watch_session,
             steam::steam_sync_playtime,
+            steam::steam_cloud_status,
             steam::steam_get_game_details,
             steam::steam_get_api_key,
             steam::steam_set_api_key,
@@ -2124,8 +2141,6 @@ fn main() {
             steam_auth::steam_switch_account,
             steam_auth::steam_remove_saved_account,
             steam_auth::steam_owned_games,
-            external_stores::external_detect_games,
-            external_stores::external_launch_game,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,
@@ -2158,6 +2173,8 @@ fn main() {
             gogdl::commands::gog_get_system_requirements,
             gogdl::transfers::gog_install_game,
             gogdl::transfers::gog_cancel_download,
+            gogdl::transfers::gog_pause_download,
+            gogdl::transfers::gog_resume_download,
             gogdl::transfers::gog_uninstall_game,
             gogdl::transfers::gog_import_game,
             gogdl::transfers::gog_verify_game,

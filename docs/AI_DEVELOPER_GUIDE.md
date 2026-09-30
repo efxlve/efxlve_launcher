@@ -78,11 +78,11 @@
      invoke<string>("epic_my_new_command", { appName });
    ```
 4. **Wire to UI via Event Delegation:**  
-   In `src/main.ts`, avoid inline click listeners. Use HTML data attributes:
+   Avoid inline click listeners in components. Use HTML data attributes:
    ```html
    <button class="ps5-btn primary" data-act="my-action" data-id="${esc(appName)}">Run</button>
    ```
-   Handle in the global click router:
+   Handle in the centralized click router (`src/features/events/click-router.ts`):
    ```typescript
    if (act === "my-action") {
      const id = el.dataset.id;
@@ -94,7 +94,7 @@
 
 ### Recipe B: Adding a Detail Drawer Tab
 
-1. Drawer tabs are rendered in `renderEpicModal()` inside `src/main.ts`.
+1. Drawer tabs are rendered in `src/features/drawer/drawer-view.ts`.
 2. Add the tab button in the drawer header with `data-act="drawer-tab"` and `data-tab="your-tab-name"`.
 3. Create `renderDrawerYourTab(summary: EpicSummary, raw: EpicGame)` returning HTML string.
 4. Add case in `renderDrawerTab(tabName)` router.

@@ -17,7 +17,7 @@ import {
   updateManageModalInputsInPlace,
   updateVerifyProgressInPlace,
 } from "../../manage/manage-view";
-import { renderBackupListHtml } from "../../drawer/drawer-widgets";
+import { rememberCloudSync, renderBackupListHtml } from "../../drawer/drawer-widgets";
 import {
   browseMoveTarget,
   cancelMoveGame,
@@ -116,16 +116,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
       if (id) {
         updateVerifyProgressInPlace(id, 0, 100, 0, i18nT("dl.starting"), i18nT("dl.starting"));
         if (id.startsWith("gog::")) {
-          gogVerifyGame(id)
-            .then((msg) => {
-              updateVerifyProgressInPlace(id, 100, 100, 100, msg, "");
-              toast(msg, "ok");
-              window.setTimeout(() => resetVerifyInPlace(id), 1200);
-            })
-            .catch((err) => {
-              resetVerifyInPlace(id);
-              toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
-            });
+          gogVerifyGame(id).catch((err) => {
+            resetVerifyInPlace(id);
+            toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
+          });
         } else {
           epicVerifyGame(id).catch((err) => {
             resetVerifyInPlace(id);
@@ -136,6 +130,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
       return true;
 
     case "manage-sync-saves":
+      if (id && (id.startsWith("gog::") || id.startsWith("steam::"))) return true;
       if (id && !S.manageSyncingSaves) {
         S.manageSyncingSaves = true;
         const syncBtn = document.querySelector<HTMLButtonElement>('[data-act="manage-sync-saves"]');
@@ -146,10 +141,19 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           .then((msg) => {
             toast(msg, "ok");
             const now = new Date().toLocaleString(currentLanguage());
+            rememberCloudSync(id, now);
             if (S.activeManageSettings && S.activeManageSettings.appName === id) {
               S.activeManageSettings.lastCloudSync = now;
             }
             if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: now });
+            const cloudVal = document.getElementById("gp-stat-cloud-val");
+            if (cloudVal && S.currentModalAppName === id) {
+              cloudVal.textContent = i18nT("drawer.cloudSynced");
+              cloudVal.classList.add("ok");
+              cloudVal.classList.remove("warn");
+              const wrap = cloudVal.closest(".gp-stat");
+              if (wrap) wrap.setAttribute("title", i18nT("manage.lastSync", { time: now }));
+            }
           })
           .catch((err) => {
             toast(i18nT("manage.syncFailed", { msg: String(err) }), "err");

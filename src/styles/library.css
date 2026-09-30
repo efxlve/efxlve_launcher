@@ -98,7 +98,7 @@
 }
 .pgrid > .pcard:hover .pcard-art,
 .pgrid > .pcard:focus-visible .pcard-art {
-  transform: scale(1.06);
+  transform: scale(1.045);
   box-shadow:
     0 0 18px 1px rgba(255, 255, 255, 0.1),
     0 16px 28px rgba(0, 0, 0, 0.45);
@@ -115,18 +115,20 @@
 }
 /* Optional caption under the cover (Settings > Appearance). */
 .pcard-caption {
-  margin-top: 10px;
+  margin-top: 16px;
   padding: 0 2px;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 .pcard-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 .pcard-title {
@@ -154,6 +156,8 @@
   padding: 0;
   flex-shrink: 0;
   margin-left: auto;
+  position: relative;
+  z-index: 3;
   line-height: 1;
   transition:
     background-color var(--ease),
@@ -167,16 +171,35 @@
   height: 9px;
   fill: currentColor;
 }
+.pcard-play-btn.is-update {
+  color: var(--warn);
+  border-color: rgba(224, 163, 46, 0.45);
+  background: var(--warn-tint);
+}
+.pcard-play-btn.is-update svg {
+  margin-left: 0;
+  fill: none;
+}
 .pcard:hover .pcard-play-btn {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.38);
   background: rgba(255, 255, 255, 0.16);
+}
+.pcard:hover .pcard-play-btn.is-update {
+  color: var(--warn);
+  border-color: rgba(224, 163, 46, 0.7);
+  background: rgba(224, 163, 46, 0.22);
 }
 .pcard-play-btn:hover {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
   transform: scale(1.15);
+}
+.pcard-play-btn.is-update:hover {
+  background: var(--warn);
+  color: #000;
+  border-color: var(--warn);
 }
 .pcard-play-btn:active {
   transform: scale(0.92);
@@ -193,6 +216,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.pcard-store-icons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.pcard-store-icons img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
 }
 /* Games that belong to another saved account keep a quiet card: the owner is
    shown on the detail page action bar only. */

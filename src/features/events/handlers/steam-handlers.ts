@@ -7,7 +7,7 @@ import { render } from "../../../core/render";
 import { S } from "../../../core/state";
 import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
-import { steamGameAction, steamOpenClient, steamSetApiKey } from "../../../steam";
+import { steamGameAction, steamOpenClient, steamOpenDownloads, steamSetApiKey, steamWatchSession } from "../../../steam";
 import {
   beginSteamQrLogin,
   cancelSteamLogin,
@@ -31,6 +31,7 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
   switch (act) {
     case "steam-action": {
       const mode = target.dataset.mode === "install"
+        || target.dataset.mode === "update"
         || target.dataset.mode === "uninstall"
         || target.dataset.mode === "validate"
         ? target.dataset.mode
@@ -39,6 +40,9 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         void steamGameAction(id, mode)
           .then(() => {
             toast(i18nT("steam.opening"), "");
+            if (mode === "launch" && S.steamExitAfterPlay) {
+              void steamWatchSession(id).catch(() => {});
+            }
             // Install/uninstall/validate finish inside the Steam client, so the
             // grid is re-read once instead of trusting the instant hand-off.
             if (mode !== "launch") scheduleSteamLibraryResync();
@@ -50,6 +54,10 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
 
     case "steam-open-client":
       void steamOpenClient().catch((e: unknown) => toast(String(e), "err"));
+      return true;
+
+    case "steam-open-downloads":
+      void steamOpenDownloads().catch((e: unknown) => toast(String(e), "err"));
       return true;
 
     case "steam-open-settings":
