@@ -19,7 +19,7 @@ import { patchLibraryCardDom } from "../../core/game-view";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
-import { fmtBytes, fmtSpeed } from "../../core/utils";
+import { fmtBytes } from "../../core/utils";
 import {
   steamDownloadLive,
   steamListInstalled,
@@ -280,13 +280,20 @@ export function steamDownloadWaiting(appId: string): boolean {
   return true;
 }
 
+/** Steam's "Ağ" figure is decimal MB/s (1.8 MB/s), not a 1024-based KB/s value. */
+function steamNetSpeed(bytesPerSec: number): string {
+  const mb = bytesPerSec / 1_000_000;
+  if (mb >= 0.1) return `${mb.toFixed(1)} MB/s`;
+  return `${(bytesPerSec / 1_000).toFixed(1)} KB/s`;
+}
+
 /** Percent, byte pair, and speed for one Steam transfer. `pct` is null when Steam has no total yet. */
 export function steamDownloadLabel(g: Pick<SteamGame, "bytesDownloaded" | "bytesToDownload">, perSec = 0): { pct: number | null; text: string } {
   const total = g.bytesToDownload > 0 ? g.bytesToDownload : 0;
   const got = Math.max(0, g.bytesDownloaded > 0 ? g.bytesDownloaded : 0);
   const pct = total > 0 ? Math.min(100, Math.round((Math.min(got, total) / total) * 100)) : null;
   const bytes = total > 0 ? `${fmtBytes(Math.min(got, total))} / ${fmtBytes(total)}` : "";
-  const speed = perSec > 0 ? fmtSpeed(perSec) : "";
+  const speed = perSec > 0 ? steamNetSpeed(perSec) : "";
   const text = [pct !== null ? `%${pct}` : "", bytes, speed].filter(Boolean).join(" · ") || t("steam.downloadingHint");
   return { pct, text };
 }

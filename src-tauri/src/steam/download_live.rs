@@ -82,12 +82,16 @@ fn nonzero(total: u64, fallback: u64) -> u64 {
 fn parse_live_line(body: &str, at: i64) -> Option<LiveEvent> {
     let body = body.trim();
     if let Some(rest) = body.strip_prefix("Current download rate:") {
-        let mbps: f64 = rest.trim().trim_end_matches("Mbps").trim().parse().ok()?;
-        if mbps < 0.0 {
-            return None;
+        return mbps_rate(rest.trim().trim_end_matches("Mbps"), at);
+    }
+    // "Current download rate" is a slow average. The connection line carries
+    // the same Mbps figure Steam shows as MB/s, and it updates within seconds:
+    // `(rate was 11.592, now 14.395)` → 1.8 MB/s.
+    if let Some(now) = body.split("now ").nth(1) {
+        if body.contains("rate was ") {
+            let num = now.trim().trim_end_matches(')').trim();
+            return mbps_rate(num, at);
         }
-        let bps = (mbps * 1_000_000.0 / 8.0).round() as u64;
-        return Some(LiveEvent::Rate { at, bps });
     }
     let rest = body.strip_prefix("AppID ")?;
     let (app, after) = rest.split_once(' ')?;
@@ -102,6 +106,16 @@ fn parse_live_line(body: &str, at: i64) -> Option<LiveEvent> {
     let nums = &after[pos + marker.len()..];
     let (got, total) = split_pair(nums)?;
     Some(LiveEvent::Start { app: app.to_string(), at, got, total })
+}
+
+fn mbps_rate(text: &str, at: i64) -> Option<LiveEvent> {
+    let mbps: f64 = text.trim().parse().ok()?;
+    if mbps < 0.0 {
+        return None;
+    }
+    // Steam logs megabits. 14.395 Mbps is 1.8 MB/s on the download page.
+    let bps = (mbps * 1_000_000.0 / 8.0).round() as u64;
+    Some(LiveEvent::Rate { at, bps })
 }
 
 fn split_pair(text: &str) -> Option<(u64, u64)> {
@@ -406,6 +420,11 @@ mod tests {
         );
         let rate = parse_live_line("Current download rate: 8.000 Mbps", 60);
         assert_eq!(rate, Some(LiveEvent::Rate { at: 60, bps: 1_000_000 }));
+        let fresh = parse_live_line(
+            "Increasing target number of download connections to 11 (rate was 11.592, now 14.395)",
+            70,
+        );
+        assert_eq!(fresh, Some(LiveEvent::Rate { at: 70, bps: 1_799_375 }));
         let stop = parse_live_line("AppID 730 update canceled : Disabled (Suspended)", 70);
         assert_eq!(stop, Some(LiveEvent::Stop { app: "730".into(), at: 70 }));
     }
