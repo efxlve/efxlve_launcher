@@ -76,6 +76,17 @@ export const steamOpenClient = () => invoke<void>("steam_open_client");
 /** Opens Steam's own Downloads window (pause and queue live there). */
 export const steamOpenDownloads = () => invoke<void>("steam_open_downloads");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
+
+/** One Steam transfer, with the byte counter moved forward since the last exact sample. */
+export interface SteamLiveDownload {
+  appId: string;
+  bytesDownloaded: number;
+  bytesToDownload: number;
+  bytesPerSec: number;
+}
+
+/** Live download rows. Steam does not write the byte total every second. */
+export const steamDownloadLive = () => invoke<SteamLiveDownload[]>("steam_download_live");
 export const steamCloudStatus = (appId: string) =>
   invoke<{ appId: string; lastSync: number | null }>("steam_cloud_status", { appId });
 /** Hands an action (launch/install/uninstall/validate) to the Steam client. */

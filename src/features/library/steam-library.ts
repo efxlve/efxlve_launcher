@@ -19,8 +19,9 @@ import { patchLibraryCardDom } from "../../core/game-view";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
-import { fmtBytes } from "../../core/utils";
+import { fmtBytes, fmtSpeed } from "../../core/utils";
 import {
+  steamDownloadLive,
   steamListInstalled,
   steamLoginStatus,
   steamOwnedGames,
@@ -247,13 +248,17 @@ export function scheduleSteamLibraryResync(delayMs = 6000): void {
   }, delayMs);
 }
 
-/** Percent and byte line for one Steam transfer. `pct` is null when Steam has no total yet. */
-export function steamDownloadLabel(g: Pick<SteamGame, "bytesDownloaded" | "bytesToDownload">): { pct: number | null; text: string } {
+/** Latest bytes/s for a live Steam transfer. The manifest itself does not move every second. */
+const steamLiveSpeed = new Map<string, number>();
+
+/** Percent, byte pair, and speed for one Steam transfer. `pct` is null when Steam has no total yet. */
+export function steamDownloadLabel(g: Pick<SteamGame, "bytesDownloaded" | "bytesToDownload">, perSec = 0): { pct: number | null; text: string } {
   const total = g.bytesToDownload > 0 ? g.bytesToDownload : 0;
-  const got = g.bytesDownloaded > 0 ? g.bytesDownloaded : 0;
-  const pct = total > 0 ? Math.min(100, Math.round((got / total) * 100)) : null;
-  const bytes = total > 0 ? `${fmtBytes(got)} / ${fmtBytes(total)}` : "";
-  const text = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
+  const got = Math.max(0, g.bytesDownloaded > 0 ? g.bytesDownloaded : 0);
+  const pct = total > 0 ? Math.min(100, Math.round((Math.min(got, total) / total) * 100)) : null;
+  const bytes = total > 0 ? `${fmtBytes(Math.min(got, total))} / ${fmtBytes(total)}` : "";
+  const speed = perSec > 0 ? fmtSpeed(perSec) : "";
+  const text = [pct !== null ? `%${pct}` : "", bytes, speed].filter(Boolean).join(" · ") || t("steam.downloadingHint");
   return { pct, text };
 }
 
@@ -262,7 +267,7 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
   let paintedSpeed = false;
   for (const g of games) {
     if (!g.downloading) continue;
-    const { pct, text } = steamDownloadLabel(g);
+    const { pct, text } = steamDownloadLabel(g, steamLiveSpeed.get(g.appId) ?? 0);
     const id = `steam::${g.appId}`;
     const label = pct !== null ? t("common.downloading", { p: pct }) : t("steam.downloading");
     document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((el) => {
@@ -408,13 +413,49 @@ export function checkAndPollSteamDownloads(): void {
     steamActiveDlPollTimer = null;
     if (!S.steamGames.some((g) => g.downloading)) return;
 
-    await refreshSteamInstalled();
-    // applySteamInstalledSnapshot already arms the next tick. Arming another
-    // one here leaked a timer on every pass and the scans piled up.
+    await pulseSteamDownloads();
+    // A full library scan on this timer used to pile up. The pulse only arms
+    // the next tick when it did not already do that itself.
     if (steamActiveDlPollTimer === null) checkAndPollSteamDownloads();
   };
 
-  steamActiveDlPollTimer = setTimeout(poll, 1500);
+  steamActiveDlPollTimer = setTimeout(poll, 1000);
+}
+
+/** Moves the on-screen counter every second. The manifest is not rewritten that often. */
+async function pulseSteamDownloads(): Promise<void> {
+  let rows: Awaited<ReturnType<typeof steamDownloadLive>>;
+  try {
+    rows = await steamDownloadLive();
+  } catch {
+    return;
+  }
+  if (rows.length === 0) {
+    steamLiveSpeed.clear();
+    await refreshSteamInstalled();
+    return;
+  }
+  const seen = new Set<string>();
+  for (const row of rows) {
+    seen.add(row.appId);
+    if (row.bytesPerSec > 0) steamLiveSpeed.set(row.appId, row.bytesPerSec);
+    else steamLiveSpeed.delete(row.appId);
+    const game = S.steamGames.find((g) => g.appId === row.appId);
+    if (!game) continue;
+    game.downloading = true;
+    game.bytesDownloaded = row.bytesDownloaded;
+    game.bytesToDownload = row.bytesToDownload;
+    const item = S.steamSummaries.find((entry) => entry.id === row.appId);
+    if (item) {
+      item.downloading = true;
+      item.bytesDownloaded = row.bytesDownloaded;
+      item.bytesToDownload = row.bytesToDownload;
+    }
+  }
+  for (const id of [...steamLiveSpeed.keys()]) {
+    if (!seen.has(id)) steamLiveSpeed.delete(id);
+  }
+  paintSteamDownloadRows(S.steamGames);
 }
 
 /** One scan at a time. The file watcher and the download poller both call this. */

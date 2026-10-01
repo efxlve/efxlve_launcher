@@ -5,6 +5,7 @@
 //! back through `steam://`. It does not replace the Steam client.
 
 mod achievements;
+mod download_live;
 mod catalog;
 mod cloud;
 mod library;
@@ -38,6 +39,10 @@ pub use library::{
 // playtime.rs: SteamPlaytime, read_playtimes, steam_sync_playtime
 #[allow(unused_imports)]
 pub use playtime::*;
+
+// download_live.rs: SteamLiveDownload, steam_download_live
+#[allow(unused_imports)]
+pub use download_live::*;
 
 // protocol.rs: SteamStatus, steam_status, steam_open_client, steam_open_downloads, steam_list_installed, steam_game_action
 #[allow(unused_imports)]

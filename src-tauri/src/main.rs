@@ -581,6 +581,7 @@ fn main() {
             steam::steam_open_client,
             steam::steam_open_downloads,
             steam::steam_list_installed,
+            steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam::steam_game_action,
             steam_session::steam_watch_session,
