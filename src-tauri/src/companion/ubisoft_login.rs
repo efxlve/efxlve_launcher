@@ -448,13 +448,19 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
             }
         }
     };
-    if games.is_empty() {
-        match collect_graphql(&client, &live, log).await {
-            Ok(found) => games = found,
-            Err(err) => {
-                if first_error.is_none() {
-                    first_error = Some(err);
+    // The catalog and the GraphQL list cover the same account from two sides;
+    // the union keeps a game that only one of them knows about.
+    match collect_graphql(&client, &live, log).await {
+        Ok(found) => {
+            for game in found {
+                if !games.iter().any(|(id, _)| id == &game.0) {
+                    games.push(game);
                 }
+            }
+        }
+        Err(err) => {
+            if first_error.is_none() {
+                first_error = Some(err);
             }
         }
     }
@@ -514,7 +520,12 @@ pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<(String, String)> 
         let Some(space) = item.get("spaceId").and_then(|v| v.as_str()) else {
             continue;
         };
-        let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("").trim();
+        let name = item
+            .get("displayName")
+            .and_then(|v| v.as_str())
+            .or_else(|| item.get("name").and_then(|v| v.as_str()))
+            .unwrap_or("")
+            .trim();
         if space.is_empty() || name.is_empty() || name.eq_ignore_ascii_case("unknown") {
             continue;
         }
@@ -608,12 +619,19 @@ mod tests {
     #[test]
     fn catalog_keeps_named_pc_games_only() {
         let value = serde_json::json!({"games": [
-            {"spaceId": "a", "name": "Watch Dogs", "platforms": [{"type": "PC"}]},
-            {"spaceId": "b", "name": "Console Only", "platforms": [{"type": "PS5"}]},
-            {"spaceId": "c", "name": "Unknown", "platforms": [{"type": "PC"}]},
-            {"spaceId": "d", "platforms": [{"type": "PC"}]}
+            {"spaceId": "a", "displayName": "Watch Dogs", "platforms": [{"type": "PC"}]},
+            {"spaceId": "b", "name": "Fallback Name", "platforms": [{"type": "PC"}]},
+            {"spaceId": "c", "displayName": "Console Only", "platforms": [{"type": "PS5"}]},
+            {"spaceId": "d", "displayName": "Unknown", "platforms": [{"type": "PC"}]},
+            {"spaceId": "e", "platforms": [{"type": "PC"}]}
         ]});
-        assert_eq!(catalog_games(&value), vec![("a".to_string(), "Watch Dogs".to_string())]);
+        assert_eq!(
+            catalog_games(&value),
+            vec![
+                ("a".to_string(), "Watch Dogs".to_string()),
+                ("b".to_string(), "Fallback Name".to_string())
+            ]
+        );
     }
 
     #[test]
