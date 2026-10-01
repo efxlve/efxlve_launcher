@@ -1012,3 +1012,25 @@
     padding: 0 12px;
   }
 }
+
+/* Main profile, then one card per store. Upcoming stores stay off until asked. */
+.profile-platforms { margin: 0 0 20px; }
+.profile-platforms-head { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.profile-platforms-row {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px;
+}
+.profile-platform {
+  flex: 0 0 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 14px 14px 12px; text-align: left; cursor: pointer;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+  color: var(--text); font-family: inherit;
+}
+.profile-platform.is-on { border-color: var(--accent); }
+.profile-platform.is-soon { cursor: default; color: var(--text-3); }
+.profile-platform-mark { height: 18px; display: flex; align-items: center; }
+.profile-platform-mark img { width: 18px; height: 18px; object-fit: contain; }
+.profile-platform-name { font-size: 12px; color: var(--text-2); }
+.profile-platform.is-soon .profile-platform-name { color: var(--text-3); }
+.profile-platform-pct { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.profile-platform-meta { font-size: 11px; color: var(--text-3); }
+.profile-platforms-settings { margin-top: 8px; }
