@@ -506,7 +506,14 @@ document.addEventListener("click", (e) => {
     void invoke("companion_hide_login").catch(() => {});
     S.activeStore = store;
     pushNavHistory({ view: "store" });
-    void openStore(store);
+    if (store === "ubisoft") {
+      // A fresh login page: the warm one already sent its session once.
+      void invoke("destroy_store_view")
+        .catch(() => {})
+        .then(() => openStore("ubisoft"));
+    } else {
+      void openStore(store);
+    }
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;

@@ -22,8 +22,16 @@ const ENTITLEMENTS_URL: &str =
     "https://public-ubiservices.ubi.com/v1/profiles/me/global/ubiconnect/entitlement/api/entitlements";
 const CATALOG_URL: &str =
     "https://public-ubiservices.ubi.com/v1/spaces/global/ubiconnect/games/api/catalog";
+const UPLAY_GRAPHQL_URL: &str = "https://public-ubiservices.ubi.com/v1/profiles/me/uplay/graphql";
 /// Ubisoft answers a catalog request with at most 50 games.
 const CATALOG_BATCH: usize = 50;
+
+/// The owned-games query FriendsOfGalaxy's plugin still uses. The newer
+/// entitlement endpoint is the primary source; this is the fallback.
+const OWNED_GAMES_QUERY: &str = "query AllGames { viewer { id ...ownedGamesList } } \
+fragment gameProps on Game { id spaceId name } \
+fragment ownedGameProps on Game { ...gameProps viewer { meta { id ownedPlatformGroups { id name type } } } } \
+fragment ownedGamesList on User { ownedGames: games(filterBy: {isOwned: true}) { totalCount nodes { ...ownedGameProps } } }";
 
 /// Page script for the overlay login webview.
 ///
@@ -57,11 +65,11 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     if (!data || !data.ticket || data.twoFactorAuthenticationTicket) return;
     session = data;
     clearTimeout(window.__efxlveUbiTimer);
-    window.__efxlveUbiTimer = setTimeout(done, 1500);
+    window.__efxlveUbiTimer = setTimeout(done, 10000);
   }
   function inspect(url, method, text) {
     if (!url) return;
-    if (url.indexOf("/v3/profiles/sessions") !== -1 && method === "POST") {
+    if (url.indexOf("/profiles/sessions") !== -1 && method === "POST") {
       try { take(JSON.parse(text)); } catch (e) {}
     } else if (url.indexOf("/configcache/api/postauth") !== -1) {
       done();
@@ -199,13 +207,19 @@ fn insert(map: &mut reqwest::header::HeaderMap, name: &'static str, value: &str)
     }
 }
 
-fn headers(session: &Session, extra: &[(&'static str, &str)]) -> reqwest::header::HeaderMap {
+fn headers(
+    session: &Session,
+    app_id: &'static str,
+    genome_id: &'static str,
+    extra: &[(&'static str, &str)],
+) -> reqwest::header::HeaderMap {
     let mut map = reqwest::header::HeaderMap::new();
     insert(&mut map, "Authorization", &format!("Ubi_v1 t={}", session.ticket));
-    insert(&mut map, "Ubi-AppId", UBI_APP_ID);
-    insert(&mut map, "Ubi-GenomeId", UBI_GENOME_ID);
+    insert(&mut map, "Ubi-AppId", app_id);
+    insert(&mut map, "Ubi-GenomeId", genome_id);
     insert(&mut map, "Ubi-SessionId", &session.session_id);
     insert(&mut map, "Accept", "*/*");
+    insert(&mut map, "Content-Type", "application/json");
     insert(&mut map, "ubi-localecode", "en-US");
     for (name, value) in extra {
         insert(&mut map, name, value);
@@ -219,7 +233,7 @@ async fn refresh_session(client: &reqwest::Client, session: &Session) -> Option<
     if session.ticket.is_empty() || session.session_id.is_empty() || session.user_id.is_empty() {
         return None;
     }
-    let mut map = headers(session, &[("Content-Type", "application/json")]);
+    let mut map = headers(session, UBI_APP_ID, UBI_GENOME_ID, &[]);
     insert(&mut map, "Origin", "https://store.ubi.com");
     insert(&mut map, "Referer", "https://store.ubi.com/upc/login");
     let response = client
@@ -261,40 +275,81 @@ fn apply_session(session: &Session, value: &serde_json::Value) -> Option<Session
     Some(next)
 }
 
-async fn fetch_entitlements(client: &reqwest::Client, session: &Session) -> Result<serde_json::Value, String> {
+/// One diagnostic row per HTTP step; only a snippet of the body is kept.
+fn log_step(log: &mut Vec<serde_json::Value>, step: &str, status: u16, body: &str) {
+    log.push(serde_json::json!({
+        "step": step,
+        "status": status,
+        "body": body.chars().take(1200).collect::<String>(),
+    }));
+}
+
+fn log_note(log: &mut Vec<serde_json::Value>, step: &str, ok: bool) {
+    log.push(serde_json::json!({ "step": step, "ok": ok }));
+}
+
+/// Writes the last import's steps so a failed sign-in can be inspected at
+/// `~/.config/efxlve/ubi_debug.json`.
+fn write_debug(log: &[serde_json::Value], result: &Result<usize, String>) {
+    let path = super::accounts::data_dir().join("ubi_debug.json");
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let payload = serde_json::json!({
+        "ok": result.as_ref().ok(),
+        "error": result.as_ref().err(),
+        "steps": log,
+    });
+    if let Ok(text) = serde_json::to_string_pretty(&payload) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+async fn fetch_entitlements(
+    client: &reqwest::Client,
+    session: &Session,
+    log: &mut Vec<serde_json::Value>,
+) -> Result<serde_json::Value, String> {
     let response = client
         .get(ENTITLEMENTS_URL)
-        .headers(headers(session, &[]))
+        .headers(headers(session, UBI_APP_ID, UBI_GENOME_ID, &[]))
         .send()
         .await
         .map_err(|e| e.to_string())?;
-    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+    let status = response.status();
+    let text = response.text().await.map_err(|e| e.to_string())?;
+    log_step(log, "entitlements", status.as_u16(), &text);
+    if status == reqwest::StatusCode::UNAUTHORIZED {
         return Err("@t:accounts.ubiLoginFailed".into());
     }
-    if !response.status().is_success() {
-        return Err(format!("Ubisoft {}", response.status().as_u16()));
+    if !status.is_success() {
+        return Err(format!("Ubisoft {}", status.as_u16()));
     }
-    response.json().await.map_err(|e| e.to_string())
+    serde_json::from_str(&text).map_err(|e| e.to_string())
 }
 
 async fn fetch_catalog(
     client: &reqwest::Client,
     session: &Session,
     space_ids: &[String],
+    log: &mut Vec<serde_json::Value>,
 ) -> Vec<(String, String)> {
     let mut games = Vec::new();
     for chunk in space_ids.chunks(CATALOG_BATCH) {
         let response = client
             .get(CATALOG_URL)
             .query(&[("spaceIds", chunk.join(","))])
-            .headers(headers(session, &[("Ubi-RequestedPlatformType", "uplay")]))
+            .headers(headers(session, UBI_APP_ID, UBI_GENOME_ID, &[("Ubi-RequestedPlatformType", "uplay")]))
             .send()
             .await;
         let Ok(response) = response else { continue };
-        if !response.status().is_success() {
+        let status = response.status();
+        let Ok(text) = response.text().await else { continue };
+        log_step(log, "catalog", status.as_u16(), &text);
+        if !status.is_success() {
             continue;
         }
-        let Ok(value) = response.json::<serde_json::Value>().await else {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
             continue;
         };
         games.extend(catalog_games(&value));
@@ -302,31 +357,113 @@ async fn fetch_catalog(
     games
 }
 
+/// The entitlement API plus its catalog lookup, the fork's owned-games path.
+async fn collect_entitlements(
+    client: &reqwest::Client,
+    session: &Session,
+    log: &mut Vec<serde_json::Value>,
+) -> Result<Vec<(String, String)>, String> {
+    let entitlements = fetch_entitlements(client, session, log).await?;
+    let space_ids = entitlement_space_ids(&entitlements);
+    if space_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    Ok(fetch_catalog(client, session, &space_ids, log).await)
+}
+
+/// `AllGames` GraphQL, the FriendsOfGalaxy plugin's owned-games path.
+async fn collect_graphql(
+    client: &reqwest::Client,
+    session: &Session,
+    log: &mut Vec<serde_json::Value>,
+) -> Result<Vec<(String, String)>, String> {
+    let body = serde_json::json!({
+        "operationName": "AllGames",
+        "variables": { "owned": true },
+        "query": OWNED_GAMES_QUERY,
+    });
+    let response = client
+        .post(UPLAY_GRAPHQL_URL)
+        .headers(headers(session, UBI_APP_ID, UBI_GENOME_ID, &[]))
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let status = response.status();
+    let text = response.text().await.map_err(|e| e.to_string())?;
+    log_step(log, "graphql", status.as_u16(), &text);
+    if !status.is_success() {
+        return Err(format!("Ubisoft {}", status.as_u16()));
+    }
+    let value: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    Ok(graphql_games(&value))
+}
+
 /// Owned games from the account API, ready for the local cache.
 pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
+    let mut log = vec![serde_json::json!({
+        "step": "session",
+        "ticket": !session.ticket.is_empty(),
+        "sessionId": !session.session_id.is_empty(),
+        "userId": !session.user_id.is_empty(),
+        "name": !session.name.is_empty(),
+    })];
+    let result = import_inner(session, &mut log).await;
+    write_debug(&log, &result);
+    result
+}
+
+async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Result<usize, String> {
     let client = http_client()?;
-    let mut live = refresh_session(&client, session).await.unwrap_or_else(|| session.clone());
-    let entitlements = match fetch_entitlements(&client, &live).await {
-        Ok(value) => value,
-        Err(first) => {
-            // The captured ticket can be stale; a fresh session POST is the
+    let mut live = session.clone();
+    // The plugin order: post the captured session once, renew it, then read.
+    let posted = post_session(&client, &live).await;
+    log_note(log, "post-session", posted.is_some());
+    if let Some(next) = posted {
+        live = next;
+    }
+    let refreshed = refresh_session(&client, &live).await;
+    log_note(log, "put-session", refreshed.is_some());
+    if let Some(next) = refreshed {
+        live = next;
+    }
+    let mut first_error = None;
+    let mut games = match collect_entitlements(&client, &live, log).await {
+        Ok(games) => games,
+        Err(err) => {
+            first_error = Some(err);
+            // The captured ticket can be stale; one more session POST is the
             // plugin's fallback before it gives up.
             if let Some(next) = post_session(&client, &live).await {
                 live = next;
-                fetch_entitlements(&client, &live).await?
+                match collect_entitlements(&client, &live, log).await {
+                    Ok(games) => games,
+                    Err(err) => {
+                        first_error = Some(err);
+                        Vec::new()
+                    }
+                }
             } else {
-                return Err(first);
+                Vec::new()
             }
         }
     };
-    let space_ids = entitlement_space_ids(&entitlements);
-    if space_ids.is_empty() {
-        return Ok(0);
+    if games.is_empty() {
+        match collect_graphql(&client, &live, log).await {
+            Ok(found) => games = found,
+            Err(err) => {
+                if first_error.is_none() {
+                    first_error = Some(err);
+                }
+            }
+        }
     }
-    let mut games = fetch_catalog(&client, &live, &space_ids).await;
     let mut seen = std::collections::HashSet::new();
     games.retain(|(id, _)| seen.insert(id.clone()));
     if games.is_empty() {
+        if let Some(err) = first_error {
+            return Err(err);
+        }
         return Ok(0);
     }
     ubisoft::save_owned(&games);
@@ -335,7 +472,7 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
 
 /// Plain ticket refresh (`Ubi_v1`), used when the PUT did not revive the session.
 async fn post_session(client: &reqwest::Client, session: &Session) -> Option<Session> {
-    let mut map = headers(session, &[("Content-Type", "application/json")]);
+    let mut map = headers(session, UBI_APP_ID, UBI_GENOME_ID, &[]);
     insert(&mut map, "Origin", "https://store.ubi.com");
     insert(&mut map, "Referer", "https://store.ubi.com/upc/login");
     let response = client.post(SESSIONS_URL).headers(map).send().await.ok()?;
@@ -398,6 +535,44 @@ pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<(String, String)> 
     games
 }
 
+/// PC titles from the `AllGames` GraphQL response.
+pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<(String, String)> {
+    let Some(nodes) = value.pointer("/data/viewer/ownedGames/nodes").and_then(|v| v.as_array()) else {
+        return Vec::new();
+    };
+    let mut games = Vec::new();
+    for node in nodes {
+        let Some(space) = node.get("spaceId").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let name = node.get("name").and_then(|v| v.as_str()).unwrap_or("").trim();
+        if space.is_empty() || name.is_empty() || name.eq_ignore_ascii_case("unknown") {
+            continue;
+        }
+        let Some(platforms) = node.pointer("/viewer/meta/ownedPlatformGroups") else {
+            continue;
+        };
+        if !has_pc_platform(platforms) {
+            continue;
+        }
+        games.push((space.to_string(), name.to_string()));
+    }
+    games
+}
+
+fn has_pc_platform(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Array(items) => items.iter().any(has_pc_platform),
+        serde_json::Value::Object(map) => {
+            if map.get("type").and_then(|v| v.as_str()) == Some("PC") {
+                return true;
+            }
+            map.values().any(has_pc_platform)
+        }
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -439,5 +614,15 @@ mod tests {
             {"spaceId": "d", "platforms": [{"type": "PC"}]}
         ]});
         assert_eq!(catalog_games(&value), vec![("a".to_string(), "Watch Dogs".to_string())]);
+    }
+
+    #[test]
+    fn graphql_keeps_owned_pc_games_with_platform_groups() {
+        let value = serde_json::json!({"data": {"viewer": {"ownedGames": {"nodes": [
+            {"spaceId": "a", "name": "Watch Dogs", "viewer": {"meta": {"ownedPlatformGroups": [[{"type": "PC"}]]}}},
+            {"spaceId": "b", "name": "Console Only", "viewer": {"meta": {"ownedPlatformGroups": [[{"type": "PS5"}]]}}},
+            {"spaceId": "c", "name": "No Meta"}
+        ]}}}});
+        assert_eq!(graphql_games(&value), vec![("a".to_string(), "Watch Dogs".to_string())]);
     }
 }
