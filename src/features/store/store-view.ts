@@ -206,8 +206,8 @@ export const STEAM_STORE_URL = "https://store.steampowered.com/";
 export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
 export const BATTLENET_STORE_URL = "https://shop.battle.net/";
 export const EA_STORE_URL = "https://www.ea.com/games";
-/** Microsoft Store web, filtered to PC games. */
-export const XBOX_STORE_URL = "https://apps.microsoft.com/games/pc";
+/** Xbox's own PC games list (PC filter applied). */
+export const XBOX_STORE_URL = "https://www.xbox.com/en-us/games/all-games/pc?PlayWith=PC";
 export const UBISOFT_STORE_URL = "https://store.ubi.com/";
 
 /**

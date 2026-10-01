@@ -172,6 +172,15 @@ fn store_id_for_label(label: &str) -> String {
         .to_string()
 }
 
+/// Sign-in pages a store tab can be left on. Opening the tab again must return
+/// to the storefront instead of showing the account/client page.
+fn is_login_page(url: &url::Url) -> bool {
+    matches!(
+        url.host_str(),
+        Some("connect.cdn.ubisoft.com") | Some("account.battle.net")
+    )
+}
+
 /// How many storefronts may stay alive at once. Each one is a renderer process
 /// (measured at roughly 60-260 MB working set), so the least recently used
 /// storefronts are closed instead of holding all of them in RAM.
@@ -532,11 +541,14 @@ pub async fn show_store_view(
             }
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
-                    if cur.as_str() != target.as_str()
-                        && !target.as_str().ends_with(".com/")
-                        && !target.as_str().ends_with(".com/en")
-                        && !target.as_str().ends_with(".com")
-                    {
+                    // A store home URL is not reloaded on every tab click, but a
+                    // login page left behind must give way to the storefront.
+                    let store_home = target.as_str().ends_with(".com/")
+                        || target.as_str().ends_with(".com/en")
+                        || target.as_str().ends_with(".com")
+                        || target.as_str().ends_with(".net/")
+                        || target.as_str().ends_with(".net");
+                    if cur.as_str() != target.as_str() && (is_login_page(&cur) || !store_home) {
                         let _ = v.navigate(target);
                     }
                 }
@@ -946,6 +958,16 @@ mod tests {
             super::store_id_for_label("epic-store-view"),
             "epic-store-view"
         );
+    }
+
+    #[test]
+    fn sign_in_pages_are_recognised() {
+        let overlay = url::Url::parse("https://connect.cdn.ubisoft.com/overlay/default/?env=prod").unwrap();
+        let account = url::Url::parse("https://account.battle.net/games").unwrap();
+        let store = url::Url::parse("https://store.ubisoft.com/tr/home").unwrap();
+        assert!(super::is_login_page(&overlay));
+        assert!(super::is_login_page(&account));
+        assert!(!super::is_login_page(&store));
     }
 
     #[test]
