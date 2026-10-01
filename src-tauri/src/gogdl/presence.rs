@@ -34,7 +34,9 @@ pub async fn go_online(app: &AppHandle) -> bool {
                 return false;
             };
             let _ = save_auth_tokens(app, &fresh);
-            send_presence(&fresh.user_id, &fresh.access_token, true).await.is_ok()
+            send_presence(&fresh.user_id, &fresh.access_token, true)
+                .await
+                .is_ok()
         }
         Err(_) => false,
     }

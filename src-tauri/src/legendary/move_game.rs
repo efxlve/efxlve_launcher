@@ -148,7 +148,10 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
 
 /// Opens the native Windows modern folder picker dialog.
 /// `title` is supplied by the frontend so the dialog follows the selected language.
-pub async fn select_folder_dialog(default_path: Option<String>, title: Option<String>) -> Result<Option<String>, String> {
+pub async fn select_folder_dialog(
+    default_path: Option<String>,
+    title: Option<String>,
+) -> Result<Option<String>, String> {
     #[cfg(windows)]
     {
         let picker_title = title
@@ -482,10 +485,7 @@ async fn move_game_folder_internal(
 
     let cur_path = PathBuf::from(&cur_install_path_str);
     if !cur_path.is_dir() {
-        return Err(format!(
-            "@t:move.folderMissing\u{1f}{}",
-            cur_path.display()
-        ));
+        return Err(format!("@t:move.folderMissing\u{1f}{}", cur_path.display()));
     }
 
     let folder_name = cur_path
@@ -661,8 +661,8 @@ async fn move_game_folder_internal(
     }
 
     // B) legendary move <app> <target_base> --skip-move
-    let bin_path = crate::legendary::paths::resolve_binary(app)
-        .unwrap_or_else(|_| PathBuf::from("legendary"));
+    let bin_path =
+        crate::legendary::paths::resolve_binary(app).unwrap_or_else(|_| PathBuf::from("legendary"));
 
     let mut move_cmd = tokio::process::Command::new(bin_path);
     move_cmd.args([
@@ -698,10 +698,7 @@ async fn move_game_folder_internal(
     Ok(MoveGameResult {
         success: true,
         new_path: new_path_str,
-        message: format!(
-            "@t:move.successPath\u{1f}{}",
-            new_game_path.display()
-        ),
+        message: format!("@t:move.successPath\u{1f}{}", new_game_path.display()),
     })
 }
 
@@ -769,15 +766,24 @@ fn copy_dir_with_progress<'a>(
                     .map(|f| f.to_string_lossy().to_string())
                     .unwrap_or_default();
 
-                let mut src_file = tokio::fs::File::open(&entry_path)
-                    .await
-                    .map_err(|e| format!("@t:move.openSrcFailed\u{1f}{}\u{1f}{}", entry_path.display(), e))?;
+                let mut src_file = tokio::fs::File::open(&entry_path).await.map_err(|e| {
+                    format!(
+                        "@t:move.openSrcFailed\u{1f}{}\u{1f}{}",
+                        entry_path.display(),
+                        e
+                    )
+                })?;
 
-                let mut dst_file = tokio::fs::File::create(&target_item_path)
-                    .await
-                    .map_err(|e| {
-                        format!("@t:move.openDstFailed\u{1f}{}\u{1f}{}", target_item_path.display(), e)
-                    })?;
+                let mut dst_file =
+                    tokio::fs::File::create(&target_item_path)
+                        .await
+                        .map_err(|e| {
+                            format!(
+                                "@t:move.openDstFailed\u{1f}{}\u{1f}{}",
+                                target_item_path.display(),
+                                e
+                            )
+                        })?;
 
                 let mut buf = vec![0u8; 1024 * 1024]; // 1 MB buffer
 

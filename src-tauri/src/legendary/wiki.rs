@@ -47,7 +47,9 @@ fn urlencoding_term(title: &str) -> String {
     let mut out = String::new();
     for b in title.trim().as_bytes() {
         match *b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(*b as char),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(*b as char)
+            }
             b' ' => out.push('+'),
             _ => out.push_str(&format!("%{b:02X}")),
         }
@@ -109,7 +111,9 @@ fn strip_edition(title: &str) -> &str {
     for suffix in EDITIONS {
         if lower.ends_with(suffix) {
             let cut = title.len() - suffix.len();
-            let trimmed = title[..cut].trim_end_matches([' ', ':', '-', '–', '—']).trim_end();
+            let trimmed = title[..cut]
+                .trim_end_matches([' ', ':', '-', '–', '—'])
+                .trim_end();
             if !trimmed.is_empty() && best.map(|b| trimmed.len() > b.len()).unwrap_or(true) {
                 best = Some(trimmed);
             }
@@ -165,9 +169,22 @@ struct WikiPage {
 }
 
 fn page_from_value(value: &serde_json::Value) -> WikiPage {
-    let title = value.get("title").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
-    let extract = value.get("extract").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let description = value.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let title = value
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let extract = value
+        .get("extract")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let description = value
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     let categories = value
         .get("categories")
         .and_then(|v| v.as_array())
@@ -179,7 +196,12 @@ fn page_from_value(value: &serde_json::Value) -> WikiPage {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
-    WikiPage { title, extract, description, categories }
+    WikiPage {
+        title,
+        extract,
+        description,
+        categories,
+    }
 }
 
 /// How strongly a page claims to be this game's article:
@@ -234,8 +256,14 @@ async fn search_pages(
         .get(&url)
         .header("Accept", "application/json")
         // Wikipedia answers 403 to requests without a descriptive user agent.
-        .header("User-Agent", "EfxlveLauncher/0.1 (https://github.com/efxlve/efxlve_launcher)")
-        .header("Api-User-Agent", "EfxlveLauncher/0.1 (https://github.com/efxlve/efxlve_launcher)")
+        .header(
+            "User-Agent",
+            "EfxlveLauncher/0.1 (https://github.com/efxlve/efxlve_launcher)",
+        )
+        .header(
+            "Api-User-Agent",
+            "EfxlveLauncher/0.1 (https://github.com/efxlve/efxlve_launcher)",
+        )
         .send()
         .await
         .map_err(|_| ())?;
@@ -309,7 +337,13 @@ fn negative_answer_usable(supported: bool, age: Option<Duration>) -> bool {
 fn cache_path(app_name: &str, lang: &str) -> PathBuf {
     let safe: String = app_name
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     super::skip::default_config_dir()
         .join("wiki_about")
@@ -436,15 +470,30 @@ mod tests {
     fn short_description_is_the_strongest_signal() {
         let game = page("Portal", GAME_EXTRACT, "2007 video game", &[]);
         assert_eq!(page_tier("Portal", "en", &game), 1);
-        let film = page("Zero Hour!", FILM_EXTRACT, "1957 American drama film", &["1957 films"]);
+        let film = page(
+            "Zero Hour!",
+            FILM_EXTRACT,
+            "1957 American drama film",
+            &["1957 films"],
+        );
         assert_eq!(page_tier("Zero Hour", "en", &film), 0);
-        let musician = page("Grime (musician)", "Claire Elise Boucher, known as Grimes, is a Canadian musician and record producer.", "Canadian musician", &["Musicians"]);
+        let musician = page(
+            "Grime (musician)",
+            "Claire Elise Boucher, known as Grimes, is a Canadian musician and record producer.",
+            "Canadian musician",
+            &["Musicians"],
+        );
         assert_eq!(page_tier("GRIME", "en", &musician), 0);
     }
 
     #[test]
     fn category_and_phrase_are_lower_tiers() {
-        let by_category = page("Portal", GAME_EXTRACT, "", &["Video games developed in the United States"]);
+        let by_category = page(
+            "Portal",
+            GAME_EXTRACT,
+            "",
+            &["Video games developed in the United States"],
+        );
         assert_eq!(page_tier("Portal", "en", &by_category), 2);
         let by_phrase = page("Ghostwire: Tokyo", "Ghostwire: Tokyo is an action-adventure game developed by Tango Gameworks for Windows.", "", &[]);
         assert_eq!(page_tier("Ghostwire Tokyo", "en", &by_phrase), 3);
@@ -455,14 +504,23 @@ mod tests {
     #[test]
     fn parenthetical_and_edition_tails_are_ignored() {
         assert!(title_matches("Mortal Shell", "Mortal Shell (video game)"));
-        assert!(title_matches("Deponia The Complete Journey", "Deponia (video game)"));
-        assert!(title_matches("Dying Light: Enhanced Edition", "Dying Light"));
+        assert!(title_matches(
+            "Deponia The Complete Journey",
+            "Deponia (video game)"
+        ));
+        assert!(title_matches(
+            "Dying Light: Enhanced Edition",
+            "Dying Light"
+        ));
         assert!(!title_matches("Rogue Legacy", "Rogue Legacy 2"));
     }
 
     #[test]
     fn trademark_symbols_and_spacing_are_cleaned() {
-        assert_eq!(clean_query("Train Sim World® 7: Sand Patch Grade"), "Train Sim World 7: Sand Patch Grade");
+        assert_eq!(
+            clean_query("Train Sim World® 7: Sand Patch Grade"),
+            "Train Sim World 7: Sand Patch Grade"
+        );
         assert_eq!(clean_query("Cyberpunk 2077™"), "Cyberpunk 2077");
         assert_eq!(clean_query("Deponia The Complete Journey"), "Deponia");
         assert!(title_matches("Train Sim World® 7", "Train Sim World 7"));
@@ -486,15 +544,26 @@ mod tests {
             &["Video games"],
         );
         assert_eq!(page_tier("Portal", "en", &disamb), 0);
-        let short = page("Portal", "Portal is a game developed by Valve.", "2007 video game", &[]);
+        let short = page(
+            "Portal",
+            "Portal is a game developed by Valve.",
+            "2007 video game",
+            &[],
+        );
         assert_eq!(page_tier("Portal", "en", &short), 0);
     }
 
     #[test]
     fn negative_cache_expires_but_positive_never_does() {
-        assert!(negative_answer_usable(true, Some(NEGATIVE_CACHE_TTL + Duration::from_secs(60))));
+        assert!(negative_answer_usable(
+            true,
+            Some(NEGATIVE_CACHE_TTL + Duration::from_secs(60))
+        ));
         assert!(negative_answer_usable(false, Some(Duration::from_secs(60))));
-        assert!(!negative_answer_usable(false, Some(NEGATIVE_CACHE_TTL + Duration::from_secs(1))));
+        assert!(!negative_answer_usable(
+            false,
+            Some(NEGATIVE_CACHE_TTL + Duration::from_secs(1))
+        ));
         // No timestamp (unknown age) keeps the old behaviour.
         assert!(negative_answer_usable(false, None));
     }
@@ -511,13 +580,18 @@ mod tests {
                 .build()
                 .unwrap();
             for (query, expect_found) in [
-                ("Mortal Shell", true), // exact article
-                ("Zero Hour", true),    // the film ranks first; the game-biased pass must win
+                ("Mortal Shell", true),                                    // exact article
+                ("Zero Hour", true), // the film ranks first; the game-biased pass must win
                 ("The Dungeon Of Naheulbeuk: The Amulet Of Chaos", false), // no safe article
             ] {
                 let (ok, lead) = wiki_lead(&client, query, "en").await;
                 assert!(ok, "request failed for {query}");
-                assert_eq!(lead.is_some(), expect_found, "{query} lead found = {}", lead.is_some());
+                assert_eq!(
+                    lead.is_some(),
+                    expect_found,
+                    "{query} lead found = {}",
+                    lead.is_some()
+                );
                 tokio::time::sleep(Duration::from_millis(600)).await;
             }
         });

@@ -43,7 +43,8 @@ pub async fn cloud_backup_start_gdrive_auth(_app: AppHandle) -> Result<String, S
         client_secret,
         &code,
         Some(&code_verifier),
-    ).await?;
+    )
+    .await?;
 
     let mut settings = manager::load_settings();
     settings.gdrive_refresh_token = Some(refresh);

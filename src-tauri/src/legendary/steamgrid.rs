@@ -189,7 +189,11 @@ async fn sgdb_client() -> Result<reqwest::Client, String> {
 /// GET a SteamGridDB URL. A 400 is retried once without query filters, because
 /// an over-strict dimension/type combination is still a bad request while the
 /// unfiltered game endpoint usually succeeds.
-async fn sgdb_fetch(api_key: &str, url: &str, bare: &str) -> Result<(reqwest::StatusCode, String), String> {
+async fn sgdb_fetch(
+    api_key: &str,
+    url: &str,
+    bare: &str,
+) -> Result<(reqwest::StatusCode, String), String> {
     let client = sgdb_client().await?;
     let first = client
         .get(url)
@@ -236,8 +240,12 @@ pub async fn search_games(api_key: &str, term: &str) -> Result<Vec<SteamGridGame
         }
     }
 
-    let encoded_term: String = url::form_urlencoded::byte_serialize(trimmed_term.as_bytes()).collect();
-    let url = format!("https://www.steamgriddb.com/api/v2/search/autocomplete/{}", encoded_term);
+    let encoded_term: String =
+        url::form_urlencoded::byte_serialize(trimmed_term.as_bytes()).collect();
+    let url = format!(
+        "https://www.steamgriddb.com/api/v2/search/autocomplete/{}",
+        encoded_term
+    );
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(8))
@@ -259,9 +267,12 @@ pub async fn search_games(api_key: &str, term: &str) -> Result<Vec<SteamGridGame
         return Err(format!("@t:cover.searchFailed\u{1f}{}", status.as_u16()));
     }
 
-    let text = res.text().await.map_err(|e| format!("@t:cover.readFailed\u{1f}{}", e))?;
-    let parsed: SteamGridResponse<SteamGridGame> = serde_json::from_str(&text)
-        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
+    let text = res
+        .text()
+        .await
+        .map_err(|e| format!("@t:cover.readFailed\u{1f}{}", e))?;
+    let parsed: SteamGridResponse<SteamGridGame> =
+        serde_json::from_str(&text).map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -270,7 +281,10 @@ pub async fn search_games(api_key: &str, term: &str) -> Result<Vec<SteamGridGame
         }
         Ok(parsed.data)
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.unknownSearchError".to_string());
+        let err_msg = parsed
+            .errors
+            .and_then(|e| e.first().cloned())
+            .unwrap_or_else(|| "@t:cover.unknownSearchError".to_string());
         Err(err_msg)
     }
 }
@@ -321,8 +335,8 @@ pub async fn get_grids(
     if !status.is_success() {
         return Err(format!("@t:cover.coversFailed\u{1f}{}", status.as_u16()));
     }
-    let parsed: SteamGridResponse<SteamGridImage> = serde_json::from_str(&text)
-        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
+    let parsed: SteamGridResponse<SteamGridImage> =
+        serde_json::from_str(&text).map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -331,7 +345,10 @@ pub async fn get_grids(
         }
         Ok(apply_style_filter(parsed.data, wanted.as_deref()))
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.coversLoadFailed".to_string());
+        let err_msg = parsed
+            .errors
+            .and_then(|e| e.first().cloned())
+            .unwrap_or_else(|| "@t:cover.coversLoadFailed".to_string());
         Err(err_msg)
     }
 }
@@ -344,7 +361,11 @@ pub async fn get_heroes(
     let wanted = styles.clone();
     let st = style_for_api(styles.as_deref()).to_string();
     let cache_dir = steamgrid_cache_dir();
-    let cache_file = cache_dir.join(format!("heroes_{}_{}.json", game_id, sanitize_filename(&st)));
+    let cache_file = cache_dir.join(format!(
+        "heroes_{}_{}.json",
+        game_id,
+        sanitize_filename(&st)
+    ));
 
     if cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
@@ -367,8 +388,8 @@ pub async fn get_heroes(
     if !status.is_success() {
         return Err(format!("@t:cover.heroesFailed\u{1f}{}", status.as_u16()));
     }
-    let parsed: SteamGridResponse<SteamGridImage> = serde_json::from_str(&text)
-        .map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
+    let parsed: SteamGridResponse<SteamGridImage> =
+        serde_json::from_str(&text).map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
 
     if parsed.success {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
@@ -377,7 +398,10 @@ pub async fn get_heroes(
         }
         Ok(apply_style_filter(parsed.data, wanted.as_deref()))
     } else {
-        let err_msg = parsed.errors.and_then(|e| e.first().cloned()).unwrap_or_else(|| "@t:cover.heroesLoadFailed".to_string());
+        let err_msg = parsed
+            .errors
+            .and_then(|e| e.first().cloned())
+            .unwrap_or_else(|| "@t:cover.heroesLoadFailed".to_string());
         Err(err_msg)
     }
 }
@@ -420,8 +444,7 @@ pub async fn epic_search_steamgrid(
     term: String,
     steam_app_id: Option<String>,
 ) -> Result<Vec<SteamGridGame>, String> {
-    let key = epic_get_steamgrid_key(app)
-        .ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
+    let key = epic_get_steamgrid_key(app).ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
     let mut results = search_games(&key, &term).await?;
     if results.is_empty() {
         let cleaned = clean_steamgrid_search_term(&term);
@@ -442,7 +465,10 @@ pub async fn epic_search_steamgrid(
 
 /// Name search ranks older, more popular games first ("Aion" beats "AION 2").
 /// A platform id is one game, so it is pinned ahead of those name hits.
-pub fn pin_platform_match(mut games: Vec<SteamGridGame>, hit: Option<SteamGridGame>) -> Vec<SteamGridGame> {
+pub fn pin_platform_match(
+    mut games: Vec<SteamGridGame>,
+    hit: Option<SteamGridGame>,
+) -> Vec<SteamGridGame> {
     let Some(mut hit) = hit else {
         return games;
     };
@@ -461,7 +487,11 @@ struct SteamGridOne<T> {
 
 /// `GET /games/{platform}/{id}`. A 404 means SteamGridDB has no page for that
 /// app; the name search is still usable, so this returns `None` instead of an error.
-async fn game_by_platform(api_key: &str, platform: &str, platform_id: u64) -> Option<SteamGridGame> {
+async fn game_by_platform(
+    api_key: &str,
+    platform: &str,
+    platform_id: u64,
+) -> Option<SteamGridGame> {
     let url = format!("https://www.steamgriddb.com/api/v2/games/{platform}/{platform_id}");
     let client = sgdb_client().await.ok()?;
     let res = client
@@ -488,8 +518,7 @@ pub async fn epic_get_steamgrid_covers(
     styles: Option<String>,
     dimensions: Option<String>,
 ) -> Result<Vec<SteamGridImage>, String> {
-    let key = epic_get_steamgrid_key(app)
-        .ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
+    let key = epic_get_steamgrid_key(app).ok_or_else(|| "@t:cover.keyNotConfigured".to_string())?;
     let at = asset_type.as_deref().unwrap_or("grids");
     if at == "heroes" {
         get_heroes(&key, game_id, styles).await
@@ -600,7 +629,10 @@ mod tests {
         assert_eq!(res.data.len(), 1);
         assert_eq!(res.data[0].score, 15);
         assert_eq!(res.data[0].style.as_deref(), Some("alternate"));
-        assert_eq!(res.data[0].author.as_ref().and_then(|a| a.name.as_deref()), Some("ArtistName"));
+        assert_eq!(
+            res.data[0].author.as_ref().and_then(|a| a.name.as_deref()),
+            Some("ArtistName")
+        );
     }
 
     #[test]

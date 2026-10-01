@@ -3,10 +3,10 @@
 //! Stores and switches between multiple Epic Games user sessions by archiving
 //! each account's `user.json` in `%USERPROFILE%\.config\legendary\accounts\<account_id>\`.
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SavedAccount {
@@ -35,6 +35,14 @@ fn accounts_dir(config_dir: &Path) -> PathBuf {
     config_dir.join("accounts")
 }
 
+/// One path segment inside the vault. Rejects `..`, separators, and absolute paths.
+fn account_folder(config_dir: &Path, id: &str) -> Result<PathBuf, String> {
+    if !crate::vault_id::is_vault_id(id) {
+        return Err("Invalid account id".into());
+    }
+    Ok(accounts_dir(config_dir).join(id))
+}
+
 fn accounts_meta_file(config_dir: &Path) -> PathBuf {
     accounts_dir(config_dir).join("accounts_meta.json")
 }
@@ -48,7 +56,9 @@ pub fn read_active_user(config_dir: &Path) -> Option<(String, String)> {
     let data = fs::read_to_string(&user_path).ok()?;
     let parsed: UserJsonMinimal = serde_json::from_str(&data).ok()?;
     match (parsed.account_id, parsed.display_name) {
-        (Some(id), Some(name)) if !id.trim().is_empty() => Some((id.trim().to_string(), name.trim().to_string())),
+        (Some(id), Some(name)) if !id.trim().is_empty() => {
+            Some((id.trim().to_string(), name.trim().to_string()))
+        }
         _ => None,
     }
 }
@@ -59,7 +69,9 @@ pub fn ensure_current_account_saved(config_dir: &Path) {
         return;
     };
 
-    let acc_dir = accounts_dir(config_dir).join(&active_id);
+    let Ok(acc_dir) = account_folder(config_dir, &active_id) else {
+        return;
+    };
     let _ = fs::create_dir_all(&acc_dir);
 
     // Copy user.json to accounts/<id>/user.json
@@ -137,7 +149,9 @@ pub fn archive_active_sidecars(config_dir: &Path) {
     let Some((active_id, _)) = read_active_user(config_dir) else {
         return;
     };
-    let acc_dir = accounts_dir(config_dir).join(&active_id);
+    let Ok(acc_dir) = account_folder(config_dir, &active_id) else {
+        return;
+    };
     let _ = fs::create_dir_all(&acc_dir);
     archive_sidecars(config_dir, &acc_dir);
 
@@ -196,7 +210,9 @@ fn snapshot_game_count(acc_dir: &Path) -> Option<usize> {
 pub fn list_saved_accounts(config_dir: &Path) -> Vec<SavedAccount> {
     ensure_current_account_saved(config_dir);
 
-    let active_id = read_active_user(config_dir).map(|(id, _)| id).unwrap_or_default();
+    let active_id = read_active_user(config_dir)
+        .map(|(id, _)| id)
+        .unwrap_or_default();
     let mut list = read_accounts_meta(config_dir);
 
     // Backfill the archived game count once per account so the profile can show
@@ -204,7 +220,10 @@ pub fn list_saved_accounts(config_dir: &Path) -> Vec<SavedAccount> {
     let mut dirty = false;
     for acc in list.iter_mut() {
         if acc.game_count.is_none() {
-            let count = snapshot_game_count(&accounts_dir(config_dir).join(&acc.account_id));
+            let Ok(folder) = account_folder(config_dir, &acc.account_id) else {
+                continue;
+            };
+            let count = snapshot_game_count(&folder);
             if let Some(count) = count {
                 acc.game_count = Some(count);
                 dirty = true;
@@ -221,7 +240,8 @@ pub fn list_saved_accounts(config_dir: &Path) -> Vec<SavedAccount> {
 
     // Sort: active account first, then last_used descending
     list.sort_by(|a, b| {
-        b.is_active.cmp(&a.is_active)
+        b.is_active
+            .cmp(&a.is_active)
             .then_with(|| b.last_used.cmp(&a.last_used))
     });
 
@@ -234,10 +254,13 @@ pub fn switch_account(config_dir: &Path, target_account_id: &str) -> Result<Save
     ensure_current_account_saved(config_dir);
 
     // 2. Locate target account folder
-    let target_dir = accounts_dir(config_dir).join(target_account_id);
+    let target_dir = account_folder(config_dir, target_account_id)?;
     let target_user = target_dir.join("user.json");
     if !target_user.is_file() {
-        return Err(format!("Saved credentials for account {} not found", target_account_id));
+        return Err(format!(
+            "Saved credentials for account {} not found",
+            target_account_id
+        ));
     }
 
     // 3. Copy target user.json into active position
@@ -278,7 +301,7 @@ pub fn switch_account(config_dir: &Path, target_account_id: &str) -> Result<Save
 
 /// Removes a saved account from the switcher list.
 pub fn remove_saved_account(config_dir: &Path, target_account_id: &str) -> Result<(), String> {
-    let target_dir = accounts_dir(config_dir).join(target_account_id);
+    let target_dir = account_folder(config_dir, target_account_id)?;
     if target_dir.is_dir() {
         let _ = fs::remove_dir_all(&target_dir);
     }
@@ -350,7 +373,11 @@ mod tests {
         );
 
         // Account 2's library stays archived when a new login clears the shared snapshot.
-        fs::write(dir.join("efxlve_library_snapshot.json"), "[{\"app_name\":\"a\"}]").unwrap();
+        fs::write(
+            dir.join("efxlve_library_snapshot.json"),
+            "[{\"app_name\":\"a\"}]",
+        )
+        .unwrap();
         archive_active_sidecars(&dir);
         discard_shared_session_cache(&dir);
         assert_eq!(
@@ -367,7 +394,10 @@ mod tests {
 
         // The archived game count is backfilled so the dormant profile can show it.
         let list_with_count = list_saved_accounts(&dir);
-        let acc2 = list_with_count.iter().find(|a| a.account_id == "test_acc_2").unwrap();
+        let acc2 = list_with_count
+            .iter()
+            .find(|a| a.account_id == "test_acc_2")
+            .unwrap();
         assert_eq!(acc2.game_count, Some(1));
 
         // 4. Remove account 1
@@ -375,6 +405,24 @@ mod tests {
         let list2 = list_saved_accounts(&dir);
         assert_eq!(list2.len(), 1);
         assert_eq!(list2[0].account_id, "test_acc_2");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn remove_rejects_path_escape() {
+        let dir =
+            std::env::temp_dir().join(format!("efxlve-test-acc-escape-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("accounts")).unwrap();
+        let secret = dir.join("secret.txt");
+        fs::write(&secret, "keep").unwrap();
+
+        assert!(remove_saved_account(&dir, r"..\secret.txt").is_err());
+        assert!(remove_saved_account(&dir, "../secret.txt").is_err());
+        assert!(remove_saved_account(&dir, r"C:\Windows").is_err());
+        assert!(switch_account(&dir, "..").is_err());
+        assert_eq!(fs::read_to_string(&secret).unwrap(), "keep");
 
         let _ = fs::remove_dir_all(&dir);
     }

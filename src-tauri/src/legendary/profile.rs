@@ -168,12 +168,19 @@ fn product_kind(title: &str) -> Option<&'static str> {
     None
 }
 
-fn is_library_base(categories: &[String], has_main_game: bool, kind: Option<&str>, title: &str) -> bool {
+fn is_library_base(
+    categories: &[String],
+    has_main_game: bool,
+    kind: Option<&str>,
+    title: &str,
+) -> bool {
     if has_main_game || kind.is_some() || is_opaque_id(title) {
         return false;
     }
     let games = categories.iter().any(|c| c == "games");
-    let extra = categories.iter().any(|c| c == "digitalextras" || c == "addons" || c.starts_with("addons/"));
+    let extra = categories
+        .iter()
+        .any(|c| c == "digitalextras" || c == "addons" || c.starts_with("addons/"));
     games && !extra
 }
 
@@ -288,11 +295,17 @@ fn title_extends(base_title: &str, product_title: &str) -> bool {
     if base.is_empty() || product.len() <= base.len() || !product.starts_with(&base) {
         return false;
     }
-    let rest = product[base.len()..].trim_start_matches(|c: char| matches!(c, ' ' | '-' | ':' | '–' | '—' | '·'));
+    let rest = product[base.len()..]
+        .trim_start_matches(|c: char| matches!(c, ' ' | '-' | ':' | '–' | '—' | '·'));
     !rest.is_empty()
 }
 
-fn choose_set_label(sandbox: &str, base_idx: usize, idxs: &[usize], entries: &[CatalogEntry]) -> String {
+fn choose_set_label(
+    sandbox: &str,
+    base_idx: usize,
+    idxs: &[usize],
+    entries: &[CatalogEntry],
+) -> String {
     let key = sandbox.trim().to_lowercase();
     for &i in idxs {
         if i == base_idx {
@@ -326,7 +339,8 @@ fn choose_set_label(sandbox: &str, base_idx: usize, idxs: &[usize], entries: &[C
             }
         });
     }
-    best.and_then(|i| entries[i].product_label.clone()).unwrap_or_default()
+    best.and_then(|i| entries[i].product_label.clone())
+        .unwrap_or_default()
 }
 
 fn totals_for(idxs: &[usize], preferred: usize, entries: &[CatalogEntry]) -> (u32, u32) {
@@ -507,7 +521,10 @@ fn catalog_entry_from_meta(val: &serde_json::Value) -> Option<CatalogEntry> {
     }
 
     let mut categories = Vec::new();
-    if let Some(arr) = val.pointer("/metadata/categories").and_then(|c| c.as_array()) {
+    if let Some(arr) = val
+        .pointer("/metadata/categories")
+        .and_then(|c| c.as_array())
+    {
         for cat in arr {
             if let Some(path) = cat.get("path").and_then(|p| p.as_str()) {
                 let path = path.trim().to_lowercase();
@@ -656,10 +673,10 @@ pub async fn fetch_player_profile(
         return Err("@t:profile.notLoggedIn".into());
     }
 
-    let user_content =
-        fs::read_to_string(&user_file).map_err(|e| format!("@t:profile.userReadFailed\u{1f}{e}"))?;
-    let user_json: serde_json::Value =
-        serde_json::from_str(&user_content).map_err(|e| format!("@t:profile.userInvalid\u{1f}{e}"))?;
+    let user_content = fs::read_to_string(&user_file)
+        .map_err(|e| format!("@t:profile.userReadFailed\u{1f}{e}"))?;
+    let user_json: serde_json::Value = serde_json::from_str(&user_content)
+        .map_err(|e| format!("@t:profile.userInvalid\u{1f}{e}"))?;
 
     let account_id = user_json
         .get("account_id")
@@ -750,8 +767,8 @@ pub async fn fetch_player_profile(
         .await
         .map_err(|e| format!("@t:profile.graphqlReadFailed\u{1f}{e}"))?;
 
-    let gql_resp: GqlResponse =
-        serde_json::from_str(&text).map_err(|e| format!("@t:profile.graphqlParseFailed\u{1f}{e}"))?;
+    let gql_resp: GqlResponse = serde_json::from_str(&text)
+        .map_err(|e| format!("@t:profile.graphqlParseFailed\u{1f}{e}"))?;
 
     let records = gql_resp
         .data
@@ -780,10 +797,12 @@ pub async fn fetch_player_profile(
         let unl = r.total_unlocked.unwrap_or(0);
         let xp = r.total_xp.unwrap_or(0);
 
-        let is_plat = r
-            .player_awards
-            .iter()
-            .any(|a| a.award_type.as_deref().unwrap_or("").eq_ignore_ascii_case("PLATINUM"));
+        let is_plat = r.player_awards.iter().any(|a| {
+            a.award_type
+                .as_deref()
+                .unwrap_or("")
+                .eq_ignore_ascii_case("PLATINUM")
+        });
 
         let last_date = r
             .player_awards
@@ -977,7 +996,13 @@ mod tests {
     #[test]
     fn split_products_use_library_title_and_stay_separate() {
         let index = index_entries(vec![
-            sample("Boga", "Death Stranding", "f4a904", &["games", "applications"], false),
+            sample(
+                "Boga",
+                "Death Stranding",
+                "f4a904",
+                &["games", "applications"],
+                false,
+            ),
             sample(
                 "content1",
                 "Death Stranding Content",

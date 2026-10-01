@@ -8,7 +8,9 @@
 
 import { ctxRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { summaryOf, sharedOwnerOf } from "../../core/selectors";
+import { gameVersionsOf, summaryOf, sharedOwnerOf } from "../../core/selectors";
+import { storeVersionLabel } from "../drawer/external-versions";
+import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
@@ -46,8 +48,16 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   const isSteam = appName.startsWith("steam::");
   const steamItem = (mode: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
     `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="${mode}">${icon(iconName, 15)}<span>${label}</span></button>`;
+  const versions = gameVersionsOf(appName);
+  const versionBlock = versions.length < 2
+    ? ""
+    : `${versions.map((version) => {
+        const active = version.appName === appName;
+        return `<button class="ps5-context-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
+      }).join("")}<div class="ps5-context-sep"></div>`;
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
+    ${versionBlock}
     ${shared
       ? `<button class="ps5-context-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
       : isSteam
@@ -65,6 +75,7 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${!shared && !isSteam && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
+    ${item("epic-store-page", t("ctx.storePage"), "globe")}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam

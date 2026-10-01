@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 30.09.2026 (v0.1.17 tree: 15 locales × 1.435 keys, 165 Tauri commands, 53 Rust files).
+> **Last synced:** 01.10.2026. Start at `docs/agent/README.md`. Epic commands are a folder (`legendary/commands/`), not one file. The store webview host is `store_host.rs`.
 
 ---
 
@@ -81,12 +81,14 @@ efxlve_launcher/
 ├── src-tauri/                         # Rust Backend (Tauri v2 + Tokio)
 │   ├── Cargo.toml
 │   ├── tauri.conf.json                # Window, bundle, updater endpoint & public key
-│   └── src/                           # 53 Rust files
-│       ├── main.rs                    # App builder, window/store hooks, tray, IPC table (165 commands)
+│   └── src/                           # Rust sources
+│       ├── main.rs                    # App builder, window, tray, settings, IPC table
+│       ├── store_host.rs              # Embedded store child webviews
+│       ├── vault_id.rs                # Account-id allowlist (blocks path escape)
 │       ├── presence.rs                # Discord Rich Presence worker
 │       ├── eos.rs                     # Epic Online Services overlay detection
-│       ├── legendary/                 # Epic backend (25 files)
-│       │   ├── commands.rs            # 55+ #[tauri::command] entry points
+│       ├── legendary/                 # Epic backend
+│       │   ├── commands/              # Epic IPC, split by job (see docs/agent/README.md)
 │       │   ├── transfers.rs           # Install/update/uninstall, queue, progress parsing, EGL manifest sync
 │       │   ├── accounts.rs            # Epic account vault (archive/activate/remove sessions)
 │       │   ├── cache.rs               # Disk readers, library snapshot, EGL `.item` helpers
@@ -175,10 +177,10 @@ efxlve_launcher/
 
 | File / Subsystem | Primary Responsibilities |
 |---|---|
-| `main.rs` | App builder, window/store events, tray, settings persistence, IPC registration (165 commands). |
+| `main.rs` | App builder, window, tray, settings persistence, IPC registration. Store webviews live in `store_host.rs`. |
 | `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
 | `eos.rs` | Epic Online Services overlay detection & install state. |
-| `legendary/commands.rs` | Epic IPC entry points (library, install, verify, move, settings, EGL, shortcuts). |
+| `legendary/commands/` | Epic IPC. `mod.rs` re-exports `session`, `cdn`, `achievements`, `metadata`, `verify`, `game_local`, `ops`. Call sites stay `legendary::commands::*`. |
 | `legendary/transfers.rs` | Install/update/uninstall pipelines, queue, progress parsing, **EGL `.item` version sync on success**, playtime session hooks. |
 | `legendary/cache.rs` | Disk readers, library snapshot, EGL manifest helpers (`sync_egl_manifest_version`, `remove_egl_manifests_for_game`). |
 | `legendary/accounts.rs` | Epic account vault (archive `user.json` + snapshot, activate, remove). |

@@ -60,7 +60,10 @@ struct VdfParser<'a> {
 
 impl<'a> VdfParser<'a> {
     fn new(text: &'a str) -> Self {
-        Self { bytes: text.as_bytes(), pos: 0 }
+        Self {
+            bytes: text.as_bytes(),
+            pos: 0,
+        }
     }
 
     fn skip_ws(&mut self) {
@@ -141,12 +144,19 @@ pub fn parse_vdf(text: &str) -> Vdf {
 /// Steam install directory from the registry (`SteamPath` / `InstallPath`).
 pub fn steam_install_path() -> Option<PathBuf> {
     let hkcu = winreg::query(r"HKCU\Software\Valve\Steam", Some("SteamPath"));
-    let hklm = winreg::query(r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam", Some("InstallPath"));
+    let hklm = winreg::query(
+        r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam",
+        Some("InstallPath"),
+    );
     let raw = hkcu
         .as_deref()
         .map(winreg::parse_reg_sz)
         .filter(|p| !p.is_empty())
-        .or_else(|| hklm.as_deref().map(winreg::parse_reg_sz).filter(|p| !p.is_empty()))?;
+        .or_else(|| {
+            hklm.as_deref()
+                .map(winreg::parse_reg_sz)
+                .filter(|p| !p.is_empty())
+        })?;
     let path = PathBuf::from(raw);
     if path.is_dir() {
         Some(path)
@@ -256,13 +266,18 @@ pub fn library_folders(steam: &Path) -> Vec<PathBuf> {
     let main = steam.join("steamapps");
     let mut folders = vec![main.clone()];
     let mut seen = std::collections::HashSet::from([path_key(&main)]);
-    let Ok(text) = std::fs::read_to_string(steam.join("steamapps").join("libraryfolders.vdf")) else {
+    let Ok(text) = std::fs::read_to_string(steam.join("steamapps").join("libraryfolders.vdf"))
+    else {
         return folders;
     };
     let root = parse_vdf(&text);
-    let Some(list) = root.get("libraryfolders") else { return folders };
+    let Some(list) = root.get("libraryfolders") else {
+        return folders;
+    };
     for (_, entry) in list.entries() {
-        let Some(path) = entry.get("path").and_then(Vdf::as_str) else { continue };
+        let Some(path) = entry.get("path").and_then(Vdf::as_str) else {
+            continue;
+        };
         let candidate = PathBuf::from(path).join("steamapps");
         // The main install is usually listed again with different casing; only a
         // real, unseen folder joins the list.
@@ -305,8 +320,16 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
     if app_id.is_empty() {
         return None;
     }
-    let name = state.get("name").and_then(Vdf::as_str).unwrap_or(&app_id).to_string();
-    let install_dir = state.get("installdir").and_then(Vdf::as_str).unwrap_or("").to_string();
+    let name = state
+        .get("name")
+        .and_then(Vdf::as_str)
+        .unwrap_or(&app_id)
+        .to_string();
+    let install_dir = state
+        .get("installdir")
+        .and_then(Vdf::as_str)
+        .unwrap_or("")
+        .to_string();
     let size_bytes = state
         .get("SizeOnDisk")
         .and_then(Vdf::as_str)
@@ -366,14 +389,18 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
     let steam_running = steam_client_running(steam);
     let preloads = cached_preload_ids(steam);
     for folder in library_folders(steam) {
-        let Ok(entries) = std::fs::read_dir(&folder) else { continue };
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let path = entry.path();
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             if !file_name.starts_with("appmanifest_") || !file_name.ends_with(".acf") {
                 continue;
             }
-            let Ok(text) = std::fs::read_to_string(&path) else { continue };
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
             if let Some(mut game) = parse_app_manifest(&text, &folder) {
                 if is_steam_library_noise(&game.app_id, &game.name) {
                     continue;
@@ -460,7 +487,9 @@ pub fn steam_status() -> SteamStatus {
     match steam_install_path() {
         Some(path) => {
             let games = installed_games(&path).len();
-            let user_name = active_steam_user(&path).map(|(_, name)| name).unwrap_or_default();
+            let user_name = active_steam_user(&path)
+                .map(|(_, name)| name)
+                .unwrap_or_default();
             SteamStatus {
                 installed: true,
                 path: path.to_string_lossy().to_string(),
@@ -491,7 +520,9 @@ pub fn steam_open_downloads() -> Result<(), String> {
 
 #[tauri::command]
 pub fn steam_list_installed() -> Vec<SteamGame> {
-    steam_install_path().map(|p| installed_games(&p)).unwrap_or_default()
+    steam_install_path()
+        .map(|p| installed_games(&p))
+        .unwrap_or_default()
 }
 
 /// Last Steam Cloud write time for one app, read from `userdata/.../remotecache.vdf`.
@@ -531,7 +562,10 @@ fn max_sync_unix(node: &Vdf) -> Option<i64> {
 fn walk_sync_unix(node: &Vdf, best: &mut Option<i64>) {
     for (k, v) in node.entries() {
         let key = k.to_ascii_lowercase();
-        if matches!(key.as_str(), "time" | "synctime" | "remotetime" | "localtime") {
+        if matches!(
+            key.as_str(),
+            "time" | "synctime" | "remotetime" | "localtime"
+        ) {
             if let Some(s) = v.as_str() {
                 if let Ok(n) = s.parse::<i64>() {
                     if n > 1_000_000 {
@@ -560,11 +594,21 @@ pub fn steam_cloud_status(app_id: String) -> SteamCloudStatus {
     };
     let account = account_id_from_steam64(&user).unwrap_or_else(|| user.clone());
     let paths = [
-        steam.join("userdata").join(&account).join(&id).join("remotecache.vdf"),
-        steam.join("userdata").join(&user).join(&id).join("remotecache.vdf"),
+        steam
+            .join("userdata")
+            .join(&account)
+            .join(&id)
+            .join("remotecache.vdf"),
+        steam
+            .join("userdata")
+            .join(&user)
+            .join(&id)
+            .join("remotecache.vdf"),
     ];
     for path in paths {
-        let Ok(text) = std::fs::read_to_string(&path) else { continue };
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
         if let Some(ts) = max_sync_unix(&parse_vdf(&text)) {
             return SteamCloudStatus {
                 app_id: id,
@@ -642,18 +686,26 @@ pub struct SteamPlaytime {
 pub fn read_playtimes(steam: &Path) -> std::collections::HashMap<String, SteamPlaytime> {
     let mut result = std::collections::HashMap::new();
     let userdata = steam.join("userdata");
-    let Ok(entries) = std::fs::read_dir(&userdata) else { return result };
+    let Ok(entries) = std::fs::read_dir(&userdata) else {
+        return result;
+    };
     let mut newest: Option<(std::time::SystemTime, PathBuf)> = None;
     for entry in entries.flatten() {
         let config = entry.path().join("config").join("localconfig.vdf");
-        let Ok(meta) = std::fs::metadata(&config) else { continue };
+        let Ok(meta) = std::fs::metadata(&config) else {
+            continue;
+        };
         let modified = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
         if newest.as_ref().map(|(t, _)| modified > *t).unwrap_or(true) {
             newest = Some((modified, config));
         }
     }
-    let Some((_, path)) = newest else { return result };
-    let Ok(text) = std::fs::read_to_string(&path) else { return result };
+    let Some((_, path)) = newest else {
+        return result;
+    };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return result;
+    };
     let root = parse_vdf(&text);
     let apps = root
         .get("UserLocalConfigStore")
@@ -679,14 +731,22 @@ pub fn read_playtimes(steam: &Path) -> std::collections::HashMap<String, SteamPl
             .and_then(Vdf::as_str)
             .and_then(|v| v.parse::<i64>().ok())
             .filter(|v| *v > 0);
-        result.insert(app_id.clone(), SteamPlaytime { seconds: minutes * 60, last_played });
+        result.insert(
+            app_id.clone(),
+            SteamPlaytime {
+                seconds: minutes * 60,
+                last_played,
+            },
+        );
     }
     result
 }
 
 #[tauri::command]
 pub fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime> {
-    steam_install_path().map(|p| read_playtimes(&p)).unwrap_or_default()
+    steam_install_path()
+        .map(|p| read_playtimes(&p))
+        .unwrap_or_default()
 }
 
 /* ---------- Store details (network, cached on disk) ---------- */
@@ -829,7 +889,8 @@ fn appinfo_find_string(data: &[u8], table: &Option<Vec<String>>, wanted: &str) -
                     2 | 3 | 4 | 6 => self.pos += 4,
                     5 => {
                         while self.pos + 1 < self.data.len()
-                            && u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]]) != 0
+                            && u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]])
+                                != 0
                         {
                             self.pos += 2;
                         }
@@ -842,7 +903,11 @@ fn appinfo_find_string(data: &[u8], table: &Option<Vec<String>>, wanted: &str) -
         }
     }
 
-    let mut reader = Reader { data, pos: 0, table };
+    let mut reader = Reader {
+        data,
+        pos: 0,
+        table,
+    };
     reader.find(wanted)
 }
 
@@ -852,7 +917,9 @@ fn appinfo_find_string(data: &[u8], table: &Option<Vec<String>>, wanted: &str) -
 /// packs (for example Life is Strange's) would otherwise disappear; the client
 /// keeps them in `extended.listofdlc`.
 pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
-    let Some(magic) = read_u32_at(data, 0) else { return Vec::new() };
+    let Some(magic) = read_u32_at(data, 0) else {
+        return Vec::new();
+    };
     let (table, mut pos, apps_end) = match magic {
         APPINFO_MAGIC_V41 => {
             let Some(offset) = data
@@ -871,14 +938,20 @@ pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
         APPINFO_MAGIC_V40 => (None, 8usize, data.len()),
         _ => return Vec::new(),
     };
-    let Ok(target) = app_id.parse::<u32>() else { return Vec::new() };
+    let Ok(target) = app_id.parse::<u32>() else {
+        return Vec::new();
+    };
 
     while pos + 68 <= apps_end {
-        let Some(entry_id) = read_u32_at(data, pos) else { break };
+        let Some(entry_id) = read_u32_at(data, pos) else {
+            break;
+        };
         if entry_id == 0 {
             break;
         }
-        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else { break };
+        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else {
+            break;
+        };
         if size < 60 || pos + 8 + size > data.len() {
             break;
         }
@@ -926,11 +999,15 @@ pub fn parse_appinfo_preload_ids(data: &[u8]) -> std::collections::HashSet<u32> 
 
     let mut out = std::collections::HashSet::new();
     while pos + 68 <= apps_end {
-        let Some(entry_id) = read_u32_at(data, pos) else { break };
+        let Some(entry_id) = read_u32_at(data, pos) else {
+            break;
+        };
         if entry_id == 0 {
             break;
         }
-        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else { break };
+        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else {
+            break;
+        };
         if size < 60 || pos + 8 + size > data.len() {
             break;
         }
@@ -944,7 +1021,10 @@ pub fn parse_appinfo_preload_ids(data: &[u8]) -> std::collections::HashSet<u32> 
 }
 
 static PRELOAD_CACHE: std::sync::Mutex<
-    Option<(Option<std::time::SystemTime>, std::collections::HashSet<u32>)>,
+    Option<(
+        Option<std::time::SystemTime>,
+        std::collections::HashSet<u32>,
+    )>,
 > = std::sync::Mutex::new(None);
 
 /// Preload app ids from `appcache/appinfo.vdf`, reused until that file changes.
@@ -1049,10 +1129,17 @@ pub fn join_label_lines(lines: Vec<String>) -> Vec<String> {
 
 /// Turns one `appdetails` payload into the flat structure the game page uses.
 pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDetails {
-    let requirements = data.get("pc_requirements").cloned().unwrap_or(serde_json::Value::Null);
+    let requirements = data
+        .get("pc_requirements")
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
     SteamGameDetails {
         app_id: app_id.to_string(),
-        name: data.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        name: data
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         short_description: data
             .get("short_description")
             .and_then(|v| v.as_str())
@@ -1066,12 +1153,20 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
         developers: data
             .get("developers")
             .and_then(|v| v.as_array())
-            .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().map(str::to_string))
+                    .collect()
+            })
             .unwrap_or_default(),
         publishers: data
             .get("publishers")
             .and_then(|v| v.as_array())
-            .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().map(str::to_string))
+                    .collect()
+            })
             .unwrap_or_default(),
         genres: string_list(data, "genres"),
         categories: data
@@ -1090,8 +1185,16 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string(),
-        header_image: data.get("header_image").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        website: data.get("website").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        header_image: data
+            .get("header_image")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        website: data
+            .get("website")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         dlc: data
             .get("dlc")
             .and_then(|v| v.as_array())
@@ -1104,7 +1207,11 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string(),
-        drm_notice: data.get("drm_notice").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        drm_notice: data
+            .get("drm_notice")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         metacritic_score: data
             .get("metacritic")
             .and_then(|m| m.get("score"))
@@ -1115,6 +1222,16 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .and_then(|m| m.get("url"))
             .and_then(|v| v.as_str())
             .map(str::to_string),
+    }
+}
+
+/// Steam store language codes are a single alphanumeric token (`english`, `schinese`).
+/// Separators would escape the details cache directory.
+fn safe_store_language(language: String) -> Result<String, String> {
+    if (1..=32).contains(&language.len()) && language.bytes().all(|b| b.is_ascii_alphanumeric()) {
+        Ok(language)
+    } else {
+        Err("Invalid Steam language".into())
     }
 }
 
@@ -1158,7 +1275,7 @@ pub async fn steam_get_game_details(
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
     }
-    let language = language.unwrap_or_else(|| "english".into());
+    let language = safe_store_language(language.unwrap_or_else(|| "english".into()))?;
     let cache = details_cache_path(&app, &app_id, &language);
     if force != Some(true) {
         if let Ok(text) = std::fs::read_to_string(&cache) {
@@ -1186,7 +1303,9 @@ pub async fn steam_get_game_details(
         .json()
         .await
         .map_err(|e| transport_error("Steam store answered with an unexpected payload", e))?;
-    let entry = payload.get(&app_id).ok_or("Steam store has no record for this app")?;
+    let entry = payload
+        .get(&app_id)
+        .ok_or("Steam store has no record for this app")?;
     if entry.get("success").and_then(|v| v.as_bool()) != Some(true) {
         return Err("Steam store has no record for this app".into());
     }
@@ -1222,14 +1341,20 @@ use crate::legendary::models::{
 /// Steam Web API key stored in settings.json (next to the SteamGridDB key).
 #[tauri::command]
 pub fn steam_get_api_key(app: tauri::AppHandle) -> Option<String> {
-    crate::load_settings(&app).steam_api_key.filter(|k| !k.trim().is_empty())
+    crate::load_settings(&app)
+        .steam_api_key
+        .filter(|k| !k.trim().is_empty())
 }
 
 #[tauri::command]
 pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), String> {
     let mut settings = crate::load_settings(&app);
     let trimmed = api_key.trim().to_string();
-    settings.steam_api_key = if trimmed.is_empty() { None } else { Some(trimmed) };
+    settings.steam_api_key = if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed)
+    };
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -1342,7 +1467,9 @@ fn read_binary_object(data: &[u8], pos: &mut usize) -> Option<Vec<(String, Vdf)>
     let mut entries = Vec::new();
     loop {
         // A truncated file ends the current object instead of failing the parse.
-        let Some(&tag) = data.get(*pos) else { return Some(entries) };
+        let Some(&tag) = data.get(*pos) else {
+            return Some(entries);
+        };
         *pos += 1;
         if tag == 8 {
             return Some(entries);
@@ -1410,11 +1537,14 @@ fn parse_global_percentages(payload: &serde_json::Value) -> std::collections::Ha
         return out;
     };
     for entry in items {
-        let Some(name) = entry.get("name").and_then(|v| v.as_str()) else { continue };
+        let Some(name) = entry.get("name").and_then(|v| v.as_str()) else {
+            continue;
+        };
         // Valve returns the rate as a number or as a string, depending on the app.
-        let percent = entry
-            .get("percent")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())));
+        let percent = entry.get("percent").and_then(|v| {
+            v.as_f64()
+                .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+        });
         if let Some(percent) = percent {
             out.insert(name.to_string(), percent);
         }
@@ -1449,10 +1579,16 @@ fn apply_rarity(
     response: &mut GameAchievementsResponse,
     percentages: &std::collections::HashMap<String, f64>,
 ) {
-    for item in response.achievements.iter_mut().chain(response.hidden.iter_mut()) {
+    for item in response
+        .achievements
+        .iter_mut()
+        .chain(response.hidden.iter_mut())
+    {
         if let Some(percent) = percentages.get(&item.name) {
             item.tier = Some(tier_for_percent(*percent));
-            item.rarity = Some(AchievementRarity { percent: Some(*percent) });
+            item.rarity = Some(AchievementRarity {
+                percent: Some(*percent),
+            });
         }
     }
 }
@@ -1469,15 +1605,24 @@ fn steam_icon_url(app_id: &str, file: &str) -> String {
 /// `group:bit` → unlock time, straight from the client's stats file.
 fn read_unlock_times(steam: &Path, app_id: &str) -> std::collections::HashMap<String, i64> {
     let mut unlock_times = std::collections::HashMap::new();
-    let Some(account) = steam_account_id(steam) else { return unlock_times };
+    let Some(account) = steam_account_id(steam) else {
+        return unlock_times;
+    };
     let user_file = stats_dir(steam).join(format!("UserGameStats_{account}_{app_id}.bin"));
-    let Ok(bytes) = std::fs::read(user_file) else { return unlock_times };
-    let Some(user) = parse_binary_vdf(&bytes) else { return unlock_times };
+    let Ok(bytes) = std::fs::read(user_file) else {
+        return unlock_times;
+    };
+    let Some(user) = parse_binary_vdf(&bytes) else {
+        return unlock_times;
+    };
     if let Some(cache) = user.get("cache") {
         for (group_id, group) in cache.entries() {
             if let Some(times) = group.get("AchievementTimes") {
                 for (bit_id, time) in times.entries() {
-                    let value = time.as_str().and_then(|v| v.parse::<i64>().ok()).unwrap_or(0);
+                    let value = time
+                        .as_str()
+                        .and_then(|v| v.parse::<i64>().ok())
+                        .unwrap_or(0);
                     unlock_times.insert(format!("{group_id}:{bit_id}"), value);
                 }
             }
@@ -1491,7 +1636,8 @@ fn read_unlock_times(steam: &Path, app_id: &str) -> std::collections::HashMap<St
 /// `UserGameStats_<account>_<app>.bin` (unlock times). Works offline, needs no
 /// Web API key and no public profile; `None` when the client has no schema.
 pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchievementsResponse> {
-    let schema_bytes = std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
+    let schema_bytes =
+        std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
     let schema = parse_binary_vdf(&schema_bytes)?;
     let stats = schema.get(app_id)?.get("stats")?;
     let unlock_times = read_unlock_times(steam, app_id);
@@ -1502,11 +1648,17 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
     let mut items: Vec<AchievementItem> = Vec::new();
     let mut hidden_items: Vec<AchievementItem> = Vec::new();
     for (group_id, group) in groups {
-        let Some(bits) = group.get("bits") else { continue };
+        let Some(bits) = group.get("bits") else {
+            continue;
+        };
         let mut bit_ids: Vec<&(String, Vdf)> = bits.entries().iter().collect();
         bit_ids.sort_by_key(|(id, _)| id.parse::<u32>().unwrap_or(u32::MAX));
         for (bit_id, bit) in bit_ids {
-            let api_name = bit.get("name").and_then(Vdf::as_str).unwrap_or("").to_string();
+            let api_name = bit
+                .get("name")
+                .and_then(Vdf::as_str)
+                .unwrap_or("")
+                .to_string();
             if api_name.is_empty() {
                 continue;
             }
@@ -1528,10 +1680,19 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 .and_then(Vdf::as_str)
                 .map(|v| v != "0")
                 .unwrap_or(false);
-            let unlock_time = unlock_times.get(&format!("{group_id}:{bit_id}")).copied().unwrap_or(0);
+            let unlock_time = unlock_times
+                .get(&format!("{group_id}:{bit_id}"))
+                .copied()
+                .unwrap_or(0);
             let unlocked = unlock_time > 0;
-            let icon = display.and_then(|d| d.get("icon")).and_then(Vdf::as_str).unwrap_or("");
-            let icon_gray = display.and_then(|d| d.get("icon_gray")).and_then(Vdf::as_str).unwrap_or("");
+            let icon = display
+                .and_then(|d| d.get("icon"))
+                .and_then(Vdf::as_str)
+                .unwrap_or("");
+            let icon_gray = display
+                .and_then(|d| d.get("icon_gray"))
+                .and_then(Vdf::as_str)
+                .unwrap_or("");
             let file = if unlocked && !icon.is_empty() {
                 icon
             } else if !icon_gray.is_empty() {
@@ -1545,7 +1706,11 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 description,
                 unlocked,
                 progress: if unlocked { 1.0 } else { 0.0 },
-                unlock_date: if unlocked { Some(unix_date(unlock_time)) } else { None },
+                unlock_date: if unlocked {
+                    Some(unix_date(unlock_time))
+                } else {
+                    None
+                },
                 icon_link: steam_icon_url(app_id, file),
                 hidden,
                 // The local schema does not mark base/DLC groups; Steam
@@ -1584,14 +1749,22 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
 /// carry leftovers from a predecessor app (CS:GO bits under CS2), so using it
 /// as the total made every game look 100% complete.
 fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u32)> {
-    let Some(account) = steam_account_id(steam) else { return Vec::new() };
-    let Ok(entries) = std::fs::read_dir(stats_dir(steam)) else { return Vec::new() };
+    let Some(account) = steam_account_id(steam) else {
+        return Vec::new();
+    };
+    let Ok(entries) = std::fs::read_dir(stats_dir(steam)) else {
+        return Vec::new();
+    };
     let prefix = format!("UserGameStats_{account}_");
     let mut out = Vec::new();
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().to_string();
-        let Some(rest) = name.strip_prefix(&prefix) else { continue };
-        let Some(app_id) = rest.strip_suffix(".bin") else { continue };
+        let Some(rest) = name.strip_prefix(&prefix) else {
+            continue;
+        };
+        let Some(app_id) = rest.strip_suffix(".bin") else {
+            continue;
+        };
         if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
             continue;
         }
@@ -1600,13 +1773,19 @@ fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u32)> {
         else {
             continue;
         };
-        let Some(schema) = parse_binary_vdf(&schema_bytes) else { continue };
-        let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else { continue };
+        let Some(schema) = parse_binary_vdf(&schema_bytes) else {
+            continue;
+        };
+        let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else {
+            continue;
+        };
         let unlock_times = read_unlock_times(steam, app_id);
 
         let (mut total, mut unlocked) = (0u32, 0u32);
         for (group_id, group) in stats.entries() {
-            let Some(bits) = group.get("bits") else { continue };
+            let Some(bits) = group.get("bits") else {
+                continue;
+            };
             for (bit_id, _) in bits.entries() {
                 total += 1;
                 if unlock_times
@@ -1655,13 +1834,18 @@ pub async fn steam_get_achievements(
     }
 
     // 1) The Steam client's own cache: instant, offline, no key, no rate limit.
-    if let Some(mut response) = steam_install_path().and_then(|path| read_local_achievements(&path, &app_id)) {
+    if let Some(mut response) =
+        steam_install_path().and_then(|path| read_local_achievements(&path, &app_id))
+    {
         // Global unlock rates are public, so even the local path gets rarity.
         let percentages = fetch_global_percentages(&app_id).await;
         if !percentages.is_empty() {
             apply_rarity(&mut response, &percentages);
         }
-        let cached = CachedAchievements { fetched_at: now_secs(), response: response.clone() };
+        let cached = CachedAchievements {
+            fetched_at: now_secs(),
+            response: response.clone(),
+        };
         if let Ok(text) = serde_json::to_string(&cached) {
             let _ = std::fs::write(&cache, text);
         }
@@ -1669,7 +1853,8 @@ pub async fn steam_get_achievements(
     }
 
     // 2) Web API fallback (adds global rarity) when no local schema exists.
-    let key = steam_get_api_key(app.clone()).ok_or("Steam has no local achievement data for this game and no Web API key is set")?;
+    let key = steam_get_api_key(app.clone())
+        .ok_or("Steam has no local achievement data for this game and no Web API key is set")?;
     let steam_path = steam_install_path().ok_or("Steam is not installed")?;
     let steam_id = active_steam_id(&steam_path).ok_or("Steam account could not be read")?;
     let client = reqwest::Client::builder()
@@ -1698,7 +1883,10 @@ pub async fn steam_get_achievements(
         .cloned()
         .unwrap_or_default();
     if entries.is_empty() {
-        return Ok(GameAchievementsResponse { supported: Some(false), ..Default::default() });
+        return Ok(GameAchievementsResponse {
+            supported: Some(false),
+            ..Default::default()
+        });
     }
 
     // 2) The player's own unlocks.
@@ -1714,8 +1902,14 @@ pub async fn steam_get_achievements(
         .await
         .map_err(|e| transport_error("Steam answered with an unexpected payload", e))?;
     let stats = player.get("playerstats");
-    if stats.and_then(|s| s.get("success")).and_then(|v| v.as_bool()) != Some(true) {
-        return Err("Steam does not share this profile's achievements; make the profile public".into());
+    if stats
+        .and_then(|s| s.get("success"))
+        .and_then(|v| v.as_bool())
+        != Some(true)
+    {
+        return Err(
+            "Steam does not share this profile's achievements; make the profile public".into(),
+        );
     }
     let player_items = stats
         .and_then(|s| s.get("achievements"))
@@ -1728,7 +1922,10 @@ pub async fn steam_get_achievements(
         "https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid={app_id}"
     );
     let percentages = match client.get(&percent_url).send().await {
-        Ok(response) => response.json::<serde_json::Value>().await.unwrap_or(serde_json::Value::Null),
+        Ok(response) => response
+            .json::<serde_json::Value>()
+            .await
+            .unwrap_or(serde_json::Value::Null),
         Err(_) => serde_json::Value::Null,
     };
     let percent_items = percentages
@@ -1790,7 +1987,11 @@ pub async fn steam_get_achievements(
                 .to_string(),
             unlocked: achieved,
             progress: if achieved { 1.0 } else { 0.0 },
-            unlock_date: if achieved { Some(unix_date(unlock_time)) } else { None },
+            unlock_date: if achieved {
+                Some(unix_date(unlock_time))
+            } else {
+                None
+            },
             icon_link: if file.is_empty() {
                 String::new()
             } else {
@@ -1820,7 +2021,10 @@ pub async fn steam_get_achievements(
         supported: Some(true),
         ..Default::default()
     };
-    let cached = CachedAchievements { fetched_at: now_secs(), response: response.clone() };
+    let cached = CachedAchievements {
+        fetched_at: now_secs(),
+        response: response.clone(),
+    };
     if let Ok(text) = serde_json::to_string(&cached) {
         let _ = std::fs::write(&cache, text);
     }
@@ -1850,12 +2054,20 @@ pub fn steam_get_achievements_summary(
     if let Ok(entries) = std::fs::read_dir(achievements_cache_dir(&app)) {
         for entry in entries.flatten() {
             let path = entry.path();
-            let app_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+            let app_id = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
             if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
                 continue;
             }
-            let Ok(text) = std::fs::read_to_string(&path) else { continue };
-            let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) else { continue };
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) else {
+                continue;
+            };
             let response = cached.response;
             if response.total_achievements == 0 {
                 continue;
@@ -1884,7 +2096,10 @@ pub fn steam_get_achievements_summary(
         None => match steam_install_path() {
             Some(steam) => {
                 let totals = read_local_achievement_totals(&steam);
-                let fresh = CachedTotals { fetched_at: now_secs(), totals: totals.clone() };
+                let fresh = CachedTotals {
+                    fetched_at: now_secs(),
+                    totals: totals.clone(),
+                };
                 if let Ok(text) = serde_json::to_string(&fresh) {
                     let _ = std::fs::write(&cache_path, text);
                 }
@@ -1927,8 +2142,12 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Vec::new();
     }
-    let Some(steam) = steam_install_path() else { return Vec::new() };
-    let Some(account) = steam_account_id(&steam) else { return Vec::new() };
+    let Some(steam) = steam_install_path() else {
+        return Vec::new();
+    };
+    let Some(account) = steam_account_id(&steam) else {
+        return Vec::new();
+    };
     let root = steam
         .join("userdata")
         .join(account.to_string())
@@ -1936,7 +2155,9 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
         .join("remote")
         .join(&app_id)
         .join("screenshots");
-    let Ok(entries) = std::fs::read_dir(&root) else { return Vec::new() };
+    let Ok(entries) = std::fs::read_dir(&root) else {
+        return Vec::new();
+    };
 
     let mut items = Vec::new();
     for entry in entries.flatten() {
@@ -1944,14 +2165,20 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
         if !path.is_file() {
             continue;
         }
-        let Some(file_name) = path.file_name().and_then(|n| n.to_str()).map(str::to_string) else {
+        let Some(file_name) = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(str::to_string)
+        else {
             continue;
         };
         let lower = file_name.to_lowercase();
         if !(lower.ends_with(".jpg") || lower.ends_with(".jpeg") || lower.ends_with(".png")) {
             continue;
         }
-        let Ok(metadata) = std::fs::metadata(&path) else { continue };
+        let Ok(metadata) = std::fs::metadata(&path) else {
+            continue;
+        };
         let timestamp = metadata
             .modified()
             .ok()
@@ -1963,7 +2190,9 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
         // clipboard use the original.
         let thumb = root.join("thumbnails").join(&file_name);
         let preview = if thumb.is_file() { thumb } else { path.clone() };
-        let Some(data_url) = file_to_data_url(&preview) else { continue };
+        let Some(data_url) = file_to_data_url(&preview) else {
+            continue;
+        };
         let full_data_url = if preview == path {
             String::new()
         } else {
@@ -1989,6 +2218,16 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn store_language_rejects_path_separators() {
+        assert!(safe_store_language("english".into()).is_ok());
+        assert!(safe_store_language("schinese".into()).is_ok());
+        assert!(safe_store_language("../x".into()).is_err());
+        assert!(safe_store_language(r"..\x".into()).is_err());
+        assert!(safe_store_language(String::new()).is_err());
+        assert!(safe_store_language("en glish".into()).is_err());
+    }
 
     const LIBRARY_FOLDERS: &str = r#"
 "libraryfolders"
@@ -2028,18 +2267,25 @@ mod tests {
         let folders = root.get("libraryfolders").expect("libraryfolders node");
         assert_eq!(folders.entries().len(), 2);
         assert_eq!(
-            folders.get("0").and_then(|f| f.get("path")).and_then(Vdf::as_str),
+            folders
+                .get("0")
+                .and_then(|f| f.get("path"))
+                .and_then(Vdf::as_str),
             Some(r"C:\Program Files (x86)\Steam")
         );
         assert_eq!(
-            folders.get("1").and_then(|f| f.get("label")).and_then(Vdf::as_str),
+            folders
+                .get("1")
+                .and_then(|f| f.get("label"))
+                .and_then(Vdf::as_str),
             Some("Games")
         );
     }
 
     #[test]
     fn app_manifest_reads_game_fields() {
-        let game = parse_app_manifest(APP_MANIFEST, Path::new(r"D:\SteamLibrary\steamapps")).expect("game");
+        let game = parse_app_manifest(APP_MANIFEST, Path::new(r"D:\SteamLibrary\steamapps"))
+            .expect("game");
         assert_eq!(game.app_id, "620");
         assert_eq!(game.name, "Portal 2");
         assert_eq!(game.install_dir, "Portal 2");
@@ -2111,7 +2357,12 @@ mod tests {
         assert!(parse_app_manifest("", Path::new("x")).is_none());
         assert!(parse_app_manifest("\"AppState\" { \"name\"", Path::new("x")).is_none());
         assert_eq!(parse_vdf("not vdf at all").entries().len(), 0);
-        assert_eq!(parse_app_manifest(APP_MANIFEST, Path::new("x")).unwrap().app_id, "620");
+        assert_eq!(
+            parse_app_manifest(APP_MANIFEST, Path::new("x"))
+                .unwrap()
+                .app_id,
+            "620"
+        );
     }
 
     const REMOTECACHE: &str = r#"
@@ -2177,7 +2428,8 @@ mod tests {
 
     #[test]
     fn paused_download_is_not_marked_downloading() {
-        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-paused-{}", std::process::id()));
+        let tmp =
+            std::env::temp_dir().join(format!("efxlve-steam-dl-paused-{}", std::process::id()));
         let dl = tmp.join("downloading").join("730");
         std::fs::create_dir_all(&dl).expect("temp downloading dir");
         let paused_vdf = r#"
@@ -2197,7 +2449,8 @@ mod tests {
 
     #[test]
     fn staging_bytes_used_when_download_bytes_zero() {
-        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-staging-{}", std::process::id()));
+        let tmp =
+            std::env::temp_dir().join(format!("efxlve-steam-dl-staging-{}", std::process::id()));
         let dl = tmp.join("downloading").join("730");
         std::fs::create_dir_all(&dl).expect("temp downloading dir");
         let staging_vdf = r#"
@@ -2236,7 +2489,10 @@ mod tests {
         ));
         assert!(is_steam_library_noise("0", "Proton 9.0"));
         assert!(!is_steam_library_noise("730", "Counter-Strike 2"));
-        assert!(!is_steam_library_noise("2322010", "Grand Theft Auto V Enhanced"));
+        assert!(!is_steam_library_noise(
+            "2322010",
+            "Grand Theft Auto V Enhanced"
+        ));
     }
 
     #[test]
@@ -2266,7 +2522,10 @@ mod tests {
     #[test]
     fn html_is_flattened_into_clean_lines() {
         let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li>OS: Windows 10</li><li>Memory: 8 GB &amp; up</li></ul>";
-        assert_eq!(strip_html(html), "Minimum:\nOS: Windows 10\nMemory: 8 GB & up");
+        assert_eq!(
+            strip_html(html),
+            "Minimum:\nOS: Windows 10\nMemory: 8 GB & up"
+        );
         assert_eq!(strip_html(""), "");
     }
 
@@ -2356,17 +2615,41 @@ mod tests {
 
         let mut response = GameAchievementsResponse {
             achievements: vec![
-                AchievementItem { name: "AC_1".into(), ..Default::default() },
-                AchievementItem { name: "AC_2".into(), ..Default::default() },
-                AchievementItem { name: "AC_3".into(), ..Default::default() },
+                AchievementItem {
+                    name: "AC_1".into(),
+                    ..Default::default()
+                },
+                AchievementItem {
+                    name: "AC_2".into(),
+                    ..Default::default()
+                },
+                AchievementItem {
+                    name: "AC_3".into(),
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         };
         apply_rarity(&mut response, &percentages);
-        assert_eq!(response.achievements[0].tier.as_ref().map(|t| t.name.as_str()), Some("gold"));
-        assert_eq!(response.achievements[1].tier.as_ref().map(|t| t.name.as_str()), Some("bronze"));
         assert_eq!(
-            response.achievements[1].rarity.as_ref().and_then(|r| r.percent),
+            response.achievements[0]
+                .tier
+                .as_ref()
+                .map(|t| t.name.as_str()),
+            Some("gold")
+        );
+        assert_eq!(
+            response.achievements[1]
+                .tier
+                .as_ref()
+                .map(|t| t.name.as_str()),
+            Some("bronze")
+        );
+        assert_eq!(
+            response.achievements[1]
+                .rarity
+                .as_ref()
+                .and_then(|r| r.percent),
             Some(40.0)
         );
         assert!(response.achievements[2].tier.is_none());
@@ -2387,7 +2670,10 @@ mod tests {
         let lines = join_label_lines(raw);
         assert_eq!(lines[0], "Minimum:");
         assert_eq!(lines[1], "OS: Windows® 10");
-        assert_eq!(lines[2], "Processor: 4 hardware CPU threads - Intel® Core™ i5 750 or higher");
+        assert_eq!(
+            lines[2],
+            "Processor: 4 hardware CPU threads - Intel® Core™ i5 750 or higher"
+        );
         assert_eq!(lines[3], "Additional Notes:");
 
         let data = serde_json::json!({
@@ -2395,8 +2681,14 @@ mod tests {
             "pc_requirements": { "minimum": html }
         });
         let details = parse_app_details("730", &data);
-        assert!(details.requirements_min.iter().any(|l| l.starts_with("OS: ")));
-        assert!(details.requirements_min.iter().any(|l| l.starts_with("Processor: ")));
+        assert!(details
+            .requirements_min
+            .iter()
+            .any(|l| l.starts_with("OS: ")));
+        assert!(details
+            .requirements_min
+            .iter()
+            .any(|l| l.starts_with("Processor: ")));
     }
 
     #[test]
@@ -2541,7 +2833,10 @@ mod tests {
         let mut persona = String::new();
         for (id, node) in users.entries() {
             if node.get("MostRecent").and_then(Vdf::as_str) == Some("1") {
-                persona = format!("{id}:{}", node.get("PersonaName").and_then(Vdf::as_str).unwrap_or(""));
+                persona = format!(
+                    "{id}:{}",
+                    node.get("PersonaName").and_then(Vdf::as_str).unwrap_or("")
+                );
             }
         }
         assert_eq!(persona, "76561199140017878:Efxlve");
@@ -2720,7 +3015,11 @@ mod tests {
         let playtimes = read_playtimes(&path);
         println!("playtime records: {}", playtimes.len());
         for (app_id, record) in playtimes.iter().take(10) {
-            println!("  {app_id} | {} min | last {:?}", record.seconds / 60, record.last_played);
+            println!(
+                "  {app_id} | {} min | last {:?}",
+                record.seconds / 60,
+                record.last_played
+            );
         }
         let rt = tokio::runtime::Runtime::new().unwrap();
         let details = rt.block_on(async {

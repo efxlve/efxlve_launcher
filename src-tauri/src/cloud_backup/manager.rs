@@ -1,9 +1,9 @@
 //! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
 
+use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
-use reqwest::Client;
 use tauri::{AppHandle, Emitter};
 
 use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
@@ -60,7 +60,9 @@ pub fn gdrive_credentials(settings: &CloudBackupSettings) -> Result<(&str, Optio
         .unwrap_or(gdrive::GDRIVE_DEFAULT_CLIENT_ID);
 
     if client_id.is_empty() {
-        return Err("Google Drive Client ID is missing. Please configure it in Settings.".to_string());
+        return Err(
+            "Google Drive Client ID is missing. Please configure it in Settings.".to_string(),
+        );
     }
 
     let client_secret = settings
@@ -89,7 +91,13 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
             if settings.webdav_url.trim().is_empty() {
                 return Err("WebDAV URL cannot be empty.".to_string());
             }
-            webdav::test_webdav_connection(client, &settings.webdav_url, &settings.webdav_username, &settings.webdav_password).await
+            webdav::test_webdav_connection(
+                client,
+                &settings.webdav_url,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await
         }
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
@@ -97,8 +105,11 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
                 return Err("Google Drive is not connected. Please log in first.".to_string());
             }
             let (client_id, client_secret) = gdrive_credentials(settings)?;
-            let access = gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
-            let email = gdrive::fetch_user_email(client, &access).await.unwrap_or_else(|_| "connected".to_string());
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            let email = gdrive::fetch_user_email(client, &access)
+                .await
+                .unwrap_or_else(|_| "connected".to_string());
             Ok(format!("Google Drive connection verified ({email})."))
         }
     }
@@ -150,7 +161,8 @@ pub async fn upload_backup(
     };
 
     // 2. Pack to temporary .tar.gz
-    let temp_archive = std::env::temp_dir().join(format!("efxlve_upload_{app_name}_{backup_id}.tar.gz"));
+    let temp_archive =
+        std::env::temp_dir().join(format!("efxlve_upload_{app_name}_{backup_id}.tar.gz"));
     let (size_bytes, sha256) = pack_backup_dir(&target_backup_dir, &temp_archive)?;
 
     // 3. Upload according to active provider
@@ -161,8 +173,20 @@ pub async fn upload_backup(
             let app_dir = format!("{base_url}/efxlve_saves/{app_name}/");
             let target_file_url = format!("{app_dir}{backup_id}.tar.gz");
 
-            let _ = webdav::ensure_remote_collection(client, &root_dir, &settings.webdav_username, &settings.webdav_password).await;
-            let _ = webdav::ensure_remote_collection(client, &app_dir, &settings.webdav_username, &settings.webdav_password).await;
+            let _ = webdav::ensure_remote_collection(
+                client,
+                &root_dir,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await;
+            let _ = webdav::ensure_remote_collection(
+                client,
+                &app_dir,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await;
 
             webdav::upload_file_webdav(
                 client,
@@ -199,14 +223,24 @@ pub async fn upload_backup(
                     return Err(err);
                 }
             };
-            let access = match gdrive::refresh_access_token(client, client_id, client_secret, refresh).await {
-                Ok(acc) => acc,
-                Err(err) => {
-                    let _ = std::fs::remove_file(&temp_archive);
-                    return Err(err);
-                }
-            };
-            let file_id = match gdrive::upload_backup_gdrive(client, &access, app_name, &backup_id, &temp_archive).await {
+            let access =
+                match gdrive::refresh_access_token(client, client_id, client_secret, refresh).await
+                {
+                    Ok(acc) => acc,
+                    Err(err) => {
+                        let _ = std::fs::remove_file(&temp_archive);
+                        return Err(err);
+                    }
+                };
+            let file_id = match gdrive::upload_backup_gdrive(
+                client,
+                &access,
+                app_name,
+                &backup_id,
+                &temp_archive,
+            )
+            .await
+            {
                 Ok(fid) => fid,
                 Err(err) => {
                     let _ = std::fs::remove_file(&temp_archive);
@@ -233,7 +267,10 @@ pub async fn upload_backup(
     let _ = std::fs::remove_file(&temp_archive);
 
     // Update last sync time
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
     settings.last_sync_time = Some(now);
     let _ = save_settings(&settings);
 
@@ -265,7 +302,8 @@ pub async fn list_cloud_backups(app_name: &str) -> Result<Vec<CloudBackupEntry>,
                 return Ok(Vec::new());
             }
             let (client_id, client_secret) = gdrive_credentials(&settings)?;
-            let access = gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
             gdrive::list_gdrive_backups(client, &access, app_name).await
         }
         CloudBackupProvider::None => Ok(Vec::new()),
@@ -281,7 +319,8 @@ pub async fn download_and_restore(
     let settings = load_settings();
     let client = get_client();
 
-    let temp_archive = std::env::temp_dir().join(format!("efxlve_download_{app_name}_{backup_id}.tar.gz"));
+    let temp_archive =
+        std::env::temp_dir().join(format!("efxlve_download_{app_name}_{backup_id}.tar.gz"));
 
     // 1. Download
     match settings.provider {
@@ -298,7 +337,8 @@ pub async fn download_and_restore(
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
             let (client_id, client_secret) = gdrive_credentials(&settings)?;
-            let access = gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
             gdrive::download_backup_gdrive(client, &access, remote_id, &temp_archive).await?;
         }
         CloudBackupProvider::None => return Err("No active cloud provider.".to_string()),
@@ -321,12 +361,19 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
 
     match settings.provider {
         CloudBackupProvider::Webdav => {
-            webdav::delete_file_webdav(client, remote_id, &settings.webdav_username, &settings.webdav_password).await
+            webdav::delete_file_webdav(
+                client,
+                remote_id,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await
         }
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
             let (client_id, client_secret) = gdrive_credentials(&settings)?;
-            let access = gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
             gdrive::delete_backup_gdrive(client, &access, remote_id).await
         }
         CloudBackupProvider::None => Ok(()),
@@ -338,7 +385,10 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
 /// this creates a local backup and uploads it silently in the background.
 pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
     let settings = load_settings();
-    if !settings.enabled || !settings.auto_sync_on_game_exit || settings.provider == CloudBackupProvider::None {
+    if !settings.enabled
+        || !settings.auto_sync_on_game_exit
+        || settings.provider == CloudBackupProvider::None
+    {
         return;
     }
 

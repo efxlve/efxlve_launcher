@@ -227,7 +227,11 @@ pub fn get_local_now_systemtime() -> SYSTEMTIME {
     SYSTEMTIME::default()
 }
 
-pub fn get_file_local_datetime_str(_path: &Path, metadata: &std::fs::Metadata, epoch_sec: u64) -> String {
+pub fn get_file_local_datetime_str(
+    _path: &Path,
+    metadata: &std::fs::Metadata,
+    epoch_sec: u64,
+) -> String {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::fs::MetadataExt;
@@ -262,7 +266,10 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_lowercase();
-    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif") {
+    if !matches!(
+        ext.as_str(),
+        "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif"
+    ) {
         return None;
     }
 
@@ -270,8 +277,12 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     let size_bytes = metadata.len();
     let size_str = format_bytes(size_bytes);
 
-    let modified = metadata.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-    let duration = modified.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+    let modified = metadata
+        .modified()
+        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+    let duration = modified
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
     let timestamp = duration.as_secs();
 
     // Get Windows' real local file time and date (local timezone instead of UTC)
@@ -333,7 +344,10 @@ fn chrono_fallback(epoch_sec: u64) -> String {
         month += 1;
     }
     let day = days_left + 1;
-    format!("{:02}.{:02}.{:04} {:02}:{:02}:{:02}", day, month, year, hours, minutes, seconds)
+    format!(
+        "{:02}.{:02}.{:04} {:02}:{:02}:{:02}",
+        day, month, year, hours, minutes, seconds
+    )
 }
 
 /// Scans and returns all of a game's screenshots from disk.
@@ -384,9 +398,14 @@ pub async fn epic_get_game_screenshots(
                 let lower_app = clean_app.to_lowercase();
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+                    let name = path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("")
+                        .to_lowercase();
                     // Match when the file name contains the game title or app_name
-                    if (name.contains(&lower_title) || (!lower_app.is_empty() && name.contains(&lower_app)))
+                    if (name.contains(&lower_title)
+                        || (!lower_app.is_empty() && name.contains(&lower_app)))
                         && scanned_paths.insert(path.clone())
                     {
                         if let Some(item) = parse_file_to_item(&path) {
@@ -506,9 +525,17 @@ mod win_capture {
 
     #[link(name = "gdiplus")]
     extern "system" {
-        fn GdiplusStartup(token: *mut usize, input: *const GdiplusStartupInput, output: *mut c_void) -> i32;
+        fn GdiplusStartup(
+            token: *mut usize,
+            input: *const GdiplusStartupInput,
+            output: *mut c_void,
+        ) -> i32;
         fn GdiplusShutdown(token: usize);
-        fn GdipCreateBitmapFromHBITMAP(hbm: HBITMAP, hpal: *mut c_void, bitmap: *mut *mut c_void) -> i32;
+        fn GdipCreateBitmapFromHBITMAP(
+            hbm: HBITMAP,
+            hpal: *mut c_void,
+            bitmap: *mut *mut c_void,
+        ) -> i32;
         fn GdipSaveImageToFile(
             image: *mut c_void,
             filename: *const u16,
@@ -569,7 +596,10 @@ mod win_capture {
             let hdc_mem = CreateCompatibleDC(hdc_screen);
             if hdc_mem.is_null() {
                 ReleaseDC(std::ptr::null_mut(), hdc_screen);
-                return Err(format!("CreateCompatibleDC failed (err: {})", GetLastError()));
+                return Err(format!(
+                    "CreateCompatibleDC failed (err: {})",
+                    GetLastError()
+                ));
             }
 
             // Allocate a high-resolution bitmap with CreateDIBSection without a memory-pool limit
@@ -608,17 +638,7 @@ mod win_capture {
 
             let h_old = SelectObject(hdc_mem, h_bitmap);
             SetLastError(0);
-            let blt_ok = BitBlt(
-                hdc_mem,
-                0,
-                0,
-                width,
-                height,
-                hdc_screen,
-                0,
-                0,
-                SRCCOPY,
-            );
+            let blt_ok = BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, 0, 0, SRCCOPY);
             let err_code = GetLastError();
 
             SelectObject(hdc_mem, h_old);
@@ -649,13 +669,17 @@ mod win_capture {
             }
 
             let mut gdip_image: *mut c_void = std::ptr::null_mut();
-            let create_status = GdipCreateBitmapFromHBITMAP(h_bitmap, std::ptr::null_mut(), &mut gdip_image);
+            let create_status =
+                GdipCreateBitmapFromHBITMAP(h_bitmap, std::ptr::null_mut(), &mut gdip_image);
 
             DeleteObject(h_bitmap);
 
             if create_status != 0 || gdip_image.is_null() {
                 GdiplusShutdown(token);
-                return Err(format!("GdipCreateBitmapFromHBITMAP failed (status: {})", create_status));
+                return Err(format!(
+                    "GdipCreateBitmapFromHBITMAP failed (status: {})",
+                    create_status
+                ));
             }
 
             let wide_path: Vec<u16> = target_file
@@ -664,12 +688,8 @@ mod win_capture {
                 .chain(std::iter::once(0))
                 .collect();
 
-            let save_status = GdipSaveImageToFile(
-                gdip_image,
-                wide_path.as_ptr(),
-                &CLSID_PNG,
-                std::ptr::null(),
-            );
+            let save_status =
+                GdipSaveImageToFile(gdip_image, wide_path.as_ptr(), &CLSID_PNG, std::ptr::null());
 
             GdipDisposeImage(gdip_image);
             GdiplusShutdown(token);
@@ -679,7 +699,10 @@ mod win_capture {
             }
 
             if save_status != 0 {
-                return Err(format!("GdipSaveImageToFile failed (status: {})", save_status));
+                return Err(format!(
+                    "GdipSaveImageToFile failed (status: {})",
+                    save_status
+                ));
             }
 
             Ok(())
@@ -697,7 +720,10 @@ mod win_capture {
 
 /// Synchronously captures the primary screen and saves it to the running game's folder.
 /// Refuses when no game is running, and ignores a second request while one capture is in flight.
-pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
+pub fn capture_game_screenshot_sync(
+    app_name: &str,
+    title: &str,
+) -> Result<GameScreenshotItem, String> {
     let Some((running_app, running_title)) = get_active_running_game() else {
         return Err("@t:ss.notInGame".to_string());
     };
@@ -721,7 +747,10 @@ pub fn capture_game_screenshot_sync(app_name: &str, title: &str) -> Result<GameS
     capture_screen_to_game_folder(&running_app, &running_title)
 }
 
-fn capture_screen_to_game_folder(app_name: &str, title: &str) -> Result<GameScreenshotItem, String> {
+fn capture_screen_to_game_folder(
+    app_name: &str,
+    title: &str,
+) -> Result<GameScreenshotItem, String> {
     let clean_t = if !title.trim().is_empty() {
         clean_folder_name(title)
     } else {
@@ -775,7 +804,10 @@ $bmp.Dispose()
             target_str.replace('\'', "''")
         );
 
-        let utf16_bytes: Vec<u8> = ps_code.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
+        let utf16_bytes: Vec<u8> = ps_code
+            .encode_utf16()
+            .flat_map(|u| u.to_le_bytes())
+            .collect();
         let encoded_cmd = base64::engine::general_purpose::STANDARD.encode(&utf16_bytes);
 
         use std::os::windows::process::CommandExt;
@@ -797,7 +829,6 @@ $bmp.Dispose()
 
     parse_file_to_item(&target_file).ok_or_else(|| "@t:ss.fileReadFailed".to_string())
 }
-
 
 static SCREENSHOT_HOTKEY: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0x7B);
 
@@ -863,7 +894,9 @@ pub fn start_f12_listener(app: AppHandle) {
                         let title_clone = title.clone();
                         std::thread::spawn(move || {
                             // A busy capture is dropped; the previous one is still writing.
-                            if let Ok(item) = capture_game_screenshot_sync(&app_name_clone, &title_clone) {
+                            if let Ok(item) =
+                                capture_game_screenshot_sync(&app_name_clone, &title_clone)
+                            {
                                 let _ = app_clone.emit(
                                     "screenshot-captured",
                                     serde_json::json!({
@@ -924,7 +957,10 @@ pub async fn epic_replace_screenshot_with_compressed(
         };
 
         let parent_dir = orig.parent().unwrap_or_else(|| Path::new("."));
-        let file_stem = orig.file_stem().and_then(|s| s.to_str()).unwrap_or("screenshot");
+        let file_stem = orig
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("screenshot");
         let new_file_name = format!("{}.{}", file_stem, valid_ext);
         let new_path = parent_dir.join(&new_file_name);
 
@@ -944,11 +980,16 @@ pub async fn epic_replace_screenshot_with_compressed(
 
 /// Deletes a screenshot file.
 #[tauri::command]
-pub async fn epic_delete_game_screenshot(_app: AppHandle, file_path: String) -> Result<bool, String> {
+pub async fn epic_delete_game_screenshot(
+    _app: AppHandle,
+    file_path: String,
+) -> Result<bool, String> {
     tokio::task::spawn_blocking(move || {
         let p = Path::new(&file_path);
         if p.exists() && p.is_file() {
-            std::fs::remove_file(p).map(|_| true).map_err(|e| e.to_string())
+            std::fs::remove_file(p)
+                .map(|_| true)
+                .map_err(|e| e.to_string())
         } else {
             Err("@t:ss.fileNotFound".to_string())
         }
@@ -1128,8 +1169,7 @@ pub fn epic_set_screenshot_dir(
 ) -> Result<ScreenshotDirResult, String> {
     let cleaned = path.map(|p| p.trim().to_string()).filter(|p| !p.is_empty());
     if let Some(dir) = &cleaned {
-        std::fs::create_dir_all(dir)
-            .map_err(|e| format!("@t:ss.dirCreateFailed\u{1f}{e}"))?;
+        std::fs::create_dir_all(dir).map_err(|e| format!("@t:ss.dirCreateFailed\u{1f}{e}"))?;
     }
     let old_root = screenshots_root();
     let new_root = resolve_screenshot_root(cleaned.as_deref().map(Path::new));
@@ -1153,7 +1193,10 @@ pub fn epic_set_screenshot_dir(
 }
 
 /// Detects new screenshots taken during play and moves / links them.
-pub fn scan_new_captures_for_game(clean_title: &str, start_time: std::time::SystemTime) -> Vec<PathBuf> {
+pub fn scan_new_captures_for_game(
+    clean_title: &str,
+    start_time: std::time::SystemTime,
+) -> Vec<PathBuf> {
     let mut added = Vec::new();
     let target_dir = game_screenshots_dir(clean_title);
     let _ = std::fs::create_dir_all(&target_dir);
@@ -1219,15 +1262,24 @@ mod tests {
 
     #[test]
     fn test_clean_folder_name() {
-        assert_eq!(clean_folder_name("Dead by Daylight: Special Edition"), "Dead by Daylight Special Edition");
-        assert_eq!(clean_folder_name("Tom Clancy's The Division / 2"), "Tom Clancy's The Division 2");
+        assert_eq!(
+            clean_folder_name("Dead by Daylight: Special Edition"),
+            "Dead by Daylight Special Edition"
+        );
+        assert_eq!(
+            clean_folder_name("Tom Clancy's The Division / 2"),
+            "Tom Clancy's The Division 2"
+        );
     }
 
     #[test]
     fn screenshot_root_prefers_configured_folder() {
         let custom = Path::new(r"D:\Captures");
         assert_eq!(resolve_screenshot_root(Some(custom)), PathBuf::from(custom));
-        assert_eq!(resolve_screenshot_root(Some(custom)).join("Game"), PathBuf::from(r"D:\Captures").join("Game"));
+        assert_eq!(
+            resolve_screenshot_root(Some(custom)).join("Game"),
+            PathBuf::from(r"D:\Captures").join("Game")
+        );
         // No configured folder: the legacy Pictures root stays the default.
         assert!(resolve_screenshot_root(None).ends_with("Efxlve Screenshots"));
     }
@@ -1257,7 +1309,10 @@ mod tests {
         assert!(new.join("Game A").join("a2.png").is_file());
         assert!(new.join("loose.png").is_file());
         // An existing target file is never overwritten.
-        assert_eq!(std::fs::read(new.join("Game B").join("b1.png")).unwrap(), b"already");
+        assert_eq!(
+            std::fs::read(new.join("Game B").join("b1.png")).unwrap(),
+            b"already"
+        );
         assert!(!old.join("Game A").join("a1.png").exists());
         // The same root is a no-op even when "move" was requested.
         assert_eq!(move_screenshots(&new, &new).unwrap(), (0, 0));
@@ -1274,7 +1329,10 @@ mod tests {
     #[test]
     fn test_running_game_lifecycle() {
         set_active_running_game("Sugar", "Alan Wake 2", None, Vec::new());
-        assert_eq!(get_active_running_game(), Some(("Sugar".to_string(), "Alan Wake 2".to_string())));
+        assert_eq!(
+            get_active_running_game(),
+            Some(("Sugar".to_string(), "Alan Wake 2".to_string()))
+        );
         clear_active_running_game("Sugar");
         assert_eq!(get_active_running_game(), None);
     }
@@ -1290,10 +1348,17 @@ mod tests {
             let elapsed = start.elapsed();
             println!("Capture result: {:?}, took: {:?}", res, elapsed);
             if let Ok(()) = res {
-                assert!(temp_file.exists(), "Captured screenshot file does not exist");
+                assert!(
+                    temp_file.exists(),
+                    "Captured screenshot file does not exist"
+                );
                 let meta = temp_file.metadata().unwrap();
                 println!("Captured file size: {} KB", meta.len() / 1024);
-                assert!(meta.len() > 1000, "Screenshot file is too small (size: {})", meta.len());
+                assert!(
+                    meta.len() > 1000,
+                    "Screenshot file is too small (size: {})",
+                    meta.len()
+                );
                 let _ = std::fs::remove_file(&temp_file);
             }
         }
@@ -1302,7 +1367,10 @@ mod tests {
     #[test]
     fn test_local_systemtime_and_file_time() {
         let st = get_local_now_systemtime();
-        println!("Local system time: {:04}-{:02}-{:02} {:02}:{:02}:{:02}", st.w_year, st.w_month, st.w_day, st.w_hour, st.w_minute, st.w_second);
+        println!(
+            "Local system time: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            st.w_year, st.w_month, st.w_day, st.w_hour, st.w_minute, st.w_second
+        );
         #[cfg(target_os = "windows")]
         {
             assert!(st.w_year >= 2026);

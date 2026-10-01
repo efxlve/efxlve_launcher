@@ -22,7 +22,10 @@ pub struct ImportInstalledResult {
 /// `(app_name, game directory)` pairs under `root`.
 /// `folders` maps a lowercase install-folder name (`FolderName`) to an app name.
 /// Some Epic installs only ship a binary `.manifest` inside `.egstore`, with no `.mancpn`.
-pub fn scan_installed_folder(root: &Path, folders: &std::collections::HashMap<String, String>) -> Vec<(String, PathBuf)> {
+pub fn scan_installed_folder(
+    root: &Path,
+    folders: &std::collections::HashMap<String, String>,
+) -> Vec<(String, PathBuf)> {
     let mut out = Vec::new();
     let mut budget = MAX_DIRS;
     let start = if root.file_name().and_then(|n| n.to_str()) == Some(".egstore") {
@@ -50,7 +53,11 @@ fn folder_index(metadata_dir: &Path) -> std::collections::HashMap<String, String
         let Ok(val) = serde_json::from_str::<Value>(&text) else {
             continue;
         };
-        let Some(app) = val.get("app_name").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) else {
+        let Some(app) = val
+            .get("app_name")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+        else {
             continue;
         };
         let Some(folder) = val
@@ -126,9 +133,10 @@ fn identify_game(
     if let Some(app) = app_name_from_egstore(egstore) {
         return Some(app);
     }
-    let has_manifest = std::fs::read_dir(egstore).ok()?.flatten().any(|e| {
-        e.path().extension().and_then(|x| x.to_str()) == Some("manifest")
-    });
+    let has_manifest = std::fs::read_dir(egstore)
+        .ok()?
+        .flatten()
+        .any(|e| e.path().extension().and_then(|x| x.to_str()) == Some("manifest"));
     if !has_manifest {
         return None;
     }
@@ -153,7 +161,11 @@ fn app_name_from_egstore(egstore: &Path) -> Option<String> {
 
 fn app_name_from_mancpn(text: &str) -> Option<String> {
     let val: Value = serde_json::from_str(text).ok()?;
-    let app = val.get("AppName").and_then(|v| v.as_str()).unwrap_or("").trim();
+    let app = val
+        .get("AppName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
     if app.is_empty() {
         None
     } else {
@@ -164,7 +176,11 @@ fn app_name_from_mancpn(text: &str) -> Option<String> {
 /// Rockstar, EA, and Ubisoft copies on a loose folder are left out of the
 /// scan. Epic's own launcher already has a finished install record for some
 /// of them, and those stay.
-fn keep_scanned_game(app_name: &str, companion: bool, egl_installed: &std::collections::HashSet<String>) -> bool {
+fn keep_scanned_game(
+    app_name: &str,
+    companion: bool,
+    egl_installed: &std::collections::HashSet<String>,
+) -> bool {
     !companion || egl_installed.contains(app_name)
 }
 
@@ -221,7 +237,11 @@ fn companion_app_names(metadata_dir: &Path) -> std::collections::HashSet<String>
         if !is_companion_launcher_game(&val) {
             continue;
         }
-        if let Some(app) = val.get("app_name").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+        if let Some(app) = val
+            .get("app_name")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+        {
             names.insert(app.to_string());
         }
     }
@@ -250,7 +270,11 @@ fn egl_installed_app_names() -> std::collections::HashSet<String> {
         if val.get("bIsIncompleteInstall").and_then(|v| v.as_bool()) == Some(true) {
             continue;
         }
-        if let Some(app) = val.get("AppName").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+        if let Some(app) = val
+            .get("AppName")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+        {
             names.insert(app.to_string());
         }
     }
@@ -291,7 +315,9 @@ pub async fn import_installed_folder(
     let egl_installed = egl_installed_app_names();
     let found: Vec<_> = found
         .into_iter()
-        .filter(|(app_name, _)| keep_scanned_game(app_name, companions.contains(app_name), &egl_installed))
+        .filter(|(app_name, _)| {
+            keep_scanned_game(app_name, companions.contains(app_name), &egl_installed)
+        })
         .collect();
 
     let config = super::skip::default_config_dir();
@@ -348,7 +374,10 @@ async fn run_import(bin: &Path, app_name: &str, game_dir: &Path) -> bool {
     ]);
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
-    cmd.output().await.map(|o| o.status.success()).unwrap_or(false)
+    cmd.output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 /// Rockstar's launcher only continues an Epic copy when Epic Games Launcher
@@ -378,7 +407,11 @@ pub fn bind_existing_install(app_name: &str, install_path: &Path) {
             if in_pending {
                 let guid = serde_json::from_str::<Value>(&updated)
                     .ok()
-                    .and_then(|v| v.get("InstallationGuid").and_then(|g| g.as_str()).map(|s| s.to_string()))
+                    .and_then(|v| {
+                        v.get("InstallationGuid")
+                            .and_then(|g| g.as_str())
+                            .map(|s| s.to_string())
+                    })
                     .filter(|s| !s.is_empty());
                 if let Some(guid) = guid {
                     let dest = root.join(format!("{guid}.item"));
@@ -401,14 +434,20 @@ pub fn retarget_item_text(text: &str, app_name: &str, install_path: &Path) -> Op
     if value.get("AppName").and_then(|v| v.as_str()) != Some(app_name) {
         return None;
     }
-    let old = value.get("InstallLocation").and_then(|v| v.as_str()).unwrap_or("");
+    let old = value
+        .get("InstallLocation")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let new = install_path.to_string_lossy().replace('/', "\\");
     let mut out = text.to_string();
     if !old.is_empty() && old != new {
         out = out.replace(&old.replace('\\', "\\\\"), &new.replace('\\', "\\\\"));
         out = out.replace(old, &new);
     }
-    out = out.replace("\"bIsIncompleteInstall\": true", "\"bIsIncompleteInstall\": false");
+    out = out.replace(
+        "\"bIsIncompleteInstall\": true",
+        "\"bIsIncompleteInstall\": false",
+    );
     out = out.replace("\"bNeedsValidation\": true", "\"bNeedsValidation\": false");
     Some(out)
 }
@@ -419,7 +458,10 @@ pub fn epic_launcher_executable() -> Option<PathBuf> {
         r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
         r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
     ];
-    candidates.into_iter().map(PathBuf::from).find(|p| p.is_file())
+    candidates
+        .into_iter()
+        .map(PathBuf::from)
+        .find(|p| p.is_file())
 }
 
 #[cfg(test)]
@@ -435,7 +477,8 @@ mod tests {
             "bIsIncompleteInstall": true,
             "bNeedsValidation": true
         }"#;
-        let updated = retarget_item_text(raw, "Heather", Path::new(r"D:\RedDeadRedemption2")).unwrap();
+        let updated =
+            retarget_item_text(raw, "Heather", Path::new(r"D:\RedDeadRedemption2")).unwrap();
         assert!(updated.contains(r#"D:\\RedDeadRedemption2"#));
         assert!(!updated.contains("Program Files"));
         assert!(updated.contains("\"bIsIncompleteInstall\": false"));
@@ -508,6 +551,9 @@ mod tests {
     #[test]
     fn mancpn_without_app_name_is_ignored() {
         assert!(app_name_from_mancpn("{}").is_none());
-        assert_eq!(app_name_from_mancpn(r#"{"AppName":"Catnip"}"#).as_deref(), Some("Catnip"));
+        assert_eq!(
+            app_name_from_mancpn(r#"{"AppName":"Catnip"}"#).as_deref(),
+            Some("Catnip")
+        );
     }
 }

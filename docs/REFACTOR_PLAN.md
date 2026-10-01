@@ -1,5 +1,7 @@
 # REFACTOR_PLAN.md — Efxlve Launcher Modularization Plan
 
+> **Status (2026-10-01):** Epic IPC commands are `src-tauri/src/legendary/commands/` (one file per job). The embedded store is `src-tauri/src/store_host.rs`. Public paths are still `legendary::commands::*`. Still one module, on purpose, until a one-way split exists: `legendary/transfers.rs`, `steam.rs`, `steam_auth.rs`. Read `docs/agent/README.md` before the history below.
+
 > **Amaç / Purpose:** Projeyi AI ve insan geliştiricilerin rahatça okuyabileceği,
 > küçük ve sorumluluğu tek olan modüllere bölmek.
 > Split the project into small, single-responsibility modules that are easy for

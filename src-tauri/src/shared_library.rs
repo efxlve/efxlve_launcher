@@ -19,7 +19,11 @@ use crate::gogdl;
 use crate::legendary;
 
 /// Portrait cover priority, mirrors the frontend's `epicPortrait`.
-const EPIC_PORTRAIT_TYPES: [&str; 3] = ["DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"];
+const EPIC_PORTRAIT_TYPES: [&str; 3] = [
+    "DieselGameBoxTall",
+    "OfferImageTall",
+    "DieselStoreFrontTall",
+];
 /// Wide cover priority, mirrors the frontend's `epicCover`.
 const EPIC_COVER_TYPES: [&str; 6] = [
     "DieselGameBox",
@@ -51,7 +55,9 @@ pub struct SharedLibraryIndex {
 }
 
 /// Reads a portrait URL from Epic catalog metadata (same priority as the UI).
-fn epic_portrait(metadata: &std::collections::HashMap<String, serde_json::Value>) -> Option<String> {
+fn epic_portrait(
+    metadata: &std::collections::HashMap<String, serde_json::Value>,
+) -> Option<String> {
     let images = metadata.get("keyImages")?.as_array()?;
     let url_of = |t: &str| -> Option<String> {
         images
@@ -82,7 +88,11 @@ fn epic_display_name(account_dir: &Path) -> String {
     };
     serde_json::from_str::<serde_json::Value>(&text)
         .ok()
-        .and_then(|v| v.get("displayName").and_then(|n| n.as_str()).map(str::to_string))
+        .and_then(|v| {
+            v.get("displayName")
+                .and_then(|n| n.as_str())
+                .map(str::to_string)
+        })
         .unwrap_or_default()
 }
 
@@ -125,7 +135,11 @@ fn is_game_entry(game: &legendary::models::LegendaryGame) -> bool {
         .iter()
         .any(|k| k.contains("android") || k.contains("ios") || k.contains("mobile"));
     let has_desktop = keys.iter().any(|k| {
-        k.contains("windows") || k.contains("win32") || k.contains("win64") || k.contains("mac") || k.contains("linux")
+        k.contains("windows")
+            || k.contains("win32")
+            || k.contains("win64")
+            || k.contains("mac")
+            || k.contains("linux")
     });
     !(has_mobile && !has_desktop)
 }
@@ -136,7 +150,8 @@ fn gog_snapshot(account_dir: &Path) -> gogdl::models::GogCachedLibrary {
         account_id: None,
         games: Vec::new(),
     };
-    let Ok(text) = std::fs::read_to_string(account_dir.join("efxlve_gog_library_snapshot.json")) else {
+    let Ok(text) = std::fs::read_to_string(account_dir.join("efxlve_gog_library_snapshot.json"))
+    else {
         return empty;
     };
     serde_json::from_str::<gogdl::models::GogCachedLibrary>(&text).unwrap_or(empty)
@@ -145,9 +160,13 @@ fn gog_snapshot(account_dir: &Path) -> gogdl::models::GogCachedLibrary {
 /// Active GOG user id from `<gog>/auth.json` (written by gogdl).
 fn read_active_gog_user(gog_dir: &Path) -> Option<String> {
     let bytes = std::fs::read(gog_dir.join("auth.json")).ok()?;
-    let map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_slice(&bytes).ok()?;
-    map.values()
-        .find_map(|v| v.get("user_id").and_then(|id| id.as_str()).map(str::to_string))
+    let map: std::collections::HashMap<String, serde_json::Value> =
+        serde_json::from_slice(&bytes).ok()?;
+    map.values().find_map(|v| {
+        v.get("user_id")
+            .and_then(|id| id.as_str())
+            .map(str::to_string)
+    })
 }
 
 /// Builds the shared index from every saved account except the active ones.
@@ -166,7 +185,11 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
             if !dir.is_dir() {
                 continue;
             }
-            let account_id = dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+            let account_id = dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
             if account_id.is_empty() || Some(&account_id) == active_epic.as_ref() {
                 continue;
             }
@@ -215,7 +238,11 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
             if !dir.is_dir() {
                 continue;
             }
-            let user_id = dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+            let user_id = dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
             if user_id.is_empty() || Some(&user_id) == active_gog.as_ref() {
                 continue;
             }
@@ -264,7 +291,10 @@ pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
 mod tests {
     use super::*;
 
-    fn game_with_metadata(metadata: serde_json::Value, asset_keys: &[&str]) -> legendary::models::LegendaryGame {
+    fn game_with_metadata(
+        metadata: serde_json::Value,
+        asset_keys: &[&str],
+    ) -> legendary::models::LegendaryGame {
         legendary::models::LegendaryGame {
             app_name: "x".into(),
             app_title: "X".into(),
@@ -293,11 +323,17 @@ mod tests {
         assert!(!is_game_entry(&asset));
 
         // DLC pointing at a main game.
-        let dlc = game_with_metadata(serde_json::json!({ "mainGameItem": { "id": "y" } }), &["Windows"]);
+        let dlc = game_with_metadata(
+            serde_json::json!({ "mainGameItem": { "id": "y" } }),
+            &["Windows"],
+        );
         assert!(!is_game_entry(&dlc));
 
         // Mobile-only entry.
-        let mobile = game_with_metadata(serde_json::json!({ "categories": [{ "path": "games" }] }), &["Android"]);
+        let mobile = game_with_metadata(
+            serde_json::json!({ "categories": [{ "path": "games" }] }),
+            &["Android"],
+        );
         assert!(!is_game_entry(&mobile));
 
         // Real game.
@@ -336,9 +372,11 @@ mod tests {
     }
 
     #[test]
-    fn portrait_prefers_tall_then_falls_back() {        let meta = |value: serde_json::Value| -> std::collections::HashMap<String, serde_json::Value> {
-            serde_json::from_value(value).unwrap()
-        };
+    fn portrait_prefers_tall_then_falls_back() {
+        let meta =
+            |value: serde_json::Value| -> std::collections::HashMap<String, serde_json::Value> {
+                serde_json::from_value(value).unwrap()
+            };
         assert_eq!(
             epic_portrait(&meta(serde_json::json!({
                 "keyImages": [
@@ -363,6 +401,9 @@ mod tests {
             .as_deref(),
             Some("any.jpg")
         );
-        assert_eq!(epic_portrait(&meta(serde_json::json!({ "keyImages": [] }))), None);
+        assert_eq!(
+            epic_portrait(&meta(serde_json::json!({ "keyImages": [] }))),
+            None
+        );
     }
 }

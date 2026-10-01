@@ -3,10 +3,10 @@
 //! Stores and switches between multiple GOG user sessions by archiving
 //! each account's data in `<app_data>/gog/accounts/<user_id>/`.
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SavedGogAccount {
@@ -26,6 +26,14 @@ fn current_timestamp() -> u64 {
 
 fn accounts_dir(gog_dir: &Path) -> PathBuf {
     gog_dir.join("accounts")
+}
+
+/// One path segment inside the vault. Rejects `..`, separators, and absolute paths.
+fn account_folder(gog_dir: &Path, id: &str) -> Result<PathBuf, String> {
+    if !crate::vault_id::is_vault_id(id) {
+        return Err("Invalid account id".into());
+    }
+    Ok(accounts_dir(gog_dir).join(id))
 }
 
 fn accounts_meta_file(gog_dir: &Path) -> PathBuf {
@@ -55,7 +63,9 @@ fn read_active_gog_user(gog_dir: &Path) -> Option<String> {
     let path = gog_dir.join(AUTH_JSON);
     let bytes = fs::read(&path).ok()?;
     // Auth is stored as {"46899977096215655": {"user_id": "...", ...}}
-    if let Ok(map) = serde_json::from_slice::<std::collections::HashMap<String, serde_json::Value>>(&bytes) {
+    if let Ok(map) =
+        serde_json::from_slice::<std::collections::HashMap<String, serde_json::Value>>(&bytes)
+    {
         for val in map.values() {
             if let Some(uid) = val.get("user_id").and_then(|v| v.as_str()) {
                 if !uid.is_empty() {
@@ -103,8 +113,14 @@ fn write_accounts_meta(gog_dir: &Path, list: &[SavedGogAccount]) {
 }
 
 fn archive_sidecars(gog_dir: &Path, acc_dir: &Path) {
-    copy_if_file(&gog_dir.join(LIBRARY_SNAPSHOT), &acc_dir.join(LIBRARY_SNAPSHOT));
-    copy_if_file(&gog_dir.join(ACHIEVEMENTS_CACHE), &acc_dir.join(ACHIEVEMENTS_CACHE));
+    copy_if_file(
+        &gog_dir.join(LIBRARY_SNAPSHOT),
+        &acc_dir.join(LIBRARY_SNAPSHOT),
+    );
+    copy_if_file(
+        &gog_dir.join(ACHIEVEMENTS_CACHE),
+        &acc_dir.join(ACHIEVEMENTS_CACHE),
+    );
 }
 
 /// Ensures the current active GOG user is saved in accounts/<user_id>/.
@@ -113,7 +129,9 @@ pub fn ensure_current_gog_account_saved(gog_dir: &Path, username: Option<&str>) 
         return;
     };
 
-    let acc_dir = accounts_dir(gog_dir).join(&active_id);
+    let Ok(acc_dir) = account_folder(gog_dir, &active_id) else {
+        return;
+    };
     let _ = fs::create_dir_all(&acc_dir);
 
     // Copy auth.json
@@ -148,7 +166,10 @@ pub fn ensure_current_gog_account_saved(gog_dir: &Path, username: Option<&str>) 
 }
 
 /// Returns all saved GOG accounts, sorted by active first then last_used descending.
-pub fn list_saved_gog_accounts(gog_dir: &Path, current_username: Option<&str>) -> Vec<SavedGogAccount> {
+pub fn list_saved_gog_accounts(
+    gog_dir: &Path,
+    current_username: Option<&str>,
+) -> Vec<SavedGogAccount> {
     ensure_current_gog_account_saved(gog_dir, current_username);
 
     let active_id = read_active_gog_user(gog_dir).unwrap_or_default();
@@ -159,7 +180,8 @@ pub fn list_saved_gog_accounts(gog_dir: &Path, current_username: Option<&str>) -
     }
 
     list.sort_by(|a, b| {
-        b.is_active.cmp(&a.is_active)
+        b.is_active
+            .cmp(&a.is_active)
             .then_with(|| b.last_used.cmp(&a.last_used))
     });
 
@@ -167,23 +189,36 @@ pub fn list_saved_gog_accounts(gog_dir: &Path, current_username: Option<&str>) -
 }
 
 /// Switches the active GOG account to the target user_id.
-pub fn switch_gog_account(gog_dir: &Path, target_user_id: &str, current_username: Option<&str>) -> Result<SavedGogAccount, String> {
+pub fn switch_gog_account(
+    gog_dir: &Path,
+    target_user_id: &str,
+    current_username: Option<&str>,
+) -> Result<SavedGogAccount, String> {
     // 1. Save current
     ensure_current_gog_account_saved(gog_dir, current_username);
 
     // 2. Locate target
-    let target_dir = accounts_dir(gog_dir).join(target_user_id);
+    let target_dir = account_folder(gog_dir, target_user_id)?;
     let target_auth = target_dir.join(AUTH_JSON);
     if !target_auth.is_file() {
-        return Err(format!("Saved credentials for GOG account {} not found", target_user_id));
+        return Err(format!(
+            "Saved credentials for GOG account {} not found",
+            target_user_id
+        ));
     }
 
     // 3. Restore target auth.json
     let _ = fs::copy(&target_auth, gog_dir.join(AUTH_JSON));
 
     // 4. Restore sidecars
-    restore_or_remove(&target_dir.join(LIBRARY_SNAPSHOT), &gog_dir.join(LIBRARY_SNAPSHOT));
-    restore_or_remove(&target_dir.join(ACHIEVEMENTS_CACHE), &gog_dir.join(ACHIEVEMENTS_CACHE));
+    restore_or_remove(
+        &target_dir.join(LIBRARY_SNAPSHOT),
+        &gog_dir.join(LIBRARY_SNAPSHOT),
+    );
+    restore_or_remove(
+        &target_dir.join(ACHIEVEMENTS_CACHE),
+        &gog_dir.join(ACHIEVEMENTS_CACHE),
+    );
 
     // 5. Update metadata
     let mut list = read_accounts_meta(gog_dir);
@@ -206,7 +241,7 @@ pub fn switch_gog_account(gog_dir: &Path, target_user_id: &str, current_username
 
 /// Removes a saved GOG account.
 pub fn remove_saved_gog_account(gog_dir: &Path, target_user_id: &str) -> Result<(), String> {
-    let target_dir = accounts_dir(gog_dir).join(target_user_id);
+    let target_dir = account_folder(gog_dir, target_user_id)?;
     if target_dir.is_dir() {
         let _ = fs::remove_dir_all(&target_dir);
     }
@@ -271,6 +306,23 @@ mod tests {
         let list2 = list_saved_gog_accounts(&dir, Some("SecondGogUser"));
         assert_eq!(list2.len(), 1);
         assert_eq!(list2[0].user_id, "gog_user_2");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn remove_rejects_path_escape() {
+        let dir =
+            std::env::temp_dir().join(format!("efxlve-test-gog-escape-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("accounts")).unwrap();
+        let secret = dir.join("secret.txt");
+        fs::write(&secret, "keep").unwrap();
+
+        assert!(remove_saved_gog_account(&dir, r"..\secret.txt").is_err());
+        assert!(remove_saved_gog_account(&dir, "../secret.txt").is_err());
+        assert!(switch_gog_account(&dir, r"C:\Windows", None).is_err());
+        assert_eq!(fs::read_to_string(&secret).unwrap(), "keep");
 
         let _ = fs::remove_dir_all(&dir);
     }

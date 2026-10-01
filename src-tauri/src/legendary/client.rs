@@ -47,10 +47,7 @@ fn stderr_tail(stderr: &[u8]) -> String {
 }
 
 /// Runs and parses commands that produce JSON output.
-pub async fn run_json<T: DeserializeOwned>(
-    bin: &Path,
-    args: &[&str],
-) -> Result<T, LegendaryError> {
+pub async fn run_json<T: DeserializeOwned>(bin: &Path, args: &[&str]) -> Result<T, LegendaryError> {
     run_json_timeout(bin, args, CMD_TIMEOUT_SECS).await
 }
 

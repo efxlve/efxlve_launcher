@@ -52,6 +52,10 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
+/** Library storefronts that stay visible. Missing means every store. */
+export const SOURCE_FILTER_KEY = "efxlve-source-filter";
+/** Canonical game title → library key of the store version the player picked. */
+export const PREFERRED_VERSION_KEY = "efxlve-preferred-version";
 /** Enter TV Mode automatically when a controller connects. Missing = Steam Deck only. */
 export const TV_AUTO_KEY = "efxlve-tv-auto";
 

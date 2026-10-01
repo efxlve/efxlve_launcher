@@ -238,7 +238,11 @@ fn has_save_like_files(dir: &Path) -> bool {
         if let Ok(entries) = std::fs::read_dir(&current_dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
-                let name_low = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+                let name_low = p
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
                 if p.is_file() {
                     if name_low.contains("save")
                         || name_low.ends_with(".sav")
@@ -283,7 +287,11 @@ fn has_save_like_files(dir: &Path) -> bool {
 
 /// Attempts to automatically discover the local save directory for a game
 /// across standard Windows locations (Unreal Engine LocalAppData, Saved Games, Documents, LocalLow, etc.).
-pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Option<&str>) -> Option<String> {
+pub fn detect_save_path(
+    app_name: &str,
+    title: Option<&str>,
+    install_path: Option<&str>,
+) -> Option<String> {
     // 0. Fast-path known save locations for popular titles
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
         let base = Path::new(&user_profile);
@@ -291,14 +299,20 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
         let app_low = app_name.to_lowercase();
 
         if app_low == "ginger" || title_low.contains("cyberpunk") {
-            let cp_path = base.join("Saved Games").join("CD Projekt Red").join("Cyberpunk 2077");
+            let cp_path = base
+                .join("Saved Games")
+                .join("CD Projekt Red")
+                .join("Cyberpunk 2077");
             if cp_path.is_dir() {
                 return Some(cp_path.to_string_lossy().to_string());
             }
         }
 
         if app_low == "heather" || title_low.contains("red dead redemption") {
-            let rdr2_path = base.join("Documents").join("Rockstar Games").join("Red Dead Redemption 2");
+            let rdr2_path = base
+                .join("Documents")
+                .join("Rockstar Games")
+                .join("Red Dead Redemption 2");
             if rdr2_path.is_dir() {
                 return Some(rdr2_path.to_string_lossy().to_string());
             }
@@ -314,7 +328,10 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
         }
 
         if title_low.contains("spider-man") || title_low.contains("spiderman") {
-            for sub in ["Marvel's Spider-Man Remastered", "Marvel's Spider-Man Miles Morales"] {
+            for sub in [
+                "Marvel's Spider-Man Remastered",
+                "Marvel's Spider-Man Miles Morales",
+            ] {
                 let sm_path = base.join("Documents").join(sub);
                 if sm_path.is_dir() {
                     return Some(sm_path.to_string_lossy().to_string());
@@ -323,7 +340,9 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
         }
 
         if title_low.contains("uncharted") {
-            let uc_path = base.join("Saved Games").join("Uncharted Legacy of Thieves Collection");
+            let uc_path = base
+                .join("Saved Games")
+                .join("Uncharted Legacy of Thieves Collection");
             if uc_path.is_dir() {
                 return Some(uc_path.to_string_lossy().to_string());
             }
@@ -336,7 +355,9 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
         let base = Path::new(&user_profile);
         let saved_games_dir = base.join("Saved Games");
-        if let Some(found) = scan_folder_for_game(&saved_games_dir, &names, &normalized, true, false) {
+        if let Some(found) =
+            scan_folder_for_game(&saved_games_dir, &names, &normalized, true, false)
+        {
             return Some(found.to_string_lossy().to_string());
         }
 
@@ -401,7 +422,10 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
     None
 }
 
-pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result<SaveBackupInfo, String> {
+pub fn create_backup(
+    app_name: &str,
+    save_path_override: Option<&str>,
+) -> Result<SaveBackupInfo, String> {
     let installed = super::cache::read_installed(&super::skip::default_config_dir());
     let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
 
@@ -410,9 +434,16 @@ pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result
 
     let save_path_str = if let Some(sp) = save_path_override.filter(|s| !s.trim().is_empty()) {
         sp.trim().to_string()
-    } else if let Some(csp) = cfg.and_then(|c| c.custom_save_path.as_deref()).filter(|s| !s.trim().is_empty()) {
+    } else if let Some(csp) = cfg
+        .and_then(|c| c.custom_save_path.as_deref())
+        .filter(|s| !s.trim().is_empty())
+    {
         csp.trim().to_string()
-    } else if let Some(sp) = installed_game.as_ref().and_then(|g| g.save_path.as_deref()).filter(|s| !s.trim().is_empty()) {
+    } else if let Some(sp) = installed_game
+        .as_ref()
+        .and_then(|g| g.save_path.as_deref())
+        .filter(|s| !s.trim().is_empty())
+    {
         sp.trim().to_string()
     } else {
         let title = installed_game.as_ref().map(|g| g.title.as_str());
@@ -522,10 +553,12 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
         }
     }
 
-    copy_dir_all(&data_src, &dest)
-        .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+    copy_dir_all(&data_src, &dest).map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
 
-    Ok(format!("@t:backup.restored\u{1f}{}\u{1f}{}", info.file_count, info.formatted_date))
+    Ok(format!(
+        "@t:backup.restored\u{1f}{}\u{1f}{}",
+        info.file_count, info.formatted_date
+    ))
 }
 
 pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {
@@ -560,12 +593,17 @@ mod tests {
 
     #[test]
     fn test_detect_save_path_candidates() {
-        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_save_detect_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("efxlve_test_save_detect_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
         let save_dir = temp_dir.join("Saved").join("SaveGames");
         std::fs::create_dir_all(&save_dir).unwrap();
 
-        let detected = detect_save_path("SampleGame", Some("Sample Game"), Some(&temp_dir.to_string_lossy()));
+        let detected = detect_save_path(
+            "SampleGame",
+            Some("Sample Game"),
+            Some(&temp_dir.to_string_lossy()),
+        );
         assert!(detected.is_some());
         assert_eq!(detected.unwrap(), save_dir.to_string_lossy().to_string());
 
@@ -583,12 +621,16 @@ mod tests {
             "unchartedlegacyofthievescollection"
         );
         assert_eq!(normalize_for_match("Cyberpunk 2077"), "cyberpunk2077");
-        assert_eq!(normalize_for_match("Marvel's Spider-Man"), "marvelsspiderman");
+        assert_eq!(
+            normalize_for_match("Marvel's Spider-Man"),
+            "marvelsspiderman"
+        );
     }
 
     #[test]
     fn test_scan_nested_publisher() {
-        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_pub_detect_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("efxlve_test_pub_detect_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
         let game_dir = temp_dir.join("CD Projekt Red").join("Cyberpunk 2077");
         std::fs::create_dir_all(&game_dir).unwrap();

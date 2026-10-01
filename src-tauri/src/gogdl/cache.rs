@@ -76,7 +76,10 @@ pub fn load_cached_library(app: &AppHandle) -> GogCachedLibrary {
                         if g.hero_url.is_none() {
                             g.hero_url = Some(c.clone());
                         }
-                        g.cover_url = Some(c.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg"));
+                        g.cover_url = Some(c.replace(
+                            "_product_card_v2_mobile_slider_639.jpg",
+                            "_glx_vertical_cover.jpg",
+                        ));
                     }
                 }
             }
@@ -108,10 +111,15 @@ pub fn save_cached_library(
 }
 
 /// Load cached GOG achievement summaries from disk.
-pub fn load_achievements_cache(app: &AppHandle) -> HashMap<String, crate::legendary::models::GameAchievementSummary> {
+pub fn load_achievements_cache(
+    app: &AppHandle,
+) -> HashMap<String, crate::legendary::models::GameAchievementSummary> {
     let path = super::paths::achievements_cache_path(app);
     if let Ok(bytes) = fs::read(&path) {
-        if let Ok(map) = serde_json::from_slice::<HashMap<String, crate::legendary::models::GameAchievementSummary>>(&bytes) {
+        if let Ok(map) = serde_json::from_slice::<
+            HashMap<String, crate::legendary::models::GameAchievementSummary>,
+        >(&bytes)
+        {
             return map;
         }
     }

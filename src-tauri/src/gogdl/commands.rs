@@ -1,6 +1,6 @@
 //! Tauri IPC commands for GOG.COM integration.
 
-use tauri::{AppHandle, command};
+use tauri::{command, AppHandle};
 
 use super::api_client::{
     exchange_auth_code, fetch_game_details, fetch_gog_achievements, fetch_user_library,
@@ -10,9 +10,7 @@ use super::cache::{
     clear_auth_tokens, load_achievements_cache, load_auth_tokens, load_cached_library,
     load_installed_games, save_achievements_cache, save_auth_tokens, save_cached_library,
 };
-use super::models::{
-    GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary,
-};
+use super::models::{GogAuthStatus, GogCachedLibrary, GogGameDetails, GogGameSummary};
 use super::{cmd_error, GogError};
 use crate::legendary::models::{
     GameAchievementSummary, GameAchievementsResponse, GameRequirementsResponse,
@@ -39,9 +37,17 @@ pub async fn gog_auth_status(app: AppHandle) -> Result<GogAuthStatus, String> {
         if let Ok(profile) = get_user_profile(&tokens.access_token).await {
             if !profile.username.is_empty() && profile.username != "GOG User" {
                 username = Some(profile.username.clone());
-                let _ = save_cached_library(&app, Some(&profile.username), Some(&tokens.user_id), &cached.games);
+                let _ = save_cached_library(
+                    &app,
+                    Some(&profile.username),
+                    Some(&tokens.user_id),
+                    &cached.games,
+                );
                 let gog_dir = super::paths::gog_config_dir(&app);
-                super::accounts::ensure_current_gog_account_saved(&gog_dir, Some(&profile.username));
+                super::accounts::ensure_current_gog_account_saved(
+                    &gog_dir,
+                    Some(&profile.username),
+                );
             }
         }
     }
@@ -64,13 +70,14 @@ pub async fn gog_auth_code(app: AppHandle, code: String) -> Result<GogAuthStatus
     let tokens = exchange_auth_code(code).await.map_err(cmd_error)?;
 
     // Fetch user profile to verify and retrieve display name
-    let profile = get_user_profile(&tokens.access_token)
-        .await
-        .unwrap_or(super::models::GogUserProfile {
-            user_id: tokens.user_id.clone(),
-            username: "GOG User".to_string(),
-            avatar_url: None,
-        });
+    let profile =
+        get_user_profile(&tokens.access_token)
+            .await
+            .unwrap_or(super::models::GogUserProfile {
+                user_id: tokens.user_id.clone(),
+                username: "GOG User".to_string(),
+                avatar_url: None,
+            });
 
     save_auth_tokens(&app, &tokens).map_err(cmd_error)?;
 
@@ -308,12 +315,20 @@ pub async fn gog_get_saved_accounts(
             if let Ok(profile) = get_user_profile(&tokens.access_token).await {
                 if !profile.username.is_empty() && profile.username != "GOG User" {
                     username = Some(profile.username.clone());
-                    let _ = save_cached_library(&app, Some(&profile.username), Some(&tokens.user_id), &cached.games);
+                    let _ = save_cached_library(
+                        &app,
+                        Some(&profile.username),
+                        Some(&tokens.user_id),
+                        &cached.games,
+                    );
                 }
             }
         }
     }
-    Ok(super::accounts::list_saved_gog_accounts(&gog_dir, username.as_deref()))
+    Ok(super::accounts::list_saved_gog_accounts(
+        &gog_dir,
+        username.as_deref(),
+    ))
 }
 
 /// Switches the active GOG account.
@@ -330,10 +345,7 @@ pub async fn gog_switch_account(
 
 /// Removes a saved GOG account.
 #[command]
-pub async fn gog_remove_saved_account(
-    app: AppHandle,
-    user_id: String,
-) -> Result<(), String> {
+pub async fn gog_remove_saved_account(app: AppHandle, user_id: String) -> Result<(), String> {
     let gog_dir = super::paths::gog_config_dir(&app);
     super::accounts::remove_saved_gog_account(&gog_dir, &user_id)
 }

@@ -138,7 +138,10 @@ mod tests {
 
     #[test]
     fn a_very_old_marker_is_capped() {
-        assert_eq!(recovered_seconds(1_000, 1_000 + MAX_RECOVERED_SECS + 5_000), Some(MAX_RECOVERED_SECS));
+        assert_eq!(
+            recovered_seconds(1_000, 1_000 + MAX_RECOVERED_SECS + 5_000),
+            Some(MAX_RECOVERED_SECS)
+        );
     }
 
     #[test]
@@ -176,7 +179,10 @@ mod tests {
             true
         });
         assert_eq!(recorded, Some(("Ginger".to_string(), 3_600)));
-        assert_eq!(calls.lock().unwrap().as_slice(), &[("Ginger".to_string(), 3_600)]);
+        assert_eq!(
+            calls.lock().unwrap().as_slice(),
+            &[("Ginger".to_string(), 3_600)]
+        );
         assert!(!path.exists(), "the marker must be gone after recovery");
         // A second recovery must not find anything.
         assert_eq!(recover_with(&path, &|_, _| true), None);
@@ -202,7 +208,10 @@ mod tests {
             }),
             None
         );
-        assert!(!called.load(std::sync::atomic::Ordering::Relaxed), "a too-short marker must not reach the recorder");
+        assert!(
+            !called.load(std::sync::atomic::Ordering::Relaxed),
+            "a too-short marker must not reach the recorder"
+        );
         assert!(!path.exists(), "even a rejected marker is cleared");
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }

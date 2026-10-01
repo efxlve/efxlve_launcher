@@ -18,9 +18,9 @@
 //! still use CREATE_NO_WINDOW.
 
 use std::io::Write;
-use tokio::io::AsyncWriteExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use tokio::io::AsyncWriteExt;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
@@ -209,9 +209,7 @@ fn read_eocd(tail: &[u8]) -> Option<CentralDirPos> {
     loop {
         if tail.len() >= i + 22 && tail[i..i + 4] == [0x50, 0x4b, 0x05, 0x06] {
             let comment_len = u16::from_le_bytes([tail[i + 20], tail[i + 21]]) as usize;
-            let end = i
-                .checked_add(22)
-                .and_then(|n| n.checked_add(comment_len));
+            let end = i.checked_add(22).and_then(|n| n.checked_add(comment_len));
             if end == Some(tail.len()) {
                 let size = u32::from_le_bytes(tail[i + 12..i + 16].try_into().ok()?) as u64;
                 let offset = u32::from_le_bytes(tail[i + 16..i + 20].try_into().ok()?) as u64;
@@ -287,7 +285,9 @@ fn hidden_command(program: &str) -> std::process::Command {
 fn eos_overlay_status_blocking() -> EosOverlayStatus {
     let found = find_eos_service_install(&program_files_roots());
     let installed = found.is_some();
-    let path = found.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let path = found
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
 
     let mut version = String::new();
     let mut overlay_supported = false;
@@ -403,7 +403,10 @@ async fn resolve_cdn_url(client: &reqwest::Client, archive_id: u32) -> Result<Ur
         .to_string();
     let next = resp.url().join(&loc).map_err(fail)?;
     if !is_epic_download_host(&next) || next.path().contains("/auth/login") {
-        return Err(fail(format!("unexpected installer host {}", next.host_str().unwrap_or(""))));
+        return Err(fail(format!(
+            "unexpected installer host {}",
+            next.host_str().unwrap_or("")
+        )));
     }
     Ok(next)
 }
@@ -792,12 +795,7 @@ pub async fn eos_install_redistributable(app: AppHandle) -> Result<EosInstallOut
     .await
     .unwrap_or(false);
     Ok(EosInstallOutcome {
-        outcome: if installed {
-            "installed"
-        } else {
-            "cancelled"
-        }
-        .into(),
+        outcome: if installed { "installed" } else { "cancelled" }.into(),
     })
 }
 
@@ -904,7 +902,8 @@ mod tests {
         let (version, overlay) = parse_eos_registry(text);
         assert_eq!(version, "1.19.2.1");
         assert!(overlay);
-        let (_version, off) = parse_eos_registry("    OverlayInstallSupported    REG_DWORD    0x0\r\n");
+        let (_version, off) =
+            parse_eos_registry("    OverlayInstallSupported    REG_DWORD    0x0\r\n");
         assert!(!off);
     }
 
@@ -937,6 +936,9 @@ mod tests {
         assert_eq!(entry.uncompressed_size, payload.len() as u64);
         let off = entry.local_header_offset as usize;
         let data_off = local_header_data_offset(&bytes[off..off + 30]).unwrap() as usize;
-        assert_eq!(&bytes[off + data_off..off + data_off + payload.len()], payload);
+        assert_eq!(
+            &bytes[off + data_off..off + data_off + payload.len()],
+            payload
+        );
     }
 }

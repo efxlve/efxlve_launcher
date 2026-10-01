@@ -68,7 +68,8 @@ struct PendingLogin {
 
 impl PendingLogin {
     fn needs_code(&self) -> bool {
-        self.guard_types.contains(&GUARD_EMAIL_CODE) || self.guard_types.contains(&GUARD_DEVICE_CODE)
+        self.guard_types.contains(&GUARD_EMAIL_CODE)
+            || self.guard_types.contains(&GUARD_DEVICE_CODE)
     }
 
     fn needs_confirmation(&self) -> bool {
@@ -285,17 +286,22 @@ async fn post_form(
     let body = response.text().await.unwrap_or_default();
     let payload: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
     if !status.is_success() {
-        return Err(if status == reqwest::StatusCode::UNAUTHORIZED
-            || status == reqwest::StatusCode::FORBIDDEN
-        {
-            "@t:steam.err.sessionExpired".to_string()
-        } else {
-            // The status code is kept in the message so a user screenshot is
-            // enough to diagnose; no Steam payload ever reaches the UI.
-            format!("@t:steam.err.steam\u{1f}HTTP {status}")
-        });
+        return Err(
+            if status == reqwest::StatusCode::UNAUTHORIZED
+                || status == reqwest::StatusCode::FORBIDDEN
+            {
+                "@t:steam.err.sessionExpired".to_string()
+            } else {
+                // The status code is kept in the message so a user screenshot is
+                // enough to diagnose; no Steam payload ever reaches the UI.
+                format!("@t:steam.err.steam\u{1f}HTTP {status}")
+            },
+        );
     }
-    Ok(ApiCall { eresult, body: payload })
+    Ok(ApiCall {
+        eresult,
+        body: payload,
+    })
 }
 
 /// `GetPasswordRSAPublicKey` answers on GET only (Steam rejects it as POST).
@@ -327,7 +333,11 @@ async fn get_rsa_key(
 }
 
 /// Encrypts the password with RSA PKCS#1 v1.5, exactly like SteamKit does.
-fn encrypt_password(password: &str, modulus_hex: &str, exponent_hex: &str) -> Result<String, String> {
+fn encrypt_password(
+    password: &str,
+    modulus_hex: &str,
+    exponent_hex: &str,
+) -> Result<String, String> {
     use rsa::{BigUint, Pkcs1v15Encrypt, RsaPublicKey};
     let n = BigUint::parse_bytes(modulus_hex.as_bytes(), 16)
         .ok_or_else(|| "@t:steam.err.crypto".to_string())?;
@@ -448,7 +458,12 @@ fn encode_poll_request(client_id: &str, request_id: &[u8]) -> Vec<u8> {
 }
 
 /// `CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request`.
-fn encode_guard_code_request(client_id: &str, steam_id: &str, code: &str, code_type: i64) -> Vec<u8> {
+fn encode_guard_code_request(
+    client_id: &str,
+    steam_id: &str,
+    code: &str,
+    code_type: i64,
+) -> Vec<u8> {
     let mut out = Vec::new();
     put_number(&mut out, 1, client_id.parse::<u64>().unwrap_or(0));
     put_fixed64(&mut out, 2, steam_id.parse::<u64>().unwrap_or(0));
@@ -497,8 +512,8 @@ fn parse_begin_response(
     }
     let mut guard_types = Vec::new();
     let mut email_hint = String::new();
-    if let Some(confirmations) = field(response, "allowed_confirmations", "allowedConfirmations")
-        .and_then(Value::as_array)
+    if let Some(confirmations) =
+        field(response, "allowed_confirmations", "allowedConfirmations").and_then(Value::as_array)
     {
         for entry in confirmations {
             let guard = field_i64(entry, "confirmation_type", "confirmationType");
@@ -566,7 +581,9 @@ fn parse_poll_response(response: &Value, pending: &PendingLogin) -> PollOutcome 
             access_token: field_str(response, "access_token", "accessToken"),
         };
     }
-    PollOutcome::Waiting { new_client_id: field_str(response, "new_client_id", "newClientId") }
+    PollOutcome::Waiting {
+        new_client_id: field_str(response, "new_client_id", "newClientId"),
+    }
 }
 
 /// `GetOwnedGames` payload → flat game list (pure, unit tested).
@@ -600,14 +617,20 @@ pub fn parse_owned_games(response: &Value) -> SteamOwnedGames {
         .unwrap_or_default();
     let game_count = field_i64(response, "game_count", "gameCount");
     SteamOwnedGames {
-        game_count: if game_count > 0 { game_count } else { games.len() as i64 },
+        game_count: if game_count > 0 {
+            game_count
+        } else {
+            games.len() as i64
+        },
         games,
     }
 }
 
 /// Expiry of a JWT access token, in Unix seconds (0 when unreadable).
 fn token_exp_secs(token: &str) -> u64 {
-    jwt_claim(token, "exp").and_then(|v| v.as_u64()).unwrap_or(0)
+    jwt_claim(token, "exp")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0)
 }
 
 /// Subject (`sub`) claim of a JWT — the SteamID64 a token belongs to.
@@ -619,7 +642,9 @@ fn jwt_sub(token: &str) -> Option<String> {
 /// issued the token and the API rejects invalid ones).
 fn jwt_claim(token: &str, claim: &str) -> Option<Value> {
     let payload = token.split('.').nth(1)?;
-    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload).ok()?;
+    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(payload)
+        .ok()?;
     let value = serde_json::from_slice::<Value>(&bytes).ok()?;
     value.get(claim).cloned()
 }
@@ -693,8 +718,14 @@ mod dpapi {
     }
 
     pub fn protect(plain: &[u8]) -> Result<Vec<u8>, String> {
-        let input = DataBlob { cb_data: plain.len() as u32, pb_data: plain.as_ptr() as *mut u8 };
-        let mut output = DataBlob { cb_data: 0, pb_data: std::ptr::null_mut() };
+        let input = DataBlob {
+            cb_data: plain.len() as u32,
+            pb_data: plain.as_ptr() as *mut u8,
+        };
+        let mut output = DataBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
         let ok = unsafe {
             CryptProtectData(
                 &input,
@@ -713,8 +744,14 @@ mod dpapi {
     }
 
     pub fn unprotect(sealed: &[u8]) -> Result<Vec<u8>, String> {
-        let input = DataBlob { cb_data: sealed.len() as u32, pb_data: sealed.as_ptr() as *mut u8 };
-        let mut output = DataBlob { cb_data: 0, pb_data: std::ptr::null_mut() };
+        let input = DataBlob {
+            cb_data: sealed.len() as u32,
+            pb_data: sealed.as_ptr() as *mut u8,
+        };
+        let mut output = DataBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
         let ok = unsafe {
             CryptUnprotectData(
                 &input,
@@ -807,8 +844,12 @@ fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
         refresh_token: session.refresh_token.clone(),
         saved_at: now_secs(),
     };
-    let Ok(json) = serde_json::to_vec(&stored).map(Zeroizing::new) else { return };
-    let Ok(mut sealed) = dpapi::protect(&json) else { return };
+    let Ok(json) = serde_json::to_vec(&stored).map(Zeroizing::new) else {
+        return;
+    };
+    let Ok(mut sealed) = dpapi::protect(&json) else {
+        return;
+    };
     let _ = std::fs::write(vault_path(&auth_dir(app), &session.steam_id), &sealed);
     sealed.zeroize();
 
@@ -816,7 +857,10 @@ fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
     for account in accounts.iter_mut() {
         account.is_active = account.steam_id == session.steam_id;
     }
-    match accounts.iter_mut().find(|account| account.steam_id == session.steam_id) {
+    match accounts
+        .iter_mut()
+        .find(|account| account.steam_id == session.steam_id)
+    {
         Some(account) => {
             account.account_name = session.account_name.clone();
             account.last_used = now_secs();
@@ -874,9 +918,15 @@ fn migrate_legacy_session(app: &tauri::AppHandle) {
     if !legacy.is_file() || !load_meta(&auth_dir(app)).is_empty() {
         return;
     }
-    let Ok(sealed) = std::fs::read(&legacy) else { return };
-    let Ok(plain) = dpapi::unprotect(&sealed) else { return };
-    let Ok(stored) = serde_json::from_slice::<StoredSession>(&plain) else { return };
+    let Ok(sealed) = std::fs::read(&legacy) else {
+        return;
+    };
+    let Ok(plain) = dpapi::unprotect(&sealed) else {
+        return;
+    };
+    let Ok(stored) = serde_json::from_slice::<StoredSession>(&plain) else {
+        return;
+    };
     if stored.steam_id.is_empty() {
         return;
     }
@@ -913,7 +963,9 @@ fn ensure_disk_checked(app: &tauri::AppHandle) {
 fn random_session_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    (0..12).map(|_| format!("{:02x}", rng.gen::<u8>())).collect()
+    (0..12)
+        .map(|_| format!("{:02x}", rng.gen::<u8>()))
+        .collect()
 }
 
 /// Percent-decodes a cookie value (`%7C%7C` → `||`). `+` is kept literal:
@@ -991,7 +1043,10 @@ async fn finalize_web_login(
     let form = vec![
         ("nonce".to_string(), refresh_token.to_string()),
         ("sessionid".to_string(), random_session_id()),
-        ("redir".to_string(), "https://steamcommunity.com/login/home/?goto=".to_string()),
+        (
+            "redir".to_string(),
+            "https://steamcommunity.com/login/home/?goto=".to_string(),
+        ),
     ];
     let response = client
         .post("https://login.steampowered.com/jwt/finalizelogin")
@@ -1013,7 +1068,8 @@ async fn finalize_web_login(
             return Err(eresult_error(error));
         }
     }
-    let (url, params) = settoken_transfer(&payload).ok_or_else(|| "@t:steam.err.steam".to_string())?;
+    let (url, params) =
+        settoken_transfer(&payload).ok_or_else(|| "@t:steam.err.steam".to_string())?;
 
     let mut transfer_form = vec![("steamID".to_string(), steam_id.to_string())];
     transfer_form.extend(params);
@@ -1091,7 +1147,9 @@ async fn fetch_owned_games(
         .json()
         .await
         .map_err(|_| "@t:steam.err.steam".to_string())?;
-    Ok(parse_owned_games(payload.get("response").unwrap_or(&Value::Null)))
+    Ok(parse_owned_games(
+        payload.get("response").unwrap_or(&Value::Null),
+    ))
 }
 
 /* ---------- Commands ---------- */
@@ -1204,7 +1262,12 @@ pub async fn steam_login_begin(
     // Nested `device_details` forces the protobuf payload form; the other auth
     // calls need it too, because `request_id` is a raw byte field.
     let request = encode_begin_request(&account_name, &encrypted, &timestamp, remember);
-    let call = post_form(&client, "BeginAuthSessionViaCredentials", &protobuf_payload(&request)).await?;
+    let call = post_form(
+        &client,
+        "BeginAuthSessionViaCredentials",
+        &protobuf_payload(&request),
+    )
+    .await?;
     if call.eresult != 1 {
         return Err(eresult_error(call.eresult));
     }
@@ -1221,7 +1284,10 @@ pub async fn steam_login_code(code: String) -> Result<SteamLoginStatus, String> 
     if code.is_empty() {
         return Err("@t:steam.err.guardInvalid".to_string());
     }
-    let pending = lock().pending.clone().ok_or_else(|| "@t:steam.err.noSession".to_string())?;
+    let pending = lock()
+        .pending
+        .clone()
+        .ok_or_else(|| "@t:steam.err.noSession".to_string())?;
     let client = http_client()?;
     let request = encode_guard_code_request(
         &pending.client_id,
@@ -1229,7 +1295,12 @@ pub async fn steam_login_code(code: String) -> Result<SteamLoginStatus, String> 
         &code,
         pending.code_type(),
     );
-    let call = post_form(&client, "UpdateAuthSessionWithSteamGuardCode", &protobuf_payload(&request)).await?;
+    let call = post_form(
+        &client,
+        "UpdateAuthSessionWithSteamGuardCode",
+        &protobuf_payload(&request),
+    )
+    .await?;
     if call.eresult != 1 {
         return Err(eresult_error(call.eresult));
     }
@@ -1261,7 +1332,12 @@ pub async fn steam_login_status(app: tauri::AppHandle) -> Result<SteamLoginStatu
         return Err("@t:steam.err.sessionNotFound".to_string());
     }
     let request = encode_poll_request(&pending.client_id, &request_id);
-    let call = post_form(&client, "PollAuthSessionStatus", &protobuf_payload(&request)).await?;
+    let call = post_form(
+        &client,
+        "PollAuthSessionStatus",
+        &protobuf_payload(&request),
+    )
+    .await?;
     if call.eresult != 1 {
         // 22 (Pending) is not an error: the user has not approved yet.
         if call.eresult == 22 {
@@ -1270,12 +1346,21 @@ pub async fn steam_login_status(app: tauri::AppHandle) -> Result<SteamLoginStatu
         return Err(eresult_error(call.eresult));
     }
     match parse_poll_response(call.response(), &pending) {
-        PollOutcome::Approved { account_name, steam_id, refresh_token, access_token } => {
+        PollOutcome::Approved {
+            account_name,
+            steam_id,
+            refresh_token,
+            access_token,
+        } => {
             let mut session = SteamSession {
                 account_name,
                 steam_id,
                 refresh_token,
-                access_token: if access_token.is_empty() { None } else { Some(access_token) },
+                access_token: if access_token.is_empty() {
+                    None
+                } else {
+                    Some(access_token)
+                },
                 access_token_exp: 0,
             };
             if let Some(token) = session.access_token.clone() {
@@ -1332,7 +1417,10 @@ pub fn steam_get_saved_accounts(app: tauri::AppHandle) -> Vec<SteamSavedAccount>
 
 /// Switches the launcher session to another saved Steam account.
 #[tauri::command]
-pub fn steam_switch_account(app: tauri::AppHandle, steam_id: String) -> Result<SteamLoginStatus, String> {
+pub fn steam_switch_account(
+    app: tauri::AppHandle,
+    steam_id: String,
+) -> Result<SteamLoginStatus, String> {
     if !valid_steam_id(&steam_id) {
         return Err("@t:steam.err.account".to_string());
     }
@@ -1391,7 +1479,10 @@ pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames,
         let Some(session) = state.session.as_ref() else {
             return Err("@t:steam.err.notSignedIn".to_string());
         };
-        (session.steam_id.clone(), session.access_token_valid().map(str::to_string))
+        (
+            session.steam_id.clone(),
+            session.access_token_valid().map(str::to_string),
+        )
     };
 
     let client = http_client()?;
@@ -1468,12 +1559,7 @@ mod tests {
     #[test]
     fn begin_response_rejects_incomplete_payloads() {
         assert!(parse_begin_response("x", true, &serde_json::json!({})).is_err());
-        assert!(parse_begin_response(
-            "x",
-            true,
-            &serde_json::json!({ "client_id": "1" })
-        )
-        .is_err());
+        assert!(parse_begin_response("x", true, &serde_json::json!({ "client_id": "1" })).is_err());
     }
 
     #[test]
@@ -1485,7 +1571,11 @@ mod tests {
             "account_name": "efxlve"
         });
         match parse_poll_response(&response, &pending) {
-            PollOutcome::Approved { refresh_token, account_name, .. } => {
+            PollOutcome::Approved {
+                refresh_token,
+                account_name,
+                ..
+            } => {
                 assert_eq!(refresh_token, "eyJhbGciOiJ");
                 assert_eq!(account_name, "efxlve");
             }
@@ -1582,7 +1672,10 @@ mod tests {
         let pending = parse_begin_response("x", false, &payload).expect("pending");
         assert_eq!(pending.status().state, "code");
         assert_eq!(pending.status().email_hint, "example.com");
-        assert!(!pending.status().confirm, "no mobile confirmation was offered");
+        assert!(
+            !pending.status().confirm,
+            "no mobile confirmation was offered"
+        );
     }
 
     #[test]
@@ -1642,7 +1735,8 @@ mod tests {
         assert_eq!(&poll[4..], &[0xde, 0xad, 0xbe, 0xef]);
 
         // Guard code: field 2 is fixed64, then the code and its type.
-        let update = encode_guard_code_request("7", "76561199140017878", "ABC12", GUARD_DEVICE_CODE);
+        let update =
+            encode_guard_code_request("7", "76561199140017878", "ABC12", GUARD_DEVICE_CODE);
         assert_eq!(update[0], 0x08);
         assert_eq!(update[1], 7);
         assert_eq!(update[2], 0x11);
@@ -1692,8 +1786,12 @@ mod tests {
         let exponent = format!("{:x}", public.e());
 
         let encoded = encrypt_password("hunter2", &modulus, &exponent).expect("encrypted");
-        let ciphertext = base64::engine::general_purpose::STANDARD.decode(encoded).unwrap();
-        let plain = private.decrypt(Pkcs1v15Encrypt, &ciphertext).expect("decrypted");
+        let ciphertext = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .unwrap();
+        let plain = private
+            .decrypt(Pkcs1v15Encrypt, &ciphertext)
+            .expect("decrypted");
         assert_eq!(String::from_utf8(plain).unwrap(), "hunter2");
 
         assert!(encrypt_password("x", "not-hex", "010001").is_err());
@@ -1728,7 +1826,10 @@ mod tests {
         rt.block_on(async {
             let client = http_client().unwrap();
             let (modulus, exponent, timestamp) = get_rsa_key(&client, "efxlve").await.unwrap();
-            println!("rsa modulus: {} chars, timestamp {timestamp}", modulus.len());
+            println!(
+                "rsa modulus: {} chars, timestamp {timestamp}",
+                modulus.len()
+            );
             let encrypted = encrypt_password("definitely-wrong", &modulus, &exponent).unwrap();
             let request = encode_begin_request("efxlve", &encrypted, &timestamp, true);
             let form = vec![(
@@ -1738,14 +1839,22 @@ mod tests {
             let call = post_form(&client, "BeginAuthSessionViaCredentials", &form)
                 .await
                 .unwrap();
-            println!("begin eresult: {} ({})", call.eresult, eresult_error(call.eresult));
+            println!(
+                "begin eresult: {} ({})",
+                call.eresult,
+                eresult_error(call.eresult)
+            );
             assert!(call.eresult != 1, "a wrong password must not succeed");
 
             // finalizelogin shape: a dummy refresh token must be rejected with a
             // structured JSON error, not a routing/parse failure.
-            let finalize = finalize_web_login(&client, "not-a-real-refresh-token", "76561199140017878").await;
+            let finalize =
+                finalize_web_login(&client, "not-a-real-refresh-token", "76561199140017878").await;
             println!("finalize result: {:?}", finalize);
-            assert!(finalize.is_err(), "a dummy refresh token must not mint a token");
+            assert!(
+                finalize.is_err(),
+                "a dummy refresh token must not mint a token"
+            );
         });
     }
 
@@ -1806,7 +1915,11 @@ mod tests {
     #[test]
     fn qr_codes_render_inline_svg() {
         let svg = qr_svg("https://s.team/q/1/123456789").expect("qr svg");
-        assert!(svg.contains("<svg"), "expected SVG markup, got: {}", &svg[..svg.len().min(60)]);
+        assert!(
+            svg.contains("<svg"),
+            "expected SVG markup, got: {}",
+            &svg[..svg.len().min(60)]
+        );
         assert!(svg.contains("</svg>"));
         assert!(svg.len() > 200);
         assert!(qr_svg("").is_ok(), "an empty payload still renders");
@@ -1814,8 +1927,9 @@ mod tests {
 
     #[test]
     fn jwt_subject_is_read_from_the_payload() {
-        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(serde_json::to_vec(&serde_json::json!({ "sub": "76561199140017878" })).unwrap());
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+            serde_json::to_vec(&serde_json::json!({ "sub": "76561199140017878" })).unwrap(),
+        );
         let token = format!("header.{payload}.signature");
         assert_eq!(jwt_sub(&token).as_deref(), Some("76561199140017878"));
         assert!(jwt_sub("not-a-jwt").is_none());
@@ -1854,7 +1968,11 @@ mod tests {
             }
             println!(
                 "body preview: {}",
-                serde_json::to_string(&safe).unwrap_or_default().chars().take(400).collect::<String>()
+                serde_json::to_string(&safe)
+                    .unwrap_or_default()
+                    .chars()
+                    .take(400)
+                    .collect::<String>()
             );
             println!("response keys: {keys:?}");
             assert_eq!(call.eresult, 1, "QR begin must succeed");
@@ -1875,7 +1993,11 @@ mod tests {
 
             // The sign-in card embeds exactly this markup.
             let svg = qr_svg(&challenge_url).expect("qr svg");
-            println!("challenge url: {} chars, svg: {} bytes", challenge_url.len(), svg.len());
+            println!(
+                "challenge url: {} chars, svg: {} bytes",
+                challenge_url.len(),
+                svg.len()
+            );
             assert!(svg.contains("<svg"), "QR markup must render");
 
             let poll = encode_poll_request(&client_id, &request_id);

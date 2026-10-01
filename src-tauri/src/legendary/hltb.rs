@@ -141,12 +141,20 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
                     let path = &part[..end];
                     if path.contains("/_next/static/chunks/") {
                         let script_url = format!("https://howlongtobeat.com{}", path);
-                        if let Ok(s_resp) = client.get(&script_url).header("User-Agent", ua).send().await {
+                        if let Ok(s_resp) = client
+                            .get(&script_url)
+                            .header("User-Agent", ua)
+                            .send()
+                            .await
+                        {
                             if let Ok(js_content) = s_resp.text().await {
                                 if let Some(idx) = js_content.find("/api/search/") {
                                     let sub = &js_content[idx..];
-                                    if let Some(end_quote) = sub.find(['\"', '\'', '`', '?', ' ', '$']) {
-                                        let mut ep = sub[..end_quote].trim_end_matches('/').to_string();
+                                    if let Some(end_quote) =
+                                        sub.find(['\"', '\'', '`', '?', ' ', '$'])
+                                    {
+                                        let mut ep =
+                                            sub[..end_quote].trim_end_matches('/').to_string();
                                         if let Some(pos) = ep.find("/init") {
                                             ep = ep[..pos].to_string();
                                         }
@@ -170,7 +178,10 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis();
-    let init_url = format!("https://howlongtobeat.com{}/init?t={}", search_endpoint, now);
+    let init_url = format!(
+        "https://howlongtobeat.com{}/init?t={}",
+        search_endpoint, now
+    );
 
     let mut auth_token = String::new();
     let mut auth_key = String::new();
@@ -232,7 +243,10 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
 
     if !auth_key.is_empty() && !auth_val.is_empty() {
         if let Some(m) = payload.as_object_mut() {
-            m.insert(auth_key.clone(), serde_json::Value::String(auth_val.clone()));
+            m.insert(
+                auth_key.clone(),
+                serde_json::Value::String(auth_val.clone()),
+            );
         }
     }
 

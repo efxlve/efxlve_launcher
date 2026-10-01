@@ -42,7 +42,13 @@ pub fn cover_url_from_assets(assets: &serde_json::Value) -> Option<String> {
 pub fn hero_url_from_assets(assets: &serde_json::Value) -> Option<String> {
     asset_file_url(
         assets,
-        &["library_hero", "library_hero_2x", "hero_capsule", "hero_capsule_2x", "header"],
+        &[
+            "library_hero",
+            "library_hero_2x",
+            "hero_capsule",
+            "hero_capsule_2x",
+            "header",
+        ],
     )
 }
 
@@ -66,7 +72,9 @@ pub struct SteamLibraryArt {
 
 /// One GetItems call for up to 40 app ids. Missing art is omitted.
 #[tauri::command]
-pub async fn steam_library_art(app_ids: Vec<String>) -> Result<HashMap<String, SteamLibraryArt>, String> {
+pub async fn steam_library_art(
+    app_ids: Vec<String>,
+) -> Result<HashMap<String, SteamLibraryArt>, String> {
     let ids: Vec<u64> = app_ids
         .iter()
         .filter_map(|id| id.parse::<u64>().ok())
@@ -78,7 +86,8 @@ pub async fn steam_library_art(app_ids: Vec<String>) -> Result<HashMap<String, S
     }
 
     let input = store_items_query(&ids);
-    let encoded: String = url::form_urlencoded::byte_serialize(input.to_string().as_bytes()).collect();
+    let encoded: String =
+        url::form_urlencoded::byte_serialize(input.to_string().as_bytes()).collect();
     let endpoint = format!(
         "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json={encoded}"
     );
@@ -104,8 +113,12 @@ pub async fn steam_library_art(app_ids: Vec<String>) -> Result<HashMap<String, S
         .and_then(|v| v.as_array());
     if let Some(items) = items {
         for item in items {
-            let Some(app_id) = item.get("appid").and_then(|v| v.as_u64()) else { continue };
-            let Some(assets) = item.get("assets") else { continue };
+            let Some(app_id) = item.get("appid").and_then(|v| v.as_u64()) else {
+                continue;
+            };
+            let Some(assets) = item.get("assets") else {
+                continue;
+            };
             let cover = cover_url_from_assets(assets).unwrap_or_default();
             let hero = hero_url_from_assets(assets).unwrap_or_default();
             if cover.is_empty() && hero.is_empty() {
@@ -141,10 +154,15 @@ mod tests {
         let query = store_items_query(&[3393110]);
         assert!(query.get("context").is_some());
         assert_eq!(
-            query.pointer("/data_request/include_assets").and_then(|v| v.as_bool()),
+            query
+                .pointer("/data_request/include_assets")
+                .and_then(|v| v.as_bool()),
             Some(true)
         );
-        assert_eq!(query.pointer("/ids/0/appid").and_then(|v| v.as_u64()), Some(3393110));
+        assert_eq!(
+            query.pointer("/ids/0/appid").and_then(|v| v.as_u64()),
+            Some(3393110)
+        );
     }
 
     #[test]

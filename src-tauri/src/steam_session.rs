@@ -17,11 +17,7 @@ use crate::steam::{installed_games, steam_install_path};
 static WATCHED: Mutex<Option<String>> = Mutex::new(None);
 
 fn still_watching(app_id: &str) -> bool {
-    WATCHED
-        .lock()
-        .ok()
-        .and_then(|slot| slot.clone())
-        == Some(app_id.to_string())
+    WATCHED.lock().ok().and_then(|slot| slot.clone()) == Some(app_id.to_string())
 }
 
 fn set_watched(app_id: Option<String>) {
@@ -76,7 +72,11 @@ fn install_path_for(app_id: &str) -> Option<PathBuf> {
     if game.install_dir.is_empty() {
         return None;
     }
-    Some(PathBuf::from(game.library).join("common").join(game.install_dir))
+    Some(
+        PathBuf::from(game.library)
+            .join("common")
+            .join(game.install_dir),
+    )
 }
 
 fn emit_status(app: &AppHandle, app_id: &str, running: bool) {

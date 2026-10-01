@@ -113,6 +113,7 @@ export async function epicInstall(appName: string, installDir?: string | null): 
     if (S.ignoredUpdates.has(appName)) {
       S.ignoredUpdates.delete(appName);
       localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
+      updateBadge();
     }
     toast(msg, "ok");
     S.dlQueueStatus = await epicGetQueue();
@@ -206,10 +207,10 @@ export async function refreshEpicInstalled(): Promise<void> {
     setEpicSummaries(summarize(S.epicGamesRaw, einstalled, eskipped));
     pruneRecent();
     S.epicSkippedCount = eskipped.length;
-    if (S.view === "library") {
-      syncLibraryHeadingCount();
-      updateBadge();
-    }
+    // Installed membership changed: refresh the badge and the sidebar list
+    // even when the library grid itself is not on screen.
+    updateBadge();
+    if (S.view === "library") syncLibraryHeadingCount();
     void refreshUpdates();
   } catch (e) {
     toast(t("lib.installedRefreshFailed", { msg: String(e) }), "err");

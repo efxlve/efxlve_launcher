@@ -122,7 +122,11 @@ pub fn save_collection(
 /// Reorders collections to match `ids`. Unknown ids are ignored. Collections
 /// the client did not list stay at the end, in their previous order.
 pub fn order_collections(list: Vec<GameCollection>, ids: &[String]) -> Vec<GameCollection> {
-    let rank: HashMap<&str, usize> = ids.iter().enumerate().map(|(i, id)| (id.as_str(), i)).collect();
+    let rank: HashMap<&str, usize> = ids
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (id.as_str(), i))
+        .collect();
     let mut known = Vec::new();
     let mut unknown = Vec::new();
     for col in list {
@@ -162,7 +166,11 @@ pub fn set_game_collections(app_name: &str, collection_ids: &[String]) -> Result
     for col in list.iter_mut() {
         let should_contain = id_set.contains(col.id.as_str());
         if should_contain {
-            if !col.app_names.iter().any(|a| a.eq_ignore_ascii_case(app_name)) {
+            if !col
+                .app_names
+                .iter()
+                .any(|a| a.eq_ignore_ascii_case(app_name))
+            {
                 col.app_names.push(app_name.to_string());
             }
         } else {
@@ -190,7 +198,13 @@ fn deduplicate_strings(vec: Vec<String>) -> Vec<String> {
 fn generate_collection_id(name: &str) -> String {
     let slug: String = name
         .chars()
-        .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
         .collect();
     let trimmed = slug.trim_matches('-');
     let ts = std::time::SystemTime::now()
@@ -242,7 +256,11 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
     if let Ok(entries) = fs::read_dir(&egl_saved) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_dir() && p.file_name().and_then(|n| n.to_str()).map_or(false, |n| n.starts_with("webcache")) {
+            if p.is_dir()
+                && p.file_name()
+                    .and_then(|n| n.to_str())
+                    .map_or(false, |n| n.starts_with("webcache"))
+            {
                 let idb = p.join("IndexedDB");
                 if idb.is_dir() {
                     if let Ok(idb_entries) = fs::read_dir(&idb) {
@@ -298,7 +316,10 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
         let existing = read_collections_raw();
         let mut merged = existing;
         for col in &result {
-            if let Some(idx) = merged.iter().position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name)) {
+            if let Some(idx) = merged
+                .iter()
+                .position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name))
+            {
                 merged[idx].name = col.name.clone();
                 merged[idx].app_names = deduplicate_strings(col.app_names.clone());
             } else {
@@ -322,21 +343,32 @@ fn build_metadata_lookup() -> HashMap<String, String> {
             if p.extension().and_then(|e| e.to_str()) == Some("json") {
                 if let Ok(content) = fs::read_to_string(&p) {
                     if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                        let app_name = val.get("app_name")
+                        let app_name = val
+                            .get("app_name")
                             .and_then(|v| v.as_str())
                             .unwrap_or("")
                             .to_string();
 
                         if !app_name.is_empty() {
-                            if let Some(ns) = val.get("metadata").and_then(|m| m.get("namespace")).and_then(|v| v.as_str()) {
+                            if let Some(ns) = val
+                                .get("metadata")
+                                .and_then(|m| m.get("namespace"))
+                                .and_then(|v| v.as_str())
+                            {
                                 map.insert(ns.to_lowercase(), app_name.clone());
                             } else if let Some(ns) = val.get("namespace").and_then(|v| v.as_str()) {
                                 map.insert(ns.to_lowercase(), app_name.clone());
                             }
 
-                            if let Some(cat) = val.get("metadata").and_then(|m| m.get("catalogItemId")).and_then(|v| v.as_str()) {
+                            if let Some(cat) = val
+                                .get("metadata")
+                                .and_then(|m| m.get("catalogItemId"))
+                                .and_then(|v| v.as_str())
+                            {
                                 map.insert(cat.to_lowercase(), app_name.clone());
-                            } else if let Some(cat) = val.get("catalog_item_id").and_then(|v| v.as_str()) {
+                            } else if let Some(cat) =
+                                val.get("catalog_item_id").and_then(|v| v.as_str())
+                            {
                                 map.insert(cat.to_lowercase(), app_name);
                             }
                         }
@@ -380,39 +412,43 @@ fn parse_leveldb_buffer(
         if id.len() == 36 {
             let start_before = abs_idx.saturating_sub(120);
             let before_bytes = &bytes[start_before..abs_idx];
-            let raw_name = if let Some(name_offset) = before_bytes.windows(4).rposition(|w| w == b"name") {
-                let name_pos = start_before + name_offset + 4;
-                if name_pos + 1 < bytes.len() {
-                    let tag = bytes[name_pos];
-                    let len = bytes[name_pos + 1] as usize;
-                    if tag == 0x22 && name_pos + 2 + len <= bytes.len() {
-                        String::from_utf8_lossy(&bytes[name_pos + 2..name_pos + 2 + len]).to_string()
-                    } else if tag == 0x63 && name_pos + 2 + len <= bytes.len() {
-                        let u16_vec: Vec<u16> = bytes[name_pos + 2..name_pos + 2 + len]
-                            .chunks_exact(2)
-                            .map(|c| u16::from_le_bytes([c[0], c[1]]))
-                            .collect();
-                        String::from_utf16_lossy(&u16_vec)
-                    } else {
-                        let before = &latin1_str[start_before..abs_idx];
-                        if let Some(name_idx) = before.rfind("name") {
-                            let after_name = &before[name_idx + 4..];
-                            let trimmed = after_name.trim_end_matches(|c: char| c <= ' ' || c == '"' || c == '\u{000c}');
-                            if let Some(start_idx) = trimmed.find(|c: char| c.is_alphabetic()) {
-                                trimmed[start_idx..].to_string()
+            let raw_name =
+                if let Some(name_offset) = before_bytes.windows(4).rposition(|w| w == b"name") {
+                    let name_pos = start_before + name_offset + 4;
+                    if name_pos + 1 < bytes.len() {
+                        let tag = bytes[name_pos];
+                        let len = bytes[name_pos + 1] as usize;
+                        if tag == 0x22 && name_pos + 2 + len <= bytes.len() {
+                            String::from_utf8_lossy(&bytes[name_pos + 2..name_pos + 2 + len])
+                                .to_string()
+                        } else if tag == 0x63 && name_pos + 2 + len <= bytes.len() {
+                            let u16_vec: Vec<u16> = bytes[name_pos + 2..name_pos + 2 + len]
+                                .chunks_exact(2)
+                                .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                                .collect();
+                            String::from_utf16_lossy(&u16_vec)
+                        } else {
+                            let before = &latin1_str[start_before..abs_idx];
+                            if let Some(name_idx) = before.rfind("name") {
+                                let after_name = &before[name_idx + 4..];
+                                let trimmed = after_name.trim_end_matches(|c: char| {
+                                    c <= ' ' || c == '"' || c == '\u{000c}'
+                                });
+                                if let Some(start_idx) = trimmed.find(|c: char| c.is_alphabetic()) {
+                                    trimmed[start_idx..].to_string()
+                                } else {
+                                    String::new()
+                                }
                             } else {
                                 String::new()
                             }
-                        } else {
-                            String::new()
                         }
+                    } else {
+                        String::new()
                     }
                 } else {
                     String::new()
-                }
-            } else {
-                String::new()
-            };
+                };
 
             let clean = clean_collection_name(&raw_name);
             if !clean.is_empty() {
@@ -570,7 +606,11 @@ mod tests {
 
     #[test]
     fn test_deduplicate() {
-        let input = vec!["Carnation".to_string(), "carnation".to_string(), "Ginger".to_string()];
+        let input = vec![
+            "Carnation".to_string(),
+            "carnation".to_string(),
+            "Ginger".to_string(),
+        ];
         let dedup = deduplicate_strings(input);
         assert_eq!(dedup.len(), 2);
         assert_eq!(dedup[0], "Carnation");
@@ -579,8 +619,14 @@ mod tests {
 
     #[test]
     fn test_clean_name() {
-        assert_eq!(clean_collection_name("Hikaye/Ba_ar1m Tamamlanan"), "Hikaye/Başarım Tamamlanan");
-        assert_eq!(clean_collection_name("c2Hikaye/Ba_ ar1 m Tamamlanan"), "Hikaye/Başarım Tamamlanan");
+        assert_eq!(
+            clean_collection_name("Hikaye/Ba_ar1m Tamamlanan"),
+            "Hikaye/Başarım Tamamlanan"
+        );
+        assert_eq!(
+            clean_collection_name("c2Hikaye/Ba_ ar1 m Tamamlanan"),
+            "Hikaye/Başarım Tamamlanan"
+        );
     }
 
     #[test]

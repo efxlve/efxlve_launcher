@@ -9,8 +9,7 @@ use tauri::{AppHandle, Manager};
 
 use super::LegendaryError;
 
-pub const RELEASES_LATEST_URL: &str =
-    "https://github.com/legendary-gl/legendary/releases/latest";
+pub const RELEASES_LATEST_URL: &str = "https://github.com/legendary-gl/legendary/releases/latest";
 pub const WINDOWS_ASSET_NAME: &str = "legendary_windows_x64.exe";
 
 /// `<app_data>/bin` — the auto-downloaded binary lives here.

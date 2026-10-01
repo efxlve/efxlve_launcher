@@ -1,10 +1,11 @@
 //! Google Drive integration for save backups (REST API v3 & AppData folder).
 
+use std::net::{Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-use std::net::{Ipv4Addr, SocketAddr};
 
+use crate::cloud_backup::models::CloudBackupEntry;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use rand::RngCore;
@@ -13,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
-use crate::cloud_backup::models::CloudBackupEntry;
 
 pub const GDRIVE_OAUTH_PORT: u16 = 54123;
 pub const GDRIVE_REDIRECT_URI: &str = "http://127.0.0.1:54123/oauth/callback";
@@ -79,7 +79,10 @@ pub fn generate_auth_url(client_id: &str, code_challenge: &str) -> String {
 pub async fn listen_for_auth_code() -> Result<String, String> {
     static IN_FLIGHT: AtomicBool = AtomicBool::new(false);
     if IN_FLIGHT.swap(true, Ordering::SeqCst) {
-        return Err("Google sign-in is already waiting in the browser. Finish that window first.".to_string());
+        return Err(
+            "Google sign-in is already waiting in the browser. Finish that window first."
+                .to_string(),
+        );
     }
     struct Guard;
     impl Drop for Guard {
@@ -126,9 +129,14 @@ pub async fn listen_for_auth_code() -> Result<String, String> {
 
     if let Some(err) = auth_error {
         if err == "invalid_client" {
-            return Err("Google OAuth client was not found. The Desktop client ID is missing or revoked.".to_string());
+            return Err(
+                "Google OAuth client was not found. The Desktop client ID is missing or revoked."
+                    .to_string(),
+            );
         }
-        return Err(format!("Authorization was cancelled or rejected by Google: {err}"));
+        return Err(format!(
+            "Authorization was cancelled or rejected by Google: {err}"
+        ));
     }
 
     if let Some(code) = auth_code {
@@ -203,11 +211,17 @@ pub async fn exchange_code_for_tokens(
         if err == "invalid_client" {
             return Err("Google OAuth client was not found or is not a Desktop app. The stored client ID is missing or revoked.".to_string());
         }
-        return Err(format!("Google token exchange failed ({status}): {err} ({desc})"));
+        return Err(format!(
+            "Google token exchange failed ({status}): {err} ({desc})"
+        ));
     }
 
-    let access = token_resp.access_token.ok_or_else(|| "Missing access token in response".to_string())?;
-    let refresh = token_resp.refresh_token.ok_or_else(|| "Missing refresh token in response".to_string())?;
+    let access = token_resp
+        .access_token
+        .ok_or_else(|| "Missing access token in response".to_string())?;
+    let refresh = token_resp
+        .refresh_token
+        .ok_or_else(|| "Missing refresh token in response".to_string())?;
 
     // Fetch user email for display
     let email = fetch_user_email(client, &access).await.ok();
@@ -259,7 +273,8 @@ pub async fn fetch_user_email(client: &Client, access_token: &str) -> Result<Str
         .map_err(|e| e.to_string())?;
 
     let info: UserInfoResponse = res.json().await.map_err(|e| e.to_string())?;
-    info.email.ok_or_else(|| "Email address not found".to_string())
+    info.email
+        .ok_or_else(|| "Email address not found".to_string())
 }
 
 /// Uploads a backup archive directly to Google Drive's hidden `appDataFolder` using Resumable Upload.
@@ -300,7 +315,9 @@ pub async fn upload_backup_gdrive(
     if !init_res.status().is_success() {
         let status = init_res.status();
         let err_txt = init_res.text().await.unwrap_or_default();
-        return Err(format!("Google Drive upload session rejected (HTTP {status}): {err_txt}"));
+        return Err(format!(
+            "Google Drive upload session rejected (HTTP {status}): {err_txt}"
+        ));
     }
 
     let upload_url = init_res
@@ -327,11 +344,17 @@ pub async fn upload_backup_gdrive(
     if !upload_res.status().is_success() {
         let status = upload_res.status();
         let err_txt = upload_res.text().await.unwrap_or_default();
-        return Err(format!("Google Drive file upload rejected (HTTP {status}): {err_txt}"));
+        return Err(format!(
+            "Google Drive file upload rejected (HTTP {status}): {err_txt}"
+        ));
     }
 
     let created: serde_json::Value = upload_res.json().await.map_err(|e| e.to_string())?;
-    let file_id = created.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+    let file_id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string();
 
     Ok(file_id)
 }
@@ -342,7 +365,9 @@ pub async fn list_gdrive_backups(
     access_token: &str,
     app_name: &str,
 ) -> Result<Vec<CloudBackupEntry>, String> {
-    let q = format!("appProperties has {{ key='efxlve_game' and value='{app_name}' }} and trashed = false");
+    let q = format!(
+        "appProperties has {{ key='efxlve_game' and value='{app_name}' }} and trashed = false"
+    );
     let res = client
         .get("https://www.googleapis.com/drive/v3/files")
         .bearer_auth(access_token)
@@ -435,7 +460,11 @@ pub async fn download_backup_gdrive(
 }
 
 /// Deletes a file on Google Drive.
-pub async fn delete_backup_gdrive(client: &Client, access_token: &str, file_id: &str) -> Result<(), String> {
+pub async fn delete_backup_gdrive(
+    client: &Client,
+    access_token: &str,
+    file_id: &str,
+) -> Result<(), String> {
     let url = format!("https://www.googleapis.com/drive/v3/files/{file_id}");
     let res = client
         .delete(&url)
@@ -494,4 +523,3 @@ mod tests {
         assert_eq!(auth_code, Some("4/0Adw123xyz".to_string()));
     }
 }
-

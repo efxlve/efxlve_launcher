@@ -18,7 +18,7 @@ const STEAM_LANGUAGES: Record<string, string> = {
   fr: "french",
   it: "italian",
   ja: "japanese",
-  ko: "korean",
+  ko: "koreana",
   pl: "polish",
   "pt-BR": "portuguese",
   ru: "russian",

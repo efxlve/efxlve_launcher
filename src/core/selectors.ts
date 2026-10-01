@@ -412,39 +412,26 @@ export function gameStoresLabel(appNameOrTitle: string): string {
   return "Epic";
 }
 
-/** Computes the deduplicated total library game count, excluding hidden games. */
+/**
+ * Deduplicated library size, excluding hidden games.
+ * Copies of one title on Epic, GOG and Steam count once, matching the grid.
+ */
 export function totalLibraryGamesCount(): number {
-  const seenTitles = new Set<string>();
+  const seen = new Set<string>();
   let count = 0;
-  for (const s of S.epicSummaries) {
-    if (S.hiddenGames.has(s.appName)) continue;
-    seenTitles.add(canonicalGameTitle(s.title));
+  const add = (key: string, title: string): void => {
+    if (S.hiddenGames.has(key)) return;
+    const canon = canonicalGameTitle(title);
+    const id = canon || key;
+    if (seen.has(id)) return;
+    seen.add(id);
     count++;
-  }
-  for (const g of S.gogSummaries) {
-    if (S.hiddenGames.has(g.key)) continue;
-    const canon = canonicalGameTitle(g.title);
-    if (seenTitles.has(canon)) continue;
-    seenTitles.add(canon);
-    count++;
-  }
-  // Steam games live on this PC and join the count like any owned game.
-  for (const g of S.steamSummaries) {
-    if (S.hiddenGames.has(g.key)) continue;
-    const canon = canonicalGameTitle(g.title);
-    if (seenTitles.has(canon)) continue;
-    seenTitles.add(canon);
-    count++;
-  }
-  // Games from other saved accounts count too while the shared library is on.
+  };
+  for (const s of S.epicSummaries) add(s.appName, s.title);
+  for (const g of S.gogSummaries) add(g.key, g.title);
+  for (const g of S.steamSummaries) add(g.key, g.title);
   if (S.showSharedLibrary) {
-    for (const g of S.sharedOwners.values()) {
-      if (S.hiddenGames.has(g.key)) continue;
-      const canon = canonicalGameTitle(g.title);
-      if (seenTitles.has(canon)) continue;
-      seenTitles.add(canon);
-      count++;
-    }
+    for (const g of S.sharedOwners.values()) add(g.key, g.title);
   }
   return count;
 }

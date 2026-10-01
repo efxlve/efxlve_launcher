@@ -2,8 +2,8 @@
 //! as soon as the Steam client writes them — no idle polling.
 
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use std::sync::Mutex;
 use std::sync::mpsc::{self, RecvTimeoutError};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
@@ -31,7 +31,8 @@ pub fn steam_watch_library(app: AppHandle) -> Result<(), String> {
     };
 
     let (tx, rx) = mpsc::channel();
-    let mut watcher = RecommendedWatcher::new(tx, notify::Config::default()).map_err(|e| e.to_string())?;
+    let mut watcher =
+        RecommendedWatcher::new(tx, notify::Config::default()).map_err(|e| e.to_string())?;
     for folder in crate::steam::library_folders(&steam) {
         let _ = watcher.watch(&folder, RecursiveMode::NonRecursive);
         let downloading = folder.join("downloading");

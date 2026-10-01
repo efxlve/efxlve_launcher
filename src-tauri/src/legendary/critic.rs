@@ -132,7 +132,10 @@ pub fn critic_search_terms(title: &str) -> Vec<String> {
         if trimmed.len() < 2 {
             return;
         }
-        if terms.iter().any(|existing| existing.eq_ignore_ascii_case(trimmed)) {
+        if terms
+            .iter()
+            .any(|existing| existing.eq_ignore_ascii_case(trimmed))
+        {
             return;
         }
         terms.push(trimmed.to_string());
@@ -180,7 +183,15 @@ pub fn calculate_tier(score: u32) -> &'static str {
 /// Two shapes show up in the wild:
 ///   {{Infobox game/row/reception|Metacritic|dead-by-daylight|71}}
 ///   {{Infobox game/row/reception|Metacritic|pc|counter-strike-2|82}}
-pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Option<u32>, Option<String>, Option<f64>) {
+pub fn parse_reception_data(
+    content: &str,
+) -> (
+    Option<u32>,
+    Option<String>,
+    Option<u32>,
+    Option<String>,
+    Option<f64>,
+) {
     let mut oc_score: Option<u32> = None;
     let mut oc_url: Option<String> = None;
     let mut mc_score: Option<u32> = None;
@@ -204,7 +215,8 @@ pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Opti
             };
 
             let parts: Vec<&str> = inner.split('|').map(|p| p.trim()).collect();
-            let Some((provider_raw, id_or_slug, score_str, platform)) = reception_fields(&parts) else {
+            let Some((provider_raw, id_or_slug, score_str, platform)) = reception_fields(&parts)
+            else {
                 continue;
             };
             let provider = provider_raw.to_lowercase();
@@ -230,7 +242,10 @@ pub fn parse_reception_data(content: &str) -> (Option<u32>, Option<String>, Opti
                             mc_url = Some(if id_or_slug.starts_with("http") {
                                 id_or_slug.to_string()
                             } else {
-                                format!("https://www.metacritic.com/game/{}/", id_or_slug.trim_end_matches('/'))
+                                format!(
+                                    "https://www.metacritic.com/game/{}/",
+                                    id_or_slug.trim_end_matches('/')
+                                )
                             });
                         }
                     }
@@ -259,7 +274,8 @@ fn reception_fields<'a>(parts: &'a [&str]) -> Option<(&'a str, &'a str, &'a str,
 
 fn normalize_for_match(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
-    let lowered = s.to_lowercase()
+    let lowered = s
+        .to_lowercase()
         .replace(" ii", " 2")
         .replace(" iii", " 3")
         .replace(" iv", " 4")
@@ -306,13 +322,17 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
         for item in items {
             if let Some(ref gn) = item.game_name {
                 let norm_gn = normalize_for_match(gn);
-                if norm_gn.len() >= 5 && (norm_title.contains(&norm_gn) || norm_gn.contains(&norm_title)) {
+                if norm_gn.len() >= 5
+                    && (norm_title.contains(&norm_gn) || norm_gn.contains(&norm_title))
+                {
                     return make_goygoy_review(item);
                 }
             }
             if let Some(ref g) = item.game {
                 let norm_g = normalize_for_match(g);
-                if norm_g.len() >= 5 && (norm_title.contains(&norm_g) || norm_g.contains(&norm_title)) {
+                if norm_g.len() >= 5
+                    && (norm_title.contains(&norm_g) || norm_g.contains(&norm_title))
+                {
                     return make_goygoy_review(item);
                 }
             }
@@ -334,7 +354,10 @@ fn make_goygoy_review(item: &GoygoyRawItem) -> Option<GoygoyReview> {
     };
 
     Some(GoygoyReview {
-        title: item.title.clone().unwrap_or_else(|| "@t:critic.reviewTitle".to_string()),
+        title: item
+            .title
+            .clone()
+            .unwrap_or_else(|| "@t:critic.reviewTitle".to_string()),
         score: item.score,
         writer: item.writer.clone(),
         summary: item.summary.clone(),
@@ -463,7 +486,12 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
             url::form_urlencoded::byte_serialize(term.as_bytes()).collect::<String>()
         );
         let mut pages: Vec<String> = Vec::new();
-        if let Ok(resp) = client.get(&search_url).header("User-Agent", ua).send().await {
+        if let Ok(resp) = client
+            .get(&search_url)
+            .header("User-Agent", ua)
+            .send()
+            .await
+        {
             if let Ok(json_val) = resp.json::<serde_json::Value>().await {
                 if let Some(arr) = json_val.get(1).and_then(|v| v.as_array()) {
                     for title in arr.iter().filter_map(|v| v.as_str()) {
@@ -484,12 +512,19 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
             );
             if let Ok(resp) = client.get(&query_url).header("User-Agent", ua).send().await {
                 if let Ok(json_val) = resp.json::<serde_json::Value>().await {
-                    if let Some(pages_map) = json_val.get("query").and_then(|q| q.get("pages")).and_then(|p| p.as_object()) {
+                    if let Some(pages_map) = json_val
+                        .get("query")
+                        .and_then(|q| q.get("pages"))
+                        .and_then(|p| p.as_object())
+                    {
                         for (_pid, pdata) in pages_map {
                             if let Some(revs) = pdata.get("revisions").and_then(|r| r.as_array()) {
                                 if let Some(first_rev) = revs.first() {
-                                    if let Some(content_str) = first_rev.get("*").and_then(|c| c.as_str()) {
-                                        let (o_sc, o_u, m_sc, m_u, i_sc) = parse_reception_data(content_str);
+                                    if let Some(content_str) =
+                                        first_rev.get("*").and_then(|c| c.as_str())
+                                    {
+                                        let (o_sc, o_u, m_sc, m_u, i_sc) =
+                                            parse_reception_data(content_str);
                                         if o_sc.is_some() || m_sc.is_some() || i_sc.is_some() {
                                             oc_score = o_sc;
                                             oc_url = o_u;
@@ -512,8 +547,11 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
     let goygoy_items = fetch_goygoy_reviews(&client).await;
     let goygoy_match = find_goygoy_review_match(title, &goygoy_items);
 
-    let supported = oc_score.is_some() || mc_score.is_some() || igdb_score.is_some() || goygoy_match.is_some();
-    let effective_score = oc_score.or(mc_score).or_else(|| goygoy_match.as_ref().and_then(|g| g.score));
+    let supported =
+        oc_score.is_some() || mc_score.is_some() || igdb_score.is_some() || goygoy_match.is_some();
+    let effective_score = oc_score
+        .or(mc_score)
+        .or_else(|| goygoy_match.as_ref().and_then(|g| g.score));
     let tier = effective_score.map(|s| calculate_tier(s).to_string());
 
     let result = CriticData {
@@ -547,10 +585,22 @@ mod tests {
 
     #[test]
     fn test_clean_critic_search_term() {
-        assert_eq!(clean_critic_search_term("Dead by Daylight - Gold Edition"), "Dead by Daylight");
-        assert_eq!(clean_critic_search_term("Alan Wake 2 Deluxe Edition"), "Alan Wake 2");
-        assert_eq!(clean_critic_search_term("Tom Clancy's The Division 2"), "The Division 2");
-        assert_eq!(clean_critic_search_term("Death Stranding Director's Cut"), "Death Stranding");
+        assert_eq!(
+            clean_critic_search_term("Dead by Daylight - Gold Edition"),
+            "Dead by Daylight"
+        );
+        assert_eq!(
+            clean_critic_search_term("Alan Wake 2 Deluxe Edition"),
+            "Alan Wake 2"
+        );
+        assert_eq!(
+            clean_critic_search_term("Tom Clancy's The Division 2"),
+            "The Division 2"
+        );
+        assert_eq!(
+            clean_critic_search_term("Death Stranding Director's Cut"),
+            "Death Stranding"
+        );
         assert_eq!(
             clean_critic_search_term("UNCHARTED™: Legacy of Thieves Collection"),
             "UNCHARTED: Legacy of Thieves Collection"
@@ -578,9 +628,15 @@ mod tests {
         "#;
         let (oc_score, oc_url, mc_score, mc_url, igdb_score) = parse_reception_data(sample);
         assert_eq!(oc_score, Some(70));
-        assert_eq!(oc_url, Some("https://opencritic.com/game/2844/dead-by-daylight".to_string()));
+        assert_eq!(
+            oc_url,
+            Some("https://opencritic.com/game/2844/dead-by-daylight".to_string())
+        );
         assert_eq!(mc_score, Some(71));
-        assert_eq!(mc_url, Some("https://www.metacritic.com/game/dead-by-daylight/".to_string()));
+        assert_eq!(
+            mc_url,
+            Some("https://www.metacritic.com/game/dead-by-daylight/".to_string())
+        );
         assert_eq!(igdb_score, Some(6.7));
 
         let with_platform = r#"
@@ -590,7 +646,10 @@ mod tests {
         "#;
         let (_, _, mc_pc, mc_pc_url, _) = parse_reception_data(with_platform);
         assert_eq!(mc_pc, Some(82));
-        assert_eq!(mc_pc_url, Some("https://www.metacritic.com/game/counter-strike-2/".to_string()));
+        assert_eq!(
+            mc_pc_url,
+            Some("https://www.metacritic.com/game/counter-strike-2/".to_string())
+        );
     }
 
     #[test]

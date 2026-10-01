@@ -62,8 +62,13 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, GogError> {
         )));
     }
 
-    let bytes = resp.bytes().await.map_err(|e| GogError::Http(e.to_string()))?;
-    tokio::fs::write(&part, &bytes).await.map_err(|e| GogError::Io(e.to_string()))?;
+    let bytes = resp
+        .bytes()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
+    tokio::fs::write(&part, &bytes)
+        .await
+        .map_err(|e| GogError::Io(e.to_string()))?;
 
     tokio::fs::rename(&part, &target)
         .await

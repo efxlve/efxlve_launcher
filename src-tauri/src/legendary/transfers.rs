@@ -134,7 +134,9 @@ fn remembered_request(app_name: &str, meta: Option<&PendingDownload>) -> Pending
     if let Some(pending) = read_pending_download().filter(|pending| pending.app_name == app_name) {
         return pending;
     }
-    if let Some(saved) = super::download_resume::load_one(&super::download_resume::resumes_path(), app_name) {
+    if let Some(saved) =
+        super::download_resume::load_one(&super::download_resume::resumes_path(), app_name)
+    {
         return pending_from_record(saved);
     }
     PendingDownload {
@@ -146,7 +148,8 @@ fn remembered_request(app_name: &str, meta: Option<&PendingDownload>) -> Pending
 
 fn has_resume_record(app_name: &str) -> bool {
     read_pending_download().is_some_and(|pending| pending.app_name == app_name)
-        || super::download_resume::load_one(&super::download_resume::resumes_path(), app_name).is_some()
+        || super::download_resume::load_one(&super::download_resume::resumes_path(), app_name)
+            .is_some()
 }
 
 fn saved_install_dir(app_name: &str) -> Option<String> {
@@ -220,7 +223,11 @@ fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
                 let meta = v.get("metadata").unwrap_or(&v);
                 if let Some(cattr) = meta.get("customAttributes") {
-                    if let Some(fn_val) = cattr.get("FolderName").and_then(|x| x.get("value")).and_then(|x| x.as_str()) {
+                    if let Some(fn_val) = cattr
+                        .get("FolderName")
+                        .and_then(|x| x.get("value"))
+                        .and_then(|x| x.as_str())
+                    {
                         let trimmed = fn_val.trim();
                         if !trimmed.is_empty() {
                             candidate_names.push(trimmed.to_string());
@@ -228,7 +235,12 @@ fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
                     }
                 }
                 if let Some(title) = meta.get("title").and_then(|x| x.as_str()) {
-                    let cleaned: String = title.chars().filter(|c| !matches!(*c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|')).collect();
+                    let cleaned: String = title
+                        .chars()
+                        .filter(|c| {
+                            !matches!(*c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|')
+                        })
+                        .collect();
                     let trimmed = cleaned.trim();
                     if !trimmed.is_empty() && !candidate_names.contains(&trimmed.to_string()) {
                         candidate_names.push(trimmed.to_string());
@@ -282,7 +294,10 @@ fn queue_names(queue: &VecDeque<PendingDownload>) -> Vec<String> {
 
 fn start_download_request(app: &AppHandle, request: PendingDownload) -> Result<String, String> {
     let bin = resolve_bin(app)?;
-    let saved = super::download_resume::load_one(&super::download_resume::resumes_path(), &request.app_name);
+    let saved = super::download_resume::load_one(
+        &super::download_resume::resumes_path(),
+        &request.app_name,
+    );
     let resuming = saved.is_some();
     let merged = pending_from_record(super::download_resume::merge_resume(
         saved.as_ref(),
@@ -477,12 +492,7 @@ fn emit_progress(app: &AppHandle, id: &str, progress: u8, done: bool) {
 }
 
 fn emit_paused(app: &AppHandle, id: &str) {
-    let _ = app.emit(
-        "download-paused",
-        DlPaused {
-            id: id.to_string(),
-        },
-    );
+    let _ = app.emit("download-paused", DlPaused { id: id.to_string() });
 }
 
 fn emit_failed(app: &AppHandle, id: &str, message: String) {
@@ -496,12 +506,7 @@ fn emit_failed(app: &AppHandle, id: &str, message: String) {
 }
 
 fn emit_cancelled(app: &AppHandle, id: &str) {
-    let _ = app.emit(
-        "download-cancelled",
-        DlCancelled {
-            id: id.to_string(),
-        },
-    );
+    let _ = app.emit("download-cancelled", DlCancelled { id: id.to_string() });
 }
 
 /// Default install root: `<home>/Games` (same as legendary).
@@ -568,7 +573,8 @@ pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
                 .trim_start()
                 .trim_start_matches([':', '\t'])
                 .trim_start();
-            let Some(num_end) = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ',')) else {
+            let Some(num_end) = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))
+            else {
                 continue;
             };
             if num_end == 0 {
@@ -694,7 +700,10 @@ fn spawn_install_with_tags(
     }
 
     // Preferred CDN (from the auto speed test) can noticeably improve throughput.
-    if let Some(cdn) = load_settings(app).preferred_cdn.filter(|c| !c.trim().is_empty()) {
+    if let Some(cdn) = load_settings(app)
+        .preferred_cdn
+        .filter(|c| !c.trim().is_empty())
+    {
         cmd.arg("--preferred-cdn").arg(cdn);
     }
 
@@ -752,11 +761,7 @@ impl<R: AsyncRead + Unpin> CrlfLines<R> {
 
     async fn next_line(&mut self) -> Option<String> {
         loop {
-            if let Some(pos) = self
-                .pending
-                .iter()
-                .position(|&b| b == b'\n' || b == b'\r')
-            {
+            if let Some(pos) = self.pending.iter().position(|&b| b == b'\n' || b == b'\r') {
                 let line: Vec<u8> = self.pending.drain(..=pos).collect();
                 let s = String::from_utf8_lossy(&line[..line.len().saturating_sub(1)])
                     .trim()
@@ -883,7 +888,11 @@ fn short_error(err_text: &str) -> String {
 }
 
 /// Starts the download (must NOT be called while holding a lock!). Sets up the monitor task on success.
-fn start_download(app: &AppHandle, app_name: String, override_dir: Option<String>) -> Result<String, String> {
+fn start_download(
+    app: &AppHandle,
+    app_name: String,
+    override_dir: Option<String>,
+) -> Result<String, String> {
     start_download_with_tags(app, app_name, Vec::new(), override_dir)
 }
 
@@ -1026,8 +1035,16 @@ async fn monitor_download(
                         last_pct = p;
                     }
                     let p = last_pct as u8;
-                    let dl_bytes = if downloaded_mib > 0.0 { Some((downloaded_mib * 1024.0 * 1024.0) as u64) } else { None };
-                    let tot_bytes = if total_mib > 0.0 { Some((total_mib * 1024.0 * 1024.0) as u64) } else { None };
+                    let dl_bytes = if downloaded_mib > 0.0 {
+                        Some((downloaded_mib * 1024.0 * 1024.0) as u64)
+                    } else {
+                        None
+                    };
+                    let tot_bytes = if total_mib > 0.0 {
+                        Some((total_mib * 1024.0 * 1024.0) as u64)
+                    } else {
+                        None
+                    };
                     emit_progress_full(
                         &app,
                         &app_name,
@@ -1069,9 +1086,8 @@ async fn monitor_download(
                     stderr = child.stderr.take();
                     // Update the pid (so the cancel command finds the current process)
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
-                        let still_ours = s.active_generation == Some(generation)
-                            && !s.cancelled
-                            && !s.paused;
+                        let still_ours =
+                            s.active_generation == Some(generation) && !s.cancelled && !s.paused;
                         if !still_ours {
                             drop(s);
                             drop(child);
@@ -1087,7 +1103,9 @@ async fn monitor_download(
             }
         }
         // If Epic rate-limited with HTTP 429, wait 8 seconds for the rate-limit window to clear and retry once.
-        if !rate_limit_retried && (err_text.contains("429") || err_text.contains("Too Many Requests")) {
+        if !rate_limit_retried
+            && (err_text.contains("429") || err_text.contains("Too Many Requests"))
+        {
             if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
@@ -1102,9 +1120,8 @@ async fn monitor_download(
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
-                        let still_ours = s.active_generation == Some(generation)
-                            && !s.cancelled
-                            && !s.paused;
+                        let still_ours =
+                            s.active_generation == Some(generation) && !s.cancelled && !s.paused;
                         if !still_ours {
                             drop(s);
                             drop(child);
@@ -1120,7 +1137,11 @@ async fn monitor_download(
             }
         }
         // If Epic service timed out (TimeoutError / ReadTimeoutError), wait 3 seconds and retry once.
-        if !timeout_retried && (err_text.contains("timed out") || err_text.contains("Timeout") || err_text.contains("ReadTimeoutError")) {
+        if !timeout_retried
+            && (err_text.contains("timed out")
+                || err_text.contains("Timeout")
+                || err_text.contains("ReadTimeoutError"))
+        {
             if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
@@ -1135,9 +1156,8 @@ async fn monitor_download(
                     stdout = child.stdout.take();
                     stderr = child.stderr.take();
                     if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
-                        let still_ours = s.active_generation == Some(generation)
-                            && !s.cancelled
-                            && !s.paused;
+                        let still_ours =
+                            s.active_generation == Some(generation) && !s.cancelled && !s.paused;
                         if !still_ours {
                             drop(s);
                             drop(child);
@@ -1218,17 +1238,7 @@ async fn monitor_download(
             // files legendary just wrote; otherwise EGL re-offers the update.
             super::cache::sync_egl_manifest_version(&super::skip::default_config_dir(), &app_name);
             emit_progress_full(
-                &app,
-                &app_name,
-                100,
-                true,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                tot_bytes,
+                &app, &app_name, 100, true, None, None, None, None, None, None, tot_bytes,
                 tot_bytes,
             );
             let settings = crate::load_settings(&app);
@@ -1237,7 +1247,9 @@ async fn monitor_download(
                 let app_name_clone = app_name.clone();
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-                    let _ = super::commands::epic_create_desktop_shortcut(app_clone, app_name_clone).await;
+                    let _ =
+                        super::commands::epic_create_desktop_shortcut(app_clone, app_name_clone)
+                            .await;
                 });
             }
         }
@@ -1673,10 +1685,18 @@ fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
 
     // Blacklist critical Windows roots
     let forbidden = [
-        "c:\\", "d:\\", "e:\\", "f:\\", "g:\\",
-        "c:\\windows", "c:\\windows\\system32",
-        "c:\\program files", "c:\\program files (x86)",
-        "c:\\programdata", "c:\\programdata\\epic", "c:\\users",
+        "c:\\",
+        "d:\\",
+        "e:\\",
+        "f:\\",
+        "g:\\",
+        "c:\\windows",
+        "c:\\windows\\system32",
+        "c:\\program files",
+        "c:\\program files (x86)",
+        "c:\\programdata",
+        "c:\\programdata\\epic",
+        "c:\\users",
     ];
     for f in forbidden {
         if s == f || s == format!("{}\\", f.trim_end_matches('\\')) {
@@ -1765,7 +1785,10 @@ pub async fn epic_uninstall_game(
     let mut resolved_install_path: Option<PathBuf> = None;
 
     let installed_list = super::cache::read_installed(&config);
-    if let Some(entry) = installed_list.iter().find(|g| g.app_name.eq_ignore_ascii_case(&app_name)) {
+    if let Some(entry) = installed_list
+        .iter()
+        .find(|g| g.app_name.eq_ignore_ascii_case(&app_name))
+    {
         if !entry.title.trim().is_empty() {
             resolved_title = entry.title.clone();
         }
@@ -1776,7 +1799,10 @@ pub async fn epic_uninstall_game(
 
     if resolved_install_path.is_none() {
         let egl_games = super::cache::read_egl_installed_games();
-        if let Some(egl) = egl_games.iter().find(|g| g.app_name.eq_ignore_ascii_case(&app_name)) {
+        if let Some(egl) = egl_games
+            .iter()
+            .find(|g| g.app_name.eq_ignore_ascii_case(&app_name))
+        {
             if !egl.title.trim().is_empty() {
                 resolved_title = egl.title.clone();
             }
@@ -1831,7 +1857,10 @@ pub async fn epic_uninstall_game(
         // If legendary reported it wasn't installed in its own database, but our
         // cleanup completed (e.g. for EGL-imported games), treat it as uninstalled.
         if low.contains("not installed")
-            || resolved_install_path.as_ref().map(|p| !p.exists()).unwrap_or(false)
+            || resolved_install_path
+                .as_ref()
+                .map(|p| !p.exists())
+                .unwrap_or(false)
         {
             Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
         } else {
@@ -1880,7 +1909,8 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
         } else {
             entry.title.clone()
         };
-        let mut custom_args: Vec<String> = entry.launch_parameters
+        let mut custom_args: Vec<String> = entry
+            .launch_parameters
             .split_whitespace()
             .map(|s| s.to_string())
             .collect();
@@ -2008,7 +2038,10 @@ pub async fn epic_stop_game(app: AppHandle, app_name: String) -> Result<String, 
 
 /// Detects executable (.exe) files in the game directory.
 /// Shared-library and crash-reporter binaries are filtered out.
-pub fn discover_game_executables(install_path: &Path, main_executable: Option<&str>) -> Vec<String> {
+pub fn discover_game_executables(
+    install_path: &Path,
+    main_executable: Option<&str>,
+) -> Vec<String> {
     let mut exes = Vec::new();
     if let Some(main) = main_executable {
         let name = Path::new(main)
@@ -2078,8 +2111,14 @@ fn scan_dir_for_exes(
 /// True when `image` is the install directory itself or a file inside it.
 /// A drive root (`C:\`) is rejected so a bad path cannot match every process.
 pub fn image_inside_install(image: &str, install: &str) -> bool {
-    let image = image.replace('/', "\\").trim_end_matches('\\').to_lowercase();
-    let install = install.replace('/', "\\").trim_end_matches('\\').to_lowercase();
+    let image = image
+        .replace('/', "\\")
+        .trim_end_matches('\\')
+        .to_lowercase();
+    let install = install
+        .replace('/', "\\")
+        .trim_end_matches('\\')
+        .to_lowercase();
     if install.len() < 4 || !install.contains('\\') {
         return false;
     }
@@ -2222,7 +2261,8 @@ mod win_process {
                     .unwrap_or(entry.sz_exe_file.len());
                 let exe_name = String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase();
                 let mut full_path: Option<String> = None;
-                let h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
+                let h_proc =
+                    OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, entry.th32_process_id);
                 if !h_proc.is_null() {
                     let mut buf = [0u16; 1024];
                     let mut size = buf.len() as DWORD;
@@ -2237,7 +2277,9 @@ mod win_process {
                 }
 
                 let is_self = entry.th32_process_id == self_pid
-                    || full_path.as_ref().is_some_and(|p| self_exe.as_ref() == Some(p));
+                    || full_path
+                        .as_ref()
+                        .is_some_and(|p| self_exe.as_ref() == Some(p));
                 let inside = full_path.as_deref().is_some_and(|p| {
                     norm_install_path
                         .as_deref()
@@ -2281,7 +2323,10 @@ mod win_process {
 #[cfg(not(target_os = "windows"))]
 mod win_process {
     use std::path::Path;
-    pub fn is_game_process_running(_install_path: Option<&Path>, _candidate_exes: &[String]) -> bool {
+    pub fn is_game_process_running(
+        _install_path: Option<&Path>,
+        _candidate_exes: &[String],
+    ) -> bool {
         false
     }
 
@@ -2338,7 +2383,10 @@ async fn spawn_launched(
     });
     if let Some(epic_exe) = via_epic.as_ref() {
         if let Some(entry) = installed_entry {
-            super::import_installed::bind_existing_install(app_name, Path::new(&entry.install_path));
+            super::import_installed::bind_existing_install(
+                app_name,
+                Path::new(&entry.install_path),
+            );
         }
         let uri = format!("com.epicgames.launcher://apps/{app_name}?action=launch&silent=true");
         let _ = tokio::process::Command::new(epic_exe).arg(uri).spawn();
@@ -2360,7 +2408,12 @@ async fn spawn_launched(
     let cfgs = super::commands::load_all_game_custom_configs();
     if via_epic.is_none() {
         if let Some(cfg) = cfgs.get(app_name) {
-            if let Some(wrapper) = cfg.wrapper.as_deref().map(str::trim).filter(|w| !w.is_empty()) {
+            if let Some(wrapper) = cfg
+                .wrapper
+                .as_deref()
+                .map(str::trim)
+                .filter(|w| !w.is_empty())
+            {
                 cmd.arg("--wrapper").arg(wrapper);
             }
             if let Some(envs) = cfg.env_vars.as_ref() {
@@ -2397,7 +2450,11 @@ async fn spawn_launched(
             std::fs::read_to_string(&meta_path)
                 .ok()
                 .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-                .and_then(|v| v.get("app_title").and_then(|t| t.as_str()).map(|s| s.to_string()))
+                .and_then(|v| {
+                    v.get("app_title")
+                        .and_then(|t| t.as_str())
+                        .map(|s| s.to_string())
+                })
         })
         .unwrap_or_else(|| app_name.to_string());
 
@@ -2425,23 +2482,24 @@ async fn spawn_launched(
     );
 
     // Early-crash check in the first 2.5 seconds (only errors on a non-zero exit with no running process)
-    let early_failure = match tokio::time::timeout(std::time::Duration::from_millis(2500), child.wait()).await {
-        Ok(Ok(st)) if !st.success() => {
-            if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
-                Some(format!("@t:dl.launchFailedCode\u{1f}{:?}", st.code()))
-            } else {
-                None
+    let early_failure =
+        match tokio::time::timeout(std::time::Duration::from_millis(2500), child.wait()).await {
+            Ok(Ok(st)) if !st.success() => {
+                if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
+                    Some(format!("@t:dl.launchFailedCode\u{1f}{:?}", st.code()))
+                } else {
+                    None
+                }
             }
-        }
-        Ok(Err(e)) => {
-            if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
-                Some(e.to_string())
-            } else {
-                None
+            Ok(Err(e)) => {
+                if !is_game_process_running(install_path.as_deref(), &candidate_exes) {
+                    Some(e.to_string())
+                } else {
+                    None
+                }
             }
-        }
-        _ => None,
-    };
+            _ => None,
+        };
 
     if let Some(err) = early_failure {
         super::screenshots::clear_active_running_game(app_name);
@@ -2494,7 +2552,8 @@ async fn spawn_launched(
                 }
             }
 
-            let proc_running = is_game_process_running(install_path_bg.as_deref(), &candidate_exes_bg);
+            let proc_running =
+                is_game_process_running(install_path_bg.as_deref(), &candidate_exes_bg);
 
             if proc_running || (!child_finished) {
                 if !game_detected {
@@ -2574,7 +2633,10 @@ async fn spawn_launched(
         );
 
         // Auto Cloud Backup (WebDAV/Google Drive) if enabled in settings
-        crate::cloud_backup::manager::trigger_auto_sync_on_exit(app_bg.clone(), app_name_bg.clone());
+        crate::cloud_backup::manager::trigger_auto_sync_on_exit(
+            app_bg.clone(),
+            app_name_bg.clone(),
+        );
 
         // Cloud sync defaults on. The toggle lives in efxlve_game_settings.json
         // (camelCase). An older path looked at a file that was never written, so
@@ -2588,7 +2650,10 @@ async fn spawn_launched(
             let mut sync_cmd = tokio::process::Command::new(&bin_bg);
             // -y first: sync-saves asks upload/download and would exit on a closed stdin.
             sync_cmd.args(["-y", "sync-saves", &app_name_bg]);
-            sync_cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+            sync_cmd
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
             #[cfg(windows)]
             sync_cmd.creation_flags(CREATE_NO_WINDOW);
             let finished = sync_cmd.output().await;
@@ -2640,7 +2705,8 @@ mod tests {
 
     #[test]
     fn parses_progress_percent_line() {
-        let line = "[DLManager] INFO: = Progress: 50.46% (1156/2291), Running for 00:00:31, ETA: 00:00:30";
+        let line =
+            "[DLManager] INFO: = Progress: 50.46% (1156/2291), Running for 00:00:31, ETA: 00:00:30";
         assert_eq!(parse_progress_percent(line), Some(50));
         let done = "[DLManager] INFO: = Progress: 100.00% (2291/2291), Running for 00:00:32, ETA: 00:00:00";
         assert_eq!(parse_progress_percent(done), Some(100));
@@ -2668,7 +2734,8 @@ mod tests {
 
     #[test]
     fn test_parse_eta() {
-        let line = "[DLManager] INFO: = Progress: 50.46% (1156/2291), Running for 00:00:31, ETA: 00:01:22";
+        let line =
+            "[DLManager] INFO: = Progress: 50.46% (1156/2291), Running for 00:00:31, ETA: 00:01:22";
         let res = parse_eta(line);
         assert_eq!(res, Some(("00:01:22".to_string(), 82)));
 
@@ -2759,7 +2826,10 @@ mod tests {
 
     #[test]
     fn test_is_game_process_running() {
-        assert!(!is_game_process_running(None, &["fake_nonexistent_game_xyz_999.exe".to_string()]));
+        assert!(!is_game_process_running(
+            None,
+            &["fake_nonexistent_game_xyz_999.exe".to_string()]
+        ));
         #[cfg(target_os = "windows")]
         {
             let running = is_game_process_running(None, &["services.exe".to_string()]);
@@ -2770,8 +2840,14 @@ mod tests {
     #[test]
     fn test_is_safe_game_dir() {
         let def = PathBuf::from(r"C:\Games");
-        assert!(is_safe_game_dir(&PathBuf::from(r"C:\Games\ReadyOrNot"), &def));
-        assert!(is_safe_game_dir(&PathBuf::from(r"D:\EpicGames\Cyberpunk2077"), &def));
+        assert!(is_safe_game_dir(
+            &PathBuf::from(r"C:\Games\ReadyOrNot"),
+            &def
+        ));
+        assert!(is_safe_game_dir(
+            &PathBuf::from(r"D:\EpicGames\Cyberpunk2077"),
+            &def
+        ));
         assert!(!is_safe_game_dir(&PathBuf::from(r"C:\"), &def));
         assert!(!is_safe_game_dir(&PathBuf::from(r"D:\"), &def));
         assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Games"), &def));
@@ -2781,7 +2857,8 @@ mod tests {
 
     #[test]
     fn test_force_remove_dir_all_handles_readonly() {
-        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_uninstall_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("efxlve_test_uninstall_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
         let sub = temp_dir.join("subfolder");
         std::fs::create_dir_all(&sub).unwrap();

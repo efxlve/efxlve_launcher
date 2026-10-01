@@ -3,10 +3,13 @@
  * screenshots, manage), store URLs and selective install.
  */
 
+import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
-import { summaryOf } from "../../../core/selectors";
+import { gameVersionsOf, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
+import { refreshLibraryResultsInPlace } from "../../library/library-view";
+import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../../drawer/drawer-view";
@@ -18,6 +21,21 @@ import {
   epicListBackups,
   epicStorePageUrlForGame,
 } from "../../../epic";
+
+/** Saves the chosen store copy and shows it on the open game page and in the library. */
+function selectGameVersion(appName: string): void {
+  rememberPreferredVersion(appName);
+  const versions = gameVersionsOf(appName);
+  if (versions.some((version) => S.epicFav.has(version.appName)) && !S.epicFav.has(appName)) {
+    S.epicFav.add(appName);
+    localStorage.setItem(FAV_KEY, JSON.stringify([...S.epicFav]));
+  }
+  const open = S.currentModalAppName;
+  if (open && versions.some((version) => version.appName === open)) {
+    openEpicModal(appName, false);
+  }
+  if (S.view === "library") refreshLibraryResultsInPlace();
+}
 
 export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -87,8 +105,9 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
 
     case "switch-drawer-version":
+    case "prefer-version":
       S.isVersionDropdownOpen = false;
-      if (id) openEpicModal(id, false);
+      if (id) selectGameVersion(id);
       return true;
 
     case "toggle-version-dropdown":

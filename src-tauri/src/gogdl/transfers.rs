@@ -1,16 +1,16 @@
-﻿//! GOG game download, update, and transfer management via `gogdl` CLI.
+//! GOG game download, update, and transfer management via `gogdl` CLI.
 
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Mutex;
 use std::time::Instant;
-use tauri::{AppHandle, Emitter, command};
+use tauri::{command, AppHandle, Emitter};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
 use super::cache::{load_installed_games, save_installed_games};
+use super::cmd_error;
 use super::models::GogInstalledInfo;
 use super::paths::{auth_json_path, ensure_binary};
-use super::cmd_error;
 
 #[derive(Default)]
 pub struct GogDlState {
@@ -87,11 +87,7 @@ impl<R: AsyncRead + Unpin> CrlfLines<R> {
 
     async fn next_line(&mut self) -> Option<String> {
         loop {
-            if let Some(pos) = self
-                .pending
-                .iter()
-                .position(|&b| b == b'\n' || b == b'\r')
-            {
+            if let Some(pos) = self.pending.iter().position(|&b| b == b'\n' || b == b'\r') {
                 let line_bytes: Vec<u8> = self.pending.drain(..pos).collect();
                 if !self.pending.is_empty() {
                     let next = self.pending[0];
@@ -142,7 +138,9 @@ fn parse_progress(line: &str) -> Option<i32> {
 fn parse_eta(line: &str) -> Option<String> {
     let idx = line.find("ETA:")? + "ETA:".len();
     let rest = line[idx..].trim();
-    let end = rest.find(|c: char| c == ' ' || c == ',' || c == '\t').unwrap_or(rest.len());
+    let end = rest
+        .find(|c: char| c == ' ' || c == ',' || c == '\t')
+        .unwrap_or(rest.len());
     let eta = rest[..end].trim();
     if !eta.is_empty() {
         Some(eta.to_string())
@@ -156,7 +154,9 @@ fn parse_speed(line: &str, keyword: &str) -> Option<(String, u64)> {
     let idx = line.find(keyword)? + keyword.len();
     let rest = line[idx..].trim_start();
     let clean = rest.trim_start_matches('-').trim_start();
-    let end = clean.find(|c: char| c == '(' || c == '/' || c == ',').unwrap_or(clean.len());
+    let end = clean
+        .find(|c: char| c == '(' || c == '/' || c == ',')
+        .unwrap_or(clean.len());
     let part = clean[..end].trim();
     if part.is_empty() {
         return None;
@@ -192,14 +192,29 @@ pub fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInf
     let text = std::fs::read_to_string(&info_path).ok()?;
     let val: serde_json::Value = serde_json::from_str(&text).ok()?;
 
-    let title = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let version = val.get("version").and_then(|v| v.as_str()).unwrap_or("1.0.0").to_string();
-    let build_id = val.get("buildId").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let title = val
+        .get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let version = val
+        .get("version")
+        .and_then(|v| v.as_str())
+        .unwrap_or("1.0.0")
+        .to_string();
+    let build_id = val
+        .get("buildId")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     let mut exe: Option<String> = None;
 
     if let Some(tasks) = val.get("playTasks").and_then(|v| v.as_array()) {
         for t in tasks {
-            let is_primary = t.get("isPrimary").and_then(|v| v.as_bool()).unwrap_or(false);
+            let is_primary = t
+                .get("isPrimary")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             let path = t.get("path").and_then(|v| v.as_str());
             if let Some(p) = path {
                 if is_primary || exe.is_none() {
@@ -381,8 +396,8 @@ pub async fn gog_install_game(
             Ok(s) if s.success() => {
                 // Record local install entry
                 let mut installed_map = load_installed_games(&app_clone);
-                let info = scan_gog_info(&target_dir_clone, &clean_id_clone).unwrap_or(
-                    GogInstalledInfo {
+                let info =
+                    scan_gog_info(&target_dir_clone, &clean_id_clone).unwrap_or(GogInstalledInfo {
                         game_id: clean_id_clone.clone(),
                         title: clean_id_clone.clone(),
                         install_path: target_dir_clone.to_string_lossy().to_string(),
@@ -390,13 +405,17 @@ pub async fn gog_install_game(
                         install_size: 0,
                         executable: None,
                         build_id: String::new(),
-                    },
-                );
+                    });
                 // Keep GOG Galaxy's registry entry in step so the official client
                 // does not offer the update we just installed. Best effort.
                 super::galaxy::sync_galaxy_version(&clean_id_clone, &info.version, &info.build_id);
                 // Freshly installed build is up to date: refresh the update cache.
-                super::updates::store_installed_build(&app_clone, &clean_id_clone, &info.build_id, &info.version);
+                super::updates::store_installed_build(
+                    &app_clone,
+                    &clean_id_clone,
+                    &info.build_id,
+                    &info.version,
+                );
                 installed_map.insert(clean_id_clone.clone(), info);
                 let _ = save_installed_games(&app_clone, &installed_map);
 
@@ -477,9 +496,7 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
 
     let _ = app.emit(
         "download-cancelled",
-        DlCancelledPayload {
-            id: composite_id,
-        },
+        DlCancelledPayload { id: composite_id },
     );
 
     Ok(())
@@ -499,7 +516,8 @@ fn gog_pid_for(composite_id: &str) -> Option<(u32, bool)> {
 pub async fn gog_pause_download(app: AppHandle, game_id: String) -> Result<String, String> {
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let composite_id = format!("gog::{clean_id}");
-    let (pid, already) = gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
+    let (pid, already) =
+        gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
     if already {
         return Ok("@t:dl.paused".to_string());
     }
@@ -522,7 +540,8 @@ pub async fn gog_pause_download(app: AppHandle, game_id: String) -> Result<Strin
 pub async fn gog_resume_download(app: AppHandle, game_id: String) -> Result<String, String> {
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let composite_id = format!("gog::{clean_id}");
-    let (pid, paused) = gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
+    let (pid, paused) =
+        gog_pid_for(&composite_id).ok_or_else(|| "@t:gog.notDownloading".to_string())?;
     if !paused {
         return Ok("@t:dl.resumed".to_string());
     }
@@ -619,8 +638,7 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
     // keeps showing a broken install (same reason we delete Epic `.item`s).
     super::galaxy::remove_galaxy_registry(&clean_id);
 
-    save_installed_games(&app, &installed_map)
-        .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
+    save_installed_games(&app, &installed_map).map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
 
     Ok(format!("@t:dl.uninstalled\u{1f}{}", info.title))
 }
@@ -655,8 +673,7 @@ pub async fn gog_import_game(
 
     let mut installed_map = load_installed_games(&app);
     installed_map.insert(clean_id, info.clone());
-    save_installed_games(&app, &installed_map)
-        .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
+    save_installed_games(&app, &installed_map).map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
 
     Ok(info)
 }
@@ -770,7 +787,10 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
                     VerifyCompletePayload {
                         id: id_clone,
                         success: false,
-                        message: format!("gogdl repair exited with code {}", status.code().unwrap_or(-1)),
+                        message: format!(
+                            "gogdl repair exited with code {}",
+                            status.code().unwrap_or(-1)
+                        ),
                     },
                 );
             }

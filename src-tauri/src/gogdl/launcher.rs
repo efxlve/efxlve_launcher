@@ -2,11 +2,13 @@
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-use tauri::{AppHandle, Emitter, command};
+use tauri::{command, AppHandle, Emitter};
 
 use super::cache::load_installed_games;
 use super::transfers::scan_gog_info;
-use crate::legendary::transfers::{discover_game_executables, game_process_pids, is_game_process_running};
+use crate::legendary::transfers::{
+    discover_game_executables, game_process_pids, is_game_process_running,
+};
 
 /// Helper to find any candidate executable in the game folder when metadata is missing.
 fn find_fallback_exe(dir: &Path) -> Result<PathBuf, String> {

@@ -11,8 +11,8 @@ export type View = "library" | "downloads" | "settings" | "profile" | "store" | 
 /** Store or catalog provider source for a game. */
 export type GameSource = "epic" | "gog" | "steam";
 
-/** Active catalog source filter in the library toolbar. */
-export type SourceFilter = "all" | "epic" | "gog" | "steam";
+/** One storefront the library filter can include or exclude. */
+export type StoreId = GameSource;
 
 /** Account/setup lifecycle phase for GOG.COM. */
 export type GogPhase = "checking" | "setup" | "login" | "library" | "error";

@@ -1,10 +1,10 @@
 //! WebDAV client for Nextcloud, ownCloud, Box, pCloud, and custom WebDAV servers.
 
-use std::path::Path;
+use crate::cloud_backup::models::CloudBackupEntry;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use reqwest::{Client, Method, StatusCode};
-use crate::cloud_backup::models::CloudBackupEntry;
+use std::path::Path;
 
 fn basic_auth_header(user: &str, pass: &str) -> String {
     format!("Basic {}", BASE64.encode(format!("{user}:{pass}")))
@@ -19,7 +19,12 @@ fn clean_base_url(url: &str) -> String {
 }
 
 /// Tests connectivity and credentials against a WebDAV server.
-pub async fn test_webdav_connection(client: &Client, url: &str, user: &str, pass: &str) -> Result<String, String> {
+pub async fn test_webdav_connection(
+    client: &Client,
+    url: &str,
+    user: &str,
+    pass: &str,
+) -> Result<String, String> {
     let clean = clean_base_url(url);
     let propfind = Method::from_bytes(b"PROPFIND").map_err(|e| e.to_string())?;
 
@@ -42,7 +47,12 @@ pub async fn test_webdav_connection(client: &Client, url: &str, user: &str, pass
 }
 
 /// Ensures a remote directory/collection exists via MKCOL.
-pub async fn ensure_remote_collection(client: &Client, url: &str, user: &str, pass: &str) -> Result<(), String> {
+pub async fn ensure_remote_collection(
+    client: &Client,
+    url: &str,
+    user: &str,
+    pass: &str,
+) -> Result<(), String> {
     let clean = clean_base_url(url);
     let mkcol = Method::from_bytes(b"MKCOL").map_err(|e| e.to_string())?;
 
@@ -86,7 +96,10 @@ pub async fn upload_file_webdav(
     if res.status().is_success() {
         Ok(())
     } else {
-        Err(format!("Server rejected upload with HTTP status: {}", res.status()))
+        Err(format!(
+            "Server rejected upload with HTTP status: {}",
+            res.status()
+        ))
     }
 }
 
@@ -110,7 +123,10 @@ pub async fn download_file_webdav(
         .map_err(|e| format!("Download request failed: {e}"))?;
 
     if !res.status().is_success() {
-        return Err(format!("Download failed with HTTP status: {}", res.status()));
+        return Err(format!(
+            "Download failed with HTTP status: {}",
+            res.status()
+        ));
     }
 
     let bytes = res.bytes().await.map_err(|e| e.to_string())?;
@@ -122,7 +138,12 @@ pub async fn download_file_webdav(
 }
 
 /// Deletes a file on WebDAV via DELETE.
-pub async fn delete_file_webdav(client: &Client, remote_url: &str, user: &str, pass: &str) -> Result<(), String> {
+pub async fn delete_file_webdav(
+    client: &Client,
+    remote_url: &str,
+    user: &str,
+    pass: &str,
+) -> Result<(), String> {
     let res = client
         .delete(remote_url)
         .header("Authorization", basic_auth_header(user, pass))
@@ -162,7 +183,10 @@ pub async fn list_webdav_backups(
     }
 
     if !res.status().is_success() && res.status() != StatusCode::MULTI_STATUS {
-        return Err(format!("Failed to list remote backups: HTTP {}", res.status()));
+        return Err(format!(
+            "Failed to list remote backups: HTTP {}",
+            res.status()
+        ));
     }
 
     let text = res.text().await.unwrap_or_default();
@@ -175,8 +199,15 @@ fn parse_propfind_xml(xml: &str, app_name: &str, base_url: &str) -> Vec<CloudBac
     let mut list = Vec::new();
 
     // Iterate over each <response> or <d:response> block
-    for block in xml.split("<response>").chain(xml.split("<d:response>")).skip(1) {
-        let block_end = block.find("</response>").or_else(|| block.find("</d:response>")).unwrap_or(block.len());
+    for block in xml
+        .split("<response>")
+        .chain(xml.split("<d:response>"))
+        .skip(1)
+    {
+        let block_end = block
+            .find("</response>")
+            .or_else(|| block.find("</d:response>"))
+            .unwrap_or(block.len());
         let chunk = &block[..block_end];
 
         let href = extract_tag_value(chunk, "href").or_else(|| extract_tag_value(chunk, "d:href"));
@@ -241,7 +272,10 @@ mod tests {
     fn test_extract_tag_value() {
         let xml = "<d:response><d:href>/remote.php/webdav/efxlve_saves/game1/1700000000.tar.gz</d:href><d:propstat><d:prop><d:getcontentlength>12345</d:getcontentlength></d:prop></d:propstat></d:response>";
         let href = extract_tag_value(xml, "d:href");
-        assert_eq!(href.unwrap(), "/remote.php/webdav/efxlve_saves/game1/1700000000.tar.gz");
+        assert_eq!(
+            href.unwrap(),
+            "/remote.php/webdav/efxlve_saves/game1/1700000000.tar.gz"
+        );
 
         let len = extract_tag_value(xml, "d:getcontentlength");
         assert_eq!(len.unwrap(), "12345");

@@ -11,16 +11,23 @@ use sha2::{Digest, Sha256};
 
 /// Packages the entire backup folder (including data/ and backup_info.json) into a compressed .tar.gz archive.
 /// Returns (archive_size_bytes, sha256_checksum).
-pub fn pack_backup_dir(source_backup_dir: &Path, target_tar_gz: &Path) -> Result<(u64, String), String> {
+pub fn pack_backup_dir(
+    source_backup_dir: &Path,
+    target_tar_gz: &Path,
+) -> Result<(u64, String), String> {
     if !source_backup_dir.is_dir() {
-        return Err(format!("Source directory does not exist: {}", source_backup_dir.display()));
+        return Err(format!(
+            "Source directory does not exist: {}",
+            source_backup_dir.display()
+        ));
     }
 
     if let Some(parent) = target_tar_gz.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
 
-    let file = File::create(target_tar_gz).map_err(|e| format!("Failed to create archive file: {e}"))?;
+    let file =
+        File::create(target_tar_gz).map_err(|e| format!("Failed to create archive file: {e}"))?;
     let writer = BufWriter::new(file);
     let enc = GzEncoder::new(writer, Compression::default());
     let mut tar_builder = tar::Builder::new(enc);
@@ -38,7 +45,9 @@ pub fn pack_backup_dir(source_backup_dir: &Path, target_tar_gz: &Path) -> Result
         .finish()
         .map_err(|e| format!("Failed to complete compression: {e}"))?;
 
-    writer.flush().map_err(|e| format!("Failed to flush archive: {e}"))?;
+    writer
+        .flush()
+        .map_err(|e| format!("Failed to flush archive: {e}"))?;
 
     // Compute size and SHA-256
     let (size, sha) = compute_file_sha256(target_tar_gz)?;
@@ -93,7 +102,8 @@ mod tests {
 
     #[test]
     fn test_pack_and_unpack_roundtrip() {
-        let temp_base = std::env::temp_dir().join(format!("efxlve_test_archive_{}", std::process::id()));
+        let temp_base =
+            std::env::temp_dir().join(format!("efxlve_test_archive_{}", std::process::id()));
         let src_dir = temp_base.join("source");
         let dst_dir = temp_base.join("unpacked");
         let archive_file = temp_base.join("backup.tar.gz");
@@ -102,7 +112,11 @@ mod tests {
         std::fs::create_dir_all(src_dir.join("data")).unwrap();
 
         std::fs::write(src_dir.join("backup_info.json"), r#"{"id":"123"}"#).unwrap();
-        std::fs::write(src_dir.join("data").join("save.dat"), b"SAVEGAME_DATA_BINARY").unwrap();
+        std::fs::write(
+            src_dir.join("data").join("save.dat"),
+            b"SAVEGAME_DATA_BINARY",
+        )
+        .unwrap();
 
         // Pack
         let (size, sha) = pack_backup_dir(&src_dir, &archive_file).expect("packing should succeed");

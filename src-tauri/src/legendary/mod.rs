@@ -3,29 +3,29 @@
 //! Phase 0 scope: binary resolution + auto-download, auth (code/import),
 //! session status and library listing. Downloads/play are phases 1-2.
 
-pub mod client;
+pub mod accounts;
+pub mod backup;
 pub mod cache;
+pub mod client;
+pub mod collections;
 pub mod commands;
+pub mod critic;
+pub mod download_resume;
 pub mod downloader;
+pub mod hltb;
+pub mod import_installed;
+pub mod library_playtime;
 pub mod models;
+pub mod move_game;
 pub mod paths;
 pub mod playtime;
 pub mod playtime_session;
-pub mod backup;
-pub mod collections;
-pub mod skip;
-pub mod download_resume;
-pub mod transfers;
-pub mod hltb;
-pub mod library_playtime;
-pub mod steamgrid;
-pub mod wiki;
 pub mod profile;
-pub mod critic;
 pub mod screenshots;
-pub mod move_game;
-pub mod accounts;
-pub mod import_installed;
+pub mod skip;
+pub mod steamgrid;
+pub mod transfers;
+pub mod wiki;
 
 use thiserror::Error;
 
@@ -98,13 +98,17 @@ impl LegendaryError {
     /// User-facing message descriptor (technical detail preserved as an argument).
     pub fn friendly(self) -> String {
         match &self {
-            LegendaryError::CommandFailed { stderr_tail, .. } => match transient_reason(stderr_tail) {
-                Some("rate_limit") => "@t:err.rateLimited".to_string(),
-                Some("session") => "@t:err.sessionExpired".to_string(),
-                Some(_) => format!("@t:err.network\u{1f}{stderr_tail}"),
-                None if stderr_tail.contains("Login failed") => "@t:err.loginFailed".to_string(),
-                None => self.to_string(),
-            },
+            LegendaryError::CommandFailed { stderr_tail, .. } => {
+                match transient_reason(stderr_tail) {
+                    Some("rate_limit") => "@t:err.rateLimited".to_string(),
+                    Some("session") => "@t:err.sessionExpired".to_string(),
+                    Some(_) => format!("@t:err.network\u{1f}{stderr_tail}"),
+                    None if stderr_tail.contains("Login failed") => {
+                        "@t:err.loginFailed".to_string()
+                    }
+                    None => self.to_string(),
+                }
+            }
             _ => self.to_string(),
         }
     }

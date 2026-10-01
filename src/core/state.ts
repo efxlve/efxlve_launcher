@@ -48,13 +48,34 @@ import {
   DIM_UNINSTALLED_KEY,
   CONTRAST_TITLES_KEY,
   LIB_PAGE_SIZE_KEY,
+  PREFERRED_VERSION_KEY,
+  SOURCE_FILTER_KEY,
   LIB_PAGINATION_KEY,
   normalizeLibraryPageSize,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GogPhase, LibraryItem, SavedAccount, SettingsSection, SourceFilter, View } from "./types";
+import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GogPhase, LibraryItem, SavedAccount, SettingsSection, StoreId, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
+
+const ALL_STORES: readonly StoreId[] = ["epic", "gog", "steam"];
+
+/** Stores left on in the library filter. An empty or broken save means all of them. */
+function loadEnabledStores(): Set<StoreId> {
+  try {
+    const raw = localStorage.getItem(SOURCE_FILTER_KEY);
+    if (!raw) return new Set(ALL_STORES);
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set(ALL_STORES);
+    const next = new Set<StoreId>();
+    for (const item of parsed) {
+      if (item === "epic" || item === "gog" || item === "steam") next.add(item);
+    }
+    return next.size > 0 ? next : new Set(ALL_STORES);
+  } catch {
+    return new Set(ALL_STORES);
+  }
+}
 
 function loadJsonRecord(key: string): Record<string, string> {
   try {
@@ -141,7 +162,12 @@ export const S = {
   gogGalaxyDetected: ([]) as import("../gog").GalaxyDetectedGame[],
   gogGalaxySyncing: false,
   gogUpdates: (new Map()) as Map<string, import("../gog").GogUpdateInfo>,
-  sourceFilter: ("all") as SourceFilter,
+  /** Storefronts included in the library. More than one can be on at once. */
+  enabledStores: loadEnabledStores(),
+  /** Canonical title → chosen library key, so playtime and trophies stay on that copy. */
+  preferredVersions: loadJsonRecord(PREFERRED_VERSION_KEY),
+  /** Games in the current library result (filters applied). -1 until the grid is built. */
+  libraryVisibleCount: -1,
   gogSummaries: ([]) as LibraryItem[],
   gogSummariesMap: (new Map()) as Map<string, LibraryItem>,
   steamSummaries: ([]) as LibraryItem[],

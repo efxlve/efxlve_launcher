@@ -22,7 +22,9 @@ pub struct ResumeRecord {
 pub enum DownloadStop {
     /// Explicit user cancel. Partial files may be removed only when this game
     /// was never installed; an update must keep the existing install folder.
-    UserCancel { was_installed: bool },
+    UserCancel {
+        was_installed: bool,
+    },
     /// Unexpected exit, timeout, network drop, crash, or stall. Not a cancel.
     Failure,
     Pause,
@@ -45,11 +47,15 @@ pub fn resumes_path() -> PathBuf {
 /// Pure rule shared by the monitor and the unit test.
 pub fn plan_stop(stop: DownloadStop) -> StopPlan {
     match stop {
-        DownloadStop::UserCancel { was_installed: false } => StopPlan {
+        DownloadStop::UserCancel {
+            was_installed: false,
+        } => StopPlan {
             cleanup_partial: true,
             keep_resume_record: false,
         },
-        DownloadStop::UserCancel { was_installed: true } => StopPlan {
+        DownloadStop::UserCancel {
+            was_installed: true,
+        } => StopPlan {
             cleanup_partial: false,
             keep_resume_record: false,
         },
@@ -186,7 +192,9 @@ mod tests {
         let plan = commit_stop(
             &path,
             "fortnite",
-            DownloadStop::UserCancel { was_installed: false },
+            DownloadStop::UserCancel {
+                was_installed: false,
+            },
         );
         assert!(plan.cleanup_partial);
         assert!(!plan.keep_resume_record);
@@ -198,7 +206,9 @@ mod tests {
         let update = commit_stop(
             &path,
             "fortnite",
-            DownloadStop::UserCancel { was_installed: true },
+            DownloadStop::UserCancel {
+                was_installed: true,
+            },
         );
         assert!(!update.cleanup_partial);
         assert!(load_one(&path, "fortnite").is_none());

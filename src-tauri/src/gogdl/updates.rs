@@ -99,7 +99,10 @@ pub async fn check_updates(app: &AppHandle, force: bool) -> Result<Vec<GogUpdate
         if info.build_id.is_empty() {
             continue;
         }
-        let fresh = cache.get(id).map(|c| is_fresh(c, now, force)).unwrap_or(false);
+        let fresh = cache
+            .get(id)
+            .map(|c| is_fresh(c, now, force))
+            .unwrap_or(false);
         if !fresh && !pending.contains(id) {
             pending.push(id.clone());
         }
@@ -133,7 +136,9 @@ pub async fn check_updates(app: &AppHandle, force: bool) -> Result<Vec<GogUpdate
         if info.build_id.is_empty() {
             continue;
         }
-        let Some(cached) = cache.get(id) else { continue };
+        let Some(cached) = cache.get(id) else {
+            continue;
+        };
         if !has_update(&info.build_id, &cached.build_id) {
             continue;
         }

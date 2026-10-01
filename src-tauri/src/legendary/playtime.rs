@@ -42,7 +42,10 @@ pub fn read_playtime_store(path: &Path) -> HashMap<String, PlaytimeRecord> {
     HashMap::new()
 }
 
-pub fn write_playtime_store(path: &Path, store: &HashMap<String, PlaytimeRecord>) -> Result<(), String> {
+pub fn write_playtime_store(
+    path: &Path,
+    store: &HashMap<String, PlaytimeRecord>,
+) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -73,7 +76,7 @@ pub fn record_session(app_name: &str, session_seconds: u64) -> Result<PlaytimeRe
     rec.total_seconds = rec.total_seconds.saturating_add(session_seconds);
     rec.session_count = rec.session_count.saturating_add(1);
     rec.last_played_timestamp = Some(now_ts);
-    
+
     // Simple UTC/ISO format
     let days = now_ts / 86400;
     let rem = now_ts % 86400;

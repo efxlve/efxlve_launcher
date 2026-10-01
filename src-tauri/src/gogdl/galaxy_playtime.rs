@@ -125,8 +125,14 @@ mod tests {
 
     #[test]
     fn release_keys_map_to_product_ids() {
-        assert_eq!(product_id_from_release_key("gog_1207658924_GOTY").as_deref(), Some("1207658924"));
-        assert_eq!(product_id_from_release_key("gog_1423049311").as_deref(), Some("1423049311"));
+        assert_eq!(
+            product_id_from_release_key("gog_1207658924_GOTY").as_deref(),
+            Some("1207658924")
+        );
+        assert_eq!(
+            product_id_from_release_key("gog_1423049311").as_deref(),
+            Some("1423049311")
+        );
         // Non-GOG platforms and malformed keys are ignored.
         assert_eq!(product_id_from_release_key("steam_12345_foo"), None);
         assert_eq!(product_id_from_release_key("gog_notanumber"), None);

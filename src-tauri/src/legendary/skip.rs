@@ -152,8 +152,8 @@ pub fn write_seed(
     asset: &GameAsset,
 ) -> Result<(), LegendaryError> {
     let seed = build_seed(app_name, platform, asset);
-    let text =
-        serde_json::to_string_pretty(&seed).map_err(|e| LegendaryError::ParseError(e.to_string()))?;
+    let text = serde_json::to_string_pretty(&seed)
+        .map_err(|e| LegendaryError::ParseError(e.to_string()))?;
     let dir = config_dir.join("metadata");
     std::fs::create_dir_all(&dir).map_err(LegendaryError::from)?;
     std::fs::write(dir.join(format!("{app_name}.json")), text).map_err(LegendaryError::from)?;

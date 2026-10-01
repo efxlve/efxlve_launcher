@@ -128,16 +128,24 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
                     }
                     client = Some(c);
                 }
-                let mut payload = activity::Activity::new().details(&upd.details).state(&upd.state);
+                let mut payload = activity::Activity::new()
+                    .details(&upd.details)
+                    .state(&upd.state);
                 let mut assets = activity::Assets::new();
                 let mut has_assets = false;
                 if !upd.large_image.is_empty() {
-                    let hover = if upd.large_text.is_empty() { &upd.details } else { &upd.large_text };
+                    let hover = if upd.large_text.is_empty() {
+                        &upd.details
+                    } else {
+                        &upd.large_text
+                    };
                     assets = assets.large_image(&upd.large_image).large_text(hover);
                     has_assets = true;
                 }
                 if !upd.small_image.is_empty() {
-                    assets = assets.small_image(&upd.small_image).small_text("Efxlve Launcher");
+                    assets = assets
+                        .small_image(&upd.small_image)
+                        .small_text("Efxlve Launcher");
                     has_assets = true;
                 }
                 if has_assets {

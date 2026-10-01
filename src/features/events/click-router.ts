@@ -47,7 +47,7 @@ import { toggleSidebarDrawer } from "../../core/sidebar-layout";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import type { EpicSort, EpicViewMode, SourceFilter, View } from "../../core/types";
+import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { handleWindowResize, updateMaxIcon } from "../../core/window";
 import { setLanguage, t as i18nT } from "../../i18n";
@@ -73,6 +73,7 @@ import {
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
+import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
@@ -370,12 +371,7 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.toggle("show", S.isStoreDropdownOpen);
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
-    const val = t.dataset.val as SourceFilter;
-    if (val === "all" || val === "epic" || val === "gog" || val === "steam") {
-      S.sourceFilter = val;
-      S.isStoreDropdownOpen = false;
-      const menu = document.getElementById("store-dropdown-menu");
-      if (menu) menu.classList.remove("show");
+    if (applyStoreFilter(t.dataset.val)) {
       resetCardChunk();
       render();
     }

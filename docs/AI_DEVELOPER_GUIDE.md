@@ -61,7 +61,7 @@
 ### Recipe A: Adding a New Tauri Backend Command
 
 1. **Rust Implementation:**  
-   Add your async or sync handler in `src-tauri/src/legendary/commands.rs` (or appropriate submodule):
+   Add the handler in the matching file under `src-tauri/src/legendary/commands/` (`session`, `cdn`, `achievements`, `metadata`, `verify`, `game_local`, or `ops`). `commands/mod.rs` re-exports it, so the path stays `legendary::commands::`:
    ```rust
    #[tauri::command]
    pub async fn epic_my_new_command(app_name: String) -> Result<String, String> {

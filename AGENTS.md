@@ -1,88 +1,49 @@
-﻿# AGENTS.md — Efxlve Launcher
+# AGENTS.md — Efxlve Launcher
 
-> Bu dosya, projede çalışan yapay zeka ajanları (Antigravity, Cursor / Claude) ve geliştiriciler için **tek operasyonel gerçektir**.
-> Geçmiş sürüm kayıtları ve detaylı geliştirme günlükleri için `docs/CHANGELOG_INTERNAL.md` dosyasına bakın.
+This file is the operational rule set for people and coding agents. For the file map, read `docs/agent/README.md` first. History lives in `docs/CHANGELOG_INTERNAL.md`.
 
----
+## 1. What this is
 
-## 1. Proje Vizyonu: "Universal Gaming Hub"
+Efxlve Launcher is a Windows x86_64 desktop game hub. It makes Epic, GOG, and Steam usable from one window so those clients do not have to stay open in the background.
 
-Efxlve Launcher; Epic Games, GOG ve Steam gibi dağınık mağaza ve başlatıcıları arka planda gereksiz kılan; ultra hızlı, düşük bellek tüketen, konsol sadeliğinde birleşik bir **Masaüstü Oyun Merkezi (Universal Gaming Hub)**'dir (Windows x86_64).
+- Backend: Rust (Tauri 2) wraps the Legendary CLI and gogdl, reads local Steam VDF files, and opens store pages as native WebView2 child windows.
+- Frontend: Vite 6 + TypeScript 5.6. No framework. DOM updates and O(1) maps.
 
-- **Felsefe:** GOG Galaxy gibi hantal olmayan, Playnite gibi karmaşık eklenti ayarı gerektirmeyen, kutudan çıktığı gibi 120 FPS akıcılıkta çalışan, "gerçek siyah" PS5/Hydra konsol estetiğine sahip native bir deneyim sunmak.
-- **Backend:** `legendary` CLI (GPL-3.0) ve `gogdl` gibi harici araçları Rust ile sarar, gömülü mağazaları native WebView2 child pencereleri (`add_child`) ile açar, yerel Steam manifest/VDF dosyalarını okur.
-- **Frontend:** Vanilla TypeScript + Vite (Framework veya Virtual DOM kütüphanesi yoktur; saf DOM manipülasyonu ve O(1) hash map indeksleri kullanılır).
-
----
-
-## 2. Teknoloji Yığını & Zorunlu Komutlar
-
-- **Tauri v2** (`features = ["unstable"]` — gömülü mağaza child webview'ları için zorunludur)
-- **Rust stable** (MSVC toolchain, Windows) + **Node 20+**
-- **Frontend:** Vite 6 + TypeScript 5.6 (vanilla) + inline SVG ikonlar
-- **Backend:** `serde`, `tokio`, `reqwest`, `thiserror`
+## 2. Commands
 
 ```powershell
-npm.cmd run tauri dev      # Geliştirme modu (Windows PowerShell'de DAİMA npm.cmd kullanılır)
-npm.cmd run build          # Tip denetimi ve bundle (tsc --noEmit && vite build)
-cargo check                # Hızlı Rust backend doğrulaması
-cargo test                 # Rust birim testleri (yeni mantık/parser eklendiğinde test zorunludur)
+npm.cmd run tauri dev
+npm.cmd run build
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
----
+PowerShell must call `npm.cmd`, not `npm`.
 
-## 3. Katı Kurallar & Sıfır Tolerans (Zero-Tolerance Invariants)
+## 3. Rules
 
-1. **PERFORMANS & HAFİFLİK (1 Numaralı Öncelik):**
-   - 500+ oyunluk kütüphanede asla O(N²) arama yapılmaz; `rawOf` ve `summaryOf` hash map'leri O(1) tutulur.
-   - Boşta çalışan `requestAnimationFrame`, periyodik polling veya CSS animasyonu bırakılamaz.
-   - Heroic Prensibi: Arayüz ÖNCE yerel disk önbelleğinden anında açılır; ağ senkronizasyonu arka planda sessizce yürütülür. Ağ kesilse bile arayüz kilitlenmez.
-   - Render disiplini: İlerleme veya IPC olaylarında tüm görünüm ASLA yeniden çizilmez (`innerHTML = ...` yasaktır). İlgili DOM öğeleri yerinde (`patchLibraryCardDom`, `data-dlbtn`) güncellenir.
-2. **SIFIR EMOJİ POLİTİKASI (Kesinlikle Yasak):**
-   - Arayüzün hiçbir yerinde (butonlar, bildirimler, etiketler, sekmeler, dil seçenekleri) işletim sistemi emojisi (`🎮`, `🚀`, `✨`, `⭐`, `🇹🇷` vb.) KULLANILAMAZ. Her zaman inline SVG ikon (`icon("name", 16)`) veya ISO dil kodu (`TR`, `EN`) kullanılır.
-3. **TASARIM DİLİ (Hydra / PS5 Console Dark):**
-   - **Gerçek siyah** yüzeyler (`#000000`), 1px hairline sınırlar ve tek beyaz vurgu rengi (`--accent #ffffff`).
-   - Renk yalnızca DURUM bildirir (yeşil: online, amber: update/beklemede, kırmızı: hata/sayaç). Süs amaçlı renk kullanımı yasaktır.
-   - YASAKLAR: Neon gölgeler (`box-shadow glow`), gradyan metinler (`background-clip: text`), dekoratif mor/cyan gradyanlar, `backdrop-filter: blur` ve her öğeyi 999px kapsüle çevirmek yasaktır.
-4. **HYDRA ARAYÜZ SADELİĞİ & ART-FIRST FELSEFESİ (Aşırı Kalabalıklaşma Yasağı):**
-   - **Kapak Hijyeni (Art-First):** Kütüphanedeki kapakların üzerine asla sabit oynama süresi veya kupa rozetleri yığılmaz. Kapaklar temiz birer posterdir; detaylar yalnızca hover durumunda veya detay sayfasında gösterilir.
-   - **Sıfır Veri Tekrarı:** Aynı sayfada aynı veri (örn. HLTB süresi veya inceleme puanı) asla birden fazla yerde gösterilemez.
-   - **Sinematik Oyun Sayfası:** Oyun detay sayfası bir veritabanı veya bento kutu çöplüğü değildir. Geniş hero görseli, net birincil eylem (`Oyna`/`Yükle`) ve ferah bir içerik akışına sahip olmalıdır.
-5. **KONTROLCÜ, TV MODU & STEAM INPUT VİZYONU:**
-   - **10-ft TV Modu (`tv-mode.ts`):** PC TV'ye bağlandığında klavye/fareye gerek kalmadan PlayStation/Xbox konsol dashboard'u gibi çalışır (A: Seç, B: Geri, LB/RB: Raf geçişi).
-   - **Virtual Controller Bridge (Steam Input Eşdeğeri):** Epic ve GOG oyunlarında native DualSense/DualShock desteği olmayan oyunlar (örn: Dead by Daylight) için kontrolcüyü sanal XInput'a (Xbox 360) çeviren native köprü vizyonu hedeflenir.
-6. **SAYISAL TİTREME ENGELLEME (Tabular Nums):**
-   - İndirme hızları (`MB/s`), disk hızları, yüzdeler (`%45`), oyun süreleri ve kupa sayaçlarında `font-variant-numeric: tabular-nums` zorunludur.
-7. **MODÜLERLİK & DOSYA BOYUTU LİMİTİ:**
-   - Kaynak dosyaların tek amaca odaklanması hedeflenir. Dev, tek parça monolit dosyalar yazılmaz; sorumluluklar `src/features/<ad>/` veya `src/core/` altında mantıklı modüllere ayrılır.
-8. **İNGİLİZCE KOD YORUMLARI:**
-   - Tüm kod yorumları yalnızca İngilizce yazılır (harici ve açık kaynak denetçiler için).
-9. **COMMIT KURALI:**
-   - Git commit'leri ve push işlemleri **yalnızca kullanıcı açıkça talep ettiğinde** yapılır. Commit mesajları standart İngilizce emir kipiyle (`feat: ...`, `fix: ...`, `refactor: ...`) yazılır.
-10. **GÖMÜLÜ MAĞAZA ALTIN KURALI:**
-   - `WebviewBuilder::additional_browser_args(...)` çağrısı WebView2 alt pencerelerini sessizce bozar; asla kullanılmaz.
+1. **Performance.** No O(N²) scans of a 500+ game library. Use `rawOf` and `summaryOf`. No idle `requestAnimationFrame`, polling, or animation. Paint from the disk cache first; sync the network behind that. Never rebuild a view with `innerHTML` on progress or IPC. Patch the node (`patchLibraryCardDom`, `data-dlbtn`).
+2. **No emoji.** Buttons, toasts, tabs, and badges use `icon("name", size)` or an ISO language code (`TR`, `EN`).
+3. **Look.** True black `#000000`, 1px hairlines, one white accent `--accent`. Color means status only: green online, amber updating, red error. No neon glow, gradient text, decorative gradients, `backdrop-filter: blur`, or 999px pills.
+4. **Covers stay clean.** No permanent playtime or trophy badges on library covers. Do not show the same number twice on one screen. The game page is a wide hero, one primary action (`Play` / `Install`), and a quiet content column.
+5. **Controller.** TV Mode is `src/features/gamepad/tv-mode.ts` (A select, B back, LB/RB shelves). A later Virtual Controller Bridge should present DualSense as XInput for games that only accept Xbox pads.
+6. **Tabular numbers.** Speeds, percents, playtimes, and trophy counts use `font-variant-numeric: tabular-nums`.
+7. **Module size.** One job per file. Past ~1,500 lines, split by responsibility. `core/` never imports `features/`.
+8. **English.** Code comments are English.
+9. **Git.** Commit and push only when the user asks. Messages are imperative English (`feat:`, `fix:`, `refactor:`).
+10. **Child webviews.** Do not call `WebviewBuilder::additional_browser_args`. It blanks the child WebView2.
 
----
+## 4. Map
 
-## 4. Temel Dizin & Mimari Haritası
-
-- `src/core/`: Uygulama çekirdeği (state, türler, i18n, pencere yönetimi, navigasyon, toast, API çağrıları).
-- `src/features/`: Modüler işlevler:
-  - `library/`: Oyun kartları, kütüphane ızgarası/listesi, filtreleme, sanal sentinel yükleme.
-  - `store/`: Gömülü mağazalar (Epic, GOG, Steam).
-  - `downloads/`: İndirme kuyruğu, hız hesaplama, transfer yöneticisi.
-  - `settings/`: Sistem, hesaplar, indirme, bulut yedekleme, görünüm ayarları.
-  - `profile/`: Oyuncu istatistikleri, en çok oynananlar, kupa özeti.
-  - `gamepad/`: Kontrolcü dinleyicisi ve 10 fit TV Modu (`tv-mode.ts`).
-  - `palette/`: Hızlı komut paleti (Ctrl+K).
-  - `notifications/`: Bildirim merkezi ve geçmişi.
-- `src-tauri/src/`:
-  - `legendary/`: Epic Games istemci/CLI yönetimi, indirme kuyruğu, transferler, önbellek.
-  - `gogdl/`: GOG Galaxy / gogdl CLI entegrasyonu, oturum ve presence.
-  - `steam*.rs`: Steam oturum yönetimi (QR/credentials), DPAPI mühürlü kasa, kütüphane/başarım parser'ları.
-  - `main.rs`: Tauri IPC komut eşlemeleri (`generate_handler!`), pencere yaşam döngüsü.
-- `docs/`:
-  - `DESIGN_SYSTEM.md`: Renk token'ları, tipografi, buton ve kart sözleşmeleri.
-  - `ROADMAP.md`: Aktif görevler, eksik özellikler ve faz planı.
-  - `TAURI_IPC_REFERENCE.md`: Frontend ve Rust arasındaki 165+ IPC komutunun tam listesi.
-  - `CHANGELOG_INTERNAL.md`: Projenin geçmiş sürüm ve sprint günlükleri.
+- `src/core/` — state, selectors, nav, render bus, IPC-facing helpers.
+- `src/features/` — library, store, downloads, settings, profile, gamepad, events.
+- `src-tauri/src/legendary/commands/` — Epic IPC, one file per job. External path stays `legendary::commands::*`.
+- `src-tauri/src/legendary/transfers.rs` — install queue, progress, launch.
+- `src-tauri/src/gogdl/` — GOG session, library, transfers.
+- `src-tauri/src/steam.rs` and `steam_auth.rs` — Steam library/details and DPAPI sign-in.
+- `src-tauri/src/store_host.rs` — embedded store webviews.
+- `src-tauri/src/main.rs` — process boot, window, tray, IPC registration.
+- `docs/agent/README.md` — where to edit, and the traps.
+- `docs/DESIGN_SYSTEM.md` — color, type, buttons, cards.
+- `docs/TAURI_IPC_REFERENCE.md` — IPC commands.
+- `docs/ROADMAP.md` — planned work.

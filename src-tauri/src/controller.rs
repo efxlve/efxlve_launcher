@@ -28,7 +28,8 @@ pub struct ControllerSupportStatus {
 /// Reports which controller-bridging layers exist on this machine.
 #[tauri::command]
 pub fn controller_support_status() -> ControllerSupportStatus {
-    let vi_em_bus = winreg::query(r"HKLM\SYSTEM\CurrentControlSet\Services\ViGEmBus", None).is_some();
+    let vi_em_bus =
+        winreg::query(r"HKLM\SYSTEM\CurrentControlSet\Services\ViGEmBus", None).is_some();
     let steam_path = steam::steam_install_path();
     ControllerSupportStatus {
         vi_em_bus,

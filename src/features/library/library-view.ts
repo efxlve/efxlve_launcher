@@ -19,6 +19,7 @@ import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
+import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterMenuHtml } from "./store-filter";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -107,7 +108,7 @@ function visibleSignature(): string {
     S.query,
     S.epicFilter,
     S.epicSort,
-    S.sourceFilter,
+    enabledStoreKey(),
     S.activeCollectionId ?? "",
     String(S.libraryDataRev),
     S.appLanguage,
@@ -118,6 +119,7 @@ function visibleSignature(): string {
 export function invalidateLibraryVisibleCache(): void {
   visibleCache = null;
   visibleCacheSig = "";
+  S.libraryVisibleCount = -1;
 }
 
 export function epicVisibleSummaries(): EpicSummary[] {
@@ -144,79 +146,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
     }
   }
 
-  const baseItems: EpicSummary[] = [];
-
-  if (S.sourceFilter === "all") {
-    // When showing all stores, deduplicate cross-store games using canonical titles.
-    // If one copy is installed and the other is not, pick the installed one so the card reflects ready-to-play status!
-    const canonMap = new Map<string, EpicSummary>();
-
-    for (const s of S.epicSummaries) {
-      canonMap.set(canonicalGameTitle(s.title), s);
-    }
-
-    for (const g of S.gogSummaries) {
-      const c = canonicalGameTitle(g.title);
-      const existing = canonMap.get(c);
-      const gogSummary: EpicSummary = {
-        appName: g.key,
-        title: g.title,
-        version: g.version,
-        cover: g.coverUrl,
-        description: g.description,
-        dlcCount: g.dlcCount,
-        installed: g.installed,
-        installPath: g.installPath,
-        installSize: g.installSize,
-        installedVersion: g.installedVersion,
-        updateAvailable: g.updateAvailable,
-      };
-
-      if (!existing) {
-        canonMap.set(c, gogSummary);
-      } else if (!existing.installed && g.installed) {
-        canonMap.set(c, gogSummary);
-      }
-    }
-
-    // Steam games installed on this PC (they never shadow an owned copy either).
-    for (const g of S.steamSummaries) {
-      const c = canonicalGameTitle(g.title);
-      if (!canonMap.has(c)) canonMap.set(c, libraryItemToSummary(g));
-    }
-
-    // Games from other saved accounts (they never shadow an owned copy).
-    for (const s of sharedSummaries()) {
-      const c = canonicalGameTitle(s.title);
-      if (!canonMap.has(c)) canonMap.set(c, s);
-    }
-
-    baseItems.push(...canonMap.values());
-  } else if (S.sourceFilter === "epic") {
-    baseItems.push(...S.epicSummaries);
-    baseItems.push(...sharedSummaries().filter((s) => !s.appName.startsWith("gog::")));
-  } else if (S.sourceFilter === "gog") {
-    for (const g of S.gogSummaries) {
-      baseItems.push({
-        appName: g.key,
-        title: g.title,
-        version: g.version,
-        cover: g.coverUrl,
-        description: g.description,
-        dlcCount: g.dlcCount,
-        installed: g.installed,
-        installPath: g.installPath,
-        installSize: g.installSize,
-        installedVersion: g.installedVersion,
-        updateAvailable: g.updateAvailable,
-      });
-    }
-    baseItems.push(...sharedSummaries().filter((s) => s.appName.startsWith("gog::")));
-  } else if (S.sourceFilter === "steam") {
-    for (const g of S.steamSummaries) {
-      baseItems.push(libraryItemToSummary(g));
-    }
-  }
+  const baseItems = libraryBaseItems();
 
   const list = baseItems.filter((s) => {
     if (query.source === "epic" && s.appName.startsWith("gog::")) return false;
@@ -315,7 +245,45 @@ export function epicVisibleSummaries(): EpicSummary[] {
 
   visibleCache = result;
   visibleCacheSig = sig;
+  S.libraryVisibleCount = result.length;
   return result;
+}
+
+/**
+ * One row per title, limited to the storefronts that are checked.
+ * A saved store choice supplies the playtime and trophies on that card.
+ */
+function libraryBaseItems(): EpicSummary[] {
+  const groups = new Map<string, EpicSummary[]>();
+  const push = (s: EpicSummary): void => {
+    if (S.hiddenGames.has(s.appName)) return;
+    const canon = canonicalGroup(s);
+    const list = groups.get(canon);
+    if (list) list.push(s);
+    else groups.set(canon, [s]);
+  };
+  if (S.enabledStores.has("epic")) {
+    for (const s of S.epicSummaries) push(s);
+    for (const s of sharedSummaries()) {
+      if (!s.appName.startsWith("gog::")) push(s);
+    }
+  }
+  if (S.enabledStores.has("gog")) {
+    for (const g of S.gogSummaries) push(libraryItemToSummary(g));
+    for (const s of sharedSummaries()) {
+      if (s.appName.startsWith("gog::")) push(s);
+    }
+  }
+  if (S.enabledStores.has("steam")) {
+    for (const g of S.steamSummaries) push(libraryItemToSummary(g));
+  }
+  const out: EpicSummary[] = [];
+  for (const list of groups.values()) out.push(pickShownCopy(list));
+  return out;
+}
+
+function canonicalGroup(s: EpicSummary): string {
+  return canonicalGameTitle(s.title) || `\0${s.appName}`;
 }
 
 /**
@@ -326,7 +294,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
-  const showStores = S.showStoreBadge && S.sourceFilter === "all";
+  const showStores = S.showStoreBadge && S.enabledStores.size > 1;
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
   const titleRow = S.showCoverTitles
@@ -357,7 +325,7 @@ function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   const source = sourceOfKey(s.appName);
-  const showStores = S.showStoreBadge && S.sourceFilter === "all";
+  const showStores = S.showStoreBadge && S.enabledStores.size > 1;
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
@@ -455,7 +423,7 @@ function renderLibraryPager(total: number): string {
 export function renderEpicItems(): string {
   const inCollection = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   // Any change to the result set definition restarts pagination at page 1.
-  const resultKey = [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination].join("\x1f");
+  const resultKey = [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey()].join("\x1f");
   if (resultKey !== lastResultKey) {
     lastResultKey = resultKey;
     S.libPage = 1;
@@ -560,7 +528,7 @@ export function renderSkeletonLibrary(): string {
 export function syncLibraryHeadingCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  const total = totalLibraryGamesCount();
+  const total = S.libraryVisibleCount >= 0 ? S.libraryVisibleCount : totalLibraryGamesCount();
   const show = S.view === "library" && !S.currentModalAppName && total > 0;
   el.textContent = t("lib.gameCount", { count: total });
   el.hidden = !show;
@@ -574,6 +542,7 @@ export function refreshLibraryResultsInPlace(): boolean {
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
+  syncLibraryHeadingCount();
   return true;
 }
 
@@ -632,35 +601,17 @@ export function renderEpic(): string {
 
   const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
   const hasSteam = S.steamSummaries.length > 0;
-  // Per-store counts make a store's games (e.g. a freshly signed-in Steam
-  // library) discoverable from the store dropdown itself.
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
-  const storeOption = (value: string, label: string, count: number): string =>
-    `<button class="sort-menu-item-btn store-menu-item ${S.sourceFilter === value ? "selected" : ""}" data-act="source-filter" data-val="${value}">${esc(label)}<span class="store-option-count tabular-nums">${count}</span></button>`;
-  const currentStoreLabel =
-    S.sourceFilter === "epic"
-      ? t("source.epic")
-      : S.sourceFilter === "gog"
-        ? t("source.gog")
-        : S.sourceFilter === "steam"
-          ? t("source.steam")
-          : t("source.all");
-
   const sourceDropdown = hasGog || hasSteam
-    ? `
-    <div class="store-dropdown-container">
-      <button class="btn ghost lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
-        <span class="lib-sort-kicker">${esc(t("lib.storeBy"))}</span>
-        <span class="sort-btn-label">${esc(currentStoreLabel)}</span>
-        ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
-      </button>
-      <div id="store-dropdown-menu" class="sort-dropdown-menu ${S.isStoreDropdownOpen ? "show" : ""}">
-        ${storeOption("all", t("source.all"), totalLibraryGamesCount())}
-        ${storeOption("epic", t("source.epic"), visibleCount(S.epicSummaries.map((s) => s.appName)))}
-        ${storeOption("gog", t("source.gog"), visibleCount(S.gogSummaries.map((g) => g.key)))}
-        ${hasSteam ? storeOption("steam", t("source.steam"), visibleCount(S.steamSummaries.map((g) => g.key))) : ""}
-      </div>
-    </div>`
+    ? storeFilterMenuHtml(
+        {
+          all: allStoresMenuCount(),
+          epic: visibleCount(S.epicSummaries.map((s) => s.appName)),
+          gog: visibleCount(S.gogSummaries.map((g) => g.key)),
+          steam: visibleCount(S.steamSummaries.map((g) => g.key)),
+        },
+        hasSteam,
+      )
     : "";
 
   const tools = `

@@ -15,11 +15,9 @@ use super::GogError;
 pub const GOG_CLIENT_ID: &str = "46899977096215655";
 pub const GOG_CLIENT_SECRET: &str =
     "9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9";
-pub const GOG_REDIRECT_URI: &str =
-    "https://embed.gog.com/on_login_success?origin=client";
+pub const GOG_REDIRECT_URI: &str = "https://embed.gog.com/on_login_success?origin=client";
 
-const APP_USER_AGENT: &str =
-    "EfxlveLauncher/0.1.16 (Windows NT 10.0; Win64; x64) GOGGalaxy/2.0.71";
+const APP_USER_AGENT: &str = "EfxlveLauncher/0.1.16 (Windows NT 10.0; Win64; x64) GOGGalaxy/2.0.71";
 
 fn create_client() -> Result<reqwest::Client, GogError> {
     let mut headers = HeaderMap::new();
@@ -164,9 +162,8 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
     let mut page = 1;
 
     loop {
-        let url = format!(
-            "https://embed.gog.com/account/getFilteredProducts?mediaType=1&page={page}"
-        );
+        let url =
+            format!("https://embed.gog.com/account/getFilteredProducts?mediaType=1&page={page}");
 
         let res = client
             .get(&url)
@@ -218,14 +215,20 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                     // Protocol-relative URL — keep the original CDN subdomain
                     (
                         Some(format!("https:{raw_img}_glx_vertical_cover.jpg")),
-                        Some(format!("https:{raw_img}_product_card_v2_mobile_slider_639.jpg")),
+                        Some(format!(
+                            "https:{raw_img}_product_card_v2_mobile_slider_639.jpg"
+                        )),
                     )
                 } else {
                     // Bare hash — build the full CDN URL
                     let clean = raw_img.trim_start_matches('/');
                     (
-                        Some(format!("https://images.gog.com/{clean}_glx_vertical_cover.jpg")),
-                        Some(format!("https://images.gog.com/{clean}_product_card_v2_mobile_slider_639.jpg")),
+                        Some(format!(
+                            "https://images.gog.com/{clean}_glx_vertical_cover.jpg"
+                        )),
+                        Some(format!(
+                            "https://images.gog.com/{clean}_product_card_v2_mobile_slider_639.jpg"
+                        )),
                     )
                 };
 
@@ -364,10 +367,12 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
         if gdb_res.status().is_success() {
             if let Ok(val) = gdb_res.json::<Value>().await {
                 if let Some(vert) = val["game"]["vertical_cover"]["url_format"].as_str() {
-                    details.cover_url = Some(vert.replace("{formatter}", "").replace("{ext}", "jpg"));
+                    details.cover_url =
+                        Some(vert.replace("{formatter}", "").replace("{ext}", "jpg"));
                 }
                 if let Some(bg) = val["game"]["background"]["url_format"].as_str() {
-                    details.hero_url = Some(bg.replace("{formatter}", "_1600").replace("{ext}", "jpg"));
+                    details.hero_url =
+                        Some(bg.replace("{formatter}", "_1600").replace("{ext}", "jpg"));
                 }
             }
         }
@@ -411,8 +416,10 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
                             _ => "Windows".to_string(),
                         };
 
-                        let mut min_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-                        let mut rec_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                        let mut min_map: std::collections::HashMap<String, String> =
+                            std::collections::HashMap::new();
+                        let mut rec_map: std::collections::HashMap<String, String> =
+                            std::collections::HashMap::new();
                         let mut key_order: Vec<String> = Vec::new();
 
                         if let Some(req_groups) = op["systemRequirements"].as_array() {
@@ -421,13 +428,18 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
                                 if let Some(reqs) = group["requirements"].as_array() {
                                     for item in reqs {
                                         let raw_name = item["name"].as_str().unwrap_or_default();
-                                        let clean_name = raw_name.trim().trim_end_matches(':').trim();
+                                        let clean_name =
+                                            raw_name.trim().trim_end_matches(':').trim();
                                         let title = if clean_name.is_empty() {
                                             item["id"].as_str().unwrap_or("Hardware").to_string()
                                         } else {
                                             clean_name.to_string()
                                         };
-                                        let desc = item["description"].as_str().unwrap_or_default().trim().to_string();
+                                        let desc = item["description"]
+                                            .as_str()
+                                            .unwrap_or_default()
+                                            .trim()
+                                            .to_string();
                                         if !desc.is_empty() {
                                             if !key_order.contains(&title) {
                                                 key_order.push(title.clone());
@@ -463,15 +475,16 @@ pub async fn fetch_game_details(game_id: &str) -> Result<GogGameDetails, GogErro
                     }
 
                     if !systems.is_empty() {
-                        details.requirements = Some(crate::legendary::models::GameRequirementsResponse {
-                            supported: true,
-                            systems,
-                            languages: Vec::new(),
-                            app_name: format!("gog::{game_id}"),
-                            description: None,
-                            short_description: None,
-                            tags: Vec::new(),
-                        });
+                        details.requirements =
+                            Some(crate::legendary::models::GameRequirementsResponse {
+                                supported: true,
+                                systems,
+                                languages: Vec::new(),
+                                app_name: format!("gog::{game_id}"),
+                                description: None,
+                                short_description: None,
+                                tags: Vec::new(),
+                            });
                     }
                 }
             }
@@ -518,7 +531,10 @@ pub async fn fetch_gog_achievements(
 
     if let Some(arr) = items {
         for item in arr {
-            let key = item["achievement_key"].as_str().unwrap_or_default().to_string();
+            let key = item["achievement_key"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string();
             let name = item["name"].as_str().unwrap_or(&key).to_string();
             let desc = item["description"].as_str().unwrap_or_default().to_string();
             let unlock_date = item["date_unlocked"].as_str().map(String::from);
@@ -526,8 +542,14 @@ pub async fn fetch_gog_achievements(
             if unlocked {
                 user_unlocked += 1;
             }
-            let icon_unlocked = item["image_url_unlocked"].as_str().unwrap_or_default().to_string();
-            let icon_locked = item["image_url_locked"].as_str().unwrap_or(&icon_unlocked).to_string();
+            let icon_unlocked = item["image_url_unlocked"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string();
+            let icon_locked = item["image_url_locked"]
+                .as_str()
+                .unwrap_or(&icon_unlocked)
+                .to_string();
             let icon_link = if unlocked { icon_unlocked } else { icon_locked };
             let rarity_val = item["rarity"].as_f64();
             let hidden = !item["visible"].as_bool().unwrap_or(true);
@@ -540,10 +562,14 @@ pub async fn fetch_gog_achievements(
                 unlocked,
                 progress: if unlocked { 100.0 } else { 0.0 },
                 unlock_date,
-                icon_id: item["achievement_id"].as_str().unwrap_or_default().to_string(),
+                icon_id: item["achievement_id"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string(),
                 icon_link,
                 tier: None,
-                rarity: rarity_val.map(|p| crate::legendary::models::AchievementRarity { percent: Some(p) }),
+                rarity: rarity_val
+                    .map(|p| crate::legendary::models::AchievementRarity { percent: Some(p) }),
                 hidden,
                 is_base: true,
             });
@@ -551,8 +577,16 @@ pub async fn fetch_gog_achievements(
     }
 
     let total = achievements.len() as u32;
-    let completed: Vec<_> = achievements.iter().filter(|a| a.unlocked).cloned().collect();
-    let uninitiated: Vec<_> = achievements.iter().filter(|a| !a.unlocked).cloned().collect();
+    let completed: Vec<_> = achievements
+        .iter()
+        .filter(|a| a.unlocked)
+        .cloned()
+        .collect();
+    let uninitiated: Vec<_> = achievements
+        .iter()
+        .filter(|a| !a.unlocked)
+        .cloned()
+        .collect();
     let is_platinum = total > 0 && user_unlocked >= total;
 
     Ok(crate::legendary::models::GameAchievementsResponse {
@@ -576,20 +610,30 @@ pub async fn fetch_gog_achievements(
 /// are only used when nothing newer exists.
 pub async fn fetch_latest_build(game_id: &str) -> Result<Option<GogBuildInfo>, GogError> {
     let client = create_client()?;
-    let url = format!(
-        "https://content-system.gog.com/products/{game_id}/os/windows/builds?generation=2"
-    );
-    let resp = client.get(&url).send().await.map_err(|e| GogError::Http(e.to_string()))?;
+    let url =
+        format!("https://content-system.gog.com/products/{game_id}/os/windows/builds?generation=2");
+    let resp = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| GogError::Http(e.to_string()))?;
     if !resp.status().is_success() {
         return Ok(None);
     }
-    let val: Value = resp.json().await.map_err(|e| GogError::ParseError(e.to_string()))?;
+    let val: Value = resp
+        .json()
+        .await
+        .map_err(|e| GogError::ParseError(e.to_string()))?;
     let Some(items) = val.get("items").and_then(|v| v.as_array()) else {
         return Ok(None);
     };
     let mut fallback: Option<GogBuildInfo> = None;
     for item in items {
-        let build_id = item.get("build_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let build_id = item
+            .get("build_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if build_id.is_empty() {
             continue;
         }
@@ -617,7 +661,6 @@ pub async fn fetch_latest_build(game_id: &str) -> Result<Option<GogBuildInfo>, G
     Ok(fallback)
 }
 
-
 /// Marks the signed-in user online or offline in Galaxy (presence heartbeat).
 ///
 /// The presence service expects a heartbeat roughly every five minutes while
@@ -640,7 +683,8 @@ pub async fn send_presence(
         .await
         .map_err(|e| GogError::Http(e.to_string()))?;
 
-    if res.status() == reqwest::StatusCode::UNAUTHORIZED || res.status() == reqwest::StatusCode::FORBIDDEN
+    if res.status() == reqwest::StatusCode::UNAUTHORIZED
+        || res.status() == reqwest::StatusCode::FORBIDDEN
     {
         return Err(GogError::NotAuthenticated);
     }
@@ -653,7 +697,6 @@ pub async fn send_presence(
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn test_parse_gog_achievements_structure() {
@@ -722,9 +765,10 @@ mod tests {
         }"#;
 
         let val: Value = serde_json::from_str(req_json).unwrap();
-        let ops = val["_embedded"]["supportedOperatingSystems"].as_array().unwrap();
+        let ops = val["_embedded"]["supportedOperatingSystems"]
+            .as_array()
+            .unwrap();
         assert_eq!(ops.len(), 1);
         assert_eq!(ops[0]["operatingSystem"]["name"], "windows");
     }
 }
-

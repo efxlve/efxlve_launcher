@@ -78,7 +78,11 @@ fn write_cache(path: &Path, playtimes: &HashMap<String, i64>, now: u64) {
 fn user_value(raw: &str, key: &str) -> String {
     serde_json::from_str::<serde_json::Value>(raw)
         .ok()
-        .and_then(|v| v.get(key).and_then(|x| x.as_str()).map(|s| s.trim().to_string()))
+        .and_then(|v| {
+            v.get(key)
+                .and_then(|x| x.as_str())
+                .map(|s| s.trim().to_string())
+        })
         .unwrap_or_default()
 }
 
@@ -187,7 +191,10 @@ mod tests {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let map = fetch_playtimes().await.expect("live playtime fetch");
-            assert!(!map.is_empty(), "a signed-in account should have playtime records");
+            assert!(
+                !map.is_empty(),
+                "a signed-in account should have playtime records"
+            );
             assert!(map.values().any(|seconds| *seconds > 0));
         });
     }

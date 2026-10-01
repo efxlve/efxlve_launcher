@@ -283,7 +283,12 @@ impl GameAchievementsResponse {
             self.user_unlocked = self.achievements.iter().filter(|a| a.unlocked).count() as u32;
         }
         if self.user_xp == 0 {
-            self.user_xp = self.achievements.iter().filter(|a| a.unlocked).map(|a| a.xp).sum();
+            self.user_xp = self
+                .achievements
+                .iter()
+                .filter(|a| a.unlocked)
+                .map(|a| a.xp)
+                .sum();
         }
 
         let base_items: Vec<_> = self.achievements.iter().filter(|a| a.is_base).collect();
@@ -419,15 +424,22 @@ mod tests {
                 }
             ]
         }"##;
-        let res: GameAchievementsResponse = serde_json::from_str(json).expect("achievements must parse");
+        let res: GameAchievementsResponse =
+            serde_json::from_str(json).expect("achievements must parse");
         assert_eq!(res.user_unlocked, 1);
         assert_eq!(res.user_xp, 10);
         assert_eq!(res.achievements.len(), 1);
         assert_eq!(res.achievements[0].display_name, "Işığı Takip Et");
         assert_eq!(res.achievements[0].unlocked, true);
         assert_eq!(res.achievements[0].tier.as_ref().unwrap().name, "bronze");
-        assert_eq!(res.achievements[0].tier.as_ref().unwrap().hex_color, "#CA512B");
-        assert_eq!(res.achievements[0].rarity.as_ref().unwrap().percent, Some(82.5));
+        assert_eq!(
+            res.achievements[0].tier.as_ref().unwrap().hex_color,
+            "#CA512B"
+        );
+        assert_eq!(
+            res.achievements[0].rarity.as_ref().unwrap().percent,
+            Some(82.5)
+        );
         assert_eq!(res.user_awards.len(), 1);
         assert_eq!(res.user_awards[0].award_type, "PLATINUM");
     }
@@ -468,7 +480,8 @@ mod tests {
                 }
             ]
         }"##;
-        let mut res: GameAchievementsResponse = serde_json::from_str(json).expect("legendary json parse edilmeli");
+        let mut res: GameAchievementsResponse =
+            serde_json::from_str(json).expect("legendary json parse edilmeli");
         res.consolidate();
         assert_eq!(res.total_achievements, 48);
         assert_eq!(res.total_xp, 1000);
@@ -478,8 +491,14 @@ mod tests {
         assert_eq!(res.achievements[0].display_name, "Hey Gidi SAL Günleri");
         assert_eq!(res.achievements[0].unlocked, true);
         assert_eq!(res.achievements[0].tier.as_ref().unwrap().name, "bronze");
-        assert_eq!(res.achievements[0].tier.as_ref().unwrap().hex_color, "#CA512B");
-        assert_eq!(res.achievements[0].rarity.as_ref().unwrap().percent, Some(73.0));
+        assert_eq!(
+            res.achievements[0].tier.as_ref().unwrap().hex_color,
+            "#CA512B"
+        );
+        assert_eq!(
+            res.achievements[0].rarity.as_ref().unwrap().percent,
+            Some(73.0)
+        );
         assert_eq!(res.is_platinum, true);
     }
 

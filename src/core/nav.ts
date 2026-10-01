@@ -52,26 +52,34 @@ function pendingUpdateCount(): number {
 function syncPageGameCount(): void {
   const el = document.getElementById("lib-heading-count");
   if (!el) return;
-  const visible = totalLibraryGamesCount();
+  const visible = S.view === "library" && S.libraryVisibleCount >= 0 ? S.libraryVisibleCount : totalLibraryGamesCount();
   const show = S.view === "library" && !S.currentModalAppName && visible > 0;
   const label = t("lib.gameCount", { count: visible });
   if (el.textContent !== label) el.textContent = label;
   el.hidden = !show;
 }
 
-/** Refresh the download counter next to the Downloads sidebar entry and the status bar. */
-export function updateBadge(): void {
+/** Last pending-update total. Download progress must not rescan the library to recompute it. */
+let lastPendingUpdates = -1;
+
+/**
+ * Refresh the download counter next to the Downloads sidebar entry.
+ * `progress` skips the library scan: byte updates do not change which games
+ * are installed or which updates are waiting.
+ */
+export function updateBadge(scope: "full" | "progress" = "full"): void {
   let active = 0;
   for (const d of S.downloads.values()) if (!d.done) active++;
   let steamDl = 0;
   for (const g of S.steamGames) if (g.downloading) steamDl++;
-  const count = active + S.dlQueueStatus.queue.length + pendingUpdateCount() + steamDl;
+  if (scope === "full" || lastPendingUpdates < 0) lastPendingUpdates = pendingUpdateCount();
+  const count = active + S.dlQueueStatus.queue.length + lastPendingUpdates + steamDl;
   const label = count > 0 ? String(count) : "";
   if (dlBadge.textContent !== label) dlBadge.textContent = label;
   dlBadge.classList.toggle("hidden", count === 0);
   if (count > 0) dlBadge.title = label;
   else dlBadge.removeAttribute("title");
-  updateSidebarGames();
+  if (scope === "full") updateSidebarGames();
 }
 
 /** Page header: window version, back button state and a title for the current view or open game page. */
@@ -117,6 +125,18 @@ export function updatePageHeader(): void {
 export function syncStoreTabsUnderline(): void {}
 
 let sidebarGamesSig = "";
+/** Installed ids + recent list + language + open game. Unchanged during download progress. */
+let sidebarInputs = "";
+
+function sidebarInputStamp(): string {
+  let stamp = `${S.appLanguage}\0${S.currentModalAppName ?? ""}\0`;
+  for (let i = 0; i < S.epicRecent.length; i++) stamp += `${S.epicRecent[i]}\n`;
+  stamp += "\0";
+  for (const s of S.epicSummaries) {
+    if (s.installed && !S.hiddenGames.has(s.appName)) stamp += `${s.appName}\n`;
+  }
+  return stamp;
+}
 
 const SIDEBAR_RECENT_LIMIT = 7;
 const sidebarFillRank = new Map<string, number>();
@@ -138,6 +158,8 @@ function fillRank(id: string): number {
 export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
   if (!host) return;
+  const stamp = sidebarInputStamp();
+  if (stamp === sidebarInputs) return;
   const recentIdx = new Map<string, number>();
   S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
   const installed = S.epicSummaries.filter((s) => s.installed && !S.hiddenGames.has(s.appName));
@@ -147,9 +169,16 @@ export function updateSidebarGames(): void {
   const fillers = installed
     .filter((s) => !recentIdx.has(s.appName))
     .sort((a, b) => fillRank(a.appName) - fillRank(b.appName));
+  if (sidebarFillRank.size > installed.length + 32) {
+    const keep = new Set(installed.map((s) => s.appName));
+    for (const id of sidebarFillRank.keys()) {
+      if (!keep.has(id)) sidebarFillRank.delete(id);
+    }
+  }
   const shown = played.concat(fillers).slice(0, SIDEBAR_RECENT_LIMIT);
 
   const sig = shown.map((s) => s.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
+  sidebarInputs = stamp;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 

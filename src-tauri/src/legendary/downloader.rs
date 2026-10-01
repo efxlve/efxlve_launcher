@@ -32,13 +32,14 @@ fn emit(app: &AppHandle, state: &str, progress: Option<u8>, message: String) {
 /// Resolves the version from `legendary -V` output (`legendary version "0.21.1", ...`).
 pub async fn binary_version(bin: &Path) -> Result<String, LegendaryError> {
     let mut cmd = tokio::process::Command::new(bin);
-    cmd.arg("-V")
-        .stdin(std::process::Stdio::null());
+    cmd.arg("-V").stdin(std::process::Stdio::null());
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
     let out = cmd.output().await?;
     if !out.status.success() {
-        return Err(LegendaryError::DownloadFailed("@t:dl.binaryNotWorking".into()));
+        return Err(LegendaryError::DownloadFailed(
+            "@t:dl.binaryNotWorking".into(),
+        ));
     }
     let text = format!(
         "{}\n{}",
@@ -117,7 +118,11 @@ mod tests {
         let path = std::env::temp_dir().join(format!("efxlve_stamp_test_{}", std::process::id()));
         std::fs::write(&path, b"first").unwrap();
         let first = binary_stamp(&path);
-        assert_eq!(first, binary_stamp(&path), "an untouched file keeps its stamp");
+        assert_eq!(
+            first,
+            binary_stamp(&path),
+            "an untouched file keeps its stamp"
+        );
 
         std::fs::write(&path, b"second-content").unwrap();
         let second = binary_stamp(&path);
@@ -176,7 +181,10 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
         .await
         .map_err(|e| LegendaryError::DownloadFailed(e.to_string()))?;
     if !resp.status().is_success() {
-        return Err(LegendaryError::DownloadFailed(format!("HTTP {}", resp.status())));
+        return Err(LegendaryError::DownloadFailed(format!(
+            "HTTP {}",
+            resp.status()
+        )));
     }
     let total = resp.content_length();
     let mut file = tokio::fs::File::create(&part).await?;

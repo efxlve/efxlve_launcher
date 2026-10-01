@@ -77,11 +77,7 @@ pub fn read_cached_games(config: &Path) -> Vec<LegendaryGame> {
             }
         }
     }
-    out.sort_by(|a, b| {
-        a.app_title
-            .to_lowercase()
-            .cmp(&b.app_title.to_lowercase())
-    });
+    out.sort_by(|a, b| a.app_title.to_lowercase().cmp(&b.app_title.to_lowercase()));
     out
 }
 
@@ -99,7 +95,11 @@ pub struct EglDetectedGame {
 /// Path to the Epic Games Launcher Data/Manifests folder.
 pub fn egl_manifests_dir() -> std::path::PathBuf {
     if let Ok(pd) = std::env::var("ProgramData") {
-        let p = Path::new(&pd).join("Epic").join("EpicGamesLauncher").join("Data").join("Manifests");
+        let p = Path::new(&pd)
+            .join("Epic")
+            .join("EpicGamesLauncher")
+            .join("Data")
+            .join("Manifests");
         if p.is_dir() {
             return p;
         }
@@ -125,23 +125,47 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
             };
             if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
                 // DLC'leri atla (sadece ana oyunlar)
-                let main_game = val.get("MainGameAppName").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let main_game = val
+                    .get("MainGameAppName")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
                 if !main_game.is_empty() {
                     continue;
                 }
-                let install_loc = val.get("InstallLocation").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let install_loc = val
+                    .get("InstallLocation")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
                 if install_loc.is_empty() || !Path::new(install_loc).exists() {
                     continue;
                 }
-                let app_name = val.get("AppName").and_then(|v| v.as_str()).unwrap_or("").trim();
-                let title = val.get("DisplayName").and_then(|v| v.as_str()).unwrap_or("").trim();
-                let executable = val.get("LaunchExecutable").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let app_name = val
+                    .get("AppName")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
+                let title = val
+                    .get("DisplayName")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
+                let executable = val
+                    .get("LaunchExecutable")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
                 // If a launch executable is specified, verify it exists. If it does not,
                 // the game files are missing or incomplete (EGL would show "Repair").
                 if !executable.is_empty() && !Path::new(install_loc).join(executable).exists() {
                     continue;
                 }
-                let version = val.get("AppVersionString").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let version = val
+                    .get("AppVersionString")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
                 let install_size = val.get("InstallSize").and_then(|v| v.as_u64()).unwrap_or(0);
 
                 if !app_name.is_empty() && !title.is_empty() {
@@ -228,7 +252,9 @@ pub fn remove_game_manifests(config: &Path, app_name: &str) {
             }
         }
     }
-    let game_settings = config.join("game_settings").join(format!("{app_name}.json"));
+    let game_settings = config
+        .join("game_settings")
+        .join(format!("{app_name}.json"));
     if game_settings.is_file() {
         let _ = std::fs::remove_file(game_settings);
     }
@@ -337,7 +363,9 @@ pub fn read_third_party_installed_games(
     // launcher; everything else is dropped before any work happens.
     let jobs: Vec<(String, String, Option<Value>)> = candidates
         .into_iter()
-        .filter(|(app_name, _, _)| !app_name.is_empty() && !already_installed.contains_key(app_name))
+        .filter(|(app_name, _, _)| {
+            !app_name.is_empty() && !already_installed.contains_key(app_name)
+        })
         .collect();
 
     // Each probe starts a `reg query` process (~30 ms here), so ~24 candidates cost
@@ -369,9 +397,15 @@ pub fn read_third_party_installed_games(
 
     let mut out = Vec::new();
     for ((app_name, title, _), install_path) in jobs.into_iter().zip(probes) {
-        let Some(install_path) = install_path else { continue };
+        let Some(install_path) = install_path else {
+            continue;
+        };
         out.push(InstalledGame {
-            title: if title.is_empty() { app_name.clone() } else { title },
+            title: if title.is_empty() {
+                app_name.clone()
+            } else {
+                title
+            },
             app_name,
             version: "1.0".to_string(),
             install_path,
@@ -438,12 +472,23 @@ fn metadata_candidates(config: &Path) -> Vec<(String, String, Option<Value>)> {
         let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) else {
             continue;
         };
-        let app_name = val.get("app_name").and_then(|v| v.as_str()).unwrap_or("").trim();
+        let app_name = val
+            .get("app_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
         if app_name.is_empty() {
             continue;
         }
-        let title = val.get("app_title").and_then(|v| v.as_str()).unwrap_or("").trim();
-        let attrs = val.get("metadata").and_then(|m| m.get("customAttributes")).cloned();
+        let title = val
+            .get("app_title")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
+        let attrs = val
+            .get("metadata")
+            .and_then(|m| m.get("customAttributes"))
+            .cloned();
         out.push((app_name.to_string(), title.to_string(), attrs));
     }
     out
@@ -483,7 +528,11 @@ pub fn read_installed_with_catalog(
             if !path_str.is_empty() {
                 let p = Path::new(path_str);
                 if p.is_absolute() {
-                    let drive_present = p.components().next().map(|c| Path::new(&c).exists()).unwrap_or(false);
+                    let drive_present = p
+                        .components()
+                        .next()
+                        .map(|c| Path::new(&c).exists())
+                        .unwrap_or(false);
                     if drive_present && !p.exists() {
                         map.remove(&key);
                         changed = true;
@@ -495,7 +544,13 @@ pub fn read_installed_with_catalog(
 
     // 1. Read the Epic Games Launcher manifests and add the missing ones
     for egl in read_egl_installed_games() {
-        ensure_egl_manifest(config, &egl.app_name, &egl.install_path, &egl.version, "Windows");
+        ensure_egl_manifest(
+            config,
+            &egl.app_name,
+            &egl.install_path,
+            &egl.version,
+            "Windows",
+        );
         if !map.contains_key(&egl.app_name) {
             map.insert(
                 egl.app_name.clone(),
@@ -561,7 +616,11 @@ pub fn sync_egl_manifest_version(config: &Path, app_name: &str) {
         return;
     }
     let installed = read_installed(config);
-    let find = |name: &str| installed.iter().find(|g| g.app_name.eq_ignore_ascii_case(name));
+    let find = |name: &str| {
+        installed
+            .iter()
+            .find(|g| g.app_name.eq_ignore_ascii_case(name))
+    };
     let Some(main) = find(app_name) else {
         return;
     };
@@ -622,7 +681,8 @@ fn apply_installed_version(val: &mut serde_json::Value, version: &str, install_s
         return false;
     };
     let mut changed = false;
-    if !version.is_empty() && obj.get("AppVersionString").and_then(|v| v.as_str()) != Some(version) {
+    if !version.is_empty() && obj.get("AppVersionString").and_then(|v| v.as_str()) != Some(version)
+    {
         obj.insert(
             "AppVersionString".to_string(),
             serde_json::Value::String(version.to_string()),
@@ -630,11 +690,17 @@ fn apply_installed_version(val: &mut serde_json::Value, version: &str, install_s
         changed = true;
     }
     if obj.get("InstallSize").and_then(|v| v.as_u64()) != Some(install_size) {
-        obj.insert("InstallSize".to_string(), serde_json::Value::from(install_size));
+        obj.insert(
+            "InstallSize".to_string(),
+            serde_json::Value::from(install_size),
+        );
         changed = true;
     }
     if obj.get("bNeedsValidation").and_then(|v| v.as_bool()) == Some(true) {
-        obj.insert("bNeedsValidation".to_string(), serde_json::Value::Bool(false));
+        obj.insert(
+            "bNeedsValidation".to_string(),
+            serde_json::Value::Bool(false),
+        );
         changed = true;
     }
     changed
@@ -663,8 +729,13 @@ mod tests {
     fn test_read_egl_installed_games_parses() {
         let games = read_egl_installed_games();
         if egl_manifests_dir().is_dir() {
-            assert!(!games.is_empty(), "If the EGL folder exists there must be at least one game");
-            let has_cyberpunk_or_rdr = games.iter().any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
+            assert!(
+                !games.is_empty(),
+                "If the EGL folder exists there must be at least one game"
+            );
+            let has_cyberpunk_or_rdr = games
+                .iter()
+                .any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
             assert!(has_cyberpunk_or_rdr, "Cyberpunk or RDR2 must be detected");
         }
     }
@@ -693,9 +764,19 @@ mod tests {
         let config = crate::legendary::skip::default_config_dir();
         let installed = read_installed(&config);
         if egl_manifests_dir().is_dir() {
-            assert!(installed.len() >= 6, "At least 6 installed games (EGL + Legendary) must be found");
-            let has_spider_or_wand = installed.iter().any(|g| g.app_name.contains("be23672deb69402781cd47cc2919caf4") || g.title.contains("Spider-Man") || g.title == "Wand");
-            assert!(has_spider_or_wand, "Spider-Man or Wand must be in the installed list");
+            assert!(
+                installed.len() >= 6,
+                "At least 6 installed games (EGL + Legendary) must be found"
+            );
+            let has_spider_or_wand = installed.iter().any(|g| {
+                g.app_name.contains("be23672deb69402781cd47cc2919caf4")
+                    || g.title.contains("Spider-Man")
+                    || g.title == "Wand"
+            });
+            assert!(
+                has_spider_or_wand,
+                "Spider-Man or Wand must be in the installed list"
+            );
         }
     }
 
@@ -706,7 +787,8 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
 
         let json_path = dir.join("installed.json");
-        let initial = r#"{"ReadyOrNot": {"app_name": "ReadyOrNot"}, "Cyberpunk": {"app_name": "Cyberpunk"}}"#;
+        let initial =
+            r#"{"ReadyOrNot": {"app_name": "ReadyOrNot"}, "Cyberpunk": {"app_name": "Cyberpunk"}}"#;
         std::fs::write(&json_path, initial).unwrap();
 
         remove_game_from_installed_json(&dir, "ReadyOrNot");
@@ -727,13 +809,21 @@ mod tests {
             "bNeedsValidation": true
         });
 
-        assert!(apply_installed_version(&mut val, "2.32_hotfix", 117213238008));
+        assert!(apply_installed_version(
+            &mut val,
+            "2.32_hotfix",
+            117213238008
+        ));
         assert_eq!(val["AppVersionString"], "2.32_hotfix");
         assert_eq!(val["InstallSize"], 117213238008u64);
         assert_eq!(val["bNeedsValidation"], false);
 
         // Re-running with the same values must be a no-op (no needless writes).
-        assert!(!apply_installed_version(&mut val, "2.32_hotfix", 117213238008));
+        assert!(!apply_installed_version(
+            &mut val,
+            "2.32_hotfix",
+            117213238008
+        ));
 
         // An unknown version must not clobber whatever EGL already stored.
         assert!(!apply_installed_version(&mut val, "", 117213238008));

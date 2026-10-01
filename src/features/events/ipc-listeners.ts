@@ -107,7 +107,7 @@ function scheduleDlDomUpdate(id: string): void {
 function applyDlDomUpdate(id: string): void {
   const dl = S.downloads.get(id);
   const progress = dl ? dl.progress : 100;
-  updateBadge();
+  updateBadge("progress");
   document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((b) => {
     b.textContent = t("common.downloading", { p: Math.round(progress) });
   });

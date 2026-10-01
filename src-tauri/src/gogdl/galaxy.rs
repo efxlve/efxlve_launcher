@@ -86,9 +86,13 @@ fn parse_reg_output(text: &str) -> Vec<GalaxyDetectedGame> {
             });
             continue;
         }
-        let Some(rec) = current.as_mut() else { continue };
+        let Some(rec) = current.as_mut() else {
+            continue;
+        };
         let line = raw.trim_start();
-        let Some(type_pos) = line.find("REG_") else { continue };
+        let Some(type_pos) = line.find("REG_") else {
+            continue;
+        };
         let name = line[..type_pos].trim().to_lowercase();
         let after = &line[type_pos..];
         let value = after
@@ -149,11 +153,23 @@ pub fn sync_galaxy_installed(app: &AppHandle) -> Result<u32, String> {
         // to the registry values so Galaxy installs are usable immediately.
         let info = super::transfers::scan_gog_info(dir, &g.game_id).unwrap_or(GogInstalledInfo {
             game_id: g.game_id.clone(),
-            title: if g.title.is_empty() { g.game_id.clone() } else { g.title.clone() },
+            title: if g.title.is_empty() {
+                g.game_id.clone()
+            } else {
+                g.title.clone()
+            },
             install_path: g.install_path.clone(),
-            version: if g.version.is_empty() { "1.0.0".to_string() } else { g.version.clone() },
+            version: if g.version.is_empty() {
+                "1.0.0".to_string()
+            } else {
+                g.version.clone()
+            },
             install_size: 0,
-            executable: if g.executable.is_empty() { None } else { Some(g.executable.clone()) },
+            executable: if g.executable.is_empty() {
+                None
+            } else {
+                Some(g.executable.clone())
+            },
             build_id: g.build_id.clone(),
         });
         map.insert(g.game_id.clone(), info);
@@ -183,10 +199,14 @@ pub fn sync_galaxy_version(game_id: &str, version: &str, build_id: &str) {
             continue;
         }
         if !version.is_empty() {
-            let _ = reg(&["add", &key, "/v", "version", "/t", "REG_SZ", "/d", version, "/f"]);
+            let _ = reg(&[
+                "add", &key, "/v", "version", "/t", "REG_SZ", "/d", version, "/f",
+            ]);
         }
         if !build_id.is_empty() {
-            let _ = reg(&["add", &key, "/v", "buildId", "/t", "REG_SZ", "/d", build_id, "/f"]);
+            let _ = reg(&[
+                "add", &key, "/v", "buildId", "/t", "REG_SZ", "/d", build_id, "/f",
+            ]);
         }
         return;
     }
@@ -231,6 +251,9 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1423049311
     #[test]
     fn empty_or_garbage_output_yields_no_records() {
         assert!(parse_reg_output("").is_empty());
-        assert!(parse_reg_output("ERROR: The system was unable to find the specified registry key").is_empty());
+        assert!(parse_reg_output(
+            "ERROR: The system was unable to find the specified registry key"
+        )
+        .is_empty());
     }
 }
