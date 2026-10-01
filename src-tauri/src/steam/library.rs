@@ -122,10 +122,12 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         && !paused
         && work_left
         && (!fully_installed || update_active);
-    // Steam's library percent is BytesDownloaded / BytesToDownload once that
-    // counter moves. Until the client flushes it, BytesDownloaded stays 0 and
-    // the moving number is BytesStaged — showing 0% hides a live update.
-    if downloading && bytes_downloaded == 0 && bytes_staged > 0 && bytes_to_stage > 0 {
+    // Steam's "N% complete" on an update is BytesStaged / BytesToStage once
+    // staging has started. The network counter can sit at a different percent
+    // (a 26% download next to a 40% update). Report the staged pair so the
+    // row matches the client. A download that has not staged yet keeps the
+    // network counter.
+    if downloading && bytes_to_stage > bytes_staged && bytes_staged > 0 {
         bytes_downloaded = bytes_staged;
         bytes_to_download = bytes_to_stage;
     }
@@ -435,10 +437,12 @@ mod tests {
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
-    fn a_moving_download_counter_stays_the_shown_progress() {
+    fn steam_complete_percent_follows_staging_while_both_move() {
         let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-both-{}", std::process::id()));
         let dl = tmp.join("downloading").join("730");
         std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        // Network is 26% (200289152/761417584). Steam's own "40% complete"
+        // is the staged fraction (886817329/2231094511).
         let both = r#"
     "AppState"
     {
@@ -453,8 +457,31 @@ mod tests {
     "#;
         let game = parse_app_manifest(both, &tmp).expect("game");
         assert!(game.downloading);
-        assert_eq!(game.bytes_downloaded, 200_289_152);
-        assert_eq!(game.bytes_to_download, 761_417_584);
+        assert_eq!(game.bytes_downloaded, 886_817_329);
+        assert_eq!(game.bytes_to_download, 2_231_094_511);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn a_download_with_no_staged_bytes_uses_the_network_counter() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-net-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let net = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1026"
+    	"BytesToDownload"		"4000"
+    	"BytesDownloaded"		"1000"
+    	"BytesToStage"		"0"
+    	"BytesStaged"		"0"
+    }
+    "#;
+        let game = parse_app_manifest(net, &tmp).expect("game");
+        assert!(game.downloading);
+        assert_eq!(game.bytes_downloaded, 1000);
+        assert_eq!(game.bytes_to_download, 4000);
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
