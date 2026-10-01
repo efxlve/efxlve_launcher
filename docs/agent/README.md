@@ -25,12 +25,12 @@ Use `npm.cmd`, not `npm`, in PowerShell. Do not commit unless the user asks.
 | Download progress DOM | `src/features/events/ipc-listeners.ts` (`applyDlDomUpdate`). Do not call `render()` here |
 | A screen | `src/features/<name>/` |
 | Epic IPC command | `src-tauri/src/legendary/commands/<file>.rs`, then register it in `src-tauri/src/main.rs`, then wrap it in `src/epic.ts` |
-| Epic install / queue / launch | `src-tauri/src/legendary/transfers.rs` |
+| Epic install / queue / launch | `src-tauri/src/legendary/transfers/` (`queue.rs` owns the state machine) |
 | Epic account vault | `src-tauri/src/legendary/accounts.rs` |
 | GOG | `src-tauri/src/gogdl/` |
-| Steam library, details, achievements | `src-tauri/src/steam.rs` |
-| Steam sign-in and DPAPI vault | `src-tauri/src/steam_auth.rs` |
-| Embedded store webviews | `src-tauri/src/store_host.rs` |
+| Steam library, details, achievements | `src-tauri/src/steam/` (`mod.rs` lists each file) |
+| Steam sign-in and DPAPI vault | `src-tauri/src/steam_auth/` (`session.rs`, `wire.rs`, `vault.rs`) |
+| Embedded store webviews | `src-tauri/src/store_host.rs` and `store_extension.js` |
 | Strings | `src/locales/*.json` (15 files, same keys). Rust sends `@t:key` plus `\u{1f}` args. The UI translates them with `localizeMessage` |
 
 `core/` must not import `features/`. Features import `core/` and call `S.field = ...` (the binding `S` is not reassigned).
@@ -67,16 +67,20 @@ Callers still use `legendary::commands::epic_*`. The folder is split by job:
 
 `download-progress` can fire many times a second. `applyDlDomUpdate` calls `updateBadge("progress")`. That path updates the counter and the bars only. It does not rescan the library or rebuild the sidebar. A full `updateBadge()` runs when the queue, install set, or update list changes.
 
-## Still large
+## One job per file
 
-These files are still above the ~1,500 line target. They were not split because their private helpers call each other in both directions; a mechanical cut would create circular modules.
+Callers keep the old paths (`steam::steam_status`, `legendary::transfers::epic_install_game`, `steam_auth::steam_login_begin`). Open the folder's `mod.rs` first. It names the file that owns the job.
 
-| File | Why it is one module today |
+| Folder | Files |
 |---|---|
-| `legendary/transfers.rs` | Queue, progress parser, install monitor, uninstall, and launch share one state machine |
-| `steam.rs` | VDF parser, library, store details, achievements, and screenshots share the parser |
-| `steam_auth.rs` | Protobuf login, QR, and the DPAPI vault are one session state machine |
-| `store_host.rs` | Webview host. The long `STORE_EXTENSION_SCRIPT` is injected JavaScript, not Rust logic |
+| `steam/` | `vdf`, `runtime`, `library`, `protocol`, `cloud`, `playtime`, `users`, `catalog`, `achievements`, `shots` |
+| `steam_auth/` | `wire` (protobuf), `vault` (DPAPI), `session` (commands) |
+| `legendary/transfers/` | `parse`, `paths`, `guard`, `queue`, `launch`, `uninstall` |
+| `legendary/commands/` | Epic IPC, one file per job (table above) |
+
+`store_extension.js` is the script injected into the store webview. `store_host.rs` only places and sizes that webview.
+
+A file past ~1,500 lines should be split on a one-way dependency. Do not cut a state machine in half if the two halves call each other.
 
 ## Verify
 

@@ -2,7 +2,7 @@
 
 > **Primary Audience:** AI Agents & Core Developers.
 > **Purpose:** Instant symbol lookup, architecture mapping, and file navigation. Read this to locate any function, state variable, module, or view in under 5 seconds.
-> **Last synced:** 01.10.2026. Start at `docs/agent/README.md`. Epic commands are a folder (`legendary/commands/`), not one file. The store webview host is `store_host.rs`.
+> **Last synced:** 01.10.2026. Start at `docs/agent/README.md`. Epic commands, Epic transfers, Steam library, and Steam sign-in are folders. The store page script is `store_extension.js`.
 
 ---
 
@@ -84,12 +84,15 @@ efxlve_launcher/
 │   └── src/                           # Rust sources
 │       ├── main.rs                    # App builder, window, tray, settings, IPC table
 │       ├── store_host.rs              # Embedded store child webviews
+│       ├── store_extension.js         # Script injected into those webviews
 │       ├── vault_id.rs                # Account-id allowlist (blocks path escape)
 │       ├── presence.rs                # Discord Rich Presence worker
 │       ├── eos.rs                     # Epic Online Services overlay detection
+│       ├── steam/                     # Steam library, details, achievements (see steam/mod.rs)
+│       ├── steam_auth/                # Steam sign-in, protobuf, DPAPI vault
 │       ├── legendary/                 # Epic backend
 │       │   ├── commands/              # Epic IPC, split by job (see docs/agent/README.md)
-│       │   ├── transfers.rs           # Install/update/uninstall, queue, progress parsing, EGL manifest sync
+│       │   ├── transfers/             # Install queue, progress parse, launch, uninstall, delete guard
 │       │   ├── accounts.rs            # Epic account vault (archive/activate/remove sessions)
 │       │   ├── cache.rs               # Disk readers, library snapshot, EGL `.item` helpers
 │       │   ├── import_installed.rs    # Portable-folder game scanner & import
@@ -106,7 +109,7 @@ efxlve_launcher/
 │   ├── ROADMAP.md                     # Prioritized backlog (audit findings live in §6)
 │   ├── CHANGELOG_INTERNAL.md          # Development history (§1–174)
 │   ├── TAURI_IPC_REFERENCE.md         # IPC command dictionary (165 commands)
-│   ├── REFACTOR_PLAN.md               # Modularization record + remaining splits
+│   ├── REFACTOR_PLAN.md               # Module-size rule and where the big files were split
 │   ├── DESIGN_SYSTEM.md               # Single desktop design language
 │   └── CROSS_PLATFORM.md              # Linux/macOS research
 ├── README.md
@@ -181,7 +184,7 @@ efxlve_launcher/
 | `presence.rs` | Discord Rich Presence worker (opt-in, `presence_enabled`). |
 | `eos.rs` | Epic Online Services overlay detection & install state. |
 | `legendary/commands/` | Epic IPC. `mod.rs` re-exports `session`, `cdn`, `achievements`, `metadata`, `verify`, `game_local`, `ops`. Call sites stay `legendary::commands::*`. |
-| `legendary/transfers.rs` | Install/update/uninstall pipelines, queue, progress parsing, **EGL `.item` version sync on success**, playtime session hooks. |
+| `legendary/transfers/` | Install queue (`queue.rs`), stderr parser (`parse.rs`), launch (`launch.rs`), uninstall (`uninstall.rs`), delete guard (`guard.rs`). EGL manifest sync still runs when an install succeeds. |
 | `legendary/cache.rs` | Disk readers, library snapshot, EGL manifest helpers (`sync_egl_manifest_version`, `remove_egl_manifests_for_game`). |
 | `legendary/accounts.rs` | Epic account vault (archive `user.json` + snapshot, activate, remove). |
 | `legendary/import_installed.rs` | Portable folder scan/import, `.item` rewrite helpers. |
@@ -195,8 +198,8 @@ efxlve_launcher/
 | `legendary/models.rs`, `client.rs`, `downloader.rs`, `paths.rs` | Models, CLI process runner, binary downloader, path resolver. |
 | `gogdl/*` | GOG OAuth, library, achievements, requirements, install/verify/launch, accounts, **online heartbeat** (`presence.gog.com`, `presence.rs`), **GOG Galaxy detection/sync** (`galaxy.rs`), **Galaxy playtime import** (`galaxy_playtime.rs`) and **update checking** (`updates.rs`, content-system build feed). |
 | `cloud_backup/*` | WebDAV + Google Drive save archives, auto-sync on game exit. |
-| `steam.rs` | Steam client detection (text VDF parser, library folders, app manifests), `steam://` hand-off, local playtime, store details (merged with the client's `appinfo.vdf` DLC list) and achievements from the client's own **binary KeyValues** cache (Web API key only as a fallback). |
-| `steam_auth.rs` | Steam account sign-in (RSA-encrypted password, Steam Guard code/one-tap approval, QR sign-in with inline SVG, poll, token refresh), **multi-account vault** (DPAPI-sealed refresh tokens at `<app_data>/steam/accounts/<steamid>.bin` + `accounts_meta.json`, legacy single-file migration), `GetOwnedGames`, `steam_login_*` / `steam_*_saved_account*` / `steam_switch_account` / `steam_owned_games` / `steam_logout` commands. |
+| `steam/` | Steam client files. `vdf.rs` parses text KeyValues. `library.rs` reads manifests. `catalog.rs` is store details plus `appinfo.vdf`. `achievements.rs` reads the client's binary cache (Web API key is the fallback). `protocol.rs` hands actions back through `steam://`. |
+| `steam_auth/` | Steam sign-in. `wire.rs` builds protobuf. `session.rs` runs the HTTPS flow (password, guard code, QR). `vault.rs` seals refresh tokens with DPAPI at `<app_data>/steam/accounts/<steamid>.bin`. |
 | `external_stores.rs`, `controller.rs`, `winreg.rs` | EA/Ubisoft/Xbox detection & launch hand-off, controller bridge probe, shared registry helper. |
 
 ---

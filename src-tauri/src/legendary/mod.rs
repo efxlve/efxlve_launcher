@@ -1,7 +1,8 @@
-//! Epic Games (Legendary CLI) integration.
+//! Epic Games integration through the Legendary CLI.
 //!
-//! Phase 0 scope: binary resolution + auto-download, auth (code/import),
-//! session status and library listing. Downloads/play are phases 1-2.
+//! `commands/` is the IPC surface. `transfers/` installs, launches, and
+//! uninstalls. Account files live in `accounts.rs`. Start at `commands/mod.rs`
+//! or `transfers/mod.rs`.
 
 pub mod accounts;
 pub mod backup;

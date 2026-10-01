@@ -107,7 +107,7 @@
 ### Scenario 1: Game Fails to Launch
 - **Check:** Does the game require a third-party launcher (EA App / Ubisoft Connect)?
 - **Diagnosis:** Run `legendary launch <app_name> --dry-run` or check `isThirdPartyManaged()`. EA games must use `link2ea://` protocol URI.
-- **File:** `src-tauri/src/legendary/transfers.rs` (`epic_launch_game`).
+- **File:** `src-tauri/src/legendary/transfers/launch.rs` (`epic_launch_game`).
 
 ### Scenario 2: Active Download Shows 0 B/s or Disappears
 - **Check:** Did Legendary prompt for DLC confirmation on stdin?

@@ -1,3 +1,11 @@
+/**
+ * Epic IPC types and `invoke` wrappers.
+ *
+ * Types match the Rust models (snake_case). Command arguments are camelCase.
+ * Presentation helpers (covers, slugs, third-party launchers) sit above the
+ * command wrappers. New commands go next to the matching section comment.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 import { NO_DESC } from "./core/constants";
@@ -700,7 +708,7 @@ export const epicGetAchievements = (appName: string, forceRefresh = false) =>
 export const epicGetAchievementsSummary = () =>
   invoke<Record<string, EpicAchievementSummary>>("epic_get_achievements_summary");
 
-/* ---------- Sistem Gereksinimleri (System Requirements) ---------- */
+/* ---------- System requirements ---------- */
 
 export interface SystemDetailItem {
   title: string;
@@ -726,7 +734,7 @@ export interface GameRequirementsResponse {
 export const epicGetSystemRequirements = (title: string, appName: string, forceRefresh = false) =>
   invoke<GameRequirementsResponse>("epic_get_system_requirements", { title, appName, forceRefresh });
 
-/* ---------- Epic Games Launcher Entegrasyonu ---------- */
+/* ---------- Epic Games Launcher detection ---------- */
 
 export interface EglDetectedGame {
   appName: string;
@@ -1002,7 +1010,7 @@ export const epicDeleteBackup = (appName: string, backupId: string) =>
 export const epicOpenBackupFolder = (appName: string) =>
   invoke<string>("epic_open_backup_folder", { appName });
 
-/* ---------- Koleksiyonlar (Collections / Categories) ---------- */
+/* ---------- Collections ---------- */
 
 export interface GameCollection {
   id: string;

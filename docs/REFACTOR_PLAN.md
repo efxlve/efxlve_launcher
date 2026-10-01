@@ -1,198 +1,34 @@
-# REFACTOR_PLAN.md — Efxlve Launcher Modularization Plan
+# Module layout
 
-> **Status (2026-10-01):** Epic IPC commands are `src-tauri/src/legendary/commands/` (one file per job). The embedded store is `src-tauri/src/store_host.rs`. Public paths are still `legendary::commands::*`. Still one module, on purpose, until a one-way split exists: `legendary/transfers.rs`, `steam.rs`, `steam_auth.rs`. Read `docs/agent/README.md` before the history below.
+Read `docs/agent/README.md` first. This file is the size rule and the split that keeps each file inside one job.
 
-> **Amaç / Purpose:** Projeyi AI ve insan geliştiricilerin rahatça okuyabileceği,
-> küçük ve sorumluluğu tek olan modüllere bölmek.
-> Split the project into small, single-responsibility modules that are easy for
-> both AI agents and human reviewers (including external reviewers) to read.
+Explanations in source and in this file are English. User-facing copy lives in `src/locales/*.json`, not in comments.
 
----
+## Rule
 
-## 1. Neden? / Why?
+One file, one job. Past about 1,500 lines, split along a one-way dependency. `core/` does not import `features/`. Callers keep the old Rust paths (`steam::steam_status`, `legendary::transfers::epic_install_game`, `steam_auth::steam_login_begin`, `legendary::commands::*`).
 
-Eski yapı "her şey tek dosyada" idi:
+Do not rename state with a regex. Move one function, then `npm.cmd run build` or `cargo test`.
 
-| Dosya | Eski satır | Durum |
+## Rust folders
+
+| Folder | Open first | Jobs |
 |---|---|---|
-| `src/styles.css` | ~10.100 | ✅ 29 modüle bölündü (`src/styles/`) |
-| `src/main.ts` | ~11.400 | 🚧 Faz 3'te bölünüyor |
-| `src/epic.ts` | ~1.030 | ✅ Kabul edilebilir (barrel olarak korunuyor) |
+| `src-tauri/src/steam/` | `mod.rs` | VDF parser, library, store details, achievements, screenshots, `steam://` actions |
+| `src-tauri/src/steam_auth/` | `mod.rs` | Protobuf bodies (`wire.rs`), DPAPI vault (`vault.rs`), sign-in commands (`session.rs`) |
+| `src-tauri/src/legendary/commands/` | `mod.rs` | Epic IPC, one file per job |
+| `src-tauri/src/legendary/transfers/` | `mod.rs` | Progress parser, install queue, launch, uninstall, delete guard |
+| `src-tauri/src/store_host.rs` | — | Child webview placement. The injected page script is `store_extension.js` |
 
-**Kural / Rule:** Hiçbir kaynak dosya **~1.500 satırı** geçmemelidir. Geçiyorsa
-sorumluluğu tek olan modüllere ayrılmalıdır.
+## Frontend
 
----
+`src/main.ts` only boots the window. Screens live in `src/features/<name>/`. Shared state is the object `S` in `src/core/state.ts`. Lookups go through `summaryOf` and `rawOf`.
 
-## 2. Comment Convention / Yorum Standardı
-
-All code comments must be **English-only** and explanatory. This keeps the
-project readable for external reviewers (e.g. Epic Games staff) and for
-contributors who do not speak Turkish. Existing Turkish comments are converted
-to English as files are touched or refactored.
-
-```ts
-/**
- * Resolve the cached cover for a game, falling back to official key art.
- * Order: custom user cover -> SteamGrid cache -> Epic DieselGameBox.
- */
-```
-
-```ts
-// Cache the value to avoid an O(n) lookup on every render.
-```
-
-**Forbidden:** Non-English, meaningless or copy-pasted comments.
-
----
-
-## 3. Hedef Dizin Yapısı / Target Structure
-
-```
-src/
-├── main.ts                     # Yalnızca bootstrap + init() (~<150 satır hedefi)
-├── i18n.ts                     # Çeviri motoru (mevcut)
-├── core/                       # Durum, IPC, yardımcılar (paylaşılan çekirdek)
-│   ├── types.ts                # ✅ Alan tipleri
-│   ├── constants.ts            # ✅ Sabitler + localStorage anahtarları
-│   ├── utils.ts                # ✅ Saf biçimlendirme/temizleme
-│   ├── icons.ts                # ✅ SVG ikon sistemi
-│   ├── state.ts                # 🚧 Tek paylaşılan `AppState` nesnesi
-│   ├── dom.ts                  # 🚧 viewEl, modalRoot, toasts... referansları
-│   ├── ipc.ts                  # 🚧 Tauri olay dinleyicileri + invoke sarmalayıcıları
-│   └── toast.ts                # 🚧 toast bildirimleri
-├── features/
-│   ├── library/                # Kütüphane: hero, raflar, grid, filtre
-│   ├── drawer/                 # Oyun detay çekmecesi + sekmeler
-│   ├── downloads/              # İndirme merkezi + kuyruk + hız grafiği
-│   ├── profile/                # Profil & kupa merkezi
-│   ├── settings/               # Ayarlar + 3. parti hub + dil
-│   ├── store/                  # Gömülü mağaza webview köprüsü
-│   ├── gamepad/                # Kontrolcü navigasyonu + HUD
-│   ├── screenshots/            # Galeri + lightbox + paylaşım
-│   ├── collections/            # Koleksiyon modalları
-│   ├── move-game/              # Sürücüler arası taşıma
-│   ├── dlc/                    # DLC yöneticisi + seçici kurulum
-│   └── context-menu/           # Sağ tık menüsü
-└── styles/                     # ✅ 29 modüler CSS dosyası + index.css
-```
-
----
-
-## 4. Durum Yönetimi Stratejisi / State Management
-
-`main.ts`'in bölünememesinin tek nedeni, yüzlerce modül-düzeyi `let`/`const`
-değişkeninin tek bir lexical scope'ta yaşamasıdır. Çözüm:
-
-1. **Tek `AppState` nesnesi** (`src/core/state.ts`):
-   ```ts
-   export const S = {
-     view: "library" as View,
-     epicSummaries: [] as EpicSummary[],
-     // ... tüm paylaşılan durum
-   };
-   ```
-   Nesne olduğu için her modül `S.view = "downloads"` yapabilir (import edilen
-   binding yeniden atanamaz; nesne alanı atanabilir).
-2. **Erişimciler** durumu mantıksal gruplara ayırır: `S.library`, `S.downloads`,
-   `S.profile`, `S.screenshots`... Böylece `S.downloads.queue` gibi okunur olur.
-3. **O(1) harita'lar** (`epicSummariesMap`, `epicGamesRawMap`) state içinde tutulur;
-   `summaryOf` / `rawOf` erişimcileri `core/state.ts`'ten export edilir.
-4. **Döngüsel bağımlılık yok:** `features/*` → `core/*` tek yönlü akar.
-   `core/*` hiçbir `features/*` modülünü import etmez.
-
-**Kritik güvenlik notu:** Yeniden adlandırma mekanik olarak (regex) YAPILMAZ.
-Her özellik tek tek taşınır, `npm.cmd run build` (tsc) yeşil olmadan sonraki
-adıma geçilmez. Yerel değişken gölgelemesi (shadowing) her adımda elle kontrol edilir.
-
----
-
-## 5. Fazlar / Phases
-
-| Faz | Kapsam | Durum |
-|---|---|---|
-| **F1** | CSS'i 29 modüle böl (`src/styles/`). | ✅ Tamamlandı |
-| **F2** | `core/types.ts`, `core/constants.ts`, `core/utils.ts`, `core/icons.ts` çıkar. | ✅ Tamamlandı |
-| **F3a** | `core/state.ts` (tek `S` nesnesi); `main.ts` referanslarını `S.*`'e taşı (TS dil servisi ile, tsc doğrulamalı). | ✅ Tamamlandı |
-| **F3b** | `core/dom.ts` ✅ + `core/toast.ts` ✅ + `core/selectors.ts` ✅; `core/ipc.ts` (olay kayıtları) 🚧. | 🟡 Kısmi |
-| **F4** | `features/context-menu` ✅, `features/dlc` ✅, `features/move-game` ✅ (view), `features/settings` ✅, `features/profile` ✅; `features/gamepad` 🚧, `features/screenshots` 🚧, `features/collections` 🚧. | 🟡 Devam ediyor |
-| **F5** | `features/library`, `features/drawer`, `features/downloads`, `features/profile`, `features/settings` çıkar. | 🚧 Planlandı |
-| **F6** | `features/collections`, `features/move-game`, `features/dlc`, `features/store` çıkar; `main.ts` yalnızca bootstrap kalır. | 🚧 Planlandı |
-
----
-
-## 6. Doğrulama / Verification (her fazda zorunlu)
+## Checks
 
 ```powershell
-npm.cmd run build     # tsc --noEmit + vite build
-cargo test            # Rust tarafı bozulmadı mı
+npm.cmd run build
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-- AGENTS.md kuralı: her faz sonunda `docs/CHANGELOG_INTERNAL.md`'ye özet + `git commit`.
-- `AGENTS.md` §4.2 (ölü kod sıfır tolerans): taşıma sonrası eski tanımlar silinir.
-
----
-
-## 6.5. Handoff / Current Status (Devir Teslim)
-
-> Bu bölüm, farklı bir AI ajanı veya geliştirici devraldığında kaldığı yerden
-> devam edebilmesi için güncel durumu özetler. **Her faz sonunda güncelle.**
-
-**Son güncelleme (28.09.2026, v0.1.17):** Modülerleştirme tamamlandı; v0.1.17 denetim düzeltmeleri (ROADMAP §6.1-6.2) uygulandı. `npm.cmd run build` + `cargo test` yeşil. **`main.ts` 11.422 → 130 satır.**
-
-**Tamamlanan yapı:**
-```
-src/
-├── main.ts                 130 satır (render/scheduleRender/closeAllModals + bootstrap)
-├── i18n.ts                 15 dilli çeviri motoru (en/tr gömülü, 13 dil dinamik chunk)
-├── epic.ts / gog.ts        IPC barrel + tipler
-├── core/                   16 modül (types, constants, utils, icons, state, dom, toast,
-│                           selectors, game-view, epic-actions, epic-playtime, nav,
-│                           recent, render, window, collection-icons)
-├── features/               28 alt sistem (auth, library, drawer, downloads, profile,
-│                           settings, store, gamepad + tv-mode, screenshots, collections,
-│                           move-game, dlc, manage, cover, playtime, context-menu, events
-│                           + 8 işleyici, notifications, palette, presence, accounts,
-│                           cloud-backup, changelog, eos, install, storage, updates, onboarding)
-├── styles/                 12 CSS modülü (11 + index.css)
-└── locales/                15 dil JSON (1.361 anahtar, tam parite)
-```
-
-**Kalan işler (opsiyonel, backlog):**
-1. `main.ts`'in `render()` fonksiyonu (view dağıtıcısı) `core/`'a taşınabilir; ama 130 satır kabul edilebilir.
-2. **Olay router'ı** (`click-router.ts`, 1.938 → **647 satır**) ✅ TAMAMLANDI. Aksiyonlar sorumluluk bazlı 8 alt işleyiciye ayrıldı.
-3. **Rust dosya boyutları:** `legendary/commands.rs` **3.060**, `legendary/transfers.rs` **2.703**, `main.rs` **1.969**, `legendary/screenshots.rs` **1.353** satır — ~1.500 kuralının üzerinde; sorumluluk bazlı bölünmeleri backlog'da (ROADMAP §6.3). `legendary/profile.rs` 1.060, `eos.rs` 942, `move_game.rs` 961 sınıra yakın.
-4. `docs/REFACTOR_PLAN.md` §6.6 backlog: (a) kalan Türkçe arayüz metinlerinin `src/locales/*.json`'a taşınması ✅, (b) optimizasyon/ölü kod temizliği ✅ (v0.1.17'de ek olarak ~14 ölü handler dalı, ölü CSS blokları ve export'lar temizlendi).
-
-**Kanıtlanmış desen:** Yeni modül `import { S } from "../../core/state"` + `core/*` import eder; `core` asla `features`'ı import etmez (döngüsel bağımlılık yok). `render()`/`scheduleRender()`/`openEpicModal()`/`closeAllModals()`/`updateGamepadHud()` gerektiren modüller `core/render.ts` bus'ından import eder; `main.ts`/`ipc-listeners.ts` gerçek implementasyonları kaydeder.
-
-**Yöntem notu (F3a):** Durum taşıma, TypeScript dil servisi (`findReferences`) ile yapıldı; mekanik regex KULLANILMADI (yerel gölgeleme riski). Geçici betikler `%TEMP%\opencode\` altındaydı, repoda tutulmadı.
-
-**DİKKAT (satır kayması):** Toplu kesim betikleri çalıştırılmadan önce hedef fonksiyon satır numaraları YENİDEN alınmalı (import eklemeleri numaraları kaydırır). Aksi hâlde fonksiyon gövdesi/başlığı yanlış kesilir ve `tsc` sözdizimi hatası verir; `git checkout -- src/main.ts` ile geri dönüp tekrar denenmelidir.
-
----
-
-## 6.6. Ek Backlog (Kullanıcı Talebi — Sonra Yapılacak)
-
-Bu maddeler kullanıcı tarafından istendi ve modülerleştirme ile birlikte/sonrasında ele alınacak:
-
-1. **Türkçe metinlerin i18n'e taşınması (Localization) — TAMAMLANDI:**
-   - ✅ Tüm kullanıcıya dönük metinler `t()` üzerinden geliyor: nav, sağ tık menüsü, onboarding, çekmece (tüm sekmeler + widget'lar), kütüphane, indirmeler, ayarlar, profil, koleksiyonlar, taşıma modalı, ekran görüntüleri, kapak/SteamGridDB modalı, olay yöneticileri, auth, mağaza yükleme, toast/hata mesajları ve boş durumlar.
-   - ✅ Tüm kod yorumları İngilizce (Kural §4.9). Kalan Türkçe dizeler yalnızca veri sabitleri (demo katalog, sentinel'ler, anahtar kelime tespiti) ve dil adları.
-   - `src/locales/tr.json` + `en.json`: **1.208 anahtar**, tam eşlikli. Diğer 13 dil İngilizce'ye düşer. `i18n.ts` motoru ve 15 dil dosyası hazır (bkz. §84). Kaldırılan özelliklerin ölü anahtarları temizlendi (bkz. §166).
-2. **Gereksiz / optimize olmayan kod temizliği — TAMAMLANDI (temel):**
-   - ✅ Kullanılmayan importlar ve ölü yerel değişkenler temizlendi (`noUnusedLocals` 0 hata).
-   - ✅ Sıfır-emoji politikası ihlali giderildi: `POPULAR_COL_EMOJIS` kaldırıldı, `core/collection-icons.ts` (24 SVG ikon) ile değiştirildi.
-   - ✅ Ölü bağımsız yönetim modalı (`openManageModal`/`renderManageModal`/`#manage-root`) ve `sortLabelMap`/`fmtPrice` kaldırıldı.
-   - 🚧 Gelecekte: taşımalar sırasında yeni fark edilen tekrar eden mantık/performans borcu.
-
----
-
-## 7. Bilinen Riskler / Known Risks
-
-- **Gölgeleme (shadowing):** `view`, `query`, `games`, `downloads` gibi isimler
-  bazı fonksiyonlarda yerel değişken olabilir. `S.*` taşıması sırasında her
-  kullanım elle doğrulanır; tsc + manuel gözden geçirme şarttır.
-- **Circular imports:** `core` asla `features`'ı import etmez kuralı korunur.
-- **Performans:** Refactor davranışı DEĞİŞTİRMEZ; O(1) harita'lar ve hedefli DOM
-  mutasyonu disiplini (AGENTS.md §6) aynen korunur.
+Use `npm.cmd`, not `npm`, in PowerShell.

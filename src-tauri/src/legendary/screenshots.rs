@@ -1,3 +1,8 @@
+//! Screenshot hotkey, capture, and the Pictures folder.
+//!
+//! Owns the global hotkey hook and moving new captures into per-game folders.
+//! Steam's own screenshots are read in `steam/shots.rs`, not here.
+
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
