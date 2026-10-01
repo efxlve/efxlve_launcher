@@ -27,9 +27,31 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.19",
+    version: "0.1.20",
     date: "2026-10-01",
     isCurrent: true,
+    fixed: [
+      {
+        en: "Opening notifications on the store keeps the store page where it is. The list sits on top of it.",
+        tr: "Mağaza sekmesinde bildirimleri açmak mağaza sayfasını kapatmaz veya kaydırmaz. Liste sayfanın üstünde durur.",
+      },
+      {
+        en: "Restoring the launcher from the taskbar no longer flashes from a tiny window to fullscreen.",
+        tr: "Launcher görev çubuğundan geri açılınca küçük bir pencereden tam ekrana zıplamaz.",
+      },
+      {
+        en: "Settings lists the Steam client, not every installed Steam game.",
+        tr: "Ayarlar her Steam oyununu değil, Steam istemcisini listeler.",
+      },
+      {
+        en: "A Steam game that has already finished downloading is no longer shown as downloading.",
+        tr: "İndirmesi bitmiş bir Steam oyunu artık indiriliyor olarak görünmez.",
+      },
+    ],
+  },
+  {
+    version: "0.1.19",
+    date: "2026-10-01",
     items: [
       {
         en: "Personal Cloud Save Backup: seamlessly back up and restore game saves with Google Drive (OAuth 2.0 PKCE) and WebDAV.",
