@@ -8,7 +8,8 @@
 import { listen } from "@tauri-apps/api/event";
 import { companionLibrary, companionResolveCovers, companionStoreStatus, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { scheduleRender } from "../../core/render";
+import { scheduleRender, render } from "../../core/render";
+import { setView } from "../store/store-view";
 import { S } from "../../core/state";
 
 const storeIds = new Map<string, string>();
@@ -18,7 +19,10 @@ function bindCompanionLogin(): void {
   if (loginBound) return;
   loginBound = true;
   void listen("companion-signed-in", () => {
-    void loadCompanionLibrary();
+    void loadCompanionLibrary().then(() => {
+      setView("library");
+      render();
+    });
   });
 }
 

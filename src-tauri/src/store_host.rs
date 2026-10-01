@@ -583,6 +583,10 @@ pub async fn show_store_view(
             if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
                 // A click on the store, while the notification layer is open, asks
                 // the shell to close that layer. The store page itself stays put.
+                if url.path() == "/bnet-library" {
+                    crate::companion::accept_bnet_library(&app_nav, url.fragment().unwrap_or(""));
+                    return false;
+                }
                 if url.path() == "/notif-close" {
                     let _ = app_nav.emit(
                         "notif-overlay-act",
@@ -613,6 +617,9 @@ pub async fn show_store_view(
             }
             true
         });
+    if store_id == "battlenet" {
+        builder = builder.initialization_script(crate::companion::bnet_watch_script());
+    }
     // The 44 KB storefront decoration only exists for the Epic store: injecting it
     // into the other storefronts meant parsing and running a script that finds
     // nothing, on every document load.

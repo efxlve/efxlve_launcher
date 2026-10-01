@@ -1387,7 +1387,7 @@
   "accounts.linkHint": "Bu istemcide açık olan hesabı bağla. Kayıtlı kütüphanesi burada görünür.",
   "accounts.linking": "Bağlanıyor",
   "accounts.signIn": "Giriş yap",
-  "accounts.bnetLogin": "Battle.net giriş sayfası açılır. Sahip olunan oyunlar o hesaptan gelir.",
+  "accounts.bnetLogin": "Mağazalar sekmesinde açılır. Girişten sonra sayfa kapanır ve oyunlar kütüphaneye gelir.",
   "accounts.setupNeeded": "Kurulum gerekli",
   "accounts.gogDesc": "GOG kütüphanesi desteği",
   "accounts.connectCta": "Hesap bağla",

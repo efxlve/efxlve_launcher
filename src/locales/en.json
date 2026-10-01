@@ -1387,7 +1387,7 @@
   "accounts.linkHint": "Link the account signed in to this client. Its cached library then shows here.",
   "accounts.linking": "Connecting",
   "accounts.signIn": "Sign in",
-  "accounts.bnetLogin": "Battle.net's sign-in page opens. Owned games come from that account.",
+  "accounts.bnetLogin": "Opens in Stores. After you sign in, the page closes and the games go to the library.",
   "accounts.setupNeeded": "Setup required",
   "accounts.gogDesc": "GOG library support",
   "accounts.connectCta": "Connect an account",

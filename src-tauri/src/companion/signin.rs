@@ -132,7 +132,11 @@ fn bounds(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
     }
 }
 
-fn accept_library(app: &AppHandle, fragment: &str) {
+pub(crate) fn watch_script() -> &'static str {
+    WATCH_SCRIPT
+}
+
+pub(crate) fn accept_library(app: &AppHandle, fragment: &str) {
     let games = battlenet::account_games(fragment);
     if games.is_empty() {
         if let Some(window) = app.get_window("main") {

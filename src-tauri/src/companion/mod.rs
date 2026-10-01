@@ -6,6 +6,7 @@
 //! Passwords and third-party client secrets are not stored here.
 
 mod accounts;
+pub(crate) use signin::{accept_library as accept_bnet_library, watch_script as bnet_watch_script};
 mod battlenet;
 mod covers;
 mod launch;

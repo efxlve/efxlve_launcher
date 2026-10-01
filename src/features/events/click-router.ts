@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionLink, companionOpenClient, companionShowLogin, companionUnlink, type CompanionStore } from "../../companion";
+import { companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -268,7 +268,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    let store = (t.dataset.store as "epic" | "gog" | "steam") || S.activeStore || "epic";
+    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet") || S.activeStore || "epic";
     if (!t.dataset.store && !isHeaderStore(store)) store = "epic";
     if (S.activeStore !== store) {
       S.activeStore = store;
@@ -502,14 +502,10 @@ document.addEventListener("click", (e) => {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
-    // Same frame as the store: the whole content column, so the account card cannot sit under the page.
-    const frame = document.getElementById("content")?.getBoundingClientRect();
-    const x = frame ? frame.left : 0;
-    const y = frame ? frame.top : 0;
-    const width = Math.max(100, window.innerWidth - x);
-    const height = Math.max(frame ? frame.height : 0, window.innerHeight - y);
-    void invoke("hide_store_view").catch(() => {});
-    void companionShowLogin(x, y, width, height).catch((e: unknown) => toast(String(e), "err"));
+    void invoke("companion_hide_login").catch(() => {});
+    S.activeStore = "battlenet";
+    pushNavHistory({ view: "store" });
+    void openStore("battlenet");
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;

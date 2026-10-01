@@ -180,17 +180,18 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
   epic: "Epic Games",
   gog: "GOG",
   steam: "Steam",
+  battlenet: "Battle.net",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet"];
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -199,10 +200,13 @@ export function isHeaderStore(id: string): boolean {
 export const GOG_STORE_URL = "https://www.gog.com/";
 export const STEAM_STORE_URL = "https://store.steampowered.com/";
 
+export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
+
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
   gog: GOG_STORE_URL,
   steam: STEAM_STORE_URL,
+  battlenet: BATTLENET_ACCOUNT_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -210,6 +214,7 @@ export function storeIdForUrl(url: string): StoreId {
   const lower = url.toLowerCase();
   if (lower.includes("gog.com")) return "gog";
   if (lower.includes("steampowered.com")) return "steam";
+  if (lower.includes("battle.net")) return "battlenet";
   return "epic";
 }
 
