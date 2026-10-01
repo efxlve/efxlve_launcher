@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSync, companionUnlink, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -83,7 +83,7 @@ import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { isHeaderStore, loadPlayerProfile, openProfile, openStore, setView } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -268,7 +268,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet" | "ubisoft") || S.activeStore || "epic";
+    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox") || S.activeStore || "epic";
     if (!t.dataset.store && !isHeaderStore(store)) store = "epic";
     if (S.activeStore !== store) {
       S.activeStore = store;
@@ -503,17 +503,14 @@ document.addEventListener("click", (e) => {
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
     const store = id === "ubisoft" ? "ubisoft" : "battlenet";
+    // The login page is used once; the tab itself stays a store page.
+    const loginUrl = store === "ubisoft" ? UBISOFT_LOGIN_URL : BATTLENET_ACCOUNT_URL;
     void invoke("companion_hide_login").catch(() => {});
     S.activeStore = store;
     pushNavHistory({ view: "store" });
-    if (store === "ubisoft") {
-      // A fresh login page: the warm one already sent its session once.
-      void invoke("destroy_store_view")
-        .catch(() => {})
-        .then(() => openStore("ubisoft"));
-    } else {
-      void openStore(store);
-    }
+    void invoke("destroy_store_view")
+      .catch(() => {})
+      .then(() => openStoreUrl(loginUrl, "store"));
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;
@@ -542,26 +539,6 @@ document.addEventListener("click", (e) => {
   } else if (act === "companion-uninstall" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
     void companionGameAction(store, id, "uninstall").catch((e: unknown) => toast(String(e), "err"));
-  } else if (act === "companion-rescan") {
-    const store = id as CompanionStore;
-    if (store === "ubisoft") {
-      // Refresh the sealed session first; the disk scan alone cannot see new
-      // purchases.
-      S.companionBusy = store;
-      render();
-      void companionSync(store)
-        .then(() => loadCompanionLibrary())
-        .catch((e: unknown) => {
-          const raw = String(e);
-          toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
-        })
-        .finally(() => {
-          S.companionBusy = "";
-          render();
-        });
-    } else {
-      void loadCompanionLibrary().then(() => render());
-    }
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

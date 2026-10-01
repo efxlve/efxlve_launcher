@@ -149,15 +149,18 @@ pub(crate) fn accept_library(app: &AppHandle, fragment: &str) {
     battlenet::save_owned(&games);
     let name = accounts::detected_name("battlenet");
     let _ = accounts::link_named("battlenet", &name);
+    // The account page did its job: the tab returns to the store page.
+    if let Some(window) = app.get_window("main") {
+        if let Some(webview) = window.get_webview("store-view-battlenet") {
+            if let Ok(url) = url::Url::parse("https://shop.battle.net/") {
+                let _ = webview.navigate(url);
+            }
+        }
+    }
     let _ = app.emit(
         "companion-signed-in",
         serde_json::json!({ "store": "battlenet", "count": games.len() }),
     );
-    if let Some(window) = app.get_window("main") {
-        if let Some(webview) = window.get_webview(LABEL) {
-            let _ = webview.close();
-        }
-    }
 }
 
 pub fn hide_login(app: &AppHandle) {

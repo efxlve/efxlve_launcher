@@ -44,6 +44,9 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
 (function () {
   if (window.__efxlveUbiHooks) return;
   window.__efxlveUbiHooks = true;
+  // Only the overlay login page hands out a session; the store page must not
+  // re-trigger an import on every visit.
+  var loginHost = location.hostname === "connect.cdn.ubisoft.com";
   var session = null;
   function b64(text) {
     var bytes = new TextEncoder().encode(text);
@@ -70,7 +73,7 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     window.__efxlveUbiTimer = setTimeout(done, 10000);
   }
   function inspect(url, method, text) {
-    if (!url) return;
+    if (!loginHost || !url) return;
     if (url.indexOf("/profiles/sessions") !== -1 && method === "POST") {
       try { take(JSON.parse(text)); } catch (e) {}
     } else if (url.indexOf("/configcache/api/postauth") !== -1) {
@@ -174,6 +177,14 @@ pub(crate) fn accept_session(app: &AppHandle, fragment: &str) {
                     session.name.trim().to_string()
                 };
                 let _ = accounts::link_named("ubisoft", &name);
+                // The login page did its job: the tab returns to the store.
+                if let Some(window) = app.get_window("main") {
+                    if let Some(webview) = window.get_webview("store-view-ubisoft") {
+                        if let Ok(url) = url::Url::parse("https://store.ubi.com/") {
+                            let _ = webview.navigate(url);
+                        }
+                    }
+                }
                 let _ = app.emit(
                     "companion-signed-in",
                     serde_json::json!({ "store": "ubisoft", "count": count }),

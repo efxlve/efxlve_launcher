@@ -108,8 +108,9 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean
     return `<button type="button" class="sort-menu-item-btn store-menu-item${on ? " is-on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-act="source-filter" data-val="${value}">${mark}${logo}<span class="store-option-label">${esc(label)}</span><span class="store-option-count tabular-nums">${count}</span></button>`;
   };
   const allOn = STORE_ORDER.every((id) => S.enabledStores.has(id));
-  // Companion stores join the menu once their client has games in the library.
-  const companionRows = COMPANION_ORDER.filter((id) => counts[id] > 0)
+  // Every storefront gets a row, even with zero games, so the filter never
+  // hides a store the user owns nothing in yet.
+  const companionRows = COMPANION_ORDER
     .map((id) => row(id, storeName(id, false), counts[id], S.enabledStores.has(id)))
     .join("");
   return `

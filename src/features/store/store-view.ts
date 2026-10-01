@@ -180,7 +180,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -189,10 +189,12 @@ export const STORE_LABELS: Record<StoreId, string> = {
   steam: "Steam",
   battlenet: "Battle.net",
   ubisoft: "Ubisoft Connect",
+  ea: "EA App",
+  xbox: "Xbox",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet", "ubisoft"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet", "ubisoft", "ea", "xbox"];
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -202,10 +204,15 @@ export const GOG_STORE_URL = "https://www.gog.com/";
 export const STEAM_STORE_URL = "https://store.steampowered.com/";
 
 export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
+export const BATTLENET_STORE_URL = "https://shop.battle.net/";
+export const EA_STORE_URL = "https://www.ea.com/games";
+/** Microsoft Store web, filtered to PC games. */
+export const XBOX_STORE_URL = "https://apps.microsoft.com/games/pc";
+export const UBISOFT_STORE_URL = "https://store.ubi.com/";
 
 /**
  * Ubisoft's overlay login page, the same start URL the Galaxy Uplay plugin
- * uses. The injected store script reads the session this page receives.
+ * uses. It is only opened for the sign-in; the tab itself is the store page.
  */
 export const UBISOFT_LOGIN_URL =
   "https://connect.cdn.ubisoft.com/overlay/default/" +
@@ -218,8 +225,10 @@ const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
   gog: GOG_STORE_URL,
   steam: STEAM_STORE_URL,
-  battlenet: BATTLENET_ACCOUNT_URL,
-  ubisoft: UBISOFT_LOGIN_URL,
+  battlenet: BATTLENET_STORE_URL,
+  ubisoft: UBISOFT_STORE_URL,
+  ea: EA_STORE_URL,
+  xbox: XBOX_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -229,6 +238,8 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
   if (lower.includes("ubisoft.com")) return "ubisoft";
+  if (lower.includes("ea.com")) return "ea";
+  if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
   return "epic";
 }
 

@@ -602,27 +602,24 @@ export function renderEpic(): string {
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
-  const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
   const hasSteam = S.steamSummaries.length > 0;
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
   const companionCount = (source: GameSource): number =>
     visibleCount(S.companionSummaries.filter((g) => g.source === source).map((g) => g.key));
-  const hasCompanion = S.companionSummaries.length > 0;
-  const sourceDropdown = hasGog || hasSteam || hasCompanion
-    ? storeFilterMenuHtml(
-        {
-          all: allStoresMenuCount(),
-          epic: visibleCount(S.epicSummaries.map((s) => s.appName)),
-          gog: visibleCount(S.gogSummaries.map((g) => g.key)),
-          steam: visibleCount(S.steamSummaries.map((g) => g.key)),
-          ea: companionCount("ea"),
-          ubisoft: companionCount("ubisoft"),
-          xbox: companionCount("xbox"),
-          battlenet: companionCount("battlenet"),
-        },
-        hasSteam,
-      )
-    : "";
+  // Every storefront has a row, even with zero games.
+  const sourceDropdown = storeFilterMenuHtml(
+    {
+      all: allStoresMenuCount(),
+      epic: visibleCount(S.epicSummaries.map((s) => s.appName)),
+      gog: visibleCount(S.gogSummaries.map((g) => g.key)),
+      steam: visibleCount(S.steamSummaries.map((g) => g.key)),
+      ea: companionCount("ea"),
+      ubisoft: companionCount("ubisoft"),
+      xbox: companionCount("xbox"),
+      battlenet: companionCount("battlenet"),
+    },
+    hasSteam,
+  );
 
   const tools = `
     ${sourceDropdown}

@@ -513,7 +513,7 @@ html.sb-narrow .sb-toggle-label {
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* --- Store switcher: compact segmented control, three storefronts --- */
+/* --- Store switcher: compact segmented control, one tab per storefront --- */
 .store-tabs {
   display: inline-flex;
   align-items: center;
@@ -526,7 +526,13 @@ html.sb-narrow .sb-toggle-label {
   border-radius: var(--r-sm);
   contain: layout;
   user-select: none;
+  /* Seven storefronts: never squash the segmented control, scroll it instead. */
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
 .store-tabs .tab {
   height: 30px;
@@ -535,6 +541,7 @@ html.sb-narrow .sb-toggle-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-3);
+  white-space: nowrap;
 }
 .store-tabs .tab:hover { color: var(--text); background: var(--surface-2); }
 .store-tabs .tab.active { color: #fff; background: var(--surface-3); }
