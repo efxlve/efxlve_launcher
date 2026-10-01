@@ -57,6 +57,18 @@ fn save_cache(cache: &HashMap<String, CachedArt>) {
     }
 }
 
+/// Drops one store's cached art so a fresh import (or a better matcher) can
+/// resolve it again. Other stores keep their cache.
+pub(crate) fn clear_store(store: &str) {
+    let mut cache = load_cache();
+    let before = cache.len();
+    let prefix = format!("{store}::");
+    cache.retain(|key, _| !key.starts_with(&prefix));
+    if cache.len() != before {
+        save_cache(&cache);
+    }
+}
+
 fn cache_key(store: &str, id: &str) -> String {
     format!("{store}::{id}")
 }

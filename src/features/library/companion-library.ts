@@ -43,6 +43,10 @@ function bindCompanionLogin(): void {
 export async function syncCompanionAccounts(): Promise<void> {
   try {
     const report = await companionSync("ubisoft");
+    if (report.needsLogin) {
+      // The sealed session is missing or expired: tell the user where to fix it.
+      toast("@t:accounts.ubiSessionExpired", "err");
+    }
     if (report.updated || report.needsLogin) await loadCompanionLibrary();
   } catch {
     // Offline or signed out: the cards keep the cached list.

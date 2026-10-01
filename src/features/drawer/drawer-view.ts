@@ -259,13 +259,9 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const primary = s.installed
       ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
       : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
-    const remove = s.installed
-      ? `<button class="btn ghost lg danger" data-act="companion-uninstall" data-id="${s.appName}" data-store="${store}">${icon("trash", 16)} ${t("common.uninstall")}</button>`
-      : "";
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg" data-act="companion-open" data-id="${store}">${icon("external", 16)} ${t("accounts.openClient")}</button>
-      ${remove}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       ${sourceChipHtml(s.appName)}`;
   }

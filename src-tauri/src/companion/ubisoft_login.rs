@@ -430,6 +430,9 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
     write_debug(&log, &mapped);
     match result {
         Ok((count, live)) => {
+            // The account catalog now provides the art; stale Steam-search
+            // covers for this store must not survive.
+            super::covers::clear_store("ubisoft");
             ubi_vault::save(&live);
             Ok(count)
         }
@@ -497,6 +500,8 @@ pub(crate) async fn sync_owned() -> UbiSync {
             ubi_vault::save(&refreshed);
             let after = signature(ubisoft::load_owned());
             if count > 0 && after != before {
+                // The owned set changed: drop stale art so it is re-resolved.
+                super::covers::clear_store("ubisoft");
                 UbiSync::Updated(count)
             } else {
                 UbiSync::Unchanged(count)
