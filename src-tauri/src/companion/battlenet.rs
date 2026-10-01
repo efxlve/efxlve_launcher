@@ -212,30 +212,46 @@ pub(crate) fn account_games(text: &str) -> Vec<(String, String)> {
     let value: serde_json::Value = serde_json::from_str(text).unwrap_or(serde_json::Value::Null);
     let mut games = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    let accounts = value.get("games").unwrap_or(&value);
-    if let Some(rows) = accounts.get("gameAccounts").and_then(|v| v.as_array()) {
-        for row in rows {
-            let title_id = row.get("titleId").and_then(|v| v.as_u64()).unwrap_or(0);
-            let Some((uid, name)) = title_game(title_id) else { continue };
-            if seen.insert(uid) {
-                games.push((uid.to_string(), name.to_string()));
-            }
-        }
-    }
-    if seen.contains("wow") && seen.insert("wow_classic") {
+    walk_account(&value, &mut games, &mut seen);
+    if seen.contains("wow") && seen.insert("wow_classic".to_string()) {
         games.push(("wow_classic".into(), "World of Warcraft Classic".into()));
     }
-    let classic = value.get("classic").unwrap_or(&value);
-    if let Some(rows) = classic.get("classicGames").and_then(|v| v.as_array()) {
-        for row in rows {
-            let label = row.get("localizedGameName").and_then(|v| v.as_str()).unwrap_or("");
-            let Some((uid, name)) = classic_game(label) else { continue };
-            if seen.insert(uid) {
-                games.push((uid.to_string(), name.to_string()));
+    games
+}
+
+fn walk_account(value: &serde_json::Value, games: &mut Vec<(String, String)>, seen: &mut std::collections::HashSet<String>) {
+    match value {
+        serde_json::Value::Array(items) => {
+            for item in items {
+                walk_account(item, games, seen);
             }
         }
+        serde_json::Value::Object(map) => {
+            if let Some(title_id) = json_u64(map.get("titleId")) {
+                if let Some((uid, name)) = title_game(title_id) {
+                    if seen.insert(uid.to_string()) {
+                        games.push((uid.to_string(), name.to_string()));
+                    }
+                }
+            }
+            if let Some(label) = map.get("localizedGameName").and_then(|v| v.as_str()) {
+                if let Some((uid, name)) = classic_game(label) {
+                    if seen.insert(uid.to_string()) {
+                        games.push((uid.to_string(), name.to_string()));
+                    }
+                }
+            }
+            for child in map.values() {
+                walk_account(child, games, seen);
+            }
+        }
+        _ => {}
     }
-    games
+}
+
+fn json_u64(value: Option<&serde_json::Value>) -> Option<u64> {
+    let value = value?;
+    value.as_u64().or_else(|| value.as_str().and_then(|text| text.parse().ok()))
 }
 
 pub(crate) fn save_owned(games: &[(String, String)]) {
@@ -337,5 +353,7 @@ mod tests {
         assert!(games.iter().any(|(id, _)| id == "fenris"));
         assert!(games.iter().any(|(id, _)| id == "d2"));
         assert!(games.iter().all(|(id, _)| id != "1"));
+        let as_text = r#"{"gameAccounts":[{"titleId":"5730135"}]}"#;
+        assert!(account_games(as_text).iter().any(|(id, _)| id == "wow"));
     }
 }

@@ -16,15 +16,28 @@ const WATCH_SCRIPT: &str = r#"
   if (window.__efxlveBnetWatch) return;
   window.__efxlveBnetWatch = true;
   var bag = { games: null, classic: null };
+  function hasList(obj) {
+    if (!obj || typeof obj !== "object") return false;
+    if (Array.isArray(obj.gameAccounts) && obj.gameAccounts.length) return true;
+    if (Array.isArray(obj.classicGames) && obj.classicGames.length) return true;
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) {
+      var child = obj[keys[i]];
+      if (child && typeof child === "object" && hasList(child)) return true;
+    }
+    return false;
+  }
   function take(url, text) {
     if (!url || window.__efxlveBnetSent) return;
     var hit = url.indexOf("games-and-subs") !== -1 ? "games" : (url.indexOf("classic-games") !== -1 ? "classic" : "");
     if (!hit) return;
     try { bag[hit] = JSON.parse(text); } catch (e) { return; }
-    if (!bag.games) return;
+    if (!bag.games && !bag.classic) return;
+    if (!hasList(bag.games) && !hasList(bag.classic)) return;
     clearTimeout(window.__efxlveBnetTimer);
     window.__efxlveBnetTimer = setTimeout(function () {
       if (window.__efxlveBnetSent) return;
+      if (!hasList(bag.games) && !hasList(bag.classic)) return;
       window.__efxlveBnetSent = true;
       var body = encodeURIComponent(JSON.stringify({ games: bag.games, classic: bag.classic }));
       location.replace("https://efxlve.local/bnet-library#" + body);
@@ -100,6 +113,9 @@ fn bounds(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
 
 fn accept_library(app: &AppHandle, fragment: &str) {
     let games = battlenet::account_games(fragment);
+    if games.is_empty() {
+        return;
+    }
     battlenet::save_owned(&games);
     let name = accounts::detected_name("battlenet");
     let _ = accounts::link_named("battlenet", &name);
