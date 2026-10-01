@@ -13,6 +13,7 @@ use super::scan::slug;
 use super::FoundGame;
 
 struct UbiRow {
+    install_id: u64,
     launch_id: u64,
     name: String,
 }
@@ -34,6 +35,12 @@ pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -
             store_id: String::new(),
             launch_exe: String::new(),
             launch_uri: format!("uplay://launch/{}/0", row.launch_id),
+            install_uri: if row.install_id > 0 {
+                format!("uplay://install/{}", row.install_id)
+            } else {
+                String::new()
+            },
+            uninstall_uri: format!("uplay://uninstall/{}", row.launch_id),
         };
         if let Some(hit) = installed.iter().find(|g| g.store == "ubisoft" && slug(&g.name) == slug(&row.name)) {
             game.installed = true;
@@ -95,7 +102,7 @@ fn row_from_record(record: &[u8]) -> Option<UbiRow> {
         return None;
     }
     let name = game_name(&yaml)?;
-    Some(UbiRow { launch_id, name })
+    Some(UbiRow { install_id, launch_id, name })
 }
 
 fn is_other_store(yaml: &str) -> bool {
@@ -250,6 +257,8 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[(String, String)])
             store_id: String::new(),
             launch_exe: String::new(),
             launch_uri: String::new(),
+            install_uri: String::new(),
+            uninstall_uri: String::new(),
         });
     }
     games
@@ -296,6 +305,8 @@ mod tests {
         assert_eq!(games[0].name, "Watch Dogs");
         assert_eq!(games[0].id, "34");
         assert_eq!(games[0].launch_uri, "uplay://launch/34/0");
+        assert_eq!(games[0].install_uri, "uplay://install/12");
+        assert_eq!(games[0].uninstall_uri, "uplay://uninstall/34");
         assert!(!games[0].installed);
     }
 
@@ -310,6 +321,8 @@ mod tests {
             store_id: String::new(),
             launch_exe: String::new(),
             launch_uri: "uplay://launch/34/0".into(),
+            install_uri: "uplay://install/12".into(),
+            uninstall_uri: "uplay://uninstall/34".into(),
         }];
         let merged = merge_owned(
             local,

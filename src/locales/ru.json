@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "Откроется в разделе «Магазины». После входа импортируются все ваши игры Ubisoft.",
   "accounts.ubiNoGames": "Для этой учётной записи игры Ubisoft не найдены.",
   "accounts.ubiLoginFailed": "Не удалось завершить вход в Ubisoft.",
+  "accounts.ubiSessionExpired": "Сеанс Ubisoft истёк. Войдите снова, чтобы обновить библиотеку.",
   "accounts.setupNeeded": "Нужна настройка",
   "accounts.gogDesc": "Поддержка библиотеки GOG",
   "accounts.connectCta": "Подключить аккаунт",

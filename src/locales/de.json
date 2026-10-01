@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "Öffnet sich unter Stores. Nach der Anmeldung werden alle eigenen Ubisoft-Spiele importiert.",
   "accounts.ubiNoGames": "Für dieses Konto kamen keine Ubisoft-Spiele zurück.",
   "accounts.ubiLoginFailed": "Die Ubisoft-Anmeldung konnte nicht abgeschlossen werden.",
+  "accounts.ubiSessionExpired": "Ubisoft-Sitzung abgelaufen. Melde dich erneut an, um die Bibliothek zu aktualisieren.",
   "accounts.setupNeeded": "Einrichtung erforderlich",
   "accounts.gogDesc": "Unterstützung für die GOG-Bibliothek",
   "accounts.connectCta": "Konto verbinden",

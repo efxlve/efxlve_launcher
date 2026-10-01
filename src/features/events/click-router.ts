@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSync, companionUnlink, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -535,8 +535,33 @@ document.addEventListener("click", (e) => {
       .then(() => loadCompanionLibrary())
       .then(() => render())
       .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-install" && id) {
+    const store = (t.dataset.store as CompanionStore) || "ubisoft";
+    // The protocol opens the client's own install prompt; the client downloads.
+    void companionGameAction(store, id, "install").catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-uninstall" && id) {
+    const store = (t.dataset.store as CompanionStore) || "ubisoft";
+    void companionGameAction(store, id, "uninstall").catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-rescan") {
-    void loadCompanionLibrary().then(() => render());
+    const store = id as CompanionStore;
+    if (store === "ubisoft") {
+      // Refresh the sealed session first; the disk scan alone cannot see new
+      // purchases.
+      S.companionBusy = store;
+      render();
+      void companionSync(store)
+        .then(() => loadCompanionLibrary())
+        .catch((e: unknown) => {
+          const raw = String(e);
+          toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
+        })
+        .finally(() => {
+          S.companionBusy = "";
+          render();
+        });
+    } else {
+      void loadCompanionLibrary().then(() => render());
+    }
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

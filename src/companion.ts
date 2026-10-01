@@ -31,7 +31,14 @@ export interface CompanionStoreStatus {
   clientInstalled: boolean;
   accountName: string;
   linked: boolean;
+  needsLogin: boolean;
   gameCount: number;
+}
+
+export interface CompanionSyncReport {
+  updated: boolean;
+  count: number;
+  needsLogin: boolean;
 }
 
 export interface CompanionCoverHit {
@@ -44,6 +51,14 @@ export interface CompanionCoverHit {
 export const companionLibrary = () => invoke<CompanionGame[]>("companion_library");
 
 export const companionStoreStatus = () => invoke<CompanionStoreStatus[]>("companion_store_status");
+
+/** Refresh a linked account from its own service (Ubisoft has a session). */
+export const companionSync = (store: CompanionStore) =>
+  invoke<CompanionSyncReport>("companion_sync", { store });
+
+/** Install, uninstall or launch a game inside its own client. */
+export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
+  invoke<void>("companion_game_action", { store, id, action });
 
 export const companionLink = (store: CompanionStore) =>
   invoke<CompanionAccount>("companion_link", { store });

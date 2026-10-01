@@ -14,6 +14,10 @@ use super::launch::client_installed;
 pub struct CompanionAccount {
     pub store: String,
     pub name: String,
+    /// True when the sealed session could not be refreshed and the user must
+    /// sign in again (the owned list stays visible meanwhile).
+    #[serde(default)]
+    pub needs_login: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -23,6 +27,7 @@ pub struct CompanionStoreStatus {
     pub client_installed: bool,
     pub account_name: String,
     pub linked: bool,
+    pub needs_login: bool,
     pub game_count: u32,
 }
 
@@ -84,6 +89,7 @@ pub(crate) fn link_store(store: &str) -> Result<CompanionAccount, String> {
     let account = CompanionAccount {
         store: store.to_string(),
         name: detected_name(store),
+        needs_login: false,
     };
     let path = accounts_file();
     let mut accounts = load_accounts(&path);
@@ -101,6 +107,7 @@ pub(crate) fn link_named(store: &str, name: &str) -> Result<CompanionAccount, St
     let account = CompanionAccount {
         store: store.to_string(),
         name: if name.trim().is_empty() { detected_name(store) } else { name.trim().to_string() },
+        needs_login: false,
     };
     let path = accounts_file();
     let mut accounts = load_accounts(&path);
@@ -108,6 +115,28 @@ pub(crate) fn link_named(store: &str, name: &str) -> Result<CompanionAccount, St
     accounts.push(account.clone());
     save_accounts(&path, &accounts)?;
     Ok(account)
+}
+
+/// Flags a linked store whose sealed session expired. The account row stays so
+/// the imported games remain in the library until the user signs in again.
+pub(crate) fn mark_needs_login(store: &str, value: bool) -> Result<(), String> {
+    let path = accounts_file();
+    let mut accounts = load_accounts(&path);
+    let mut changed = false;
+    for account in &mut accounts {
+        if account.store == store && account.needs_login != value {
+            account.needs_login = value;
+            changed = true;
+        }
+    }
+    if changed {
+        save_accounts(&path, &accounts)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn is_linked(store: &str) -> bool {
+    load_accounts(&accounts_file()).iter().any(|a| a.store == store)
 }
 
 pub(crate) fn unlink_store(store: &str) -> Result<(), String> {
@@ -226,10 +255,10 @@ mod tests {
     fn link_roundtrip_keeps_one_row_per_store() {
         let path = std::env::temp_dir().join(format!("efxlve-companion-acc-{}", std::process::id()));
         let _ = std::fs::remove_file(&path);
-        let mut rows = vec![CompanionAccount { store: "ea".into(), name: "EA App".into() }];
+        let mut rows = vec![CompanionAccount { store: "ea".into(), name: "EA App".into(), needs_login: false }];
         save_accounts(&path, &rows).unwrap();
         rows.retain(|a| a.store != "ea");
-        rows.push(CompanionAccount { store: "ea".into(), name: "Other".into() });
+        rows.push(CompanionAccount { store: "ea".into(), name: "Other".into(), needs_login: false });
         save_accounts(&path, &rows).unwrap();
         let loaded = load_accounts(&path);
         assert_eq!(loaded.len(), 1);

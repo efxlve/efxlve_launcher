@@ -1391,6 +1391,7 @@
   "accounts.ubiLogin": "Mağazalar sekmesinde açılır. Girişten sonra sahip olduğun tüm Ubisoft oyunları içe aktarılır.",
   "accounts.ubiNoGames": "Bu hesap için hiç Ubisoft oyunu bulunamadı.",
   "accounts.ubiLoginFailed": "Ubisoft girişi tamamlanamadı.",
+  "accounts.ubiSessionExpired": "Ubisoft oturumu sona erdi. Kütüphaneyi yenilemek için tekrar giriş yap.",
   "accounts.setupNeeded": "Kurulum gerekli",
   "accounts.gogDesc": "GOG kütüphanesi desteği",
   "accounts.connectCta": "Hesap bağla",

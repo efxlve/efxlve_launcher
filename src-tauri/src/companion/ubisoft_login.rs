@@ -11,6 +11,7 @@ use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::accounts;
+use super::ubi_vault;
 use super::ubisoft;
 
 const UBI_APP_ID: &str = "f68a4bb5-608a-4ff2-8123-be8ef797e0a6";
@@ -57,7 +58,8 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
       ticket: session.ticket || "",
       sessionId: session.sessionId || "",
       userId: session.userId || "",
-      nameOnPlatform: session.nameOnPlatform || ""
+      nameOnPlatform: session.nameOnPlatform || "",
+      rememberMeTicket: session.rememberMeTicket || ""
     };
     location.replace("https://efxlve.local/ubi-session#" + b64(JSON.stringify(payload)));
   }
@@ -140,6 +142,10 @@ pub(crate) struct Session {
     pub user_id: String,
     #[serde(rename = "nameOnPlatform", default)]
     pub name: String,
+    /// Long-lived remember-me token; it is the only reason the launcher can
+    /// refresh the library without asking the user to sign in again.
+    #[serde(rename = "rememberMeTicket", default)]
+    pub remember: String,
 }
 
 /// The overlay page hands the session back as base64 JSON.
@@ -272,6 +278,11 @@ fn apply_session(session: &Session, value: &serde_json::Value) -> Option<Session
             next.name = name.to_string();
         }
     }
+    if let Some(token) = value.get("rememberMeTicket").and_then(|v| v.as_str()) {
+        if !token.is_empty() {
+            next.remember = token.to_string();
+        }
+    }
     Some(next)
 }
 
@@ -400,6 +411,9 @@ async fn collect_graphql(
 }
 
 /// Owned games from the account API, ready for the local cache.
+///
+/// Used right after the overlay sign-in; on success the refreshable session is
+/// sealed to disk so later syncs do not ask the user to sign in again.
 pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
     let mut log = vec![serde_json::json!({
         "step": "session",
@@ -409,11 +423,95 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
         "name": !session.name.is_empty(),
     })];
     let result = import_inner(session, &mut log).await;
-    write_debug(&log, &result);
-    result
+    let mapped = result
+        .as_ref()
+        .map(|(count, _)| *count)
+        .map_err(|err| err.clone());
+    write_debug(&log, &mapped);
+    match result {
+        Ok((count, live)) => {
+            ubi_vault::save(&live);
+            Ok(count)
+        }
+        Err(err) => Err(err),
+    }
 }
 
-async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Result<usize, String> {
+/// What one background sync did.
+pub(crate) enum UbiSync {
+    Updated(usize),
+    Unchanged(usize),
+    NoSession,
+    AuthLost,
+    Failed(String),
+}
+
+/// Refreshes the sealed session and re-imports the owned catalog. This is what
+/// makes a new purchase appear without a browser sign-in.
+pub(crate) async fn sync_owned() -> UbiSync {
+    // Never run two syncs at once (boot, rescan and the timer can overlap).
+    static SYNC_RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    struct RunningGuard;
+    impl Drop for RunningGuard {
+        fn drop(&mut self) {
+            SYNC_RUNNING.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    if SYNC_RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return UbiSync::Unchanged(0);
+    }
+    let _guard = RunningGuard;
+
+    let Some(stored) = ubi_vault::load() else {
+        return UbiSync::NoSession;
+    };
+    let session = stored.into_session();
+    let client = match http_client() {
+        Ok(client) => client,
+        Err(err) => return UbiSync::Failed(err),
+    };
+    let mut live = refresh_session(&client, &session).await;
+    if live.is_none() {
+        live = refresh_remember(&client, &session).await;
+    }
+    let Some(live) = live else {
+        ubi_vault::clear();
+        return UbiSync::AuthLost;
+    };
+    let before: std::collections::HashSet<String> = ubisoft::load_owned().into_iter().map(|(id, _)| id).collect();
+    let mut log = vec![serde_json::json!({
+        "step": "sync",
+        "ticket": !live.ticket.is_empty(),
+    })];
+    let result = import_inner(&live, &mut log).await;
+    let mapped = result
+        .as_ref()
+        .map(|(count, _)| *count)
+        .map_err(|err| err.clone());
+    write_debug(&log, &mapped);
+    match result {
+        Ok((count, refreshed)) => {
+            ubi_vault::save(&refreshed);
+            let after: std::collections::HashSet<String> =
+                ubisoft::load_owned().into_iter().map(|(id, _)| id).collect();
+            if count > 0 && after != before {
+                UbiSync::Updated(count)
+            } else {
+                UbiSync::Unchanged(count)
+            }
+        }
+        Err(err) => {
+            if err == "@t:accounts.ubiLoginFailed" {
+                ubi_vault::clear();
+                UbiSync::AuthLost
+            } else {
+                UbiSync::Failed(err)
+            }
+        }
+    }
+}
+
+async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Result<(usize, Session), String> {
     let client = http_client()?;
     let mut live = session.clone();
     // The plugin order: post the captured session once, renew it, then read.
@@ -470,10 +568,40 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
         if let Some(err) = first_error {
             return Err(err);
         }
-        return Ok(0);
+        return Ok((0, live));
     }
     ubisoft::save_owned(&games);
-    Ok(games.len())
+    Ok((games.len(), live))
+}
+
+/// Long-lived refresh: POST with the remember-me token (`rm_v1`) returns a new
+/// ticket when the short-lived one has died.
+async fn refresh_remember(client: &reqwest::Client, session: &Session) -> Option<Session> {
+    if session.remember.is_empty() {
+        return None;
+    }
+    let mut map = headers(
+        session,
+        UBI_APP_ID,
+        UBI_GENOME_ID,
+        &[
+            ("Origin", "https://connect.ubisoft.com"),
+            ("Referer", "https://connect.ubisoft.com"),
+        ],
+    );
+    insert(&mut map, "Authorization", &format!("rm_v1 t={}", session.remember));
+    let response = client
+        .post(SESSIONS_URL)
+        .headers(map)
+        .json(&serde_json::json!({ "rememberMe": true }))
+        .send()
+        .await
+        .ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    let value: serde_json::Value = response.json().await.ok()?;
+    apply_session(session, &value)
 }
 
 /// Plain ticket refresh (`Ubi_v1`), used when the PUT did not revive the session.

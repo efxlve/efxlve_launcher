@@ -45,7 +45,7 @@ import { modalRoot } from "../../core/dom";
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
-import { loadCompanionLibrary } from "../library/companion-library";
+import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -660,6 +660,8 @@ export async function initApp(hooks: {
     // Steam games come from the Steam client's own manifests on this PC.
     void loadSteamLibrary().then(() => startSteamLibraryWatch());
     void loadCompanionLibrary();
+    // Linked companion accounts refresh in the background (Ubisoft session).
+    void syncCompanionAccounts();
 
     // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
     // same play path as the Play button once the shell is up.

@@ -463,6 +463,8 @@ fn main() {
             legendary::screenshots::start_f12_listener(app.handle().clone());
             // Keeps the GOG account visible as online while the launcher runs.
             gogdl::presence::spawn(app.handle().clone());
+            // Refreshes linked companion accounts (today: Ubisoft) on a timer.
+            companion::start_ubi_sync(app.handle().clone());
             build_tray(app)?;
             Ok(())
         })
@@ -586,12 +588,14 @@ fn main() {
             companion::companion_library,
             companion::companion_store_status,
             companion::companion_link,
+            companion::companion_sync,
             companion::companion_unlink,
             companion::companion_resolve_covers,
             companion::companion_show_login,
             companion::companion_hide_login,
             companion::companion_open_client,
             companion::companion_launch,
+            companion::companion_game_action,
             steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam::steam_game_action,

@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "Se abre en Tiendas. Tras iniciar sesión, se importan todos tus juegos de Ubisoft.",
   "accounts.ubiNoGames": "No se recibió ningún juego de Ubisoft para esta cuenta.",
   "accounts.ubiLoginFailed": "No se pudo completar el inicio de sesión de Ubisoft.",
+  "accounts.ubiSessionExpired": "La sesión de Ubisoft caducó. Inicia sesión de nuevo para actualizar la biblioteca.",
   "accounts.setupNeeded": "Configuración necesaria",
   "accounts.gogDesc": "Compatibilidad con la biblioteca de GOG",
   "accounts.connectCta": "Conectar una cuenta",

@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "ストアで開きます。サインインすると、所有している Ubisoft ゲームがすべて取り込まれます。",
   "accounts.ubiNoGames": "このアカウントの Ubisoft ゲームが見つかりませんでした。",
   "accounts.ubiLoginFailed": "Ubisoft へのサインインを完了できませんでした。",
+  "accounts.ubiSessionExpired": "Ubisoft のセッションが切れました。再度サインインしてライブラリを更新してください。",
   "accounts.setupNeeded": "セットアップが必要",
   "accounts.gogDesc": "GOG ライブラリ対応",
   "accounts.connectCta": "アカウントを接続",

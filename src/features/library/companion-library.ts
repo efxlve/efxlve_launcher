@@ -6,7 +6,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionLibrary, companionResolveCovers, companionStoreStatus, companionToItem } from "../../companion";
+import { companionLibrary, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
@@ -31,6 +31,22 @@ function bindCompanionLogin(): void {
     render();
     toast(String(event.payload), "err");
   });
+  void listen("companion-store-changed", () => {
+    void loadCompanionLibrary();
+  });
+}
+
+/**
+ * One background refresh of the accounts that support it. Ubisoft keeps a
+ * sealed session, so buying a game elsewhere shows up without signing in again.
+ */
+export async function syncCompanionAccounts(): Promise<void> {
+  try {
+    const report = await companionSync("ubisoft");
+    if (report.updated || report.needsLogin) await loadCompanionLibrary();
+  } catch {
+    // Offline or signed out: the cards keep the cached list.
+  }
 }
 
 export async function loadCompanionLibrary(): Promise<void> {

@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "Abre em Lojas. Após entrar, todos os seus jogos da Ubisoft são importados.",
   "accounts.ubiNoGames": "Nenhum jogo da Ubisoft retornou para esta conta.",
   "accounts.ubiLoginFailed": "Não foi possível concluir a entrada na Ubisoft.",
+  "accounts.ubiSessionExpired": "A sessão da Ubisoft expirou. Entre novamente para atualizar a biblioteca.",
   "accounts.setupNeeded": "Configuração necessária",
   "accounts.gogDesc": "Suporte à biblioteca GOG",
   "accounts.connectCta": "Conectar uma conta",

@@ -13,6 +13,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_minimize_to_tray` | `appSetMinimizeToTray({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
+| `companion_game_action` | `companionGameAction({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_hide_login` | `companionHideLogin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_installed_games` | `companionInstalledGames({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_launch` | `companionLaunch({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -22,6 +23,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `companion_resolve_covers` | `companionResolveCovers({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_show_login` | `companionShowLogin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_store_status` | `companionStoreStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `companion_sync` | `companionSync({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_unlink` | `companionUnlink({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `controller_support_status` | `controllerSupportStatus({ ... })` | `src-tauri/src/controller.rs` |
 | `destroy_store_view` | `destroyStoreView({ ... })` | `src-tauri/src/store_host.rs` |

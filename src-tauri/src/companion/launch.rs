@@ -82,6 +82,12 @@ fn safe_uri(uri: &str) -> bool {
         let id = parts.next().unwrap_or("");
         return !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()) && parts.next() == Some("0") && parts.next().is_none();
     }
+    if let Some(id) = uri.strip_prefix("uplay://install/") {
+        return !id.is_empty() && id.chars().all(|c| c.is_ascii_digit());
+    }
+    if let Some(id) = uri.strip_prefix("uplay://uninstall/") {
+        return !id.is_empty() && id.chars().all(|c| c.is_ascii_digit());
+    }
     if let Some(code) = uri.strip_prefix("battlenet://") {
         return !code.is_empty()
             && code.len() <= 32
@@ -143,8 +149,12 @@ mod tests {
     #[test]
     fn only_store_protocols_pass() {
         assert!(safe_uri("uplay://launch/34/0"));
-        assert!(safe_uri("battlenet://fenris"));
+        assert!(safe_uri("uplay://install/34"));
+        assert!(safe_uri("uplay://uninstall/34"));
         assert!(!safe_uri("uplay://launch/34/0 & calc"));
+        assert!(!safe_uri("uplay://install/34/0"));
+        assert!(!safe_uri("uplay://uninstall/abc"));
+        assert!(safe_uri("battlenet://fenris"));
         assert!(!safe_uri("https://example.com"));
         assert!(!safe_uri("battlenet://agent"));
     }

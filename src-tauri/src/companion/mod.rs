@@ -15,7 +15,9 @@ mod scan;
 mod signin;
 mod ubisoft;
 mod ubisoft_login;
+mod ubi_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
+use ubisoft_login::UbiSync;
 
 use std::collections::HashSet;
 
@@ -36,6 +38,10 @@ pub(crate) struct FoundGame {
     pub store_id: String,
     pub launch_exe: String,
     pub launch_uri: String,
+    /// Client protocol that opens the install prompt (empty when unknown).
+    pub install_uri: String,
+    /// Client protocol that removes the game (empty when unknown).
+    pub uninstall_uri: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -121,6 +127,7 @@ fn status_rows() -> Vec<CompanionStoreStatus> {
                 client_installed: launch::client_installed(store),
                 account_name: name,
                 linked: saved.is_some(),
+                needs_login: saved.map(|a| a.needs_login).unwrap_or(false),
                 game_count: discover(store).len() as u32,
             }
         })
@@ -152,7 +159,81 @@ pub fn companion_link(store: String) -> Result<CompanionAccount, String> {
 
 #[tauri::command]
 pub fn companion_unlink(store: String) -> Result<(), String> {
+    if store == "ubisoft" {
+        ubi_vault::clear();
+    }
     accounts::unlink_store(&store)
+}
+
+/// One background refresh result for a companion account.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanionSyncReport {
+    pub updated: bool,
+    pub count: u32,
+    pub needs_login: bool,
+}
+
+/// Refreshes a linked account from its own service. Ubisoft is the only store
+/// with a refreshable session (the sealed remember-me token); the others are
+/// local-only and report what the disk scan found.
+#[tauri::command]
+pub async fn companion_sync(store: String) -> Result<CompanionSyncReport, String> {
+    if !accounts::is_store(&store) {
+        return Err("Unknown store".into());
+    }
+    if store != "ubisoft" {
+        return Ok(CompanionSyncReport {
+            updated: false,
+            count: discover(&store).len() as u32,
+            needs_login: false,
+        });
+    }
+    Ok(match ubisoft_login::sync_owned().await {
+        UbiSync::Updated(count) => CompanionSyncReport { updated: true, count: count as u32, needs_login: false },
+        UbiSync::Unchanged(count) => CompanionSyncReport { updated: false, count: count as u32, needs_login: false },
+        UbiSync::NoSession => {
+            // A linked account with no sealed session (linked before this
+            // existed): ask for one sign-in so auto-sync can take over.
+            let linked = accounts::is_linked("ubisoft");
+            if linked {
+                let _ = accounts::mark_needs_login("ubisoft", true);
+            }
+            CompanionSyncReport { updated: false, count: 0, needs_login: linked }
+        }
+        UbiSync::AuthLost => {
+            let _ = accounts::mark_needs_login("ubisoft", true);
+            CompanionSyncReport { updated: false, count: 0, needs_login: true }
+        }
+        UbiSync::Failed(err) => return Err(err),
+    })
+}
+
+/// Refreshes linked companion stores while the launcher runs. A game bought on
+/// another machine then shows up without touching the Accounts page.
+pub fn start_ubi_sync(app: tauri::AppHandle) {
+    use tauri::Emitter;
+    tauri::async_runtime::spawn(async move {
+        // The frontend syncs once at boot; this timer keeps a long session
+        // fresh without jumping the user anywhere.
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(15 * 60)).await;
+            if !accounts::is_linked("ubisoft") {
+                continue;
+            }
+            match ubisoft_login::sync_owned().await {
+                UbiSync::Updated(_) => {
+                    let _ = app.emit("companion-store-changed", "ubisoft");
+                }
+                UbiSync::AuthLost => {
+                    let _ = accounts::mark_needs_login("ubisoft", true);
+                    let _ = app.emit("companion-signin-failed", "@t:accounts.ubiSessionExpired");
+                    let _ = app.emit("companion-store-changed", "ubisoft");
+                }
+                _ => {}
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -186,4 +267,25 @@ pub fn companion_launch(store: String, id: String) -> Result<(), String> {
         }
     }
     launch::open_client(&store)
+}
+
+/// Install, uninstall or launch a companion game. Install and uninstall use the
+/// client's own protocol handlers: the client does the work, the launcher only
+/// starts it. A game without a known id falls back to opening the client.
+#[tauri::command]
+pub fn companion_game_action(store: String, id: String, action: String) -> Result<(), String> {
+    if !accounts::is_store(&store) || id.is_empty() {
+        return Err("Unknown game".into());
+    }
+    let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
+        return Err("Unknown game".into());
+    };
+    match action.as_str() {
+        "install" if !game.install_uri.is_empty() => launch::open_game(&game.install_uri, ""),
+        "uninstall" if !game.uninstall_uri.is_empty() => launch::open_game(&game.uninstall_uri, ""),
+        "launch" if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() => {
+            launch::open_game(&game.launch_uri, &game.launch_exe)
+        }
+        _ => launch::open_client(&store),
+    }
 }

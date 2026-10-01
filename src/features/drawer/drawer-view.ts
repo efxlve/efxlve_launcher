@@ -252,11 +252,19 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       ${sourceChipHtml(s.appName)}`;
   }
 
-  // Companion games stay inside their client: play and install open that client.
+  // Companion games stay inside their client: install, uninstall and play all
+  // go through that client's protocol handlers.
   if (isCompanionApp(s.appName)) {
-    return `
-      <button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${s.installed ? t("common.playNow") : t("common.play")}</button>
-      <button class="btn ghost lg" data-act="companion-open" data-id="${sourceOfKey(s.appName)}">${icon("external", 16)} ${t("accounts.openClient")}</button>
+    const store = sourceOfKey(s.appName);
+    const primary = s.installed
+      ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
+      : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+    const remove = s.installed
+      ? `<button class="btn ghost lg danger" data-act="companion-uninstall" data-id="${s.appName}" data-store="${store}">${icon("trash", 16)} ${t("common.uninstall")}</button>`
+      : "";
+    return `${primary}
+      <button class="btn ghost lg" data-act="companion-open" data-id="${store}">${icon("external", 16)} ${t("accounts.openClient")}</button>
+      ${remove}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       ${sourceChipHtml(s.appName)}`;
   }

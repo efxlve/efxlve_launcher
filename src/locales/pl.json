@@ -1314,6 +1314,7 @@
   "accounts.ubiLogin": "Otwiera się w Sklepach. Po zalogowaniu zaimportowane zostaną wszystkie posiadane gry Ubisoft.",
   "accounts.ubiNoGames": "Nie zwrócono żadnych gier Ubisoft dla tego konta.",
   "accounts.ubiLoginFailed": "Nie udało się dokończyć logowania do Ubisoft.",
+  "accounts.ubiSessionExpired": "Sesja Ubisoft wygasła. Zaloguj się ponownie, aby odświeżyć bibliotekę.",
   "accounts.setupNeeded": "Wymagana konfiguracja",
   "accounts.gogDesc": "Obsługa biblioteki GOG",
   "accounts.connectCta": "Połącz konto",

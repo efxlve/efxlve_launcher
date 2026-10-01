@@ -1391,6 +1391,7 @@
   "accounts.ubiLogin": "Opens in Stores. After you sign in, every owned Ubisoft game is imported.",
   "accounts.ubiNoGames": "No Ubisoft games came back for this account.",
   "accounts.ubiLoginFailed": "Ubisoft sign-in could not be completed.",
+  "accounts.ubiSessionExpired": "Ubisoft session expired. Sign in again to refresh the library.",
   "accounts.setupNeeded": "Setup required",
   "accounts.gogDesc": "GOG library support",
   "accounts.connectCta": "Connect an account",
