@@ -68,6 +68,22 @@ const WATCH_SCRIPT: &str = r#"
       });
     };
   }
+  function pullAccount() {
+    if (window.__efxlveBnetSent) return;
+    var opts = { credentials: "include", headers: { "Accept": "application/json" } };
+    Promise.all([
+      fetch("/api/games-and-subs", opts).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+      fetch("/api/classic-games", opts).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (pair) {
+      if (window.__efxlveBnetSent) return;
+      if (!hasList(pair[0]) && !hasList(pair[1])) return;
+      window.__efxlveBnetSent = true;
+      var body = encodeURIComponent(JSON.stringify({ games: pair[0], classic: pair[1] }));
+      location.replace("https://efxlve.local/bnet-library#" + body);
+    });
+  }
+  pullAccount();
+  setInterval(pullAccount, 2000);
 })();
 "#;
 
@@ -79,7 +95,8 @@ pub async fn show_login(app: AppHandle, x: f64, y: f64, width: f64, height: f64)
     if let Some(webview) = window.get_webview(LABEL) {
         let _ = webview.set_bounds(bounds(x, y, width, height));
         let _ = webview.show();
-        let _ = webview.navigate(url);
+        // Already on the signed-in account page: ask that page for the game list.
+        let _ = webview.eval(WATCH_SCRIPT);
         return Ok(());
     }
     let app_nav = app.clone();
