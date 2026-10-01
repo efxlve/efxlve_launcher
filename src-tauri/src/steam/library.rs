@@ -122,12 +122,11 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         && !paused
         && work_left
         && (!fully_installed || update_active);
-    // Steam's "N% complete" on an update is BytesStaged / BytesToStage once
-    // staging has started. The network counter can sit at a different percent
-    // (a 26% download next to a 40% update). Report the staged pair so the
-    // row matches the client. A download that has not staged yet keeps the
-    // network counter.
-    if downloading && bytes_to_stage > bytes_staged && bytes_staged > 0 {
+    // Steam's download row ("Veriler indiriliyor") is BytesDownloaded /
+    // BytesToDownload. BytesStaged is the separate disk pass ("Dosyalar
+    // güncelleniyor") and is a different total, so it must not replace the
+    // download line. Use it only while the network counter is still zero.
+    if downloading && bytes_downloaded == 0 && bytes_staged > 0 && bytes_to_stage > 0 {
         bytes_downloaded = bytes_staged;
         bytes_to_download = bytes_to_stage;
     }
@@ -437,12 +436,12 @@ mod tests {
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
-    fn steam_complete_percent_follows_staging_while_both_move() {
+    fn the_download_row_stays_on_the_network_counter_while_staging_runs() {
         let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-both-{}", std::process::id()));
         let dl = tmp.join("downloading").join("730");
         std::fs::create_dir_all(&dl).expect("temp downloading dir");
-        // Network is 26% (200289152/761417584). Steam's own "40% complete"
-        // is the staged fraction (886817329/2231094511).
+        // Steam's "Veriler indiriliyor" line is 200289152/761417584.
+        // BytesStaged is the other bar and must not replace it.
         let both = r#"
     "AppState"
     {
@@ -457,8 +456,8 @@ mod tests {
     "#;
         let game = parse_app_manifest(both, &tmp).expect("game");
         assert!(game.downloading);
-        assert_eq!(game.bytes_downloaded, 886_817_329);
-        assert_eq!(game.bytes_to_download, 2_231_094_511);
+        assert_eq!(game.bytes_downloaded, 200_289_152);
+        assert_eq!(game.bytes_to_download, 761_417_584);
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
