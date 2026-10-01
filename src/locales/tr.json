@@ -1455,8 +1455,6 @@
   "ctx.restoreIndicator": "Güncelleme Göstergesini Göster",
   "settings.storeBadgeTitle": "Mağaza Rozeti",
   "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde oyun başlıklarının altında hangi mağazalara ait olduğunu gösterir.",
-  "settings.coverStoreIconsTitle": "Kapakta mağaza simgeleri",
-  "settings.coverStoreIconsDesc": "Oyunu birden fazla mağazada sahipseniz kapağın üzerinde küçük Epic, GOG ve Steam işaretleri gösterir.",
   "settings.gogLogout": "GOG'dan Çıkış Yap",
   "accounts.manageAccounts": "Hesapları Yönet",
   "settings.installedIconTitle": "Yüklü oyun simgesi",

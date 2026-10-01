@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -19,7 +19,6 @@ import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
-import { storeLogo } from "../store/store-logos";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -325,20 +324,6 @@ export function epicVisibleSummaries(): EpicSummary[] {
  * The caption already shows the name, so the card does not also set a title
  * tooltip (that tooltip is a square system box on the rounded cover).
  */
-function coverStoreIcons(title: string): string {
-  if (!S.showCoverStoreIcons) return "";
-  const marks: string[] = [];
-  const seen = new Set<string>();
-  for (const key of storeKeysForTitle(title)) {
-    const src: "steam" | "gog" | "epic" = key.startsWith("steam::") ? "steam" : key.startsWith("gog::") ? "gog" : "epic";
-    if (seen.has(src)) continue;
-    seen.add(src);
-    marks.push(storeLogo(src, 14));
-  }
-  if (marks.length === 0) return "";
-  return `<div class="pcard-store-icons" aria-hidden="true">${marks.join("")}</div>`;
-}
-
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
   const showStores = S.showStoreBadge && S.sourceFilter === "all";
@@ -359,7 +344,6 @@ export function epicCardPortrait(s: EpicSummary): string {
     <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
-        ${coverStoreIcons(s.title)}
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}

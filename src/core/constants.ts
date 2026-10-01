@@ -52,8 +52,6 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
-/** Small Epic / GOG / Steam marks on library covers. Off unless set to "true". */
-export const COVER_STORE_ICONS_KEY = "efxlve-cover-store-icons";
 /** Enter TV Mode automatically when a controller connects. Missing = Steam Deck only. */
 export const TV_AUTO_KEY = "efxlve-tv-auto";
 

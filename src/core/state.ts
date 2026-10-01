@@ -40,7 +40,6 @@ import {
   SPEED_BITS_KEY,
   COVER_TITLES_KEY,
   STORE_BADGE_KEY,
-  COVER_STORE_ICONS_KEY,
   TV_AUTO_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
@@ -318,7 +317,6 @@ export const S = {
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
-  showCoverStoreIcons: (localStorage.getItem(COVER_STORE_ICONS_KEY) === "true") as boolean,
   tvAutoEnter: (() => {
     try {
       const v = localStorage.getItem(TV_AUTO_KEY);

@@ -1455,8 +1455,6 @@
   "ctx.restoreIndicator": "Restore Update Indicator",
   "settings.storeBadgeTitle": "Store Badge",
   "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
-  "settings.coverStoreIconsTitle": "Store icons on covers",
-  "settings.coverStoreIconsDesc": "Show small Epic, GOG and Steam marks on the cover when you own the game in more than one store.",
   "settings.gogLogout": "Sign out of GOG",
   "accounts.manageAccounts": "Manage Accounts",
   "settings.installedIconTitle": "Installed game icon",

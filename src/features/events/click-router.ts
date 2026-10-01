@@ -28,7 +28,6 @@ import {
   SS_FORMAT_KEY,
   SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
-  COVER_STORE_ICONS_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
   isTauri,
@@ -605,10 +604,6 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-badge") {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
-    scheduleRender();
-  } else if (act === "toggle-cover-store-icons") {
-    S.showCoverStoreIcons = !S.showCoverStoreIcons;
-    localStorage.setItem(COVER_STORE_ICONS_KEY, String(S.showCoverStoreIcons));
     scheduleRender();
   } else if (act === "toggle-tv-auto") {
     S.tvAutoEnter = !S.tvAutoEnter;
