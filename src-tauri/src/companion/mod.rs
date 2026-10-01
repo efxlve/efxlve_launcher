@@ -14,6 +14,8 @@ mod proto;
 mod scan;
 mod signin;
 mod ubisoft;
+mod ubisoft_login;
+pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 
 use std::collections::HashSet;
 
@@ -55,10 +57,7 @@ fn discover(store: &str) -> Vec<FoundGame> {
     let installed = scan::uninstall_games();
     match store {
         "ea" => installed.into_iter().filter(|g| g.store == "ea").collect(),
-        "ubisoft" => match ubisoft::configurations_path().and_then(|path| std::fs::read(path).ok()) {
-            Some(bytes) => ubisoft::games_from_configurations(&bytes, &installed),
-            None => installed.into_iter().filter(|g| g.store == "ubisoft").collect(),
-        },
+        "ubisoft" => ubisoft::merged_games(&installed),
         "xbox" => scan::xbox_games(),
         "battlenet" => battlenet::merged_games(&installed),
         _ => Vec::new(),

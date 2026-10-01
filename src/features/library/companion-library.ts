@@ -9,8 +9,9 @@ import { listen } from "@tauri-apps/api/event";
 import { companionLibrary, companionResolveCovers, companionStoreStatus, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render } from "../../core/render";
-import { setView } from "../store/store-view";
+import { setView, hideStore } from "../store/store-view";
 import { S } from "../../core/state";
+import { toast } from "../../core/toast";
 
 const storeIds = new Map<string, string>();
 let loginBound = false;
@@ -23,6 +24,12 @@ function bindCompanionLogin(): void {
       setView("library");
       render();
     });
+  });
+  void listen<string>("companion-signin-failed", (event) => {
+    // The store child sits above the toast layer, so close it first.
+    hideStore();
+    render();
+    toast(String(event.payload), "err");
   });
 }
 

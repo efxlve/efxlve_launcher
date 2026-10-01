@@ -180,7 +180,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "battlenet";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -188,10 +188,11 @@ export const STORE_LABELS: Record<StoreId, string> = {
   gog: "GOG",
   steam: "Steam",
   battlenet: "Battle.net",
+  ubisoft: "Ubisoft Connect",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet", "ubisoft"];
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -202,11 +203,23 @@ export const STEAM_STORE_URL = "https://store.steampowered.com/";
 
 export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
 
+/**
+ * Ubisoft's overlay login page, the same start URL the Galaxy Uplay plugin
+ * uses. The injected store script reads the session this page receives.
+ */
+export const UBISOFT_LOGIN_URL =
+  "https://connect.cdn.ubisoft.com/overlay/default/" +
+  "?env=prod&isStandalone=true&platform=pc&deviceType=desktop" +
+  "&locale=en-US&spaceId=0a706b37-4b88-4437-b8f4-4ed2458c9518" +
+  "&applicationId=20adeb9c-6dad-404e-af1e-b12b4594e86e" +
+  "&country=US&region=WW&ownershipGroup=empty";
+
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
   gog: GOG_STORE_URL,
   steam: STEAM_STORE_URL,
   battlenet: BATTLENET_ACCOUNT_URL,
+  ubisoft: UBISOFT_LOGIN_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -215,6 +228,7 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("gog.com")) return "gog";
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
+  if (lower.includes("ubisoft.com")) return "ubisoft";
   return "epic";
 }
 

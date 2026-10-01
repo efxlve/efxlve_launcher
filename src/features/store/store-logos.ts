@@ -20,6 +20,7 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   gog,
   steam,
   battlenet,
+  ubisoft,
 };
 
 const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet };

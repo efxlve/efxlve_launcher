@@ -1,9 +1,12 @@
-//! Ubisoft Connect's local configuration cache.
+//! Ubisoft Connect's local configuration cache and the imported owned catalog.
 //!
 //! The cache is a protobuf list of YAML documents. Each playable game has
 //! `start_game` and a display name. Steam and Epic copies are left to those
 //! stores. The file is a game list: account passwords are not in it, and this
 //! parser never reads `settings.yaml`.
+//!
+//! Games the account owns but the client has not cached come from the sign-in
+//! import and live in `companion_ubi_owned.json`.
 
 use super::proto::for_each_field;
 use super::scan::slug;
@@ -187,6 +190,71 @@ pub(crate) fn configurations_path() -> Option<std::path::PathBuf> {
     if program.is_file() { Some(program) } else { None }
 }
 
+fn owned_cache_path() -> std::path::PathBuf {
+    super::accounts::data_dir().join("companion_ubi_owned.json")
+}
+
+/// Writes the owned catalog captured at sign-in; ids are Ubisoft space ids.
+pub(crate) fn save_owned(games: &[(String, String)]) {
+    let path = owned_cache_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let rows: Vec<serde_json::Value> = games
+        .iter()
+        .map(|(id, name)| serde_json::json!({ "id": id, "name": name }))
+        .collect();
+    if let Ok(text) = serde_json::to_string(&rows) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+pub(crate) fn load_owned() -> Vec<(String, String)> {
+    let Ok(text) = std::fs::read_to_string(owned_cache_path()) else {
+        return Vec::new();
+    };
+    let rows: Vec<serde_json::Value> = serde_json::from_str(&text).unwrap_or_default();
+    rows.into_iter()
+        .filter_map(|row| {
+            let id = row.get("id")?.as_str()?.to_string();
+            let name = row.get("name")?.as_str()?.to_string();
+            if id.is_empty() || name.is_empty() { None } else { Some((id, name)) }
+        })
+        .collect()
+}
+
+/// Local games plus the imported catalog the client has not cached yet.
+pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
+    let games = match configurations_path().and_then(|path| std::fs::read(path).ok()) {
+        Some(bytes) => games_from_configurations(&bytes, installed),
+        None => installed.iter().filter(|g| g.store == "ubisoft").cloned().collect(),
+    };
+    let mut games = merge_owned(games, &load_owned());
+    games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    games
+}
+
+/// Adds imported games whose name is not in the local list yet. An imported
+/// row has no launch id, so `companion_launch` hands it to the client.
+pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[(String, String)]) -> Vec<FoundGame> {
+    for (id, name) in owned {
+        if games.iter().any(|g| slug(&g.name) == slug(name)) {
+            continue;
+        }
+        games.push(FoundGame {
+            store: "ubisoft".into(),
+            id: id.clone(),
+            name: name.clone(),
+            install_path: String::new(),
+            installed: false,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
+        });
+    }
+    games
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,5 +297,32 @@ mod tests {
         assert_eq!(games[0].id, "34");
         assert_eq!(games[0].launch_uri, "uplay://launch/34/0");
         assert!(!games[0].installed);
+    }
+
+    #[test]
+    fn imported_games_join_the_local_list_without_duplicating_names() {
+        let local = vec![FoundGame {
+            store: "ubisoft".into(),
+            id: "34".into(),
+            name: "Watch Dogs".into(),
+            install_path: String::new(),
+            installed: false,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: "uplay://launch/34/0".into(),
+        }];
+        let merged = merge_owned(
+            local,
+            &[
+                ("space-1".into(), "Watch Dogs".into()),
+                ("space-2".into(), "Far Cry 6".into()),
+            ],
+        );
+        assert_eq!(merged.len(), 2);
+        let imported = merged.iter().find(|g| g.id == "space-2").unwrap();
+        assert_eq!(imported.name, "Far Cry 6");
+        assert!(!imported.installed);
+        assert!(imported.launch_uri.is_empty());
+        assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);
     }
 }

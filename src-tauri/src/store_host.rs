@@ -587,6 +587,10 @@ pub async fn show_store_view(
                     crate::companion::accept_bnet_library(&app_nav, url.fragment().unwrap_or(""));
                     return false;
                 }
+                if url.path() == "/ubi-session" {
+                    crate::companion::accept_ubi_session(&app_nav, url.fragment().unwrap_or(""));
+                    return false;
+                }
                 if url.path() == "/notif-close" {
                     let _ = app_nav.emit(
                         "notif-overlay-act",
@@ -619,6 +623,9 @@ pub async fn show_store_view(
         });
     if store_id == "battlenet" {
         builder = builder.initialization_script(crate::companion::bnet_watch_script());
+    }
+    if store_id == "ubisoft" {
+        builder = builder.initialization_script(crate::companion::ubi_watch_script());
     }
     // The 44 KB storefront decoration only exists for the Epic store: injecting it
     // into the other storefronts meant parsing and running a script that finds

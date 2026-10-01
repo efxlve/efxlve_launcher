@@ -268,7 +268,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet") || S.activeStore || "epic";
+    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet" | "ubisoft") || S.activeStore || "epic";
     if (!t.dataset.store && !isHeaderStore(store)) store = "epic";
     if (S.activeStore !== store) {
       S.activeStore = store;
@@ -502,10 +502,11 @@ document.addEventListener("click", (e) => {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
+    const store = id === "ubisoft" ? "ubisoft" : "battlenet";
     void invoke("companion_hide_login").catch(() => {});
-    S.activeStore = "battlenet";
+    S.activeStore = store;
     pushNavHistory({ view: "store" });
-    void openStore("battlenet");
+    void openStore(store);
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;
