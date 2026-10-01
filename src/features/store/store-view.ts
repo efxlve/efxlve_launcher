@@ -69,7 +69,7 @@ const COVERING_ROOT_IDS = [
   "hide-games-root",
   "hide-achievements-root",
   "share-modal-root",
-  "notif-root",
+  "changelog-root",
 ] as const;
 
 /**

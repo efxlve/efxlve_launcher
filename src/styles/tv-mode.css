@@ -1996,6 +1996,11 @@ html.is-steam-deck .tv-card {
   display: none;
 }
 
+/* The bar is fixed over the window. Library content scrolls clear of it. */
+body:has(.gamepad-hud-bar:not(.hidden)):not(.tv-mode) #view {
+  padding-bottom: 64px;
+}
+
 .gamepad-hud-bar.dimmed {
   opacity: 0.28;
 }

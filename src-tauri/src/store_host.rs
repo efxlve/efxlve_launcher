@@ -241,7 +241,26 @@ fn move_store_bounds(
         }
     }
     remember_applied_bounds(x, y, width, height);
+    // set_bounds can lift the store above the notification layer.
+    crate::notif_overlay::raise_if_open(window);
     Ok(())
+}
+
+/// Size to use while a store child is parked off-screen.
+/// A 1×1 bounds update is what makes the main window restore from a dot:
+/// WebView2 copies that size onto the parent.
+fn parked_content_size(window: &tauri::Window) -> (f64, f64) {
+    let Ok(physical) = window.inner_size() else {
+        return (1280.0, 800.0);
+    };
+    if !resize_is_a_real_frame(physical.width, physical.height) {
+        return (1280.0, 800.0);
+    }
+    let Ok(scale) = window.scale_factor() else {
+        return (1280.0, 800.0);
+    };
+    let logical = physical.to_logical::<f64>(scale);
+    (logical.width.max(100.0), logical.height.max(100.0))
 }
 
 /// Moves every store child webview off-screen and hides it once.
@@ -253,14 +272,15 @@ fn park_store_offscreen(window: &tauri::Window) -> Result<(), String> {
     if views.is_empty() {
         return Ok(());
     }
-    let rect = webview_rect(X, Y, 1.0, 1.0);
+    let (width, height) = parked_content_size(window);
+    let rect = webview_rect(X, Y, width, height);
     for v in &views {
         v.set_bounds(rect).map_err(|e| e.to_string())?;
     }
     for v in &views {
         v.hide().map_err(|e| e.to_string())?;
     }
-    remember_applied_bounds(X, Y, 1.0, 1.0);
+    remember_applied_bounds(X, Y, width, height);
     Ok(())
 }
 
@@ -302,6 +322,7 @@ fn show_store_bounds(
             let _ = v.hide();
         }
     }
+    crate::notif_overlay::raise_if_open(window);
     Ok(())
 }
 
@@ -560,6 +581,15 @@ pub async fn show_store_view(
         })
         .on_navigation(move |url| {
             if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
+                // A click on the store, while the notification layer is open, asks
+                // the shell to close that layer. The store page itself stays put.
+                if url.path() == "/notif-close" {
+                    let _ = app_nav.emit(
+                        "notif-overlay-act",
+                        serde_json::json!({ "act": "overlay-close" }),
+                    );
+                    return false;
+                }
                 let query: std::collections::HashMap<_, _> =
                     url.query_pairs().into_owned().collect();
                 let app_name = query.get("app").cloned().unwrap_or_default();
@@ -637,6 +667,15 @@ pub fn resize_store_view(
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    // Minimize reports a 0×0 client. Applying that here resizes the parent.
+    if window.is_minimized().unwrap_or(false) {
+        return Ok(());
+    }
+    if let Ok(size) = window.inner_size() {
+        if !resize_is_a_real_frame(size.width, size.height) {
+            return Ok(());
+        }
+    }
     remember_store_insets(x, y, bottom.unwrap_or(0.0));
     let palette_open = STORE_PALETTE_OPEN.load(SeqCst);
     // Palette-open resizes must not hide or show. Parking here races the
@@ -649,9 +688,8 @@ pub fn resize_store_view(
 }
 
 /// Hides the embedded store view (its state is preserved).
-/// Guaranteed hiding: in addition to `hide()` the native window is moved off-screen
-/// and shrunk to 1x1, so that even with async IPC latency no pixel residue or
-/// overlap can remain on screen.
+/// The child is moved off-screen at its current size and hidden, so a later
+/// restore does not animate the main window up from a 1×1 frame.
 #[tauri::command]
 pub fn hide_store_view(app: AppHandle) -> Result<String, String> {
     let window = app
@@ -732,9 +770,20 @@ pub fn destroy_store_view(app: AppHandle) -> Result<String, String> {
     Ok("@t:store.closed".into())
 }
 
+/// A minimize reports a 0×0 or 1×1 client size. Applying that to the store child
+/// makes the restored window pop from a dot to the full frame.
+pub(crate) fn resize_is_a_real_frame(width: u32, height: u32) -> bool {
+    width >= 160 && height >= 160
+}
+
 /// Keeps the store child inside the content area when the main window resizes.
 pub fn on_main_window_resized(window: &tauri::Window, physical_size: tauri::PhysicalSize<u32>) {
     use std::sync::atomic::Ordering::{Relaxed, SeqCst};
+    if window.is_minimized().unwrap_or(false)
+        || !resize_is_a_real_frame(physical_size.width, physical_size.height)
+    {
+        return;
+    }
     let palette_open = STORE_PALETTE_OPEN.load(SeqCst);
     let store_visible = STORE_VISIBLE.load(SeqCst);
     let Ok(scale_factor) = window.scale_factor() else {
@@ -758,7 +807,10 @@ pub fn on_main_window_resized(window: &tauri::Window, physical_size: tauri::Phys
 
 #[cfg(test)]
 mod tests {
-    use super::{store_bounds, store_hold_effect, store_resize_bounds, StoreHoldEffect};
+    use super::{
+        resize_is_a_real_frame, store_bounds, store_hold_effect, store_resize_bounds,
+        StoreHoldEffect,
+    };
 
     #[test]
     fn store_bounds_fill_content_area_between_header_and_status_bar() {
@@ -766,6 +818,13 @@ mod tests {
             store_bounds(1600.0, 900.0, 225.0, 86.0, 24.0),
             (225.0, 86.0, 1375.0, 790.0)
         );
+    }
+
+    #[test]
+    fn a_minimize_size_does_not_move_the_store() {
+        assert!(!resize_is_a_real_frame(0, 0));
+        assert!(!resize_is_a_real_frame(1, 1));
+        assert!(resize_is_a_real_frame(1280, 800));
     }
 
     #[test]

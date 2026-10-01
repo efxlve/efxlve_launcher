@@ -8,6 +8,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
+import { holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
 
 export interface ChangelogText {
   en: string;
@@ -309,11 +310,13 @@ function renderGroup(title: string | undefined, items: ChangelogText[] | undefin
 }
 
 export function openChangelogModal(): void {
+  void holdStoreOverlay("changelog");
   renderChangelogModal();
 }
 
 export function closeChangelogModal(): void {
   if (changelogRoot) changelogRoot.innerHTML = "";
+  releaseStoreOverlay("changelog");
 }
 
 export function renderChangelogModal(): void {

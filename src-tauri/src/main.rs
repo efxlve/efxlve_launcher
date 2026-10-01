@@ -13,6 +13,7 @@ mod steam_art;
 mod steam_auth;
 mod steam_session;
 mod steam_watch;
+mod notif_overlay;
 mod store_host;
 mod vault_id;
 mod winreg;
@@ -567,6 +568,9 @@ fn main() {
             store_host::hide_store_view,
             store_host::set_store_palette_hold,
             store_host::destroy_store_view,
+            notif_overlay::show_notif_overlay,
+            notif_overlay::move_notif_overlay,
+            notif_overlay::hide_notif_overlay,
             open_folder,
             eos::eos_overlay_status,
             eos::eos_install_redistributable,

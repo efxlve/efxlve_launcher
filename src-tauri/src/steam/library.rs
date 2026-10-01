@@ -110,8 +110,18 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
     // Byte counters come from the manifest. Walking the download folder to sum
     // file sizes blocks the UI for the whole transfer (tens of GB, constantly
     // rewritten while the poller is running).
+    let bytes_staged = acf_u64(state, "BytesStaged");
     let paused = (state_flags & 512) != 0;
-    let downloading = dl_dir.is_dir() && !paused;
+    let fully_installed = (state_flags & 4) != 0;
+    // UpdateRunning (256) or UpdateStarted (1024): an installed game is patching.
+    let update_active = (state_flags & (256 | 1024)) != 0;
+    // Bytes already caught up means Steam parked the job (its "Unscheduled"
+    // row at 100%) or a tool such as LuaTools left `downloading/<id>` behind.
+    let work_left = bytes_to_download > bytes_downloaded || bytes_to_stage > bytes_staged;
+    let downloading = dl_dir.is_dir()
+        && !paused
+        && work_left
+        && (!fully_installed || update_active);
     if downloading && bytes_to_download == 0 {
         let stage_to = acf_u64(state, "BytesToStage");
         if stage_to > 0 {
@@ -399,6 +409,44 @@ mod tests {
         assert!(game.downloading);
         assert_eq!(game.bytes_to_download, 8000);
         assert_eq!(game.bytes_downloaded, 4000);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn finished_bytes_are_not_a_live_download() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-done-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let done = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1026"
+    	"BytesToDownload"		"4000"
+    	"BytesDownloaded"		"4000"
+    }
+    "#;
+        let game = parse_app_manifest(done, &tmp).expect("game");
+        assert!(!game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn installed_game_with_a_leftover_download_folder_is_not_downloading() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-left-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let installed = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"4"
+    	"BytesToDownload"		"9000"
+    	"BytesDownloaded"		"1000"
+    }
+    "#;
+        let game = parse_app_manifest(installed, &tmp).expect("game");
+        assert!(!game.downloading);
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]

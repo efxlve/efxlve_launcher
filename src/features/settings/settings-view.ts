@@ -265,7 +265,7 @@ function renderController(): string {
   return group(padRows, t("controller.padsTitle")) + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
 }
 
-/** Steam card: detected client, installed games and the Steam hand-off. */
+/** Steam card: client path, game count, and the Web API key. Games stay in the library. */
 function renderSteamGroup(): string {
   const status = S.steamStatus;
   if (!status) return "";
@@ -273,8 +273,6 @@ function renderSteamGroup(): string {
   if (!status.installed) {
     return group(row(t("steam.notFound"), t("steam.desc"), rescan), "Steam");
   }
-  const games = S.steamGames;
-  const MAX_ROWS = 60;
   const apiRow = row(
     t("settings.steamApiTitle"),
     `${t("settings.steamApiDesc")} <span class="chip ${S.steamApiKey ? "ok" : ""}">${S.steamApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
@@ -283,23 +281,9 @@ function renderSteamGroup(): string {
      <button class="btn ghost small" data-act="open-external-url" data-url="https://steamcommunity.com/dev/apikey">${t("settings.getFreeKey")}</button>`,
     true,
   );
-  const gameRows = games.slice(0, MAX_ROWS).map((g: SteamGame) => `
-    <div class="row">
-      <div class="row-main">
-        <div class="row-title">${esc(g.name)}</div>
-        <div class="row-meta">${fmtBytes(g.sizeBytes)}${(g.stateFlags & 2) !== 0 && !g.preloaded && !g.downloading ? ` · ${t("steam.updateRequired")}` : ""}</div>
-      </div>
-      <button class="btn ghost small" data-act="steam-action" data-id="${esc(g.appId)}" data-mode="launch">${icon("play", 13)} ${t("steam.launch")}</button>
-    </div>`).join("");
-  const more = games.length > MAX_ROWS
-    ? `<div class="row"><div class="row-meta">${t("steam.more", { count: games.length - MAX_ROWS })}</div></div>`
-    : "";
-  const empty = games.length === 0
-    ? `<div class="row"><div class="row-meta">${t("steam.empty")}</div></div>`
-    : "";
   return group(
     row(t("settings.steamExitAfterPlay"), t("settings.steamExitAfterPlayDesc"), toggle("toggle-steam-exit-after-play", S.steamExitAfterPlay)) +
-    row(t("steam.games", { count: games.length }), esc(status.path), rescan) + apiRow + gameRows + more + empty,
+    row(t("steam.games", { count: S.steamGames.length }), esc(status.path), rescan) + apiRow,
     "Steam",
   );
 }

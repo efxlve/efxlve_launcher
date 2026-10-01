@@ -7,13 +7,15 @@
  * 10-foot gamepad focus model keeps working.
  */
 
-import { EOS_OVERLAY_DECLINE_KEY, NOTIF_KEY } from "../../core/constants";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { EOS_OVERLAY_DECLINE_KEY, NOTIF_KEY, isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
 import { esc, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
-import { holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
+import { embeddedStoreHeld, syncStoreViewSize } from "../store/store-view";
 
 const MAX = 50;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
@@ -31,6 +33,7 @@ const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
 
 /** Restores the persisted notification history (invalid entries are dropped). */
 export function loadNotifications(): void {
+  bindNotifOverlay();
   try {
     const raw = localStorage.getItem(NOTIF_KEY);
     if (!raw) return;
@@ -143,27 +146,17 @@ export function updateNotifBadge(): void {
 
 /** Signature of the last painted panel; renders stay no-op while nothing changes. */
 let notifPanelSig = "";
+/** The dropdown is a child webview above the store, not HTML under it. */
+let notifOverlayOn = false;
+let notifOverlayBox = { w: 360, h: 320 };
+let notifOverlayBound = false;
 
-/** Renders the dropdown into #notif-root (or clears it when closed). */
-export function renderNotificationPanel(): void {
-  const root = document.getElementById("notif-root");
-  updateNotifBadge();
-  if (!root) return;
-  if (!S.notifOpen) {
-    notifPanelSig = "";
-    if (root.firstChild) root.innerHTML = "";
-    releaseStoreOverlay("notif");
-    return;
-  }
+/** True while a native store child would paint over an HTML dropdown. */
+function storeCoversUi(): boolean {
+  return isTauri && ((S.view === "store" && S.storeShown) || embeddedStoreHeld());
+}
 
-  const unread = unreadCount();
-  // `render()` runs on every download progress event; rebuilding the open panel
-  // each time was pure DOM churn. Skip when the visible content is unchanged.
-  const first = S.notifications[0];
-  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}`;
-  if (sig === notifPanelSig && root.firstChild) return;
-  notifPanelSig = sig;
-
+function panelMarkup(unread: number): string {
   const items = S.notifications
     .map((n) => {
       const action = n.action
@@ -182,13 +175,11 @@ export function renderNotificationPanel(): void {
         </button>`;
     })
     .join("");
-
   const body =
     S.notifications.length === 0
       ? `<div class="notif-empty">${icon("bell", 26)}<p>${t("notif.empty")}</p></div>`
       : `<div class="notif-list">${items}</div>`;
-
-  root.innerHTML = `
+  return `
     <div class="notif-panel" role="dialog" aria-label="${esc(t("notif.title"))}">
       <div class="notif-head">
         <span class="notif-title">${icon("bell", 14)} ${t("notif.title")}</span>
@@ -199,6 +190,99 @@ export function renderNotificationPanel(): void {
       </div>
       ${body}
     </div>`;
+}
+
+function overlayOrigin(width: number, height: number): { x: number; y: number } {
+  const anchor = document.getElementById("notif-btn")?.getBoundingClientRect();
+  let x = anchor ? anchor.left : 8;
+  let y = anchor ? anchor.bottom + 8 : 40;
+  if (x + width > window.innerWidth - 8) x = window.innerWidth - width - 8;
+  if (x < 8) x = 8;
+  if (y + height > window.innerHeight - 8) y = Math.max(8, (anchor?.top ?? 40) - height - 8);
+  return { x, y };
+}
+
+/** Shows the list in a child webview that paints above the store. */
+async function presentStoreOverlay(panelHtml: string): Promise<void> {
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-4000px;top:0;width:360px;visibility:hidden;";
+  holder.innerHTML = panelHtml;
+  document.body.appendChild(holder);
+  const panel = holder.querySelector<HTMLElement>(".notif-panel");
+  const height = Math.max(120, Math.min(panel?.offsetHeight ?? 320, Math.round(window.innerHeight * 0.7)));
+  const width = Math.min(360, Math.max(160, window.innerWidth - 16));
+  holder.remove();
+  notifOverlayBox = { w: width, h: height };
+  const { x, y } = overlayOrigin(width, height);
+  await invoke("show_notif_overlay", { x, y, width, height, html: panelHtml });
+}
+
+function hideStoreOverlay(): void {
+  if (!isTauri) return;
+  void invoke("hide_notif_overlay").catch(() => undefined);
+}
+
+/** Forwards a click inside the overlay into the same button path as the HTML panel. */
+function deliverOverlayAct(act: string, id: string): void {
+  if (act === "overlay-close") {
+    closeNotifPanel();
+    return;
+  }
+  const root = document.getElementById("notif-root");
+  if (!root || !act) return;
+  const btn = document.createElement("button");
+  btn.dataset.act = act;
+  if (id) btn.dataset.id = id;
+  root.appendChild(btn);
+  btn.click();
+  btn.remove();
+}
+
+function bindNotifOverlay(): void {
+  if (notifOverlayBound || !isTauri) return;
+  notifOverlayBound = true;
+  void listen<{ act?: string; id?: string }>("notif-overlay-act", (event) => {
+    deliverOverlayAct(event.payload.act || "", event.payload.id || "");
+  });
+}
+
+/** Renders the dropdown into #notif-root (or clears it when closed). */
+export function renderNotificationPanel(): void {
+  const root = document.getElementById("notif-root");
+  updateNotifBadge();
+  if (!root) return;
+  if (!S.notifOpen) {
+    notifPanelSig = "";
+    notifOverlayOn = false;
+    if (root.firstChild) root.innerHTML = "";
+    hideStoreOverlay();
+    syncStoreViewSize();
+    return;
+  }
+
+  const unread = unreadCount();
+  // `render()` runs on every download progress event; rebuilding the open panel
+  // each time was pure DOM churn. Skip when the visible content is unchanged.
+  const first = S.notifications[0];
+  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}`;
+  const covers = storeCoversUi();
+  if (sig === notifPanelSig && (root.firstChild || (covers && notifOverlayOn))) return;
+  notifPanelSig = sig;
+
+  const markup = panelMarkup(unread);
+  if (covers) {
+    root.innerHTML = "";
+    notifOverlayOn = true;
+    void presentStoreOverlay(markup).catch(() => {
+      notifOverlayOn = false;
+      root.innerHTML = markup;
+      positionNotifPanel();
+    });
+    return;
+  }
+  if (notifOverlayOn) hideStoreOverlay();
+  notifOverlayOn = false;
+  root.innerHTML = markup;
   positionNotifPanel();
 }
 
@@ -207,9 +291,20 @@ export function renderNotificationPanel(): void {
  * when the window does not have room underneath.
  */
 export function positionNotifPanel(): void {
+  if (notifOverlayOn) {
+    const { x, y } = overlayOrigin(notifOverlayBox.w, notifOverlayBox.h);
+    void invoke("move_notif_overlay", {
+      x,
+      y,
+      width: notifOverlayBox.w,
+      height: notifOverlayBox.h,
+    }).catch(() => undefined);
+    return;
+  }
   const panel = document.querySelector<HTMLElement>("#notif-root .notif-panel");
   const anchor = document.getElementById("notif-btn")?.getBoundingClientRect();
   if (!panel || !anchor) return;
+  panel.style.width = "";
   const left = Math.min(anchor.left, Math.max(8, window.innerWidth - panel.offsetWidth - 8));
   panel.style.left = `${left}px`;
   const gap = 8;
@@ -221,14 +316,13 @@ export function positionNotifPanel(): void {
 /** Opens the notification panel (and marks everything as read). */
 export function openNotifPanel(): void {
   S.notifOpen = true;
-  void holdStoreOverlay("notif");
   renderNotificationPanel();
   markAllRead();
+  syncStoreViewSize();
 }
 
 export function closeNotifPanel(): void {
   if (!S.notifOpen) return;
   S.notifOpen = false;
-  releaseStoreOverlay("notif");
   renderNotificationPanel();
 }

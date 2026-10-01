@@ -414,7 +414,7 @@ function renderManageTab(s: EpicSummary): string {
             <div class="tv-manage-list">
               <div class="tv-manage-item">
                 <div class="tv-manage-item-info">
-                  <span class="tv-manage-item-title">${t("manage.installFolder")}</span>
+                  <span class="tv-manage-item-title">${t("manage.installLocation")}</span>
                   <span class="tv-manage-item-sub">${esc(s.installPath || "—")}</span>
                 </div>
                 ${s.installed ? `<button type="button" class="btn ghost small" data-act="tv-open-folder" data-id="${esc(s.appName)}">${icon("folder", 14)} ${t("tv.openFolder")}</button>` : ""}

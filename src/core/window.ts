@@ -30,6 +30,9 @@ export function updateMaxIcon(isMax?: boolean): void {
 }
 
 export function handleWindowResize(): void {
+  // A minimize delivers a 0×0 or 1×1 size. Resizing the store child from that
+  // makes the restored window pop from a dot to the full frame.
+  if (window.innerWidth < 160 || window.innerHeight < 160) return;
   updateMaxIcon();
   if (S.view === "downloads" && typeof drawSpeedCanvas === "function") {
     drawSpeedCanvas();
