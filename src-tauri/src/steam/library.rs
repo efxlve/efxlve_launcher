@@ -229,3 +229,190 @@ pub(super) fn is_steam_library_noise(app_id: &str, name: &str) -> bool {
         || n == "source sdk"
         || n.starts_with("source sdk ")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::path::Path;
+
+    use super::super::vdf::parse_vdf;
+
+    const APP_MANIFEST: &str = r#"
+    "AppState"
+    {
+    	"appid"		"620"
+    	"Universe"		"1"
+    	"name"		"Portal 2"
+    	"installdir"		"Portal 2"
+    	"SizeOnDisk"		"12345678901"
+    	"StateFlags"		"4"
+    }
+    "#;
+
+    const APP_MANIFEST_DOWNLOADING: &str = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"installdir"		"Counter-Strike Global Offensive"
+    	"SizeOnDisk"		"100"
+    	"StateFlags"		"1026"
+    	"BytesToDownload"		"4000"
+    	"BytesDownloaded"		"1000"
+    }
+    "#;
+
+    #[test]
+    fn app_manifest_reads_game_fields() {
+        let game =
+            parse_app_manifest(APP_MANIFEST, Path::new(r"D:\SteamLibrary\steamapps")).expect("game");
+        assert_eq!(game.app_id, "620");
+        assert_eq!(game.name, "Portal 2");
+        assert_eq!(game.install_dir, "Portal 2");
+        assert_eq!(game.size_bytes, 12_345_678_901);
+        assert_eq!(game.state_flags, 4);
+        assert_eq!(game.bytes_downloaded, 0);
+        assert_eq!(game.bytes_to_download, 0);
+        assert!(game.library.ends_with("steamapps"));
+        assert!(!game.preloaded);
+    }
+    #[test]
+    fn preload_manifest_is_not_an_update() {
+        let preload = r#"
+    "AppState"
+    {
+    	"appid"		"3962600"
+    	"name"		"AION 2"
+    	"installdir"		"AION2"
+    	"StateFlags"		"6"
+    	"buildid"		"17000001"
+    	"TargetBuildID"		"0"
+    	"BytesToDownload"		"0"
+    	"BytesToStage"		"0"
+    }
+    "#;
+        let game = parse_app_manifest(preload, Path::new("x")).expect("game");
+        assert!(game.preloaded);
+        assert_eq!(game.state_flags, 6);
+    }
+    #[test]
+    fn real_update_with_a_newer_build_is_not_a_preload() {
+        let update = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"6"
+    	"buildid"		"100"
+    	"TargetBuildID"		"200"
+    	"BytesToDownload"		"0"
+    	"BytesToStage"		"0"
+    }
+    "#;
+        let game = parse_app_manifest(update, Path::new("x")).expect("game");
+        assert!(!game.preloaded);
+    }
+    #[test]
+    fn queued_bytes_keep_an_update_even_without_a_target_build() {
+        let update = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"6"
+    	"buildid"		"100"
+    	"TargetBuildID"		"0"
+    	"BytesToDownload"		"4096"
+    }
+    "#;
+        let game = parse_app_manifest(update, Path::new("x")).expect("game");
+        assert!(!game.preloaded);
+    }
+    #[test]
+    fn broken_or_empty_documents_never_panic() {
+        assert!(parse_app_manifest("", Path::new("x")).is_none());
+        assert!(parse_app_manifest("\"AppState\" { \"name\"", Path::new("x")).is_none());
+        assert_eq!(parse_vdf("not vdf at all").entries().len(), 0);
+        assert_eq!(
+            parse_app_manifest(APP_MANIFEST, Path::new("x"))
+                .unwrap()
+                .app_id,
+            "620"
+        );
+    }
+    #[test]
+    fn app_manifest_reads_download_bytes_without_treating_them_as_live() {
+        let game = parse_app_manifest(APP_MANIFEST_DOWNLOADING, Path::new("x")).expect("game");
+        assert_eq!(game.app_id, "730");
+        assert_eq!(game.bytes_downloaded, 1000);
+        assert_eq!(game.bytes_to_download, 4000);
+        assert_eq!(game.state_flags, 1026);
+        assert!(!game.downloading);
+    }
+    #[test]
+    fn downloading_folder_marks_a_live_download() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let game = parse_app_manifest(APP_MANIFEST_DOWNLOADING, &tmp).expect("game");
+        assert!(game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn paused_download_is_not_marked_downloading() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-paused-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let paused_vdf = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1538"
+    	"BytesToDownload"		"4000"
+    	"BytesDownloaded"		"1000"
+    }
+    "#;
+        let game = parse_app_manifest(paused_vdf, &tmp).expect("game");
+        assert!(!game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn staging_bytes_used_when_download_bytes_zero() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-staging-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let staging_vdf = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1026"
+    	"BytesToDownload"		"0"
+    	"BytesDownloaded"		"0"
+    	"BytesToStage"		"8000"
+    	"BytesStaged"		"4000"
+    }
+    "#;
+        let game = parse_app_manifest(staging_vdf, &tmp).expect("game");
+        assert!(game.downloading);
+        assert_eq!(game.bytes_to_download, 8000);
+        assert_eq!(game.bytes_downloaded, 4000);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn steamworks_redistributables_are_not_games() {
+        assert!(is_steam_library_noise("228980", "Anything"));
+        assert!(is_steam_library_noise(
+            "1",
+            "Steamworks Common Redistributables"
+        ));
+        assert!(is_steam_library_noise("0", "Proton 9.0"));
+        assert!(!is_steam_library_noise("730", "Counter-Strike 2"));
+        assert!(!is_steam_library_noise(
+            "2322010",
+            "Grand Theft Auto V Enhanced"
+        ));
+    }
+}

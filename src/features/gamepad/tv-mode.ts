@@ -1,5 +1,6 @@
 /**
- * TV Mode: Console-grade Big Picture Dashboard for Steam Deck and 10-ft TV.
+ * TV Mode: console shell for a gamepad (A select, B back, LB/RB shelves).
+ * Status color only. Covers stay free of permanent badges.
  *
  * PS5/Hydra console aesthetic:
  * - Top header bar with category tabs (Recent, Installed, Favorites, All, Updates),

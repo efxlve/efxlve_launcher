@@ -128,3 +128,54 @@ pub(super) fn path_key(path: &Path) -> String {
         .trim_end_matches('\\')
         .to_lowercase()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::path::Path;
+    use super::super::library::{installed_games, library_folders};
+
+
+    #[test]
+    fn steam_pid_file_ignores_junk() {
+        assert_eq!(parse_steam_pid("1234\r\n"), Some(1234));
+        assert_eq!(parse_steam_pid("0"), None);
+        assert_eq!(parse_steam_pid("nope"), None);
+        assert_eq!(parse_steam_pid(""), None);
+    }
+    #[test]
+    fn library_paths_compare_case_insensitively() {
+        assert_eq!(
+            path_key(Path::new(r"C:/Program Files (x86)/Steam/steamapps/")),
+            path_key(Path::new(r"c:\program files (x86)\steam\steamapps"))
+        );
+    }
+    /// Live check against this machine's Steam install.
+    /// Run: `cargo test live_steam -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_detection() {
+        let Some(path) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        println!("steam: {}", path.display());
+        let folders = library_folders(&path);
+        println!("libraries: {}", folders.len());
+        for folder in &folders {
+            println!("  {}", folder.display());
+        }
+        let games = installed_games(&path);
+        println!("installed games: {}", games.len());
+        for game in games.iter().take(12) {
+            println!(
+                "  {} | {} | {} MB | flags {}",
+                game.app_id,
+                game.name,
+                game.size_bytes / 1_048_576,
+                game.state_flags
+            );
+        }
+    }
+}

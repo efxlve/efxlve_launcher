@@ -103,7 +103,7 @@ function scheduleDlDomUpdate(id: string): void {
   });
 }
 
-/** In-place download UI update (Rule 15): never re-renders the whole view. */
+/** Patches the existing download nodes. Do not assign `innerHTML` on this path. */
 function applyDlDomUpdate(id: string): void {
   const dl = S.downloads.get(id);
   const progress = dl ? dl.progress : 100;

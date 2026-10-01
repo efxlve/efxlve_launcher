@@ -1,5 +1,3 @@
-# Efxlve — Gemini Oturumu
+# Gemini
 
-Bu dosya Antigravity ve Gemini oturumları için hızlı referans dosyasıdır.
-Proje ana kuralları ve vizyonu için daima `AGENTS.md`, dosya haritası için `docs/CODEBASE_MAP.md` dosyalarını kaynak kabul et.
-Commit yalnızca kullanıcı açıkça istediğinde atılır.
+The task map and the traps are in `AGENTS.md`. Open only the files that table names. Leave `docs/CHANGELOG_INTERNAL.md` and `docs/ROADMAP.md` unread.

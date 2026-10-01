@@ -775,3 +775,160 @@ pub fn steam_get_achievements_summary(
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
+    use super::super::runtime::steam_install_path;
+
+
+    #[test]
+    fn global_percentages_apply_rarity_to_local_achievements() {
+        let payload = serde_json::json!({
+            "achievementpercentages": {
+                "achievements": [
+                    { "name": "AC_1", "percent": 3.5 },
+                    { "name": "AC_2", "percent": "40.0" }
+                ]
+            }
+        });
+        let percentages = parse_global_percentages(&payload);
+        assert_eq!(percentages.get("AC_1"), Some(&3.5));
+        assert_eq!(percentages.get("AC_2"), Some(&40.0));
+
+        let mut response = GameAchievementsResponse {
+            achievements: vec![
+                AchievementItem {
+                    name: "AC_1".into(),
+                    ..Default::default()
+                },
+                AchievementItem {
+                    name: "AC_2".into(),
+                    ..Default::default()
+                },
+                AchievementItem {
+                    name: "AC_3".into(),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        };
+        apply_rarity(&mut response, &percentages);
+        assert_eq!(
+            response.achievements[0]
+                .tier
+                .as_ref()
+                .map(|t| t.name.as_str()),
+            Some("gold")
+        );
+        assert_eq!(
+            response.achievements[1]
+                .tier
+                .as_ref()
+                .map(|t| t.name.as_str()),
+            Some("bronze")
+        );
+        assert_eq!(
+            response.achievements[1]
+                .rarity
+                .as_ref()
+                .and_then(|r| r.percent),
+            Some(40.0)
+        );
+        assert!(response.achievements[2].tier.is_none());
+    }
+    #[test]
+    fn unix_seconds_become_civil_dates() {
+        assert_eq!(unix_date(0), "");
+        assert_eq!(unix_date(1_700_000_000), "2023-11-14");
+        assert_eq!(unix_date(1_600_000_000), "2020-09-13");
+    }
+    #[test]
+    fn tiers_follow_the_global_unlock_rate() {
+        assert_eq!(tier_for_percent(1.5).name, "gold");
+        assert_eq!(tier_for_percent(12.0).name, "silver");
+        assert_eq!(tier_for_percent(60.0).name, "bronze");
+    }
+    /// Live check for the SteamID and the achievement pipeline (needs the key).
+    /// Run: `cargo test live_steam_achievements -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_achievements() {
+        let Some(path) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        println!("active steam id: {:?}", active_steam_id(&path));
+    }
+    #[test]
+    fn binary_vdf_reads_nested_objects_and_scalars() {
+        // Valve KeyValues binary: [type][key]\0[payload]; 0 = subtree, 8 = end.
+        let mut data: Vec<u8> = Vec::new();
+        data.push(0);
+        data.extend_from_slice(b"319630\0");
+        data.push(0);
+        data.extend_from_slice(b"stats\0");
+        data.push(0);
+        data.extend_from_slice(b"1\0");
+        data.push(0);
+        data.extend_from_slice(b"bits\0");
+        data.push(0);
+        data.extend_from_slice(b"0\0");
+        data.push(1); // string
+        data.extend_from_slice(b"name\0");
+        data.extend_from_slice(b"AC_1\0");
+        data.push(2); // int32
+        data.extend_from_slice(b"hidden\0");
+        data.extend_from_slice(&1i32.to_le_bytes());
+        data.push(8); // end bits
+        data.push(8); // end group 1
+        data.push(8); // end stats
+        data.push(8); // end 319630
+        data.push(8); // end root object
+
+        let root = parse_binary_vdf(&data).expect("parsed");
+        let bit = root
+            .get("319630")
+            .and_then(|app| app.get("stats"))
+            .and_then(|stats| stats.get("1"))
+            .and_then(|group| group.get("bits"))
+            .and_then(|bits| bits.get("0"))
+            .expect("achievement bit");
+        assert_eq!(bit.get("name").and_then(Vdf::as_str), Some("AC_1"));
+        assert_eq!(bit.get("hidden").and_then(Vdf::as_str), Some("1"));
+        assert!(parse_binary_vdf(b"garbage").is_none());
+        assert!(parse_binary_vdf(&[0, 1, 2]).is_none());
+    }
+    /// Live check of the local achievement cache (needs the Steam client).
+    /// Run: `cargo test live_steam_local_achievements -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_local_achievements() {
+        let Some(steam) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        println!("steam: {}", steam.display());
+        match read_local_achievements(&steam, "319630") {
+            Some(response) => println!(
+                "319630 (Life is Strange): {}/{} unlocked",
+                response.user_unlocked, response.total_achievements
+            ),
+            None => println!("319630: no local schema"),
+        }
+        let started = std::time::Instant::now();
+        let totals = read_local_achievement_totals(&steam);
+        println!(
+            "games with local achievement stats: {} in {} ms",
+            totals.len(),
+            started.elapsed().as_millis()
+        );
+        for app in ["730", "1240440", "319630", "620", "1097150", "227300"] {
+            if let Some((_, unlocked, total)) = totals.iter().find(|(id, _, _)| id == app) {
+                println!("  {app}: {unlocked}/{total}");
+            }
+        }
+    }
+}

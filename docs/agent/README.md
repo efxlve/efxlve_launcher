@@ -1,6 +1,8 @@
 # Agent guide
 
-Read this before editing Efxlve Launcher. It is the map. The rules live in `AGENTS.md`. Design tokens live in `docs/DESIGN_SYSTEM.md`. The command list lives in `docs/TAURI_IPC_REFERENCE.md`.
+Always-loaded rules and the task table are in `AGENTS.md`. Open this file when that table does not name the file. Design tokens live in `docs/DESIGN_SYSTEM.md`. Command names live in `docs/agent/ipc-index.md`.
+
+Leave `docs/CHANGELOG_INTERNAL.md` and `docs/ROADMAP.md` unread during a code change.
 
 The app is a Windows desktop launcher (Tauri 2 + Rust + vanilla TypeScript). It wraps Legendary (Epic), gogdl (GOG), and the local Steam client. There is no web framework and no virtual DOM.
 
@@ -24,14 +26,14 @@ Use `npm.cmd`, not `npm`, in PowerShell. Do not commit unless the user asks.
 | Click actions | `src/features/events/click-router.ts` and `src/features/events/handlers/` |
 | Download progress DOM | `src/features/events/ipc-listeners.ts` (`applyDlDomUpdate`). Do not call `render()` here |
 | A screen | `src/features/<name>/` |
-| Epic IPC command | `src-tauri/src/legendary/commands/<file>.rs`, then register it in `src-tauri/src/main.rs`, then wrap it in `src/epic.ts` |
+| Epic IPC command | `src-tauri/src/legendary/commands/<file>.rs`, then register it in `src-tauri/src/main.rs`, then wrap it in `src/epic-commands.ts` |
 | Epic install / queue / launch | `src-tauri/src/legendary/transfers/` (`queue.rs` owns the state machine) |
 | Epic account vault | `src-tauri/src/legendary/accounts.rs` |
 | GOG | `src-tauri/src/gogdl/` |
 | Steam library, details, achievements | `src-tauri/src/steam/` (`mod.rs` lists each file) |
 | Steam sign-in and DPAPI vault | `src-tauri/src/steam_auth/` (`session.rs`, `wire.rs`, `vault.rs`) |
 | Embedded store webviews | `src-tauri/src/store_host.rs` and `store_extension.js` |
-| Strings | `src/locales/*.json` (15 files, same keys). Rust sends `@t:key` plus `\u{1f}` args. The UI translates them with `localizeMessage` |
+| Strings | `src/locales/*.json` (15 files, same keys). Rust sends `@t:key` plus `\u{1f}` args. The UI translates them with `localizeMessage`. `npm.cmd run locales` checks that every file has the same keys |
 
 `core/` must not import `features/`. Features import `core/` and call `S.field = ...` (the binding `S` is not reassigned).
 

@@ -91,3 +91,30 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
     items.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     items
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    /// Live check for the client's own screenshots.
+    /// Run: `cargo test live_steam_screenshots -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_screenshots() {
+        for app in ["730", "359550", "381210"] {
+            let items = steam_get_game_screenshots(app.to_string());
+            println!("{app}: {} screenshots", items.len());
+            for item in items.iter().take(3) {
+                println!(
+                    "  {} | {} | {} | thumb {} | full {}",
+                    item.file_name,
+                    item.date_str,
+                    item.size_str,
+                    item.data_url.len(),
+                    item.full_data_url.len()
+                );
+            }
+        }
+    }
+}

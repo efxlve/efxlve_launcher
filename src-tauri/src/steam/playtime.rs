@@ -85,3 +85,60 @@ pub fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime>
         .map(|p| read_playtimes(&p))
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn playtimes_are_read_from_the_newest_local_config() {
+        let text = r#"
+    "UserLocalConfigStore"
+    {
+    	"Software"
+    	{
+    		"Valve"
+    		{
+    			"Steam"
+    			{
+    				"apps"
+    				{
+    					"620"
+    					{
+    						"LastPlayed"		"1700000000"
+    						"Playtime"		"90"
+    					}
+    					"730"
+    					{
+    						"Playtime"		"0"
+    					}
+    				}
+    			}
+    		}
+    	}
+    }
+    "#;
+        let root = parse_vdf(text);
+        let apps = root
+            .get("UserLocalConfigStore")
+            .and_then(|n| n.get("Software"))
+            .and_then(|n| n.get("Valve"))
+            .and_then(|n| n.get("Steam"))
+            .and_then(|n| n.get("apps"))
+            .expect("apps node");
+        let minutes = apps
+            .get("620")
+            .and_then(|n| n.get("Playtime"))
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(0);
+        assert_eq!(minutes * 60, 5400);
+        let last = apps
+            .get("620")
+            .and_then(|n| n.get("LastPlayed"))
+            .and_then(Vdf::as_str)
+            .and_then(|v| v.parse::<i64>().ok());
+        assert_eq!(last, Some(1_700_000_000));
+    }
+}

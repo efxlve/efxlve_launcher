@@ -126,3 +126,49 @@ pub fn parse_vdf(text: &str) -> Vdf {
     let root = parser.object();
     Vdf::Obj(root)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const LIBRARY_FOLDERS: &str = r#"
+    "libraryfolders"
+    {
+    	"0"
+    	{
+    		"path"		"C:\\Program Files (x86)\\Steam"
+    		"label"		""
+    		"apps"
+    		{
+    			"228980"		"123456789"
+    		}
+    	}
+    	"1"
+    	{
+    		"path"		"D:\\SteamLibrary"
+    		"label"		"Games"
+    	}
+    }
+    "#;
+
+    #[test]
+    fn vdf_parser_reads_nested_objects() {
+        let root = parse_vdf(LIBRARY_FOLDERS);
+        let folders = root.get("libraryfolders").expect("libraryfolders node");
+        assert_eq!(folders.entries().len(), 2);
+        assert_eq!(
+            folders
+                .get("0")
+                .and_then(|f| f.get("path"))
+                .and_then(Vdf::as_str),
+            Some(r"C:\Program Files (x86)\Steam")
+        );
+        assert_eq!(
+            folders
+                .get("1")
+                .and_then(|f| f.get("label"))
+                .and_then(Vdf::as_str),
+            Some("Games")
+        );
+    }
+}

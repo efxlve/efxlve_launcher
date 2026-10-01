@@ -33,3 +33,42 @@ pub fn active_steam_user(steam: &Path) -> Option<(String, String)> {
 pub fn active_steam_id(steam: &Path) -> Option<String> {
     active_steam_user(steam).map(|(id, _)| id)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::vdf::{parse_vdf, Vdf};
+
+
+    #[test]
+    fn login_users_resolve_to_the_most_recent_persona() {
+        let text = r#"
+    "users"
+    {
+    	"76561199140017878"
+    	{
+    		"AccountName"		"efxlve"
+    		"PersonaName"		"Efxlve"
+    		"MostRecent"		"1"
+    		"Timestamp"		"1700000000"
+    	}
+    	"76561198000000000"
+    	{
+    		"PersonaName"		"Other"
+    		"MostRecent"		"0"
+    	}
+    }
+    "#;
+        let root = parse_vdf(text);
+        let users = root.get("users").expect("users node");
+        let mut persona = String::new();
+        for (id, node) in users.entries() {
+            if node.get("MostRecent").and_then(Vdf::as_str) == Some("1") {
+                persona = format!(
+                    "{id}:{}",
+                    node.get("PersonaName").and_then(Vdf::as_str).unwrap_or("")
+                );
+            }
+        }
+        assert_eq!(persona, "76561199140017878:Efxlve");
+    }
+}

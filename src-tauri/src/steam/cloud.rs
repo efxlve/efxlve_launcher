@@ -100,3 +100,43 @@ pub fn steam_cloud_status(app_id: String) -> SteamCloudStatus {
     }
     empty
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use super::super::vdf::parse_vdf;
+
+    const REMOTECACHE: &str = r#"
+    "730"
+    {
+    	"save.dat"
+    	{
+    		"size"		"12"
+    		"localtime"		"1700000000"
+    		"time"		"1700000100"
+    		"remotetime"		"1700000200"
+    	}
+    }
+    "#;
+
+    #[test]
+    fn remotecache_reads_newest_unix_time() {
+        let root = parse_vdf(REMOTECACHE);
+        assert_eq!(max_sync_unix(&root), Some(1_700_000_200));
+    }
+    #[test]
+    fn steamid64_becomes_account_id() {
+        assert_eq!(
+            account_id_from_steam64("76561197960265729").as_deref(),
+            Some("1")
+        );
+        assert_eq!(account_id_from_steam64("12345").as_deref(), Some("12345"));
+    }
+    #[test]
+    fn cloud_status_rejects_a_path() {
+        let status = steam_cloud_status(r"..\Windows".into());
+        assert!(status.last_sync.is_none());
+        assert!(status.app_id.is_empty());
+    }
+}

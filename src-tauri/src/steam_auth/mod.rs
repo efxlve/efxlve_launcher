@@ -204,12 +204,55 @@ mod session;
 mod vault;
 mod wire;
 
+// session.rs: http_client, field, field_str, field_i64, ApiCall, post_form, get_rsa_key, encrypt_password, finalize_web_login, generate_access_token, fetch_owned_games, SteamQrLogin, steam_login_qr_begin, qr_svg, steam_login_begin, steam_login_code, steam_login_status, steam_logout, steam_get_saved_accounts, steam_switch_account, steam_remove_saved_account, steam_owned_games, refresh_access_token
 #[allow(unused_imports)]
 pub use session::*;
+
 #[allow(unused_imports)]
-pub use vault::*;
+pub use vault::{
+    StoredSession,
+    auth_dir,
+    SteamSavedAccount,
+    vault_path,
+    valid_steam_id,
+    meta_path,
+    load_meta,
+    save_meta,
+    persist_session,
+    deactivate_vault,
+    read_vault_session,
+    load_stored_session,
+    migrate_legacy_session,
+    ensure_disk_checked,
+    random_session_id,
+    percent_decode,
+    cookie_access_token,
+    settoken_transfer,
+};
+
 #[allow(unused_imports)]
-pub use wire::*;
+pub use wire::{
+    put_varint,
+    put_string,
+    put_bytes,
+    put_number,
+    put_fixed64,
+    protobuf_payload,
+    decode_base64_bytes,
+    encode_begin_request,
+    encode_qr_begin_request,
+    encode_poll_request,
+    encode_guard_code_request,
+    encode_generate_request,
+    eresult_error,
+    parse_begin_response,
+    PollOutcome,
+    parse_poll_response,
+    parse_owned_games,
+    token_exp_secs,
+    jwt_sub,
+    jwt_claim,
+};
 
 #[cfg(test)]
 mod tests;

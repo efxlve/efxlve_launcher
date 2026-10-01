@@ -543,6 +543,7 @@ pub async fn show_store_view(
     }
 
     let app_nav = app.clone();
+    // additional_browser_args blanks this child webview. Leave the builder without it.
     let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
         // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
         .background_color(tauri::webview::Color(14, 15, 18, 255))

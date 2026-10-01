@@ -5,6 +5,8 @@
  * drawer). Achievements, DLC, screenshots and system requirements are fetched
  * on demand. Pure presentational widgets live in drawer-widgets.ts; the Manage
  * tab lives in features/manage; state lives in S.
+ * One primary action. A number already on the page is not repeated. Status
+ * color only.
  */
 
 import { invoke } from "@tauri-apps/api/core";

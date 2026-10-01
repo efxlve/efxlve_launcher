@@ -15,26 +15,52 @@ mod shots;
 mod users;
 mod vdf;
 
+// achievements.rs: unix_date, read_local_achievements, steam_get_achievements, steam_get_achievements_summary
 #[allow(unused_imports)]
 pub use achievements::*;
+
+// catalog.rs: SteamGameDetails, parse_appinfo_dlc_ids, parse_appinfo_preload_ids, read_client_dlc_ids, strip_html, join_label_lines, parse_app_details, steam_get_game_details, steam_get_api_key, steam_set_api_key
 #[allow(unused_imports)]
 pub use catalog::*;
+
+// cloud.rs: SteamCloudStatus, steam_cloud_status
 #[allow(unused_imports)]
 pub use cloud::*;
+
 #[allow(unused_imports)]
-pub use library::*;
+pub use library::{
+    library_folders,
+    SteamGame,
+    parse_app_manifest,
+    installed_games,
+};
+
+// playtime.rs: SteamPlaytime, read_playtimes, steam_sync_playtime
 #[allow(unused_imports)]
 pub use playtime::*;
+
+// protocol.rs: SteamStatus, steam_status, steam_open_client, steam_open_downloads, steam_list_installed, steam_game_action
 #[allow(unused_imports)]
 pub use protocol::*;
+
 #[allow(unused_imports)]
-pub use runtime::*;
+pub use runtime::{
+    steam_install_path,
+};
+
+// shots.rs: steam_get_game_screenshots
 #[allow(unused_imports)]
 pub use shots::*;
-#[allow(unused_imports)]
-pub use users::*;
-#[allow(unused_imports)]
-pub use vdf::*;
 
-#[cfg(test)]
-mod tests;
+#[allow(unused_imports)]
+pub use users::{
+    active_steam_user,
+    active_steam_id,
+};
+
+#[allow(unused_imports)]
+pub use vdf::{
+    Vdf,
+    parse_vdf,
+};
+

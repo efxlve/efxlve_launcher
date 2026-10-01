@@ -128,3 +128,38 @@ pub fn steam_game_action(app_id: String, action: String) -> Result<(), String> {
     };
     spawn_uri(&url)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn actions_reject_bad_input() {
+        assert!(steam_game_action("620; rm -rf".into(), "launch".into()).is_err());
+        assert!(steam_game_action(String::new(), "launch".into()).is_err());
+        assert!(steam_game_action("620".into(), "delete-everything".into()).is_err());
+    }
+    #[test]
+    fn steam_action_urls_keep_the_verb_and_app_id() {
+        assert_eq!(
+            steam_action_url("730", "install").as_deref(),
+            Some("steam://install/730")
+        );
+        assert_eq!(
+            steam_action_url("730", "update").as_deref(),
+            Some("steam://rungameid/730")
+        );
+        assert_eq!(
+            steam_action_url("730", "launch").as_deref(),
+            Some("steam://rungameid/730")
+        );
+        assert!(steam_action_url("730", "delete-everything").is_none());
+    }
+    #[test]
+    fn steam_uri_rejects_shell_metacharacters() {
+        assert!(spawn_uri("https://example.com").is_err());
+        assert!(spawn_uri("steam://run/1&calc").is_err());
+        assert!(spawn_uri("steam://open/main\ncmd").is_err());
+    }
+}

@@ -615,3 +615,247 @@ pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), S
     crate::save_settings(&app, &settings);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use super::super::playtime::read_playtimes;
+    use super::super::runtime::steam_install_path;
+
+
+    #[test]
+    fn store_language_rejects_path_separators() {
+        assert!(safe_store_language("english".into()).is_ok());
+        assert!(safe_store_language("schinese".into()).is_ok());
+        assert!(safe_store_language("../x".into()).is_err());
+        assert!(safe_store_language(r"..\x".into()).is_err());
+        assert!(safe_store_language(String::new()).is_err());
+        assert!(safe_store_language("en glish".into()).is_err());
+    }
+    #[test]
+    fn html_is_flattened_into_clean_lines() {
+        let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li>OS: Windows 10</li><li>Memory: 8 GB &amp; up</li></ul>";
+        assert_eq!(
+            strip_html(html),
+            "Minimum:\nOS: Windows 10\nMemory: 8 GB & up"
+        );
+        assert_eq!(strip_html(""), "");
+    }
+    #[test]
+    fn appinfo_dlc_ids_come_from_the_client_cache() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // "appinfo"
+        vdf.push(0);
+        vdf.extend_from_slice(&key(1)); // "extended"
+        vdf.push(1);
+        vdf.extend_from_slice(&key(2)); // "listofdlc"
+        vdf.extend_from_slice(b"329880,329910,432670\0");
+        vdf.push(8);
+        vdf.push(8);
+        vdf.push(8);
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&319630u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&3u32.to_le_bytes());
+        data.extend_from_slice(b"appinfo\0extended\0listofdlc\0");
+
+        assert_eq!(
+            parse_appinfo_dlc_ids(&data, "319630"),
+            vec!["329880", "329910", "432670"]
+        );
+        assert!(parse_appinfo_dlc_ids(&data, "730").is_empty());
+        assert!(parse_appinfo_dlc_ids(b"junk", "730").is_empty());
+    }
+    #[test]
+    fn appinfo_preloadonly_is_collected() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // common
+        vdf.push(1);
+        vdf.extend_from_slice(&key(1)); // releasestate
+        vdf.extend_from_slice(b"preloadonly\0");
+        vdf.push(8);
+        vdf.push(8);
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&3962600u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&2u32.to_le_bytes());
+        data.extend_from_slice(b"common\0releasestate\0");
+
+        let ids = parse_appinfo_preload_ids(&data);
+        assert!(ids.contains(&3962600));
+        assert_eq!(ids.len(), 1);
+    }
+    #[test]
+    fn label_only_requirement_lines_join_with_their_values() {
+        // Real Steam pages use `<strong>OS:</strong> Windows 10`; strip_html
+        // splits that into "OS:" and "Windows 10".
+        let html = "<strong>Minimum:</strong><br><ul class=\"bb_ul\"><li><strong>OS:</strong> Windows® 10<br></li>\
+            <li><strong>Processor:</strong> 4 hardware CPU threads - Intel® Core™ i5 750 or higher<br></li>\
+            <li><strong>Additional Notes:</strong> <br></li></ul>";
+        let raw: Vec<String> = strip_html(html)
+            .lines()
+            .map(|l| l.trim().to_string())
+            .filter(|l| !l.is_empty())
+            .collect();
+        let lines = join_label_lines(raw);
+        assert_eq!(lines[0], "Minimum:");
+        assert_eq!(lines[1], "OS: Windows® 10");
+        assert_eq!(
+            lines[2],
+            "Processor: 4 hardware CPU threads - Intel® Core™ i5 750 or higher"
+        );
+        assert_eq!(lines[3], "Additional Notes:");
+
+        let data = serde_json::json!({
+            "name": "Counter-Strike 2",
+            "pc_requirements": { "minimum": html }
+        });
+        let details = parse_app_details("730", &data);
+        assert!(details
+            .requirements_min
+            .iter()
+            .any(|l| l.starts_with("OS: ")));
+        assert!(details
+            .requirements_min
+            .iter()
+            .any(|l| l.starts_with("Processor: ")));
+    }
+    #[test]
+    fn app_details_map_to_the_game_page_shape() {
+        let data = serde_json::json!({
+            "name": "Portal 2",
+            "short_description": "Puzzle platformer",
+            "detailed_description": "<p>Think with portals</p>",
+            "developers": ["Valve"],
+            "publishers": ["Valve"],
+            "genres": [{ "description": "Action" }, { "description": "Adventure" }],
+            "categories": [{ "id": 2, "description": "Single-player" }, { "id": 9, "description": "Co-op" }],
+            "release_date": { "date": "18 Apr, 2011" },
+            "header_image": "https://cdn/header.jpg",
+            "website": "https://thinkwithportals.com",
+            "dlc": [1234, 5678],
+            "pc_requirements": { "minimum": "<li>OS: Windows 7</li>", "recommended": "<li>OS: Windows 10</li>" }
+        });
+        let details = parse_app_details("620", &data);
+        assert_eq!(details.name, "Portal 2");
+        assert_eq!(details.description, "Think with portals");
+        assert_eq!(details.genres, vec!["Action", "Adventure"]);
+        assert_eq!(details.categories, vec![2, 9]);
+        assert_eq!(details.release_date, "18 Apr, 2011");
+        assert_eq!(details.dlc, vec!["1234", "5678"]);
+        assert_eq!(details.requirements_min, vec!["OS: Windows 7"]);
+        assert_eq!(details.requirements_rec, vec!["OS: Windows 10"]);
+        assert_eq!(details.ext_user_account_notice, "");
+        assert_eq!(details.drm_notice, "");
+    }
+    #[test]
+    fn app_details_keep_third_party_and_drm_notices() {
+        let data = serde_json::json!({
+            "name": "Battlefield 2042",
+            "developers": ["DICE"],
+            "publishers": ["Electronic Arts"],
+            "ext_user_account_notice": "EA App",
+            "drm_notice": "Easy Anti-Cheat"
+        });
+        let details = parse_app_details("1517290", &data);
+        assert_eq!(details.developers, vec!["DICE"]);
+        assert_eq!(details.ext_user_account_notice, "EA App");
+        assert_eq!(details.drm_notice, "Easy Anti-Cheat");
+        assert_eq!(details.metacritic_score, None);
+    }
+    #[test]
+    fn app_details_keep_metacritic_block() {
+        let data = serde_json::json!({
+            "name": "Portal 2",
+            "metacritic": { "score": 95, "url": "https://www.metacritic.com/game/pc/portal-2" }
+        });
+        let details = parse_app_details("620", &data);
+        assert_eq!(details.metacritic_score, Some(95));
+        assert_eq!(
+            details.metacritic_url.as_deref(),
+            Some("https://www.metacritic.com/game/pc/portal-2")
+        );
+    }
+    /// Live check for the client's own DLC list (`appcache/appinfo.vdf`).
+    /// Run: `cargo test live_steam_client_dlc -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_client_dlc() {
+        let Some(steam) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        for app in ["319630", "730", "620"] {
+            let ids = read_client_dlc_ids(&steam, app);
+            println!("{app}: {} dlc -> {ids:?}", ids.len());
+        }
+    }
+    /// Live check for playtime + store details (network).
+    /// Run: `cargo test live_steam_playtime_and_details -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_steam_playtime_and_details() {
+        let Some(path) = steam_install_path() else {
+            println!("Steam is not installed on this machine");
+            return;
+        };
+        let playtimes = read_playtimes(&path);
+        println!("playtime records: {}", playtimes.len());
+        for (app_id, record) in playtimes.iter().take(10) {
+            println!(
+                "  {app_id} | {} min | last {:?}",
+                record.seconds / 60,
+                record.last_played
+            );
+        }
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let details = rt.block_on(async {
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(15))
+                .user_agent("efxlve-launcher")
+                .build()
+                .unwrap();
+            let payload: serde_json::Value = client
+                .get("https://store.steampowered.com/api/appdetails?appids=620&l=english")
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            parse_app_details("620", payload.get("620").unwrap().get("data").unwrap())
+        });
+        println!(
+            "details: {} | {} | genres {:?} | min req {} lines",
+            details.name,
+            details.release_date,
+            details.genres,
+            details.requirements_min.len()
+        );
+    }
+}
