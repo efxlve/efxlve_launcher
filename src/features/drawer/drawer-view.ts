@@ -229,6 +229,12 @@ function sourceChipHtml(appName: string): string {
     </div>`;
 }
 
+/** Games owned inside another launcher: EA App, Ubisoft Connect, Xbox, Battle.net. */
+function isCompanionApp(appName: string): boolean {
+  const source = sourceOfKey(appName);
+  return source !== "epic" && source !== "gog" && source !== "steam";
+}
+
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const faved = S.epicFav.has(s.appName);
@@ -243,6 +249,15 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
+      ${sourceChipHtml(s.appName)}`;
+  }
+
+  // Companion games stay inside their client: play and install open that client.
+  if (isCompanionApp(s.appName)) {
+    return `
+      <button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${s.installed ? t("common.playNow") : t("common.play")}</button>
+      <button class="btn ghost lg" data-act="companion-open" data-id="${sourceOfKey(s.appName)}">${icon("external", 16)} ${t("accounts.openClient")}</button>
+      <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       ${sourceChipHtml(s.appName)}`;
   }
 
@@ -278,6 +293,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
+  if (isCompanionApp(s.appName)) return renderDrawerOverview(s, partner, antiCheat);
   switch (S.activeDrawerTab) {
     case "overview": return renderDrawerOverview(s, partner, antiCheat);
     case "achievements": return renderDrawerAchievements(s);
@@ -476,13 +492,28 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const g = rawOf(appName);
   const partner = gamePartner(s, g);
   const antiCheat = gameAntiCheat(s, g);
+  const companion = isCompanionApp(appName);
+  // Companion games only have the overview: the other tabs read store metadata
+  // they do not have.
+  if (companion) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
-  ensureCloudSyncStamp(s);
-  if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
-  if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
-  if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
-  ensureEosSupport(appName);
+  if (companion) {
+    // No Epic metadata: the title-based Wikipedia lookup fills the About box.
+    const key = aboutKey(appName);
+    if (!aboutCache.has(key) && S.loadingAboutFor !== key) {
+      S.loadingAboutFor = key;
+      void loadWikiAbout(s).finally(() => {
+        if (S.loadingAboutFor === key) S.loadingAboutFor = null;
+      });
+    }
+  } else {
+    ensureCloudSyncStamp(s);
+    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
+    if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
+    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
+    ensureEosSupport(appName);
+  }
 
   const dlcRes = S.dlcCache.get(appName);
   const dlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
@@ -516,7 +547,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
-  const isEpic = !isGog && !isSteam;
+  const isEpic = sourceOfKey(appName) === "epic";
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const achSum = S.epicAchSummaries[appName];
   const pt = S.playtimeMap.get(appName);
@@ -530,6 +561,13 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
   const cloudTone = cloud.synced ? "ok" : (cloud.label !== "—" ? "warn" : "");
+  const tabs = companion
+    ? tabButton("overview", t("drawer.overview"))
+    : `${tabButton("overview", t("drawer.overview"))}
+       ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
+       ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
+       ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
+       ${tabButton("specs", t("drawer.specs"))}`;
 
   modalRoot.innerHTML = `
     <div class="overlay">
@@ -562,18 +600,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
         <div class="gp-body">
           <div class="tabs gp-tabs" id="drawer-tabs-scrollable">
-            ${tabButton("overview", t("drawer.overview"))}
-            ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
-            ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
-            ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
-            ${tabButton("specs", t("drawer.specs"))}
+            ${tabs}
           </div>
           <div id="drawer-tab-content">${renderActiveTab(s, partner, antiCheat)}</div>
         </div>
       </div>
     </div>`;
 
-  if (!isGog && !S.dlcCache.has(appName)) {
+  if (!companion && !isGog && !S.dlcCache.has(appName)) {
     epicGetGameDlcs(appName)
       .then((res) => {
         S.dlcCache.set(appName, res);

@@ -16,7 +16,7 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
 import { epicReorderCollections, type EpicSummary } from "../../epic";
-import type { EpicSort } from "../../core/types";
+import type { EpicSort, GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterMenuHtml } from "./store-filter";
@@ -277,7 +277,9 @@ function libraryBaseItems(): EpicSummary[] {
   if (S.enabledStores.has("steam")) {
     for (const g of S.steamSummaries) push(libraryItemToSummary(g));
   }
-  for (const g of S.companionSummaries) push(libraryItemToSummary(g));
+  for (const g of S.companionSummaries) {
+    if (S.enabledStores.has(g.source)) push(libraryItemToSummary(g));
+  }
   const out: EpicSummary[] = [];
   for (const list of groups.values()) out.push(pickShownCopy(list));
   return out;
@@ -603,13 +605,20 @@ export function renderEpic(): string {
   const hasGog = S.gogSummaries.length > 0 || Boolean(S.gogAccount);
   const hasSteam = S.steamSummaries.length > 0;
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
-  const sourceDropdown = hasGog || hasSteam
+  const companionCount = (source: GameSource): number =>
+    visibleCount(S.companionSummaries.filter((g) => g.source === source).map((g) => g.key));
+  const hasCompanion = S.companionSummaries.length > 0;
+  const sourceDropdown = hasGog || hasSteam || hasCompanion
     ? storeFilterMenuHtml(
         {
           all: allStoresMenuCount(),
           epic: visibleCount(S.epicSummaries.map((s) => s.appName)),
           gog: visibleCount(S.gogSummaries.map((g) => g.key)),
           steam: visibleCount(S.steamSummaries.map((g) => g.key)),
+          ea: companionCount("ea"),
+          ubisoft: companionCount("ubisoft"),
+          xbox: companionCount("xbox"),
+          battlenet: companionCount("battlenet"),
         },
         hasSteam,
       )

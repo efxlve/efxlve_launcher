@@ -54,22 +54,24 @@ import {
   normalizeLibraryPageSize,
   loadStrSet,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GogPhase, LibraryItem, SavedAccount, SettingsSection, StoreId, View } from "./types";
+import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
-const ALL_STORES: readonly StoreId[] = ["epic", "gog", "steam"];
+const ALL_STORES: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet"];
 
 /** Stores left on in the library filter. An empty or broken save means all of them. */
-function loadEnabledStores(): Set<StoreId> {
+function loadEnabledStores(): Set<GameSource> {
   try {
     const raw = localStorage.getItem(SOURCE_FILTER_KEY);
     if (!raw) return new Set(ALL_STORES);
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return new Set(ALL_STORES);
-    const next = new Set<StoreId>();
+    const next = new Set<GameSource>();
     for (const item of parsed) {
-      if (item === "epic" || item === "gog" || item === "steam") next.add(item);
+      if (typeof item === "string" && (ALL_STORES as readonly string[]).includes(item)) {
+        next.add(item as GameSource);
+      }
     }
     return next.size > 0 ? next : new Set(ALL_STORES);
   } catch {

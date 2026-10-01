@@ -10,27 +10,35 @@ import { icon } from "../../core/icons";
 import { storeLogo } from "../store/store-logos";
 import { canonicalGameTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
-import type { StoreId } from "../../core/types";
+import type { GameSource } from "../../core/types";
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
-const STORE_ORDER: readonly StoreId[] = ["epic", "gog", "steam"];
+const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet"];
+const COMPANION_ORDER: readonly GameSource[] = ["ea", "ubisoft", "xbox", "battlenet"];
 
 /** Stable signature fragment for the visible-library cache. */
 export function enabledStoreKey(): string {
   return STORE_ORDER.filter((id) => S.enabledStores.has(id)).join(",");
 }
 
-function storeName(id: StoreId, short: boolean): string {
-  if (id === "epic") return short ? "Epic" : t("source.epic");
-  if (id === "gog") return t("source.gog");
-  return t("source.steam");
+/** Brand names are not translated: they read the same in every locale. */
+function storeName(id: GameSource, short: boolean): string {
+  switch (id) {
+    case "epic": return short ? "Epic" : t("source.epic");
+    case "gog": return t("source.gog");
+    case "steam": return t("source.steam");
+    case "ea": return "EA App";
+    case "ubisoft": return "Ubisoft Connect";
+    case "xbox": return "Xbox";
+    case "battlenet": return "Battle.net";
+  }
 }
 
 /** Button label: "All Stores", one store's name, or "Epic, Steam". */
 export function storeFilterLabel(): string {
-  if (S.enabledStores.size >= STORE_ORDER.length) return t("source.all");
+  if (STORE_ORDER.every((id) => S.enabledStores.has(id))) return t("source.all");
   const short = S.enabledStores.size > 1;
   return STORE_ORDER.filter((id) => S.enabledStores.has(id)).map((id) => storeName(id, short)).join(", ");
 }
@@ -41,14 +49,15 @@ export function storeFilterLabel(): string {
  */
 export function applyStoreFilter(value: string): boolean {
   if (value === "all") {
-    if (S.enabledStores.size >= STORE_ORDER.length) return false;
+    if (STORE_ORDER.every((id) => S.enabledStores.has(id))) return false;
     S.enabledStores = new Set(STORE_ORDER);
-  } else if (value === "epic" || value === "gog" || value === "steam") {
-    if (S.enabledStores.has(value)) {
+  } else if ((STORE_ORDER as readonly string[]).includes(value)) {
+    const id = value as GameSource;
+    if (S.enabledStores.has(id)) {
       if (S.enabledStores.size === 1) return false;
-      S.enabledStores.delete(value);
+      S.enabledStores.delete(id);
     } else {
-      S.enabledStores.add(value);
+      S.enabledStores.add(id);
     }
   } else {
     return false;
@@ -88,14 +97,21 @@ export function pickShownCopy(list: EpicSummary[]): EpicSummary {
   return chosen;
 }
 
+/** Row counts for the store menu: one per source plus the deduped total. */
+export type StoreFilterCounts = Record<GameSource, number> & { all: number };
+
 /** Store menu. Stays open so several storefronts can be checked. */
-export function storeFilterMenuHtml(counts: { all: number; epic: number; gog: number; steam: number }, hasSteam: boolean): string {
-  const row = (value: StoreId | "all", label: string, count: number, on: boolean): string => {
+export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean): string {
+  const row = (value: GameSource | "all", label: string, count: number, on: boolean): string => {
     const mark = `<span class="store-option-mark">${on ? icon("check", 14) : ""}</span>`;
     const logo = value === "all" ? `<span class="store-option-logo"></span>` : `<span class="store-option-logo">${storeLogo(value, 16)}</span>`;
     return `<button type="button" class="sort-menu-item-btn store-menu-item${on ? " is-on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-act="source-filter" data-val="${value}">${mark}${logo}<span class="store-option-label">${esc(label)}</span><span class="store-option-count tabular-nums">${count}</span></button>`;
   };
-  const allOn = S.enabledStores.size >= STORE_ORDER.length;
+  const allOn = STORE_ORDER.every((id) => S.enabledStores.has(id));
+  // Companion stores join the menu once their client has games in the library.
+  const companionRows = COMPANION_ORDER.filter((id) => counts[id] > 0)
+    .map((id) => row(id, storeName(id, false), counts[id], S.enabledStores.has(id)))
+    .join("");
   return `
     <div class="store-dropdown-container">
       <button class="btn ghost lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
@@ -109,6 +125,7 @@ export function storeFilterMenuHtml(counts: { all: number; epic: number; gog: nu
         ${row("epic", t("source.epic"), counts.epic, S.enabledStores.has("epic"))}
         ${row("gog", t("source.gog"), counts.gog, S.enabledStores.has("gog"))}
         ${hasSteam ? row("steam", t("source.steam"), counts.steam, S.enabledStores.has("steam")) : ""}
+        ${companionRows ? `<div class="store-menu-sep"></div>${companionRows}` : ""}
       </div>
     </div>`;
 }
