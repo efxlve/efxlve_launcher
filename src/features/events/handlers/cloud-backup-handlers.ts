@@ -16,6 +16,10 @@ import {
   updateCloudBackupSettings,
   uploadGameCloudAction,
 } from "../../cloud-backup/cloud-backup-actions";
+import {
+  openGoogleDriveGuideModal,
+  closeGoogleDriveGuideModal,
+} from "../../cloud-backup/cloud-backup-view";
 import type { CloudBackupProvider } from "../../../epic";
 
 export function handleCloudBackupAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
@@ -89,9 +93,55 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
     }
 
-    case "cloud-gdrive-connect":
-      void startGoogleDriveAuthAction();
+    case "open-gdrive-guide":
+      openGoogleDriveGuideModal();
       return true;
+
+    case "close-gdrive-guide":
+      closeGoogleDriveGuideModal();
+      return true;
+
+    case "cloud-gdrive-save": {
+      const clientIdInput = document.getElementById("cloud-gdrive-client-id") as HTMLInputElement | null;
+      const clientSecretInput = document.getElementById("cloud-gdrive-client-secret") as HTMLInputElement | null;
+      const gdriveClientId = clientIdInput?.value.trim() ?? "";
+      const gdriveClientSecret = clientSecretInput?.value.trim() ?? "";
+      void updateCloudBackupSettings({
+        gdriveClientId,
+        gdriveClientSecret,
+      }).then((ok) => {
+        if (ok) toast(i18nT("cloud.gdriveSaved"), "ok");
+      });
+      return true;
+    }
+
+    case "cloud-gdrive-connect": {
+      const clientIdInput = document.getElementById("cloud-gdrive-client-id") as HTMLInputElement | null;
+      const clientSecretInput = document.getElementById("cloud-gdrive-client-secret") as HTMLInputElement | null;
+      const inputId = clientIdInput?.value.trim() ?? "";
+      const inputSecret = clientSecretInput?.value.trim() ?? "";
+
+      const currentId = inputId || (S.cloudBackupSettings?.gdriveClientId ?? "");
+      const currentSecret = inputSecret || (S.cloudBackupSettings?.gdriveClientSecret ?? "");
+
+      if (!currentId) {
+        toast(i18nT("cloud.gdriveMissingClientId"), "err");
+        openGoogleDriveGuideModal();
+        return true;
+      }
+
+      void (async () => {
+        if (inputId !== S.cloudBackupSettings?.gdriveClientId || inputSecret !== S.cloudBackupSettings?.gdriveClientSecret) {
+          const saved = await updateCloudBackupSettings({
+            gdriveClientId: currentId,
+            gdriveClientSecret: currentSecret,
+          });
+          if (!saved) return;
+        }
+        await startGoogleDriveAuthAction();
+      })();
+      return true;
+    }
 
     case "cloud-gdrive-disconnect":
       void disconnectGoogleDriveAction();
@@ -105,7 +155,9 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         webdavUrl: urlInput?.value.trim() ?? "",
         webdavUsername: userInput?.value.trim() ?? "",
         webdavPassword: passInput?.value ?? "",
-      }).then(() => toast(i18nT("cloud.webdavSaved"), "ok"));
+      }).then((ok) => {
+        if (ok) toast(i18nT("cloud.webdavSaved"), "ok");
+      });
       return true;
     }
 
@@ -114,11 +166,12 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;
       const passInput = document.getElementById("cloud-webdav-pass") as HTMLInputElement | null;
       void (async () => {
-        await updateCloudBackupSettings({
+        const saved = await updateCloudBackupSettings({
           webdavUrl: urlInput?.value.trim() ?? "",
           webdavUsername: userInput?.value.trim() ?? "",
           webdavPassword: passInput?.value ?? "",
         });
+        if (!saved) return;
         await testCloudConnectionAction();
       })();
       return true;

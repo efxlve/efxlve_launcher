@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
-  <img src="https://img.shields.io/badge/version-0.1.18-222" alt="Version 0.1.18" />
+  <img src="https://img.shields.io/badge/version-0.1.19-222" alt="Version 0.1.19" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
@@ -38,7 +38,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.18**.
+The current release is **v0.1.19**.
 
 1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
 2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).
@@ -73,6 +73,7 @@ cargo test                 # Rust unit tests
 ## Architecture & Design Guidelines
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Subsystem boundaries, cache-first hydration, and data pipelines.
+- [docs/GOOGLE_DRIVE_SETUP_GUIDE.md](./docs/GOOGLE_DRIVE_SETUP_GUIDE.md) — Step-by-step Google Drive Cloud Save Backup setup guide.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) — Hydra console dark tokens, layout contracts, and UI invariants.
 - [docs/TAURI_IPC_REFERENCE.md](./docs/TAURI_IPC_REFERENCE.md) — 165+ Tauri IPC commands and event schemas.
 - [AGENTS.md](./AGENTS.md) — Operational guidelines for AI agents and core developers.

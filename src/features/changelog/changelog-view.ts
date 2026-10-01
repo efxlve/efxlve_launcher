@@ -26,9 +26,35 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.18",
+    version: "0.1.19",
     date: "2026-10-01",
     isCurrent: true,
+    items: [
+      {
+        en: "Personal Cloud Save Backup: seamlessly back up and restore game saves with Google Drive (OAuth 2.0 PKCE) and WebDAV.",
+        tr: "Kişisel Bulut Kayıt Yedeği: oyun save'lerinizi Google Drive (OAuth 2.0 PKCE) ve WebDAV ile tek tıkla veya otomatik yedekleyin ve geri yükleyin.",
+      },
+      {
+        en: "Resumable Upload Engine: large save archives (e.g. 250MB+ Cyberpunk saves) upload reliably with Google Drive's resumable chunked protocol.",
+        tr: "Kesintisiz Yükleme Motoru: 250MB+ boyutundaki büyük save dosyaları Google Drive Resumable protokolüyle kopmadan güvenle yüklenir.",
+      },
+      {
+        en: "Multi-Version History: inspect full backup history per game with timestamps, sizes, and separate Restore and Delete actions.",
+        tr: "Çoklu Sürüm Geçmişi: her oyun için alınan tüm yedekleri zaman damgası ve boyutlarıyla listeleyin; bağımsız Geri Yükle ve Sil butonlarıyla yönetin.",
+      },
+      {
+        en: "Bring Your Own Credentials (BYOC): fully independent Google Cloud setup with zero developer fees, zero user caps, and isolated appData sandboxing.",
+        tr: "Topluluk için Bağımsız Bulut (BYOC): kurumsal onay veya kullanıcı limiti olmadan, kişisel Google Cloud anahtarlarınız ve gizli appData alanı ile %100 gizli kullanım.",
+      },
+      {
+        en: "In-App Setup Guide & Documentation: interactive parameter guide modal and comprehensive setup documentation.",
+        tr: "Uygulama İçi Kurulum Rehberi ve Dokümantasyon: adım adım yardımcı modal ve kapsamlı açık kaynak kurulum dokümantasyonu.",
+      },
+    ],
+  },
+  {
+    version: "0.1.18",
+    date: "2026-10-01",
     items: [
       {
         en: "Steam: sign in with your password, Steam Guard or a QR code, then browse the whole owned library — covers, playtime, achievements, add-ons, screenshots and downloads — and switch saved accounts without signing in again.",

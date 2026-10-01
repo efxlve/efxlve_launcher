@@ -45,18 +45,36 @@ export function renderCloudBackupSettingsGroup(): string {
     const email = st.gdriveUserEmail || t("cloud.connected");
 
     providerConfig = `
-      <div class="row settings-row">
+      <div class="row settings-row stacked">
         <div class="row-main">
-          <div class="settings-row-title">Google Drive</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div class="settings-row-title">Google Drive (OAuth 2.0)</div>
+            <button type="button" class="btn ghost small" data-act="open-gdrive-guide" title="${t("cloud.guideBtnTip")}">
+              ${icon("info", 13)} ${t("cloud.guideBtn")}
+            </button>
+          </div>
           <div class="settings-row-desc">
             ${isConnected ? `${t("cloud.gdriveConnectedHint", { email: esc(email) })}<div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.5;">${icon("info", 12)} ${t("cloud.gdriveLocationHint")}</div>` : t("cloud.gdriveDisconnectedHint")}
           </div>
         </div>
-        <div class="settings-row-control">
-          ${isConnected
-            ? `<span class="chip ok">${esc(email)}</span>
-               <button type="button" class="btn ghost danger small" data-act="cloud-gdrive-disconnect">${t("cloud.disconnect")}</button>`
-            : `<button type="button" class="btn primary small" data-act="cloud-gdrive-connect">${icon("globe", 13)} ${t("cloud.connectGoogle")}</button>`}
+        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientId")}</label>
+            <input id="cloud-gdrive-client-id" class="input" placeholder="123456789-xxxxxxxx.apps.googleusercontent.com" value="${esc(st.gdriveClientId || "")}" spellcheck="false" autocomplete="off" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientSecret")}</label>
+            <input id="cloud-gdrive-client-secret" type="password" class="input" placeholder="GOCSPX-xxxxxxxxx (${t("cloud.gdriveClientSecret")})" value="${esc(st.gdriveClientSecret || "")}" spellcheck="false" autocomplete="off" />
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:4px">
+            ${isConnected ? `<span class="chip ok">${esc(email)}</span>` : ""}
+            <button type="button" class="btn ghost small" data-act="cloud-gdrive-save">
+              ${t("common.save")}
+            </button>
+            ${isConnected
+              ? `<button type="button" class="btn ghost danger small" data-act="cloud-gdrive-disconnect">${t("cloud.disconnect")}</button>`
+              : `<button type="button" class="btn primary small" data-act="cloud-gdrive-connect">${icon("globe", 13)} ${t("cloud.connectGoogle")}</button>`}
+          </div>
         </div>
       </div>`;
   } else if (activeProvider === "webdav") {
@@ -285,3 +303,104 @@ export function updateManageCloudRowInPlace(appName: string): void {
   if (btn && btn.dataset.id && btn.dataset.id !== appName) return;
   container.innerHTML = renderManageCloudBackupRow(appName);
 }
+
+/** Closes the Google Drive OAuth guide modal. */
+export function closeGoogleDriveGuideModal(): void {
+  document.getElementById("gdrive-guide-backdrop")?.remove();
+}
+
+/** Opens the in-app step-by-step Google Drive OAuth setup guide modal. */
+export function openGoogleDriveGuideModal(): void {
+  closeGoogleDriveGuideModal();
+
+  const backdrop = document.createElement("div");
+  backdrop.id = "gdrive-guide-backdrop";
+  backdrop.className = "modal-backdrop";
+  backdrop.dataset.act = "close-gdrive-guide";
+
+  backdrop.innerHTML = `
+    <div class="modal" style="width: min(720px, 94vw); max-height: 88vh;" data-act="prevent-modal-close">
+      <div class="modal-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          ${icon("globe", 18)}
+          <div>
+            <h3 class="modal-title">${t("cloud.guideTitle")}</h3>
+            <div style="font-size: 12px; color: var(--text-3); margin-top: 2px;">${t("cloud.guideSub")}</div>
+          </div>
+        </div>
+        <button type="button" class="manage-head-close" data-act="close-gdrive-guide" title="${t("common.close")}">
+          ${icon("x", 16)}
+        </button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep1")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep1Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            API: Google Drive API · Project Name: Efxlve Launcher
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep2")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep2Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            User Type: External · App Name: Efxlve Launcher
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep3")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep3Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            Scope: .../auth/drive.appdata
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep4")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep4Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            Test user: your-email@gmail.com
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep5")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep5Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            Application Type: Desktop App · Name: Efxlve Desktop
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep6")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep6Desc")}</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+            Client ID: 123456789-xxxxxxxx.apps.googleusercontent.com<br>Client Secret: GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxx
+          </div>
+        </div>
+
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep7")}</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep7Desc")}</div>
+        </div>
+      </div>
+
+      <div class="modal-foot" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+        <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://github.com/efxlve/efxlve_launcher/blob/main/docs/GOOGLE_DRIVE_SETUP_GUIDE.md">
+          ${icon("external", 13)} ${t("cloud.openGithubGuide")}
+        </button>
+        <button type="button" class="btn primary small" data-act="open-external-url" data-url="https://console.cloud.google.com/">
+          ${icon("external", 13)} ${t("cloud.openCloudConsole")}
+        </button>
+        <button type="button" class="btn ghost small" data-act="close-gdrive-guide">
+          ${t("common.close")}
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(backdrop);
+}
+

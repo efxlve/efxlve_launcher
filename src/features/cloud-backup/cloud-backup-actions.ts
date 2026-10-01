@@ -34,7 +34,7 @@ export async function initCloudBackupSettings(): Promise<CloudBackupSettings | n
 
 export async function updateCloudBackupSettings(
   patch: Partial<CloudBackupSettings>,
-): Promise<void> {
+): Promise<boolean> {
   const current = S.cloudBackupSettings ?? {
     enabled: false,
     provider: "none",
@@ -55,8 +55,10 @@ export async function updateCloudBackupSettings(
     await cloudBackupSaveSettings(updated);
     S.cloudBackupSettings = updated;
     scheduleRender();
+    return true;
   } catch (err) {
     toast(String(err), "err");
+    return false;
   }
 }
 
