@@ -144,6 +144,8 @@ pub(crate) fn games_from_uninstall(entries_text: &str) -> Vec<FoundGame> {
             launch_uri: String::new(),
             install_uri: String::new(),
             uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
@@ -223,6 +225,8 @@ pub(crate) fn xbox_games_in(root: &Path) -> Vec<FoundGame> {
             launch_uri: String::new(),
             install_uri: String::new(),
             uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));

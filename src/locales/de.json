@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "Für dieses Konto kamen keine Ubisoft-Spiele zurück.",
   "accounts.ubiLoginFailed": "Die Ubisoft-Anmeldung konnte nicht abgeschlossen werden.",
   "accounts.ubiSessionExpired": "Ubisoft-Sitzung abgelaufen. Melde dich erneut an, um die Bibliothek zu aktualisieren.",
+  "accounts.companionManagedDesc": "Installation, Updates und Deinstallation laufen in {name}.",
+  "accounts.companionUninstallDesc": "Entfernt das Spiel über den eigenen Deinstaller von {name}.",
   "accounts.setupNeeded": "Einrichtung erforderlich",
   "accounts.gogDesc": "Unterstützung für die GOG-Bibliothek",
   "accounts.connectCta": "Konto verbinden",

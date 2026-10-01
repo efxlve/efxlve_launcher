@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "Для этой учётной записи игры Ubisoft не найдены.",
   "accounts.ubiLoginFailed": "Не удалось завершить вход в Ubisoft.",
   "accounts.ubiSessionExpired": "Сеанс Ubisoft истёк. Войдите снова, чтобы обновить библиотеку.",
+  "accounts.companionManagedDesc": "Установка, обновления и удаление выполняются в {name}.",
+  "accounts.companionUninstallDesc": "Удаляет игру через собственный деинсталлятор {name}.",
   "accounts.setupNeeded": "Нужна настройка",
   "accounts.gogDesc": "Поддержка библиотеки GOG",
   "accounts.connectCta": "Подключить аккаунт",

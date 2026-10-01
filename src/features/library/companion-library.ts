@@ -6,7 +6,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionLibrary, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
+import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
@@ -69,6 +69,35 @@ export async function loadCompanionLibrary(): Promise<void> {
   S.libraryDataRev++;
   scheduleRender();
   void fillCompanionCovers();
+  void fillCompanionPlaytime();
+}
+
+/** Playtime the Ubisoft service reports, merged into the shared playtime map. */
+let playtimeBusy = false;
+async function fillCompanionPlaytime(): Promise<void> {
+  if (playtimeBusy || !S.companionSummaries.some((g) => g.source === "ubisoft")) return;
+  playtimeBusy = true;
+  try {
+    const rows = await companionPlaytimes("ubisoft");
+    let changed = false;
+    for (const row of rows) {
+      const existing = S.playtimeMap.get(row.id);
+      if (!existing || existing.total_seconds !== row.totalSeconds) {
+        S.playtimeMap.set(row.id, {
+          total_seconds: row.totalSeconds,
+          session_count: existing?.session_count ?? 0,
+          last_played_timestamp: existing?.last_played_timestamp,
+          last_played: existing?.last_played,
+        });
+        changed = true;
+      }
+    }
+    if (changed) scheduleRender();
+  } catch {
+    // Signed out or offline: the columns stay empty.
+  } finally {
+    playtimeBusy = false;
+  }
 }
 
 async function fillCompanionCovers(): Promise<void> {

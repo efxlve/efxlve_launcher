@@ -165,7 +165,20 @@ async fn steam_app(client: &reqwest::Client, name: &str) -> Option<u64> {
         .json()
         .await
         .ok()?;
-    search.items.into_iter().find(|hit| names_match(name, &hit.name)).map(|hit| hit.id)
+    // Best match, not the first: the exact title must win over a longer one
+    // ("Watch Dogs" must not resolve to "Watch Dogs: Legion").
+    let query = norm(name);
+    let mut best: Option<(usize, u64)> = None;
+    for hit in search.items {
+        if !names_match(name, &hit.name) {
+            continue;
+        }
+        let extra = norm(&hit.name).len().saturating_sub(query.len());
+        if best.map(|(best_extra, _)| extra < best_extra).unwrap_or(true) {
+            best = Some((extra, hit.id));
+        }
+    }
+    best.map(|(_, id)| id)
 }
 
 pub(crate) fn names_match(query: &str, candidate: &str) -> bool {
@@ -176,6 +189,16 @@ pub(crate) fn names_match(query: &str, candidate: &str) -> bool {
     }
     if q == c {
         return true;
+    }
+    // "Watch Dogs" must not pick "Watch Dogs 2": a trailing number has to agree.
+    let trailing_number = |s: &str| {
+        s.rsplit(' ')
+            .next()
+            .filter(|part| !part.is_empty() && part.chars().all(|ch| ch.is_ascii_digit()))
+            .map(str::to_string)
+    };
+    if trailing_number(&q) != trailing_number(&c) {
+        return false;
     }
     let (short, long) = if q.len() <= c.len() { (q.as_str(), c.as_str()) } else { (c.as_str(), q.as_str()) };
     if !long.contains(short) {
@@ -213,6 +236,10 @@ mod tests {
         assert!(names_match("EA SPORTS FC 25", "FC 25"));
         assert!(!names_match("No Man's Sky", "Sky"));
         assert!(!names_match("Minecraft Launcher", "Minecraft Dungeons"));
+        // A sequel is not the same game.
+        assert!(!names_match("Watch Dogs", "Watch Dogs 2"));
+        assert!(!names_match("Far Cry 5", "Far Cry 6"));
+        assert!(names_match("Watch Dogs 2", "WATCH_DOGS® 2"));
     }
 
     #[test]

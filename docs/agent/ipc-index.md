@@ -20,6 +20,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `companion_library` | `companionLibrary({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_link` | `companionLink({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_open_client` | `companionOpenClient({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `companion_playtimes` | `companionPlaytimes({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_resolve_covers` | `companionResolveCovers({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_show_login` | `companionShowLogin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_store_status` | `companionStoreStatus({ ... })` | `src-tauri/src/companion/mod.rs` |

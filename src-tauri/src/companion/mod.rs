@@ -42,6 +42,10 @@ pub(crate) struct FoundGame {
     pub install_uri: String,
     /// Client protocol that removes the game (empty when unknown).
     pub uninstall_uri: String,
+    /// Box art from the owned catalog (empty when the client art is used).
+    pub cover_url: String,
+    /// Wide art from the owned catalog (empty when the client art is used).
+    pub hero_url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -108,7 +112,10 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
     games
         .iter()
         .map(|game| {
-            let (cover, hero) = cached_cover(&cache, &game.store, &game.id);
+            // The account catalog art wins over the Steam-search fallback.
+            let (cached, cached_hero) = cached_cover(&cache, &game.store, &game.id);
+            let cover = if game.cover_url.is_empty() { cached } else { game.cover_url.clone() };
+            let hero = if game.hero_url.is_empty() { cached_hero } else { game.hero_url.clone() };
             to_public(game, &cover, &hero)
         })
         .collect()
@@ -267,6 +274,15 @@ pub fn companion_launch(store: String, id: String) -> Result<(), String> {
         }
     }
     launch::open_client(&store)
+}
+
+/// Playtime for the linked Ubisoft account, keyed by library id.
+#[tauri::command]
+pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRow> {
+    if store != "ubisoft" {
+        return Vec::new();
+    }
+    ubisoft_login::playtimes().await
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the

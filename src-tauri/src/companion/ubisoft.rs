@@ -8,6 +8,8 @@
 //! Games the account owns but the client has not cached come from the sign-in
 //! import and live in `companion_ubi_owned.json`.
 
+use serde::{Deserialize, Serialize};
+
 use super::proto::for_each_field;
 use super::scan::slug;
 use super::FoundGame;
@@ -41,6 +43,8 @@ pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -
                 String::new()
             },
             uninstall_uri: format!("uplay://uninstall/{}", row.launch_id),
+            cover_url: String::new(),
+            hero_url: String::new(),
         };
         if let Some(hit) = installed.iter().find(|g| g.store == "ubisoft" && slug(&g.name) == slug(&row.name)) {
             game.installed = true;
@@ -201,32 +205,37 @@ fn owned_cache_path() -> std::path::PathBuf {
     super::accounts::data_dir().join("companion_ubi_owned.json")
 }
 
+/// One imported owned game. `id` is the Ubisoft space id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct OwnedGame {
+    pub id: String,
+    pub name: String,
+    /// Catalog box art; empty when the catalog had none for this game.
+    #[serde(default)]
+    pub cover: String,
+    /// Catalog wide art; empty when the catalog had none for this game.
+    #[serde(default)]
+    pub hero: String,
+}
+
 /// Writes the owned catalog captured at sign-in; ids are Ubisoft space ids.
-pub(crate) fn save_owned(games: &[(String, String)]) {
+pub(crate) fn save_owned(games: &[OwnedGame]) {
     let path = owned_cache_path();
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    let rows: Vec<serde_json::Value> = games
-        .iter()
-        .map(|(id, name)| serde_json::json!({ "id": id, "name": name }))
-        .collect();
-    if let Ok(text) = serde_json::to_string(&rows) {
+    if let Ok(text) = serde_json::to_string(games) {
         let _ = std::fs::write(path, text);
     }
 }
 
-pub(crate) fn load_owned() -> Vec<(String, String)> {
+pub(crate) fn load_owned() -> Vec<OwnedGame> {
     let Ok(text) = std::fs::read_to_string(owned_cache_path()) else {
         return Vec::new();
     };
-    let rows: Vec<serde_json::Value> = serde_json::from_str(&text).unwrap_or_default();
+    let rows: Vec<OwnedGame> = serde_json::from_str(&text).unwrap_or_default();
     rows.into_iter()
-        .filter_map(|row| {
-            let id = row.get("id")?.as_str()?.to_string();
-            let name = row.get("name")?.as_str()?.to_string();
-            if id.is_empty() || name.is_empty() { None } else { Some((id, name)) }
-        })
+        .filter(|game| !game.id.is_empty() && !game.name.is_empty())
         .collect()
 }
 
@@ -241,17 +250,24 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
     games
 }
 
-/// Adds imported games whose name is not in the local list yet. An imported
-/// row has no launch id, so `companion_launch` hands it to the client.
-pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[(String, String)]) -> Vec<FoundGame> {
-    for (id, name) in owned {
-        if games.iter().any(|g| slug(&g.name) == slug(name)) {
+/// Adds imported games whose name is not in the local list yet and copies the
+/// catalog art onto the local row that matches by name. An imported row has no
+/// launch id, so `companion_launch` hands it to the client.
+pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec<FoundGame> {
+    for game in owned {
+        if let Some(local) = games.iter_mut().find(|g| slug(&g.name) == slug(&game.name)) {
+            if local.cover_url.is_empty() {
+                local.cover_url = game.cover.clone();
+            }
+            if local.hero_url.is_empty() {
+                local.hero_url = game.hero.clone();
+            }
             continue;
         }
         games.push(FoundGame {
             store: "ubisoft".into(),
-            id: id.clone(),
-            name: name.clone(),
+            id: game.id.clone(),
+            name: game.name.clone(),
             install_path: String::new(),
             installed: false,
             store_id: String::new(),
@@ -259,6 +275,8 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[(String, String)])
             launch_uri: String::new(),
             install_uri: String::new(),
             uninstall_uri: String::new(),
+            cover_url: game.cover.clone(),
+            hero_url: game.hero.clone(),
         });
     }
     games
@@ -323,17 +341,23 @@ mod tests {
             launch_uri: "uplay://launch/34/0".into(),
             install_uri: "uplay://install/12".into(),
             uninstall_uri: "uplay://uninstall/34".into(),
+            cover_url: String::new(),
+            hero_url: String::new(),
         }];
         let merged = merge_owned(
             local,
             &[
-                ("space-1".into(), "Watch Dogs".into()),
-                ("space-2".into(), "Far Cry 6".into()),
+                OwnedGame { id: "space-1".into(), name: "Watch Dogs".into(), cover: "ubi-cover".into(), hero: String::new() },
+                OwnedGame { id: "space-2".into(), name: "Far Cry 6".into(), cover: "fc6-cover".into(), hero: "fc6-hero".into() },
             ],
         );
         assert_eq!(merged.len(), 2);
+        // The catalog art lands on the local row that matches by name.
+        assert_eq!(merged.iter().find(|g| g.id == "34").unwrap().cover_url, "ubi-cover");
         let imported = merged.iter().find(|g| g.id == "space-2").unwrap();
         assert_eq!(imported.name, "Far Cry 6");
+        assert_eq!(imported.cover_url, "fc6-cover");
+        assert_eq!(imported.hero_url, "fc6-hero");
         assert!(!imported.installed);
         assert!(imported.launch_uri.is_empty());
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);

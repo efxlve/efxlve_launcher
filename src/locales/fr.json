@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "Aucun jeu Ubisoft n'a été renvoyé pour ce compte.",
   "accounts.ubiLoginFailed": "La connexion à Ubisoft n'a pas pu aboutir.",
   "accounts.ubiSessionExpired": "Session Ubisoft expirée. Reconnectez-vous pour actualiser la bibliothèque.",
+  "accounts.companionManagedDesc": "L'installation, les mises à jour et la désinstallation passent par {name}.",
+  "accounts.companionUninstallDesc": "Supprime le jeu via le désinstalleur de {name}.",
   "accounts.setupNeeded": "Configuration requise",
   "accounts.gogDesc": "Prise en charge de la bibliothèque GOG",
   "accounts.connectCta": "Connecter un compte",

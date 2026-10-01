@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "이 계정의 Ubisoft 게임을 찾지 못했습니다.",
   "accounts.ubiLoginFailed": "Ubisoft 로그인을 완료하지 못했습니다.",
   "accounts.ubiSessionExpired": "Ubisoft 세션이 만료되었습니다. 다시 로그인하여 라이브러리를 새로 고치세요.",
+  "accounts.companionManagedDesc": "설치, 업데이트, 제거는 {name}에서 진행됩니다.",
+  "accounts.companionUninstallDesc": "{name}의 자체 제거 프로그램으로 게임을 삭제합니다.",
   "accounts.setupNeeded": "설정 필요",
   "accounts.gogDesc": "GOG 라이브러리 지원",
   "accounts.connectCta": "계정 연결",

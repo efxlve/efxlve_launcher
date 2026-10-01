@@ -596,6 +596,7 @@ fn main() {
             companion::companion_open_client,
             companion::companion_launch,
             companion::companion_game_action,
+            companion::companion_playtimes,
             steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam::steam_game_action,

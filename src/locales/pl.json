@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "Nie zwrócono żadnych gier Ubisoft dla tego konta.",
   "accounts.ubiLoginFailed": "Nie udało się dokończyć logowania do Ubisoft.",
   "accounts.ubiSessionExpired": "Sesja Ubisoft wygasła. Zaloguj się ponownie, aby odświeżyć bibliotekę.",
+  "accounts.companionManagedDesc": "Instalacja, aktualizacje i dezinstalacja odbywają się w {name}.",
+  "accounts.companionUninstallDesc": "Usuwa grę za pomocą deinstalatora {name}.",
   "accounts.setupNeeded": "Wymagana konfiguracja",
   "accounts.gogDesc": "Obsługa biblioteki GOG",
   "accounts.connectCta": "Połącz konto",

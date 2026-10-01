@@ -1392,6 +1392,8 @@
   "accounts.ubiNoGames": "No Ubisoft games came back for this account.",
   "accounts.ubiLoginFailed": "Ubisoft sign-in could not be completed.",
   "accounts.ubiSessionExpired": "Ubisoft session expired. Sign in again to refresh the library.",
+  "accounts.companionManagedDesc": "Install, updates and uninstall run inside {name}.",
+  "accounts.companionUninstallDesc": "Removes the game through {name}'s own uninstaller.",
   "accounts.setupNeeded": "Setup required",
   "accounts.gogDesc": "GOG library support",
   "accounts.connectCta": "Connect an account",

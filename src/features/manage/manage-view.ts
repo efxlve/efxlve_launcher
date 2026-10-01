@@ -5,12 +5,13 @@
 
 import { manageRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { lastPlayedLabel, rawOf, summaryOf } from "../../core/selectors";
+import { lastPlayedLabel, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
+import type { GameSource } from "../../core/types";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
@@ -78,14 +79,17 @@ export function openManagePopup(appName: string): void {
     </div>`;
 
   // Ensure cloud settings and backups are hydrated when the popup opens.
-  if (!S.cloudBackupSettings) {
+  // Companion games have no cloud saves here, so the fetch is skipped.
+  const source = sourceOfKey(appName);
+  const companion = source !== "epic" && source !== "gog" && source !== "steam";
+  if (!companion && !S.cloudBackupSettings) {
     void initCloudBackupSettings().then((st) => {
       updateManageCloudRowInPlace(appName);
       if (st?.enabled && st.provider !== "none") {
         void loadCloudBackupsAction(appName);
       }
     });
-  } else if (S.cloudBackupSettings.enabled && S.cloudBackupSettings.provider !== "none") {
+  } else if (!companion && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
     void loadCloudBackupsAction(appName);
   }
 }
@@ -103,7 +107,48 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
 }
 
 /** Renders the Manage tab for an installed game. */
+/** Manage panel for a game owned by EA, Ubisoft, Xbox or Battle.net. */
+function companionManageBody(s: EpicSummary, source: GameSource): string {
+  const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : "Battle.net";
+  const pt = S.playtimeMap.get(s.appName);
+  const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const files = s.installed
+    ? `${row(
+        t("manage.installLocation"),
+        `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
+        `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
+      )}
+      ${row(
+        t("manage.uninstallTitle"),
+        t("accounts.companionUninstallDesc", { name: brand }),
+        `<button class="btn ghost small danger" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`,
+      )}`
+    : row(
+        t("common.install"),
+        t("accounts.companionManagedDesc", { name: brand }),
+        `<button class="btn primary small" data-act="companion-install" data-id="${s.appName}" data-store="${source}">${icon("download", 13)} ${t("common.install")}</button>`,
+      );
+  return `
+    <div class="manage-tab-content">
+      <div class="section-title">${t("manage.groupFiles")}</div>
+      <div class="list">${files}</div>
+      <div class="section-title">${t("manage.groupPlaytime")}</div>
+      <div class="list">${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "")}</div>
+      <div class="section-title">${t("manage.groupCover")}</div>
+      <div class="list">
+        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
+      </div>
+    </div>`;
+}
+
 export function renderDrawerManage(s: EpicSummary): string {
+  // Companion games are managed by their own client: this panel only offers the
+  // hand-off actions, the folder and the playtime the service reports.
+  const source = sourceOfKey(s.appName);
+  if (source !== "epic" && source !== "gog" && source !== "steam") {
+    return companionManageBody(s, source);
+  }
   // Steam games are maintained by the Steam client: only hand-off actions here,
   // never file moves, verification loops or save backups of our own.
   if (s.appName.startsWith("steam::")) {

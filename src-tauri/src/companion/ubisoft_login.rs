@@ -7,7 +7,7 @@
 //! plugin calls. Session tickets live in memory for the import only.
 
 use base64::Engine;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::accounts;
@@ -344,7 +344,7 @@ async fn fetch_catalog(
     session: &Session,
     space_ids: &[String],
     log: &mut Vec<serde_json::Value>,
-) -> Vec<(String, String)> {
+) -> Vec<ubisoft::OwnedGame> {
     let mut games = Vec::new();
     for chunk in space_ids.chunks(CATALOG_BATCH) {
         let response = client
@@ -373,7 +373,7 @@ async fn collect_entitlements(
     client: &reqwest::Client,
     session: &Session,
     log: &mut Vec<serde_json::Value>,
-) -> Result<Vec<(String, String)>, String> {
+) -> Result<Vec<ubisoft::OwnedGame>, String> {
     let entitlements = fetch_entitlements(client, session, log).await?;
     let space_ids = entitlement_space_ids(&entitlements);
     if space_ids.is_empty() {
@@ -387,7 +387,7 @@ async fn collect_graphql(
     client: &reqwest::Client,
     session: &Session,
     log: &mut Vec<serde_json::Value>,
-) -> Result<Vec<(String, String)>, String> {
+) -> Result<Vec<ubisoft::OwnedGame>, String> {
     let body = serde_json::json!({
         "operationName": "AllGames",
         "variables": { "owned": true },
@@ -478,7 +478,10 @@ pub(crate) async fn sync_owned() -> UbiSync {
         ubi_vault::clear();
         return UbiSync::AuthLost;
     };
-    let before: std::collections::HashSet<String> = ubisoft::load_owned().into_iter().map(|(id, _)| id).collect();
+    let signature = |games: Vec<ubisoft::OwnedGame>| -> std::collections::HashSet<(String, String)> {
+        games.into_iter().map(|game| (game.id, game.cover)).collect()
+    };
+    let before = signature(ubisoft::load_owned());
     let mut log = vec![serde_json::json!({
         "step": "sync",
         "ticket": !live.ticket.is_empty(),
@@ -492,8 +495,7 @@ pub(crate) async fn sync_owned() -> UbiSync {
     match result {
         Ok((count, refreshed)) => {
             ubi_vault::save(&refreshed);
-            let after: std::collections::HashSet<String> =
-                ubisoft::load_owned().into_iter().map(|(id, _)| id).collect();
+            let after = signature(ubisoft::load_owned());
             if count > 0 && after != before {
                 UbiSync::Updated(count)
             } else {
@@ -547,12 +549,24 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
         }
     };
     // The catalog and the GraphQL list cover the same account from two sides;
-    // the union keeps a game that only one of them knows about.
+    // the union keeps a game that only one of them knows about and the catalog
+    // contributes the box art.
     match collect_graphql(&client, &live, log).await {
         Ok(found) => {
             for game in found {
-                if !games.iter().any(|(id, _)| id == &game.0) {
-                    games.push(game);
+                match games.iter_mut().find(|g| g.id == game.id) {
+                    Some(existing) => {
+                        if existing.name.is_empty() {
+                            existing.name = game.name;
+                        }
+                        if existing.cover.is_empty() {
+                            existing.cover = game.cover;
+                        }
+                        if existing.hero.is_empty() {
+                            existing.hero = game.hero;
+                        }
+                    }
+                    None => games.push(game),
                 }
             }
         }
@@ -563,7 +577,7 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
         }
     }
     let mut seen = std::collections::HashSet::new();
-    games.retain(|(id, _)| seen.insert(id.clone()));
+    games.retain(|game| seen.insert(game.id.clone()));
     if games.is_empty() {
         if let Some(err) = first_error {
             return Err(err);
@@ -638,8 +652,8 @@ pub(crate) fn entitlement_space_ids(value: &serde_json::Value) -> Vec<String> {
     ids
 }
 
-/// PC titles from a catalog response.
-pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<(String, String)> {
+/// PC titles from a catalog response, with Ubisoft's own box art.
+pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame> {
     let mut games = Vec::new();
     let Some(items) = value.get("games").and_then(|v| v.as_array()) else {
         return games;
@@ -669,13 +683,26 @@ pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<(String, String)> 
         if !pc {
             continue;
         }
-        games.push((space.to_string(), name.to_string()));
+        let image = |key: &str| {
+            item.pointer(&format!("/imageUrls/{key}"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string()
+        };
+        let low = image("lowBoxArt");
+        let cover = if low.is_empty() { image("highBoxArt") } else { low };
+        games.push(ubisoft::OwnedGame {
+            id: space.to_string(),
+            name: name.to_string(),
+            cover,
+            hero: image("background"),
+        });
     }
     games
 }
 
-/// PC titles from the `AllGames` GraphQL response.
-pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<(String, String)> {
+/// PC titles from the `AllGames` GraphQL response. It has no artwork.
+pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame> {
     let Some(nodes) = value.pointer("/data/viewer/ownedGames/nodes").and_then(|v| v.as_array()) else {
         return Vec::new();
     };
@@ -694,7 +721,12 @@ pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<(String, String)> 
         if !has_pc_platform(platforms) {
             continue;
         }
-        games.push((space.to_string(), name.to_string()));
+        games.push(ubisoft::OwnedGame {
+            id: space.to_string(),
+            name: name.to_string(),
+            cover: String::new(),
+            hero: String::new(),
+        });
     }
     games
 }
@@ -709,6 +741,212 @@ fn has_pc_platform(value: &serde_json::Value) -> bool {
             map.values().any(has_pc_platform)
         }
         _ => false,
+    }
+}
+
+/// One playtime row keyed by the id the library card uses.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaytimeRow {
+    pub id: String,
+    pub total_seconds: u64,
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn playtime_cache_path() -> std::path::PathBuf {
+    super::accounts::data_dir().join("companion_ubi_playtime.json")
+}
+
+fn load_playtime_cache() -> std::collections::HashMap<String, (u64, u64)> {
+    let Ok(text) = std::fs::read_to_string(playtime_cache_path()) else {
+        return std::collections::HashMap::new();
+    };
+    let value: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+    let mut out = std::collections::HashMap::new();
+    if let Some(map) = value.as_object() {
+        for (id, row) in map {
+            let seconds = row.get("seconds").and_then(|v| v.as_u64()).unwrap_or(0);
+            let fetched = row.get("fetchedAt").and_then(|v| v.as_u64()).unwrap_or(0);
+            out.insert(id.clone(), (seconds, fetched));
+        }
+    }
+    out
+}
+
+fn save_playtime_cache(cache: &std::collections::HashMap<String, (u64, u64)>) {
+    let mut map = serde_json::Map::new();
+    for (id, (seconds, fetched)) in cache {
+        map.insert(id.clone(), serde_json::json!({ "seconds": seconds, "fetchedAt": fetched }));
+    }
+    if let Ok(text) = serde_json::to_string(&serde_json::Value::Object(map)) {
+        let path = playtime_cache_path();
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(path, text);
+    }
+}
+
+/// Playtime for every owned game, keyed by the library id. Cached for a day;
+/// a missing cache entry is fetched with the sealed session.
+pub(crate) async fn playtimes() -> Vec<PlaytimeRow> {
+    let Some(stored) = ubi_vault::load() else {
+        return Vec::new();
+    };
+    let session = stored.into_session();
+    let Ok(client) = http_client() else {
+        return Vec::new();
+    };
+    let mut live = refresh_session(&client, &session).await;
+    if live.is_none() {
+        live = refresh_remember(&client, &session).await;
+    }
+    let Some(live) = live else {
+        return Vec::new();
+    };
+    let owned = ubisoft::load_owned();
+    if owned.is_empty() {
+        return Vec::new();
+    }
+    let local = super::discover("ubisoft");
+    let now = now_secs();
+    let mut cache = load_playtime_cache();
+    let mut changed = false;
+    let mut rows = Vec::new();
+    for game in &owned {
+        // The card id is the local launch id when the client knows the game.
+        let card_id = local
+            .iter()
+            .find(|g| super::scan::slug(&g.name) == super::scan::slug(&game.name))
+            .map(|g| g.id.clone())
+            .unwrap_or_else(|| game.id.clone());
+        let cached = cache.get(&game.id).copied();
+        let fresh = cached.map(|(_, fetched)| now.saturating_sub(fetched) < 24 * 3600).unwrap_or(false);
+        let seconds = if fresh {
+            cached.map(|(seconds, _)| seconds).unwrap_or(0)
+        } else {
+            match fetch_playtime(&client, &live, &game.id).await {
+                Some(seconds) => {
+                    cache.insert(game.id.clone(), (seconds, now));
+                    changed = true;
+                    seconds
+                }
+                None => cached.map(|(seconds, _)| seconds).unwrap_or(0),
+            }
+        };
+        rows.push(PlaytimeRow { id: card_id, total_seconds: seconds });
+    }
+    if changed {
+        save_playtime_cache(&cache);
+    }
+    rows
+}
+
+async fn fetch_playtime(client: &reqwest::Client, session: &Session, space_id: &str) -> Option<u64> {
+    if session.user_id.is_empty() {
+        return None;
+    }
+    let url = format!("https://public-ubiservices.ubi.com/v1/profiles/{}/stats", session.user_id);
+    let response = client
+        .get(url)
+        .query(&[("spaceId", space_id)])
+        .headers(headers(
+            session,
+            UBI_APP_ID,
+            UBI_GENOME_ID,
+            &[("Ubi-RequestedPlatformType", "uplay"), ("Ubi-LocaleCode", "en-US")],
+        ))
+        .send()
+        .await
+        .ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    let value: serde_json::Value = response.json().await.ok()?;
+    Some(parse_playtime(&value))
+}
+
+/// `Statscards` to total seconds, following the Galaxy plugin's heuristics.
+pub(crate) fn parse_playtime(value: &serde_json::Value) -> u64 {
+    let Some(cards) = value.get("Statscards").and_then(|v| v.as_array()) else {
+        return 0;
+    };
+    let time_cards: Vec<&serde_json::Value> = cards
+        .iter()
+        .filter(|card| card.get("format").and_then(|v| v.as_str()) == Some("LongTimespan"))
+        .collect();
+    if time_cards.is_empty() {
+        return 0;
+    }
+    let chosen: Vec<&serde_json::Value> = if time_cards.len() == 1 {
+        vec![time_cards[0]]
+    } else {
+        const TOTAL_NAMES: [&str; 5] = ["playtime", "time played", "play time", "total play time", "total playtime"];
+        let named = time_cards.iter().find(|card| {
+            let display = card.get("displayName").and_then(|v| v.as_str()).unwrap_or("").to_lowercase();
+            TOTAL_NAMES.contains(&display.as_str())
+        });
+        if let Some(card) = named {
+            vec![*card]
+        } else if time_cards.len() == 2 && complementary_modes(&time_cards) {
+            time_cards.clone()
+        } else {
+            let weight = |card: &serde_json::Value| -> i32 {
+                let text = format!(
+                    "{} {}",
+                    card.get("displayName").and_then(|v| v.as_str()).unwrap_or("").to_lowercase(),
+                    card.get("statName").and_then(|v| v.as_str()).unwrap_or("").to_lowercase()
+                );
+                ["all", "total", "absolute"].iter().filter(|word| text.contains(**word)).count() as i32
+            };
+            let max = time_cards.iter().map(|card| weight(card)).max().unwrap_or(0);
+            time_cards.iter().filter(|card| weight(card) == max).copied().collect()
+        }
+    };
+    let seconds: f64 = chosen.iter().filter_map(|card| normalize_seconds(card)).sum();
+    seconds.max(0.0).floor() as u64
+}
+
+fn complementary_modes(cards: &[&serde_json::Value]) -> bool {
+    let name = |card: &serde_json::Value| {
+        format!(
+            "{} {}",
+            card.get("statName").and_then(|v| v.as_str()).unwrap_or("").to_lowercase(),
+            card.get("displayName").and_then(|v| v.as_str()).unwrap_or("").to_lowercase()
+        )
+    };
+    let a = name(cards[0]);
+    let b = name(cards[1]);
+    [("pvp", "pve"), ("solo", "coop"), ("single", "multi")]
+        .iter()
+        .any(|(x, y)| (a.contains(x) && b.contains(y)) || (a.contains(y) && b.contains(x)))
+}
+
+fn normalize_seconds(card: &serde_json::Value) -> Option<f64> {
+    let raw = card.get("value")?;
+    let value = match raw {
+        serde_json::Value::Number(n) => n.as_f64()?,
+        serde_json::Value::String(s) => {
+            if s.is_empty() {
+                0.0
+            } else {
+                s.parse::<f64>().ok()?
+            }
+        }
+        _ => return None,
+    };
+    match card.get("unit").and_then(|v| v.as_str()) {
+        Some("Hours") => Some(value * 3600.0),
+        Some("Minutes") => Some(value * 60.0),
+        Some("Seconds") => Some(value),
+        Some("Miliseconds") => Some(value / 1000.0),
+        _ => None,
     }
 }
 
@@ -745,21 +983,22 @@ mod tests {
     }
 
     #[test]
-    fn catalog_keeps_named_pc_games_only() {
+    fn catalog_keeps_named_pc_games_only_and_reads_the_box_art() {
         let value = serde_json::json!({"games": [
-            {"spaceId": "a", "displayName": "Watch Dogs", "platforms": [{"type": "PC"}]},
-            {"spaceId": "b", "name": "Fallback Name", "platforms": [{"type": "PC"}]},
+            {"spaceId": "a", "displayName": "Watch Dogs", "platforms": [{"type": "PC"}],
+             "imageUrls": {"lowBoxArt": "https://cdn/low.png", "highBoxArt": "https://cdn/high.png", "background": "https://cdn/bg.jpg"}},
+            {"spaceId": "b", "name": "Fallback Name", "platforms": [{"type": "PC"}], "imageUrls": {"highBoxArt": "https://cdn/high.png"}},
             {"spaceId": "c", "displayName": "Console Only", "platforms": [{"type": "PS5"}]},
             {"spaceId": "d", "displayName": "Unknown", "platforms": [{"type": "PC"}]},
             {"spaceId": "e", "platforms": [{"type": "PC"}]}
         ]});
-        assert_eq!(
-            catalog_games(&value),
-            vec![
-                ("a".to_string(), "Watch Dogs".to_string()),
-                ("b".to_string(), "Fallback Name".to_string())
-            ]
-        );
+        let games = catalog_games(&value);
+        assert_eq!(games.len(), 2);
+        assert_eq!(games[0].id, "a");
+        assert_eq!(games[0].name, "Watch Dogs");
+        assert_eq!(games[0].cover, "https://cdn/low.png");
+        assert_eq!(games[0].hero, "https://cdn/bg.jpg");
+        assert_eq!(games[1].cover, "https://cdn/high.png");
     }
 
     #[test]
@@ -769,6 +1008,31 @@ mod tests {
             {"spaceId": "b", "name": "Console Only", "viewer": {"meta": {"ownedPlatformGroups": [[{"type": "PS5"}]]}}},
             {"spaceId": "c", "name": "No Meta"}
         ]}}}});
-        assert_eq!(graphql_games(&value), vec![("a".to_string(), "Watch Dogs".to_string())]);
+        let games = graphql_games(&value);
+        assert_eq!(games.len(), 1);
+        assert_eq!(games[0].id, "a");
+        assert!(games[0].cover.is_empty());
+    }
+
+    #[test]
+    fn playtime_reads_the_total_card_and_mode_splits() {
+        let one = serde_json::json!({"Statscards": [
+            {"format": "LongTimespan", "displayName": "Playtime", "statName": "TotalPlaytime", "unit": "Seconds", "value": "3661"}
+        ]});
+        assert_eq!(parse_playtime(&one), 3661);
+
+        let named = serde_json::json!({"Statscards": [
+            {"format": "LongTimespan", "displayName": "PvP", "statName": "PvpTime", "unit": "Hours", "value": "2"},
+            {"format": "LongTimespan", "displayName": "Time Played", "statName": "TimePlayed", "unit": "Minutes", "value": "90"}
+        ]});
+        assert_eq!(parse_playtime(&named), 5400);
+
+        let modes = serde_json::json!({"Statscards": [
+            {"format": "LongTimespan", "displayName": "Solo", "statName": "SoloTime", "unit": "Hours", "value": "1"},
+            {"format": "LongTimespan", "displayName": "Coop", "statName": "CoopTime", "unit": "Hours", "value": "2"}
+        ]});
+        assert_eq!(parse_playtime(&modes), 10800);
+
+        assert_eq!(parse_playtime(&serde_json::json!({})), 0);
     }
 }

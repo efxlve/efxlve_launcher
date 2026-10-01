@@ -41,6 +41,11 @@ export interface CompanionSyncReport {
   needsLogin: boolean;
 }
 
+export interface CompanionPlaytimeRow {
+  id: string;
+  totalSeconds: number;
+}
+
 export interface CompanionCoverHit {
   store: CompanionStore;
   id: string;
@@ -59,6 +64,10 @@ export const companionSync = (store: CompanionStore) =>
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });
+
+/** Playtime the store's own service reports for a linked account. */
+export const companionPlaytimes = (store: CompanionStore) =>
+  invoke<CompanionPlaytimeRow[]>("companion_playtimes", { store });
 
 export const companionLink = (store: CompanionStore) =>
   invoke<CompanionAccount>("companion_link", { store });

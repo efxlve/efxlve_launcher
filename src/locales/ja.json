@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "このアカウントの Ubisoft ゲームが見つかりませんでした。",
   "accounts.ubiLoginFailed": "Ubisoft へのサインインを完了できませんでした。",
   "accounts.ubiSessionExpired": "Ubisoft のセッションが切れました。再度サインインしてライブラリを更新してください。",
+  "accounts.companionManagedDesc": "インストール、更新、アンインストールは {name} で行われます。",
+  "accounts.companionUninstallDesc": "{name} のアンインストーラーでゲームを削除します。",
   "accounts.setupNeeded": "セットアップが必要",
   "accounts.gogDesc": "GOG ライブラリ対応",
   "accounts.connectCta": "アカウントを接続",

@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "لم تُرجع أي ألعاب Ubisoft لهذا الحساب.",
   "accounts.ubiLoginFailed": "تعذر إكمال تسجيل الدخول إلى Ubisoft.",
   "accounts.ubiSessionExpired": "انتهت جلسة Ubisoft. سجّل الدخول من جديد لتحديث المكتبة.",
+  "accounts.companionManagedDesc": "التثبيت والتحديثات وإلغاء التثبيت تتم داخل {name}.",
+  "accounts.companionUninstallDesc": "يزيل اللعبة عبر أداة إلغاء التثبيت الخاصة بـ {name}.",
   "accounts.setupNeeded": "يلزم الإعداد",
   "accounts.gogDesc": "دعم مكتبة GOG",
   "accounts.connectCta": "ربط حساب",

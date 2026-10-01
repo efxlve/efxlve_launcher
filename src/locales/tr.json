@@ -1392,6 +1392,8 @@
   "accounts.ubiNoGames": "Bu hesap için hiç Ubisoft oyunu bulunamadı.",
   "accounts.ubiLoginFailed": "Ubisoft girişi tamamlanamadı.",
   "accounts.ubiSessionExpired": "Ubisoft oturumu sona erdi. Kütüphaneyi yenilemek için tekrar giriş yap.",
+  "accounts.companionManagedDesc": "Yükleme, güncelleme ve kaldırma {name} üzerinden yürür.",
+  "accounts.companionUninstallDesc": "Oyunu {name}'in kendi kaldırıcısıyla siler.",
   "accounts.setupNeeded": "Kurulum gerekli",
   "accounts.gogDesc": "GOG kütüphanesi desteği",
   "accounts.connectCta": "Hesap bağla",

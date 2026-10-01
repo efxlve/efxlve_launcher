@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "此帳戶沒有傳回任何 Ubisoft 遊戲。",
   "accounts.ubiLoginFailed": "無法完成 Ubisoft 登入。",
   "accounts.ubiSessionExpired": "Ubisoft 工作階段已過期。請重新登入以重新整理媒體庫。",
+  "accounts.companionManagedDesc": "安裝、更新與解除安裝都在 {name} 中進行。",
+  "accounts.companionUninstallDesc": "透過 {name} 內建的解除安裝程式移除遊戲。",
   "accounts.setupNeeded": "需要設定",
   "accounts.gogDesc": "GOG 遊戲庫支援",
   "accounts.connectCta": "連線帳號",

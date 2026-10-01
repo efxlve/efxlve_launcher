@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "ไม่พบเกม Ubisoft สำหรับบัญชีนี้",
   "accounts.ubiLoginFailed": "ไม่สามารถลงชื่อเข้าใช้ Ubisoft ได้สำเร็จ",
   "accounts.ubiSessionExpired": "เซสชัน Ubisoft หมดอายุ ลงชื่อเข้าใช้อีกครั้งเพื่ออัปเดตคลังเกม",
+  "accounts.companionManagedDesc": "การติดตั้ง อัปเดต และถอนการติดตั้งทำใน {name}",
+  "accounts.companionUninstallDesc": "ลบเกมผ่านตัวถอนการติดตั้งของ {name}",
   "accounts.setupNeeded": "ต้องตั้งค่า",
   "accounts.gogDesc": "รองรับคลังเกม GOG",
   "accounts.connectCta": "เชื่อมบัญชี",

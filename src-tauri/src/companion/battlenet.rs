@@ -46,6 +46,8 @@ pub(crate) fn games_from_db(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundG
                 launch_uri: format!("battlenet://{code}"),
                 install_uri: String::new(),
                 uninstall_uri: String::new(),
+                cover_url: String::new(),
+                hero_url: String::new(),
             });
         },
         |_, _| {},
@@ -304,6 +306,8 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
             launch_uri: format!("battlenet://{id}"),
             install_uri: String::new(),
             uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));

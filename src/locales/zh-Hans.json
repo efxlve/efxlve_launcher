@@ -1315,6 +1315,8 @@
   "accounts.ubiNoGames": "此账户没有返回任何 Ubisoft 游戏。",
   "accounts.ubiLoginFailed": "无法完成 Ubisoft 登录。",
   "accounts.ubiSessionExpired": "Ubisoft 会话已过期。请重新登录以刷新库。",
+  "accounts.companionManagedDesc": "安装、更新和卸载都在 {name} 中进行。",
+  "accounts.companionUninstallDesc": "通过 {name} 自带的卸载程序移除游戏。",
   "accounts.setupNeeded": "需要设置",
   "accounts.gogDesc": "GOG 游戏库支持",
   "accounts.connectCta": "连接账户",
