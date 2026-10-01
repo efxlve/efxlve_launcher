@@ -29,7 +29,6 @@ import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
-import { completionOf, renderProfilePlatforms } from "./profile-platforms";
 
 export function coverOf(appName: string, fallback = ""): string {
   const s = S.epicSummariesMap.get(appName);
@@ -351,15 +350,6 @@ function showStoreChips(): boolean {
  * Achievement rows for the current page: one account, or Overview narrowed by
  * the store tab. Search updates call this so GOG and Steam stay in the list.
  */
-/** Achievement rows for one store, or every live store when `all`. */
-export function profileGamesFor(scope: "all" | StoreKind): ProfileGameRecord[] {
-  const games: ProfileGameRecord[] = [];
-  if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
-  if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
-  if (scope === "all" || scope === "steam") games.push(...buildSteamProfileGames());
-  return games;
-}
-
 export function profileListGames(): ProfileGameRecord[] {
   const selection = profileSelection();
   if (selection.mode === "account") {
@@ -368,7 +358,12 @@ export function profileListGames(): ProfileGameRecord[] {
     if (selection.account.kind === "gog") return buildGogProfileGames();
     return buildSteamProfileGames();
   }
-  return profileGamesFor(storeScope());
+  const scope = storeScope();
+  const games: ProfileGameRecord[] = [];
+  if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
+  if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
+  if (scope === "all" || scope === "steam") games.push(...buildSteamProfileGames());
+  return games;
 }
 
 export function libraryCount(scope: "all" | StoreKind): number {
@@ -507,10 +502,8 @@ function renderProfileHero(
       <span class="profile-stat-label">${label}</span>
     </div>`;
 
-  const completion = showData ? completionOf(games) : null;
   const statsPod = showData
     ? `<div class="profile-stats">
-        ${completion !== null ? stat(`${completion.toFixed(1)}%`, t("profile.completion")) : ""}
         ${stat(String(gamesCount), t("profile.games"))}
         ${stat(esc(fmtPlaytime(playtimeSeconds)), t("profile.played"))}
         ${stat(unlocked.toLocaleString(), t("profile.trophies"))}
@@ -1037,7 +1030,6 @@ export function renderProfile(): string {
   return `
     <div class="page profile-page">
       ${heroHtml}
-      ${combined ? renderProfilePlatforms() : ""}
       ${navTabsHtml}
       <div class="profile-content">
         ${contentHtml}

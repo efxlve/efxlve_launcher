@@ -92,7 +92,6 @@ import {
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
-import { toggleProfileSettings, toggleProfileUpcoming } from "../profile/profile-platforms";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
 
@@ -339,12 +338,6 @@ document.addEventListener("click", (e) => {
     }
     S.profileShowHidden = false;
     resetProfileCards();
-    render();
-  } else if (act === "profile-settings") {
-    toggleProfileSettings();
-    render();
-  } else if (act === "profile-upcoming") {
-    toggleProfileUpcoming();
     render();
   } else if (act === "profile-store" && t.dataset.val) {
     const store = t.dataset.val;
