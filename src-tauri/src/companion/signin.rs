@@ -13,7 +13,6 @@ const LABEL: &str = "companion-login";
 
 const WATCH_SCRIPT: &str = r#"
 (function () {
-  if (window.__efxlveBnetWatch) return;
   window.__efxlveBnetWatch = true;
   var bag = { games: null, classic: null };
   function hasList(obj) {
@@ -43,6 +42,8 @@ const WATCH_SCRIPT: &str = r#"
       location.replace("https://efxlve.local/bnet-library#" + body);
     }, 600);
   }
+  if (!window.__efxlveBnetHooks) {
+  window.__efxlveBnetHooks = true;
   var open = XMLHttpRequest.prototype.open;
   var send = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.open = function (method, url) {
@@ -68,6 +69,7 @@ const WATCH_SCRIPT: &str = r#"
       });
     };
   }
+  }
   function pullAccount() {
     if (window.__efxlveBnetSent) return;
     var opts = { credentials: "include", headers: { "Accept": "application/json" } };
@@ -83,7 +85,9 @@ const WATCH_SCRIPT: &str = r#"
     });
   }
   pullAccount();
-  setInterval(pullAccount, 2000);
+  if (!window.__efxlveBnetTimerPull) {
+    window.__efxlveBnetTimerPull = setInterval(pullAccount, 2000);
+  }
 })();
 "#;
 
@@ -131,6 +135,11 @@ fn bounds(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
 fn accept_library(app: &AppHandle, fragment: &str) {
     let games = battlenet::account_games(fragment);
     if games.is_empty() {
+        if let Some(window) = app.get_window("main") {
+            if let Some(webview) = window.get_webview(LABEL) {
+                let _ = webview.eval("window.__efxlveBnetSent = false;");
+            }
+        }
         return;
     }
     battlenet::save_owned(&games);

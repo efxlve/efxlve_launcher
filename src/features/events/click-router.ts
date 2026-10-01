@@ -502,9 +502,14 @@ document.addEventListener("click", (e) => {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
-    const rect = viewEl.getBoundingClientRect();
+    // Same frame as the store: the whole content column, so the account card cannot sit under the page.
+    const frame = document.getElementById("content")?.getBoundingClientRect();
+    const x = frame ? frame.left : 0;
+    const y = frame ? frame.top : 0;
+    const width = Math.max(100, window.innerWidth - x);
+    const height = Math.max(frame ? frame.height : 0, window.innerHeight - y);
     void invoke("hide_store_view").catch(() => {});
-    void companionShowLogin(rect.left, rect.top, rect.width, rect.height).catch((e: unknown) => toast(String(e), "err"));
+    void companionShowLogin(x, y, width, height).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;
