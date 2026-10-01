@@ -17,6 +17,7 @@ import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import { epicPortrait, type EpicSummary } from "../../epic";
+import { steamDownloadLabel } from "../library/steam-library";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -330,13 +331,7 @@ export function renderDownloads(): string {
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
   const steamRows = steamDownloading.map((g) => {
-    const pct = g.bytesToDownload > 0
-      ? Math.min(100, Math.round((g.bytesDownloaded / g.bytesToDownload) * 100))
-      : null;
-    const bytes = g.bytesDownloaded > 0
-      ? `${fmtBytes(g.bytesDownloaded)}${g.bytesToDownload > 0 ? ` / ${fmtBytes(g.bytesToDownload)}` : ""}`
-      : "";
-    const meta = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
+    const meta = steamDownloadLabel(g).text;
     return gameRow(
       summaryOf(`steam::${g.appId}`),
       `steam::${g.appId}`,

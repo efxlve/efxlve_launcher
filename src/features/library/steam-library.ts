@@ -247,6 +247,50 @@ export function scheduleSteamLibraryResync(delayMs = 6000): void {
   }, delayMs);
 }
 
+/** Percent and byte line for one Steam transfer. `pct` is null when Steam has no total yet. */
+export function steamDownloadLabel(g: Pick<SteamGame, "bytesDownloaded" | "bytesToDownload">): { pct: number | null; text: string } {
+  const total = g.bytesToDownload > 0 ? g.bytesToDownload : 0;
+  const got = g.bytesDownloaded > 0 ? g.bytesDownloaded : 0;
+  const pct = total > 0 ? Math.min(100, Math.round((got / total) * 100)) : null;
+  const bytes = total > 0 ? `${fmtBytes(got)} / ${fmtBytes(total)}` : "";
+  const text = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
+  return { pct, text };
+}
+
+/** Writes the live percent into download rows. A full re-render can leave the old 0% behind. */
+function paintSteamDownloadRows(games: SteamGame[]): void {
+  let paintedSpeed = false;
+  for (const g of games) {
+    if (!g.downloading) continue;
+    const { pct, text } = steamDownloadLabel(g);
+    const id = `steam::${g.appId}`;
+    const label = pct !== null ? t("common.downloading", { p: pct }) : t("steam.downloading");
+    document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((el) => {
+      const span = el.querySelector("span");
+      if (span) {
+        span.textContent = label;
+      } else {
+        const svg = el.querySelector("svg");
+        if (svg) el.innerHTML = `${svg.outerHTML} ${label}`;
+        else el.textContent = label;
+      }
+    });
+    document.querySelectorAll<HTMLElement>(`[data-tv-dlbar="${id}"]`).forEach((bar) => {
+      if (pct !== null) bar.style.width = `${pct}%`;
+    });
+    document.querySelectorAll(`[data-steam-dl="${g.appId}"]`).forEach((meta) => {
+      meta.textContent = text;
+    });
+    if (!paintedSpeed) {
+      const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
+      if (chip && !(S.activeDlMetrics && !S.activeDlMetrics.done && S.activeDlMetrics.speedBytes > 0)) {
+        chip.textContent = pct !== null ? `%${pct}` : t("steam.downloading");
+        paintedSpeed = true;
+      }
+    }
+  }
+}
+
 /** Applies a fresh installed/downloading snapshot without hitting the owned-games API. */
 export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
   S.steamGames = games.filter((g) => !isSteamLibraryNoise(g.appId, g.name));
@@ -315,6 +359,9 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
     structural = true;
   }
 
+  // The downloads row can still say 0% after a later render used a stale
+  // snapshot. Paint from this read even when the library item did not change.
+  paintSteamDownloadRows(games);
   if (!changed) {
     checkAndPollSteamDownloads();
     return false;
@@ -332,39 +379,7 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
   } else {
     for (const g of games) {
       if (!g.downloading) continue;
-      const id = `steam::${g.appId}`;
-      patchLibraryCardDom(id);
-      const pct = g.bytesToDownload > 0
-        ? Math.min(100, Math.round((g.bytesDownloaded / g.bytesToDownload) * 100))
-        : null;
-      const label = pct !== null ? t("common.downloading", { p: pct }) : t("steam.downloading");
-      document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((el) => {
-        const span = el.querySelector("span");
-        if (span) {
-          span.textContent = label;
-        } else {
-          const svg = el.querySelector("svg");
-          if (svg) {
-            el.innerHTML = `${svg.outerHTML} ${label}`;
-          } else {
-            el.textContent = label;
-          }
-        }
-      });
-      document.querySelectorAll<HTMLElement>(`[data-tv-dlbar="${id}"]`).forEach((bar) => {
-        if (pct !== null) bar.style.width = `${pct}%`;
-      });
-      const meta = document.querySelector(`[data-steam-dl="${g.appId}"]`);
-      if (meta) {
-        const bytes = g.bytesDownloaded > 0
-          ? `${fmtBytes(g.bytesDownloaded)}${g.bytesToDownload > 0 ? ` / ${fmtBytes(g.bytesToDownload)}` : ""}`
-          : "";
-        meta.textContent = [pct !== null ? `%${pct}` : "", bytes].filter(Boolean).join(" · ") || t("steam.downloadingHint");
-      }
-      const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
-      if (chip && !(S.activeDlMetrics && !S.activeDlMetrics.done && S.activeDlMetrics.speedBytes > 0)) {
-        chip.textContent = pct !== null ? `%${pct}` : t("steam.downloading");
-      }
+      patchLibraryCardDom(`steam::${g.appId}`);
     }
   }
   checkAndPollSteamDownloads();

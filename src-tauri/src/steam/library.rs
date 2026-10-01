@@ -122,14 +122,12 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         && !paused
         && work_left
         && (!fully_installed || update_active);
-    if downloading && bytes_to_download == 0 {
-        let stage_to = acf_u64(state, "BytesToStage");
-        if stage_to > 0 {
-            bytes_to_download = stage_to;
-            if bytes_downloaded == 0 {
-                bytes_downloaded = acf_u64(state, "BytesStaged");
-            }
-        }
+    // Steam's library percent is BytesDownloaded / BytesToDownload once that
+    // counter moves. Until the client flushes it, BytesDownloaded stays 0 and
+    // the moving number is BytesStaged — showing 0% hides a live update.
+    if downloading && bytes_downloaded == 0 && bytes_staged > 0 && bytes_to_stage > 0 {
+        bytes_downloaded = bytes_staged;
+        bytes_to_download = bytes_to_stage;
     }
     Some(SteamGame {
         app_id,
@@ -409,6 +407,54 @@ mod tests {
         assert!(game.downloading);
         assert_eq!(game.bytes_to_download, 8000);
         assert_eq!(game.bytes_downloaded, 4000);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn staged_bytes_show_progress_while_the_download_counter_is_still_zero() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-stageonly-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        // Fully installed build that is patching. Steam has already named the
+        // download size, but BytesDownloaded is still 0 while bytes are staged.
+        let staging_vdf = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1030"
+    	"BytesToDownload"		"761417584"
+    	"BytesDownloaded"		"0"
+    	"BytesToStage"		"2231094511"
+    	"BytesStaged"		"580000000"
+    }
+    "#;
+        let game = parse_app_manifest(staging_vdf, &tmp).expect("game");
+        assert!(game.downloading);
+        assert_eq!(game.bytes_downloaded, 580_000_000);
+        assert_eq!(game.bytes_to_download, 2_231_094_511);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn a_moving_download_counter_stays_the_shown_progress() {
+        let tmp = std::env::temp_dir().join(format!("efxlve-steam-dl-both-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        let both = r#"
+    "AppState"
+    {
+    	"appid"		"730"
+    	"name"		"Counter-Strike 2"
+    	"StateFlags"		"1030"
+    	"BytesToDownload"		"761417584"
+    	"BytesDownloaded"		"200289152"
+    	"BytesToStage"		"2231094511"
+    	"BytesStaged"		"886817329"
+    }
+    "#;
+        let game = parse_app_manifest(both, &tmp).expect("game");
+        assert!(game.downloading);
+        assert_eq!(game.bytes_downloaded, 200_289_152);
+        assert_eq!(game.bytes_to_download, 761_417_584);
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
