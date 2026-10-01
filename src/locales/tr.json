@@ -1377,6 +1377,8 @@
   "accounts.epicShort": "Kütüphane, başarımlar, bulut kayıtları",
   "accounts.steamDesc": "Steam kütüphanesi desteği (hesap girişi)",
   "accounts.connected": "Bağlı",
+  "accounts.companionHint": "Bu istemcide kurulu oyunlar. Oyna, istemciyi açar.",
+  "accounts.openClient": "İstemciyi aç",
   "accounts.notConnected": "Bağlı değil",
   "accounts.setupNeeded": "Kurulum gerekli",
   "accounts.gogDesc": "GOG kütüphanesi desteği",

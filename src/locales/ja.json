@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "ライブラリ、実績、クラウドセーブ",
   "accounts.steamDesc": "Steamライブラリ対応（アカウント連携）",
   "accounts.connected": "接続済み",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "未接続",
   "accounts.setupNeeded": "セットアップが必要",
   "accounts.gogDesc": "GOG ライブラリ対応",

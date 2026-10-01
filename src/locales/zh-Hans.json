@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "游戏库、成就、云存档",
   "accounts.steamDesc": "Steam 库支持（账号登录）",
   "accounts.connected": "已连接",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "未连接",
   "accounts.setupNeeded": "需要设置",
   "accounts.gogDesc": "GOG 游戏库支持",

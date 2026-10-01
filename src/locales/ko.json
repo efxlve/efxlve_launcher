@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "라이브러리, 업적, 클라우드 저장",
   "accounts.steamDesc": "Steam 라이브러리 지원(계정 로그인)",
   "accounts.connected": "연결됨",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "연결 안 됨",
   "accounts.setupNeeded": "설정 필요",
   "accounts.gogDesc": "GOG 라이브러리 지원",

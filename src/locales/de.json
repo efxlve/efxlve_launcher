@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Bibliothek, Erfolge, Cloud-Spielstände",
   "accounts.steamDesc": "Steam-Bibliotheksunterstützung (Kontoanmeldung)",
   "accounts.connected": "Verbunden",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Nicht verbunden",
   "accounts.setupNeeded": "Einrichtung erforderlich",
   "accounts.gogDesc": "Unterstützung für die GOG-Bibliothek",

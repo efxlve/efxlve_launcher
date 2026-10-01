@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "المكتبة والإنجازات والحفظ السحابي",
   "accounts.steamDesc": "دعم مكتبة Steam (تسجيل الدخول)",
   "accounts.connected": "متصل",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "غير متصل",
   "accounts.setupNeeded": "يلزم الإعداد",
   "accounts.gogDesc": "دعم مكتبة GOG",

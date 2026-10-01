@@ -17,7 +17,8 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   steam,
 };
 
-/** Logo markup for a store card: 24px mark, empty alt (the name is right next to it). */
-export function storeLogo(id: StoreId, size = 24): string {
+/** Logo markup for a store card. Companion clients have no mark here yet. */
+export function storeLogo(id: string, size = 24): string {
+  if (id !== "epic" && id !== "gog" && id !== "steam") return "";
   return `<img class="acc-store-logo" src="${STORE_LOGOS[id]}" width="${size}" height="${size}" alt="" draggable="false" />`;
 }

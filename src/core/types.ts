@@ -9,10 +9,10 @@
 export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "tv";
 
 /** Store or catalog provider source for a game. */
-export type GameSource = "epic" | "gog" | "steam";
+export type GameSource = "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet";
 
-/** One storefront the library filter can include or exclude. */
-export type StoreId = GameSource;
+/** Library filter. Companion launchers are listed with the library, not as a filter yet. */
+export type StoreId = "epic" | "gog" | "steam";
 
 /** Account/setup lifecycle phase for GOG.COM. */
 export type GogPhase = "checking" | "setup" | "login" | "library" | "error";

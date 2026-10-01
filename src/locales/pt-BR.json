@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Biblioteca, conquistas, saves na nuvem",
   "accounts.steamDesc": "Suporte à biblioteca Steam (login da conta)",
   "accounts.connected": "Conectada",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Não conectada",
   "accounts.setupNeeded": "Configuração necessária",
   "accounts.gogDesc": "Suporte à biblioteca GOG",

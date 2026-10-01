@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Libreria, obiettivi, salvataggi cloud",
   "accounts.steamDesc": "Supporto libreria Steam (accesso all'account)",
   "accounts.connected": "Connesso",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Non connesso",
   "accounts.setupNeeded": "Configurazione necessaria",
   "accounts.gogDesc": "Supporto alla libreria GOG",

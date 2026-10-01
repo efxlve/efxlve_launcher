@@ -277,6 +277,7 @@ function libraryBaseItems(): EpicSummary[] {
   if (S.enabledStores.has("steam")) {
     for (const g of S.steamSummaries) push(libraryItemToSummary(g));
   }
+  for (const g of S.companionSummaries) push(libraryItemToSummary(g));
   const out: EpicSummary[] = [];
   for (const list of groups.values()) out.push(pickShownCopy(list));
   return out;
@@ -567,7 +568,7 @@ export function renderEpic(): string {
   }
   // Every store counts: a Steam-only player (no Epic/GOG account) must still
   // see the grid instead of the "connect an account" empty state.
-  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.steamSummaries.length > 0;
+  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.steamSummaries.length > 0 || S.companionSummaries.length > 0;
   const isAnyConnected = (S.epicPhase === "library" && Boolean(S.epicAccount)) || (S.gogPhase === "library" && Boolean(S.gogAccount));
 
   if (S.epicPhase === "checking" && S.gogPhase === "checking") {

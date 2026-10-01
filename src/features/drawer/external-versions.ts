@@ -11,6 +11,14 @@ export function storeVersionLabel(source: GameVersionSource): string {
       return "GOG";
     case "steam":
       return "Steam";
+    case "ea":
+      return "EA App";
+    case "ubisoft":
+      return "Ubisoft Connect";
+    case "xbox":
+      return "Xbox";
+    case "battlenet":
+      return "Battle.net";
     default:
       return "Epic Games";
   }

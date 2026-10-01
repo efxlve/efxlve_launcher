@@ -405,6 +405,8 @@ export const S = {
   controllerBridge: (null) as ControllerSupportStatus | null,
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],
+  /** Installed games owned by EA, Ubisoft, Xbox or Battle.net. */
+  companionSummaries: [] as import("./types").LibraryItem[],
   steamApiKey: (null) as string | null,
   steamDetails: (new Map()) as Map<string, import("../steam").SteamGameDetails>,
   /** Steam account sign-in (ROADMAP §13). `null` until the first status call. */

@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Biblioteka, osiągnięcia, zapisy w chmurze",
   "accounts.steamDesc": "Obsługa biblioteki Steam (logowanie konta)",
   "accounts.connected": "Połączono",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Niepołączone",
   "accounts.setupNeeded": "Wymagana konfiguracja",
   "accounts.gogDesc": "Obsługa biblioteki GOG",

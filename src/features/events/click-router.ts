@@ -73,6 +73,8 @@ import {
 } from "../library/library-view";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
+import { loadCompanionLibrary } from "../library/companion-library";
+import { companionOpenClient } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -496,6 +498,11 @@ document.addEventListener("click", (e) => {
     toggleFav(id);
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
+  } else if (act === "companion-open" && id) {
+    const store = id as "ea" | "ubisoft" | "xbox" | "battlenet";
+    void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-rescan") {
+    void loadCompanionLibrary().then(() => render());
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

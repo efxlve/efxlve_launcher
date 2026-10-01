@@ -359,8 +359,8 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
 }
 
 /** Source note under the description: the game's own store, or the Wikipedia fallback. */
-function aboutSourceText(storeDesc: string, wikiText: string, source: "epic" | "gog" | "steam"): string {
-  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : "Epic Games Store";
+function aboutSourceText(storeDesc: string, wikiText: string, source: "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet"): string {
+  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : "Epic Games Store";
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");

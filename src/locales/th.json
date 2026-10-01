@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "คลังเกม ความสำเร็จ เซฟบนคลาวด์",
   "accounts.steamDesc": "รองรับคลังเกม Steam (ลงชื่อเข้าใช้บัญชี)",
   "accounts.connected": "เชื่อมต่อแล้ว",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "ยังไม่เชื่อมต่อ",
   "accounts.setupNeeded": "ต้องตั้งค่า",
   "accounts.gogDesc": "รองรับคลังเกม GOG",

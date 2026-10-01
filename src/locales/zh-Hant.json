@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "遊戲庫、成就、雲端存檔",
   "accounts.steamDesc": "Steam 媒體庫支援（帳號登入）",
   "accounts.connected": "已連線",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "未連線",
   "accounts.setupNeeded": "需要設定",
   "accounts.gogDesc": "GOG 遊戲庫支援",

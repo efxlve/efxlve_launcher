@@ -128,6 +128,10 @@ export function rebuildAllGamesMap(): void {
     map.set(g.key, g);
     rememberCanon(storeSets, keySets, g.title, "Steam", g.key);
   }
+  for (const g of S.companionSummaries) {
+    map.set(g.key, g);
+    rememberCanon(storeSets, keySets, g.title, g.source, g.key);
+  }
 
   // Other accounts' games stay searchable/detail-openable through the same map
   // while the shared library is enabled.
@@ -248,10 +252,14 @@ export function sharedOwnerOf(key: string): import("../epic").SharedGame | undef
   return S.sharedOwners.get(key);
 }
 
-/** Store of a library key: `epic` (no prefix), `gog::<id>` or `steam::<id>`. */
+/** Store of a library key: `epic` (no prefix), or `<store>::<id>`. */
 export function sourceOfKey(key: string): import("./types").GameSource {
   if (key.startsWith("gog::")) return "gog";
   if (key.startsWith("steam::")) return "steam";
+  if (key.startsWith("ea::")) return "ea";
+  if (key.startsWith("ubisoft::")) return "ubisoft";
+  if (key.startsWith("xbox::")) return "xbox";
+  if (key.startsWith("battlenet::")) return "battlenet";
   return "epic";
 }
 

@@ -1377,6 +1377,8 @@
   "accounts.epicShort": "Library, achievements, cloud saves",
   "accounts.steamDesc": "Steam library support (account sign-in)",
   "accounts.connected": "Connected",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Not connected",
   "accounts.setupNeeded": "Setup required",
   "accounts.gogDesc": "GOG library support",

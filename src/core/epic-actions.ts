@@ -25,6 +25,7 @@ import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
+import { companionOpenClient } from "../companion";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -50,6 +51,17 @@ export async function epicStop(appName: string): Promise<void> {
 
 export async function epicPlay(appName: string): Promise<void> {
   // Steam games belong to the Steam client: hand the launch over to it.
+  if (appName.startsWith("ea::") || appName.startsWith("ubisoft::") || appName.startsWith("xbox::") || appName.startsWith("battlenet::")) {
+    pushRecent(appName);
+    toast(t("dl.launching"), "");
+    const store = appName.slice(0, appName.indexOf("::")) as "ea" | "ubisoft" | "xbox" | "battlenet";
+    try {
+      await companionOpenClient(store);
+    } catch (e) {
+      toast(String(e), "err");
+    }
+    return;
+  }
   if (appName.startsWith("steam::")) {
     pushRecent(appName);
     toast(t("dl.launching"), "");

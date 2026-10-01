@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cloud_backup;
+mod companion;
 mod controller;
 mod eos;
 mod gogdl;
@@ -581,6 +582,8 @@ fn main() {
             steam::steam_open_client,
             steam::steam_open_downloads,
             steam::steam_list_installed,
+            companion::companion_installed_games,
+            companion::companion_open_client,
             steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam::steam_game_action,

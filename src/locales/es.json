@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Biblioteca, logros, partidas en la nube",
   "accounts.steamDesc": "Compatibilidad con la biblioteca de Steam (inicio de sesión)",
   "accounts.connected": "Conectada",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "No conectada",
   "accounts.setupNeeded": "Configuración necesaria",
   "accounts.gogDesc": "Compatibilidad con la biblioteca de GOG",

@@ -1300,6 +1300,8 @@
   "accounts.epicShort": "Библиотека, достижения, облачные сохранения",
   "accounts.steamDesc": "Поддержка библиотеки Steam (вход в аккаунт)",
   "accounts.connected": "Подключено",
+  "accounts.companionHint": "Installed games from this client. Play opens the client.",
+  "accounts.openClient": "Open client",
   "accounts.notConnected": "Не подключено",
   "accounts.setupNeeded": "Нужна настройка",
   "accounts.gogDesc": "Поддержка библиотеки GOG",

@@ -450,12 +450,37 @@ function steamCard(): string {
     </section>`;
 }
 
-/** The three connector cards. */
+function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: string): string {
+  const games = S.companionSummaries.filter((g) => g.source === store);
+  const connected = games.length > 0;
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <div class="row-main">
+          <div class="acc-store-name">${esc(title)}</div>
+          <div class="row-meta">${connected ? `${games.length} ${t("settings.accountTotalGames")}` : t("accounts.companionHint")}</div>
+        </div>
+        ${connected ? `<span class="chip ok">${t("accounts.connected")}</span>` : `<span class="chip">${t("accounts.notConnected")}</span>`}
+      </div>
+      <div class="acc-card-body">
+        <div class="acc-actions">
+          <button class="btn ghost small" data-act="companion-open" data-id="${store}">${icon("external", 13)} ${t("accounts.openClient")}</button>
+          <button class="btn ghost small" data-act="companion-rescan">${t("settings.rescan")}</button>
+        </div>
+      </div>
+    </section>`;
+}
+
+/** The three connector cards, then the DRM clients that keep their own games. */
 function accountCards(): string {
   return `
     ${epicCard()}
     ${gogCard()}
-    ${steamCard()}`;
+    ${steamCard()}
+    ${companionCard("ea", "EA App")}
+    ${companionCard("ubisoft", "Ubisoft Connect")}
+    ${companionCard("xbox", "Xbox")}
+    ${companionCard("battlenet", "Battle.net")}`;
 }
 
 /** Account list, switch, add and sign-out, embedded in Settings. */
