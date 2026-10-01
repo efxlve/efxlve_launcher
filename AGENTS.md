@@ -8,7 +8,18 @@ For a code change, open only the matching rows. Leave `docs/CHANGELOG_INTERNAL.m
 
 `npm.cmd run build` (PowerShell uses `npm.cmd`). If Rust changed, `cargo test --manifest-path src-tauri/Cargo.toml`.
 
-One task, one folder. Stop when that check passes.
+One task, one folder. Stop when that check passes. Then commit. Never skip the commit, and do not ask first. Do not push unless the user asks.
+
+## Commit
+
+Message shape: `type: why`
+
+English, imperative, no trailing period. One task, one commit. Types: `fix`, `feat`, `refactor`, `test`, `docs`, `chore`.
+
+```
+fix: keep the notification list above the store
+docs: commit every completed change without asking
+```
 
 ## Open only these files
 
@@ -44,4 +55,5 @@ Names exported from a folder are listed in that folder's `mod.rs` (`pub use file
 7. Icons are `icon("name", size)` or an ISO code (`TR`, `EN`). Covers have no permanent playtime or trophy badge. Color means status: green online, amber updating, red error.
 8. Speeds, percents, playtime, and counters use `font-variant-numeric: tabular-nums`.
 9. An account vault id passes `vault_id::is_vault_id` before `Path::join`.
-10. Code comments are English.
+10. Code comments are English. Every `t("key")` exists in `src/locales/en.json`.
+11. Settings shows the Steam client, not a row per Steam game. A Steam app is downloading only while bytes remain and the client is actually transferring.

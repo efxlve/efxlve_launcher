@@ -1,0 +1,19 @@
+---
+description: Commit every completed change without asking
+alwaysApply: true
+---
+
+# Commits
+
+After every completed change, create a git commit without asking the user. Never skip this step. Do not push unless the user asks.
+
+Message shape: `type: why`
+
+- English, imperative, no trailing period.
+- One task, one commit.
+- Types: `fix`, `feat`, `refactor`, `test`, `docs`, `chore`.
+
+```
+fix: keep the notification list above the store
+docs: commit every completed change without asking
+```

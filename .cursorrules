@@ -32,4 +32,4 @@ You are an expert systems & UI engineer working on Efxlve Launcher, a high-perfo
   - `cargo check` (validates Rust backend)
   - `cargo test` (unit tests)
 - Tauri IPC parameters are camelCase in JS (`{ appName }`), matching Rust snake_case (`app_name: String`).
-- Do not commit or push unless explicitly instructed by the user.
+- After every completed change, commit without asking. Never skip that step. The message shape is in `AGENTS.md`. Do not push unless the user asks.
