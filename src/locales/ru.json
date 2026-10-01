@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Ключ Steam Web API",
   "settings.steamApiDesc": "Необязательный запасной вариант: достижения обычно читаются из кеша клиента Steam; этот ключ нужен только для игр без локальных данных.",
   "settings.steamApiPlaceholder": "Ключ Steam Web API",
+  "settings.steamKeySaved": "Ключ Steam Web API сохранён",
+  "settings.steamKeyRemoved": "Ключ Steam Web API удалён",
   "settings.showHide": "Показать/скрыть",
   "settings.test": "Проверить",
   "settings.netMax": "Максимальная",

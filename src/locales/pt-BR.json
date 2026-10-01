@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Chave da API Web da Steam",
   "settings.steamApiDesc": "Alternativa opcional: as conquistas normalmente vêm do cache do cliente Steam; esta chave só é usada em jogos sem dados locais.",
   "settings.steamApiPlaceholder": "Chave da API Web da Steam",
+  "settings.steamKeySaved": "Chave da API Web da Steam salva",
+  "settings.steamKeyRemoved": "Chave da API Web da Steam removida",
   "settings.showHide": "Mostrar/Ocultar",
   "settings.test": "Testar",
   "settings.netMax": "Máxima",

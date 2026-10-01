@@ -1125,6 +1125,8 @@ export interface SteamGridGame {
   name: string;
   types: string[];
   verified?: boolean | null;
+  /** True when this row was resolved from the Steam app id, not the name search. */
+  matchedSteam?: boolean;
 }
 
 export const epicGetSteamGridKey = () =>
@@ -1136,8 +1138,8 @@ export const epicSetSteamGridKey = (apiKey: string) =>
 export const epicTestSteamGridKey = (apiKey: string) =>
   invoke<boolean>("epic_test_steamgrid_key", { apiKey });
 
-export const epicSearchSteamGrid = (term: string) =>
-  invoke<SteamGridGame[]>("epic_search_steamgrid", { term });
+export const epicSearchSteamGrid = (term: string, steamAppId?: string | null) =>
+  invoke<SteamGridGame[]>("epic_search_steamgrid", { term, steamAppId: steamAppId ?? null });
 
 export const epicGetSteamGridCovers = (
   gameId: number,

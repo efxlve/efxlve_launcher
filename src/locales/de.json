@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Steam-Web-API-Schlüssel",
   "settings.steamApiDesc": "Optionaler Ersatz: Erfolge werden normalerweise aus dem Cache des Steam-Clients gelesen; dieser Schlüssel greift nur bei Spielen ohne lokale Daten.",
   "settings.steamApiPlaceholder": "Steam-Web-API-Schlüssel",
+  "settings.steamKeySaved": "Steam-Web-API-Schlüssel gespeichert",
+  "settings.steamKeyRemoved": "Steam-Web-API-Schlüssel entfernt",
   "settings.showHide": "Anzeigen/Verbergen",
   "settings.test": "Testen",
   "settings.netMax": "Am schnellsten",

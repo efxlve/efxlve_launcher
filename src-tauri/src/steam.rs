@@ -291,6 +291,10 @@ pub struct SteamGame {
     pub bytes_downloaded: u64,
     /// Total bytes this job still reports (`BytesToDownload`). Zero when Steam has not written it.
     pub bytes_to_download: u64,
+    /// True when the install is a preload (release build is not out yet).
+    /// Steam still sets `UpdateRequired` for those, but there is nothing to download.
+    #[serde(default)]
+    pub preloaded: bool,
 }
 
 /// Parses one `appmanifest_<id>.acf` file.
@@ -315,6 +319,9 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         .unwrap_or(0);
     let mut bytes_to_download = acf_u64(state, "BytesToDownload");
     let mut bytes_downloaded = acf_u64(state, "BytesDownloaded");
+    let bytes_to_stage = acf_u64(state, "BytesToStage");
+    let build_id = acf_u64(state, "buildid");
+    let target_build_id = acf_u64(state, "TargetBuildID");
     let dl_dir = library.join("downloading").join(&app_id);
     // Only a live `downloading/<id>` folder means Steam is transferring files.
     // If paused (bit 512 = 0x200), it is not actively downloading.
@@ -342,6 +349,13 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         downloading,
         bytes_downloaded,
         bytes_to_download,
+        // A preload keeps UpdateRequired set until release day, with no newer
+        // build and nothing queued. A real patch names a different TargetBuildID
+        // or reports bytes to fetch.
+        preloaded: (state_flags & 2) != 0
+            && bytes_to_download == 0
+            && bytes_to_stage == 0
+            && (target_build_id == 0 || target_build_id == build_id),
     })
 }
 
@@ -350,6 +364,7 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
     let mut games: Vec<SteamGame> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let steam_running = steam_client_running(steam);
+    let preloads = cached_preload_ids(steam);
     for folder in library_folders(steam) {
         let Ok(entries) = std::fs::read_dir(&folder) else { continue };
         for entry in entries.flatten() {
@@ -365,6 +380,13 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                 }
                 if !steam_running {
                     game.downloading = false;
+                }
+                if !game.preloaded {
+                    if let Ok(id) = game.app_id.parse::<u32>() {
+                        if preloads.contains(&id) {
+                            game.preloaded = true;
+                        }
+                    }
                 }
                 // A game left behind in an old library folder must not appear twice.
                 if seen.insert(game.app_id.clone()) {
@@ -396,6 +418,7 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                         downloading: true,
                         bytes_downloaded: 0,
                         bytes_to_download: 0,
+                        preloaded: false,
                     });
                 }
             }
@@ -872,6 +895,73 @@ pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
         pos += 8 + size;
     }
     Vec::new()
+}
+
+/// App ids whose client metadata says `releasestate` is `preloadonly`.
+///
+/// Those installs sit on disk before release. Steam sets `UpdateRequired` so
+/// Play stays locked, but the client itself shows the game as up to date.
+pub fn parse_appinfo_preload_ids(data: &[u8]) -> std::collections::HashSet<u32> {
+    let Some(magic) = read_u32_at(data, 0) else {
+        return std::collections::HashSet::new();
+    };
+    let (table, mut pos, apps_end) = match magic {
+        APPINFO_MAGIC_V41 => {
+            let Some(offset) = data
+                .get(8..16)
+                .and_then(|b| b.try_into().ok())
+                .map(u64::from_le_bytes)
+                .map(|v| v as usize)
+            else {
+                return std::collections::HashSet::new();
+            };
+            if offset >= data.len() {
+                return std::collections::HashSet::new();
+            }
+            (parse_appinfo_strings(data, offset), 16usize, offset)
+        }
+        APPINFO_MAGIC_V40 => (None, 8usize, data.len()),
+        _ => return std::collections::HashSet::new(),
+    };
+
+    let mut out = std::collections::HashSet::new();
+    while pos + 68 <= apps_end {
+        let Some(entry_id) = read_u32_at(data, pos) else { break };
+        if entry_id == 0 {
+            break;
+        }
+        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else { break };
+        if size < 60 || pos + 8 + size > data.len() {
+            break;
+        }
+        let blob = &data[pos + 68..pos + 8 + size];
+        if appinfo_find_string(blob, &table, "releasestate").as_deref() == Some("preloadonly") {
+            out.insert(entry_id);
+        }
+        pos += 8 + size;
+    }
+    out
+}
+
+static PRELOAD_CACHE: std::sync::Mutex<
+    Option<(Option<std::time::SystemTime>, std::collections::HashSet<u32>)>,
+> = std::sync::Mutex::new(None);
+
+/// Preload app ids from `appcache/appinfo.vdf`, reused until that file changes.
+fn cached_preload_ids(steam: &Path) -> std::collections::HashSet<u32> {
+    let path = steam.join("appcache").join("appinfo.vdf");
+    let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+    let mut guard = PRELOAD_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((cached_mtime, set)) = guard.as_ref() {
+        if cached_mtime == &mtime {
+            return set.clone();
+        }
+    }
+    let set = std::fs::read(&path)
+        .map(|data| parse_appinfo_preload_ids(&data))
+        .unwrap_or_default();
+    *guard = Some((mtime, set.clone()));
+    set
 }
 
 /// Reads the client's DLC ids for one app from disk (empty when unavailable).
@@ -1958,6 +2048,62 @@ mod tests {
         assert_eq!(game.bytes_downloaded, 0);
         assert_eq!(game.bytes_to_download, 0);
         assert!(game.library.ends_with("steamapps"));
+        assert!(!game.preloaded);
+    }
+
+    #[test]
+    fn preload_manifest_is_not_an_update() {
+        let preload = r#"
+"AppState"
+{
+	"appid"		"3962600"
+	"name"		"AION 2"
+	"installdir"		"AION2"
+	"StateFlags"		"6"
+	"buildid"		"17000001"
+	"TargetBuildID"		"0"
+	"BytesToDownload"		"0"
+	"BytesToStage"		"0"
+}
+"#;
+        let game = parse_app_manifest(preload, Path::new("x")).expect("game");
+        assert!(game.preloaded);
+        assert_eq!(game.state_flags, 6);
+    }
+
+    #[test]
+    fn real_update_with_a_newer_build_is_not_a_preload() {
+        let update = r#"
+"AppState"
+{
+	"appid"		"730"
+	"name"		"Counter-Strike 2"
+	"StateFlags"		"6"
+	"buildid"		"100"
+	"TargetBuildID"		"200"
+	"BytesToDownload"		"0"
+	"BytesToStage"		"0"
+}
+"#;
+        let game = parse_app_manifest(update, Path::new("x")).expect("game");
+        assert!(!game.preloaded);
+    }
+
+    #[test]
+    fn queued_bytes_keep_an_update_even_without_a_target_build() {
+        let update = r#"
+"AppState"
+{
+	"appid"		"730"
+	"name"		"Counter-Strike 2"
+	"StateFlags"		"6"
+	"buildid"		"100"
+	"TargetBuildID"		"0"
+	"BytesToDownload"		"4096"
+}
+"#;
+        let game = parse_app_manifest(update, Path::new("x")).expect("game");
+        assert!(!game.preloaded);
     }
 
     #[test]
@@ -2160,6 +2306,38 @@ mod tests {
         );
         assert!(parse_appinfo_dlc_ids(&data, "730").is_empty());
         assert!(parse_appinfo_dlc_ids(b"junk", "730").is_empty());
+    }
+
+    #[test]
+    fn appinfo_preloadonly_is_collected() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // common
+        vdf.push(1);
+        vdf.extend_from_slice(&key(1)); // releasestate
+        vdf.extend_from_slice(b"preloadonly\0");
+        vdf.push(8);
+        vdf.push(8);
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&3962600u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&2u32.to_le_bytes());
+        data.extend_from_slice(b"common\0releasestate\0");
+
+        let ids = parse_appinfo_preload_ids(&data);
+        assert!(ids.contains(&3962600));
+        assert_eq!(ids.len(), 1);
     }
 
     #[test]

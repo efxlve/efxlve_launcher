@@ -9,6 +9,7 @@ mod cloud_backup;
 mod shared_library;
 mod controller;
 mod steam;
+mod steam_art;
 mod steam_watch;
 mod steam_auth;
 mod steam_session;
@@ -2164,6 +2165,7 @@ fn main() {
             steam::steam_get_game_details,
             steam::steam_get_api_key,
             steam::steam_set_api_key,
+            steam_art::steam_library_art,
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
             steam::steam_get_game_screenshots,

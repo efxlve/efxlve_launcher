@@ -13,6 +13,7 @@ import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
 import { esc, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
+import { holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
 
 const MAX = 50;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
@@ -151,6 +152,7 @@ export function renderNotificationPanel(): void {
   if (!S.notifOpen) {
     notifPanelSig = "";
     if (root.firstChild) root.innerHTML = "";
+    releaseStoreOverlay("notif");
     return;
   }
 
@@ -219,6 +221,9 @@ export function positionNotifPanel(): void {
 /** Opens the notification panel (and marks everything as read). */
 export function openNotifPanel(): void {
   S.notifOpen = true;
+  // Park the store child before the panel paints. It is a native webview and
+  // ignores z-index, so the dropdown would otherwise open underneath it.
+  void holdStoreOverlay("notif");
   renderNotificationPanel();
   markAllRead();
 }

@@ -34,6 +34,8 @@ export interface SteamGame {
   downloading: boolean;
   bytesDownloaded: number;
   bytesToDownload: number;
+  /** Release build is not out yet. Steam still sets the update flag. */
+  preloaded?: boolean;
 }
 
 /** Playtime from the Steam client's own local config, in seconds. */
@@ -91,6 +93,15 @@ export const steamGetGameDetails = (appId: string, language?: string, force = fa
 
 export const steamGetApiKey = () => invoke<string | null>("steam_get_api_key");
 export const steamSetApiKey = (apiKey: string) => invoke<void>("steam_set_api_key", { apiKey });
+
+export interface SteamLibraryArt {
+  cover: string;
+  hero: string;
+}
+
+/** Current library portraits and heroes for app ids whose flat CDN capsule 404s. */
+export const steamLibraryArt = (appIds: string[]) =>
+  invoke<Record<string, SteamLibraryArt>>("steam_library_art", { appIds });
 /** Schema + the player's unlocks + global rarity; cached on disk for an hour. */
 export const steamGetAchievements = (appId: string, force = false) =>
   invoke<import("./epic").EpicAchievementsData>("steam_get_achievements", { appId, force });

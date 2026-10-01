@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Clé API Web Steam",
   "settings.steamApiDesc": "Solution de repli facultative : les succès sont normalement lus depuis le cache du client Steam ; cette clé ne sert qu’aux jeux sans données locales.",
   "settings.steamApiPlaceholder": "Clé API Web Steam",
+  "settings.steamKeySaved": "Clé API Web Steam enregistrée",
+  "settings.steamKeyRemoved": "Clé API Web Steam retirée",
   "settings.showHide": "Afficher/Masquer",
   "settings.test": "Tester",
   "settings.netMax": "La plus rapide",

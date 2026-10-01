@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "คีย์ Steam Web API",
   "settings.steamApiDesc": "ทางเลือกสำรอง: ปกติแล้วอ่านความสำเร็จจากแคชของไคลเอนต์ Steam คีย์นี้ใช้เฉพาะเกมที่ไม่มีข้อมูลในเครื่อง",
   "settings.steamApiPlaceholder": "คีย์ Steam Web API",
+  "settings.steamKeySaved": "บันทึกคีย์ Steam Web API แล้ว",
+  "settings.steamKeyRemoved": "นำคีย์ Steam Web API ออกแล้ว",
   "settings.showHide": "แสดง/ซ่อน",
   "settings.test": "ทดสอบ",
   "settings.netMax": "เร็วที่สุด",

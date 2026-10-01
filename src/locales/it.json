@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Chiave API Web di Steam",
   "settings.steamApiDesc": "Alternativa opzionale: gli obiettivi vengono normalmente letti dalla cache del client Steam; questa chiave serve solo per i giochi senza dati locali.",
   "settings.steamApiPlaceholder": "Chiave API Web di Steam",
+  "settings.steamKeySaved": "Chiave API Web di Steam salvata",
+  "settings.steamKeyRemoved": "Chiave API Web di Steam rimossa",
   "settings.showHide": "Mostra/Nascondi",
   "settings.test": "Prova",
   "settings.netMax": "Massima",

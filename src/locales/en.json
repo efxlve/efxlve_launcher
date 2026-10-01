@@ -1189,6 +1189,8 @@
   "settings.steamApiTitle": "Steam Web API key",
   "settings.steamApiDesc": "Optional fallback: achievements are normally read from the Steam client's own cache; this key is only used for games without local data.",
   "settings.steamApiPlaceholder": "Steam Web API key",
+  "settings.steamKeySaved": "Steam Web API key saved",
+  "settings.steamKeyRemoved": "Steam Web API key removed",
   "settings.showHide": "Show/Hide",
   "settings.test": "Test",
   "settings.netMax": "Fastest",

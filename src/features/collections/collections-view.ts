@@ -17,7 +17,7 @@ import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
-import { epicDeleteCollection, epicGetCollections, epicSaveCollection, epicSetGameCollections } from "../../epic";
+import { epicDeleteCollection, epicGetCollections, epicImportEglCollections, epicSaveCollection, epicSetGameCollections, type GameCollection } from "../../epic";
 import { renderCollectionTags } from "../drawer/drawer-view";
 export function openCollectionModal(colId?: string | null): void {
   S.activeEditingColId = colId ?? null;
@@ -336,4 +336,35 @@ export async function loadEpicCollections(): Promise<void> {
   } catch (e) {
     console.warn("Collections could not be fetched:", e);
   }
+  syncEglCollectionsOnce();
+}
+
+let eglSynced = false;
+
+function collectionSig(cols: GameCollection[]): string {
+  return cols
+    .map((c) => `${c.id}\t${c.name}\t${c.app_names.join(",")}`)
+    .sort()
+    .join("\n");
+}
+
+/**
+ * Pull Epic Games Launcher categories once per session.
+ * The manual import button stays; this is the same merge, run at startup so a
+ * reboot does not leave the library without those categories.
+ */
+function syncEglCollectionsOnce(): void {
+  if (!isTauri || eglSynced) return;
+  eglSynced = true;
+  void epicImportEglCollections()
+    .then((cols) => {
+      if (!cols.length) return;
+      if (collectionSig(S.epicCollections) === collectionSig(cols)) return;
+      S.epicCollections = cols;
+      S.libraryDataRev++;
+      if (S.view === "library" || S.view === "settings") scheduleRender();
+    })
+    .catch(() => {
+      eglSynced = false;
+    });
 }

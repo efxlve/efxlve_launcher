@@ -71,8 +71,11 @@ const COVERING_ROOT_IDS = [
   "share-modal-root",
 ] as const;
 
-/** True while the command palette is keeping the store child webview off-screen. */
-let storeHeldForPalette = false;
+/**
+ * Surfaces that park the store child. A native webview ignores z-index, so
+ * the palette and the notification panel would otherwise open underneath it.
+ */
+const storeHoldReasons = new Set<string>();
 /** True after a close has already asked Rust to show the child once. */
 let storeRestoreInFlight = false;
 /** Watches covering roots only while a hold is waiting for them to close. */
@@ -97,8 +100,8 @@ function stopCoverWatch(): void {
 function watchCoversThenRelease(): void {
   if (coverWatch) return;
   coverWatch = new MutationObserver(() => {
-    if (!storeHeldForPalette || paletteDomOpen() || coveringStore()) return;
-    releaseStoreForPalette();
+    if (paletteDomOpen() || coveringStore() || !storeHoldReasons.has("cover")) return;
+    releaseStoreOverlay("cover");
   });
   for (const id of COVERING_ROOT_IDS) {
     const el = document.getElementById(id);
@@ -110,21 +113,20 @@ export function syncStoreViewSize(): void {
   // A resize while the palette is open, or the echo of the single restore,
   // must not move or hide the child again.
   const embedded = embeddedStoreRect !== null;
-  if ((!embedded && S.view !== "store") || !S.storeShown || !isTauri || storeHeldForPalette || storeRestoreInFlight) return;
+  if ((!embedded && S.view !== "store") || !S.storeShown || !isTauri || storeHoldReasons.size > 0 || storeRestoreInFlight) return;
   const rect = embedded ? embeddedStoreRect!() : storeRect();
   invoke<void>("resize_store_view", rect).catch(() => undefined);
 }
 
 /**
- * Parks the store child webview so the command palette (main webview) can
- * paint above it. Same off-screen hide the store already uses when leaving
- * the page; the store page itself stays current.
+ * Parks the store child webview so a main-webview surface can paint above it.
+ * The store page itself stays current. A second reason does not hide again.
  */
-export function holdStoreForPalette(): Promise<void> {
-  // Also hold while the store page is still loading. An in-flight show checks
-  // this flag and parks the child instead of painting over the palette.
-  if (storeHeldForPalette || S.view !== "store" || !isTauri) return Promise.resolve();
-  storeHeldForPalette = true;
+export function holdStoreOverlay(reason: string): Promise<void> {
+  if (storeHoldReasons.has(reason)) return Promise.resolve();
+  const alreadyParked = storeHoldReasons.size > 0;
+  storeHoldReasons.add(reason);
+  if (alreadyParked || S.view !== "store" || !isTauri) return Promise.resolve();
   return invoke("set_store_palette_hold", {
     hold: true,
     restore: false,
@@ -136,22 +138,25 @@ export function holdStoreForPalette(): Promise<void> {
   }).then(
     () => undefined,
     () => {
-      storeHeldForPalette = false;
+      storeHoldReasons.delete(reason);
     },
   );
 }
 
-/** Puts the store child back once, unless the user left the store or a launcher surface is still open. */
-export function releaseStoreForPalette(): void {
-  // closePalette and a same-turn DOM/resize sync both call this. The first
-  // call owns the single restore; the second finds the hold already cleared.
-  if (!storeHeldForPalette || paletteDomOpen() || storeRestoreInFlight) return;
+export function holdStoreForPalette(): Promise<void> {
+  return holdStoreOverlay("palette");
+}
+
+/** Puts the store child back once the last covering surface has closed. */
+export function releaseStoreOverlay(reason: string): void {
+  if (reason === "palette" && paletteDomOpen()) return;
+  if (!storeHoldReasons.delete(reason) || storeHoldReasons.size > 0 || storeRestoreInFlight) return;
   if (S.view === "store" && S.storeShown && coveringStore()) {
+    storeHoldReasons.add("cover");
     watchCoversThenRelease();
     return;
   }
   stopCoverWatch();
-  storeHeldForPalette = false;
   if (!isTauri) return;
   const restore = S.view === "store" && S.storeShown;
   const rect = restore ? storeRect() : { x: 0, y: 0, width: 100, height: 100, bottom: 0 };
@@ -159,6 +164,10 @@ export function releaseStoreForPalette(): void {
   void invoke("set_store_palette_hold", { hold: false, restore, ...rect }).finally(() => {
     storeRestoreInFlight = false;
   });
+}
+
+export function releaseStoreForPalette(): void {
+  releaseStoreOverlay("palette");
 }
 
 /** Storefront the loading screen names; the child stays hidden until it paints. */

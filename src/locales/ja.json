@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Steam Web APIキー",
   "settings.steamApiDesc": "任意の代替手段: 実績は通常 Steam クライアントのキャッシュから読み取られます。このキーはローカルデータがないゲームにのみ使用されます。",
   "settings.steamApiPlaceholder": "Steam Web APIキー",
+  "settings.steamKeySaved": "Steam Web APIキーを保存しました",
+  "settings.steamKeyRemoved": "Steam Web APIキーを削除しました",
   "settings.showHide": "表示/非表示",
   "settings.test": "テスト",
   "settings.netMax": "最速",

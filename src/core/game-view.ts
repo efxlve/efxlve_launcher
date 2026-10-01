@@ -7,6 +7,7 @@
  */
 
 import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../epic";
+import { cachedSteamCover, steamCdnPortrait } from "./steam-art-cache";
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
@@ -242,17 +243,35 @@ export function epicDlProgress(appName: string): number | null {
   return null;
 }
 
-/** Portrait cover markup with custom cover -> Epic key art -> fallback. */
+/**
+ * Portrait cover markup with custom cover -> Epic key art -> fallback.
+ * Library cards already skip off-screen work with content-visibility. Adding
+ * loading="lazy" on top of that makes WebView2 leave the image blank: the
+ * lazy observer never hears that the card became visible.
+ */
 export function epicArt(s: EpicSummary): string {
   const custom = S.customCovers[s.appName];
-  if (custom) return `<img src="${esc(custom)}" alt="" loading="lazy" decoding="async" />`;
+  if (custom) return `<img src="${esc(custom)}" alt="" decoding="async" />`;
+  if (s.appName.startsWith("steam::")) {
+    return steamPortraitImg(s.appName.slice("steam::".length));
+  }
   const g = rawOf(s.appName);
   let url = g ? epicPortrait(g) : s.cover;
   if (url && url.includes("_product_card_v2_mobile_slider_639.jpg")) {
+    const original = url;
     url = url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg");
+    return `<img src="${esc(url)}" data-art-fallback="${esc(original)}" alt="" decoding="async" />`;
   }
-  if (url) return `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" />`;
+  if (url) return `<img src="${esc(url)}" alt="" decoding="async" />`;
   return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+}
+
+function steamPortraitImg(appId: string): string {
+  const cached = cachedSteamCover(appId);
+  if (cached === "") return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+  const src = cached || steamCdnPortrait(appId);
+  const step = cached ? "resolved" : "0";
+  return `<img src="${esc(src)}" data-steam-app="${esc(appId)}" data-art-step="${step}" alt="" decoding="async" />`;
 }
 
 /**

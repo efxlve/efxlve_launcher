@@ -88,7 +88,7 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
       void steamSetApiKey(key)
         .then(() => {
           S.steamApiKey = key || null;
-          toast(key ? i18nT("cover.keySaved") : i18nT("cover.keyRemoved"), "ok");
+          toast(key ? i18nT("settings.steamKeySaved") : i18nT("settings.steamKeyRemoved"), "ok");
           render();
         })
         .catch((e: unknown) => toast(String(e), "err"));

@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Klucz Steam Web API",
   "settings.steamApiDesc": "Opcjonalny zapas: osiągnięcia są zwykle czytane z pamięci podręcznej klienta Steam; ten klucz służy tylko grom bez lokalnych danych.",
   "settings.steamApiPlaceholder": "Klucz Steam Web API",
+  "settings.steamKeySaved": "Zapisano klucz Steam Web API",
+  "settings.steamKeyRemoved": "Usunięto klucz Steam Web API",
   "settings.showHide": "Pokaż/Ukryj",
   "settings.test": "Test",
   "settings.netMax": "Najszybsza",

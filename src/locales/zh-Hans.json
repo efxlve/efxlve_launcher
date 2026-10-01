@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Steam Web API 密钥",
   "settings.steamApiDesc": "可选备用：成就通常从 Steam 客户端缓存读取；仅在游戏没有本地数据时使用此密钥。",
   "settings.steamApiPlaceholder": "Steam Web API 密钥",
+  "settings.steamKeySaved": "已保存 Steam Web API 密钥",
+  "settings.steamKeyRemoved": "已移除 Steam Web API 密钥",
   "settings.showHide": "显示/隐藏",
   "settings.test": "测试",
   "settings.netMax": "最快",

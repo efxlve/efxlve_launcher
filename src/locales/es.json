@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Clave de la API web de Steam",
   "settings.steamApiDesc": "Alternativa opcional: los logros se leen normalmente de la caché del cliente de Steam; esta clave solo se usa para juegos sin datos locales.",
   "settings.steamApiPlaceholder": "Clave de la API web de Steam",
+  "settings.steamKeySaved": "Clave de la API web de Steam guardada",
+  "settings.steamKeyRemoved": "Clave de la API web de Steam eliminada",
   "settings.showHide": "Mostrar/Ocultar",
   "settings.test": "Probar",
   "settings.netMax": "La más rápida",

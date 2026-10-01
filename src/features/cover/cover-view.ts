@@ -12,9 +12,11 @@ import { epicWideArt, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 
 import { esc } from "../../core/utils";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 
-import { epicGetSteamGridCovers, epicSearchSteamGrid } from "../../epic";
+import { epicGetSteamGridCovers, epicSearchSteamGrid, type SteamGridGame, type SteamGridImage } from "../../epic";
+import { cachedSteamCover, cachedSteamHero, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { steamLibraryArt } from "../../steam";
 export function saveCustomCover(appName: string, url: string): void {
   S.customCovers[appName] = url.trim();
   localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(S.customCovers));
@@ -129,10 +131,69 @@ export function openCustomCoverModal(appName: string, initialTarget: "cover" | "
 
   renderCustomCoverModalFrame(appName);
   renderCustomCoverModalContent(appName);
+  void warmOfficialSteamArt(appName);
 
   if (S.steamGridApiKey && S.sgdbSearchQuery) {
     void searchAndLoadSteamGrid(appName, S.sgdbSearchQuery);
   }
+}
+
+function steamAppIdOf(appName: string): string {
+  return appName.startsWith("steam::") ? appName.slice(7) : "";
+}
+
+function officialSteamUrl(appName: string, target: "cover" | "hero"): string {
+  const id = steamAppIdOf(appName);
+  if (!/^\d+$/.test(id)) return "";
+  const url = target === "hero" ? cachedSteamHero(id) : cachedSteamCover(id);
+  return url || "";
+}
+
+/** Steam's own library art, shown ahead of community grids. */
+function officialSteamCard(appName: string): SteamGridImage | null {
+  if (S.sgdbActiveStyle && S.sgdbActiveStyle !== "official") return null;
+  const url = officialSteamUrl(appName, S.activeCoverTarget);
+  if (!url) return null;
+  return {
+    id: 0,
+    score: 0,
+    style: "official",
+    url,
+    thumb: url,
+    author: { name: "Steam" },
+  };
+}
+
+function coverGallery(appName: string): SteamGridImage[] {
+  const official = officialSteamCard(appName);
+  const rest = S.sgdbCoversList.filter((item) => !official || item.url !== official.url);
+  return official ? [official, ...rest] : S.sgdbCoversList;
+}
+
+/** Auto-pick the Steam-id match, or a name that contains the whole query. */
+function pickSteamGridGame(games: SteamGridGame[], term: string): SteamGridGame | null {
+  const steamHit = games.find((game) => game.matchedSteam);
+  if (steamHit) return steamHit;
+  const query = term.trim().toLowerCase();
+  if (!query) return null;
+  return games.find((game) => game.name.toLowerCase().includes(query)) ?? null;
+}
+
+async function warmOfficialSteamArt(appName: string): Promise<void> {
+  const id = steamAppIdOf(appName);
+  if (!/^\d+$/.test(id)) return;
+  if (cachedSteamCover(id) !== undefined && cachedSteamHero(id) !== undefined) return;
+  try {
+    const map = await steamLibraryArt([id]);
+    const art = map[id];
+    rememberSteamCover(id, art?.cover || "");
+    rememberSteamHero(id, art?.hero || "");
+  } catch {
+    return;
+  }
+  if (S.activeCustomCoverAppName !== appName) return;
+  renderCustomCoverModalFrame(appName);
+  renderCustomCoverModalContent(appName);
 }
 
 export function renderCustomCoverModalFrame(appName: string): void {
@@ -148,8 +209,8 @@ export function renderCustomCoverModalFrame(appName: string): void {
   const hasCustomHero = Boolean(S.customHeroes[appName]);
   const isCustomForTarget = S.activeCoverTarget === "hero" ? hasCustomHero : hasCustomCover;
 
-  const currentCoverArt = S.customCovers[appName] || s?.cover || "";
-  const currentHeroArt = S.customHeroes[appName] || (s ? epicWideArt(s) : null) || s?.cover || "";
+  const currentCoverArt = S.customCovers[appName] || officialSteamUrl(appName, "cover") || s?.cover || "";
+  const currentHeroArt = S.customHeroes[appName] || officialSteamUrl(appName, "hero") || (s ? epicWideArt(s) : null) || s?.cover || "";
   const activeCurrentImg = S.sgdbSelectedCoverUrl || (S.activeCoverTarget === "hero" ? currentHeroArt : currentCoverArt);
   const hasAnyCustom = hasCustomCover || hasCustomHero;
 
@@ -191,7 +252,7 @@ export function renderCustomCoverModalFrame(appName: string): void {
                 <span class="cover-meta-badge ${S.activeCoverTarget}">
                   ${S.activeCoverTarget === "cover" ? `${icon("image", 12)} ${t("cover.portraitCard")}` : `${icon("rows", 12)} ${t("cover.heroCard")}`}
                 </span>
-                ${isCustomForTarget ? `<span class="cover-status-tag custom">${icon("sparkles", 11)} ${t("cover.customInUse")}</span>` : `<span class="cover-status-tag">${icon("check", 11)} ${t("cover.originalEpic")}</span>`}
+                ${isCustomForTarget ? `<span class="cover-status-tag custom">${icon("sparkles", 11)} ${t("cover.customInUse")}</span>` : `<span class="cover-status-tag">${icon("check", 11)} ${appName.startsWith("steam::") || appName.startsWith("gog::") ? t("cover.original") : t("cover.originalEpic")}</span>`}
               </div>
               <div class="cover-meta-desc">
                 ${S.activeCoverTarget === "cover" ? t("cover.portraitDesc") : t("cover.heroDesc")}
@@ -340,6 +401,7 @@ export function renderCustomCoverModalContent(appName: string): void {
     return;
   }
 
+  const gallery = coverGallery(appName);
   container.innerHTML = `
     <div class="cover-tab-pane">
       <div class="sgdb-container">
@@ -410,23 +472,24 @@ export function renderCustomCoverModalContent(appName: string): void {
             <div style="padding:24px;text-align:center;color:#f87171;font-size:12px">
               ${esc(S.sgdbErrorMsg)}
             </div>
-          ` : S.sgdbCoversList.length === 0 ? `
+          ` : gallery.length === 0 ? `
             <div style="padding:40px;text-align:center;color:var(--muted);font-size:12.5px">
               ${t("cover.noResults")}
             </div>
           ` : `
             <div class="${S.sgdbAssetType === "heroes" ? "sgdb-grid-horizontal" : "sgdb-grid-vertical"}">
-              ${S.sgdbCoversList.map(item => {
+              ${gallery.map(item => {
                 const isSel = S.sgdbSelectedCoverUrl === item.url;
                 const thumbUrl = item.thumb || item.url;
                 const authorName = item.author?.name || t("cover.community");
                 const styleLabel = item.style === "no_logo" ? t("cover.styleNoLogo") : item.style === "alternate" ? t("cover.styleAlternate") : item.style === "official" ? t("cover.styleOfficial") : "";
+                const showScore = item.style !== "official" || item.score > 0;
                 return `
-                <div class="sgdb-card ${isSel ? "selected" : ""}" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${t("cover.authorScore", { author: esc(authorName), score: item.score })}">
+                <div class="sgdb-card ${isSel ? "selected" : ""}" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${showScore ? t("cover.authorScore", { author: esc(authorName), score: item.score }) : esc(authorName)}">
                   <img src="${esc(thumbUrl)}" loading="lazy" alt="Cover" />
                   <div class="sgdb-card-badges">
                     ${styleLabel ? `<span class="sgdb-style-tag">${esc(styleLabel)}</span>` : "<span></span>"}
-                    <span class="sgdb-score-tag">${icon("chevron-up", 10)} ${item.score}</span>
+                    ${showScore ? `<span class="sgdb-score-tag">${icon("chevron-up", 10)} ${item.score}</span>` : ""}
                   </div>
                   <div class="sgdb-card-footer">${esc(authorName)}</div>
                   ${isSel ? `<div class="sgdb-selected-check">${icon("check", 14)}</div>` : ""}
@@ -438,6 +501,11 @@ export function renderCustomCoverModalContent(appName: string): void {
       </div>
     </div>
   `;
+}
+
+function sgdbErrorText(err: unknown): string {
+  const raw = typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
+  return localizeMessage(raw);
 }
 
 export async function searchAndLoadSteamGrid(appName: string, query?: string): Promise<void> {
@@ -459,11 +527,13 @@ export async function searchAndLoadSteamGrid(appName: string, query?: string): P
   }
 
   try {
-    const games = await epicSearchSteamGrid(term);
+    const steamId = steamAppIdOf(appName);
+    const games = await epicSearchSteamGrid(term, steamId || null);
     S.sgdbGamesList = games;
-    if (games.length > 0) {
-      S.sgdbSelectedGameId = games[0].id;
-      await loadSteamGridCovers(appName, games[0].id);
+    const pick = pickSteamGridGame(games, term);
+    if (pick) {
+      S.sgdbSelectedGameId = pick.id;
+      await loadSteamGridCovers(appName, pick.id);
     } else {
       S.sgdbSelectedGameId = null;
       S.sgdbCoversList = [];
@@ -471,7 +541,7 @@ export async function searchAndLoadSteamGrid(appName: string, query?: string): P
       renderCustomCoverModalContent(appName);
     }
   } catch (err) {
-    S.sgdbErrorMsg = String(err);
+    S.sgdbErrorMsg = sgdbErrorText(err);
     S.sgdbCoversList = [];
     S.sgdbIsSearching = false;
     renderCustomCoverModalContent(appName);
@@ -486,7 +556,7 @@ export async function loadSteamGridCovers(appName: string, gameId: number): Prom
     const covers = await epicGetSteamGridCovers(gameId, S.sgdbAssetType, S.sgdbActiveStyle || undefined);
     S.sgdbCoversList = covers;
   } catch (err) {
-    S.sgdbErrorMsg = String(err);
+    S.sgdbErrorMsg = sgdbErrorText(err);
     S.sgdbCoversList = [];
   } finally {
     S.sgdbIsSearching = false;

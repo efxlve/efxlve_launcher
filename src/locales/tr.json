@@ -1189,6 +1189,8 @@
   "settings.steamApiTitle": "Steam Web API anahtarı",
   "settings.steamApiDesc": "İsteğe bağlı yedek: başarımlar normalde Steam istemcisinin kendi önbelleğinden okunur; bu anahtar yalnızca yerel veri bulunmayan oyunlarda kullanılır.",
   "settings.steamApiPlaceholder": "Steam Web API anahtarı",
+  "settings.steamKeySaved": "Steam Web API anahtarı kaydedildi",
+  "settings.steamKeyRemoved": "Steam Web API anahtarı kaldırıldı",
   "settings.showHide": "Göster/Gizle",
   "settings.test": "Test Et",
   "settings.netMax": "En yüksek",

@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "Steam Web API 키",
   "settings.steamApiDesc": "선택적 대체 수단: 도전 과제는 보통 Steam 클라이언트 캐시에서 읽습니다. 이 키는 로컬 데이터가 없는 게임에만 사용됩니다.",
   "settings.steamApiPlaceholder": "Steam Web API 키",
+  "settings.steamKeySaved": "Steam Web API 키를 저장했습니다",
+  "settings.steamKeyRemoved": "Steam Web API 키를 삭제했습니다",
   "settings.showHide": "표시/숨기기",
   "settings.test": "테스트",
   "settings.netMax": "가장 빠름",

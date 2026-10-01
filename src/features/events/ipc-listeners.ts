@@ -37,6 +37,7 @@ import {
 import { localizeMessage, setLanguage, t } from "../../i18n";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
+import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
@@ -150,6 +151,7 @@ export async function initApp(hooks: {
   scheduleRender: () => void;
   closeAllModals: () => void;
 }): Promise<void> {
+  installArtFallback();
   updateMaxIcon();
   createIcons({
     icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor },

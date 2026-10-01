@@ -1114,6 +1114,8 @@
   "settings.steamApiTitle": "مفتاح Steam Web API",
   "settings.steamApiDesc": "بديل اختياري: تُقرأ الإنجازات عادةً من ذاكرة عميل Steam؛ يُستخدم هذا المفتاح فقط للألعاب التي لا تتوفر لها بيانات محلية.",
   "settings.steamApiPlaceholder": "مفتاح Steam Web API",
+  "settings.steamKeySaved": "حُفظ مفتاح Steam Web API",
+  "settings.steamKeyRemoved": "أُزيل مفتاح Steam Web API",
   "settings.showHide": "إظهار/إخفاء",
   "settings.test": "اختبار",
   "settings.netMax": "الأسرع",

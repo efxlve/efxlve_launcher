@@ -44,9 +44,13 @@ const STEAM_TOOL_IDS = new Set(["228980"]);
 
 const STEAM_STATE_UPDATE_REQUIRED = 2;
 
-/** True when Steam reports a pending update and the game is not actively downloading. */
-export function steamUpdatePending(stateFlags: number, downloading = false): boolean {
-  if (downloading) return false;
+/**
+ * True when Steam has a downloadable update and is not already transferring it.
+ * A preload sets the same flag, but `preloaded` means the release build is not
+ * out yet, so there is nothing to update.
+ */
+export function steamUpdatePending(stateFlags: number, downloading = false, preloaded = false): boolean {
+  if (downloading || preloaded) return false;
   return (stateFlags & STEAM_STATE_UPDATE_REQUIRED) !== 0;
 }
 
@@ -82,7 +86,7 @@ export function steamGameToItem(g: SteamGame): LibraryItem {
     coverUrl: `${STEAM_CDN}/${g.appId}/library_600x900.jpg`,
     heroUrl: `${STEAM_CDN}/${g.appId}/library_hero.jpg`,
     description: "",
-    updateAvailable: steamUpdatePending(g.stateFlags, g.downloading),
+    updateAvailable: steamUpdatePending(g.stateFlags, g.downloading, g.preloaded),
     downloading: g.downloading,
     bytesDownloaded: g.bytesDownloaded,
     bytesToDownload: g.bytesToDownload,
@@ -271,7 +275,7 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
       continue;
     }
     const downloading = g.downloading;
-    const updateAvailable = steamUpdatePending(g.stateFlags, downloading);
+    const updateAvailable = steamUpdatePending(g.stateFlags, downloading, g.preloaded);
     const installed = g.installDir.length > 0 || (g.stateFlags & 4) !== 0;
     const titleChanged = !/^\d+$/.test(g.name) && item.title !== g.name;
     // Size and byte counters move on every Steam write during an update.
