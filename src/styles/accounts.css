@@ -15,7 +15,7 @@
   display: grid; place-items: center;
 }
 /* Brand mark for identification: the store's own logo file, never redrawn by us. */
-.acc-store-logo { display: block; border-radius: 6px; }
+.acc-store-logo { display: block; object-fit: contain; }
 .acc-group-title { margin: 10px 0 0; }
 .acc-store-name { font-size: 14px; font-weight: 600; }
 .acc-lead { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.5; }

@@ -51,7 +51,7 @@
 .store-menu-item:hover { background: rgba(255, 255, 255, 0.06); }
 .store-option-mark { width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; color: var(--text); }
 .store-option-logo { width: 16px; height: 16px; flex-shrink: 0; display: inline-flex; }
-.store-option-logo img { width: 16px; height: 16px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.store-option-logo img { width: 16px; height: 16px; object-fit: contain; }
 .store-option-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .store-option-count { color: var(--text-3); font-size: 12px; margin-left: auto; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; }
 
