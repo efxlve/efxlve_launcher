@@ -17,7 +17,7 @@ import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import { epicPortrait, type EpicSummary } from "../../epic";
-import { steamDownloadLabel } from "../library/steam-library";
+import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -331,11 +331,12 @@ export function renderDownloads(): string {
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
   const steamRows = steamDownloading.map((g) => {
-    const meta = steamDownloadLabel(g).text;
+    const waiting = steamDownloadWaiting(g.appId);
+    const meta = waiting ? t("common.calculating") : steamDownloadLabel(g).text;
     return gameRow(
       summaryOf(`steam::${g.appId}`),
       `steam::${g.appId}`,
-      `<span class="tabular-nums" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>`,
+      `<span class="tabular-nums${waiting ? " is-wait" : ""}" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>`,
       `<button class="btn ghost small" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
        <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
     );

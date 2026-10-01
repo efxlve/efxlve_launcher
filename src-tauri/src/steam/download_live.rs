@@ -200,6 +200,54 @@ fn now_unix() -> i64 {
         .unwrap_or(0)
 }
 
+struct LogCursor {
+    len: u64,
+    events: Vec<LiveEvent>,
+}
+
+static LOG_CURSOR: std::sync::Mutex<Option<LogCursor>> = std::sync::Mutex::new(None);
+
+/// Reads only the bytes appended since the last pulse. The first read takes
+/// the tail; after that a one-second tick is a few lines, not the whole log.
+fn events_now(path: &Path) -> Vec<LiveEvent> {
+    let Ok(mut file) = File::open(path) else {
+        return Vec::new();
+    };
+    let Ok(len) = file.metadata().map(|m| m.len()) else {
+        return Vec::new();
+    };
+    let Ok(mut slot) = LOG_CURSOR.lock() else {
+        return Vec::new();
+    };
+    if let Some(cur) = slot.as_mut() {
+        if len < cur.len {
+            *slot = None;
+        } else if len == cur.len {
+            return cur.events.clone();
+        } else if file.seek(SeekFrom::Start(cur.len)).is_ok() {
+            let mut buf = String::new();
+            if file.read_to_string(&mut buf).is_ok() {
+                cur.events.extend(parse_log(&buf));
+                if cur.events.len() > 500 {
+                    let drop_n = cur.events.len() - 500;
+                    cur.events.drain(..drop_n);
+                }
+                cur.len = len;
+                return cur.events.clone();
+            }
+        }
+    }
+    drop(slot);
+    let Some(text) = read_tail(path, LOG_TAIL_BYTES) else {
+        return Vec::new();
+    };
+    let events = parse_log(&text);
+    if let Ok(mut slot) = LOG_CURSOR.lock() {
+        *slot = Some(LogCursor { len, events: events.clone() });
+    }
+    events
+}
+
 /// Downloading apps, with the byte counter moved forward since Steam's last exact sample.
 #[tauri::command]
 pub fn steam_download_live() -> Vec<SteamLiveDownload> {
@@ -207,9 +255,7 @@ pub fn steam_download_live() -> Vec<SteamLiveDownload> {
         return Vec::new();
     };
     let games = installed_games(&steam);
-    let events = read_tail(&steam.join("logs").join("content_log.txt"), LOG_TAIL_BYTES)
-        .map(|text| parse_log(&text))
-        .unwrap_or_default();
+    let events = events_now(&steam.join("logs").join("content_log.txt"));
     let now = now_unix();
     games
         .into_iter()

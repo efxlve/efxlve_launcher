@@ -250,6 +250,35 @@ export function scheduleSteamLibraryResync(delayMs = 6000): void {
 
 /** Latest bytes/s for a live Steam transfer. The manifest itself does not move every second. */
 const steamLiveSpeed = new Map<string, number>();
+/** Byte total at the moment a transfer started, so a stale number is not shown as live. */
+const steamAwaitFloor = new Map<string, number>();
+const steamAwaitSince = new Map<string, number>();
+/** Keeps the row on screen while Steam is between "stopped" and the next sample. */
+const steamKeepUntil = new Map<string, number>();
+const STEAM_AWAIT_MS = 8000;
+const STEAM_KEEP_MS = 12000;
+
+function beginSteamAwait(appId: string, bytes: number): void {
+  if (!steamAwaitSince.has(appId)) steamAwaitSince.set(appId, Date.now());
+  if (!steamAwaitFloor.has(appId)) steamAwaitFloor.set(appId, bytes);
+  steamKeepUntil.set(appId, Date.now() + STEAM_KEEP_MS);
+}
+
+function clearSteamAwait(appId: string): void {
+  steamAwaitSince.delete(appId);
+  steamAwaitFloor.delete(appId);
+}
+
+/** True while the row should show a spinner instead of a stale or empty counter. */
+export function steamDownloadWaiting(appId: string): boolean {
+  const since = steamAwaitSince.get(appId);
+  if (since == null) return false;
+  if (Date.now() - since > STEAM_AWAIT_MS) {
+    clearSteamAwait(appId);
+    return false;
+  }
+  return true;
+}
 
 /** Percent, byte pair, and speed for one Steam transfer. `pct` is null when Steam has no total yet. */
 export function steamDownloadLabel(g: Pick<SteamGame, "bytesDownloaded" | "bytesToDownload">, perSec = 0): { pct: number | null; text: string } {
@@ -267,7 +296,9 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
   let paintedSpeed = false;
   for (const g of games) {
     if (!g.downloading) continue;
+    const waiting = steamDownloadWaiting(g.appId);
     const { pct, text } = steamDownloadLabel(g, steamLiveSpeed.get(g.appId) ?? 0);
+    const shown = waiting ? t("common.calculating") : text;
     const id = `steam::${g.appId}`;
     const label = pct !== null ? t("common.downloading", { p: pct }) : t("steam.downloading");
     document.querySelectorAll(`[data-dlbtn="${id}"]`).forEach((el) => {
@@ -284,7 +315,8 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
       if (pct !== null) bar.style.width = `${pct}%`;
     });
     document.querySelectorAll(`[data-steam-dl="${g.appId}"]`).forEach((meta) => {
-      meta.textContent = text;
+      meta.classList.toggle("is-wait", waiting);
+      meta.textContent = shown;
     });
     if (!paintedSpeed) {
       const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
@@ -298,7 +330,33 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
 
 /** Applies a fresh installed/downloading snapshot without hitting the owned-games API. */
 export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
+  const previous = S.steamGames.filter((g) => g.downloading).map((g) => ({ ...g }));
   S.steamGames = games.filter((g) => !isSteamLibraryNoise(g.appId, g.name));
+  const now = Date.now();
+  const liveIds = new Set(S.steamGames.filter((g) => g.downloading).map((g) => g.appId));
+  for (const prev of previous) {
+    if (liveIds.has(prev.appId)) {
+      steamKeepUntil.set(prev.appId, now + STEAM_KEEP_MS);
+      continue;
+    }
+    const until = steamKeepUntil.get(prev.appId) ?? 0;
+    if (until <= now) {
+      clearSteamAwait(prev.appId);
+      steamKeepUntil.delete(prev.appId);
+      continue;
+    }
+    // Steam drops the row for a moment when an update starts. Keep it, and
+    // show the spinner until a newer byte sample arrives.
+    const existing = S.steamGames.find((g) => g.appId === prev.appId);
+    if (existing) existing.downloading = true;
+    else S.steamGames.push({ ...prev, downloading: true });
+    beginSteamAwait(prev.appId, prev.bytesDownloaded);
+  }
+  for (const g of S.steamGames) {
+    if (!g.downloading) continue;
+    const was = previous.find((p) => p.appId === g.appId && p.downloading);
+    if (!was) beginSteamAwait(g.appId, 0);
+  }
   const byId = new Map(S.steamGames.map((g) => [g.appId, g]));
   let changed = false;
   let structural = false;
@@ -440,6 +498,8 @@ async function pulseSteamDownloads(): Promise<void> {
     seen.add(row.appId);
     if (row.bytesPerSec > 0) steamLiveSpeed.set(row.appId, row.bytesPerSec);
     else steamLiveSpeed.delete(row.appId);
+    const floor = steamAwaitFloor.get(row.appId) ?? 0;
+    if (row.bytesPerSec > 0 || row.bytesDownloaded > floor) clearSteamAwait(row.appId);
     const game = S.steamGames.find((g) => g.appId === row.appId);
     if (!game) continue;
     game.downloading = true;
