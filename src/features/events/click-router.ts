@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionOpenClient } from "../../companion";
+import { companionLaunch, companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -499,8 +499,29 @@ document.addEventListener("click", (e) => {
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
   } else if (act === "companion-open" && id) {
-    const store = id as "ea" | "ubisoft" | "xbox" | "battlenet";
+    const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-link" && id) {
+    const store = id as CompanionStore;
+    if (S.companionBusy) return;
+    S.companionBusy = store;
+    render();
+    void companionLink(store)
+      .then(() => loadCompanionLibrary())
+      .catch((e: unknown) => {
+        const raw = String(e);
+        toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
+      })
+      .finally(() => {
+        S.companionBusy = "";
+        render();
+      });
+  } else if (act === "companion-unlink" && id) {
+    const store = id as CompanionStore;
+    void companionUnlink(store)
+      .then(() => loadCompanionLibrary())
+      .then(() => render())
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-rescan") {
     void loadCompanionLibrary().then(() => render());
   } else if (act === "epic-play" && id) {    void epicPlay(id);

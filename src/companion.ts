@@ -1,9 +1,8 @@
 /**
  * DRM launchers other than Steam: EA App, Ubisoft Connect, Xbox and Battle.net.
  *
- * The games stay inside those clients. The launcher lists what they installed
- * and opens the client to play. Owned-but-not-installed libraries and
- * achievement catalogs are not on disk the way Steam's are.
+ * Linking an account imports the catalog that client already cached, the same
+ * way GOG Galaxy's plugins do. Play hands the game back to that client.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -16,13 +15,51 @@ export interface CompanionGame {
   id: string;
   name: string;
   installPath: string;
+  installed: boolean;
+  coverUrl: string;
+  heroUrl: string;
+  storeId: string;
 }
 
-export const companionInstalledGames = () =>
-  invoke<CompanionGame[]>("companion_installed_games");
+export interface CompanionAccount {
+  store: CompanionStore;
+  name: string;
+}
+
+export interface CompanionStoreStatus {
+  store: CompanionStore;
+  clientInstalled: boolean;
+  accountName: string;
+  linked: boolean;
+  gameCount: number;
+}
+
+export interface CompanionCoverHit {
+  store: CompanionStore;
+  id: string;
+  coverUrl: string;
+  heroUrl: string;
+}
+
+export const companionLibrary = () => invoke<CompanionGame[]>("companion_library");
+
+export const companionStoreStatus = () => invoke<CompanionStoreStatus[]>("companion_store_status");
+
+export const companionLink = (store: CompanionStore) =>
+  invoke<CompanionAccount>("companion_link", { store });
+
+export const companionUnlink = (store: CompanionStore) =>
+  invoke<void>("companion_unlink", { store });
 
 export const companionOpenClient = (store: CompanionStore) =>
   invoke<void>("companion_open_client", { store });
+
+export const companionLaunch = (store: CompanionStore, id: string) =>
+  invoke<void>("companion_launch", { store, id });
+
+export const companionResolveCovers = (
+  queries: { store: string; id: string; name: string; storeId: string }[],
+) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });
 
 export function companionToItem(g: CompanionGame): LibraryItem {
   const source = g.store as GameSource;
@@ -34,11 +71,11 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     developer: "",
     version: "—",
     installedVersion: null,
-    installed: true,
+    installed: g.installed !== false,
     installPath: g.installPath || null,
     installSize: 0,
-    coverUrl: null,
-    heroUrl: null,
+    coverUrl: g.coverUrl || null,
+    heroUrl: g.heroUrl || null,
     description: "",
     updateAvailable: false,
     cloudSavesSupported: false,

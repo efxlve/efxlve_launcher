@@ -186,6 +186,11 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
   if (S.runningGames.has(s.appName)) {
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
+  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+    return s.installed
+      ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
+      : `<button class="btn install lg" data-act="epic-play" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
+  }
   if (s.installed) {
     return s.updateAvailable || S.availableUpdates.has(s.appName)
       ? `<button class="btn update lg" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`

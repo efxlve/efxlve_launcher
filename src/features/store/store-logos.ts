@@ -9,6 +9,10 @@
 import epic from "../../assets/stores/epic.png";
 import gog from "../../assets/stores/gog.png";
 import steam from "../../assets/stores/steam.png";
+import ea from "../../assets/stores/ea.png";
+import ubisoft from "../../assets/stores/ubisoft.png";
+import xbox from "../../assets/stores/xbox.png";
+import battlenet from "../../assets/stores/battlenet.png";
 import type { StoreId } from "./store-view";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
@@ -17,8 +21,11 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   steam,
 };
 
-/** Logo markup for a store card. Companion clients have no mark here yet. */
+const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet };
+
+/** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24): string {
-  if (id !== "epic" && id !== "gog" && id !== "steam") return "";
-  return `<img class="acc-store-logo" src="${STORE_LOGOS[id]}" width="${size}" height="${size}" alt="" draggable="false" />`;
+  const src = (id === "epic" || id === "gog" || id === "steam") ? STORE_LOGOS[id] : COMPANION_LOGOS[id];
+  if (!src) return "";
+  return `<img class="acc-store-logo" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
 }

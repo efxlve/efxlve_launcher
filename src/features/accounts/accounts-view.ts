@@ -451,21 +451,50 @@ function steamCard(): string {
 }
 
 function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: string): string {
-  const games = S.companionSummaries.filter((g) => g.source === store);
-  const connected = games.length > 0;
+  const status = S.companionStatus.find((row) => row.store === store);
+  const linked = status?.linked ?? false;
+  const client = status?.clientInstalled ?? false;
+  const count = status?.gameCount ?? S.companionSummaries.filter((g) => g.source === store).length;
+  const name = status?.accountName || "";
+  const busy = S.companionBusy === store;
+  const meta = !client
+    ? t("accounts.clientMissing")
+    : linked
+      ? (name ? t("accounts.signedInClient", { name }) : t("accounts.localAccount"))
+      : t("accounts.foundGames", { count });
+  const chip = linked
+    ? `<span class="chip ok">${t("accounts.connected")}</span>`
+    : `<span class="chip">${t("accounts.notConnected")}</span>`;
+  const accountRow = linked
+    ? `<div class="list acc-accounts">
+        <div class="row">
+          <span class="settings-avatar">${esc((name.trim()[0] || title.trim()[0] || "A").toUpperCase())}</span>
+          <div class="row-main">
+            <div class="row-title">${esc(name || title)}</div>
+            <div class="row-meta tabular-nums">${t("accounts.foundGames", { count })}</div>
+          </div>
+          <div class="row-actions">
+            <button class="icon-btn danger" data-act="companion-unlink" data-id="${store}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>
+          </div>
+        </div>
+      </div>`
+    : `<p class="acc-lead">${t("accounts.linkHint")}</p>`;
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo(store)}</span>
         <div class="row-main">
           <div class="acc-store-name">${esc(title)}</div>
-          <div class="row-meta">${connected ? `${games.length} ${t("settings.accountTotalGames")}` : t("accounts.companionHint")}</div>
+          <div class="row-meta">${esc(meta)}</div>
         </div>
-        ${connected ? `<span class="chip ok">${t("accounts.connected")}</span>` : `<span class="chip">${t("accounts.notConnected")}</span>`}
+        ${chip}
       </div>
       <div class="acc-card-body">
+        ${accountRow}
         <div class="acc-actions">
-          <button class="btn ghost small" data-act="companion-open" data-id="${store}">${icon("external", 13)} ${t("accounts.openClient")}</button>
-          <button class="btn ghost small" data-act="companion-rescan">${t("settings.rescan")}</button>
+          ${linked ? "" : `<button class="btn primary small" data-act="companion-link" data-id="${store}" ${!client || busy ? "disabled" : ""}>${icon("plus", 13)} ${busy ? t("steam.waiting") : t("settings.accountAdd")}</button>`}
+          <button class="btn ghost small" data-act="companion-open" data-id="${store}" ${client ? "" : "disabled"}>${icon("external", 13)} ${t("accounts.openClient")}</button>
+          <button class="btn ghost small" data-act="companion-rescan" ${busy ? "disabled" : ""}>${t("settings.rescan")}</button>
         </div>
       </div>
     </section>`;

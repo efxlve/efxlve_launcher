@@ -262,7 +262,13 @@ export function epicArt(s: EpicSummary): string {
     url = url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg");
     return `<img src="${esc(url)}" data-art-fallback="${esc(original)}" alt="" decoding="async" />`;
   }
-  if (url) return `<img src="${esc(url)}" alt="" decoding="async" />`;
+  if (url) {
+    const steamApp = url.match(/\/apps\/(\d+)\//);
+    if (steamApp) {
+      return `<img src="${esc(url)}" data-steam-app="${esc(steamApp[1])}" data-art-step="0" alt="" decoding="async" />`;
+    }
+    return `<img src="${esc(url)}" alt="" decoding="async" />`;
+  }
   return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
 }
 
@@ -332,6 +338,12 @@ export function epicActionButtons(
       return `<button class="btn update${btn}" data-act="steam-action" data-id="${steamId}" data-mode="update" title="${t("steam.updateRequired")}">${icon("download", 14)} ${t("common.update")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
+  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+    if (!s.installed) {
+      return `<button class="btn install${btn}" data-act="epic-play" data-id="${s.appName}">${icon("download", 14)} ${t("common.install")}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
   if (isAppDownloading(s.appName)) {
     const p = epicDlProgress(s.appName);

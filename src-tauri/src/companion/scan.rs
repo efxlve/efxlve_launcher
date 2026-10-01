@@ -1,20 +1,9 @@
-//! Installed games that belong to a DRM launcher other than Steam.
-//!
-//! EA App, Ubisoft Connect, the Xbox app and Battle.net keep the games.
-//! This module only reads what those clients already installed and hands
-//! launch back to them. It does not invent an owned library or achievements.
+//! Installed EA, Ubisoft and Battle.net rows from the uninstall registry,
+//! plus Xbox games laid out under `C:\XboxGames`.
 
-use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CompanionGame {
-    pub store: String,
-    pub id: String,
-    pub name: String,
-    pub install_path: String,
-}
+use super::FoundGame;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct UninstallEntry {
@@ -25,19 +14,21 @@ struct UninstallEntry {
 
 /// `MicrosoftGame.config` title. The element form and the attribute form both occur.
 pub(crate) fn xbox_display_name(xml: &str) -> Option<String> {
-    if let Some(rest) = xml.split("DefaultDisplayName=\"").nth(1) {
-        let name = rest.split('"').next()?.trim();
-        if !name.is_empty() {
-            return Some(name.to_string());
-        }
-    }
-    let rest = xml.split("<DefaultDisplayName>").nth(1)?;
-    let name = rest.split("</DefaultDisplayName>").next()?.trim();
-    if name.is_empty() {
-        None
-    } else {
-        Some(name.to_string())
-    }
+    xml_attr(xml, "DefaultDisplayName").or_else(|| xml_text(xml, "DefaultDisplayName"))
+}
+
+pub(crate) fn xml_attr(xml: &str, attr: &str) -> Option<String> {
+    let key = format!("{attr}=\"");
+    let rest = xml.split(&key).nth(1)?;
+    let value = rest.split('"').next()?.trim();
+    if value.is_empty() { None } else { Some(value.to_string()) }
+}
+
+pub(crate) fn xml_text(xml: &str, tag: &str) -> Option<String> {
+    let open = format!("<{tag}>");
+    let rest = xml.split(&open).nth(1)?;
+    let value = rest.split('<').next()?.trim();
+    if value.is_empty() { None } else { Some(value.to_string()) }
 }
 
 fn parse_uninstall_export(text: &str) -> Vec<UninstallEntry> {
@@ -117,7 +108,7 @@ fn is_launcher_row(name: &str) -> bool {
         || name.contains("xbox identity provider")
 }
 
-fn slug(name: &str) -> String {
+pub(crate) fn slug(name: &str) -> String {
     let mut out = String::new();
     let mut dash = false;
     for ch in name.chars() {
@@ -132,9 +123,9 @@ fn slug(name: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-fn games_from_uninstall(entries: &[UninstallEntry]) -> Vec<CompanionGame> {
+pub(crate) fn games_from_uninstall(entries_text: &str) -> Vec<FoundGame> {
     let mut games = Vec::new();
-    for entry in entries {
+    for entry in parse_uninstall_export(entries_text) {
         let Some(store) = companion_store(&entry.name, &entry.publisher) else {
             continue;
         };
@@ -142,55 +133,25 @@ fn games_from_uninstall(entries: &[UninstallEntry]) -> Vec<CompanionGame> {
         if id.is_empty() {
             continue;
         }
-        games.push(CompanionGame {
+        games.push(FoundGame {
             store: store.to_string(),
             id,
-            name: entry.name.clone(),
-            install_path: entry.location.clone(),
+            name: entry.name,
+            install_path: entry.location,
+            installed: true,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     games
 }
 
-fn xbox_games() -> Vec<CompanionGame> {
-    let root = PathBuf::from(r"C:\XboxGames");
-    let Ok(entries) = std::fs::read_dir(&root) else {
-        return Vec::new();
-    };
-    let mut games = Vec::new();
-    for entry in entries.flatten() {
-        if !entry.path().is_dir() {
-            continue;
-        }
-        let folder = entry.file_name().to_string_lossy().to_string();
-        if folder.eq_ignore_ascii_case("GameSave") {
-            continue;
-        }
-        let config = entry.path().join("Content").join("MicrosoftGame.config");
-        let name = std::fs::read_to_string(&config)
-            .ok()
-            .and_then(|xml| xbox_display_name(&xml))
-            .unwrap_or(folder);
-        let id = slug(&name);
-        if id.is_empty() {
-            continue;
-        }
-        games.push(CompanionGame {
-            store: "xbox".into(),
-            id,
-            name,
-            install_path: entry.path().to_string_lossy().to_string(),
-        });
-    }
-    games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-    games
-}
-
-fn uninstall_games() -> Vec<CompanionGame> {
+pub(crate) fn uninstall_games() -> Vec<FoundGame> {
     #[cfg(windows)]
     {
-        games_from_uninstall(&parse_uninstall_export(&query_uninstall()))
+        games_from_uninstall(&query_uninstall())
     }
     #[cfg(not(windows))]
     {
@@ -221,58 +182,71 @@ fn query_uninstall() -> String {
     all
 }
 
-/// Installed EA, Ubisoft, Xbox and Battle.net games.
-#[tauri::command]
-pub fn companion_installed_games() -> Vec<CompanionGame> {
-    let mut games = uninstall_games();
-    games.extend(xbox_games());
-    games.sort_by(|a, b| (&a.store, &a.id).cmp(&(&b.store, &b.id)));
-    games.dedup_by(|a, b| a.store == b.store && a.id == b.id);
+pub(crate) fn xbox_games() -> Vec<FoundGame> {
+    xbox_games_in(Path::new(r"C:\XboxGames"))
+}
+
+pub(crate) fn xbox_games_in(root: &Path) -> Vec<FoundGame> {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return Vec::new();
+    };
+    let mut games = Vec::new();
+    for entry in entries.flatten() {
+        if !entry.path().is_dir() {
+            continue;
+        }
+        let folder = entry.file_name().to_string_lossy().to_string();
+        if folder.eq_ignore_ascii_case("GameSave") {
+            continue;
+        }
+        let content = entry.path().join("Content");
+        let config = content.join("MicrosoftGame.config");
+        let xml = std::fs::read_to_string(&config).unwrap_or_default();
+        let name = xbox_display_name(&xml).unwrap_or(folder);
+        let id = slug(&name);
+        if id.is_empty() {
+            continue;
+        }
+        let store_id = xml_text(&xml, "StoreId").unwrap_or_default();
+        let exe_rel = executable_name(&xml).unwrap_or_default();
+        let launch_exe = exe_under(&content, &exe_rel);
+        games.push(FoundGame {
+            store: "xbox".into(),
+            id,
+            name,
+            install_path: entry.path().to_string_lossy().to_string(),
+            installed: true,
+            store_id,
+            launch_exe,
+            launch_uri: String::new(),
+        });
+    }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     games
 }
 
-/// Opens the DRM client. The game itself will not start without it.
-#[tauri::command]
-pub fn companion_open_client(store: String) -> Result<(), String> {
-    let path = match store.as_str() {
-        "ea" => client_path(&[
-            r"C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe",
-            r"C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EADesktop.exe",
-        ]),
-        "ubisoft" => client_path(&[
-            r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe",
-            r"C:\Program Files\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe",
-        ]),
-        "battlenet" => client_path(&[
-            r"C:\Program Files (x86)\Battle.net\Battle.net.exe",
-            r"C:\Program Files\Battle.net\Battle.net.exe",
-        ]),
-        "xbox" => client_path(&[]),
-        _ => None,
-    };
-    if store == "xbox" {
-        return open_xbox();
+/// `Name` on `<Executable>`, not the package identity.
+fn executable_name(xml: &str) -> Option<String> {
+    let rest = xml.split("<Executable ").nth(1)?;
+    let tag = rest.split(['/', '>']).next()?;
+    xml_attr(tag, "Name")
+}
+
+/// The executable attribute is only used when it stays inside the game folder.
+fn exe_under(content: &Path, relative: &str) -> String {
+    if relative.is_empty() || relative.contains("..") {
+        return String::new();
     }
-    let Some(path) = path else {
-        return Err("@t:accounts.notConnected".into());
-    };
-    std::process::Command::new(path)
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    let path = content.join(relative.replace('/', "\\"));
+    if path.is_file() {
+        path.to_string_lossy().to_string()
+    } else {
+        String::new()
+    }
 }
 
-fn client_path(candidates: &[&str]) -> Option<PathBuf> {
+pub(crate) fn client_exe(candidates: &[&str]) -> Option<PathBuf> {
     candidates.iter().map(PathBuf::from).find(|path| path.is_file())
-}
-
-fn open_xbox() -> Result<(), String> {
-    std::process::Command::new("explorer.exe")
-        .arg("shell:AppsFolder\\Microsoft.GamingApp_8wekyb3d8bbwe!Microsoft.Xbox.App")
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
@@ -280,9 +254,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn xbox_config_reads_both_title_forms() {
-        let attr = r#"<ShellVisuals DefaultDisplayName="No Man's Sky" />"#;
-        assert_eq!(xbox_display_name(attr).as_deref(), Some("No Man's Sky"));
+    fn xbox_config_reads_title_store_and_exe() {
+        let xml = r#"<Game>
+          <ExecutableList><Executable Name="Binaries\NMS.exe" Id="NoMansSky"/></ExecutableList>
+          <ShellVisuals DefaultDisplayName="No Man's Sky" />
+          <StoreId>BQVQTL3PCH05</StoreId>
+        </Game>"#;
+        assert_eq!(xbox_display_name(xml).as_deref(), Some("No Man's Sky"));
+        assert_eq!(xml_text(xml, "StoreId").as_deref(), Some("BQVQTL3PCH05"));
+        assert_eq!(executable_name(xml).as_deref(), Some("Binaries\\NMS.exe"));
         let elem = "<ShellVisuals><DefaultDisplayName>Minecraft</DefaultDisplayName></ShellVisuals>";
         assert_eq!(xbox_display_name(elem).as_deref(), Some("Minecraft"));
     }
@@ -314,9 +294,9 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Ubi
     DisplayName    REG_SZ    Ubisoft Connect
     Publisher    REG_SZ    Ubisoft
 "#;
-        let games = games_from_uninstall(&parse_uninstall_export(text));
+        let games = games_from_uninstall(text);
         assert_eq!(games.len(), 3);
-        assert!(games.iter().any(|g| g.store == "ea" && g.name.contains("FC 25")));
+        assert!(games.iter().any(|g| g.store == "ea" && g.name.contains("FC 25") && g.installed));
         assert!(games.iter().any(|g| g.store == "ubisoft" && g.id == "assassin-s-creed-mirage"));
         assert!(games.iter().any(|g| g.store == "battlenet" && g.name == "Overwatch"));
         assert!(games.iter().all(|g| g.name != "EA App" && g.name != "Ubisoft Connect"));

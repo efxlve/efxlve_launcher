@@ -75,6 +75,16 @@ let canonStoresMap = new Map<string, string>();
 let canonKeysMap = new Map<string, string[]>();
 const EMPTY_CANON_KEYS: readonly string[] = [];
 
+function companionStoreLabel(source: string): string {
+  switch (source) {
+    case "ea": return "EA App";
+    case "ubisoft": return "Ubisoft Connect";
+    case "xbox": return "Xbox";
+    case "battlenet": return "Battle.net";
+    default: return source;
+  }
+}
+
 function rememberCanon(
   storeSets: Map<string, Set<string>>,
   keySets: Map<string, string[]>,
@@ -130,7 +140,7 @@ export function rebuildAllGamesMap(): void {
   }
   for (const g of S.companionSummaries) {
     map.set(g.key, g);
-    rememberCanon(storeSets, keySets, g.title, g.source, g.key);
+    rememberCanon(storeSets, keySets, g.title, companionStoreLabel(g.source), g.key);
   }
 
   // Other accounts' games stay searchable/detail-openable through the same map
@@ -417,6 +427,10 @@ export function gameStoresLabel(appNameOrTitle: string): string {
   if (found) return found;
   if (appNameOrTitle.startsWith("steam::") || S.steamSummariesMap.has(appNameOrTitle)) return "Steam";
   if (appNameOrTitle.startsWith("gog::") || S.gogSummariesMap.has(appNameOrTitle)) return "GOG";
+  if (appNameOrTitle.startsWith("ea::")) return "EA App";
+  if (appNameOrTitle.startsWith("ubisoft::")) return "Ubisoft Connect";
+  if (appNameOrTitle.startsWith("xbox::")) return "Xbox";
+  if (appNameOrTitle.startsWith("battlenet::")) return "Battle.net";
   return "Epic";
 }
 
@@ -438,6 +452,7 @@ export function totalLibraryGamesCount(): number {
   for (const s of S.epicSummaries) add(s.appName, s.title);
   for (const g of S.gogSummaries) add(g.key, g.title);
   for (const g of S.steamSummaries) add(g.key, g.title);
+  for (const g of S.companionSummaries) add(g.key, g.title);
   if (S.showSharedLibrary) {
     for (const g of S.sharedOwners.values()) add(g.key, g.title);
   }

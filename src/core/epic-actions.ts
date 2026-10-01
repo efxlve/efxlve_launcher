@@ -25,7 +25,7 @@ import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
-import { companionOpenClient } from "../companion";
+import { companionLaunch } from "../companion";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -55,8 +55,9 @@ export async function epicPlay(appName: string): Promise<void> {
     pushRecent(appName);
     toast(t("dl.launching"), "");
     const store = appName.slice(0, appName.indexOf("::")) as "ea" | "ubisoft" | "xbox" | "battlenet";
+    const gameId = appName.slice(appName.indexOf("::") + 2);
     try {
-      await companionOpenClient(store);
+      await companionLaunch(store, gameId);
     } catch (e) {
       toast(String(e), "err");
     }
