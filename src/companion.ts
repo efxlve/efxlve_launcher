@@ -54,6 +54,9 @@ export const companionUnlink = (store: CompanionStore) =>
 export const companionOpenClient = (store: CompanionStore) =>
   invoke<void>("companion_open_client", { store });
 
+export const companionShowLogin = (x: number, y: number, width: number, height: number) =>
+  invoke<void>("companion_show_login", { x, y, width, height });
+
 export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 

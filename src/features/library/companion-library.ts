@@ -5,14 +5,25 @@
  * also brings in the owned games that client has cached. Covers fill in place.
  */
 
+import { listen } from "@tauri-apps/api/event";
 import { companionLibrary, companionResolveCovers, companionStoreStatus, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 
 const storeIds = new Map<string, string>();
+let loginBound = false;
+
+function bindCompanionLogin(): void {
+  if (loginBound) return;
+  loginBound = true;
+  void listen("companion-signed-in", () => {
+    void loadCompanionLibrary();
+  });
+}
 
 export async function loadCompanionLibrary(): Promise<void> {
+  bindCompanionLogin();
   try {
     const [games, status] = await Promise.all([
       companionLibrary(),

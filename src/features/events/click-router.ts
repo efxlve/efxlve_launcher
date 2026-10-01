@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionLaunch, companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
+import { companionLink, companionOpenClient, companionShowLogin, companionUnlink, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -501,6 +501,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "companion-open" && id) {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
+    const rect = viewEl.getBoundingClientRect();
+    void invoke("hide_store_view").catch(() => {});
+    void companionShowLogin(rect.left, rect.top, rect.width, rect.height).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;

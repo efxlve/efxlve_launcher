@@ -11,6 +11,7 @@ mod covers;
 mod launch;
 mod proto;
 mod scan;
+mod signin;
 mod ubisoft;
 
 use std::collections::HashSet;
@@ -58,10 +59,7 @@ fn discover(store: &str) -> Vec<FoundGame> {
             None => installed.into_iter().filter(|g| g.store == "ubisoft").collect(),
         },
         "xbox" => scan::xbox_games(),
-        "battlenet" => match battlenet::db_path().and_then(|path| std::fs::read(path).ok()) {
-            Some(bytes) => battlenet::games_from_db(&bytes, &installed),
-            None => installed.into_iter().filter(|g| g.store == "battlenet").collect(),
-        },
+        "battlenet" => battlenet::merged_games(&installed),
         _ => Vec::new(),
     }
 }
@@ -160,6 +158,16 @@ pub fn companion_unlink(store: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn companion_resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     covers::resolve_covers(queries).await
+}
+
+#[tauri::command]
+pub async fn companion_show_login(app: tauri::AppHandle, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+    signin::show_login(app, x, y, width, height).await
+}
+
+#[tauri::command]
+pub fn companion_hide_login(app: tauri::AppHandle) {
+    signin::hide_login(&app);
 }
 
 #[tauri::command]

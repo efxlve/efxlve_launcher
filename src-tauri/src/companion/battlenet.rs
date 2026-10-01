@@ -158,6 +158,138 @@ pub(crate) fn db_path() -> Option<std::path::PathBuf> {
     if path.is_file() { Some(path) } else { None }
 }
 
+fn owned_cache_path() -> std::path::PathBuf {
+    super::accounts::data_dir().join("companion_bnet_owned.json")
+}
+
+/// Title ids from the Galaxy Blizzard plugin, plus Diablo IV.
+fn title_game(title_id: u64) -> Option<(&'static str, &'static str)> {
+    Some(match title_id {
+        21297 => ("s1", "StarCraft"),
+        21298 => ("s2", "StarCraft II"),
+        5730135 => ("wow", "World of Warcraft"),
+        5272175 => ("prometheus", "Overwatch"),
+        22323 => ("w3", "Warcraft III"),
+        1465140039 => ("hs_beta", "Hearthstone"),
+        1214607983 => ("heroes", "Heroes of the Storm"),
+        17459 => ("diablo3", "Diablo III"),
+        4613486 => ("fenris", "Diablo IV"),
+        1447645266 => ("viper", "Call of Duty: Black Ops 4"),
+        1329875278 => ("odin", "Call of Duty: Modern Warfare"),
+        1279351378 => ("lazarus", "Call of Duty: MW2 Campaign Remastered"),
+        1514493267 => ("zeus", "Call of Duty: Black Ops Cold War"),
+        1381257807 => ("rtro", "Blizzard Arcade Collection"),
+        1464615513 => ("wlby", "Crash Bandicoot 4: It's About Time"),
+        5198665 => ("osi", "Diablo II: Resurrected"),
+        1179603525 => ("fore", "Call of Duty: Vanguard"),
+        1146311730 => ("destiny2", "Destiny 2"),
+        _ => return None,
+    })
+}
+
+fn classic_game(name: &str) -> Option<(&'static str, &'static str)> {
+    let folded = name.replace('\u{a0}', " ").to_lowercase();
+    if folded.contains("lord of destruction") {
+        return Some(("d2lod", "Diablo II: Lord of Destruction"));
+    }
+    if folded.contains("diablo") && folded.contains("ii") {
+        return Some(("d2", "Diablo II"));
+    }
+    if folded.contains("frozen throne") {
+        return Some(("w3tft", "Warcraft III: The Frozen Throne"));
+    }
+    if folded.contains("reign of chaos") || folded.contains("warcraft iii") {
+        return Some(("w3roc", "Warcraft III: Reign of Chaos"));
+    }
+    if folded.contains("starcraft") && folded.contains("anthology") {
+        return Some(("sca", "StarCraft Anthology"));
+    }
+    None
+}
+
+/// Owned games reported by Battle.net's account page (`games-and-subs` and classic games).
+pub(crate) fn account_games(text: &str) -> Vec<(String, String)> {
+    let value: serde_json::Value = serde_json::from_str(text).unwrap_or(serde_json::Value::Null);
+    let mut games = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    let accounts = value.get("games").unwrap_or(&value);
+    if let Some(rows) = accounts.get("gameAccounts").and_then(|v| v.as_array()) {
+        for row in rows {
+            let title_id = row.get("titleId").and_then(|v| v.as_u64()).unwrap_or(0);
+            let Some((uid, name)) = title_game(title_id) else { continue };
+            if seen.insert(uid) {
+                games.push((uid.to_string(), name.to_string()));
+            }
+        }
+    }
+    if seen.contains("wow") && seen.insert("wow_classic") {
+        games.push(("wow_classic".into(), "World of Warcraft Classic".into()));
+    }
+    let classic = value.get("classic").unwrap_or(&value);
+    if let Some(rows) = classic.get("classicGames").and_then(|v| v.as_array()) {
+        for row in rows {
+            let label = row.get("localizedGameName").and_then(|v| v.as_str()).unwrap_or("");
+            let Some((uid, name)) = classic_game(label) else { continue };
+            if seen.insert(uid) {
+                games.push((uid.to_string(), name.to_string()));
+            }
+        }
+    }
+    games
+}
+
+pub(crate) fn save_owned(games: &[(String, String)]) {
+    let path = owned_cache_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let rows: Vec<serde_json::Value> = games
+        .iter()
+        .map(|(id, name)| serde_json::json!({ "id": id, "name": name }))
+        .collect();
+    if let Ok(text) = serde_json::to_string(&rows) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+pub(crate) fn load_owned() -> Vec<(String, String)> {
+    let Ok(text) = std::fs::read_to_string(owned_cache_path()) else {
+        return Vec::new();
+    };
+    let rows: Vec<serde_json::Value> = serde_json::from_str(&text).unwrap_or_default();
+    rows.into_iter()
+        .filter_map(|row| {
+            let id = row.get("id")?.as_str()?.to_string();
+            let name = row.get("name")?.as_str()?.to_string();
+            if id.is_empty() || name.is_empty() { None } else { Some((id, name)) }
+        })
+        .collect()
+}
+
+pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
+    let mut games = match db_path().and_then(|path| std::fs::read(path).ok()) {
+        Some(bytes) => games_from_db(&bytes, installed),
+        None => installed.iter().filter(|g| g.store == "battlenet").cloned().collect(),
+    };
+    for (id, name) in load_owned() {
+        if games.iter().any(|g| g.id == id) {
+            continue;
+        }
+        games.push(FoundGame {
+            store: "battlenet".into(),
+            id: id.clone(),
+            name,
+            install_path: String::new(),
+            installed: false,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: format!("battlenet://{id}"),
+        });
+    }
+    games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    games
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,5 +326,16 @@ mod tests {
         assert_eq!(games[0].launch_uri, "battlenet://fenris");
         let dumped = format!("{games:?}");
         assert!(!dumped.contains("do-not-keep"));
+    }
+
+    #[test]
+    fn account_page_lists_owned_titles_and_skips_unknown_ids() {
+        let text = r#"{"games":{"gameAccounts":[{"titleId":5730135,"gameAccountStatus":"Good"},{"titleId":4613486},{"titleId":1}]},"classic":{"classicGames":[{"localizedGameName":"Diablo® II"}]}}"#;
+        let games = account_games(text);
+        assert!(games.iter().any(|(id, name)| id == "wow" && name == "World of Warcraft"));
+        assert!(games.iter().any(|(id, _)| id == "wow_classic"));
+        assert!(games.iter().any(|(id, _)| id == "fenris"));
+        assert!(games.iter().any(|(id, _)| id == "d2"));
+        assert!(games.iter().all(|(id, _)| id != "1"));
     }
 }

@@ -93,6 +93,23 @@ pub(crate) fn link_store(store: &str) -> Result<CompanionAccount, String> {
     Ok(account)
 }
 
+/// Records a signed-in account after the store's own login page succeeded.
+pub(crate) fn link_named(store: &str, name: &str) -> Result<CompanionAccount, String> {
+    if !is_store(store) {
+        return Err("Unknown store".into());
+    }
+    let account = CompanionAccount {
+        store: store.to_string(),
+        name: if name.trim().is_empty() { detected_name(store) } else { name.trim().to_string() },
+    };
+    let path = accounts_file();
+    let mut accounts = load_accounts(&path);
+    accounts.retain(|a| a.store != store);
+    accounts.push(account.clone());
+    save_accounts(&path, &accounts)?;
+    Ok(account)
+}
+
 pub(crate) fn unlink_store(store: &str) -> Result<(), String> {
     let path = accounts_file();
     let mut accounts = load_accounts(&path);

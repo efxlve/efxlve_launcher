@@ -588,6 +588,8 @@ fn main() {
             companion::companion_link,
             companion::companion_unlink,
             companion::companion_resolve_covers,
+            companion::companion_show_login,
+            companion::companion_hide_login,
             companion::companion_open_client,
             companion::companion_launch,
             steam::steam_download_live,

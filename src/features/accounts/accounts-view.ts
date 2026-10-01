@@ -461,10 +461,13 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: st
     ? t("accounts.clientMissing")
     : linked
       ? (name ? t("accounts.signedInClient", { name }) : t("accounts.localAccount"))
-      : t("accounts.foundGames", { count });
+      : store === "battlenet"
+        ? t("accounts.bnetLogin")
+        : t("accounts.foundGames", { count });
   const chip = linked
     ? `<span class="chip ok">${t("accounts.connected")}</span>`
     : `<span class="chip">${t("accounts.notConnected")}</span>`;
+  const lead = store === "battlenet" ? t("accounts.bnetLogin") : t("accounts.linkHint");
   const accountRow = linked
     ? `<div class="list acc-accounts">
         <div class="row">
@@ -478,7 +481,7 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: st
           </div>
         </div>
       </div>`
-    : `<p class="acc-lead">${t("accounts.linkHint")}</p>`;
+    : `<p class="acc-lead">${lead}</p>`;
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
@@ -492,7 +495,8 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: st
       <div class="acc-card-body">
         ${accountRow}
         <div class="acc-actions">
-          ${linked ? "" : `<button class="btn primary small" data-act="companion-link" data-id="${store}" ${!client || busy ? "disabled" : ""}>${icon("plus", 13)} ${busy ? t("steam.waiting") : t("settings.accountAdd")}</button>`}
+          ${store === "battlenet" ? `<button class="btn primary small" data-act="companion-signin" data-id="${store}">${icon("user", 13)} ${t("accounts.signIn")}</button>` : ""}
+          ${linked || store === "battlenet" ? "" : `<button class="btn primary small" data-act="companion-link" data-id="${store}" ${!client || busy ? "disabled" : ""}>${icon("plus", 13)} ${busy ? t("accounts.linking") : t("settings.accountAdd")}</button>`}
           <button class="btn ghost small" data-act="companion-open" data-id="${store}" ${client ? "" : "disabled"}>${icon("external", 13)} ${t("accounts.openClient")}</button>
           <button class="btn ghost small" data-act="companion-rescan" ${busy ? "disabled" : ""}>${t("settings.rescan")}</button>
         </div>
