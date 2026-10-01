@@ -12,8 +12,9 @@ import { t } from "../../i18n";
 
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
-import { renderManageCloudBackupRow } from "../cloud-backup/cloud-backup-view";
-import { loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
+import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
+import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
+export { updateManageCloudRowInPlace };
 
 /** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
 function envToText(env: Record<string, string> | undefined): string {
@@ -76,13 +77,16 @@ export function openManagePopup(appName: string): void {
       </div>
     </div>`;
 
-  // The cloud row offers restore/delete for the newest backup, so the list has
-  // to be known when the popup opens (one call, silently skipped when disabled).
-  const cloud = S.cloudBackupSettings;
-  if (cloud?.enabled && cloud.provider !== "none" && !S.cloudBackupsMap.has(appName)) {
-    void loadCloudBackupsAction(appName).then(() => {
-      if (openManageAppName === appName) openManagePopup(appName);
+  // Ensure cloud settings and backups are hydrated when the popup opens.
+  if (!S.cloudBackupSettings) {
+    void initCloudBackupSettings().then((st) => {
+      updateManageCloudRowInPlace(appName);
+      if (st?.enabled && st.provider !== "none") {
+        void loadCloudBackupsAction(appName);
+      }
     });
+  } else if (S.cloudBackupSettings.enabled && S.cloudBackupSettings.provider !== "none") {
+    void loadCloudBackupsAction(appName);
   }
 }
 
@@ -125,7 +129,7 @@ export function renderDrawerManage(s: EpicSummary): string {
                 <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
               </div>
             </div>
-            ${renderManageCloudBackupRow(s.appName)}
+            <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
           </div>
           <div class="section-title">${t("manage.groupPlaytime")}</div>
           <div class="list">
@@ -157,7 +161,7 @@ export function renderDrawerManage(s: EpicSummary): string {
               <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
             </div>
           </div>
-          ${renderManageCloudBackupRow(s.appName)}
+          <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
         </div>
 
         <div class="section-title">${t("manage.groupCover")}</div>
@@ -206,7 +210,7 @@ export function renderDrawerManage(s: EpicSummary): string {
               <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
             </div>
           </div>
-          ${renderManageCloudBackupRow(s.appName)}
+          <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
         </div>
         <div class="section-title">${t("manage.groupCover")}</div>
         <div class="list">
@@ -308,7 +312,7 @@ export function renderDrawerManage(s: EpicSummary): string {
               `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
               `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
-            ${renderManageCloudBackupRow(id)}`}
+            <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
       </div>` : ""}
 
       ${s.installed ? `<div class="section-title">${t("manage.groupLaunch")}</div>
@@ -403,6 +407,8 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   if (actionsEl) {
     actionsEl.innerHTML = renderSavePathActions(st.appName, activeSavePath, Boolean(st.customSavePath));
   }
+
+  updateManageCloudRowInPlace(st.appName);
 }
 
 /** Update the verify progress bar and button without re-rendering the drawer. */

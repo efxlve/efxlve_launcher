@@ -59,96 +59,337 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
     Ok((total_bytes, file_count))
 }
 
-/// Attempts to automatically discover the local save directory for a game
-/// across standard Windows locations (Unreal Engine LocalAppData, Saved Games, Documents, etc.).
-pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Option<&str>) -> Option<String> {
+fn normalize_for_match(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
+fn build_search_candidates(
+    app_name: &str,
+    title: Option<&str>,
+    install_path: Option<&str>,
+) -> (Vec<String>, Vec<String>) {
     let mut names: Vec<String> = Vec::new();
-    if !app_name.trim().is_empty() {
-        names.push(app_name.trim().to_string());
-        names.push(app_name.trim().replace(' ', ""));
-        names.push(app_name.trim().replace([':', '-', '_', '\''], ""));
+
+    let app_clean = app_name.trim();
+    if !app_clean.is_empty() {
+        names.push(app_clean.to_string());
+        names.push(app_clean.replace(' ', ""));
+        names.push(app_clean.replace([':', '-', '_', '\'', '\"', '™', '®', '©'], ""));
     }
+
     if let Some(t) = title {
-        let t_trim = t.trim();
-        if !t_trim.is_empty() {
-            names.push(t_trim.to_string());
-            names.push(t_trim.replace(' ', ""));
-            names.push(t_trim.replace([':', '-', '_', '\''], ""));
+        let t_clean = t.trim();
+        if !t_clean.is_empty() {
+            names.push(t_clean.to_string());
+            names.push(t_clean.replace(' ', ""));
+            names.push(t_clean.replace([':', '-', '_', '\'', '\"', '™', '®', '©'], ""));
+
+            if let Some((main, sub)) = t_clean.split_once(':') {
+                let m = main.trim();
+                let s = sub.trim();
+                if !m.is_empty() {
+                    names.push(m.to_string());
+                    names.push(m.replace([':', '-', '_', '\'', '\"', '™', '®', '©'], ""));
+                }
+                if !s.is_empty() {
+                    names.push(s.to_string());
+                    names.push(s.replace([':', '-', '_', '\'', '\"', '™', '®', '©'], ""));
+                }
+            } else if let Some((main, sub)) = t_clean.split_once(" - ") {
+                let m = main.trim();
+                let s = sub.trim();
+                if !m.is_empty() {
+                    names.push(m.to_string());
+                }
+                if !s.is_empty() {
+                    names.push(s.to_string());
+                }
+            }
         }
     }
+
+    if let Some(ip) = install_path {
+        let p = Path::new(ip);
+        if let Some(fn_os) = p.file_name().and_then(|n| n.to_str()) {
+            let fn_trim = fn_os.trim();
+            if !fn_trim.is_empty() {
+                names.push(fn_trim.to_string());
+                names.push(fn_trim.replace([':', '-', '_', '\'', '\"'], ""));
+            }
+        }
+    }
+
+    names.retain(|n| !n.trim().is_empty());
     names.dedup();
 
-    // 1. %LOCALAPPDATA% (Unreal Engine games, Unity, indie games)
-    if let Ok(local_app) = std::env::var("LOCALAPPDATA") {
-        let base = Path::new(&local_app);
-        for name in &names {
-            let candidate_saved = base.join(name).join("Saved").join("SaveGames");
-            if candidate_saved.is_dir() {
-                return Some(candidate_saved.to_string_lossy().to_string());
+    let mut normalized: Vec<String> = names
+        .iter()
+        .map(|n| normalize_for_match(n))
+        .filter(|k| !k.is_empty())
+        .collect();
+    normalized.dedup();
+
+    (names, normalized)
+}
+
+fn is_dir_match(dir_name: &str, names: &[String], normalized: &[String]) -> bool {
+    for n in names {
+        if n.eq_ignore_ascii_case(dir_name) {
+            return true;
+        }
+    }
+    let dir_norm = normalize_for_match(dir_name);
+    if !dir_norm.is_empty() {
+        for k in normalized {
+            if k == &dir_norm {
+                return true;
             }
-            let candidate_saved_root = base.join(name).join("Saved");
-            if candidate_saved_root.is_dir() {
-                return Some(candidate_saved_root.to_string_lossy().to_string());
-            }
-            let candidate_direct = base.join(name);
-            if candidate_direct.is_dir() && has_save_like_files(&candidate_direct) {
-                return Some(candidate_direct.to_string_lossy().to_string());
+        }
+    }
+    false
+}
+
+fn scan_folder_for_game(
+    base: &Path,
+    names: &[String],
+    normalized: &[String],
+    allow_nested: bool,
+    require_save_files: bool,
+) -> Option<PathBuf> {
+    if !base.is_dir() {
+        return None;
+    }
+
+    let entries = match std::fs::read_dir(base) {
+        Ok(e) => e.flatten().collect::<Vec<_>>(),
+        Err(_) => return None,
+    };
+
+    // 1. Direct children
+    for entry in &entries {
+        if let Ok(file_type) = entry.file_type() {
+            if file_type.is_dir() {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if is_dir_match(&name_str, names, normalized) {
+                    let path = entry.path();
+                    if !require_save_files || has_save_like_files(&path) {
+                        return Some(path);
+                    }
+                }
             }
         }
     }
 
-    // 2. %USERPROFILE%\Saved Games
+    // 2. 1-level nested children (Publisher/Studio folder, e.g. CD Projekt Red, Rockstar Games, etc.)
+    if allow_nested {
+        for entry in &entries {
+            if let Ok(file_type) = entry.file_type() {
+                if file_type.is_dir() {
+                    let pub_path = entry.path();
+                    if let Ok(sub_entries) = std::fs::read_dir(&pub_path) {
+                        for sub_entry in sub_entries.flatten() {
+                            if let Ok(sub_type) = sub_entry.file_type() {
+                                if sub_type.is_dir() {
+                                    let sub_name = sub_entry.file_name();
+                                    let sub_name_str = sub_name.to_string_lossy();
+                                    if is_dir_match(&sub_name_str, names, normalized) {
+                                        let path = sub_entry.path();
+                                        if !require_save_files || has_save_like_files(&path) {
+                                            return Some(path);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn check_unreal_or_direct(candidate: &Path) -> Option<PathBuf> {
+    let saved_games = candidate.join("Saved").join("SaveGames");
+    if saved_games.is_dir() {
+        return Some(saved_games);
+    }
+    let saved = candidate.join("Saved");
+    if saved.is_dir() {
+        return Some(saved);
+    }
+    if has_save_like_files(candidate) {
+        return Some(candidate.to_path_buf());
+    }
+    None
+}
+
+/// Helper that checks if a directory contains save-related files or subdirectories
+fn has_save_like_files(dir: &Path) -> bool {
+    let mut dirs_to_check = vec![dir.to_path_buf()];
+    let mut depth = 0;
+
+    while let Some(current_dir) = dirs_to_check.pop() {
+        if let Ok(entries) = std::fs::read_dir(&current_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                let name_low = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+                if p.is_file() {
+                    if name_low.contains("save")
+                        || name_low.ends_with(".sav")
+                        || name_low.ends_with(".dat")
+                        || name_low.ends_with(".bin")
+                        || name_low.ends_with(".json")
+                        || name_low.ends_with(".xml")
+                        || name_low.ends_with(".profile")
+                        || name_low.ends_with(".sl2")
+                        || name_low.ends_with(".vdf")
+                        || name_low.starts_with("srdr")
+                        || name_low.starts_with("sgta")
+                    {
+                        return true;
+                    }
+                } else if p.is_dir() && depth < 2 {
+                    if name_low.contains("save")
+                        || name_low == "profiles"
+                        || name_low == "users"
+                        || name_low == "data"
+                        || (name_low.len() >= 16 && name_low.chars().all(|c| c.is_ascii_hexdigit()))
+                    {
+                        return true;
+                    }
+                    dirs_to_check.push(p);
+                }
+            }
+        }
+        depth += 1;
+        if depth > 3 {
+            break;
+        }
+    }
+
+    if let Ok(mut entries) = std::fs::read_dir(dir) {
+        if entries.next().is_some() {
+            return true;
+        }
+    }
+    false
+}
+
+/// Attempts to automatically discover the local save directory for a game
+/// across standard Windows locations (Unreal Engine LocalAppData, Saved Games, Documents, LocalLow, etc.).
+pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Option<&str>) -> Option<String> {
+    // 0. Fast-path known save locations for popular titles
+    if let Ok(user_profile) = std::env::var("USERPROFILE") {
+        let base = Path::new(&user_profile);
+        let title_low = title.unwrap_or("").to_lowercase();
+        let app_low = app_name.to_lowercase();
+
+        if app_low == "ginger" || title_low.contains("cyberpunk") {
+            let cp_path = base.join("Saved Games").join("CD Projekt Red").join("Cyberpunk 2077");
+            if cp_path.is_dir() {
+                return Some(cp_path.to_string_lossy().to_string());
+            }
+        }
+
+        if app_low == "heather" || title_low.contains("red dead redemption") {
+            let rdr2_path = base.join("Documents").join("Rockstar Games").join("Red Dead Redemption 2");
+            if rdr2_path.is_dir() {
+                return Some(rdr2_path.to_string_lossy().to_string());
+            }
+        }
+
+        if title_low.contains("grand theft auto") || title_low.contains("gta") {
+            for sub in ["GTAV Enhanced", "GTA V", "Grand Theft Auto V"] {
+                let gta_path = base.join("Documents").join("Rockstar Games").join(sub);
+                if gta_path.is_dir() {
+                    return Some(gta_path.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        if title_low.contains("spider-man") || title_low.contains("spiderman") {
+            for sub in ["Marvel's Spider-Man Remastered", "Marvel's Spider-Man Miles Morales"] {
+                let sm_path = base.join("Documents").join(sub);
+                if sm_path.is_dir() {
+                    return Some(sm_path.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        if title_low.contains("uncharted") {
+            let uc_path = base.join("Saved Games").join("Uncharted Legacy of Thieves Collection");
+            if uc_path.is_dir() {
+                return Some(uc_path.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    let (names, normalized) = build_search_candidates(app_name, title, install_path);
+
+    // 1. %USERPROFILE%\Saved Games (direct and publisher subfolder)
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
         let base = Path::new(&user_profile);
         let saved_games_dir = base.join("Saved Games");
-        if saved_games_dir.is_dir() {
-            for name in &names {
-                let candidate = saved_games_dir.join(name);
-                if candidate.is_dir() {
-                    return Some(candidate.to_string_lossy().to_string());
-                }
-            }
+        if let Some(found) = scan_folder_for_game(&saved_games_dir, &names, &normalized, true, false) {
+            return Some(found.to_string_lossy().to_string());
         }
 
-        // 3. %USERPROFILE%\Documents\My Games
+        // 2. %USERPROFILE%\Documents\My Games (direct and publisher subfolder)
         let my_games = base.join("Documents").join("My Games");
-        if my_games.is_dir() {
-            for name in &names {
-                let candidate = my_games.join(name);
-                if candidate.is_dir() {
-                    return Some(candidate.to_string_lossy().to_string());
-                }
+        if let Some(found) = scan_folder_for_game(&my_games, &names, &normalized, true, false) {
+            let inner_saved = found.join("Saved").join("SaveGames");
+            if inner_saved.is_dir() {
+                return Some(inner_saved.to_string_lossy().to_string());
             }
+            let inner_saves = found.join("Saves");
+            if inner_saves.is_dir() {
+                return Some(inner_saves.to_string_lossy().to_string());
+            }
+            return Some(found.to_string_lossy().to_string());
         }
 
-        // 4. %USERPROFILE%\Documents\<Name>
+        // 3. %USERPROFILE%\Documents (direct and publisher subfolder)
         let docs = base.join("Documents");
-        if docs.is_dir() {
-            for name in &names {
-                let candidate = docs.join(name);
-                if candidate.is_dir() && has_save_like_files(&candidate) {
-                    return Some(candidate.to_string_lossy().to_string());
-                }
+        if let Some(found) = scan_folder_for_game(&docs, &names, &normalized, true, true) {
+            return Some(found.to_string_lossy().to_string());
+        }
+
+        // 4. %USERPROFILE%\AppData\LocalLow (Unity games: <Publisher>\<Game>)
+        let locallow = base.join("AppData").join("LocalLow");
+        if let Some(found) = scan_folder_for_game(&locallow, &names, &normalized, true, false) {
+            return Some(found.to_string_lossy().to_string());
+        }
+    }
+
+    // 5. %LOCALAPPDATA% (Unreal Engine games, Unity, indie games)
+    if let Ok(local_app) = std::env::var("LOCALAPPDATA") {
+        let base = Path::new(&local_app);
+        if let Some(found) = scan_folder_for_game(base, &names, &normalized, true, false) {
+            if let Some(ue_path) = check_unreal_or_direct(&found) {
+                return Some(ue_path.to_string_lossy().to_string());
             }
         }
     }
 
-    // 5. %APPDATA%
+    // 6. %APPDATA% (Roaming)
     if let Ok(roaming) = std::env::var("APPDATA") {
         let base = Path::new(&roaming);
-        for name in &names {
-            let candidate = base.join(name);
-            if candidate.is_dir() && has_save_like_files(&candidate) {
-                return Some(candidate.to_string_lossy().to_string());
-            }
+        if let Some(found) = scan_folder_for_game(base, &names, &normalized, true, true) {
+            return Some(found.to_string_lossy().to_string());
         }
     }
 
-    // 6. Inside install_path
+    // 7. Inside install_path
     if let Some(ip) = install_path {
         let p = Path::new(ip);
         if p.is_dir() {
-            for sub in ["Saved\\SaveGames", "Saved", "Saves"] {
+            for sub in ["Saved\\SaveGames", "Saved", "Saves", "save", "Save"] {
                 let candidate = p.join(sub);
                 if candidate.is_dir() {
                     return Some(candidate.to_string_lossy().to_string());
@@ -158,20 +399,6 @@ pub fn detect_save_path(app_name: &str, title: Option<&str>, install_path: Optio
     }
 
     None
-}
-
-/// Helper that checks if a directory contains save-related files or subdirectories
-fn has_save_like_files(dir: &Path) -> bool {
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let p = entry.path();
-            let name_low = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
-            if name_low.contains("save") || name_low.ends_with(".sav") || name_low.ends_with(".dat") {
-                return true;
-            }
-        }
-    }
-    false
 }
 
 pub fn create_backup(app_name: &str, save_path_override: Option<&str>) -> Result<SaveBackupInfo, String> {
@@ -272,7 +499,29 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
         return Err("@t:backup.dataFolderNotFound".to_string());
     }
 
-    let dest = PathBuf::from(&info.save_path);
+    let mut dest = PathBuf::from(&info.save_path);
+    if !dest.exists() {
+        if let Ok(current_user) = std::env::var("USERPROFILE") {
+            let path_str = info.save_path.replace('\\', "/");
+            if let Some(idx) = path_str.find("/Saved Games/") {
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+            } else if let Some(idx) = path_str.find("/Documents/") {
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+            } else if let Some(idx) = path_str.find("/AppData/") {
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+            }
+        }
+        if !dest.exists() {
+            let installed = super::cache::read_installed(&super::skip::default_config_dir());
+            let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
+            let title = installed_game.as_ref().map(|g| g.title.as_str());
+            let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
+            if let Some(detected) = detect_save_path(app_name, title, install_path) {
+                dest = PathBuf::from(detected);
+            }
+        }
+    }
+
     copy_dir_all(&data_src, &dest)
         .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
 
@@ -319,6 +568,35 @@ mod tests {
         let detected = detect_save_path("SampleGame", Some("Sample Game"), Some(&temp_dir.to_string_lossy()));
         assert!(detected.is_some());
         assert_eq!(detected.unwrap(), save_dir.to_string_lossy().to_string());
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_normalize_for_match() {
+        assert_eq!(
+            normalize_for_match("UNCHARTED™: Legacy of Thieves Collection"),
+            "unchartedlegacyofthievescollection"
+        );
+        assert_eq!(
+            normalize_for_match("Uncharted Legacy of Thieves Collection"),
+            "unchartedlegacyofthievescollection"
+        );
+        assert_eq!(normalize_for_match("Cyberpunk 2077"), "cyberpunk2077");
+        assert_eq!(normalize_for_match("Marvel's Spider-Man"), "marvelsspiderman");
+    }
+
+    #[test]
+    fn test_scan_nested_publisher() {
+        let temp_dir = std::env::temp_dir().join(format!("efxlve_test_pub_detect_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        let game_dir = temp_dir.join("CD Projekt Red").join("Cyberpunk 2077");
+        std::fs::create_dir_all(&game_dir).unwrap();
+
+        let (names, normalized) = build_search_candidates("Ginger", Some("Cyberpunk 2077"), None);
+        let found = scan_folder_for_game(&temp_dir, &names, &normalized, true, false);
+        assert!(found.is_some());
+        assert_eq!(found.unwrap(), game_dir);
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

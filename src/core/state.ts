@@ -234,6 +234,7 @@ export const S = {
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,
+  cloudBackupSyncingApp: (null) as string | null,
   cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,

@@ -1,4 +1,4 @@
-﻿//! Tauri IPC commands for Cloud Save Backup.
+//! Tauri IPC commands for Cloud Save Backup.
 
 use tauri::{command, AppHandle};
 
@@ -23,8 +23,11 @@ pub async fn cloud_backup_test_connection(settings: CloudBackupSettings) -> Resu
 
 #[command]
 pub async fn cloud_backup_start_gdrive_auth(_app: AppHandle) -> Result<String, String> {
-    let client_id = gdrive::GDRIVE_DEFAULT_CLIENT_ID;
-    let auth_url = gdrive::generate_auth_url(client_id);
+    let settings = manager::load_settings();
+    let (client_id, client_secret) = manager::gdrive_credentials(&settings)?;
+
+    let (code_verifier, code_challenge) = gdrive::generate_pkce();
+    let auth_url = gdrive::generate_auth_url(client_id, &code_challenge);
 
     // Open user's default browser with auth URL
     let _ = tauri_plugin_opener::open_url(&auth_url, None::<&str>);
@@ -34,7 +37,13 @@ pub async fn cloud_backup_start_gdrive_auth(_app: AppHandle) -> Result<String, S
 
     // Exchange code for tokens
     let client = reqwest::Client::new();
-    let (_access, refresh, email) = gdrive::exchange_code_for_tokens(&client, client_id, &code).await?;
+    let (_access, refresh, email) = gdrive::exchange_code_for_tokens(
+        &client,
+        client_id,
+        client_secret,
+        &code,
+        Some(&code_verifier),
+    ).await?;
 
     let mut settings = manager::load_settings();
     settings.gdrive_refresh_token = Some(refresh);

@@ -1305,6 +1305,8 @@ export interface CloudBackupSettings {
   webdavUrl: string;
   webdavUsername: string;
   webdavPassword: string;
+  gdriveClientId?: string | null;
+  gdriveClientSecret?: string | null;
   gdriveFolderId?: string | null;
   gdriveUserEmail?: string | null;
   gdriveRefreshToken?: string | null;

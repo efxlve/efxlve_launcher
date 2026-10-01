@@ -7,6 +7,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { scheduleRender } from "../../core/render";
+import { updateManageCloudRowInPlace } from "./cloud-backup-view";
 import {
   cloudBackupGetSettings,
   cloudBackupSaveSettings,
@@ -41,6 +42,8 @@ export async function updateCloudBackupSettings(
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
+    gdriveClientId: null,
+    gdriveClientSecret: null,
     gdriveFolderId: null,
     gdriveUserEmail: null,
     gdriveRefreshToken: null,
@@ -110,17 +113,23 @@ export async function disconnectGoogleDriveAction(): Promise<void> {
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {
   if (S.cloudBackupSyncing) return;
   S.cloudBackupSyncing = true;
+  S.cloudBackupSyncingApp = appName;
+  updateManageCloudRowInPlace(appName);
   toast(t("cloud.uploading"), "");
   try {
     const entry = await cloudBackupUploadGame(appName, backupId);
     toast(t("cloud.uploadSuccess"), "ok");
     const existing = S.cloudBackupsMap.get(appName) || [];
     S.cloudBackupsMap.set(appName, [entry, ...existing.filter((e) => e.backupId !== entry.backupId)]);
+    updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
     toast(String(err), "err");
+    updateManageCloudRowInPlace(appName);
   } finally {
     S.cloudBackupSyncing = false;
+    S.cloudBackupSyncingApp = null;
+    updateManageCloudRowInPlace(appName);
     scheduleRender();
   }
 }
@@ -129,6 +138,7 @@ export async function loadCloudBackupsAction(appName: string): Promise<CloudBack
   try {
     const list = await cloudBackupListGame(appName);
     S.cloudBackupsMap.set(appName, list);
+    updateManageCloudRowInPlace(appName);
     return list;
   } catch {
     return [];
@@ -144,6 +154,7 @@ export async function downloadCloudBackupAction(
   try {
     await cloudBackupDownloadGame(appName, remoteId, backupId);
     toast(t("cloud.downloadSuccess"), "ok");
+    updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
     toast(String(err), "err");
@@ -156,8 +167,29 @@ export async function deleteCloudBackupAction(appName: string, remoteId: string)
     const existing = S.cloudBackupsMap.get(appName) || [];
     S.cloudBackupsMap.set(appName, existing.filter((e) => e.remoteId !== remoteId));
     toast(t("cloud.deleteSuccess"), "ok");
+    updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
     toast(String(err), "err");
   }
 }
+
+export async function deleteAllCloudBackupsAction(appName: string): Promise<void> {
+  const backups = [...(S.cloudBackupsMap.get(appName) || [])];
+  if (backups.length === 0) return;
+  toast(t("cloud.deletingAll"), "");
+  try {
+    for (const b of backups) {
+      await cloudBackupDeleteRemote(b.remoteId);
+    }
+    S.cloudBackupsMap.set(appName, []);
+    toast(t("cloud.deleteAllSuccess"), "ok");
+    updateManageCloudRowInPlace(appName);
+    scheduleRender();
+  } catch (err) {
+    toast(String(err), "err");
+    void loadCloudBackupsAction(appName);
+  }
+}
+
+

@@ -236,8 +236,9 @@ const ICON_PATHS: Record<string, string> = {
 };
 
 /** Render an inline SVG icon. */
-export function icon(name: IconName, size = 15): string {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] ?? ""}</svg>`;
+export function icon(name: IconName, size = 15, className?: string): string {
+  const cls = className ? ` class="${className}"` : "";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls}>${ICON_PATHS[name] ?? ""}</svg>`;
 }
 
 /**

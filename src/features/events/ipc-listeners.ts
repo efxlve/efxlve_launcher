@@ -69,6 +69,7 @@ import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
+import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
@@ -184,6 +185,7 @@ export async function initApp(hooks: {
   void initGogSession();
   void hydrateSteamAuth();
   void loadSavedAccounts();
+  void initCloudBackupSettings();
 
   if (isTauri) {
     void initEosInstall();

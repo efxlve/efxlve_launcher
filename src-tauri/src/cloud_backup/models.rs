@@ -27,6 +27,10 @@ pub struct CloudBackupSettings {
     #[serde(default)]
     pub webdav_password: String,
     #[serde(default)]
+    pub gdrive_client_id: Option<String>,
+    #[serde(default)]
+    pub gdrive_client_secret: Option<String>,
+    #[serde(default)]
     pub gdrive_folder_id: Option<String>,
     #[serde(default)]
     pub gdrive_user_email: Option<String>,
@@ -45,6 +49,8 @@ impl Default for CloudBackupSettings {
             webdav_url: String::new(),
             webdav_username: String::new(),
             webdav_password: String::new(),
+            gdrive_client_id: None,
+            gdrive_client_secret: None,
             gdrive_folder_id: None,
             gdrive_user_email: None,
             gdrive_refresh_token: None,

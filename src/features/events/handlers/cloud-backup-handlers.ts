@@ -6,6 +6,7 @@ import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import {
+  deleteAllCloudBackupsAction,
   deleteCloudBackupAction,
   disconnectGoogleDriveAction,
   downloadCloudBackupAction,
@@ -36,15 +37,32 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
 
     case "manage-cloud-restore": {
-      // Restore the newest cloud backup over the local save folder.
-      const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
-      if (id && latest) void downloadCloudBackupAction(id, latest.remoteId, latest.backupId);
+      const btn = t.closest<HTMLElement>('[data-act="manage-cloud-restore"]') ?? t;
+      const remoteId = btn.dataset.remoteId;
+      const backupId = btn.dataset.bid;
+      if (id && remoteId && backupId) {
+        void downloadCloudBackupAction(id, remoteId, backupId);
+      } else {
+        const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
+        if (id && latest) void downloadCloudBackupAction(id, latest.remoteId, latest.backupId);
+      }
       return true;
     }
 
     case "manage-cloud-delete": {
-      const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
-      if (id && latest) void deleteCloudBackupAction(id, latest.remoteId);
+      const btn = t.closest<HTMLElement>('[data-act="manage-cloud-delete"]') ?? t;
+      const remoteId = btn.dataset.remoteId;
+      if (id && remoteId) {
+        void deleteCloudBackupAction(id, remoteId);
+      } else {
+        const latest = id ? S.cloudBackupsMap.get(id)?.[0] : undefined;
+        if (id && latest) void deleteCloudBackupAction(id, latest.remoteId);
+      }
+      return true;
+    }
+
+    case "manage-cloud-delete-all": {
+      if (id) void deleteAllCloudBackupsAction(id);
       return true;
     }
 

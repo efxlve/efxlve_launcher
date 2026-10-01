@@ -5,15 +5,20 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::net::{Ipv4Addr, SocketAddr};
 
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
+use rand::RngCore;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
 use crate::cloud_backup::models::CloudBackupEntry;
 
 pub const GDRIVE_OAUTH_PORT: u16 = 54123;
 pub const GDRIVE_REDIRECT_URI: &str = "http://127.0.0.1:54123/oauth/callback";
-pub const GDRIVE_DEFAULT_CLIENT_ID: &str = "982937084531-h0d2lfl5m2kmhvh128vcrb1pceekj9ep.apps.googleusercontent.com";
+pub const GDRIVE_DEFAULT_CLIENT_ID: &str = "";
+pub const GDRIVE_DEFAULT_CLIENT_SECRET: &str = "";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TokenResponse {
@@ -47,14 +52,26 @@ pub struct DriveFileItem {
     pub app_properties: Option<std::collections::HashMap<String, String>>,
 }
 
-/// Generates the Google OAuth2 authorization URL for the user to visit.
-pub fn generate_auth_url(client_id: &str) -> String {
+/// Generates a PKCE code_verifier and code_challenge (RFC 7636).
+pub fn generate_pkce() -> (String, String) {
+    let mut bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    let verifier = URL_SAFE_NO_PAD.encode(&bytes);
+    let mut hasher = Sha256::new();
+    hasher.update(verifier.as_bytes());
+    let challenge = URL_SAFE_NO_PAD.encode(hasher.finalize());
+    (verifier, challenge)
+}
+
+/// Generates the Google OAuth2 authorization URL with PKCE for the user to visit.
+pub fn generate_auth_url(client_id: &str, code_challenge: &str) -> String {
     let scope = "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.appdata%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email";
     format!(
-        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&access_type=offline&prompt=consent",
+        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&access_type=offline&prompt=consent&code_challenge={}&code_challenge_method=S256",
         client_id,
         GDRIVE_REDIRECT_URI,
         scope,
+        code_challenge,
     )
 }
 
@@ -75,7 +92,7 @@ pub async fn listen_for_auth_code() -> Result<String, String> {
     let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, GDRIVE_OAUTH_PORT));
     let listener = bind_oauth_listener(addr).await?;
 
-    let (mut stream, _) = tokio::time::timeout(Duration::from_secs(180), listener.accept())
+    let (mut stream, _) = tokio::time::timeout(Duration::from_secs(120), listener.accept())
         .await
         .map_err(|_| "Google sign-in timed out. Try Connect with Google again.".to_string())?
         .map_err(|e| e.to_string())?;
@@ -84,26 +101,41 @@ pub async fn listen_for_auth_code() -> Result<String, String> {
     let n = stream.read(&mut buf).await.map_err(|e| e.to_string())?;
     let req = String::from_utf8_lossy(&buf[..n]);
 
-    let html_success = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<!DOCTYPE html><html><body style=\"background:#0b0b0b;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:90vh\"><div style=\"text-align:center\"><h2 style=\"color:#fff;margin-bottom:8px\">Efxlve Launcher</h2><p style=\"color:#a0a0a0\">Google Drive connection successful! You can close this browser tab.</p></div></body></html>";
+    let html_success = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<!DOCTYPE html><html><body style=\"background:#000000;color:#ffffff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:90vh\"><div style=\"text-align:center\"><h2 style=\"color:#ffffff;margin-bottom:8px\">Efxlve Launcher</h2><p style=\"color:#888888\">Google Drive connection successful! You can close this browser tab.</p></div></body></html>";
     let _ = stream.write_all(html_success.as_bytes()).await;
     let _ = stream.flush().await;
 
-    if let Some(code_start) = req.find("code=") {
-        let after = &req[code_start + 5..];
-        let code_end = after.find(['&', ' ']).unwrap_or(after.len());
-        let code = &after[..code_end];
-        return Ok(code.to_string());
+    // Extract query string from request line (e.g. "GET /oauth/callback?code=... HTTP/1.1")
+    let first_line = req.lines().next().unwrap_or_default();
+    let query_str = first_line
+        .split_whitespace()
+        .nth(1)
+        .and_then(|p| p.split_once('?'))
+        .map(|(_, q)| q)
+        .unwrap_or_default();
+
+    let mut auth_code = None;
+    let mut auth_error = None;
+    for (k, v) in url::form_urlencoded::parse(query_str.as_bytes()) {
+        if k == "code" {
+            auth_code = Some(v.into_owned());
+        } else if k == "error" {
+            auth_error = Some(v.into_owned());
+        }
     }
 
-    if req.contains("error=invalid_client") {
-        return Err("Google OAuth client was not found. The Desktop client ID is missing or revoked.".to_string());
+    if let Some(err) = auth_error {
+        if err == "invalid_client" {
+            return Err("Google OAuth client was not found. The Desktop client ID is missing or revoked.".to_string());
+        }
+        return Err(format!("Authorization was cancelled or rejected by Google: {err}"));
     }
 
-    if req.contains("error=") {
-        return Err("Authorization was cancelled or rejected by the user.".to_string());
+    if let Some(code) = auth_code {
+        return Ok(code);
     }
 
-    Err("Invalid callback request received from browser.".to_string())
+    Err("Invalid callback request received from browser (no code).".to_string())
 }
 
 async fn bind_oauth_listener(addr: SocketAddr) -> Result<tokio::net::TcpListener, String> {
@@ -134,30 +166,44 @@ async fn bind_oauth_listener(addr: SocketAddr) -> Result<tokio::net::TcpListener
 pub async fn exchange_code_for_tokens(
     client: &Client,
     client_id: &str,
+    client_secret: Option<&str>,
     code: &str,
+    code_verifier: Option<&str>,
 ) -> Result<(String, String, Option<String>), String> {
-    let params = [
-        ("code", code),
-        ("client_id", client_id),
-        ("redirect_uri", GDRIVE_REDIRECT_URI),
-        ("grant_type", "authorization_code"),
+    let mut params = vec![
+        ("code", code.to_string()),
+        ("client_id", client_id.to_string()),
+        ("redirect_uri", GDRIVE_REDIRECT_URI.to_string()),
+        ("grant_type", "authorization_code".to_string()),
     ];
+
+    if let Some(secret) = client_secret.filter(|s| !s.trim().is_empty()) {
+        params.push(("client_secret", secret.to_string()));
+    }
+    if let Some(verifier) = code_verifier.filter(|v| !v.trim().is_empty()) {
+        params.push(("code_verifier", verifier.to_string()));
+    }
 
     let res = client
         .post("https://oauth2.googleapis.com/token")
         .form(&params)
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Failed to connect to Google token endpoint: {e}"))?;
 
-    let token_resp: TokenResponse = res.json().await.map_err(|e| e.to_string())?;
+    let status = res.status();
+    let text = res.text().await.map_err(|e| e.to_string())?;
+
+    let token_resp: TokenResponse = serde_json::from_str(&text).map_err(|e| {
+        format!("Failed to parse Google response (HTTP {status}): {e} (body: {text})")
+    })?;
 
     if let Some(err) = token_resp.error {
         let desc = token_resp.error_description.unwrap_or_default();
         if err == "invalid_client" {
             return Err("Google OAuth client was not found or is not a Desktop app. The stored client ID is missing or revoked.".to_string());
         }
-        return Err(format!("Token exchange failed: {err} ({desc})"));
+        return Err(format!("Google token exchange failed ({status}): {err} ({desc})"));
     }
 
     let access = token_resp.access_token.ok_or_else(|| "Missing access token in response".to_string())?;
@@ -170,12 +216,21 @@ pub async fn exchange_code_for_tokens(
 }
 
 /// Gets a fresh access token using a stored refresh token.
-pub async fn refresh_access_token(client: &Client, client_id: &str, refresh_token: &str) -> Result<String, String> {
-    let params = [
-        ("client_id", client_id),
-        ("refresh_token", refresh_token),
-        ("grant_type", "refresh_token"),
+pub async fn refresh_access_token(
+    client: &Client,
+    client_id: &str,
+    client_secret: Option<&str>,
+    refresh_token: &str,
+) -> Result<String, String> {
+    let mut params = vec![
+        ("client_id", client_id.to_string()),
+        ("refresh_token", refresh_token.to_string()),
+        ("grant_type", "refresh_token".to_string()),
     ];
+
+    if let Some(secret) = client_secret.filter(|s| !s.trim().is_empty()) {
+        params.push(("client_secret", secret.to_string()));
+    }
 
     let res = client
         .post("https://oauth2.googleapis.com/token")
@@ -207,7 +262,7 @@ pub async fn fetch_user_email(client: &Client, access_token: &str) -> Result<Str
     info.email.ok_or_else(|| "Email address not found".to_string())
 }
 
-/// Uploads a backup archive directly to Google Drive's hidden `appDataFolder`.
+/// Uploads a backup archive directly to Google Drive's hidden `appDataFolder` using Resumable Upload.
 pub async fn upload_backup_gdrive(
     client: &Client,
     access_token: &str,
@@ -215,9 +270,10 @@ pub async fn upload_backup_gdrive(
     backup_id: &str,
     local_archive_path: &Path,
 ) -> Result<String, String> {
-    let file_bytes = tokio::fs::read(local_archive_path)
+    let file_metadata = tokio::fs::metadata(local_archive_path)
         .await
-        .map_err(|e| format!("Could not read local archive: {e}"))?;
+        .map_err(|e| format!("Could not read local archive metadata: {e}"))?;
+    let file_len = file_metadata.len();
 
     let filename = format!("{app_name}_{backup_id}.tar.gz");
 
@@ -230,34 +286,51 @@ pub async fn upload_backup_gdrive(
         }
     });
 
-    let boundary = "-------EfxlveBoundary7MA4YWxkTrZu0gW";
-    let delimiter = format!("\r\n--{boundary}\r\n");
-    let close_delimiter = format!("\r\n--{boundary}--\r\n");
-
-    let mut body = Vec::new();
-    body.extend_from_slice(delimiter.as_bytes());
-    body.extend_from_slice(b"Content-Type: application/json; charset=UTF-8\r\n\r\n");
-    body.extend_from_slice(metadata.to_string().as_bytes());
-    body.extend_from_slice(delimiter.as_bytes());
-    body.extend_from_slice(b"Content-Type: application/gzip\r\n\r\n");
-    body.extend_from_slice(&file_bytes);
-    body.extend_from_slice(close_delimiter.as_bytes());
-
-    let res = client
-        .post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart")
+    // 1. Initiate resumable upload session
+    let init_res = client
+        .post("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable")
         .bearer_auth(access_token)
-        .header("Content-Type", format!("multipart/related; boundary={boundary}"))
-        .body(body)
+        .header("X-Upload-Content-Type", "application/gzip")
+        .header("X-Upload-Content-Length", file_len.to_string())
+        .json(&metadata)
         .send()
         .await
-        .map_err(|e| format!("Upload request failed: {e}"))?;
+        .map_err(|e| format!("Failed to initiate Google Drive upload session: {e}"))?;
 
-    if !res.status().is_success() {
-        let err_txt = res.text().await.unwrap_or_default();
-        return Err(format!("Google Drive upload rejected: {err_txt}"));
+    if !init_res.status().is_success() {
+        let status = init_res.status();
+        let err_txt = init_res.text().await.unwrap_or_default();
+        return Err(format!("Google Drive upload session rejected (HTTP {status}): {err_txt}"));
     }
 
-    let created: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let upload_url = init_res
+        .headers()
+        .get("Location")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| "Google Drive did not return upload Location header".to_string())?
+        .to_string();
+
+    // 2. Upload file bytes directly
+    let file_bytes = tokio::fs::read(local_archive_path)
+        .await
+        .map_err(|e| format!("Could not read local archive bytes: {e}"))?;
+
+    let upload_res = client
+        .put(&upload_url)
+        .header("Content-Length", file_len.to_string())
+        .header("Content-Type", "application/gzip")
+        .body(file_bytes)
+        .send()
+        .await
+        .map_err(|e| format!("Google Drive file upload failed: {e}"))?;
+
+    if !upload_res.status().is_success() {
+        let status = upload_res.status();
+        let err_txt = upload_res.text().await.unwrap_or_default();
+        return Err(format!("Google Drive file upload rejected (HTTP {status}): {err_txt}"));
+    }
+
+    let created: serde_json::Value = upload_res.json().await.map_err(|e| e.to_string())?;
     let file_id = created.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
 
     Ok(file_id)
@@ -377,3 +450,48 @@ pub async fn delete_backup_gdrive(client: &Client, access_token: &str, file_id: 
         Err(format!("Delete failed: HTTP {}", res.status()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_pkce_valid() {
+        let (verifier, challenge) = generate_pkce();
+        assert!(!verifier.is_empty());
+        assert!(!challenge.is_empty());
+        assert_ne!(verifier, challenge);
+        assert!(!verifier.contains('='));
+        assert!(!challenge.contains('='));
+    }
+
+    #[test]
+    fn test_generate_auth_url_contains_pkce_and_client_id() {
+        let url = generate_auth_url("test_client_id_123", "test_challenge_abc");
+        assert!(url.contains("client_id=test_client_id_123"));
+        assert!(url.contains("code_challenge=test_challenge_abc"));
+        assert!(url.contains("code_challenge_method=S256"));
+        assert!(url.contains("redirect_uri="));
+    }
+
+    #[test]
+    fn test_parse_auth_code_from_query() {
+        let req = "GET /oauth/callback?code=4%2F0Adw123xyz&scope=email HTTP/1.1\r\nHost: 127.0.0.1:54123\r\n";
+        let first_line = req.lines().next().unwrap_or_default();
+        let query_str = first_line
+            .split_whitespace()
+            .nth(1)
+            .and_then(|p| p.split_once('?'))
+            .map(|(_, q)| q)
+            .unwrap_or_default();
+
+        let mut auth_code = None;
+        for (k, v) in url::form_urlencoded::parse(query_str.as_bytes()) {
+            if k == "code" {
+                auth_code = Some(v.into_owned());
+            }
+        }
+        assert_eq!(auth_code, Some("4/0Adw123xyz".to_string()));
+    }
+}
+

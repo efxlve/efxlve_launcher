@@ -343,6 +343,51 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ss-share-btn:hover, .ss-compress-btn:hover { background: var(--surface-3); }
 .ss-delete-btn:hover { background: var(--err); }
 .ss-compressed-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(14, 15, 18, 0.85); color: var(--text-2); }
-.screenshot-info-strip { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; }
 .ss-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ss-date { color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* --- Manage Cloud Backup Row & Badges --- */
+.manage-cloud-container { display: contents; }
+.mg-cloud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  width: fit-content;
+}
+.mg-cloud-badge.synced {
+  border-color: rgba(48, 164, 108, 0.4);
+  background: rgba(48, 164, 108, 0.08);
+  color: #46a758;
+}
+.mg-cloud-badge.syncing {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+.mg-cloud-badge.empty {
+  color: var(--text-3);
+  border-color: var(--line);
+}
+.mg-cloud-badge .badge-dot {
+  opacity: 0.4;
+  margin: 0 2px;
+}
+.mg-cloud-badge .badge-time,
+.mg-cloud-badge .badge-size {
+  font-variant-numeric: tabular-nums;
+}
+.mg-cloud-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
