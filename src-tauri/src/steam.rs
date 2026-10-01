@@ -349,13 +349,13 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
         downloading,
         bytes_downloaded,
         bytes_to_download,
-        // A preload keeps UpdateRequired set until release day, with no newer
-        // build and nothing queued. A real patch names a different TargetBuildID
-        // or reports bytes to fetch.
+        // A preload has encrypted depots (buildid > 0) with no public target
+        // build yet (TargetBuildID == 0) and keeps UpdateRequired set until release day.
         preloaded: (state_flags & 2) != 0
             && bytes_to_download == 0
             && bytes_to_stage == 0
-            && (target_build_id == 0 || target_build_id == build_id),
+            && build_id > 0
+            && target_build_id == 0,
     })
 }
 

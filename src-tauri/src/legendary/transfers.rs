@@ -2257,7 +2257,7 @@ mod win_process {
                 // Matching on the file name alone used to kill WebView2 (and blank
                 // this window) when the game shipped a helper with the same name.
                 let matched = !is_self
-                    && if full_path.is_some() {
+                    && if norm_install_path.is_some() && full_path.is_some() {
                         inside && !ignored
                     } else {
                         name_hit && !super::shared_host_exe(&exe_name)
@@ -2762,8 +2762,8 @@ mod tests {
         assert!(!is_game_process_running(None, &["fake_nonexistent_game_xyz_999.exe".to_string()]));
         #[cfg(target_os = "windows")]
         {
-            let running = is_game_process_running(None, &["explorer.exe".to_string()]);
-            assert!(running, "explorer.exe should be running on Windows");
+            let running = is_game_process_running(None, &["services.exe".to_string()]);
+            assert!(running, "services.exe should be running on Windows");
         }
     }
 

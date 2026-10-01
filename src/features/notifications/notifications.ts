@@ -7,7 +7,7 @@
  * 10-foot gamepad focus model keeps working.
  */
 
-import { NOTIF_KEY, EOS_OVERLAY_DECLINE_KEY } from "../../core/constants";
+import { EOS_OVERLAY_DECLINE_KEY, NOTIF_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
@@ -221,8 +221,6 @@ export function positionNotifPanel(): void {
 /** Opens the notification panel (and marks everything as read). */
 export function openNotifPanel(): void {
   S.notifOpen = true;
-  // Park the store child before the panel paints. It is a native webview and
-  // ignores z-index, so the dropdown would otherwise open underneath it.
   void holdStoreOverlay("notif");
   renderNotificationPanel();
   markAllRead();
@@ -231,5 +229,6 @@ export function openNotifPanel(): void {
 export function closeNotifPanel(): void {
   if (!S.notifOpen) return;
   S.notifOpen = false;
+  releaseStoreOverlay("notif");
   renderNotificationPanel();
 }

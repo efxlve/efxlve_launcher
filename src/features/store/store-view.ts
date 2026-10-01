@@ -69,11 +69,12 @@ const COVERING_ROOT_IDS = [
   "hide-games-root",
   "hide-achievements-root",
   "share-modal-root",
+  "notif-root",
 ] as const;
 
 /**
  * Surfaces that park the store child. A native webview ignores z-index, so
- * the palette and the notification panel would otherwise open underneath it.
+ * the command palette would otherwise open underneath it.
  */
 const storeHoldReasons = new Set<string>();
 /** True after a close has already asked Rust to show the child once. */

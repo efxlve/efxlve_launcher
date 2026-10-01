@@ -21,7 +21,7 @@ function loadDisk(key: string): Map<string, string> {
     if (!raw) return map;
     const parsed = JSON.parse(raw) as Record<string, string>;
     for (const [id, url] of Object.entries(parsed)) {
-      if (id && url) map.set(id, url);
+      if (id && typeof url === "string") map.set(id, url);
     }
   } catch {
     /* a corrupt cache just means the CDN path is tried again */
@@ -39,7 +39,7 @@ function saveDisk(key: string, store: Map<string, string>): void {
   }
 }
 
-/** `undefined` when unknown, `""` when this session confirmed there is no art. */
+/** `undefined` when unknown, `""` when confirmed there is no art. */
 export function cachedSteamCover(appId: string): string | undefined {
   if (memory.has(appId)) return memory.get(appId);
   return disk.get(appId);
@@ -47,10 +47,6 @@ export function cachedSteamCover(appId: string): string | undefined {
 
 export function rememberSteamCover(appId: string, url: string): void {
   memory.set(appId, url);
-  if (!url) {
-    if (disk.delete(appId)) saveDisk(STORAGE_KEY, disk);
-    return;
-  }
   if (disk.get(appId) === url) return;
   disk.set(appId, url);
   saveDisk(STORAGE_KEY, disk);
@@ -85,11 +81,4 @@ export function steamCdnPortrait(appId: string): string {
 
 export function steamHeaderPortrait(appId: string): string {
   return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
-}
-
-/** Alternate flat CDN portraits tried before the store lookup. */
-export function steamPortraitFallback(appId: string, step: number): string | null {
-  if (step === 1) return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`;
-  if (step === 2) return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900_2x.jpg`;
-  return null;
 }

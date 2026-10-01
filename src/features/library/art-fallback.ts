@@ -15,7 +15,6 @@ import {
   rememberSteamCover,
   rememberSteamHero,
   steamHeaderPortrait,
-  steamPortraitFallback,
 } from "../../core/steam-art-cache";
 import { steamLibraryArt } from "../../steam";
 
@@ -143,13 +142,6 @@ function onArtError(ev: Event): void {
     return;
   }
 
-  const nextStep = Number(step) + 1;
-  const next = steamPortraitFallback(appId, nextStep);
-  if (next) {
-    img.dataset.artStep = String(nextStep);
-    img.src = next;
-    return;
-  }
   queueSteamResolve(appId, img);
 }
 

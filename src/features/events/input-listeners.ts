@@ -54,6 +54,7 @@ import {
 import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
+import { closeNotifPanel } from "../notifications/notifications";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   const target = e.target as HTMLElement | null;
@@ -171,6 +172,10 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
+    if (S.notifOpen) {
+      closeNotifPanel();
+      return;
+    }
     if (S.activeMoveModalAppName) {
       if (S.isMovingGame) {
         toast(i18nT("move.inProgress"), "");
