@@ -233,8 +233,11 @@ export function allStoreSummaries(): EpicSummary[] {
   const items = S.epicSummaries;
   const gog = S.gogSummaries.length > 0 ? S.gogSummaries.map(libraryItemToSummary) : [];
   const steam = S.steamSummaries.length > 0 ? S.steamSummaries.map(libraryItemToSummary) : [];
-  if (gog.length === 0 && steam.length === 0) return items;
-  return [...items, ...gog, ...steam];
+  // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) belong to the same
+  // union: the palette, collections and hidden-games search all use this list.
+  const companion = S.companionSummaries.length > 0 ? S.companionSummaries.map(libraryItemToSummary) : [];
+  if (gog.length === 0 && steam.length === 0 && companion.length === 0) return items;
+  return [...items, ...gog, ...steam, ...companion];
 }
 
 /** O(1) summary lookup by app name (Epic or GOG or Steam). */
