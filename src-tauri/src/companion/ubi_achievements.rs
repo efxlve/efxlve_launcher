@@ -389,7 +389,7 @@ fn config_match<'a>(
     title: &str,
 ) -> Option<&'a super::ubisoft::UbiRow> {
     rows.iter()
-        .find(|r| !r.space_id.is_empty() && r.space_id.eq_ignore_ascii_case(app_id))
+        .find(|r| !app_id.is_empty() && !r.space_id.is_empty() && r.space_id.eq_ignore_ascii_case(app_id))
         .or_else(|| rows.iter().find(|r| !app_id.is_empty() && r.launch_id.to_string() == app_id))
         .or_else(|| {
             let key = super::scan::slug(title);
@@ -405,7 +405,9 @@ fn config_match<'a>(
 /// an owned game the client has not installed). The configuration cache bridges
 /// a space id to the archive spec and the product id.
 pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> GameAchievementsResponse {
-    if app_id.is_empty() {
+    // An Epic copy has no Ubisoft product id; the title alone can still find
+    // the client's cache through the configuration index.
+    if app_id.is_empty() && title.is_empty() {
         return GameAchievementsResponse::default();
     }
     let rows = super::ubisoft::config_rows();

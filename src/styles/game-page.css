@@ -214,6 +214,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* --- Achievements --- */
 .ach-summary-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }
+.ach-source-note { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; color: var(--text-3); font-size: 12px; line-height: 1.5; border: 1px dashed var(--line); border-radius: var(--r-sm); }
+.ach-source-note svg { flex-shrink: 0; }
 .ach-summary-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px; }
 .ach-summary-pct { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 56px; }
 .ach-summary-pct svg { vertical-align: -2px; }

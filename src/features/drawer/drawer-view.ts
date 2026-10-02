@@ -19,7 +19,7 @@ import { epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } 
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { epicWideArt, gameVersionsOf, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, epicWideArt, gameVersionsOf, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
@@ -243,6 +243,16 @@ function sourceChipHtml(appName: string): string {
 export function isCompanionApp(appName: string): boolean {
   const source = sourceOfKey(appName);
   return source !== "epic" && source !== "gog" && source !== "steam";
+}
+
+/** Epic app names whose achievement list is read from Ubisoft Connect. */
+const ubiAchSource = new Set<string>();
+
+/** The Ubisoft copy of an Epic title, matched by canonical name. */
+function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").LibraryItem | undefined {
+  const canon = canonicalGameTitle(s.title);
+  if (!canon) return undefined;
+  return S.companionSummaries.find((g) => g.source === "ubisoft" && canonicalGameTitle(g.title) === canon);
 }
 
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
@@ -866,6 +876,18 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   }
 
   if (data.achievements.length === 0) {
+    // Epic copies of Ubisoft games: Epic ships no achievement set for some of
+    // them (Watch Dogs), so the local Ubisoft Connect cache is the source.
+    if (sourceOfKey(s.appName) === "epic" && partner?.type === "ubisoft") {
+      const openClient = `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>`;
+      const install = `<button class="btn play small" data-act="epic-play" data-id="${esc(s.appName)}">${icon("download", 13)} ${t("drawer.launchInstallWith", { name: "Ubisoft Connect" })}</button>`;
+      return emptyState(
+        "gamepad-2",
+        t("ach.ubiEpicTitle"),
+        s.installed ? t("ach.ubiEpicEmptyInstalled") : t("ach.ubiEpicEmptyNotInstalled"),
+        s.installed ? openClient : `${install}${openClient}`,
+      );
+    }
     // Ubisoft has no public achievement API: the list comes from the client's
     // local cache, and a game the client never opened has no cache yet.
     if (s.appName.startsWith("ubisoft::")) {
@@ -928,7 +950,12 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const filterChip = (val: string, label: string, n: number): string =>
     `<button class="tab ach-status-chip ${S.activeAchFilter === val ? "active" : ""}" data-act="ach-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
+  const sourceNote = ubiAchSource.has(s.appName)
+    ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
+    : "";
+
   return `
+    ${sourceNote}
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-left">
         <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(18) : `${pct}%`}</span>
@@ -944,7 +971,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${tierChip("silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
         <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
-        ${isCompanionApp(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
+        ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>
     </div>
 
@@ -983,7 +1010,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     const source = sourceOfKey(appName);
     const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
     const rawId = isGog ? appName.slice(5) : appName;
-    const data = isGog
+    let data = isGog
       ? await gogGetAchievements(rawId)
       : isSteam
         ? await steamGetAchievements(appName.slice(7), forceRefresh)
@@ -995,6 +1022,32 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
               currentLanguage(),
             )
           : await epicGetAchievements(appName, forceRefresh);
+    // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
+    // while Ubisoft Connect tracks them for the same account. Read the client's
+    // local cache as the fallback and flag the page so it can say so.
+    if (source === "epic" && data.achievements.length === 0) {
+      const s = summaryOf(appName);
+      const ubi = s ? ubisoftCompanionFor(s) : undefined;
+      const partner = s ? gamePartner(s, rawOf(appName)) : null;
+      if (partner?.type === "ubisoft") {
+        const ubiData = await companionAchievements(
+          "ubisoft",
+          ubi?.id ?? "",
+          ubi?.title ?? s?.title ?? appName,
+          currentLanguage(),
+        );
+        if (ubiData.achievements.length > 0) {
+          data = ubiData;
+          ubiAchSource.add(appName);
+        } else {
+          ubiAchSource.delete(appName);
+        }
+      } else {
+        ubiAchSource.delete(appName);
+      }
+    } else {
+      ubiAchSource.delete(appName);
+    }
     S.loadedAchievements.set(appName, data);
     const summary: EpicAchievementSummary = {
       app_name: appName,
