@@ -225,7 +225,15 @@ function renderCollections(): string {
           ${mergePanel}${deletePanel}`;
       }).join("");
 
-  return infoBox("col.settingsInfo") + imports + group(rows, t("col.allCollections"));
+  return (
+    infoBox("col.settingsInfo") +
+    imports +
+    `<div class="settings-section-head">
+       <h3 class="section-title">${t("col.allCollections")}</h3>
+       <button type="button" class="btn ghost small" data-act="open-new-collection-modal">${t("col.newCollectionBtn")}</button>
+     </div>
+     <div class="list settings-group">${rows}</div>`
+  );
 }
 
 function renderIntegrations(): string {

@@ -197,12 +197,12 @@ export function updateColGamesListInPlace(): void {
   if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
 }
 
-export async function saveCollectionFromModal(): Promise<void> {
+export async function saveCollectionFromModal(): Promise<boolean> {
   const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
   const name = nameInput?.value.trim() || "";
   if (!name) {
     toast(t("col.needName"), "err");
-    return;
+    return false;
   }
   try {
     const saved = await epicSaveCollection(
@@ -214,12 +214,14 @@ export async function saveCollectionFromModal(): Promise<void> {
     toast(t("col.saved", { name: saved.name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
+    return true;
   } catch (e) {
     toast(t("col.saveFailed", { msg: String(e) }), "err");
+    return false;
   }
 }
 
-export async function deleteCollectionFromModal(colId: string): Promise<void> {
+export async function deleteCollectionFromModal(colId: string): Promise<boolean> {
   const col = S.epicCollections.find((c) => c.id === colId);
   const name = col ? col.name : t("col.defaultName");
   try {
@@ -228,8 +230,10 @@ export async function deleteCollectionFromModal(colId: string): Promise<void> {
     toast(t("col.deleted", { name }), "ok");
     closeCollectionModal();
     await loadEpicCollections();
+    return true;
   } catch (e) {
     toast(t("col.deleteFailed", { msg: String(e) }), "err");
+    return false;
   }
 }
 
