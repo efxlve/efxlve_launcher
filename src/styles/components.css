@@ -85,6 +85,14 @@
 }
 .input:focus, .text-input:focus { outline: none; border-color: var(--accent); }
 .input::placeholder { color: var(--text-3); }
+.input:disabled, .text-input:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Info box: one sentence that keeps the "why" out of a card body. */
+.info-box {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-1); color: var(--text-2); font-size: 12px; line-height: 1.5;
+}
+.info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--text-3); }
 .search {
   display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);

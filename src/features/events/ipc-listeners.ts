@@ -35,6 +35,7 @@ import {
   type VerifyProgressEvent,
 } from "../../epic";
 import { localizeMessage, setLanguage, t } from "../../i18n";
+import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
@@ -463,14 +464,20 @@ export async function initApp(hooks: {
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
         // Opt-in: pause the active download while a game is running so it does not
-        // steal bandwidth/disk from gameplay. Only pause what we did not already pause.
-        if (S.pauseOnPlay && !S.dlQueueStatus.isPaused) {
-          const active = [...S.downloads.entries()].find(([, d]) => !d.done);
-          if (active) {
-            const activeId = active[0];
-            void epicPauseDownload(activeId)
+        // steal bandwidth/disk from gameplay. Covers Epic and GOG downloads, and
+        // never touches a pause the user asked for.
+        const pausedNow = S.dlQueueStatus.isPaused || S.gogDlPaused;
+        if (S.pauseOnPlay && !S.autoPausedDl && !pausedNow) {
+          const activeId = S.activeDlMetrics && !S.activeDlMetrics.done
+            ? S.activeDlMetrics.id
+            : [...S.downloads.entries()].find(([, d]) => !d.done)?.[0];
+          if (activeId) {
+            const isGog = activeId.startsWith("gog::");
+            void (isGog ? gogPauseDownload(activeId) : epicPauseDownload(activeId))
               .then(() => {
                 S.autoPausedDl = activeId;
+                if (isGog) S.gogDlPaused = true;
+                else S.dlQueueStatus.isPaused = true;
               })
               .catch(() => {});
           }
@@ -500,12 +507,21 @@ export async function initApp(hooks: {
             : t("status.closed", { title }),
           "",
         );
-        // Resume a download we auto-paused, once no game is running anymore and the
-        // user has not resumed it manually in the meantime.
-        if (S.autoPausedDl && S.runningGames.size === 0 && S.dlQueueStatus.isPaused) {
+        // Resume a download this rule paused, once no game is running anymore and
+        // the user has not resumed it manually in the meantime.
+        if (S.autoPausedDl && S.runningGames.size === 0) {
           const resumeId = S.autoPausedDl;
-          S.autoPausedDl = null;
-          void epicResumeDownload(resumeId).catch(() => {});
+          const isGog = resumeId.startsWith("gog::");
+          const stillPaused = isGog ? S.gogDlPaused : S.dlQueueStatus.isPaused;
+          if (stillPaused) {
+            S.autoPausedDl = null;
+            void (isGog ? gogResumeDownload(resumeId) : epicResumeDownload(resumeId))
+              .then(() => {
+                if (isGog) S.gogDlPaused = false;
+                else S.dlQueueStatus.isPaused = false;
+              })
+              .catch(() => {});
+          }
         }
         // Opt-in: back up local saves when the game closes.
         if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {

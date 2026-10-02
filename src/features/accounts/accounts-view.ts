@@ -157,7 +157,7 @@ function supportDetails(store: string): string {
 
 /** One-line explanation box, used to keep confusing points out of the cards. */
 function infoBox(key: string): string {
-  return `<div class="acc-info">${icon("info", 14)}<span>${t(key)}</span></div>`;
+  return `<div class="info-box">${icon("info", 14)}<span>${t(key)}</span></div>`;
 }
 
 /** Section caption that groups the cards. */

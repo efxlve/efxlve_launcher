@@ -4,14 +4,6 @@
 .acc-page { max-width: 760px; display: flex; flex-direction: column; gap: 14px; }
 .acc-intro { margin: 0 0 4px; color: var(--text-2); font-size: 13px; }
 
-/* One-line explanation box. Keeps the "why" out of the cards themselves. */
-.acc-info {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm);
-  background: var(--surface-1); color: var(--text-2); font-size: 12px; line-height: 1.5;
-}
-.acc-info svg { flex-shrink: 0; margin-top: 1px; color: var(--text-3); }
-
 /* Card groups: launcher-managed stores, client stores, announced services. */
 .acc-group-title { margin: 10px 0 -2px; }
 .settings-accounts .acc-group-title:first-of-type { margin-top: 0; }

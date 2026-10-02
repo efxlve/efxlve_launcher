@@ -78,6 +78,11 @@ function group(rows: string, title = ""): string {
   return `${title ? `<h3 class="section-title">${title}</h3>` : ""}<div class="list settings-group">${rows}</div>`;
 }
 
+/** One-line explanation box (shared component, see DESIGN_SYSTEM.md). */
+function infoBox(key: string): string {
+  return `<div class="info-box">${icon("info", 14)}<span>${t(key)}</span></div>`;
+}
+
 function renderDownloads(): string {
   const savedDir = S.epicSettingsCache?.install_dir?.trim() || "";
   const shownDir = savedDir || S.epicDefaultDir || "—";
@@ -105,12 +110,24 @@ function renderDownloads(): string {
      <button type="button" class="btn ghost small" data-act="dl-find-fastest-cdn">${t("downloads.cdnFind")}</button>`,
   );
 
+  const updates = group(
+    row(t("settings.autoUpdate"), t("settings.autoUpdateDesc"), toggle("toggle-auto-update", S.autoUpdateEnabled)) +
+    row(
+      t("settings.autoUpdateTime"),
+      t("settings.autoUpdateTimeDesc"),
+      `<input id="auto-update-time" type="time" class="input settings-time-input" value="${esc(S.autoUpdateTime)}" ${S.autoUpdateEnabled ? "" : "disabled"} aria-label="${esc(t("settings.autoUpdateTime"))}" />`,
+    ),
+    t("settings.updatesTitle"),
+  );
+
   return (
+    infoBox("downloads.scopeInfo") +
     group(dir + row(
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
     ) + profile + cdn, t("settings.secDownloads")) +
+    updates +
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
       row(t("downloads.pauseOnPlay"), t("downloads.pauseOnPlayDesc"), toggle("toggle-pause-on-play", S.pauseOnPlay)) +

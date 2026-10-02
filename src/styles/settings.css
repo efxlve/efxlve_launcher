@@ -14,6 +14,8 @@
 .settings-accounts { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
 .settings-accounts .acc-actions { width: 100%; }
 .settings-accounts .acc-actions .btn.danger { margin-left: auto; }
+/* Time picker in Settings → Downloads (scheduled automatic updates). */
+.settings-time-input { width: 116px; }
 .settings-panel > .section-title:first-child, .settings-panel > .card:first-child { margin-top: 0; }
 .settings-section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
 .settings-section-head .section-title { margin: 0 0 10px; }
