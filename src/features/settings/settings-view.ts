@@ -86,13 +86,16 @@ function infoBox(key: string): string {
 
 /**
  * Collapsible settings row for keys that are set once: the summary shows the
- * title and the current status, the body holds the fields and actions.
+ * title, an optional hint and the current status, the body holds the fields.
  */
-function detailsRow(title: string, desc: string, chip: string, control: string): string {
+function detailsRow(title: string, desc: string, chip: string, control: string, hint = ""): string {
   return `
     <details class="settings-details">
       <summary>
-        <span class="settings-row-title">${title}</span>
+        <span class="settings-details-main">
+          <span class="settings-row-title">${title}</span>
+          ${hint ? `<span class="settings-row-desc">${hint}</span>` : ""}
+        </span>
         ${chip}
       </summary>
       <div class="settings-details-body">
@@ -212,7 +215,14 @@ function renderIntegrations(): string {
       galaxy.length > 0 ? t("settings.gogGalaxyFound", { count: galaxy.length }) : t("settings.gogGalaxyNone"),
       t("settings.gogGalaxyDesc"),
       galaxyAction,
-    ) + galaxyRows;
+    ) + galaxyRows +
+    // Galaxy tags double as the client's collections; they are cross-platform,
+    // so Steam and Epic tags come over as well.
+    row(
+      t("settings.gogGalaxyTagsTitle"),
+      t("settings.gogGalaxyTagsDesc"),
+      `<button class="btn ghost small" data-act="gog-import-galaxy-tags">${t("settings.gogGalaxyTagsBtn")}</button>`,
+    );
 
   const sgdb = detailsRow(
     t("settings.sgdbTitle"),
@@ -335,6 +345,7 @@ function renderSteamGroup(): string {
     `<input id="settings-steam-key-input" type="password" class="input settings-path-input" placeholder="${t("settings.steamApiPlaceholder")}" value="${esc(S.steamApiKey || "")}" spellcheck="false" autocomplete="off" />
      <button class="btn primary small" data-act="save-steam-key">${t("common.save")}</button>
      <button class="btn ghost small" data-act="open-external-url" data-url="https://steamcommunity.com/dev/apikey">${t("settings.getFreeKey")}</button>`,
+    t("settings.steamApiHint"),
   );
   return group(apiKey, "Steam");
 }

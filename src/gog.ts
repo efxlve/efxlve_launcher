@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { LibraryItem } from "./core/types";
-import type { EpicAchievementSummary, EpicAchievementsData, GameRequirementsResponse } from "./epic";
+import type { EpicAchievementSummary, EpicAchievementsData, GameCollection, GameRequirementsResponse } from "./epic";
 
 export interface GogAuthStatus {
   logged_in: boolean;
@@ -206,3 +206,10 @@ export const gogSetInstallDir = (path: string | null) =>
 
 /** Fallback GOG install folder: `%USERPROFILE%\Games\GOG`. */
 export const gogDefaultInstallDir = () => invoke<string>("gog_default_install_dir");
+
+/**
+ * Imports the user's GOG Galaxy tags as collections (read-only) and returns
+ * the merged collection list.
+ */
+export const gogImportGalaxyTags = () =>
+  invoke<GameCollection[]>("gog_import_galaxy_tags");

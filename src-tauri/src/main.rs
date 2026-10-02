@@ -689,6 +689,7 @@ fn main() {
             gogdl::commands::gog_get_install_dir,
             gogdl::commands::gog_set_install_dir,
             gogdl::commands::gog_default_install_dir,
+            gogdl::commands::gog_import_galaxy_tags,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

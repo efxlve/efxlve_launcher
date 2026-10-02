@@ -23,7 +23,7 @@ pub struct GalaxyPlaytimeEntry {
 }
 
 /// `<ProgramData>/GOG.com/Galaxy/storage/galaxy-2.0.db` when it exists.
-fn galaxy_db_path() -> Option<PathBuf> {
+pub(super) fn galaxy_db_path() -> Option<PathBuf> {
     let program_data = std::env::var("ProgramData").ok()?;
     let path = PathBuf::from(program_data)
         .join("GOG.com")
@@ -38,7 +38,7 @@ fn galaxy_db_path() -> Option<PathBuf> {
 }
 
 /// Turns a GOG release key (`gog_1207658924_GameOfTheYear`) into the product id.
-fn product_id_from_release_key(key: &str) -> Option<String> {
+pub(super) fn product_id_from_release_key(key: &str) -> Option<String> {
     let rest = key.strip_prefix("gog_")?;
     let id: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
     if id.is_empty() {

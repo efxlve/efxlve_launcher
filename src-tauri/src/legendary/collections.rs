@@ -195,7 +195,7 @@ fn deduplicate_strings(vec: Vec<String>) -> Vec<String> {
     result
 }
 
-fn generate_collection_id(name: &str) -> String {
+pub(crate) fn generate_collection_id(name: &str) -> String {
     let slug: String = name
         .chars()
         .map(|c| {
@@ -218,7 +218,7 @@ fn generate_collection_id(name: &str) -> String {
     }
 }
 
-fn chrono_now_iso() -> String {
+pub(crate) fn chrono_now_iso() -> String {
     let dur = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default();
@@ -311,29 +311,33 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
     }
 
     result.sort_by(|a, b| a.name.cmp(&b.name));
-
-    if !result.is_empty() {
-        let existing = read_collections_raw();
-        let mut merged = existing;
-        for col in &result {
-            if let Some(idx) = merged
-                .iter()
-                .position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name))
-            {
-                merged[idx].name = col.name.clone();
-                merged[idx].app_names = deduplicate_strings(col.app_names.clone());
-            } else {
-                merged.push(col.clone());
-            }
-        }
-        let _ = save_collections(&merged);
-        return Ok(merged);
-    }
-
-    Ok(result)
+    Ok(merge_collections(result))
 }
 
-fn build_metadata_lookup() -> HashMap<String, String> {
+/// Merges imported collections into `collections.json`, matching existing ones
+/// by id or case-insensitive name, and returns the merged list. An empty input
+/// changes nothing.
+pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollection> {
+    if incoming.is_empty() {
+        return incoming;
+    }
+    let mut merged = read_collections_raw();
+    for col in &incoming {
+        if let Some(idx) = merged
+            .iter()
+            .position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name))
+        {
+            merged[idx].name = col.name.clone();
+            merged[idx].app_names = deduplicate_strings(col.app_names.clone());
+        } else {
+            merged.push(col.clone());
+        }
+    }
+    let _ = save_collections(&merged);
+    merged
+}
+
+pub(crate) fn build_metadata_lookup() -> HashMap<String, String> {
     let mut map = HashMap::new();
     let meta_dir = super::skip::default_config_dir().join("metadata");
 

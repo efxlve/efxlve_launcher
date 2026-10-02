@@ -12,6 +12,7 @@ import { allStoreSummaries } from "../../../core/selectors";
 import { resetCardChunk } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
 import { epicImportEglCollections } from "../../../epic";
+import { gogImportGalaxyTags } from "../../../gog";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -195,6 +196,19 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "import-egl-collections":
       toast(i18nT("col.scanningEgl"), "");
       void epicImportEglCollections()
+        .then((cols) => {
+          toast(i18nT("col.importedCount", { count: cols.length }), "ok");
+          void loadEpicCollections();
+          if (S.view === "settings") void loadSettingsView();
+        })
+        .catch((err) => {
+          toast(i18nT("col.importFailed", { msg: String(err) }), "err");
+        });
+      return true;
+
+    case "gog-import-galaxy-tags":
+      toast(i18nT("col.scanningGalaxy"), "");
+      void gogImportGalaxyTags()
         .then((cols) => {
           toast(i18nT("col.importedCount", { count: cols.length }), "ok");
           void loadEpicCollections();

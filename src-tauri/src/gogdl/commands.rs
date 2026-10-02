@@ -417,3 +417,12 @@ pub fn gog_default_install_dir() -> String {
     let home = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
     format!("{home}\\Games\\GOG")
 }
+
+/// Imports the user's GOG Galaxy tags as collections (read-only) and returns
+/// the merged collection list.
+#[command]
+pub async fn gog_import_galaxy_tags() -> Result<Vec<crate::legendary::collections::GameCollection>, String> {
+    tauri::async_runtime::spawn_blocking(super::galaxy_tags::import_galaxy_tags)
+        .await
+        .map_err(|e| e.to_string())
+}

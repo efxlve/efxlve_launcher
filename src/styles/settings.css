@@ -81,7 +81,7 @@
 }
 .settings-details > summary::-webkit-details-marker { display: none; }
 .settings-details > summary:hover { background: var(--surface-2); }
-.settings-details > summary .settings-row-title { flex: 1; }
+.settings-details-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .settings-details > summary::after {
   content: ""; width: 6px; height: 6px; flex-shrink: 0; margin-right: 4px;
   border-right: 1.5px solid var(--text-3); border-bottom: 1.5px solid var(--text-3);

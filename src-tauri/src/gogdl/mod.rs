@@ -6,6 +6,7 @@ pub mod cache;
 pub mod commands;
 pub mod galaxy;
 pub mod galaxy_playtime;
+pub mod galaxy_tags;
 pub mod launcher;
 pub mod models;
 pub mod paths;
