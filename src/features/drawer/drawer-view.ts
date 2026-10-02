@@ -70,6 +70,15 @@ function partnerFromSteamNotice(notice: string): ThirdPartyLauncherInfo | null {
 }
 
 function gamePartner(s: EpicSummary, g: ReturnType<typeof rawOf>): ThirdPartyLauncherInfo | null {
+  // Companion games are owned and launched by their own client, so the client
+  // itself is the external launcher (features, cloud and meta rows).
+  switch (sourceOfKey(s.appName)) {
+    case "ea": return { name: "EA App", type: "ea", shortName: "EA App" };
+    case "ubisoft": return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
+    case "xbox": return { name: "Xbox", type: "other", shortName: "Xbox" };
+    case "battlenet": return { name: "Battle.net", type: "other", shortName: "Battle.net" };
+    default: break;
+  }
   const notice = S.steamDetails.get(s.appName)?.extUserAccountNotice || "";
   return partnerFromSteamNotice(notice) || getThirdPartyLauncher(g, s.title, steamStudioHints(s.appName));
 }
@@ -108,8 +117,8 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
 function paintGameCloud(s: EpicSummary): void {
   const el = document.getElementById("gp-stat-cloud-val");
   if (!el) return;
-  const isEpic = !s.appName.startsWith("gog::") && !s.appName.startsWith("steam::");
-  if (!isEpic) return;
+  // Steam and GOG games use their own cloud row in the features card only.
+  if (s.appName.startsWith("gog::") || s.appName.startsWith("steam::")) return;
   const g = rawOf(s.appName);
   const info = heroCloudStatus(s, g, gamePartner(s, g));
   el.textContent = info.label;
@@ -571,7 +580,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
-  const cloudTone = cloud.synced ? "ok" : (cloud.label !== "—" ? "warn" : "");
+  const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
   const tabs = companion
     ? tabButton("overview", t("drawer.overview"))
     : `${tabButton("overview", t("drawer.overview"))}
@@ -605,7 +614,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-stats">
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${isEpic ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}
+            ${isEpic || companion ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}
           </div>
         </div>
 

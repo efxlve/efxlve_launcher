@@ -10,7 +10,7 @@
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { epicPlatinumIcon, icon } from "../../core/icons";
-import { isTurkishUser } from "../../core/selectors";
+import { isTurkishUser, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
@@ -616,6 +616,18 @@ export function heroCloudStatus(
     return {
       label: i18nT("feat.gogCloud"),
       tooltip: i18nT("feat.gogCloudTip"),
+      synced: false,
+      neutral: true,
+    };
+  }
+  // Native client games (EA, Ubisoft, Xbox, Battle.net): name the provider
+  // instead of guessing a sync state the launcher cannot observe.
+  const source = sourceOfKey(s.appName);
+  if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+    const provider = cloudSaveInfo(s, g, partner, reqData);
+    return {
+      label: provider.label,
+      tooltip: provider.tooltip,
       synced: false,
       neutral: true,
     };
