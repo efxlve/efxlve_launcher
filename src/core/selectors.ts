@@ -14,6 +14,13 @@ import type { GameSource, LibraryItem } from "./types";
 /** Wide-art URL cache (key art lookup was repeated for every card render). */
 const wideArtCache = new Map<string, string | null>();
 
+/** Drops cached wide art so a later resolution (companion catalog, cover
+ * resolver) is picked up by the next render. One key, or every key. */
+export function clearWideArtCache(appName?: string): void {
+  if (appName) wideArtCache.delete(appName);
+  else wideArtCache.clear();
+}
+
 /**
  * Maps the canonical stored "last played" values to translation keys. The stored
  * values are kept as-is for backward compatibility; only the displayed label is
@@ -531,6 +538,16 @@ export function epicWideArt(s: EpicSummary): string | null {
         .replace("_product_card_v2_mobile_slider_639.jpg", "_glx_bg_top_padding_7.jpg");
       wideArtCache.set(s.appName, hero);
       return hero;
+    }
+  }
+
+  // Companion games (EA, Ubisoft, Xbox, Battle.net): the client catalog ships a
+  // wide background. The portrait cover must never be stretched into the banner.
+  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+    const item = S.allGamesMap.get(s.appName);
+    if (item?.heroUrl) {
+      wideArtCache.set(s.appName, item.heroUrl);
+      return item.heroUrl;
     }
   }
 

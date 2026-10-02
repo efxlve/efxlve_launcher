@@ -506,6 +506,8 @@
   "ss.emptyDesc": "Every legend needs proof. Press {hotkey} (or Win + Alt + PrtScn) mid-game and the moment lands here automatically.",
   "ss.steamEmptyDesc": "Steam has no shots for this game yet. Tap F12 in-game and they will show up here.",
   "ss.openSettings": "Screenshot settings",
+  "ss.ubiReadOnly": "These screenshots belong to Ubisoft Connect and cannot be changed here.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect has no shots for this game yet. Press F12 in-game and they will show up here.",
   "ss.steamReadOnly": "Steam screenshots are read-only here; manage them in the Steam client.",
   "ss.zoom": "Enlarge",
   "ss.shareTip": "Share / Copy to Clipboard",

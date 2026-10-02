@@ -19,6 +19,10 @@ pub struct CoverQuery {
     pub name: String,
     #[serde(default)]
     pub store_id: String,
+    /// Cover the caller already has (client catalog). It always wins; the
+    /// resolver only fills the missing half (usually the wide hero).
+    #[serde(default)]
+    pub cover: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -92,9 +96,11 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
         if query.id.is_empty() || query.name.is_empty() {
             continue;
         }
-        let (cover, hero) = cached_cover(&cache, &query.store, &query.id);
-        if !cover.is_empty() {
-            hits.push(CoverHit { store: query.store, id: query.id, cover_url: cover, hero_url: hero });
+        let (cached_cover, cached_hero) = cached_cover(&cache, &query.store, &query.id);
+        // The caller's catalog cover outranks the cached Steam cover.
+        let known_cover = if query.cover.is_empty() { cached_cover } else { query.cover.clone() };
+        if !known_cover.is_empty() && !cached_hero.is_empty() {
+            hits.push(CoverHit { store: query.store, id: query.id, cover_url: known_cover, hero_url: cached_hero });
             continue;
         }
         pending.push(query);
@@ -103,12 +109,15 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
         }
     }
     for query in pending {
-        let Some((query, cover, hero)) = fetch_one(client.clone(), query).await else {
+        // Keep whatever the caller already had; the fetch only fills the gap.
+        let requested_cover = query.cover.clone();
+        let Some((query, fetched_cover, hero)) = fetch_one(client.clone(), query).await else {
             continue;
         };
-        if cover.is_empty() {
+        if fetched_cover.is_empty() && hero.is_empty() {
             continue;
         }
+        let cover = if requested_cover.is_empty() { fetched_cover } else { requested_cover };
         cache.insert(cache_key(&query.store, &query.id), CachedArt { cover: cover.clone(), hero: hero.clone() });
         hits.push(CoverHit { store: query.store, id: query.id, cover_url: cover, hero_url: hero });
     }

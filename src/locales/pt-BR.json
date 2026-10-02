@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Toda lenda precisa de provas. Aperte {hotkey} (ou Win + Alt + PrtScn) no jogo e o momento cai aqui automaticamente.",
   "ss.steamEmptyDesc": "O Steam ainda não tem capturas deste jogo. Aperte F12 no jogo e elas aparecerão aqui.",
   "ss.openSettings": "Configurações de captura",
+  "ss.ubiReadOnly": "Estas capturas pertencem ao Ubisoft Connect e não podem ser alteradas aqui.",
+  "ss.ubiEmptyDesc": "O Ubisoft Connect ainda não tem capturas deste jogo. Aperte F12 no jogo e elas aparecerão aqui.",
   "ss.steamReadOnly": "As capturas da Steam são somente leitura aqui; gerencie-as no cliente Steam.",
   "ss.zoom": "Ampliar",
   "ss.shareTip": "Compartilhar / copiar para a área de transferência",

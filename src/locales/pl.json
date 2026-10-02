@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Każda legenda potrzebuje dowodu. Naciśnij {hotkey} (albo Win + Alt + PrtScn) w grze, a moment sam trafi tutaj.",
   "ss.steamEmptyDesc": "Steam nie ma jeszcze zrzutów z tej gry. Naciśnij F12 w grze, a pojawią się tutaj.",
   "ss.openSettings": "Ustawienia zrzutów ekranu",
+  "ss.ubiReadOnly": "Te zrzuty należą do Ubisoft Connect i nie można ich tu zmieniać.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect nie ma jeszcze zrzutów z tej gry. Naciśnij F12 w grze, a pojawią się tutaj.",
   "ss.steamReadOnly": "Zrzuty Steam są tutaj tylko do odczytu; zarządzaj nimi w kliencie Steam.",
   "ss.zoom": "Powiększ",
   "ss.shareTip": "Udostępnij / kopiuj do schowka",

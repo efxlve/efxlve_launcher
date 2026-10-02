@@ -14,10 +14,14 @@ use super::proto::for_each_field;
 use super::scan::slug;
 use super::FoundGame;
 
-struct UbiRow {
-    install_id: u64,
-    launch_id: u64,
-    name: String,
+pub(crate) struct UbiRow {
+    pub(crate) install_id: u64,
+    pub(crate) launch_id: u64,
+    pub(crate) name: String,
+    /// Catalog space id (`space_id:` in the YAML); empty when absent.
+    pub(crate) space_id: String,
+    /// Achievement archive spec (`achievements:` in the YAML); empty when absent.
+    pub(crate) achievements: String,
 }
 
 pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundGame> {
@@ -107,7 +111,28 @@ fn row_from_record(record: &[u8]) -> Option<UbiRow> {
         return None;
     }
     let name = game_name(&yaml)?;
-    Some(UbiRow { install_id, launch_id, name })
+    Some(UbiRow {
+        install_id,
+        launch_id,
+        name,
+        space_id: yaml_value(&yaml, "space_id"),
+        achievements: yaml_value(&yaml, "achievements"),
+    })
+}
+
+/// First `key: value` line anywhere in the YAML document.
+fn yaml_value(yaml: &str, key: &str) -> String {
+    let prefix = format!("{key}:");
+    for line in yaml.lines() {
+        let trimmed = line.trim();
+        if let Some(value) = trimmed.strip_prefix(&prefix) {
+            let value = clean_value(value);
+            if !value.is_empty() {
+                return value;
+            }
+        }
+    }
+    String::new()
 }
 
 fn is_other_store(yaml: &str) -> bool {
@@ -200,6 +225,15 @@ pub(crate) fn configurations_path() -> Option<std::path::PathBuf> {
         r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\cache\configuration\configurations",
     );
     if program.is_file() { Some(program) } else { None }
+}
+
+/// Every cached configuration record, including owned games the client has not
+/// installed. The achievement lookup uses the space id and the archive spec.
+pub(crate) fn config_rows() -> Vec<UbiRow> {
+    configurations_path()
+        .and_then(|path| std::fs::read(path).ok())
+        .map(|bytes| rows(&bytes))
+        .unwrap_or_default()
 }
 
 fn owned_cache_path() -> std::path::PathBuf {

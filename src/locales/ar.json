@@ -483,6 +483,8 @@
   "ss.emptyDesc": "كل أسطورة تحتاج دليلاً. اضغط {hotkey} (أو Win + Alt + PrtScn) أثناء اللعب وستصل اللقطة هنا تلقائياً.",
   "ss.steamEmptyDesc": "لا توجد لقطات لهذه اللعبة في Steam بعد. اضغط F12 أثناء اللعب وستظهر هنا.",
   "ss.openSettings": "إعدادات اللقطات",
+  "ss.ubiReadOnly": "هذه اللقطات مملوكة لـ Ubisoft Connect ولا يمكن تغييرها هنا.",
+  "ss.ubiEmptyDesc": "لا توجد لقطات لهذه اللعبة في Ubisoft Connect بعد. اضغط F12 أثناء اللعب وستظهر هنا.",
   "ss.steamReadOnly": "لقطات Steam للقراءة فقط هنا؛ أدرها من عميل Steam.",
   "ss.zoom": "تكبير",
   "ss.shareTip": "مشاركة / نسخ إلى الحافظة",

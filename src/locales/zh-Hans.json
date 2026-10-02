@@ -483,6 +483,8 @@
   "ss.emptyDesc": "每个传奇都需要证据。游戏中按 {hotkey}（或 Win + Alt + PrtScn），精彩瞬间会自动出现在这里。",
   "ss.steamEmptyDesc": "Steam 中还没有这款游戏的截图。游戏中按 F12，截图就会出现在这里。",
   "ss.openSettings": "截图设置",
+  "ss.ubiReadOnly": "这些截图属于 Ubisoft Connect，无法在此修改。",
+  "ss.ubiEmptyDesc": "Ubisoft Connect 中还没有这款游戏的截图。游戏中按 F12，截图就会出现在这里。",
   "ss.steamReadOnly": "Steam 截图在此为只读；请在 Steam 客户端中管理。",
   "ss.zoom": "放大",
   "ss.shareTip": "分享 / 复制到剪贴板",

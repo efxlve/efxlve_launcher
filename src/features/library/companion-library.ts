@@ -7,7 +7,7 @@
 
 import { listen } from "@tauri-apps/api/event";
 import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
-import { rebuildAllGamesMap } from "../../core/selectors";
+import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
 import { S } from "../../core/state";
@@ -114,7 +114,9 @@ async function fillCompanionPlaytime(): Promise<void> {
 }
 
 async function fillCompanionCovers(): Promise<void> {
-  const missing = S.companionSummaries.filter((g) => !g.coverUrl);
+  // Resolve art when either half is missing: a missing wide hero would leave
+  // the game page stretching the portrait cover.
+  const missing = S.companionSummaries.filter((g) => !g.coverUrl || !g.heroUrl);
   if (missing.length === 0) return;
   let hits;
   try {
@@ -123,22 +125,30 @@ async function fillCompanionCovers(): Promise<void> {
       id: g.id,
       name: g.title,
       storeId: storeIds.get(g.key) || "",
+      cover: g.coverUrl || "",
     })));
   } catch {
     return;
   }
   let changed = false;
+  let changedCurrent = false;
   for (const hit of hits) {
-    if (!hit.coverUrl) continue;
+    if (!hit.coverUrl && !hit.heroUrl) continue;
     const key = `${hit.store}::${hit.id}`;
     const item = S.companionSummaries.find((g) => g.key === key);
     if (!item) continue;
-    item.coverUrl = hit.coverUrl;
-    item.heroUrl = hit.heroUrl || null;
+    // Never downgrade art the client catalog already provided.
+    if (!item.coverUrl && hit.coverUrl) item.coverUrl = hit.coverUrl;
+    if (!item.heroUrl && hit.heroUrl) item.heroUrl = hit.heroUrl;
     changed = true;
-    patchCompanionCover(key, hit.coverUrl);
+    clearWideArtCache(key);
+    if (hit.coverUrl) patchCompanionCover(key, hit.coverUrl);
+    if (S.currentModalAppName === key) changedCurrent = true;
   }
-  if (changed) rebuildAllGamesMap();
+  if (changed) {
+    rebuildAllGamesMap();
+    if (changedCurrent && S.currentModalAppName) openEpicModal(S.currentModalAppName, false, false);
+  }
 }
 
 function patchCompanionCover(key: string, url: string): void {

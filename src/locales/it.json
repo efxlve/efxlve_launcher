@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Ogni leggenda ha bisogno di prove. Premi {hotkey} (o Win + Alt + Stampa) in gioco e lo scatto finirà qui automaticamente.",
   "ss.steamEmptyDesc": "Steam non ha ancora scatti per questo gioco. Premi F12 in gioco e compariranno qui.",
   "ss.openSettings": "Impostazioni screenshot",
+  "ss.ubiReadOnly": "Questi scatti appartengono a Ubisoft Connect e non possono essere modificati qui.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect non ha ancora scatti per questo gioco. Premi F12 in gioco e compariranno qui.",
   "ss.steamReadOnly": "Gli screenshot di Steam sono di sola lettura qui; gestiscili nel client Steam.",
   "ss.zoom": "Ingrandisci",
   "ss.shareTip": "Condividi / copia negli appunti",

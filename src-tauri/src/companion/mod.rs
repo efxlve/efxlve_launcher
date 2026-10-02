@@ -277,20 +277,24 @@ pub fn companion_launch(store: String, id: String) -> Result<(), String> {
     }
     if let Some(game) = discover(&store).into_iter().find(|g| g.id == id) {
         if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
-            // The screenshot hotkey needs to know which game is on screen. The
-            // install folder is enough to match the process; client protocols
-            // do not expose the executable name.
-            let install_path = std::path::Path::new(&game.install_path)
-                .is_dir()
-                .then(|| std::path::PathBuf::from(&game.install_path));
-            let app_name = format!("{}::{}", game.store, game.id);
-            crate::legendary::screenshots::set_active_running_game(
-                &app_name,
-                &game.name,
-                install_path.clone(),
-                Vec::new(),
-            );
-            watch_companion_exit(app_name, install_path);
+            // Ubisoft Connect has its own F12 screenshot tool for these games;
+            // registering the launcher's hotkey as well would capture twice.
+            if game.store != "ubisoft" {
+                // The screenshot hotkey needs to know which game is on screen.
+                // The install folder is enough to match the process; client
+                // protocols do not expose the executable name.
+                let install_path = std::path::Path::new(&game.install_path)
+                    .is_dir()
+                    .then(|| std::path::PathBuf::from(&game.install_path));
+                let app_name = format!("{}::{}", game.store, game.id);
+                crate::legendary::screenshots::set_active_running_game(
+                    &app_name,
+                    &game.name,
+                    install_path.clone(),
+                    Vec::new(),
+                );
+                watch_companion_exit(app_name, install_path);
+            }
             return launch::open_game(&game.launch_uri, &game.launch_exe);
         }
     }
@@ -334,18 +338,24 @@ pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRo
 }
 
 /// Achievements the local Ubisoft Connect client cached for one game. The id is
-/// the client's own launch id, the same value the library card uses; imported
-/// space ids have no local cache and return an empty set.
+/// the library card id; for an owned game the client has not installed it is
+/// the catalog space id and the configuration cache supplies the product id
+/// and the archive spec. `title` is the fallback matcher.
 #[tauri::command]
 pub fn companion_achievements(
     store: String,
     id: String,
+    title: Option<String>,
     language: Option<String>,
 ) -> GameAchievementsResponse {
     if store != "ubisoft" {
         return GameAchievementsResponse::default();
     }
-    ubi_achievements::achievements_for(&id, language.as_deref().unwrap_or("en"))
+    ubi_achievements::achievements_for(
+        &id,
+        title.as_deref().unwrap_or(""),
+        language.as_deref().unwrap_or("en"),
+    )
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the

@@ -305,24 +305,61 @@ fn achievements_root() -> Option<PathBuf> {
     local.is_dir().then_some(local)
 }
 
-/// Newest schema archive whose name starts with `<app_id>_`.
-fn schema_path(root: &Path, app_id: &str) -> Option<PathBuf> {
+/// The client stores the archive as `<product id>_<spec>.zip`; an uninstalled
+/// game only has its space id, so the configuration's `achievements:` spec is
+/// the bridge between the two names.
+pub(crate) fn normalize_spec(value: &str) -> String {
+    let cleaned = value
+        .trim()
+        .trim_matches(|c| c == '"' || c == '\'')
+        .replace('\\', "/");
+    let base = cleaned.rsplit('/').next().unwrap_or("").to_string();
+    let lower = base.to_lowercase();
+    let lower = lower.strip_suffix(".zip").unwrap_or(&lower);
+    match lower.split_once('_') {
+        Some((head, rest)) if !head.is_empty() && head.chars().all(|c| c.is_ascii_digit()) => {
+            rest.to_string()
+        }
+        _ => lower.to_string(),
+    }
+}
+
+fn file_matches_spec(file_name: &str, spec: &str) -> bool {
+    if spec.is_empty() {
+        return false;
+    }
+    let lower = file_name.to_lowercase();
+    let base = lower.strip_suffix(".zip").unwrap_or(&lower);
+    base == spec || base.ends_with(&format!("_{spec}"))
+}
+
+/// Newest schema archive: the product-id prefix first, then any file whose name
+/// carries the configuration's achievement spec.
+fn schema_path_for(root: &Path, app_id: &str, spec: &str) -> Option<PathBuf> {
     let prefix = format!("{app_id}_");
+    let wanted = normalize_spec(spec);
     let mut best: Option<(std::time::SystemTime, PathBuf)> = None;
+    let mut fallback: Option<(std::time::SystemTime, PathBuf)> = None;
     for entry in std::fs::read_dir(root).ok()?.flatten() {
+        if !entry.path().is_file() {
+            continue;
+        }
         let name = entry.file_name().to_string_lossy().to_string();
-        if !name.starts_with(&prefix) || !entry.path().is_file() {
+        let is_prefix = name.starts_with(&prefix);
+        let is_spec = !is_prefix && file_matches_spec(&name, &wanted);
+        if !is_prefix && !is_spec {
             continue;
         }
         let modified = entry
             .metadata()
             .and_then(|m| m.modified())
             .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-        if best.as_ref().map_or(true, |(cur, _)| modified > *cur) {
-            best = Some((modified, entry.path()));
+        let slot = if is_prefix { &mut best } else { &mut fallback };
+        if slot.as_ref().map_or(true, |(cur, _)| modified > *cur) {
+            *slot = Some((modified, entry.path()));
         }
     }
-    best.map(|(_, path)| path)
+    best.or(fallback).map(|(_, path)| path)
 }
 
 /// The linked account's own spool file, or the first one that exists.
@@ -345,16 +382,47 @@ fn spool_path(root: &Path, app_id: &str) -> Option<PathBuf> {
     None
 }
 
-/// The achievements the local Ubisoft Connect client has for one game id.
-/// `id` is the client's own launch id, the same value the library card uses.
-pub(crate) fn achievements_for(app_id: &str, language: &str) -> GameAchievementsResponse {
-    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+/// Matches a configuration row by space id, then product id, then title.
+fn config_match<'a>(
+    rows: &'a [super::ubisoft::UbiRow],
+    app_id: &str,
+    title: &str,
+) -> Option<&'a super::ubisoft::UbiRow> {
+    rows.iter()
+        .find(|r| !r.space_id.is_empty() && r.space_id.eq_ignore_ascii_case(app_id))
+        .or_else(|| rows.iter().find(|r| !app_id.is_empty() && r.launch_id.to_string() == app_id))
+        .or_else(|| {
+            let key = super::scan::slug(title);
+            if key.is_empty() {
+                return None;
+            }
+            rows.iter().find(|r| super::scan::slug(&r.name) == key)
+        })
+}
+
+/// The achievements the local Ubisoft Connect client has for one game.
+/// `id` is the library card id (client launch id, or the catalog space id for
+/// an owned game the client has not installed). The configuration cache bridges
+/// a space id to the archive spec and the product id.
+pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> GameAchievementsResponse {
+    if app_id.is_empty() {
         return GameAchievementsResponse::default();
     }
+    let rows = super::ubisoft::config_rows();
+    let entry = config_match(&rows, app_id, title);
+    let spec = entry.map(|e| e.achievements.clone()).unwrap_or_default();
+    let spool_id = entry
+        .map(|e| e.launch_id)
+        .filter(|id| *id > 0)
+        .map(|id| id.to_string())
+        .or_else(|| {
+            (!app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit())).then(|| app_id.to_string())
+        });
+
     let Some(root) = achievements_root() else {
         return GameAchievementsResponse::default();
     };
-    let Some(schema) = schema_path(&root, app_id) else {
+    let Some(schema) = schema_path_for(&root, app_id, &spec) else {
         return GameAchievementsResponse::default();
     };
     let Ok(bytes) = std::fs::read(&schema) else {
@@ -364,8 +432,8 @@ pub(crate) fn achievements_for(app_id: &str, language: &str) -> GameAchievements
     if rows.is_empty() {
         return GameAchievementsResponse::default();
     }
-    let earned = spool_root()
-        .and_then(|spool_root| spool_path(&spool_root, app_id))
+    let earned = spool_id
+        .and_then(|id| spool_root().and_then(|spool_root| spool_path(&spool_root, &id)))
         .and_then(|path| std::fs::read(path).ok())
         .map(|bytes| parse_spool(&bytes))
         .unwrap_or_default();
@@ -509,8 +577,19 @@ mod tests {
 
     #[test]
     fn missing_archive_or_spool_yields_an_empty_response() {
-        let data = achievements_for("not-a-number", "en");
+        let data = achievements_for("", "", "en");
         assert_eq!(data.total_achievements, 0);
         assert!(data.achievements.is_empty());
+    }
+
+    #[test]
+    fn specs_normalize_to_the_archive_tail() {
+        assert_eq!(normalize_spec("ACOrigins"), "acorigins");
+        assert_eq!(normalize_spec("./ACOrigins.zip"), "acorigins");
+        assert_eq!(normalize_spec("3539_ACOrigins"), "acorigins");
+        assert!(file_matches_spec("3539_ACOrigins.zip", "acorigins"));
+        assert!(file_matches_spec("3539_acorigins.zip", "acorigins"));
+        assert!(!file_matches_spec("3539_ACOdyssey.zip", "acorigins"));
+        assert!(!file_matches_spec("3539_ACOrigins.zip", ""));
     }
 }

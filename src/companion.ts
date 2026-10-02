@@ -73,11 +73,11 @@ export const companionPlaytimes = (store: CompanionStore) =>
 
 /**
  * Achievements the local Ubisoft Connect client cached for one game. The id is
- * the client's own launch id; imported space ids have no local cache and come
- * back empty.
+ * the library card id; uninstalled owned games use their catalog space id and
+ * the title matcher bridges it to the client's cache.
  */
-export const companionAchievements = (store: CompanionStore, id: string, language: string) =>
-  invoke<import("./epic").EpicAchievementsData>("companion_achievements", { store, id, language });
+export const companionAchievements = (store: CompanionStore, id: string, title: string, language: string) =>
+  invoke<import("./epic").EpicAchievementsData>("companion_achievements", { store, id, title, language });
 
 export const companionLink = (store: CompanionStore) =>
   invoke<CompanionAccount>("companion_link", { store });
@@ -95,7 +95,7 @@ export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 
 export const companionResolveCovers = (
-  queries: { store: string; id: string; name: string; storeId: string }[],
+  queries: { store: string; id: string; name: string; storeId: string; cover?: string }[],
 ) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });
 
 export function companionToItem(g: CompanionGame): LibraryItem {

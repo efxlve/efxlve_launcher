@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Jede Legende braucht einen Beweis. Drücke im Spiel {hotkey} (oder Win + Alt + PrtScn) und der Moment landet automatisch hier.",
   "ss.steamEmptyDesc": "Steam hat noch keine Aufnahmen für dieses Spiel. Drücke im Spiel F12, dann erscheinen sie hier.",
   "ss.openSettings": "Screenshot-Einstellungen",
+  "ss.ubiReadOnly": "Diese Screenshots gehören zu Ubisoft Connect und können hier nicht geändert werden.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect hat noch keine Aufnahmen für dieses Spiel. Drücke im Spiel F12, dann erscheinen sie hier.",
   "ss.steamReadOnly": "Steam-Screenshots sind hier schreibgeschützt; verwalte sie im Steam-Client.",
   "ss.zoom": "Vergrößern",
   "ss.shareTip": "Teilen / in die Zwischenablage kopieren",

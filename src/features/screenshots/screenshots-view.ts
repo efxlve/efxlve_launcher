@@ -27,6 +27,23 @@ function isSteamApp(appName: string): boolean {
   return appName.startsWith("steam::");
 }
 
+/** Gallery owner whose client keeps the files (read-only in this launcher). */
+type GalleryOwner = "steam" | "ubisoft";
+
+function galleryOwner(appName: string): GalleryOwner | null {
+  if (isSteamApp(appName)) return "steam";
+  if (appName.startsWith("ubisoft::")) return "ubisoft";
+  return null;
+}
+
+function ownerBadge(owner: GalleryOwner): string {
+  return owner === "steam" ? "STEAM" : "UBISOFT";
+}
+
+function ownerReadOnlyTip(owner: GalleryOwner): string {
+  return t(owner === "steam" ? "ss.steamReadOnly" : "ss.ubiReadOnly");
+}
+
 /** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
 export function renderMomentsStrip(appName: string): string {
   const items = S.loadedScreenshots.get(appName) || [];
@@ -284,7 +301,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
     document.body.appendChild(shareRoot);
   }
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
-  const readOnly = isSteamApp(appName);
+  const readOnly = galleryOwner(appName) !== null;
   shareRoot.innerHTML = `
     <div class="ss-share-backdrop" data-act="close-share-modal">
       <div class="ss-share-card" role="dialog" aria-modal="true">
@@ -378,7 +395,8 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   }
 
   const hasUncompressed = screenshots.some(item => !item.file_name.endsWith(".avif") && !item.file_name.endsWith(".webp"));
-  const readOnly = isSteamApp(s.appName);
+  const owner = galleryOwner(s.appName);
+  const readOnly = owner !== null;
 
   const headerHtml = `
     <div class="screenshots-gallery-head">
@@ -407,7 +425,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
           <div class="screenshots-empty-icon">${icon("image", 44)}</div>
           <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
           <p class="screenshots-empty-desc">
-            ${readOnly ? t("ss.steamEmptyDesc") : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
+            ${owner === "steam" ? t("ss.steamEmptyDesc") : owner === "ubisoft" ? t("ss.ubiEmptyDesc") : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </p>
           <button type="button" class="btn ghost small screenshots-empty-settings" data-view="settings" data-settings-section="screenshots">
             ${icon("settings", 13)} ${t("ss.openSettings")}
@@ -435,8 +453,8 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
             <button class="ss-share-btn" data-act="share-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.shareTip")}">
               ${icon("share-2", 12)} ${t("ss.share")}
             </button>
-            ${readOnly
-              ? `<span class="ss-compressed-tag" title="${t("ss.steamReadOnly")}">STEAM</span>`
+            ${readOnly && owner
+              ? `<span class="ss-compressed-tag" title="${esc(ownerReadOnlyTip(owner))}">${ownerBadge(owner)}</span>`
               : !isAvifOrWebp
                 ? `
               <button class="ss-compress-btn" data-act="compress-screenshot" data-id="${s.appName}" data-idx="${idx}" title="${t("ss.compressTip")}">
@@ -479,7 +497,8 @@ export function renderScreenshotLightbox(appName: string, index: number): string
   if (!item) return "";
 
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
-  const readOnly = isSteamApp(appName);
+  const owner = galleryOwner(appName);
+  const readOnly = owner !== null;
   const fullSrc = item.full_data_url || item.data_url;
 
   return `
@@ -494,8 +513,8 @@ export function renderScreenshotLightbox(appName: string, index: number): string
             <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.shareTip2")}">
               ${icon("share-2", 13)} ${t("ss.share")}
             </button>
-            ${readOnly
-              ? `<span class="lightbox-badge-avif" title="${t("ss.steamReadOnly")}">STEAM</span>`
+            ${readOnly && owner
+              ? `<span class="lightbox-badge-avif" title="${esc(ownerReadOnlyTip(owner))}">${ownerBadge(owner)}</span>`
               : !isAvifOrWebp
                 ? `
               <button class="btn ghost small" data-act="compress-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.compressTip2")}">

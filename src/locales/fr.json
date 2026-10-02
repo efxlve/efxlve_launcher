@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Chaque légende mérite une preuve. Appuyez sur {hotkey} (ou Win + Alt + Impr. écran) en jeu : la capture atterrit ici automatiquement.",
   "ss.steamEmptyDesc": "Steam n'a pas encore de captures pour ce jeu. Appuyez sur F12 en jeu et elles apparaîtront ici.",
   "ss.openSettings": "Paramètres des captures",
+  "ss.ubiReadOnly": "Ces captures appartiennent à Ubisoft Connect et ne peuvent pas être modifiées ici.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect n'a pas encore de captures pour ce jeu. Appuyez sur F12 en jeu et elles apparaîtront ici.",
   "ss.steamReadOnly": "Les captures Steam sont en lecture seule ici ; gérez-les dans le client Steam.",
   "ss.zoom": "Agrandir",
   "ss.shareTip": "Partager / copier dans le presse-papiers",

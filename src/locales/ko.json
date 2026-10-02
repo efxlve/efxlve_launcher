@@ -483,6 +483,8 @@
   "ss.emptyDesc": "전설에게는 증거가 필요합니다. 게임 중 {hotkey}(또는 Win + Alt + PrtScn)를 누르면 순간이 자동으로 여기에 저장됩니다.",
   "ss.steamEmptyDesc": "Steam에 이 게임의 스크린샷이 아직 없습니다. 게임 중 F12를 누르면 여기에 나타납니다.",
   "ss.openSettings": "스크린샷 설정",
+  "ss.ubiReadOnly": "이 스크린샷은 Ubisoft Connect에 속해 있으며 여기서 변경할 수 없습니다.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect에 이 게임의 스크린샷이 아직 없습니다. 게임 중 F12를 누르면 여기에 나타납니다.",
   "ss.steamReadOnly": "Steam 스크린샷은 여기서 읽기 전용입니다. Steam 클라이언트에서 관리하세요.",
   "ss.zoom": "확대",
   "ss.shareTip": "공유 / 클립보드에 복사",

@@ -506,6 +506,8 @@
   "ss.emptyDesc": "Her efsanenin bir kanıtı olur. Oyun sırasında {hotkey} (veya Win + Alt + PrtScn) tuşuna bas; kare otomatik olarak buraya düşsün.",
   "ss.steamEmptyDesc": "Steam'de bu oyun için henüz kare yok. Oyunda F12'ye bas, burada belirsin.",
   "ss.openSettings": "Ekran görüntüsü ayarları",
+  "ss.ubiReadOnly": "Bu ekran görüntüleri Ubisoft Connect'e aittir; buradan değiştirilemez.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect'te bu oyun için henüz kare yok. Oyunda F12'ye bas, burada belirsin.",
   "ss.steamReadOnly": "Steam ekran görüntüleri salt okunurdur; Steam istemcisinden yönetilir.",
   "ss.zoom": "Büyüt",
   "ss.shareTip": "Paylaş / Panoya Kopyala",

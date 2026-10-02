@@ -483,6 +483,8 @@
   "ss.emptyDesc": "Toda leyenda necesita pruebas. Pulsa {hotkey} (o Win + Alt + Impr Pant) en el juego y la captura aparecerá aquí automáticamente.",
   "ss.steamEmptyDesc": "Steam aún no tiene capturas de este juego. Pulsa F12 en el juego y aparecerán aquí.",
   "ss.openSettings": "Ajustes de capturas",
+  "ss.ubiReadOnly": "Estas capturas pertenecen a Ubisoft Connect y no se pueden modificar aquí.",
+  "ss.ubiEmptyDesc": "Ubisoft Connect aún no tiene capturas de este juego. Pulsa F12 en el juego y aparecerán aquí.",
   "ss.steamReadOnly": "Las capturas de Steam son de solo lectura aquí; gestiónalas en el cliente de Steam.",
   "ss.zoom": "Ampliar",
   "ss.shareTip": "Compartir / copiar al portapapeles",

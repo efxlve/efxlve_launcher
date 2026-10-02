@@ -395,7 +395,54 @@ pub async fn epic_get_game_screenshots(
             }
         }
 
-        // 2. Windows Game Bar / Captures folder: %USERPROFILE%\Videos\Captures
+        // 2. Ubisoft Connect's own captures: the client groups them under
+        // `Pictures\UbisoftConnect\<game>` (older builds used `Pictures\Uplay`).
+        // Loose files in the root are matched by title like Game Bar captures.
+        if app_name.starts_with("ubisoft::") {
+            for root_name in ["UbisoftConnect", "Uplay"] {
+                let root = get_user_pictures_dir().join(root_name);
+                if !root.is_dir() {
+                    continue;
+                }
+                let Ok(entries) = std::fs::read_dir(&root) else {
+                    continue;
+                };
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let folder = clean_folder_name(&entry.file_name().to_string_lossy());
+                        if folder.eq_ignore_ascii_case(&clean_t) || folder.eq_ignore_ascii_case(&clean_app) {
+                            if let Ok(files) = std::fs::read_dir(&path) {
+                                for file in files.flatten() {
+                                    let file_path = file.path();
+                                    if scanned_paths.insert(file_path.clone()) {
+                                        if let Some(item) = parse_file_to_item(&file_path) {
+                                            results.push(item);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        let name = path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("")
+                            .to_lowercase();
+                        if (name.contains(&clean_t.to_lowercase())
+                            || (!clean_app.is_empty() && name.contains(&clean_app.to_lowercase())))
+                            && scanned_paths.insert(path.clone())
+                        {
+                            if let Some(item) = parse_file_to_item(&path) {
+                                results.push(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Windows Game Bar / Captures folder: %USERPROFILE%\Videos\Captures
         let captures_dir = get_user_videos_dir().join("Captures");
         if captures_dir.is_dir() {
             if let Ok(entries) = std::fs::read_dir(&captures_dir) {
@@ -718,6 +765,29 @@ pub async fn epic_delete_game_screenshot(
     .map_err(|e| e.to_string())?
 }
 
+/// Per-game folder the Ubisoft Connect client writes its captures to. Falls
+/// back to the client's root when it stores loose files there.
+fn ubisoft_game_dir(title: &str) -> Option<PathBuf> {
+    let clean = clean_folder_name(title);
+    for root_name in ["UbisoftConnect", "Uplay"] {
+        let root = get_user_pictures_dir().join(root_name);
+        if !root.is_dir() {
+            continue;
+        }
+        if let Ok(entries) = std::fs::read_dir(&root) {
+            for entry in entries.flatten() {
+                if entry.path().is_dir()
+                    && clean_folder_name(&entry.file_name().to_string_lossy()).eq_ignore_ascii_case(&clean)
+                {
+                    return Some(entry.path());
+                }
+            }
+        }
+        return Some(root);
+    }
+    None
+}
+
 /// Opens the game's screenshots folder with Windows Explorer.
 #[tauri::command]
 pub async fn epic_open_game_screenshots_folder(
@@ -731,7 +801,12 @@ pub async fn epic_open_game_screenshots_folder(
         } else {
             clean_folder_name(&app_name)
         };
-        let target_dir = game_screenshots_dir(&clean_t);
+        // Ubisoft games keep their captures in the client's own folder.
+        let target_dir = if app_name.starts_with("ubisoft::") {
+            ubisoft_game_dir(&title).unwrap_or_else(|| game_screenshots_dir(&clean_t))
+        } else {
+            game_screenshots_dir(&clean_t)
+        };
         let _ = std::fs::create_dir_all(&target_dir);
 
         // Rule 10: opening a folder = explorer from Rust

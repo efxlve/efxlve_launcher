@@ -483,6 +483,8 @@
   "ss.emptyDesc": "伝説には証拠が必要です。プレイ中に{hotkey}（または Win + Alt + PrtScn）を押すと、その瞬間がここに自動で保存されます。",
   "ss.steamEmptyDesc": "Steamにはまだこのゲームのスクリーンショットがありません。プレイ中にF12を押すとここに表示されます。",
   "ss.openSettings": "スクリーンショット設定",
+  "ss.ubiReadOnly": "これらのスクリーンショットはUbisoft Connectのもので、ここでは変更できません。",
+  "ss.ubiEmptyDesc": "Ubisoft Connectにはまだこのゲームのスクリーンショットがありません。プレイ中にF12を押すとここに表示されます。",
   "ss.steamReadOnly": "Steamのスクリーンショットはここでは読み取り専用です。Steamクライアントで管理してください。",
   "ss.zoom": "拡大",
   "ss.shareTip": "共有 / クリップボードにコピー",

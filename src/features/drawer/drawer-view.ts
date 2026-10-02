@@ -981,6 +981,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
           ? await companionAchievements(
               source as "ea" | "ubisoft" | "xbox" | "battlenet",
               appName.slice(appName.indexOf("::") + 2),
+              summaryOf(appName)?.title || appName,
               currentLanguage(),
             )
           : await epicGetAchievements(appName, forceRefresh);
