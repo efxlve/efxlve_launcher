@@ -106,6 +106,17 @@ export const xboxLoginHide = () => invoke<void>("xbox_login_hide");
 export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 
+/** Per-client behavior toggles (Integrations → After playing). */
+export interface CompanionClientSettings {
+  closeAfterPlay: Record<string, boolean>;
+}
+
+export const companionGetClientSettings = () =>
+  invoke<CompanionClientSettings>("companion_get_client_settings");
+
+export const companionSetCloseAfterPlay = (store: CompanionStore, enabled: boolean) =>
+  invoke<void>("companion_set_close_after_play", { store, enabled });
+
 export const companionResolveCovers = (
   queries: { store: string; id: string; name: string; storeId: string; cover?: string }[],
 ) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });

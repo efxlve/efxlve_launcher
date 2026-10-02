@@ -29,7 +29,7 @@ use ubisoft_login::UbiSync;
 
 use std::collections::HashSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::legendary::models::GameAchievementsResponse;
 
@@ -361,15 +361,14 @@ pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Res
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return launch::open_client(&store);
     };
-    // Ubisoft Connect has its own F12 screenshot tool for these games;
-    // registering the launcher's hotkey as well would capture twice.
+    // The screenshot hotkey needs to know which game is on screen. The install
+    // folder is enough to match the process; client protocols do not expose the
+    // executable name. Ubisoft Connect has its own F12 screenshot tool, so only
+    // its close-after-play watcher is worth spawning.
+    let install_path = std::path::Path::new(&game.install_path)
+        .is_dir()
+        .then(|| std::path::PathBuf::from(&game.install_path));
     if game.store != "ubisoft" {
-        // The screenshot hotkey needs to know which game is on screen. The
-        // install folder is enough to match the process; client protocols do
-        // not expose the executable name.
-        let install_path = std::path::Path::new(&game.install_path)
-            .is_dir()
-            .then(|| std::path::PathBuf::from(&game.install_path));
         let app_name = format!("{}::{}", game.store, game.id);
         crate::legendary::screenshots::set_active_running_game(
             &app_name,
@@ -377,7 +376,9 @@ pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Res
             install_path.clone(),
             Vec::new(),
         );
-        watch_companion_exit(app, app_name, game.store.clone(), install_path);
+        watch_companion_exit(app, Some(app_name), game.store.clone(), install_path);
+    } else if close_after_play_enabled("ubisoft") {
+        watch_companion_exit(app, None, game.store.clone(), install_path);
     }
     // Riot hands every action to RiotClientServices.exe with a product flag.
     if store == "riot" {
@@ -435,14 +436,101 @@ fn add_local_playtime(app_name: &str, seconds: u64) {
     }
 }
 
-/// Clears the screenshot hotkey's active game once the process exits and adds
-/// the session to the locally tracked playtime. The client protocol returns
-/// before the game window exists, so the watcher waits for a process first,
-/// then for it to disappear. Riot and Battle.net can spend minutes updating
-/// before the game window appears, hence the long grace.
+/* ---------- Per-client behavior (close after playing) ---------- */
+
+/// Client behavior toggles from the Integrations page, stored beside the
+/// playtime cache. A store that is absent means "off".
+#[derive(Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanionClientSettings {
+    #[serde(default)]
+    pub close_after_play: std::collections::HashMap<String, bool>,
+}
+
+fn client_settings_path() -> std::path::PathBuf {
+    accounts::data_dir().join("companion_settings.json")
+}
+
+fn load_client_settings() -> CompanionClientSettings {
+    std::fs::read_to_string(client_settings_path())
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+fn close_after_play_enabled(store: &str) -> bool {
+    load_client_settings()
+        .close_after_play
+        .get(store)
+        .copied()
+        .unwrap_or(false)
+}
+
+/// Quits a store client by image name. The clients expose no quit command, so
+/// this is a forced tree kill; it only runs when the user opted in.
+fn close_client(store: &str) {
+    let images: &[&str] = match store {
+        "ea" => &["EADesktop.exe"],
+        "ubisoft" => &["UbisoftConnect.exe"],
+        "battlenet" => &["Battle.net.exe"],
+        "riot" => &["RiotClientServices.exe", "RiotClient.exe"],
+        _ => return,
+    };
+    for image in images {
+        let mut cmd = std::process::Command::new("taskkill");
+        cmd.args(["/IM", image, "/T", "/F"]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000);
+        }
+        let _ = cmd.spawn();
+    }
+}
+
+fn close_client_if_enabled(store: &str) {
+    if close_after_play_enabled(store) {
+        close_client(store);
+    }
+}
+
+/// Client behavior toggles for the Integrations page.
+#[tauri::command]
+pub fn companion_get_client_settings() -> CompanionClientSettings {
+    load_client_settings()
+}
+
+#[tauri::command]
+pub fn companion_set_close_after_play(store: String, enabled: bool) -> Result<(), String> {
+    if !accounts::is_store(&store) {
+        return Err("Unknown store".into());
+    }
+    let mut settings = load_client_settings();
+    if enabled {
+        settings.close_after_play.insert(store, true);
+    } else {
+        settings.close_after_play.remove(&store);
+    }
+    let path = client_settings_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(text) = serde_json::to_string(&settings) {
+        let _ = std::fs::write(path, text);
+    }
+    Ok(())
+}
+
+/// Clears the screenshot hotkey's active game once the process exits, adds the
+/// session to the locally tracked playtime, and quits the client when the user
+/// asked for it. The client protocol returns before the game window exists, so
+/// the watcher waits for a process first, then for it to disappear. Riot and
+/// Battle.net can spend minutes updating before the game window appears, hence
+/// the long grace. `app_name` is `None` for stores whose screenshot tool stays
+/// the client's own (Ubisoft).
 fn watch_companion_exit(
     app: tauri::AppHandle,
-    app_name: String,
+    app_name: Option<String>,
     store: String,
     install_path: Option<std::path::PathBuf>,
 ) {
@@ -466,13 +554,19 @@ fn watch_companion_exit(
             }
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
-        crate::legendary::screenshots::clear_active_running_game(&app_name);
+        if let Some(app_name) = &app_name {
+            crate::legendary::screenshots::clear_active_running_game(app_name);
+        }
         if let Some(detected) = detected_at {
-            let seconds = detected.elapsed().as_secs();
-            if seconds >= 5 {
-                add_local_playtime(&app_name, seconds);
-                // The cards and the open page re-read the cache.
-                let _ = app.emit("companion-store-changed", store);
+            // Opt-in: quit the store client now that its game has closed.
+            close_client_if_enabled(&store);
+            if let Some(app_name) = &app_name {
+                let seconds = detected.elapsed().as_secs();
+                if seconds >= 5 {
+                    add_local_playtime(app_name, seconds);
+                    // The cards and the open page re-read the cache.
+                    let _ = app.emit("companion-store-changed", store);
+                }
             }
         }
     });

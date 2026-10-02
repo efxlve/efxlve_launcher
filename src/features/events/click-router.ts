@@ -73,7 +73,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -719,6 +719,15 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-steam-exit-after-play") {
     S.steamExitAfterPlay = !S.steamExitAfterPlay;
     localStorage.setItem(STEAM_EXIT_AFTER_PLAY_KEY, String(S.steamExitAfterPlay));
+    render();
+  } else if (act === "toggle-client-exit") {
+    // Companion clients: the Rust watcher reads this from its settings file.
+    const store = t.dataset.store as CompanionStore | undefined;
+    const enabled = (t as HTMLInputElement).checked;
+    if (store) {
+      S.companionCloseAfterPlay = { ...S.companionCloseAfterPlay, [store]: enabled };
+      void companionSetCloseAfterPlay(store, enabled).catch((e: unknown) => toast(String(e), "err"));
+    }
     render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;

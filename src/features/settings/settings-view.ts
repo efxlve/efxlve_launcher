@@ -39,6 +39,7 @@ import {
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
 import type { ControllerKind } from "../../core/types";
@@ -228,13 +229,28 @@ function renderIntegrations(): string {
 
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
+  // Opt-in per client: quit it once the game it launched closes. Steam keeps
+  // its own localStorage toggle; the companion clients read the Rust settings.
+  const exitToggle = (store: string) =>
+    `<label class="switch"><input type="checkbox" data-act="toggle-client-exit" data-store="${store}" ${S.companionCloseAfterPlay[store] ? "checked" : ""} /><span class="track"></span></label>`;
+  const afterPlaying = group(
+    row(t("settings.steamExitAfterPlay"), t("settings.steamExitAfterPlayDesc"), toggle("toggle-steam-exit-after-play", S.steamExitAfterPlay)) +
+    row(t("settings.eaExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("ea")) +
+    row(t("settings.ubiExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("ubisoft")) +
+    row(t("settings.bnetExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("battlenet")) +
+    row(t("settings.riotExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("riot")),
+    t("settings.afterPlayingTitle"),
+  );
+
   return (
     infoBox("settings.integrationsInfo") +
     group(eglGroup, t("settings.eglTitle")) +
+    group(eos, t("settings.eosGroupTitle")) +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     renderSteamGroup() +
+    afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    group(presence + eos, t("settings.secSocial"))
+    group(presence, t("settings.secSocial"))
   );
 }
 
@@ -304,7 +320,7 @@ function renderController(): string {
   return group(padRows, t("controller.padsTitle")) + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
 }
 
-/** Steam card: the client toggle and the optional Web API key. */
+/** Steam card: the optional Web API key. Behavior toggles live in After playing. */
 function renderSteamGroup(): string {
   const status = S.steamStatus;
   if (!status) return "";
@@ -320,11 +336,7 @@ function renderSteamGroup(): string {
      <button class="btn primary small" data-act="save-steam-key">${t("common.save")}</button>
      <button class="btn ghost small" data-act="open-external-url" data-url="https://steamcommunity.com/dev/apikey">${t("settings.getFreeKey")}</button>`,
   );
-  return group(
-    row(t("settings.steamExitAfterPlay"), t("settings.steamExitAfterPlayDesc"), toggle("toggle-steam-exit-after-play", S.steamExitAfterPlay)) +
-    apiKey,
-    "Steam",
-  );
+  return group(apiKey, "Steam");
 }
 
 /** Page-size picker shared by Settings and the library pagination bar. */
@@ -641,16 +653,18 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eos, galaxyList, steamState] = await Promise.all([
+    const [eglList, eos, galaxyList, steamState, clientSettings] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
+      companionGetClientSettings().catch(() => null),
     ]);
     S.eglDetectedList = eglList;
     S.eosOverlay = eos;
     S.gogGalaxyDetected = galaxyList;
     S.steamStatus = steamState;
+    S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

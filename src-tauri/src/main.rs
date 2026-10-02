@@ -613,6 +613,8 @@ fn main() {
             companion::companion_open_client,
             companion::companion_launch,
             companion::companion_game_action,
+            companion::companion_get_client_settings,
+            companion::companion_set_close_after_play,
             companion::companion_playtimes,
             companion::companion_achievements,
             steam::steam_download_live,
