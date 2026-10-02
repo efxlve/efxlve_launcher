@@ -394,6 +394,8 @@
   "ach.partnerDesc": "تُتتبَّع إنجازات هذه اللعبة مباشرة عبر {name}.",
   "ach.ubiTitle": "إنجازات Ubisoft Connect",
   "ach.ubiDesc": "تتم إدارة الإنجازات عبر Ubisoft Connect. إذا كانت القائمة فارغة، افتح اللعبة مرة واحدة في العميل ليحمّل بيانات الإنجازات؛ وستظهر هنا بعد ذلك.",
+  "ach.eaTitle": "لا توجد إنجازات EA لهذه اللعبة",
+  "ach.eaDesc": "يتم قراءة الإنجازات من حساب EA الخاص بك. اللعبة التي لا تحتوي على مجموعة إنجازات EA تبقى فارغة هنا.",
   "ach.ubiEpicTitle": "الإنجازات تأتي من Ubisoft Connect",
   "ach.ubiEpicDesc": "لا توجد إنجازات لهذه اللعبة على Epic Games. القائمة أدناه تُقرأ من Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "لا توجد إنجازات لهذه اللعبة على Epic Games. افتحها مرة واحدة في Ubisoft Connect لتنزيل بيانات الإنجازات؛ وستظهر هنا بعد ذلك.",

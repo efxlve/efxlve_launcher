@@ -18,6 +18,7 @@ use super::ea;
 use super::ea_vault::{self, EaTokens};
 use super::pcsign;
 use super::FoundGame;
+use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
 
 const LABEL: &str = "ea-login";
 const CLIENT_ID: &str = "JUNO_PC_CLIENT";
@@ -29,8 +30,11 @@ const GRAPHQL_URL: &str = "https://service-aggregation-layer.juno.ea.com/graphql
 const REDIRECT_URI: &str = "qrc:///html/login_successful.html";
 const USER_AGENT: &str = "EAApp/PC/13.680.0.6193";
 const X_CLIENT_ID: &str = "EAX-JUNO-CLIENT";
-/// EA's offers endpoint takes a bounded id list per call.
-const OFFER_BATCH: usize = 50;
+/// EA's offers endpoint takes a bounded id list per call. The id list appears
+/// twice in the query, so this stays well below any URL limit.
+const OFFER_ID_BATCH: usize = 20;
+/// Playtime accepts a longer slug list in one call.
+const PLAYTIME_BATCH: usize = 50;
 
 /// PKCE verifier for the sign-in attempt currently in flight.
 static VERIFIER: Mutex<Option<String>> = Mutex::new(None);
@@ -47,9 +51,12 @@ pub(crate) struct OwnedGame {
     /// Content id used by `origin2://` deep links.
     #[serde(default)]
     pub content_id: String,
-    /// EA game slug, kept for playtime lookups.
+    /// EA game slug, the key of the playtime endpoint.
     #[serde(default)]
     pub slug: String,
+    /// `achievementSetOverride` from the offer, the key of the achievements endpoint.
+    #[serde(default)]
+    pub achievement_set: String,
 }
 
 fn owned_cache_path() -> PathBuf {
@@ -449,10 +456,37 @@ async fn identity(access: &str) -> Result<String, String> {
     Ok(name)
 }
 
-const ENTITLEMENTS_QUERY: &str = r#"query{me{ownedGameProducts(storefronts:[EA],locale:"DEFAULT",paging:{limit:9999,next:null},productFound:true,orderBy:{field:NAME,direction:ASC},ownershipMethod:[PURCHASE,REDEMPTION,ENTITLEMENT_GRANT],downloadableOnly:false,entitlementEnabled:true,platforms:[PC]){items{id:originOfferId product{name gameSlug baseItem(availabilities:[VISIBLE]){title gameType}}}}}}"#;
+/// Every owned product, with the product details the library shows.
+///
+/// The reference plugin also filters by `ownershipMethod` (purchase, redemption,
+/// grant). That drops promotion grants — Prime Gaming copies like Mass Effect
+/// Legendary Edition — so the filter is left off and DLC offers are removed by
+/// their display type instead.
+const ENTITLEMENTS_QUERY: &str = r#"query{me{ownedGameProducts(storefronts:[EA],locale:"DEFAULT",paging:{limit:9999,next:null},productFound:true,orderBy:{field:NAME,direction:ASC},downloadableOnly:false,entitlementEnabled:true,platforms:[PC]){items{id:originOfferId product{name gameSlug baseItem(availabilities:[VISIBLE]){title gameType}}}}}}"#;
 
-/// The owned catalog: entitlements first, then the content ids that the
-/// `origin2://` handler needs, fetched in bounded batches.
+/// Offer fields the deep links, the playtime endpoint and the achievements
+/// endpoint need beyond the entitlement itself.
+#[derive(Debug, Clone, Default)]
+struct OfferInfo {
+    content_id: String,
+    display_name: String,
+    display_type: String,
+    achievement_set: String,
+    slug: String,
+    game_type: String,
+}
+
+/// Add-ons are sold as their own entitlements; only games belong in the library.
+pub(crate) fn is_dlc(display_type: &str, game_type: &str) -> bool {
+    let display = display_type.replace('_', "").to_lowercase();
+    if matches!(display.as_str(), "addon" | "expansion" | "dlc") {
+        return true;
+    }
+    matches!(game_type.to_lowercase().as_str(), "extra_content" | "expansion")
+}
+
+/// The owned catalog: entitlements first, then the offer details (content id,
+/// achievement set, slug) in bounded batches.
 pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> {
     let value = graphql(access, ENTITLEMENTS_QUERY).await?;
     let items = value
@@ -460,8 +494,7 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
         .and_then(|v| v.as_array())
         .cloned()
         .unwrap_or_default();
-    let mut entries: Vec<(String, String, String)> = Vec::new(); // id, name, slug
-    let mut seen = std::collections::HashSet::new();
+    let mut entitlements: Vec<(String, String, String)> = Vec::new(); // id, name, slug
     for item in items {
         let id = item.get("id").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
         if id.is_empty() {
@@ -471,56 +504,305 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
         let name = product
             .get("name")
             .and_then(|v| v.as_str())
-            .or_else(|| product.pointer("/baseItem/title").and_then(|v| v.as_str()))
             .unwrap_or("")
             .trim()
             .to_string();
-        if name.is_empty() {
-            continue;
-        }
         let slug = product
             .get("gameSlug")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
-        let dedupe = if slug.is_empty() { format!("id:{id}") } else { format!("slug:{slug}") };
-        if !seen.insert(dedupe) {
-            continue;
-        }
-        entries.push((id, name, slug));
+        entitlements.push((id, name, slug));
     }
 
-    let mut content: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    let ids: Vec<String> = entries.iter().map(|(id, _, _)| id.clone()).collect();
-    for chunk in ids.chunks(OFFER_BATCH) {
+    let mut offers: std::collections::HashMap<String, OfferInfo> = std::collections::HashMap::new();
+    let ids: Vec<String> = entitlements.iter().map(|(id, _, _)| id.clone()).collect();
+    for chunk in ids.chunks(OFFER_ID_BATCH) {
         let list = serde_json::to_string(chunk).unwrap_or_else(|_| "[]".into());
         let query = format!(
-            "query{{legacyOffers(offerIds:{list},locale:\"DEFAULT\"){{offerId:id contentId displayName}}}}"
+            "query{{legacyOffers(offerIds:{list},locale:\"DEFAULT\"){{offerId:id contentId displayName displayType achievementSetOverride}} gameProducts(offerIds:{list},locale:\"DEFAULT\"){{items{{id name originOfferId gameSlug baseItem{{title gameType}}}}}}}}"
         );
         let Ok(value) = graphql(access, &query).await else {
             continue;
         };
-        let Some(offers) = value.get("data").and_then(|d| d.get("legacyOffers")).and_then(|v| v.as_array()) else {
-            continue;
-        };
-        for offer in offers {
-            let offer_id = offer.get("offerId").and_then(|v| v.as_str()).unwrap_or("");
-            let content_id = offer.get("contentId").and_then(|v| v.as_str()).unwrap_or("");
-            if !offer_id.is_empty() && !content_id.is_empty() {
-                content.insert(offer_id.to_string(), content_id.to_string());
+        if let Some(legacy) = value.pointer("/data/legacyOffers").and_then(|v| v.as_array()) {
+            for offer in legacy {
+                let offer_id = offer.get("offerId").and_then(|v| v.as_str()).unwrap_or("");
+                if offer_id.is_empty() {
+                    continue;
+                }
+                let entry = offers.entry(offer_id.to_string()).or_default();
+                entry.content_id = offer.get("contentId").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                if entry.display_name.is_empty() {
+                    entry.display_name = offer.get("displayName").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                }
+                entry.display_type = offer.get("displayType").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                entry.achievement_set = offer
+                    .get("achievementSetOverride")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+            }
+        }
+        if let Some(products) = value.pointer("/data/gameProducts/items").and_then(|v| v.as_array()) {
+            for product in products {
+                let origin = product.get("originOfferId").and_then(|v| v.as_str()).unwrap_or("");
+                if origin.is_empty() {
+                    continue;
+                }
+                let entry = offers.entry(origin.to_string()).or_default();
+                if entry.display_name.is_empty() {
+                    entry.display_name = product.get("name").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                }
+                if entry.slug.is_empty() {
+                    entry.slug = product.get("gameSlug").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                }
+                if entry.game_type.is_empty() {
+                    entry.game_type = product
+                        .pointer("/baseItem/gameType")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                }
             }
         }
     }
 
-    let mut games: Vec<OwnedGame> = entries
-        .into_iter()
-        .map(|(id, name, slug)| {
-            let content_id = content.get(&id).cloned().unwrap_or_else(|| id.clone());
-            OwnedGame { id, name, content_id, slug }
-        })
-        .collect();
+    let mut games: Vec<OwnedGame> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for (id, product_name, product_slug) in entitlements {
+        let offer = offers.get(&id).cloned().unwrap_or_default();
+        if is_dlc(&offer.display_type, &offer.game_type) {
+            continue;
+        }
+        let name = if !product_name.is_empty() {
+            product_name
+        } else if !offer.display_name.is_empty() {
+            offer.display_name.clone()
+        } else {
+            continue;
+        };
+        let slug = if product_slug.is_empty() { offer.slug.clone() } else { product_slug };
+        let dedupe = if slug.is_empty() { format!("id:{id}") } else { format!("slug:{slug}") };
+        if !seen.insert(dedupe) {
+            continue;
+        }
+        let content_id = if offer.content_id.is_empty() { id.clone() } else { offer.content_id.clone() };
+        games.push(OwnedGame {
+            id,
+            name,
+            content_id,
+            slug,
+            achievement_set: offer.achievement_set.clone(),
+        });
+    }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Ok(games)
+}
+
+/// The cached owned entry behind a game slug (playtime works in slugs).
+pub(crate) fn owned_for_slug(slug: &str) -> Option<OwnedGame> {
+    cached_owned().into_iter().find(|game| game.slug == slug)
+}
+
+/* ---------- Playtime ---------- */
+
+/// API playtime is cached briefly: every library paint asks for it.
+static PLAYTIME: Mutex<Option<(std::time::Instant, Vec<(String, u64)>)>> = Mutex::new(None);
+const PLAYTIME_TTL: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+
+/// `totalPlayTimeSeconds` per game slug, straight from the EA account service.
+pub(crate) async fn fetch_playtimes(access: &str) -> Result<Vec<(String, u64)>, String> {
+    if let Some((at, rows)) = PLAYTIME.lock().unwrap().as_ref() {
+        if at.elapsed() < PLAYTIME_TTL {
+            return Ok(rows.clone());
+        }
+    }
+    let mut slugs: Vec<String> = cached_owned()
+        .into_iter()
+        .filter(|game| !game.slug.is_empty())
+        .map(|game| game.slug)
+        .collect();
+    slugs.sort();
+    slugs.dedup();
+    let mut rows: Vec<(String, u64)> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for chunk in slugs.chunks(PLAYTIME_BATCH) {
+        let list = serde_json::to_string(chunk).unwrap_or_else(|_| "[]".into());
+        let query = format!(
+            "query{{me{{recentGames(gameSlugs:{list}){{items{{gameSlug lastSessionEndDate totalPlayTimeSeconds}}}}}}}}"
+        );
+        let Ok(value) = graphql(access, &query).await else {
+            continue;
+        };
+        let Some(items) = value.pointer("/data/me/recentGames/items").and_then(|v| v.as_array()) else {
+            continue;
+        };
+        for item in items {
+            let slug = item.get("gameSlug").and_then(|v| v.as_str()).unwrap_or("");
+            let seconds = item.get("totalPlayTimeSeconds").and_then(|v| v.as_u64()).unwrap_or(0);
+            if slug.is_empty() || seconds == 0 || !seen.insert(slug.to_string()) {
+                continue;
+            }
+            rows.push((slug.to_string(), seconds));
+        }
+    }
+    *PLAYTIME.lock().unwrap() = Some((std::time::Instant::now(), rows.clone()));
+    Ok(rows)
+}
+
+/* ---------- Achievements ---------- */
+
+/// Persona id (`nexus.psid`) from the access token; the achievements endpoint
+/// takes it as `playerPsd`.
+pub(crate) fn persona_id(access: &str) -> Option<String> {
+    let payload = access.split('.').nth(1)?;
+    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload).ok()?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    match value.pointer("/nexus/psid")? {
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        serde_json::Value::String(text) => Some(text.clone()),
+        _ => None,
+    }
+}
+
+/// Offer ids that may be interpolated into a GraphQL string.
+fn safe_offer_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 64
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, ':' | '.' | '_' | '-'))
+}
+
+/// Achievement set of one library row: the cached owned entry first (by id or
+/// by title, because installed rows keep their own id), then a live lookup.
+async fn achievement_set_for(access: &str, id: &str, title: &str) -> Option<String> {
+    let owned = cached_owned();
+    if let Some(entry) = owned.iter().find(|game| game.id == id) {
+        if !entry.achievement_set.is_empty() {
+            return Some(entry.achievement_set.clone());
+        }
+    }
+    let wanted = ea::normalize_title(title);
+    if !wanted.is_empty() {
+        if let Some(entry) = owned.iter().find(|game| ea::normalize_title(&game.name) == wanted) {
+            if !entry.achievement_set.is_empty() {
+                return Some(entry.achievement_set.clone());
+            }
+        }
+    }
+    if !safe_offer_id(id) {
+        return None;
+    }
+    let query = format!(
+        "query{{legacyOffers(offerIds:[\"{id}\"],locale:\"DEFAULT\"){{offerId:id achievementSetOverride}}}}"
+    );
+    let value = graphql(access, &query).await.ok()?;
+    let set = value
+        .pointer("/data/legacyOffers/0/achievementSetOverride")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if set.is_empty() {
+        None
+    } else {
+        Some(set)
+    }
+}
+
+/// One achievement as the EA service reports it.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct EaAchievement {
+    pub name: String,
+    pub unlocked: bool,
+    pub unlock_date: Option<String>,
+}
+
+/// EA achievements for one library row, shaped like the other stores' data.
+/// The service reports the complete set (locked and unlocked) with an
+/// `awardCount` flag, so no separate definitions call is needed.
+pub(crate) async fn achievements(id: &str, title: &str) -> GameAchievementsResponse {
+    let Ok(access) = ensure_access().await else {
+        return GameAchievementsResponse::default();
+    };
+    let Some(persona) = persona_id(&access) else {
+        return GameAchievementsResponse::default();
+    };
+    let Some(set) = achievement_set_for(&access, id, title).await else {
+        return GameAchievementsResponse::default();
+    };
+    let query = format!(
+        "query{{achievements(achievementSetIds:[\"{set}\"],playerPsd:\"{persona}\",showHidden:true){{id achievements{{id name awardCount date}}}}}}"
+    );
+    let Ok(value) = graphql(&access, &query).await else {
+        return GameAchievementsResponse::default();
+    };
+    let sets = value
+        .pointer("/data/achievements")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let mut items = Vec::new();
+    for set_value in sets {
+        let Some(list) = set_value.get("achievements").and_then(|v| v.as_array()) else {
+            continue;
+        };
+        for achievement in list {
+            let name = achievement
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            if name.is_empty() {
+                continue;
+            }
+            let unlocked = achievement.get("awardCount").and_then(|v| v.as_u64()).unwrap_or(0) == 1;
+            let date = achievement.get("date").and_then(|v| v.as_str()).unwrap_or("").trim();
+            items.push(EaAchievement {
+                name,
+                unlocked,
+                // Locked rows carry the request time, which is not an unlock date.
+                unlock_date: if unlocked && !date.is_empty() { Some(date.to_string()) } else { None },
+            });
+        }
+    }
+    achievements_response(items)
+}
+
+/// Maps the EA list to the shared achievement model: names, unlock flags and
+/// dates; EA exposes no descriptions, icons, XP or tiers.
+pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievementsResponse {
+    let total = items.len() as u32;
+    let achievements: Vec<AchievementItem> = items
+        .into_iter()
+        .map(|item| AchievementItem {
+            name: item.name.clone(),
+            display_name: item.name,
+            description: String::new(),
+            xp: 0,
+            unlocked: item.unlocked,
+            progress: if item.unlocked { 1.0 } else { 0.0 },
+            unlock_date: item.unlock_date,
+            icon_id: String::new(),
+            icon_link: String::new(),
+            tier: None,
+            rarity: None,
+            hidden: false,
+            is_base: true,
+        })
+        .collect();
+    let unlocked = achievements.iter().filter(|item| item.unlocked).count() as u32;
+    GameAchievementsResponse {
+        achievements,
+        user_unlocked: unlocked,
+        total_achievements: total,
+        supported: Some(total > 0),
+        ..Default::default()
+    }
 }
 
 /* ---------- Library merge ---------- */
@@ -630,6 +912,7 @@ mod tests {
             name: "EA SPORTS FC 25".into(),
             content_id: "1002975".into(),
             slug: "ea-sports-fc-25".into(),
+            achievement_set: "123_456_789".into(),
         };
         let title = ea::normalize_title(&owned.name);
         let existing = games.iter_mut().find(|game| {
@@ -638,5 +921,58 @@ mod tests {
         });
         assert!(existing.is_some());
         assert_eq!(games.len(), 1);
+    }
+
+    #[test]
+    fn add_ons_are_not_games() {
+        assert!(is_dlc("addon", ""));
+        assert!(is_dlc("AddOn", ""));
+        assert!(is_dlc("expansion", ""));
+        assert!(is_dlc("", "EXTRA_CONTENT"));
+        assert!(is_dlc("", "expansion"));
+        assert!(!is_dlc("FullGame", "BASE_GAME"));
+        assert!(!is_dlc("", "COLLECTION"));
+    }
+
+    #[test]
+    fn the_persona_id_comes_from_the_access_token() {
+        // {"nexus":{"psid":1005725578979}} as an unpadded base64url payload.
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(br#"{"nexus":{"psid":1005725578979}}"#);
+        let token = format!("header.{payload}.signature");
+        assert_eq!(persona_id(&token).as_deref(), Some("1005725578979"));
+        assert_eq!(persona_id("no-dots"), None);
+        assert_eq!(persona_id("a.b.c"), None);
+    }
+
+    #[test]
+    fn achievements_map_to_the_shared_model() {
+        let response = achievements_response(vec![
+            EaAchievement {
+                name: "First".into(),
+                unlocked: true,
+                unlock_date: Some("2024-01-02T03:04:05.000Z".into()),
+            },
+            EaAchievement { name: "Second".into(), unlocked: false, unlock_date: None },
+        ]);
+        assert_eq!(response.total_achievements, 2);
+        assert_eq!(response.user_unlocked, 1);
+        assert_eq!(response.achievements.len(), 2);
+        assert!(response.achievements.iter().any(|item| item.name == "First" && item.unlocked));
+        assert_eq!(
+            response.achievements[0].unlock_date.as_deref(),
+            Some("2024-01-02T03:04:05.000Z")
+        );
+        assert_eq!(response.supported, Some(true));
+        assert_eq!(achievements_response(Vec::new()).supported, Some(false));
+    }
+
+    #[test]
+    fn offer_ids_are_sanitized_before_they_enter_a_query() {
+        assert!(safe_offer_id("Origin.OFR.50.0001051"));
+        assert!(safe_offer_id("OFB-EAST:55619"));
+        assert!(!safe_offer_id("id\"} extra{"));
+        assert!(!safe_offer_id(""));
+        assert!(!safe_offer_id(&"x".repeat(65)));
     }
 }

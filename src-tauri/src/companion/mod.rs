@@ -442,13 +442,16 @@ fn watch_companion_exit(
     });
 }
 
-/// Playtime rows keyed by library id. Ubisoft reports it through its stats
-/// service; the other clients have no playtime API, so the sessions this
+/// Playtime rows keyed by library id. Ubisoft and EA report it through their
+/// services; the other clients have no playtime API, so the sessions this
 /// launcher started are summed from the local cache.
 #[tauri::command]
 pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRow> {
     if store == "ubisoft" {
         return ubisoft_login::playtimes().await;
+    }
+    if store == "ea" {
+        return ea_playtimes().await;
     }
     let prefix = format!("{store}::");
     load_local_playtimes()
@@ -463,17 +466,61 @@ pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRo
         .collect()
 }
 
-/// Achievements the local Ubisoft Connect client cached for one game. The id is
-/// the library card id; for an owned game the client has not installed it is
-/// the catalog space id and the configuration cache supplies the product id
-/// and the archive spec. `title` is the fallback matcher.
+/// EA's own totals, with the locally tracked sessions as the fallback. The
+/// service works in game slugs; the id the UI uses depends on whether the
+/// game is installed, so the merged library is consulted for the row id.
+async fn ea_playtimes() -> Vec<ubisoft_login::PlaytimeRow> {
+    let mut totals: std::collections::HashMap<String, u64> = load_local_playtimes()
+        .into_iter()
+        .filter_map(|(key, seconds)| key.strip_prefix("ea::").map(|id| (id.to_string(), seconds)))
+        .collect();
+    if accounts::is_linked("ea") {
+        if let Ok(access) = ea_login::ensure_access().await {
+            if let Ok(api_rows) = ea_login::fetch_playtimes(&access).await {
+                let games = discover("ea");
+                for (slug, seconds) in api_rows {
+                    let Some(owned) = ea_login::owned_for_slug(&slug) else {
+                        continue;
+                    };
+                    let title = ea::normalize_title(&owned.name);
+                    let id = games
+                        .iter()
+                        .find(|game| {
+                            game.id == owned.id
+                                || (!owned.content_id.is_empty()
+                                    && game.store_id.split(',').any(|part| part.trim() == owned.content_id))
+                                || (!title.is_empty() && ea::normalize_title(&game.name) == title)
+                        })
+                        .map(|game| game.id.clone())
+                        .unwrap_or_else(|| owned.id.clone());
+                    let entry = totals.entry(id).or_insert(0);
+                    *entry = (*entry).max(seconds);
+                }
+            }
+        }
+    }
+    let mut rows: Vec<ubisoft_login::PlaytimeRow> = totals
+        .into_iter()
+        .map(|(id, total_seconds)| ubisoft_login::PlaytimeRow { id, total_seconds })
+        .collect();
+    rows.sort_by(|a, b| a.id.cmp(&b.id));
+    rows
+}
+
+/// Achievements the store's own service reports. Ubisoft's client cache needs
+/// no session; EA reads the achievement set of the owned offer with the sealed
+/// account session. The id is the library card id, `title` the fallback
+/// matcher for installed rows that kept their own id.
 #[tauri::command]
-pub fn companion_achievements(
+pub async fn companion_achievements(
     store: String,
     id: String,
     title: Option<String>,
     language: Option<String>,
 ) -> GameAchievementsResponse {
+    if store == "ea" {
+        return ea_login::achievements(&id, title.as_deref().unwrap_or("")).await;
+    }
     if store != "ubisoft" {
         return GameAchievementsResponse::default();
     }

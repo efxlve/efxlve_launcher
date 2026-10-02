@@ -898,6 +898,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>`,
       );
     }
+    // EA games ship achievements through the EA account service; a title with
+    // no achievement set of its own stays empty here.
+    if (s.appName.startsWith("ea::")) {
+      return emptyState("trophy", t("ach.eaTitle"), t("ach.eaDesc"));
+    }
     if (partner) {
       return emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }));
     }

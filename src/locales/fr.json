@@ -394,6 +394,8 @@
   "ach.partnerDesc": "Les succès de ce jeu sont suivis directement via {name}.",
   "ach.ubiTitle": "Succès Ubisoft Connect",
   "ach.ubiDesc": "Les succès sont gérés par Ubisoft Connect. Si la liste est vide, ouvrez le jeu une fois dans le client pour qu'il télécharge les données ; ils apparaîtront ensuite ici.",
+  "ach.eaTitle": "Aucun succès EA pour ce jeu",
+  "ach.eaDesc": "Les succès sont lus depuis votre compte EA. Un jeu sans ensemble de succès EA reste vide ici.",
   "ach.ubiEpicTitle": "Les succès viennent d'Ubisoft Connect",
   "ach.ubiEpicDesc": "Ce jeu n'a pas de succès sur Epic Games. La liste ci-dessous est lue depuis Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "Ce jeu n'a pas de succès sur Epic Games. Ouvrez-le une fois dans Ubisoft Connect pour télécharger les données ; elles apparaîtront ensuite ici.",

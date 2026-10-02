@@ -394,6 +394,8 @@
   "ach.partnerDesc": "ความสำเร็จของเกมนี้ติดตามผ่าน {name} โดยตรง",
   "ach.ubiTitle": "ความสำเร็จของ Ubisoft Connect",
   "ach.ubiDesc": "ความสำเร็จจัดการผ่าน Ubisoft Connect หากรายการว่าง ให้เปิดเกมในไคลเอนต์หนึ่งครั้งเพื่อดาวน์โหลดข้อมูลความสำเร็จ แล้วจะแสดงที่นี่",
+  "ach.eaTitle": "เกมนี้ไม่มีความสำเร็จของ EA",
+  "ach.eaDesc": "ความสำเร็จถูกอ่านจากบัญชี EA ของคุณ เกมที่ไม่มีชุดความสำเร็จของ EA จะว่างเปล่าที่นี่",
   "ach.ubiEpicTitle": "ความสำเร็จมาจาก Ubisoft Connect",
   "ach.ubiEpicDesc": "เกมนี้ไม่มีความสำเร็จบน Epic Games รายการด้านล่างอ่านจาก Ubisoft Connect",
   "ach.ubiEpicEmptyInstalled": "เกมนี้ไม่มีความสำเร็จบน Epic Games เปิดเกมใน Ubisoft Connect หนึ่งครั้งเพื่อดาวน์โหลดข้อมูล แล้วจะแสดงที่นี่",

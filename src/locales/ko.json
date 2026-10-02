@@ -394,6 +394,8 @@
   "ach.partnerDesc": "이 게임의 업적은 {name}에서 직접 추적됩니다.",
   "ach.ubiTitle": "Ubisoft Connect 업적",
   "ach.ubiDesc": "업적은 Ubisoft Connect에서 관리합니다. 목록이 비어 있다면 클라이언트에서 게임을 한 번 실행해 업적 데이터를 내려받으세요. 그러면 여기에 표시됩니다.",
+  "ach.eaTitle": "이 게임에는 EA 업적이 없습니다",
+  "ach.eaDesc": "업적은 EA 계정에서 읽어옵니다. EA 업적 세트가 없는 게임은 여기에서 비어 있습니다.",
   "ach.ubiEpicTitle": "업적은 Ubisoft Connect에서 가져옵니다",
   "ach.ubiEpicDesc": "이 게임에는 Epic Games 업적이 없습니다. 아래 목록은 Ubisoft Connect에서 읽습니다.",
   "ach.ubiEpicEmptyInstalled": "이 게임에는 Epic Games 업적이 없습니다. Ubisoft Connect에서 한 번 실행해 업적 데이터를 내려받으세요. 그러면 여기에 표시됩니다.",

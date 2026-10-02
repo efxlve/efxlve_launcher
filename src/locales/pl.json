@@ -394,6 +394,8 @@
   "ach.partnerDesc": "Osiągnięcia tej gry są śledzone bezpośrednio przez {name}.",
   "ach.ubiTitle": "Osiągnięcia Ubisoft Connect",
   "ach.ubiDesc": "Osiągnięciami zarządza Ubisoft Connect. Jeśli lista jest pusta, otwórz grę raz w kliencie, aby pobrał dane; wtedy pojawią się tutaj.",
+  "ach.eaTitle": "Brak osiągnięć EA dla tej gry",
+  "ach.eaDesc": "Osiągnięcia są czytane z konta EA. Gry bez zestawu osiągnięć EA pozostaną tu puste.",
   "ach.ubiEpicTitle": "Osiągnięcia pochodzą z Ubisoft Connect",
   "ach.ubiEpicDesc": "Ta gra nie ma osiągnięć w Epic Games. Lista poniżej jest odczytywana z Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "Ta gra nie ma osiągnięć w Epic Games. Otwórz ją raz w Ubisoft Connect, aby pobrać dane; wtedy pojawią się tutaj.",

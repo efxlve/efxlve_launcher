@@ -394,6 +394,8 @@
   "ach.partnerDesc": "As conquistas deste jogo são acompanhadas diretamente por {name}.",
   "ach.ubiTitle": "Conquistas do Ubisoft Connect",
   "ach.ubiDesc": "As conquistas são gerenciadas pelo Ubisoft Connect. Se a lista estiver vazia, abra o jogo uma vez no cliente para baixar os dados; depois elas aparecerão aqui.",
+  "ach.eaTitle": "Nenhuma conquista da EA para este jogo",
+  "ach.eaDesc": "As conquistas são lidas da sua conta EA. Jogos sem conjunto de conquistas da EA ficam vazios aqui.",
   "ach.ubiEpicTitle": "As conquistas vêm do Ubisoft Connect",
   "ach.ubiEpicDesc": "Este jogo não tem conquistas na Epic Games. A lista abaixo é lida do Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "Este jogo não tem conquistas na Epic Games. Abra-o uma vez no Ubisoft Connect para baixar os dados; depois elas aparecerão aqui.",

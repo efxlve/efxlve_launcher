@@ -417,6 +417,8 @@
   "ach.partnerDesc": "Bu oyunun başarımları doğrudan {name} üzerinden takip edilmektedir.",
   "ach.ubiTitle": "Ubisoft Connect başarımları",
   "ach.ubiDesc": "Başarımlar Ubisoft Connect üzerinden takip edilir. Liste boşsa, istemcide bu oyunu bir kez açın; başarım verisi indirildiğinde burada görünecektir.",
+  "ach.eaTitle": "Bu oyunda EA başarımı yok",
+  "ach.eaDesc": "Başarımlar EA hesabından okunur. EA tarafında başarım seti olmayan oyunlarda liste boş kalır.",
   "ach.ubiEpicTitle": "Başarımlar Ubisoft Connect'ten geliyor",
   "ach.ubiEpicDesc": "Bu oyunun Epic Games üzerinde başarımları yok. Aşağıdaki liste Ubisoft Connect'ten okunuyor.",
   "ach.ubiEpicEmptyInstalled": "Bu oyunun Epic Games üzerinde başarımları yok. Başarım verisini indirmek için oyunu Ubisoft Connect'te bir kez açın; veriler burada görünecektir.",

@@ -394,6 +394,8 @@
   "ach.partnerDesc": "このゲームの実績は {name} で直接追跡されます。",
   "ach.ubiTitle": "Ubisoft Connectの実績",
   "ach.ubiDesc": "実績はUbisoft Connectで管理されています。リストが空の場合は、クライアントでこのゲームを一度起動して実績データをダウンロードしてください。その後ここに表示されます。",
+  "ach.eaTitle": "このゲームに EA の実績はありません",
+  "ach.eaDesc": "実績は EA アカウントから読み取られます。EA の実績セットがないゲームではここが空のままになります。",
   "ach.ubiEpicTitle": "実績はUbisoft Connectから取得します",
   "ach.ubiEpicDesc": "このゲームにはEpic Gamesの実績がありません。以下のリストはUbisoft Connectから読み込んでいます。",
   "ach.ubiEpicEmptyInstalled": "このゲームにはEpic Gamesの実績がありません。Ubisoft Connectで一度起動して実績データをダウンロードしてください。その後ここに表示されます。",

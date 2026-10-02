@@ -394,6 +394,8 @@
   "ach.partnerDesc": "Die Erfolge dieses Spiels werden direkt über {name} erfasst.",
   "ach.ubiTitle": "Ubisoft Connect-Erfolge",
   "ach.ubiDesc": "Erfolge werden über Ubisoft Connect verwaltet. Ist die Liste leer, öffne das Spiel einmal im Client, damit er die Erfolgsdaten herunterlädt; danach erscheinen sie hier.",
+  "ach.eaTitle": "Keine EA-Erfolge für dieses Spiel",
+  "ach.eaDesc": "Erfolge werden aus deinem EA-Konto gelesen. Spiele ohne EA-Erfolgsset bleiben hier leer.",
   "ach.ubiEpicTitle": "Erfolge stammen aus Ubisoft Connect",
   "ach.ubiEpicDesc": "Dieses Spiel hat keine Erfolge auf Epic Games. Die Liste unten wird aus Ubisoft Connect gelesen.",
   "ach.ubiEpicEmptyInstalled": "Dieses Spiel hat keine Erfolge auf Epic Games. Öffne es einmal in Ubisoft Connect, um die Erfolgsdaten herunterzuladen; danach erscheinen sie hier.",

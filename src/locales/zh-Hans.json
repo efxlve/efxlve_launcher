@@ -394,6 +394,8 @@
   "ach.partnerDesc": "此游戏的成就由 {name} 直接追踪。",
   "ach.ubiTitle": "Ubisoft Connect 成就",
   "ach.ubiDesc": "成就由 Ubisoft Connect 管理。如果列表为空，请在客户端中打开一次此游戏以下载成就数据；之后它们会显示在这里。",
+  "ach.eaTitle": "此游戏没有 EA 成就",
+  "ach.eaDesc": "成就从你的 EA 账户读取。没有 EA 成就集的游戏在此保持为空。",
   "ach.ubiEpicTitle": "成就来自 Ubisoft Connect",
   "ach.ubiEpicDesc": "此游戏在 Epic Games 上没有成就。下面的列表读取自 Ubisoft Connect。",
   "ach.ubiEpicEmptyInstalled": "此游戏在 Epic Games 上没有成就。请在 Ubisoft Connect 中打开一次以下载成就数据；之后它们会显示在这里。",

@@ -394,6 +394,8 @@
   "ach.partnerDesc": "Los logros de este juego se registran directamente a través de {name}.",
   "ach.ubiTitle": "Logros de Ubisoft Connect",
   "ach.ubiDesc": "Ubisoft Connect gestiona los logros. Si la lista está vacía, abre el juego una vez en el cliente para que descargue los datos; después aparecerán aquí.",
+  "ach.eaTitle": "Sin logros de EA para este juego",
+  "ach.eaDesc": "Los logros se leen de tu cuenta de EA. Los juegos sin conjunto de logros de EA permanecen vacíos aquí.",
   "ach.ubiEpicTitle": "Los logros vienen de Ubisoft Connect",
   "ach.ubiEpicDesc": "Este juego no tiene logros en Epic Games. La lista de abajo se lee de Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "Este juego no tiene logros en Epic Games. Ábrelo una vez en Ubisoft Connect para descargar los datos; después aparecerán aquí.",

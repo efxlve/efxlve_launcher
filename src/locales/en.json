@@ -417,6 +417,8 @@
   "ach.partnerDesc": "This game's achievements are tracked directly through {name}.",
   "ach.ubiTitle": "Ubisoft Connect achievements",
   "ach.ubiDesc": "Achievements are tracked by Ubisoft Connect. If the list is empty, open this game once in the client so it downloads the achievement data; it will appear here afterwards.",
+  "ach.eaTitle": "No EA achievements for this game",
+  "ach.eaDesc": "Achievements are read from your EA account. A game without an EA achievement set stays empty here.",
   "ach.ubiEpicTitle": "Achievements come from Ubisoft Connect",
   "ach.ubiEpicDesc": "This game has no achievements on Epic Games. The list below is read from Ubisoft Connect.",
   "ach.ubiEpicEmptyInstalled": "This game has no achievements on Epic Games. Open it once in Ubisoft Connect to download the achievement data; it will appear here afterwards.",
