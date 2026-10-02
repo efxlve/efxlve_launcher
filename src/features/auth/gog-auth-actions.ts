@@ -17,6 +17,8 @@ import {
   gogAuthStatus,
   gogCachedLibrary,
   gogCheckUpdates,
+  gogDefaultInstallDir,
+  gogGetInstallDir,
   gogListGames,
   gogLogout,
   gogSyncAchievements,
@@ -211,6 +213,18 @@ export async function gogLogoutAction(): Promise<void> {
 
 /** Check saved GOG session on app boot and hydrate cache-first. */
 export async function initGogSession(): Promise<void> {
+  // Install folder settings are local and independent of the account state, so
+  // the install dialog has them even when Settings was never opened.
+  try {
+    const [dir, fallback] = await Promise.all([
+      gogGetInstallDir().catch(() => null),
+      gogDefaultInstallDir().catch(() => ""),
+    ]);
+    S.gogInstallDir = dir || "";
+    S.gogDefaultDir = fallback || "";
+  } catch {
+    // Keep the last values; the dialog falls back to C:\Games\GOG.
+  }
   try {
     const status = await gogAuthStatus();
     if (status.logged_in) {

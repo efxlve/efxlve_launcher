@@ -252,10 +252,17 @@ pub async fn gog_install_game(
     let bin_path = ensure_binary(&app).await.map_err(cmd_error)?;
     let auth_path = auth_json_path(&app);
 
-    // Target installation directory
+    // Target installation directory: the caller's pick first, then the folder
+    // chosen in Settings → Downloads, then %USERPROFILE%\Games\GOG.
     let target_dir_str = install_path.unwrap_or_else(|| {
-        let base = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
-        format!("{base}\\Games\\GOG\\{clean_id}")
+        let base = crate::load_settings(&app)
+            .gog_install_dir
+            .filter(|p| !p.trim().is_empty())
+            .unwrap_or_else(|| {
+                let home = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
+                format!("{home}\\Games\\GOG")
+            });
+        format!("{}\\{}", base.trim_end_matches(['\\', '/']), clean_id)
     });
     let target_dir = PathBuf::from(&target_dir_str);
     let _ = tokio::fs::create_dir_all(&target_dir).await;
@@ -290,6 +297,8 @@ pub async fn gog_install_game(
     let comp_id_clone = composite_id.clone();
     let clean_id_clone = clean_id.clone();
     let target_dir_clone = target_dir.clone();
+    // Same network profile as Epic: gogdl takes the worker count directly.
+    let workers = crate::profile_workers(crate::load_settings(&app).network_profile.as_deref());
 
     tokio::spawn(async move {
         let mut cmd = tokio::process::Command::new(&bin_path);
@@ -303,6 +312,9 @@ pub async fn gog_install_game(
             .arg("windows")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        if let Some(workers) = workers {
+            cmd.arg("--max-workers").arg(workers);
+        }
 
         #[cfg(windows)]
         {

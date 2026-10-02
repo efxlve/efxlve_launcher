@@ -197,3 +197,12 @@ export interface GalaxyPlaytimeEntry {
 
 export const gogSyncPlaytime = (userId?: string | null) =>
   invoke<GalaxyPlaytimeEntry[]>("gog_sync_playtime", { userId: userId ?? null });
+
+/** GOG install folder from Settings → Downloads (empty = the default). */
+export const gogGetInstallDir = () => invoke<string | null>("gog_get_install_dir");
+
+export const gogSetInstallDir = (path: string | null) =>
+  invoke<void>("gog_set_install_dir", { path });
+
+/** Fallback GOG install folder: `%USERPROFILE%\Games\GOG`. */
+export const gogDefaultInstallDir = () => invoke<string>("gog_default_install_dir");

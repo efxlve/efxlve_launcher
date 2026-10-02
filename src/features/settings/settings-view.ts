@@ -38,6 +38,7 @@ import {
   type ScreenshotMoveInfo,
   type ThirdPartyLauncher,
 } from "../../epic";
+import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
@@ -94,6 +95,16 @@ function renderDownloads(): string {
      <button type="button" class="btn primary small" data-act="epic-save-install-dir">${t("common.save")}</button>`,
   );
 
+  const gogSavedDir = S.gogInstallDir.trim();
+  const gogShownDir = gogSavedDir || S.gogDefaultDir || "—";
+  const gogDir = row(
+    t("settings.gogInstallDirTitle"),
+    `${t("settings.gogInstallDirHint")} <code>${esc(gogShownDir)}</code>`,
+    `<input id="gog-install-dir" class="input settings-path-input" value="${esc(gogSavedDir)}" placeholder="${esc(S.gogDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+     <button type="button" class="btn ghost small" data-act="dl-pick-gog-install-dir">${t("common.browse")}</button>
+     <button type="button" class="btn primary small" data-act="gog-save-install-dir">${t("common.save")}</button>`,
+  );
+
   const profileDesc = S.networkProfile === "max" ? t("settings.netMaxDesc") : S.networkProfile === "low" ? t("settings.netLowDesc") : t("settings.netBalancedDesc");
   const profile = row(t("settings.netCardsTitle"), profileDesc, `
     <div class="seg" role="radiogroup">
@@ -122,7 +133,7 @@ function renderDownloads(): string {
 
   return (
     infoBox("downloads.scopeInfo") +
-    group(dir + row(
+    group(dir + gogDir + row(
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
@@ -559,19 +570,23 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
         loadSavedAccounts().catch(() => []),
         epicGetScreenshotDir().catch(() => ""),
         steamGetApiKey().catch(() => null),
+        gogGetInstallDir().catch(() => null),
+        gogDefaultInstallDir().catch(() => ""),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
       S.steamGridApiKey = sgdbKey;
       S.screenshotDir = ssDir || "";
       S.steamApiKey = steamKey;
+      S.gogInstallDir = gogDir || "";
+      S.gogDefaultDir = gogDefault || "";
     } catch {
       // Silent: keep the last cached values.
     }

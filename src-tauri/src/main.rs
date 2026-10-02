@@ -102,6 +102,9 @@ fn app_set_minimize_to_tray(enabled: bool, state: tauri::State<'_, TrayPref>) {
 pub struct EpicSettings {
     #[serde(default)]
     pub install_dir: Option<String>,
+    /// Default folder for GOG installs (empty = `%USERPROFILE%\Games\GOG`).
+    #[serde(default)]
+    pub gog_install_dir: Option<String>,
     #[serde(default)]
     pub network_profile: Option<String>,
     #[serde(default)]
@@ -127,6 +130,17 @@ pub struct EpicSettings {
 
 fn default_true() -> bool {
     true
+}
+
+/// Concurrent download workers for a network profile. Epic passes the count to
+/// legendary, GOG to gogdl, so both stores share one meaning.
+pub fn profile_workers(profile: Option<&str>) -> Option<&'static str> {
+    match profile {
+        Some("max") => Some("32"),
+        Some("low") => Some("2"),
+        Some("balanced") => Some("8"),
+        _ => None,
+    }
 }
 
 fn settings_file(app: &AppHandle) -> std::path::PathBuf {
@@ -671,6 +685,9 @@ fn main() {
             gogdl::commands::gog_sync_galaxy_installed,
             gogdl::commands::gog_check_updates,
             gogdl::commands::gog_sync_playtime,
+            gogdl::commands::gog_get_install_dir,
+            gogdl::commands::gog_set_install_dir,
+            gogdl::commands::gog_default_install_dir,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

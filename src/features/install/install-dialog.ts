@@ -73,7 +73,7 @@ export async function openInstallDialog(appName: string): Promise<void> {
     S.installDialogShortcut = true;
     S.installDialogHasOptions = false;
     S.installDialogLoading = false;
-    S.installDialogDir = S.epicSettingsCache?.install_dir || S.epicDefaultDir || "C:\\Games\\GOG";
+    S.installDialogDir = S.gogInstallDir || S.gogDefaultDir || "C:\\Games\\GOG";
     renderInstallDialog();
     return;
   }

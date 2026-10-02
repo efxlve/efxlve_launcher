@@ -14,7 +14,7 @@ import { setView } from "../../store/store-view";
 import { epicDownload } from "../../auth/auth-actions";
 import { epicCancel, epicUninstall, refreshEpicInstalled } from "../../../core/epic-actions";
 import { closeManagePopup } from "../../manage/manage-view";
-import { gogCancelDownload, gogImportGame, gogPauseDownload, gogResumeDownload } from "../../../gog";
+import { gogCancelDownload, gogImportGame, gogPauseDownload, gogResumeDownload, gogSetInstallDir } from "../../../gog";
 import {
   browseInstallDir,
   closeInstallDialog,
@@ -225,6 +225,37 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         .catch((e: unknown) => toast(String(e), "err"));
       return true;
     }
+
+    case "gog-save-install-dir": {
+      const input = document.getElementById("gog-install-dir") as HTMLInputElement | null;
+      const v = input?.value?.trim() ?? "";
+      gogSetInstallDir(v ? v : null)
+        .then(() => {
+          S.gogInstallDir = v;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        })
+        .catch((e: unknown) => toast(String(e), "err"));
+      return true;
+    }
+
+    case "dl-pick-gog-install-dir":
+      void (async () => {
+        const input = document.getElementById("gog-install-dir") as HTMLInputElement | null;
+        const current = input?.value?.trim() || S.gogInstallDir || S.gogDefaultDir || null;
+        const chosen = await epicSelectFolderDialog(current, i18nT("move.pickerTitle")).catch(() => null);
+        if (!chosen) return;
+        if (input) input.value = chosen;
+        try {
+          await gogSetInstallDir(chosen);
+          S.gogInstallDir = chosen;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
 
     case "import-installed-folder":
       void (async () => {

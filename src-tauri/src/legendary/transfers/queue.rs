@@ -540,14 +540,10 @@ pub(super) fn emit_cancelled(app: &AppHandle, id: &str) {
 
 /// Concurrent chunk download workers per network profile. Higher worker counts
 /// saturate fast connections better (Epic's own launcher uses ChunkDownloads=32).
+/// The mapping is shared with the GOG downloader.
 pub(super) fn get_worker_count_arg(app: &AppHandle) -> Option<&'static str> {
     let s = load_settings(app);
-    match s.network_profile.as_deref() {
-        Some("max") => Some("32"),
-        Some("low") => Some("2"),
-        Some("balanced") => Some("8"),
-        _ => None,
-    }
+    crate::profile_workers(s.network_profile.as_deref())
 }
 
 /// Shared chunk-buffer memory (MiB) per network profile. Kept modest so low-RAM

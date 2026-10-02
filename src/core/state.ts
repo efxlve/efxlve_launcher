@@ -387,6 +387,7 @@ export const S = {
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
   autoUpdateTime: (localStorage.getItem(AUTO_UPDATE_TIME_KEY) || "03:00") as string,
   epicDefaultDir: "",
+  gogInstallDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
   thirdPartyLaunchers: ([]) as ThirdPartyLauncher[],

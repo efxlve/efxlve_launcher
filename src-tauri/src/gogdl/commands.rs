@@ -389,3 +389,31 @@ pub async fn gog_sync_playtime(
     .await
     .map_err(|e| e.to_string())
 }
+
+/// Default GOG install folder from Settings → Downloads (empty = default).
+#[command]
+pub fn gog_get_install_dir(app: AppHandle) -> Option<String> {
+    crate::load_settings(&app).gog_install_dir
+}
+
+#[command]
+pub fn gog_set_install_dir(app: AppHandle, path: Option<String>) -> Result<(), String> {
+    let mut s = crate::load_settings(&app);
+    s.gog_install_dir = path.and_then(|p| {
+        let trimmed = p.trim().to_string();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed)
+        }
+    });
+    crate::save_settings(&app, &s);
+    Ok(())
+}
+
+/// Fallback GOG install folder: `%USERPROFILE%\Games\GOG`.
+#[command]
+pub fn gog_default_install_dir() -> String {
+    let home = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
+    format!("{home}\\Games\\GOG")
+}
