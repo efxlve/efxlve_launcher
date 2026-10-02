@@ -699,9 +699,9 @@ function accountCards(): string {
     ${groupTitle("accounts.groupManaged")}
     ${epicCard()}
     ${gogCard()}
-    ${steamCard()}
     ${groupTitle("accounts.groupClients")}
     ${infoBox("accounts.clientInfo")}
+    ${steamCard()}
     ${companionCard("xbox", "Xbox")}
     ${companionCard("battlenet", "Battle.net")}
     ${companionCard("ubisoft", "Ubisoft Connect")}
