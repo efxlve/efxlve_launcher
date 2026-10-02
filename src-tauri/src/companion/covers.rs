@@ -126,14 +126,27 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
 }
 
 async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQuery, String, String)> {
-    if !query.store_id.is_empty() {
-        if let Some(poster) = xbox_poster(&client, &query.store_id).await {
-            return Some((query, poster, String::new()));
-        }
-    }
-    if let Some(app) = steam_app(&client, &query.name).await {
-        let cover = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_600x900.jpg");
-        let hero = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_hero.jpg");
+    // Xbox rows carry a Store id: the product page knows both the poster and
+    // the wide art, so the portrait is never stretched into the banner.
+    let xbox = if !query.store_id.is_empty() {
+        xbox_art(&client, &query.store_id).await
+    } else {
+        None
+    };
+    let steam = steam_app(&client, &query.name).await;
+    let cover = xbox
+        .as_ref()
+        .map(|(cover, _)| cover.clone())
+        .filter(|cover| !cover.is_empty())
+        .or_else(|| steam.map(steam_cover))
+        .unwrap_or_default();
+    let hero = xbox
+        .as_ref()
+        .map(|(_, hero)| hero.clone())
+        .filter(|hero| !hero.is_empty())
+        .or_else(|| steam.map(steam_hero))
+        .unwrap_or_default();
+    if !cover.is_empty() || !hero.is_empty() {
         return Some((query, cover, hero));
     }
     // Riot's PC titles are not on Steam: fall back to the game's own share
@@ -144,6 +157,31 @@ async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQ
         }
     }
     None
+}
+
+fn steam_cover(app: u64) -> String {
+    format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_600x900.jpg")
+}
+
+fn steam_hero(app: u64) -> String {
+    format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_hero.jpg")
+}
+
+/// Microsoft Store images are tiny until a size is requested, and the title
+/// APIs hand out plain `http://` links. Non-Store hosts pass through.
+pub(crate) fn sized_store_image(url: &str, width: u32) -> String {
+    let url = url.trim();
+    if url.is_empty() {
+        return String::new();
+    }
+    let mut url = url.to_string();
+    if let Some(rest) = url.strip_prefix("http://") {
+        url = format!("https://{rest}");
+    }
+    if !url.contains("store-images.s-microsoft.com") || url.contains('?') {
+        return url;
+    }
+    format!("{url}?q=90&w={width}")
 }
 
 /// Official Riot pages used only to resolve a share image for the four titles.
@@ -180,7 +218,7 @@ pub(crate) fn html_meta_content(html: &str, property: &str) -> Option<String> {
     None
 }
 
-async fn xbox_poster(client: &reqwest::Client, store_id: &str) -> Option<String> {
+async fn xbox_art(client: &reqwest::Client, store_id: &str) -> Option<(String, String)> {
     if !store_id.chars().all(|c| c.is_ascii_alphanumeric()) {
         return None;
     }
@@ -188,7 +226,23 @@ async fn xbox_poster(client: &reqwest::Client, store_id: &str) -> Option<String>
         "https://storeedgefd.dsx.mp.microsoft.com/v9.0/products/{store_id}?market=US&locale=en-US&deviceFamily=Windows.Desktop"
     );
     let value: serde_json::Value = client.get(url).send().await.ok()?.json().await.ok()?;
-    find_image(&value, "Poster").or_else(|| find_image(&value, "BoxArt"))
+    Some(xbox_art_urls(&value))
+}
+
+/// (cover, hero) from a displaycatalog product payload, sized for use. The
+/// wide kinds win: `BrandedKeyArt` is often a portrait.
+pub(crate) fn xbox_art_urls(value: &serde_json::Value) -> (String, String) {
+    let cover = find_image(value, "Poster")
+        .or_else(|| find_image(value, "BoxArt"))
+        .unwrap_or_default();
+    let hero = find_image(value, "SuperHeroArt")
+        .or_else(|| find_image(value, "TitledHeroArt"))
+        .or_else(|| find_image(value, "Hero"))
+        .or_else(|| find_image(value, "TransparentKeyArt"))
+        .or_else(|| find_image(value, "BrandedKeyArt"))
+        .or_else(|| find_image(value, "Background"))
+        .unwrap_or_default();
+    (sized_store_image(&cover, 720), sized_store_image(&hero, 1920))
 }
 
 fn find_image(value: &serde_json::Value, kind: &str) -> Option<String> {
@@ -198,7 +252,8 @@ fn find_image(value: &serde_json::Value, kind: &str) -> Option<String> {
             let is_kind = map.get("ImageType").and_then(|v| v.as_str()) == Some(kind);
             if is_kind {
                 if let Some(uri) = map.get("Uri").and_then(|v| v.as_str()) {
-                    if uri.starts_with("https://") {
+                    // `sized_store_image` upgrades plain http links later.
+                    if uri.starts_with("https://") || uri.starts_with("http://") {
                         return Some(uri.to_string());
                     }
                 }
@@ -316,6 +371,40 @@ mod tests {
             find_image(&json, "Poster").as_deref(),
             Some("https://store-images.s-microsoft.com/image/poster")
         );
+    }
+
+    #[test]
+    fn store_images_get_a_size_and_https() {
+        assert_eq!(
+            sized_store_image("http://store-images.s-microsoft.com/image/apps.1.2", 1920),
+            "https://store-images.s-microsoft.com/image/apps.1.2?q=90&w=1920"
+        );
+        // A URL that already carries a size is left alone.
+        assert_eq!(
+            sized_store_image("https://store-images.s-microsoft.com/image/apps.1.2?w=100", 1920),
+            "https://store-images.s-microsoft.com/image/apps.1.2?w=100"
+        );
+        assert_eq!(sized_store_image("https://cdn.example/a.jpg", 720), "https://cdn.example/a.jpg");
+        assert_eq!(sized_store_image("", 720), "");
+    }
+
+    #[test]
+    fn xbox_art_sizes_the_poster_and_never_uses_portrait_key_art_as_hero() {
+        let json = serde_json::json!({"Products":[{"Images":[
+            {"ImageType":"Poster","Uri":"http://store-images.s-microsoft.com/image/poster"},
+            {"ImageType":"BrandedKeyArt","Uri":"http://store-images.s-microsoft.com/image/branded"},
+            {"ImageType":"SuperHeroArt","Uri":"http://store-images.s-microsoft.com/image/hero"}
+        ]}]});
+        let (cover, hero) = xbox_art_urls(&json);
+        assert_eq!(cover, "https://store-images.s-microsoft.com/image/poster?q=90&w=720");
+        assert_eq!(hero, "https://store-images.s-microsoft.com/image/hero?q=90&w=1920");
+
+        // Only a portrait key art: it is still better than nothing.
+        let only_branded = serde_json::json!({"Products":[{"Images":[
+            {"ImageType":"BrandedKeyArt","Uri":"http://store-images.s-microsoft.com/image/branded"}
+        ]}]});
+        let (_, hero) = xbox_art_urls(&only_branded);
+        assert_eq!(hero, "https://store-images.s-microsoft.com/image/branded?q=90&w=1920");
     }
 
     #[test]

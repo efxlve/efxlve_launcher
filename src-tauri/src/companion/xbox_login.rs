@@ -32,9 +32,11 @@ const TITLEHUB_URL: &str = "https://titlehub.xboxlive.com";
 const USERSTATS_URL: &str = "https://userstats.xboxlive.com/batch";
 const ACHIEVEMENTS_URL: &str = "https://achievements.xboxlive.com";
 const USER_AGENT: &str = "XboxApp/PC/39.39.22001.0";
-/// Art preferences of the title-hub image list.
+/// Art preferences of the title-hub image list. The wide kinds come first:
+/// `BrandedKeyArt` is often a portrait (584x800), which must never become the
+/// banner background.
 const COVER_KINDS: &[&str] = &["Poster", "BoxArt", "Tile", "SquareArt", "FeaturePromotionalSquareArt"];
-const HERO_KINDS: &[&str] = &["Hero", "BrandedKeyArt", "SuperHeroArt", "TransparentKeyArt", "Background"];
+const HERO_KINDS: &[&str] = &["SuperHeroArt", "TitledHeroArt", "Hero", "TransparentKeyArt", "BrandedKeyArt", "Background"];
 
 /// In-memory copy of the sealed session.
 static SESSION: Mutex<Option<XboxTokens>> = Mutex::new(None);
@@ -607,7 +609,7 @@ pub(crate) fn parse_titles(value: &serde_json::Value) -> Vec<OwnedGame> {
         let display_image = title.get("displayImage").and_then(|v| v.as_str()).unwrap_or("");
         let cover = {
             let picked = pick_image(&images, COVER_KINDS);
-            if picked.is_empty() { display_image.to_string() } else { picked }
+            super::covers::sized_store_image(if picked.is_empty() { display_image } else { &picked }, 720)
         };
         let achievement = title.get("achievement").cloned().unwrap_or_default();
         games.push(OwnedGame {
@@ -615,7 +617,7 @@ pub(crate) fn parse_titles(value: &serde_json::Value) -> Vec<OwnedGame> {
             pfn,
             name,
             cover,
-            hero: pick_image(&images, HERO_KINDS),
+            hero: super::covers::sized_store_image(&pick_image(&images, HERO_KINDS), 1920),
             achievement_current: achievement
                 .get("currentAchievements")
                 .and_then(|v| v.as_u64())
