@@ -857,7 +857,11 @@ pub(crate) async fn playtimes() -> Vec<PlaytimeRow> {
             .map(|g| g.id.clone())
             .unwrap_or_else(|| game.id.clone());
         let cached = cache.get(&game.id).copied();
-        let fresh = cached.map(|(_, fetched)| now.saturating_sub(fetched) < 24 * 3600).unwrap_or(false);
+        // A zero entry is not "fresh": it means the last call answered without
+        // stats (wrong endpoint, 412) and must be retried, not cached for a day.
+        let fresh = cached
+            .map(|(seconds, fetched)| seconds > 0 && now.saturating_sub(fetched) < 24 * 3600)
+            .unwrap_or(false);
         let seconds = if fresh {
             cached.map(|(seconds, _)| seconds).unwrap_or(0)
         } else {
@@ -882,15 +886,17 @@ async fn fetch_playtime(client: &reqwest::Client, session: &Session, space_id: &
     if session.user_id.is_empty() {
         return None;
     }
-    let url = format!("https://public-ubiservices.ubi.com/v1/profiles/{}/stats", session.user_id);
+    // The client and the Galaxy plugin both read `/statscard`; `/stats` is a
+    // different endpoint and answered without any Statscards.
+    let url = format!("https://public-ubiservices.ubi.com/v1/profiles/{}/statscard", session.user_id);
     let response = client
         .get(url)
-        .query(&[("spaceId", space_id)])
+        .query(&[("spaceId", space_id), ("offset", "0")])
         .headers(headers(
             session,
             UBI_APP_ID,
             UBI_GENOME_ID,
-            &[("Ubi-RequestedPlatformType", "uplay"), ("Ubi-LocaleCode", "en-US")],
+            &[("Ubi-RequestedPlatformType", "uplay"), ("Ubi-LocaleCode", "en-GB")],
         ))
         .send()
         .await
