@@ -18,7 +18,7 @@ use rusqlite::{Connection, OpenFlags};
 
 use crate::legendary::collections::{
     build_metadata_lookup, chrono_now_iso, generate_collection_id, merge_collections,
-    GameCollection,
+    CollectionImport, GameCollection,
 };
 
 /// Localized names Galaxy gives its own "hidden" marker tag.
@@ -124,10 +124,43 @@ fn read_galaxy_collections() -> Vec<GameCollection> {
         .collect()
 }
 
+/// Reads the releases the user hid in Galaxy (`UserReleaseProperties.isHidden`),
+/// mapped to the launcher's composite keys.
+fn read_galaxy_hidden() -> Vec<String> {
+    let Some(path) = super::galaxy_playtime::galaxy_db_path() else {
+        return Vec::new();
+    };
+    let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX;
+    let Ok(conn) = Connection::open_with_flags(&path, flags) else {
+        return Vec::new();
+    };
+
+    let epic = build_metadata_lookup();
+    let rows = conn
+        .prepare("SELECT releaseKey FROM UserReleaseProperties WHERE isHidden = 1")
+        .and_then(|mut stmt| {
+            let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+            Ok(rows.filter_map(|r| r.ok()).collect::<Vec<_>>())
+        })
+        .unwrap_or_default();
+
+    let mut hidden: Vec<String> = rows
+        .iter()
+        .filter_map(|release| composite_key(release, &epic))
+        .collect();
+    hidden.sort();
+    hidden.dedup();
+    hidden
+}
+
 /// Imports the user's GOG Galaxy tags as collections and returns the merged
-/// collection list (the same shape the EGL import returns).
-pub fn import_galaxy_tags() -> Vec<GameCollection> {
-    merge_collections(read_galaxy_collections())
+/// collection list (the same shape the EGL import returns) plus the releases
+/// Galaxy had hidden.
+pub fn import_galaxy_tags() -> CollectionImport {
+    CollectionImport {
+        collections: merge_collections(read_galaxy_collections()),
+        hidden: read_galaxy_hidden(),
+    }
 }
 
 #[cfg(test)]

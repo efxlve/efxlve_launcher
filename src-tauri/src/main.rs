@@ -627,6 +627,7 @@ fn main() {
             steam::steam_find_store_app,
             steam::steam_get_api_key,
             steam::steam_set_api_key,
+            steam::steam_import_collections,
             steam_art::steam_library_art,
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,

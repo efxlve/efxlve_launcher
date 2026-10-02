@@ -118,6 +118,13 @@ export const steamFindStoreApp = (query: string, language?: string) =>
 export const steamGetApiKey = () => invoke<string | null>("steam_get_api_key");
 export const steamSetApiKey = (apiKey: string) => invoke<void>("steam_set_api_key", { apiKey });
 
+/**
+ * Imports the Steam library collections (read-only) and returns the merged
+ * collection list plus the games the user hid in Steam.
+ */
+export const steamImportCollections = () =>
+  invoke<import("./epic").CollectionImport>("steam_import_collections");
+
 export interface SteamLibraryArt {
   cover: string;
   hero: string;

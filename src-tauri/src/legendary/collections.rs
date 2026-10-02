@@ -21,6 +21,16 @@ pub struct CollectionsData {
     pub collections: Vec<GameCollection>,
 }
 
+/// Result of a client collection import: the merged collection list plus the
+/// composite keys that client had hidden, so the frontend can merge them into
+/// its own hidden games.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionImport {
+    pub collections: Vec<GameCollection>,
+    pub hidden: Vec<String>,
+}
+
 /// File where collections are stored: %USERPROFILE%\.config\legendary\collections.json
 pub fn get_collections_path() -> PathBuf {
     super::skip::default_config_dir().join("collections.json")
@@ -316,7 +326,9 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
 
 /// Merges imported collections into `collections.json`, matching existing ones
 /// by id or case-insensitive name, and returns the merged list. An empty input
-/// changes nothing.
+/// changes nothing. Members are unioned: collections with the same name from
+/// different clients combine instead of overwriting each other, and the name
+/// already stored in the launcher wins (imports only add games).
 pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollection> {
     if incoming.is_empty() {
         return incoming;
@@ -327,8 +339,9 @@ pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollec
             .iter()
             .position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name))
         {
-            merged[idx].name = col.name.clone();
-            merged[idx].app_names = deduplicate_strings(col.app_names.clone());
+            let mut app_names = merged[idx].app_names.clone();
+            app_names.extend(col.app_names.clone());
+            merged[idx].app_names = deduplicate_strings(app_names);
         } else {
             merged.push(col.clone());
         }

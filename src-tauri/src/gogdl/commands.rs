@@ -419,9 +419,9 @@ pub fn gog_default_install_dir() -> String {
 }
 
 /// Imports the user's GOG Galaxy tags as collections (read-only) and returns
-/// the merged collection list.
+/// the merged collection list plus the games Galaxy had hidden.
 #[command]
-pub async fn gog_import_galaxy_tags() -> Result<Vec<crate::legendary::collections::GameCollection>, String> {
+pub async fn gog_import_galaxy_tags() -> Result<crate::legendary::collections::CollectionImport, String> {
     tauri::async_runtime::spawn_blocking(super::galaxy_tags::import_galaxy_tags)
         .await
         .map_err(|e| e.to_string())

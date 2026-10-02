@@ -81,6 +81,12 @@ export interface GameCollection {
   emoji?: string | null;
 }
 
+/** Result of a client collection import: merged collections plus hidden keys. */
+export interface CollectionImport {
+  collections: GameCollection[];
+  hidden: string[];
+}
+
 export interface CachedLibrary {
   account: string | null;
   accountId: string | null;

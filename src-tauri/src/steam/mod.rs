@@ -8,6 +8,7 @@ mod achievements;
 mod download_live;
 mod catalog;
 mod cloud;
+mod collections;
 mod library;
 mod playtime;
 mod protocol;
@@ -27,6 +28,10 @@ pub use catalog::*;
 // cloud.rs: SteamCloudStatus, steam_cloud_status
 #[allow(unused_imports)]
 pub use cloud::*;
+
+// collections.rs: steam_import_collections
+#[allow(unused_imports)]
+pub use collections::*;
 
 #[allow(unused_imports)]
 pub use library::{

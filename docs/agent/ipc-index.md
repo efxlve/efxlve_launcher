@@ -185,6 +185,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_get_game_details` | `steamGetGameDetails({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_get_game_screenshots` | `steamGetGameScreenshots({ ... })` | `src-tauri/src/steam/shots.rs` |
 | `steam_get_saved_accounts` | `steamGetSavedAccounts({ ... })` | `src-tauri/src/steam_auth/session.rs` |
+| `steam_import_collections` | `steamImportCollections({ ... })` | `src-tauri/src/steam/collections.rs` |
 | `steam_library_art` | `steamLibraryArt({ ... })` | `src-tauri/src/steam_art.rs` |
 | `steam_list_installed` | `steamListInstalled({ ... })` | `src-tauri/src/steam/protocol.rs` |
 | `steam_login_begin` | `steamLoginBegin({ ... })` | `src-tauri/src/steam_auth/session.rs` |

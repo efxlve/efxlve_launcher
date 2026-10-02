@@ -11,8 +11,10 @@ import { render } from "../../../core/render";
 import { allStoreSummaries } from "../../../core/selectors";
 import { resetCardChunk } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
-import { epicImportEglCollections } from "../../../epic";
+import { epicDeleteCollection, epicImportEglCollections, epicSaveCollection } from "../../../epic";
 import { gogImportGalaxyTags } from "../../../gog";
+import { steamImportCollections } from "../../../steam";
+import { hideGameIds } from "../../library/hide-games";
 import {
   closeCollectionModal,
   deleteCollectionFromModal,
@@ -209,8 +211,9 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "gog-import-galaxy-tags":
       toast(i18nT("col.scanningGalaxy"), "");
       void gogImportGalaxyTags()
-        .then((cols) => {
-          toast(i18nT("col.importedCount", { count: cols.length }), "ok");
+        .then((result) => {
+          toast(i18nT("col.importedCount", { count: result.collections.length }), "ok");
+          if (result.hidden.length) hideGameIds(result.hidden);
           void loadEpicCollections();
           if (S.view === "settings") void loadSettingsView();
         })
@@ -219,7 +222,58 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
         });
       return true;
 
+    case "steam-import-collections":
+      toast(i18nT("col.scanningSteam"), "");
+      void steamImportCollections()
+        .then((result) => {
+          toast(i18nT("col.importedCount", { count: result.collections.length }), "ok");
+          if (result.hidden.length) hideGameIds(result.hidden);
+          void loadEpicCollections();
+          if (S.view === "settings") void loadSettingsView();
+        })
+        .catch((err) => {
+          toast(i18nT("col.importFailed", { msg: String(err) }), "err");
+        });
+      return true;
+
+    case "col-merge-ask": {
+      const colId = t.dataset.id;
+      S.colMergeSource = S.colMergeSource === colId ? null : colId ?? null;
+      render();
+      return true;
+    }
+
+    case "col-merge-cancel":
+      S.colMergeSource = null;
+      render();
+      return true;
+
+    case "col-merge-into": {
+      const sourceId = t.dataset.source;
+      const targetId = t.dataset.id;
+      S.colMergeSource = null;
+      void mergeCollectionsInto(sourceId, targetId);
+      return true;
+    }
+
     default:
       return false;
+  }
+}
+
+/** Unions the source collection's games into the target and removes the source. */
+async function mergeCollectionsInto(sourceId?: string, targetId?: string): Promise<void> {
+  const source = S.epicCollections.find((c) => c.id === sourceId);
+  const target = S.epicCollections.find((c) => c.id === targetId);
+  if (!source || !target) return;
+  const merged = [...new Set([...target.app_names, ...source.app_names])];
+  try {
+    await epicSaveCollection(target.name, merged, target.id);
+    await epicDeleteCollection(source.id);
+    toast(i18nT("col.merged", { count: source.app_names.length, name: target.name }), "ok");
+    await loadEpicCollections();
+    if (S.view === "settings") void loadSettingsView();
+  } catch (e) {
+    toast(i18nT("col.mergeFailed", { msg: String(e) }), "err");
   }
 }
