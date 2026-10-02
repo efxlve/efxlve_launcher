@@ -13,6 +13,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_minimize_to_tray` | `appSetMinimizeToTray({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
+| `companion_achievements` | `companionAchievements({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_game_action` | `companionGameAction({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_hide_login` | `companionHideLogin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_installed_games` | `companionInstalledGames({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -134,6 +135,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `show_store_view` | `showStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `steam_cloud_status` | `steamCloudStatus({ ... })` | `src-tauri/src/steam/cloud.rs` |
 | `steam_download_live` | `steamDownloadLive({ ... })` | `src-tauri/src/steam/download_live.rs` |
+| `steam_find_store_app` | `steamFindStoreApp({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_game_action` | `steamGameAction({ ... })` | `src-tauri/src/steam/protocol.rs` |
 | `steam_get_achievements` | `steamGetAchievements({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_achievements_summary` | `steamGetAchievementsSummary({ ... })` | `src-tauri/src/steam/achievements.rs` |

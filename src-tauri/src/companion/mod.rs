@@ -13,6 +13,7 @@ mod launch;
 mod proto;
 mod scan;
 mod signin;
+mod ubi_achievements;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
@@ -22,6 +23,8 @@ use ubisoft_login::UbiSync;
 use std::collections::HashSet;
 
 use serde::Serialize;
+
+use crate::legendary::models::GameAchievementsResponse;
 
 pub use accounts::{CompanionAccount, CompanionStoreStatus};
 pub use covers::{CoverHit, CoverQuery};
@@ -274,10 +277,51 @@ pub fn companion_launch(store: String, id: String) -> Result<(), String> {
     }
     if let Some(game) = discover(&store).into_iter().find(|g| g.id == id) {
         if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
+            // The screenshot hotkey needs to know which game is on screen. The
+            // install folder is enough to match the process; client protocols
+            // do not expose the executable name.
+            let install_path = std::path::Path::new(&game.install_path)
+                .is_dir()
+                .then(|| std::path::PathBuf::from(&game.install_path));
+            let app_name = format!("{}::{}", game.store, game.id);
+            crate::legendary::screenshots::set_active_running_game(
+                &app_name,
+                &game.name,
+                install_path.clone(),
+                Vec::new(),
+            );
+            watch_companion_exit(app_name, install_path);
             return launch::open_game(&game.launch_uri, &game.launch_exe);
         }
     }
     launch::open_client(&store)
+}
+
+/// Clears the screenshot hotkey's active game once the process exits. The
+/// client protocol returns before the game window exists, so the watcher waits
+/// for a process first, then for it to disappear.
+fn watch_companion_exit(app_name: String, install_path: Option<std::path::PathBuf>) {
+    tauri::async_runtime::spawn(async move {
+        let started = std::time::Instant::now();
+        let mut detected = false;
+        let mut missing = 0u32;
+        loop {
+            if crate::legendary::transfers::is_game_process_running(install_path.as_deref(), &[]) {
+                detected = true;
+                missing = 0;
+            } else if detected {
+                missing += 1;
+                if missing >= 3 {
+                    break;
+                }
+            } else if started.elapsed() > std::time::Duration::from_secs(90) {
+                // The client only opened an install prompt; nothing to watch.
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        }
+        crate::legendary::screenshots::clear_active_running_game(&app_name);
+    });
 }
 
 /// Playtime for the linked Ubisoft account, keyed by library id.
@@ -287,6 +331,21 @@ pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRo
         return Vec::new();
     }
     ubisoft_login::playtimes().await
+}
+
+/// Achievements the local Ubisoft Connect client cached for one game. The id is
+/// the client's own launch id, the same value the library card uses; imported
+/// space ids have no local cache and return an empty set.
+#[tauri::command]
+pub fn companion_achievements(
+    store: String,
+    id: String,
+    language: Option<String>,
+) -> GameAchievementsResponse {
+    if store != "ubisoft" {
+        return GameAchievementsResponse::default();
+    }
+    ubi_achievements::achievements_for(&id, language.as_deref().unwrap_or("en"))
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the

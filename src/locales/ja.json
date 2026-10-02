@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "出典: GOG",
   "drawer.sourceSteam": "出典: Steam",
   "drawer.sourceStore": "出典: {store}",
+  "drawer.addonsSteamCount": "Steamストアには{count}個のアドオンが掲載されています",
+  "drawer.addonsSteamDesc": "クライアントはアドオン一覧を公開していません。このタイトルのアドオンはSteamストアページに掲載されています。ストアページを開いて閲覧してください。",
   "common.unknownError": "不明なエラー",
   "sys.openEpicStore": "Epic Store で開く",
   "sys.openGogStore": "GOG Store で開く",

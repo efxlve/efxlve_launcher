@@ -27,8 +27,9 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
-import { steamGetGameDetails } from "../../steam";
+import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
+import { companionAchievements } from "../../companion";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
@@ -239,7 +240,7 @@ function sourceChipHtml(appName: string): string {
 }
 
 /** Games owned inside another launcher: EA App, Ubisoft Connect, Xbox, Battle.net. */
-function isCompanionApp(appName: string): boolean {
+export function isCompanionApp(appName: string): boolean {
   const source = sourceOfKey(appName);
   return source !== "epic" && source !== "gog" && source !== "steam";
 }
@@ -307,7 +308,6 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
-  if (isCompanionApp(s.appName)) return renderDrawerOverview(s, partner, antiCheat);
   switch (S.activeDrawerTab) {
     case "overview": return renderDrawerOverview(s, partner, antiCheat);
     case "achievements": return renderDrawerAchievements(s);
@@ -396,12 +396,19 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
 }
 
 /** Source note under the description: the game's own store, or the Wikipedia fallback. */
-function aboutSourceText(storeDesc: string, wikiText: string, source: "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet"): string {
+function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): string {
+  const source = sourceOfKey(s.appName);
   const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : "Epic Games Store";
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");
   if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+    // A companion game without a client description falls back to the Steam
+    // store text; say so instead of naming the client that had no data.
+    const steam = S.steamDetails.get(s.appName);
+    if (steam && storeDesc && (steam.description === storeDesc || steam.shortDescription === storeDesc)) {
+      return t("drawer.sourceSteam");
+    }
     return t("drawer.sourceStore", { store: storeName });
   }
   return t("drawer.sourceEpic");
@@ -419,7 +426,7 @@ function paintAboutText(s: EpicSummary): void {
   const srcEl = document.getElementById("hub-desc-source");
   if (srcEl) {
     srcEl.hidden = !text;
-    srcEl.textContent = aboutSourceText(storeDesc, wikiText, sourceOfKey(s.appName));
+    srcEl.textContent = aboutSourceText(s, storeDesc, wikiText);
   }
 }
 
@@ -512,21 +519,17 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const partner = gamePartner(s, g);
   const antiCheat = gameAntiCheat(s, g);
   const companion = isCompanionApp(appName);
-  // Companion games only have the overview: the other tabs read store metadata
-  // they do not have.
-  if (companion) S.activeDrawerTab = "overview";
+  // Companion games open on Overview; the rest of the tabs read their own
+  // local or store data and are available too.
+  if (companion && isInitialOpen) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only
     // the fallback, so the store text does not flash and get replaced.
-    const key = aboutKey(appName);
-    if (!epicDescription(s) && !aboutCache.has(key) && S.loadingAboutFor !== key) {
-      S.loadingAboutFor = key;
-      void loadWikiAbout(s).finally(() => {
-        if (S.loadingAboutFor === key) S.loadingAboutFor = null;
-      });
-    }
+    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
+    if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
+    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
   } else {
     ensureCloudSyncStamp(s);
     if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
@@ -581,9 +584,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
   const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
-  const tabs = companion
-    ? tabButton("overview", t("drawer.overview"))
-    : `${tabButton("overview", t("drawer.overview"))}
+  const tabs = `${tabButton("overview", t("drawer.overview"))}
        ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
        ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
        ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
@@ -675,7 +676,7 @@ export function renderDrawerOverview(
   const effectiveDesc = epicDesc || wikiText || null;
   const aboutResolved = aboutCache.has(key);
   const aboutLoading = !effectiveDesc && !aboutResolved && (S.loadingReqFor === s.appName || S.loadingAboutFor === key);
-  const sourceText = aboutSourceText(epicDesc, wikiText, sourceOfKey(s.appName));
+  const sourceText = aboutSourceText(s, epicDesc, wikiText);
   const sourceHidden = !effectiveDesc;
 
   return `
@@ -722,6 +723,29 @@ function renderDrawerFeatures(
 }
 
 export function renderDrawerDlcs(s: EpicSummary): string {
+  // Companion games: their client lists no add-ons, so the Steam store page of
+  // the same title supplies the count and the browsing hand-off.
+  if (isCompanionApp(s.appName)) {
+    const details = S.steamDetails.get(s.appName);
+    if (!details && S.loadingReqFor !== s.appName) {
+      void fetchAndRenderRequirements(s.appName, s.title);
+      return loadingState(t("dlc.scanning"));
+    }
+    const count = details?.dlc.length ?? 0;
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    return `
+      <div class="dlc-tab-content">
+        <div class="row">
+          <div class="row-main">
+            <div class="row-title">${t("drawer.addonsSteamCount", { count })}</div>
+            <div class="row-meta">${t("drawer.addonsSteamDesc")}</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("ctx.storePage")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
   // Steam lists DLC ids only; names would need one store call per add-on, so the
   // tab reports the count and hands the browsing over to Steam.
   if (s.appName.startsWith("steam::")) {
@@ -891,7 +915,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(18) : `${pct}%`}</span>
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
-          <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP`}</span>
+          <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : data.total_xp > 0 ? `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP` : ""}</span>
         </div>
         <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
       </div>
@@ -901,7 +925,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${tierChip("silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
         <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
-        <button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>
+        ${isCompanionApp(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>
     </div>
 
@@ -937,12 +961,20 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
   try {
     const isGog = appName.startsWith("gog::");
     const isSteam = appName.startsWith("steam::");
+    const source = sourceOfKey(appName);
+    const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
     const rawId = isGog ? appName.slice(5) : appName;
     const data = isGog
       ? await gogGetAchievements(rawId)
       : isSteam
         ? await steamGetAchievements(appName.slice(7), forceRefresh)
-        : await epicGetAchievements(appName, forceRefresh);
+        : isCompanion
+          ? await companionAchievements(
+              source as "ea" | "ubisoft" | "xbox" | "battlenet",
+              appName.slice(appName.indexOf("::") + 2),
+              currentLanguage(),
+            )
+          : await epicGetAchievements(appName, forceRefresh);
     S.loadedAchievements.set(appName, data);
     const summary: EpicAchievementSummary = {
       app_name: appName,
@@ -1019,7 +1051,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
       <div class="page-actions">
         <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : "sys.openEpicStore")}</button>
+        <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>
       </div>
     </div>`;
 }
@@ -1029,6 +1061,12 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
   // Steam: one store call carries the description, the hero art and the specs.
   if (appName.startsWith("steam::")) {
     await loadSteamDetails(appName, forceRefresh);
+    return;
+  }
+  // Companion games: their own client publishes no specs, so the same Steam
+  // store lookup supplies the requirements, developer and add-on count.
+  if (isCompanionApp(appName)) {
+    await loadCompanionStoreDetails(appName, title, forceRefresh);
     return;
   }
   S.loadingReqFor = appName;
@@ -1084,6 +1122,68 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       if (settled) maybeLoadWikiAbout(settled);
     }
     if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") openEpicModal(appName, false);
+  }
+}
+
+/**
+ * Steam store id resolved for a companion title (null = no exact match yet).
+ * Session-lived: the store search is the only uncached network step.
+ */
+const companionSteamApps = new Map<string, string | null>();
+
+/**
+ * Companion games have no store API for specs, so the Steam store page of the
+ * same title supplies the requirements, developer and add-on count. The title
+ * match is exact; anything looser would show another game's data.
+ */
+async function loadCompanionStoreDetails(appName: string, title: string, force = false): Promise<void> {
+  const s = summaryOf(appName);
+  if (!s) return;
+  S.loadingReqFor = appName;
+  try {
+    const language = steamLanguage(S.appLanguage);
+    let hitApp = companionSteamApps.get(appName);
+    if (hitApp === undefined || force) {
+      const hit = await steamFindStoreApp(title, language);
+      hitApp = hit?.appId ?? null;
+      companionSteamApps.set(appName, hitApp);
+    }
+    if (!hitApp) {
+      S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
+      return;
+    }
+    const details = await steamGetGameDetails(hitApp, language, force);
+    S.steamDetails.set(appName, details);
+    S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
+    const item = S.allGamesMap.get(appName);
+    if (item) item.dlcCount = details.dlc.length;
+    // The client catalog text always wins; Steam only fills the gap.
+    const desc = s.description?.trim();
+    if (!desc || desc === NO_DESC || desc === s.title || desc.length <= 25) {
+      s.description = details.description || details.shortDescription;
+    }
+    if (S.currentModalAppName === appName) {
+      paintAboutText(s);
+      paintGameMeta(s);
+      paintGameCloud(s);
+      const featuresEl = document.getElementById("hub-features-list");
+      if (featuresEl) {
+        const g = rawOf(appName);
+        featuresEl.innerHTML = renderGameFeatures(s, g, gamePartner(s, g), gameAntiCheat(s, g), S.loadedRequirements.get(appName));
+      }
+      const dlcTab = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
+      if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), details.dlc.length);
+    }
+  } catch (e) {
+    console.warn("Companion store details could not be fetched:", e);
+    S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
+  } finally {
+    S.loadingReqFor = null;
+    storeAboutSettled.add(appName);
+    maybeLoadWikiAbout(s);
+    if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
+      openEpicModal(appName, false, false);
+    }
   }
 }
 

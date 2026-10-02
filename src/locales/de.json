@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "Quelle: GOG",
   "drawer.sourceSteam": "Quelle: Steam",
   "drawer.sourceStore": "Quelle: {store}",
+  "drawer.addonsSteamCount": "Der Steam-Shop listet {count} Add-ons",
+  "drawer.addonsSteamDesc": "Ihr Client veröffentlicht keine Add-on-Liste. Die Steam-Shop-Seite dieses Titels listet sie; öffnen Sie die Shop-Seite zum Durchsuchen.",
   "common.unknownError": "Unbekannter Fehler",
   "sys.openEpicStore": "Im Epic Store öffnen",
   "sys.openGogStore": "Im GOG Store öffnen",

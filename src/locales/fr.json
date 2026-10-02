@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "Source : GOG",
   "drawer.sourceSteam": "Source : Steam",
   "drawer.sourceStore": "Source : {store}",
+  "drawer.addonsSteamCount": "Le magasin Steam liste {count} extensions",
+  "drawer.addonsSteamDesc": "Votre client ne publie pas de liste d'extensions. La page Steam de ce titre les liste ; ouvrez la page du magasin pour les parcourir.",
   "common.unknownError": "Erreur inconnue",
   "sys.openEpicStore": "Ouvrir dans Epic Store",
   "sys.openGogStore": "Ouvrir dans GOG Store",

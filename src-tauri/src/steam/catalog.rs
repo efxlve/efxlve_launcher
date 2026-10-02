@@ -595,6 +595,96 @@ pub async fn steam_get_game_details(
     Ok(details)
 }
 
+/// One Steam store search hit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamStoreHit {
+    pub app_id: String,
+    pub name: String,
+}
+
+/// Lowercase, punctuation-free, edition tails removed. Used only to accept an
+/// exact store match, never a fuzzy one: a wrong app id would show another
+/// game's requirements.
+pub(crate) fn normalize_store_title(name: &str) -> String {
+    let mut s = name.to_lowercase();
+    for tail in [
+        "standard edition",
+        "deluxe edition",
+        "gold edition",
+        "ultimate edition",
+        "complete edition",
+        "definitive edition",
+        "special edition",
+        "enhanced edition",
+        "game of the year edition",
+        "game of the year",
+        "goty edition",
+        "goty",
+        "remastered",
+        "director's cut",
+        "directors cut",
+    ] {
+        s = s.replace(tail, "");
+    }
+    s.chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Finds the Steam store app whose title matches exactly. Companion games use
+/// it for system requirements, add-on counts and developer names their own
+/// client does not publish.
+#[tauri::command]
+pub async fn steam_find_store_app(
+    query: String,
+    language: Option<String>,
+) -> Result<Option<SteamStoreHit>, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Ok(None);
+    }
+    let language = safe_store_language(language.unwrap_or_else(|| "english".into()))?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(12))
+        .user_agent("efxlve-launcher")
+        .build()
+        .map_err(|e| e.to_string())?;
+    let payload: serde_json::Value = client
+        .get("https://store.steampowered.com/api/storesearch/")
+        .query(&[("term", query), ("l", &language), ("cc", "US")])
+        .send()
+        .await
+        .map_err(|e| transport_error("Steam search could not be reached", e))?
+        .json()
+        .await
+        .map_err(|e| transport_error("Steam search answered with an unexpected payload", e))?;
+    let wanted = normalize_store_title(query);
+    if wanted.is_empty() {
+        return Ok(None);
+    }
+    let hit = payload
+        .get("items")
+        .and_then(|v| v.as_array())
+        .and_then(|items| {
+            items.iter().find_map(|item| {
+                if item.get("type").and_then(|v| v.as_str()) != Some("app") {
+                    return None;
+                }
+                let id = item.get("id").and_then(|v| v.as_u64())?;
+                let name = item.get("name").and_then(|v| v.as_str())?.trim();
+                (normalize_store_title(name) == wanted).then(|| SteamStoreHit {
+                    app_id: id.to_string(),
+                    name: name.to_string(),
+                })
+            })
+        });
+    Ok(hit)
+}
+
 /// Steam Web API key stored in settings.json (next to the SteamGridDB key).
 #[tauri::command]
 pub fn steam_get_api_key(app: tauri::AppHandle) -> Option<String> {
@@ -632,6 +722,15 @@ mod tests {
         assert!(safe_store_language(r"..\x".into()).is_err());
         assert!(safe_store_language(String::new()).is_err());
         assert!(safe_store_language("en glish".into()).is_err());
+    }
+
+    #[test]
+    fn store_titles_normalize_editions_and_punctuation() {
+        assert_eq!(normalize_store_title("Watch Dogs 2"), "watch dogs 2");
+        assert_eq!(normalize_store_title("Watch_Dogs™ 2"), "watch dogs 2");
+        assert_eq!(normalize_store_title("Far Cry 3 Deluxe Edition"), "far cry 3");
+        assert_eq!(normalize_store_title("Assassin's Creed IV Black Flag"), "assassin s creed iv black flag");
+        assert_ne!(normalize_store_title("Watch Dogs"), normalize_store_title("Watch Dogs 2"));
     }
     #[test]
     fn html_is_flattened_into_clean_lines() {

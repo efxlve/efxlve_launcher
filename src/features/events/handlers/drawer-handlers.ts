@@ -12,7 +12,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
 import {
@@ -137,7 +137,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
             void fetchAndRenderAchievements(S.currentModalAppName, true);
           }
         } else if (tab === "dlcs") {
-          if (!S.dlcCache.has(S.currentModalAppName) && !S.dlcLoading) {
+          if (!isCompanionApp(S.currentModalAppName) && !S.dlcCache.has(S.currentModalAppName) && !S.dlcLoading) {
             S.dlcLoading = true;
             epicGetGameDlcs(S.currentModalAppName)
               .then((res) => {

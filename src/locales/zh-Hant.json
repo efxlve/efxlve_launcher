@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "來源：GOG",
   "drawer.sourceSteam": "來源：Steam",
   "drawer.sourceStore": "來源：{store}",
+  "drawer.addonsSteamCount": "Steam 商店列出了 {count} 個附加內容",
+  "drawer.addonsSteamDesc": "你的客戶端不提供附加內容清單。此遊戲的附加內容列在 Steam 商店頁面上；開啟商店頁面即可瀏覽。",
   "common.unknownError": "未知錯誤",
   "sys.openEpicStore": "在 Epic Store 中開啟",
   "sys.openGogStore": "在 GOG Store 中開啟",

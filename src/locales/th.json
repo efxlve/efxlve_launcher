@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "ที่มา: GOG",
   "drawer.sourceSteam": "ที่มา: Steam",
   "drawer.sourceStore": "ที่มา: {store}",
+  "drawer.addonsSteamCount": "ร้านค้า Steam แสดง {count} ส่วนเสริม",
+  "drawer.addonsSteamDesc": "ไคลเอนต์ของคุณไม่ได้เผยแพร่รายการส่วนเสริม หน้าของ Steam สำหรับเกมนี้มีรายการอยู่ เปิดหน้าร้านค้าเพื่อเรียกดู",
   "common.unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",
   "sys.openEpicStore": "เปิดใน Epic Store",
   "sys.openGogStore": "เปิดใน GOG Store",

@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "Источник: GOG",
   "drawer.sourceSteam": "Источник: Steam",
   "drawer.sourceStore": "Источник: {store}",
+  "drawer.addonsSteamCount": "Магазин Steam перечисляет {count} дополнений",
+  "drawer.addonsSteamDesc": "Ваш клиент не публикует список дополнений. На странице Steam этого тайтла они перечислены; откройте страницу магазина, чтобы просмотреть.",
   "common.unknownError": "Неизвестная ошибка",
   "sys.openEpicStore": "Открыть в Epic Store",
   "sys.openGogStore": "Открыть в GOG Store",

@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "Fonte: GOG",
   "drawer.sourceSteam": "Fonte: Steam",
   "drawer.sourceStore": "Fonte: {store}",
+  "drawer.addonsSteamCount": "Lo store di Steam elenca {count} DLC",
+  "drawer.addonsSteamDesc": "Il tuo client non pubblica un elenco di DLC. La pagina Steam di questo titolo li elenca; apri la pagina dello store per sfogliarli.",
   "common.unknownError": "Errore sconosciuto",
   "sys.openEpicStore": "Apri su Epic Store",
   "sys.openGogStore": "Apri su GOG Store",

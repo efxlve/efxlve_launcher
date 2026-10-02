@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "Fonte: GOG",
   "drawer.sourceSteam": "Fonte: Steam",
   "drawer.sourceStore": "Fonte: {store}",
+  "drawer.addonsSteamCount": "A loja da Steam lista {count} complementos",
+  "drawer.addonsSteamDesc": "Seu cliente não publica uma lista de complementos. A página da Steam deste título os lista; abra a página da loja para navegar.",
   "common.unknownError": "Erro desconhecido",
   "sys.openEpicStore": "Abrir na Epic Store",
   "sys.openGogStore": "Abrir na GOG Store",

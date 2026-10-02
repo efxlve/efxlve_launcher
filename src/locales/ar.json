@@ -1363,6 +1363,8 @@
   "drawer.sourceGog": "المصدر: GOG",
   "drawer.sourceSteam": "المصدر: Steam",
   "drawer.sourceStore": "المصدر: {store}",
+  "drawer.addonsSteamCount": "متجر Steam يسرد {count} إضافات",
+  "drawer.addonsSteamDesc": "عميلك لا ينشر قائمة الإضافات. صفحة Steam لهذا العنوان تسردها؛ افتح صفحة المتجر لتصفحها.",
   "common.unknownError": "خطأ غير معروف",
   "sys.openEpicStore": "فتح في Epic Store",
   "sys.openGogStore": "فتح في GOG Store",

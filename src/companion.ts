@@ -71,6 +71,14 @@ export const companionGameAction = (store: CompanionStore, id: string, action: "
 export const companionPlaytimes = (store: CompanionStore) =>
   invoke<CompanionPlaytimeRow[]>("companion_playtimes", { store });
 
+/**
+ * Achievements the local Ubisoft Connect client cached for one game. The id is
+ * the client's own launch id; imported space ids have no local cache and come
+ * back empty.
+ */
+export const companionAchievements = (store: CompanionStore, id: string, language: string) =>
+  invoke<import("./epic").EpicAchievementsData>("companion_achievements", { store, id, language });
+
 export const companionLink = (store: CompanionStore) =>
   invoke<CompanionAccount>("companion_link", { store });
 

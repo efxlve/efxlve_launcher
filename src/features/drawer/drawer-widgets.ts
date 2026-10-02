@@ -604,7 +604,7 @@ export function heroCloudStatus(
     };
   }
   const cats = steamCategories(s.appName);
-  if (cats.includes(STEAM_CAT_CLOUD) || (s.appName.startsWith("steam::") && S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
+  if (s.appName.startsWith("steam::") && (cats.includes(STEAM_CAT_CLOUD) || S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
     return {
       label: i18nT("feat.steamCloud"),
       tooltip: i18nT("feat.steamCloudTip"),
@@ -656,7 +656,7 @@ export function cloudSaveInfo(
 ): CloudSaveInfo {
   const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
   const cats = steamCategories(s.appName);
-  if (cats.includes(STEAM_CAT_CLOUD) || (s.appName.startsWith("steam::") && S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
+  if (s.appName.startsWith("steam::") && (cats.includes(STEAM_CAT_CLOUD) || S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
     return { label: i18nT("feat.steamCloud"), tooltip: i18nT("feat.steamCloudTip"), synced: true };
   }
   if (s.appName.startsWith("gog::") && S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported) {
@@ -690,7 +690,7 @@ export function renderGameFeatures(
   const ctrl = detectControllerSupport(s, g, reqData);
   const cloud = cloudSaveInfo(s, g, partner, reqData);
   const cats = steamCategories(s.appName);
-  const cheat = antiCheat || (cats.includes(STEAM_CAT_VAC) ? "VAC" : null);
+  const cheat = antiCheat || (s.appName.startsWith("steam::") && cats.includes(STEAM_CAT_VAC) ? "VAC" : null);
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
   const versionOk = Boolean(versionInfo.display && /\d/.test(versionInfo.display));
 

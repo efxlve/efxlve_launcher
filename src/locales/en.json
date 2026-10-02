@@ -1440,6 +1440,8 @@
   "drawer.sourceGog": "Source: GOG",
   "drawer.sourceSteam": "Source: Steam",
   "drawer.sourceStore": "Source: {store}",
+  "drawer.addonsSteamCount": "The Steam store lists {count} add-ons",
+  "drawer.addonsSteamDesc": "Your client does not publish an add-on list. The Steam store page for this title lists them; open the store page to browse.",
   "common.unknownError": "Unknown error",
   "gog.webLogin": "GOG Web Login",
   "gog.pastePlaceholder": "Paste the authorization code or redirect URL here...",

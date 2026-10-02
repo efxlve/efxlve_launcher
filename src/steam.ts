@@ -100,6 +100,19 @@ export const steamSyncPlaytime = () =>
 export const steamGetGameDetails = (appId: string, language?: string, force = false) =>
   invoke<SteamGameDetails>("steam_get_game_details", { appId, language: language ?? null, force });
 
+/** One Steam store search hit (used for companion games' specs and add-ons). */
+export interface SteamStoreHit {
+  appId: string;
+  name: string;
+}
+
+/**
+ * Finds the Steam store app whose title matches exactly, or null. The match is
+ * exact so another game's requirements can never appear on the page.
+ */
+export const steamFindStoreApp = (query: string, language?: string) =>
+  invoke<SteamStoreHit | null>("steam_find_store_app", { query, language: language ?? null });
+
 /* ---------- Achievements (opt-in: needs a Steam Web API key) ---------- */
 
 export const steamGetApiKey = () => invoke<string | null>("steam_get_api_key");
