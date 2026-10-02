@@ -113,39 +113,49 @@ async function fillCompanionPlaytime(): Promise<void> {
   }
 }
 
+/** Art the resolver could not match this session (Steam has no such title). */
+const coverMisses = new Set<string>();
+
 async function fillCompanionCovers(): Promise<void> {
   // Resolve art when either half is missing: a missing wide hero would leave
-  // the game page stretching the portrait cover.
-  const missing = S.companionSummaries.filter((g) => !g.coverUrl || !g.heroUrl);
-  if (missing.length === 0) return;
-  let hits;
-  try {
-    hits = await companionResolveCovers(missing.map((g) => ({
-      store: g.source,
-      id: g.id,
-      name: g.title,
-      storeId: storeIds.get(g.key) || "",
-      cover: g.coverUrl || "",
-    })));
-  } catch {
-    return;
-  }
-  let changed = false;
-  let changedCurrent = false;
-  for (const hit of hits) {
-    if (!hit.coverUrl && !hit.heroUrl) continue;
-    const key = `${hit.store}::${hit.id}`;
-    const item = S.companionSummaries.find((g) => g.key === key);
-    if (!item) continue;
-    // Never downgrade art the client catalog already provided.
-    if (!item.coverUrl && hit.coverUrl) item.coverUrl = hit.coverUrl;
-    if (!item.heroUrl && hit.heroUrl) item.heroUrl = hit.heroUrl;
-    changed = true;
-    clearWideArtCache(key);
-    if (hit.coverUrl) patchCompanionCover(key, hit.coverUrl);
-    if (S.currentModalAppName === key) changedCurrent = true;
-  }
-  if (changed) {
+  // the game page stretching the portrait cover. The resolver answers up to 48
+  // queries per call, so drain the list in bounded rounds.
+  for (let round = 0; round < 6; round++) {
+    const missing = S.companionSummaries.filter((g) => (!g.coverUrl || !g.heroUrl) && !coverMisses.has(g.key));
+    if (missing.length === 0) return;
+    const batch = missing.slice(0, 48);
+    let hits;
+    try {
+      hits = await companionResolveCovers(batch.map((g) => ({
+        store: g.source,
+        id: g.id,
+        name: g.title,
+        storeId: storeIds.get(g.key) || "",
+        cover: g.coverUrl || "",
+      })));
+    } catch {
+      return;
+    }
+    const hitKeys = new Set(hits.filter((h) => h.coverUrl || h.heroUrl).map((h) => `${h.store}::${h.id}`));
+    for (const g of batch) {
+      if (!hitKeys.has(g.key)) coverMisses.add(g.key);
+    }
+    let changed = false;
+    let changedCurrent = false;
+    for (const hit of hits) {
+      if (!hit.coverUrl && !hit.heroUrl) continue;
+      const key = `${hit.store}::${hit.id}`;
+      const item = S.companionSummaries.find((g) => g.key === key);
+      if (!item) continue;
+      // Never downgrade art the client catalog already provided.
+      if (!item.coverUrl && hit.coverUrl) item.coverUrl = hit.coverUrl;
+      if (!item.heroUrl && hit.heroUrl) item.heroUrl = hit.heroUrl;
+      changed = true;
+      clearWideArtCache(key);
+      if (hit.coverUrl) patchCompanionCover(key, hit.coverUrl);
+      if (S.currentModalAppName === key) changedCurrent = true;
+    }
+    if (!changed) return;
     rebuildAllGamesMap();
     if (changedCurrent && S.currentModalAppName) openEpicModal(S.currentModalAppName, false, false);
   }
