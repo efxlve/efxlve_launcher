@@ -92,6 +92,11 @@ fn exe_is_inside_game(path: &Path) -> bool {
 }
 
 fn safe_uri(uri: &str) -> bool {
+    // EA deep links carry a comma-separated content-id list and one optional
+    // flag, so they are checked before the generic character rule (`&`).
+    if let Some(rest) = uri.strip_prefix("origin2://game/launch") {
+        return safe_ea_launch(rest);
+    }
     if uri.bytes().any(|b| b == b'"' || b == b'\n' || b == b'\r' || b == b'&' || b == b'|' || b == b' ') {
         return false;
     }
@@ -113,6 +118,28 @@ fn safe_uri(uri: &str) -> bool {
             && !matches!(code, "agent" | "bna");
     }
     false
+}
+
+/// `origin2://game/launch?offerIds=<id[,id...]>[&autoDownload=1]`.
+fn safe_ea_launch(rest: &str) -> bool {
+    let Some(query) = rest.strip_prefix('?') else {
+        return false;
+    };
+    let mut parts = query.split('&');
+    let Some(ids) = parts.next().and_then(|first| first.strip_prefix("offerIds=")) else {
+        return false;
+    };
+    if ids.is_empty() || ids.len() > 256 {
+        return false;
+    }
+    let ids_ok = ids.split(',').all(|id| {
+        !id.is_empty()
+            && id.len() <= 64
+            && id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == ':' || c == '-')
+    });
+    ids_ok && parts.all(|part| part == "autoDownload=1")
 }
 
 fn ea_exe() -> Option<PathBuf> {
@@ -175,5 +202,17 @@ mod tests {
         assert!(safe_uri("battlenet://fenris"));
         assert!(!safe_uri("https://example.com"));
         assert!(!safe_uri("battlenet://agent"));
+    }
+
+    #[test]
+    fn only_well_formed_ea_deep_links_pass() {
+        assert!(safe_uri("origin2://game/launch?offerIds=71592"));
+        assert!(safe_uri("origin2://game/launch?offerIds=1002975,1003943&autoDownload=1"));
+        assert!(safe_uri("origin2://game/launch?offerIds=OFB-EAST:48217"));
+        assert!(!safe_uri("origin2://game/launch?offerIds=71592&x=1"));
+        assert!(!safe_uri("origin2://game/launch?offerIds=71592%20"));
+        assert!(!safe_uri("origin2://game/launch?offerIds="));
+        assert!(!safe_uri("origin2://game/launch"));
+        assert!(!safe_uri("origin2://game/uninstall?offerIds=71592"));
     }
 }

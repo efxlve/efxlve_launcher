@@ -9,6 +9,7 @@ mod accounts;
 pub(crate) use signin::{accept_library as accept_bnet_library, watch_script as bnet_watch_script};
 mod battlenet;
 mod covers;
+mod ea;
 mod launch;
 mod proto;
 mod riot;
@@ -73,7 +74,7 @@ const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
 fn discover(store: &str) -> Vec<FoundGame> {
     let installed = scan::uninstall_games();
     match store {
-        "ea" => installed.into_iter().filter(|g| g.store == "ea").collect(),
+        "ea" => ea::merged_games(&installed),
         "ubisoft" => ubisoft::merged_games(&installed),
         "xbox" => scan::xbox_games(),
         "battlenet" => battlenet::merged_games(&installed),
@@ -462,6 +463,8 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
         };
     }
     match action.as_str() {
+        // EA has no headless uninstaller: the EA app's library owns the flow.
+        "uninstall" if store == "ea" => launch::open_client(&store),
         // Battle.net ships an official headless uninstaller in the agent folder.
         "uninstall" if store == "battlenet" => {
             match battlenet::uninstall_command(&game.id, &game.name) {
