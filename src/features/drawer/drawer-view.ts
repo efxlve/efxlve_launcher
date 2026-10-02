@@ -19,7 +19,7 @@ import { epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } 
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { canonicalGameTitle, epicWideArt, gameVersionsOf, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
@@ -78,6 +78,7 @@ function gamePartner(s: EpicSummary, g: ReturnType<typeof rawOf>): ThirdPartyLau
     case "ubisoft": return { name: "Ubisoft Connect", type: "ubisoft", shortName: "Ubisoft" };
     case "xbox": return { name: "Xbox", type: "other", shortName: "Xbox" };
     case "battlenet": return { name: "Battle.net", type: "other", shortName: "Battle.net" };
+    case "riot": return { name: "Riot Client", type: "other", shortName: "Riot" };
     default: break;
   }
   const notice = S.steamDetails.get(s.appName)?.extUserAccountNotice || "";
@@ -196,7 +197,7 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
   if (S.runningGames.has(s.appName)) {
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
-  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+  if (isCompanionApp(s.appName)) {
     return s.installed
       ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
       : `<button class="btn install lg" data-act="epic-play" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
@@ -239,10 +240,9 @@ function sourceChipHtml(appName: string): string {
     </div>`;
 }
 
-/** Games owned inside another launcher: EA App, Ubisoft Connect, Xbox, Battle.net. */
+/** Games owned inside another launcher: EA App, Ubisoft Connect, Xbox, Battle.net, Riot. */
 export function isCompanionApp(appName: string): boolean {
-  const source = sourceOfKey(appName);
-  return source !== "epic" && source !== "gog" && source !== "steam";
+  return isCompanionKey(appName);
 }
 
 /** Epic app names whose achievement list is read from Ubisoft Connect. */
@@ -430,11 +430,11 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
 /** Source note under the description: the game's own store, or the Wikipedia fallback. */
 function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): string {
   const source = sourceOfKey(s.appName);
-  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : "Epic Games Store";
+  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : source === "riot" ? "Riot Games" : "Epic Games Store";
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");
-  if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+  if (isCompanionSource(source)) {
     // A companion game without a client description falls back to the Steam
     // store text; say so instead of naming the client that had no data.
     const steam = S.steamDetails.get(s.appName);
@@ -1016,7 +1016,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
         ? await steamGetAchievements(appName.slice(7), forceRefresh)
         : isCompanion
           ? await companionAchievements(
-              source as "ea" | "ubisoft" | "xbox" | "battlenet",
+              source as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot",
               appName.slice(appName.indexOf("::") + 2),
               summaryOf(appName)?.title || appName,
               currentLanguage(),

@@ -58,7 +58,7 @@ import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, Drawe
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
 
 
-const ALL_STORES: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet"];
+const ALL_STORES: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot"];
 
 /** Stores left on in the library filter. An empty or broken save means all of them. */
 function loadEnabledStores(): Set<GameSource> {
@@ -123,7 +123,7 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox",
+  activeStore: ("epic") as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "riot",
   /** True while the active storefront webview is still loading its first page. */
   storeLoading: false,
   epicPhase: "checking" as EpicPhase,

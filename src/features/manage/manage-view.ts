@@ -109,7 +109,7 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
 /** Renders the Manage tab for an installed game. */
 /** Manage panel for a game owned by EA, Ubisoft, Xbox or Battle.net. */
 function companionManageBody(s: EpicSummary, source: GameSource): string {
-  const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : "Battle.net";
+  const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "riot" ? "Riot Client" : "Battle.net";
   const pt = S.playtimeMap.get(s.appName);
   const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
   const files = s.installed

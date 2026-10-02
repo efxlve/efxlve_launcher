@@ -8,7 +8,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { GameSource, LibraryItem } from "./core/types";
 
-export type CompanionStore = "ea" | "ubisoft" | "xbox" | "battlenet";
+export type CompanionStore = "ea" | "ubisoft" | "xbox" | "battlenet" | "riot";
 
 export interface CompanionGame {
   store: CompanionStore;

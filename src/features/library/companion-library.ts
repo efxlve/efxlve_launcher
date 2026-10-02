@@ -6,7 +6,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
+import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, type CompanionStore } from "../../companion";
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
@@ -76,29 +76,39 @@ export async function loadCompanionLibrary(): Promise<void> {
   void fillCompanionPlaytime();
 }
 
-/** Playtime the Ubisoft service reports, merged into the shared playtime map. */
+/** Playtime from the store service (Ubisoft) or the local session cache,
+ * merged into the shared playtime map. */
 let playtimeBusy = false;
 async function fillCompanionPlaytime(): Promise<void> {
-  if (playtimeBusy || !S.companionSummaries.some((g) => g.source === "ubisoft")) return;
+  if (playtimeBusy) return;
+  const stores = new Set(S.companionSummaries.map((g) => g.source));
+  if (stores.size === 0) return;
   playtimeBusy = true;
   try {
-    const rows = await companionPlaytimes("ubisoft");
     let changed = false;
     let changedCurrent = false;
-    for (const row of rows) {
-      // The service returns the client's own card id; the library key is the
-      // composite `ubisoft::<id>` every lookup (hero, cover, manage) uses.
-      const key = `ubisoft::${row.id}`;
-      const existing = S.playtimeMap.get(key);
-      if (!existing || existing.total_seconds !== row.totalSeconds) {
-        S.playtimeMap.set(key, {
-          total_seconds: row.totalSeconds,
-          session_count: existing?.session_count ?? 0,
-          last_played_timestamp: existing?.last_played_timestamp,
-          last_played: existing?.last_played,
-        });
-        changed = true;
-        if (S.currentModalAppName === key) changedCurrent = true;
+    for (const store of stores) {
+      let rows;
+      try {
+        rows = await companionPlaytimes(store as CompanionStore);
+      } catch {
+        // Signed out or offline: that store's columns stay empty.
+        continue;
+      }
+      for (const row of rows) {
+        // Rows carry the client's own id; the library key is `<store>::<id>`.
+        const key = `${store}::${row.id}`;
+        const existing = S.playtimeMap.get(key);
+        if (!existing || existing.total_seconds !== row.totalSeconds) {
+          S.playtimeMap.set(key, {
+            total_seconds: row.totalSeconds,
+            session_count: existing?.session_count ?? 0,
+            last_played_timestamp: existing?.last_played_timestamp,
+            last_played: existing?.last_played,
+          });
+          changed = true;
+          if (S.currentModalAppName === key) changedCurrent = true;
+        }
       }
     }
     if (changed) {
@@ -106,8 +116,6 @@ async function fillCompanionPlaytime(): Promise<void> {
       // The game page paints TIME from the map; refresh the open one in place.
       if (changedCurrent && S.currentModalAppName) openEpicModal(S.currentModalAppName, false, false);
     }
-  } catch {
-    // Signed out or offline: the columns stay empty.
   } finally {
     playtimeBusy = false;
   }

@@ -30,7 +30,7 @@ import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
 import { notify, render } from "./render";
-import { rawOf, setEpicSummaries } from "./selectors";
+import { isCompanionKey, rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
 import { toast } from "./toast";
 import { syncLibraryHeadingCount } from "../features/library/library-view";
@@ -51,10 +51,10 @@ export async function epicStop(appName: string): Promise<void> {
 
 export async function epicPlay(appName: string): Promise<void> {
   // Steam games belong to the Steam client: hand the launch over to it.
-  if (appName.startsWith("ea::") || appName.startsWith("ubisoft::") || appName.startsWith("xbox::") || appName.startsWith("battlenet::")) {
+  if (isCompanionKey(appName)) {
     pushRecent(appName);
     toast(t("dl.launching"), "");
-    const store = appName.slice(0, appName.indexOf("::")) as "ea" | "ubisoft" | "xbox" | "battlenet";
+    const store = appName.slice(0, appName.indexOf("::")) as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot";
     const gameId = appName.slice(appName.indexOf("::") + 2);
     try {
       await companionLaunch(store, gameId);

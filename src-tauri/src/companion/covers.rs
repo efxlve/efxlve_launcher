@@ -131,10 +131,53 @@ async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQ
             return Some((query, poster, String::new()));
         }
     }
-    let app = steam_app(&client, &query.name).await?;
-    let cover = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_600x900.jpg");
-    let hero = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_hero.jpg");
-    Some((query, cover, hero))
+    if let Some(app) = steam_app(&client, &query.name).await {
+        let cover = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_600x900.jpg");
+        let hero = format!("https://cdn.cloudflare.steamstatic.com/steam/apps/{app}/library_hero.jpg");
+        return Some((query, cover, hero));
+    }
+    // Riot's PC titles are not on Steam: fall back to the game's own share
+    // image, which the site publishes for link previews.
+    if query.store == "riot" {
+        if let Some(image) = riot_share_image(&client, &query.id).await {
+            return Some((query, image.clone(), image));
+        }
+    }
+    None
+}
+
+/// Official Riot pages used only to resolve a share image for the four titles.
+const RIOT_SITES: &[(&str, &str)] = &[
+    ("league_of_legends", "https://www.leagueoflegends.com/en-us/"),
+    ("bacon", "https://playruneterra.com/en-us/"),
+    ("valorant", "https://playvalorant.com/en-us/"),
+    ("lion", "https://2xko.riotgames.com/en-us/"),
+];
+
+async fn riot_share_image(client: &reqwest::Client, id: &str) -> Option<String> {
+    let url = RIOT_SITES.iter().find(|(code, _)| *code == id)?.1;
+    let html = client.get(url).send().await.ok()?.text().await.ok()?;
+    let image = html_meta_content(&html, "og:image")?;
+    Some(image.replace("&amp;", "&"))
+}
+
+/// `content` of the first `<meta>` tag whose attributes mention `property`.
+pub(crate) fn html_meta_content(html: &str, property: &str) -> Option<String> {
+    let mut rest = html;
+    while let Some(start) = rest.find("<meta") {
+        let end = rest[start..].find('>').map(|idx| idx + start)?;
+        let tag = &rest[start..end];
+        if tag.contains(property) {
+            let content = tag.find("content=\"")? + "content=\"".len();
+            let value_end = tag[content..].find('"')? + content;
+            let value = tag[content..value_end].trim();
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+        rest = &rest[end + 1..];
+    }
+    None
 }
 
 async fn xbox_poster(client: &reqwest::Client, store_id: &str) -> Option<String> {
@@ -273,5 +316,15 @@ mod tests {
             find_image(&json, "Poster").as_deref(),
             Some("https://store-images.s-microsoft.com/image/poster")
         );
+    }
+
+    #[test]
+    fn share_image_reads_the_meta_tag_in_any_attribute_order() {
+        let a = r#"<head><meta property="og:image" content="https://cdn.example/a.jpg" /><meta property="og:title" content="x" /></head>"#;
+        assert_eq!(html_meta_content(a, "og:image").as_deref(), Some("https://cdn.example/a.jpg"));
+        let b = r#"<meta content="https://cdn.example/b.jpg" property="og:image">"#;
+        assert_eq!(html_meta_content(b, "og:image").as_deref(), Some("https://cdn.example/b.jpg"));
+        assert_eq!(html_meta_content("<head></head>", "og:image"), None);
+        assert_eq!(html_meta_content(r#"<meta property="og:image" content="">"#, "og:image"), None);
     }
 }

@@ -19,6 +19,8 @@ export function storeVersionLabel(source: GameVersionSource): string {
       return "Xbox";
     case "battlenet":
       return "Battle.net";
+    case "riot":
+      return "Riot Games";
     default:
       return "Epic Games";
   }

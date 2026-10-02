@@ -8,7 +8,7 @@
 
 import { ctxRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { gameVersionsOf, summaryOf, sharedOwnerOf } from "../../core/selectors";
+import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../core/selectors";
 import { storeVersionLabel } from "../drawer/external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
@@ -46,6 +46,11 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   const shared = sharedOwnerOf(appName);
   // Steam games: every file action belongs to the Steam client.
   const isSteam = appName.startsWith("steam::");
+  // Companion games: install/uninstall go through their own client.
+  const source = sourceOfKey(appName);
+  const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
+  const companionItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
+    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}" data-store="${source}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const steamItem = (mode: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
     `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="${mode}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const versions = gameVersionsOf(appName);
@@ -64,7 +69,11 @@ export function showContextMenu(x: number, y: number, appName: string): void {
         ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("update", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
     ${s.installed ? steamItem("validate", t("steam.validate"), "shield") : ""}
     ${item("manage-game", t("common.manage"), "settings")}`
-        : `${installed ? item("play", t("common.play"), "play") : item("install", t("common.install"), "download")}
+        : `${installed
+            ? item("epic-play", t("common.play"), "play")
+            : isCompanion
+              ? companionItem("companion-install", t("common.install"), "download")
+              : item("epic-install", t("common.install"), "download")}
     ${item("manage-game", t("common.manage"), "settings")}`}
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
@@ -80,7 +89,9 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam
           ? steamItem("uninstall", t("steam.uninstall"), "trash", true)
-          : item("uninstall", t("common.uninstall"), "trash", true)}`
+          : isCompanion
+            ? companionItem("companion-uninstall", t("common.uninstall"), "trash", true)
+            : item("epic-uninstall", t("common.uninstall"), "trash", true)}`
       : ""}
   `;
 

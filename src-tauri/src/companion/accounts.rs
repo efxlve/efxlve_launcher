@@ -59,7 +59,7 @@ pub(crate) fn save_accounts(path: &Path, accounts: &[CompanionAccount]) -> Resul
 }
 
 pub(crate) fn is_store(store: &str) -> bool {
-    matches!(store, "ea" | "ubisoft" | "xbox" | "battlenet")
+    matches!(store, "ea" | "ubisoft" | "xbox" | "battlenet" | "riot")
 }
 
 /// Persona already signed in to the client, when the client stores one in a

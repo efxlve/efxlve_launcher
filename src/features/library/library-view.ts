@@ -617,6 +617,7 @@ export function renderEpic(): string {
       ubisoft: companionCount("ubisoft"),
       xbox: companionCount("xbox"),
       battlenet: companionCount("battlenet"),
+      riot: companionCount("riot"),
     },
     hasSteam,
   );

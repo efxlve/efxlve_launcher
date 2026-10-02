@@ -12,7 +12,7 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
+import { isCompanionKey, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
@@ -339,7 +339,7 @@ export function epicActionButtons(
     }
     return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
-  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+  if (isCompanionKey(s.appName)) {
     const store = s.appName.slice(0, s.appName.indexOf("::"));
     if (!s.installed) {
       return `<button class="btn install${btn}" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 14)} ${t("common.install")}</button>`;

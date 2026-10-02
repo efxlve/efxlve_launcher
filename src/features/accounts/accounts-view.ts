@@ -452,7 +452,7 @@ function steamCard(): string {
     </section>`;
 }
 
-function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: string): string {
+function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet" | "riot", title: string): string {
   const status = S.companionStatus.find((row) => row.store === store);
   const linked = status?.linked ?? false;
   const needsLogin = status?.needsLogin ?? false;
@@ -519,7 +519,8 @@ function accountCards(): string {
     ${companionCard("ea", "EA App")}
     ${companionCard("ubisoft", "Ubisoft Connect")}
     ${companionCard("xbox", "Xbox")}
-    ${companionCard("battlenet", "Battle.net")}`;
+    ${companionCard("battlenet", "Battle.net")}
+    ${companionCard("riot", "Riot Games")}`;
 }
 
 /** Account list, switch, add and sign-out, embedded in Settings. */

@@ -88,6 +88,7 @@ function companionStoreLabel(source: string): string {
     case "ubisoft": return "Ubisoft Connect";
     case "xbox": return "Xbox";
     case "battlenet": return "Battle.net";
+    case "riot": return "Riot Games";
     default: return source;
   }
 }
@@ -263,13 +264,7 @@ export function summaryOf(appName: string): EpicSummary | undefined {
   // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) live in the
   // unified map under `<store>::<id>`.
   const companion = S.allGamesMap.get(appName);
-  if (
-    companion &&
-    (companion.source === "ea" ||
-      companion.source === "ubisoft" ||
-      companion.source === "xbox" ||
-      companion.source === "battlenet")
-  ) {
+  if (companion && isCompanionKey(companion.key)) {
     return libraryItemToSummary(companion);
   }
   // Games that only another saved account owns resolve to a shared entry so the
@@ -292,7 +287,18 @@ export function sourceOfKey(key: string): import("./types").GameSource {
   if (key.startsWith("ubisoft::")) return "ubisoft";
   if (key.startsWith("xbox::")) return "xbox";
   if (key.startsWith("battlenet::")) return "battlenet";
+  if (key.startsWith("riot::")) return "riot";
   return "epic";
+}
+
+/** True for a store owned and launched by its own client. */
+export function isCompanionSource(source: string): boolean {
+  return source !== "epic" && source !== "gog" && source !== "steam";
+}
+
+/** True for games owned and launched by another client (EA, Ubisoft, Xbox, Battle.net, Riot). */
+export function isCompanionKey(appName: string): boolean {
+  return isCompanionSource(sourceOfKey(appName));
 }
 
 /** Minimal summary for a shared (other-account) game. */
@@ -467,6 +473,7 @@ export function gameStoresLabel(appNameOrTitle: string): string {
   if (appNameOrTitle.startsWith("ubisoft::")) return "Ubisoft Connect";
   if (appNameOrTitle.startsWith("xbox::")) return "Xbox";
   if (appNameOrTitle.startsWith("battlenet::")) return "Battle.net";
+  if (appNameOrTitle.startsWith("riot::")) return "Riot Games";
   return "Epic";
 }
 
@@ -541,9 +548,10 @@ export function epicWideArt(s: EpicSummary): string | null {
     }
   }
 
-  // Companion games (EA, Ubisoft, Xbox, Battle.net): the client catalog ships a
-  // wide background. The portrait cover must never be stretched into the banner.
-  if (s.appName.startsWith("ea::") || s.appName.startsWith("ubisoft::") || s.appName.startsWith("xbox::") || s.appName.startsWith("battlenet::")) {
+  // Companion games (EA, Ubisoft, Xbox, Battle.net, Riot): the client catalog
+  // ships a wide background. The portrait cover must never be stretched into
+  // the banner.
+  if (isCompanionKey(s.appName)) {
     const item = S.allGamesMap.get(s.appName);
     if (item?.heroUrl) {
       wideArtCache.set(s.appName, item.heroUrl);

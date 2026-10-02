@@ -13,6 +13,7 @@ import ea from "../../assets/stores/ea.png";
 import ubisoft from "../../assets/stores/ubisoft.png";
 import xbox from "../../assets/stores/xbox.png";
 import battlenet from "../../assets/stores/battlenet.png";
+import riot from "../../assets/stores/riot.png";
 import type { StoreId } from "./store-view";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
@@ -23,9 +24,10 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   ubisoft,
   ea,
   xbox,
+  riot,
 };
 
-const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet };
+const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot };
 
 /** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {

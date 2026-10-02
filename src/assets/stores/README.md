@@ -12,10 +12,10 @@ Settings → About.
 The files are the same official shapes, redrawn as pure white (`#ffffff`) on a
 transparent ground so they match the console: one accent, no brand colors. GOG is
 the stacked gog.com wordmark. Steam is the crank, Xbox the sphere, EA the disc,
-Ubisoft the spiral, Battle.net the knot, Epic the wordmark. Simple Icons
-(simpleicons.org) publishes the same monochrome shapes for Epic, GOG, Steam, EA,
-Ubisoft and Battle.net; Xbox's sphere is the mark already in this folder, filled
-white. The colored favicons are not used.
+Ubisoft the spiral, Battle.net the knot, Riot the fist, Epic the wordmark. Simple
+Icons (simpleicons.org) publishes the same monochrome shapes for Epic, GOG,
+Steam, EA, Ubisoft and Battle.net; Xbox's sphere is the mark already in this
+folder, filled white. The colored favicons are not used.
 
 | Store | Source | File |
 | --- | --- | --- |
@@ -26,6 +26,7 @@ white. The colored favicons are not used.
 | Battle.net | `shop.battle.net/static/favicon-192x192.png` | `battlenet.png` |
 | Ubisoft | `store.ubisoft.com/.../images/favicon-96x96.png` (whitened, see below) | `ubisoft.png` |
 | EA | Wikimedia Commons, `File:Electronic-Arts-Logo.svg` (official mark) | `ea.png` |
+| Riot Games | `www.riotgames.com/assets/img/meta/.../apple-touch-icon-precomposed-180x180.png` (whitened, see below) | `riot.png` |
 
 The shapes come from those official files. Each glyph is now pure white on
 transparency; brand colors are not drawn. Trademark owners are named in

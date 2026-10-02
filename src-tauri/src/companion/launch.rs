@@ -18,6 +18,7 @@ pub(crate) fn client_installed(store: &str) -> bool {
         "ubisoft" => ubi_exe().is_some(),
         "battlenet" => bnet_exe().is_some(),
         "xbox" => xbox_present(),
+        "riot" => super::riot::client_exe().is_some(),
         _ => false,
     }
 }
@@ -30,6 +31,7 @@ pub(crate) fn open_client(store: &str) -> Result<(), String> {
         "ea" => ea_exe(),
         "ubisoft" => ubi_exe(),
         "battlenet" => bnet_exe(),
+        "riot" => super::riot::client_exe(),
         _ => None,
     };
     let Some(path) = path else {

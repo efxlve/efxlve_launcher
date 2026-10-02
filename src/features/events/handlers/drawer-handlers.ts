@@ -6,7 +6,7 @@
 import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
-import { gameVersionsOf, sourceOfKey, summaryOf } from "../../../core/selectors";
+import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
@@ -89,7 +89,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "epic-store-page":
       if (id) {
         const source = sourceOfKey(id);
-        if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+        if (isCompanionSource(source)) {
           // The id is not an Epic app name: open the owning storefront in the
           // embedded store, with Ubisoft's search filtered to the title.
           const s = summaryOf(id);

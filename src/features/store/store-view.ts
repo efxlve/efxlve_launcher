@@ -181,7 +181,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "riot";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -192,10 +192,11 @@ export const STORE_LABELS: Record<StoreId, string> = {
   ubisoft: "Ubisoft Connect",
   ea: "EA App",
   xbox: "Xbox",
+  riot: "Riot Games",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -213,6 +214,8 @@ export const EA_STORE_URL = "https://www.ea.com/games";
  */
 export const XBOX_STORE_URL = "https://www.xbox.com/games/all-games/pc?PlayWith=PC";
 export const UBISOFT_STORE_URL = "https://store.ubi.com/";
+/** Riot has no web storefront; the play page downloads the client. */
+export const RIOT_STORE_URL = "https://www.riotgames.com/en/play";
 
 /**
  * Ubisoft's overlay login page, the same start URL the Galaxy Uplay plugin
@@ -233,6 +236,7 @@ const STORE_URLS: Record<StoreId, string> = {
   ubisoft: UBISOFT_STORE_URL,
   ea: EA_STORE_URL,
   xbox: XBOX_STORE_URL,
+  riot: RIOT_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -242,6 +246,7 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
   if (lower.includes("ubisoft.com") || lower.includes("ubi.com")) return "ubisoft";
+  if (lower.includes("riotgames.com")) return "riot";
   if (lower.includes("ea.com")) return "ea";
   if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
   return "epic";

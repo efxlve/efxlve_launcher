@@ -168,6 +168,8 @@ fn store_id_for_url(url: &str) -> &'static str {
         "xbox"
     } else if url.contains("battle.net") {
         "battlenet"
+    } else if url.contains("riotgames.com") {
+        "riot"
     } else {
         "epic"
     }
@@ -1013,6 +1015,10 @@ mod tests {
         assert_eq!(
             super::store_id_for_url("https://shop.battle.net/"),
             "battlenet"
+        );
+        assert_eq!(
+            super::store_id_for_url("https://www.riotgames.com/en/play"),
+            "riot"
         );
         // Case does not matter, and unknown hosts fall back to the Epic storefront.
         assert_eq!(

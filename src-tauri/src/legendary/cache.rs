@@ -727,17 +727,49 @@ mod tests {
 
     #[test]
     fn test_read_egl_installed_games_parses() {
-        let games = read_egl_installed_games();
-        if egl_manifests_dir().is_dir() {
-            assert!(
-                !games.is_empty(),
-                "If the EGL folder exists there must be at least one game"
-            );
-            let has_cyberpunk_or_rdr = games
-                .iter()
-                .any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
-            assert!(has_cyberpunk_or_rdr, "Cyberpunk or RDR2 must be detected");
+        // The folder can be an empty leftover after the Epic Launcher is
+        // uninstalled or its games were removed; the check only makes sense
+        // when at least one manifest still points at a folder on disk.
+        let dir = egl_manifests_dir();
+        let installed_manifest = std::fs::read_dir(&dir)
+            .map(|entries| {
+                entries.flatten().any(|entry| {
+                    let path = entry.path();
+                    if path.extension().and_then(|e| e.to_str()) != Some("item") {
+                        return false;
+                    }
+                    let Ok(text) = std::fs::read_to_string(&path) else {
+                        return false;
+                    };
+                    let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) else {
+                        return false;
+                    };
+                    let main = val
+                        .get("MainGameAppName")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    let loc = val
+                        .get("InstallLocation")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    main.is_empty() && !loc.is_empty() && Path::new(loc).is_dir()
+                })
+            })
+            .unwrap_or(false);
+        if !installed_manifest {
+            return;
         }
+        let games = read_egl_installed_games();
+        assert!(
+            !games.is_empty(),
+            "If an installed EGL manifest exists there must be at least one game"
+        );
+        let has_cyberpunk_or_rdr = games
+            .iter()
+            .any(|g| g.app_name == "Ginger" || g.app_name == "Heather");
+        assert!(has_cyberpunk_or_rdr, "Cyberpunk or RDR2 must be detected");
     }
 
     #[test]

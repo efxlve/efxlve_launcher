@@ -11,6 +11,7 @@ mod battlenet;
 mod covers;
 mod launch;
 mod proto;
+mod riot;
 mod scan;
 mod signin;
 mod ubi_achievements;
@@ -67,7 +68,7 @@ pub struct CompanionGame {
     pub description: String,
 }
 
-const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet"];
+const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
 
 fn discover(store: &str) -> Vec<FoundGame> {
     let installed = scan::uninstall_games();
@@ -76,6 +77,7 @@ fn discover(store: &str) -> Vec<FoundGame> {
         "ubisoft" => ubisoft::merged_games(&installed),
         "xbox" => scan::xbox_games(),
         "battlenet" => battlenet::merged_games(&installed),
+        "riot" => riot::games(),
         _ => Vec::new(),
     }
 }
@@ -85,8 +87,11 @@ fn library_games() -> Vec<FoundGame> {
     let mut games = Vec::new();
     let mut seen = HashSet::new();
     for store in STORES {
+        // Riot's PC titles are free to play: with the client installed the
+        // whole catalog belongs in the library, linked or not.
+        let free_with_client = *store == "riot" && launch::client_installed("riot");
         for game in discover(store) {
-            if !linked.contains(*store) && !game.installed {
+            if !linked.contains(*store) && !game.installed && !free_with_client {
                 continue;
             }
             let key = format!("{}::{}", game.store, game.id);
@@ -271,70 +276,149 @@ pub fn companion_open_client(store: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn companion_launch(store: String, id: String) -> Result<(), String> {
+pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Result<(), String> {
     if !accounts::is_store(&store) || id.is_empty() {
         return Err("Unknown game".into());
     }
-    if let Some(game) = discover(&store).into_iter().find(|g| g.id == id) {
-        if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
-            // Ubisoft Connect has its own F12 screenshot tool for these games;
-            // registering the launcher's hotkey as well would capture twice.
-            if game.store != "ubisoft" {
-                // The screenshot hotkey needs to know which game is on screen.
-                // The install folder is enough to match the process; client
-                // protocols do not expose the executable name.
-                let install_path = std::path::Path::new(&game.install_path)
-                    .is_dir()
-                    .then(|| std::path::PathBuf::from(&game.install_path));
-                let app_name = format!("{}::{}", game.store, game.id);
-                crate::legendary::screenshots::set_active_running_game(
-                    &app_name,
-                    &game.name,
-                    install_path.clone(),
-                    Vec::new(),
-                );
-                watch_companion_exit(app_name, install_path);
-            }
-            return launch::open_game(&game.launch_uri, &game.launch_exe);
-        }
+    let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
+        return launch::open_client(&store);
+    };
+    // Ubisoft Connect has its own F12 screenshot tool for these games;
+    // registering the launcher's hotkey as well would capture twice.
+    if game.store != "ubisoft" {
+        // The screenshot hotkey needs to know which game is on screen. The
+        // install folder is enough to match the process; client protocols do
+        // not expose the executable name.
+        let install_path = std::path::Path::new(&game.install_path)
+            .is_dir()
+            .then(|| std::path::PathBuf::from(&game.install_path));
+        let app_name = format!("{}::{}", game.store, game.id);
+        crate::legendary::screenshots::set_active_running_game(
+            &app_name,
+            &game.name,
+            install_path.clone(),
+            Vec::new(),
+        );
+        watch_companion_exit(app, app_name, game.store.clone(), install_path);
+    }
+    // Riot hands every action to RiotClientServices.exe with a product flag.
+    if store == "riot" {
+        return match riot::action_command(&id, "launch") {
+            Some((exe, args)) => launch::run_command(&exe, &args),
+            None => launch::open_client(&store),
+        };
+    }
+    if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
+        return launch::open_game(&game.launch_uri, &game.launch_exe);
     }
     launch::open_client(&store)
 }
 
-/// Clears the screenshot hotkey's active game once the process exits. The
-/// client protocol returns before the game window exists, so the watcher waits
-/// for a process first, then for it to disappear.
-fn watch_companion_exit(app_name: String, install_path: Option<std::path::PathBuf>) {
+/* ---------- Locally tracked companion playtime ---------- */
+
+fn playtime_cache_path() -> std::path::PathBuf {
+    accounts::data_dir().join("companion_playtime.json")
+}
+
+fn load_local_playtimes() -> std::collections::HashMap<String, u64> {
+    let Ok(text) = std::fs::read_to_string(playtime_cache_path()) else {
+        return std::collections::HashMap::new();
+    };
+    let value: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+    value
+        .as_object()
+        .map(|map| {
+            map.iter()
+                .filter_map(|(key, row)| Some((key.clone(), row.as_u64()?)))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Adds one finished session to the local companion playtime cache.
+fn add_local_playtime(app_name: &str, seconds: u64) {
+    if seconds == 0 {
+        return;
+    }
+    let mut map = load_local_playtimes();
+    let entry = map.entry(app_name.to_string()).or_insert(0);
+    *entry = entry.saturating_add(seconds);
+    let path = playtime_cache_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let value = serde_json::Value::Object(
+        map.into_iter()
+            .map(|(key, seconds)| (key, serde_json::Value::from(seconds)))
+            .collect(),
+    );
+    if let Ok(text) = serde_json::to_string(&value) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+/// Clears the screenshot hotkey's active game once the process exits and adds
+/// the session to the locally tracked playtime. The client protocol returns
+/// before the game window exists, so the watcher waits for a process first,
+/// then for it to disappear. Riot and Battle.net can spend minutes updating
+/// before the game window appears, hence the long grace.
+fn watch_companion_exit(
+    app: tauri::AppHandle,
+    app_name: String,
+    store: String,
+    install_path: Option<std::path::PathBuf>,
+) {
     tauri::async_runtime::spawn(async move {
+        use tauri::Emitter;
         let started = std::time::Instant::now();
-        let mut detected = false;
+        let mut detected_at: Option<std::time::Instant> = None;
         let mut missing = 0u32;
         loop {
             if crate::legendary::transfers::is_game_process_running(install_path.as_deref(), &[]) {
-                detected = true;
+                detected_at.get_or_insert_with(std::time::Instant::now);
                 missing = 0;
-            } else if detected {
+            } else if detected_at.is_some() {
                 missing += 1;
                 if missing >= 3 {
                     break;
                 }
-            } else if started.elapsed() > std::time::Duration::from_secs(90) {
+            } else if started.elapsed() > std::time::Duration::from_secs(300) {
                 // The client only opened an install prompt; nothing to watch.
                 break;
             }
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
         crate::legendary::screenshots::clear_active_running_game(&app_name);
+        if let Some(detected) = detected_at {
+            let seconds = detected.elapsed().as_secs();
+            if seconds >= 5 {
+                add_local_playtime(&app_name, seconds);
+                // The cards and the open page re-read the cache.
+                let _ = app.emit("companion-store-changed", store);
+            }
+        }
     });
 }
 
-/// Playtime for the linked Ubisoft account, keyed by library id.
+/// Playtime rows keyed by library id. Ubisoft reports it through its stats
+/// service; the other clients have no playtime API, so the sessions this
+/// launcher started are summed from the local cache.
 #[tauri::command]
 pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRow> {
-    if store != "ubisoft" {
-        return Vec::new();
+    if store == "ubisoft" {
+        return ubisoft_login::playtimes().await;
     }
-    ubisoft_login::playtimes().await
+    let prefix = format!("{store}::");
+    load_local_playtimes()
+        .into_iter()
+        .filter_map(|(key, seconds)| {
+            key.strip_prefix(&prefix)
+                .map(|id| ubisoft_login::PlaytimeRow {
+                    id: id.to_string(),
+                    total_seconds: seconds,
+                })
+        })
+        .collect()
 }
 
 /// Achievements the local Ubisoft Connect client cached for one game. The id is
@@ -370,6 +454,13 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return Err("Unknown game".into());
     };
+    // Riot: launch, install and uninstall are product flags on the client exe.
+    if store == "riot" {
+        return match riot::action_command(&game.id, &action) {
+            Some((exe, args)) => launch::run_command(&exe, &args),
+            None => launch::open_client(&store),
+        };
+    }
     match action.as_str() {
         // Battle.net ships an official headless uninstaller in the agent folder.
         "uninstall" if store == "battlenet" => {
@@ -385,7 +476,7 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
         }
         // No install protocol: open the client on the product's own page, where
         // it offers install or uninstall.
-        ("install" | "uninstall") if !game.launch_uri.is_empty() => launch::open_game(&game.launch_uri, ""),
+        "install" | "uninstall" if !game.launch_uri.is_empty() => launch::open_game(&game.launch_uri, ""),
         _ => launch::open_client(&store),
     }
 }
