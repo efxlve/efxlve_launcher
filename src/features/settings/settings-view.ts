@@ -88,8 +88,8 @@ function renderDownloads(): string {
   const savedDir = S.epicSettingsCache?.install_dir?.trim() || "";
   const shownDir = savedDir || S.epicDefaultDir || "—";
   const dir = row(
-    t("settings.installDirTitle"),
-    `${t("settings.installDirHint")} <code>${esc(shownDir)}</code>`,
+    t("settings.epicInstallDirTitle"),
+    `${t("settings.epicInstallDirHint")} <code>${esc(shownDir)}</code>`,
     `<input id="epic-install-dir" class="input settings-path-input" value="${esc(savedDir)}" placeholder="${esc(S.epicDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
      <button type="button" class="btn ghost small" data-act="dl-pick-install-dir">${t("common.browse")}</button>
      <button type="button" class="btn primary small" data-act="epic-save-install-dir">${t("common.save")}</button>`,
@@ -410,8 +410,6 @@ function renderSystem(): string {
     ? `<div class="row"><div class="progress app-update-progress"><span class="app-update-progress-bar" id="app-update-bar" style="width:${S.appUpdateProgress}%"></span></div></div>`
     : "";
 
-  const autoUpdateControl = `<input id="auto-update-time" class="input settings-field-sm" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" />${toggle("toggle-auto-update", S.autoUpdateEnabled)}`;
-
   return (
     group(
       row(`${t("appUpdate.current")} <code>v${esc(S.appVersion)}</code>`, updateDesc, updateControl) + progress +
@@ -420,8 +418,7 @@ function renderSystem(): string {
     ) +
     group(
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
-      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)) +
-      row(t("settings.autoUpdate"), t("settings.autoUpdateDesc"), autoUpdateControl),
+      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)),
       t("settings.secSystem"),
     ) +
     group(
