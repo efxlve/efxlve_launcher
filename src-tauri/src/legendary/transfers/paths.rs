@@ -1,6 +1,6 @@
 //! Where Epic games are installed, and where `legendary.exe` lives.
 //!
-//! The install root comes from settings, then `<home>/Games`.
+//! The install root comes from settings, then `<home>/Games/Epic`.
 
 use std::path::PathBuf;
 
@@ -9,13 +9,14 @@ use tauri::AppHandle;
 use crate::legendary::{cmd_error, paths};
 use crate::load_settings;
 
-/// Default install root: `<home>/Games` (same as legendary).
+/// Default install root: `<home>/Games/Epic` — one folder per store, mirroring
+/// `Games\GOG`.
 pub fn default_install_dir() -> PathBuf {
     let home = std::env::var("USERPROFILE")
         .or_else(|_| std::env::var("HOME"))
         .map(PathBuf::from)
         .unwrap_or_else(|_| std::env::temp_dir());
-    home.join("Games")
+    home.join("Games").join("Epic")
 }
 
 pub(super) fn resolve_base(app: &AppHandle, override_dir: Option<String>) -> PathBuf {
