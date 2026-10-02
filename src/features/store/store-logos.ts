@@ -28,8 +28,8 @@ export const STORE_LOGOS: Record<StoreId, string> = {
 const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet };
 
 /** Logo markup for a store card. */
-export function storeLogo(id: string, size = 24): string {
+export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
   const src = STORE_LOGOS[id as StoreId] || COMPANION_LOGOS[id];
   if (!src) return "";
-  return `<img class="acc-store-logo" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
+  return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
 }

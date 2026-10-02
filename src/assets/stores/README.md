@@ -1,9 +1,8 @@
 # Store logos
 
-One 64×64 PNG per embedded storefront, shown **only** next to the store name on the
-Accounts and Integrations cards so the player can identify the store at a glance.
-They are never used in the app chrome (the header storefront tabs stay text only)
-and never as decoration.
+One 64×64 PNG per embedded storefront, shown next to the store name on the
+Accounts and Integrations cards and in the Stores header tabs so the player can
+identify the store at a glance. They are never used as decoration.
 
 Every mark is the property of its owner and is used here for identification only
 (nominative use). The project claims no rights to them and is not affiliated with,

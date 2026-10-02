@@ -15,8 +15,8 @@ import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
-const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet"];
-const COMPANION_ORDER: readonly GameSource[] = ["ea", "ubisoft", "xbox", "battlenet"];
+const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea"];
+const COMPANION_ORDER: readonly GameSource[] = ["xbox", "battlenet", "ubisoft", "ea"];
 
 /** Stable signature fragment for the visible-library cache. */
 export function enabledStoreKey(): string {

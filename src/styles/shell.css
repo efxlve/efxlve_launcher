@@ -513,12 +513,12 @@ html.sb-narrow .sb-toggle-label {
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* --- Store switcher: compact segmented control, one tab per storefront --- */
+/* --- Store switcher: segmented control, one tab per storefront --- */
 .store-tabs {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  height: 36px;
+  height: 40px;
   margin: 0 auto 0 16px;
   padding: 3px;
   background: var(--surface-1);
@@ -535,17 +535,23 @@ html.sb-narrow .sb-toggle-label {
 .store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
 .store-tabs .tab {
-  height: 30px;
-  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-3);
+  color: var(--text-2);
   white-space: nowrap;
 }
 .store-tabs .tab:hover { color: var(--text); background: var(--surface-2); }
 .store-tabs .tab.active { color: #fff; background: var(--surface-3); }
 .store-tabs .tab.active::after { display: none; }
+.store-tabs .store-tab-logo { width: 16px; height: 16px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
+.store-tabs .tab:hover .store-tab-logo,
+.store-tabs .tab.active .store-tab-logo { opacity: 1; }
 .store-tabs-underline { display: none; }
 
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-switcher:not([hidden]))) .page-header-title { flex: 1; }

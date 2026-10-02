@@ -9,6 +9,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
+import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -194,7 +195,7 @@ export const STORE_LABELS: Record<StoreId, string> = {
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "battlenet", "ubisoft", "ea", "xbox"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea"];
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -541,3 +542,21 @@ export function setView(next: View): void {
   }
   S.view = next;
 }
+
+/**
+ * Puts each storefront's mark next to its name in the header. Runs once: the
+ * tab buttons are static in `index.html`, the labels live here.
+ */
+function decorateStoreTabs(): void {
+  const switcher = document.getElementById("store-switcher");
+  if (!switcher || switcher.dataset.logos === "1") return;
+  switcher.dataset.logos = "1";
+  switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+    const id = btn.dataset.store as StoreId;
+    const label = STORE_LABELS[id];
+    const logo = storeLogo(id, 16, "store-tab-logo");
+    if (!label || !logo) return;
+    btn.innerHTML = `${logo}<span class="store-tab-label">${label}</span>`;
+  });
+}
+decorateStoreTabs();
