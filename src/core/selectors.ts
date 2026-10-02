@@ -432,6 +432,20 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
     });
   }
 
+  // Games the linked clients own (EA, Ubisoft, Xbox, Battle.net) are copies of
+  // the same title too; the selector can switch to them.
+  const companionMatch = pickStoreMatch(S.companionSummaries, (g) => g.title, (g) => g.installed, title);
+  if (companionMatch) {
+    versions.push({
+      source: companionMatch.source,
+      appName: companionMatch.key,
+      title: companionMatch.title,
+      installed: companionMatch.installed,
+      version: companionMatch.version,
+      installPath: companionMatch.installPath || null,
+    });
+  }
+
   return versions;
 }
 

@@ -6,11 +6,11 @@
 import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
-import { gameVersionsOf, summaryOf } from "../../../core/selectors";
+import { gameVersionsOf, sourceOfKey, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
-import { openStoreUrl } from "../../store/store-view";
+import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
@@ -88,7 +88,17 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
 
     case "epic-store-page":
       if (id) {
-        if (id.startsWith("gog::")) {
+        const source = sourceOfKey(id);
+        if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+          // The id is not an Epic app name: open the owning storefront in the
+          // embedded store, with Ubisoft's search filtered to the title.
+          const s = summaryOf(id);
+          const title = s ? s.title : id;
+          const url = source === "ubisoft"
+            ? `https://store.ubi.com/search?q=${encodeURIComponent(title)}`
+            : storeUrlFor(source);
+          void openStoreUrl(url, "store");
+        } else if (id.startsWith("gog::")) {
           const s = summaryOf(id);
           const title = s ? s.title : id.slice(5);
           const url = `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
