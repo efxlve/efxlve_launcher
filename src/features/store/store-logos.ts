@@ -14,6 +14,8 @@ import ubisoft from "../../assets/stores/ubisoft.png";
 import xbox from "../../assets/stores/xbox.png";
 import battlenet from "../../assets/stores/battlenet.png";
 import riot from "../../assets/stores/riot.png";
+import discord from "../../assets/stores/discord.png";
+import spotify from "../../assets/stores/spotify.png";
 import type { StoreId } from "./store-view";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
@@ -27,11 +29,12 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   riot,
 };
 
-const COMPANION_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot };
+/** Marks for services that are not storefronts (the Accounts page uses them). */
+const EXTRA_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot, discord, spotify };
 
 /** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
-  const src = STORE_LOGOS[id as StoreId] || COMPANION_LOGOS[id];
+  const src = STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id];
   if (!src) return "";
   return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
 }

@@ -1,10 +1,12 @@
 /**
- * Accounts page: one connector card per store (Epic today, GOG next).
+ * Accounts page: one card per store, grouped by how the store works.
  *
  * There is no blocking sign-in screen: the launcher always opens its shell and
- * each store is connected from here. A connector card owns its own states
- * (setup, signed out, connecting, connected) so adding a store later is only a
- * new card, not a new app-wide auth phase.
+ * each store is connected from here. A card owns its own states (setup, signed
+ * out, connecting, connected) so adding a store later is only a new card, not a
+ * new app-wide auth phase. Each card carries a collapsed support matrix so a
+ * user can see what the store does, what its own client keeps, and what is not
+ * available at all, without the page turning into a wall of text.
  */
 
 import { emptyState, icon } from "../../core/icons";
@@ -16,6 +18,167 @@ import { storeLogo } from "../store/store-logos";
 
 /** Progress thresholds for the four post-login steps. */
 const STEP_DONE_AT = [40, 72, 90, 100];
+
+/* ---------- Support matrix ---------- */
+
+/** How one capability is provided: by the launcher, by the client, or not at all. */
+type CapState = "yes" | "via" | "local" | "no" | "hotkey" | "clientTool";
+
+interface Cap {
+  /** Feature label key, resolved as `accounts.cap.<key>`. */
+  key: string;
+  state: CapState;
+}
+
+const CAP_STATE_ICON: Record<CapState, string> = {
+  yes: "check",
+  via: "external",
+  local: "timer",
+  no: "x",
+  hotkey: "camera",
+  clientTool: "camera",
+};
+
+/** What each store can and cannot do, shown inside the card's details block. */
+const CAPS: Record<string, Cap[]> = {
+  epic: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "yes" },
+    { key: "uninstall", state: "yes" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "yes" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+  gog: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "yes" },
+    { key: "uninstall", state: "yes" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "yes" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+  steam: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "via" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "yes" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "clientTool" },
+  ],
+  ea: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "via" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+  ubisoft: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "via" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "clientTool" },
+  ],
+  xbox: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "yes" },
+    { key: "playtime", state: "yes" },
+    { key: "cloud", state: "via" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+  battlenet: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "no" },
+    { key: "playtime", state: "local" },
+    { key: "cloud", state: "via" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+  riot: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "via" },
+    { key: "uninstall", state: "via" },
+    { key: "launch", state: "yes" },
+    { key: "achievements", state: "no" },
+    { key: "playtime", state: "local" },
+    { key: "cloud", state: "no" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
+};
+
+/** One row of the support matrix: feature, how it is provided, and the state. */
+function capabilityRow(cap: Cap): string {
+  return `<div class="acc-feature ${cap.state}">
+    <span class="acc-feature-icon">${icon(CAP_STATE_ICON[cap.state] as Parameters<typeof icon>[0], 13)}</span>
+    <span class="acc-feature-label">${t(`accounts.cap.${cap.key}`)}</span>
+    <span class="acc-feature-state">${t(`accounts.capState.${cap.state}`)}</span>
+  </div>`;
+}
+
+/**
+ * Collapsed support matrix. The cards stay short; the detail a curious user
+ * needs (what the store supports, what the client keeps) is one click away.
+ */
+function supportDetails(store: string): string {
+  const caps = CAPS[store] || [];
+  if (caps.length === 0) return "";
+  const note = t(`accounts.note.${store}`);
+  return `<details class="acc-details">
+    <summary>${icon("info", 13)} <span>${t("accounts.supportTitle")}</span></summary>
+    <div class="acc-features">${caps.map(capabilityRow).join("")}</div>
+    <p class="acc-hint">${note}</p>
+  </details>`;
+}
+
+/** One-line explanation box, used to keep confusing points out of the cards. */
+function infoBox(key: string): string {
+  return `<div class="acc-info">${icon("info", 14)}<span>${t(key)}</span></div>`;
+}
+
+/** Section caption that groups the cards. */
+function groupTitle(key: string): string {
+  return `<h3 class="section-title acc-group-title">${t(key)}</h3>`;
+}
+
+/** A store that is announced but not available yet. */
+function soonCard(id: string, title: string, descKey: string): string {
+  return `
+    <section class="card acc-card soon">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo(id)}</span>
+        <div class="row-main">
+          <div class="acc-store-name">${esc(title)}</div>
+          <div class="row-meta">${t(descKey)}</div>
+        </div>
+        <span class="chip warn">${t("accounts.soon")}</span>
+      </div>
+    </section>`;
+}
 
 /** In-place DOM update for the connecting sequence inside the Epic card. */
 export function updateAuthProgressUi(): void {
@@ -155,7 +318,7 @@ function epicCard(): string {
         <div class="row-main"><div class="acc-store-name">Epic Games</div><div class="row-meta">${connected ? esc(S.epicAccount) : t("accounts.epicShort")}</div></div>
         ${status}
       </div>
-      <div class="acc-card-body">${body}</div>
+      <div class="acc-card-body">${body}${supportDetails("epic")}</div>
     </section>`;
 }
 
@@ -240,7 +403,7 @@ function gogCard(): string {
         </div>
         ${status}
       </div>
-      <div class="acc-card-body">${body}</div>
+      <div class="acc-card-body">${body}${supportDetails("gog")}</div>
     </section>`;
 }
 
@@ -448,7 +611,7 @@ function steamCard(): string {
         </div>
         ${statusChip}
       </div>
-      <div class="acc-card-body">${body}</div>
+      <div class="acc-card-body">${body}${supportDetails("steam")}</div>
     </section>`;
 }
 
@@ -521,26 +684,37 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet" | "riot", 
           ${linked ? `<button class="btn ghost small" data-act="companion-rescan" data-id="${store}">${icon("refresh", 13)} ${t("settings.rescan")}</button>` : ""}
           <button class="btn ghost small" data-act="companion-open" data-id="${store}" ${client ? "" : "disabled"}>${icon("external", 13)} ${t("accounts.openClient")}</button>
         </div>
+        ${supportDetails(store)}
       </div>
     </section>`;
 }
 
-/** The three connector cards, then the DRM clients that keep their own games. */
+/**
+ * Account cards, grouped so the page reads as three short lists instead of one
+ * long wall: stores the launcher manages itself, stores that live in their own
+ * client, and the two integrations that are on the way.
+ */
 function accountCards(): string {
   return `
+    ${groupTitle("accounts.groupManaged")}
     ${epicCard()}
     ${gogCard()}
     ${steamCard()}
-    ${companionCard("ea", "EA App")}
-    ${companionCard("ubisoft", "Ubisoft Connect")}
+    ${groupTitle("accounts.groupClients")}
+    ${infoBox("accounts.clientInfo")}
     ${companionCard("xbox", "Xbox")}
     ${companionCard("battlenet", "Battle.net")}
-    ${companionCard("riot", "Riot Games")}`;
+    ${companionCard("ubisoft", "Ubisoft Connect")}
+    ${companionCard("ea", "EA App")}
+    ${companionCard("riot", "Riot Games")}
+    ${groupTitle("accounts.groupSoon")}
+    ${soonCard("discord", "Discord", "accounts.discordDesc")}
+    ${soonCard("spotify", "Spotify", "accounts.spotifyDesc")}`;
 }
 
 /** Account list, switch, add and sign-out, embedded in Settings. */
 export function renderAccountSettings(): string {
-  return `<div class="settings-accounts">${accountCards()}</div>`;
+  return `<div class="settings-accounts">${infoBox("accounts.optionalInfo")}${accountCards()}</div>`;
 }
 
 export function renderAccounts(): string {
@@ -548,6 +722,7 @@ export function renderAccounts(): string {
   return `
     <div class="page acc-page">
       <p class="page-sub acc-intro">${t("accounts.subtitle")}</p>
+      ${infoBox("accounts.optionalInfo")}
       ${accountCards()}
     </div>`;
 }
