@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionUnlink, eaLoginOpen, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -505,12 +505,14 @@ document.addEventListener("click", (e) => {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
-    if (id === "ea") {
-      // EA signs in through its own OAuth window (PKCE + PC signature); the
-      // window closes itself once the redirect comes back.
-      void eaLoginOpen().catch((e: unknown) => {
+    if (id === "ea" || id === "xbox") {
+      // These stores sign in through their own OAuth window; it closes itself
+      // once the redirect comes back.
+      const open = id === "ea" ? eaLoginOpen : xboxLoginOpen;
+      const failure = id === "ea" ? "@t:accounts.eaLoginFailed" : "@t:accounts.xboxLoginFailed";
+      void open().catch((e: unknown) => {
         const raw = String(e);
-        toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
+        toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw || i18nT(failure.slice(3)), "err");
       });
     } else {
       const store = id === "ubisoft" ? "ubisoft" : "battlenet";

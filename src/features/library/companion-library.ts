@@ -60,6 +60,13 @@ export async function syncCompanionAccounts(): Promise<void> {
   } catch {
     // Not linked or offline: the cached list stays.
   }
+  try {
+    const report = await companionSync("xbox");
+    if (report.needsLogin) toast("@t:accounts.xboxSessionExpired", "err");
+    if (report.updated || report.needsLogin) changed = true;
+  } catch {
+    // Not linked or offline: the cached list stays.
+  }
   if (changed) await loadCompanionLibrary();
 }
 

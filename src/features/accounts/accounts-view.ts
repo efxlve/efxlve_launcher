@@ -460,18 +460,25 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet" | "riot", 
   const count = status?.gameCount ?? S.companionSummaries.filter((g) => g.source === store).length;
   const name = status?.accountName || "";
   const busy = S.companionBusy === store;
-  const webLogin = store === "ea" || store === "battlenet" || store === "ubisoft";
+  const webLogin = store === "ea" || store === "xbox" || store === "battlenet" || store === "ubisoft";
   const canSignIn = webLogin && (!linked || needsLogin);
   const loginHint = store === "ea"
     ? t("accounts.eaLogin")
-    : store === "ubisoft"
-      ? t("accounts.ubiLogin")
-      : t("accounts.bnetLogin");
+    : store === "xbox"
+      ? t("accounts.xboxLogin")
+      : store === "ubisoft"
+        ? t("accounts.ubiLogin")
+        : t("accounts.bnetLogin");
+  const expired = store === "ea"
+    ? t("accounts.eaSessionExpired")
+    : store === "xbox"
+      ? t("accounts.xboxSessionExpired")
+      : t("accounts.ubiSessionExpired");
   const meta = !client
     ? t("accounts.clientMissing")
     : linked
       ? (needsLogin
-          ? t(store === "ea" ? "accounts.eaSessionExpired" : "accounts.ubiSessionExpired")
+          ? expired
           : name
             ? t("accounts.signedInClient", { name })
             : t("accounts.localAccount"))

@@ -97,6 +97,12 @@ export const eaLoginOpen = () => invoke<void>("ea_login_open");
 /** Closes the EA sign-in window without importing. */
 export const eaLoginHide = () => invoke<void>("ea_login_hide");
 
+/** Opens the Microsoft sign-in window for the Xbox account. */
+export const xboxLoginOpen = () => invoke<void>("xbox_login_open");
+
+/** Closes the Xbox sign-in window without importing. */
+export const xboxLoginHide = () => invoke<void>("xbox_login_hide");
+
 export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 

@@ -47,10 +47,29 @@ pub(crate) fn open_game(uri: &str, exe: &str) -> Result<(), String> {
     if uri.is_empty() {
         return Err("@t:accounts.clientMissing".into());
     }
+    // Store games start through their package identity, not a path.
+    if let Some(aumid) = uri.strip_prefix("aumid:") {
+        return open_aumid(aumid);
+    }
     if !safe_uri(uri) {
         return Err("Unsupported game URL".into());
     }
     tauri_plugin_opener::open_url(uri, None::<&str>).map_err(|e| e.to_string())
+}
+
+/// Starts an installed Store package through the shell app folder.
+fn open_aumid(aumid: &str) -> Result<(), String> {
+    if !super::xbox_login::safe_aumid(aumid) {
+        return Err("@t:accounts.clientMissing".into());
+    }
+    let mut cmd = Command::new("explorer.exe");
+    cmd.arg(format!(r"shell:AppsFolder\{aumid}"));
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
 /// Runs one of the client's own tools (e.g. the Blizzard uninstaller) without a
@@ -116,6 +135,13 @@ fn safe_uri(uri: &str) -> bool {
             && code.len() <= 32
             && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
             && !matches!(code, "agent" | "bna");
+    }
+    if let Some(pfn) = uri.strip_prefix("ms-windows-store://pdp/?PFN=") {
+        return !pfn.is_empty()
+            && pfn.len() <= 128
+            && pfn
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
     }
     false
 }
@@ -214,5 +240,13 @@ mod tests {
         assert!(!safe_uri("origin2://game/launch?offerIds="));
         assert!(!safe_uri("origin2://game/launch"));
         assert!(!safe_uri("origin2://game/uninstall?offerIds=71592"));
+    }
+
+    #[test]
+    fn microsoft_store_product_links_pass() {
+        assert!(safe_uri("ms-windows-store://pdp/?PFN=Microsoft.ForzaHorizon5_8wekyb3d8bbwe"));
+        assert!(!safe_uri("ms-windows-store://pdp/?PFN=Bad App"));
+        assert!(!safe_uri("ms-windows-store://pdp/?PFN="));
+        assert!(!safe_uri("ms-windows-store://pdp/?PFN=x&calc"));
     }
 }

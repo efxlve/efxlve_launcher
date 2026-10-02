@@ -22,6 +22,8 @@ mod ubi_achievements;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
+mod xbox_login;
+mod xbox_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 use ubisoft_login::UbiSync;
 
@@ -83,7 +85,7 @@ fn discover(store: &str) -> Vec<FoundGame> {
             games
         }
         "ubisoft" => ubisoft::merged_games(&installed),
-        "xbox" => scan::xbox_games(),
+        "xbox" => xbox_login::merged_games(&scan::xbox_games()),
         "battlenet" => battlenet::merged_games(&installed),
         "riot" => riot::games(),
         _ => Vec::new(),
@@ -194,6 +196,11 @@ pub fn companion_unlink(store: String) -> Result<(), String> {
         ea_login::clear_session();
         ea_login::clear_owned();
     }
+    if store == "xbox" {
+        xbox_vault::clear();
+        xbox_login::clear_session();
+        xbox_login::clear_owned();
+    }
     accounts::unlink_store(&store)
 }
 
@@ -225,6 +232,24 @@ pub async fn companion_sync(store: String) -> Result<CompanionSyncReport, String
         return Ok(match ea_login::sync_owned().await {
             Ok(count) => CompanionSyncReport { updated: true, count: count as u32, needs_login: false },
             Err(message) if message == "@t:accounts.eaSessionExpired" => CompanionSyncReport {
+                updated: false,
+                count: 0,
+                needs_login: true,
+            },
+            Err(message) => return Err(message),
+        });
+    }
+    if store == "xbox" {
+        if !accounts::is_linked("xbox") {
+            return Ok(CompanionSyncReport {
+                updated: false,
+                count: discover("xbox").len() as u32,
+                needs_login: false,
+            });
+        }
+        return Ok(match xbox_login::sync_owned().await {
+            Ok(count) => CompanionSyncReport { updated: true, count: count as u32, needs_login: false },
+            Err(message) if message == "@t:accounts.xboxSessionExpired" => CompanionSyncReport {
                 updated: false,
                 count: 0,
                 needs_login: true,
@@ -310,6 +335,17 @@ pub async fn ea_login_open(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn ea_login_hide(app: tauri::AppHandle) {
     ea_login::hide_login(&app);
+}
+
+/// Opens the Microsoft sign-in window for the Xbox account.
+#[tauri::command]
+pub async fn xbox_login_open(app: tauri::AppHandle) -> Result<(), String> {
+    xbox_login::open_login(app).await
+}
+
+#[tauri::command]
+pub fn xbox_login_hide(app: tauri::AppHandle) {
+    xbox_login::hide_login(&app);
 }
 
 #[tauri::command]
@@ -453,6 +489,9 @@ pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRo
     if store == "ea" {
         return ea_playtimes().await;
     }
+    if store == "xbox" {
+        return xbox_playtimes().await;
+    }
     let prefix = format!("{store}::");
     load_local_playtimes()
         .into_iter()
@@ -507,6 +546,47 @@ async fn ea_playtimes() -> Vec<ubisoft_login::PlaytimeRow> {
     rows
 }
 
+/// Xbox's own totals, with the locally tracked sessions as the fallback. The
+/// service works in title ids; the library id depends on whether the game came
+/// from the local scan, so the merged library is consulted for the row id.
+async fn xbox_playtimes() -> Vec<ubisoft_login::PlaytimeRow> {
+    let mut totals: std::collections::HashMap<String, u64> = load_local_playtimes()
+        .into_iter()
+        .filter_map(|(key, seconds)| key.strip_prefix("xbox::").map(|id| (id.to_string(), seconds)))
+        .collect();
+    if accounts::is_linked("xbox") {
+        if let Ok(api_rows) = xbox_login::fetch_playtimes().await {
+            let games = discover("xbox");
+            for (title_id, seconds) in api_rows {
+                let Some(owned) = xbox_login::owned_for_title(&title_id) else {
+                    continue;
+                };
+                let title = ea::normalize_title(&owned.name);
+                let id = games
+                    .iter()
+                    .find(|game| {
+                        (!owned.pfn.is_empty() && game.id.eq_ignore_ascii_case(&owned.pfn))
+                            || game.id == owned.title_id
+                            || (!title.is_empty() && ea::normalize_title(&game.name) == title)
+                    })
+                    .map(|game| game.id.clone())
+                    .unwrap_or_else(|| owned.pfn.clone());
+                if id.is_empty() {
+                    continue;
+                }
+                let entry = totals.entry(id).or_insert(0);
+                *entry = (*entry).max(seconds);
+            }
+        }
+    }
+    let mut rows: Vec<ubisoft_login::PlaytimeRow> = totals
+        .into_iter()
+        .map(|(id, total_seconds)| ubisoft_login::PlaytimeRow { id, total_seconds })
+        .collect();
+    rows.sort_by(|a, b| a.id.cmp(&b.id));
+    rows
+}
+
 /// Achievements the store's own service reports. Ubisoft's client cache needs
 /// no session; EA reads the achievement set of the owned offer with the sealed
 /// account session. The id is the library card id, `title` the fallback
@@ -520,6 +600,12 @@ pub async fn companion_achievements(
 ) -> GameAchievementsResponse {
     if store == "ea" {
         return ea_login::achievements(&id, title.as_deref().unwrap_or("")).await;
+    }
+    if store == "xbox" {
+        let Some(title_id) = xbox_login::title_id_for(&id, title.as_deref().unwrap_or("")) else {
+            return GameAchievementsResponse::default();
+        };
+        return xbox_login::achievements(&title_id).await;
     }
     if store != "ubisoft" {
         return GameAchievementsResponse::default();

@@ -595,6 +595,8 @@ fn main() {
             companion::companion_hide_login,
             companion::ea_login_open,
             companion::ea_login_hide,
+            companion::xbox_login_open,
+            companion::xbox_login_hide,
             companion::companion_open_client,
             companion::companion_launch,
             companion::companion_game_action,

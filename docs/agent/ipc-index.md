@@ -162,3 +162,5 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_sync_playtime` | `steamSyncPlaytime({ ... })` | `src-tauri/src/steam/playtime.rs` |
 | `steam_watch_library` | `steamWatchLibrary({ ... })` | `src-tauri/src/steam_watch.rs` |
 | `steam_watch_session` | `steamWatchSession({ ... })` | `src-tauri/src/steam_session.rs` |
+| `xbox_login_hide` | `xboxLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `xbox_login_open` | `xboxLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
