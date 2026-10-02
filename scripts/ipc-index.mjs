@@ -16,7 +16,8 @@ const rows = [];
 for (const file of walk(join("src-tauri", "src"))) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].includes("#[tauri::command]")) continue;
+    // `#[command]` is the aliased form (`use tauri::command`), used by gogdl.
+    if (!/^\s*#\[(tauri::)?command\]/.test(lines[i])) continue;
     const next = lines.slice(i + 1, i + 6).join(" ");
     const match = next.match(/\bfn\s+([A-Za-z0-9_]+)/);
     if (!match) continue;
