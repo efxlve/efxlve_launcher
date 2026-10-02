@@ -253,6 +253,11 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-icon-wrapper { position: relative; width: 48px; height: 48px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-2); }
 .ach-art { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ach-mystery-box, .ach-fallback-icon { width: 100%; height: 100%; display: grid; place-items: center; color: var(--text-3); }
+/* Stores without per-achievement art fall back to a tier-coloured trophy. */
+.ach-fallback-icon.gold { color: #d4a72c; }
+.ach-fallback-icon.silver { color: #a9adb7; }
+.ach-fallback-icon.bronze { color: #b07a4f; }
+.ach-fallback-icon.platinum { color: var(--accent); }
 .ach-locked-badge { position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 4px; background: rgba(14, 15, 18, 0.85); color: var(--text-2); }
 .ach-content { flex: 1; min-width: 0; }
 .ach-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }

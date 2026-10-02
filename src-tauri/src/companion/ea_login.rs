@@ -717,6 +717,9 @@ async fn achievement_set_for(access: &str, id: &str, title: &str) -> Option<Stri
 #[derive(Debug, Clone, Default)]
 pub(crate) struct EaAchievement {
     pub name: String,
+    pub description: String,
+    pub points: u32,
+    pub hidden: bool,
     pub unlocked: bool,
     pub unlock_date: Option<String>,
 }
@@ -735,7 +738,7 @@ pub(crate) async fn achievements(id: &str, title: &str) -> GameAchievementsRespo
         return GameAchievementsResponse::default();
     };
     let query = format!(
-        "query{{achievements(achievementSetIds:[\"{set}\"],playerPsd:\"{persona}\",showHidden:true){{id achievements{{id name awardCount date}}}}}}"
+        "query{{achievements(achievementSetIds:[\"{set}\"],playerPsd:\"{persona}\",showHidden:true){{id achievements{{id name awardCount date description howTo isHidden points}}}}}}"
     );
     let Ok(value) = graphql(&access, &query).await else {
         return GameAchievementsResponse::default();
@@ -762,8 +765,23 @@ pub(crate) async fn achievements(id: &str, title: &str) -> GameAchievementsRespo
             }
             let unlocked = achievement.get("awardCount").and_then(|v| v.as_u64()).unwrap_or(0) == 1;
             let date = achievement.get("date").and_then(|v| v.as_str()).unwrap_or("").trim();
+            let description = achievement
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            let how_to = achievement
+                .get("howTo")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string();
             items.push(EaAchievement {
                 name,
+                description: if description.is_empty() { how_to } else { description },
+                points: achievement.get("points").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                hidden: achievement.get("isHidden").and_then(|v| v.as_bool()).unwrap_or(false),
                 unlocked,
                 // Locked rows carry the request time, which is not an unlock date.
                 unlock_date: if unlocked && !date.is_empty() { Some(date.to_string()) } else { None },
@@ -773,17 +791,20 @@ pub(crate) async fn achievements(id: &str, title: &str) -> GameAchievementsRespo
     achievements_response(items)
 }
 
-/// Maps the EA list to the shared achievement model: names, unlock flags and
-/// dates; EA exposes no descriptions, icons, XP or tiers.
+/// Maps the EA list to the shared achievement model. EA gives names,
+/// descriptions, points and the hidden flag; there is no artwork in the
+/// account service, so cards fall back to a tier-coloured trophy.
 pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievementsResponse {
     let total = items.len() as u32;
+    let total_xp: u32 = items.iter().map(|item| item.points).sum();
+    let user_xp: u32 = items.iter().filter(|item| item.unlocked).map(|item| item.points).sum();
     let achievements: Vec<AchievementItem> = items
         .into_iter()
         .map(|item| AchievementItem {
             name: item.name.clone(),
             display_name: item.name,
-            description: String::new(),
-            xp: 0,
+            description: item.description,
+            xp: item.points,
             unlocked: item.unlocked,
             progress: if item.unlocked { 1.0 } else { 0.0 },
             unlock_date: item.unlock_date,
@@ -791,7 +812,7 @@ pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievemen
             icon_link: String::new(),
             tier: None,
             rarity: None,
-            hidden: false,
+            hidden: item.hidden,
             is_base: true,
         })
         .collect();
@@ -799,7 +820,9 @@ pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievemen
     GameAchievementsResponse {
         achievements,
         user_unlocked: unlocked,
+        user_xp,
         total_achievements: total,
+        total_xp,
         supported: Some(total > 0),
         ..Default::default()
     }
@@ -950,15 +973,28 @@ mod tests {
         let response = achievements_response(vec![
             EaAchievement {
                 name: "First".into(),
+                description: "Do the thing".into(),
+                points: 50,
                 unlocked: true,
                 unlock_date: Some("2024-01-02T03:04:05.000Z".into()),
+                ..Default::default()
             },
-            EaAchievement { name: "Second".into(), unlocked: false, unlock_date: None },
+            EaAchievement {
+                name: "Second".into(),
+                points: 20,
+                hidden: true,
+                ..Default::default()
+            },
         ]);
         assert_eq!(response.total_achievements, 2);
         assert_eq!(response.user_unlocked, 1);
+        assert_eq!(response.user_xp, 50);
+        assert_eq!(response.total_xp, 70);
         assert_eq!(response.achievements.len(), 2);
         assert!(response.achievements.iter().any(|item| item.name == "First" && item.unlocked));
+        assert_eq!(response.achievements[0].description, "Do the thing");
+        assert_eq!(response.achievements[0].xp, 50);
+        assert!(response.achievements[1].hidden);
         assert_eq!(
             response.achievements[0].unlock_date.as_deref(),
             Some("2024-01-02T03:04:05.000Z")

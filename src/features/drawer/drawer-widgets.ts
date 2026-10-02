@@ -957,7 +957,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
             ? `<div class="ach-mystery-box">${icon("lock", 20)}</div>`
             : a.icon_link
               ? `<img class="ach-art" src="${esc(a.icon_link)}" alt="" loading="lazy" />`
-              : `<div class="ach-fallback-icon">${icon("trophy", 20)}</div>`
+              : `<div class="ach-fallback-icon ${tierClass}">${icon("trophy", 20)}</div>`
         }
         ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
       </div>
