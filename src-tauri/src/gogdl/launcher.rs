@@ -98,6 +98,14 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
     // Candidate executables for process tree supervision
     let candidate_exes = discover_game_executables(&install_dir, entry.executable.as_deref());
 
+    // The screenshot hotkey follows the same running game as the playtime watch.
+    crate::legendary::screenshots::set_active_running_game(
+        &composite_id,
+        &title,
+        Some(install_dir.clone()),
+        candidate_exes.clone(),
+    );
+
     let app_clone = app.clone();
     let comp_id_clone = composite_id.clone();
     let install_dir_clone = install_dir.clone();
@@ -142,6 +150,7 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
         }
 
         let elapsed = started.elapsed().as_secs();
+        crate::legendary::screenshots::clear_active_running_game(&comp_id_clone);
         let _ = crate::legendary::playtime::record_session(&comp_id_clone, elapsed);
         crate::legendary::playtime_session::finish();
 
@@ -178,6 +187,7 @@ pub async fn gog_stop_game(app: AppHandle, game_id: String) -> Result<String, St
     }
 
     crate::legendary::playtime_session::finish();
+    crate::legendary::screenshots::clear_active_running_game(&composite_id);
     crate::legendary::transfers::wake_main_window(&app);
 
     let _ = app.emit(
