@@ -159,7 +159,8 @@ fn store_id_for_url(url: &str) -> &'static str {
         "gog"
     } else if url.contains("steampowered.com") {
         "steam"
-    } else if url.contains("ubisoft.com") {
+    } else if url.contains("ubisoft.com") || url.contains("ubi.com") {
+        // The store lives on store.ubi.com, which does not contain "ubisoft.com".
         "ubisoft"
     } else if url.contains("ea.com") {
         "ea"
@@ -997,6 +998,11 @@ mod tests {
         );
         assert_eq!(
             super::store_id_for_url("https://store.ubisoft.com/tr/home"),
+            "ubisoft"
+        );
+        // The storefront's own host: "store.ubi.com" has no "ubisoft.com" in it.
+        assert_eq!(
+            super::store_id_for_url("https://store.ubi.com/"),
             "ubisoft"
         );
         assert_eq!(super::store_id_for_url("https://www.ea.com/games"), "ea");

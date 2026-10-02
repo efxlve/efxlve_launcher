@@ -240,7 +240,7 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("gog.com")) return "gog";
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
-  if (lower.includes("ubisoft.com")) return "ubisoft";
+  if (lower.includes("ubisoft.com") || lower.includes("ubi.com")) return "ubisoft";
   if (lower.includes("ea.com")) return "ea";
   if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
   return "epic";
