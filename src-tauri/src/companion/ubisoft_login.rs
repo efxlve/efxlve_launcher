@@ -492,8 +492,11 @@ pub(crate) async fn sync_owned() -> UbiSync {
         ubi_vault::clear();
         return UbiSync::AuthLost;
     };
-    let signature = |games: Vec<ubisoft::OwnedGame>| -> std::collections::HashSet<(String, String)> {
-        games.into_iter().map(|game| (game.id, game.cover)).collect()
+    let signature = |games: Vec<ubisoft::OwnedGame>| -> std::collections::HashSet<(String, String, String)> {
+        games
+            .into_iter()
+            .map(|game| (game.id, game.cover, game.description))
+            .collect()
     };
     let before = signature(ubisoft::load_owned());
     let mut log = vec![serde_json::json!({
