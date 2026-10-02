@@ -85,9 +85,12 @@ async function fillCompanionPlaytime(): Promise<void> {
     const rows = await companionPlaytimes("ubisoft");
     let changed = false;
     for (const row of rows) {
-      const existing = S.playtimeMap.get(row.id);
+      // The service returns the client's own card id; the library key is the
+      // composite `ubisoft::<id>` every lookup (hero, cover, manage) uses.
+      const key = `ubisoft::${row.id}`;
+      const existing = S.playtimeMap.get(key);
       if (!existing || existing.total_seconds !== row.totalSeconds) {
-        S.playtimeMap.set(row.id, {
+        S.playtimeMap.set(key, {
           total_seconds: row.totalSeconds,
           session_count: existing?.session_count ?? 0,
           last_played_timestamp: existing?.last_played_timestamp,
