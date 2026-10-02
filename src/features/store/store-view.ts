@@ -560,3 +560,75 @@ function decorateStoreTabs(): void {
   });
 }
 decorateStoreTabs();
+
+/**
+ * Shows the tab scroll arrows only while the tab strip overflows, and dims the
+ * arrow on the side that has nothing more to scroll.
+ */
+function updateStoreTabsArrows(): void {
+  const bar = document.getElementById("store-tabs-bar");
+  const scroller = document.getElementById("store-switcher");
+  if (!bar || !scroller) return;
+  const overflow = scroller.scrollWidth > scroller.clientWidth + 1;
+  bar.classList.toggle("has-overflow", overflow);
+  const prev = bar.querySelector<HTMLButtonElement>('[data-dir="-1"]');
+  const next = bar.querySelector<HTMLButtonElement>('[data-dir="1"]');
+  const atStart = scroller.scrollLeft <= 1;
+  const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 1;
+  if (prev) prev.disabled = !overflow || atStart;
+  if (next) next.disabled = !overflow || atEnd;
+}
+
+function initStoreTabsBar(): void {
+  const scroller = document.getElementById("store-switcher");
+  if (!scroller) return;
+  scroller.addEventListener("scroll", updateStoreTabsArrows, { passive: true });
+  // The strip is display:none until the store view opens; observing it catches
+  // the first real size and every later window resize.
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(updateStoreTabsArrows).observe(scroller);
+  }
+  window.addEventListener("resize", updateStoreTabsArrows);
+  updateStoreTabsArrows();
+}
+initStoreTabsBar();
+
+/**
+ * Scrolls the tab strip by one comfortable page. The animation is done here
+ * instead of with `scrollBy({ behavior: "smooth" })`, which some WebView2
+ * builds skip when the window is not focused. A timer lands the final position
+ * even if animation frames are throttled (occluded window).
+ */
+export function scrollStoreTabs(direction: number): void {
+  const scroller = document.getElementById("store-switcher");
+  if (!scroller) return;
+  const max = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+  const start = scroller.scrollLeft;
+  const delta = direction * Math.max(140, Math.round(scroller.clientWidth * 0.6));
+  const target = Math.max(0, Math.min(start + delta, max));
+  if (target === start) return;
+  let landed = false;
+  const land = (): void => {
+    if (landed) return;
+    landed = true;
+    scroller.scrollLeft = target;
+    // Some environments throttle the scroll event; keep the arrows in step.
+    updateStoreTabsArrows();
+  };
+  window.setTimeout(land, 300);
+  const t0 = performance.now();
+  const duration = 220;
+  const step = (now: number): void => {
+    if (landed) return;
+    const progress = Math.min(1, (now - t0) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    scroller.scrollLeft = start + (target - start) * eased;
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      landed = true;
+      updateStoreTabsArrows();
+    }
+  };
+  requestAnimationFrame(step);
+}

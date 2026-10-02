@@ -287,6 +287,8 @@
   "move.cancelFailed": "İptal isteği gönderilemedi: {msg}",
   "store.starting": "Mağaza ve oturum başlatılıyor",
   "store.inLibrary": "Kütüphanede",
+  "store.tabsPrev": "Önceki mağazalar",
+  "store.tabsNext": "Sonraki mağazalar",
   "common.play": "Oyna",
   "common.install": "Yükle",
   "common.manage": "Özellikler & Yönet",

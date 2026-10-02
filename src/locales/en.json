@@ -287,6 +287,8 @@
   "move.cancelFailed": "Cancel request could not be sent: {msg}",
   "store.starting": "Starting store and session",
   "store.inLibrary": "In Library",
+  "store.tabsPrev": "Previous stores",
+  "store.tabsNext": "Next stores",
   "common.play": "Play",
   "common.install": "Install",
   "common.manage": "Properties & Manage",

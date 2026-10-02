@@ -15,6 +15,11 @@ export const SIDEBAR_MAX = 400;
 export const SIDEBAR_DEFAULT = 252;
 export const SIDEBAR_COLLAPSE_AT = 160;
 
+/** Window width that folds the rail and the header search into compact mode. */
+const COMPACT_AT = 1180;
+/** Unfold again only after this much room (hysteresis: no flapping). */
+const COMPACT_LEAVE_AT = 1240;
+
 const DRAWER_MS = 280;
 const DRAWER_EASE = "cubic-bezier(0.2, 0, 0, 1)";
 
@@ -143,12 +148,39 @@ export function refreshSidebarToggle(): void {
   syncToggleUi(measuredWidth());
 }
 
+let compactMode = false;
+
+/**
+ * Folds the rail to icons on a narrow window and unfolds it when there is room
+ * again. The player's own width is kept for the next unfold.
+ */
+function autoFitSidebar(): void {
+  const width = window.innerWidth;
+  if (!compactMode && width < COMPACT_AT) {
+    compactMode = true;
+  } else if (compactMode && width >= COMPACT_LEAVE_AT) {
+    compactMode = false;
+  } else {
+    return;
+  }
+  document.documentElement.classList.toggle("win-compact", compactMode);
+  if (compactMode) {
+    if (measuredWidth() >= SIDEBAR_COLLAPSE_AT) applySidebarWidth(SIDEBAR_MIN);
+  } else {
+    applySidebarWidth(readExpandedWidth());
+  }
+  handleWindowResize();
+}
+
 export function initSidebarLayout(): void {
   applySidebarWidth(readStoredWidth());
 
   const handle = document.getElementById("sb-resize");
   if (!handle || handle.dataset.ready === "1") return;
   handle.dataset.ready = "1";
+
+  autoFitSidebar();
+  window.addEventListener("resize", autoFitSidebar);
 
   let dragging = false;
   let dragMoved = false;

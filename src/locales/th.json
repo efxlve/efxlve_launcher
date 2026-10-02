@@ -276,6 +276,8 @@
   "move.cancelFailed": "ส่งคำขอยกเลิกไม่ได้: {msg}",
   "store.starting": "กำลังเริ่มร้านค้าและเซสชัน",
   "store.inLibrary": "ในคลัง",
+  "store.tabsPrev": "ร้านค้าก่อนหน้า",
+  "store.tabsNext": "ร้านค้าถัดไป",
   "common.play": "เล่น",
   "common.install": "ติดตั้ง",
   "common.manage": "คุณสมบัติและการจัดการ",

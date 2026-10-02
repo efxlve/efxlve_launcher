@@ -276,6 +276,8 @@
   "move.cancelFailed": "キャンセル要求を送れませんでした: {msg}",
   "store.starting": "ストアとセッションを開始しています",
   "store.inLibrary": "ライブラリ内",
+  "store.tabsPrev": "前のストア",
+  "store.tabsNext": "次のストア",
   "common.play": "プレイ",
   "common.install": "インストール",
   "common.manage": "プロパティと管理",

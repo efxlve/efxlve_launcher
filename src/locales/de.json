@@ -276,6 +276,8 @@
   "move.cancelFailed": "Abbruch konnte nicht gesendet werden: {msg}",
   "store.starting": "Shop und Sitzung werden gestartet",
   "store.inLibrary": "In Bibliothek",
+  "store.tabsPrev": "Vorherige Stores",
+  "store.tabsNext": "Nächste Stores",
   "common.play": "Spielen",
   "common.install": "Installieren",
   "common.manage": "Eigenschaften und Verwalten",

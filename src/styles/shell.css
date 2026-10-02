@@ -514,12 +514,38 @@ html.sb-narrow .sb-toggle-label {
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .page-header-count { margin-left: 10px; margin-right: auto; font-size: 15px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* --- Store switcher: segmented control, one tab per storefront --- */
+.store-tabs-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 auto 0 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+.store-tabs-bar[hidden] { display: none !important; }
+.store-tabs-arrow {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.store-tabs-bar.has-overflow .store-tabs-arrow { display: inline-flex; }
+.store-tabs-arrow:hover:not(:disabled) { color: var(--text); background: var(--surface-2); }
+.store-tabs-arrow:disabled { opacity: 0.3; cursor: default; }
 .store-tabs {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   height: 40px;
-  margin: 0 auto 0 16px;
+  margin: 0;
   padding: 3px;
   background: var(--surface-1);
   border: 1px solid var(--line);
@@ -527,8 +553,8 @@ html.sb-narrow .sb-toggle-label {
   contain: layout;
   user-select: none;
   /* Seven storefronts: never squash the segmented control, scroll it instead. */
-  flex-shrink: 0;
-  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -554,7 +580,7 @@ html.sb-narrow .sb-toggle-label {
 .store-tabs .tab.active .store-tab-logo { opacity: 1; }
 .store-tabs-underline { display: none; }
 
-#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-switcher:not([hidden]))) .page-header-title { flex: 1; }
+#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-tabs-bar:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
 .store-progress-line { display: none !important; }
 .page-search {
@@ -565,6 +591,9 @@ html.sb-narrow .sb-toggle-label {
 }
 .page-search span:not(.kbd) { flex: 1; text-align: left; }
 .page-search:hover { border-color: var(--line-strong); color: var(--text-2); }
+/* Narrow window: the search collapses to its icon so the header keeps its room. */
+html.win-compact .page-search { width: 36px; padding: 0; justify-content: center; }
+html.win-compact .page-search span { display: none; }
 #content { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
 #view { flex: 1; overflow-y: auto; padding: 20px 28px 40px; }
 #view.view-enter > * { animation: page-in var(--ease-in) both; }

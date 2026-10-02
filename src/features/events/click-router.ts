@@ -83,7 +83,7 @@ import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, scrollStoreTabs, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -276,6 +276,9 @@ document.addEventListener("click", (e) => {
     }
     pushNavHistory({ view: "store" });
     void openStore(store);
+  } else if (act === "store-tabs-scroll") {
+    const dir = Number(t.dataset.dir) || 1;
+    scrollStoreTabs(dir);
   } else if (act === "open-profile") {
     openProfile();
   } else if (act === "open-changelog") {

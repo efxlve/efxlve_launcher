@@ -276,6 +276,8 @@
   "move.cancelFailed": "Не удалось отправить запрос на отмену: {msg}",
   "store.starting": "Запуск магазина и сеанса",
   "store.inLibrary": "В библиотеке",
+  "store.tabsPrev": "Предыдущие магазины",
+  "store.tabsNext": "Следующие магазины",
   "common.play": "Играть",
   "common.install": "Установить",
   "common.manage": "Свойства и управление",

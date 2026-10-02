@@ -276,6 +276,8 @@
   "move.cancelFailed": "Não foi possível enviar o cancelamento: {msg}",
   "store.starting": "Iniciando a loja e a sessão",
   "store.inLibrary": "Na biblioteca",
+  "store.tabsPrev": "Lojas anteriores",
+  "store.tabsNext": "Próximas lojas",
   "common.play": "Jogar",
   "common.install": "Instalar",
   "common.manage": "Propriedades e gerenciar",

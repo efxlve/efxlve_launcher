@@ -276,6 +276,8 @@
   "move.cancelFailed": "تعذر إرسال طلب الإلغاء: {msg}",
   "store.starting": "جارٍ بدء المتجر والجلسة",
   "store.inLibrary": "في المكتبة",
+  "store.tabsPrev": "المتاجر السابقة",
+  "store.tabsNext": "المتاجر التالية",
   "common.play": "تشغيل",
   "common.install": "تثبيت",
   "common.manage": "الخصائص والإدارة",

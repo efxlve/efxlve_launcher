@@ -105,7 +105,8 @@ export function updatePageHeader(): void {
   syncPageGameCount();
   const switcher = document.getElementById("store-switcher");
   if (switcher) {
-    switcher.hidden = S.view !== "store";
+    const bar = document.getElementById("store-tabs-bar");
+    if (bar) bar.hidden = S.view !== "store";
     if (S.view === "store") {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");

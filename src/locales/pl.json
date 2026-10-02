@@ -276,6 +276,8 @@
   "move.cancelFailed": "Nie udało się wysłać żądania anulowania: {msg}",
   "store.starting": "Uruchamianie sklepu i sesji",
   "store.inLibrary": "W bibliotece",
+  "store.tabsPrev": "Poprzednie sklepy",
+  "store.tabsNext": "Następne sklepy",
   "common.play": "Graj",
   "common.install": "Zainstaluj",
   "common.manage": "Właściwości i zarządzanie",
