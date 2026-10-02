@@ -126,7 +126,7 @@ function renderDownloads(): string {
     row(
       t("settings.autoUpdateTime"),
       t("settings.autoUpdateTimeDesc"),
-      `<input id="auto-update-time" type="time" class="input settings-time-input" value="${esc(S.autoUpdateTime)}" ${S.autoUpdateEnabled ? "" : "disabled"} aria-label="${esc(t("settings.autoUpdateTime"))}" />`,
+      `<input id="auto-update-time" class="input settings-time-input" value="${esc(S.autoUpdateTime)}" maxlength="5" placeholder="03:00" spellcheck="false" autocomplete="off" ${S.autoUpdateEnabled ? "" : "disabled"} aria-label="${esc(t("settings.autoUpdateTime"))}" />`,
     ),
     t("settings.updatesTitle"),
   );

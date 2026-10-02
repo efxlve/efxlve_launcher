@@ -305,9 +305,12 @@ document.addEventListener("change", (e) => {
 
   if (target && target.id === "auto-update-time") {
     const v = target.value.trim();
-    if (/^\d{1,2}:\d{2}$/.test(v)) {
-      const [h, m] = v.split(":");
-      const norm = `${h.padStart(2, "0")}:${m}`;
+    // Plain text field: accept "3:00" and "0300" too, but only real times.
+    const match = v.match(/^(\d{1,2}):?(\d{2})$/);
+    const hours = match ? Number(match[1]) : -1;
+    const minutes = match ? Number(match[2]) : -1;
+    if (match && hours <= 23 && minutes <= 59) {
+      const norm = `${String(hours).padStart(2, "0")}:${match[2]}`;
       S.autoUpdateTime = norm;
       localStorage.setItem(AUTO_UPDATE_TIME_KEY, norm);
       target.value = norm;
