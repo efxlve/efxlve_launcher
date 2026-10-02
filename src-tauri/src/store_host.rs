@@ -30,6 +30,11 @@ static STORE_PALETTE_OPEN: std::sync::atomic::AtomicBool =
 /// Bumped every time the store is hidden. A show that started earlier must not
 /// paint the webview back on top of another page.
 static STORE_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// A storefront that is loading away from a sign-in page. It becomes visible
+/// when its page has painted; `NO_PENDING_LOAD` means nothing is waiting.
+const NO_PENDING_LOAD: u64 = u64::MAX;
+static SHOW_AFTER_LOAD_EPOCH: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(NO_PENDING_LOAD);
 
 fn remember_store_insets(left: f64, top: f64, bottom: f64) {
     use std::sync::atomic::Ordering::Relaxed;
@@ -464,6 +469,8 @@ pub async fn show_store_view(
     remember_store_insets(x, y, bottom.unwrap_or(0.0));
     let epoch = STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
+    // A new show request cancels a storefront that was still waiting to appear.
+    SHOW_AFTER_LOAD_EPOCH.store(NO_PENDING_LOAD, std::sync::atomic::Ordering::SeqCst);
 
     let store_id = store_id_for_url(&url);
     // Only the Epic storefront is decorated with the owned library, and building
@@ -515,6 +522,18 @@ pub async fn show_store_view(
             .into_iter()
             .find(|w| w.label() == target_label)
         {
+            // A tab left on its sign-in page loads the storefront while hidden
+            // and appears only once the store has painted, so opening the tab
+            // never flashes the account/client UI.
+            if v.url().ok().map(|u| is_login_page(&u)).unwrap_or(false) {
+                if let Ok(target) = url.parse::<url::Url>() {
+                    let _ = v.hide();
+                    STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
+                    SHOW_AFTER_LOAD_EPOCH.store(epoch, std::sync::atomic::Ordering::SeqCst);
+                    let _ = v.navigate(target);
+                    return Ok("@t:store.pending".into());
+                }
+            }
             // The palette hold parks the webview; do not move it back on screen.
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
@@ -541,14 +560,13 @@ pub async fn show_store_view(
             }
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
-                    // A store home URL is not reloaded on every tab click, but a
-                    // login page left behind must give way to the storefront.
+                    // A store home URL is not reloaded on every tab click.
                     let store_home = target.as_str().ends_with(".com/")
                         || target.as_str().ends_with(".com/en")
                         || target.as_str().ends_with(".com")
                         || target.as_str().ends_with(".net/")
                         || target.as_str().ends_with(".net");
-                    if cur.as_str() != target.as_str() && (is_login_page(&cur) || !store_home) {
+                    if cur.as_str() != target.as_str() && !store_home {
                         let _ = v.navigate(target);
                     }
                 }
@@ -583,6 +601,17 @@ pub async fn show_store_view(
         .on_page_load(move |webview, payload| {
             if payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
+            }
+            // A storefront that navigated away from a sign-in page becomes
+            // visible now, once the store has actually painted.
+            let pending = SHOW_AFTER_LOAD_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
+            if pending != NO_PENDING_LOAD
+                && pending == STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst)
+                && !STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst)
+            {
+                SHOW_AFTER_LOAD_EPOCH.store(NO_PENDING_LOAD, std::sync::atomic::Ordering::SeqCst);
+                let _ = webview.show();
+                STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
             }
             // The storefront painted: the frontend can drop its progress sweep.
             use tauri::Emitter;
