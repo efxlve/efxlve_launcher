@@ -392,6 +392,8 @@
   "ach.checking": "Controllo degli obiettivi…",
   "ach.partnerTitle": "Obiettivi {name}",
   "ach.partnerDesc": "Gli obiettivi di questo gioco sono gestiti direttamente da {name}.",
+  "ach.ubiTitle": "Obiettivi Ubisoft Connect",
+  "ach.ubiDesc": "Gli obiettivi sono gestiti da Ubisoft Connect. Se la lista è vuota, apri il gioco una volta nel client per scaricare i dati; poi compariranno qui.",
   "ach.noSupportTitle": "Nessun supporto agli obiettivi",
   "ach.noSupportDesc": "Non sono definiti obiettivi per questo gioco.",
   "ach.platinumComplete": "Trofeo di platino completato!",

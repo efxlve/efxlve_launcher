@@ -392,6 +392,8 @@
   "ach.checking": "กำลังตรวจสอบความสำเร็จ…",
   "ach.partnerTitle": "ความสำเร็จ {name}",
   "ach.partnerDesc": "ความสำเร็จของเกมนี้ติดตามผ่าน {name} โดยตรง",
+  "ach.ubiTitle": "ความสำเร็จของ Ubisoft Connect",
+  "ach.ubiDesc": "ความสำเร็จจัดการผ่าน Ubisoft Connect หากรายการว่าง ให้เปิดเกมในไคลเอนต์หนึ่งครั้งเพื่อดาวน์โหลดข้อมูลความสำเร็จ แล้วจะแสดงที่นี่",
   "ach.noSupportTitle": "ไม่รองรับความสำเร็จ",
   "ach.noSupportDesc": "ไม่มีความสำเร็จที่กำหนดไว้สำหรับเกมนี้",
   "ach.platinumComplete": "ถ้วยแพลตินัมครบแล้ว!",

@@ -392,6 +392,8 @@
   "ach.checking": "업적 확인 중…",
   "ach.partnerTitle": "{name} 업적",
   "ach.partnerDesc": "이 게임의 업적은 {name}에서 직접 추적됩니다.",
+  "ach.ubiTitle": "Ubisoft Connect 업적",
+  "ach.ubiDesc": "업적은 Ubisoft Connect에서 관리합니다. 목록이 비어 있다면 클라이언트에서 게임을 한 번 실행해 업적 데이터를 내려받으세요. 그러면 여기에 표시됩니다.",
   "ach.noSupportTitle": "업적 지원 없음",
   "ach.noSupportDesc": "이 게임에는 업적이 정의되어 있지 않습니다.",
   "ach.platinumComplete": "플래티넘 트로피 완료.",

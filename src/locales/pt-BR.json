@@ -392,6 +392,8 @@
   "ach.checking": "Verificando conquistas…",
   "ach.partnerTitle": "Conquistas de {name}",
   "ach.partnerDesc": "As conquistas deste jogo são acompanhadas diretamente por {name}.",
+  "ach.ubiTitle": "Conquistas do Ubisoft Connect",
+  "ach.ubiDesc": "As conquistas são gerenciadas pelo Ubisoft Connect. Se a lista estiver vazia, abra o jogo uma vez no cliente para baixar os dados; depois elas aparecerão aqui.",
   "ach.noSupportTitle": "Sem suporte a conquistas",
   "ach.noSupportDesc": "Não há conquistas definidas para este jogo.",
   "ach.platinumComplete": "Troféu de platina concluído!",

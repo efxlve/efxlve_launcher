@@ -392,6 +392,8 @@
   "ach.checking": "Comprobando logros…",
   "ach.partnerTitle": "Logros de {name}",
   "ach.partnerDesc": "Los logros de este juego se registran directamente a través de {name}.",
+  "ach.ubiTitle": "Logros de Ubisoft Connect",
+  "ach.ubiDesc": "Ubisoft Connect gestiona los logros. Si la lista está vacía, abre el juego una vez en el cliente para que descargue los datos; después aparecerán aquí.",
   "ach.noSupportTitle": "Sin compatibilidad con logros",
   "ach.noSupportDesc": "No hay logros definidos para este juego.",
   "ach.platinumComplete": "Trofeo de platino completado!",

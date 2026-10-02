@@ -392,6 +392,8 @@
   "ach.checking": "Vérification des succès…",
   "ach.partnerTitle": "Succès {name}",
   "ach.partnerDesc": "Les succès de ce jeu sont suivis directement via {name}.",
+  "ach.ubiTitle": "Succès Ubisoft Connect",
+  "ach.ubiDesc": "Les succès sont gérés par Ubisoft Connect. Si la liste est vide, ouvrez le jeu une fois dans le client pour qu'il télécharge les données ; ils apparaîtront ensuite ici.",
   "ach.noSupportTitle": "Aucun succès pris en charge",
   "ach.noSupportDesc": "Aucun succès n'est défini pour ce jeu.",
   "ach.platinumComplete": "Trophée platine terminé !",

@@ -866,6 +866,16 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   }
 
   if (data.achievements.length === 0) {
+    // Ubisoft has no public achievement API: the list comes from the client's
+    // local cache, and a game the client never opened has no cache yet.
+    if (s.appName.startsWith("ubisoft::")) {
+      return emptyState(
+        "gamepad-2",
+        t("ach.ubiTitle"),
+        t("ach.ubiDesc"),
+        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>`,
+      );
+    }
     if (partner) {
       return emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }));
     }

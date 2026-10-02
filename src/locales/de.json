@@ -392,6 +392,8 @@
   "ach.checking": "Erfolge werden geprüft…",
   "ach.partnerTitle": "{name}-Erfolge",
   "ach.partnerDesc": "Die Erfolge dieses Spiels werden direkt über {name} erfasst.",
+  "ach.ubiTitle": "Ubisoft Connect-Erfolge",
+  "ach.ubiDesc": "Erfolge werden über Ubisoft Connect verwaltet. Ist die Liste leer, öffne das Spiel einmal im Client, damit er die Erfolgsdaten herunterlädt; danach erscheinen sie hier.",
   "ach.noSupportTitle": "Keine Erfolgsunterstützung",
   "ach.noSupportDesc": "Für dieses Spiel sind keine Erfolge definiert.",
   "ach.platinumComplete": "Platin-Trophäe abgeschlossen!",

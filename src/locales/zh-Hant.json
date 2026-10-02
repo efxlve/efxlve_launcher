@@ -392,6 +392,8 @@
   "ach.checking": "正在檢查成就…",
   "ach.partnerTitle": "{name} 成就",
   "ach.partnerDesc": "此遊戲的成就由 {name} 直接追蹤。",
+  "ach.ubiTitle": "Ubisoft Connect 成就",
+  "ach.ubiDesc": "成就由 Ubisoft Connect 管理。如果清單為空，請在客戶端中開啟一次此遊戲以下載成就資料；之後就會顯示在這裡。",
   "ach.noSupportTitle": "不支援成就",
   "ach.noSupportDesc": "沒有為此遊戲定義成就。",
   "ach.platinumComplete": "白金獎盃完成！",

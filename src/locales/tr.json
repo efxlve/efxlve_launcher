@@ -415,6 +415,8 @@
   "ach.checking": "Başarımlar kontrol ediliyor…",
   "ach.partnerTitle": "{name} Başarımları",
   "ach.partnerDesc": "Bu oyunun başarımları doğrudan {name} üzerinden takip edilmektedir.",
+  "ach.ubiTitle": "Ubisoft Connect başarımları",
+  "ach.ubiDesc": "Başarımlar Ubisoft Connect üzerinden takip edilir. Liste boşsa, istemcide bu oyunu bir kez açın; başarım verisi indirildiğinde burada görünecektir.",
   "ach.noSupportTitle": "Başarım Desteği Bulunmuyor",
   "ach.noSupportDesc": "Bu oyun için tanımlı başarım bulunmuyor.",
   "ach.platinumComplete": "Platin Kupa Tamamlandı!",
