@@ -35,6 +35,9 @@ static STORE_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64:
 const NO_PENDING_LOAD: u64 = u64::MAX;
 static SHOW_AFTER_LOAD_EPOCH: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(NO_PENDING_LOAD);
+/// Bounds for the pending storefront. A parked webview sits off-screen, so the
+/// area must be re-applied before it is shown again.
+static PENDING_RECT: std::sync::Mutex<Option<(f64, f64, f64, f64)>> = std::sync::Mutex::new(None);
 
 fn remember_store_insets(left: f64, top: f64, bottom: f64) {
     use std::sync::atomic::Ordering::Relaxed;
@@ -184,6 +187,31 @@ fn is_login_page(url: &url::Url) -> bool {
         url.host_str(),
         Some("connect.cdn.ubisoft.com") | Some("account.battle.net")
     )
+}
+
+/// Shows a storefront that was waiting for its page load. The epoch guards
+/// against a tab switch or a hide that happened in the meantime, and the saved
+/// rect puts the parked webview back inside the content area.
+fn show_pending_store(app: &tauri::AppHandle, label: &str, epoch: u64) {
+    use std::sync::atomic::Ordering::SeqCst;
+    if SHOW_AFTER_LOAD_EPOCH.load(SeqCst) != epoch || STORE_EPOCH.load(SeqCst) != epoch {
+        return;
+    }
+    SHOW_AFTER_LOAD_EPOCH.store(NO_PENDING_LOAD, SeqCst);
+    if STORE_PALETTE_OPEN.load(SeqCst) {
+        return;
+    }
+    let rect = PENDING_RECT.lock().ok().and_then(|mut slot| slot.take());
+    if let Some(window) = app.get_window("main") {
+        if let Some(v) = window.get_webview(label) {
+            if let Some((x, y, width, height)) = rect {
+                let _ = v.set_bounds(webview_rect(x, y, width, height));
+                remember_applied_bounds(x, y, width, height);
+            }
+            let _ = v.show();
+            STORE_VISIBLE.store(true, SeqCst);
+        }
+    }
 }
 
 /// How many storefronts may stay alive at once. Each one is a renderer process
@@ -471,6 +499,9 @@ pub async fn show_store_view(
     STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
     // A new show request cancels a storefront that was still waiting to appear.
     SHOW_AFTER_LOAD_EPOCH.store(NO_PENDING_LOAD, std::sync::atomic::Ordering::SeqCst);
+    if let Ok(mut slot) = PENDING_RECT.lock() {
+        *slot = None;
+    }
 
     let store_id = store_id_for_url(&url);
     // Only the Epic storefront is decorated with the owned library, and building
@@ -530,7 +561,18 @@ pub async fn show_store_view(
                     let _ = v.hide();
                     STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
                     SHOW_AFTER_LOAD_EPOCH.store(epoch, std::sync::atomic::Ordering::SeqCst);
+                    if let Ok(mut slot) = PENDING_RECT.lock() {
+                        *slot = Some((x, y, width.max(100.0), height.max(100.0)));
+                    }
                     let _ = v.navigate(target);
+                    // Safety net: a page that never reports a finished load must
+                    // still become visible.
+                    let app_show = app.clone();
+                    let label_show = target_label.clone();
+                    tauri::async_runtime::spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_millis(2500)).await;
+                        show_pending_store(&app_show, &label_show, epoch);
+                    });
                     return Ok("@t:store.pending".into());
                 }
             }
@@ -605,13 +647,8 @@ pub async fn show_store_view(
             // A storefront that navigated away from a sign-in page becomes
             // visible now, once the store has actually painted.
             let pending = SHOW_AFTER_LOAD_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
-            if pending != NO_PENDING_LOAD
-                && pending == STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst)
-                && !STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst)
-            {
-                SHOW_AFTER_LOAD_EPOCH.store(NO_PENDING_LOAD, std::sync::atomic::Ordering::SeqCst);
-                let _ = webview.show();
-                STORE_VISIBLE.store(true, std::sync::atomic::Ordering::SeqCst);
+            if pending != NO_PENDING_LOAD {
+                show_pending_store(webview.app_handle(), webview.label(), pending);
             }
             // The storefront painted: the frontend can drop its progress sweep.
             use tauri::Emitter;
