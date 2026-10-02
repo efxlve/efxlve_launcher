@@ -593,6 +593,8 @@ fn main() {
             companion::companion_resolve_covers,
             companion::companion_show_login,
             companion::companion_hide_login,
+            companion::ea_login_open,
+            companion::ea_login_hide,
             companion::companion_open_client,
             companion::companion_launch,
             companion::companion_game_action,

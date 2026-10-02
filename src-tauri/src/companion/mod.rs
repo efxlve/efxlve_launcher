@@ -10,7 +10,10 @@ pub(crate) use signin::{accept_library as accept_bnet_library, watch_script as b
 mod battlenet;
 mod covers;
 mod ea;
+mod ea_login;
+mod ea_vault;
 mod launch;
+mod pcsign;
 mod proto;
 mod riot;
 mod scan;
@@ -74,7 +77,11 @@ const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
 fn discover(store: &str) -> Vec<FoundGame> {
     let installed = scan::uninstall_games();
     match store {
-        "ea" => ea::merged_games(&installed),
+        "ea" => {
+            let mut games = ea::merged_games(&installed);
+            ea_login::merge_owned(&mut games);
+            games
+        }
         "ubisoft" => ubisoft::merged_games(&installed),
         "xbox" => scan::xbox_games(),
         "battlenet" => battlenet::merged_games(&installed),
@@ -182,6 +189,11 @@ pub fn companion_unlink(store: String) -> Result<(), String> {
     if store == "ubisoft" {
         ubi_vault::clear();
     }
+    if store == "ea" {
+        ea_vault::clear();
+        ea_login::clear_session();
+        ea_login::clear_owned();
+    }
     accounts::unlink_store(&store)
 }
 
@@ -194,13 +206,31 @@ pub struct CompanionSyncReport {
     pub needs_login: bool,
 }
 
-/// Refreshes a linked account from its own service. Ubisoft is the only store
-/// with a refreshable session (the sealed remember-me token); the others are
-/// local-only and report what the disk scan found.
+/// Refreshes a linked account from its own service. Ubisoft and EA keep a
+/// refreshable session; the other stores are local-only and report what the
+/// disk scan found.
 #[tauri::command]
 pub async fn companion_sync(store: String) -> Result<CompanionSyncReport, String> {
     if !accounts::is_store(&store) {
         return Err("Unknown store".into());
+    }
+    if store == "ea" {
+        if !accounts::is_linked("ea") {
+            return Ok(CompanionSyncReport {
+                updated: false,
+                count: discover("ea").len() as u32,
+                needs_login: false,
+            });
+        }
+        return Ok(match ea_login::sync_owned().await {
+            Ok(count) => CompanionSyncReport { updated: true, count: count as u32, needs_login: false },
+            Err(message) if message == "@t:accounts.eaSessionExpired" => CompanionSyncReport {
+                updated: false,
+                count: 0,
+                needs_login: true,
+            },
+            Err(message) => return Err(message),
+        });
     }
     if store != "ubisoft" {
         return Ok(CompanionSyncReport {
@@ -269,6 +299,17 @@ pub async fn companion_show_login(app: tauri::AppHandle, x: f64, y: f64, width: 
 #[tauri::command]
 pub fn companion_hide_login(app: tauri::AppHandle) {
     signin::hide_login(&app);
+}
+
+/// Opens the EA sign-in window (PKCE + PC signature) over the main window.
+#[tauri::command]
+pub async fn ea_login_open(app: tauri::AppHandle) -> Result<(), String> {
+    ea_login::open_login(app).await
+}
+
+#[tauri::command]
+pub fn ea_login_hide(app: tauri::AppHandle) {
+    ea_login::hide_login(&app);
 }
 
 #[tauri::command]

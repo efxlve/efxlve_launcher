@@ -29,6 +29,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `companion_unlink` | `companionUnlink({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `controller_support_status` | `controllerSupportStatus({ ... })` | `src-tauri/src/controller.rs` |
 | `destroy_store_view` | `destroyStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `ea_login_hide` | `eaLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_login_open` | `eaLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `eos_install_redistributable` | `eosInstallRedistributable({ ... })` | `src-tauri/src/eos.rs` |
 | `eos_overlay_status` | `eosOverlayStatus({ ... })` | `src-tauri/src/eos.rs` |
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

@@ -272,7 +272,8 @@ fn same_folder(a: &str, b: &str) -> bool {
         && a.trim_end_matches(['\\', '/']).eq_ignore_ascii_case(b.trim_end_matches(['\\', '/']))
 }
 
-fn normalize_title(title: &str) -> String {
+/// Lowercase letters and digits only, for matching names across sources.
+pub(crate) fn normalize_title(title: &str) -> String {
     title
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())
@@ -280,11 +281,13 @@ fn normalize_title(title: &str) -> String {
         .to_lowercase()
 }
 
-fn launch_uri(ids: &[String]) -> String {
+/// `origin2://game/launch?offerIds=<content ids>`.
+pub(crate) fn launch_uri(ids: &[String]) -> String {
     format!("origin2://game/launch?offerIds={}", ids.join(","))
 }
 
-fn install_uri(ids: &[String]) -> String {
+/// The same deep link with the download flag, for install and repair.
+pub(crate) fn install_uri(ids: &[String]) -> String {
     format!("origin2://game/launch?offerIds={}&autoDownload=1", ids.join(","))
 }
 

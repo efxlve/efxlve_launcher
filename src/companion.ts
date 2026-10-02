@@ -91,6 +91,12 @@ export const companionOpenClient = (store: CompanionStore) =>
 export const companionShowLogin = (x: number, y: number, width: number, height: number) =>
   invoke<void>("companion_show_login", { x, y, width, height });
 
+/** Opens the EA sign-in window (PKCE + hardware signature). */
+export const eaLoginOpen = () => invoke<void>("ea_login_open");
+
+/** Closes the EA sign-in window without importing. */
+export const eaLoginHide = () => invoke<void>("ea_login_hide");
+
 export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 

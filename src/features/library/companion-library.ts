@@ -37,20 +37,30 @@ function bindCompanionLogin(): void {
 }
 
 /**
- * One background refresh of the accounts that support it. Ubisoft keeps a
- * sealed session, so buying a game elsewhere shows up without signing in again.
+ * One background refresh of the accounts that support it. Ubisoft and EA keep
+ * a sealed session, so buying a game elsewhere shows up without signing in
+ * again.
  */
 export async function syncCompanionAccounts(): Promise<void> {
+  let changed = false;
   try {
     const report = await companionSync("ubisoft");
     if (report.needsLogin) {
       // The sealed session is missing or expired: tell the user where to fix it.
       toast("@t:accounts.ubiSessionExpired", "err");
     }
-    if (report.updated || report.needsLogin) await loadCompanionLibrary();
+    if (report.updated || report.needsLogin) changed = true;
   } catch {
     // Offline or signed out: the cards keep the cached list.
   }
+  try {
+    const report = await companionSync("ea");
+    if (report.needsLogin) toast("@t:accounts.eaSessionExpired", "err");
+    if (report.updated || report.needsLogin) changed = true;
+  } catch {
+    // Not linked or offline: the cached list stays.
+  }
+  if (changed) await loadCompanionLibrary();
 }
 
 export async function loadCompanionLibrary(): Promise<void> {

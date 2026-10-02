@@ -74,7 +74,7 @@ import {
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionUnlink, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionUnlink, eaLoginOpen, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { rebuildAllGamesMap } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
@@ -505,15 +505,24 @@ document.addEventListener("click", (e) => {
     const store = id as CompanionStore;
     void companionOpenClient(store).catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-signin" || (act === "companion-link" && id === "battlenet")) {
-    const store = id === "ubisoft" ? "ubisoft" : "battlenet";
-    // The login page is used once; the tab itself stays a store page.
-    const loginUrl = store === "ubisoft" ? UBISOFT_LOGIN_URL : BATTLENET_ACCOUNT_URL;
-    void invoke("companion_hide_login").catch(() => {});
-    S.activeStore = store;
-    pushNavHistory({ view: "store" });
-    void invoke("destroy_store_view")
-      .catch(() => {})
-      .then(() => openStoreUrl(loginUrl, "store"));
+    if (id === "ea") {
+      // EA signs in through its own OAuth window (PKCE + PC signature); the
+      // window closes itself once the redirect comes back.
+      void eaLoginOpen().catch((e: unknown) => {
+        const raw = String(e);
+        toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
+      });
+    } else {
+      const store = id === "ubisoft" ? "ubisoft" : "battlenet";
+      // The login page is used once; the tab itself stays a store page.
+      const loginUrl = store === "ubisoft" ? UBISOFT_LOGIN_URL : BATTLENET_ACCOUNT_URL;
+      void invoke("companion_hide_login").catch(() => {});
+      S.activeStore = store;
+      pushNavHistory({ view: "store" });
+      void invoke("destroy_store_view")
+        .catch(() => {})
+        .then(() => openStoreUrl(loginUrl, "store"));
+    }
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
     if (S.companionBusy) return;
