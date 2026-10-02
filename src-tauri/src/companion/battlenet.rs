@@ -48,6 +48,7 @@ pub(crate) fn games_from_db(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundG
                 uninstall_uri: String::new(),
                 cover_url: String::new(),
                 hero_url: String::new(),
+                description: String::new(),
             });
         },
         |_, _| {},
@@ -308,6 +309,7 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
             uninstall_uri: String::new(),
             cover_url: String::new(),
             hero_url: String::new(),
+            description: String::new(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));

@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "Источник: Epic Games Store",
   "drawer.sourceGog": "Источник: GOG",
   "drawer.sourceSteam": "Источник: Steam",
+  "drawer.sourceStore": "Источник: {store}",
   "common.unknownError": "Неизвестная ошибка",
   "sys.openEpicStore": "Открыть в Epic Store",
   "sys.openGogStore": "Открыть в GOG Store",

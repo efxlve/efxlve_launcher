@@ -1439,6 +1439,7 @@
   "drawer.sourceEpic": "Source: Epic Games Store",
   "drawer.sourceGog": "Source: GOG",
   "drawer.sourceSteam": "Source: Steam",
+  "drawer.sourceStore": "Source: {store}",
   "common.unknownError": "Unknown error",
   "gog.webLogin": "GOG Web Login",
   "gog.pastePlaceholder": "Paste the authorization code or redirect URL here...",

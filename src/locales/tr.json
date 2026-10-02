@@ -1439,6 +1439,7 @@
   "drawer.sourceEpic": "Kaynak: Epic Games Store",
   "drawer.sourceGog": "Kaynak: GOG",
   "drawer.sourceSteam": "Kaynak: Steam",
+  "drawer.sourceStore": "Kaynak: {store}",
   "common.unknownError": "Bilinmeyen hata",
   "gog.webLogin": "GOG Web Girişi",
   "gog.pastePlaceholder": "Yetkilendirme kodunu veya yönlendirme URL'sini buraya yapıştırın...",

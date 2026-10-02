@@ -341,7 +341,9 @@ function epicDescription(s: EpicSummary): string {
   const hasRealDesc = rawDesc && rawDesc !== NO_DESC && rawDesc !== s.title && rawDesc.length > 25;
   const reqData = S.loadedRequirements.get(s.appName);
   const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : "");
-  return (hasRealDesc ? rawDesc : storeDesc) || "";
+  // Companion catalogs ship plain text that may still carry store markup.
+  if (hasRealDesc) return isCompanionApp(s.appName) ? cleanStoreDescription(rawDesc) : rawDesc;
+  return storeDesc || "";
 }
 
 /** Wikipedia fallback text per game + language ("" = checked, nothing found). */
@@ -390,6 +392,9 @@ function aboutSourceText(storeDesc: string, wikiText: string, source: "epic" | "
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");
+  if (source === "ea" || source === "ubisoft" || source === "xbox" || source === "battlenet") {
+    return t("drawer.sourceStore", { store: storeName });
+  }
   return t("drawer.sourceEpic");
 }
 
@@ -504,9 +509,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   ensureOverviewData(s);
   if (companion) {
-    // No Epic metadata: the title-based Wikipedia lookup fills the About box.
+    // The client catalog often ships its own description; Wikipedia is only
+    // the fallback, so the store text does not flash and get replaced.
     const key = aboutKey(appName);
-    if (!aboutCache.has(key) && S.loadingAboutFor !== key) {
+    if (!epicDescription(s) && !aboutCache.has(key) && S.loadingAboutFor !== key) {
       S.loadingAboutFor = key;
       void loadWikiAbout(s).finally(() => {
         if (S.loadingAboutFor === key) S.loadingAboutFor = null;

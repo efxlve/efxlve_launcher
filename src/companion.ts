@@ -19,6 +19,8 @@ export interface CompanionGame {
   coverUrl: string;
   heroUrl: string;
   storeId: string;
+  /** Store description from the owned catalog; empty when the client has none. */
+  description: string;
 }
 
 export interface CompanionAccount {
@@ -103,7 +105,7 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     installSize: 0,
     coverUrl: g.coverUrl || null,
     heroUrl: g.heroUrl || null,
-    description: "",
+    description: g.description || "",
     updateAvailable: false,
     cloudSavesSupported: false,
     dlcCount: 0,

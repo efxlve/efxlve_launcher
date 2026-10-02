@@ -46,6 +46,8 @@ pub(crate) struct FoundGame {
     pub cover_url: String,
     /// Wide art from the owned catalog (empty when the client art is used).
     pub hero_url: String,
+    /// Store description from the owned catalog (empty when the client has none).
+    pub description: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -59,6 +61,7 @@ pub struct CompanionGame {
     pub cover_url: String,
     pub hero_url: String,
     pub store_id: String,
+    pub description: String,
 }
 
 const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet"];
@@ -104,6 +107,7 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str) -> CompanionGame {
         cover_url: cover.to_string(),
         hero_url: hero.to_string(),
         store_id: game.store_id.clone(),
+        description: game.description.clone(),
     }
 }
 

@@ -45,6 +45,7 @@ pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -
             uninstall_uri: format!("uplay://uninstall/{}", row.launch_id),
             cover_url: String::new(),
             hero_url: String::new(),
+            description: String::new(),
         };
         if let Some(hit) = installed.iter().find(|g| g.store == "ubisoft" && slug(&g.name) == slug(&row.name)) {
             game.installed = true;
@@ -216,6 +217,9 @@ pub(crate) struct OwnedGame {
     /// Catalog wide art; empty when the catalog had none for this game.
     #[serde(default)]
     pub hero: String,
+    /// Catalog description; empty when the catalog had none for this game.
+    #[serde(default)]
+    pub description: String,
 }
 
 /// Writes the owned catalog captured at sign-in; ids are Ubisoft space ids.
@@ -251,8 +255,8 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
 }
 
 /// Adds imported games whose name is not in the local list yet and copies the
-/// catalog art onto the local row that matches by name. An imported row has no
-/// launch id, so `companion_launch` hands it to the client.
+/// catalog art and description onto the local row that matches by name. An
+/// imported row has no launch id, so `companion_launch` hands it to the client.
 pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec<FoundGame> {
     for game in owned {
         if let Some(local) = games.iter_mut().find(|g| slug(&g.name) == slug(&game.name)) {
@@ -261,6 +265,9 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
             }
             if local.hero_url.is_empty() {
                 local.hero_url = game.hero.clone();
+            }
+            if local.description.is_empty() {
+                local.description = game.description.clone();
             }
             continue;
         }
@@ -277,6 +284,7 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
             uninstall_uri: String::new(),
             cover_url: game.cover.clone(),
             hero_url: game.hero.clone(),
+            description: game.description.clone(),
         });
     }
     games
@@ -343,21 +351,24 @@ mod tests {
             uninstall_uri: "uplay://uninstall/34".into(),
             cover_url: String::new(),
             hero_url: String::new(),
+            description: String::new(),
         }];
         let merged = merge_owned(
             local,
             &[
-                OwnedGame { id: "space-1".into(), name: "Watch Dogs".into(), cover: "ubi-cover".into(), hero: String::new() },
-                OwnedGame { id: "space-2".into(), name: "Far Cry 6".into(), cover: "fc6-cover".into(), hero: "fc6-hero".into() },
+                OwnedGame { id: "space-1".into(), name: "Watch Dogs".into(), cover: "ubi-cover".into(), hero: String::new(), description: "Chicago hacker story".into() },
+                OwnedGame { id: "space-2".into(), name: "Far Cry 6".into(), cover: "fc6-cover".into(), hero: "fc6-hero".into(), description: String::new() },
             ],
         );
         assert_eq!(merged.len(), 2);
-        // The catalog art lands on the local row that matches by name.
+        // The catalog art and description land on the local row that matches by name.
         assert_eq!(merged.iter().find(|g| g.id == "34").unwrap().cover_url, "ubi-cover");
+        assert_eq!(merged.iter().find(|g| g.id == "34").unwrap().description, "Chicago hacker story");
         let imported = merged.iter().find(|g| g.id == "space-2").unwrap();
         assert_eq!(imported.name, "Far Cry 6");
         assert_eq!(imported.cover_url, "fc6-cover");
         assert_eq!(imported.hero_url, "fc6-hero");
+        assert!(imported.description.is_empty());
         assert!(!imported.installed);
         assert!(imported.launch_uri.is_empty());
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);

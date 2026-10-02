@@ -707,11 +707,21 @@ pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame
         };
         let low = image("lowBoxArt");
         let cover = if low.is_empty() { image("highBoxArt") } else { low };
+        // The catalog calls the store blurb `displayDescription`; older
+        // responses only carry `description`.
+        let description = item
+            .get("displayDescription")
+            .and_then(|v| v.as_str())
+            .or_else(|| item.get("description").and_then(|v| v.as_str()))
+            .unwrap_or("")
+            .trim()
+            .to_string();
         games.push(ubisoft::OwnedGame {
             id: space.to_string(),
             name: name.to_string(),
             cover,
             hero: image("background"),
+            description,
         });
     }
     games
@@ -742,6 +752,7 @@ pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame
             name: name.to_string(),
             cover: String::new(),
             hero: String::new(),
+            description: String::new(),
         });
     }
     games
@@ -1001,9 +1012,9 @@ mod tests {
     #[test]
     fn catalog_keeps_named_pc_games_only_and_reads_the_box_art() {
         let value = serde_json::json!({"games": [
-            {"spaceId": "a", "displayName": "Watch Dogs", "platforms": [{"type": "PC"}],
+            {"spaceId": "a", "displayName": "Watch Dogs", "displayDescription": "  Hacking in Chicago.  ", "platforms": [{"type": "PC"}],
              "imageUrls": {"lowBoxArt": "https://cdn/low.png", "highBoxArt": "https://cdn/high.png", "background": "https://cdn/bg.jpg"}},
-            {"spaceId": "b", "name": "Fallback Name", "platforms": [{"type": "PC"}], "imageUrls": {"highBoxArt": "https://cdn/high.png"}},
+            {"spaceId": "b", "name": "Fallback Name", "description": "Legacy blurb", "platforms": [{"type": "PC"}], "imageUrls": {"highBoxArt": "https://cdn/high.png"}},
             {"spaceId": "c", "displayName": "Console Only", "platforms": [{"type": "PS5"}]},
             {"spaceId": "d", "displayName": "Unknown", "platforms": [{"type": "PC"}]},
             {"spaceId": "e", "platforms": [{"type": "PC"}]}
@@ -1014,7 +1025,9 @@ mod tests {
         assert_eq!(games[0].name, "Watch Dogs");
         assert_eq!(games[0].cover, "https://cdn/low.png");
         assert_eq!(games[0].hero, "https://cdn/bg.jpg");
+        assert_eq!(games[0].description, "Hacking in Chicago.");
         assert_eq!(games[1].cover, "https://cdn/high.png");
+        assert_eq!(games[1].description, "Legacy blurb");
     }
 
     #[test]

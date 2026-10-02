@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "المصدر: Epic Games Store",
   "drawer.sourceGog": "المصدر: GOG",
   "drawer.sourceSteam": "المصدر: Steam",
+  "drawer.sourceStore": "المصدر: {store}",
   "common.unknownError": "خطأ غير معروف",
   "sys.openEpicStore": "فتح في Epic Store",
   "sys.openGogStore": "فتح في GOG Store",

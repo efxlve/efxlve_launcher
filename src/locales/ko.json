@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "출처: Epic Games Store",
   "drawer.sourceGog": "출처: GOG",
   "drawer.sourceSteam": "출처: Steam",
+  "drawer.sourceStore": "출처: {store}",
   "common.unknownError": "알 수 없는 오류",
   "sys.openEpicStore": "Epic Store에서 열기",
   "sys.openGogStore": "GOG Store에서 열기",

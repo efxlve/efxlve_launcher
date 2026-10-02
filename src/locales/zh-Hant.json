@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "來源：Epic Games Store",
   "drawer.sourceGog": "來源：GOG",
   "drawer.sourceSteam": "來源：Steam",
+  "drawer.sourceStore": "來源：{store}",
   "common.unknownError": "未知錯誤",
   "sys.openEpicStore": "在 Epic Store 中開啟",
   "sys.openGogStore": "在 GOG Store 中開啟",

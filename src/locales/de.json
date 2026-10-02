@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "Quelle: Epic Games Store",
   "drawer.sourceGog": "Quelle: GOG",
   "drawer.sourceSteam": "Quelle: Steam",
+  "drawer.sourceStore": "Quelle: {store}",
   "common.unknownError": "Unbekannter Fehler",
   "sys.openEpicStore": "Im Epic Store öffnen",
   "sys.openGogStore": "Im GOG Store öffnen",

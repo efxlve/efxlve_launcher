@@ -1362,6 +1362,7 @@
   "drawer.sourceEpic": "แหล่งข้อมูล: Epic Games Store",
   "drawer.sourceGog": "ที่มา: GOG",
   "drawer.sourceSteam": "ที่มา: Steam",
+  "drawer.sourceStore": "ที่มา: {store}",
   "common.unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",
   "sys.openEpicStore": "เปิดใน Epic Store",
   "sys.openGogStore": "เปิดใน GOG Store",
