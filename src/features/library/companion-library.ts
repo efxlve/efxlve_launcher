@@ -8,7 +8,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem } from "../../companion";
 import { rebuildAllGamesMap } from "../../core/selectors";
-import { scheduleRender, render } from "../../core/render";
+import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -84,6 +84,7 @@ async function fillCompanionPlaytime(): Promise<void> {
   try {
     const rows = await companionPlaytimes("ubisoft");
     let changed = false;
+    let changedCurrent = false;
     for (const row of rows) {
       // The service returns the client's own card id; the library key is the
       // composite `ubisoft::<id>` every lookup (hero, cover, manage) uses.
@@ -97,9 +98,14 @@ async function fillCompanionPlaytime(): Promise<void> {
           last_played: existing?.last_played,
         });
         changed = true;
+        if (S.currentModalAppName === key) changedCurrent = true;
       }
     }
-    if (changed) scheduleRender();
+    if (changed) {
+      scheduleRender();
+      // The game page paints TIME from the map; refresh the open one in place.
+      if (changedCurrent && S.currentModalAppName) openEpicModal(S.currentModalAppName, false, false);
+    }
   } catch {
     // Signed out or offline: the columns stay empty.
   } finally {

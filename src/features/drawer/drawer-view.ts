@@ -332,6 +332,28 @@ function tabButton(tab: string, label: string, count = 0, extraClass = ""): stri
   return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
 }
 
+/**
+ * TIME / TROPHY / CLOUD chips. Re-rendered in place whenever late data (local
+ * achievements, service playtime, cloud stamp) arrives, so the open page never
+ * keeps a stale dash.
+ */
+function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
+  const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
+    `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
+  const isPlat = isAppPlatinum(s.appName);
+  const achSum = S.epicAchSummaries[s.appName];
+  const pt = S.playtimeMap.get(s.appName);
+  const achVal = achSum && achSum.total_achievements > 0
+    ? `${achSum.user_unlocked}/${achSum.total_achievements}`
+    : "—";
+  const cloud = heroCloudStatus(s, rawOf(s.appName), partner);
+  const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
+  return `
+            ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${s.appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
+            ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
+            ${sourceOfKey(s.appName) === "epic" || isCompanionApp(s.appName) ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}`;
+}
+
 /** Split Epic's catalog blurb into readable paragraphs. */
 function aboutMarkup(text: string): string {
   const parts = text.split(/\n+/).map((part) => part.trim()).filter(Boolean);
@@ -563,6 +585,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), dlcCount);
     const actions = modalRoot.querySelector(".gp-actions");
     if (actions) actions.innerHTML = actionsHtml(s, partner);
+    const stats = modalRoot.querySelector(".gp-stats");
+    if (stats) stats.innerHTML = heroStatsHtml(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
     return;
@@ -570,20 +594,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
-  const isEpic = sourceOfKey(appName) === "epic";
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
-  const achSum = S.epicAchSummaries[appName];
-  const pt = S.playtimeMap.get(appName);
-  const achVal = achSum && achSum.total_achievements > 0
-    ? `${achSum.user_unlocked}/${achSum.total_achievements}`
-    : "—";
-
   const meta = gameMetaHtml(s, partner, antiCheat);
-  const cloud = heroCloudStatus(s, g, partner);
 
-  const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
-    `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
-  const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
   const tabs = `${tabButton("overview", t("drawer.overview"))}
        ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
        ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
@@ -612,11 +625,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
           </div>
-          <div class="gp-stats">
-            ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
-            ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${isEpic || companion ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}
-          </div>
+          <div class="gp-stats">${heroStatsHtml(s, partner)}</div>
         </div>
 
         <div class="gp-body">
@@ -737,8 +746,8 @@ export function renderDrawerDlcs(s: EpicSummary): string {
       <div class="dlc-tab-content">
         <div class="row">
           <div class="row-main">
-            <div class="row-title">${t("drawer.addonsSteamCount", { count })}</div>
-            <div class="row-meta">${t("drawer.addonsSteamDesc")}</div>
+            <div class="row-title">${t("drawer.addonsCount", { count })}</div>
+            <div class="row-meta">${t("drawer.addonsDesc")}</div>
           </div>
           <div class="row-actions">
             <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("ctx.storePage")}</button>

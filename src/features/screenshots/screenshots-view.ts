@@ -409,6 +409,9 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
           <p class="screenshots-empty-desc">
             ${readOnly ? t("ss.steamEmptyDesc") : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
           </p>
+          <button type="button" class="btn ghost small screenshots-empty-settings" data-view="settings" data-settings-section="screenshots">
+            ${icon("settings", 13)} ${t("ss.openSettings")}
+          </button>
         </div>
       </div>
     `;
