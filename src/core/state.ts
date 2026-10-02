@@ -55,7 +55,7 @@ import {
   loadStrSet,
 } from "./constants";
 import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
-import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo, ThirdPartyLauncher } from "../epic";
+import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
 const ALL_STORES: readonly GameSource[] = ["epic", "gog", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot"];
@@ -390,7 +390,6 @@ export const S = {
   gogInstallDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
-  thirdPartyLaunchers: ([]) as ThirdPartyLauncher[],
   activeEditingColId: (null) as string | null,
   colModalSelectedApps: (new Set()) as Set<string>,
   colModalSearchQuery: ("") as string,

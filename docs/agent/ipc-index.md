@@ -122,7 +122,6 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_sync_saves` | `epicSyncSaves({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_take_pending_launch` | `epicTakePendingLaunch({ ... })` | `src-tauri/src/main.rs` |
 | `epic_test_steamgrid_key` | `epicTestSteamgridKey({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
-| `epic_third_party_launchers` | `epicThirdPartyLaunchers({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_uninstall_game` | `epicUninstallGame({ ... })` | `src-tauri/src/legendary/transfers/uninstall.rs` |
 | `epic_verify_game` | `epicVerifyGame({ ... })` | `src-tauri/src/legendary/commands/verify.rs` |
 | `hide_notif_overlay` | `hideNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |

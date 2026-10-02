@@ -59,7 +59,6 @@ import {
   epicSetNetworkProfile,
   epicSetOfflineMode,
   epicSyncEglInstalled,
-  epicThirdPartyLaunchers,
 } from "../../epic";
 import { bootEpic } from "../auth/auth-actions";
 import { updateColGamesListInPlace } from "../collections/collections-view";
@@ -578,13 +577,6 @@ document.addEventListener("click", (e) => {
       });
   } else if (act === "epic-refresh-egl") {
     void loadIntegrationsView(true);
-  } else if (act === "third-party-refresh") {
-    epicThirdPartyLaunchers()
-      .then((list) => {
-        S.thirdPartyLaunchers = list;
-        render();
-      })
-      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "toggle-auto-desktop-shortcut") {
     S.autoDesktopShortcut = !S.autoDesktopShortcut;
     localStorage.setItem(AUTO_SHORTCUT_KEY, String(S.autoDesktopShortcut));

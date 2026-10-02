@@ -524,7 +524,6 @@ fn main() {
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
             legendary::commands::epic_import_installed_folder,
-            legendary::commands::epic_third_party_launchers,
             legendary::commands::epic_verify_game,
             legendary::commands::epic_get_game_settings,
             legendary::commands::epic_save_game_settings,

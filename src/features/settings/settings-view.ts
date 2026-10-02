@@ -33,22 +33,21 @@ import {
   epicPortrait,
   epicSelectFolderDialog,
   epicSetScreenshotDir,
-  epicThirdPartyLaunchers,
   type EglDetectedGame,
   type ScreenshotMoveInfo,
-  type ThirdPartyLauncher,
 } from "../../epic";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { controllerKind } from "../gamepad/gamepad";
-import { steamListInstalled, steamGetApiKey, steamStatus, type SteamGame } from "../../steam";
+import { steamGetApiKey, steamStatus } from "../../steam";
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
   { id: "downloads", labelKey: "settings.secDownloads" },
+  { id: "cloud", labelKey: "settings.secCloud" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
@@ -82,6 +81,24 @@ function group(rows: string, title = ""): string {
 /** One-line explanation box (shared component, see DESIGN_SYSTEM.md). */
 function infoBox(key: string): string {
   return `<div class="info-box">${icon("info", 14)}<span>${t(key)}</span></div>`;
+}
+
+/**
+ * Collapsible settings row for keys that are set once: the summary shows the
+ * title and the current status, the body holds the fields and actions.
+ */
+function detailsRow(title: string, desc: string, chip: string, control: string): string {
+  return `
+    <details class="settings-details">
+      <summary>
+        <span class="settings-row-title">${title}</span>
+        ${chip}
+      </summary>
+      <div class="settings-details-body">
+        <div class="settings-row-desc">${desc}</div>
+        <div class="settings-row-control">${control}</div>
+      </div>
+    </details>`;
 }
 
 function renderDownloads(): string {
@@ -150,6 +167,11 @@ function renderDownloads(): string {
   );
 }
 
+/** Cloud saves page: its own top-level section instead of an Integrations block. */
+function renderCloud(): string {
+  return infoBox("cloud.pageInfo") + renderCloudBackupSettingsGroup();
+}
+
 function renderIntegrations(): string {
   if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
@@ -191,25 +213,15 @@ function renderIntegrations(): string {
       galaxyAction,
     ) + galaxyRows;
 
-  const tplRows = S.thirdPartyLaunchers.length === 0
-    ? row(t("settings.thirdPartyDesc"), t("settings.scanning"), "")
-    : S.thirdPartyLaunchers.map((l: ThirdPartyLauncher) => row(
-        esc(l.name),
-        l.installed ? esc(l.installPath || t("settings.pathUnknown")) : t("settings.thirdPartyRecommended"),
-        `${l.installed ? `<span class="chip ok">${t("settings.installed")}${l.version ? ` \u00B7 v${esc(l.version)}` : ""}</span>` : `<span class="chip">${t("settings.notInstalled")}</span>`}
-         <button class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("settings.officialDownload")}</button>`,
-      )).join("") +
-      row(t("settings.thirdPartyDesc"), null, `<button class="btn ghost small" data-act="third-party-refresh">${t("settings.rescan")}</button>`);
-
-  const sgdb = row(
+  const sgdb = detailsRow(
     t("settings.sgdbTitle"),
-    `${t("settings.sgdbDesc")} <span class="chip ${S.steamGridApiKey ? "ok" : ""}">${S.steamGridApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    t("settings.sgdbDesc"),
+    `<span class="chip ${S.steamGridApiKey ? "ok" : ""}">${S.steamGridApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
     `<input id="settings-sgdb-key-input" type="${S.showSettingsSgdbKey ? "text" : "password"}" class="input settings-path-input" placeholder="${t("settings.sgdbPlaceholder")}" value="${esc(S.steamGridApiKey || "")}" spellcheck="false" autocomplete="off" />
      <button class="icon-btn" data-act="toggle-sgdb-key-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsSgdbKey ? "eye-off" : "eye", 15)}</button>
      <button class="btn primary small" data-act="save-sgdb-key">${t("common.save")}</button>
      <button class="btn ghost small" data-act="test-sgdb-key">${t("settings.test")}</button>
      <button class="btn ghost small" data-act="open-external-url" data-url="https://www.steamgriddb.com/profile/preferences/api">${t("settings.getFreeKey")}</button>`,
-    true,
   );
 
   const eos = renderEosSettingsRow();
@@ -217,12 +229,11 @@ function renderIntegrations(): string {
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
   return (
-    renderCloudBackupSettingsGroup() +
-    renderSteamGroup() +
+    infoBox("settings.integrationsInfo") +
     group(eglGroup, t("settings.eglTitle")) +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
-    group(tplRows, t("settings.thirdPartyTitle")) +
-    group(sgdb, "SteamGridDB") +
+    renderSteamGroup() +
+    group(sgdb, t("settings.coverArtTitle")) +
     group(presence + eos, t("settings.secSocial"))
   );
 }
@@ -293,7 +304,7 @@ function renderController(): string {
   return group(padRows, t("controller.padsTitle")) + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
 }
 
-/** Steam card: client path, game count, and the Web API key. Games stay in the library. */
+/** Steam card: the client toggle and the optional Web API key. */
 function renderSteamGroup(): string {
   const status = S.steamStatus;
   if (!status) return "";
@@ -301,17 +312,17 @@ function renderSteamGroup(): string {
   if (!status.installed) {
     return group(row(t("steam.notFound"), t("steam.desc"), rescan), "Steam");
   }
-  const apiRow = row(
+  const apiKey = detailsRow(
     t("settings.steamApiTitle"),
-    `${t("settings.steamApiDesc")} <span class="chip ${S.steamApiKey ? "ok" : ""}">${S.steamApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    t("settings.steamApiDesc"),
+    `<span class="chip ${S.steamApiKey ? "ok" : ""}">${S.steamApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
     `<input id="settings-steam-key-input" type="password" class="input settings-path-input" placeholder="${t("settings.steamApiPlaceholder")}" value="${esc(S.steamApiKey || "")}" spellcheck="false" autocomplete="off" />
      <button class="btn primary small" data-act="save-steam-key">${t("common.save")}</button>
      <button class="btn ghost small" data-act="open-external-url" data-url="https://steamcommunity.com/dev/apikey">${t("settings.getFreeKey")}</button>`,
-    true,
   );
   return group(
     row(t("settings.steamExitAfterPlay"), t("settings.steamExitAfterPlayDesc"), toggle("toggle-steam-exit-after-play", S.steamExitAfterPlay)) +
-    row(t("steam.games", { count: S.steamGames.length }), esc(status.path), rescan) + apiRow,
+    apiKey,
     "Steam",
   );
 }
@@ -535,6 +546,7 @@ function renderHidden(): string {
 function renderSection(section: SettingsSection): string {
   switch (section) {
     case "account": return renderAccountSettings();
+    case "cloud": return renderCloud();
     case "integrations": return renderIntegrations();
     case "controller": return renderController();
     case "appearance": return renderAppearance();
@@ -617,7 +629,7 @@ export async function loadControllerView(force = false): Promise<void> {
 }
 
 /**
- * Loads the slow integration data (EGL scan, third-party registry scan, EOS).
+ * Loads the slow integration data (EGL scan, GOG Galaxy, Steam, EOS).
  * Runs only when the Integrations section is shown and is cached afterwards.
  */
 export async function loadIntegrationsView(force = false): Promise<void> {
@@ -629,20 +641,16 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, thirdParty, eos, galaxyList, steamState, steamGames] = await Promise.all([
+    const [eglList, eos, galaxyList, steamState] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
-      epicThirdPartyLaunchers().catch(() => [] as ThirdPartyLauncher[]),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
-      steamListInstalled().catch(() => [] as SteamGame[]),
     ]);
     S.eglDetectedList = eglList;
-    S.thirdPartyLaunchers = thirdParty;
     S.eosOverlay = eos;
     S.gogGalaxyDetected = galaxyList;
     S.steamStatus = steamState;
-    S.steamGames = steamGames;
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

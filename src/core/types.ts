@@ -28,7 +28,7 @@ export type EpicSort = "alpha" | "alphaDesc" | "recent" | "played" | "achievemen
 export type EpicViewMode = "grid" | "list";
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "account" | "downloads" | "integrations" | "controller" | "appearance" | "screenshots" | "system" | "hidden" | "about";
+export type SettingsSection = "account" | "downloads" | "cloud" | "integrations" | "controller" | "appearance" | "screenshots" | "system" | "hidden" | "about";
 
 /** Controller family, used to pick the right button glyphs and hints. */
 export type ControllerKind = "playstation" | "xbox" | "switch" | "steamdeck" | "generic";

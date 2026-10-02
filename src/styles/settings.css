@@ -71,7 +71,24 @@
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; max-width: 100%; }
 .settings-row.stacked .settings-row-control { justify-content: flex-start; }
 .settings-path-input { width: min(280px, 100%); min-width: 0; flex: 1 1 160px; }
-.settings-field-sm { width: 72px; text-align: center; font-variant-numeric: tabular-nums; }
+/* Collapsible settings row: the summary carries the title and the status chip,
+   the body holds the fields. Used for keys that are set once. */
+.settings-details { border-top: 1px solid var(--line); }
+.settings-details:first-child { border-top: none; }
+.settings-details > summary {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  cursor: pointer; list-style: none; transition: background-color var(--ease);
+}
+.settings-details > summary::-webkit-details-marker { display: none; }
+.settings-details > summary:hover { background: var(--surface-2); }
+.settings-details > summary .settings-row-title { flex: 1; }
+.settings-details > summary::after {
+  content: ""; width: 6px; height: 6px; flex-shrink: 0; margin-right: 4px;
+  border-right: 1.5px solid var(--text-3); border-bottom: 1.5px solid var(--text-3);
+  transform: rotate(45deg); transition: transform var(--ease);
+}
+.settings-details[open] > summary::after { transform: rotate(-135deg); }
+.settings-details-body { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 14px; }
 .settings-select { height: 32px; min-width: 160px; }
 .settings-value { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .settings-note-warn { color: var(--warn); }
