@@ -1295,6 +1295,7 @@
   "col.gameCount": "{count} 个游戏",
   "col.noCollectionsLong": "尚未创建合集。",
   "col.newCollectionBtn": "+ 创建新合集",
+  "col.newCollection": "新建收藏",
   "col.edit": "编辑",
   "col.deleteHint": "游戏仍留在游戏库中。只会移除此合集。",
   "col.needName": "请输入合集名称。",

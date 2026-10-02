@@ -1295,6 +1295,7 @@
   "col.gameCount": "{count} เกม",
   "col.noCollectionsLong": "ยังไม่ได้สร้างคอลเลกชัน",
   "col.newCollectionBtn": "+ สร้างคอลเลกชันใหม่",
+  "col.newCollection": "คอลเลกชันใหม่",
   "col.edit": "แก้ไข",
   "col.deleteHint": "เกมยังอยู่ในคลัง มีเพียงคอลเลกชันนี้ที่ถูกนำออก",
   "col.needName": "โปรดใส่ชื่อคอลเลกชัน",

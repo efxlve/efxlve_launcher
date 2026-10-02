@@ -1295,6 +1295,7 @@
   "col.gameCount": "게임 {count}개",
   "col.noCollectionsLong": "만든 컬렉션이 아직 없습니다.",
   "col.newCollectionBtn": "+ 새 컬렉션 만들기",
+  "col.newCollection": "새 컬렉션",
   "col.edit": "편집",
   "col.deleteHint": "게임은 라이브러리에 남습니다. 이 컬렉션만 제거됩니다.",
   "col.needName": "컬렉션 이름을 입력하세요.",

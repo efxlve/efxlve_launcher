@@ -1295,6 +1295,7 @@
   "col.gameCount": "{count} 個遊戲",
   "col.noCollectionsLong": "尚未建立收藏集。",
   "col.newCollectionBtn": "+ 建立新收藏集",
+  "col.newCollection": "新增收藏",
   "col.edit": "編輯",
   "col.deleteHint": "遊戲仍留在遊戲庫中。只會移除此收藏集。",
   "col.needName": "請輸入收藏集名稱。",

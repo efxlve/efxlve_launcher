@@ -230,7 +230,7 @@ function renderCollections(): string {
     imports +
     `<div class="settings-section-head">
        <h3 class="section-title">${t("col.allCollections")}</h3>
-       <button type="button" class="btn ghost small" data-act="open-new-collection-modal">${t("col.newCollectionBtn")}</button>
+       <button type="button" class="btn ghost small" data-act="open-new-collection-modal">${icon("plus", 13)} ${t("col.newCollection")}</button>
      </div>
      <div class="list settings-group">${rows}</div>`
   );

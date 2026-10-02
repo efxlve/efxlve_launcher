@@ -1378,6 +1378,7 @@
   "col.gameCount": "{count} games",
   "col.noCollectionsLong": "No collections created yet.",
   "col.newCollectionBtn": "+ Create New Collection",
+  "col.newCollection": "New collection",
   "col.edit": "Edit",
   "col.deleteHint": "Games stay in the library. Only this collection is removed.",
   "col.needName": "Please enter a collection name.",

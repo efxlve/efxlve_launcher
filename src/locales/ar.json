@@ -1295,6 +1295,7 @@
   "col.gameCount": "{count} لعبة",
   "col.noCollectionsLong": "لم تُنشأ مجموعات بعد.",
   "col.newCollectionBtn": "+ إنشاء مجموعة جديدة",
+  "col.newCollection": "مجموعة جديدة",
   "col.edit": "تعديل",
   "col.deleteHint": "تبقى الألعاب في المكتبة. تُزال هذه المجموعة فقط.",
   "col.needName": "يرجى إدخال اسم مجموعة.",

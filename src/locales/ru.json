@@ -1295,6 +1295,7 @@
   "col.gameCount": "Игр: {count}",
   "col.noCollectionsLong": "Коллекций ещё нет.",
   "col.newCollectionBtn": "+ Создать коллекцию",
+  "col.newCollection": "Новая коллекция",
   "col.edit": "Изменить",
   "col.deleteHint": "Игры остаются в библиотеке. Удаляется только эта коллекция.",
   "col.needName": "Введите название коллекции.",

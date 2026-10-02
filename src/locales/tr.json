@@ -1378,6 +1378,7 @@
   "col.gameCount": "{count} oyun",
   "col.noCollectionsLong": "Henüz hiç koleksiyon oluşturulmamış.",
   "col.newCollectionBtn": "+ Yeni Koleksiyon Oluştur",
+  "col.newCollection": "Yeni koleksiyon",
   "col.edit": "Düzenle",
   "col.deleteHint": "Oyunlar kütüphanede kalır. Yalnızca bu koleksiyon silinir.",
   "col.needName": "Lütfen koleksiyon adı girin.",

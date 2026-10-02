@@ -19,7 +19,7 @@
    width. Typing is normalized by the change handler. */
 .settings-time-input { width: 72px; padding: 0 8px; text-align: center; font-variant-numeric: tabular-nums; }
 .settings-panel > .section-title:first-child, .settings-panel > .card:first-child { margin-top: 0; }
-.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
+.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; padding-right: 15px; }
 .settings-section-head .section-title { margin: 0 0 10px; }
 .settings-hidden-head {
   margin: 0 0 12px; justify-content: space-between;
