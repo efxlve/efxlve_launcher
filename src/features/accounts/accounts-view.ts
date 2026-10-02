@@ -351,6 +351,7 @@ function steamSignInBlock(): string {
           ${showAppApproval ? `<span class="chip">${t("steam.waiting")}</span>` : ""}
           <span class="acc-spacer"></span>
           ${!showCodeInput ? `<button class="btn ghost small" data-act="steam-login-code-mode">${t("steam.useCode")}</button>` : ""}
+          <button class="btn ghost small" data-act="steam-login-qr">${icon("qr-code", 13)} ${t("steam.qrLogin")}</button>
           <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
         </div>
       </div>`;
@@ -372,6 +373,7 @@ function steamSignInBlock(): string {
         </label>
         <div class="acc-actions">
           <button class="btn primary" data-act="steam-login-submit" ${S.steamAuthBusy ? "disabled" : ""}>${icon("arrow-right", 14)} ${S.steamAuthBusy ? t("steam.waiting") : t("steam.signInBtn")}</button>
+          <button class="btn ghost small" data-act="steam-login-qr">${icon("qr-code", 13)} ${t("steam.qrLogin")}</button>
           <button class="btn ghost small" data-act="steam-login-cancel">${t("common.cancel")}</button>
         </div>
         <p class="acc-hint">${t("steam.secureNote")}</p>

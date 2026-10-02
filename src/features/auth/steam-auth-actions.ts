@@ -40,6 +40,8 @@ const DEFINITIVE_POLL_ERRORS = [
 
 let pollTimer: number | null = null;
 let pollDeadline = 0;
+/** Last "keep this session" choice; the Guard step has no checkbox to read. */
+let rememberPref = true;
 /** Last painted auth state: avoids repainting (and wiping inputs) while typing. */
 let lastPainted = "";
 
@@ -112,7 +114,10 @@ export function promptSteamCodeMode(): void {
 
 /** QR sign-in: fetch the challenge, show the code and poll for approval. */
 export async function beginSteamQrLogin(): Promise<void> {
-  const remember = (document.getElementById("steam-remember") as HTMLInputElement | null)?.checked ?? true;
+  // The Guard step has no "keep this session" checkbox; reuse the last choice.
+  const checkbox = document.getElementById("steam-remember") as HTMLInputElement | null;
+  if (checkbox) rememberPref = checkbox.checked;
+  const remember = checkbox?.checked ?? rememberPref;
   stopSteamPoll();
   S.steamAuthStep = "qr";
   S.steamAuthBusy = true;
@@ -157,7 +162,9 @@ export function cancelSteamLogin(): void {
 export async function submitSteamCredentials(): Promise<void> {
   const user = (document.getElementById("steam-user") as HTMLInputElement | null)?.value.trim() ?? "";
   const pass = (document.getElementById("steam-pass") as HTMLInputElement | null)?.value ?? "";
-  const remember = (document.getElementById("steam-remember") as HTMLInputElement | null)?.checked ?? true;
+  const checkbox = document.getElementById("steam-remember") as HTMLInputElement | null;
+  if (checkbox) rememberPref = checkbox.checked;
+  const remember = checkbox?.checked ?? rememberPref;
   if (!user || !pass) {
     toast(t("steam.err.empty"), "err");
     return;
