@@ -503,6 +503,7 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet", title: st
         <div class="acc-actions">
           ${canSignIn ? `<button class="btn primary small" data-act="companion-signin" data-id="${store}">${icon("user", 13)} ${t("accounts.signIn")}</button>` : ""}
           ${linked || webLogin ? "" : `<button class="btn primary small" data-act="companion-link" data-id="${store}" ${!client || busy ? "disabled" : ""}>${icon("plus", 13)} ${busy ? t("accounts.linking") : t("settings.accountAdd")}</button>`}
+          ${linked ? `<button class="btn ghost small" data-act="companion-rescan" data-id="${store}">${icon("refresh", 13)} ${t("settings.rescan")}</button>` : ""}
           <button class="btn ghost small" data-act="companion-open" data-id="${store}" ${client ? "" : "disabled"}>${icon("external", 13)} ${t("accounts.openClient")}</button>
         </div>
       </div>

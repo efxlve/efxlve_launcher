@@ -51,6 +51,22 @@ pub(crate) fn open_game(uri: &str, exe: &str) -> Result<(), String> {
     tauri_plugin_opener::open_url(uri, None::<&str>).map_err(|e| e.to_string())
 }
 
+/// Runs one of the client's own tools (e.g. the Blizzard uninstaller) without a
+/// shell, so arguments cannot be re-interpreted.
+pub(crate) fn run_command(exe: &Path, args: &[String]) -> Result<(), String> {
+    if !exe.is_file() {
+        return Err("@t:accounts.clientMissing".into());
+    }
+    let mut cmd = Command::new(exe);
+    cmd.args(args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 fn open_exe(exe: &str) -> Result<(), String> {
     let path = PathBuf::from(exe);
     if !path.is_file() || !exe_is_inside_game(&path) {

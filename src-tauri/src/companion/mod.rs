@@ -359,8 +359,9 @@ pub fn companion_achievements(
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the
-/// client's own protocol handlers: the client does the work, the launcher only
-/// starts it. A game without a known id falls back to opening the client.
+/// client's own protocol handlers or tools: the client does the work, the
+/// launcher only starts it. A game without a known id falls back to opening the
+/// client.
 #[tauri::command]
 pub fn companion_game_action(store: String, id: String, action: String) -> Result<(), String> {
     if !accounts::is_store(&store) || id.is_empty() {
@@ -370,11 +371,21 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
         return Err("Unknown game".into());
     };
     match action.as_str() {
+        // Battle.net ships an official headless uninstaller in the agent folder.
+        "uninstall" if store == "battlenet" => {
+            match battlenet::uninstall_command(&game.id, &game.name) {
+                Some((exe, args)) => launch::run_command(&exe, &args),
+                None => launch::open_client(&store),
+            }
+        }
         "install" if !game.install_uri.is_empty() => launch::open_game(&game.install_uri, ""),
         "uninstall" if !game.uninstall_uri.is_empty() => launch::open_game(&game.uninstall_uri, ""),
         "launch" if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() => {
             launch::open_game(&game.launch_uri, &game.launch_exe)
         }
+        // No install protocol: open the client on the product's own page, where
+        // it offers install or uninstall.
+        ("install" | "uninstall") if !game.launch_uri.is_empty() => launch::open_game(&game.launch_uri, ""),
         _ => launch::open_client(&store),
     }
 }

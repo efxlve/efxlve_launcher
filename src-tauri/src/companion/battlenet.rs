@@ -1,8 +1,8 @@
 //! Battle.net's `product.db`.
 //!
-//! The file is a protobuf catalog of product codes and install paths. A
-//! decryption key field exists in the same message; this parser never copies
-//! it out.
+//! The file is a protobuf catalog of products: `uid` (the product's own id),
+//! `product_code` (the launch code), and the install path. A decryption key
+//! field exists deeper in the message; this parser never copies it out.
 
 use std::path::Path;
 
@@ -21,29 +21,35 @@ pub(crate) fn games_from_db(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundG
             if field != 1 {
                 return;
             }
-            let Some((code, path, is_installed)) = product(payload) else {
+            let Some(product) = product(payload) else {
                 return;
             };
-            if !seen.insert(code.clone()) {
+            if !seen.insert(product.uid.clone()) {
                 return;
             }
-            let Some(name) = display_name(&code, &path) else {
+            let Some(name) = display_name(&product.uid, &product.path) else {
                 return;
             };
-            let id = slug(&code);
+            let id = slug(&product.uid);
             if id.is_empty() {
                 return;
             }
-            let on_disk = !path.is_empty() && Path::new(&path).is_dir();
+            let on_disk = !product.path.is_empty() && Path::new(&product.path).is_dir();
+            // The URI takes the launch code (family), not the product uid.
+            let launch = if !product.code.is_empty() {
+                product.code.clone()
+            } else {
+                family(&product.uid).map(str::to_string).unwrap_or_default()
+            };
             games.push(FoundGame {
                 store: "battlenet".into(),
                 id,
                 name,
-                install_path: path,
-                installed: is_installed || on_disk,
+                install_path: product.path,
+                installed: product.installed || on_disk,
                 store_id: String::new(),
                 launch_exe: String::new(),
-                launch_uri: format!("battlenet://{code}"),
+                launch_uri: if launch.is_empty() { String::new() } else { format!("battlenet://{launch}") },
                 install_uri: String::new(),
                 uninstall_uri: String::new(),
                 cover_url: String::new(),
@@ -73,14 +79,24 @@ pub(crate) fn games_from_db(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundG
     games
 }
 
-fn product(msg: &[u8]) -> Option<(String, String, bool)> {
+struct ProductRow {
+    uid: String,
+    code: String,
+    path: String,
+    installed: bool,
+}
+
+fn product(msg: &[u8]) -> Option<ProductRow> {
+    let mut uid = String::new();
     let mut code = String::new();
     let mut path = String::new();
     let mut installed = false;
     for_each_field(
         msg,
         |field, payload| {
-            if field == 2 {
+            if field == 1 {
+                uid = String::from_utf8_lossy(payload).trim().to_string();
+            } else if field == 2 {
                 code = String::from_utf8_lossy(payload).trim().to_string();
             } else if field == 3 {
                 for_each_field(
@@ -114,11 +130,61 @@ fn product(msg: &[u8]) -> Option<(String, String, bool)> {
         },
         |_, _| {},
     );
+    let uid_l = uid.to_lowercase();
     let code_l = code.to_lowercase();
-    if code.is_empty() || SKIP.iter().any(|s| *s == code_l) {
+    if uid.is_empty() && code.is_empty() {
         return None;
     }
-    Some((code, path, installed))
+    if SKIP.iter().any(|s| *s == uid_l || *s == code_l) {
+        return None;
+    }
+    Some(ProductRow { uid, code, path, installed })
+}
+
+/// Launch code (`--exec=launch <family>` / `battlenet://<family>`) for a uid.
+fn family(code: &str) -> Option<&'static str> {
+    Some(match code {
+        "s1" => "S1",
+        "s2" => "S2",
+        "wow" => "WoW",
+        "wow_classic" | "wow_classic_era" => "WoWC",
+        "prometheus" | "pro" | "ow" => "Pro",
+        "w3" => "W3",
+        "hsb" | "hs_beta" | "wtcg" => "WTCG",
+        "hero" | "heroes" => "Hero",
+        "d3" | "diablo3" => "D3",
+        "fenris" => "Fen",
+        "osi" => "OSI",
+        "viper" => "VIPR",
+        "odin" => "ODIN",
+        "lazarus" | "lazr" => "LAZR",
+        "zeus" => "ZEUS",
+        "fore" => "FORE",
+        "auks" => "AUKS",
+        "rtro" => "RTRO",
+        "wlby" => "WLBY",
+        "destiny2" => "DST2",
+        _ => return None,
+    })
+}
+
+/// Official Blizzard uninstaller invocation for one installed product.
+pub(crate) fn uninstall_command(uid: &str, name: &str) -> Option<(std::path::PathBuf, Vec<String>)> {
+    if uid.is_empty() || !uid.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        return None;
+    }
+    let exe = std::path::PathBuf::from(r"C:\ProgramData\Battle.net\Agent\Blizzard Uninstaller.exe");
+    if !exe.is_file() {
+        return None;
+    }
+    Some((
+        exe,
+        vec![
+            "--lang=enUS".to_string(),
+            format!("--uid={uid}"),
+            format!("--displayname={name}"),
+        ],
+    ))
 }
 
 fn display_name(code: &str, path: &str) -> Option<String> {
@@ -139,7 +205,7 @@ fn known_name(code: &str) -> Option<&'static str> {
         "wow" => "World of Warcraft",
         "wow_classic" => "World of Warcraft Classic",
         "wow_classic_era" => "World of Warcraft Classic Era",
-        "pro" | "prometheus" | "ow" => "Overwatch",
+        "pro" | "prometheus" | "ow" => "Overwatch 2",
         "d3" | "diablo3" => "Diablo III",
         "fenris" => "Diablo IV",
         "osi" => "Diablo II: Resurrected",
@@ -214,14 +280,39 @@ fn classic_game(name: &str) -> Option<(&'static str, &'static str)> {
 
 /// Owned games reported by Battle.net's account page (`games-and-subs` and classic games).
 pub(crate) fn account_games(text: &str) -> Vec<(String, String)> {
+    account_library(text).0
+}
+
+/// Owned games plus the BattleTag the page exposed (empty when it did not).
+pub(crate) fn account_library(text: &str) -> (Vec<(String, String)>, String) {
     let value: serde_json::Value = serde_json::from_str(text).unwrap_or(serde_json::Value::Null);
+    let tag = find_string(&value, "battleTag")
+        .or_else(|| find_string(&value, "battle_tag"))
+        .or_else(|| value.get("tag").and_then(|v| v.as_str()).map(str::to_string))
+        .unwrap_or_default();
     let mut games = Vec::new();
     let mut seen = std::collections::HashSet::new();
     walk_account(&value, &mut games, &mut seen);
     if seen.contains("wow") && seen.insert("wow_classic".to_string()) {
         games.push(("wow_classic".into(), "World of Warcraft Classic".into()));
     }
-    games
+    (games, tag.trim().to_string())
+}
+
+/// First string value stored under `key` anywhere in the document.
+fn find_string(value: &serde_json::Value, key: &str) -> Option<String> {
+    match value {
+        serde_json::Value::Object(map) => {
+            if let Some(found) = map.get(key).and_then(|v| v.as_str()) {
+                if !found.trim().is_empty() {
+                    return Some(found.to_string());
+                }
+            }
+            map.values().find_map(|child| find_string(child, key))
+        }
+        serde_json::Value::Array(items) => items.iter().find_map(|child| find_string(child, key)),
+        _ => None,
+    }
 }
 
 fn walk_account(value: &serde_json::Value, games: &mut Vec<(String, String)>, seen: &mut std::collections::HashSet<String>) {
@@ -304,7 +395,7 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
             installed: false,
             store_id: String::new(),
             launch_exe: String::new(),
-            launch_uri: format!("battlenet://{id}"),
+            launch_uri: family(&id).map(|f| format!("battlenet://{f}")).unwrap_or_default(),
             install_uri: String::new(),
             uninstall_uri: String::new(),
             cover_url: String::new(),
@@ -330,8 +421,8 @@ mod tests {
         let mut settings = Vec::new();
         push_bytes(&mut settings, 1, br"C:\Games\Diablo IV");
         let mut install = Vec::new();
-        push_bytes(&mut install, 1, b"uid");
-        push_bytes(&mut install, 2, b"fenris");
+        push_bytes(&mut install, 1, b"fenris");
+        push_bytes(&mut install, 2, b"Fen");
         push_bytes(&mut install, 3, &settings);
         push_bytes(&mut install, 4, &cached);
         let mut agent = Vec::new();
@@ -343,15 +434,29 @@ mod tests {
     }
 
     #[test]
-    fn product_db_names_the_game_and_drops_the_agent_and_the_key() {
+    fn product_db_uses_the_uid_and_the_launch_code() {
         let games = games_from_db(&sample(), &[]);
         assert_eq!(games.len(), 1);
         assert_eq!(games[0].name, "Diablo IV");
-        assert_eq!(games[0].id, "fenris");
+        assert_eq!(games[0].id, "fenris", "the uid is the stable library id");
         assert!(games[0].installed);
-        assert_eq!(games[0].launch_uri, "battlenet://fenris");
+        assert_eq!(games[0].launch_uri, "battlenet://Fen", "the URI takes the launch code");
         let dumped = format!("{games:?}");
         assert!(!dumped.contains("do-not-keep"));
+    }
+
+    #[test]
+    fn account_only_games_use_the_family_launch_code() {
+        let games = merged_games(&[]);
+        // Without a local product.db this list can be empty; the family map is
+        // what turns an imported uid into the client's launch code.
+        assert_eq!(family("fenris"), Some("Fen"));
+        assert_eq!(family("wow"), Some("WoW"));
+        assert_eq!(family("prometheus"), Some("Pro"));
+        assert_eq!(family("wow_classic"), Some("WoWC"));
+        assert_eq!(family("unknown"), None);
+        // The imported rows come from the account cache; no cache in tests.
+        let _ = games;
     }
 
     #[test]

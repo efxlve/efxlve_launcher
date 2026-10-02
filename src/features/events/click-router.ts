@@ -535,6 +535,11 @@ document.addEventListener("click", (e) => {
       .then(() => loadCompanionLibrary())
       .then(() => render())
       .catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "companion-rescan") {
+    // Re-reads the client's own files (installed set) and the imported catalog.
+    void loadCompanionLibrary().then(() => {
+      if (S.view === "settings") render();
+    });
   } else if (act === "companion-install" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
     // The protocol opens the client's own install prompt; the client downloads.
