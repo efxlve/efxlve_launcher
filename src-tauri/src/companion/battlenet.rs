@@ -278,11 +278,6 @@ fn classic_game(name: &str) -> Option<(&'static str, &'static str)> {
     None
 }
 
-/// Owned games reported by Battle.net's account page (`games-and-subs` and classic games).
-pub(crate) fn account_games(text: &str) -> Vec<(String, String)> {
-    account_library(text).0
-}
-
 /// Owned games plus the BattleTag the page exposed (empty when it did not).
 pub(crate) fn account_library(text: &str) -> (Vec<(String, String)>, String) {
     let value: serde_json::Value = serde_json::from_str(text).unwrap_or(serde_json::Value::Null);
@@ -462,13 +457,13 @@ mod tests {
     #[test]
     fn account_page_lists_owned_titles_and_skips_unknown_ids() {
         let text = r#"{"games":{"gameAccounts":[{"titleId":5730135,"gameAccountStatus":"Good"},{"titleId":4613486},{"titleId":1}]},"classic":{"classicGames":[{"localizedGameName":"Diablo® II"}]}}"#;
-        let games = account_games(text);
+        let (games, _) = account_library(text);
         assert!(games.iter().any(|(id, name)| id == "wow" && name == "World of Warcraft"));
         assert!(games.iter().any(|(id, _)| id == "wow_classic"));
         assert!(games.iter().any(|(id, _)| id == "fenris"));
         assert!(games.iter().any(|(id, _)| id == "d2"));
         assert!(games.iter().all(|(id, _)| id != "1"));
         let as_text = r#"{"gameAccounts":[{"titleId":"5730135"}]}"#;
-        assert!(account_games(as_text).iter().any(|(id, _)| id == "wow"));
+        assert!(account_library(as_text).0.iter().any(|(id, _)| id == "wow"));
     }
 }

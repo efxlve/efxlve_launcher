@@ -244,7 +244,7 @@ mod tests {
             }
         }
         assert_eq!(percent_decode(&encoded), payload);
-        let games = battlenet::account_games(&percent_decode(&encoded));
+        let games = battlenet::account_library(&percent_decode(&encoded)).0;
         assert!(games.iter().any(|(id, name)| id == "fenris" && name == "Diablo IV"));
     }
 
