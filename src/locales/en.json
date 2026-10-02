@@ -1371,6 +1371,7 @@
   "col.clear": "Clear",
   "col.noMatch": "No matching games found.",
   "col.delete": "Delete Collection",
+  "col.deleteAsk": "Delete \"{name}\"?",
   "col.saveChanges": "Save Changes",
   "col.create": "Create Collection",
   "col.chooseCategories": "Categories that {name} will belong to",

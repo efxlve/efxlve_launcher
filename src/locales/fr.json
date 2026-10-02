@@ -1288,6 +1288,7 @@
   "col.clear": "Effacer",
   "col.noMatch": "Aucun jeu correspondant.",
   "col.delete": "Supprimer la collection",
+  "col.deleteAsk": "Supprimer « {name} » ?",
   "col.saveChanges": "Enregistrer les modifications",
   "col.create": "Créer la collection",
   "col.chooseCategories": "Catégories auxquelles {name} appartiendra",

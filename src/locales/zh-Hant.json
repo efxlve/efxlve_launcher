@@ -1288,6 +1288,7 @@
   "col.clear": "清除",
   "col.noMatch": "找不到相符的遊戲。",
   "col.delete": "刪除收藏集",
+  "col.deleteAsk": "刪除「{name}」？",
   "col.saveChanges": "儲存變更",
   "col.create": "建立收藏集",
   "col.chooseCategories": "{name} 將歸屬的分類",

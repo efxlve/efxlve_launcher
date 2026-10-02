@@ -393,6 +393,8 @@ export const S = {
   activeEditingColId: (null) as string | null,
   /** Collection whose "merge into" target list is open in Settings. */
   colMergeSource: (null) as string | null,
+  /** Collection whose delete confirmation is open in Settings. */
+  colDeleteConfirm: (null) as string | null,
   colModalSelectedApps: (new Set()) as Set<string>,
   colModalSearchQuery: ("") as string,
   colModalMarker: ("") as string,

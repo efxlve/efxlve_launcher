@@ -1288,6 +1288,7 @@
   "col.clear": "Limpar",
   "col.noMatch": "Nenhum jogo correspondente.",
   "col.delete": "Excluir coleção",
+  "col.deleteAsk": "Excluir \"{name}\"?",
   "col.saveChanges": "Salvar alterações",
   "col.create": "Criar coleção",
   "col.chooseCategories": "Categorias das quais {name} fará parte",

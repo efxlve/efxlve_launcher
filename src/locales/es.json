@@ -1288,6 +1288,7 @@
   "col.clear": "Vaciar",
   "col.noMatch": "No se encontraron juegos coincidentes.",
   "col.delete": "Eliminar colección",
+  "col.deleteAsk": "¿Eliminar \"{name}\"?",
   "col.saveChanges": "Guardar cambios",
   "col.create": "Crear colección",
   "col.chooseCategories": "Categorías a las que pertenecerá {name}",

@@ -1288,6 +1288,7 @@
   "col.clear": "クリア",
   "col.noMatch": "一致するゲームが見つかりません。",
   "col.delete": "コレクションを削除",
+  "col.deleteAsk": "「{name}」を削除しますか？",
   "col.saveChanges": "変更を保存",
   "col.create": "コレクションを作成",
   "col.chooseCategories": "{name} が属するカテゴリ",

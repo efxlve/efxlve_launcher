@@ -238,6 +238,7 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
 
     case "col-merge-ask": {
       const colId = t.dataset.id;
+      S.colDeleteConfirm = null;
       S.colMergeSource = S.colMergeSource === colId ? null : colId ?? null;
       render();
       return true;
@@ -253,6 +254,26 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       const targetId = t.dataset.id;
       S.colMergeSource = null;
       void mergeCollectionsInto(sourceId, targetId);
+      return true;
+    }
+
+    case "col-settings-delete-ask": {
+      const colId = t.dataset.id;
+      S.colMergeSource = null;
+      S.colDeleteConfirm = S.colDeleteConfirm === colId ? null : colId ?? null;
+      render();
+      return true;
+    }
+
+    case "col-settings-delete-cancel":
+      S.colDeleteConfirm = null;
+      render();
+      return true;
+
+    case "col-settings-delete-confirm": {
+      const colId = t.dataset.id;
+      S.colDeleteConfirm = null;
+      if (colId) void deleteCollectionFromSettings(colId);
       return true;
     }
 
@@ -275,5 +296,19 @@ async function mergeCollectionsInto(sourceId?: string, targetId?: string): Promi
     if (S.view === "settings") void loadSettingsView();
   } catch (e) {
     toast(i18nT("col.mergeFailed", { msg: String(e) }), "err");
+  }
+}
+
+/** Deletes one collection from the Settings list (games stay in the library). */
+async function deleteCollectionFromSettings(colId: string): Promise<void> {
+  const name = S.epicCollections.find((c) => c.id === colId)?.name ?? "";
+  try {
+    await epicDeleteCollection(colId);
+    if (S.activeCollectionId === colId) S.activeCollectionId = null;
+    toast(i18nT("col.deleted", { name }), "ok");
+    await loadEpicCollections();
+    if (S.view === "settings") void loadSettingsView();
+  } catch (e) {
+    toast(i18nT("col.deleteFailed", { msg: String(e) }), "err");
   }
 }

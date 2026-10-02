@@ -1288,6 +1288,7 @@
   "col.clear": "مسح",
   "col.noMatch": "لم يُعثر على ألعاب مطابقة.",
   "col.delete": "حذف المجموعة",
+  "col.deleteAsk": "حذف \"{name}\"؟",
   "col.saveChanges": "حفظ التغييرات",
   "col.create": "إنشاء مجموعة",
   "col.chooseCategories": "الفئات التي ستنتمي إليها {name}",

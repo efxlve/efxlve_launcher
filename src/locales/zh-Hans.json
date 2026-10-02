@@ -1288,6 +1288,7 @@
   "col.clear": "清除",
   "col.noMatch": "未找到匹配的游戏。",
   "col.delete": "删除合集",
+  "col.deleteAsk": "删除“{name}”？",
   "col.saveChanges": "保存更改",
   "col.create": "创建合集",
   "col.chooseCategories": "{name} 将归属的分类",

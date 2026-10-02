@@ -1371,6 +1371,7 @@
   "col.clear": "Temizle",
   "col.noMatch": "Eşleşen oyun bulunamadı.",
   "col.delete": "Koleksiyonu Sil",
+  "col.deleteAsk": "\"{name}\" silinsin mi?",
   "col.saveChanges": "Değişiklikleri Kaydet",
   "col.create": "Koleksiyon Oluştur",
   "col.chooseCategories": "{name} oyununun dahil olacağı kategoriler",

@@ -1288,6 +1288,7 @@
   "col.clear": "지우기",
   "col.noMatch": "일치하는 게임을 찾지 못했습니다.",
   "col.delete": "컬렉션 삭제",
+  "col.deleteAsk": "\"{name}\"을(를) 삭제할까요?",
   "col.saveChanges": "변경 사항 저장",
   "col.create": "컬렉션 만들기",
   "col.chooseCategories": "{name}이(가) 속할 카테고리",

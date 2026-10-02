@@ -1288,6 +1288,7 @@
   "col.clear": "Очистить",
   "col.noMatch": "Подходящих игр нет.",
   "col.delete": "Удалить коллекцию",
+  "col.deleteAsk": "Удалить «{name}»?",
   "col.saveChanges": "Сохранить изменения",
   "col.create": "Создать коллекцию",
   "col.chooseCategories": "Категории, в которые войдёт {name}",

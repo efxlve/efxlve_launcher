@@ -1288,6 +1288,7 @@
   "col.clear": "Leeren",
   "col.noMatch": "Keine passenden Spiele gefunden.",
   "col.delete": "Sammlung löschen",
+  "col.deleteAsk": "\"{name}\" löschen?",
   "col.saveChanges": "Änderungen speichern",
   "col.create": "Sammlung erstellen",
   "col.chooseCategories": "Kategorien, zu denen {name} gehören soll",

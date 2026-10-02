@@ -37,7 +37,6 @@ import {
   type ScreenshotMoveInfo,
 } from "../../epic";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
-import { STORE_LABELS } from "../store/store-view";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { companionGetClientSettings } from "../../companion";
@@ -178,23 +177,10 @@ function renderCloud(): string {
   return infoBox("cloud.pageInfo") + renderCloudBackupSettingsGroup();
 }
 
-/** Store breakdown line for one collection ("Epic Games 3 · Steam 7"). */
-function collectionStoreBreakdown(appNames: string[]): string {
-  const counts = new Map<string, number>();
-  for (const name of appNames) {
-    const source = name.split("::")[0] || "epic";
-    counts.set(source, (counts.get(source) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([source, count]) => `${(STORE_LABELS as Record<string, string>)[source] ?? source} ${count}`)
-    .join(" · ");
-}
-
 /**
- * Collections page: import from each client, then review, edit and merge the
- * result. Imports union members by name; the merge action does the same for
- * differently named collections.
+ * Collections page: import from each client, then review, edit, merge or
+ * delete the result. Imports union members by name; the merge action does the
+ * same for differently named collections.
  */
 function renderCollections(): string {
   const imports = group(
@@ -208,27 +194,35 @@ function renderCollections(): string {
     ? row(t("col.noCollectionsLong"), null, "")
     : S.epicCollections.map((c) => {
         const merging = S.colMergeSource === c.id;
+        const deleting = S.colDeleteConfirm === c.id;
         const targets = S.epicCollections.filter((other) => other.id !== c.id);
-        const breakdown = collectionStoreBreakdown(c.app_names);
         const mergePanel = merging
           ? `<div class="col-merge-panel">
                <span class="settings-row-desc">${t("col.mergeInto")}</span>
                ${targets.map((other) => `<button type="button" class="btn ghost small" data-act="col-merge-into" data-id="${esc(other.id)}" data-source="${esc(c.id)}">${esc(other.name)} <span class="tabular-nums">${other.app_names.length}</span></button>`).join("")}
-               <button type="button" class="btn ghost small" data-act="col-merge-cancel">${t("common.cancelShort")}</button>
+               <button type="button" class="btn ghost danger small" data-act="col-merge-cancel">${t("common.cancelShort")}</button>
+             </div>`
+          : "";
+        const deletePanel = deleting
+          ? `<div class="col-merge-panel">
+               <span class="settings-row-desc"><strong>${t("col.deleteAsk", { name: esc(c.name) })}</strong> ${t("col.deleteHint")}</span>
+               <button type="button" class="btn danger small" data-act="col-settings-delete-confirm" data-id="${esc(c.id)}">${t("common.delete")}</button>
+               <button type="button" class="btn ghost danger small" data-act="col-settings-delete-cancel">${t("common.cancelShort")}</button>
              </div>`
           : "";
         return `
           <div class="row settings-row">
             <div class="row-main">
               <div class="settings-row-title">${esc(c.name)}</div>
-              <div class="settings-row-desc">${t("col.gameCount", { count: c.app_names.length })}${breakdown ? ` · ${esc(breakdown)}` : ""}</div>
+              <div class="settings-row-desc">${t("col.gameCount", { count: c.app_names.length })}</div>
             </div>
             <div class="settings-row-control">
               <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(c.id)}">${t("col.edit")}</button>
               <button type="button" class="btn ghost small" data-act="col-merge-ask" data-id="${esc(c.id)}" ${targets.length === 0 ? "disabled" : ""}>${t("col.merge")}</button>
+              <button type="button" class="btn ghost danger small" data-act="col-settings-delete-ask" data-id="${esc(c.id)}">${t("common.delete")}</button>
             </div>
           </div>
-          ${mergePanel}`;
+          ${mergePanel}${deletePanel}`;
       }).join("");
 
   return infoBox("col.settingsInfo") + imports + group(rows, t("col.allCollections"));

@@ -1288,6 +1288,7 @@
   "col.clear": "ล้าง",
   "col.noMatch": "ไม่พบเกมที่ตรงกัน",
   "col.delete": "ลบคอลเลกชัน",
+  "col.deleteAsk": "ลบ \"{name}\" หรือไม่?",
   "col.saveChanges": "บันทึกการเปลี่ยนแปลง",
   "col.create": "สร้างคอลเลกชัน",
   "col.chooseCategories": "หมวดหมู่ที่ {name} จะอยู่",
