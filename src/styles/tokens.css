@@ -90,8 +90,9 @@
   --ps5-status-err: var(--err);
 }
 
-/* Epic Games Launcher canvas, sampled from the launcher itself. */
-:root[data-surface="epic"] {
+/* Soft black surface: a lifted background with blue-grey panels for bright
+   rooms. Applied by Settings > Appearance. */
+:root[data-surface="soft"] {
   --bg: #101014;
   --surface-1: #18181c;
   --surface-2: #222228;

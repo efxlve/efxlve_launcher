@@ -387,7 +387,11 @@ export const S = {
   libPageSize: normalizeLibraryPageSize(localStorage.getItem(LIB_PAGE_SIZE_KEY)),
   libPage: 1,
   screenshotDir: "",
-  surface: (localStorage.getItem(SURFACE_KEY) === "epic" ? "epic" : "black") as "black" | "epic",
+  surface: (() => {
+    // "epic" is the old stored value for the soft surface; keep it working.
+    const v = localStorage.getItem(SURFACE_KEY);
+    return (v === "soft" || v === "epic" ? "soft" : "black") as "black" | "soft";
+  })(),
   autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
   autoUpdateTime: (localStorage.getItem(AUTO_UPDATE_TIME_KEY) || "03:00") as string,

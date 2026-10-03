@@ -98,7 +98,7 @@ export function normalizeLibraryPageSize(raw: string | number | null | undefined
   const size = typeof raw === "number" ? raw : Number(raw);
   return (LIB_PAGE_SIZES as readonly number[]).includes(size) ? size : LIB_PAGE_SIZES[0];
 }
-/** Shell surface: "black" (default) or "epic" (#101014). */
+/** Shell surface: "black" (default) or "soft" (#101014). */
 export const SURFACE_KEY = "efxlve-surface";
 /** Persisted left-sidebar width in CSS pixels. */
 export const SIDEBAR_W_KEY = "efxlve-sidebar-w";

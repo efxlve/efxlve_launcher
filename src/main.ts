@@ -37,7 +37,7 @@ import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 
-if (S.surface === "epic") document.documentElement.dataset.surface = "epic";
+if (S.surface === "soft") document.documentElement.dataset.surface = "soft";
 document.documentElement.classList.add("ready");
 initSidebarLayout();
 

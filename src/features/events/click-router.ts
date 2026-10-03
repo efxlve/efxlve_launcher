@@ -662,10 +662,10 @@ document.addEventListener("click", (e) => {
     S.settingsSection = "controller";
     void loadSettingsView();
   } else if (act === "set-surface") {
-    const surface = t.dataset.surface === "epic" ? "epic" : "black";
+    const surface = t.dataset.surface === "soft" ? "soft" : "black";
     S.surface = surface;
     localStorage.setItem(SURFACE_KEY, surface);
-    if (surface === "epic") document.documentElement.dataset.surface = "epic";
+    if (surface === "soft") document.documentElement.dataset.surface = "soft";
     else delete document.documentElement.dataset.surface;
     render();
   } else if (act === "toggle-cover-stats") {
