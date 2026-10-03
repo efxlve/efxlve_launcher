@@ -277,14 +277,21 @@ pub fn build_index(config_dir: &Path, gog_dir: &Path) -> SharedLibraryIndex {
 
 /// Tauri entry point: reads the real config/app-data paths.
 #[tauri::command]
-pub fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
-    let config = legendary::skip::default_config_dir();
-    let gog = app
-        .path()
-        .app_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("gog");
-    build_index(&config, &gog)
+pub async fn shared_library_index(app: AppHandle) -> SharedLibraryIndex {
+    // Parses every saved account's multi-megabyte library snapshot (the active
+    // account alone is ~17 MB): run on a blocking thread so the main thread
+    // never stalls on the JSON during boot.
+    tauri::async_runtime::spawn_blocking(move || {
+        let config = legendary::skip::default_config_dir();
+        let gog = app
+            .path()
+            .app_data_dir()
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("gog");
+        build_index(&config, &gog)
+    })
+    .await
+    .unwrap_or_else(|_| SharedLibraryIndex { games: Vec::new() })
 }
 
 #[cfg(test)]
