@@ -186,8 +186,12 @@ export async function initApp(hooks: {
   // registration, settings fetches or window-chrome IPC.
   initGamepadSupport();
   // Re-arm the XInput bridge when the user left it on last session.
+  // HidApi enumeration races WebView2's own device scan during the first
+  // paint and can leave the window on the library skeleton, not responding.
   if (localStorage.getItem(CONTROLLER_BRIDGE_KEY) === "true") {
-    void controllerBridgeStart().catch(() => {});
+    window.setTimeout(() => {
+      void controllerBridgeStart().catch(() => {});
+    }, 4000);
   }
   // Start with Windows defaults to on; the marker keeps a user's choice.
   if (!localStorage.getItem(AUTOSTART_INIT_KEY)) {

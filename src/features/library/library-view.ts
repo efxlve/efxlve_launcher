@@ -526,20 +526,39 @@ export function setupLibScrollObserver(): void {
     S.libScrollObserver = null;
   };
 
+  // One chunk per frame. If the new cards add no height, the sentinel never
+  // leaves the viewport and this callback would append the whole library in a
+  // single turn: the WebView stops pumping, Windows reports "Not Responding",
+  // and the grid stays a black row of empty covers.
+  let busy = false;
   S.libScrollObserver = new IntersectionObserver((entries) => {
-    if (!entries[0]?.isIntersecting) return;
+    if (busy || !entries[0]?.isIntersecting) return;
     const visible = epicVisibleSummaries();
     if (S.renderedCardCount >= visible.length) {
       stop();
       return;
     }
     const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
+    if (nextSlice.length === 0) {
+      stop();
+      return;
+    }
+    const before = viewEl.scrollHeight;
+    busy = true;
+    S.libScrollObserver?.disconnect();
     S.renderedCardCount += nextSlice.length;
     sentinel.insertAdjacentHTML("beforebegin", nextSlice.map(renderItem).join(""));
-    if (S.renderedCardCount >= visible.length) stop();
+    if (viewEl.scrollHeight <= before || S.renderedCardCount >= visible.length) {
+      stop();
+      return;
+    }
+    requestAnimationFrame(() => {
+      busy = false;
+      if (sentinel.isConnected) S.libScrollObserver?.observe(sentinel);
+    });
   }, {
     root: viewEl,
-    rootMargin: "450px",
+    rootMargin: "200px",
   });
 
   S.libScrollObserver.observe(sentinel);

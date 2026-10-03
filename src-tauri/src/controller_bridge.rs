@@ -339,7 +339,11 @@ pub fn start() -> Result<BridgeStatus, String> {
         }
         Err(_) => {
             stop.store(true, Ordering::Relaxed);
-            let _ = thread.join();
+            // HidApi enumeration and ViGEm plugin can block inside the worker
+            // and never return. Joining that thread here stalls the process
+            // thread that owns the window, so the launcher stays on the
+            // skeleton and Windows reports "Not Responding".
+            drop(thread);
             return Err("@t:controller.bridgeStartTimeout".into());
         }
     }
@@ -484,7 +488,9 @@ fn worker(
             continue;
         };
         match device.read_timeout(&mut buffer, 50) {
-            Ok(0) => {}
+            // A device that completes the read immediately would otherwise spin
+            // this thread and stall the HID stack the WebView gamepad poll uses.
+            Ok(0) => std::thread::sleep(Duration::from_millis(10)),
             Ok(read) => {
                 if let Some(state) = parse_report(*family, &buffer[..read]) {
                     // Report ids 0x11 (DualShock 4) and 0x31 (DualSense) only

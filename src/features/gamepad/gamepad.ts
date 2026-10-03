@@ -252,19 +252,10 @@ export function initGamepadSupport(): void {
     }
   }, { passive: true });
 
-  setTimeout(() => {
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const first = Array.from(gamepads).find((g) => g !== null && g.connected);
-    if (first) {
-      bindPad(first);
-      if (!S.gamepadPolling) {
-        S.gamepadPolling = true;
-        updateGamepadHud(true);
-        requestAnimationFrame(gamepadLoop);
-      }
-      if (S.tvAutoEnter) void onControllerConnected(S.gamepadName);
-    }
-  }, 1000);
+  // getGamepads() enumerates HID on the renderer thread. Calling it while the
+  // window is still booting blocks that thread: the library stays on its
+  // skeleton and Windows marks the window "Not Responding". A pad that is
+  // already connected fires gamepadconnected on the first button.
 }
 
 function axisPast(v: number, dz: number): boolean {

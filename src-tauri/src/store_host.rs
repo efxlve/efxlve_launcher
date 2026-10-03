@@ -217,10 +217,11 @@ fn show_pending_store(app: &tauri::AppHandle, label: &str, epoch: u64) {
     }
 }
 
-/// How many storefronts may stay alive at once. Each one is a renderer process
-/// (measured at roughly 60-260 MB working set), so the least recently used
-/// storefronts are closed instead of holding all of them in RAM.
-const MAX_WARM_STORES: usize = 3;
+/// How many storefronts may stay alive at once. Each one is another WebView2
+/// renderer in the same process as the main window (about 60-260 MB). More
+/// than one pushes that process over the edge: Windows kills it, the window
+/// and its icon disappear, and Task Manager is left with "WebView2 Manager".
+const MAX_WARM_STORES: usize = 1;
 
 /// Alive storefront labels, most recently used first.
 static STORE_WARM_ORDER: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
