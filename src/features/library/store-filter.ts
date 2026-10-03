@@ -127,9 +127,15 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean
         ${row("epic", t("source.epic"), counts.epic, S.enabledStores.has("epic"))}
         ${row("gog", t("source.gog"), counts.gog, S.enabledStores.has("gog"))}
         ${hasSteam ? row("steam", t("source.steam"), counts.steam, S.enabledStores.has("steam")) : ""}
-        ${companionRows ? `<div class="store-menu-sep"></div>${companionRows}` : ""}
+        ${companionRows}
       </div>
     </div>`;
+}
+
+/** Whether that menu row should show a check. `all` is on only when every store is. */
+export function storeFilterRowOn(value: string): boolean {
+  if (value === "all") return STORE_ORDER.every((id) => S.enabledStores.has(id));
+  return (STORE_ORDER as readonly string[]).includes(value) && S.enabledStores.has(value as GameSource);
 }
 
 /** Deduped size used by the All Stores row. */

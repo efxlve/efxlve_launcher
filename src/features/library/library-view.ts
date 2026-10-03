@@ -19,7 +19,7 @@ import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort, GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
-import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterMenuHtml } from "./store-filter";
+import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -419,6 +419,11 @@ function renderLibraryPager(total: number): string {
     </div>`;
 }
 
+/** Result-set fingerprint. A change restarts pagination and the card chunk. */
+function libraryResultKey(): string {
+  return [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey()].join("\x1f");
+}
+
 /**
  * Renders the library content area. Default All is a cover grid (or list).
  * Collections are a separate filter mode.
@@ -426,7 +431,7 @@ function renderLibraryPager(total: number): string {
 export function renderEpicItems(): string {
   const inCollection = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   // Any change to the result set definition restarts pagination at page 1.
-  const resultKey = [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey()].join("\x1f");
+  const resultKey = libraryResultKey();
   if (resultKey !== lastResultKey) {
     lastResultKey = resultKey;
     S.libPage = 1;
@@ -594,6 +599,81 @@ export function refreshLibraryResultsInPlace(): boolean {
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
   syncLibraryHeadingCount();
+  return true;
+}
+
+/** Store-menu checks and the button label. The menu itself stays open. */
+function syncStoreFilterMenu(): void {
+  const label = document.querySelector<HTMLElement>(".lib-store-btn .sort-btn-label");
+  if (label) label.textContent = storeFilterLabel();
+  document.querySelectorAll<HTMLElement>('#store-dropdown-menu [data-act="source-filter"]').forEach((btn) => {
+    const on = storeFilterRowOn(btn.dataset.val || "");
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-checked", on ? "true" : "false");
+    const mark = btn.querySelector(".store-option-mark");
+    if (mark) mark.innerHTML = on ? icon("check", 14) : "";
+  });
+}
+
+/**
+ * Applies a store-filter change without rebuilding the page. Cards that stay
+ * in the slice keep their cover elements, so the WebView does not decode the
+ * whole grid again. A full `render()` here was what froze the launcher.
+ */
+export function refreshLibraryForStoreFilter(): boolean {
+  if (S.view !== "library") return false;
+  const results = document.getElementById("lib-results");
+  const grid = results?.querySelector<HTMLElement>(".pgrid, .lib-list");
+  if (!results || !grid) return false;
+
+  invalidateLibraryVisibleCache();
+  resetCardChunk();
+  const visible = epicVisibleSummaries();
+  if (visible.length === 0) return false;
+
+  lastResultKey = libraryResultKey();
+  S.libPage = 1;
+  const slice = renderedSlice(visible);
+  const head = grid.querySelector<HTMLElement>(":scope > .lrow-head");
+  const existing = new Map<string, HTMLElement>();
+  grid.querySelectorAll<HTMLElement>(":scope > [data-lib-item]").forEach((el) => {
+    const id = el.dataset.libItem || "";
+    if (id) existing.set(id, el);
+  });
+
+  const frag = document.createDocumentFragment();
+  for (const s of slice) {
+    const kept = existing.get(s.appName);
+    if (kept) {
+      existing.delete(s.appName);
+      frag.appendChild(kept);
+    } else {
+      const holder = document.createElement("template");
+      holder.innerHTML = renderItem(s);
+      const card = holder.content.firstElementChild;
+      if (card) frag.appendChild(card);
+    }
+  }
+  for (const stale of existing.values()) stale.remove();
+  grid.replaceChildren(frag);
+  if (head) grid.prepend(head);
+  if (!S.libPagination && S.renderedCardCount < visible.length) {
+    const sentinel = document.createElement("div");
+    sentinel.id = "lib-scroll-sentinel";
+    sentinel.className = "lib-sentinel";
+    grid.appendChild(sentinel);
+  }
+  results.querySelector(".lib-pager")?.remove();
+  if (S.libPagination) {
+    const holder = document.createElement("template");
+    holder.innerHTML = renderLibraryPager(visible.length);
+    const pager = holder.content.firstElementChild;
+    if (pager) results.appendChild(pager);
+  }
+  viewEl.scrollTop = 0;
+  setupLibScrollObserver();
+  syncLibraryHeadingCount();
+  syncStoreFilterMenu();
   return true;
 }
 

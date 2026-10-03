@@ -71,6 +71,7 @@ import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import {
   consumeCollectionDragClick,
+  refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
   updateLibraryFilterInPlace,
@@ -383,10 +384,7 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.toggle("show", S.isStoreDropdownOpen);
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
-    if (applyStoreFilter(t.dataset.val)) {
-      resetCardChunk();
-      render();
-    }
+    if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
   } else if (act === "toggle-col-dropdown") {
     S.isColDropdownOpen = !S.isColDropdownOpen;
     S.isSortDropdownOpen = false;
