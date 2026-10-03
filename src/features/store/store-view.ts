@@ -654,10 +654,12 @@ syncStoreTabsPill();
 if (typeof MutationObserver !== "undefined") {
   const switcher = document.getElementById("store-switcher");
   if (switcher) {
-    new MutationObserver(syncStoreTabsPill).observe(switcher, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class", "hidden"],
+    // Watch the tab buttons only. Observing the whole strip also sees the
+    // pill's own class writes and reschedules this callback forever, which
+    // pegs the renderer and leaves the window on the library skeleton.
+    const watch = new MutationObserver(syncStoreTabsPill);
+    switcher.querySelectorAll("[data-store]").forEach((btn) => {
+      watch.observe(btn, { attributes: true, attributeFilter: ["class", "hidden"] });
     });
   }
 }
@@ -685,11 +687,8 @@ function initStoreTabsBar(): void {
   const scroller = document.getElementById("store-switcher");
   if (!scroller) return;
   scroller.addEventListener("scroll", updateStoreTabsArrows, { passive: true });
-  // The strip is display:none until the store view opens; observing it catches
-  // the first real size and every later window resize.
-  if (typeof ResizeObserver !== "undefined") {
-    new ResizeObserver(updateStoreTabsArrows).observe(scroller);
-  }
+  // ResizeObserver on this strip feeds itself: showing the arrows changes the
+  // scroller's size, which fires the observer again and never returns to paint.
   window.addEventListener("resize", updateStoreTabsArrows);
   updateStoreTabsArrows();
 }
