@@ -10,8 +10,11 @@
    - Tabular numbers on all metrics, speeds, percentages and timers
    ========================================================================== */
 
+/* `clip`, not `hidden`: a hidden box is still a scroll container, so focus
+   scrolling leaves a scroll offset behind and the next entry flashes overlay
+   scrollbars at the window edge. A clipped box cannot scroll at all. */
 html:has(body.tv-mode) {
-  overflow: hidden;
+  overflow: clip;
   background: #000000;
 }
 
@@ -20,7 +23,7 @@ body.tv-mode {
   --header-h: 0px;
   user-select: none;
   background: #000000;
-  overflow: hidden;
+  overflow: clip;
 }
 
 body.tv-mode #winbar,
@@ -33,7 +36,7 @@ body.tv-mode #btn-tv-mode {
 
 body.tv-mode #app {
   height: 100vh;
-  overflow: hidden;
+  overflow: clip;
 }
 
 body.tv-mode #body,
@@ -42,7 +45,7 @@ body.tv-mode #content,
 body.tv-mode #view {
   padding: 0;
   margin: 0;
-  overflow: hidden;
+  overflow: clip;
   min-height: 0;
   height: 100%;
   background: #000000;
