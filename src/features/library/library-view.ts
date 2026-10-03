@@ -430,6 +430,9 @@ export function renderEpicItems(): string {
   if (resultKey !== lastResultKey) {
     lastResultKey = resultKey;
     S.libPage = 1;
+    // A new result set starts at the first card chunk. Re-renders for the same
+    // set keep the grown chunk, so a scrolled grid is not collapsed to the top.
+    resetCardChunk();
   }
   const visible = epicVisibleSummaries();
 
@@ -541,7 +544,6 @@ export function refreshLibraryResultsInPlace(): boolean {
   if (S.view !== "library") return false;
   const resultsEl = document.getElementById("lib-results");
   if (!resultsEl) return false;
-  resetCardChunk();
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
@@ -593,8 +595,9 @@ export function renderEpic(): string {
       </div>`;
   }
 
-  // A full page rebuild must not replay a grown 200–520 card chunk.
-  resetCardChunk();
+  // A full page rebuild keeps the current card chunk: collapsing a scrolled
+  // grid back to the first chunk would jump the user to the top. The chunk is
+  // reset when the result set itself changes (see renderEpicItems).
 
   // Installed is a live tab and must survive a rebuild. Updates and the retired
   // collections mode have no tab, so a redraw must not leave the grid stuck there.
@@ -717,7 +720,6 @@ export function updateLibraryFilterInPlace(): boolean {
     colDropdownBtn.dataset.colId = activeCol?.id ?? "";
   }
 
-  resetCardChunk();
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();

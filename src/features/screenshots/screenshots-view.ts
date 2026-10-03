@@ -71,8 +71,14 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
     : epicGetGameScreenshots(appName, title);
   request
     .then((items) => {
-      S.loadedScreenshots.set(appName, items);
       S.loadingScreenshotsFor = null;
+      // One gallery at a time: the map is only read for the open game, and a
+      // response landing after its consumer closed must not pile up. (A late
+      // response replaces the previous entry instead of adding one.)
+      S.loadedScreenshots.set(appName, items);
+      for (const key of [...S.loadedScreenshots.keys()]) {
+        if (key !== appName) S.loadedScreenshots.delete(key);
+      }
       if (S.currentModalAppName === appName) {
         const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
         const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
