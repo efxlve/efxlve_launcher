@@ -476,7 +476,119 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// `tauri dev` rebuilds by killing the `cargo run` process. On Windows that
+/// does not stop this process, so `efxlve-launcher.exe` stays locked, the next
+/// link fails, and the dev session exits. Leave as soon as that cargo parent
+/// dies so the new build can replace the exe and start again.
+#[cfg(windows)]
+fn exit_when_cargo_parent_dies() {
+    use std::mem::size_of;
+
+    type Handle = *mut core::ffi::c_void;
+    type Dword = u32;
+
+    const INVALID_HANDLE: Handle = -1isize as Handle;
+    const SNAPPROCESS: Dword = 0x00000002;
+    const SYNCHRONIZE: Dword = 0x00100000;
+
+    #[repr(C)]
+    struct ProcessEntry {
+        size: Dword,
+        cnt_usage: Dword,
+        pid: Dword,
+        heap: usize,
+        module: Dword,
+        threads: Dword,
+        parent_pid: Dword,
+        pri: i32,
+        flags: Dword,
+        exe: [u16; 260],
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetCurrentProcessId() -> Dword;
+        fn CreateToolhelp32Snapshot(flags: Dword, pid: Dword) -> Handle;
+        fn Process32FirstW(snap: Handle, entry: *mut ProcessEntry) -> i32;
+        fn Process32NextW(snap: Handle, entry: *mut ProcessEntry) -> i32;
+        fn OpenProcess(access: Dword, inherit: i32, pid: Dword) -> Handle;
+        fn WaitForSingleObject(handle: Handle, millis: Dword) -> Dword;
+        fn CloseHandle(handle: Handle) -> i32;
+    }
+
+    fn exe_name(wide: &[u16]) -> String {
+        let end = wide.iter().position(|c| *c == 0).unwrap_or(wide.len());
+        String::from_utf16_lossy(&wide[..end])
+            .rsplit(['\\', '/'])
+            .next()
+            .unwrap_or("")
+            .to_ascii_lowercase()
+    }
+
+    struct Parent {
+        pid: Dword,
+        exe: String,
+    }
+
+    let parent = unsafe {
+        let snap = CreateToolhelp32Snapshot(SNAPPROCESS, 0);
+        if snap.is_null() || snap == INVALID_HANDLE {
+            return;
+        }
+        let mut entry = std::mem::zeroed::<ProcessEntry>();
+        entry.size = size_of::<ProcessEntry>() as Dword;
+        let mut self_parent: Option<Dword> = None;
+        let mut names: Vec<(Dword, String)> = Vec::new();
+        if Process32FirstW(snap, &mut entry) != 0 {
+            let self_pid = GetCurrentProcessId();
+            loop {
+                if entry.pid == self_pid {
+                    self_parent = Some(entry.parent_pid);
+                }
+                names.push((entry.pid, exe_name(&entry.exe)));
+                if Process32NextW(snap, &mut entry) == 0 {
+                    break;
+                }
+            }
+        }
+        CloseHandle(snap);
+        let Some(pid) = self_parent else {
+            return;
+        };
+        let Some(exe) = names.into_iter().find_map(|(id, name)| (id == pid).then_some(name)) else {
+            return;
+        };
+        Parent { pid, exe }
+    };
+    if parent.exe != "cargo.exe" {
+        return;
+    }
+
+    let handle = unsafe { OpenProcess(SYNCHRONIZE, 0, parent.pid) };
+    if handle.is_null() {
+        return;
+    }
+    // Raw handles are not Send. The watch thread is the only remaining user.
+    let handle = handle as usize;
+    std::thread::Builder::new()
+        .name("dev-parent-watch".into())
+        .spawn(move || {
+            let handle = handle as Handle;
+            // 0 is WAIT_OBJECT_0: the parent process handle was signaled.
+            let signaled = unsafe { WaitForSingleObject(handle, u32::MAX) } == 0;
+            unsafe { CloseHandle(handle) };
+            if signaled {
+                std::process::exit(0);
+            }
+        })
+        .ok();
+}
+
+#[cfg(not(windows))]
+fn exit_when_cargo_parent_dies() {}
+
 fn main() {
+    exit_when_cargo_parent_dies();
     // Desktop shortcuts start the launcher with `--launch <app>`; the app name is
     // picked up by the UI after boot and routed through the normal play path.
     let pending_launch = parse_launch_arg(std::env::args().skip(1));
