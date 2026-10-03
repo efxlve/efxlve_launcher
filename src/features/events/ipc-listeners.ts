@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, LayoutGrid, MessageCircle, Monitor, Music, Settings, ShoppingBag, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -52,7 +52,7 @@ import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companio
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
-import { icon } from "../../core/icons";
+import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall } from "../../core/recent";
 import {
@@ -159,7 +159,7 @@ export async function initApp(hooks: {
   installArtFallback();
   updateMaxIcon();
   createIcons({
-    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, MessageCircle },
+    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, ...BRAND_ICONS },
   });
   loadNotifications();
   initAutoUpdate();
