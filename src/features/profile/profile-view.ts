@@ -22,13 +22,14 @@
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
-import { rawOf } from "../../core/selectors";
+import { rawOf, sourceOfKey } from "../../core/selectors";
 import { avatarFor, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
+import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
 
 export function coverOf(appName: string, fallback = ""): string {
   const s = S.epicSummariesMap.get(appName);
@@ -37,12 +38,28 @@ export function coverOf(appName: string, fallback = ""): string {
   return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
 }
 
+/** Short tab labels: brand names are not translated. */
+const STORE_TAB_LABELS: Record<StoreKind, string> = {
+  epic: "Epic",
+  gog: "GOG",
+  steam: "Steam",
+  xbox: "Xbox",
+  battlenet: "Battle.net",
+  ubisoft: "Ubisoft",
+  ea: "EA",
+};
+
+/** Stores whose achievements the launcher tracks in bulk. */
+const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam"];
+
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
       && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().length === 0;
-    const title = S.profileShowHidden ? t("profile.hiddenEmpty") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
-    const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
+    const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
+      && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
+    const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
+    const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : companionGap ? t("profile.companionEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
     return `<div class="row">${emptyState("trophy", title, desc)}</div>`;
   }
   const chips = showStoreChips();
@@ -110,7 +127,8 @@ function totalSteamGames(): number {
   return S.steamStatus?.games ?? 0;
 }
 
-export type StoreKind = "epic" | "gog" | "steam";
+/** Every storefront the profile shows; Riot has no storefront of its own. */
+export type StoreKind = "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea";
 
 /** One selectable account in the profile header. */
 export interface ProfileAccount {
@@ -122,28 +140,35 @@ export interface ProfileAccount {
 }
 
 export function storeName(kind: StoreKind): string {
-  if (kind === "epic") return "Epic Games";
-  if (kind === "gog") return "GOG.COM";
-  return "Steam";
+  return STORE_LABELS[kind];
 }
 
-export function storeCode(kind: StoreKind): string {
-  if (kind === "epic") return "EPIC";
-  if (kind === "gog") return "GOG";
-  return "STEAM";
+const STORE_CODES: Record<StoreKind, string> = {
+  epic: "EPIC",
+  gog: "GOG",
+  steam: "STEAM",
+  xbox: "XBOX",
+  battlenet: "BNET",
+  ubisoft: "UBI",
+  ea: "EA",
+};
+
+/** Row chip code. Riot games can sit in the shelf without a storefront. */
+export function storeCode(kind: StoreKind | "riot"): string {
+  return kind === "riot" ? "RIOT" : STORE_CODES[kind];
 }
 
 export function switchAct(kind: StoreKind): string {
   if (kind === "epic") return "account-switch";
   if (kind === "gog") return "gog-account-switch";
-  return "steam-account-switch";
+  if (kind === "steam") return "steam-account-switch";
+  // Companion stores keep a single account; the Accounts page manages it.
+  return "";
 }
 
 /** Library key → store. Epic ids have no prefix. */
-export function gameStore(appName: string): StoreKind {
-  if (appName.startsWith("steam::") || S.steamSummariesMap.has(appName)) return "steam";
-  if (appName.startsWith("gog::") || S.gogSummariesMap.has(appName) || S.allGamesMap.get(appName)?.source === "gog") return "gog";
-  return "epic";
+export function gameStore(appName: string): StoreKind | "riot" {
+  return sourceOfKey(appName);
 }
 
 function steamSignedIn(): boolean {
@@ -319,10 +344,19 @@ function buildSteamProfileGames(): ProfileGameRecord[] {
 
 /** Stores that currently have a signed-in session or a local library. */
 export function overviewStores(): StoreKind[] {
+  const linkedCompanion = new Set(S.companionStatus.filter((s) => s.linked).map((s) => s.store));
   const out: StoreKind[] = [];
-  if (S.epicAccount) out.push("epic");
-  if (S.gogAccount) out.push("gog");
-  if (steamConnected()) out.push("steam");
+  for (const id of HEADER_STORES) {
+    if (id === "epic") {
+      if (S.epicAccount) out.push(id);
+    } else if (id === "gog") {
+      if (S.gogAccount) out.push(id);
+    } else if (id === "steam") {
+      if (steamConnected()) out.push(id);
+    } else if (linkedCompanion.has(id)) {
+      out.push(id);
+    }
+  }
   return out;
 }
 
@@ -367,13 +401,21 @@ export function profileListGames(): ProfileGameRecord[] {
 }
 
 export function libraryCount(scope: "all" | StoreKind): number {
-  const epic = totalEpicGames();
-  const gog = S.gogSummaries.length;
-  const steam = totalSteamGames();
-  if (scope === "epic") return epic;
-  if (scope === "gog") return gog;
-  if (scope === "steam") return steam;
-  return epic + gog + steam;
+  if (scope === "epic") return totalEpicGames();
+  if (scope === "steam") return totalSteamGames();
+  if (scope === "gog") {
+    let n = 0;
+    for (const g of S.gogSummaries) if (!S.hiddenGames.has(g.key)) n++;
+    return n;
+  }
+  if (scope !== "all") {
+    let n = 0;
+    for (const g of S.companionSummaries) {
+      if (!S.hiddenGames.has(g.key) && gameStore(g.key) === scope) n++;
+    }
+    return n;
+  }
+  return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea");
 }
 
 /** Store filter pills inside the Achievements tab toolbar. */
@@ -386,9 +428,7 @@ function renderStoreScope(): string {
     `<button type="button" class="tab${current === val ? " active" : ""}" data-act="profile-store" data-val="${val}">${esc(label)}${count !== undefined ? `<span class="count">${count}</span>` : ""}</button>`;
   return `<div class="tabs profile-scope-tabs" role="tablist" aria-label="${esc(t("profile.storeBreakdown"))}">
     ${tab("all", t("profile.storeAll"))}
-    ${stores.includes("epic") ? tab("epic", "Epic", totalEpicGames()) : ""}
-    ${stores.includes("gog") ? tab("gog", "GOG", S.gogSummaries.length) : ""}
-    ${stores.includes("steam") ? tab("steam", "Steam", totalSteamGames()) : ""}
+    ${stores.map((s) => tab(s, STORE_TAB_LABELS[s], libraryCount(s))).join("")}
   </div>`;
 }
 
@@ -404,11 +444,12 @@ export function sumStats(games: ProfileGameRecord[]): { unlocked: number; platin
 }
 
 /** Playtime sum. Steam keys are `steam::`, so they never count as Epic hours. */
-export function playtimeFor(scope: "epic" | "gog" | "steam" | "all"): number {
+/** Playtime sum for one store or everything. Keys carry their store prefix. */
+export function playtimeFor(scope: "all" | StoreKind): number {
   let total = 0;
   for (const [key, rec] of S.playtimeMap) {
-    const store = key.startsWith("steam::") ? "steam" : key.startsWith("gog::") ? "gog" : "epic";
-    if (scope === "all" || store === scope) total += rec.total_seconds || 0;
+    if (scope !== "all" && gameStore(key) !== scope) continue;
+    total += rec.total_seconds || 0;
   }
   return total;
 }
@@ -479,7 +520,8 @@ function renderProfileHero(
         ${stores.map((s) => `
           <span class="profile-hero-store-pill">
             <span class="profile-acc-dot" aria-hidden="true"></span>
-            ${storeName(s)}
+            ${storeLogo(s, 13)}
+            <span>${storeName(s)}</span>
           </span>
         `).join("")}
       </div>`
@@ -860,6 +902,53 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
       </div>`;
   }).join("");
 
+  const companionCards = S.companionStatus
+    .filter((s) => s.linked && s.store !== "riot")
+    .map((s) => {
+      const kind = s.store as StoreKind;
+      return `
+      <div class="card profile-acc-manage-card">
+        <div class="profile-acc-manage-top">
+          <div class="profile-acc-manage-user">
+            <span class="profile-acc-avatar-lg">${storeLogo(kind, 22)}</span>
+            <div class="profile-acc-manage-names">
+              <div class="profile-acc-manage-title-row">
+                <span class="profile-acc-manage-name">${esc(s.accountName || STORE_LABELS[kind])}</span>
+                <span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>
+              </div>
+              <div class="profile-acc-manage-store-tag">
+                ${storeLogo(kind, 14)}
+                <span>${storeName(kind)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="profile-acc-manage-badge">
+            <span class="profile-acc-status-pill online"><span class="profile-acc-dot" aria-hidden="true"></span>${t("profile.activeSession")}</span>
+          </div>
+        </div>
+        <div class="profile-acc-manage-meta-row">
+          <span class="profile-acc-meta-item">
+            <span class="profile-acc-meta-val tabular-nums">${s.gameCount}</span>
+            <span class="profile-acc-meta-lbl">${t("profile.games")}</span>
+          </span>
+        </div>
+        <div class="profile-acc-manage-footer">
+          <button type="button" class="btn ghost small" data-view="accounts">${t("accounts.manageAccounts")}</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const companionSection = companionCards
+    ? `<div class="profile-section-subhead">
+         <h4 class="profile-section-subtitle">${t("profile.companionAccounts")}</h4>
+         <span class="profile-section-desc">${t("profile.companionAccountsDesc")}</span>
+       </div>
+       <div class="profile-accounts-grid">
+         ${companionCards}
+       </div>`
+    : "";
+
   return `
     <div class="profile-accounts-view">
       <div class="profile-section-head">
@@ -882,6 +971,8 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
       <div class="profile-accounts-grid">
         ${accountCards}
       </div>
+
+      ${companionSection}
     </div>`;
 }
 

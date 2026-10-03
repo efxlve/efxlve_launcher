@@ -565,6 +565,9 @@
 
 .profile-scope-tabs {
   margin-bottom: 2px;
+  /* Seven stores plus "All": wrap instead of shrinking the labels. */
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
 .profile-ach-toolbar {
