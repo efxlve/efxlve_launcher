@@ -1,27 +1,21 @@
 /**
- * Game controller (gamepad) polling, HUD and navigation.
+ * Game controller polling and TV Mode navigation.
  *
+ * The desktop UI stays mouse/keyboard: the controller drives TV Mode only,
+ * like Steam Big Picture or the Xbox app. Start enters TV Mode from anywhere.
  * Polls the Gamepad API only while a controller is connected (80ms when idle).
  * Face buttons fire on the edge so holding A cannot launch a game twice.
  * D-pad / sticks repeat after an initial delay. State lives in S.
  */
 
-import { MORE_CARD_CHUNK, isSteamDeckDevice } from "../../core/constants";
-import { closeModal } from "../../core/dom";
-import { toggleFav } from "../../core/game-view";
+import { isSteamDeckDevice } from "../../core/constants";
 import { icon } from "../../core/icons";
-import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
-import type { ControllerKind, DrawerTab } from "../../core/types";
+import type { ControllerKind } from "../../core/types";
 import { controllerSupportStatus } from "../../epic";
 import { pushNotification } from "../notifications/notifications";
-import {
-  epicCardPortrait,
-  epicVisibleSummaries,
-} from "../library/library-view";
-import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { closeScreenshotLightbox, navigateScreenshotLightbox } from "../screenshots/screenshots-view";
 import {
   isTvProfileOpen,
@@ -40,7 +34,7 @@ import {
   tvRowJump,
   tvSkip,
 } from "./tv-mode";
-import { embeddedStoreHeld, setView, syncStoreViewSize } from "../store/store-view";
+import { embeddedStoreHeld, syncStoreViewSize } from "../store/store-view";
 import { tvPanel } from "./tv-panels";
 import { openTvKeyboard, tvKeyboardOpen } from "./tv-keyboard";
 
@@ -100,11 +94,6 @@ function bumperGlyphs(kind: ControllerKind): string {
   return `<span class="gp-glyph btn-bumper">${l}</span><span class="gp-glyph btn-bumper">${r}</span>`;
 }
 
-function menuGlyph(kind: ControllerKind): string {
-  const label = kind === "playstation" ? "Options" : kind === "steamdeck" ? "Menu" : "Start";
-  return `<span class="gp-glyph btn-start">${label}</span>`;
-}
-
 function hudItem(glyphs: string, label: string): string {
   return `<div class="gp-hud-item">${glyphs} <span>${label}</span></div>`;
 }
@@ -153,92 +142,69 @@ export function ensureGamepadHud(): HTMLElement {
 let lastHudKey = "";
 
 export function updateGamepadHud(active = true): void {
-  const hud = ensureGamepadHud();
-  if (!active || !S.gamepadPolling) {
-    hud.classList.add("hidden");
+  // Controller hints are TV Mode only: the desktop UI is mouse/keyboard, like
+  // Steam Big Picture or the Xbox app.
+  if (!active || !S.gamepadPolling || S.view !== "tv") {
+    if (S.gamepadHudEl) S.gamepadHudEl.classList.add("hidden");
     if (embeddedStoreHeld()) requestAnimationFrame(() => syncStoreViewSize());
     return;
   }
 
+  const hud = ensureGamepadHud();
   hud.classList.remove("hidden");
   hud.classList.remove("dimmed");
 
-  const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim()) && Boolean(S.currentModalAppName);
-
-  const hudKey = `${modalOpen ? "modal" : S.view}|${tvKeyboardOpen() ? "k" : isTvProfileOpen() ? "p" : tvDetailOpen() ? "d" : tvPanel() ?? "h"}|${S.appLanguage}|${S.gamepadKind}`;
+  const hudKey = `${tvKeyboardOpen() ? "k" : S.activeLightboxScreenshot ? "l" : isTvProfileOpen() ? "p" : tvDetailOpen() ? "d" : tvPanel() ?? "h"}|${S.appLanguage}|${S.gamepadKind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
   const kind = S.gamepadKind;
   const dpad = `<span class="gp-glyph btn-dpad">D-Pad</span>`;
 
-  if (modalOpen) {
+  if (tvKeyboardOpen()) {
     hud.innerHTML = [
       hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
       hudItem(faceGlyph(kind, "b"), t("common.back")),
-      hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
-      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
-  } else if (S.view === "tv") {
-    if (tvKeyboardOpen()) {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
-        hudItem(faceGlyph(kind, "b"), t("common.back")),
-        hudItem(dpad, t("gamepad.navigate")),
-      ].join("");
-    } else if (isTvProfileOpen()) {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
-        hudItem(faceGlyph(kind, "b"), t("common.back")),
-        hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
-        hudItem(bumperGlyphs(kind), t("tv.hudShelves")),
-        hudItem(dpad, t("gamepad.navigate")),
-      ].join("");
-    } else if (tvDetailOpen()) {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("common.play")),
-        hudItem(faceGlyph(kind, "b"), t("common.back")),
-        hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
-        hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
-      ].join("");
-    } else if (tvPanel() === "stores") {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "b"), t("common.back")),
-        hudItem(bumperGlyphs(kind), t("nav.store")),
-        hudItem(dpad, t("gamepad.navigate")),
-      ].join("");
-    } else if (tvPanel() === "downloads") {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
-        hudItem(faceGlyph(kind, "b"), t("common.back")),
-        hudItem(dpad, t("gamepad.navigate")),
-      ].join("");
-    } else {
-      hud.innerHTML = [
-        hudItem(faceGlyph(kind, "a"), t("tv.hudPlay")),
-        hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
-        hudItem(faceGlyph(kind, "y"), t("common.search")),
-        hudItem(bumperGlyphs(kind), t("tv.hudCategories")),
-        hudItem(dpad, t("gamepad.navigate")),
-      ].join("");
-    }
-  } else if (S.view === "profile") {
+  } else if (S.activeLightboxScreenshot) {
     hud.innerHTML = [
-      hudItem(faceGlyph(kind, "a"), t("gamepad.inspectTrophies")),
-      hudItem(faceGlyph(kind, "x"), t("profile.refresh")),
-      hudItem(faceGlyph(kind, "y"), t("common.search")),
-      hudItem(menuGlyph(kind), t("tv.open")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
+  } else if (isTvProfileOpen()) {
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
+      hudItem(bumperGlyphs(kind), t("tv.hudShelves")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
+  } else if (tvDetailOpen()) {
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("common.play")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(faceGlyph(kind, "y"), t("gamepad.favorite")),
       hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+    ].join("");
+  } else if (tvPanel() === "stores") {
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
+      hudItem(bumperGlyphs(kind), t("nav.store")),
+      hudItem(dpad, t("gamepad.navigate")),
+    ].join("");
+  } else if (tvPanel() === "downloads") {
+    hud.innerHTML = [
+      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
+      hudItem(faceGlyph(kind, "b"), t("common.back")),
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   } else {
     hud.innerHTML = [
-      hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
-      hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
+      hudItem(faceGlyph(kind, "a"), t("tv.hudPlay")),
+      hudItem(faceGlyph(kind, "x"), t("tv.hudDetails")),
       hudItem(faceGlyph(kind, "y"), t("common.search")),
-      hudItem(menuGlyph(kind), t("tv.open")),
-      hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
+      hudItem(bumperGlyphs(kind), t("tv.hudCategories")),
       hudItem(dpad, t("gamepad.navigate")),
     ].join("");
   }
@@ -372,14 +338,6 @@ function consumeHold(key: string, now: number): boolean {
   return false;
 }
 
-function focusedAppName(): string | null {
-  if (S.currentModalAppName) return S.currentModalAppName;
-  const el = document.activeElement as HTMLElement | null;
-  if (!el) return null;
-  const host = el.closest<HTMLElement>("[data-id]");
-  return host?.dataset.id || el.dataset.id || null;
-}
-
 export function gamepadLoop(): void {
   if (!S.gamepadPolling) return;
 
@@ -429,31 +387,28 @@ export function gamepadLoop(): void {
     return;
   }
 
-  if (justPressed(mask, BTN_SELECT)) {
-    if (S.view === "tv") {
-      if (isTvProfileOpen()) tvCloseProfile();
-      else tvOpenProfile();
-      lastHudKey = "";
-      updateGamepadHud(true);
-      prevButtons = mask;
-      scheduleGamepadLoop(false);
-      return;
-    }
-    if (isPaletteOpen()) closePalette();
-    else openPalette();
-    prevButtons = mask;
-    scheduleGamepadLoop(false);
-    return;
-  }
-
-  if (isPaletteOpen()) {
-    if (justPressed(mask, BTN_B)) closePalette();
+  if (justPressed(mask, BTN_SELECT) && S.view === "tv") {
+    if (isTvProfileOpen()) tvCloseProfile();
+    else tvOpenProfile();
+    lastHudKey = "";
+    updateGamepadHud(true);
     prevButtons = mask;
     scheduleGamepadLoop(false);
     return;
   }
 
   if (S.view === "tv") {
+    // The screenshot lightbox opens from the TV hub: Back closes it, the
+    // d-pad walks through the shots.
+    if (S.activeLightboxScreenshot) {
+      if (justPressed(mask, BTN_B)) closeScreenshotLightbox();
+      else if (consumeHold(left ? "ss-prev" : right ? "ss-next" : "", now)) {
+        navigateScreenshotLightbox(left ? "prev" : "next");
+      }
+      prevButtons = mask;
+      scheduleGamepadLoop(false);
+      return;
+    }
     if (justPressed(mask, BTN_B)) tvBack();
     else if (justPressed(mask, BTN_A)) tvActivate();
     else if (justPressed(mask, BTN_X) || justPressed(mask, BTN_R4)) {
@@ -483,209 +438,8 @@ export function gamepadLoop(): void {
     return;
   }
 
-  if (justPressed(mask, BTN_B)) {
-    if (S.activeLightboxScreenshot) closeScreenshotLightbox();
-    else if (S.currentModalAppName) closeModal();
-    else if (S.view === "store") {
-      setView(S.lastNonStoreView);
-      render();
-    }
-  } else if (justPressed(mask, BTN_A)) {
-    const active = document.activeElement as HTMLElement | null;
-    if (active && typeof active.click === "function") active.click();
-  } else if (justPressed(mask, BTN_LB) || justPressed(mask, BTN_RB)) {
-    handleGamepadTabSwitch(justPressed(mask, BTN_RB) ? 1 : -1);
-  } else if (justPressed(mask, BTN_Y)) {
-    const searchInput = (document.getElementById("ach-search-input") || document.getElementById("search")) as HTMLInputElement | null;
-    searchInput?.focus();
-  } else if (justPressed(mask, BTN_X) || justPressed(mask, BTN_L4)) {
-    const id = focusedAppName();
-    if (id) toggleFav(id);
-  } else if (justPressed(mask, BTN_R4)) {
-    const id = focusedAppName();
-    if (id) openEpicModal(id);
-  } else if (S.activeLightboxScreenshot && (left || right)) {
-    if (consumeHold(left ? "ss-prev" : "ss-next", now)) navigateScreenshotLightbox(left ? "prev" : "next");
-  } else if (dir) {
-    if (consumeHold(`d:${dir}`, now)) handleGamepadDirectionalMove(dir as "up" | "down" | "left" | "right");
-  } else {
-    holdKey = "";
-    holdCount = 0;
-  }
-
+  // Outside TV Mode the controller drives nothing: the desktop UI stays
+  // mouse/keyboard, and Start (handled above) is the way in.
   prevButtons = mask;
   scheduleGamepadLoop(false);
-}
-
-function libraryGridColumns(grid: HTMLElement): number {
-  const card = grid.querySelector<HTMLElement>(":scope > .pcard");
-  if (!card) return 1;
-  const gap = 20;
-  const w = card.offsetWidth;
-  if (w <= 0) return 1;
-  return Math.max(1, Math.round((grid.clientWidth + gap) / (w + gap)));
-}
-
-function moveLibraryGridFocus(dir: "up" | "down" | "left" | "right"): boolean {
-  const grid = document.querySelector<HTMLElement>(".pgrid");
-  if (!grid) return false;
-  const cards = Array.from(grid.querySelectorAll<HTMLElement>(":scope > .pcard"));
-  if (cards.length === 0) return false;
-
-  const current = document.activeElement as HTMLElement | null;
-  const onCard = current && current.classList.contains("pcard") && grid.contains(current);
-  const filters = Array.from(document.querySelectorAll<HTMLElement>(".lib-filter, .lib-sort-btn, .lib-search input, .lib-refresh-btn"));
-
-  if (!onCard) {
-    if (dir === "down" || dir === "right") {
-      cards[0].focus();
-      cards[0].scrollIntoView({ block: "nearest", inline: "nearest" });
-      return true;
-    }
-    return false;
-  }
-
-  const idx = cards.indexOf(current);
-  if (idx < 0) return false;
-  const cols = libraryGridColumns(grid);
-  let next = idx;
-  if (dir === "left") next = idx - 1;
-  else if (dir === "right") next = idx + 1;
-  else if (dir === "up") next = idx - cols;
-  else next = idx + cols;
-
-  if (dir === "up" && next < 0) {
-    const lastFilter = filters[filters.length - 1];
-    if (lastFilter) {
-      lastFilter.focus();
-      return true;
-    }
-    return true;
-  }
-  if (next < 0 || next >= cards.length) return true;
-  cards[next].focus();
-  cards[next].scrollIntoView({ block: "nearest", inline: "nearest" });
-  return true;
-}
-
-export function handleGamepadDirectionalMove(dir: "up" | "down" | "left" | "right"): void {
-  const modalOpen = Boolean(document.getElementById("modal-root")?.innerHTML.trim());
-  const scope: HTMLElement = modalOpen
-    ? document.getElementById("modal-root")!
-    : (document.getElementById("view") || document.body);
-
-  if (S.view === "library" && !modalOpen) {
-    if (moveLibraryGridFocus(dir)) {
-      if (dir === "down") {
-        const sentinel = document.getElementById("lib-scroll-sentinel");
-        if (sentinel) {
-          const visible = epicVisibleSummaries();
-          if (S.renderedCardCount < visible.length) {
-            const nextSlice = visible.slice(S.renderedCardCount, S.renderedCardCount + MORE_CARD_CHUNK);
-            S.renderedCardCount += nextSlice.length;
-            sentinel.insertAdjacentHTML("beforebegin", nextSlice.map((s) => epicCardPortrait(s)).join(""));
-            if (S.renderedCardCount >= visible.length) {
-              sentinel.remove();
-              S.libScrollObserver?.disconnect();
-              S.libScrollObserver = null;
-            }
-          }
-        }
-      }
-      return;
-    }
-    const chrome = Array.from(
-      document.querySelectorAll<HTMLElement>(".lib-filter, .lib-sort-btn, .lib-search input, .lib-refresh-btn"),
-    ).filter((el) => el.offsetParent !== null);
-    if (chrome.length > 0) {
-      const current = document.activeElement as HTMLElement | null;
-      const idx = current ? chrome.indexOf(current) : -1;
-      const next = dir === "left" || dir === "up"
-        ? (idx <= 0 ? chrome.length - 1 : idx - 1)
-        : (idx < 0 || idx >= chrome.length - 1 ? 0 : idx + 1);
-      chrome[next].focus();
-      return;
-    }
-  }
-
-  const selector = 'button:not([disabled]):not(.iconbtn), .pcard, [tabindex="0"], a[href], input:not([disabled]), select:not([disabled])';
-  const focusables = Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter((el) => {
-    return el.offsetParent !== null;
-  });
-
-  if (focusables.length === 0) return;
-
-  const current = document.activeElement as HTMLElement | null;
-  if (!current || !scope.contains(current) || current === document.body) {
-    const primaryBtn = scope.querySelector<HTMLElement>(".btn.play, .btn.primary, .pcard");
-    if (primaryBtn) {
-      primaryBtn.focus();
-    } else {
-      focusables[0].focus();
-    }
-    return;
-  }
-
-  const curRect = current.getBoundingClientRect();
-  const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
-
-  let bestCandidate: HTMLElement | null = null;
-  let minDistance = Infinity;
-
-  for (const el of focusables) {
-    if (el === current) continue;
-    const r = el.getBoundingClientRect();
-    const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-
-    const dx = center.x - curCenter.x;
-    const dy = center.y - curCenter.y;
-
-    if (dir === "up" && dy >= -4) continue;
-    if (dir === "down" && dy <= 4) continue;
-    if (dir === "left" && dx >= -4) continue;
-    if (dir === "right" && dx <= 4) continue;
-
-    let dist = 0;
-    if (dir === "up" || dir === "down") {
-      dist = Math.abs(dy) + Math.abs(dx) * 1.8;
-    } else {
-      dist = Math.abs(dx) + Math.abs(dy) * 1.8;
-    }
-
-    if (dist < minDistance) {
-      minDistance = dist;
-      bestCandidate = el;
-    }
-  }
-
-  if (bestCandidate) {
-    bestCandidate.focus();
-    bestCandidate.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
-}
-
-/** LB/RB: cycles Store, Library and Downloads. */
-export function cycleTopView(step: number): void {
-  const order = [
-    '[data-act="open-store"]',
-    '[data-view="library"]',
-    '[data-view="downloads"]',
-  ];
-  const current = S.view === "store" ? 0 : S.view === "downloads" ? 2 : 1;
-  const next = (current + step + order.length) % order.length;
-  document.querySelector<HTMLElement>(`#sidebar ${order[next]}`)?.click();
-}
-
-export function handleGamepadTabSwitch(step: number): void {
-  if (S.currentModalAppName) {
-    const tabs: DrawerTab[] = ["overview", "achievements", "dlcs", "screenshots", "specs"];
-
-    const curIdx = tabs.indexOf(S.activeDrawerTab);
-    const nextIdx = (curIdx + step + tabs.length) % tabs.length;
-    S.activeDrawerTab = tabs[nextIdx];
-    openEpicModal(S.currentModalAppName, false, true);
-  } else {
-    cycleTopView(step);
-  }
-  updateGamepadHud(S.gamepadPolling);
 }
