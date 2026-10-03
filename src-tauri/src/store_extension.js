@@ -330,7 +330,7 @@
                     }
                 }
 
-                var candidates = root.querySelectorAll('header a, nav a, a, button, div[role="button"]');
+                var candidates = root.querySelectorAll('header a, header button, nav a, nav button');
                 for (var j = 0; j < candidates.length; j++) {
                     var c = candidates[j];
                     var norm = normalizeText(c.textContent);
@@ -360,13 +360,6 @@
                     }
                 }
 
-                var allNodes = root.querySelectorAll('*');
-                for (var k = 0; k < allNodes.length; k++) {
-                    if (allNodes[k].shadowRoot) {
-                        injectStyle(allNodes[k].shadowRoot);
-                        scanTree(allNodes[k].shadowRoot);
-                    }
-                }
             }
 
             scanTree(document);
@@ -377,8 +370,8 @@
     var dlCheckTimer = setInterval(function() {
         hideDownloadButton();
         dlCheckCount++;
-        if (dlCheckCount > 24) clearInterval(dlCheckTimer);
-    }, 250);
+        if (dlCheckCount > 6) clearInterval(dlCheckTimer);
+    }, 500);
 
     // 4. Multi-language dictionary (ABSOLUTELY NO EMOJI)
     function getI18n() {
@@ -895,23 +888,38 @@
         }
     } catch(e) {}
 
-    // Slow safety net for storefronts that swap content without adding nodes; it
-    // is skipped while the store is parked (hidden), so an idle launcher does no
-    // work at all, and a storefront coming back on screen rescans immediately.
+    // Safety net for a storefront that replaces text without adding nodes.
+    // A full DOM walk every few seconds is what made the embedded store hitch;
+    // history changes and added nodes already schedule a scan.
+    var lastScanPath = '';
     setInterval(function() {
-        if (document.visibilityState === 'visible') scanAndDecorate();
-    }, 3000);
+        if (document.visibilityState !== 'visible') return;
+        if (window.location.pathname === lastScanPath) return;
+        lastScanPath = window.location.pathname;
+        scheduleScan();
+    }, 8000);
 
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') scheduleScan();
     });
 
     try {
+        function addedByUs(node) {
+            if (!node || node.nodeType !== 1) return true;
+            var cls = node.classList;
+            if (cls && (cls.contains('efxlve-price-tag') || cls.contains('efxlve-store-badge') || cls.contains('efxlve-pdp-card') || cls.contains('efxlve-pdp-banner'))) return true;
+            if (node.id === 'efxlve-store-veil' || node.id === 'efxlve-store-style') return true;
+            return false;
+        }
         var obs = new MutationObserver(function(mutations) {
             for (var i = 0; i < mutations.length; i++) {
-                if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
-                    scheduleScan();
-                    break;
+                var nodes = mutations[i].addedNodes;
+                if (!nodes) continue;
+                for (var j = 0; j < nodes.length; j++) {
+                    if (!addedByUs(nodes[j])) {
+                        scheduleScan();
+                        return;
+                    }
                 }
             }
         });

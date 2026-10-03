@@ -16,7 +16,7 @@ import { esc } from "./utils";
 import { icon } from "./icons";
 import { t } from "../i18n";
 import { epicPortrait } from "../epic";
-import { openStoreUrl, setView } from "../features/store/store-view";
+import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
 
 /** Highlight the sidebar entry that matches the current view (or open game). */
 export function updateSidebarActive(): void {
@@ -106,13 +106,19 @@ export function updatePageHeader(): void {
   const switcher = document.getElementById("store-switcher");
   if (switcher) {
     const bar = document.getElementById("store-tabs-bar");
-    if (bar) bar.hidden = S.view !== "store";
-    if (S.view === "store") {
+    const showTabs = S.view === "store";
+    const wasHidden = bar ? bar.hidden : true;
+    if (bar) bar.hidden = !showTabs;
+    if (showTabs) {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");
         btn.classList.toggle("active", active);
         btn.setAttribute("aria-current", active ? "page" : "false");
       });
+      // The strip is display:none until now, so a measure taken while it was
+      // hidden saw a zero box and the pill either stayed invisible or glided
+      // in from the corner. Measure after layout.
+      if (wasHidden) requestAnimationFrame(() => syncStoreTabsPill());
     }
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;

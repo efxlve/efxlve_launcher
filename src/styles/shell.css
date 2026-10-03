@@ -588,10 +588,9 @@ html.sb-narrow .sb-toggle-label {
   white-space: nowrap;
   position: relative;
   z-index: 1;
-  transition: color 140ms ease, transform 120ms ease;
+  transition: color 140ms ease;
 }
-.store-tabs .tab:active { transform: scale(0.94); }
-.store-tabs .tab:hover:not(.active) { color: var(--text); background: var(--surface-2); }
+.store-tabs .tab:hover:not(.active) { color: var(--text); }
 .store-tabs .tab.active { color: #fff; background: transparent; }
 .store-tabs .tab.active::after { display: none; }
 .store-tabs .store-tab-logo { width: 16px; height: 16px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
