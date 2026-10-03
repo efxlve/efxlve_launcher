@@ -42,6 +42,7 @@ import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { storeLogo } from "../store/store-logos";
+import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -487,6 +488,21 @@ function renderAppearance(): string {
       row(t("tv.open"), t("controller.tvModeDesc"), `<button class="btn ghost small" data-act="open-tv-mode">${icon("gamepad-2", 14)} ${t("tv.open")}</button>`) +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
+    ) +
+    infoBox("settings.storeTabsNote") +
+    group(
+      HEADER_STORES.map((id) => {
+        const hidden = S.hiddenStores.has(id);
+        // The last visible store stays: an empty bar would have nothing to open.
+        const lastVisible = !hidden && HEADER_STORES.every((store) => store === id || S.hiddenStores.has(store));
+        return row(
+          `${storeLogo(id, 18, "settings-store-logo")}${STORE_LABELS[id]}`,
+          null,
+          `<label class="switch"><input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} /><span class="track"></span></label>`,
+        );
+      }).join("") +
+      row(t("settings.storeLogosOnlyTitle"), t("settings.storeLogosOnlyDesc"), toggle("toggle-store-logos-only", S.storeLogosOnly)),
+      t("settings.secStoreTabs"),
     ) +
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`
   );

@@ -44,6 +44,11 @@ export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
 /** Settings > Controller: PlayStation pads are mapped to a virtual Xbox pad. */
 export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";
 
+/** Store ids the user hid from the Stores bar (JSON array). */
+export const HIDDEN_STORES_KEY = "efxlve-hidden-stores";
+/** Icon-only store tabs; only the open store keeps its full name. */
+export const STORE_LOGOS_ONLY_KEY = "efxlve-store-logos-only";
+
 /** Settings > System: send the launcher to the taskbar when a game starts. */
 export const MINIMIZE_ON_GAME_KEY = "efxlve-minimize-on-game";
 

@@ -15,7 +15,7 @@ import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 import {
-  HEADER_STORES,
+  visibleHeaderStores,
   STORE_LABELS,
   embeddedStoreHeld,
   isStoreWarm,
@@ -97,7 +97,7 @@ export function tvOpenDownloadsPanel(): void {
 export function tvOpenStoresPanel(url?: string): void {
   const next = url || storeUrl || storeUrlFor("epic");
   const id = storeIdForUrl(next);
-  const idx = HEADER_STORES.indexOf(id);
+  const idx = visibleHeaderStores().indexOf(id);
   storeFocus = idx < 0 ? 0 : idx;
   storeUrl = next;
   panel = "stores";
@@ -121,7 +121,7 @@ export function tvSelectStore(id: string): void {
   if (id !== "epic" && id !== "gog" && id !== "steam") return;
   const next = storeUrlFor(id);
   if (panel === "stores" && storeUrl === next && S.storeShown) {
-    storeFocus = HEADER_STORES.indexOf(id);
+    storeFocus = visibleHeaderStores().indexOf(id);
     paintStoreTabs();
     return;
   }
@@ -156,7 +156,7 @@ export function renderTvDownloads(): string {
 }
 
 export function renderTvStores(): string {
-  const tabs = HEADER_STORES.map((id, i) => `
+  const tabs = visibleHeaderStores().map((id, i) => `
     <button type="button" class="tv-cat-btn tv-store-tab${i === storeFocus ? " active focused" : ""}" data-tv-store="${id}">
       ${storeLogo(id, 18)}
       <span>${STORE_LABELS[id]}</span>
@@ -200,8 +200,10 @@ export function hydrateTvPanel(): boolean {
 
 export function tvPanelMove(dir: "up" | "down" | "left" | "right"): void {
   if (panel === "stores") {
-    if (dir === "left") tvSelectStore(HEADER_STORES[(storeFocus + HEADER_STORES.length - 1) % HEADER_STORES.length]);
-    else if (dir === "right") tvSelectStore(HEADER_STORES[(storeFocus + 1) % HEADER_STORES.length]);
+    const stores = visibleHeaderStores();
+    if (stores.length === 0) return;
+    if (dir === "left") tvSelectStore(stores[(storeFocus + stores.length - 1) % stores.length]);
+    else if (dir === "right") tvSelectStore(stores[(storeFocus + 1) % stores.length]);
     return;
   }
   if (panel !== "downloads") return;
@@ -255,7 +257,7 @@ function backButton(): string {
 }
 
 function paintStoreTabs(): void {
-  const id = HEADER_STORES[storeFocus];
+  const id = visibleHeaderStores()[storeFocus];
   document.querySelectorAll<HTMLElement>(".tv-store-tab").forEach((tab) => {
     const on = tab.dataset.tvStore === id;
     tab.classList.toggle("active", on);

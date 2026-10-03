@@ -19,6 +19,8 @@ import {
   FAV_KEY,
   HIDDEN_ACH_KEY,
   HIDDEN_KEY,
+  HIDDEN_STORES_KEY,
+  STORE_LOGOS_ONLY_KEY,
   IGNORED_UPDATES_KEY,
   AUTO_BACKUP_KEY,
   AUTO_SHORTCUT_KEY,
@@ -124,7 +126,18 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "riot",
+  activeStore: ("epic") as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox",
+  /** Store ids hidden from the Stores bar (Settings > Appearance). */
+  hiddenStores: (() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(HIDDEN_STORES_KEY) || "[]") as unknown;
+      return new Set(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : []);
+    } catch {
+      return new Set<string>();
+    }
+  })() as Set<string>,
+  /** Icon-only store tabs; the open store keeps its full name. */
+  storeLogosOnly: (localStorage.getItem(STORE_LOGOS_ONLY_KEY) === "true") as boolean,
   /** True while the active storefront webview is still loading its first page. */
   storeLoading: false,
   epicPhase: "checking" as EpicPhase,

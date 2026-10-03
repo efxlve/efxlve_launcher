@@ -578,6 +578,9 @@ html.sb-narrow .sb-toggle-label {
 .store-tabs .store-tab-logo { width: 16px; height: 16px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
 .store-tabs .tab:hover .store-tab-logo,
 .store-tabs .tab.active .store-tab-logo { opacity: 1; }
+/* Logos-only mode: every tab is its mark; the open store keeps its full name. */
+.store-tabs.logos-only .tab .store-tab-label { display: none; }
+.store-tabs.logos-only .tab.active .store-tab-label { display: inline; }
 .store-tabs-underline { display: none; }
 
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-tabs-bar:not([hidden]))) .page-header-title { flex: 1; }

@@ -91,7 +91,10 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         const source = sourceOfKey(id);
         if (isCompanionSource(source)) {
           // The id is not an Epic app name: open the owning storefront in the
-          // embedded store, with Ubisoft's search filtered to the title.
+          // embedded store, with Ubisoft's search filtered to the title. Riot
+          // has no web storefront (its shop lives in the client), so there is
+          // nothing to open.
+          if (source === "riot") return true;
           const s = summaryOf(id);
           const title = s ? s.title : id;
           const url = source === "ubisoft"

@@ -26,7 +26,6 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   ubisoft,
   ea,
   xbox,
-  riot,
 };
 
 /** Marks for services that are not storefronts (the Accounts page uses them). */

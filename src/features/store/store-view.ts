@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, STORE_LOGOS_ONLY_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -181,7 +181,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "riot";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -192,11 +192,15 @@ export const STORE_LABELS: Record<StoreId, string> = {
   ubisoft: "Ubisoft Connect",
   ea: "EA App",
   xbox: "Xbox",
-  riot: "Riot Games",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea"];
+
+/** Header stores the user kept visible (Settings > Appearance). */
+export function visibleHeaderStores(): StoreId[] {
+  return HEADER_STORES.filter((id) => !S.hiddenStores.has(id));
+}
 
 export function isHeaderStore(id: string): boolean {
   return (HEADER_STORES as string[]).includes(id);
@@ -214,8 +218,6 @@ export const EA_STORE_URL = "https://www.ea.com/games";
  */
 export const XBOX_STORE_URL = "https://www.xbox.com/games/all-games/pc?PlayWith=PC";
 export const UBISOFT_STORE_URL = "https://store.ubi.com/";
-/** Riot has no web storefront; the play page downloads the client. */
-export const RIOT_STORE_URL = "https://www.riotgames.com/en/play";
 
 /**
  * Ubisoft's overlay login page, the same start URL the Galaxy Uplay plugin
@@ -236,7 +238,6 @@ const STORE_URLS: Record<StoreId, string> = {
   ubisoft: UBISOFT_STORE_URL,
   ea: EA_STORE_URL,
   xbox: XBOX_STORE_URL,
-  riot: RIOT_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -246,7 +247,6 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
   if (lower.includes("ubisoft.com") || lower.includes("ubi.com")) return "ubisoft";
-  if (lower.includes("riotgames.com")) return "riot";
   if (lower.includes("ea.com")) return "ea";
   if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
   return "epic";
@@ -568,6 +568,54 @@ function decorateStoreTabs(): void {
   });
 }
 decorateStoreTabs();
+
+/**
+ * Applies the store-bar settings: hidden stores leave the strip, logos-only
+ * keeps a full name on the open store alone, and the scroll arrows follow the
+ * new width. The active store falls back to the first visible one.
+ */
+export function applyStoreTabs(): void {
+  const switcher = document.getElementById("store-switcher");
+  if (!switcher) return;
+  let activeVisible = false;
+  switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+    const id = btn.dataset.store || "";
+    const hidden = S.hiddenStores.has(id);
+    btn.hidden = hidden;
+    if (!hidden && id === S.activeStore) activeVisible = true;
+  });
+  switcher.classList.toggle("logos-only", S.storeLogosOnly);
+  if (!activeVisible) {
+    const first = switcher.querySelector<HTMLElement>("[data-store]:not([hidden])");
+    const id = first?.dataset.store;
+    if (id && isHeaderStore(id)) S.activeStore = id as StoreId;
+  }
+  updateStoreTabsArrows();
+}
+
+/** Persists a store's visibility. The last visible store cannot be hidden. */
+export function setStoreHidden(id: string, hidden: boolean): void {
+  if (!isHeaderStore(id)) return;
+  if (hidden) {
+    const remaining = HEADER_STORES.filter((store) => store !== id && !S.hiddenStores.has(store));
+    if (remaining.length === 0) return;
+    S.hiddenStores.add(id);
+  } else {
+    S.hiddenStores.delete(id);
+  }
+  localStorage.setItem(HIDDEN_STORES_KEY, JSON.stringify([...S.hiddenStores]));
+  applyStoreTabs();
+}
+
+/** Icon-only store tabs; only the open store keeps its full name. */
+export function setStoreLogosOnly(on: boolean): void {
+  S.storeLogosOnly = on;
+  localStorage.setItem(STORE_LOGOS_ONLY_KEY, String(on));
+  applyStoreTabs();
+}
+
+// The tab strip is static markup: apply the stored choices once at boot.
+applyStoreTabs();
 
 /**
  * Shows the tab scroll arrows only while the tab strip overflows, and dims the

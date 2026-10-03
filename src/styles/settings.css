@@ -63,6 +63,8 @@
 .settings-row.stacked .settings-row-control { flex: 0 0 auto; }
 .settings-row .row-main { flex: 1 1 220px; min-width: min(220px, 100%); }
 .settings-row-title { font-size: 13px; font-weight: 500; overflow-wrap: break-word; }
+/* Store mark inside a settings row title (Settings > Appearance > Store tabs). */
+.settings-store-logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; }
 .settings-row-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; margin-top: 2px; overflow-wrap: break-word; }
 .settings-row-desc code, .settings-panel code {
   font-family: Consolas, monospace; font-size: 12px; color: var(--text-2);

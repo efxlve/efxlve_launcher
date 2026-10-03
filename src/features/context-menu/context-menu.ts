@@ -49,6 +49,8 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   // Companion games: install/uninstall go through their own client.
   const source = sourceOfKey(appName);
   const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
+/** Riot games have no web storefront: the client owns its shop. */
+const isRiot = source === "riot";
   const companionItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
     `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}" data-store="${source}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const steamItem = (mode: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
@@ -84,7 +86,7 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     ${!shared && !isSteam && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
-    ${item("epic-store-page", t("ctx.storePage"), "globe")}
+    ${!isRiot ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam
