@@ -93,7 +93,6 @@ let headerFocusIndex = 0;
 let stageActionIndex = 0;
 let autoEntered = false;
 let lastBgUrl = "";
-let detailApp: string | null = null;
 let tvProfileOpenState = false;
 let openedDetailsFromProfile = false;
 let activeHubTab: TvHubTab = "overview";
@@ -117,20 +116,20 @@ export function setTvSearchQuery(q: string): void {
 
 function enterTvDownloads(): void {
   tvProfileOpenState = false;
-  detailApp = null;
+  S.tvDetailAppName = null;
   tvOpenDownloadsPanel();
 }
 
 function enterTvStores(url?: string): void {
   tvProfileOpenState = false;
-  detailApp = null;
+  S.tvDetailAppName = null;
   tvOpenStoresPanel(url);
 }
 
 export function tvOpenProfile(): void {
   tvDismissPanels();
   tvProfileOpenState = true;
-  detailApp = null;
+  S.tvDetailAppName = null;
   resetTvProfileFocus();
   render();
   bumpHud();
@@ -183,7 +182,7 @@ function initBatteryMonitoring(): void {
 }
 
 export function tvDetailOpen(): boolean {
-  return detailApp !== null;
+  return S.tvDetailAppName !== null;
 }
 
 function bumpHud(): void {
@@ -535,7 +534,7 @@ function paintHeaderTabs(): void {
 }
 
 function applyFocus(): void {
-  if (detailApp) return;
+  if (S.tvDetailAppName) return;
 
   const game = focusedGame();
   paintBg(artUrl(game));
@@ -597,16 +596,16 @@ export function renderTvMode(): string {
   initBatteryMonitoring();
   startClockTimer();
 
-  if (tvProfileOpenState && !detailApp) {
+  if (tvProfileOpenState && !S.tvDetailAppName) {
     tvKeyboardClose();
     return renderTvProfile();
   }
 
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     tvKeyboardClose();
-    const s = summaryOf(detailApp);
+    const s = summaryOf(S.tvDetailAppName);
     if (s) return renderTvGameHub(s, activeHubTab);
-    detailApp = null;
+    S.tvDetailAppName = null;
   }
 
   if (tvPanel() === "downloads" || tvPanel() === "stores") {
@@ -652,13 +651,13 @@ export function renderTvMode(): string {
 
 export function hydrateTvMode(): void {
   lastBgUrl = "";
-  if (!detailApp && !tvProfileOpenState && hydrateTvPanel()) return;
-  if (tvProfileOpenState && !detailApp) {
+  if (!S.tvDetailAppName && !tvProfileOpenState && hydrateTvPanel()) return;
+  if (tvProfileOpenState && !S.tvDetailAppName) {
     applyTvProfileFocus();
     return;
   }
-  if (detailApp) {
-    const s = summaryOf(detailApp);
+  if (S.tvDetailAppName) {
+    const s = summaryOf(S.tvDetailAppName);
     if (s) {
       const slot = document.getElementById("tv-hub-slot");
       if (slot) {
@@ -676,12 +675,12 @@ export function tvMove(dir: "up" | "down" | "left" | "right"): void {
     tvKeyboardMove(dir);
     return;
   }
-  if (tvProfileOpenState && !detailApp) {
+  if (tvProfileOpenState && !S.tvDetailAppName) {
     tvProfileMove(dir);
     return;
   }
 
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     if (dir === "left" || dir === "right") {
       tvNeighbor(dir === "right" ? 1 : -1);
     } else if (dir === "down") {
@@ -777,15 +776,15 @@ export function tvRowJump(step: number): void {
     tvKeyboardMove(step > 0 ? "right" : "left");
     return;
   }
-  if (tvPanel() && !detailApp && !tvProfileOpenState) {
+  if (tvPanel() && !S.tvDetailAppName && !tvProfileOpenState) {
     tvPanelMove(step > 0 ? "right" : "left");
     return;
   }
-  if (tvProfileOpenState && !detailApp) {
+  if (tvProfileOpenState && !S.tvDetailAppName) {
     tvProfileShelfJump(step > 0 ? 1 : -1);
     return;
   }
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     tvNeighbor(step);
     return;
   }
@@ -793,7 +792,7 @@ export function tvRowJump(step: number): void {
 }
 
 export function tvSkip(dir: 1 | -1): void {
-  if (detailApp || tvProfileOpenState || tvPanel() || tvKeyboardOpen()) return;
+  if (S.tvDetailAppName || tvProfileOpenState || tvPanel() || tvKeyboardOpen()) return;
   const apps = activeCategoryApps();
   focusCol = Math.max(0, Math.min(apps.length - 1, focusCol + dir * SKIP));
   applyFocus();
@@ -801,12 +800,12 @@ export function tvSkip(dir: 1 | -1): void {
 
 /** Step through tabs in Game Hub or step to next card. */
 export function tvNeighbor(step: number): void {
-  if (tvProfileOpenState && !detailApp) {
+  if (tvProfileOpenState && !S.tvDetailAppName) {
     tvProfileShelfJump(step > 0 ? 1 : -1);
     return;
   }
-  if (detailApp) {
-    const s = summaryOf(detailApp);
+  if (S.tvDetailAppName) {
+    const s = summaryOf(S.tvDetailAppName);
     if (!s) return;
     const tabOrder: TvHubTab[] = ["overview", "achievements", "dlcs", "screenshots", "manage"];
     const curIdx = tabOrder.indexOf(activeHubTab);
@@ -831,7 +830,7 @@ export function tvActivate(): void {
     tvKeyboardActivate();
     return;
   }
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     const primaryBtn = document.querySelector<HTMLElement>("#tv-hub .tv-action-btn");
     primaryBtn?.click();
     return;
@@ -904,7 +903,7 @@ export function tvOpenDetails(appName?: string): void {
   if (!targetId) return;
   const s = summaryOf(targetId);
   if (!s) return;
-  detailApp = s.appName;
+  S.tvDetailAppName = s.appName;
   activeHubTab = "overview";
   ensureGameHubData(s);
   render();
@@ -912,7 +911,9 @@ export function tvOpenDetails(appName?: string): void {
 }
 
 export function tvCloseDetails(): void {
-  detailApp = null;
+  // The hub's screenshot gallery is tens of megabytes; free it with the hub.
+  if (S.tvDetailAppName) S.loadedScreenshots.delete(S.tvDetailAppName);
+  S.tvDetailAppName = null;
   activeHubTab = "overview";
   render();
   bumpHud();
@@ -925,11 +926,11 @@ export function tvCloseDetails(): void {
 
 export function tvFavorite(): void {
   if (tvKeyboardOpen()) return;
-  if (tvPanel() && !detailApp) return;
-  const s = detailApp ? summaryOf(detailApp) : focusedGame();
+  if (tvPanel() && !S.tvDetailAppName) return;
+  const s = S.tvDetailAppName ? summaryOf(S.tvDetailAppName) : focusedGame();
   if (!s) return;
   toggleFav(s.appName);
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     const btn = document.querySelector<HTMLElement>(`#tv-hub [data-act="epic-fav"]`);
     if (btn) {
       const faved = S.epicFav.has(s.appName);
@@ -945,7 +946,7 @@ export function tvBack(): void {
     tvKeyboardClose();
     return;
   }
-  if (detailApp) {
+  if (S.tvDetailAppName) {
     tvCloseDetails();
     return;
   }
@@ -1026,7 +1027,7 @@ export function openTvMode(): void {
   focusSection = "shelf";
   headerFocusIndex = 0;
   stageActionIndex = 0;
-  detailApp = null;
+  S.tvDetailAppName = null;
   searchQuery = "";
   lastBgUrl = "";
   tvDismissPanels();
@@ -1043,7 +1044,7 @@ export function closeTvMode(): void {
   window.clearTimeout(bootTimer);
   stopClockTimer();
   document.getElementById("tv-boot")?.remove();
-  detailApp = null;
+  S.tvDetailAppName = null;
   tvProfileOpenState = false;
   openedDetailsFromProfile = false;
   searchQuery = "";
@@ -1335,7 +1336,7 @@ document.addEventListener("keydown", (e) => {
 
 /** Mouseover shelf card updates focus smoothly. */
 document.addEventListener("mouseover", (e) => {
-  if (S.view !== "tv" || detailApp || tvPanel() || tvKeyboardOpen()) return;
+  if (S.view !== "tv" || S.tvDetailAppName || tvPanel() || tvKeyboardOpen()) return;
   const card = (e.target as HTMLElement).closest?.<HTMLElement>(".tv-card");
   if (!card) return;
   const c = Number(card.dataset.col);

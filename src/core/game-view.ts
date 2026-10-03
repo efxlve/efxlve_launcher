@@ -188,6 +188,12 @@ export function patchLibraryCardDom(appName: string): boolean {
     patchCoverPlayChip(item, appName, s.installed);
     const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
     if (achHost) achHost.innerHTML = listAchievementCell(appName);
+    // List view shows playtime as its own column; the grid shows the cover badge.
+    const playHost = item.querySelector<HTMLElement>("[data-lib-playtime]");
+    if (playHost) {
+      const secs = S.playtimeMap.get(appName)?.total_seconds ?? 0;
+      playHost.textContent = secs > 0 ? fmtPlaytime(secs) : "-";
+    }
     const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
     if (actionHost) actionHost.innerHTML = actions;
     const cardArt = item.querySelector<HTMLElement>("[data-card-art]");

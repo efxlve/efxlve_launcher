@@ -351,6 +351,8 @@ export const S = {
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
+  /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */
+  tvDetailAppName: (null) as string | null,
   tvAutoEnter: (() => {
     try {
       const v = localStorage.getItem(TV_AUTO_KEY);

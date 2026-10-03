@@ -71,14 +71,13 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
     : epicGetGameScreenshots(appName, title);
   request
     .then((items) => {
+      // A newer request for another game wins; a response landing after its
+      // consumer closed is dropped instead of holding the gallery in memory.
+      if (S.loadingScreenshotsFor !== appName) return;
       S.loadingScreenshotsFor = null;
-      // One gallery at a time: the map is only read for the open game, and a
-      // response landing after its consumer closed must not pile up. (A late
-      // response replaces the previous entry instead of adding one.)
+      const consumerOpen = S.currentModalAppName === appName || S.tvDetailAppName === appName;
+      if (!consumerOpen) return;
       S.loadedScreenshots.set(appName, items);
-      for (const key of [...S.loadedScreenshots.keys()]) {
-        if (key !== appName) S.loadedScreenshots.delete(key);
-      }
       if (S.currentModalAppName === appName) {
         const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
         const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
