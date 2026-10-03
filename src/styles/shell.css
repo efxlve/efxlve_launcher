@@ -596,7 +596,9 @@ html.win-compact .page-search { width: 36px; padding: 0; justify-content: center
 html.win-compact .page-search span { display: none; }
 #content { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
 #view { flex: 1; overflow-y: auto; padding: 20px 28px 40px; }
-#view.view-enter > * { animation: page-in var(--ease-in) both; }
+/* The TV shell has its own boot animation; sliding it 8px would make #view
+   overflow and flash overlay scrollbars at the window edge. */
+#view.view-enter > *:not(.tv-screen) { animation: page-in var(--ease-in) both; }
 
 /* Notification panel: fixed dropdown positioned by JS under the sidebar bell. */
 #notif-root { position: relative; z-index: 400; }

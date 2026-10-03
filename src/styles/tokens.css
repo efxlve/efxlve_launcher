@@ -101,9 +101,12 @@
 
 * {
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
+
+/* Chromium 121+ ignores ::-webkit-scrollbar as soon as scrollbar-width or
+   scrollbar-color is set, which handed every bar to WebView2's Fluent overlay
+   style: a 5px light-blue sliver at the container edge that ignores our own
+   colours. The webkit rules below stay in charge instead. */
 
 html, body { height: 100%; }
 

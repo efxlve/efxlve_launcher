@@ -48,13 +48,18 @@ body.tv-mode #view {
   background: #000000;
 }
 
+/* TV Mode: no scrollbars anywhere. The shell scrolls with the controller or
+   the wheel, and a bar that slips through flashes a blue sliver at the window
+   edge (WebView2's overlay scrollbar). */
 html:has(body.tv-mode),
-body.tv-mode {
+body.tv-mode,
+body.tv-mode * {
   scrollbar-width: none;
 }
 
 html:has(body.tv-mode)::-webkit-scrollbar,
-body.tv-mode::-webkit-scrollbar {
+body.tv-mode::-webkit-scrollbar,
+body.tv-mode *::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
