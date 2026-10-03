@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "Мост XInput",
   "controller.bridgeDesc": "Геймпады PlayStation — HID-устройства, поэтому игры, читающие только XInput (например Dead by Daylight), их не видят. Мост передаёт геймпад в виртуальный Xbox 360. Выключайте для игр с нативной поддержкой DualShock: иначе они увидят два геймпада.",
   "controller.bridgeRunning": "Работает",
+  "controller.bridgeWaiting": "Ожидание контроллера",
+  "controller.bridgeNoHid": "Не удалось открыть HID-интерфейс контроллера: {a1}",
   "controller.bridgeRunningWith": "Работает · {name}",
   "controller.bridgeStopped": "Выключено",
   "controller.bridgeVirtualNote": "Мост добавляет виртуальный геймпад Xbox 360 рядом с геймпадом PlayStation; он исчезает при выключении моста.",

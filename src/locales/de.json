@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "XInput-Brücke",
   "controller.bridgeDesc": "PlayStation-Controller sind HID-Geräte; Spiele, die nur XInput lesen (zum Beispiel Dead by Daylight), ignorieren sie. Die Brücke speist deinen Controller in einen virtuellen Xbox-360-Pad ein. Schalte sie für Spiele mit nativer DualShock-Unterstützung aus: sie würden zwei Pads sehen.",
   "controller.bridgeRunning": "Aktiv",
+  "controller.bridgeWaiting": "Wartet auf Controller",
+  "controller.bridgeNoHid": "Controller-HID-Schnittstelle konnte nicht geöffnet werden: {a1}",
   "controller.bridgeRunningWith": "Aktiv · {name}",
   "controller.bridgeStopped": "Aus",
   "controller.bridgeVirtualNote": "Die Brücke fügt neben deinem PlayStation-Controller einen virtuellen Xbox-360-Controller hinzu; er verschwindet, wenn die Brücke ausgeschaltet wird.",

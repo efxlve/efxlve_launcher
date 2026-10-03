@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "บริดจ์ XInput",
   "controller.bridgeDesc": "คอนโทรลเลอร์ PlayStation เป็นอุปกรณ์ HID เกมที่อ่านเฉพาะ XInput (เช่น Dead by Daylight) จึงมองไม่เห็น บริดจ์จะส่งคอนโทรลเลอร์ของคุณไปเป็นแพด Xbox 360 เสมือน ปิดไว้สำหรับเกมที่รองรับ DualShock โดยตรง เพราะจะเห็นแพดสองอัน",
   "controller.bridgeRunning": "ทำงานอยู่",
+  "controller.bridgeWaiting": "รอคอนโทรลเลอร์",
+  "controller.bridgeNoHid": "ไม่สามารถเปิดอินเทอร์เฟซ HID ของคอนโทรลเลอร์ได้: {a1}",
   "controller.bridgeRunningWith": "ทำงานอยู่ · {name}",
   "controller.bridgeStopped": "ปิด",
   "controller.bridgeVirtualNote": "บริดจ์จะเพิ่มคอนโทรลเลอร์ Xbox 360 เสมือนข้างคอนโทรลเลอร์ PlayStation และจะหายไปเมื่อปิดบริดจ์",

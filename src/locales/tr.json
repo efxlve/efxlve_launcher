@@ -714,6 +714,8 @@
   "controller.bridgeTitle": "XInput köprüsü",
   "controller.bridgeDesc": "PlayStation kolları HID aygıtlarıdır; yalnızca XInput okuyan oyunlar (örneğin Dead by Daylight) onları görmez. Köprü, kolunu sanal bir Xbox 360 pad'ine aktarır. DualShock'u doğrudan destekleyen oyunlarda kapat: yoksa iki kol birden görürler.",
   "controller.bridgeRunning": "Çalışıyor",
+  "controller.bridgeWaiting": "Kumanda bekleniyor",
+  "controller.bridgeNoHid": "Kumandanın HID arayüzü açılamadı: {a1}",
   "controller.bridgeRunningWith": "Çalışıyor · {name}",
   "controller.bridgeStopped": "Kapalı",
   "controller.bridgeVirtualNote": "Köprü, PlayStation kolunun yanında sanal bir Xbox 360 Controller oluşturur; köprü kapatılınca kaybolur.",

@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "Pont XInput",
   "controller.bridgeDesc": "Les manettes PlayStation sont des périphériques HID ; les jeux qui ne lisent que XInput (par exemple Dead by Daylight) les ignorent. Le pont injecte votre manette dans une manette Xbox 360 virtuelle. Désactivez-le pour les jeux compatibles DualShock natif : ils verraient deux manettes.",
   "controller.bridgeRunning": "Actif",
+  "controller.bridgeWaiting": "En attente d'une manette",
+  "controller.bridgeNoHid": "Impossible d'ouvrir l'interface HID de la manette : {a1}",
   "controller.bridgeRunningWith": "Actif · {name}",
   "controller.bridgeStopped": "Désactivé",
   "controller.bridgeVirtualNote": "Le pont ajoute une manette Xbox 360 virtuelle à côté de votre manette PlayStation ; elle disparaît lorsque le pont est désactivé.",

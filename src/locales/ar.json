@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "جسر XInput",
   "controller.bridgeDesc": "أذرع PlayStation أجهزة HID، لذا تتجاهلها الألعاب التي تقرأ XInput فقط (مثل Dead by Daylight). ينقل الجسر ذراعك إلى ذراع Xbox 360 افتراضي. أوقفه في الألعاب التي تدعم DualShock أصلاً: سترى ذراعين.",
   "controller.bridgeRunning": "يعمل",
+  "controller.bridgeWaiting": "بانتظار وحدة التحكم",
+  "controller.bridgeNoHid": "تعذّر فتح واجهة HID لوحدة التحكم: {a1}",
   "controller.bridgeRunningWith": "يعمل · {name}",
   "controller.bridgeStopped": "متوقف",
   "controller.bridgeVirtualNote": "يضيف الجسر ذراع Xbox 360 افتراضيًا بجانب ذراع PlayStation؛ ويختفي عند إيقاف الجسر.",

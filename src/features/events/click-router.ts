@@ -641,7 +641,7 @@ document.addEventListener("click", (e) => {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
-    if (S.settingsSection === "controller") void loadControllerView();
+    if (S.settingsSection === "controller") void loadControllerView(true);
     if (S.settingsSection === "launchers") void loadLaunchersView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);

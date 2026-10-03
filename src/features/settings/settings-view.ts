@@ -409,7 +409,7 @@ function renderController(): string {
     : !status.viEmBus
       ? `<span class="chip warn">${t("controller.bridgeMissing")}</span>`
       : bridgeRunning
-        ? `<span class="chip ok">${status.bridgeDevice ? t("controller.bridgeRunningWith", { name: status.bridgeDevice }) : t("controller.bridgeRunning")}</span>`
+        ? `<span class="chip ok">${status.bridgeDevice ? t("controller.bridgeRunningWith", { name: status.bridgeDevice }) : t("controller.bridgeWaiting")}</span>`
         : `<span class="chip">${t("controller.bridgeStopped")}</span>`;
   const bridgeControls = status === null
     ? ""
@@ -748,7 +748,7 @@ export async function loadSettingsView(): Promise<void> {
   // Re-add the EOS notice if it was cleared. Uses the status already in memory.
   syncEosNotice();
   if (S.settingsSection === "integrations") void loadIntegrationsView();
-  if (S.settingsSection === "controller") void loadControllerView();
+  if (S.settingsSection === "controller") void loadControllerView(true);
   if (S.settingsSection === "launchers") void loadLaunchersView();
 }
 

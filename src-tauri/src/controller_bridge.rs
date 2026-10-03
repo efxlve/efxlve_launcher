@@ -307,8 +307,9 @@ pub fn status() -> BridgeStatus {
     }
 }
 
-/// Starts the bridge. Fails fast when ViGEmBus is missing or the virtual pad
-/// cannot be plugged in; otherwise the worker keeps reconnecting the pad.
+/// Starts the bridge. Fails fast when ViGEmBus is missing or the HID stack
+/// cannot be opened; the virtual pad itself is plugged as soon as a physical
+/// pad appears, so an idle launcher adds no device.
 pub fn start() -> Result<BridgeStatus, String> {
     {
         let guard = HANDLE.lock().map_err(|_| "bridge lock poisoned".to_string())?;
@@ -389,31 +390,28 @@ fn worker(
         }
     };
     let mut target = Xbox360Wired::new(client, TargetId::XBOX360_WIRED);
-    if let Err(e) = target.plugin() {
-        let _ = ready.send(Err(format!("@t:controller.bridgeError\u{1f}{e}")));
-        return;
-    }
-    // No wait_ready here: some driver versions never signal it and the call
-    // would block the worker. Updates simply retry until the driver accepts
-    // them, which happens within a frame or two.
-    let _ = ready.send(Ok(()));
+
+    // The virtual pad is plugged only once a physical pad is actually here.
+    // Plugging it at startup made Windows play the device-connected chime on
+    // every launcher start, even with no controller connected.
+    let mut plugged = false;
 
     // Rumble: ViGEm notifies us whenever a game changes the virtual pad's
     // motors; the values are forwarded to the physical pad's output report.
     let (rumble_tx, rumble_rx) = std::sync::mpsc::channel::<(u8, u8)>();
-    if let Ok(notification) = target.request_notification() {
-        notification.spawn_thread(move |_, data| {
-            let _ = rumble_tx.send((data.large_motor, data.small_motor));
-        });
-    }
 
     let mut api = match hidapi::HidApi::new() {
         Ok(api) => api,
-        Err(_) => {
-            let _ = target.update(&to_xgamepad(&PadState::default()));
+        Err(e) => {
+            let _ = ready.send(Err(format!("@t:controller.bridgeNoHid\u{1f}{e}")));
             return;
         }
     };
+
+    // No wait_ready here: some driver versions never signal it and the call
+    // would block the worker. Updates simply retry until the driver accepts
+    // them, which happens within a frame or two.
+    let _ = ready.send(Ok(()));
 
     let mut open: Option<(hidapi::HidDevice, PadFamily)> = None;
     let mut buffer = [0u8; 128];
@@ -444,7 +442,7 @@ fn worker(
             open = open_pad(&api);
             if open.is_none() {
                 // Keep the virtual pad centered while no physical pad is around.
-                if last != PadState::default() {
+                if plugged && last != PadState::default() {
                     let _ = target.update(&to_xgamepad(&PadState::default()));
                     last = PadState::default();
                 }
@@ -458,6 +456,27 @@ fn worker(
                         PadFamily::DualSense => "DualSense".to_string(),
                     };
                 }
+            }
+
+            // A physical pad is here: plug the virtual one, once per session.
+            // The rumble channel starts with it, and a failure drops the handle
+            // so the next lap retries instead of feeding a dead target.
+            if !plugged {
+                if target.plugin().is_err() {
+                    if let Ok(mut name) = device_name.lock() {
+                        name.clear();
+                    }
+                    open = None;
+                    std::thread::sleep(Duration::from_millis(1000));
+                    continue;
+                }
+                if let Ok(notification) = target.request_notification() {
+                    let rumble_tx = rumble_tx.clone();
+                    notification.spawn_thread(move |_, data| {
+                        let _ = rumble_tx.send((data.large_motor, data.small_motor));
+                    });
+                }
+                plugged = true;
             }
         }
 
@@ -506,7 +525,9 @@ fn worker(
     }
 
     // Center the virtual pad; dropping the target unplugs it.
-    let _ = target.update(&to_xgamepad(&PadState::default()));
+    if plugged {
+        let _ = target.update(&to_xgamepad(&PadState::default()));
+    }
 }
 
 /// Opens the gamepad HID interface of the first Sony pad found.

@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "XInput 브리지",
   "controller.bridgeDesc": "PlayStation 컨트롤러는 HID 장치라 XInput만 읽는 게임(예: Dead by Daylight)은 인식하지 못합니다. 브리지는 컨트롤러를 가상 Xbox 360 패드로 전달합니다. DualShock을 기본 지원하는 게임에서는 꺼 두세요. 패드가 두 개로 보입니다.",
   "controller.bridgeRunning": "실행 중",
+  "controller.bridgeWaiting": "컨트롤러 대기 중",
+  "controller.bridgeNoHid": "컨트롤러 HID 인터페이스를 열 수 없습니다: {a1}",
   "controller.bridgeRunningWith": "실행 중 · {name}",
   "controller.bridgeStopped": "꺼짐",
   "controller.bridgeVirtualNote": "브리지는 PlayStation 컨트롤러 옆에 가상 Xbox 360 컨트롤러를 추가합니다. 브리지를 끄면 사라집니다.",

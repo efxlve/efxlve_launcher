@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "XInput ブリッジ",
   "controller.bridgeDesc": "PlayStation コントローラーは HID デバイスのため、XInput しか読まないゲーム（例: Dead by Daylight）では認識されません。ブリッジはコントローラーを仮想 Xbox 360 パッドに変換します。DualShock にネイティブ対応したゲームではオフにしてください（パッドが二重に見えます）。",
   "controller.bridgeRunning": "実行中",
+  "controller.bridgeWaiting": "コントローラーを待機中",
+  "controller.bridgeNoHid": "コントローラーの HID インターフェースを開けませんでした: {a1}",
   "controller.bridgeRunningWith": "実行中 · {name}",
   "controller.bridgeStopped": "オフ",
   "controller.bridgeVirtualNote": "ブリッジは PlayStation コントローラーの隣に仮想 Xbox 360 コントローラーを追加します。ブリッジをオフにすると消えます。",

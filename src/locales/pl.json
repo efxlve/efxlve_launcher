@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "Most XInput",
   "controller.bridgeDesc": "Pady PlayStation to urządzenia HID, więc gry czytające tylko XInput (np. Dead by Daylight) ich nie widzą. Most przekazuje pad do wirtualnego pada Xbox 360. Wyłącz go dla gier z natywną obsługą DualShock: zobaczyłyby dwa pady.",
   "controller.bridgeRunning": "Aktywny",
+  "controller.bridgeWaiting": "Czekam na kontroler",
+  "controller.bridgeNoHid": "Nie udało się otworzyć interfejsu HID kontrolera: {a1}",
   "controller.bridgeRunningWith": "Aktywny · {name}",
   "controller.bridgeStopped": "Wyłączony",
   "controller.bridgeVirtualNote": "Most dodaje wirtualny pad Xbox 360 obok pada PlayStation; znika po wyłączeniu mostu.",

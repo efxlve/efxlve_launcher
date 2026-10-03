@@ -679,6 +679,8 @@
   "controller.bridgeTitle": "XInput 桥接",
   "controller.bridgeDesc": "PlayStation 手柄是 HID 设备，只读取 XInput 的游戏（例如 Dead by Daylight）看不到它们。桥接会把你的手柄送入虚拟 Xbox 360 手柄。对原生支持 DualShock 的游戏请关闭，否则会看到两个手柄。",
   "controller.bridgeRunning": "运行中",
+  "controller.bridgeWaiting": "等待控制器",
+  "controller.bridgeNoHid": "无法打开控制器的 HID 接口：{a1}",
   "controller.bridgeRunningWith": "运行中 · {name}",
   "controller.bridgeStopped": "关闭",
   "controller.bridgeVirtualNote": "桥接会在你的 PlayStation 手柄旁添加一个虚拟 Xbox 360 手柄；关闭桥接后它会消失。",
