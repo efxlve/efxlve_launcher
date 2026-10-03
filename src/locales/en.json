@@ -30,6 +30,7 @@
   "friends.unavailableDesc": "This build has no friends integration. Connected store accounts can still be managed.",
   "coming.spotify": "Spotify is coming soon! Until then, alt-tabbing to your music stays a skill — we're a launcher, not a DJ.",
   "coming.discord": "Discord is coming soon! Until then, telling your friends “one more game” stays a manual process.",
+  "coming.soon": "Coming soon",
   "nav.online": "Online",
   "nav.offline": "Offline",
   "nav.offlineTip": "Offline Mode Active — Epic network requests are paused (click to go online)",

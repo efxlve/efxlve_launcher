@@ -1560,6 +1560,7 @@
   "friends.unavailableDesc": "Cette version n'intègre pas les amis. Les comptes de boutique connectés restent gérables.",
   "coming.spotify": "Spotify arrive bientôt ! En attendant, l'Alt-Tab vers ta musique reste une compétence — on est un launcher, pas un DJ.",
   "coming.discord": "Discord arrive bientôt ! En attendant, dire « encore une partie » à tes amis reste une opération manuelle.",
+  "coming.soon": "Bientôt",
   "nav.resizeSidebar": "Redimensionner la barre latérale (double-clic pour réinitialiser)",
   "nav.collapseSidebar": "Réduire la barre latérale",
   "nav.expandSidebar": "Développer la barre latérale",

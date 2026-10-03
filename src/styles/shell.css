@@ -232,6 +232,12 @@ body.sb-resizing iframe {
   gap: 0;
   flex-shrink: 0;
 }
+/* Thin rule between the app nav and the integration teasers; matches the one
+   above the recently played list. */
+.sb-divider {
+  margin: 14px 0 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 .sb-item {
   position: relative;
   display: flex;
