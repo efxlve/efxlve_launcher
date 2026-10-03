@@ -145,7 +145,7 @@ function sidebarInputStamp(): string {
   return stamp;
 }
 
-const SIDEBAR_RECENT_LIMIT = 7;
+const SIDEBAR_RECENT_LIMIT = 5;
 const sidebarFillRank = new Map<string, number>();
 
 function fillRank(id: string): number {
@@ -158,7 +158,7 @@ function fillRank(id: string): number {
 }
 
 /**
- * Up to seven sidebar games: recently played first, then random installed
+ * Up to five sidebar games: recently played first, then random installed
  * titles so the list stays full. Rebuilt only when membership or a status
  * marker changes.
  */
