@@ -217,11 +217,27 @@ export function updateOfflineModeUi(): void {
   btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
 }
 
+/**
+ * The library and profile refresh buttons carry `spinning` while their sync
+ * runs. The library's in-place grid patch skips the header markup, so a flag
+ * that flips false during a patch used to leave the icon rotating forever
+ * (one stuck spinner pegs a CPU core and the GPU). Re-apply the class from
+ * state on every render, patch or full.
+ */
+function syncRefreshSpinners(): void {
+  document.querySelectorAll<HTMLElement>(".lib-refresh-btn").forEach((btn) => {
+    const spinning =
+      btn.dataset.act === "refresh-profile" ? S.profileLoading : S.epicSyncing || S.gogSyncing;
+    btn.classList.toggle("spinning", spinning);
+  });
+}
+
 /** Refresh the account chip, the active sidebar item and the installed-games list. */
 export function updateChrome(): void {
   updateSidebarActive();
   updateSidebarGames();
   updatePageHeader();
+  syncRefreshSpinners();
   const acc = document.getElementById("account");
   if (acc) {
     // Signed in: the account chip opens the profile (if Epic) or accounts page; signed out: the store accounts page.
