@@ -298,8 +298,17 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
                 let path = f.path();
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
                 if ext == "log" || ext == "ldb" {
-                    if let Ok(bytes) = fs::read(&path) {
-                        parse_leveldb_buffer(&bytes, &meta_map, &mut found_collections);
+                    // The whole file is parsed in memory, so huge caches are
+                    // skipped: a one-time import must not spike RAM and disk.
+                    // Category records live in small files.
+                    let too_big = f
+                        .metadata()
+                        .map(|meta| meta.len() > 64 * 1024 * 1024)
+                        .unwrap_or(false);
+                    if !too_big {
+                        if let Ok(bytes) = fs::read(&path) {
+                            parse_leveldb_buffer(&bytes, &meta_map, &mut found_collections);
+                        }
                     }
                 }
             }

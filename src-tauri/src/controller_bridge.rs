@@ -75,6 +75,24 @@ fn axis_y(value: u8) -> i16 {
     axis(value).saturating_neg()
 }
 
+/// True when the new state differs enough to be worth a ViGEm update.
+///
+/// ViGEmBus is a kernel driver: every update is an IOCTL. Analog sticks jitter
+/// by a unit or two even when untouched, so comparing exact values would send
+/// hundreds of updates per second for nothing. The values themselves are never
+/// altered, only the trigger has hysteresis.
+fn materially_different(next: &PadState, last: &PadState) -> bool {
+    const AXIS_STEP: u16 = 512; // ~1.5% of the stick range
+    const TRIGGER_STEP: u8 = 3;
+    next.buttons != last.buttons
+        || next.left_trigger.abs_diff(last.left_trigger) > TRIGGER_STEP
+        || next.right_trigger.abs_diff(last.right_trigger) > TRIGGER_STEP
+        || next.thumb_lx.abs_diff(last.thumb_lx) > AXIS_STEP
+        || next.thumb_ly.abs_diff(last.thumb_ly) > AXIS_STEP
+        || next.thumb_rx.abs_diff(last.thumb_rx) > AXIS_STEP
+        || next.thumb_ry.abs_diff(last.thumb_ry) > AXIS_STEP
+}
+
 fn button_state(b1: u8, b2: u8, b3: u8) -> u16 {
     let mut buttons = 0u16;
     if b1 & 0x20 != 0 {
@@ -381,6 +399,9 @@ fn worker(
     let mut last = PadState::default();
     let mut bluetooth = false;
     let mut last_rumble = (0u8, 0u8);
+    // Caps how often the virtual pad is updated (125 Hz is plenty for games).
+    let mut last_sent: Option<std::time::Instant> = None;
+    const MIN_UPDATE_INTERVAL: Duration = Duration::from_millis(8);
 
     while !stop.load(Ordering::Relaxed) {
         // Forward any rumble the game asked for to the physical pad.
@@ -424,23 +445,29 @@ fn worker(
                     // Report ids 0x11 (DualShock 4) and 0x31 (DualSense) only
                     // exist over Bluetooth.
                     bluetooth = matches!(buffer[0], 0x11 | 0x31);
-                    if state != last {
+                    if materially_different(&state, &last)
+                        && last_sent.map_or(true, |sent| sent.elapsed() >= MIN_UPDATE_INTERVAL)
+                    {
                         // Retry until the driver accepts the state: the virtual
                         // pad may still be warming up right after plugin.
                         if target.update(&to_xgamepad(&state)).is_ok() {
                             last = state;
+                            last_sent = Some(std::time::Instant::now());
                         }
                     }
                 }
             }
             Err(_) => {
-                // Pad unplugged or the handle went stale: stop its motors and
-                // reopen on the next lap.
+                // Pad unplugged or the handle went stale: stop its motors, wait
+                // for the HID stack to settle, then reopen on the next lap. The
+                // wait matters: reopening in a tight loop would flood the HID
+                // stack when another process holds the device.
                 if let Some((device, family)) = open.as_ref() {
                     let _ = device.write(&rumble_report(*family, bluetooth, 0, 0));
                 }
                 bluetooth = false;
                 last_rumble = (0u8, 0u8);
+                last_sent = None;
                 if last != PadState::default() {
                     let _ = target.update(&to_xgamepad(&PadState::default()));
                     last = PadState::default();
@@ -449,6 +476,7 @@ fn worker(
                     name.clear();
                 }
                 open = None;
+                std::thread::sleep(Duration::from_millis(500));
             }
         }
     }
@@ -458,9 +486,13 @@ fn worker(
 }
 
 /// Opens the gamepad HID interface of the first Sony pad found.
+///
+/// Only the gamepad interface is accepted: the same pad exposes audio and
+/// sensor interfaces whose reports this parser cannot read, so falling back to
+/// them would feed garbage into the bridge.
 #[cfg(windows)]
 fn open_pad(api: &hidapi::HidApi) -> Option<(hidapi::HidDevice, PadFamily)> {
-    let mut best: Option<(&std::ffi::CStr, PadFamily)> = None;
+    let mut fallback: Option<(&std::ffi::CStr, PadFamily)> = None;
     for info in api.device_list() {
         if info.vendor_id() != SONY_VENDOR {
             continue;
@@ -468,19 +500,16 @@ fn open_pad(api: &hidapi::HidApi) -> Option<(hidapi::HidDevice, PadFamily)> {
         let Some(family) = family_for_product(info.product_id()) else {
             continue;
         };
-        let is_gamepad = info.usage_page() == 0x01 && info.usage() == 0x05;
-        if is_gamepad || info.interface_number() == 3 || best.is_none() {
-            let candidate = (info.path(), family);
-            if is_gamepad {
-                best = Some(candidate);
-                break;
+        let is_gamepad = info.usage_page() == 0x01 && matches!(info.usage(), 0x04 | 0x05);
+        if is_gamepad {
+            if let Ok(device) = api.open_path(info.path()) {
+                return Some((device, family));
             }
-            if best.is_none() {
-                best = Some(candidate);
-            }
+        } else if info.interface_number() == 3 && fallback.is_none() {
+            fallback = Some((info.path(), family));
         }
     }
-    let (path, family) = best?;
+    let (path, family) = fallback?;
     api.open_path(path).ok().map(|device| (device, family))
 }
 
@@ -583,6 +612,34 @@ mod tests {
         report[11] = 0x01; // PS
         let state = parse_report(PadFamily::DualSense, &report).expect("state");
         assert_eq!(state.buttons, X_DOWN | X_LEFT | X_GUIDE);
+    }
+
+    /// True when analog jitter is ignored but real movement and buttons pass.
+    #[test]
+    fn analog_jitter_does_not_trigger_updates() {
+        let base = PadState {
+            thumb_lx: 1000,
+            thumb_ly: -1000,
+            left_trigger: 100,
+            ..Default::default()
+        };
+        let jitter = PadState {
+            thumb_lx: 1200,
+            thumb_ly: -1200,
+            left_trigger: 101,
+            ..base
+        };
+        assert!(!materially_different(&jitter, &base));
+        let moved = PadState {
+            thumb_lx: 4000,
+            ..base
+        };
+        assert!(materially_different(&moved, &base));
+        let pressed = PadState {
+            buttons: X_A,
+            ..base
+        };
+        assert!(materially_different(&pressed, &base));
     }
 
     #[test]
