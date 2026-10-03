@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "运行中",
   "controller.bridgeRunningWith": "运行中 · {name}",
   "controller.bridgeStopped": "关闭",
+  "controller.bridgeVirtualNote": "桥接会在你的 PlayStation 手柄旁添加一个虚拟 Xbox 360 手柄；关闭桥接后它会消失。",
   "controller.bridgeNoDriver": "未安装 ViGEmBus；安装驱动后即可使用桥接。",
   "controller.bridgeError": "无法创建虚拟手柄：{a1}",
   "controller.bridgeStartTimeout": "桥接未能及时启动。",

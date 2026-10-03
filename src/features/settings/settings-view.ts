@@ -381,7 +381,10 @@ function renderController(): string {
     true,
   );
 
-  return group(padRows, t("controller.padsTitle")) + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
+  const virtualNote = status?.bridgeRunning
+    ? `<p class="page-sub">${t("controller.bridgeVirtualNote")}</p>`
+    : "";
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */

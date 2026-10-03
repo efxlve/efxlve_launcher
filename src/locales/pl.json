@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "Aktywny",
   "controller.bridgeRunningWith": "Aktywny · {name}",
   "controller.bridgeStopped": "Wyłączony",
+  "controller.bridgeVirtualNote": "Most dodaje wirtualny pad Xbox 360 obok pada PlayStation; znika po wyłączeniu mostu.",
   "controller.bridgeNoDriver": "ViGEmBus nie jest zainstalowany; zainstaluj sterownik, aby użyć mostu.",
   "controller.bridgeError": "Nie udało się utworzyć wirtualnego pada: {a1}",
   "controller.bridgeStartTimeout": "Most nie uruchomił się na czas.",

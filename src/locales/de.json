@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "Aktiv",
   "controller.bridgeRunningWith": "Aktiv · {name}",
   "controller.bridgeStopped": "Aus",
+  "controller.bridgeVirtualNote": "Die Brücke fügt neben deinem PlayStation-Controller einen virtuellen Xbox-360-Controller hinzu; er verschwindet, wenn die Brücke ausgeschaltet wird.",
   "controller.bridgeNoDriver": "ViGEmBus ist nicht installiert; installiere den Treiber, um die Brücke zu nutzen.",
   "controller.bridgeError": "Der virtuelle Controller konnte nicht erstellt werden: {a1}",
   "controller.bridgeStartTimeout": "Die Brücke wurde nicht rechtzeitig gestartet.",

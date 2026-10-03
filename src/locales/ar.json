@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "يعمل",
   "controller.bridgeRunningWith": "يعمل · {name}",
   "controller.bridgeStopped": "متوقف",
+  "controller.bridgeVirtualNote": "يضيف الجسر ذراع Xbox 360 افتراضيًا بجانب ذراع PlayStation؛ ويختفي عند إيقاف الجسر.",
   "controller.bridgeNoDriver": "ViGEmBus غير مثبّت؛ ثبّت التعريف لاستخدام الجسر.",
   "controller.bridgeError": "تعذّر إنشاء ذراع التحكم الافتراضي: {a1}",
   "controller.bridgeStartTimeout": "لم يبدأ الجسر في الوقت المحدد.",

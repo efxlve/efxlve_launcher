@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "Activo",
   "controller.bridgeRunningWith": "Activo · {name}",
   "controller.bridgeStopped": "Desactivado",
+  "controller.bridgeVirtualNote": "El puente añade un mando virtual de Xbox 360 junto a tu mando de PlayStation; desaparece al desactivar el puente.",
   "controller.bridgeNoDriver": "ViGEmBus no está instalado; instala el controlador para usar el puente.",
   "controller.bridgeError": "No se pudo crear el mando virtual: {a1}",
   "controller.bridgeStartTimeout": "El puente no se inició a tiempo.",

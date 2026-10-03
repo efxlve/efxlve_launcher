@@ -38,4 +38,5 @@ custom-protocol = ["tauri/custom-protocol"]
 
 [target.'cfg(windows)'.dependencies]
 hidapi = "2"
-vigem-client = "0.1.4"
+vigem-client = { version = "0.1.4", features = ["unstable_xtarget_notification"] }
+crc32fast = "1"

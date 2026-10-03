@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "Actif",
   "controller.bridgeRunningWith": "Actif · {name}",
   "controller.bridgeStopped": "Désactivé",
+  "controller.bridgeVirtualNote": "Le pont ajoute une manette Xbox 360 virtuelle à côté de votre manette PlayStation ; elle disparaît lorsque le pont est désactivé.",
   "controller.bridgeNoDriver": "ViGEmBus n'est pas installé ; installez le pilote pour utiliser le pont.",
   "controller.bridgeError": "Impossible de créer la manette virtuelle : {a1}",
   "controller.bridgeStartTimeout": "Le pont n'a pas démarré à temps.",

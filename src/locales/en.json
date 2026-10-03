@@ -704,6 +704,7 @@
   "controller.bridgeRunning": "Running",
   "controller.bridgeRunningWith": "Running · {name}",
   "controller.bridgeStopped": "Off",
+  "controller.bridgeVirtualNote": "The bridge adds a virtual Xbox 360 Controller next to your PlayStation pad; it disappears when the bridge is turned off.",
   "controller.bridgeNoDriver": "ViGEmBus is not installed; install the driver to use the bridge.",
   "controller.bridgeError": "Could not create the virtual controller: {a1}",
   "controller.bridgeStartTimeout": "The bridge did not start in time.",

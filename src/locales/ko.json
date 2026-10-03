@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "실행 중",
   "controller.bridgeRunningWith": "실행 중 · {name}",
   "controller.bridgeStopped": "꺼짐",
+  "controller.bridgeVirtualNote": "브리지는 PlayStation 컨트롤러 옆에 가상 Xbox 360 컨트롤러를 추가합니다. 브리지를 끄면 사라집니다.",
   "controller.bridgeNoDriver": "ViGEmBus가 설치되어 있지 않습니다. 브리지를 사용하려면 드라이버를 설치하세요.",
   "controller.bridgeError": "가상 컨트롤러를 만들 수 없습니다: {a1}",
   "controller.bridgeStartTimeout": "브리지가 제때 시작되지 않았습니다.",

@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "ทำงานอยู่",
   "controller.bridgeRunningWith": "ทำงานอยู่ · {name}",
   "controller.bridgeStopped": "ปิด",
+  "controller.bridgeVirtualNote": "บริดจ์จะเพิ่มคอนโทรลเลอร์ Xbox 360 เสมือนข้างคอนโทรลเลอร์ PlayStation และจะหายไปเมื่อปิดบริดจ์",
   "controller.bridgeNoDriver": "ยังไม่ได้ติดตั้ง ViGEmBus ติดตั้งไดรเวอร์เพื่อใช้บริดจ์",
   "controller.bridgeError": "สร้างคอนโทรลเลอร์เสมือนไม่สำเร็จ: {a1}",
   "controller.bridgeStartTimeout": "บริดจ์ไม่เริ่มทำงานทันเวลา",

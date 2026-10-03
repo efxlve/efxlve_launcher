@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "実行中",
   "controller.bridgeRunningWith": "実行中 · {name}",
   "controller.bridgeStopped": "オフ",
+  "controller.bridgeVirtualNote": "ブリッジは PlayStation コントローラーの隣に仮想 Xbox 360 コントローラーを追加します。ブリッジをオフにすると消えます。",
   "controller.bridgeNoDriver": "ViGEmBus がインストールされていません。ブリッジを使うにはドライバーをインストールしてください。",
   "controller.bridgeError": "仮想コントローラーを作成できませんでした: {a1}",
   "controller.bridgeStartTimeout": "ブリッジが時間内に起動しませんでした。",

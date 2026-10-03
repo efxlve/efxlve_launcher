@@ -669,6 +669,7 @@
   "controller.bridgeRunning": "Работает",
   "controller.bridgeRunningWith": "Работает · {name}",
   "controller.bridgeStopped": "Выключено",
+  "controller.bridgeVirtualNote": "Мост добавляет виртуальный геймпад Xbox 360 рядом с геймпадом PlayStation; он исчезает при выключении моста.",
   "controller.bridgeNoDriver": "ViGEmBus не установлен; установите драйвер, чтобы использовать мост.",
   "controller.bridgeError": "Не удалось создать виртуальный геймпад: {a1}",
   "controller.bridgeStartTimeout": "Мост не запустился вовремя.",

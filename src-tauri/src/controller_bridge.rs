@@ -169,6 +169,65 @@ fn parse_ds5(report: &[u8], o: usize) -> PadState {
     }
 }
 
+/// Rumble output report for the pad: `large` is the left/big motor, `small`
+/// the right/small one, exactly as ViGEm reports them.
+///
+/// DualShock 4 uses output report 0x05 over USB and 0x11 over Bluetooth;
+/// DualSense uses 0x02 and 0x31. Bluetooth reports end with a CRC32 trailer.
+pub fn rumble_report(family: PadFamily, bluetooth: bool, large: u8, small: u8) -> Vec<u8> {
+    match family {
+        PadFamily::DualShock4 => {
+            if bluetooth {
+                let mut report = vec![0u8; 78];
+                report[0] = 0x11;
+                report[1] = 0xC0 | 0x04; // HIDP + CRC magic, 4 ms report interval
+                report[3] = 0x01; // rumble valid
+                report[6] = small;
+                report[7] = large;
+                append_crc(&mut report);
+                report
+            } else {
+                let mut report = vec![0u8; 32];
+                report[0] = 0x05;
+                report[1] = 0x01; // rumble valid
+                report[4] = small;
+                report[5] = large;
+                report
+            }
+        }
+        PadFamily::DualSense => {
+            // The pad's emulated rumble is stronger than an Xbox pad's, so the
+            // values are halved to match (same as SDL does).
+            let (large, small) = (large >> 1, small >> 1);
+            if bluetooth {
+                let mut report = vec![0u8; 78];
+                report[0] = 0x31;
+                report[3] = 0x03; // rumble emulation on, audio haptics off
+                report[5] = small;
+                report[6] = large;
+                append_crc(&mut report);
+                report
+            } else {
+                let mut report = vec![0u8; 48];
+                report[0] = 0x02;
+                report[1] = 0x03; // rumble emulation on, audio haptics off
+                report[3] = small;
+                report[4] = large;
+                report
+            }
+        }
+    }
+}
+
+/// Bluetooth output reports end with a CRC32 over the HIDP header and payload.
+fn append_crc(report: &mut [u8]) {
+    let end = report.len() - 4;
+    let mut hasher = crc32fast::Hasher::new();
+    hasher.update(&[0xA2]);
+    hasher.update(&report[..end]);
+    report[end..].copy_from_slice(&hasher.finalize().to_le_bytes());
+}
+
 /// What the Settings page shows for the bridge.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -300,6 +359,15 @@ fn worker(
     // them, which happens within a frame or two.
     let _ = ready.send(Ok(()));
 
+    // Rumble: ViGEm notifies us whenever a game changes the virtual pad's
+    // motors; the values are forwarded to the physical pad's output report.
+    let (rumble_tx, rumble_rx) = std::sync::mpsc::channel::<(u8, u8)>();
+    if let Ok(notification) = target.request_notification() {
+        notification.spawn_thread(move |_, data| {
+            let _ = rumble_tx.send((data.large_motor, data.small_motor));
+        });
+    }
+
     let api = match hidapi::HidApi::new() {
         Ok(api) => api,
         Err(_) => {
@@ -309,10 +377,22 @@ fn worker(
     };
 
     let mut open: Option<(hidapi::HidDevice, PadFamily)> = None;
-    let mut buffer = [0u8; 64];
+    let mut buffer = [0u8; 128];
     let mut last = PadState::default();
+    let mut bluetooth = false;
+    let mut last_rumble = (0u8, 0u8);
 
     while !stop.load(Ordering::Relaxed) {
+        // Forward any rumble the game asked for to the physical pad.
+        while let Ok((large, small)) = rumble_rx.try_recv() {
+            if (large, small) != last_rumble {
+                last_rumble = (large, small);
+                if let Some((device, family)) = open.as_ref() {
+                    let report = rumble_report(*family, bluetooth, large, small);
+                    let _ = device.write(&report);
+                }
+            }
+        }
         if open.is_none() {
             open = open_pad(&api);
             if open.is_none() {
@@ -341,6 +421,9 @@ fn worker(
             Ok(0) => {}
             Ok(read) => {
                 if let Some(state) = parse_report(*family, &buffer[..read]) {
+                    // Report ids 0x11 (DualShock 4) and 0x31 (DualSense) only
+                    // exist over Bluetooth.
+                    bluetooth = matches!(buffer[0], 0x11 | 0x31);
                     if state != last {
                         // Retry until the driver accepts the state: the virtual
                         // pad may still be warming up right after plugin.
@@ -351,7 +434,13 @@ fn worker(
                 }
             }
             Err(_) => {
-                // Pad unplugged or the handle went stale: reopen on the next lap.
+                // Pad unplugged or the handle went stale: stop its motors and
+                // reopen on the next lap.
+                if let Some((device, family)) = open.as_ref() {
+                    let _ = device.write(&rumble_report(*family, bluetooth, 0, 0));
+                }
+                bluetooth = false;
+                last_rumble = (0u8, 0u8);
                 if last != PadState::default() {
                     let _ = target.update(&to_xgamepad(&PadState::default()));
                     last = PadState::default();
@@ -513,6 +602,40 @@ mod tests {
         assert_eq!(axis(255), 32767);
         assert_eq!(axis_y(0), 32767);
         assert_eq!(axis_y(255), -32767);
+    }
+
+    #[test]
+    fn rumble_reports_carry_the_motors() {
+        let usb = rumble_report(PadFamily::DualShock4, false, 200, 100);
+        assert_eq!(usb.len(), 32);
+        assert_eq!(usb[0], 0x05);
+        assert_eq!(usb[1], 0x01);
+        assert_eq!(usb[4], 100); // right/small motor
+        assert_eq!(usb[5], 200); // left/large motor
+
+        let bt = rumble_report(PadFamily::DualShock4, true, 200, 100);
+        assert_eq!(bt.len(), 78);
+        assert_eq!(bt[0], 0x11);
+        assert_eq!(bt[6], 100);
+        assert_eq!(bt[7], 200);
+        // The trailer is the CRC32 over the HIDP header and the payload.
+        let mut hasher = crc32fast::Hasher::new();
+        hasher.update(&[0xA2]);
+        hasher.update(&bt[..74]);
+        assert_eq!(&bt[74..], hasher.finalize().to_le_bytes());
+
+        let ds5_usb = rumble_report(PadFamily::DualSense, false, 200, 100);
+        assert_eq!(ds5_usb.len(), 48);
+        assert_eq!(ds5_usb[0], 0x02);
+        assert_eq!(ds5_usb[1], 0x03);
+        assert_eq!(ds5_usb[3], 50); // halved to match Xbox strength
+        assert_eq!(ds5_usb[4], 100);
+
+        let ds5_bt = rumble_report(PadFamily::DualSense, true, 200, 100);
+        assert_eq!(ds5_bt.len(), 78);
+        assert_eq!(ds5_bt[0], 0x31);
+        assert_eq!(ds5_bt[5], 50);
+        assert_eq!(ds5_bt[6], 100);
     }
 
     /// Hardware smoke test: reads reports from a connected Sony pad and parses
