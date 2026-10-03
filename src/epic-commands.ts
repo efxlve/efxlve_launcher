@@ -105,6 +105,17 @@ export const controllerBridgeStart = () =>
   invoke<ControllerBridgeStatus>("controller_bridge_start");
 export const controllerBridgeStop = () =>
   invoke<ControllerBridgeStatus>("controller_bridge_stop");
+
+/** Store client detection for Settings > Launchers. */
+export interface LauncherStatus {
+  id: string;
+  name: string;
+  installed: boolean;
+  path: string;
+  downloadUrl: string;
+}
+export const launchersStatus = () =>
+  invoke<LauncherStatus[]>("launchers_status");
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */

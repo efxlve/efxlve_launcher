@@ -171,6 +171,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `gog_verify_game` | `gogVerifyGame({ ... })` | `src-tauri/src/gogdl/transfers.rs` |
 | `hide_notif_overlay` | `hideNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `hide_store_view` | `hideStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `launchers_status` | `launchersStatus({ ... })` | `src-tauri/src/launchers.rs` |
 | `library_dir` | `libraryDir({ ... })` | `src-tauri/src/main.rs` |
 | `move_notif_overlay` | `moveNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |

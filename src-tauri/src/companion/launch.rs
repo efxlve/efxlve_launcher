@@ -23,6 +23,18 @@ pub(crate) fn client_installed(store: &str) -> bool {
     }
 }
 
+/// Installed client executable; `None` when the client is not installed (the
+/// Xbox app has no single executable, so it has no path).
+pub(crate) fn client_path(store: &str) -> Option<PathBuf> {
+    match store {
+        "ea" => ea_exe(),
+        "ubisoft" => ubi_exe(),
+        "battlenet" => bnet_exe(),
+        "riot" => super::riot::client_exe(),
+        _ => None,
+    }
+}
+
 pub(crate) fn open_client(store: &str) -> Result<(), String> {
     if store == "xbox" {
         return open_xbox_app();

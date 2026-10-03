@@ -399,6 +399,9 @@ export const S = {
   gogInstallDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
+  /** Store client rows for Settings > Launchers. */
+  launchers: ([]) as import("../epic").LauncherStatus[],
+  launchersLoading: false,
   activeEditingColId: (null) as string | null,
   /** Collection whose "merge into" target list is open in Settings. */
   colMergeSource: (null) as string | null,

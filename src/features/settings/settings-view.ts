@@ -23,6 +23,7 @@ import { appUpdateInstallBlocked } from "../updates/update-manager";
 import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
   controllerSupportStatus,
+  launchersStatus,
   eosOverlayStatus,
   epicDefaultInstallDir,
   epicDetectEglGames,
@@ -40,6 +41,7 @@ import {
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { storeLogo } from "../store/store-logos";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -51,6 +53,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "downloads", labelKey: "settings.secDownloads" },
   { id: "cloud", labelKey: "settings.secCloud" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
+  { id: "launchers", labelKey: "settings.secLaunchers" },
   { id: "collections", labelKey: "settings.secCollections" },
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
@@ -237,6 +240,50 @@ function renderCollections(): string {
   );
 }
 
+/** Hand-back actions per store id (missing entries have no open command). */
+const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
+  steam: { act: "steam-open-client", withId: false },
+  xbox: { act: "companion-open", withId: true },
+  battlenet: { act: "companion-open", withId: true },
+  ubisoft: { act: "companion-open", withId: true },
+  ea: { act: "companion-open", withId: true },
+  riot: { act: "companion-open", withId: true },
+};
+
+/**
+ * Launchers page: which store clients are installed, where they live, and
+ * where to get the missing ones. The launcher never installs a client itself.
+ */
+function renderLaunchers(): string {
+  if (S.launchers.length === 0) {
+    return S.launchersLoading
+      ? `<div class="empty-state"><span class="spinner"></span></div>`
+      : infoBox("launchers.info");
+  }
+  const rows = S.launchers.map((l) => {
+    const open = LAUNCHER_OPEN[l.id];
+    const chip = l.installed
+      ? `<span class="chip ok">${t("launchers.detected")}</span>`
+      : `<span class="chip warn">${t("launchers.missing")}</span>`;
+    const openBtn = l.installed && open
+      ? `<button type="button" class="btn ghost small" data-act="${open.act}"${open.withId ? ` data-id="${l.id}"` : ""}>${t("accounts.openClient")}</button>`
+      : "";
+    const downloadBtn = l.installed
+      ? ""
+      : `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("launchers.download")}</button>`;
+    return `
+      <div class="row settings-row">
+        <span class="acc-store-mark">${storeLogo(l.id, 24)}</span>
+        <div class="row-main">
+          <div class="settings-row-title">${esc(l.name)}</div>
+          ${l.path ? `<div class="settings-row-desc"><code>${esc(l.path)}</code></div>` : ""}
+        </div>
+        <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
+      </div>`;
+  }).join("");
+  return infoBox("launchers.info") + group(rows, t("settings.secLaunchers"));
+}
+
 function renderIntegrations(): string {
   if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
@@ -367,10 +414,6 @@ function renderController(): string {
     ? `<p class="page-sub">${t("controller.deckNote")}</p>`
     : "";
   const tv = row(
-    t("tv.open"),
-    t("controller.tvModeDesc"),
-    `<button class="btn primary small" data-act="open-tv-mode">${icon("gamepad-2", 14)} ${t("tv.open")}</button>`,
-  ) + row(
     t("controller.tvAutoTitle"),
     t("controller.tvAutoDesc"),
     toggle("toggle-tv-auto", S.tvAutoEnter),
@@ -385,7 +428,7 @@ function renderController(): string {
   const virtualNote = status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(tv, t("tv.mode")) + deckNote + group(bridge, t("settings.secController"));
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */
@@ -468,8 +511,14 @@ function renderScreenshots(): string {
   );
 
   const formats: [string, string][] = [["avif", t("settings.avifBest")], ["webp", t("settings.webpBalanced")], ["jpg", t("settings.jpegUniversal")]];
+  // The description follows the selected format instead of always praising AVIF.
+  const formatInfo = S.screenshotCompressionFormat === "webp"
+    ? t("settings.webpInfo")
+    : S.screenshotCompressionFormat === "jpg"
+      ? t("settings.jpgInfo")
+      : t("settings.avifInfo");
   const options = S.screenshotCompressionEnabled
-    ? row(t("settings.format"), t("settings.avifInfo"), `<div class="seg">${formats.map(([f, label]) => `<button type="button" class="${S.screenshotCompressionFormat === f ? "active" : ""}" data-act="set-ss-format" data-format="${f}">${label}</button>`).join("")}</div>`) +
+    ? row(t("settings.format"), formatInfo, `<div class="seg">${formats.map(([f, label]) => `<button type="button" class="${S.screenshotCompressionFormat === f ? "active" : ""}" data-act="set-ss-format" data-format="${f}">${label}</button>`).join("")}</div>`) +
       row(t("settings.quality"), null, `<input type="range" min="0.70" max="0.95" step="0.05" value="${S.screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" class="settings-range" /><span id="ss-quality-val" class="settings-range-val">%${Math.round(S.screenshotCompressionQuality * 100)}</span>`)
     : "";
 
@@ -631,6 +680,7 @@ function renderSection(section: SettingsSection): string {
     case "account": return renderAccountSettings();
     case "cloud": return renderCloud();
     case "integrations": return renderIntegrations();
+    case "launchers": return renderLaunchers();
     case "collections": return renderCollections();
     case "controller": return renderController();
     case "appearance": return renderAppearance();
@@ -691,6 +741,7 @@ export async function loadSettingsView(): Promise<void> {
   syncEosNotice();
   if (S.settingsSection === "integrations") void loadIntegrationsView();
   if (S.settingsSection === "controller") void loadControllerView();
+  if (S.settingsSection === "launchers") void loadLaunchersView();
 }
 
 /**
@@ -712,6 +763,25 @@ export async function loadControllerView(force = false): Promise<void> {
     S.controllerBridge = { viEmBus: false, steam: false, steamPath: "", bridgeRunning: false, bridgeDevice: "" };
   }
   render();
+}
+
+/** Loads the store client rows for Settings > Launchers. */
+export async function loadLaunchersView(force = false): Promise<void> {
+  if (!isTauri || S.launchersLoading) return;
+  if (S.launchers.length > 0 && !force) {
+    render();
+    return;
+  }
+  S.launchersLoading = true;
+  render();
+  try {
+    S.launchers = await launchersStatus();
+  } catch {
+    S.launchers = [];
+  } finally {
+    S.launchersLoading = false;
+    render();
+  }
 }
 
 /**

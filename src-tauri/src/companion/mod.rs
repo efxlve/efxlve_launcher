@@ -13,6 +13,7 @@ mod ea;
 mod ea_login;
 mod ea_vault;
 mod launch;
+pub(crate) use launch::{client_installed, client_path};
 mod pcsign;
 mod proto;
 mod riot;

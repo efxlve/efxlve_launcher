@@ -96,7 +96,7 @@ import {
   openNotifPanel,
   renderNotificationPanel,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadControllerView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
@@ -639,6 +639,7 @@ document.addEventListener("click", (e) => {
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
     if (S.settingsSection === "controller") void loadControllerView();
+    if (S.settingsSection === "launchers") void loadLaunchersView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
   } else if (act === "toggle-controller-bridge") {

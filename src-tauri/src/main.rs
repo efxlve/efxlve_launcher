@@ -7,6 +7,7 @@ mod controller;
 mod controller_bridge;
 mod eos;
 mod gogdl;
+mod launchers;
 mod legendary;
 mod presence;
 mod shared_library;
@@ -530,6 +531,7 @@ fn main() {
             app_minimize,
             app_get_autostart,
             app_set_autostart,
+            launchers::launchers_status,
             app_toggle_maximize,
             app_is_maximized,
             app_set_fullscreen,
