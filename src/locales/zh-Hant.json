@@ -56,6 +56,8 @@
   "launchers.detected": "已偵測",
   "launchers.missing": "未安裝",
   "launchers.download": "下載",
+  "launchers.epicNote": "可選——Efxlve 自行安裝、更新並啟動 Epic 遊戲；只有匯入它安裝的遊戲時才需要官方啟動器（見 {section}）。",
+  "launchers.gogNote": "可選——Efxlve 自行安裝、更新並啟動 GOG 遊戲；只有匯入它的遊戲與標籤時才需要 Galaxy（見 {section}）。",
   "settings.secCollections": "收藏",
   "settings.integrationsInfo": "可選擴充。這裡的功能都不是遊玩必需；匯入只會連結已安裝的遊戲。",
   "settings.coverArtTitle": "封面圖",

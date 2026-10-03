@@ -64,6 +64,8 @@
   "launchers.detected": "Detected",
   "launchers.missing": "Not installed",
   "launchers.download": "Download",
+  "launchers.epicNote": "Optional — Efxlve installs, updates and launches Epic games on its own; the official launcher is only needed to import games it installed (see {section}).",
+  "launchers.gogNote": "Optional — Efxlve installs, updates and launches GOG games on its own; Galaxy is only needed to import its games and tags (see {section}).",
   "settings.secCollections": "Collections",
   "settings.integrationsInfo": "Optional extras. Nothing here is required to play; imports only link games already on your disk.",
   "settings.coverArtTitle": "Cover art",

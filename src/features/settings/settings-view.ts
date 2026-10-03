@@ -271,12 +271,20 @@ function renderLaunchers(): string {
     const downloadBtn = l.installed
       ? ""
       : `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("launchers.download")}</button>`;
+    // Epic and GOG are fully managed by the launcher; their clients are only
+    // needed to import what those clients installed.
+    const note = l.id === "epic"
+      ? t("launchers.epicNote", { section: t("settings.secIntegrations") })
+      : l.id === "gog"
+        ? t("launchers.gogNote", { section: t("settings.secIntegrations") })
+        : "";
     return `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo(l.id, 24)}</span>
         <div class="row-main">
           <div class="settings-row-title">${esc(l.name)}</div>
           ${l.path ? `<div class="settings-row-desc"><code>${esc(l.path)}</code></div>` : ""}
+          ${note ? `<div class="settings-row-desc">${note}</div>` : ""}
         </div>
         <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;

@@ -56,6 +56,8 @@
   "launchers.detected": "감지됨",
   "launchers.missing": "설치되지 않음",
   "launchers.download": "다운로드",
+  "launchers.epicNote": "선택 사항 — Efxlve는 Epic 게임을 직접 설치, 업데이트, 실행합니다. 공식 런처는 그것이 설치한 게임을 가져올 때만 필요합니다({section} 참고).",
+  "launchers.gogNote": "선택 사항 — Efxlve는 GOG 게임을 직접 설치, 업데이트, 실행합니다. Galaxy는 그 게임과 태그를 가져올 때만 필요합니다({section} 참고).",
   "settings.secCollections": "컬렉션",
   "settings.integrationsInfo": "선택 사항입니다. 여기 있는 기능은 플레이에 필요하지 않으며, 가져오기는 이미 디스크에 있는 게임을 연결할 뿐입니다.",
   "settings.coverArtTitle": "커버 아트",

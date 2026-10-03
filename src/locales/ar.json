@@ -56,6 +56,8 @@
   "launchers.detected": "تم العثور عليه",
   "launchers.missing": "غير مثبّت",
   "launchers.download": "تنزيل",
+  "launchers.epicNote": "اختياري — يقوم Efxlve بتثبيت ألعاب Epic وتحديثها وتشغيلها بنفسه؛ ولا يلزم المشغّل الرسمي إلا لاستيراد الألعاب التي ثبّتها (انظر {section}).",
+  "launchers.gogNote": "اختياري — يقوم Efxlve بتثبيت ألعاب GOG وتحديثها وتشغيلها بنفسه؛ ولا يلزم Galaxy إلا لاستيراد ألعابه ووسومه (انظر {section}).",
   "settings.secCollections": "المجموعات",
   "settings.integrationsInfo": "إضافات اختيارية. لا شيء هنا مطلوب للعب؛ الاستيراد يربط فقط الألعاب الموجودة على القرص.",
   "settings.coverArtTitle": "أغلفة الألعاب",
