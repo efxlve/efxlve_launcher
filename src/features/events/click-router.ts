@@ -203,6 +203,9 @@ document.addEventListener("click", (e) => {
   if (t.dataset.view) {
     closeAllModals();
     const targetView = t.dataset.view as View;
+    // Re-clicking Library while the grid is already on screen must not rebuild
+    // it: a full render re-requests every cover and drops the scroll position.
+    if (targetView === "library" && S.view === "library") return;
     setView(targetView);
     pushNavHistory({ view: targetView });
     if (S.view === "library") void bootEpic();
