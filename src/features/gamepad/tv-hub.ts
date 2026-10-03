@@ -40,8 +40,10 @@ import {
 } from "../drawer/drawer-widgets";
 import {
   fetchAndRenderScreenshots,
+  hydrateShotPreviews,
   openScreenshotLightbox,
   renderMomentsStrip,
+  shotThumbHtml,
 } from "../screenshots/screenshots-view";
 
 export type TvHubTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage";
@@ -389,12 +391,13 @@ function renderScreenshotsTab(s: EpicSummary): string {
     .map(
       (item, idx) => `
       <button type="button" class="tv-ss-thumb" data-act="tv-open-ss" data-app="${esc(s.appName)}" data-idx="${idx}" tabindex="0">
-        <img src="${esc(item.data_url || item.full_data_url)}" alt="" loading="lazy" />
+        ${shotThumbHtml(item)}
         <span class="tv-ss-overlay">${icon("camera", 16)}</span>
       </button>`,
     )
     .join("");
 
+  hydrateShotPreviews();
   return `
     <div class="tv-tab-pane tv-ss-pane">
       <div class="tv-ss-grid">${thumbs}</div>

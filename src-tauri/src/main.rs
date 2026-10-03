@@ -683,6 +683,7 @@ fn main() {
             legendary::commands::epic_get_player_profile,
             legendary::screenshots::epic_get_game_screenshots,
             legendary::screenshots::epic_get_screenshot_full_data,
+            legendary::screenshots::epic_save_screenshot_preview,
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_open_game_screenshots_folder,
             legendary::screenshots::epic_set_screenshot_hotkey,

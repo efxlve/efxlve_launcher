@@ -715,6 +715,10 @@ export const epicGetGameScreenshots = (appName: string, title: string) =>
 export const epicGetScreenshotFullData = (filePath: string) =>
   invoke<string>("epic_get_screenshot_full_data", { filePath });
 
+/** Caches a preview the WebView built for a format GDI+ cannot read. */
+export const epicSaveScreenshotPreview = (filePath: string, dataUrl: string) =>
+  invoke<boolean>("epic_save_screenshot_preview", { filePath, dataUrl });
+
 export const epicDeleteGameScreenshot = (filePath: string) =>
   invoke<boolean>("epic_delete_game_screenshot", { filePath });
 

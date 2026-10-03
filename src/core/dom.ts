@@ -52,6 +52,7 @@ export function closeModal(): void {
   // only meaningful while the drawer is open, so free them with it.
   S.loadedScreenshots.clear();
   S.screenshotFullSrc.clear();
+  S.screenshotPreviewSrc.clear();
   updateSidebarActive();
   updatePageHeader();
   // Drop per-game manage state along with the drawer that owns the manage tab.

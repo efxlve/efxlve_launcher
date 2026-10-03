@@ -229,7 +229,9 @@ const PREVIEW_MAX_BYTES: u64 = 200 * 1024;
 /// base64 (Rust string, JSON copy, WebView copy), which kills the process on a
 /// folder of 4K PNGs. Large files get a cached JPEG thumbnail instead; the
 /// original is read only when the lightbox, share sheet or compressor asks for
-/// it. Files GDI+ cannot decode fall back to the file itself.
+/// it. A file no preview can be produced for (GDI+ cannot read AVIF/WebP)
+/// reports an empty preview: the grid shows a placeholder, the WebView builds
+/// one from the original and `epic_save_screenshot_preview` caches it.
 pub fn file_to_preview_data_url(path: &Path) -> Option<String> {
     let metadata = std::fs::metadata(path).ok()?;
     if metadata.len() <= PREVIEW_MAX_BYTES {
@@ -238,15 +240,21 @@ pub fn file_to_preview_data_url(path: &Path) -> Option<String> {
 
     let cache_dir = shot_thumbs_dir();
     let cached = shot_thumb_path(&cache_dir, path, &metadata);
-    if !cached.is_file() {
-        if std::fs::create_dir_all(&cache_dir).is_err() {
-            return file_to_data_url(path);
-        }
-        if win_capture::make_thumbnail(path, &cached, 480).is_err() {
-            return file_to_data_url(path);
-        }
+    if !cached.is_file()
+        && (std::fs::create_dir_all(&cache_dir).is_err()
+            || win_capture::make_thumbnail(path, &cached, 480).is_err())
+    {
+        // Falling back to the full file here would restore the exact memory
+        // spike this helper exists to prevent.
+        return Some(String::new());
     }
-    file_to_data_url(&cached).or_else(|| file_to_data_url(path))
+    if let Some(data) = file_to_data_url(&cached) {
+        return Some(data);
+    }
+    // A preview that cannot be read is worse than none: drop it and let the
+    // next listing regenerate it.
+    let _ = std::fs::remove_file(&cached);
+    Some(String::new())
 }
 
 /// `~/.config/efxlve/shot_thumbs`, next to the other launcher caches.
@@ -587,6 +595,38 @@ pub async fn epic_get_screenshot_full_data(file_path: String) -> Result<String, 
             return Err("Screenshot is too large to load".to_string());
         }
         file_to_data_url(path).ok_or_else(|| "@t:ss.fileNotFound".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Stores a grid preview the WebView generated for a format GDI+ cannot read
+/// (AVIF/WebP), so the next listing serves it from the disk cache.
+#[tauri::command]
+pub async fn epic_save_screenshot_preview(
+    file_path: String,
+    data_url: String,
+) -> Result<bool, String> {
+    tokio::task::spawn_blocking(move || {
+        let path = Path::new(&file_path);
+        let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
+        if !metadata.is_file() {
+            return Err("@t:ss.fileNotFound".to_string());
+        }
+        let encoded = data_url
+            .strip_prefix("data:image/jpeg;base64,")
+            .ok_or_else(|| "Preview must be a JPEG data URL".to_string())?;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() > 512 * 1024 {
+            return Err("Preview is too large".to_string());
+        }
+        let cache_dir = shot_thumbs_dir();
+        std::fs::create_dir_all(&cache_dir).map_err(|e| e.to_string())?;
+        std::fs::write(shot_thumb_path(&cache_dir, path, &metadata), bytes)
+            .map_err(|e| e.to_string())?;
+        Ok(true)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -1390,6 +1430,47 @@ mod tests {
         let cached = file_to_preview_data_url(&source).expect("cached preview");
         assert_eq!(preview, cached);
         let _ = std::fs::remove_file(&source);
+    }
+
+    /// A capture no preview can be produced for must report an empty preview
+    /// instead of falling back to the full-size data URL.
+    #[test]
+    fn unpreviewable_capture_reports_empty_preview() {
+        let temp_file = std::env::temp_dir().join("efxlve_test_big_avif.avif");
+        std::fs::write(&temp_file, vec![0u8; (PREVIEW_MAX_BYTES + 4096) as usize]).unwrap();
+        let item = parse_file_to_item(&temp_file).expect("item");
+        assert_eq!(item.data_url, "");
+        let _ = std::fs::remove_file(&temp_file);
+    }
+
+    /// A preview the WebView generated is cached and served by the next listing.
+    #[test]
+    fn saved_preview_is_served_by_the_next_listing() {
+        let temp_file = std::env::temp_dir().join("efxlve_test_saved_preview.avif");
+        std::fs::write(&temp_file, vec![0u8; (PREVIEW_MAX_BYTES + 4096) as usize]).unwrap();
+        // Nothing GDI+ can read: the listing reports an empty preview.
+        assert_eq!(
+            parse_file_to_item(&temp_file).map(|item| item.data_url),
+            Some(String::new())
+        );
+
+        let preview = format!(
+            "data:image/jpeg;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(b"jpeg preview bytes")
+        );
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let saved = rt
+            .block_on(epic_save_screenshot_preview(
+                temp_file.to_string_lossy().to_string(),
+                preview.clone(),
+            ))
+            .expect("save preview");
+        assert!(saved);
+
+        // The next listing serves the stored preview.
+        let item = parse_file_to_item(&temp_file).expect("item");
+        assert_eq!(item.data_url, preview);
+        let _ = std::fs::remove_file(&temp_file);
     }
 
     /// Times preview generation on the real capture folders.

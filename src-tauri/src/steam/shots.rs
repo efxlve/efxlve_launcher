@@ -51,12 +51,17 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
             .map(|d| d.as_secs())
             .unwrap_or(0);
         let date_str = get_file_local_datetime_str(&path, &metadata, timestamp);
-        // The gallery stays light with the client's thumbnail; the lightbox,
-        // share sheet and clipboard load the original on demand.
+        // The gallery stays light with the client's thumbnail; without one the
+        // file gets a generated preview, never a full-size data URL. The
+        // original is loaded only when the lightbox, share sheet or clipboard
+        // asks for it.
         let thumb = root.join("thumbnails").join(&file_name);
-        let preview = if thumb.is_file() { thumb } else { path.clone() };
-        let Some(data_url) = file_to_data_url(&preview).or_else(|| file_to_preview_data_url(&path))
-        else {
+        let data_url = if thumb.is_file() {
+            file_to_data_url(&thumb)
+        } else {
+            file_to_preview_data_url(&path)
+        };
+        let Some(data_url) = data_url else {
             continue;
         };
         let size_bytes = metadata.len();

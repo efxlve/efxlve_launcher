@@ -117,6 +117,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_resume_pending_download` | `epicResumePendingDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_save_collection` | `epicSaveCollection({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_save_game_settings` | `epicSaveGameSettings({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
+| `epic_save_screenshot_preview` | `epicSaveScreenshotPreview({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_search_steamgrid` | `epicSearchSteamgrid({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_select_folder_dialog` | `epicSelectFolderDialog({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_auto_desktop_shortcut` | `epicSetAutoDesktopShortcut({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

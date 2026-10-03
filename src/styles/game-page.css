@@ -339,6 +339,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .screenshot-card { cursor: pointer; border-radius: var(--r-md); }
 .screenshot-thumb-wrap { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }
 .screenshot-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Preview the backend could not read (AVIF/WebP): a placeholder until the
+   WebView builds one from the original. */
+.shot-thumb-pending { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-3); background: var(--surface-2); }
+.shot-loading-box { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .screenshot-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; background: rgba(0, 0, 0, 0.45); opacity: 0; transition: opacity var(--ease); }
 .screenshot-card:hover .screenshot-overlay, .screenshot-card:focus-visible .screenshot-overlay { opacity: 1; }
 .screenshot-overlay-top, .screenshot-overlay-bottom { display: flex; align-items: center; gap: 6px; }

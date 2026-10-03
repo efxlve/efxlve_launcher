@@ -18,6 +18,7 @@ import {
   epicGetGameScreenshots,
   epicGetScreenshotFullData,
   epicReplaceScreenshotWithCompressed,
+  epicSaveScreenshotPreview,
   type EpicSummary,
   type GameScreenshotItem,
 } from "../../epic";
@@ -52,15 +53,29 @@ function ownerReadOnlyTip(owner: GalleryOwner): string {
  * cache is freed with the gallery.
  */
 export function fullShotSrc(item: GameScreenshotItem): string {
-  return S.screenshotFullSrc.get(item.file_path) || item.full_data_url || item.data_url;
+  return S.screenshotFullSrc.get(item.file_path) || item.full_data_url || shotPreviewSrc(item);
+}
+
+/** Grid thumbnail: the listing's preview, or one the WebView generated. */
+export function shotPreviewSrc(item: GameScreenshotItem): string {
+  return item.data_url || S.screenshotPreviewSrc.get(item.file_path) || "";
+}
+
+/**
+ * Grid/strap thumbnail markup. An empty preview means the backend could not
+ * read the format (GDI+ has no AVIF/WebP decoder); the placeholder carries the
+ * path so `hydrateShotPreviews` can build one from the original.
+ */
+export function shotThumbHtml(item: GameScreenshotItem): string {
+  const src = shotPreviewSrc(item);
+  if (src) return `<img src="${src}" alt="${esc(item.file_name)}" loading="lazy" />`;
+  return `<div class="shot-thumb-pending" data-shot-preview="${esc(item.file_path)}">${icon("image", 18)}</div>`;
 }
 
 const fullShotRequests = new Map<string, Promise<string | null>>();
 
-/** Loads one original, sharing the request when two consumers ask together. */
-export function ensureFullShot(appName: string, item: GameScreenshotItem): Promise<string | null> {
-  const cached = S.screenshotFullSrc.get(item.file_path);
-  if (cached) return Promise.resolve(cached);
+/** Fetches one original, sharing the in-flight request between consumers. */
+function requestFullShotData(appName: string, item: GameScreenshotItem): Promise<string | null> {
   const inFlight = fullShotRequests.get(item.file_path);
   if (inFlight) return inFlight;
 
@@ -68,18 +83,25 @@ export function ensureFullShot(appName: string, item: GameScreenshotItem): Promi
     ? steamGetScreenshotFullData(appName.slice(7), item.file_path)
     : epicGetScreenshotFullData(item.file_path)
   )
-    .then((data) => {
-      if (!data) return null;
-      // The gallery may have closed while the original was loading; caching
-      // then would leave the file in memory with nothing showing it.
-      if (S.loadedScreenshots.has(appName)) S.screenshotFullSrc.set(item.file_path, data);
-      return data;
-    })
+    .then((data) => data || null)
     .catch(() => null)
     .finally(() => fullShotRequests.delete(item.file_path));
 
   fullShotRequests.set(item.file_path, request);
   return request;
+}
+
+/** Loads one original and caches it while its gallery stays open. */
+export function ensureFullShot(appName: string, item: GameScreenshotItem): Promise<string | null> {
+  const cached = S.screenshotFullSrc.get(item.file_path);
+  if (cached) return Promise.resolve(cached);
+  return requestFullShotData(appName, item).then((data) => {
+    if (!data) return null;
+    // The gallery may have closed while the original was loading; caching then
+    // would leave the file in memory with nothing showing it.
+    if (S.loadedScreenshots.has(appName)) S.screenshotFullSrc.set(item.file_path, data);
+    return data;
+  });
 }
 
 /** Drops one file's original after it is deleted or rewritten by compression. */
@@ -91,8 +113,94 @@ export function forgetFullShot(filePath: string): void {
 export function forgetGameScreenshots(appName: string): void {
   for (const item of S.loadedScreenshots.get(appName) || []) {
     S.screenshotFullSrc.delete(item.file_path);
+    S.screenshotPreviewSrc.delete(item.file_path);
   }
   S.loadedScreenshots.delete(appName);
+}
+
+const shotPreviewJobs = new Map<string, Promise<void>>();
+
+/** Finds the loaded item behind a placeholder's path. */
+function findShotByPath(filePath: string): { appName: string; item: GameScreenshotItem } | null {
+  for (const [appName, items] of S.loadedScreenshots) {
+    const item = items.find((x) => x.file_path === filePath);
+    if (item) return { appName, item };
+  }
+  return null;
+}
+
+/**
+ * Builds a grid preview inside the WebView for files the backend cannot read
+ * (GDI+ has no AVIF/WebP decoder) and asks the backend to cache it, so the next
+ * listing serves it like any other thumbnail. Jobs run one at a time: each
+ * holds a full-size original only while it is scaled down.
+ */
+function generateShotPreview(appName: string, item: GameScreenshotItem): Promise<void> {
+  const existing = shotPreviewJobs.get(item.file_path);
+  if (existing) return existing;
+
+  const job = (async () => {
+    try {
+      const full = await requestFullShotData(appName, item);
+      if (!full) return;
+      const img = new Image();
+      img.src = full;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Image could not be decoded"));
+      });
+
+      const width = img.naturalWidth || img.width || 480;
+      const height = img.naturalHeight || img.height || 270;
+      const scale = Math.min(1, 480 / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      if (!dataUrl.startsWith("data:image/jpeg")) return;
+      S.screenshotPreviewSrc.set(item.file_path, dataUrl);
+      patchShotPreviewDom(item.file_path, dataUrl);
+      void epicSaveScreenshotPreview(item.file_path, dataUrl).catch(() => {});
+    } catch {
+      // The placeholder stays; the lightbox still opens the original.
+    } finally {
+      shotPreviewJobs.delete(item.file_path);
+    }
+  })();
+
+  shotPreviewJobs.set(item.file_path, job);
+  return job;
+}
+
+function patchShotPreviewDom(filePath: string, dataUrl: string): void {
+  const selector = `[data-shot-preview="${CSS.escape(filePath)}"]`;
+  document.querySelectorAll<HTMLElement>(selector).forEach((host) => {
+    host.outerHTML = `<img src="${dataUrl}" alt="" loading="lazy" />`;
+  });
+}
+
+/**
+ * Fills in the previews of every placeholder on screen, one at a time. Called
+ * after a render; the microtask waits for the markup to reach the document.
+ */
+export function hydrateShotPreviews(): void {
+  queueMicrotask(() => {
+    const hosts = [...document.querySelectorAll<HTMLElement>("[data-shot-preview]")];
+    if (hosts.length === 0) return;
+    void (async () => {
+      for (const host of hosts) {
+        const filePath = host.dataset.shotPreview;
+        if (!filePath || S.screenshotPreviewSrc.has(filePath)) continue;
+        const found = findShotByPath(filePath);
+        if (!found) continue;
+        await generateShotPreview(found.appName, found.item);
+      }
+    })();
+  });
 }
 
 /** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
@@ -102,8 +210,9 @@ export function renderMomentsStrip(appName: string): string {
   const shown = items.slice(0, 8);
   const thumbs = shown.map((item, idx) => `
     <button type="button" class="gp-moment" data-act="open-screenshot-lightbox" data-id="${esc(appName)}" data-idx="${idx}" title="${esc(item.file_name)}">
-      <img src="${item.data_url}" alt="" loading="lazy" />
+      ${shotThumbHtml(item)}
     </button>`).join("");
+  hydrateShotPreviews();
   return `
     <section id="gp-moments" class="gp-section gp-moments">
       <div class="gp-progress-head">
@@ -378,7 +487,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
       <div class="ss-share-card" role="dialog" aria-modal="true">
         <div class="ss-share-head">
           <div class="ss-share-preview-thumb">
-            <img src="${fullShotSrc(item)}" alt="${esc(item.file_name)}" />
+            ${shotThumbHtml(item)}
           </div>
           <div class="ss-share-meta">
             <h3 class="ss-share-title">${t("ss.shareTitle")}</h3>
@@ -513,7 +622,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
         return `
     <div class="screenshot-card" data-act="open-screenshot-lightbox" data-id="${s.appName}" data-idx="${idx}" tabindex="0" title="${esc(item.file_name)}">
       <div class="screenshot-thumb-wrap">
-        <img src="${item.data_url}" alt="${esc(item.file_name)}" loading="lazy" />
+        ${shotThumbHtml(item)}
         <div class="screenshot-overlay">
           <div class="screenshot-overlay-top">
             <span class="ss-chip date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</span>
@@ -552,6 +661,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
     )
     .join("");
 
+  hydrateShotPreviews();
   return `
     <div class="screenshots-tab-container">
       ${headerHtml}
@@ -620,7 +730,11 @@ export function renderScreenshotLightbox(appName: string, index: number): string
           }
 
           <div class="lightbox-img-container">
-            <img src="${fullSrc}" alt="${esc(item.file_name)}" />
+            ${
+              fullSrc
+                ? `<img src="${fullSrc}" alt="${esc(item.file_name)}" />`
+                : `<div class="shot-loading-box"><span class="hltb-spinner" style="width:34px;height:34px;border-width:3px"></span></div>`
+            }
           </div>
 
           ${

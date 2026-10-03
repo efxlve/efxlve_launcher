@@ -236,6 +236,8 @@ export const S = {
   loadedScreenshots: (new Map()) as Map<string, GameScreenshotItem[]>,
   /** Full-resolution data URLs for the galleries a consumer is viewing now. */
   screenshotFullSrc: new Map<string, string>(),
+  /** Grid previews the WebView built for files the backend cannot read. */
+  screenshotPreviewSrc: new Map<string, string>(),
   loadingScreenshotsFor: (null) as string | null,
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,
