@@ -1056,27 +1056,32 @@ mod tests {
                 *warm = order.into_iter().map(str::to_string).collect();
             }
         };
-        reset(vec![
+        // The test follows the budget constant instead of hard-coding it: the
+        // window stays responsive by keeping very few storefronts alive.
+        let labels = [
             "store-view-epic",
             "store-view-gog",
             "store-view-steam",
-        ]);
+            "store-view-ubisoft",
+        ];
+        reset(labels[..super::MAX_WARM_STORES].to_vec());
         assert!(
             super::prune_store_views().is_empty(),
-            "three storefronts fit"
+            "the warm budget fits"
         );
 
-        // Visiting a fourth closes the oldest one (the tail of the list).
-        super::touch_store_warm("store-view-ubisoft");
-        assert_eq!(super::prune_store_views(), vec!["steam".to_string()]);
+        // One more closes the oldest one (the tail of the list).
+        let newest = labels[super::MAX_WARM_STORES];
+        super::touch_store_warm(newest);
+        assert_eq!(
+            super::prune_store_views(),
+            vec![super::store_id_for_label(labels[super::MAX_WARM_STORES - 1])]
+        );
         let order = super::STORE_WARM_ORDER
             .lock()
             .map(|o| o.clone())
             .unwrap_or_default();
-        assert_eq!(
-            order.first().map(String::as_str),
-            Some("store-view-ubisoft")
-        );
+        assert_eq!(order.first().map(String::as_str), Some(newest));
 
         // Revisiting moves a storefront to the front instead of duplicating it.
         super::touch_store_warm("store-view-gog");
