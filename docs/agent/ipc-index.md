@@ -25,6 +25,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `cloud_backup_test_connection` | `cloudBackupTestConnection({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_upload_game` | `cloudBackupUploadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `companion_achievements` | `companionAchievements({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `companion_achievements_summary` | `companionAchievementsSummary({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_game_action` | `companionGameAction({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_get_client_settings` | `companionGetClientSettings({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_hide_login` | `companionHideLogin({ ... })` | `src-tauri/src/companion/mod.rs` |

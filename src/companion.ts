@@ -79,6 +79,13 @@ export const companionPlaytimes = (store: CompanionStore) =>
 export const companionAchievements = (store: CompanionStore, id: string, title: string, language: string) =>
   invoke<import("./epic").EpicAchievementsData>("companion_achievements", { store, id, title, language });
 
+/**
+ * Bulk summaries for stores that keep achievements on disk (Ubisoft reads the
+ * client's local cache). Xbox and EA answer per game, so they are absent here.
+ */
+export const companionAchievementsSummary = (store: CompanionStore, language: string) =>
+  invoke<Record<string, import("./epic").EpicAchievementSummary>>("companion_achievements_summary", { store, language });
+
 export const companionLink = (store: CompanionStore) =>
   invoke<CompanionAccount>("companion_link", { store });
 

@@ -32,7 +32,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::legendary::models::GameAchievementsResponse;
+use crate::legendary::models::{GameAchievementSummary, GameAchievementsResponse};
 
 pub use accounts::{CompanionAccount, CompanionStoreStatus};
 pub use covers::{CoverHit, CoverQuery};
@@ -710,6 +710,50 @@ pub async fn companion_achievements(
         title.as_deref().unwrap_or(""),
         language.as_deref().unwrap_or("en"),
     )
+}
+
+/// Bulk achievement summaries for a store that keeps them on disk. Ubisoft
+/// writes every game's set into the client's own cache, so one pass over the
+/// library is cheap and offline. Xbox and EA answer per game over the network,
+/// so those stay on their game pages.
+#[tauri::command]
+pub async fn companion_achievements_summary(
+    store: String,
+    language: Option<String>,
+) -> std::collections::HashMap<String, GameAchievementSummary> {
+    if store != "ubisoft" {
+        return std::collections::HashMap::new();
+    }
+    let language = language.unwrap_or_else(|| "en".to_string());
+    tokio::task::spawn_blocking(move || {
+        let mut rows = std::collections::HashMap::new();
+        for game in library_games() {
+            if game.store != "ubisoft" {
+                continue;
+            }
+            let response = ubi_achievements::achievements_for(&game.id, &game.name, &language);
+            if response.total_achievements == 0 {
+                continue;
+            }
+            let key = format!("ubisoft::{}", game.id);
+            rows.insert(
+                key.clone(),
+                GameAchievementSummary {
+                    app_name: key,
+                    user_unlocked: response.user_unlocked,
+                    total_achievements: response.total_achievements,
+                    user_xp: response.user_xp,
+                    total_xp: response.total_xp,
+                    is_platinum: response.is_platinum,
+                    supported: true,
+                    ..Default::default()
+                },
+            );
+        }
+        rows
+    })
+    .await
+    .unwrap_or_default()
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the

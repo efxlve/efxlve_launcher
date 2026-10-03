@@ -13,8 +13,7 @@ import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { localizeMessage, t } from "../../i18n";
-import {
+import { currentLanguage, localizeMessage, t } from "../../i18n";import {
   epicCachedLibrary,
   epicEnsureBinary,
   epicGetAchievementsSummary,
@@ -34,6 +33,7 @@ import {
   type CachedLibrary,
 } from "../../epic";
 import { gogGetAchievementsSummary } from "../../gog";
+import { companionAchievementsSummary } from "../../companion";
 import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadPlayerProfile } from "../store/store-view";
@@ -114,13 +114,16 @@ export async function refreshEpic(forceSync = false): Promise<void> {
 export async function loadEpicAchSummaries(): Promise<void> {
   if (!isTauri) return;
   try {
-    const [epicSummaries, gogSummaries, steamSummaries] = await Promise.all([
+    const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
       epicGetAchievementsSummary().catch(() => ({})),
       gogGetAchievementsSummary().catch(() => ({})),
       // Steam summaries come from the disk cache: no key or network needed.
       steamGetAchievementsSummary().catch(() => ({})),
+      // Ubisoft also keeps its sets on disk, so the bulk pass is offline.
+      // Xbox and EA answer per game over the network and stay out of this map.
+      companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
     ]);
-    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries };
+    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
     S.libraryDataRev++;
     if (S.view === "library" || S.view === "profile") scheduleRender();
   } catch (e) {

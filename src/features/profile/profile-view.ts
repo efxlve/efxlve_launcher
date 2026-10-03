@@ -50,7 +50,7 @@ const STORE_TAB_LABELS: Record<StoreKind, string> = {
 };
 
 /** Stores whose achievements the launcher tracks in bulk. */
-const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam"];
+const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
 
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
@@ -380,6 +380,30 @@ function showStoreChips(): boolean {
   return profileSelection().mode === "combined" && storeScope() === "all" && overviewStores().length > 1;
 }
 
+/** Ubisoft achievement rows from the client's local cache (bulk summary). */
+function buildUbisoftProfileGames(): ProfileGameRecord[] {
+  const games: ProfileGameRecord[] = [];
+  for (const item of S.companionSummaries) {
+    if (gameStore(item.key) !== "ubisoft") continue;
+    const ach = achSummaryOf(item.key);
+    if (!ach || ach.total_achievements <= 0) continue;
+    games.push({
+      sandbox_id: "",
+      app_name: item.key,
+      app_title: item.title,
+      cover: item.coverUrl,
+      total_unlocked: ach.user_unlocked,
+      total_achievements: ach.total_achievements,
+      total_xp: ach.user_xp || 0,
+      total_product_xp: ach.total_xp || 0,
+      is_platinum: ach.is_platinum || false,
+      unlocked_percent: ach.total_achievements > 0 ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0,
+      last_unlocked_date: null,
+    });
+  }
+  return games;
+}
+
 /**
  * Achievement rows for the current page: one account, or Overview narrowed by
  * the store tab. Search updates call this so GOG and Steam stay in the list.
@@ -397,6 +421,7 @@ export function profileListGames(): ProfileGameRecord[] {
   if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
   if (scope === "all" || scope === "steam") games.push(...buildSteamProfileGames());
+  if (scope === "all" || scope === "ubisoft") games.push(...buildUbisoftProfileGames());
   return games;
 }
 

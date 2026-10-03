@@ -761,6 +761,7 @@ fn main() {
             companion::companion_set_close_after_play,
             companion::companion_playtimes,
             companion::companion_achievements,
+            companion::companion_achievements_summary,
             steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam::steam_game_action,
