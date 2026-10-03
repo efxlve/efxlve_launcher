@@ -46,7 +46,7 @@ import {
   updateOfflineModeUi,
   updatePageHeader,
 } from "../../core/nav";
-import { toggleSidebarDrawer } from "../../core/sidebar-layout";
+import { refreshSidebarToggle, toggleSidebarDrawer } from "../../core/sidebar-layout";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -614,6 +614,9 @@ document.addEventListener("click", (e) => {
       localStorage.setItem(LANG_KEY, lang);
       void setLanguage(lang).then(() => {
         updateOfflineModeUi();
+        // The drawer label is not a data-i18n node; without this it keeps the
+        // previous language until the next resize or drawer toggle.
+        refreshSidebarToggle();
         if (isTauri) {
           void invoke("app_set_tray_labels", { show: i18nT("tray.show"), quit: i18nT("tray.quit") }).catch(() => {});
         }
