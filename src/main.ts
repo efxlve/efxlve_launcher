@@ -24,7 +24,7 @@ import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
-import { renderEpic, setupLibScrollObserver } from "./features/library/library-view";
+import { patchLibraryGridInPlace, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
@@ -88,6 +88,17 @@ function render(): void {
   }
   if (S.view !== "library" && modalRoot.innerHTML.trim()) {
     closeModal();
+  }
+  // Data arrivals on the library patch the rendered cards in place; a full
+  // innerHTML rebuild would re-decode every cover. Falls back when the result
+  // set itself changed (a new game, another filter, a different sort).
+  if (S.view === "library" && patchLibraryGridInPlace()) {
+    updateChrome();
+    updateNavHistoryUi();
+    updateGamepadHud(S.gamepadPolling);
+    renderNotificationPanel();
+    presenceSync();
+    return;
   }
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()

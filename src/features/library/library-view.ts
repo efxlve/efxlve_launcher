@@ -8,7 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -448,21 +448,48 @@ export function renderEpicItems(): string {
     return emptyState("gamepad-2", t("lib.noGames"), "", `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>`);
   }
 
-  let chunk: EpicSummary[];
-  let sentinelHtml = "";
-  if (S.libPagination) {
-    // Pagination replaces progressive chunking: only the current page is in the DOM.
-    const pages = Math.max(1, Math.ceil(visible.length / S.libPageSize));
-    S.libPage = Math.min(Math.max(1, S.libPage), pages);
-    const start = (S.libPage - 1) * S.libPageSize;
-    chunk = visible.slice(start, start + S.libPageSize);
-  } else {
-    chunk = visible.slice(0, S.renderedCardCount);
-    sentinelHtml = S.renderedCardCount < visible.length ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>` : "";
-  }
+  const chunk = renderedSlice(visible);
+  const sentinelHtml = !S.libPagination && S.renderedCardCount < visible.length
+    ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>`
+    : "";
   const itemsHtml = chunk.map(renderItem).join("");
 
   return `${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+}
+
+/** The summaries the current grid renders, in order (page or chunk). */
+function renderedSlice(visible: EpicSummary[]): EpicSummary[] {
+  if (S.libPagination) {
+    const pages = Math.max(1, Math.ceil(visible.length / S.libPageSize));
+    S.libPage = Math.min(Math.max(1, S.libPage), pages);
+    const start = (S.libPage - 1) * S.libPageSize;
+    return visible.slice(start, start + S.libPageSize);
+  }
+  return visible.slice(0, S.renderedCardCount);
+}
+
+/**
+ * Patches the rendered cards when the result set is unchanged, so a data
+ * arrival (playtime, achievements, install state) does not rebuild the grid and
+ * re-decode every cover. Returns false when the grid needs a full rebuild.
+ */
+export function patchLibraryGridInPlace(): boolean {
+  if (S.view !== "library") return false;
+  const resultsEl = document.getElementById("lib-results");
+  if (!resultsEl) return false;
+  // The sync note sits outside the grid; a changed note needs a full rebuild.
+  const noteEl = document.getElementById("lib-sync-note");
+  if ((noteEl?.textContent ?? "") !== (S.epicSyncNote || "")) return false;
+  const rendered = [...resultsEl.querySelectorAll<HTMLElement>("[data-lib-item]")];
+  if (rendered.length === 0) return false;
+  const expected = renderedSlice(epicVisibleSummaries());
+  if (expected.length !== rendered.length) return false;
+  for (let i = 0; i < rendered.length; i++) {
+    if ((rendered[i].dataset.libItem || "") !== expected[i].appName) return false;
+  }
+  for (const item of rendered) patchLibraryCardDom(item.dataset.libItem || "");
+  syncLibraryHeadingCount();
+  return true;
 }
 
 let cardSettleWired = false;
@@ -695,7 +722,7 @@ export function renderEpic(): string {
   return `
     <div class="page lib-page">
       ${libraryHeader(tools, filters)}
-      ${S.epicSyncNote ? `<p class="page-sub">${esc(S.epicSyncNote)}</p>` : ""}
+      ${S.epicSyncNote ? `<p class="page-sub" id="lib-sync-note">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
     </div>`;
 }
