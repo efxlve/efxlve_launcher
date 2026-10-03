@@ -39,6 +39,14 @@ const CLSID_PNG: GUID = GUID {
     data4: [0x9a, 0x73, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e],
 };
 
+// CLSID for ImageFormatJPEG: {557cf401-1a04-11d3-9a73-0000f81ef32e}
+const CLSID_JPEG: GUID = GUID {
+    data1: 0x557cf401,
+    data2: 0x1a04,
+    data3: 0x11d3,
+    data4: [0x9a, 0x73, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e],
+};
+
 #[link(name = "user32")]
 extern "system" {
     fn OpenInputDesktop(dwFlags: u32, fInherit: BOOL, dwDesiredAccess: u32) -> *mut c_void;
@@ -119,6 +127,17 @@ extern "system" {
         encoderParams: *const c_void,
     ) -> i32;
     fn GdipDisposeImage(image: *mut c_void) -> i32;
+    fn GdipLoadImageFromFile(filename: *const u16, image: *mut *mut c_void) -> i32;
+    fn GdipGetImageWidth(image: *mut c_void, width: *mut u32) -> i32;
+    fn GdipGetImageHeight(image: *mut c_void, height: *mut u32) -> i32;
+    fn GdipGetImageThumbnail(
+        image: *mut c_void,
+        thumb_width: u32,
+        thumb_height: u32,
+        thumb_image: *mut *mut c_void,
+        callback: *mut c_void,
+        callback_data: *mut c_void,
+    ) -> i32;
 }
 
 #[link(name = "kernel32")]
@@ -283,4 +302,97 @@ fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
 
         Ok(())
     }
+}
+
+/// Writes a small JPEG preview of `source` to `target` for the gallery grid.
+///
+/// The gallery used to ship every capture as a full-size data URL in one IPC
+/// response; a folder of 4K PNGs turns that into hundreds of megabytes across
+/// the Rust, JSON and WebView copies. The preview keeps the listing small, and
+/// the original is read only when the lightbox, share sheet or compressor asks
+/// for it.
+pub fn make_thumbnail(source: &Path, target: &Path, max_px: u32) -> Result<(), String> {
+    unsafe {
+        let startup_input = GdiplusStartupInput {
+            gdiplus_version: 1,
+            debug_event_callback: 0,
+            suppress_background_thread: 0,
+            suppress_external_codecs: 0,
+        };
+
+        let mut token: usize = 0;
+        let status = GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut());
+        if status != 0 {
+            return Err(format!("GdiplusStartup failed (status: {})", status));
+        }
+
+        let result = make_thumbnail_gdi(source, target, max_px);
+        GdiplusShutdown(token);
+        result
+    }
+}
+
+unsafe fn make_thumbnail_gdi(source: &Path, target: &Path, max_px: u32) -> Result<(), String> {
+    let wide_source: Vec<u16> = source
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+
+    let mut image: *mut c_void = std::ptr::null_mut();
+    let load_status = GdipLoadImageFromFile(wide_source.as_ptr(), &mut image);
+    if load_status != 0 || image.is_null() {
+        return Err(format!(
+            "GdipLoadImageFromFile failed (status: {})",
+            load_status
+        ));
+    }
+
+    let mut width: u32 = 0;
+    let mut height: u32 = 0;
+    let _ = GdipGetImageWidth(image, &mut width);
+    let _ = GdipGetImageHeight(image, &mut height);
+    if width == 0 || height == 0 {
+        GdipDisposeImage(image);
+        return Err("Image reports no size".to_string());
+    }
+
+    // GdipGetImageThumbnail stretches to the box it is given; compute the box
+    // from the aspect ratio instead.
+    let scale = max_px as f64 / width.max(height) as f64;
+    let thumb_w = ((width as f64 * scale).round() as u32).max(1);
+    let thumb_h = ((height as f64 * scale).round() as u32).max(1);
+
+    let mut thumb: *mut c_void = std::ptr::null_mut();
+    let thumb_status = GdipGetImageThumbnail(
+        image,
+        thumb_w,
+        thumb_h,
+        &mut thumb,
+        std::ptr::null_mut(),
+        std::ptr::null_mut(),
+    );
+    GdipDisposeImage(image);
+    if thumb_status != 0 || thumb.is_null() {
+        return Err(format!(
+            "GdipGetImageThumbnail failed (status: {})",
+            thumb_status
+        ));
+    }
+
+    let wide_target: Vec<u16> = target
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+    let save_status = GdipSaveImageToFile(thumb, wide_target.as_ptr(), &CLSID_JPEG, std::ptr::null());
+    GdipDisposeImage(thumb);
+
+    if save_status != 0 {
+        return Err(format!(
+            "GdipSaveImageToFile failed (status: {})",
+            save_status
+        ));
+    }
+    Ok(())
 }

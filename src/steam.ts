@@ -146,6 +146,10 @@ export const steamGetAchievementsSummary = () =>
 export const steamGetGameScreenshots = (appId: string) =>
   invoke<import("./epic").GameScreenshotItem[]>("steam_get_game_screenshots", { appId });
 
+/** Full-resolution data URL for one Steam screenshot, read on demand. */
+export const steamGetScreenshotFullData = (appId: string, filePath: string) =>
+  invoke<string>("steam_get_screenshot_full_data", { appId, filePath });
+
 /* ---------- Account sign-in (ROADMAP §13, the web auth flow) ---------- */
 
 /** Sign-in state from `steam_login_begin` / `steam_login_code` / `steam_login_status`. */

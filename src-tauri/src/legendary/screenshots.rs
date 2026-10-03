@@ -125,8 +125,8 @@ pub struct GameScreenshotItem {
     pub size_bytes: u64,
     pub size_str: String,
     pub data_url: String,
-    /// Full-resolution data URL when `data_url` holds a thumbnail (Steam's own
-    /// screenshots ship both); empty means `data_url` is already full size.
+    /// Retained for the wire format: the listing ships previews only and the
+    /// original is fetched per file when a viewer asks for it.
     #[serde(default)]
     pub full_data_url: String,
 }
@@ -217,6 +217,64 @@ pub fn file_to_data_url(path: &Path) -> Option<String> {
     };
     let encoded = base64::engine::general_purpose::STANDARD.encode(&bytes);
     Some(format!("data:{mime};base64,{encoded}"))
+}
+
+/// Size under which a screenshot is its own preview: compressed captures and
+/// client thumbnails are already small enough for the grid.
+const PREVIEW_MAX_BYTES: u64 = 200 * 1024;
+
+/// Preview data URL for the gallery grid.
+///
+/// Full-size captures would cross the IPC boundary as hundreds of megabytes of
+/// base64 (Rust string, JSON copy, WebView copy), which kills the process on a
+/// folder of 4K PNGs. Large files get a cached JPEG thumbnail instead; the
+/// original is read only when the lightbox, share sheet or compressor asks for
+/// it. Files GDI+ cannot decode fall back to the file itself.
+pub fn file_to_preview_data_url(path: &Path) -> Option<String> {
+    let metadata = std::fs::metadata(path).ok()?;
+    if metadata.len() <= PREVIEW_MAX_BYTES {
+        return file_to_data_url(path);
+    }
+
+    let cache_dir = shot_thumbs_dir();
+    let cached = shot_thumb_path(&cache_dir, path, &metadata);
+    if !cached.is_file() {
+        if std::fs::create_dir_all(&cache_dir).is_err() {
+            return file_to_data_url(path);
+        }
+        if win_capture::make_thumbnail(path, &cached, 480).is_err() {
+            return file_to_data_url(path);
+        }
+    }
+    file_to_data_url(&cached).or_else(|| file_to_data_url(path))
+}
+
+/// `~/.config/efxlve/shot_thumbs`, next to the other launcher caches.
+fn shot_thumbs_dir() -> PathBuf {
+    std::env::var_os("USERPROFILE")
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join(".config")
+        .join("efxlve")
+        .join("shot_thumbs")
+}
+
+/// Cache file keyed by path, mtime and size: a compressed or replaced capture
+/// gets a new key, so a stale preview is never served.
+fn shot_thumb_path(cache_dir: &Path, path: &Path, metadata: &std::fs::Metadata) -> PathBuf {
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    path.to_string_lossy().to_lowercase().hash(&mut hasher);
+    metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+        .hash(&mut hasher);
+    metadata.len().hash(&mut hasher);
+    cache_dir.join(format!("{:016x}.jpg", hasher.finish()))
 }
 
 #[repr(C)]
@@ -318,7 +376,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
 
     // Get Windows' real local file time and date (local timezone instead of UTC)
     let datetime = get_file_local_datetime_str(path, &metadata, timestamp);
-    let data_url = file_to_data_url(path)?;
+    let data_url = file_to_preview_data_url(path)?;
 
     Some(GameScreenshotItem {
         id: format!("{}_{}", file_name, timestamp),
@@ -496,7 +554,39 @@ pub async fn epic_get_game_screenshots(
 
         // Sort newest to oldest
         results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        // A gallery this deep is already past browsing; the newest 300 keep the
+        // response bounded even when a folder holds thousands of captures.
+        results.truncate(300);
         Ok(results)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Full-resolution data URL for one screenshot, produced only when the
+/// lightbox, share sheet or compressor asks for it. The listing ships previews.
+#[tauri::command]
+pub async fn epic_get_screenshot_full_data(file_path: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || {
+        let path = Path::new(&file_path);
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif") {
+            return Err("@t:ss.fileNotFound".to_string());
+        }
+        let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
+        if !metadata.is_file() {
+            return Err("@t:ss.fileNotFound".to_string());
+        }
+        // A file this large is not a screenshot and would only repeat the
+        // memory spike the preview listing avoids.
+        if metadata.len() > 64 * 1024 * 1024 {
+            return Err("Screenshot is too large to load".to_string());
+        }
+        file_to_data_url(path).ok_or_else(|| "@t:ss.fileNotFound".to_string())
     })
     .await
     .map_err(|e| e.to_string())?
@@ -1231,5 +1321,108 @@ mod tests {
         let unwrapped = item.unwrap();
         assert!(unwrapped.data_url.starts_with("data:image/avif;base64,"));
         let _ = std::fs::remove_file(&temp_file);
+    }
+
+    #[test]
+    fn thumb_cache_key_tracks_the_file() {
+        let temp_file = std::env::temp_dir().join("efxlve_test_thumb_key.png");
+        std::fs::write(&temp_file, b"first").unwrap();
+        let cache_dir = Path::new(r"C:\cache");
+        let first = shot_thumb_path(cache_dir, &temp_file, &std::fs::metadata(&temp_file).unwrap());
+
+        // The same file and stamp serve the same cache entry.
+        let same = shot_thumb_path(cache_dir, &temp_file, &std::fs::metadata(&temp_file).unwrap());
+        assert_eq!(first, same);
+
+        // A rewritten capture (different size) gets a fresh key.
+        std::fs::write(&temp_file, b"second version with more bytes").unwrap();
+        let second = shot_thumb_path(cache_dir, &temp_file, &std::fs::metadata(&temp_file).unwrap());
+        assert_ne!(first, second);
+        let _ = std::fs::remove_file(&temp_file);
+    }
+
+    /// Minimal 24-bit BMP of `width` x `height`: GDI+ reads it like a capture.
+    #[cfg(target_os = "windows")]
+    fn write_test_bmp(path: &Path, width: u32, height: u32) {
+        let row_bytes = ((width * 3 + 3) / 4) * 4;
+        let pixels = vec![0x40u8; (row_bytes * height) as usize];
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"BM");
+        bytes.extend_from_slice(&(54u32 + pixels.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&54u32.to_le_bytes());
+        bytes.extend_from_slice(&40u32.to_le_bytes());
+        bytes.extend_from_slice(&(width as i32).to_le_bytes());
+        bytes.extend_from_slice(&(height as i32).to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&24u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&(pixels.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&2835i32.to_le_bytes());
+        bytes.extend_from_slice(&2835i32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&pixels);
+        std::fs::write(path, bytes).unwrap();
+    }
+
+    /// A large capture becomes a small JPEG preview: the gallery listing must
+    /// never ship the full-size data URL that used to kill the process.
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn preview_thumbnail_is_cached_and_smaller() {
+        let source = std::env::temp_dir().join("efxlve_test_preview.bmp");
+        write_test_bmp(&source, 600, 400);
+        let source_len = std::fs::metadata(&source).unwrap().len();
+        assert!(
+            source_len > PREVIEW_MAX_BYTES,
+            "test capture must exceed the preview threshold"
+        );
+
+        let preview = file_to_preview_data_url(&source).expect("preview");
+        assert!(preview.starts_with("data:image/jpeg;base64,"));
+        assert!(
+            preview.len() < source_len as usize,
+            "preview must be smaller than the capture"
+        );
+
+        // The second call serves the cache without regenerating.
+        let cached = file_to_preview_data_url(&source).expect("cached preview");
+        assert_eq!(preview, cached);
+        let _ = std::fs::remove_file(&source);
+    }
+
+    /// Times preview generation on the real capture folders.
+    /// Run: `cargo test live_preview_real_captures -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    #[cfg(target_os = "windows")]
+    fn live_preview_real_captures() {
+        let root = get_user_pictures_dir().join("Efxlve Screenshots");
+        let mut checked = 0;
+        for entry in std::fs::read_dir(&root).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            for file in std::fs::read_dir(&path).into_iter().flatten().flatten() {
+                let file_path = file.path();
+                let size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
+                let start = std::time::Instant::now();
+                let preview = file_to_preview_data_url(&file_path);
+                println!(
+                    "{} | {} KB -> preview {} KB in {:?}",
+                    file_path.file_name().unwrap_or_default().to_string_lossy(),
+                    size / 1024,
+                    preview.as_deref().map(str::len).unwrap_or(0) / 1024,
+                    start.elapsed()
+                );
+                checked += 1;
+                if checked >= 6 {
+                    return;
+                }
+            }
+        }
+        println!("no capture folders found under {}", root.display());
     }
 }

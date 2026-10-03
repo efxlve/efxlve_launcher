@@ -34,7 +34,7 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
-import { fetchAndRenderScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
+import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderNextAchievements, renderProgressStrip } from "./drawer-widgets";
 
 /** Scrolls a tab into view only when it is clipped (narrow windows). */
@@ -539,6 +539,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const s = summaryOf(appName);
   if (!s) return;
   const isSameApp = S.currentModalAppName === appName;
+  // Switching games inside the open drawer must not keep the previous
+  // gallery (and its full-size originals) alive.
+  if (!isSameApp && S.currentModalAppName) forgetGameScreenshots(S.currentModalAppName);
   S.currentModalAppName = appName;
   S.isVersionDropdownOpen = false;
   if (isInitialOpen) {

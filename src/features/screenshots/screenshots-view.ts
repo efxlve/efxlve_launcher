@@ -16,11 +16,12 @@ import { t } from "../../i18n";
 
 import {
   epicGetGameScreenshots,
+  epicGetScreenshotFullData,
   epicReplaceScreenshotWithCompressed,
   type EpicSummary,
   type GameScreenshotItem,
 } from "../../epic";
-import { steamGetGameScreenshots } from "../../steam";
+import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
 
 /** Steam keeps its screenshots in the client's own folder: gallery is read-only. */
 function isSteamApp(appName: string): boolean {
@@ -42,6 +43,56 @@ function ownerBadge(owner: GalleryOwner): string {
 
 function ownerReadOnlyTip(owner: GalleryOwner): string {
   return t(owner === "steam" ? "ss.steamReadOnly" : "ss.ubiReadOnly");
+}
+
+/**
+ * Full-resolution data URLs are only meaningful while a viewer asks for them:
+ * one original is already megabytes. The listing ships small previews; the
+ * lightbox, share sheet and compressor pull the original on demand and the
+ * cache is freed with the gallery.
+ */
+export function fullShotSrc(item: GameScreenshotItem): string {
+  return S.screenshotFullSrc.get(item.file_path) || item.full_data_url || item.data_url;
+}
+
+const fullShotRequests = new Map<string, Promise<string | null>>();
+
+/** Loads one original, sharing the request when two consumers ask together. */
+export function ensureFullShot(appName: string, item: GameScreenshotItem): Promise<string | null> {
+  const cached = S.screenshotFullSrc.get(item.file_path);
+  if (cached) return Promise.resolve(cached);
+  const inFlight = fullShotRequests.get(item.file_path);
+  if (inFlight) return inFlight;
+
+  const request = (isSteamApp(appName)
+    ? steamGetScreenshotFullData(appName.slice(7), item.file_path)
+    : epicGetScreenshotFullData(item.file_path)
+  )
+    .then((data) => {
+      if (!data) return null;
+      // The gallery may have closed while the original was loading; caching
+      // then would leave the file in memory with nothing showing it.
+      if (S.loadedScreenshots.has(appName)) S.screenshotFullSrc.set(item.file_path, data);
+      return data;
+    })
+    .catch(() => null)
+    .finally(() => fullShotRequests.delete(item.file_path));
+
+  fullShotRequests.set(item.file_path, request);
+  return request;
+}
+
+/** Drops one file's original after it is deleted or rewritten by compression. */
+export function forgetFullShot(filePath: string): void {
+  S.screenshotFullSrc.delete(filePath);
+}
+
+/** Frees a game's gallery and its originals with the consumer that showed it. */
+export function forgetGameScreenshots(appName: string): void {
+  for (const item of S.loadedScreenshots.get(appName) || []) {
+    S.screenshotFullSrc.delete(item.file_path);
+  }
+  S.loadedScreenshots.delete(appName);
 }
 
 /** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
@@ -104,7 +155,9 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       }
     })
     .catch(() => {
-      S.loadingScreenshotsFor = null;
+      // Only the request that owns the marker clears it: a failure for another
+      // game must not drop the response of the game still loading.
+      if (S.loadingScreenshotsFor === appName) S.loadingScreenshotsFor = null;
     });
 }
 
@@ -145,11 +198,16 @@ export function playScreenshotShutterSound(): void {
   }
 }
 
-export async function copyScreenshotImageToClipboard(item: GameScreenshotItem): Promise<boolean> {
+export async function copyScreenshotImageToClipboard(item: GameScreenshotItem, appName = ""): Promise<boolean> {
   try {
+    // The clipboard wants the original, never the grid preview.
+    const fullSrc =
+      (appName ? await ensureFullShot(appName, item) : null) ||
+      item.full_data_url ||
+      item.data_url;
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = item.full_data_url || item.data_url;
+    img.src = fullSrc;
     await new Promise((res, rej) => {
       img.onload = res;
       img.onerror = () => rej(new Error("Image could not be loaded"));
@@ -260,8 +318,14 @@ async function compressScreenshotNow(
   silent: boolean,
 ): Promise<GameScreenshotItem | null> {
   try {
-    const { base64, ext, bytes } = await compressImageToBlob(item.data_url, format, quality);
+    // Compress the original, never the grid preview: replacing the file with a
+    // downscaled version would silently destroy it.
+    const source = await ensureFullShot(appName, item);
+    if (!source) throw new Error(t("ss.fileNotFound"));
+    const { base64, ext, bytes } = await compressImageToBlob(source, format, quality);
     const updated = await epicReplaceScreenshotWithCompressed(item.file_path, base64, ext);
+    // The file changed on disk: its cached original no longer matches.
+    forgetFullShot(item.file_path);
 
     const list = S.loadedScreenshots.get(appName) || [];
     const idx = list.findIndex((x) => x.file_path === item.file_path || x.id === item.id);
@@ -299,6 +363,8 @@ async function compressScreenshotNow(
 
 export function openShareModal(appName: string, item: GameScreenshotItem): void {
   S.activeShareScreenshot = { appName, item };
+  // Warm the original: "copy image" hands the clipboard the full-size file.
+  void ensureFullShot(appName, item);
   let shareRoot = document.getElementById("share-modal-root");
   if (!shareRoot) {
     shareRoot = document.createElement("div");
@@ -312,7 +378,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
       <div class="ss-share-card" role="dialog" aria-modal="true">
         <div class="ss-share-head">
           <div class="ss-share-preview-thumb">
-            <img src="${item.full_data_url || item.data_url}" alt="${esc(item.file_name)}" />
+            <img src="${fullShotSrc(item)}" alt="${esc(item.file_name)}" />
           </div>
           <div class="ss-share-meta">
             <h3 class="ss-share-title">${t("ss.shareTitle")}</h3>
@@ -504,7 +570,7 @@ export function renderScreenshotLightbox(appName: string, index: number): string
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
   const owner = galleryOwner(appName);
   const readOnly = owner !== null;
-  const fullSrc = item.full_data_url || item.data_url;
+  const fullSrc = fullShotSrc(item);
 
   return `
     <div class="screenshot-lightbox-overlay" data-act="close-screenshot-lightbox-backdrop">
@@ -585,6 +651,17 @@ export function openScreenshotLightbox(appName: string, index: number): void {
     document.body.appendChild(lbRoot);
   }
   lbRoot.innerHTML = renderScreenshotLightbox(appName, index);
+
+  // The stage opens on the grid preview; the original swaps in when it lands.
+  const item = (S.loadedScreenshots.get(appName) || [])[index];
+  if (item && !S.screenshotFullSrc.has(item.file_path)) {
+    void ensureFullShot(appName, item).then((data) => {
+      const active = S.activeLightboxScreenshot;
+      if (!data || !active || active.appName !== appName || active.index !== index) return;
+      const root = document.getElementById("lightbox-root");
+      if (root) root.innerHTML = renderScreenshotLightbox(appName, index);
+    });
+  }
 }
 
 export function closeScreenshotLightbox(): void {

@@ -704,12 +704,16 @@ export interface GameScreenshotItem {
   size_bytes: number;
   size_str: string;
   data_url: string;
-  /** Full-resolution data URL when `data_url` is only a thumbnail (Steam). */
+  /** Retained for the wire format; originals load per file when a viewer asks. */
   full_data_url: string;
 }
 
 export const epicGetGameScreenshots = (appName: string, title: string) =>
   invoke<GameScreenshotItem[]>("epic_get_game_screenshots", { appName, title });
+
+/** Full-resolution data URL for one screenshot, read only when a viewer asks. */
+export const epicGetScreenshotFullData = (filePath: string) =>
+  invoke<string>("epic_get_screenshot_full_data", { filePath });
 
 export const epicDeleteGameScreenshot = (filePath: string) =>
   invoke<boolean>("epic_delete_game_screenshot", { filePath });

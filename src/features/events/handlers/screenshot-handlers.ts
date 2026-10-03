@@ -20,6 +20,7 @@ import {
   compressScreenshotItem,
   copyScreenshotImageToClipboard,
   fetchAndRenderScreenshots,
+  forgetFullShot,
   navigateScreenshotLightbox,
   openScreenshotDeleteConfirm,
   openScreenshotLightbox,
@@ -85,6 +86,8 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
           .then((success) => {
             if (success) {
               toast(i18nT("ss.deleted"), "ok");
+              // The file is gone: drop the original held for the lightbox.
+              forgetFullShot(pending.filePath);
               const s = summaryOf(pending.appName);
               const title = s ? s.title : pending.appName;
               if (pending.lightbox) closeScreenshotLightbox();
@@ -138,7 +141,7 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
 
     case "do-copy-image":
       if (S.activeShareScreenshot) {
-        void copyScreenshotImageToClipboard(S.activeShareScreenshot.item);
+        void copyScreenshotImageToClipboard(S.activeShareScreenshot.item, S.activeShareScreenshot.appName);
         closeShareModal();
       }
       return true;

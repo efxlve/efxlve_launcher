@@ -234,6 +234,8 @@ export const S = {
   { code: 0x24, name: "Home" },
 ]) as { code: number; name: string }[],
   loadedScreenshots: (new Map()) as Map<string, GameScreenshotItem[]>,
+  /** Full-resolution data URLs for the galleries a consumer is viewing now. */
+  screenshotFullSrc: new Map<string, string>(),
   loadingScreenshotsFor: (null) as string | null,
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,

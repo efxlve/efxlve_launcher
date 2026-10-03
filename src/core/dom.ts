@@ -51,6 +51,7 @@ export function closeModal(): void {
   // Screenshot data URLs are tens of megabytes for a full gallery; they are
   // only meaningful while the drawer is open, so free them with it.
   S.loadedScreenshots.clear();
+  S.screenshotFullSrc.clear();
   updateSidebarActive();
   updatePageHeader();
   // Drop per-game manage state along with the drawer that owns the manage tab.

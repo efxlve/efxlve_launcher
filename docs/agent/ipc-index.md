@@ -79,6 +79,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_get_queue` | `epicGetQueue({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_get_saved_accounts` | `epicGetSavedAccounts({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_get_screenshot_dir` | `epicGetScreenshotDir({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `epic_get_screenshot_full_data` | `epicGetScreenshotFullData({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_get_screenshot_move_info` | `epicGetScreenshotMoveInfo({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_get_settings` | `epicGetSettings({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_get_steamgrid_covers` | `epicGetSteamgridCovers({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
@@ -190,6 +191,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_get_game_details` | `steamGetGameDetails({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_get_game_screenshots` | `steamGetGameScreenshots({ ... })` | `src-tauri/src/steam/shots.rs` |
 | `steam_get_saved_accounts` | `steamGetSavedAccounts({ ... })` | `src-tauri/src/steam_auth/session.rs` |
+| `steam_get_screenshot_full_data` | `steamGetScreenshotFullData({ ... })` | `src-tauri/src/steam/shots.rs` |
 | `steam_import_collections` | `steamImportCollections({ ... })` | `src-tauri/src/steam/collections.rs` |
 | `steam_library_art` | `steamLibraryArt({ ... })` | `src-tauri/src/steam_art.rs` |
 | `steam_list_installed` | `steamListInstalled({ ... })` | `src-tauri/src/steam/protocol.rs` |

@@ -27,6 +27,7 @@ import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { setView, storeUrlFor } from "../store/store-view";
 import { storeLogo } from "../store/store-logos";
+import { forgetGameScreenshots } from "../screenshots/screenshots-view";
 import { storeVersionLabel } from "../drawer/external-versions";
 import { accountAvatar, profileSelection } from "../profile/profile-view";
 import {
@@ -903,6 +904,10 @@ export function tvOpenDetails(appName?: string): void {
   if (!targetId) return;
   const s = summaryOf(targetId);
   if (!s) return;
+  // Moving between games inside the hub frees the previous gallery.
+  if (S.tvDetailAppName && S.tvDetailAppName !== s.appName) {
+    forgetGameScreenshots(S.tvDetailAppName);
+  }
   S.tvDetailAppName = s.appName;
   activeHubTab = "overview";
   ensureGameHubData(s);
@@ -912,7 +917,7 @@ export function tvOpenDetails(appName?: string): void {
 
 export function tvCloseDetails(): void {
   // The hub's screenshot gallery is tens of megabytes; free it with the hub.
-  if (S.tvDetailAppName) S.loadedScreenshots.delete(S.tvDetailAppName);
+  if (S.tvDetailAppName) forgetGameScreenshots(S.tvDetailAppName);
   S.tvDetailAppName = null;
   activeHubTab = "overview";
   render();
@@ -1044,6 +1049,8 @@ export function closeTvMode(): void {
   window.clearTimeout(bootTimer);
   stopClockTimer();
   document.getElementById("tv-boot")?.remove();
+  // Leaving TV Mode frees the hub's gallery too, not only its own close path.
+  if (S.tvDetailAppName) forgetGameScreenshots(S.tvDetailAppName);
   S.tvDetailAppName = null;
   tvProfileOpenState = false;
   openedDetailsFromProfile = false;
