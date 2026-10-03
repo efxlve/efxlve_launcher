@@ -166,20 +166,32 @@ fn status_rows() -> Vec<CompanionStoreStatus> {
 
 /// Installed games, plus the owned catalog of every linked account.
 #[tauri::command]
-pub fn companion_installed_games() -> Vec<CompanionGame> {
-    with_cached_art(&library_games())
+pub async fn companion_installed_games() -> Vec<CompanionGame> {
+    // Walks every store's catalogs and install folders; a sync command would
+    // run this on the main thread and freeze the window.
+    tokio::task::spawn_blocking(companion_games_sync)
+        .await
+        .unwrap_or_default()
 }
 
 /// Same list as `companion_installed_games`. Kept so the accounts page can ask
 /// for the library by the name it uses.
 #[tauri::command]
-pub fn companion_library() -> Vec<CompanionGame> {
-    companion_installed_games()
+pub async fn companion_library() -> Vec<CompanionGame> {
+    tokio::task::spawn_blocking(companion_games_sync)
+        .await
+        .unwrap_or_default()
+}
+
+fn companion_games_sync() -> Vec<CompanionGame> {
+    with_cached_art(&library_games())
 }
 
 #[tauri::command]
-pub fn companion_store_status() -> Vec<CompanionStoreStatus> {
-    status_rows()
+pub async fn companion_store_status() -> Vec<CompanionStoreStatus> {
+    tokio::task::spawn_blocking(status_rows)
+        .await
+        .unwrap_or_default()
 }
 
 #[tauri::command]

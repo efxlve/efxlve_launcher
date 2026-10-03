@@ -80,10 +80,16 @@ pub fn read_playtimes(steam: &Path) -> std::collections::HashMap<String, SteamPl
 }
 
 #[tauri::command]
-pub fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime> {
-    steam_install_path()
-        .map(|p| read_playtimes(&p))
-        .unwrap_or_default()
+pub async fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime> {
+    // The client's local config can be a few megabytes; keep the parse off the
+    // main thread.
+    tokio::task::spawn_blocking(|| {
+        steam_install_path()
+            .map(|p| read_playtimes(&p))
+            .unwrap_or_default()
+    })
+    .await
+    .unwrap_or_default()
 }
 
 #[cfg(test)]

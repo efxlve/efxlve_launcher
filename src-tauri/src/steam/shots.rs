@@ -16,8 +16,16 @@ use crate::legendary::screenshots::{
 /// Read-only: the files belong to the Steam client, so the gallery shows its
 /// thumbnails and opens the originals, but never edits or deletes them.
 #[tauri::command]
-pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
-    let Some(root) = steam_screenshots_root(&app_id) else {
+pub async fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
+    // Disk reads and thumbnail generation stay off the main thread: a sync
+    // command runs on it and a gallery of large PNGs would freeze the window.
+    tokio::task::spawn_blocking(move || steam_shots_for(&app_id))
+        .await
+        .unwrap_or_default()
+}
+
+fn steam_shots_for(app_id: &str) -> Vec<GameScreenshotItem> {
+    let Some(root) = steam_screenshots_root(app_id) else {
         return Vec::new();
     };
     let Ok(entries) = std::fs::read_dir(&root) else {
@@ -85,11 +93,22 @@ pub fn steam_get_game_screenshots(app_id: String) -> Vec<GameScreenshotItem> {
 
 /// Full-resolution data URL for one Steam screenshot, on demand.
 #[tauri::command]
-pub fn steam_get_screenshot_full_data(app_id: String, file_path: String) -> Result<String, String> {
-    let Some(root) = steam_screenshots_root(&app_id) else {
+pub async fn steam_get_screenshot_full_data(
+    app_id: String,
+    file_path: String,
+) -> Result<String, String> {
+    // Reading and encoding one original is megabytes of work: keep it off the
+    // main thread.
+    tokio::task::spawn_blocking(move || steam_full_data_for(&app_id, &file_path))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn steam_full_data_for(app_id: &str, file_path: &str) -> Result<String, String> {
+    let Some(root) = steam_screenshots_root(app_id) else {
         return Err("@t:ss.fileNotFound".to_string());
     };
-    let path = std::path::PathBuf::from(&file_path);
+    let path = std::path::PathBuf::from(file_path);
     // Only the client's own screenshot folder may be read here.
     if !path.starts_with(&root) {
         return Err("@t:ss.fileNotFound".to_string());
@@ -130,7 +149,7 @@ mod tests {
     #[ignore]
     fn live_steam_screenshots() {
         for app in ["730", "359550", "381210"] {
-            let items = steam_get_game_screenshots(app.to_string());
+            let items = steam_shots_for(app);
             println!("{app}: {} screenshots", items.len());
             for item in items.iter().take(3) {
                 println!(

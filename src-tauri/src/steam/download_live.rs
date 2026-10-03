@@ -264,32 +264,38 @@ fn events_now(path: &Path) -> Vec<LiveEvent> {
 
 /// Downloading apps, with the byte counter moved forward since Steam's last exact sample.
 #[tauri::command]
-pub fn steam_download_live() -> Vec<SteamLiveDownload> {
-    let Some(steam) = steam_install_path() else {
-        return Vec::new();
-    };
-    let games = installed_games(&steam);
-    let events = events_now(&steam.join("logs").join("content_log.txt"));
-    let now = now_unix();
-    games
-        .into_iter()
-        .filter(|game| game.downloading)
-        .map(|game| {
-            let (got, total, rate) = live_bytes(
-                &events,
-                &game.app_id,
-                game.bytes_downloaded,
-                game.bytes_to_download,
-                now,
-            );
-            SteamLiveDownload {
-                app_id: game.app_id,
-                bytes_downloaded: got,
-                bytes_to_download: total,
-                bytes_per_sec: rate,
-            }
-        })
-        .collect()
+pub async fn steam_download_live() -> Vec<SteamLiveDownload> {
+    // Manifest scan plus the client's content log: off the main thread, since
+    // the downloads page polls this while bytes are moving.
+    tokio::task::spawn_blocking(|| {
+        let Some(steam) = steam_install_path() else {
+            return Vec::new();
+        };
+        let games = installed_games(&steam);
+        let events = events_now(&steam.join("logs").join("content_log.txt"));
+        let now = now_unix();
+        games
+            .into_iter()
+            .filter(|game| game.downloading)
+            .map(|game| {
+                let (got, total, rate) = live_bytes(
+                    &events,
+                    &game.app_id,
+                    game.bytes_downloaded,
+                    game.bytes_to_download,
+                    now,
+                );
+                SteamLiveDownload {
+                    app_id: game.app_id,
+                    bytes_downloaded: got,
+                    bytes_to_download: total,
+                    bytes_per_sec: rate,
+                }
+            })
+            .collect()
+    })
+    .await
+    .unwrap_or_default()
 }
 
 #[cfg(windows)]

@@ -695,8 +695,17 @@ pub(super) fn totals_cache_path(app: &tauri::AppHandle) -> PathBuf {
 /// Achievement summaries for the library covers: the per-game disk cache plus
 /// the Steam client's own stats files (offline, no network, no key).
 #[tauri::command]
-pub fn steam_get_achievements_summary(
+pub async fn steam_get_achievements_summary(
     app: tauri::AppHandle,
+) -> std::collections::HashMap<String, GameAchievementSummary> {
+    // Directory scans plus JSON parses: keep the main thread free.
+    tokio::task::spawn_blocking(move || steam_achievements_summary_for(&app))
+        .await
+        .unwrap_or_default()
+}
+
+fn steam_achievements_summary_for(
+    app: &tauri::AppHandle,
 ) -> std::collections::HashMap<String, GameAchievementSummary> {
     let mut out = std::collections::HashMap::new();
     if let Ok(entries) = std::fs::read_dir(achievements_cache_dir(&app)) {
