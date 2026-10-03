@@ -547,6 +547,7 @@ html.sb-narrow .sb-toggle-label {
   height: 40px;
   margin: 0;
   padding: 3px;
+  position: relative;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
@@ -560,6 +561,20 @@ html.sb-narrow .sb-toggle-label {
 }
 .store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
+/* Active pill: glides between tabs instead of snapping (syncStoreTabsPill). */
+.store-tabs-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 34px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 240ms var(--ease), width 240ms var(--ease), height 200ms var(--ease), opacity 160ms ease;
+}
+.store-tabs-pill.is-ready { opacity: 1; }
 .store-tabs .tab {
   display: inline-flex;
   align-items: center;
@@ -571,9 +586,13 @@ html.sb-narrow .sb-toggle-label {
   font-weight: 600;
   color: var(--text-2);
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  transition: color 140ms ease, transform 120ms ease;
 }
-.store-tabs .tab:hover { color: var(--text); background: var(--surface-2); }
-.store-tabs .tab.active { color: #fff; background: var(--surface-3); }
+.store-tabs .tab:active { transform: scale(0.94); }
+.store-tabs .tab:hover:not(.active) { color: var(--text); background: var(--surface-2); }
+.store-tabs .tab.active { color: #fff; background: transparent; }
 .store-tabs .tab.active::after { display: none; }
 .store-tabs .store-tab-logo { width: 16px; height: 16px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
 .store-tabs .tab:hover .store-tab-logo,

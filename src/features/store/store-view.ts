@@ -614,8 +614,53 @@ export function setStoreLogosOnly(on: boolean): void {
   applyStoreTabs();
 }
 
-// The tab strip is static markup: apply the stored choices once at boot.
+/**
+ * Glides the active pill under the open store's tab. The tab's layout offsets
+ * are relative to the same padding box as the pill, so a scrolled or resized
+ * strip stays aligned without extra bookkeeping.
+ */
+export function syncStoreTabsPill(): void {
+  const switcher = document.getElementById("store-switcher");
+  if (!switcher) return;
+  let pill = switcher.querySelector<HTMLElement>(".store-tabs-pill");
+  if (!pill) {
+    pill = document.createElement("span");
+    pill.className = "store-tabs-pill";
+    pill.setAttribute("aria-hidden", "true");
+    switcher.prepend(pill);
+  }
+  const active = switcher.querySelector<HTMLElement>(".tab.active:not([hidden])");
+  if (!active || active.offsetWidth === 0) {
+    pill.classList.remove("is-ready");
+    return;
+  }
+  // The first aim must not animate in from the strip's corner.
+  const first = !pill.classList.contains("is-ready");
+  if (first) pill.style.transition = "none";
+  pill.style.width = `${active.offsetWidth}px`;
+  pill.style.height = `${active.offsetHeight}px`;
+  pill.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
+  if (first) {
+    void pill.offsetWidth;
+    pill.style.transition = "";
+  }
+  pill.classList.add("is-ready");
+}
+
+// The tab strip is static markup: apply the stored choices once at boot and
+// keep the pill in step with every later class change (open or hidden store).
 applyStoreTabs();
+syncStoreTabsPill();
+if (typeof MutationObserver !== "undefined") {
+  const switcher = document.getElementById("store-switcher");
+  if (switcher) {
+    new MutationObserver(syncStoreTabsPill).observe(switcher, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "hidden"],
+    });
+  }
+}
 
 /**
  * Shows the tab scroll arrows only while the tab strip overflows, and dims the
@@ -633,6 +678,7 @@ function updateStoreTabsArrows(): void {
   const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 1;
   if (prev) prev.disabled = !overflow || atStart;
   if (next) next.disabled = !overflow || atEnd;
+  syncStoreTabsPill();
 }
 
 function initStoreTabsBar(): void {

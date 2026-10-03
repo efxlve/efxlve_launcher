@@ -81,8 +81,8 @@ function toggle(act: string, checked: boolean): string {
   return `<label class="switch"><input type="checkbox" data-act="${act}" ${checked ? "checked" : ""} /><span class="track"></span></label>`;
 }
 
-function group(rows: string, title = ""): string {
-  return `${title ? `<h3 class="section-title">${title}</h3>` : ""}<div class="list settings-group">${rows}</div>`;
+function group(rows: string, title = "", note = ""): string {
+  return `${title ? `<h3 class="section-title">${title}</h3>` : ""}${note}<div class="list settings-group">${rows}</div>`;
 }
 
 /** One-line explanation box (shared component, see DESIGN_SYSTEM.md). */
@@ -489,7 +489,6 @@ function renderAppearance(): string {
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
     ) +
-    infoBox("settings.storeTabsNote") +
     group(
       HEADER_STORES.map((id) => {
         const hidden = S.hiddenStores.has(id);
@@ -503,6 +502,7 @@ function renderAppearance(): string {
       }).join("") +
       row(t("settings.storeLogosOnlyTitle"), t("settings.storeLogosOnlyDesc"), toggle("toggle-store-logos-only", S.storeLogosOnly)),
       t("settings.secStoreTabs"),
+      infoBox("settings.storeTabsNote"),
     ) +
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`
   );
