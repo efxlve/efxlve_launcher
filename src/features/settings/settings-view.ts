@@ -347,12 +347,21 @@ function renderController(): string {
       );
 
   const status = S.controllerBridge;
+  const bridgeRunning = status?.bridgeRunning ?? false;
   const bridgeChip = status === null
     ? `<span class="chip">${t("controller.checking")}</span>`
-    : status.viEmBus
-      ? `<span class="chip ok">${t("controller.bridgeFound")}</span>`
-      : `<span class="chip warn">${t("controller.bridgeMissing")}</span>`;
-  const steamNote = status?.steam ? `<br />${t("controller.steamNote")}` : "";
+    : !status.viEmBus
+      ? `<span class="chip warn">${t("controller.bridgeMissing")}</span>`
+      : bridgeRunning
+        ? `<span class="chip ok">${status.bridgeDevice ? t("controller.bridgeRunningWith", { name: status.bridgeDevice }) : t("controller.bridgeRunning")}</span>`
+        : `<span class="chip">${t("controller.bridgeStopped")}</span>`;
+  const bridgeControls = status === null
+    ? ""
+    : !status.viEmBus
+      ? `${bridgeChip}
+         <button class="btn ghost small" data-act="open-external-url" data-url="https://github.com/nefarius/ViGEmBus/releases">${t("controller.downloadVigem")}</button>
+         <button class="btn ghost small" data-act="controller-refresh">${t("controller.refresh")}</button>`
+      : `${bridgeChip}${toggle("toggle-controller-bridge", bridgeRunning)}`;
   const deckNote = isSteamDeckDevice() || pads.some((g) => controllerKind(g.id) === "steamdeck")
     ? `<p class="page-sub">${t("controller.deckNote")}</p>`
     : "";
@@ -367,11 +376,8 @@ function renderController(): string {
   );
   const bridge = row(
     t("controller.bridgeTitle"),
-    `${t("controller.bridgeDesc")}${steamNote}`,
-    `${bridgeChip}
-     <button class="btn ghost small" data-act="open-external-url" data-url="https://github.com/nefarius/ViGEmBus/releases">${t("controller.downloadVigem")}</button>
-     <button class="btn ghost small" data-act="open-external-url" data-url="https://github.com/Ryochan7/DS4Windows/releases">${t("controller.downloadDs4")}</button>
-     <button class="btn ghost small" data-act="controller-refresh">${t("controller.refresh")}</button>`,
+    t("controller.bridgeDesc"),
+    bridgeControls,
     true,
   );
 
@@ -695,7 +701,7 @@ export async function loadControllerView(force = false): Promise<void> {
   try {
     S.controllerBridge = await controllerSupportStatus();
   } catch {
-    S.controllerBridge = { viEmBus: false, steam: false, steamPath: "" };
+    S.controllerBridge = { viEmBus: false, steam: false, steamPath: "", bridgeRunning: false, bridgeDevice: "" };
   }
   render();
 }

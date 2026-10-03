@@ -30,6 +30,7 @@ import {
   STORE_BADGE_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
+  CONTROLLER_BRIDGE_KEY,
   isTauri,
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
@@ -59,6 +60,8 @@ import {
   epicSetNetworkProfile,
   epicSetOfflineMode,
   epicSyncEglInstalled,
+  controllerBridgeStart,
+  controllerBridgeStop,
 } from "../../epic";
 import { bootEpic } from "../auth/auth-actions";
 import { updateColGamesListInPlace } from "../collections/collections-view";
@@ -636,6 +639,22 @@ document.addEventListener("click", (e) => {
     if (S.settingsSection === "controller") void loadControllerView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
+  } else if (act === "toggle-controller-bridge") {
+    const enabled = !(S.controllerBridge?.bridgeRunning ?? false);
+    localStorage.setItem(CONTROLLER_BRIDGE_KEY, String(enabled));
+    void (enabled ? controllerBridgeStart() : controllerBridgeStop())
+      .then((bridge) => {
+        if (S.controllerBridge) {
+          S.controllerBridge.bridgeRunning = bridge.running;
+          S.controllerBridge.bridgeDevice = bridge.device;
+        }
+        render();
+      })
+      .catch((e: unknown) => {
+        localStorage.setItem(CONTROLLER_BRIDGE_KEY, "false");
+        toast(String(e), "err");
+        void loadControllerView(true);
+      });
   } else if (act === "controller-open-settings") {
     S.view = "settings";
     S.settingsSection = "controller";

@@ -23,6 +23,9 @@ pub struct ControllerSupportStatus {
     pub steam: bool,
     /// Steam install directory when known (empty otherwise).
     pub steam_path: String,
+    /// XInput bridge state and the pad it currently bridges.
+    pub bridge_running: bool,
+    pub bridge_device: String,
 }
 
 /// Reports which controller-bridging layers exist on this machine.
@@ -31,11 +34,14 @@ pub fn controller_support_status() -> ControllerSupportStatus {
     let vi_em_bus =
         winreg::query(r"HKLM\SYSTEM\CurrentControlSet\Services\ViGEmBus", None).is_some();
     let steam_path = steam::steam_install_path();
+    let bridge = crate::controller_bridge::status();
     ControllerSupportStatus {
         vi_em_bus,
         steam: steam_path.is_some(),
         steam_path: steam_path
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_default(),
+        bridge_running: bridge.running,
+        bridge_device: bridge.device,
     }
 }

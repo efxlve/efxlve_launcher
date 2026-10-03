@@ -22,6 +22,7 @@ import {
   epicPauseDownload,
   epicResumeDownload,
   epicTakePendingLaunch,
+  controllerBridgeStart,
   toEpicSlug,
   type DlProgressEvent,
   type DownloadCancelledEvent,
@@ -40,7 +41,7 @@ import { loadNotifications, pushNotification } from "../notifications/notificati
 import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
-import { isTauri } from "../../core/constants";
+import { CONTROLLER_BRIDGE_KEY, isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
@@ -183,6 +184,10 @@ export async function initApp(hooks: {
   // Kick off the library load immediately: it must not wait for listener
   // registration, settings fetches or window-chrome IPC.
   initGamepadSupport();
+  // Re-arm the XInput bridge when the user left it on last session.
+  if (localStorage.getItem(CONTROLLER_BRIDGE_KEY) === "true") {
+    void controllerBridgeStart().catch(() => {});
+  }
   void bootEpic();
   void initGogSession();
   void hydrateSteamAuth();

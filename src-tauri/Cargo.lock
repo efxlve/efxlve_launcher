@@ -973,6 +973,7 @@ dependencies = [
  "base64 0.22.1",
  "discord-rich-presence",
  "flate2",
+ "hidapi",
  "notify",
  "qrcode",
  "rand 0.8.8",
@@ -992,6 +993,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "url",
+ "vigem-client",
  "zeroize",
 ]
 
@@ -1646,6 +1648,19 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hidapi"
+version = "2.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "818c0e1d27887aaf76fe737042e27a66b796a7b099e6d2e1a72d106c2dff3fa6"
+dependencies = [
+ "cc",
+ "cfg-if",
+ "libc",
+ "pkg-config",
+ "windows-sys 0.61.2",
+]
 
 [[package]]
 name = "html5ever"
@@ -5193,6 +5208,15 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "vigem-client"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b857e6f99efe1e1eb1e4dfb035de8ae7ec8ec56bd1928edcbd7c6e4427634d52"
+dependencies = [
+ "winapi",
+]
 
 [[package]]
 name = "vswhom"

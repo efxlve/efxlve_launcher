@@ -4,6 +4,7 @@
 mod cloud_backup;
 mod companion;
 mod controller;
+mod controller_bridge;
 mod eos;
 mod gogdl;
 mod legendary;
@@ -593,6 +594,8 @@ fn main() {
             epic_take_pending_launch,
             shared_library::shared_library_index,
             controller::controller_support_status,
+            controller_bridge::controller_bridge_start,
+            controller_bridge::controller_bridge_stop,
             steam::steam_status,
             steam::steam_open_client,
             steam::steam_open_downloads,

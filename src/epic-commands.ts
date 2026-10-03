@@ -90,9 +90,21 @@ export interface ControllerSupportStatus {
   viEmBus: boolean;
   steam: boolean;
   steamPath: string;
+  bridgeRunning: boolean;
+  bridgeDevice: string;
 }
 export const controllerSupportStatus = () =>
   invoke<ControllerSupportStatus>("controller_support_status");
+
+/** XInput bridge state: running plus the pad it currently bridges. */
+export interface ControllerBridgeStatus {
+  running: boolean;
+  device: string;
+}
+export const controllerBridgeStart = () =>
+  invoke<ControllerBridgeStatus>("controller_bridge_start");
+export const controllerBridgeStop = () =>
+  invoke<ControllerBridgeStatus>("controller_bridge_stop");
 export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 
 /** Discord Rich Presence: enable/disable and set the Discord application id. */

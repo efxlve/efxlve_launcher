@@ -35,3 +35,7 @@ notify = "6"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(windows)'.dependencies]
+hidapi = "2"
+vigem-client = "0.1.4"

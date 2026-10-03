@@ -40,6 +40,9 @@ export const SPEED_BITS_KEY = "efxlve-speed-bits";
 export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
 /** Hide the Steam window on launch and quit Steam when the game closes. Default off. */
 export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
+
+/** Settings > Controller: PlayStation pads are mapped to a virtual Xbox pad. */
+export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";
 /** Persisted in-app notification history. */
 export const NOTIF_KEY = "efxlve-notifications";
 /** User declined the optional EOS overlay install notice. */

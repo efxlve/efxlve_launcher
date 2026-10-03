@@ -38,6 +38,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `companion_store_status` | `companionStoreStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_sync` | `companionSync({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_unlink` | `companionUnlink({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `controller_bridge_start` | `controllerBridgeStart({ ... })` | `src-tauri/src/controller_bridge.rs` |
+| `controller_bridge_stop` | `controllerBridgeStop({ ... })` | `src-tauri/src/controller_bridge.rs` |
 | `controller_support_status` | `controllerSupportStatus({ ... })` | `src-tauri/src/controller.rs` |
 | `destroy_store_view` | `destroyStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `ea_login_hide` | `eaLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
