@@ -125,8 +125,10 @@ const CAPS: Record<string, Cap[]> = {
     { key: "launch", state: "yes" },
     { key: "achievements", state: "no" },
     { key: "playtime", state: "local" },
-    { key: "cloud", state: "no" },
-    { key: "store", state: "yes" },
+    // Riot syncs cloud saves inside its own client, and it has no web
+    // storefront at all.
+    { key: "cloud", state: "via" },
+    { key: "store", state: "no" },
     { key: "screenshots", state: "hotkey" },
   ],
 };
