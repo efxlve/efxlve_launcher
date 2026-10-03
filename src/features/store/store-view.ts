@@ -323,7 +323,10 @@ export async function openStore(store: StoreId = "epic"): Promise<void> {
  * Long enough that coming back from a game session or the library usually finds
  * the storefront still warm; the disk cache covers the rest.
  */
-const STORE_IDLE_DESTROY_MS = 15 * 60 * 1000;
+/** Idle time before the embedded store webview is destroyed to free memory.
+ *  Fifteen minutes kept a renderer alive long after the user left the store;
+ *  five still covers normal browsing between the library and the stores. */
+const STORE_IDLE_DESTROY_MS = 5 * 60 * 1000;
 /** Invalidates an in-flight show once the user has left the store. */
 let storeOpenEpoch = 0;
 
