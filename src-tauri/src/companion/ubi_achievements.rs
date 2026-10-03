@@ -495,7 +495,6 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
 mod tests {
     use super::*;
     use crate::companion::proto::{push_bytes, push_varint_field};
-
     fn spool_record(id: u64, earned: u64) -> Vec<u8> {
         let mut record = Vec::new();
         push_varint_field(&mut record, 1, id);
@@ -593,5 +592,29 @@ mod tests {
         assert!(file_matches_spec("3539_acorigins.zip", "acorigins"));
         assert!(!file_matches_spec("3539_ACOdyssey.zip", "acorigins"));
         assert!(!file_matches_spec("3539_ACOrigins.zip", ""));
+    }
+
+    /// Live check for the bulk summary the profile reads. Needs a linked
+    /// Ubisoft account with its client installed.
+    /// Run: `cargo test live_ubisoft_achievement_summary -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_ubisoft_achievement_summary() {
+        let mut found = 0;
+        for game in super::super::library_games() {
+            if game.store != "ubisoft" {
+                continue;
+            }
+            let response = achievements_for(&game.id, &game.name, "en");
+            if response.total_achievements == 0 {
+                continue;
+            }
+            found += 1;
+            println!(
+                "{} | {}/{} unlocked | platinum {}",
+                game.name, response.user_unlocked, response.total_achievements, response.is_platinum
+            );
+        }
+        println!("ubisoft games with achievements: {found}");
     }
 }

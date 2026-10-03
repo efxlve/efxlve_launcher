@@ -10,6 +10,7 @@ import { companionLibrary, companionPlaytimes, companionResolveCovers, companion
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
+import { loadEpicAchSummaries } from "../auth/auth-actions";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 
@@ -24,6 +25,8 @@ function bindCompanionLogin(): void {
       setView("library");
       render();
     });
+    // A fresh link also brings new achievement sets (Ubisoft reads its cache).
+    void loadEpicAchSummaries();
   });
   void listen<string>("companion-signin-failed", (event) => {
     // The store child sits above the toast layer, so close it first.

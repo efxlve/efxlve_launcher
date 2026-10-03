@@ -104,7 +104,9 @@ fn row_from_record(record: &[u8]) -> Option<UbiRow> {
         },
     );
     let launch_id = if launch_id == 0 { install_id } else { launch_id };
-    if launch_id == 0 || !yaml.contains("start_game") {
+    // Newer clients leave `start_game` out of a game's YAML; the space id is
+    // then the marker that still separates a game from a helper entry.
+    if launch_id == 0 || (!yaml.contains("start_game") && !yaml.contains("space_id:")) {
         return None;
     }
     if is_other_store(&yaml) {
