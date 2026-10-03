@@ -50,6 +50,7 @@ body.tv-mode #view {
   height: 100%;
   background: #000000;
 }
+body.tv-mode #view { scrollbar-gutter: auto; }
 
 /* TV Mode: no scrollbars anywhere. The shell scrolls with the controller or
    the wheel, and a bar that slips through flashes a blue sliver at the window
