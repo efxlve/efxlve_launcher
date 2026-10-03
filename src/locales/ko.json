@@ -1558,6 +1558,8 @@
   "nav.friends": "친구",
   "friends.unavailableTitle": "친구 기능을 사용할 수 없습니다",
   "friends.unavailableDesc": "이 빌드에는 친구 연동이 없습니다. 연결된 스토어 계정은 계속 관리할 수 있습니다.",
+  "coming.spotify": "Spotify 곱 출시! 그때까지는 Alt-Tab으로 음악을 켜는 게 실력입니다 — 우리는 런처지, DJ가 아니니까요.",
+  "coming.discord": "Discord 곱 출시! 그때까지는 친구들에게 '한 판만 더'를 직접 말해야 합니다.",
   "nav.resizeSidebar": "사이드바 너비 조절 (두 번 클릭하면 초기화)",
   "nav.collapseSidebar": "사이드바 접기",
   "nav.expandSidebar": "사이드바 펼치기",

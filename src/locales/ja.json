@@ -1558,6 +1558,8 @@
   "nav.friends": "フレンド",
   "friends.unavailableTitle": "フレンドは利用できません",
   "friends.unavailableDesc": "このビルドにフレンド連携はありません。接続したストアアカウントの管理は引き続きできます。",
+  "coming.spotify": "Spotify は近日対応！それまでは Alt+Tab で音楽を流すのもスキルのうち — 私たちはランチャーであって、DJ ではありません。",
+  "coming.discord": "Discord は近日対応！それまでは「あと1試合」を手動で伝える必要があります。",
   "nav.resizeSidebar": "サイドバーの幅を変更（ダブルクリックでリセット）",
   "nav.collapseSidebar": "サイドバーを折りたたむ",
   "nav.expandSidebar": "サイドバーを展開",

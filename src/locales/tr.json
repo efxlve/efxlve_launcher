@@ -28,6 +28,8 @@
   "nav.friends": "Arkadaşlar",
   "friends.unavailableTitle": "Arkadaşlar kullanılamıyor",
   "friends.unavailableDesc": "Bu sürümde arkadaş entegrasyonu yok. Bağlı mağaza hesaplarını yönetebilirsiniz.",
+  "coming.spotify": "Spotify çok yakında! O zamana kadar müziği Alt-Tab ile açmak bir yetenek olarak kalıyor — biz launcher'ız, DJ değiliz.",
+  "coming.discord": "Discord çok yakında! O zamana kadar arkadaşlarına “son bir oyun” demek manuel kalıyor.",
   "nav.online": "Çevrimiçi",
   "nav.offline": "Çevrimdışı",
   "nav.offlineTip": "Çevrimdışı Mod Aktif — Epic ağ istekleri durduruldu (Çevrimiçi olmak için tıklayın)",

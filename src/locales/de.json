@@ -1558,6 +1558,8 @@
   "nav.friends": "Freunde",
   "friends.unavailableTitle": "Freunde sind nicht verfügbar",
   "friends.unavailableDesc": "Diese Version hat keine Freunde-Anbindung. Verbundene Shop-Konten kannst du weiter verwalten.",
+  "coming.spotify": "Spotify kommt bald! Bis dahin bleibt Alt-Tab zur Musik eine Fähigkeit — wir sind ein Launcher, kein DJ.",
+  "coming.discord": "Discord kommt bald! Bis dahin bleibt „nur noch ein Spiel“ ein manueller Vorgang.",
   "nav.resizeSidebar": "Seitenleiste Größe ändern (Doppelklick setzt zurück)",
   "nav.collapseSidebar": "Seitenleiste einklappen",
   "nav.expandSidebar": "Seitenleiste ausklappen",

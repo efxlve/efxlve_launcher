@@ -1558,6 +1558,8 @@
   "nav.friends": "Amigos",
   "friends.unavailableTitle": "Amigos no disponibles",
   "friends.unavailableDesc": "Esta versión no integra amigos. Las cuentas de tienda conectadas se pueden seguir gestionando.",
+  "coming.spotify": "¡Spotify llega pronto! Hasta entonces, el Alt-Tab a tu música sigue siendo una habilidad: somos un launcher, no un DJ.",
+  "coming.discord": "¡Discord llega pronto! Hasta entonces, decir «una partida más» sigue siendo un proceso manual.",
   "nav.resizeSidebar": "Cambiar el ancho de la barra (doble clic para restablecer)",
   "nav.collapseSidebar": "Contraer la barra lateral",
   "nav.expandSidebar": "Expandir la barra lateral",

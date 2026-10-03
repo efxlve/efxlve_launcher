@@ -594,6 +594,9 @@ document.addEventListener("click", (e) => {
     void epicSetOfflineMode(S.offlineMode);
     toast(i18nT(S.offlineMode ? "net.offlineOn" : "net.offlineOff"), "ok");
     render();
+  } else if (act === "coming-soon") {
+    // Playful teaser for the sidebar integrations that are not wired up yet.
+    toast(i18nT(t.dataset.app === "discord" ? "coming.discord" : "coming.spotify"), "ok");
   } else if (act === "set-net-profile") {
     const prof = t.dataset.profile;
     if (prof) {

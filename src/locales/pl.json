@@ -1558,6 +1558,8 @@
   "nav.friends": "Znajomi",
   "friends.unavailableTitle": "Znajomi są niedostępni",
   "friends.unavailableDesc": "Ta wersja nie ma integracji ze znajomymi. Połączone konta sklepów nadal można zarządzać.",
+  "coming.spotify": "Spotify już wkrótce! Do tego czasu Alt-Tab do muzyki pozostaje umiejętnością — jesteśmy launcherem, nie DJ-em.",
+  "coming.discord": "Discord już wkrótce! Do tego czasu „jeszcze jedna gra” pozostaje procesem ręcznym.",
   "nav.resizeSidebar": "Zmień szerokość paska (dwuklik resetuje)",
   "nav.collapseSidebar": "Zwiń pasek boczny",
   "nav.expandSidebar": "Rozwiń pasek boczny",

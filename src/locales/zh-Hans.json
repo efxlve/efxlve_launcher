@@ -1558,6 +1558,8 @@
   "nav.friends": "好友",
   "friends.unavailableTitle": "好友功能不可用",
   "friends.unavailableDesc": "此版本没有好友集成。仍可管理已连接的商店账号。",
+  "coming.spotify": "Spotify 即将上线！在那之前，Alt+Tab 切歌仍是一项技能——我们是启动器，不是 DJ。",
+  "coming.discord": "Discord 即将上线！在那之前，“再来一局”还得你亲口说。",
   "nav.resizeSidebar": "调整侧栏宽度（双击重置）",
   "nav.collapseSidebar": "收起侧栏",
   "nav.expandSidebar": "展开侧栏",
