@@ -31,6 +31,8 @@ import {
   SURFACE_KEY,
   TV_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
+  MINIMIZE_ON_GAME_KEY,
+  AUTOSTART_INIT_KEY,
   isTauri,
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
@@ -50,7 +52,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
-import { handleWindowResize, updateMaxIcon } from "../../core/window";
+import { handleWindowResize, updateMaxIcon, appSetAutostart } from "../../core/window";
 import { setLanguage, t as i18nT } from "../../i18n";
 import {
   epicDetectEglGames,
@@ -712,6 +714,23 @@ document.addEventListener("click", (e) => {
     if (isTauri) {
       void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
     }
+    render();
+  } else if (act === "toggle-autostart") {
+    const enabled = !S.startWithWindows;
+    S.startWithWindows = enabled;
+    void appSetAutostart(enabled)
+      .then(() => {
+        localStorage.setItem(AUTOSTART_INIT_KEY, "true");
+        render();
+      })
+      .catch((e: unknown) => {
+        S.startWithWindows = !enabled;
+        toast(String(e), "err");
+        render();
+      });
+  } else if (act === "toggle-minimize-on-game") {
+    S.minimizeOnGame = !S.minimizeOnGame;
+    localStorage.setItem(MINIMIZE_ON_GAME_KEY, String(S.minimizeOnGame));
     render();
   } else if (act === "toggle-auto-backup") {
     S.autoBackupOnExit = !S.autoBackupOnExit;

@@ -9,6 +9,7 @@
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { emptyState, icon } from "../../core/icons";
+import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -382,7 +383,7 @@ function renderController(): string {
   );
 
   const virtualNote = status?.bridgeRunning
-    ? `<p class="page-sub">${t("controller.bridgeVirtualNote")}</p>`
+    ? infoBox("controller.bridgeVirtualNote")
     : "";
   return group(padRows, t("controller.padsTitle")) + virtualNote + group(tv, t("tv.open")) + deckNote + group(bridge, t("settings.secController"));
 }
@@ -509,6 +510,8 @@ function renderSystem(): string {
     ) +
     group(
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
+      row(t("settings.startWithWindows"), t("settings.startWithWindowsDesc"), toggle("toggle-autostart", S.startWithWindows)) +
+      row(t("settings.minimizeOnGame"), t("settings.minimizeOnGameDesc"), toggle("toggle-minimize-on-game", S.minimizeOnGame)) +
       row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)),
       t("settings.secSystem"),
     ) +
@@ -660,7 +663,7 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -669,6 +672,7 @@ export async function loadSettingsView(): Promise<void> {
         steamGetApiKey().catch(() => null),
         gogGetInstallDir().catch(() => null),
         gogDefaultInstallDir().catch(() => ""),
+        appGetAutostart().catch(() => false),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
@@ -677,6 +681,7 @@ export async function loadSettingsView(): Promise<void> {
       S.steamApiKey = steamKey;
       S.gogInstallDir = gogDir || "";
       S.gogDefaultDir = gogDefault || "";
+      S.startWithWindows = autostart;
     } catch {
       // Silent: keep the last cached values.
     }

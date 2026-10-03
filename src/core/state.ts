@@ -26,6 +26,7 @@ import {
   AUTO_UPDATE_TIME_KEY,
   INITIAL_CARD_CHUNK,
   MINIMIZE_TRAY_KEY,
+  MINIMIZE_ON_GAME_KEY,
   COVER_STATS_KEY,
   SURFACE_KEY,
   PAUSE_ON_PLAY_KEY,
@@ -343,6 +344,10 @@ export const S = {
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
+  /** Mirrors the HKCU Run entry; loaded from the backend in loadSettingsView. */
+  startWithWindows: false,
+  /** Default on: `!== "false"` keeps a fresh install minimizing on game start. */
+  minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) !== "false") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,

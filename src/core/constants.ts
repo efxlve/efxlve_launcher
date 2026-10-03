@@ -43,6 +43,12 @@ export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
 
 /** Settings > Controller: PlayStation pads are mapped to a virtual Xbox pad. */
 export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";
+
+/** Settings > System: send the launcher to the taskbar when a game starts. */
+export const MINIMIZE_ON_GAME_KEY = "efxlve-minimize-on-game";
+
+/** Set once, so the "start with Windows" default never overrides a choice. */
+export const AUTOSTART_INIT_KEY = "efxlve-autostart-init";
 /** Persisted in-app notification history. */
 export const NOTIF_KEY = "efxlve-notifications";
 /** User declined the optional EOS overlay install notice. */

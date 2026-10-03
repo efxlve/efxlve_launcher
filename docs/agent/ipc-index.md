@@ -6,8 +6,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | Rust command | JS wrapper shape | File |
 |---|---|---|
 | `app_close` | `appClose({ ... })` | `src-tauri/src/main.rs` |
+| `app_get_autostart` | `appGetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_is_maximized` | `appIsMaximized({ ... })` | `src-tauri/src/main.rs` |
 | `app_minimize` | `appMinimize({ ... })` | `src-tauri/src/main.rs` |
+| `app_set_autostart` | `appSetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_decorations` | `appSetDecorations({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_fullscreen` | `appSetFullscreen({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_minimize_to_tray` | `appSetMinimizeToTray({ ... })` | `src-tauri/src/main.rs` |

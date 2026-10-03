@@ -41,7 +41,8 @@ import { loadNotifications, pushNotification } from "../notifications/notificati
 import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
-import { CONTROLLER_BRIDGE_KEY, isTauri } from "../../core/constants";
+import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, isTauri } from "../../core/constants";
+import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
@@ -187,6 +188,12 @@ export async function initApp(hooks: {
   // Re-arm the XInput bridge when the user left it on last session.
   if (localStorage.getItem(CONTROLLER_BRIDGE_KEY) === "true") {
     void controllerBridgeStart().catch(() => {});
+  }
+  // Start with Windows defaults to on; the marker keeps a user's choice.
+  if (!localStorage.getItem(AUTOSTART_INIT_KEY)) {
+    void appSetAutostart(true)
+      .then(() => localStorage.setItem(AUTOSTART_INIT_KEY, "true"))
+      .catch(() => {});
   }
   void bootEpic();
   void initGogSession();
@@ -468,6 +475,11 @@ export async function initApp(hooks: {
       if (running) {
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
+        // Opt-in: get the launcher out of the way when a game starts. TV Mode
+        // is a fullscreen couch UI and stays where it is.
+        if (S.minimizeOnGame && S.view !== "tv") {
+          void appMinimize().catch(() => {});
+        }
         // Opt-in: pause the active download while a game is running so it does not
         // steal bandwidth/disk from gameplay. Covers Epic and GOG downloads, and
         // never touches a pause the user asked for.

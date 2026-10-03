@@ -45,9 +45,52 @@ pub fn parse_reg_sz(output: &str) -> String {
         .unwrap_or_default()
 }
 
+/// Writes a `REG_SZ` value with `reg add /f` (creates the key when needed).
+pub fn set_string(key: &str, value: &str, data: &str) -> bool {
+    let mut command = Command::new("reg");
+    command.args(["add", key, "/v", value, "/t", "REG_SZ", "/d", data, "/f"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Deletes one value with `reg delete /f`. A missing value still counts as gone.
+pub fn delete_value(key: &str, value: &str) -> bool {
+    let mut command = Command::new("reg");
+    command.args(["delete", key, "/v", value, "/f"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Verifies the real write path: `reg add` must keep the quotes Windows
+    /// needs for paths with spaces. Writes to a throwaway HKCU key.
+    #[test]
+    #[ignore = "writes to HKCU"]
+    fn set_string_keeps_quotes() {
+        let key = r"HKCU\Software\EfxlveLauncherProbe";
+        assert!(set_string(key, "Path", "\"C:\\Program Files\\App\\app.exe\""));
+        let out = query(key, Some("Path")).expect("value present");
+        println!("{out}");
+        assert!(out.contains("\"C:\\Program Files\\App\\app.exe\""));
+        assert!(delete_value(key, "Path"));
+    }
 
     #[test]
     fn reg_sz_data_is_parsed_from_query_output() {

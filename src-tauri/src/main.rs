@@ -277,6 +277,31 @@ fn app_minimize(app: AppHandle) -> Result<(), String> {
     window.minimize().map_err(|e| e.to_string())
 }
 
+/// HKCU Run entry that opens the launcher at sign-in.
+const AUTOSTART_KEY: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+const AUTOSTART_VALUE: &str = "EfxlveLauncher";
+
+#[tauri::command]
+fn app_get_autostart() -> bool {
+    winreg::query(AUTOSTART_KEY, Some(AUTOSTART_VALUE)).is_some()
+}
+
+#[tauri::command]
+fn app_set_autostart(enabled: bool) -> Result<(), String> {
+    if !enabled {
+        let _ = winreg::delete_value(AUTOSTART_KEY, AUTOSTART_VALUE);
+        return Ok(());
+    }
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    // Quoted so a path with spaces stays one argument for Windows.
+    let data = format!("\"{}\"", exe.to_string_lossy());
+    if winreg::set_string(AUTOSTART_KEY, AUTOSTART_VALUE, &data) {
+        Ok(())
+    } else {
+        Err("@t:settings.autostartFailed".into())
+    }
+}
+
 #[tauri::command]
 fn app_toggle_maximize(app: AppHandle) -> Result<bool, String> {
     let window = app
@@ -503,6 +528,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             library_dir,
             app_minimize,
+            app_get_autostart,
+            app_set_autostart,
             app_toggle_maximize,
             app_is_maximized,
             app_set_fullscreen,
