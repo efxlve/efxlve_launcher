@@ -82,7 +82,9 @@ fn axis_y(value: u8) -> i16 {
 /// hundreds of updates per second for nothing. The values themselves are never
 /// altered, only the trigger has hysteresis.
 fn materially_different(next: &PadState, last: &PadState) -> bool {
-    const AXIS_STEP: u16 = 512; // ~1.5% of the stick range
+    // Two HID steps are ~516 XInput units, so the step must sit above that to
+    // swallow idle jitter; real movement passes well before a game's deadzone.
+    const AXIS_STEP: u16 = 1024;
     const TRIGGER_STEP: u8 = 3;
     next.buttons != last.buttons
         || next.left_trigger.abs_diff(last.left_trigger) > TRIGGER_STEP
@@ -386,7 +388,7 @@ fn worker(
         });
     }
 
-    let api = match hidapi::HidApi::new() {
+    let mut api = match hidapi::HidApi::new() {
         Ok(api) => api,
         Err(_) => {
             let _ = target.update(&to_xgamepad(&PadState::default()));
@@ -415,6 +417,9 @@ fn worker(
             }
         }
         if open.is_none() {
+            // hidapi caches the device list from `new()`, so a pad plugged in
+            // after the bridge started needs an explicit refresh.
+            let _ = api.refresh_devices();
             open = open_pad(&api);
             if open.is_none() {
                 // Keep the virtual pad centered while no physical pad is around.
@@ -445,14 +450,19 @@ fn worker(
                     // Report ids 0x11 (DualShock 4) and 0x31 (DualSense) only
                     // exist over Bluetooth.
                     bluetooth = matches!(buffer[0], 0x11 | 0x31);
+                    // Buttons always go through: an 8 ms gate must never eat a
+                    // tap. Analog updates keep the rate cap.
+                    let buttons_changed = state.buttons != last.buttons;
                     if materially_different(&state, &last)
-                        && last_sent.map_or(true, |sent| sent.elapsed() >= MIN_UPDATE_INTERVAL)
+                        && (buttons_changed
+                            || last_sent.map_or(true, |sent| sent.elapsed() >= MIN_UPDATE_INTERVAL))
                     {
-                        // Retry until the driver accepts the state: the virtual
-                        // pad may still be warming up right after plugin.
+                        // A rejected update (driver still warming up) is retried,
+                        // but the rate gate still applies so retries cannot run
+                        // once per report.
+                        last_sent = Some(std::time::Instant::now());
                         if target.update(&to_xgamepad(&state)).is_ok() {
                             last = state;
-                            last_sent = Some(std::time::Instant::now());
                         }
                     }
                 }
@@ -624,8 +634,8 @@ mod tests {
             ..Default::default()
         };
         let jitter = PadState {
-            thumb_lx: 1200,
-            thumb_ly: -1200,
+            thumb_lx: 1000 + 516, // two HID steps, the idle jitter ceiling
+            thumb_ly: -1000 - 516,
             left_trigger: 101,
             ..base
         };

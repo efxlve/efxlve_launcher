@@ -165,26 +165,8 @@ pub(crate) fn uninstall_games() -> Vec<FoundGame> {
 }
 
 #[cfg(windows)]
-fn query_uninstall() -> String {
+fn scan_uninstall() -> String {
     use std::os::windows::process::CommandExt;
-    use std::sync::Mutex;
-    use std::time::{Duration, Instant};
-
-    /// `reg query /s` walks every uninstall entry of three hives, which is
-    /// slow. One library refresh asks for the same data many times in a row
-    /// (once per store, plus the store status and the library list), so the
-    /// export is cached for a short window: one scan per refresh burst instead
-    /// of dozens.
-    static CACHE: Mutex<Option<(Instant, String)>> = Mutex::new(None);
-    const TTL: Duration = Duration::from_secs(20);
-
-    if let Ok(guard) = CACHE.lock() {
-        if let Some((at, text)) = guard.as_ref() {
-            if at.elapsed() < TTL {
-                return text.clone();
-            }
-        }
-    }
 
     let roots = [
         r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
@@ -203,10 +185,35 @@ fn query_uninstall() -> String {
             }
         }
     }
-    if let Ok(mut guard) = CACHE.lock() {
-        *guard = Some((Instant::now(), all.clone()));
-    }
     all
+}
+
+/// `reg query /s` walks every uninstall entry of three hives, which is slow.
+/// One library refresh asks for the same data many times in a row (once per
+/// store, plus the store status and the library list), so the export is cached
+/// for a short window.
+#[cfg(windows)]
+fn query_uninstall() -> String {
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    static CACHE: Mutex<Option<(Instant, String)>> = Mutex::new(None);
+    const TTL: Duration = Duration::from_secs(20);
+
+    // The lock is held across the scan on purpose: when the library list and
+    // the store status ask at the same time, the second caller waits and then
+    // reuses the fresh result instead of scanning a second time.
+    if let Ok(mut guard) = CACHE.lock() {
+        if let Some((at, text)) = guard.as_ref() {
+            if at.elapsed() < TTL {
+                return text.clone();
+            }
+        }
+        let text = scan_uninstall();
+        *guard = Some((Instant::now(), text.clone()));
+        return text;
+    }
+    scan_uninstall()
 }
 
 pub(crate) fn xbox_games() -> Vec<FoundGame> {

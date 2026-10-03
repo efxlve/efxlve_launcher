@@ -39,6 +39,29 @@ function saveDisk(key: string, store: Map<string, string>): void {
   }
 }
 
+/**
+ * Disk writes are debounced: the first cover resolution pass remembers one URL
+ * per game, and writing the whole map for each of them would hammer the
+ * synchronous localStorage API. One write per idle window is enough.
+ */
+const dirtyKeys = new Set<string>();
+let saveTimer = 0;
+
+function scheduleDiskSave(key: string): void {
+  dirtyKeys.add(key);
+  if (saveTimer) return;
+  saveTimer = window.setTimeout(flushDiskSaves, 1500);
+}
+
+function flushDiskSaves(): void {
+  saveTimer = 0;
+  if (dirtyKeys.has(STORAGE_KEY)) saveDisk(STORAGE_KEY, disk);
+  if (dirtyKeys.has(HERO_KEY)) saveDisk(HERO_KEY, heroDisk);
+  dirtyKeys.clear();
+}
+
+window.addEventListener("pagehide", flushDiskSaves);
+
 /** `undefined` when unknown, `""` when confirmed there is no art. */
 export function cachedSteamCover(appId: string): string | undefined {
   if (memory.has(appId)) return memory.get(appId);
@@ -49,13 +72,13 @@ export function rememberSteamCover(appId: string, url: string): void {
   memory.set(appId, url);
   if (disk.get(appId) === url) return;
   disk.set(appId, url);
-  saveDisk(STORAGE_KEY, disk);
+  scheduleDiskSave(STORAGE_KEY);
 }
 
 /** Drop a URL that 404'd so the next paint does not request it again. */
 export function forgetSteamCover(appId: string): void {
   memory.delete(appId);
-  if (disk.delete(appId)) saveDisk(STORAGE_KEY, disk);
+  if (disk.delete(appId)) scheduleDiskSave(STORAGE_KEY);
 }
 
 /** `undefined` when unknown, `""` when this session confirmed there is no hero. */
@@ -67,12 +90,12 @@ export function cachedSteamHero(appId: string): string | undefined {
 export function rememberSteamHero(appId: string, url: string): void {
   heroMemory.set(appId, url);
   if (!url) {
-    if (heroDisk.delete(appId)) saveDisk(HERO_KEY, heroDisk);
+    if (heroDisk.delete(appId)) scheduleDiskSave(HERO_KEY);
     return;
   }
   if (heroDisk.get(appId) === url) return;
   heroDisk.set(appId, url);
-  saveDisk(HERO_KEY, heroDisk);
+  scheduleDiskSave(HERO_KEY);
 }
 
 export function steamCdnPortrait(appId: string): string {

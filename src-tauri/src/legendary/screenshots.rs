@@ -36,6 +36,32 @@ pub fn set_active_running_game(
     }
 }
 
+/// PIDs of the running game, cached for a second.
+///
+/// `game_process_pids` walks every process, and the hotkey loop asks fifty
+/// times a second while a game is on screen. A game's process does not change
+/// identity while it runs, so one snapshot per second is enough.
+fn game_pids_cached(game: &RunningGame) -> Vec<u32> {
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    static CACHE: Mutex<Option<(Instant, String, Vec<u32>)>> = Mutex::new(None);
+    const TTL: Duration = Duration::from_secs(1);
+
+    if let Ok(guard) = CACHE.lock() {
+        if let Some((at, key, pids)) = guard.as_ref() {
+            if key == &game.app_name && at.elapsed() < TTL {
+                return pids.clone();
+            }
+        }
+    }
+    let pids = super::transfers::game_process_pids(game.install_path.as_deref(), &game.exes);
+    if let Ok(mut guard) = CACHE.lock() {
+        *guard = Some((Instant::now(), game.app_name.clone(), pids.clone()));
+    }
+    pids
+}
+
 /// True only when the foreground window belongs to the running game, not the launcher.
 fn game_window_is_foreground() -> bool {
     let game = match RUNNING_GAME.read() {
@@ -45,7 +71,7 @@ fn game_window_is_foreground() -> bool {
     let Some(game) = game else {
         return false;
     };
-    let pids = super::transfers::game_process_pids(game.install_path.as_deref(), &game.exes);
+    let pids = game_pids_cached(&game);
     if pids.is_empty() {
         return false;
     }

@@ -42,9 +42,13 @@ document.documentElement.classList.add("ready");
 initSidebarLayout();
 
 let lastRenderedView: View | null = null;
-viewEl.addEventListener("animationend", (e) => {
-  if (e.target instanceof HTMLElement && e.target.parentElement === viewEl) viewEl.classList.remove("view-enter");
-});
+// `animationcancel` fires when a re-render replaces the children mid-animation;
+// without it the class would stick and every later render would replay it.
+for (const type of ["animationend", "animationcancel"]) {
+  viewEl.addEventListener(type, (e) => {
+    if (e.target instanceof HTMLElement && e.target.parentElement === viewEl) viewEl.classList.remove("view-enter");
+  });
+}
 
 /** Batch the next render onto the animation frame. */
 function scheduleRender(): void {
