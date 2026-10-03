@@ -515,6 +515,13 @@ fn worker(
                     let _ = target.update(&to_xgamepad(&PadState::default()));
                     last = PadState::default();
                 }
+                // Take the virtual pad with the physical one. A dead gamepad
+                // left plugged lingers for every game, and when it finally goes
+                // (launcher exit) Steam announces the disconnect with a sound
+                // while no controller is attached.
+                if plugged && target.unplug().is_ok() {
+                    plugged = false;
+                }
                 if let Ok(mut name) = device_name.lock() {
                     name.clear();
                 }
