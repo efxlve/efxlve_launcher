@@ -341,25 +341,45 @@ mod win_process {
         !game_process_pids(install_path, candidate_exes).is_empty()
     }
 
-    /// PIDs whose image name matches a candidate exe, or whose full path sits
-    /// inside the install folder. Used both to detect a running game and to
-    /// stop it (Steam-style) without killing unrelated processes.
-    pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
-        if candidate_exes.is_empty() && install_path.is_none() {
-            return Vec::new();
+    /// One snapshot of the process list, cached for a second.
+    ///
+    /// Every session watcher (Epic 1.5 s, GOG 1 s, companion 5 s) and the
+    /// screenshot hotkey call `game_process_pids`, and each call used to open
+    /// every process to read its image path: hundreds of handles a second. The
+    /// list does not change meaningfully inside a second, so one snapshot
+    /// serves them all. Rows are `(pid, exe name, image path)`; the path is
+    /// `None` when the process refuses to open.
+    fn process_snapshot() -> std::sync::Arc<Vec<(u32, String, Option<String>)>> {
+        use std::sync::{Arc, Mutex, OnceLock};
+        use std::time::{Duration, Instant};
+
+        static CACHE: OnceLock<Mutex<Option<(Instant, Arc<Vec<(u32, String, Option<String>)>>)>>> =
+            OnceLock::new();
+        const TTL: Duration = Duration::from_secs(1);
+
+        let cache = CACHE.get_or_init(|| Mutex::new(None));
+        if let Ok(guard) = cache.lock() {
+            if let Some((at, list)) = guard.as_ref() {
+                if at.elapsed() < TTL {
+                    return list.clone();
+                }
+            }
         }
 
-        let norm_install_path = install_path.map(|p| {
-            p.to_string_lossy()
-                .replace('/', "\\")
-                .trim_end_matches('\\')
-                .to_lowercase()
-        });
+        let list = Arc::new(walk_processes());
+        if let Ok(mut guard) = cache.lock() {
+            *guard = Some((Instant::now(), list.clone()));
+        }
+        list
+    }
 
+    /// Reads the process list once, path included.
+    fn walk_processes() -> Vec<(u32, String, Option<String>)> {
+        let mut rows = Vec::new();
         unsafe {
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
             if snapshot == INVALID_HANDLE_VALUE {
-                return Vec::new();
+                return rows;
             }
 
             let mut entry = std::mem::zeroed::<PROCESSENTRY32W>();
@@ -367,15 +387,8 @@ mod win_process {
 
             if Process32FirstW(snapshot, &mut entry) == 0 {
                 CloseHandle(snapshot);
-                return Vec::new();
+                return rows;
             }
-
-            let mut pids = Vec::new();
-            let self_pid = std::process::id();
-            let self_exe = std::env::current_exe().ok().and_then(|p| {
-                p.to_str()
-                    .map(|s| s.replace('/', "\\").trim_end_matches('\\').to_lowercase())
-            });
 
             loop {
                 let len = entry
@@ -399,39 +412,7 @@ mod win_process {
                     }
                     CloseHandle(h_proc);
                 }
-
-                let is_self = entry.th32_process_id == self_pid
-                    || full_path
-                        .as_ref()
-                        .is_some_and(|p| self_exe.as_ref() == Some(p));
-                let inside = full_path.as_deref().is_some_and(|p| {
-                    norm_install_path
-                        .as_deref()
-                        .is_some_and(|inst| super::image_inside_install(p, inst))
-                });
-                let ignored = full_path.as_deref().is_some_and(|p| {
-                    p.contains("crashreportclient")
-                        || p.contains("vc_redist")
-                        || p.contains("vcredist")
-                        || p.contains("dxsetup")
-                        || p.contains("unrealcefsubprocess")
-                        || p.contains("msedgewebview2.exe")
-                });
-                let name_hit =
-                    !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == &exe_name);
-                // A readable path outside the install folder is never the game.
-                // Matching on the file name alone used to kill WebView2 (and blank
-                // this window) when the game shipped a helper with the same name.
-                let matched = !is_self
-                    && if norm_install_path.is_some() && full_path.is_some() {
-                        inside && !ignored
-                    } else {
-                        name_hit && !super::shared_host_exe(&exe_name)
-                    };
-
-                if matched {
-                    pids.push(entry.th32_process_id);
-                }
+                rows.push((entry.th32_process_id, exe_name, full_path));
 
                 if Process32NextW(snapshot, &mut entry) == 0 {
                     break;
@@ -439,8 +420,65 @@ mod win_process {
             }
 
             CloseHandle(snapshot);
-            pids
         }
+        rows
+    }
+
+    /// PIDs whose image name matches a candidate exe, or whose full path sits
+    /// inside the install folder. Used both to detect a running game and to
+    /// stop it (Steam-style) without killing unrelated processes.
+    pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
+        if candidate_exes.is_empty() && install_path.is_none() {
+            return Vec::new();
+        }
+
+        let norm_install_path = install_path.map(|p| {
+            p.to_string_lossy()
+                .replace('/', "\\")
+                .trim_end_matches('\\')
+                .to_lowercase()
+        });
+
+        let self_pid = std::process::id();
+        let self_exe = std::env::current_exe().ok().and_then(|p| {
+            p.to_str()
+                .map(|s| s.replace('/', "\\").trim_end_matches('\\').to_lowercase())
+        });
+
+        let mut pids = Vec::new();
+        for (pid, exe_name, full_path) in process_snapshot().iter() {
+            let is_self = *pid == self_pid
+                || full_path.as_ref().is_some_and(|p| self_exe.as_ref() == Some(p));
+            let inside = full_path.as_deref().is_some_and(|p| {
+                norm_install_path
+                    .as_deref()
+                    .is_some_and(|inst| super::image_inside_install(p, inst))
+            });
+            let ignored = full_path.as_deref().is_some_and(|p| {
+                p.contains("crashreportclient")
+                    || p.contains("vc_redist")
+                    || p.contains("vcredist")
+                    || p.contains("dxsetup")
+                    || p.contains("unrealcefsubprocess")
+                    || p.contains("msedgewebview2.exe")
+            });
+            let name_hit =
+                !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == exe_name);
+            // A readable path outside the install folder is never the game.
+            // Matching on the file name alone used to kill WebView2 (and blank
+            // this window) when the game shipped a helper with the same name.
+            let matched = !is_self
+                && if norm_install_path.is_some() && full_path.is_some() {
+                    inside && !ignored
+                } else {
+                    name_hit && !super::shared_host_exe(exe_name)
+                };
+
+            if matched {
+                pids.push(*pid);
+            }
+        }
+        pids
     }
 }
 

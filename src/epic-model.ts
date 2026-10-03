@@ -124,6 +124,19 @@ export function clearCoverCaches(): void {
   portraitCache.clear();
 }
 
+/**
+ * Cards render their covers at roughly 200-280 px, but the Epic CDN hands out
+ * 1200 px originals: about 7.7 MB decoded each, so a full grid decodes
+ * hundreds of megabytes and pays the JPEG decode on every card. The CDN
+ * resizes on the fly, so ask for a card-sized 3:4 variant instead.
+ */
+const EPIC_COVER_QUERY = "w=480&h=640&resize=1";
+
+function sizedEpicCover(url: string): string {
+  if (!url.startsWith("https://cdn1.epicgames.com/") || url.includes("resize=")) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}${EPIC_COVER_QUERY}`;
+}
+
 export function epicCover(g: EpicGame): string | null {
   const cached = coverCache.get(g.app_name);
   if (cached !== undefined) return cached;
@@ -142,8 +155,9 @@ export function epicCover(g: EpicGame): string | null {
       url = any ? (any.url as string) : null;
     }
   }
-  coverCache.set(g.app_name, url);
-  return url;
+  const sized = url ? sizedEpicCover(url) : null;
+  coverCache.set(g.app_name, sized);
+  return sized;
 }
 
 /** Portrait cover for cards: Tall → wide art → first available. */
@@ -162,8 +176,9 @@ export function epicPortrait(g: EpicGame): string | null {
     }
   }
   if (url === null) url = epicCover(g);
-  portraitCache.set(g.app_name, url);
-  return url;
+  const sized = url ? sizedEpicCover(url) : null;
+  portraitCache.set(g.app_name, sized);
+  return sized;
 }
 
 export const EPIC_STORE_URL = "https://store.epicgames.com/";
