@@ -42,13 +42,9 @@ document.documentElement.classList.add("ready");
 initSidebarLayout();
 
 let lastRenderedView: View | null = null;
-// `animationcancel` fires when a re-render replaces the children mid-animation;
-// without it the class would stick and every later render would replay it.
-for (const type of ["animationend", "animationcancel"]) {
-  viewEl.addEventListener(type, (e) => {
-    if (e.target instanceof HTMLElement && e.target.parentElement === viewEl) viewEl.classList.remove("view-enter");
-  });
-}
+viewEl.addEventListener("animationend", (e) => {
+  if (e.target instanceof HTMLElement && e.target.parentElement === viewEl) viewEl.classList.remove("view-enter");
+});
 
 /** Batch the next render onto the animation frame. */
 function scheduleRender(): void {
@@ -69,8 +65,11 @@ function render(): void {
   // TV Mode keeps the child on screen while its store panel is open.
   if (S.view !== "store" && S.storeShown && !embeddedStoreHeld()) hideStore();
 
-  // Page-enter animation only when the view actually changes; regular
-  // re-renders of the same view must not replay it.
+  // Page-enter animation only on a real view change. The class is dropped
+  // first: a re-render landing while the previous animation still runs would
+  // otherwise replay it on the new children (a detached node's cancel event
+  // never reaches #view).
+  viewEl.classList.remove("view-enter");
   if (S.view !== lastRenderedView) {
     lastRenderedView = S.view;
     viewEl.classList.add("view-enter");

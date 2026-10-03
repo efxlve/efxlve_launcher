@@ -65,6 +65,25 @@ pub fn family_for_product(product: u16) -> Option<PadFamily> {
     }
 }
 
+/// Cap on how often the virtual pad is updated (125 Hz is plenty for games).
+const MIN_UPDATE_INTERVAL: Duration = Duration::from_millis(8);
+
+/// Whether the worker should send this state now.
+///
+/// A *new* button change bypasses the rate gate so a tap is never eaten; a
+/// button already attempted (or an analog move) waits for the gate, so a
+/// warming-up driver is not retried once per report.
+fn should_send(
+    state: &PadState,
+    last: &PadState,
+    last_attempt: &PadState,
+    since_last_sent: Option<Duration>,
+) -> bool {
+    materially_different(state, last)
+        && (state.buttons != last_attempt.buttons
+            || since_last_sent.map_or(true, |elapsed| elapsed >= MIN_UPDATE_INTERVAL))
+}
+
 /// HID axis (0..255, centered near 128) to XInput (-32768..32767).
 fn axis(value: u8) -> i16 {
     (((value as i32 - 128) * 32767) / 127).clamp(-32768, 32767) as i16
@@ -80,7 +99,7 @@ fn axis_y(value: u8) -> i16 {
 /// ViGEmBus is a kernel driver: every update is an IOCTL. Analog sticks jitter
 /// by a unit or two even when untouched, so comparing exact values would send
 /// hundreds of updates per second for nothing. The values themselves are never
-/// altered, only the trigger has hysteresis.
+/// altered; the trigger simply has a step threshold.
 fn materially_different(next: &PadState, last: &PadState) -> bool {
     // Two HID steps are ~516 XInput units, so the step must sit above that to
     // swallow idle jitter; real movement passes well before a game's deadzone.
@@ -399,11 +418,13 @@ fn worker(
     let mut open: Option<(hidapi::HidDevice, PadFamily)> = None;
     let mut buffer = [0u8; 128];
     let mut last = PadState::default();
+    // The state the last update attempt carried, successful or not: a held or
+    // rejected button must not bypass the rate gate on every report.
+    let mut last_attempt = PadState::default();
     let mut bluetooth = false;
     let mut last_rumble = (0u8, 0u8);
     // Caps how often the virtual pad is updated (125 Hz is plenty for games).
     let mut last_sent: Option<std::time::Instant> = None;
-    const MIN_UPDATE_INTERVAL: Duration = Duration::from_millis(8);
 
     while !stop.load(Ordering::Relaxed) {
         // Forward any rumble the game asked for to the physical pad.
@@ -450,16 +471,8 @@ fn worker(
                     // Report ids 0x11 (DualShock 4) and 0x31 (DualSense) only
                     // exist over Bluetooth.
                     bluetooth = matches!(buffer[0], 0x11 | 0x31);
-                    // Buttons always go through: an 8 ms gate must never eat a
-                    // tap. Analog updates keep the rate cap.
-                    let buttons_changed = state.buttons != last.buttons;
-                    if materially_different(&state, &last)
-                        && (buttons_changed
-                            || last_sent.map_or(true, |sent| sent.elapsed() >= MIN_UPDATE_INTERVAL))
-                    {
-                        // A rejected update (driver still warming up) is retried,
-                        // but the rate gate still applies so retries cannot run
-                        // once per report.
+                    if should_send(&state, &last, &last_attempt, last_sent.map(|sent| sent.elapsed())) {
+                        last_attempt = state;
                         last_sent = Some(std::time::Instant::now());
                         if target.update(&to_xgamepad(&state)).is_ok() {
                             last = state;
@@ -478,6 +491,7 @@ fn worker(
                 bluetooth = false;
                 last_rumble = (0u8, 0u8);
                 last_sent = None;
+                last_attempt = PadState::default();
                 if last != PadState::default() {
                     let _ = target.update(&to_xgamepad(&PadState::default()));
                     last = PadState::default();
@@ -622,6 +636,29 @@ mod tests {
         report[11] = 0x01; // PS
         let state = parse_report(PadFamily::DualSense, &report).expect("state");
         assert_eq!(state.buttons, X_DOWN | X_LEFT | X_GUIDE);
+    }
+
+    /// A new button press skips the rate gate; a held or rejected one waits.
+    #[test]
+    fn a_new_button_press_bypasses_the_rate_gate() {
+        let base = PadState::default();
+        let pressed = PadState {
+            buttons: X_A,
+            ..base
+        };
+        // Fresh press: sent right away.
+        assert!(should_send(&pressed, &base, &base, Some(Duration::from_millis(0))));
+        // Already attempted: the gate holds the retry back.
+        assert!(!should_send(&pressed, &base, &pressed, Some(Duration::from_millis(2))));
+        // Once the gate has elapsed the retry passes.
+        assert!(should_send(&pressed, &base, &pressed, Some(Duration::from_millis(9))));
+        // Analog-only movement respects the gate.
+        let moved = PadState {
+            thumb_lx: 20000,
+            ..base
+        };
+        assert!(!should_send(&moved, &base, &base, Some(Duration::from_millis(2))));
+        assert!(should_send(&moved, &base, &base, Some(Duration::from_millis(9))));
     }
 
     /// True when analog jitter is ignored but real movement and buttons pass.
