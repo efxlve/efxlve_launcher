@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "เปิดใช้เซฟบนคลาวด์แล้ว",
   "feat.partnerCloud": "คลาวด์ {name}",
   "feat.partnerCloudTip": "ใช้การซิงค์คลาวด์ของ {name} (Social Club)",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "เซฟซิงก์ผ่านบริการคลาวด์ของ Ubisoft Connect",
   "feat.none": "ไม่มี",
   "feat.trophiesXp": "{count} ถ้วย{extra}",
   "feat.partnerAchievements": "ความสำเร็จ {name}",

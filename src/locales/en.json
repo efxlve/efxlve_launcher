@@ -616,6 +616,8 @@
   "feat.partialPadTip": "The store lists limited controller support. Keyboard and mouse are the main controls.",
   "feat.partnerCloud": "{name} Cloud",
   "feat.partnerCloudTip": "{name} cloud sync (Social Club) is used.",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "Saves sync through Ubisoft Connect's own cloud service.",
   "feat.none": "None",
   "feat.trophiesXp": "{count} Trophies{extra}",
   "feat.partnerAchievements": "{name} Achievements",

@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "I salvataggi cloud sono attivi.",
   "feat.partnerCloud": "Cloud {name}",
   "feat.partnerCloudTip": "Si usa la sincronizzazione cloud di {name} (Social Club).",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "I salvataggi si sincronizzano tramite il servizio cloud di Ubisoft Connect.",
   "feat.none": "Nessuno",
   "feat.trophiesXp": "{count} trofei{extra}",
   "feat.partnerAchievements": "Obiettivi {name}",

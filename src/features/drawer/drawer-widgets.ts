@@ -656,6 +656,12 @@ export function cloudSaveInfo(
 ): CloudSaveInfo {
   const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
   const cats = steamCategories(s.appName);
+  // Ubisoft titles sync through Ubisoft Connect's own cloud service, whichever
+  // store sold them (Epic, Steam or Ubisoft Connect itself). This outranks the
+  // store's cloud: the game never writes to Steam Cloud or EOS.
+  if (partner?.type === "ubisoft") {
+    return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: true };
+  }
   if (s.appName.startsWith("steam::") && (cats.includes(STEAM_CAT_CLOUD) || S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
     return { label: i18nT("feat.steamCloud"), tooltip: i18nT("feat.steamCloudTip"), synced: true };
   }

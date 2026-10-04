@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "الحفظ السحابي مفعّل.",
   "feat.partnerCloud": "سحابة {name}",
   "feat.partnerCloudTip": "تُستخدم مزامنة سحابة {name} (Social Club).",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "تتم مزامنة الحفظ عبر خدمة السحابة الخاصة بـ Ubisoft Connect.",
   "feat.none": "لا شيء",
   "feat.trophiesXp": "{count} جوائز{extra}",
   "feat.partnerAchievements": "إنجازات {name}",

@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "Cloud-Spielstände sind aktiv.",
   "feat.partnerCloud": "{name}-Cloud",
   "feat.partnerCloudTip": "{name}-Cloud-Sync (Social Club) wird verwendet.",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "Spielstände werden über den eigenen Cloud-Dienst von Ubisoft Connect synchronisiert.",
   "feat.none": "Keine",
   "feat.trophiesXp": "{count} Trophäen{extra}",
   "feat.partnerAchievements": "{name}-Erfolge",

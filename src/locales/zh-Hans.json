@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "已启用云存档。",
   "feat.partnerCloud": "{name} 云",
   "feat.partnerCloudTip": "使用 {name} 云同步（Social Club）。",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "存档通过 Ubisoft Connect 自有的云服务同步。",
   "feat.none": "无",
   "feat.trophiesXp": "{count} 个奖杯{extra}",
   "feat.partnerAchievements": "{name} 成就",

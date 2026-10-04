@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "クラウドセーブが有効です。",
   "feat.partnerCloud": "{name} クラウド",
   "feat.partnerCloudTip": "{name} のクラウド同期（Social Club）を使用します。",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "セーブデータは Ubisoft Connect のクラウドサービスで同期されます。",
   "feat.none": "なし",
   "feat.trophiesXp": "{count} トロフィー{extra}",
   "feat.partnerAchievements": "{name} の実績",

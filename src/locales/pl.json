@@ -584,6 +584,8 @@
   "feat.epicCloudTip": "Zapisy w chmurze są włączone.",
   "feat.partnerCloud": "Chmura {name}",
   "feat.partnerCloudTip": "Używana jest synchronizacja w chmurze {name} (Social Club).",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "Zapisy są synchronizowane przez chmurę Ubisoft Connect.",
   "feat.none": "Brak",
   "feat.trophiesXp": "{count} trofeów{extra}",
   "feat.partnerAchievements": "Osiągnięcia {name}",

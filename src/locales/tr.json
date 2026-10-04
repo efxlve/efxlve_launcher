@@ -616,6 +616,8 @@
   "feat.partialPadTip": "Mağaza sınırlı kol desteği listeliyor. Ana kontrol klavye ve fare.",
   "feat.partnerCloud": "{name} Bulut",
   "feat.partnerCloudTip": "{name} bulut senkronizasyonu (Social Club) kullanılır.",
+  "feat.ubiCloud": "Ubisoft Connect Cloud",
+  "feat.ubiCloudTip": "Kayıtlar Ubisoft Connect'in kendi bulut hizmeti üzerinden eşitlenir.",
   "feat.none": "Bulunmuyor",
   "feat.trophiesXp": "{count} Kupa{extra}",
   "feat.partnerAchievements": "{name} Başarımları",
