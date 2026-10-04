@@ -13,6 +13,7 @@
   "palette.cmdStorage": "إدارة التخزين",
   "palette.cmdOffline": "تبديل وضع عدم الاتصال",
   "lib.colTitle": "العنوان",
+  "lib.colStore": "المتجر",
   "lib.colAchievements": "الإنجازات",
   "lib.colPlaytime": "وقت اللعب",
   "lib.colSize": "الحجم",

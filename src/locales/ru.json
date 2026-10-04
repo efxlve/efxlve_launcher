@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Диспетчер хранилища",
   "palette.cmdOffline": "Переключить автономный режим",
   "lib.colTitle": "Название",
+  "lib.colStore": "Магазин",
   "lib.colAchievements": "Достижения",
   "lib.colPlaytime": "Время в игре",
   "lib.colSize": "Размер",

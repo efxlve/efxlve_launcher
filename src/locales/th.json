@@ -13,6 +13,7 @@
   "palette.cmdStorage": "ตัวจัดการที่เก็บข้อมูล",
   "palette.cmdOffline": "สลับโหมดออฟไลน์",
   "lib.colTitle": "ชื่อ",
+  "lib.colStore": "ร้านค้า",
   "lib.colAchievements": "ความสำเร็จ",
   "lib.colPlaytime": "เวลาเล่น",
   "lib.colSize": "ขนาด",

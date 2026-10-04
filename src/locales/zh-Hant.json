@@ -13,6 +13,7 @@
   "palette.cmdStorage": "儲存空間管理",
   "palette.cmdOffline": "切換離線模式",
   "lib.colTitle": "標題",
+  "lib.colStore": "商店",
   "lib.colAchievements": "成就",
   "lib.colPlaytime": "遊玩時間",
   "lib.colSize": "大小",

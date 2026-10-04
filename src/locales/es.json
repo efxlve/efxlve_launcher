@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Administrador de almacenamiento",
   "palette.cmdOffline": "Cambiar modo sin conexión",
   "lib.colTitle": "Título",
+  "lib.colStore": "Tienda",
   "lib.colAchievements": "Logros",
   "lib.colPlaytime": "Tiempo de juego",
   "lib.colSize": "Tamaño",

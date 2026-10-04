@@ -374,10 +374,10 @@ export const S = {
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,
-  /** Optional: storefront column (mark + name) in the list view. */
-  showStoreColumn: (localStorage.getItem(STORE_COLUMN_KEY) === "true") as boolean,
-  /** Optional: achievements progress bar in the list view. */
-  showAchProgress: (localStorage.getItem(ACH_PROGRESS_KEY) === "true") as boolean,
+  /** Storefront column (mark + name) in the list view. Default on. */
+  showStoreColumn: (localStorage.getItem(STORE_COLUMN_KEY) !== "false") as boolean,
+  /** Achievements progress bar in the list view. Default on; compact windows ignore it. */
+  showAchProgress: (localStorage.getItem(ACH_PROGRESS_KEY) !== "false") as boolean,
   /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */
   tvDetailAppName: (null) as string | null,
   tvAutoEnter: (() => {

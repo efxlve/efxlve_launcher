@@ -356,12 +356,11 @@
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* --- List view --- */
-.lib-list { --lrow-store-w: 100px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 128px 110px 92px 112px; align-items: center; gap: 16px; padding: 0 16px; }
-/* Optional storefront column (setting): art, store mark + name, then the title.
-   Every column is a little narrower so the row still fits a 1000px content
-   area once the store column appears. */
-.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px var(--lrow-store-w) minmax(0, 1fr) 128px 110px 92px 112px; }
+.lib-list { --lrow-store-w: 110px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 128px 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }
+/* Optional storefront column, right after the title: its own grid column so it
+   lines up with the others instead of sticking to the game name. */
+.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px minmax(0, 1fr) var(--lrow-store-w) 128px 116px 92px 112px; }
 /* Narrow windows: the store column keeps the mark and drops the name. */
 html.win-compact .lib-list { --lrow-store-w: 44px; }
 html.win-compact .lrow-store-name { display: none; }
@@ -403,7 +402,7 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .lrow-ach.done { color: var(--text); }
-/* Optional storefront column: mark + store name, truncated when narrow. */
+/* Optional storefront column: mark + name, aligned like the other columns. */
 .lrow-store { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
 .lrow-store-logo { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }
 .lrow-store-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -417,6 +416,12 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow-ach-progress.done .lrow-ach-pct { color: var(--text); }
 .lrow-ach-track { display: block; height: 3px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
 .lrow-ach-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+/* Narrow windows (win-compact): the bar falls back to the plain count, as if
+   the "achievement progress bar" setting were off. The column keeps its width,
+   so resizing does not shift the other columns. */
+html.win-compact .lrow-ach.lrow-ach-progress { flex-direction: row; align-items: center; gap: 6px; max-width: none; padding-right: 0; }
+html.win-compact .lrow-ach-pct,
+html.win-compact .lrow-ach-track { display: none; }
 .lrow-action { display: flex; justify-content: flex-end; }
 .lrow-action .btn { width: 112px; }
 .lrow-action .btn.install { background: var(--surface-3); color: var(--text-2); font-weight: 500; border-color: var(--line); }

@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Gestion du stockage",
   "palette.cmdOffline": "Basculer le mode hors ligne",
   "lib.colTitle": "Titre",
+  "lib.colStore": "Boutique",
   "lib.colAchievements": "Succès",
   "lib.colPlaytime": "Temps de jeu",
   "lib.colSize": "Taille",

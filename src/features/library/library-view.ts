@@ -338,18 +338,18 @@ function epicListRow(s: EpicSummary): string {
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
-  // Optional: a dedicated storefront column (mark + name) left of the title.
+  // Optional: its own storefront column, aligned like the achievements column.
   const storeCell = S.showStoreColumn
     ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc((STORE_LABELS as Record<string, string>)[source] ?? source)}</span></div>`
     : "";
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
-      ${storeCell}
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${metaText}</div>
       </div>
+      ${storeCell}
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>
       <div class="lrow-col" data-lib-playtime="${s.appName}">${secs > 0 ? fmtPlaytime(secs) : "—"}</div>
       <div class="lrow-col">${s.installed && s.installSize > 0 ? fmtBytes(s.installSize) : "—"}</div>
@@ -371,7 +371,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   if (S.epicViewMode === "list") {
     return `
       <div class="lib-list${highlightCls}${S.showStoreColumn ? " has-store-col" : ""}">
-        <div class="lrow-head"><span></span>${S.showStoreColumn ? "<span></span>" : ""}<span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
+        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span>${S.showStoreColumn ? `<span>${t("lib.colStore")}</span>` : ""}<span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }

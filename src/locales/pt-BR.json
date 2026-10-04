@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Gerenciador de armazenamento",
   "palette.cmdOffline": "Alternar modo offline",
   "lib.colTitle": "Título",
+  "lib.colStore": "Loja",
   "lib.colAchievements": "Conquistas",
   "lib.colPlaytime": "Tempo de jogo",
   "lib.colSize": "Tamanho",

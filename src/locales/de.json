@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Speicherverwaltung",
   "palette.cmdOffline": "Offlinemodus umschalten",
   "lib.colTitle": "Titel",
+  "lib.colStore": "Store",
   "lib.colAchievements": "Erfolge",
   "lib.colPlaytime": "Spielzeit",
   "lib.colSize": "Größe",

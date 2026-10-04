@@ -13,6 +13,7 @@
   "palette.cmdStorage": "저장소 관리자",
   "palette.cmdOffline": "오프라인 모드 전환",
   "lib.colTitle": "제목",
+  "lib.colStore": "스토어",
   "lib.colAchievements": "업적",
   "lib.colPlaytime": "플레이 시간",
   "lib.colSize": "크기",

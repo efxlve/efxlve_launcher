@@ -13,6 +13,7 @@
   "palette.cmdStorage": "ストレージ管理",
   "palette.cmdOffline": "オフラインモードの切り替え",
   "lib.colTitle": "タイトル",
+  "lib.colStore": "ストア",
   "lib.colAchievements": "実績",
   "lib.colPlaytime": "プレイ時間",
   "lib.colSize": "サイズ",

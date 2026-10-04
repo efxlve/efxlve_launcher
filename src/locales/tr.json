@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Depolama yöneticisi",
   "palette.cmdOffline": "Çevrimdışı modu aç/kapat",
   "lib.colTitle": "Oyun",
+  "lib.colStore": "Mağaza",
   "lib.colAchievements": "Başarımlar",
   "lib.colPlaytime": "Oynama süresi",
   "lib.colSize": "Boyut",

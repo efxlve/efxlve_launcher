@@ -13,6 +13,7 @@
   "palette.cmdStorage": "Storage manager",
   "palette.cmdOffline": "Toggle offline mode",
   "lib.colTitle": "Title",
+  "lib.colStore": "Store",
   "lib.colAchievements": "Achievements",
   "lib.colPlaytime": "Playtime",
   "lib.colSize": "Size",
