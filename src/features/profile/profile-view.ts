@@ -833,10 +833,9 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
           ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
         </span>
         <span class="profile-showcase-info">
-          <span class="profile-showcase-cup">${platCelebration(40, `vitrin:${featured.app_name}`)}</span>
           <span class="profile-showcase-name">${esc(featured.app_title)}</span>
           ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
-          <span class="profile-showcase-pct tabular-nums">100%<small>${esc(t("profile.statCompleted"))}</small></span>
+          <span class="profile-showcase-pct tabular-nums">${platCelebration(40, `vitrin:${featured.app_name}`)}<span>100%</span><small>${esc(t("profile.statCompleted"))}</small></span>
         </span>
       </button>
       ${rest.length > 0

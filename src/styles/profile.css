@@ -444,7 +444,7 @@
 .profile-game-done {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -646,19 +646,8 @@
   min-width: 0;
 }
 
-.profile-showcase-cup {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-}
-
-/* The sweep is tuned for the game page's 28px cup; scale it to the podium cup. */
-.profile-showcase-cup .plat-shine {
-  inset: 9px 12px 12px 12px;
-}
-
 .profile-showcase-name {
-  margin-top: 6px;
+  margin-top: 2px;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.25;
@@ -683,12 +672,21 @@
   margin-top: auto;
   padding-top: 8px;
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
   font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+
+.profile-showcase-pct .plat-cup {
+  flex-shrink: 0;
+}
+
+/* The sweep is tuned for the game page's 28px cup; scale it to the podium cup. */
+.profile-showcase-pct .plat-shine {
+  inset: 9px 12px 12px 12px;
 }
 
 .profile-showcase-pct small {
