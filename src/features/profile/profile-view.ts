@@ -751,7 +751,6 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
         </span>
-        <span class="profile-recent-title">${esc(title)}</span>
         <span class="profile-recent-sub tabular-nums">${esc(metaStr || "—")}</span>
       </button>`;
   }).join("");

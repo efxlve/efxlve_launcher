@@ -525,7 +525,7 @@
 }
 
 .profile-recent-card:hover .profile-recent-thumb-wrap {
-  border-color: var(--line-strong);
+  border-color: var(--accent);
 }
 
 .profile-recent-thumb {
@@ -533,6 +533,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: filter var(--ease);
+}
+
+.profile-recent-card:hover .profile-recent-thumb {
+  filter: brightness(1.12);
 }
 
 .profile-recent-thumb.placeholder {
@@ -541,15 +546,6 @@
   display: grid;
   place-items: center;
   color: var(--text-3);
-}
-
-.profile-recent-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .profile-recent-sub {
