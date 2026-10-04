@@ -620,6 +620,8 @@
   "feat.partnerCloudTip": "{name} bulut senkronizasyonu (Social Club) kullanılır.",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Kayıtlar Ubisoft Connect'in kendi bulut hizmeti üzerinden eşitlenir.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Kayıtlar EA'nın kendi bulut hizmeti üzerinden eşitlenir.",
   "feat.none": "Bulunmuyor",
   "feat.trophiesXp": "{count} Kupa{extra}",
   "feat.partnerAchievements": "{name} Başarımları",

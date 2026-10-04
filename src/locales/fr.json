@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "La synchro cloud {name} (Social Club) est utilisée.",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Les sauvegardes sont synchronisées via le service cloud d'Ubisoft Connect.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Les sauvegardes sont synchronisées via le service cloud d'EA.",
   "feat.none": "Aucun",
   "feat.trophiesXp": "{count} trophées{extra}",
   "feat.partnerAchievements": "Succès {name}",

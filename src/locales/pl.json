@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "Używana jest synchronizacja w chmurze {name} (Social Club).",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Zapisy są synchronizowane przez chmurę Ubisoft Connect.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Zapisy są synchronizowane przez chmurę EA.",
   "feat.none": "Brak",
   "feat.trophiesXp": "{count} trofeów{extra}",
   "feat.partnerAchievements": "Osiągnięcia {name}",

@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "{name} 클라우드 동기화(Social Club)를 사용합니다.",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "저장 데이터는 Ubisoft Connect 자체 클라우드 서비스로 동기화됩니다.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "저장 데이터는 EA 자체 클라우드 서비스로 동기화됩니다.",
   "feat.none": "없음",
   "feat.trophiesXp": "트로피 {count}개{extra}",
   "feat.partnerAchievements": "{name} 업적",

@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "تُستخدم مزامنة سحابة {name} (Social Club).",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "تتم مزامنة الحفظ عبر خدمة السحابة الخاصة بـ Ubisoft Connect.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "تتم مزامنة الحفظ عبر خدمة السحابة الخاصة بـ EA.",
   "feat.none": "لا شيء",
   "feat.trophiesXp": "{count} جوائز{extra}",
   "feat.partnerAchievements": "إنجازات {name}",

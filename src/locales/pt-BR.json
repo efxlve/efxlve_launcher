@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "A sincronização na nuvem de {name} (Social Club) é usada.",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Os saves são sincronizados pelo serviço de nuvem do Ubisoft Connect.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Os saves são sincronizados pelo serviço de nuvem da EA.",
   "feat.none": "Nenhum",
   "feat.trophiesXp": "{count} troféus{extra}",
   "feat.partnerAchievements": "Conquistas de {name}",

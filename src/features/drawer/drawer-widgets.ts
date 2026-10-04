@@ -602,8 +602,11 @@ export function heroCloudStatus(
   partner: ThirdPartyLauncherInfo | null,
   reqData?: GameRequirementsResponse,
 ): HeroCloudStatus {
-  // Ubisoft titles sync through Ubisoft Connect's own cloud, so the hero chip
-  // names the provider instead of a state the launcher cannot observe.
+  // EA and Ubisoft titles sync through their own cloud services, so the hero
+  // chip names the provider instead of a state the launcher cannot observe.
+  if (partner?.type === "ea") {
+    return { label: i18nT("feat.eaCloud"), tooltip: i18nT("feat.eaCloudTip"), synced: false, neutral: true };
+  }
   if (partner?.type === "ubisoft") {
     return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: false, neutral: true };
   }
@@ -675,9 +678,12 @@ export function cloudSaveInfo(
 ): CloudSaveInfo {
   const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
   const cats = steamCategories(s.appName);
-  // Ubisoft titles sync through Ubisoft Connect's own cloud service, whichever
-  // store sold them (Epic, Steam or Ubisoft Connect itself). This outranks the
+  // EA and Ubisoft titles sync through their own cloud services, whichever
+  // store sold them (Epic, Steam or the client itself). These outrank the
   // store's cloud: the game never writes to Steam Cloud or EOS.
+  if (partner?.type === "ea") {
+    return { label: i18nT("feat.eaCloud"), tooltip: i18nT("feat.eaCloudTip"), synced: true };
+  }
   if (partner?.type === "ubisoft") {
     return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: true };
   }

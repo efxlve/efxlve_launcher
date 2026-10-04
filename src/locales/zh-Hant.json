@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "使用 {name} 雲端同步（Social Club）。",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "存檔透過 Ubisoft Connect 自有的雲端服務同步。",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "存檔透過 EA 自有的雲端服務同步。",
   "feat.none": "無",
   "feat.trophiesXp": "{count} 個獎盃{extra}",
   "feat.partnerAchievements": "{name} 成就",

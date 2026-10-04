@@ -588,6 +588,8 @@
   "feat.partnerCloudTip": "Используется облачная синхронизация {name} (Social Club).",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Сохранения синхронизируются через облачный сервис Ubisoft Connect.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Сохранения синхронизируются через облачный сервис EA.",
   "feat.none": "Нет",
   "feat.trophiesXp": "Трофеев: {count}{extra}",
   "feat.partnerAchievements": "Достижения {name}",

@@ -620,6 +620,8 @@
   "feat.partnerCloudTip": "{name} cloud sync (Social Club) is used.",
   "feat.ubiCloud": "Ubisoft Connect Cloud",
   "feat.ubiCloudTip": "Saves sync through Ubisoft Connect's own cloud service.",
+  "feat.eaCloud": "EA Cloud",
+  "feat.eaCloudTip": "Saves sync through EA's own cloud service.",
   "feat.none": "None",
   "feat.trophiesXp": "{count} Trophies{extra}",
   "feat.partnerAchievements": "{name} Achievements",
