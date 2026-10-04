@@ -356,8 +356,15 @@
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* --- List view --- */
-.lib-list { display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.lrow-head, .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 120px 130px 100px 124px; align-items: center; gap: 16px; padding: 0 16px; }
+.lib-list { --lrow-store-w: 100px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 128px 110px 92px 112px; align-items: center; gap: 16px; padding: 0 16px; }
+/* Optional storefront column (setting): art, store mark + name, then the title.
+   Every column is a little narrower so the row still fits a 1000px content
+   area once the store column appears. */
+.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px var(--lrow-store-w) minmax(0, 1fr) 128px 110px 92px 112px; }
+/* Narrow windows: the store column keeps the mark and drops the name. */
+html.win-compact .lib-list { --lrow-store-w: 44px; }
+html.win-compact .lrow-store-name { display: none; }
 .lrow-head { height: 36px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
 .lrow { height: 84px; border-top: 1px solid var(--line); cursor: pointer; contain: layout paint; }
 .lrow-head + .lrow { border-top: none; }
@@ -396,13 +403,15 @@
 .lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .lrow-ach.done { color: var(--text); }
-/* Optional storefront mark before a list row's title. */
-.lrow-store-logo { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }
+/* Optional storefront column: mark + store name, truncated when narrow. */
+.lrow-store { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
+.lrow-store-logo { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }
+.lrow-store-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Optional achievements progress bar: count + percent over a thin track. It
    stays inside the fixed 120px column, so narrow windows cannot break.
    The class must not be `progress`: the shared `.progress > span` rule for the
    drawer bars would override the track and flatten it to zero height. */
-.lrow-ach.lrow-ach-progress { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; max-width: 120px; }
+.lrow-ach.lrow-ach-progress { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; max-width: 128px; padding-right: 8px; }
 .lrow-ach-progress .lrow-ach-line { display: flex; align-items: center; gap: 6px; }
 .lrow-ach-pct { margin-left: auto; font-size: 12px; color: var(--text-3); }
 .lrow-ach-progress.done .lrow-ach-pct { color: var(--text); }

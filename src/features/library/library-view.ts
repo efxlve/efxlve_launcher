@@ -12,6 +12,7 @@ import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
+import { STORE_LABELS } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -337,13 +338,16 @@ function epicListRow(s: EpicSummary): string {
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
-  // Optional: the storefront mark before the title in the list view.
-  const storeIcon = S.showStoreIcons ? storeLogo(source, 14, "lrow-store-logo") : "";
+  // Optional: a dedicated storefront column (mark + name) left of the title.
+  const storeCell = S.showStoreIcons
+    ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc((STORE_LABELS as Record<string, string>)[source] ?? source)}</span></div>`
+    : "";
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
+      ${storeCell}
       <div class="lrow-main">
-        <div class="lrow-title" data-badge-host>${storeIcon}<span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
+        <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${metaText}</div>
       </div>
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>
@@ -366,8 +370,8 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const highlightCls = isHighlight ? " dim-uninstalled contrast-titles highlight-installed" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list${highlightCls}">
-        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
+      <div class="lib-list${highlightCls}${S.showStoreIcons ? " has-store-col" : ""}">
+        <div class="lrow-head"><span></span>${S.showStoreIcons ? "<span></span>" : ""}<span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
