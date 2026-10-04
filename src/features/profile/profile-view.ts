@@ -526,26 +526,23 @@ export function sumStats(games: ProfileGameRecord[]): { unlocked: number; platin
 }
 
 /**
- * Scoped totals for the hero: completed sets and real platinums are counted
- * separately so a 100% Steam set is never called a platinum.
+ * Scoped totals for the hero. One completion count drives the platinum stat,
+ * the achievements filter and the showcase, so the whole page agrees.
  */
 interface ProfileTotals {
   unlocked: number;
   completed: number;
-  platinums: number;
   xp: number;
 }
 
 function profileStats(games: ProfileGameRecord[]): ProfileTotals {
-  let unlocked = 0, completed = 0, platinums = 0, xp = 0;
+  let unlocked = 0, completed = 0, xp = 0;
   for (const g of games) {
     unlocked += g.total_unlocked;
     xp += g.total_xp;
     if (isCompletedGame(g)) completed++;
-    // A platinum is an Epic award; Steam/GOG completion is not one.
-    if (g.is_platinum && gameStore(g.app_name) === "epic") platinums++;
   }
-  return { unlocked, completed, platinums, xp };
+  return { unlocked, completed, xp };
 }
 
 /** Playtime sum for one store or everything. Keys carry their store prefix. */
@@ -946,13 +943,8 @@ export function renderProfile(): string {
     stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games") });
     stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played") });
     stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies") });
-    stats.push({ value: totals.completed.toLocaleString(), label: t("profile.statCompleted") });
-    // Platinums are an Epic award; a 100% Steam or GOG set is completion, not a platinum.
-    const showPlatinums = scope === "epic" || (scope === "all" && !!S.epicAccount);
-    if (showPlatinums) {
-      const platinums = scope === "epic" ? (S.playerProfileData?.platinum_count ?? totals.platinums) : totals.platinums;
-      stats.push({ value: platinums.toLocaleString(), label: t("profile.platLabel"), icon: "plat" });
-    }
+    // The same completion count the Platinum filter and the showcase use.
+    stats.push({ value: totals.completed.toLocaleString(), label: t("profile.platLabel"), icon: "plat" });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
       stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
