@@ -441,7 +441,6 @@
   "ach.tierGold": "ذهبي",
   "ach.tierSilver": "فضي",
   "ach.tierBronze": "برونزي",
-  "ach.noTier": "لا توجد كأس {tier} في هذه اللعبة.",
   "ach.emptyTitle": "لا توجد إنجازات تطابق بحثك",
   "ach.emptyDesc": "غيّر عوامل التصفية أو عبارة البحث وحاول مرة أخرى.",
   "ach.baseGame": "اللعبة الأساسية",

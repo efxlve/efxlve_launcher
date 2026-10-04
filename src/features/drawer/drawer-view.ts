@@ -959,12 +959,22 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const showPlat = tiers.platinum[0] > 0 || isPlat || data.is_platinum || (data.base_achievements ?? 0) > 0;
   const platTotal = tiers.platinum[0] > 0 ? tiers.platinum[0] : showPlat ? 1 : 0;
   const platUnlocked = tiers.platinum[0] > 0 ? tiers.platinum[1] : isPlat ? 1 : 0;
-  // A synthetic platinum slot (no platinum achievement in the data) explains
-  // itself on hover instead of filtering the list down to nothing.
-  const platTitle = tiers.platinum[0] === 0 ? t("ach.noTier", { tier: t("ach.tierPlatinum") }) : t("ach.tierPlatinum");
-  const tierChip = (tier: "platinum" | "gold" | "silver" | "bronze", cls: string, title: string, glyph: string, done: number, total: number): string =>
+  // A chip filters only when the tier really holds achievements. The synthetic
+  // platinum slot (a game without a platinum trophy) stays a plain indicator,
+  // so clicking it cannot filter the list down to nothing.
+  const tierChip = (
+    tier: "platinum" | "gold" | "silver" | "bronze",
+    cls: string,
+    title: string,
+    glyph: string,
+    done: number,
+    total: number,
+    clickable = true,
+  ): string =>
     total > 0
-      ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${title}" aria-pressed="${S.achTierFilter === tier}">${glyph} ${done}/${total}</button>`
+      ? clickable
+        ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${title}" aria-pressed="${S.achTierFilter === tier}">${glyph} ${done}/${total}</button>`
+        : `<span class="ach-tier-mini static ${cls} ${done >= total ? "complete" : ""}" title="${title}">${glyph} ${done}/${total}</span>`
       : "";
   const filterChip = (val: string, label: string, n: number): string =>
     `<button class="tab ach-status-chip ${S.activeAchFilter === val ? "active" : ""}" data-act="ach-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
@@ -985,7 +995,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
       </div>
       <div class="ach-summary-right">
-        ${tierChip("platinum", "plat", platTitle, epicPlatinumIcon(11), platUnlocked, platTotal)}
+        ${tierChip("platinum", "plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal, tiers.platinum[0] > 0)}
         ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
         ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}

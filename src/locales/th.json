@@ -441,7 +441,6 @@
   "ach.tierGold": "ทอง",
   "ach.tierSilver": "เงิน",
   "ach.tierBronze": "บรอนซ์",
-  "ach.noTier": "เกมนี้ไม่มีถ้วย {tier}",
   "ach.emptyTitle": "ไม่มีความสำเร็จที่ตรงกับการค้นหา",
   "ach.emptyDesc": "เปลี่ยนตัวกรองหรือคำค้นแล้วลองอีกครั้ง",
   "ach.baseGame": "เกมหลัก",

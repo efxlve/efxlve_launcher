@@ -441,7 +441,6 @@
   "ach.tierGold": "Gold",
   "ach.tierSilver": "Silber",
   "ach.tierBronze": "Bronze",
-  "ach.noTier": "Dieses Spiel hat keine {tier}-Trophäe.",
   "ach.emptyTitle": "Keine Erfolge passen zur Suche",
   "ach.emptyDesc": "Ändere die Filter oder den Suchbegriff und versuch es erneut.",
   "ach.baseGame": "Basisspiel",

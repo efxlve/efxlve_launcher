@@ -441,7 +441,6 @@
   "ach.tierGold": "Złoto",
   "ach.tierSilver": "Srebro",
   "ach.tierBronze": "Brąz",
-  "ach.noTier": "Brak trofeów {tier} w tej grze.",
   "ach.emptyTitle": "Żadne osiągnięcie nie pasuje do wyszukiwania",
   "ach.emptyDesc": "Zmień filtry lub hasło i spróbuj ponownie.",
   "ach.baseGame": "Gra podstawowa",

@@ -233,6 +233,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-tier-mini.complete { color: var(--ok); }
 /* The tier chips double as a rarity filter; the active one carries the accent. */
 .ach-tier-mini.active { border-color: var(--accent); color: var(--accent); background: var(--surface-3); }
+/* A tier with no achievements (a game without a platinum trophy) stays a plain
+   indicator: no pointer, no hover highlight. */
+.ach-tier-mini.static { cursor: default; }
+.ach-tier-mini.static:hover { background: var(--surface-2); }
 .ach-status-strip { border-bottom: none; }
 .ach-sort-select { height: 32px; }
 .ach-search-clear { width: 22px; height: 22px; }
