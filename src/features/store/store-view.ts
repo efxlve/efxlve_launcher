@@ -194,7 +194,7 @@ export function renderStoreLoadingScreen(): string {
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
-export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox";
+export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "luna";
 
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
@@ -205,10 +205,11 @@ export const STORE_LABELS: Record<StoreId, string> = {
   ubisoft: "Ubisoft Connect",
   ea: "EA App",
   xbox: "Xbox",
+  luna: "Amazon Luna",
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea"];
+export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "luna"];
 
 /** Header stores the user kept visible (Settings > Appearance). */
 export function visibleHeaderStores(): StoreId[] {
@@ -225,6 +226,11 @@ export const STEAM_STORE_URL = "https://store.steampowered.com/";
 export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
 export const BATTLENET_STORE_URL = "https://shop.battle.net/";
 export const EA_STORE_URL = "https://www.ea.com/games";
+/**
+ * Amazon Luna monthly games claim page. Luna is a cloud service: the page is
+ * read-only in the store webview, nothing installs from here.
+ */
+export const LUNA_STORE_URL = "https://luna.amazon.com/claims/home";
 /**
  * Xbox PC games list. No locale segment: Xbox redirects to the visitor's own
  * region, so every user sees their own language and currency.
@@ -251,6 +257,7 @@ const STORE_URLS: Record<StoreId, string> = {
   ubisoft: UBISOFT_STORE_URL,
   ea: EA_STORE_URL,
   xbox: XBOX_STORE_URL,
+  luna: LUNA_STORE_URL,
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
@@ -262,6 +269,7 @@ export function storeIdForUrl(url: string): StoreId {
   if (lower.includes("ubisoft.com") || lower.includes("ubi.com")) return "ubisoft";
   if (lower.includes("ea.com")) return "ea";
   if (lower.includes("xbox.com") || lower.includes("microsoft.com")) return "xbox";
+  if (lower.includes("luna.amazon.com")) return "luna";
   return "epic";
 }
 

@@ -32,6 +32,10 @@ used.
 | Discord | Simple Icons `discord` (mascot) | `discord.png` |
 | Spotify | Simple Icons `spotify` (circle) | `spotify.png` |
 
+Amazon Luna is the one storefront without a mark in this folder yet: its header
+tab, store row and settings row show the brand name alone until an official
+white shape is added.
+
 The shapes come from those official files. Each glyph is now pure white on
 transparency; brand colors are not drawn. Trademark owners are named in
 `docs/DESIGN_SYSTEM.md` and in the Legal Notice shown in Settings → About.

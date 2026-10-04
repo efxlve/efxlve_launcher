@@ -26,6 +26,8 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   ubisoft,
   ea,
   xbox,
+  // Amazon Luna ships no mark in this folder yet: its rows show the name only.
+  luna: "",
 };
 
 /** Marks for services that are not storefronts (the Accounts page uses them). */
