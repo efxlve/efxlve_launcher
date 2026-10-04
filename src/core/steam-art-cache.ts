@@ -6,6 +6,8 @@
  * session only, so a later launch can try again.
  */
 
+import { scheduleRender } from "./render";
+
 const STORAGE_KEY = "efx.steamArt.v1";
 const HERO_KEY = "efx.steamHero.v1";
 
@@ -21,7 +23,9 @@ function loadDisk(key: string): Map<string, string> {
     if (!raw) return map;
     const parsed = JSON.parse(raw) as Record<string, string>;
     for (const [id, url] of Object.entries(parsed)) {
-      if (id && typeof url === "string") map.set(id, url);
+      // Older builds persisted confirmed misses (""); skip them so the CDN is
+      // tried again instead of leaving a permanent placeholder.
+      if (id && typeof url === "string" && url) map.set(id, url);
     }
   } catch {
     /* a corrupt cache just means the CDN path is tried again */
@@ -70,6 +74,12 @@ export function cachedSteamCover(appId: string): string | undefined {
 
 export function rememberSteamCover(appId: string, url: string): void {
   memory.set(appId, url);
+  if (!url) {
+    // A confirmed miss is this session's memory only: a boot before the network
+    // is up must not poison the disk cache into permanent placeholders.
+    if (disk.delete(appId)) scheduleDiskSave(STORAGE_KEY);
+    return;
+  }
   if (disk.get(appId) === url) return;
   disk.set(appId, url);
   scheduleDiskSave(STORAGE_KEY);
@@ -105,3 +115,25 @@ export function steamCdnPortrait(appId: string): string {
 export function steamHeaderPortrait(appId: string): string {
   return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
 }
+
+/**
+ * A boot before the network is up leaves this session's misses in memory. When
+ * the connection returns, drop them and repaint so the covers load again
+ * without a restart.
+ */
+window.addEventListener("online", () => {
+  let dropped = false;
+  for (const [id, url] of memory) {
+    if (url === "") {
+      memory.delete(id);
+      dropped = true;
+    }
+  }
+  for (const [id, url] of heroMemory) {
+    if (url === "") {
+      heroMemory.delete(id);
+      dropped = true;
+    }
+  }
+  if (dropped) scheduleRender();
+});
