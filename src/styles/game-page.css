@@ -223,6 +223,47 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
    does not sit pinned to the left edge. */
 .ach-summary-pct.plat { color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
 .ach-summary-pct.plat svg { vertical-align: 0; }
+/* Platinum celebration: soft glow, sparkles, and a single shine sweep that
+   plays when the game page first paints (never a perpetual animation). */
+.plat-cup { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.plat-cup::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.07) 46%, rgba(255, 255, 255, 0) 72%);
+  pointer-events: none;
+}
+.plat-spark { position: absolute; color: #ffffff; opacity: 0.85; pointer-events: none; }
+.plat-spark.s1 { top: -7px; right: -9px; }
+.plat-spark.s2 { bottom: -5px; left: -8px; opacity: 0.6; }
+.plat-cup.shine::before { animation: plat-bloom 1.2s ease-out 0.05s 1 both; }
+.plat-shine { position: absolute; inset: 5px 7px 7px 7px; overflow: hidden; border-radius: 3px; pointer-events: none; }
+.plat-shine::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: translateX(-150%) skewX(-18deg);
+}
+.plat-cup.shine .plat-shine::after { animation: plat-sweep 1.1s ease-out 0.15s 1 both; }
+.plat-cup.shine .plat-spark { animation: plat-pop 0.7s ease-out 0.2s 1 both; }
+@keyframes plat-sweep {
+  to { transform: translateX(280%) skewX(-18deg); }
+}
+@keyframes plat-bloom {
+  0% { opacity: 0; transform: scale(0.6); }
+  55% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes plat-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.85; }
+}
 .ach-summary-text { display: flex; flex-direction: column; }
 .ach-summary-count { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ach-summary-sub { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }

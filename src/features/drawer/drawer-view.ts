@@ -38,6 +38,9 @@ import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderNextAchievements, renderProgressStrip } from "./drawer-widgets";
 
+/** True once the open game page has played its one-shot platinum shine sweep. */
+let platShineDone = false;
+
 /** Scrolls a tab into view only when it is clipped (narrow windows). */
 export function ensureTabVisible(el: HTMLElement, container: HTMLElement): void {
   const left = el.offsetLeft;
@@ -543,6 +546,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   // webview that ignores z-index. Park it while the page covers the store.
   holdStoreForCover();
   const isSameApp = S.currentModalAppName === appName;
+  // A freshly opened game page celebrates a platinum once: the cup's shine
+  // sweep replays only when the page is opened again, not on every re-render.
+  if (isInitialOpen) platShineDone = false;
   // Switching games inside the open drawer must not keep the previous
   // gallery (and its full-size originals) alive.
   if (!isSameApp && S.currentModalAppName) forgetGameScreenshots(S.currentModalAppName);
@@ -983,11 +989,16 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
     : "";
 
+  // Platinum celebration: a soft glow behind the cup, two sparkles and a
+  // one-shot shine sweep (the sweep only runs on the first paint of the page).
+  const platCup = `<span class="plat-cup${platShineDone ? "" : " shine"}">${epicPlatinumIcon(28)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 11)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 9)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
+  if (isPlat) platShineDone = true;
+
   return `
     ${sourceNote}
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-left">
-        <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(28) : `${pct}%`}</span>
+        <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? platCup : `${pct}%`}</span>
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
           <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : data.total_xp > 0 ? `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP` : ""}</span>
