@@ -286,10 +286,6 @@ export function profileSelection(): ProfileSelection {
     const found = all.find((a) => a.key === selected);
     if (found) return { mode: "account", account: found };
   }
-  const actives = activeAccounts();
-  if (!selected && actives.length <= 1 && overviewStores().length < 2) {
-    if (actives.length === 1) return { mode: "account", account: actives[0] };
-  }
   return { mode: "combined" };
 }
 
@@ -315,6 +311,7 @@ function recentApps(): string[] {
   for (const s of S.epicSummaries) if (s.installed && push(s.appName)) return out;
   for (const g of S.gogSummaries) if (g.installed && push(g.key)) return out;
   for (const g of S.steamSummaries) if (g.installed && push(g.key)) return out;
+  for (const c of S.companionSummaries) if (c.installed && push(c.key)) return out;
   return out;
 }
 
@@ -437,11 +434,12 @@ function showStoreChips(): boolean {
   return profileSelection().mode === "combined" && storeScope() === "all" && overviewStores().length > 1;
 }
 
-/** Ubisoft achievement rows from the client's local cache (bulk summary). */
-function buildUbisoftProfileGames(): ProfileGameRecord[] {
+/** Companion achievement rows from the client's local cache (bulk summary). */
+function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[] {
   const games: ProfileGameRecord[] = [];
   for (const item of S.companionSummaries) {
-    if (gameStore(item.key) !== "ubisoft") continue;
+    const store = gameStore(item.key);
+    if (targetStore && store !== targetStore) continue;
     const ach = achSummaryOf(item.key);
     if (!ach || ach.total_achievements <= 0) continue;
     games.push({
@@ -463,7 +461,7 @@ function buildUbisoftProfileGames(): ProfileGameRecord[] {
 
 /**
  * Achievement rows for the current page: one account, or Overview narrowed by
- * the store tab. Search updates call this so GOG and Steam stay in the list.
+ * the store tab. Search updates call this so GOG, Steam and companion stores stay in the list.
  */
 export function profileListGames(): ProfileGameRecord[] {
   const selection = profileSelection();
@@ -471,14 +469,17 @@ export function profileListGames(): ProfileGameRecord[] {
     if (!selection.account.active) return [];
     if (selection.account.kind === "epic") return S.epicAccount ? (S.playerProfileData?.games || []) : [];
     if (selection.account.kind === "gog") return buildGogProfileGames();
-    return buildSteamProfileGames();
+    if (selection.account.kind === "steam") return buildSteamProfileGames();
+    return buildCompanionProfileGames(selection.account.kind);
   }
   const scope = storeScope();
   const games: ProfileGameRecord[] = [];
   if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
   if (scope === "all" || scope === "steam") games.push(...buildSteamProfileGames());
-  if (scope === "all" || scope === "ubisoft") games.push(...buildUbisoftProfileGames());
+  if (scope === "all" || (scope !== "epic" && scope !== "gog" && scope !== "steam")) {
+    games.push(...buildCompanionProfileGames(scope === "all" ? undefined : scope));
+  }
   return games;
 }
 
@@ -726,10 +727,10 @@ function computeStoreSummaries(): StoreSummaryStat[] {
       if (gogGames.length > 0) {
         trophies = gogGames.reduce((acc, g) => acc + g.total_unlocked, 0);
       }
-    } else if (s === "ubisoft") {
-      const ubiGames = buildUbisoftProfileGames();
-      if (ubiGames.length > 0) {
-        trophies = ubiGames.reduce((acc, g) => acc + g.total_unlocked, 0);
+    } else {
+      const companionGames = buildCompanionProfileGames(s);
+      if (companionGames.length > 0) {
+        trophies = companionGames.reduce((acc, g) => acc + g.total_unlocked, 0);
       }
     }
 
