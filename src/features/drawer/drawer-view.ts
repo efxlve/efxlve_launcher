@@ -987,7 +987,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ${sourceNote}
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-left">
-        <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(18) : `${pct}%`}</span>
+        <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? epicPlatinumIcon(28) : `${pct}%`}</span>
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
           <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : data.total_xp > 0 ? `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP` : ""}</span>

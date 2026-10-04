@@ -219,7 +219,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-summary-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px; }
 .ach-summary-pct { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 56px; }
 .ach-summary-pct svg { vertical-align: -2px; }
-.ach-summary-pct.plat { color: var(--accent); }
+/* The platinum cup replaces the percentage; centre it in the same column so it
+   does not sit pinned to the left edge. */
+.ach-summary-pct.plat { color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+.ach-summary-pct.plat svg { vertical-align: 0; }
 .ach-summary-text { display: flex; flex-direction: column; }
 .ach-summary-count { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ach-summary-sub { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
