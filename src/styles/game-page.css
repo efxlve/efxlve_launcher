@@ -210,7 +210,9 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .hub-feature-val.muted { color: var(--text-3); }
 .hub-feature-val.plat, .hub-feature-val.gold, .hub-feature-val.accent { color: var(--text); }
 .hub-size-val { font-variant-numeric: tabular-nums; }
-.hub-version-badge { margin-left: 6px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+/* The build number gets its own row, so a long version string can no longer
+   squeeze the installed size. Wrap instead of breaking the panel. */
+.hub-build-val { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 /* --- Achievements --- */
 .ach-summary-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); }

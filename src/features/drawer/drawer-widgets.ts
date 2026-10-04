@@ -861,13 +861,24 @@ export function renderGameFeatures(
       <div class="hub-feature-val">
         ${
           s.installed
-            ? `<span class="hub-size-val">${s.installSize ? fmtBytes(s.installSize) : i18nT("common.installed")}</span>${
-                versionOk ? `<span class="hub-version-badge" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">${esc(versionInfo.display)}</span>` : ""
-              }`
+            ? `<span class="hub-size-val">${s.installSize ? fmtBytes(s.installSize) : i18nT("common.installed")}</span>`
             : i18nT("common.notInstalled")
         }
       </div>
     </div>
+
+    ${
+      s.installed && versionOk
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("tag", 12)}</div>
+        <span>${i18nT("feat.build")}</span>
+      </div>
+      <div class="hub-feature-val hub-build-val">${esc(versionInfo.display)}</div>
+    </div>`
+        : ""
+    }
   `;
 }
 
