@@ -339,7 +339,7 @@ function epicListRow(s: EpicSummary): string {
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   // Optional: a dedicated storefront column (mark + name) left of the title.
-  const storeCell = S.showStoreIcons
+  const storeCell = S.showStoreColumn
     ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc((STORE_LABELS as Record<string, string>)[source] ?? source)}</span></div>`
     : "";
   return `
@@ -370,8 +370,8 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const highlightCls = isHighlight ? " dim-uninstalled contrast-titles highlight-installed" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list${highlightCls}${S.showStoreIcons ? " has-store-col" : ""}">
-        <div class="lrow-head"><span></span>${S.showStoreIcons ? "<span></span>" : ""}<span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
+      <div class="lib-list${highlightCls}${S.showStoreColumn ? " has-store-col" : ""}">
+        <div class="lrow-head"><span></span>${S.showStoreColumn ? "<span></span>" : ""}<span>${t("lib.colTitle")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }

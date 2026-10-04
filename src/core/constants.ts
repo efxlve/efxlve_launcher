@@ -66,8 +66,10 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
-/** Show the storefront mark on every card and list row. Off by default. */
+/** Show the storefront mark on every grid cover. Off by default. */
 export const STORE_ICONS_KEY = "efxlve-store-icons";
+/** Show a storefront column (mark + name) in the list view. Off by default. */
+export const STORE_COLUMN_KEY = "efxlve-store-column";
 /** Achievements progress bar in the list view. Off by default. */
 export const ACH_PROGRESS_KEY = "efxlve-ach-progress";
 /** Library storefronts that stay visible. Missing means every store. */

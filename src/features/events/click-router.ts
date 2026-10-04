@@ -29,6 +29,7 @@ import {
   SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
+  STORE_COLUMN_KEY,
   ACH_PROGRESS_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
@@ -699,6 +700,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-icons") {
     S.showStoreIcons = !S.showStoreIcons;
     localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-store-column") {
+    S.showStoreColumn = !S.showStoreColumn;
+    localStorage.setItem(STORE_COLUMN_KEY, String(S.showStoreColumn));
     if (!refreshLibraryResultsInPlace()) scheduleRender();
   } else if (act === "toggle-ach-progress") {
     S.showAchProgress = !S.showAchProgress;

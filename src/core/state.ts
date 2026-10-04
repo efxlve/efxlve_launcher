@@ -44,6 +44,7 @@ import {
   COVER_TITLES_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
+  STORE_COLUMN_KEY,
   ACH_PROGRESS_KEY,
   TV_AUTO_KEY,
   isSteamDeckDevice,
@@ -371,8 +372,10 @@ export const S = {
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
-  /** Optional: storefront mark on every card and list row. */
+  /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,
+  /** Optional: storefront column (mark + name) in the list view. */
+  showStoreColumn: (localStorage.getItem(STORE_COLUMN_KEY) === "true") as boolean,
   /** Optional: achievements progress bar in the list view. */
   showAchProgress: (localStorage.getItem(ACH_PROGRESS_KEY) === "true") as boolean,
   /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */
