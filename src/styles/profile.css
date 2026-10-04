@@ -579,19 +579,11 @@
   background: var(--warn);
 }
 
-/* --- 8. Side rail: completion showcase (trophy shelf) --- */
-.profile-showcase-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.profile-showcase-card {
-  position: relative;
+/* --- 8. Side rail: completion podium --- */
+.profile-showcase-hero {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px;
+  gap: 14px;
+  padding: 12px;
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -601,20 +593,120 @@
   transition: background-color var(--ease), border-color var(--ease);
 }
 
-.profile-showcase-card:hover {
+.profile-showcase-hero:hover {
   background: var(--surface-3);
   border-color: var(--accent);
 }
 
-.profile-showcase-thumb {
-  aspect-ratio: 3 / 4;
-  width: 100%;
+.profile-showcase-cover {
+  width: 104px;
+  height: 139px;
+  flex-shrink: 0;
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
 }
 
-.profile-showcase-img {
+.profile-showcase-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-showcase-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-showcase-cup {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* The sweep is tuned for the game page's 28px cup; scale it to the podium cup. */
+.profile-showcase-cup .plat-shine {
+  inset: 9px 12px 12px 12px;
+}
+
+.profile-showcase-name {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.profile-showcase-meta {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-showcase-pct {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.profile-showcase-pct small {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.profile-showcase-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.profile-showcase-mini {
+  width: 56px;
+  height: 75px;
+  flex: none;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--surface-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  transition: border-color var(--ease);
+}
+
+.profile-showcase-mini:hover {
+  border-color: var(--accent);
+}
+
+.profile-showcase-mini img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -629,40 +721,27 @@
   color: var(--text-3);
 }
 
-.profile-showcase-cup {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* The sweep is tuned for the game page's 28px cup; scale it to the shelf size. */
-.profile-showcase-cup .plat-shine {
-  inset: 3px 4px 4px 4px;
-}
-
-.profile-showcase-title {
-  font-size: 11px;
+.profile-showcase-more {
+  width: 56px;
+  height: 75px;
+  flex: none;
+  border-radius: 4px;
+  border: 1px dashed var(--line-strong);
+  background: none;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-showcase-meta {
-  font-size: 10px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color var(--ease);
-}
-
-.profile-showcase-card:hover .profile-showcase-meta {
   color: var(--text-2);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--ease), border-color var(--ease);
+}
+
+.profile-showcase-more:hover {
+  color: var(--text);
+  border-color: var(--text-3);
 }
 
 /* --- 9. Dormant account panel --- */

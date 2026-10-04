@@ -38,6 +38,11 @@ export function resetProfileCards(): void {
 /** Celebrations already played this session (per surface and game). */
 const platShineDone = new Set<string>();
 
+/** Score unit: Xbox counts gamerscore, the rest count XP. */
+function xpUnitFor(appName: string): string {
+  return gameStore(appName) === "xbox" ? "G" : "XP";
+}
+
 /**
  * The game page's platinum celebration (glow, sparks, one-shot shine sweep)
  * for a completed set. Each surface celebrates a game once per session.
@@ -76,7 +81,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     // XP is only shown when the number is real; a missing product total never
     // becomes a made-up "/ 1000" denominator. Xbox counts gamerscore, so the
     // unit follows the store.
-    const xpUnit = store === "xbox" ? "G" : "XP";
+    const xpUnit = xpUnitFor(g.app_name);
     const xpText = g.total_xp > 0
       ? g.total_product_xp > g.total_xp
         ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
@@ -763,36 +768,90 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-/** Side rail: 100% completion showcase, built as a trophy shelf. */
+/** The completion that represents the most investment: playtime, then set size. */
+function pickFeaturedCompletion(games: ProfileGameRecord[]): ProfileGameRecord {
+  return games.reduce((a, b) => {
+    const pa = S.playtimeMap.get(a.app_name)?.total_seconds || 0;
+    const pb = S.playtimeMap.get(b.app_name)?.total_seconds || 0;
+    if (pa !== pb) return pb > pa ? b : a;
+    return b.total_achievements > a.total_achievements ? b : a;
+  }, games[0]);
+}
+
+/** Hero meta line for the featured completion: trophies, score and playtime. */
+function featuredMeta(g: ProfileGameRecord): string {
+  const pt = S.playtimeMap.get(g.app_name);
+  const score = g.total_xp > 0
+    ? g.total_product_xp > g.total_xp
+      ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnitFor(g.app_name)}`
+      : `${g.total_xp.toLocaleString()} ${xpUnitFor(g.app_name)}`
+    : "";
+  return [
+    g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "",
+    score,
+    pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
+  ].filter(Boolean).join(" · ");
+}
+
+/**
+ * Side rail: 100% completions as a podium. The newest (or biggest) completion
+ * takes a large card with the big cup; the rest wait on a small cover strip.
+ */
 function renderShowcasePanel(games: ProfileGameRecord[]): string {
   const completed = games.filter((g) => g.unlocked_percent >= 100);
-  const shown = completed.slice(0, 6);
-  const cards = shown.map((g) => {
-    const cover = coverOf(g.app_name, g.cover || "");
-    const meta = g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "";
+  const head = `
+    <div class="profile-panel-head">
+      <div class="profile-panel-title-wrap">
+        <span class="profile-panel-icon plat">${epicPlatinumIcon(15)}</span>
+        <div>
+          <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
+          <div class="profile-panel-sub">${t("profile.showcaseSubtitle")}</div>
+        </div>
+      </div>
+      ${completed.length > 0 ? `<span class="chip accent tabular-nums">${completed.length}</span>` : ""}
+    </div>`;
+
+  if (completed.length === 0) {
     return `
-      <button type="button" class="profile-showcase-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
-        <span class="profile-showcase-thumb">
-          ${cover ? `<img class="profile-showcase-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 20)}</span>`}
-        </span>
-        <span class="profile-showcase-cup">${platCelebration(18, `vitrin:${g.app_name}`)}</span>
-        <span class="profile-showcase-title">${esc(g.app_title)}</span>
-        ${meta ? `<span class="profile-showcase-meta tabular-nums">${meta}</span>` : ""}
+      <section class="card profile-panel profile-rail-panel">
+        ${head}
+        <div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>
+      </section>`;
+  }
+
+  const featured = pickFeaturedCompletion(completed);
+  const cover = coverOf(featured.app_name, featured.cover || "");
+  const meta = featuredMeta(featured);
+  const rest = completed.filter((g) => g.app_name !== featured.app_name);
+  const shown = rest.slice(0, 5);
+  const minis = shown.map((g) => {
+    const miniCover = coverOf(g.app_name, g.cover || "");
+    return `
+      <button type="button" class="profile-showcase-mini" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
+        ${miniCover ? `<img src="${esc(miniCover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 15)}</span>`}
       </button>`;
   }).join("");
+
   return `
-    <section class="card profile-panel profile-rail-panel profile-showcase-panel">
-      <div class="profile-panel-head">
-        <div class="profile-panel-title-wrap">
-          <span class="profile-panel-icon plat">${epicPlatinumIcon(15)}</span>
-          <div>
-            <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
-            <div class="profile-panel-sub">${t("profile.showcaseSubtitle")}</div>
-          </div>
-        </div>
-        ${completed.length > 0 ? `<span class="chip accent tabular-nums">${completed.length}</span>` : ""}
-      </div>
-      ${shown.length > 0 ? `<div class="profile-showcase-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>`}
+    <section class="card profile-panel profile-rail-panel">
+      ${head}
+      <button type="button" class="profile-showcase-hero" data-act="open-game-from-profile" data-id="${esc(featured.app_name)}" title="${esc(featured.app_title)}">
+        <span class="profile-showcase-cover${cover ? "" : " is-empty"}">
+          ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
+        </span>
+        <span class="profile-showcase-info">
+          <span class="profile-showcase-cup">${platCelebration(40, `vitrin:${featured.app_name}`)}</span>
+          <span class="profile-showcase-name">${esc(featured.app_title)}</span>
+          ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
+          <span class="profile-showcase-pct tabular-nums">100%<small>${esc(t("profile.statCompleted"))}</small></span>
+        </span>
+      </button>
+      ${rest.length > 0
+        ? `<div class="profile-showcase-strip">
+            ${minis}
+            ${rest.length > 5 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${rest.length - 5}</button>` : ""}
+          </div>`
+        : ""}
     </section>`;
 }
 
