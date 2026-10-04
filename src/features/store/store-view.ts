@@ -149,6 +149,18 @@ export function holdStoreForPalette(): Promise<void> {
   return holdStoreOverlay("palette");
 }
 
+/**
+ * Parks the storefront while a main-webview cover (the game page) is open over
+ * it. A native child webview ignores z-index, so the store would otherwise
+ * render on top of the page. The cover watcher puts it back once every
+ * covering root is empty again.
+ */
+export function holdStoreForCover(): void {
+  if (S.view !== "store" || !S.storeShown) return;
+  void holdStoreOverlay("cover");
+  watchCoversThenRelease();
+}
+
 /** Puts the store child back once the last covering surface has closed. */
 export function releaseStoreOverlay(reason: string): void {
   if (reason === "palette" && paletteDomOpen()) return;

@@ -22,6 +22,7 @@ import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { storeLogo } from "../store/store-logos";
+import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -538,6 +539,9 @@ function ensureOverviewData(s: EpicSummary): void {
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
   const s = summaryOf(appName);
   if (!s) return;
+  // The game page lives in the main webview; the storefront is a native child
+  // webview that ignores z-index. Park it while the page covers the store.
+  holdStoreForCover();
   const isSameApp = S.currentModalAppName === appName;
   // Switching games inside the open drawer must not keep the previous
   // gallery (and its full-size originals) alive.
