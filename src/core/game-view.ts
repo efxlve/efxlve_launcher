@@ -26,16 +26,17 @@ const listPlatShineDone = new Set<string>();
 
 /**
  * Achievement glyph for a list row: the game page's platinum cup celebrates a
- * completed set, the plain trophy marks the rest. The cup paints its own
- * gradient, so the not-installed dimming (text tint only) cannot mute it — it
- * keeps shining on uninstalled rows. The shine sweep plays once per session,
- * the same way the game page celebrates a fresh open.
+ * completed set, the plain trophy marks the rest. The list wrapper is a
+ * self-contained fixed-size box in normal flow (no absolute children), so the
+ * cup can never overlap the count text. It paints its own gradient and glow,
+ * so the not-installed dimming (text tint only) cannot mute it — it keeps
+ * shining on uninstalled rows. The bloom plays once per session per game.
  */
 function achievementGlyph(appName: string, done: boolean): string {
   if (!done) return icon("trophy", 13);
   const shine = listPlatShineDone.has(appName) ? "" : " shine";
   listPlatShineDone.add(appName);
-  return `<span class="plat-cup${shine}">${epicPlatinumIcon(15)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 8)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 6)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
+  return `<span class="lrow-plat-cup${shine}" aria-hidden="true">${epicPlatinumIcon(15)}</span>`;
 }
 
 /** Achievement count for a library list row. Dash when the game has no tracked set. */
