@@ -66,6 +66,10 @@ export const COVER_STATS_KEY = "efxlve-cover-stats";
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
+/** Show the storefront mark on every card and list row. Off by default. */
+export const STORE_ICONS_KEY = "efxlve-store-icons";
+/** Achievements progress bar in the list view. Off by default. */
+export const ACH_PROGRESS_KEY = "efxlve-ach-progress";
 /** Library storefronts that stay visible. Missing means every store. */
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */

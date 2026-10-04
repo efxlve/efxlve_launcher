@@ -335,6 +335,13 @@
 .cover-stat svg { width: 12px; height: 12px; flex-shrink: 0; }
 .cover-stat span { overflow: hidden; text-overflow: ellipsis; }
 .cover-stat.done { background: #fff; color: #000; }
+/* Optional storefront mark on covers (bottom-right, clear of the chips). */
+.cover-store {
+  position: absolute; right: 8px; bottom: 10px; z-index: 3; width: 22px; height: 22px;
+  display: grid; place-items: center; border-radius: 6px; background: rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+}
+.cover-store-logo { width: 14px; height: 14px; border-radius: 3px; }
 .pcard .pbadge { left: auto; right: 8px; }
 .pbadge {
   position: absolute; top: 8px; left: 8px; z-index: 3; height: 20px; padding: 0 7px;
@@ -389,6 +396,18 @@
 .lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .lrow-ach.done { color: var(--text); }
+/* Optional storefront mark before a list row's title. */
+.lrow-store-logo { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }
+/* Optional achievements progress bar: count + percent over a thin track. It
+   stays inside the fixed 120px column, so narrow windows cannot break.
+   The class must not be `progress`: the shared `.progress > span` rule for the
+   drawer bars would override the track and flatten it to zero height. */
+.lrow-ach.lrow-ach-progress { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; max-width: 120px; }
+.lrow-ach-progress .lrow-ach-line { display: flex; align-items: center; gap: 6px; }
+.lrow-ach-pct { margin-left: auto; font-size: 12px; color: var(--text-3); }
+.lrow-ach-progress.done .lrow-ach-pct { color: var(--text); }
+.lrow-ach-track { display: block; height: 3px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.lrow-ach-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 .lrow-action { display: flex; justify-content: flex-end; }
 .lrow-action .btn { width: 112px; }
 .lrow-action .btn.install { background: var(--surface-3); color: var(--text-2); font-weight: 500; border-color: var(--line); }

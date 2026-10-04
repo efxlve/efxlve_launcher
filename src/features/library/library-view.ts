@@ -11,6 +11,7 @@ import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
+import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
@@ -311,10 +312,14 @@ export function epicCardPortrait(s: EpicSummary): string {
     : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   const source = sourceOfKey(s.appName);
+  // Optional: the storefront mark on the cover (bottom-right, clear of the
+  // stats chips on the left and the running badge on the top-right).
+  const storeIcon = S.showStoreIcons ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
     <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
+        ${storeIcon}
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
         ${libraryDlBar(s.appName, epicDlProgress(s.appName))}
@@ -332,11 +337,13 @@ function epicListRow(s: EpicSummary): string {
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
+  // Optional: the storefront mark before the title in the list view.
+  const storeIcon = S.showStoreIcons ? storeLogo(source, 14, "lrow-store-logo") : "";
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
-        <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
+        <div class="lrow-title" data-badge-host>${storeIcon}<span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${metaText}</div>
       </div>
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>

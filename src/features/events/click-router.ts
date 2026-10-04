@@ -28,6 +28,8 @@ import {
   SS_FORMAT_KEY,
   SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
+  STORE_ICONS_KEY,
+  ACH_PROGRESS_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
@@ -692,7 +694,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-badge") {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
-    scheduleRender();
+    // Card markup changes need the full grid rebuild, not the in-place patch.
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-store-icons") {
+    S.showStoreIcons = !S.showStoreIcons;
+    localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-ach-progress") {
+    S.showAchProgress = !S.showAchProgress;
+    localStorage.setItem(ACH_PROGRESS_KEY, String(S.showAchProgress));
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
   } else if (act === "toggle-tv-auto") {
     S.tvAutoEnter = !S.tvAutoEnter;
     localStorage.setItem(TV_AUTO_KEY, String(S.tvAutoEnter));

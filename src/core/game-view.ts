@@ -26,7 +26,18 @@ export function listAchievementCell(appName: string): string {
   const ach = achSummaryOf(appName);
   const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
   if (ach?.supported && ach.total_achievements > 0) {
-    return `<span class="lrow-ach${done ? " done" : ""}">${icon("trophy", 13)}<span class="tabular-nums">${ach.user_unlocked}/${ach.total_achievements}</span></span>`;
+    const total = ach.total_achievements;
+    const unlocked = ach.user_unlocked;
+    // Optional progress bar: the count, the percentage and a thin track in one
+    // cell. The cell keeps its fixed column width, so narrow windows are safe.
+    if (S.showAchProgress) {
+      const pct = Math.round((unlocked / total) * 100);
+      return `<span class="lrow-ach lrow-ach-progress${done ? " done" : ""}">
+        <span class="lrow-ach-line">${icon("trophy", 13)}<span class="tabular-nums">${unlocked} / ${total}</span><span class="lrow-ach-pct tabular-nums">${pct}%</span></span>
+        <span class="lrow-ach-track"><span class="lrow-ach-fill" style="width:${pct}%"></span></span>
+      </span>`;
+    }
+    return `<span class="lrow-ach${done ? " done" : ""}">${icon("trophy", 13)}<span class="tabular-nums">${unlocked}/${total}</span></span>`;
   }
   return `<span class="lrow-ach">—</span>`;
 }
