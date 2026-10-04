@@ -273,10 +273,9 @@ export const S = {
   playerProfileData: (null) as EpicPlayerProfile | null,
   profileLoading: false,
   profileError: "",
-  profileTab: ("overview") as "overview" | "achievements" | "accounts",
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
-  /** Overview only: which store's achievements and totals the list is showing. */
+  /** Hero chips: which store's achievements and totals the page is showing. */
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
   profileSearchQuery: "",
   offlineMode: false,

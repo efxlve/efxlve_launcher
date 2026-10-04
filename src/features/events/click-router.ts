@@ -347,18 +347,8 @@ document.addEventListener("click", (e) => {
     S.profileAccount = t.dataset.key;
     resetProfileCards();
     render();
-  } else if (act === "profile-tab" && t.dataset.tab) {
-    const tab = t.dataset.tab;
-    if (tab === "overview" || tab === "achievements" || tab === "accounts") {
-      S.profileTab = tab;
-      resetProfileCards();
-      render();
-    }
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
-    if (t.dataset.tab === "achievements") {
-      S.profileTab = "achievements";
-    }
     S.profileShowHidden = false;
     resetProfileCards();
     render();
@@ -368,9 +358,6 @@ document.addEventListener("click", (e) => {
       S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
       S.profileFilter = "all";
-      if (S.profileTab === "overview") {
-        S.profileTab = "achievements";
-      }
       resetProfileCards();
       render();
     }

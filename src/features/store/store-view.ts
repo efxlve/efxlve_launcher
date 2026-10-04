@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, HIDDEN_STORES_KEY, STORE_LOGOS_ONLY_KEY } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_LOGOS_ONLY_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -16,7 +16,8 @@ import { toast } from "../../core/toast";
 import { EPIC_STORE_URL, epicGetAchievementsSummary, epicGetPlayerProfile } from "../../epic";
 import { gogGetAchievementsSummary } from "../../gog";
 import { steamGetAchievementsSummary } from "../../steam";
-import { t } from "../../i18n";
+import { companionAchievementsSummary } from "../../companion";
+import { currentLanguage, t } from "../../i18n";
 import type { View } from "../../core/types";
 export interface StoreRect {
   [key: string]: unknown;
@@ -450,16 +451,18 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
     S.profileError = String(e);
   }
   if (gen !== profileLoadGen) return;
-  // Epic's profile payload does not include GOG or Steam. Refresh the shared
-  // achievement cache so the profile list matches the library covers.
+  // Epic's profile payload does not include GOG, Steam or Ubisoft. Refresh the
+  // shared achievement cache so the profile list matches the library covers.
   try {
-    const [epicSummaries, gogSummaries, steamSummaries] = await Promise.all([
+    const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
       epicGetAchievementsSummary().catch(() => ({})),
       gogGetAchievementsSummary().catch(() => ({})),
       steamGetAchievementsSummary().catch(() => ({})),
+      // Ubisoft keeps its sets on disk; Xbox and EA answer per game.
+      companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
     ]);
     if (gen !== profileLoadGen) return;
-    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries };
+    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
     S.libraryDataRev++;
   } catch {
     // The page still renders whatever was already cached.
@@ -474,8 +477,12 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
 export async function openProfile(): Promise<void> {
   setView("profile");
   closeAllModals();
-  S.profileTab = "overview";
+  // A fresh entry always lands on the combined profile, unfiltered.
   S.profileStore = "all";
+  S.profileAccount = null;
+  S.profileFilter = "all";
+  S.profileShowHidden = false;
+  S.profileCardCount = PROFILE_CARD_CHUNK;
   if (!S.playerProfileData && !S.profileLoading) {
     void loadPlayerProfile();
   }

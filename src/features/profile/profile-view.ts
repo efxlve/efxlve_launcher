@@ -1,35 +1,27 @@
 /**
  * Profile page renderer.
  *
- * Modern Universal Gaming Hub profile adhering to the Hydra / PS5 Console Dark
- * aesthetic and inspired by the modern console profile architecture (Xbox Mythic
- * update / PlayStation trophy showcase):
+ * Single-page, Xbox-style profile: one identity hero on top, the achievement
+ * catalog as the main column, and Recently Played, Connected Accounts and the
+ * completion showcase in the side rail. There are no tabs; store scope lives
+ * on the hero chips and filters live inside the achievement panel.
  *
- * - Hero Gamer Banner: Avatar, identity, connected store presence, tabular stats
- *   (Games, Playtime, Total Trophies, 100% Completions / Platinums, XP).
- * - Focused 3-Tab Architecture:
- *   1. "Overview" (Genel Bakış): 100% Mythic / Platinum Completions Showcase,
- *      active In-Progress trophies, Recently Played shelf, and connected stores snapshot.
- *   2. "Achievements" (Başarımlar): Comprehensive catalog with store scope pills,
- *      status filters, search, sort, and sleek game progress rows.
- *   3. "Accounts" (Hesaplar): Clean, uncluttered account manager for Epic, Steam,
- *      and GOG with instant one-click switching.
- * - Single account mode: Dedicated focused view with one-click return to Overview.
- * - Strict adherence to DESIGN_SYSTEM.md: True black (#000000), surface-1/2/3,
- *   tabular-nums for metrics, zero emojis (pure SVGs only), 120 FPS performance.
+ * Statistics are scoped and honest by design: only games with a tracked
+ * achievement set count toward trophy, completion and platinum numbers, and
+ * every number follows the selected store.
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
-import { rawOf, sourceOfKey } from "../../core/selectors";
+import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
+import { STORE_LABELS } from "../store/store-view";
 
 export function coverOf(appName: string, fallback = ""): string {
   const s = S.epicSummariesMap.get(appName);
@@ -38,60 +30,23 @@ export function coverOf(appName: string, fallback = ""): string {
   return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
 }
 
-/**
- * Re-applies the hover highlight after a background render. The native :hover
- * state is lost when the grid's DOM is replaced under a stationary pointer, so
- * during a render we ask the still-mounted old DOM which showcase card sits
- * under the pointer and mark the fresh card with `is-hover`. Reading the live
- * DOM (instead of remembering a key) means a stale highlight can never outlive
- * the pointer.
- */
-let lastPointerX = -1;
-let lastPointerY = -1;
-let showcaseHoverWired = false;
-
-function wireShowcaseHover(): void {
-  if (showcaseHoverWired) return;
-  showcaseHoverWired = true;
-  // Only the position is tracked; the render reads the DOM itself.
-  document.addEventListener("pointermove", (e) => {
-    lastPointerX = e.clientX;
-    lastPointerY = e.clientY;
-  }, { passive: true });
-  document.addEventListener("mouseleave", () => {
-    lastPointerX = -1;
-    lastPointerY = -1;
-  });
+/** Resets the profile list back to the first chunk (on filter/sort/search change). */
+export function resetProfileCards(): void {
+  S.profileCardCount = PROFILE_CARD_CHUNK;
 }
-
-/** Showcase card under the pointer right now (the old DOM is still mounted during a render). */
-function hoveredShowcaseKey(): string | null {
-  if (lastPointerX < 0) return null;
-  const el = document.elementFromPoint(lastPointerX, lastPointerY);
-  return el?.closest<HTMLElement>(".profile-showcase-card")?.dataset.id ?? null;
-}
-
-wireShowcaseHover();
-
-/** Short tab labels: brand names are not translated. */
-const STORE_TAB_LABELS: Record<StoreKind, string> = {
-  epic: "Epic",
-  gog: "GOG",
-  steam: "Steam",
-  xbox: "Xbox",
-  battlenet: "Battle.net",
-  ubisoft: "Ubisoft",
-  ea: "EA",
-  riot: "Riot",
-};
 
 /** Stores whose achievements the launcher tracks in bulk. */
 const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
 
+/**
+ * Achievement row: cover, title, trophy count, earned XP and a progress bar.
+ * Only rows with a tracked set reach this list; the caller filters the rest
+ * out so a game without achievements never shows a fake 0%.
+ */
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
-      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().length === 0;
+      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter((g) => g.total_achievements > 0).length === 0;
     const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
       && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
     const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
@@ -100,32 +55,36 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   }
   const chips = showStoreChips();
   return cardGames.map((g) => {
-    const hasAch = g.total_achievements > 0;
-    const isPlat = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
+    const isPlat = g.is_platinum || (g.total_achievements > 0 && g.unlocked_percent >= 100);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
-    const pct = hasAch ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
+    const pct = g.total_achievements > 0 ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
+    // XP is only shown when the number is real; a missing product total never
+    // becomes a made-up "/ 1000" denominator.
+    const xpText = g.total_xp > 0
+      ? g.total_product_xp > g.total_xp
+        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} XP`
+        : `${g.total_xp.toLocaleString()} XP`
+      : "";
     const meta = [
-      hasAch ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : (pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : ""),
-      g.total_product_xp > 0 ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} XP` : "",
-      hasAch && pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
-    ].filter(Boolean).join(" · ") || t("profile.readyToPlay") || "Library";
+      g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "",
+      xpText,
+      pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
+    ].filter(Boolean).join(" · ");
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips
       ? ` <span class="profile-store-chip">${storeCode(gameStore(g.app_name))}</span>`
       : "";
-    const pctHtml = hasAch
-      ? `<div class="profile-game-pct${isPlat ? " plat" : ""}">${pct}%</div>`
-      : pt && pt.total_seconds > 0
-        ? `<div class="profile-game-pct tabular-nums" style="font-size:12px;opacity:0.75">${fmtPlaytime(pt.total_seconds)}</div>`
-        : "";
-    const progressBar = hasAch
+    const pctHtml = g.total_achievements > 0
+      ? `<div class="profile-game-pct${isPlat ? " plat" : ""} tabular-nums">${pct}%</div>`
+      : "";
+    const progressBar = g.total_achievements > 0
       ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
       : "";
     return `
-      <div class="row profile-game-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="profile-game-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 16)}</span>`}
         <div class="row-main">
           <div class="row-title">${esc(g.app_title)}${storeChip}${isPlat ? ` <span class="profile-plat" title="${esc(t("profile.platLabel"))}">${epicPlatinumIcon(13)}</span>` : ""}</div>
@@ -136,11 +95,6 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
         ${pctHtml}
       </div>`;
   }).join("");
-}
-
-/** Resets the profile list back to the first chunk (on filter/sort/search change). */
-export function resetProfileCards(): void {
-  S.profileCardCount = PROFILE_CARD_CHUNK;
 }
 
 /**
@@ -277,11 +231,6 @@ export function profileAccounts(): ProfileAccount[] {
   return out;
 }
 
-/** Active accounts only: the combined profile merges exactly these. */
-function activeAccounts(): ProfileAccount[] {
-  return profileAccounts().filter((a) => a.active);
-}
-
 export type ProfileSelection = { mode: "combined" } | { mode: "account"; account: ProfileAccount };
 
 /**
@@ -302,15 +251,17 @@ export function accountAvatar(account: ProfileAccount): string | null {
   return avatarFor(account.key);
 }
 
-function recentApps(): string[] {
+/** Up to nine recently played games for the rail, scoped to one store. */
+function recentApps(scope: "all" | StoreKind): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const push = (name: string): boolean => {
-    if (!seen.has(name) && (S.epicSummariesMap.has(name) || S.allGamesMap.has(name))) {
-      seen.add(name);
-      out.push(name);
-    }
-    return out.length >= 8;
+    if (out.length >= 9) return true;
+    if (seen.has(name) || (scope !== "all" && gameStore(name) !== scope)) return false;
+    if (!S.epicSummariesMap.has(name) && !S.allGamesMap.has(name)) return false;
+    seen.add(name);
+    out.push(name);
+    return out.length >= 9;
   };
   for (const name of S.epicRecent) if (push(name)) return out;
   const played = [...S.playtimeMap.entries()]
@@ -336,7 +287,12 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
     const hiddenRow = userHidAchievement(g);
     if (S.profileShowHidden) {
       if (!hiddenRow) return false;
-    } else if (hiddenRow) return false;
+    } else {
+      if (hiddenRow) return false;
+      // Games without a tracked achievement set are not achievement rows; they
+      // stay on the Recently Played rail instead of showing a fake 0%.
+      if (g.total_achievements <= 0) return false;
+    }
     const hasAch = g.total_achievements > 0;
     const done = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
     if (S.profileFilter === "platinum" && !done) return false;
@@ -426,7 +382,7 @@ export function overviewStores(): StoreKind[] {
   return out;
 }
 
-/** Overview store tab. Account pages ignore it and use that account's store. */
+/** Store filter selected in the hero chips. Account pages ignore it. */
 function storeScope(): "all" | StoreKind {
   if (profileSelection().mode !== "combined") return "all";
   const store = S.profileStore;
@@ -441,7 +397,7 @@ function achievementScope(): "all" | StoreKind {
   return storeScope();
 }
 
-/** Store marks on rows only when Overview is mixing more than one store. */
+/** Store marks on rows only when the list is mixing more than one store. */
 function showStoreChips(): boolean {
   return profileSelection().mode === "combined" && storeScope() === "all" && overviewStores().length > 1;
 }
@@ -474,8 +430,8 @@ function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[
 }
 
 /**
- * Achievement rows for the current page: one account, or Overview narrowed by
- * the store tab. Search updates call this so GOG, Steam and companion stores stay in the list.
+ * Achievement rows for the current page: one account, or the combined profile
+ * narrowed by the hero store chips.
  */
 export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRecord[] {
   const selection = profileSelection();
@@ -490,7 +446,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   const games: ProfileGameRecord[] = [];
   if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
-  if (scope === "all" || scope === "steam") games.push(...buildSteamProfileGames());
+  if ((scope === "all" || scope === "steam") && S.steamSummaries.length > 0) games.push(...buildSteamProfileGames());
   if (scope === "all" || (scope !== "epic" && scope !== "gog" && scope !== "steam")) {
     games.push(...buildCompanionProfileGames(scope === "all" ? undefined : scope));
   }
@@ -515,20 +471,6 @@ export function libraryCount(scope: "all" | StoreKind): number {
   return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea") + libraryCount("riot");
 }
 
-/** Store filter pills inside the Achievements tab toolbar. */
-function renderStoreScope(): string {
-  if (profileSelection().mode !== "combined") return "";
-  const stores = overviewStores();
-  if (stores.length < 2) return "";
-  const current = storeScope();
-  const tab = (val: string, label: string, count?: number): string =>
-    `<button type="button" class="tab${current === val ? " active" : ""}" data-act="profile-store" data-val="${val}">${esc(label)}${count !== undefined ? `<span class="count">${count}</span>` : ""}</button>`;
-  return `<div class="tabs profile-scope-tabs" role="tablist" aria-label="${esc(t("profile.storeBreakdown"))}">
-    ${tab("all", t("profile.storeAll"))}
-    ${stores.map((s) => tab(s, STORE_TAB_LABELS[s], libraryCount(s))).join("")}
-  </div>`;
-}
-
 /** Sums the stats the launcher actually has for the given game list. */
 export function sumStats(games: ProfileGameRecord[]): { unlocked: number; platinums: number; xp: number } {
   let unlocked = 0, platinums = 0, xp = 0;
@@ -540,7 +482,31 @@ export function sumStats(games: ProfileGameRecord[]): { unlocked: number; platin
   return { unlocked, platinums, xp };
 }
 
-/** Playtime sum. Steam keys are `steam::`, so they never count as Epic hours. */
+/**
+ * Scoped totals for the hero: completed sets and real platinums are counted
+ * separately so a 100% Steam set is never called a platinum.
+ */
+interface ProfileTotals {
+  unlocked: number;
+  completed: number;
+  platinums: number;
+  xp: number;
+}
+
+function profileStats(games: ProfileGameRecord[]): ProfileTotals {
+  let unlocked = 0, completed = 0, platinums = 0, xp = 0;
+  for (const g of games) {
+    unlocked += g.total_unlocked;
+    if (g.total_achievements > 0 && g.unlocked_percent >= 100) completed++;
+    const store = gameStore(g.app_name);
+    if (store === "epic") {
+      xp += g.total_xp;
+      if (g.is_platinum) platinums++;
+    }
+  }
+  return { unlocked, completed, platinums, xp };
+}
+
 /** Playtime sum for one store or everything. Keys carry their store prefix. */
 export function playtimeFor(scope: "all" | StoreKind): number {
   let total = 0;
@@ -584,82 +550,78 @@ export function accountArchiveInfo(account: ProfileAccount): { games: number | n
   };
 }
 
-/**
- * 1. Gamer Identity Hero Banner:
- * Compact horizontal layout with avatar, identity text, store icons,
- * 4 prominent tabular stats, and an overall library completion bar.
- */
+interface ProfileStat {
+  value: string;
+  label: string;
+  icon?: "plat";
+}
+
+function renderStat(stat: ProfileStat): string {
+  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(14)}</span>` : "";
+  return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}</span><span class="profile-stat-label">${esc(stat.label)}</span></div>`;
+}
+
+/** Store chips under the identity: status marks and the scope filter. */
+function renderHeroStoreChips(scope: "all" | StoreKind): string {
+  const stores = overviewStores();
+  if (stores.length === 0) return "";
+  const chip = (val: string, label: string, count: number, connected: boolean, installed: boolean): string => {
+    const statusClass = connected ? "connected" : installed ? "installed" : "unlinked";
+    const selected = scope === val;
+    const tooltip = `${label}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? ` (${count})` : ""}`;
+    return `
+      <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" title="${esc(tooltip)}">
+        ${val === "all" ? icon("layers", 13) : storeLogo(val, 14)}
+        <span class="profile-hero-chip-name">${esc(label)}</span>
+        ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
+      </button>`;
+  };
+  const all = stores.length > 1 ? chip("all", t("profile.storeAll"), libraryCount("all"), true, true) : "";
+  return `<div class="profile-hero-stores">
+    ${all}
+    ${stores.map((s) => chip(s, storeName(s), libraryCount(s), isStoreConnected(s), isStoreInstalled(s))).join("")}
+  </div>`;
+}
+
+/** Xbox-style identity hero: avatar, name, presence, scope chips and stats. */
 function renderProfileHero(
-  selection: ProfileSelection,
   displayName: string,
   avatarKey: string,
   customAvatar: string | null,
   initial: string,
   scope: "all" | StoreKind,
-  games: ProfileGameRecord[],
+  stats: ProfileStat[],
   showData: boolean,
   combined: boolean,
   account: ProfileAccount | null,
-  isEpic: boolean,
-  prof: any,
-  unlocked: number,
-  platinums: number,
-  xp: number,
-  playtimeSeconds: number,
-  gamesCount: number,
 ): string {
   const avatarTitle = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
-  const showXp = !combined && isEpic;
 
-  const stores = overviewStores();
-  const storeLogosHtml = combined
-    ? `<div class="profile-hero-stores">
-        ${ALL_PROFILE_STORES.map((s) => {
-          const connected = isStoreConnected(s);
-          const installed = isStoreInstalled(s);
-          const statusClass = connected ? "connected" : installed ? "installed" : "unlinked";
-          const count = libraryCount(s);
-          const tooltip = `${storeName(s)}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? " (" + count + ")" : ""}`;
-          const isSelected = scope === s;
-          return `
-            <button type="button" class="profile-hero-store-chip ${statusClass}${isSelected ? " selected" : ""}" data-act="profile-store" data-val="${s}" title="${esc(tooltip)}">
-              ${storeLogo(s, 14)}
-              <span class="profile-hero-chip-name">${storeName(s)}</span>
-              ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
-            </button>`;
-        }).join("")}
-      </div>`
-    : !combined && account
-      ? `<div class="profile-hero-stores">
-          <span class="profile-hero-store-pill">
-            <span class="profile-acc-dot" aria-hidden="true"></span>
-            ${storeName(account.kind)}
-          </span>
-          <button type="button" class="btn ghost small profile-back-overview-btn" data-act="profile-account" data-key="overview">
-            ${icon("arrow-left", 12)}
-            <span>${t("profile.backToOverview")}</span>
-          </button>
-        </div>`
+  let presenceText = "";
+  let presenceState = "offline";
+  if (combined) {
+    const running = [...S.runningGames][0];
+    if (running) {
+      presenceText = t("presence.playing", { title: summaryOf(running)?.title || running });
+      presenceState = "online";
+    } else {
+      const connected = overviewStores();
+      presenceText = connected.map((s) => storeName(s)).join(" · ");
+      presenceState = connected.length > 0 ? "online" : "offline";
+    }
+  } else if (account) {
+    presenceText = storeName(account.kind);
+    presenceState = account.active ? "online" : "offline";
+  }
+
+  const storesHtml = combined
+    ? renderHeroStoreChips(scope)
+    : account
+      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${esc(storeName(account.kind))}</span></div>`
       : "";
 
-  const stat = (value: string, label: string, iconPrefix = ""): string => `
-    <div class="profile-stat">
-      <span class="profile-stat-val tabular-nums">${iconPrefix}${value}</span>
-      <span class="profile-stat-label">${label}</span>
-    </div>`;
-
-  const avgCompletion = games.length > 0
-    ? Math.round(games.reduce((acc, g) => acc + g.unlocked_percent, 0) / games.length)
-    : 0;
-
-  const statsPod = showData
-    ? `<div class="profile-stats">
-        ${stat(String(gamesCount), t("profile.games"))}
-        ${stat(esc(fmtPlaytime(playtimeSeconds)), t("profile.played"))}
-        ${stat(unlocked.toLocaleString(), t("profile.trophies"))}
-        ${stat(String(platinums), t("profile.platLabel"), `<span class="profile-stat-plat-ico">${epicPlatinumIcon(14)}</span>`)}
-        ${showXp ? stat(xp.toLocaleString(), "XP") : ""}
-      </div>`
+  const statsHtml = showData
+    ? `<div class="profile-stats">${stats.map(renderStat).join("")}</div>`
     : `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
         <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
@@ -669,303 +631,36 @@ function renderProfileHero(
 
   return `
     <section class="card profile-hero">
-      <div class="profile-hero-main">
-        <div class="profile-hero-left">
-          <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-            <span class="profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 28) : esc(initial)}</span>
-            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+      <div class="profile-hero-top">
+        <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
+          <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 30) : esc(initial)}</span>
+          <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+        </button>
+        <div class="profile-hero-identity">
+          <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+            <h1 class="profile-name">${esc(displayName)}</h1>
+            <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
           </button>
-          <div class="profile-hero-identity">
-            <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-              <h1 class="profile-name">${esc(displayName)}</h1>
-              <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-            </button>
-            ${storeLogosHtml}
+          <div class="profile-presence">
+            <span class="profile-presence-dot ${presenceState}" aria-hidden="true"></span>
+            <span class="profile-presence-text">${esc(presenceText || t("accounts.notConnected"))}</span>
           </div>
+          ${storesHtml}
         </div>
-        <div class="profile-hero-right">
-          ${statsPod}
+        <div class="profile-hero-actions">
+          ${!combined
+            ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+            : ""}
+          <button type="button" class="btn ghost small" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
           <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
         </div>
       </div>
+      ${statsHtml}
     </section>`;
 }
 
-/**
- * 2. Focused Primary Navigation Tabs:
- * Overview (Genel Bakış), Achievements (Başarımlar), Accounts (Hesaplar).
- */
-function renderProfileNavTabs(allAchievementsCount: number, accountsCount: number): string {
-  const currentTab = S.profileTab || "overview";
-  return `
-    <nav class="tabs profile-nav-tabs" role="tablist">
-      <button type="button" class="tab ${currentTab === "overview" ? "active" : ""}" data-act="profile-tab" data-tab="overview">
-        ${icon("sparkles", 14)}
-        <span>${t("profile.tabOverview")}</span>
-      </button>
-      <button type="button" class="tab ${currentTab === "achievements" ? "active" : ""}" data-act="profile-tab" data-tab="achievements">
-        ${icon("trophy", 14)}
-        <span>${t("profile.tabAchievements")}</span>
-        ${allAchievementsCount > 0 ? `<span class="count">${allAchievementsCount}</span>` : ""}
-      </button>
-      <button type="button" class="tab ${currentTab === "accounts" ? "active" : ""}" data-act="profile-tab" data-tab="accounts">
-        ${icon("users", 14)}
-        <span>${t("profile.tabAccounts")}</span>
-        ${accountsCount > 0 ? `<span class="count">${accountsCount}</span>` : ""}
-      </button>
-    </nav>`;
-}
-
-interface StoreSummaryStat {
-  store: StoreKind;
-  name: string;
-  games: number;
-  playtime: number;
-  trophies: number | null;
-  status: "connected" | "installed" | "none";
-}
-
-function computeStoreSummaries(): StoreSummaryStat[] {
-  const result: StoreSummaryStat[] = [];
-  for (const s of ALL_PROFILE_STORES) {
-    const games = libraryCount(s);
-    const playtime = playtimeFor(s);
-    let trophies: number | null = null;
-
-    if (s === "epic" && S.epicAccount) {
-      trophies = S.playerProfileData?.total_unlocked || 0;
-    } else if (s === "steam" && steamConnected()) {
-      const steamGames = buildSteamProfileGames();
-      if (steamGames.length > 0) {
-        trophies = steamGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-      }
-    } else if (s === "gog" && (S.gogAccount || S.gogSummaries.length > 0)) {
-      const gogGames = buildGogProfileGames();
-      if (gogGames.length > 0) {
-        trophies = gogGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-      }
-    } else {
-      const companionGames = buildCompanionProfileGames(s);
-      if (companionGames.length > 0) {
-        trophies = companionGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-      }
-    }
-
-    const connected = isStoreConnected(s);
-    const installed = isStoreInstalled(s);
-
-    result.push({
-      store: s,
-      name: storeName(s),
-      games,
-      playtime,
-      trophies,
-      status: connected ? "connected" : installed ? "installed" : "none",
-    });
-  }
-  return result;
-}
-
-/**
- * 3. Tab 1: "Overview" (Genel Bakış):
- * Layout:
- * - 1. Platinum Shelf: single compact row of 100% completions.
- * - 2. Two equal columns:
- *      Left: "Closest to platinum" (Top 5 games with counter & progress bar)
- *      Right: "By store" (Full breakdown table: games, hours, trophies, completion)
- * - 3. Recently Played: horizontal landscape cards with playtime and last activity.
- */
-function renderOverviewTab(games: ProfileGameRecord[]): string {
-  // A. Platinum completions
-  const platGames = games.filter((g) => g.is_platinum || g.unlocked_percent >= 100);
-
-  // B. In-Progress Games (0% < progress < 100%), sorted by closest to completion
-  const inProgGames = games
-    .filter((g) => !g.is_platinum && g.unlocked_percent > 0 && g.unlocked_percent < 100)
-    .sort((a, b) => b.unlocked_percent - a.unlocked_percent || b.total_xp - a.total_xp);
-
-  // C. Recently Played (up to 6)
-  const recents = recentApps().slice(0, 6);
-
-  // D. Store summaries
-  const storeSummaries = computeStoreSummaries();
-
-  // --- 1. Platinum Shelf ---
-  const platShelfCards = platGames.slice(0, 10).map((g) => {
-    const cover = coverOf(g.app_name, g.cover || "");
-    return `
-      <div class="profile-plat-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
-        ${cover ? `<img class="profile-plat-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-plat-placeholder">${icon("gamepad-2", 24)}</div>`}
-        <div class="profile-plat-scrim">
-          <span class="profile-plat-title">${esc(g.app_title)}</span>
-        </div>
-        <span class="profile-plat-badge" title="${esc(t("profile.platLabel"))}">
-          ${epicPlatinumIcon(13)}
-        </span>
-      </div>`;
-  }).join("");
-
-  const platShelfHtml = `
-    <section class="profile-section profile-shelf-section">
-      <div class="profile-section-head">
-        <div class="profile-section-title-wrap">
-          <span class="profile-section-icon plat">${epicPlatinumIcon(16)}</span>
-          <h3 class="profile-section-title">${t("profile.filterPlatinum")}</h3>
-        </div>
-        ${platGames.length > 0 ? `<button type="button" class="btn ghost small" data-act="profile-filter" data-val="platinum" data-tab="achievements">${t("profile.viewAll")} (${platGames.length})</button>` : ""}
-      </div>
-      ${platGames.length > 0
-        ? `<div class="profile-plat-shelf">${platShelfCards}</div>`
-        : `<div class="profile-empty-showcase">
-            <span class="profile-empty-showcase-ico">${epicPlatinumIcon(22)}</span>
-            <div class="profile-empty-showcase-text">
-              <h4>${t("profile.showcaseEmpty")}</h4>
-              <p>${t("profile.showcaseEmptyDesc")}</p>
-            </div>
-          </div>`
-      }
-    </section>`;
-
-  // --- 2. Left Column: Closest to Platinum (Top 6) ---
-  const closestGames = inProgGames.slice(0, 6);
-  const closestRowsHtml = closestGames.length > 0
-    ? closestGames.map((g) => {
-        const cover = coverOf(g.app_name, g.cover || "");
-        const store = storeCode(gameStore(g.app_name));
-        const pct = Math.min(100, Math.max(0, g.unlocked_percent));
-        return `
-          <div class="profile-closest-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
-            ${cover ? `<img class="profile-closest-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-closest-thumb placeholder">${icon("gamepad-2", 14)}</span>`}
-            <div class="profile-closest-info">
-              <div class="profile-closest-title-row">
-                <span class="profile-closest-title">${esc(g.app_title)}</span>
-                <span class="profile-store-chip">${store}</span>
-              </div>
-            </div>
-            <div class="profile-closest-counter tabular-nums">${g.total_unlocked} / ${g.total_achievements}</div>
-            <div class="profile-closest-bar-wrap">
-              <div class="progress profile-mini-bar"><span style="width:${pct}%"></span></div>
-              <span class="profile-closest-pct tabular-nums">${pct}%</span>
-            </div>
-          </div>`;
-      }).join("")
-    : `
-      <div class="profile-panel-empty">
-        <p class="row-meta">${t("profile.inProgressEmpty")}</p>
-      </div>`;
-
-  // --- 3. Right Column: By Store Table ---
-  const storeTableRowsHtml = storeSummaries.map((st) => {
-    const hasTrophies = st.trophies !== null && st.trophies > 0;
-    const trophiesText = st.trophies !== null ? (hasTrophies ? st.trophies.toLocaleString() : "0") : "—";
-    const playtimeText = st.playtime > 0 ? fmtPlaytime(st.playtime) : "—";
-
-    return `
-      <tr class="profile-store-tr${st.status !== "connected" ? " muted" : ""}" data-act="profile-store" data-val="${st.store}" role="button" tabindex="0" title="${esc(st.name)}">
-        <td>
-          <div class="profile-store-name-cell">
-            <span class="profile-store-dot ${st.status}" aria-hidden="true"></span>
-            ${storeLogo(st.store, 15)}
-            <span class="profile-store-name-label">${esc(st.name)}</span>
-          </div>
-        </td>
-        <td class="text-right tabular-nums">${st.games}</td>
-        <td class="text-right tabular-nums">${playtimeText}</td>
-        <td class="text-right tabular-nums">${trophiesText}</td>
-      </tr>`;
-  }).join("");
-
-  const twoColumnsHtml = `
-    <div class="profile-overview-columns">
-      <!-- Left: Closest to Platinum -->
-      <div class="card profile-panel">
-        <div class="profile-panel-head">
-          <div class="profile-panel-title-wrap">
-            <span class="profile-panel-icon">${icon("timer", 14)}</span>
-            <h4 class="profile-panel-title">${t("profile.inProgressTitle")}</h4>
-          </div>
-          ${inProgGames.length > 6 ? `<button type="button" class="btn ghost small" data-act="profile-filter" data-val="in_progress" data-tab="achievements">${t("profile.viewAll")} (${inProgGames.length})</button>` : inProgGames.length > 0 ? `<span class="profile-count-badge tabular-nums">${inProgGames.length}</span>` : ""}
-        </div>
-        <div class="profile-closest-list">
-          ${closestRowsHtml}
-        </div>
-      </div>
-
-      <!-- Right: By Store -->
-      <div class="card profile-panel">
-        <div class="profile-panel-head">
-          <div class="profile-panel-title-wrap">
-            <span class="profile-panel-icon">${icon("layers", 14)}</span>
-            <h4 class="profile-panel-title">${t("profile.storeBreakdown")}</h4>
-          </div>
-          <button type="button" class="btn ghost small" data-act="profile-tab" data-tab="accounts">${t("common.browse")}</button>
-        </div>
-        <div class="profile-store-table-wrap">
-          <table class="profile-store-table">
-            <thead>
-              <tr>
-                <th>${t("profile.store")}</th>
-                <th class="text-right">${t("profile.games")}</th>
-                <th class="text-right">${t("profile.played")}</th>
-                <th class="text-right">${t("profile.trophies")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${storeTableRowsHtml}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-
-  // --- 4. Bottom Section: Recently Played ---
-  const recentItems = recents.map((appName) => {
-    const title = S.epicSummariesMap.get(appName)?.title || S.allGamesMap.get(appName)?.title || appName;
-    const cover = coverOf(appName);
-    const pt = S.playtimeMap.get(appName);
-    const timeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
-    const lastStr = pt?.last_played_timestamp ? lastUsedLabel(pt.last_played_timestamp) : "";
-    const metaStr = [timeStr, lastStr].filter(Boolean).join(" · ");
-
-    return `
-      <div class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" tabindex="0" role="button">
-        <div class="profile-recent-thumb-wrap">
-          ${cover ? `<img class="profile-recent-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</div>`}
-        </div>
-        <div class="profile-recent-meta-wrap">
-          <div class="profile-recent-title" title="${esc(title)}">${esc(title)}</div>
-          <div class="profile-recent-sub">${metaStr || "—"}</div>
-        </div>
-      </div>`;
-  }).join("");
-
-  const recentHtml = recents.length > 0
-    ? `
-      <section class="profile-section profile-recent-section">
-        <div class="profile-section-head">
-          <div class="profile-section-title-wrap">
-            <span class="profile-section-icon">${icon("clock", 16)}</span>
-            <h3 class="profile-section-title">${t("profile.recentGamesTitle")}</h3>
-          </div>
-          <button type="button" class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
-        </div>
-        <div class="profile-recent-grid">${recentItems}</div>
-      </section>`
-    : "";
-
-  return `
-    <div class="profile-overview-flow">
-      ${platShelfHtml}
-      ${twoColumnsHtml}
-      ${recentHtml}
-    </div>`;
-}
-
-/**
- * 4. Tab 2: "Achievements" (Başarımlar):
- * Full, filterable, searchable trophy catalog with clean toolbar and smooth rows.
- */
-function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGameRecord[]): string {
+/** Main column: the achievement catalog. Only tracked sets reach this list. */
+function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGameRecord[]): string {
   let countPlat = 0, countProgress = 0, countNotStarted = 0, countVisible = 0, countHidden = 0;
   for (const g of games) {
     if (isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name)) continue;
@@ -974,21 +669,31 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
       continue;
     }
     countVisible++;
-    const hasAch = g.total_achievements > 0;
-    const done = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
+    const done = g.is_platinum || g.unlocked_percent >= 100;
     if (done) countPlat++;
-    else if (hasAch && g.unlocked_percent > 0) countProgress++;
-    else if (hasAch) countNotStarted++;
+    else if (g.unlocked_percent > 0) countProgress++;
+    else countNotStarted++;
   }
 
   const filterTab = (val: string, label: string, n: number): string =>
     `<button type="button" class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
+  const sub = `${countVisible.toLocaleString()} ${t("profile.games")} · ${profileStats(games).unlocked.toLocaleString()} ${t("profile.trophies")}`;
+
   return `
-    <div class="profile-achievements-view">
-      ${renderStoreScope()}
+    <section class="card profile-panel profile-ach-panel">
+      <div class="profile-panel-head">
+        <div class="profile-panel-title-wrap">
+          <span class="profile-panel-icon">${icon("trophy", 15)}</span>
+          <div>
+            <h3 class="profile-panel-title">${t("profile.tabAchievements")}</h3>
+            <div class="profile-panel-sub tabular-nums">${sub}</div>
+          </div>
+        </div>
+        <button type="button" class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
+      </div>
       <div class="gp-toolbar profile-ach-toolbar">
-        <div class="tabs">
+        <div class="tabs profile-filter-tabs">
           ${filterTab("all", t("profile.filterAll"), countVisible)}
           ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
           ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
@@ -996,7 +701,6 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
           ${countHidden > 0 ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden">${t("profile.hiddenToggle")}<span class="count">${countHidden}</span></button>` : ""}
         </div>
         <div class="gp-toolbar-right">
-          <button type="button" class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
           <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${t("profile.searchPlaceholder")}" value="${esc(S.profileSearchQuery)}" />
             ${S.profileSearchQuery ? `<button type="button" class="icon-btn" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
           </label>
@@ -1008,178 +712,138 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
           </select>
         </div>
       </div>
-      <div id="profile-games-grid" class="list profile-ach-list">${renderProfileGrid(filtered)}</div>
+      <div id="profile-games-grid" class="profile-ach-list">${renderProfileGrid(filtered)}</div>
+    </section>`;
+}
+
+/** Side rail: recently played covers. */
+function renderRecentPanel(scope: "all" | StoreKind): string {
+  const recents = recentApps(scope);
+  const cards = recents.map((appName) => {
+    const title = summaryOf(appName)?.title || appName;
+    const cover = coverOf(appName);
+    const pt = S.playtimeMap.get(appName);
+    const timeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
+    const lastStr = pt?.last_played_timestamp ? lastUsedLabel(pt.last_played_timestamp) : "";
+    const metaStr = [timeStr, lastStr].filter(Boolean).join(" · ");
+    return `
+      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
+        <span class="profile-recent-thumb-wrap">
+          ${cover ? `<img class="profile-recent-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
+        </span>
+        <span class="profile-recent-title">${esc(title)}</span>
+        <span class="profile-recent-sub tabular-nums">${esc(metaStr || "—")}</span>
+      </button>`;
+  }).join("");
+  return `
+    <section class="card profile-panel profile-rail-panel">
+      <div class="profile-panel-head">
+        <div class="profile-panel-title-wrap">
+          <span class="profile-panel-icon">${icon("clock", 15)}</span>
+          <h3 class="profile-panel-title">${t("profile.recentGamesTitle")}</h3>
+        </div>
+        <button type="button" class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
+      </div>
+      ${recents.length > 0 ? `<div class="profile-recent-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.noRecentGames")}</div>`}
+    </section>`;
+}
+
+const COMPANION_CLIENTS: StoreKind[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
+
+/** One linked account row (`profileAccounts`). */
+function accountRow(a: ProfileAccount, selection: ProfileSelection): string {
+  const avatar = accountAvatar(a);
+  const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
+  const isCurrent = selection.mode === "account" && selection.account.key === a.key;
+  const archive = accountArchiveInfo(a);
+  const liveCount = a.kind === "epic" ? totalEpicGames() : a.kind === "steam" ? totalSteamGames() : a.kind === "gog" ? S.gogSummaries.length : 0;
+  const count = a.active ? liveCount : archive.games;
+  const sub = `${storeName(a.kind)}${count !== null ? ` · ${count} ${t("profile.games")}` : ""}`;
+  const trailing = !a.active
+    ? `<button type="button" class="btn primary small profile-acc-switch" data-act="${switchAct(a.kind)}" data-id="${esc(a.id)}">${t("settings.accountSwitchBtn")}</button>`
+    : isCurrent
+      ? `<span class="profile-acc-check" aria-hidden="true">${icon("check-circle", 15)}</span>`
+      : `<span class="profile-acc-chevron" aria-hidden="true">${icon("chevron-right", 15)}</span>`;
+  const attrs = a.active
+    ? ` data-act="profile-account" data-key="${esc(a.key)}" role="button" tabindex="0"`
+    : "";
+  return `
+    <div class="profile-acc-row${isCurrent ? " is-current" : ""}${a.active ? "" : " is-inactive"}"${attrs}>
+      <span class="profile-acc-ico">${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}</span>
+      <span class="profile-acc-main">
+        <span class="profile-acc-name">${esc(a.name)}</span>
+        <span class="profile-acc-sub">${esc(sub)}</span>
+      </span>
+      ${trailing}
     </div>`;
 }
 
-/**
- * 5. Tab 3: "Accounts" (Hesaplar):
- * Store accounts (Epic, GOG) on top, client accounts (Steam, EA, Ubisoft, …)
- * below: everything switchable in one place.
- */
-function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSelection): string {
-  const accountCard = (a: ProfileAccount): string => {
-    const avatar = accountAvatar(a);
-    const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
-    const isCurrent = selection.mode === "account" && selection.account.key === a.key;
-    const archive = accountArchiveInfo(a);
-
-    const gameCount = archive.games !== null
-      ? archive.games
-      : a.kind === "epic"
-        ? (a.active ? totalEpicGames() : null)
-        : a.kind === "steam"
-          ? (a.active ? totalSteamGames() : null)
-          : (a.active ? S.gogSummaries.length : null);
-
-    const action = !a.active
-      ? `<button type="button" class="btn primary small" data-act="${switchAct(a.kind)}" data-id="${esc(a.id)}">${t("settings.accountSwitchBtn")}</button>`
-      : isCurrent
-        ? `<span class="chip ok">${icon("check", 12)} ${t("profile.currentSession")}</span>`
-        : `<button type="button" class="btn ghost small" data-act="profile-account" data-key="${esc(a.key)}">${t("profile.showAccount")}</button>`;
-
-    const lastUsedText = archive.lastUsed || (a.active ? t("notif.justNow") : "—");
-
-    return `
-      <div class="card profile-acc-manage-card${isCurrent ? " is-active-session" : ""}">
-        <div class="profile-acc-manage-top">
-          <div class="profile-acc-manage-user">
-            <span class="profile-acc-avatar-lg">
-              ${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}
-            </span>
-            <div class="profile-acc-manage-names">
-              <div class="profile-acc-manage-title-row">
-                <span class="profile-acc-manage-name">${esc(a.name)}</span>
-                ${a.active ? `<span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>` : ""}
-              </div>
-              <div class="profile-acc-manage-store-tag">
-                ${storeLogo(a.kind, 14)}
-                <span>${storeName(a.kind)}</span>
-              </div>
-            </div>
-          </div>
-          <div class="profile-acc-manage-badge">
-            ${a.active
-              ? `<span class="profile-acc-status-pill online"><span class="profile-acc-dot" aria-hidden="true"></span>${t("profile.activeSession")}</span>`
-              : `<span class="profile-acc-status-pill offline">${t("profile.inactiveTitle")}</span>`
-            }
-          </div>
-        </div>
-
-        <div class="profile-acc-manage-meta-row">
-          <span class="profile-acc-meta-item">
-            <span class="profile-acc-meta-val tabular-nums">${gameCount !== null ? gameCount : "—"}</span>
-            <span class="profile-acc-meta-lbl">${t("profile.games")}</span>
-          </span>
-          <span class="profile-acc-meta-sep"></span>
-          <span class="profile-acc-meta-item">
-            <span class="profile-acc-meta-val">${esc(lastUsedText)}</span>
-            <span class="profile-acc-meta-lbl">${t("profile.lastUsed")}</span>
-          </span>
-        </div>
-
-        <div class="profile-acc-manage-footer">
-          ${action}
-        </div>
-      </div>`;
-  };
-
-  // Store accounts keep Epic and GOG; Steam is a client like EA or Ubisoft.
-  const storeCards = allAccounts.filter((a) => a.kind !== "steam").map(accountCard).join("");
-  const steamCards = allAccounts.filter((a) => a.kind === "steam").map(accountCard).join("");
-
-  const COMPANION_CLIENTS: StoreKind[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
-
-  const companionCards = COMPANION_CLIENTS
-    .map((kind) => {
-      const status = S.companionStatus.find((s) => s.store === kind);
-      const linked = status?.linked ?? false;
-      const client = status?.clientInstalled ?? false;
-      const games = status?.gameCount ?? libraryCount(kind);
-      const accountName = (linked && status?.accountName) ? status.accountName : storeName(kind);
-      const isOnline = linked;
-      const isLocal = !linked && (client || games > 0);
-
-      const badgeHtml = isOnline
-        ? `<span class="profile-acc-status-pill online"><span class="profile-acc-dot" aria-hidden="true"></span>${t("profile.activeSession")}</span>`
-        : isLocal
-          ? `<span class="profile-acc-status-pill local"><span class="profile-acc-dot amber" aria-hidden="true"></span>${t("accounts.localAccount")}</span>`
-          : `<span class="profile-acc-status-pill offline">${t("accounts.notConnected")}</span>`;
-
-      return `
-      <div class="card profile-acc-manage-card${isOnline ? " is-active-session" : ""}">
-        <div class="profile-acc-manage-top">
-          <div class="profile-acc-manage-user">
-            <span class="profile-acc-avatar-lg">${storeLogo(kind, 22)}</span>
-            <div class="profile-acc-manage-names">
-              <div class="profile-acc-manage-title-row">
-                <span class="profile-acc-manage-name">${esc(accountName)}</span>
-                ${isOnline ? `<span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>` : ""}
-              </div>
-              <div class="profile-acc-manage-store-tag">
-                ${storeLogo(kind, 14)}
-                <span>${storeName(kind)}</span>
-              </div>
-            </div>
-          </div>
-          <div class="profile-acc-manage-badge">
-            ${badgeHtml}
-          </div>
-        </div>
-        <div class="profile-acc-manage-meta-row">
-          <span class="profile-acc-meta-item">
-            <span class="profile-acc-meta-val tabular-nums">${games > 0 || isLocal ? games : "—"}</span>
-            <span class="profile-acc-meta-lbl">${t("profile.games")}</span>
-          </span>
-          <span class="profile-acc-meta-sep"></span>
-          <span class="profile-acc-meta-item">
-            <span class="profile-acc-meta-val">${isOnline ? t("accounts.connected") : isLocal ? t("accounts.localAccount") : t("accounts.notConnected")}</span>
-            <span class="profile-acc-meta-lbl">${t("profile.store")}</span>
-          </span>
-        </div>
-        <div class="profile-acc-manage-footer">
-          <button type="button" class="btn ghost small" data-view="accounts">${t("accounts.manageAccounts")}</button>
-        </div>
-      </div>`;
-    })
-    .join("");
-
-  // Client accounts: Steam profiles and the companion clients in one grid.
-  const clientCards = `${steamCards}${companionCards}`;
-
-  const clientSection = clientCards
-    ? `<div class="profile-section-subhead">
-         <h4 class="profile-section-subtitle">${t("profile.companionAccounts")}</h4>
-         <span class="profile-section-desc">${t("profile.companionAccountsDesc")}</span>
-       </div>
-       <div class="profile-accounts-grid">
-         ${clientCards}
-       </div>`
-    : "";
-
+/** One companion store row (Xbox, EA, Ubisoft, Battle.net, Riot). */
+function companionRow(kind: StoreKind, selection: ProfileSelection): string {
+  const status = S.companionStatus.find((s) => s.store === kind);
+  const linked = status?.linked ?? false;
+  const client = status?.clientInstalled ?? false;
+  const games = status?.gameCount ?? libraryCount(kind);
+  if (!linked && !client && games === 0) return "";
+  const name = linked && status?.accountName ? status.accountName : storeName(kind);
+  const sub = `${linked ? t("accounts.connected") : t("accounts.localAccount")}${games > 0 ? ` · ${games} ${t("profile.games")}` : ""}`;
+  const selected = profileSelection().mode === "combined" && storeScope() === kind;
+  const isCurrent = selection.mode === "account" && selection.account.kind === kind;
   return `
-    <div class="profile-accounts-view">
-      <div class="profile-section-head">
-        <div>
-          <h3 class="profile-section-title">${t("profile.linkedAccounts")}</h3>
-          <div class="profile-section-desc">${t("profile.accountsSubtitle")}</div>
-        </div>
-        <button type="button" class="btn ghost small" data-view="accounts">
-          ${icon("plus", 14)}
-          <span>${t("settings.accountAdd")}</span>
-        </button>
-      </div>
-
-      <div class="profile-section-subhead">
-        <h4 class="profile-section-subtitle">${t("profile.storeAccounts")}</h4>
-      </div>
-
-      <div class="profile-accounts-grid">
-        ${storeCards}
-      </div>
-
-      ${clientSection}
+    <div class="profile-acc-row${selected || isCurrent ? " is-current" : ""}" data-act="profile-store" data-val="${kind}" role="button" tabindex="0">
+      <span class="profile-acc-ico">${storeLogo(kind, 18)}</span>
+      <span class="profile-acc-main">
+        <span class="profile-acc-name">${esc(name)}</span>
+        <span class="profile-acc-sub">${esc(sub)}</span>
+      </span>
+      <span class="profile-acc-dot ${linked ? "online" : "local"}" aria-hidden="true"></span>
     </div>`;
+}
+
+/** Side rail: linked accounts and companion stores, with one manage entry. */
+function renderAccountsPanel(allAccounts: ProfileAccount[], selection: ProfileSelection): string {
+  const accountRows = allAccounts.map((a) => accountRow(a, selection)).join("");
+  const companionRows = COMPANION_CLIENTS.map((kind) => companionRow(kind, selection)).join("");
+  return `
+    <section class="card profile-panel profile-rail-panel">
+      <div class="profile-panel-head">
+        <div class="profile-panel-title-wrap">
+          <span class="profile-panel-icon">${icon("users", 15)}</span>
+          <h3 class="profile-panel-title">${t("profile.linkedAccounts")}</h3>
+        </div>
+        <button type="button" class="btn ghost small" data-view="accounts">${t("accounts.manageAccounts")}</button>
+      </div>
+      <div class="profile-acc-list">
+        ${accountRows}
+        ${companionRows}
+      </div>
+    </section>`;
+}
+
+/** Side rail: 100% completion showcase. */
+function renderShowcasePanel(games: ProfileGameRecord[]): string {
+  const platGames = games.filter((g) => g.unlocked_percent >= 100).slice(0, 6);
+  const cards = platGames.map((g) => {
+    const cover = coverOf(g.app_name, g.cover || "");
+    return `
+      <button type="button" class="profile-showcase-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
+        <span class="profile-showcase-thumb">
+          ${cover ? `<img class="profile-showcase-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 20)}</span>`}
+          <span class="profile-showcase-badge" aria-hidden="true">${epicPlatinumIcon(12)}</span>
+        </span>
+        <span class="profile-showcase-title">${esc(g.app_title)}</span>
+      </button>`;
+  }).join("");
+  return `
+    <section class="card profile-panel profile-rail-panel">
+      <div class="profile-panel-head">
+        <div class="profile-panel-title-wrap">
+          <span class="profile-panel-icon plat">${epicPlatinumIcon(15)}</span>
+          <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
+        </div>
+      </div>
+      ${platGames.length > 0 ? `<div class="profile-showcase-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>`}
+    </section>`;
 }
 
 /** Dormant account panel: calm grouped list when an inactive account is selected. */
@@ -1191,20 +855,23 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
   return `
     <div class="page profile-page">
       <section class="card profile-hero">
-        <div class="profile-hero-left">
+        <div class="profile-hero-top">
           <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
-            <span class="profile-avatar">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
+            <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
             <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
           </button>
           <div class="profile-hero-identity">
             <h1 class="profile-name">${esc(displayName)}</h1>
+            <div class="profile-presence">
+              <span class="profile-presence-dot offline" aria-hidden="true"></span>
+              <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
+            </div>
             <div class="profile-hero-stores">
               <span class="profile-hero-store-pill">${storeName(account.kind)}</span>
-              <button type="button" class="btn ghost small profile-back-overview-btn" data-act="profile-account" data-key="overview">
-                ${icon("arrow-left", 12)}
-                <span>${t("profile.backToOverview")}</span>
-              </button>
             </div>
+          </div>
+          <div class="profile-hero-actions">
+            <button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>
           </div>
         </div>
       </section>
@@ -1236,7 +903,7 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
 
 /** Main Profile Page Entry Point */
 export function renderProfile(): string {
-  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected();
+  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected() || S.companionSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
     return `<div class="page">${`<div class="empty-state"><span class="spinner"></span><h3>${t("profile.loadingTitle")}</h3><p>${t("profile.loadingDesc")}</p></div>`}</div>`;
   }
@@ -1247,14 +914,8 @@ export function renderProfile(): string {
   const selection = profileSelection();
   const combined = selection.mode === "combined";
   const account = combined ? null : selection.account;
-  const isEpic = account?.kind === "epic";
   const scope = achievementScope();
-  const prof = isEpic || (combined && (scope === "all" || scope === "epic"))
-    ? (S.epicAccount ? S.playerProfileData : null)
-    : null;
-
   const showData = combined ? overviewStores().length > 0 : Boolean(account?.active);
-  const games = showData ? profileListGames() : [];
 
   const displayName = combined
     ? currentProfileName()
@@ -1263,90 +924,62 @@ export function renderProfile(): string {
   const customAvatar = combined ? globalAvatar() : accountAvatar(account!);
   const initial = displayName.trim().charAt(0).toUpperCase() || "E";
 
-  // If selecting an inactive account, show the clean dormant panel
+  // If selecting an inactive account, show the calm dormant panel.
   if (!showData && !combined) {
     return renderDormantView(account!, displayName, avatarKey, customAvatar, initial);
   }
 
-  const filtered = filteredProfileGames(games);
+  const allGames = showData ? profileListGames(scope) : [];
+  const games = allGames.filter((g) => g.total_achievements > 0);
+  const filtered = filteredProfileGames(allGames);
 
-  // Sum statistics
-  let unlocked = 0, platinums = 0, xp = 0, playtimeSeconds = 0;
+  const totals = profileStats(games);
+  const playtimeSeconds = showData ? playtimeFor(scope) : 0;
+
+  const stats: ProfileStat[] = [];
   if (showData) {
-    const sums = sumStats(games);
-    if (!combined && isEpic && scope === "epic") {
-      unlocked = prof?.total_unlocked || 0;
-      platinums = prof?.platinum_count || 0;
-      xp = prof?.total_xp || 0;
-    } else {
-      unlocked = sums.unlocked;
-      platinums = sums.platinums;
-      xp = sums.xp;
+    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games") });
+    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played") });
+    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies") });
+    stats.push({ value: totals.completed.toLocaleString(), label: t("profile.statCompleted") });
+    // Platinums are an Epic award; a 100% Steam or GOG set is completion, not a platinum.
+    const showPlatinums = scope === "epic" || (scope === "all" && !!S.epicAccount);
+    if (showPlatinums) {
+      const platinums = scope === "epic" ? (S.playerProfileData?.platinum_count ?? totals.platinums) : totals.platinums;
+      stats.push({ value: platinums.toLocaleString(), label: t("profile.platLabel"), icon: "plat" });
     }
-    playtimeSeconds = playtimeFor(scope);
+    // XP is Epic-only currency and only shown when the scope is Epic itself.
+    if (scope === "epic" && S.playerProfileData) {
+      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
+    }
   }
 
-  // Hero Gamer Banner stats: in combined mode, ALWAYS show the user's GLOBAL stats!
-  let heroGamesCount = libraryCount(scope);
-  let heroPlaytimeSeconds = playtimeSeconds;
-  let heroUnlocked = unlocked;
-  let heroPlatinums = platinums;
-  let heroXp = xp;
-
-  if (combined) {
-    heroGamesCount = libraryCount("all");
-    heroPlaytimeSeconds = playtimeFor("all");
-    const allProfileList = profileListGames("all");
-    const globalSums = sumStats(allProfileList);
-    heroUnlocked = globalSums.unlocked;
-    heroPlatinums = globalSums.platinums;
-    heroXp = globalSums.xp;
-  }
-
-  const allAccounts = profileAccounts();
-
-  // Hero Gamer Banner
   const heroHtml = renderProfileHero(
-    selection,
     displayName,
     avatarKey,
     customAvatar,
     initial,
     scope,
-    games,
+    stats,
     showData,
     combined,
     account,
-    isEpic,
-    prof,
-    heroUnlocked,
-    heroPlatinums,
-    heroXp,
-    heroPlaytimeSeconds,
-    heroGamesCount,
   );
 
-  // Nav tabs. The Accounts tab lists store accounts, Steam accounts, and companion platforms.
-  const companionTotal = 5; // xbox, battlenet, ubisoft, ea, riot
-  const navTabsHtml = renderProfileNavTabs(games.length, allAccounts.length + companionTotal);
-
-  // Current tab content
-  const tab = S.profileTab || "overview";
-  let contentHtml = "";
-  if (tab === "overview") {
-    contentHtml = renderOverviewTab(games);
-  } else if (tab === "achievements") {
-    contentHtml = renderAchievementsTab(filtered, games);
-  } else if (tab === "accounts") {
-    contentHtml = renderAccountsTab(allAccounts, selection);
-  }
+  const allAccounts = profileAccounts();
 
   return `
     <div class="page profile-page">
       ${heroHtml}
-      ${navTabsHtml}
-      <div class="profile-content">
-        ${contentHtml}
+      <div class="profile-columns">
+        <div class="profile-col-main">
+          ${renderAchievementsPanel(games, filtered)}
+        </div>
+        <aside class="profile-col-side">
+          ${renderRecentPanel(scope)}
+          ${renderAccountsPanel(allAccounts, selection)}
+          ${renderShowcasePanel(games)}
+        </aside>
       </div>
     </div>`;
 }
