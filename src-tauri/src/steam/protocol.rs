@@ -123,8 +123,11 @@ pub(super) fn spawn_uri(target: &str) -> Result<(), String> {
 
 pub(super) fn steam_action_url(app_id: &str, action: &str) -> Option<String> {
     match action {
-        "launch" | "update" => Some(format!("steam://rungameid/{app_id}")),
-        "install" => Some(format!("steam://install/{app_id}")),
+        "launch" => Some(format!("steam://rungameid/{app_id}")),
+        // An update must not launch the game: `install` makes Steam update the
+        // existing depot state and leaves the game closed (`rungameid` would
+        // update it and then start it).
+        "install" | "update" => Some(format!("steam://install/{app_id}")),
         "uninstall" => Some(format!("steam://uninstall/{app_id}")),
         "validate" => Some(format!("steam://validate/{app_id}")),
         _ => None,
@@ -161,7 +164,7 @@ mod tests {
         );
         assert_eq!(
             steam_action_url("730", "update").as_deref(),
-            Some("steam://rungameid/730")
+            Some("steam://install/730")
         );
         assert_eq!(
             steam_action_url("730", "launch").as_deref(),
