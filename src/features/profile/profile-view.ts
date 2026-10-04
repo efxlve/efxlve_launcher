@@ -604,12 +604,17 @@ function renderProfileHero(
       <span class="profile-stat-label">${label}</span>
     </div>`;
 
+  const avgCompletion = games.length > 0
+    ? Math.round(games.reduce((acc, g) => acc + g.unlocked_percent, 0) / games.length)
+    : 0;
+
   const statsPod = showData
     ? `<div class="profile-stats">
         ${stat(String(gamesCount), t("profile.games"))}
         ${stat(esc(fmtPlaytime(playtimeSeconds)), t("profile.played"))}
         ${stat(unlocked.toLocaleString(), t("profile.trophies"))}
         ${stat(String(platinums), t("profile.platLabel"), `<span class="profile-stat-plat-ico">${epicPlatinumIcon(14)}</span>`)}
+        ${games.length > 0 ? stat(`${avgCompletion}%`, t("profile.sortProgress")) : ""}
         ${showXp ? stat(xp.toLocaleString(), "XP") : ""}
       </div>`
     : `<div class="profile-inactive">
@@ -665,24 +670,138 @@ function renderProfileNavTabs(allAchievementsCount: number, accountsCount: numbe
 
 /**
  * 3. Tab 1: "Overview" (Genel Bakış):
- * - Xbox Mythic-inspired 100% Completions Showcase.
- * - Active in-progress achievements.
- * - Recently played games shelf.
- * - Connected stores quick snapshot.
+ * Modern 2-column Gamer Hub dashboard:
+ * - Left Column (Command Center):
+ *   - Target Milestones (closest games to 100% completion with quick action).
+ *   - Career & Trophy Breakdown (plts, progress, not started, overall progress rate).
+ *   - Connected Stores status snapshot with fast jump.
+ * - Right Column (Showcase & Highlights):
+ *   - 100% Mythic / Platinum Completions Showcase Grid.
+ *   - Active In-Progress games cards.
+ *   - Recently Played Shelf.
  */
 function renderOverviewTab(games: ProfileGameRecord[]): string {
   // A. 100% Mythic / Platinum Completions
   const platGames = games.filter((g) => g.is_platinum || g.unlocked_percent >= 100);
 
-  // B. In-Progress Games (0% < progress < 100%)
+  // B. In-Progress Games (0% < progress < 100%), sorted by closest to completion first
   const inProgGames = games
     .filter((g) => !g.is_platinum && g.unlocked_percent > 0 && g.unlocked_percent < 100)
     .sort((a, b) => b.unlocked_percent - a.unlocked_percent || b.total_xp - a.total_xp);
 
-  // C. Recently Played
+  // C. Not Started Games (0% progress)
+  const notStartedGames = games.filter((g) => !g.is_platinum && g.unlocked_percent === 0);
+
+  // D. Recently Played
   const recents = recentApps();
 
-  // 1. Showcase Section HTML
+  // Progress calculations
+  let totalUnlocked = 0;
+  let totalAch = 0;
+  for (const g of games) {
+    totalUnlocked += g.total_unlocked;
+    totalAch += g.total_achievements;
+  }
+  const avgPct = games.length > 0
+    ? Math.round(games.reduce((acc, g) => acc + g.unlocked_percent, 0) / games.length)
+    : 0;
+
+  // 1. Sidebar Widget: Target Milestones (Games closest to 100%)
+  const milestones = inProgGames.slice(0, 4);
+  const milestonesHtml = milestones.length > 0
+    ? milestones.map((g) => {
+        const cover = coverOf(g.app_name, g.cover || "");
+        const store = storeCode(gameStore(g.app_name));
+        const pct = Math.min(100, Math.max(0, g.unlocked_percent));
+        return `
+          <div class="profile-milestone-item" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
+            ${cover ? `<img class="profile-milestone-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-milestone-thumb placeholder">${icon("gamepad-2", 16)}</div>`}
+            <div class="profile-milestone-info">
+              <div class="profile-milestone-title-row">
+                <span class="profile-milestone-title">${esc(g.app_title)}</span>
+                <span class="profile-store-chip">${store}</span>
+              </div>
+              <div class="profile-milestone-meta">
+                <span>${g.total_unlocked}/${g.total_achievements} ${t("profile.trophies")}</span>
+                <span class="profile-milestone-pct tabular-nums">${pct}%</span>
+              </div>
+              <div class="progress profile-milestone-bar">
+                <span style="width:${pct}%"></span>
+              </div>
+            </div>
+          </div>`;
+      }).join("")
+    : `
+      <div class="profile-widget-empty">
+        <span class="profile-widget-empty-ico">${icon("timer", 18)}</span>
+        <p class="row-meta">${t("profile.inProgressEmpty")}</p>
+      </div>`;
+
+  // 2. Sidebar Widget: Trophy & Career Breakdown
+  const breakdownWidgetHtml = `
+    <div class="card profile-widget">
+      <div class="profile-widget-head">
+        <div class="profile-widget-title-wrap">
+          <span class="profile-widget-icon">${icon("crown", 14)}</span>
+          <h4 class="profile-widget-title">${t("profile.progressTitle")}</h4>
+        </div>
+        <span class="profile-count-badge tabular-nums">${avgPct}%</span>
+      </div>
+      <div class="profile-breakdown-rate-wrap">
+        <div class="progress profile-breakdown-progress"><span style="width:${avgPct}%"></span></div>
+      </div>
+      <div class="profile-breakdown-list">
+        <div class="profile-breakdown-row">
+          <span class="profile-breakdown-label">${epicPlatinumIcon(13)} ${t("profile.filterPlatinum")}</span>
+          <span class="profile-breakdown-val tabular-nums">${platGames.length}</span>
+        </div>
+        <div class="profile-breakdown-row">
+          <span class="profile-breakdown-label">${icon("timer", 13)} ${t("profile.filterInProgress")}</span>
+          <span class="profile-breakdown-val tabular-nums">${inProgGames.length}</span>
+        </div>
+        <div class="profile-breakdown-row">
+          <span class="profile-breakdown-label">${icon("circle", 13)} ${t("profile.filterNotStarted")}</span>
+          <span class="profile-breakdown-val tabular-nums">${notStartedGames.length}</span>
+        </div>
+        <div class="profile-breakdown-row">
+          <span class="profile-breakdown-label">${icon("trophy", 13)} ${t("profile.trophies")}</span>
+          <span class="profile-breakdown-val tabular-nums">${totalUnlocked.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>`;
+
+  // 3. Sidebar Widget: Connected Stores Snapshot
+  const stores = overviewStores();
+  const storesListHtml = stores.map((s) => `
+    <div class="profile-store-row">
+      <div class="profile-store-left">
+        ${storeLogo(s, 16)}
+        <span class="profile-store-tag">${storeName(s)}</span>
+      </div>
+      <span class="profile-store-status online">
+        <span class="profile-acc-dot" aria-hidden="true"></span>
+        ${t("profile.currentActive")}
+      </span>
+    </div>
+  `).join("");
+
+  const storesWidgetHtml = stores.length > 0
+    ? `
+      <div class="card profile-widget">
+        <div class="profile-widget-head">
+          <div class="profile-widget-title-wrap">
+            <span class="profile-widget-icon">${icon("users", 14)}</span>
+            <h4 class="profile-widget-title">${t("profile.linkedStores")}</h4>
+          </div>
+          <button type="button" class="btn ghost small" data-act="profile-tab" data-tab="accounts">${t("common.browse")}</button>
+        </div>
+        <div class="profile-stores-list">
+          ${storesListHtml}
+        </div>
+      </div>`
+    : "";
+
+  // Right Column: 100% Showcase Grid
   const hoverKey = hoveredShowcaseKey();
   const showcaseCards = platGames.slice(0, 6).map((g) => {
     const cover = coverOf(g.app_name, g.cover || "");
@@ -726,7 +845,7 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
       }
     </section>`;
 
-  // 2. In-Progress Section HTML
+  // Right Column: In-Progress Highlight Cards
   const inProgCards = inProgGames.slice(0, 6).map((g) => {
     const cover = coverOf(g.app_name, g.cover || "");
     const store = storeCode(gameStore(g.app_name));
@@ -773,12 +892,12 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
       }
     </section>`;
 
-  // 3. Recently Played Section HTML
+  // Right Column: Recently Played Shelf
   const recentItems = recents.map((appName) => {
     const title = S.epicSummariesMap.get(appName)?.title || S.allGamesMap.get(appName)?.title || appName;
     const cover = coverOf(appName);
     return `
-      <button type="button" class="profile-recent-card" data-act="epic-detail" data-id="${esc(appName)}" title="${esc(title)}">
+      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
         ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="placeholder">${icon("gamepad-2", 18)}</span>`}
       </button>`;
   }).join("");
@@ -798,10 +917,30 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
     : "";
 
   return `
-    <div class="profile-overview-view">
-      ${showcaseHtml}
-      ${inProgHtml}
-      ${recentHtml}
+    <div class="profile-dashboard-grid">
+      <aside class="profile-dashboard-side">
+        <div class="card profile-widget">
+          <div class="profile-widget-head">
+            <div class="profile-widget-title-wrap">
+              <span class="profile-widget-icon">${icon("timer", 14)}</span>
+              <h4 class="profile-widget-title">${t("profile.inProgressTitle")}</h4>
+            </div>
+            ${inProgGames.length > 0 ? `<span class="profile-count-badge tabular-nums">${inProgGames.length}</span>` : ""}
+          </div>
+          <div class="profile-milestones-list">
+            ${milestonesHtml}
+          </div>
+        </div>
+
+        ${breakdownWidgetHtml}
+        ${storesWidgetHtml}
+      </aside>
+
+      <main class="profile-dashboard-main">
+        ${showcaseHtml}
+        ${inProgHtml}
+        ${recentHtml}
+      </main>
     </div>`;
 }
 
