@@ -42,7 +42,11 @@ export function studioOf(s: EpicSummary): string {
     return item?.developer || "";
   }
   if (s.appName.startsWith("steam::")) {
-    return S.steamSummariesMap.get(s.appName)?.developer || "";
+    // The client's app cache fills the summary; an opened game page can fill the gap.
+    const item = S.steamSummariesMap.get(s.appName);
+    if (item?.developer) return item.developer;
+    const details = S.steamDetails.get(s.appName);
+    return details?.developers[0] || details?.publishers[0] || "";
   }
   const g = rawOf(s.appName);
   const d = g?.metadata?.developer;

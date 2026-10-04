@@ -234,6 +234,61 @@ pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
     Vec::new()
 }
 
+/// Developer names from the client's own `appcache/appinfo.vdf`, keyed by app id.
+///
+/// The client keeps this cache for every app it knows, so the library list can
+/// show a studio for Steam games without one store request per game.
+pub fn parse_appinfo_developers(data: &[u8]) -> std::collections::HashMap<String, String> {
+    use std::collections::HashMap;
+
+    let Some(magic) = read_u32_at(data, 0) else {
+        return HashMap::new();
+    };
+    let (table, mut pos, apps_end) = match magic {
+        APPINFO_MAGIC_V41 => {
+            let Some(offset) = data
+                .get(8..16)
+                .and_then(|b| b.try_into().ok())
+                .map(u64::from_le_bytes)
+                .map(|v| v as usize)
+            else {
+                return HashMap::new();
+            };
+            if offset >= data.len() {
+                return HashMap::new();
+            }
+            (parse_appinfo_strings(data, offset), 16usize, offset)
+        }
+        APPINFO_MAGIC_V40 => (None, 8usize, data.len()),
+        _ => return HashMap::new(),
+    };
+
+    let mut out = HashMap::new();
+    while pos + 68 <= apps_end {
+        let Some(entry_id) = read_u32_at(data, pos) else {
+            break;
+        };
+        if entry_id == 0 {
+            break;
+        }
+        let Some(size) = read_u32_at(data, pos + 4).map(|v| v as usize) else {
+            break;
+        };
+        if size < 60 || pos + 8 + size > data.len() {
+            break;
+        }
+        let blob = &data[pos + 68..pos + 8 + size];
+        if let Some(developer) = appinfo_find_string(blob, &table, "developer") {
+            let developer = developer.trim();
+            if !developer.is_empty() {
+                out.insert(entry_id.to_string(), developer.to_string());
+            }
+        }
+        pos += 8 + size;
+    }
+    out
+}
+
 /// App ids whose client metadata says `releasestate` is `preloadonly`.
 ///
 /// Those installs sit on disk before release. Steam sets `UpdateRequired` so
@@ -314,6 +369,39 @@ pub fn read_client_dlc_ids(steam: &Path, app_id: &str) -> Vec<String> {
         return Vec::new();
     };
     parse_appinfo_dlc_ids(&data, app_id)
+}
+
+pub(super) static DEVELOPER_CACHE: std::sync::Mutex<
+    Option<(
+        Option<std::time::SystemTime>,
+        std::collections::HashMap<String, String>,
+    )>,
+> = std::sync::Mutex::new(None);
+
+/// App id → developer from `appinfo.vdf`, reused until that file changes.
+pub(super) fn cached_app_developers(steam: &Path) -> std::collections::HashMap<String, String> {
+    let path = steam.join("appcache").join("appinfo.vdf");
+    let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+    let mut guard = DEVELOPER_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((cached_mtime, map)) = guard.as_ref() {
+        if cached_mtime == &mtime {
+            return map.clone();
+        }
+    }
+    let map = std::fs::read(&path)
+        .map(|data| parse_appinfo_developers(&data))
+        .unwrap_or_default();
+    *guard = Some((mtime, map.clone()));
+    map
+}
+
+/// Developer names for the whole Steam library, read once from the client's own
+/// app cache. Empty when Steam or its cache is missing.
+#[tauri::command]
+pub fn steam_app_developers() -> std::collections::HashMap<String, String> {
+    steam_install_path()
+        .map(|steam| cached_app_developers(&steam))
+        .unwrap_or_default()
 }
 
 /// Drops tags and decodes the few entities Steam actually uses.
@@ -808,6 +896,61 @@ mod tests {
         let ids = parse_appinfo_preload_ids(&data);
         assert!(ids.contains(&3962600));
         assert_eq!(ids.len(), 1);
+    }
+    #[test]
+    fn appinfo_developers_come_from_the_client_cache() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        fn entry(app_id: u32, vdf: &[u8]) -> Vec<u8> {
+            let size = 60 + vdf.len();
+            let mut data = Vec::new();
+            data.extend_from_slice(&app_id.to_le_bytes());
+            data.extend_from_slice(&(size as u32).to_le_bytes());
+            data.extend_from_slice(&[0u8; 60]);
+            data.extend_from_slice(vdf);
+            data
+        }
+
+        // 620: appinfo/extended/developer. 730: no developer key anywhere.
+        let mut with_dev = Vec::new();
+        with_dev.push(0);
+        with_dev.extend_from_slice(&key(0)); // appinfo
+        with_dev.push(0);
+        with_dev.extend_from_slice(&key(1)); // extended
+        with_dev.push(1);
+        with_dev.extend_from_slice(&key(2)); // developer
+        with_dev.extend_from_slice(b"Valve\0");
+        with_dev.push(8);
+        with_dev.push(8);
+
+        let mut without_dev = Vec::new();
+        without_dev.push(0);
+        without_dev.extend_from_slice(&key(0)); // appinfo
+        without_dev.push(0);
+        without_dev.extend_from_slice(&key(3)); // widget
+        without_dev.push(1);
+        without_dev.extend_from_slice(&key(4)); // name
+        without_dev.extend_from_slice(b"Team Fortress 2\0");
+        without_dev.push(8);
+        without_dev.push(8);
+
+        let a = entry(620, &with_dev);
+        let b = entry(730, &without_dev);
+        let table_offset = 16 + a.len() + b.len();
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&a);
+        data.extend_from_slice(&b);
+        data.extend_from_slice(&5u32.to_le_bytes());
+        data.extend_from_slice(b"appinfo\0extended\0developer\0widget\0name\0");
+
+        let map = parse_appinfo_developers(&data);
+        assert_eq!(map.get("620").map(String::as_str), Some("Valve"));
+        assert!(!map.contains_key("730"));
+        assert!(parse_appinfo_developers(b"junk").is_empty());
     }
     #[test]
     fn label_only_requirement_lines_join_with_their_values() {

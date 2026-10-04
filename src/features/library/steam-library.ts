@@ -21,6 +21,7 @@ import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
 import { fmtBytes } from "../../core/utils";
 import {
+  steamAppDevelopers,
   steamDownloadLive,
   steamListInstalled,
   steamLoginStatus,
@@ -39,6 +40,22 @@ function steamCloudFlag(appId: string): boolean {
 }
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
+
+/** App id → studio name, hydrated from the Steam client's own app cache. */
+const steamDevelopers = new Map<string, string>();
+
+/** Replaces the cached studio names with a fresh appinfo read. */
+function setSteamDevelopers(map: Record<string, string>): void {
+  steamDevelopers.clear();
+  for (const [appId, developer] of Object.entries(map)) {
+    const dev = developer.trim();
+    if (dev) steamDevelopers.set(appId, dev);
+  }
+}
+
+function steamDeveloper(appId: string): string {
+  return steamDevelopers.get(appId) ?? "";
+}
 
 /** Steamworks SDK / runtimes that are not playable titles. */
 const STEAM_TOOL_IDS = new Set(["228980"]);
@@ -78,7 +95,7 @@ export function steamGameToItem(g: SteamGame): LibraryItem {
     source: "steam",
     id: g.appId,
     title: g.name,
-    developer: "",
+    developer: steamDeveloper(g.appId),
     version: "—",
     installedVersion: null,
     installed: true,
@@ -103,7 +120,7 @@ export function steamOwnedGameToItem(g: SteamOwnedGame): LibraryItem {
     source: "steam",
     id: g.appId,
     title: g.name || g.appId,
-    developer: "",
+    developer: steamDeveloper(g.appId),
     version: "—",
     installedVersion: null,
     installed: false,
@@ -179,15 +196,18 @@ export async function loadSteamLibrary(): Promise<string | null> {
   }
   let installed: SteamGame[];
   try {
-    const [games, playtimes, status] = await Promise.all([
+    const [games, playtimes, status, developers] = await Promise.all([
       steamListInstalled(),
       steamSyncPlaytime(),
       // The client status also feeds the Accounts page.
       steamStatus().catch(() => null),
+      // The client's own app cache carries the studio name offline.
+      steamAppDevelopers().catch((): Record<string, string> => ({})),
     ]);
     installed = games.filter((g) => !isSteamLibraryNoise(g.appId, g.name));
     S.steamGames = installed;
     S.steamStatus = status;
+    setSteamDevelopers(developers);
     mergeSteamPlaytimes(playtimes);
     setSteamSummaries(games.filter((g) => !isSteamLibraryNoise(g.appId, g.name)).map(steamGameToItem));
   } catch {

@@ -741,6 +741,7 @@ fn main() {
             steam::steam_open_client,
             steam::steam_open_downloads,
             steam::steam_list_installed,
+            steam::steam_app_developers,
             companion::companion_installed_games,
             companion::companion_library,
             companion::companion_store_status,

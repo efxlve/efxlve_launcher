@@ -1335,6 +1335,7 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
       if (item) {
         item.cloudSavesSupported = cloud;
         item.dlcCount = details.dlc.length;
+        if (!item.developer) item.developer = details.developers[0] || details.publishers[0] || "";
       }
       const critic = S.loadedCritic.get(appName);
       if (critic) {
