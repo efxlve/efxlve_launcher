@@ -273,6 +273,11 @@ export const S = {
   playerProfileData: (null) as EpicPlayerProfile | null,
   profileLoading: false,
   profileError: "",
+  /**
+   * Bulk achievement progress from companion stores that report it with the
+   * library (Xbox gamerscore today), keyed by `<store>::<id>`.
+   */
+  companionAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
   /** Hero chips: which store's achievements and totals the page is showing. */

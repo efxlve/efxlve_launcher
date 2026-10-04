@@ -13,6 +13,7 @@ import { setView, hideStore } from "../store/store-view";
 import { loadEpicAchSummaries } from "../auth/auth-actions";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import type { EpicAchievementSummary } from "../../epic";
 
 const storeIds = new Map<string, string>();
 let loginBound = false;
@@ -80,6 +81,25 @@ export async function loadCompanionLibrary(): Promise<void> {
       companionLibrary(),
       companionStoreStatus().catch(() => []),
     ]);
+    // Xbox reports per-game achievements and gamerscore with the title
+    // history; keep that bulk progress in the shared achievement map so the
+    // profile and library rows can read it without a network round trip.
+    const summaries: Record<string, EpicAchievementSummary> = {};
+    for (const g of games) {
+      if (g.achievementsTotal > 0) {
+        const key = `${g.store}::${g.id}`;
+        summaries[key] = {
+          app_name: key,
+          user_unlocked: g.achievementsUnlocked,
+          total_achievements: g.achievementsTotal,
+          user_xp: g.achievementsXp,
+          total_xp: g.achievementsTotalXp,
+          is_platinum: g.achievementsUnlocked >= g.achievementsTotal,
+          supported: true,
+        };
+      }
+    }
+    S.companionAchSummaries = summaries;
     S.companionSummaries = games.map(companionToItem);
     S.companionStatus = status;
     storeIds.clear();
@@ -88,6 +108,7 @@ export async function loadCompanionLibrary(): Promise<void> {
     }
   } catch {
     S.companionSummaries = [];
+    S.companionAchSummaries = {};
   }
   rebuildAllGamesMap();
   S.libraryDataRev++;

@@ -23,6 +23,11 @@ export interface CompanionGame {
   description: string;
   /** Studio from the store page or the client's own catalog. */
   developer: string;
+  /** Bulk achievement progress from the account's own service (Xbox). */
+  achievementsUnlocked: number;
+  achievementsTotal: number;
+  achievementsXp: number;
+  achievementsTotalXp: number;
 }
 
 export interface CompanionAccount {

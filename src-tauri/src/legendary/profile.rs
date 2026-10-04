@@ -7,6 +7,10 @@ use std::time::Duration;
 /// Bumped when cached achievement titles are rewritten from library metadata.
 const TITLE_REVISION: u32 = 1;
 
+/// Bumped when cached totals must be recomputed from the source instead of
+/// carrying values written by an older fallback.
+const DATA_REVISION: u32 = 1;
+
 /// Trailing product kinds Epic uses for split achievement catalogs.
 /// Longer suffixes are listed first so "digital soundtrack" wins over "soundtrack".
 const PRODUCT_KINDS: &[(&str, &str)] = &[
@@ -49,6 +53,9 @@ pub struct EpicPlayerProfile {
     /// Cache files written before library-title resolution stay at 0 and are upgraded once.
     #[serde(default)]
     pub title_revision: u32,
+    /// Cache files written by an older total model stay at 0 and are refetched once.
+    #[serde(default)]
+    pub data_revision: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -659,7 +666,8 @@ pub async fn fetch_player_profile(
                 let same_account = active_account
                     .as_deref()
                     .is_some_and(|id| id == prof.account_id);
-                if same_account {
+                // A cache written with invented totals is refetched once.
+                if same_account && prof.data_revision >= DATA_REVISION {
                     upgrade_cached_titles(config, &mut prof);
                     return Ok(prof);
                 }
@@ -811,16 +819,10 @@ pub async fn fetch_player_profile(
             .next()
             .cloned();
 
-        let mut total_ach = identity.total_achievements;
-        let mut total_prod_xp = identity.total_product_xp;
-
-        // Fallback: when the achievement count is missing or 0 in metadata
-        if total_ach == 0 && unl > 0 {
-            total_ach = unl;
-        }
-        if total_prod_xp == 0 && xp > 0 {
-            total_prod_xp = if xp > 1000 { xp } else { 1000 };
-        }
+        // Never invent totals: a missing catalog count stays 0 so the UI shows
+        // the unlocked count without a fake denominator or a fake 100%.
+        let total_ach = identity.total_achievements;
+        let total_prod_xp = identity.total_product_xp;
 
         let mut percent = if total_ach > 0 {
             ((unl as f64 / total_ach as f64) * 100.0).round() as u32
@@ -882,6 +884,7 @@ pub async fn fetch_player_profile(
         games: game_records,
         last_updated: now_epoch,
         title_revision: TITLE_REVISION,
+        data_revision: DATA_REVISION,
     };
 
     // 5. Cache to disk and keep a copy in this account's archive.

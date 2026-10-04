@@ -40,13 +40,13 @@ const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
 
 /**
  * Achievement row: cover, title, trophy count, earned XP and a progress bar.
- * Only rows with a tracked set reach this list; the caller filters the rest
- * out so a game without achievements never shows a fake 0%.
+ * Only rows the launcher can actually track reach this list; a total that is
+ * unknown hides the bar and the percentage instead of inventing one.
  */
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
     const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
-      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter((g) => g.total_achievements > 0).length === 0;
+      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter(trackedGame).length === 0;
     const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
       && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
     const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
@@ -55,19 +55,27 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   }
   const chips = showStoreChips();
   return cardGames.map((g) => {
-    const isPlat = g.is_platinum || (g.total_achievements > 0 && g.unlocked_percent >= 100);
+    const store = gameStore(g.app_name);
+    const isPlat = isCompletedGame(g);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
     const pct = g.total_achievements > 0 ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
     // XP is only shown when the number is real; a missing product total never
-    // becomes a made-up "/ 1000" denominator.
+    // becomes a made-up "/ 1000" denominator. Xbox counts gamerscore, so the
+    // unit follows the store.
+    const xpUnit = store === "xbox" ? "G" : "XP";
     const xpText = g.total_xp > 0
       ? g.total_product_xp > g.total_xp
-        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} XP`
-        : `${g.total_xp.toLocaleString()} XP`
+        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
+        : `${g.total_xp.toLocaleString()} ${xpUnit}`
       : "";
+    const trophiesText = g.total_achievements > 0
+      ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
+      : g.total_unlocked > 0
+        ? `${g.total_unlocked} ${t("profile.trophies")}`
+        : "";
     const meta = [
-      g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "",
+      trophiesText,
       xpText,
       pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
     ].filter(Boolean).join(" · ");
@@ -75,7 +83,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips
-      ? ` <span class="profile-store-chip">${storeCode(gameStore(g.app_name))}</span>`
+      ? ` <span class="profile-store-chip">${storeCode(store)}</span>`
       : "";
     const pctHtml = g.total_achievements > 0
       ? `<div class="profile-game-pct${isPlat ? " plat" : ""} tabular-nums">${pct}%</div>`
@@ -279,6 +287,21 @@ function userHidAchievement(g: ProfileGameRecord): boolean {
   return !!g.sandbox_id && S.hiddenAchievements.has(g.sandbox_id);
 }
 
+/** A row the launcher can report achievement progress for. */
+function trackedGame(g: ProfileGameRecord): boolean {
+  return g.total_achievements > 0 || g.total_unlocked > 0;
+}
+
+/** A set with every achievement unlocked, or a real platinum award. */
+function isCompletedGame(g: ProfileGameRecord): boolean {
+  return g.is_platinum || (g.total_achievements > 0 && g.unlocked_percent >= 100);
+}
+
+/** At least one unlocked achievement, even when the catalog total is unknown. */
+function hasGameProgress(g: ProfileGameRecord): boolean {
+  return g.total_achievements > 0 ? g.unlocked_percent > 0 : g.total_unlocked > 0;
+}
+
 /** Applies the profile filter tab, search box, sort order, and hidden rows. */
 export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGameRecord[] {
   const q = S.profileSearchQuery.trim().toLowerCase();
@@ -291,13 +314,11 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
       if (hiddenRow) return false;
       // Games without a tracked achievement set are not achievement rows; they
       // stay on the Recently Played rail instead of showing a fake 0%.
-      if (g.total_achievements <= 0) return false;
+      if (!trackedGame(g)) return false;
     }
-    const hasAch = g.total_achievements > 0;
-    const done = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
-    if (S.profileFilter === "platinum" && !done) return false;
-    if (S.profileFilter === "in_progress" && !(hasAch && g.unlocked_percent > 0 && !done)) return false;
-    if (S.profileFilter === "not_started" && !(hasAch && g.unlocked_percent === 0)) return false;
+    if (S.profileFilter === "platinum" && !isCompletedGame(g)) return false;
+    if (S.profileFilter === "in_progress" && !(hasGameProgress(g) && !isCompletedGame(g))) return false;
+    if (S.profileFilter === "not_started" && !(!isCompletedGame(g) && !hasGameProgress(g))) return false;
     return !q || g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q);
   });
   return list.sort((a, b) => {
@@ -497,12 +518,10 @@ function profileStats(games: ProfileGameRecord[]): ProfileTotals {
   let unlocked = 0, completed = 0, platinums = 0, xp = 0;
   for (const g of games) {
     unlocked += g.total_unlocked;
-    if (g.total_achievements > 0 && g.unlocked_percent >= 100) completed++;
-    const store = gameStore(g.app_name);
-    if (store === "epic") {
-      xp += g.total_xp;
-      if (g.is_platinum) platinums++;
-    }
+    xp += g.total_xp;
+    if (isCompletedGame(g)) completed++;
+    // A platinum is an Epic award; Steam/GOG completion is not one.
+    if (g.is_platinum && gameStore(g.app_name) === "epic") platinums++;
   }
   return { unlocked, completed, platinums, xp };
 }
@@ -669,9 +688,9 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
       continue;
     }
     countVisible++;
-    const done = g.is_platinum || g.unlocked_percent >= 100;
+    const done = isCompletedGame(g);
     if (done) countPlat++;
-    else if (g.unlocked_percent > 0) countProgress++;
+    else if (hasGameProgress(g)) countProgress++;
     else countNotStarted++;
   }
 
@@ -930,7 +949,7 @@ export function renderProfile(): string {
   }
 
   const allGames = showData ? profileListGames(scope) : [];
-  const games = allGames.filter((g) => g.total_achievements > 0);
+  const games = allGames.filter(trackedGame);
   const filtered = filteredProfileGames(allGames);
 
   const totals = profileStats(games);
@@ -951,6 +970,10 @@ export function renderProfile(): string {
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
       stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
+    }
+    // Xbox reports gamerscore, the same number the console profile shows.
+    if (scope === "xbox") {
+      stats.push({ value: totals.xp.toLocaleString(), label: "G" });
     }
   }
 

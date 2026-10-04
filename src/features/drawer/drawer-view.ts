@@ -15,7 +15,7 @@ import { isTauri, NO_DESC } from "../../core/constants";
 import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
-import { epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
+import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { presenceSync, updateGamepadHud } from "../../core/render";
@@ -355,7 +355,7 @@ function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): 
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
   const isPlat = isAppPlatinum(s.appName);
-  const achSum = S.epicAchSummaries[s.appName];
+  const achSum = achSummaryOf(s.appName);
   const pt = S.playtimeMap.get(s.appName);
   const achVal = achSum && achSum.total_achievements > 0
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`

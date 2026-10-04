@@ -75,6 +75,12 @@ pub struct CompanionGame {
     pub description: String,
     /// Studio resolved from the store page or the client's own catalog.
     pub developer: String,
+    /// Bulk achievement progress from the account's own service (Xbox title
+    /// history today). Zero when the store only answers per game.
+    pub achievements_unlocked: u32,
+    pub achievements_total: u32,
+    pub achievements_xp: u32,
+    pub achievements_total_xp: u32,
 }
 
 const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
@@ -130,11 +136,37 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> Comp
         store_id: game.store_id.clone(),
         description: game.description.clone(),
         developer: developer.to_string(),
+        achievements_unlocked: 0,
+        achievements_total: 0,
+        achievements_xp: 0,
+        achievements_total_xp: 0,
     }
+}
+
+/// Bulk progress row from the Xbox title history behind one library game.
+fn xbox_progress<'a>(game: &FoundGame, owned: &'a [xbox_login::OwnedGame]) -> Option<&'a xbox_login::OwnedGame> {
+    if game.store != "xbox" {
+        return None;
+    }
+    if let Some(row) = owned
+        .iter()
+        .find(|row| !row.pfn.is_empty() && row.pfn.eq_ignore_ascii_case(&game.id))
+    {
+        return Some(row);
+    }
+    let wanted = ea::normalize_title(&game.name);
+    if wanted.is_empty() {
+        return None;
+    }
+    owned.iter().find(|row| ea::normalize_title(&row.name) == wanted)
 }
 
 fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
     let cache = load_cache();
+    // The account's own title history already carries per-game achievement
+    // progress and gamerscore; attach it here so the profile needs no network
+    // round trip per game.
+    let xbox_owned = xbox_login::cached_owned();
     games
         .iter()
         .map(|game| {
@@ -142,7 +174,14 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
             let art = cached_art(&cache, &game.store, &game.id);
             let cover = if game.cover_url.is_empty() { art.cover } else { game.cover_url.clone() };
             let hero = if game.hero_url.is_empty() { art.hero } else { game.hero_url.clone() };
-            to_public(game, &cover, &hero, &art.developer)
+            let mut public = to_public(game, &cover, &hero, &art.developer);
+            if let Some(row) = xbox_progress(game, &xbox_owned) {
+                public.achievements_unlocked = row.achievement_current;
+                public.achievements_total = row.achievement_total;
+                public.achievements_xp = row.gamerscore;
+                public.achievements_total_xp = row.total_gamerscore;
+            }
+            public
         })
         .collect()
 }

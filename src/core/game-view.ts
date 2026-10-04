@@ -18,7 +18,11 @@ import { esc, fmtPlaytime } from "./utils";
 
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
 export function achSummaryOf(appName: string) {
-  return S.epicAchSummaries[appName] || (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`]);
+  return (
+    S.epicAchSummaries[appName] ||
+    S.companionAchSummaries[appName] ||
+    (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`])
+  );
 }
 
 /** Games whose list-row platinum shine already played this session. */
