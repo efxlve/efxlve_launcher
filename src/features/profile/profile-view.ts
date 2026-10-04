@@ -100,20 +100,29 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   }
   const chips = showStoreChips();
   return cardGames.map((g) => {
-    const isPlat = g.is_platinum || g.unlocked_percent >= 100;
+    const hasAch = g.total_achievements > 0;
+    const isPlat = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
-    const pct = Math.min(100, Math.max(0, g.unlocked_percent));
+    const pct = hasAch ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
     const meta = [
-      `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`,
+      hasAch ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : (pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : ""),
       g.total_product_xp > 0 ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} XP` : "",
-      pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
-    ].filter(Boolean).join(" · ");
+      hasAch && pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
+    ].filter(Boolean).join(" · ") || t("profile.readyToPlay") || "Library";
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips
       ? ` <span class="profile-store-chip">${storeCode(gameStore(g.app_name))}</span>`
+      : "";
+    const pctHtml = hasAch
+      ? `<div class="profile-game-pct${isPlat ? " plat" : ""}">${pct}%</div>`
+      : pt && pt.total_seconds > 0
+        ? `<div class="profile-game-pct tabular-nums" style="font-size:12px;opacity:0.75">${fmtPlaytime(pt.total_seconds)}</div>`
+        : "";
+    const progressBar = hasAch
+      ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
       : "";
     return `
       <div class="row profile-game-row" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
@@ -121,10 +130,10 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
         <div class="row-main">
           <div class="row-title">${esc(g.app_title)}${storeChip}${isPlat ? ` <span class="profile-plat" title="${esc(t("profile.platLabel"))}">${epicPlatinumIcon(13)}</span>` : ""}</div>
           <div class="row-meta">${meta}</div>
-          <div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>
+          ${progressBar}
         </div>
         ${show}
-        <div class="profile-game-pct${isPlat ? " plat" : ""}">${pct}%</div>
+        ${pctHtml}
       </div>`;
   }).join("");
 }
@@ -328,10 +337,11 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
     if (S.profileShowHidden) {
       if (!hiddenRow) return false;
     } else if (hiddenRow) return false;
-    const done = g.is_platinum || g.unlocked_percent >= 100;
+    const hasAch = g.total_achievements > 0;
+    const done = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
     if (S.profileFilter === "platinum" && !done) return false;
-    if (S.profileFilter === "in_progress" && !(g.unlocked_percent > 0 && !done)) return false;
-    if (S.profileFilter === "not_started" && g.unlocked_percent !== 0) return false;
+    if (S.profileFilter === "in_progress" && !(hasAch && g.unlocked_percent > 0 && !done)) return false;
+    if (S.profileFilter === "not_started" && !(hasAch && g.unlocked_percent === 0)) return false;
     return !q || g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q);
   });
   return list.sort((a, b) => {
@@ -351,21 +361,22 @@ function buildGogProfileGames(): ProfileGameRecord[] {
   const games: ProfileGameRecord[] = [];
   for (const item of S.gogSummaries) {
     const ach = achSummaryOf(item.key) || achSummaryOf(item.id);
-    if (ach && ach.total_achievements > 0) {
-      games.push({
-        sandbox_id: "",
-        app_name: item.key,
-        app_title: item.title,
-        cover: item.coverUrl,
-        total_unlocked: ach.user_unlocked,
-        total_achievements: ach.total_achievements,
-        total_xp: ach.user_xp || 0,
-        total_product_xp: ach.total_xp || 0,
-        is_platinum: ach.is_platinum || false,
-        unlocked_percent: ach.total_achievements > 0 ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0,
-        last_unlocked_date: null,
-      });
-    }
+    const totalAch = ach?.total_achievements || 0;
+    const userUnlocked = ach?.user_unlocked || 0;
+    const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
+    games.push({
+      sandbox_id: "",
+      app_name: item.key,
+      app_title: item.title,
+      cover: item.coverUrl,
+      total_unlocked: userUnlocked,
+      total_achievements: totalAch,
+      total_xp: ach?.user_xp || 0,
+      total_product_xp: ach?.total_xp || 0,
+      is_platinum: (ach?.is_platinum || false) || (totalAch > 0 && pct >= 100),
+      unlocked_percent: pct,
+      last_unlocked_date: null,
+    });
   }
   return games;
 }
@@ -375,18 +386,19 @@ function buildSteamProfileGames(): ProfileGameRecord[] {
   const games: ProfileGameRecord[] = [];
   for (const item of S.steamSummaries) {
     const ach = achSummaryOf(item.key);
-    if (!ach || ach.total_achievements <= 0 || !ach.supported) continue;
-    const pct = Math.round((ach.user_unlocked / ach.total_achievements) * 100);
+    const totalAch = ach && ach.supported ? (ach.total_achievements || 0) : 0;
+    const userUnlocked = ach && ach.supported ? (ach.user_unlocked || 0) : 0;
+    const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
     games.push({
       sandbox_id: "",
       app_name: item.key,
       app_title: item.title,
       cover: item.coverUrl,
-      total_unlocked: ach.user_unlocked,
-      total_achievements: ach.total_achievements,
-      total_xp: ach.user_xp || 0,
-      total_product_xp: ach.total_xp || 0,
-      is_platinum: ach.is_platinum || pct >= 100,
+      total_unlocked: userUnlocked,
+      total_achievements: totalAch,
+      total_xp: ach?.user_xp || 0,
+      total_product_xp: ach?.total_xp || 0,
+      is_platinum: (ach?.is_platinum || false) || (totalAch > 0 && pct >= 100),
       unlocked_percent: pct,
       last_unlocked_date: null,
     });
@@ -441,18 +453,20 @@ function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[
     const store = gameStore(item.key);
     if (targetStore && store !== targetStore) continue;
     const ach = achSummaryOf(item.key);
-    if (!ach || ach.total_achievements <= 0) continue;
+    const totalAch = ach?.total_achievements || 0;
+    const userUnlocked = ach?.user_unlocked || 0;
+    const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
     games.push({
       sandbox_id: "",
       app_name: item.key,
       app_title: item.title,
       cover: item.coverUrl,
-      total_unlocked: ach.user_unlocked,
-      total_achievements: ach.total_achievements,
-      total_xp: ach.user_xp || 0,
-      total_product_xp: ach.total_xp || 0,
-      is_platinum: ach.is_platinum || false,
-      unlocked_percent: ach.total_achievements > 0 ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0,
+      total_unlocked: userUnlocked,
+      total_achievements: totalAch,
+      total_xp: ach?.user_xp || 0,
+      total_product_xp: ach?.total_xp || 0,
+      is_platinum: (ach?.is_platinum || false) || (totalAch > 0 && pct >= 100),
+      unlocked_percent: pct,
       last_unlocked_date: null,
     });
   }
@@ -463,7 +477,7 @@ function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[
  * Achievement rows for the current page: one account, or Overview narrowed by
  * the store tab. Search updates call this so GOG, Steam and companion stores stay in the list.
  */
-export function profileListGames(): ProfileGameRecord[] {
+export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRecord[] {
   const selection = profileSelection();
   if (selection.mode === "account") {
     if (!selection.account.active) return [];
@@ -472,7 +486,7 @@ export function profileListGames(): ProfileGameRecord[] {
     if (selection.account.kind === "steam") return buildSteamProfileGames();
     return buildCompanionProfileGames(selection.account.kind);
   }
-  const scope = storeScope();
+  const scope = targetScope || storeScope();
   const games: ProfileGameRecord[] = [];
   if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
@@ -606,10 +620,13 @@ function renderProfileHero(
           const statusClass = connected ? "connected" : installed ? "installed" : "unlinked";
           const count = libraryCount(s);
           const tooltip = `${storeName(s)}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? " (" + count + ")" : ""}`;
+          const isSelected = scope === s;
           return `
-            <span class="profile-hero-store-icon ${statusClass}" title="${esc(tooltip)}">
+            <button type="button" class="profile-hero-store-chip ${statusClass}${isSelected ? " selected" : ""}" data-act="profile-store" data-val="${s}" title="${esc(tooltip)}">
               ${storeLogo(s, 14)}
-            </span>`;
+              <span class="profile-hero-chip-name">${storeName(s)}</span>
+              ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
+            </button>`;
         }).join("")}
       </div>`
     : !combined && account
@@ -844,7 +861,7 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
     const playtimeText = st.playtime > 0 ? fmtPlaytime(st.playtime) : "—";
 
     return `
-      <tr class="profile-store-tr${st.status !== "connected" ? " muted" : ""}">
+      <tr class="profile-store-tr${st.status !== "connected" ? " muted" : ""}" data-act="profile-store" data-val="${st.store}" role="button" tabindex="0" title="${esc(st.name)}">
         <td>
           <div class="profile-store-name-cell">
             <span class="profile-store-dot ${st.status}" aria-hidden="true"></span>
@@ -957,10 +974,11 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
       continue;
     }
     countVisible++;
-    const done = g.is_platinum || g.unlocked_percent >= 100;
+    const hasAch = g.total_achievements > 0;
+    const done = g.is_platinum || (hasAch && g.unlocked_percent >= 100);
     if (done) countPlat++;
-    else if (g.unlocked_percent > 0) countProgress++;
-    else countNotStarted++;
+    else if (hasAch && g.unlocked_percent > 0) countProgress++;
+    else if (hasAch) countNotStarted++;
   }
 
   const filterTab = (val: string, label: string, n: number): string =>
@@ -1268,7 +1286,23 @@ export function renderProfile(): string {
     playtimeSeconds = playtimeFor(scope);
   }
 
-  const gamesCount = libraryCount(scope);
+  // Hero Gamer Banner stats: in combined mode, ALWAYS show the user's GLOBAL stats!
+  let heroGamesCount = libraryCount(scope);
+  let heroPlaytimeSeconds = playtimeSeconds;
+  let heroUnlocked = unlocked;
+  let heroPlatinums = platinums;
+  let heroXp = xp;
+
+  if (combined) {
+    heroGamesCount = libraryCount("all");
+    heroPlaytimeSeconds = playtimeFor("all");
+    const allProfileList = profileListGames("all");
+    const globalSums = sumStats(allProfileList);
+    heroUnlocked = globalSums.unlocked;
+    heroPlatinums = globalSums.platinums;
+    heroXp = globalSums.xp;
+  }
+
   const allAccounts = profileAccounts();
 
   // Hero Gamer Banner
@@ -1285,11 +1319,11 @@ export function renderProfile(): string {
     account,
     isEpic,
     prof,
-    unlocked,
-    platinums,
-    xp,
-    playtimeSeconds,
-    gamesCount,
+    heroUnlocked,
+    heroPlatinums,
+    heroXp,
+    heroPlaytimeSeconds,
+    heroGamesCount,
   );
 
   // Nav tabs. The Accounts tab lists store accounts, Steam accounts, and companion platforms.

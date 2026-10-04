@@ -474,6 +474,8 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
 export async function openProfile(): Promise<void> {
   setView("profile");
   closeAllModals();
+  S.profileTab = "overview";
+  S.profileStore = "all";
   if (!S.playerProfileData && !S.profileLoading) {
     void loadPlayerProfile();
   }

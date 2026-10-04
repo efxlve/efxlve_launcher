@@ -367,6 +367,10 @@ document.addEventListener("click", (e) => {
     if (store === "all" || isHeaderStore(store) || store === "riot") {
       S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
+      S.profileFilter = "all";
+      if (S.profileTab === "overview") {
+        S.profileTab = "achievements";
+      }
       resetProfileCards();
       render();
     }
