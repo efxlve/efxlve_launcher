@@ -441,6 +441,7 @@
   "ach.tierGold": "Ouro",
   "ach.tierSilver": "Prata",
   "ach.tierBronze": "Bronze",
+  "ach.noTier": "Este jogo não tem troféu {tier}.",
   "ach.emptyTitle": "Nenhuma conquista corresponde à busca",
   "ach.emptyDesc": "Mude os filtros ou o termo e tente de novo.",
   "ach.baseGame": "Jogo base",

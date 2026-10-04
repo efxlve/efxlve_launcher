@@ -441,6 +441,7 @@
   "ach.tierGold": "金",
   "ach.tierSilver": "銀",
   "ach.tierBronze": "銅",
+  "ach.noTier": "此遊戲沒有{tier}獎盃。",
   "ach.emptyTitle": "沒有符合搜尋的成就",
   "ach.emptyDesc": "變更篩選條件或搜尋字詞後再試。",
   "ach.baseGame": "本體",

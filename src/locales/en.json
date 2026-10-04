@@ -467,6 +467,7 @@
   "ach.tierGold": "Gold",
   "ach.tierSilver": "Silver",
   "ach.tierBronze": "Bronze",
+  "ach.noTier": "This game has no {tier} trophy.",
   "ach.emptyTitle": "No Achievements Match Your Search",
   "ach.emptyDesc": "Change the filters or search term and try again.",
   "ach.baseGame": "Base Game",

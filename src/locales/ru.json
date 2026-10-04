@@ -441,6 +441,7 @@
   "ach.tierGold": "Золото",
   "ach.tierSilver": "Серебро",
   "ach.tierBronze": "Бронза",
+  "ach.noTier": "В этой игре нет трофея «{tier}».",
   "ach.emptyTitle": "Нет достижений по этому запросу",
   "ach.emptyDesc": "Измените фильтры или запрос и попробуйте снова.",
   "ach.baseGame": "Основная игра",

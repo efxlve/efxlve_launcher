@@ -7,13 +7,15 @@ import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
+import { toast } from "../../../core/toast";
+import { t as i18nT } from "../../../i18n";
 import type { DrawerTab } from "../../../core/types";
 import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp } from "../../drawer/drawer-view";
-import { renderBackupListHtml } from "../../drawer/drawer-widgets";
+import { getAchTier, renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
 import {
   epicAchievementsUrl,
@@ -236,6 +238,15 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-tier-filter": {
       const tier = t.dataset.tier as typeof S.achTierFilter | undefined;
       if (tier && S.currentModalAppName) {
+        // A tier with no achievements at all (a game without a platinum
+        // trophy) must not filter the list down to nothing; explain instead.
+        const data = S.loadedAchievements.get(S.currentModalAppName);
+        const hasTier = !data || data.achievements.some((a) => getAchTier(a) === tier);
+        if (!hasTier) {
+          const tierKey = `ach.tier${tier.charAt(0).toUpperCase()}${tier.slice(1)}`;
+          toast(i18nT("ach.noTier", { tier: i18nT(tierKey) }), "ok");
+          return true;
+        }
         // Clicking the active tier clears the filter again.
         S.achTierFilter = S.achTierFilter === tier ? "all" : tier;
         openEpicModal(S.currentModalAppName, false, false);

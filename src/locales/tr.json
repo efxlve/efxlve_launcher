@@ -467,6 +467,7 @@
   "ach.tierGold": "Altın",
   "ach.tierSilver": "Gümüş",
   "ach.tierBronze": "Bronz",
+  "ach.noTier": "Bu oyunda {tier} kupa yok.",
   "ach.emptyTitle": "Aramanıza Uygun Başarım Bulunamadı",
   "ach.emptyDesc": "Filtreleri veya arama terimini değiştirerek tekrar deneyin.",
   "ach.baseGame": "Ana Oyun",

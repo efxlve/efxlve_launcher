@@ -441,6 +441,7 @@
   "ach.tierGold": "ゴールド",
   "ach.tierSilver": "シルバー",
   "ach.tierBronze": "ブロンズ",
+  "ach.noTier": "このゲームに{tier}トロフィーはありません。",
   "ach.emptyTitle": "検索に一致する実績がありません",
   "ach.emptyDesc": "フィルターまたは検索語を変えて、もう一度試してください。",
   "ach.baseGame": "本編",
