@@ -51,7 +51,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
     const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
     const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : companionGap ? t("profile.companionEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
-    return `<div class="row">${emptyState("trophy", title, desc)}</div>`;
+    return `<div class="profile-ach-empty">${emptyState("trophy", title, desc)}</div>`;
   }
   const chips = showStoreChips();
   return cardGames.map((g) => {
@@ -746,78 +746,6 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-const COMPANION_CLIENTS: StoreKind[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
-
-/** One linked account row (`profileAccounts`). */
-function accountRow(a: ProfileAccount, selection: ProfileSelection): string {
-  const avatar = accountAvatar(a);
-  const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
-  const isCurrent = selection.mode === "account" && selection.account.key === a.key;
-  const archive = accountArchiveInfo(a);
-  const liveCount = a.kind === "epic" ? totalEpicGames() : a.kind === "steam" ? totalSteamGames() : a.kind === "gog" ? S.gogSummaries.length : 0;
-  const count = a.active ? liveCount : archive.games;
-  const sub = `${storeName(a.kind)}${count !== null ? ` · ${count} ${t("profile.games")}` : ""}`;
-  const trailing = !a.active
-    ? `<button type="button" class="btn primary small profile-acc-switch" data-act="${switchAct(a.kind)}" data-id="${esc(a.id)}">${t("settings.accountSwitchBtn")}</button>`
-    : isCurrent
-      ? `<span class="profile-acc-check" aria-hidden="true">${icon("check-circle", 15)}</span>`
-      : `<span class="profile-acc-chevron" aria-hidden="true">${icon("chevron-right", 15)}</span>`;
-  const attrs = a.active
-    ? ` data-act="profile-account" data-key="${esc(a.key)}" role="button" tabindex="0"`
-    : "";
-  return `
-    <div class="profile-acc-row${isCurrent ? " is-current" : ""}${a.active ? "" : " is-inactive"}"${attrs}>
-      <span class="profile-acc-ico">${avatar ? `<img src="${esc(avatar)}" alt="" />` : esc(initial)}</span>
-      <span class="profile-acc-main">
-        <span class="profile-acc-name">${esc(a.name)}</span>
-        <span class="profile-acc-sub">${esc(sub)}</span>
-      </span>
-      ${trailing}
-    </div>`;
-}
-
-/** One companion store row (Xbox, EA, Ubisoft, Battle.net, Riot). */
-function companionRow(kind: StoreKind, selection: ProfileSelection): string {
-  const status = S.companionStatus.find((s) => s.store === kind);
-  const linked = status?.linked ?? false;
-  const client = status?.clientInstalled ?? false;
-  const games = status?.gameCount ?? libraryCount(kind);
-  if (!linked && !client && games === 0) return "";
-  const name = linked && status?.accountName ? status.accountName : storeName(kind);
-  const sub = `${linked ? t("accounts.connected") : t("accounts.localAccount")}${games > 0 ? ` · ${games} ${t("profile.games")}` : ""}`;
-  const selected = profileSelection().mode === "combined" && storeScope() === kind;
-  const isCurrent = selection.mode === "account" && selection.account.kind === kind;
-  return `
-    <div class="profile-acc-row${selected || isCurrent ? " is-current" : ""}" data-act="profile-store" data-val="${kind}" role="button" tabindex="0">
-      <span class="profile-acc-ico">${storeLogo(kind, 18)}</span>
-      <span class="profile-acc-main">
-        <span class="profile-acc-name">${esc(name)}</span>
-        <span class="profile-acc-sub">${esc(sub)}</span>
-      </span>
-      <span class="profile-acc-dot ${linked ? "online" : "local"}" aria-hidden="true"></span>
-    </div>`;
-}
-
-/** Side rail: linked accounts and companion stores, with one manage entry. */
-function renderAccountsPanel(allAccounts: ProfileAccount[], selection: ProfileSelection): string {
-  const accountRows = allAccounts.map((a) => accountRow(a, selection)).join("");
-  const companionRows = COMPANION_CLIENTS.map((kind) => companionRow(kind, selection)).join("");
-  return `
-    <section class="card profile-panel profile-rail-panel">
-      <div class="profile-panel-head">
-        <div class="profile-panel-title-wrap">
-          <span class="profile-panel-icon">${icon("users", 15)}</span>
-          <h3 class="profile-panel-title">${t("profile.linkedAccounts")}</h3>
-        </div>
-        <button type="button" class="btn ghost small" data-view="accounts">${t("accounts.manageAccounts")}</button>
-      </div>
-      <div class="profile-acc-list">
-        ${accountRows}
-        ${companionRows}
-      </div>
-    </section>`;
-}
-
 /** Side rail: 100% completion showcase. */
 function renderShowcasePanel(games: ProfileGameRecord[]): string {
   const platGames = games.filter((g) => g.unlocked_percent >= 100).slice(0, 6);
@@ -968,8 +896,6 @@ export function renderProfile(): string {
     account,
   );
 
-  const allAccounts = profileAccounts();
-
   return `
     <div class="page profile-page">
       ${heroHtml}
@@ -978,9 +904,8 @@ export function renderProfile(): string {
           ${renderAchievementsPanel(games, filtered)}
         </div>
         <aside class="profile-col-side">
-          ${renderRecentPanel(scope)}
-          ${renderAccountsPanel(allAccounts, selection)}
           ${renderShowcasePanel(games)}
+          ${renderRecentPanel(scope)}
         </aside>
       </div>
     </div>`;
