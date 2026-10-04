@@ -255,6 +255,7 @@ export const S = {
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,
   activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden",
+  achTierFilter: ("all") as "all" | "platinum" | "gold" | "silver" | "bronze",
   achSearchQuery: "",
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",
   revealedAchievements: (new Set()) as Set<string>,

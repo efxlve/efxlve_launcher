@@ -225,11 +225,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-summary-sub { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .ach-summary-progress { flex: 1; max-width: 280px; }
 .ach-summary-right { display: flex; align-items: center; gap: 8px; }
-.ach-tier-mini { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 4px; background: var(--surface-2); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.ach-tier-mini { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 4px; border: 1px solid transparent; background: var(--surface-2); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); font-family: inherit; cursor: pointer; transition: background-color var(--ease), color var(--ease), border-color var(--ease); }
+.ach-tier-mini:hover { background: var(--surface-3); color: var(--text); }
 .ach-tier-mini.gold svg { color: #d4a72c; }
 .ach-tier-mini.silver svg { color: #a9adb7; }
 .ach-tier-mini.bronze svg { color: #b07a4f; }
 .ach-tier-mini.complete { color: var(--ok); }
+/* The tier chips double as a rarity filter; the active one carries the accent. */
+.ach-tier-mini.active { border-color: var(--accent); color: var(--accent); background: var(--surface-3); }
 .ach-status-strip { border-bottom: none; }
 .ach-sort-select { height: 32px; }
 .ach-search-clear { width: 22px; height: 22px; }

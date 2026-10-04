@@ -233,6 +233,16 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
     }
 
+    case "ach-tier-filter": {
+      const tier = t.dataset.tier as typeof S.achTierFilter | undefined;
+      if (tier && S.currentModalAppName) {
+        // Clicking the active tier clears the filter again.
+        S.achTierFilter = S.achTierFilter === tier ? "all" : tier;
+        openEpicModal(S.currentModalAppName, false, false);
+      }
+      return true;
+    }
+
     case "ach-reveal": {
       const achName = t.dataset.ach;
       if (achName && S.currentModalAppName) {

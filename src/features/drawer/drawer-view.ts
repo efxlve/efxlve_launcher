@@ -551,6 +551,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (isInitialOpen) {
     S.activeDrawerTab = "overview";
     S.activeAchFilter = "all";
+    S.achTierFilter = "all";
     S.achSearchQuery = "";
     S.achSortOrder = "default";
   }
@@ -929,6 +930,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (S.activeAchFilter === "unlocked" && !unlocked) return false;
     if (S.activeAchFilter === "locked" && unlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+    if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
     if (query) {
       const inTitle = (a.display_name || a.name).toLowerCase().includes(query);
       if (!inTitle && !(a.description || "").toLowerCase().includes(query)) return false;
@@ -957,8 +959,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const showPlat = tiers.platinum[0] > 0 || isPlat || data.is_platinum || (data.base_achievements ?? 0) > 0;
   const platTotal = tiers.platinum[0] > 0 ? tiers.platinum[0] : showPlat ? 1 : 0;
   const platUnlocked = tiers.platinum[0] > 0 ? tiers.platinum[1] : isPlat ? 1 : 0;
-  const tierChip = (cls: string, title: string, glyph: string, done: number, total: number): string =>
-    total > 0 ? `<span class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""}" title="${title}">${glyph} ${done}/${total}</span>` : "";
+  const tierChip = (tier: "platinum" | "gold" | "silver" | "bronze", cls: string, title: string, glyph: string, done: number, total: number): string =>
+    total > 0
+      ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${title}" aria-pressed="${S.achTierFilter === tier}">${glyph} ${done}/${total}</button>`
+      : "";
   const filterChip = (val: string, label: string, n: number): string =>
     `<button class="tab ach-status-chip ${S.activeAchFilter === val ? "active" : ""}" data-act="ach-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
 
@@ -978,10 +982,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
       </div>
       <div class="ach-summary-right">
-        ${tierChip("plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal)}
-        ${tierChip("gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
-        ${tierChip("silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
-        ${tierChip("bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
+        ${tierChip("platinum", "plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal)}
+        ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
+        ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
+        ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
         <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
         ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>

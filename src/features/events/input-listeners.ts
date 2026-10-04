@@ -36,7 +36,7 @@ import {
   enrichAchievementsData,
   renderDrawerDlcs,
 } from "../drawer/drawer-view";
-import { renderAchievementSections } from "../drawer/drawer-widgets";
+import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { updateInstallFinalPath } from "../install/install-dialog";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
@@ -374,6 +374,7 @@ document.addEventListener("input", (e) => {
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+          if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
           if (query) {
             const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);
             const matchDesc = (a.description || "").toLowerCase().includes(query);
