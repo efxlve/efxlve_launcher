@@ -505,7 +505,6 @@
 .profile-recent-card {
   display: flex;
   flex-direction: column;
-  gap: 5px;
   padding: 0;
   border: none;
   background: transparent;
@@ -515,6 +514,7 @@
 }
 
 .profile-recent-thumb-wrap {
+  position: relative;
   aspect-ratio: 3 / 4;
   width: 100%;
   border-radius: var(--r-sm);
@@ -533,11 +533,37 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: filter var(--ease);
+  transition: transform 220ms ease-out, filter var(--ease);
 }
 
 .profile-recent-card:hover .profile-recent-thumb {
+  transform: scale(1.06);
   filter: brightness(1.12);
+}
+
+/* One-shot shine sweep across the cover on hover. */
+.profile-recent-thumb-wrap::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.profile-recent-card:hover .profile-recent-thumb-wrap::after {
+  opacity: 1;
+  animation: profile-cover-sweep 0.55s ease-out 1 both;
+}
+
+@keyframes profile-cover-sweep {
+  to {
+    transform: translateX(300%) skewX(-18deg);
+  }
 }
 
 .profile-recent-thumb.placeholder {
@@ -548,13 +574,14 @@
   color: var(--text-3);
 }
 
-.profile-recent-sub {
-  font-size: 10px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@media (prefers-reduced-motion: reduce) {
+  .profile-recent-card:hover .profile-recent-thumb {
+    transform: none;
+  }
+  .profile-recent-card:hover .profile-recent-thumb-wrap::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* --- 7. Store status dot (hero pill, dormant badge) --- */

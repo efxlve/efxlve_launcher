@@ -742,16 +742,11 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
     const cover = coverOf(appName);
-    const pt = S.playtimeMap.get(appName);
-    const timeStr = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
-    const lastStr = pt?.last_played_timestamp ? lastUsedLabel(pt.last_played_timestamp) : "";
-    const metaStr = [timeStr, lastStr].filter(Boolean).join(" · ");
     return `
       <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
         </span>
-        <span class="profile-recent-sub tabular-nums">${esc(metaStr || "—")}</span>
       </button>`;
   }).join("");
   return `
