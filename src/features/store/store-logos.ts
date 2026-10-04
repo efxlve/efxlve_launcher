@@ -14,6 +14,7 @@ import ubisoft from "../../assets/stores/ubisoft.png";
 import xbox from "../../assets/stores/xbox.png";
 import battlenet from "../../assets/stores/battlenet.png";
 import riot from "../../assets/stores/riot.png";
+import luna from "../../assets/stores/luna.png";
 import discord from "../../assets/stores/discord.png";
 import spotify from "../../assets/stores/spotify.png";
 import type { StoreId } from "./store-view";
@@ -26,8 +27,7 @@ export const STORE_LOGOS: Record<StoreId, string> = {
   ubisoft,
   ea,
   xbox,
-  // Amazon Luna ships no mark in this folder yet: its rows show the name only.
-  luna: "",
+  luna,
 };
 
 /** Marks for services that are not storefronts (the Accounts page uses them). */
