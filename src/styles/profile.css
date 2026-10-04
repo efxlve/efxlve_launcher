@@ -533,16 +533,17 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 220ms ease-out, filter var(--ease);
+  transition: filter var(--ease);
 }
 
 .profile-recent-card:hover .profile-recent-thumb {
-  transform: scale(1.06);
   filter: brightness(1.12);
 }
 
-/* One-shot shine sweep across the cover on hover. */
-.profile-recent-thumb-wrap::after {
+/* One-shot shine sweep across a cover on hover. No zoom, no lift. */
+.profile-recent-thumb-wrap::after,
+.profile-showcase-cover::after,
+.profile-showcase-mini::after {
   content: "";
   position: absolute;
   top: -30%;
@@ -555,7 +556,9 @@
   pointer-events: none;
 }
 
-.profile-recent-card:hover .profile-recent-thumb-wrap::after {
+.profile-recent-card:hover .profile-recent-thumb-wrap::after,
+.profile-showcase-hero:hover .profile-showcase-cover::after,
+.profile-showcase-mini:hover::after {
   opacity: 1;
   animation: profile-cover-sweep 0.55s ease-out 1 both;
 }
@@ -575,10 +578,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .profile-recent-card:hover .profile-recent-thumb {
-    transform: none;
-  }
-  .profile-recent-card:hover .profile-recent-thumb-wrap::after {
+  .profile-recent-card:hover .profile-recent-thumb-wrap::after,
+  .profile-showcase-hero:hover .profile-showcase-cover::after,
+  .profile-showcase-mini:hover::after {
     animation: none;
     opacity: 0;
   }
@@ -622,6 +624,7 @@
 }
 
 .profile-showcase-cover {
+  position: relative;
   width: 104px;
   height: 139px;
   flex-shrink: 0;
@@ -638,6 +641,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: filter var(--ease);
+}
+
+.profile-showcase-hero:hover .profile-showcase-cover img {
+  filter: brightness(1.12);
 }
 
 .profile-showcase-info {
@@ -702,14 +710,13 @@
 
 .profile-showcase-strip {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
 }
 
 .profile-showcase-mini {
+  position: relative;
   width: 56px;
   height: 75px;
   flex: none;
@@ -734,6 +741,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: filter var(--ease);
+}
+
+.profile-showcase-mini:hover img {
+  filter: brightness(1.12);
 }
 
 .profile-showcase-placeholder {

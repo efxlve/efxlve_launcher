@@ -817,7 +817,9 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
   const cover = coverOf(featured.app_name, featured.cover || "");
   const meta = featuredMeta(featured);
   const rest = completed.filter((g) => g.app_name !== featured.app_name);
-  const shown = rest.slice(0, 5);
+  // Five 56px tiles plus gaps fill the rail exactly; never overflow into a scrollbar.
+  const shown = rest.slice(0, rest.length > 5 ? 4 : 5);
+  const moreCount = rest.length - shown.length;
   const minis = shown.map((g) => {
     const miniCover = coverOf(g.app_name, g.cover || "");
     return `
@@ -843,7 +845,7 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
       ${rest.length > 0
         ? `<div class="profile-showcase-strip">
             ${minis}
-            ${rest.length > 5 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${rest.length - 5}</button>` : ""}
+            ${moreCount > 0 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${moreCount}</button>` : ""}
           </div>`
         : ""}
     </section>`;
