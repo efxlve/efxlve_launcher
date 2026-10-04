@@ -21,6 +21,8 @@ export interface CompanionGame {
   storeId: string;
   /** Store description from the owned catalog; empty when the client has none. */
   description: string;
+  /** Studio from the store page or the client's own catalog. */
+  developer: string;
 }
 
 export interface CompanionAccount {
@@ -53,6 +55,8 @@ export interface CompanionCoverHit {
   id: string;
   coverUrl: string;
   heroUrl: string;
+  /** Studio resolved by the same match; empty when nothing matched. */
+  developer: string;
 }
 
 export const companionLibrary = () => invoke<CompanionGame[]>("companion_library");
@@ -135,7 +139,7 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     source,
     id: g.id,
     title: g.name,
-    developer: "",
+    developer: g.developer || "",
     version: "—",
     installedVersion: null,
     installed: g.installed !== false,

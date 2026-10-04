@@ -645,7 +645,9 @@ function catalogDeveloper(id: string): string {
     return S.gogSummariesMap.get(rawId)?.developer || "";
   }
   const value = rawOf(id)?.metadata?.developer;
-  return typeof value === "string" ? value.trim() : "";
+  if (typeof value === "string" && value.trim()) return value.trim();
+  // Steam and companion items carry the studio on the unified item.
+  return S.allGamesMap.get(id)?.developer || "";
 }
 
 /**

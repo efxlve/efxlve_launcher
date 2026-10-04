@@ -1,8 +1,9 @@
-//! Box art for companion games.
+//! Box art and studio names for companion games.
 //!
 //! Xbox titles use the public Microsoft Store poster for their StoreId.
-//! Everything else uses Steam's public store search and the portrait CDN.
-//! Results are cached so the library does not search again on every launch.
+//! Everything else uses Steam's public store search and the portrait CDN, and
+//! the same match supplies the developer. Results are cached so the library
+//! does not search again on every launch.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -32,12 +33,21 @@ pub struct CoverHit {
     pub id: String,
     pub cover_url: String,
     pub hero_url: String,
+    /// Studio resolved for the matched release (empty when nothing matched).
+    pub developer: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct CachedArt {
-    cover: String,
-    hero: String,
+    pub(crate) cover: String,
+    pub(crate) hero: String,
+    /// Studio name for the matched release.
+    #[serde(default)]
+    pub(crate) developer: String,
+    /// True once a developer lookup ran, so an empty result is not retried on
+    /// every launch.
+    #[serde(default)]
+    dev_checked: bool,
 }
 
 pub(crate) fn cache_path() -> PathBuf {
@@ -77,11 +87,8 @@ fn cache_key(store: &str, id: &str) -> String {
     format!("{store}::{id}")
 }
 
-pub(crate) fn cached_cover(cache: &HashMap<String, CachedArt>, store: &str, id: &str) -> (String, String) {
-    cache
-        .get(&cache_key(store, id))
-        .map(|art| (art.cover.clone(), art.hero.clone()))
-        .unwrap_or_default()
+pub(crate) fn cached_art(cache: &HashMap<String, CachedArt>, store: &str, id: &str) -> CachedArt {
+    cache.get(&cache_key(store, id)).cloned().unwrap_or_default()
 }
 
 pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
@@ -96,11 +103,17 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
         if query.id.is_empty() || query.name.is_empty() {
             continue;
         }
-        let (cached_cover, cached_hero) = cached_cover(&cache, &query.store, &query.id);
+        let art = cached_art(&cache, &query.store, &query.id);
         // The caller's catalog cover outranks the cached Steam cover.
-        let known_cover = if query.cover.is_empty() { cached_cover } else { query.cover.clone() };
-        if !known_cover.is_empty() && !cached_hero.is_empty() {
-            hits.push(CoverHit { store: query.store, id: query.id, cover_url: known_cover, hero_url: cached_hero });
+        let known_cover = if query.cover.is_empty() { art.cover } else { query.cover.clone() };
+        if !known_cover.is_empty() && !art.hero.is_empty() && art.dev_checked {
+            hits.push(CoverHit {
+                store: query.store,
+                id: query.id,
+                cover_url: known_cover,
+                hero_url: art.hero,
+                developer: art.developer,
+            });
             continue;
         }
         pending.push(query);
@@ -111,21 +124,24 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     for query in pending {
         // Keep whatever the caller already had; the fetch only fills the gap.
         let requested_cover = query.cover.clone();
-        let Some((query, fetched_cover, hero)) = fetch_one(client.clone(), query).await else {
+        let Some((query, fetched_cover, hero, developer)) = fetch_one(client.clone(), query).await else {
             continue;
         };
-        if fetched_cover.is_empty() && hero.is_empty() {
+        if fetched_cover.is_empty() && hero.is_empty() && developer.is_empty() {
             continue;
         }
         let cover = if requested_cover.is_empty() { fetched_cover } else { requested_cover };
-        cache.insert(cache_key(&query.store, &query.id), CachedArt { cover: cover.clone(), hero: hero.clone() });
-        hits.push(CoverHit { store: query.store, id: query.id, cover_url: cover, hero_url: hero });
+        cache.insert(
+            cache_key(&query.store, &query.id),
+            CachedArt { cover: cover.clone(), hero: hero.clone(), developer: developer.clone(), dev_checked: true },
+        );
+        hits.push(CoverHit { store: query.store, id: query.id, cover_url: cover, hero_url: hero, developer });
     }
     save_cache(&cache);
     hits
 }
 
-async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQuery, String, String)> {
+async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQuery, String, String, String)> {
     // Xbox rows carry a Store id: the product page knows both the poster and
     // the wide art, so the portrait is never stretched into the banner.
     let xbox = if !query.store_id.is_empty() {
@@ -134,29 +150,48 @@ async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQ
         None
     };
     let steam = steam_app(&client, &query.name).await;
-    let cover = xbox
+    let mut cover = xbox
         .as_ref()
-        .map(|(cover, _)| cover.clone())
+        .map(|(cover, _, _)| cover.clone())
         .filter(|cover| !cover.is_empty())
         .or_else(|| steam.map(steam_cover))
         .unwrap_or_default();
-    let hero = xbox
+    let mut hero = xbox
         .as_ref()
-        .map(|(_, hero)| hero.clone())
+        .map(|(_, hero, _)| hero.clone())
         .filter(|hero| !hero.is_empty())
         .or_else(|| steam.map(steam_hero))
         .unwrap_or_default();
-    if !cover.is_empty() || !hero.is_empty() {
-        return Some((query, cover, hero));
-    }
-    // Riot's PC titles are not on Steam: fall back to the game's own share
-    // image, which the site publishes for link previews.
-    if query.store == "riot" {
-        if let Some(image) = riot_share_image(&client, &query.id).await {
-            return Some((query, image.clone(), image));
+    let mut developer = xbox
+        .as_ref()
+        .map(|(_, _, developer)| developer.clone())
+        .filter(|developer| !developer.is_empty())
+        .unwrap_or_default();
+    if developer.is_empty() {
+        if let Some(app) = steam {
+            developer = steam_developer(&client, app).await.unwrap_or_default();
         }
     }
-    None
+    // Riot's PC titles are not on Steam, and the client catalog has no studio.
+    if query.store == "riot" {
+        developer = "Riot Games".to_string();
+    }
+    // Battle.net's product list is Blizzard's own catalog.
+    if developer.is_empty() && query.store == "battlenet" {
+        developer = "Blizzard Entertainment".to_string();
+    }
+    if cover.is_empty() && hero.is_empty() && query.store == "riot" {
+        // Fall back to the game's own share image, which the site publishes
+        // for link previews.
+        if let Some(image) = riot_share_image(&client, &query.id).await {
+            cover = image.clone();
+            hero = image;
+        }
+    }
+    if cover.is_empty() && hero.is_empty() && developer.is_empty() {
+        return None;
+    }
+    Some((query, cover, hero, developer))
 }
 
 fn steam_cover(app: u64) -> String {
@@ -218,7 +253,7 @@ pub(crate) fn html_meta_content(html: &str, property: &str) -> Option<String> {
     None
 }
 
-async fn xbox_art(client: &reqwest::Client, store_id: &str) -> Option<(String, String)> {
+async fn xbox_art(client: &reqwest::Client, store_id: &str) -> Option<(String, String, String)> {
     if !store_id.chars().all(|c| c.is_ascii_alphanumeric()) {
         return None;
     }
@@ -226,7 +261,18 @@ async fn xbox_art(client: &reqwest::Client, store_id: &str) -> Option<(String, S
         "https://storeedgefd.dsx.mp.microsoft.com/v9.0/products/{store_id}?market=US&locale=en-US&deviceFamily=Windows.Desktop"
     );
     let value: serde_json::Value = client.get(url).send().await.ok()?.json().await.ok()?;
-    Some(xbox_art_urls(&value))
+    let (cover, hero) = xbox_art_urls(&value);
+    Some((cover, hero, xbox_developer(&value)))
+}
+
+/// `Payload.DeveloperName` names the studio on Microsoft Store products.
+pub(crate) fn xbox_developer(value: &serde_json::Value) -> String {
+    value
+        .pointer("/Payload/DeveloperName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string()
 }
 
 /// (cover, hero) from a displaycatalog product payload, sized for use. The
@@ -262,6 +308,31 @@ fn find_image(value: &serde_json::Value, kind: &str) -> Option<String> {
         }
         _ => None,
     }
+}
+
+/// Studio for one Steam app. The store endpoint can answer with just the two
+/// name lists, so the request stays tiny even for a large companion library.
+async fn steam_developer(client: &reqwest::Client, app: u64) -> Option<String> {
+    let url = format!(
+        "https://store.steampowered.com/api/appdetails?appids={app}&filters=developers,publishers&l=english"
+    );
+    let value: serde_json::Value = client.get(&url).send().await.ok()?.json().await.ok()?;
+    parse_steam_developer(&value)
+}
+
+/// First developer, falling back to the publisher, from an appdetails payload.
+pub(crate) fn parse_steam_developer(value: &serde_json::Value) -> Option<String> {
+    let data = value.as_object()?.values().next()?.get("data")?;
+    let first_name = |key: &str| -> Option<String> {
+        data.get(key)?
+            .as_array()?
+            .iter()
+            .find_map(|v| v.as_str())
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string)
+    };
+    first_name("developers").or_else(|| first_name("publishers"))
 }
 
 async fn steam_app(client: &reqwest::Client, name: &str) -> Option<u64> {
@@ -415,5 +486,29 @@ mod tests {
         assert_eq!(html_meta_content(b, "og:image").as_deref(), Some("https://cdn.example/b.jpg"));
         assert_eq!(html_meta_content("<head></head>", "og:image"), None);
         assert_eq!(html_meta_content(r#"<meta property="og:image" content="">"#, "og:image"), None);
+    }
+
+    #[test]
+    fn steam_developer_prefers_the_studio_and_falls_back_to_the_publisher() {
+        let both = serde_json::json!({
+            "431960": {"success": true, "data": {"developers": ["Wallpaper Engine Team"], "publishers": ["Some Publisher"]}}
+        });
+        assert_eq!(parse_steam_developer(&both).as_deref(), Some("Wallpaper Engine Team"));
+
+        let publisher_only = serde_json::json!({
+            "730": {"success": true, "data": {"developers": [], "publishers": ["Valve"]}}
+        });
+        assert_eq!(parse_steam_developer(&publisher_only).as_deref(), Some("Valve"));
+
+        let failed = serde_json::json!({"999": {"success": false}});
+        assert!(parse_steam_developer(&failed).is_none());
+    }
+
+    #[test]
+    fn xbox_developer_reads_the_payload_field() {
+        let json = serde_json::json!({"Payload": {"DeveloperName": "Mojang/Microsoft Studios"}});
+        assert_eq!(xbox_developer(&json), "Mojang/Microsoft Studios");
+        assert_eq!(xbox_developer(&serde_json::json!({})), "");
+        assert_eq!(xbox_developer(&serde_json::json!({"Payload": {"DeveloperName": ""}})), "");
     }
 }

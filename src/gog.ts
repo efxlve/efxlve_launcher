@@ -129,7 +129,7 @@ export function gogToLibraryItem(g: GogGameSummary): LibraryItem {
     source: "gog",
     id: g.game_id,
     title: g.title,
-    developer: g.developer || "",
+    developer: g.developer || g.publisher || "",
     version: g.version || "1.0",
     installedVersion: g.is_installed ? g.version : null,
     installed: g.is_installed,

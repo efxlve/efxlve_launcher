@@ -145,11 +145,11 @@ async function fillCompanionPlaytime(): Promise<void> {
 const coverMisses = new Set<string>();
 
 async function fillCompanionCovers(): Promise<void> {
-  // Resolve art when either half is missing: a missing wide hero would leave
-  // the game page stretching the portrait cover. The resolver answers up to 48
-  // queries per call, so drain the list in bounded rounds.
+  // Resolve art and the studio when either is missing: a missing wide hero
+  // would leave the game page stretching the portrait cover. The resolver
+  // answers up to 48 queries per call, so drain the list in bounded rounds.
   for (let round = 0; round < 6; round++) {
-    const missing = S.companionSummaries.filter((g) => (!g.coverUrl || !g.heroUrl) && !coverMisses.has(g.key));
+    const missing = S.companionSummaries.filter((g) => (!g.coverUrl || !g.heroUrl || !g.developer) && !coverMisses.has(g.key));
     if (missing.length === 0) return;
     const batch = missing.slice(0, 48);
     let hits;
@@ -164,27 +164,47 @@ async function fillCompanionCovers(): Promise<void> {
     } catch {
       return;
     }
-    const hitKeys = new Set(hits.filter((h) => h.coverUrl || h.heroUrl).map((h) => `${h.store}::${h.id}`));
+    const hitKeys = new Set(hits.filter((h) => h.coverUrl || h.heroUrl || h.developer).map((h) => `${h.store}::${h.id}`));
     for (const g of batch) {
       if (!hitKeys.has(g.key)) coverMisses.add(g.key);
     }
     let changed = false;
     let changedCurrent = false;
+    let developerChanged = false;
     for (const hit of hits) {
-      if (!hit.coverUrl && !hit.heroUrl) continue;
+      if (!hit.coverUrl && !hit.heroUrl && !hit.developer) continue;
       const key = `${hit.store}::${hit.id}`;
       const item = S.companionSummaries.find((g) => g.key === key);
       if (!item) continue;
-      // Never downgrade art the client catalog already provided.
-      if (!item.coverUrl && hit.coverUrl) item.coverUrl = hit.coverUrl;
-      if (!item.heroUrl && hit.heroUrl) item.heroUrl = hit.heroUrl;
+      // Never downgrade art or a studio the client catalog already provided.
+      let touched = false;
+      if (!item.coverUrl && hit.coverUrl) {
+        item.coverUrl = hit.coverUrl;
+        touched = true;
+      }
+      if (!item.heroUrl && hit.heroUrl) {
+        item.heroUrl = hit.heroUrl;
+        touched = true;
+      }
+      if (!item.developer && hit.developer) {
+        item.developer = hit.developer;
+        touched = true;
+        developerChanged = true;
+      }
+      if (!touched) continue;
       changed = true;
-      clearWideArtCache(key);
-      if (hit.coverUrl) patchCompanionCover(key, hit.coverUrl);
+      if (hit.coverUrl) {
+        clearWideArtCache(key);
+        patchCompanionCover(key, hit.coverUrl);
+      }
       if (S.currentModalAppName === key) changedCurrent = true;
     }
     if (!changed) return;
     rebuildAllGamesMap();
+    if (developerChanged) {
+      S.libraryDataRev++;
+      scheduleRender();
+    }
     if (changedCurrent && S.currentModalAppName) openEpicModal(S.currentModalAppName, false, false);
   }
 }

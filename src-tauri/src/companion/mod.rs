@@ -37,7 +37,7 @@ use crate::legendary::models::{GameAchievementSummary, GameAchievementsResponse}
 pub use accounts::{CompanionAccount, CompanionStoreStatus};
 pub use covers::{CoverHit, CoverQuery};
 use accounts::load_accounts;
-use covers::{cached_cover, load_cache};
+use covers::{cached_art, load_cache};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FoundGame {
@@ -73,6 +73,8 @@ pub struct CompanionGame {
     pub hero_url: String,
     pub store_id: String,
     pub description: String,
+    /// Studio resolved from the store page or the client's own catalog.
+    pub developer: String,
 }
 
 const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
@@ -116,7 +118,7 @@ fn library_games() -> Vec<FoundGame> {
     games
 }
 
-fn to_public(game: &FoundGame, cover: &str, hero: &str) -> CompanionGame {
+fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> CompanionGame {
     CompanionGame {
         store: game.store.clone(),
         id: game.id.clone(),
@@ -127,6 +129,7 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str) -> CompanionGame {
         hero_url: hero.to_string(),
         store_id: game.store_id.clone(),
         description: game.description.clone(),
+        developer: developer.to_string(),
     }
 }
 
@@ -136,10 +139,10 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
         .iter()
         .map(|game| {
             // The account catalog art wins over the Steam-search fallback.
-            let (cached, cached_hero) = cached_cover(&cache, &game.store, &game.id);
-            let cover = if game.cover_url.is_empty() { cached } else { game.cover_url.clone() };
-            let hero = if game.hero_url.is_empty() { cached_hero } else { game.hero_url.clone() };
-            to_public(game, &cover, &hero)
+            let art = cached_art(&cache, &game.store, &game.id);
+            let cover = if game.cover_url.is_empty() { art.cover } else { game.cover_url.clone() };
+            let hero = if game.hero_url.is_empty() { art.hero } else { game.hero_url.clone() };
+            to_public(game, &cover, &hero, &art.developer)
         })
         .collect()
 }

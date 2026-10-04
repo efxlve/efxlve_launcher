@@ -232,8 +232,6 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                     )
                 };
 
-                let category = item["category"].as_str().map(String::from);
-
                 let dlc_count = item["dlcsCount"]
                     .as_u64()
                     .or_else(|| item["dlcCount"].as_u64())
@@ -244,7 +242,9 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
                 games.push(GogGameSummary {
                     game_id: id,
                     title,
-                    developer: category,
+                    // The list API's `category` field is a genre, not a studio;
+                    // the GamesDB pass below fills the real developer.
+                    developer: None,
                     publisher: None,
                     is_installed: false,
                     install_path: None,
@@ -271,7 +271,8 @@ pub async fn fetch_user_library(access_token: &str) -> Result<Vec<GogGameSummary
     Ok(games)
 }
 
-/// Enriches game summaries with authentic uncropped vertical box art and heroes from GamesDB.
+/// Enriches game summaries with authentic uncropped vertical box art, heroes
+/// and the studio names from GamesDB.
 pub async fn enrich_with_gamesdb(games: &mut [GogGameSummary]) {
     let client = match create_client() {
         Ok(c) => c,
@@ -280,10 +281,10 @@ pub async fn enrich_with_gamesdb(games: &mut [GogGameSummary]) {
 
     let mut set = tokio::task::JoinSet::new();
     for (idx, g) in games.iter().enumerate() {
-        if let Some(ref c) = g.cover_url {
-            if c.contains("namespace=gamesdb") {
-                continue;
-            }
+        // One GamesDB read supplies both art and names; a summary that already
+        // knows its studio is left alone.
+        if g.developer.is_some() {
+            continue;
         }
         let id = g.game_id.clone();
         let client_clone = client.clone();
@@ -298,24 +299,43 @@ pub async fn enrich_with_gamesdb(games: &mut [GogGameSummary]) {
                         let bg = val["game"]["background"]["url_format"]
                             .as_str()
                             .map(|s| s.replace("{formatter}", "_1600").replace("{ext}", "jpg"));
-                        return (idx, vert, bg);
+                        let dev = team_name(&val["game"]["developers"]);
+                        let pubn = team_name(&val["game"]["publishers"]);
+                        return (idx, vert, bg, dev, pubn);
                     }
                 }
             }
-            (idx, None, None)
+            (idx, None, None, None, None)
         });
     }
 
     while let Some(res) = set.join_next().await {
-        if let Ok((idx, vert, bg)) = res {
+        if let Ok((idx, vert, bg, dev, publisher)) = res {
             if let Some(v) = vert {
                 games[idx].cover_url = Some(v);
             }
             if let Some(b) = bg {
                 games[idx].hero_url = Some(b);
             }
+            if let Some(d) = dev {
+                games[idx].developer = Some(d);
+            }
+            if let Some(p) = publisher {
+                games[idx].publisher = Some(p);
+            }
         }
     }
+}
+
+/// First studio name in a GamesDB `developers` / `publishers` array.
+fn team_name(value: &Value) -> Option<String> {
+    value.as_array()?.iter().find_map(|team| {
+        team["name"]
+            .as_str()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string)
+    })
 }
 
 /// Fetches detailed game metadata on-demand from public GOG APIs.
@@ -770,5 +790,17 @@ mod tests {
             .unwrap();
         assert_eq!(ops.len(), 1);
         assert_eq!(ops[0]["operatingSystem"]["name"], "windows");
+    }
+
+    #[test]
+    fn test_gamesdb_team_names_use_the_first_named_studio() {
+        let teams = serde_json::json!([
+            {"id": "1", "name": "  CD Projekt RED  "},
+            {"id": "2", "name": "Another Studio"}
+        ]);
+        assert_eq!(team_name(&teams).as_deref(), Some("CD Projekt RED"));
+        assert!(team_name(&serde_json::json!([{"id": "1"}])).is_none());
+        assert!(team_name(&serde_json::json!([])).is_none());
+        assert!(team_name(&serde_json::json!(null)).is_none());
     }
 }

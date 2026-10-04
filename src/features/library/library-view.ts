@@ -50,7 +50,10 @@ export function studioOf(s: EpicSummary): string {
   }
   const g = rawOf(s.appName);
   const d = g?.metadata?.developer;
-  return typeof d === "string" ? d.trim() : "";
+  if (typeof d === "string" && d.trim()) return d.trim();
+  // Companion stores (EA, Ubisoft, Xbox, Battle.net, Riot) keep the studio on
+  // the unified item, filled by the store-page resolver.
+  return S.allGamesMap.get(s.appName)?.developer || "";
 }
 
 /**
