@@ -83,7 +83,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips
-      ? ` <span class="profile-store-chip">${storeCode(store)}</span>`
+      ? ` <span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
       : "";
     const pctHtml = g.total_achievements > 0
       ? `<div class="profile-game-pct${isPlat ? " plat" : ""} tabular-nums">${pct}%</div>`
@@ -616,23 +616,6 @@ function renderProfileHero(
 ): string {
   const avatarTitle = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
 
-  let presenceText = "";
-  let presenceState = "offline";
-  if (combined) {
-    const running = [...S.runningGames][0];
-    if (running) {
-      presenceText = t("presence.playing", { title: summaryOf(running)?.title || running });
-      presenceState = "online";
-    } else {
-      const connected = overviewStores();
-      presenceText = connected.map((s) => storeName(s)).join(" · ");
-      presenceState = connected.length > 0 ? "online" : "offline";
-    }
-  } else if (account) {
-    presenceText = storeName(account.kind);
-    presenceState = account.active ? "online" : "offline";
-  }
-
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
     : account
@@ -660,10 +643,6 @@ function renderProfileHero(
             <h1 class="profile-name">${esc(displayName)}</h1>
             <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
           </button>
-          <div class="profile-presence">
-            <span class="profile-presence-dot ${presenceState}" aria-hidden="true"></span>
-            <span class="profile-presence-text">${esc(presenceText || t("accounts.notConnected"))}</span>
-          </div>
           ${storesHtml}
         </div>
         <div class="profile-hero-actions">

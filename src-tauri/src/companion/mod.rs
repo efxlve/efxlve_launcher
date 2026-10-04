@@ -186,6 +186,17 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
         .collect()
 }
 
+/// Games a store should report as present. Riot's catalog is free to play, so
+/// `discover` always returns its four titles; they are only the player's games
+/// once a usable client or a linked account exists.
+fn visible_game_count(store: &str, linked: bool, client_installed: bool, discovered: usize) -> u32 {
+    if store == "riot" && !linked && !client_installed {
+        0
+    } else {
+        discovered as u32
+    }
+}
+
 fn status_rows() -> Vec<CompanionStoreStatus> {
     let accounts = load_accounts(&accounts::accounts_file());
     STORES
@@ -194,13 +205,15 @@ fn status_rows() -> Vec<CompanionStoreStatus> {
             let saved = accounts.iter().find(|a| a.store == *store);
             let detected = accounts::detected_name(store);
             let name = saved.map(|a| a.name.clone()).filter(|n| !n.is_empty()).unwrap_or(detected);
+            let linked = saved.is_some();
+            let client_installed = launch::client_installed(store);
             CompanionStoreStatus {
                 store: (*store).to_string(),
-                client_installed: launch::client_installed(store),
+                client_installed,
                 account_name: name,
-                linked: saved.is_some(),
+                linked,
                 needs_login: saved.map(|a| a.needs_login).unwrap_or(false),
-                game_count: discover(store).len() as u32,
+                game_count: visible_game_count(store, linked, client_installed, discover(store).len()),
             }
         })
         .collect()
@@ -848,5 +861,18 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
         // it offers install or uninstall.
         "install" | "uninstall" if !game.launch_uri.is_empty() => launch::open_game(&game.launch_uri, ""),
         _ => launch::open_client(&store),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::visible_game_count;
+
+    #[test]
+    fn riot_without_a_client_or_link_reports_no_games() {
+        assert_eq!(visible_game_count("riot", false, false, 4), 0);
+        assert_eq!(visible_game_count("riot", true, false, 4), 4);
+        assert_eq!(visible_game_count("riot", false, true, 4), 4);
+        assert_eq!(visible_game_count("ea", false, false, 3), 3);
     }
 }
