@@ -35,6 +35,19 @@ export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
 }
 
+/** Celebrations already played this session (per surface and game). */
+const platShineDone = new Set<string>();
+
+/**
+ * The game page's platinum celebration (glow, sparks, one-shot shine sweep)
+ * for a completed set. Each surface celebrates a game once per session.
+ */
+function platCelebration(size: number, shineKey: string): string {
+  const shine = platShineDone.has(shineKey) ? "" : " shine";
+  platShineDone.add(shineKey);
+  return `<span class="plat-cup${shine}" aria-hidden="true">${epicPlatinumIcon(size)}<span class="plat-spark s1">${icon("sparkles", Math.max(9, Math.round(size * 0.4)))}</span><span class="plat-spark s2">${icon("sparkles", Math.max(8, Math.round(size * 0.34)))}</span><span class="plat-shine"></span></span>`;
+}
+
 /** Stores whose achievements the launcher tracks in bulk. */
 const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
 
@@ -85,8 +98,12 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     const storeChip = chips
       ? ` <span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
       : "";
+    // A completed set gets the celebration cup left of its 100% instead of a
+    // tiny mark after the title, so finishing a game actually shows.
     const pctHtml = g.total_achievements > 0
-      ? `<div class="profile-game-pct${isPlat ? " plat" : ""} tabular-nums">${pct}%</div>`
+      ? isPlat
+        ? `<div class="profile-game-done">${platCelebration(24, `row:${g.app_name}`)}<span class="profile-game-pct plat tabular-nums">${pct}%</span></div>`
+        : `<div class="profile-game-pct tabular-nums">${pct}%</div>`
       : "";
     const progressBar = g.total_achievements > 0
       ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
@@ -95,7 +112,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="profile-game-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 16)}</span>`}
         <div class="row-main">
-          <div class="row-title">${esc(g.app_title)}${storeChip}${isPlat ? ` <span class="profile-plat" title="${esc(t("profile.platLabel"))}">${epicPlatinumIcon(13)}</span>` : ""}</div>
+          <div class="row-title">${esc(g.app_title)}${storeChip}</div>
           <div class="row-meta">${meta}</div>
           ${progressBar}
         </div>
@@ -746,29 +763,36 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-/** Side rail: 100% completion showcase. */
+/** Side rail: 100% completion showcase, built as a trophy shelf. */
 function renderShowcasePanel(games: ProfileGameRecord[]): string {
-  const platGames = games.filter((g) => g.unlocked_percent >= 100).slice(0, 6);
-  const cards = platGames.map((g) => {
+  const completed = games.filter((g) => g.unlocked_percent >= 100);
+  const shown = completed.slice(0, 6);
+  const cards = shown.map((g) => {
     const cover = coverOf(g.app_name, g.cover || "");
+    const meta = g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "";
     return `
       <button type="button" class="profile-showcase-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
         <span class="profile-showcase-thumb">
           ${cover ? `<img class="profile-showcase-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 20)}</span>`}
-          <span class="profile-showcase-badge" aria-hidden="true">${epicPlatinumIcon(12)}</span>
         </span>
+        <span class="profile-showcase-cup">${platCelebration(18, `vitrin:${g.app_name}`)}</span>
         <span class="profile-showcase-title">${esc(g.app_title)}</span>
+        ${meta ? `<span class="profile-showcase-meta tabular-nums">${meta}</span>` : ""}
       </button>`;
   }).join("");
   return `
-    <section class="card profile-panel profile-rail-panel">
+    <section class="card profile-panel profile-rail-panel profile-showcase-panel">
       <div class="profile-panel-head">
         <div class="profile-panel-title-wrap">
           <span class="profile-panel-icon plat">${epicPlatinumIcon(15)}</span>
-          <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
+          <div>
+            <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
+            <div class="profile-panel-sub">${t("profile.showcaseSubtitle")}</div>
+          </div>
         </div>
+        ${completed.length > 0 ? `<span class="chip accent tabular-nums">${completed.length}</span>` : ""}
       </div>
-      ${platGames.length > 0 ? `<div class="profile-showcase-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>`}
+      ${shown.length > 0 ? `<div class="profile-showcase-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>`}
     </section>`;
 }
 

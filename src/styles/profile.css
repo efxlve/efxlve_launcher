@@ -440,14 +440,30 @@
   color: var(--text-2);
 }
 
-.profile-game-row.is-plat .profile-game-pct,
-.profile-game-pct.plat,
-.profile-plat {
-  color: var(--accent);
+/* Completed set: the celebration cup and the 100% share one proud chip. */
+.profile-game-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 6px;
+  border-radius: var(--r-sm);
+  background: var(--accent-tint);
+  border: 1px solid transparent;
+  flex-shrink: 0;
+  transition: border-color var(--ease), background-color var(--ease);
 }
 
-.profile-plat svg {
-  vertical-align: -2px;
+.profile-game-row:hover .profile-game-done {
+  border-color: var(--line-strong);
+}
+
+.profile-game-done .profile-game-pct {
+  color: var(--accent);
+  min-width: 0;
+}
+
+.profile-game-done .plat-cup {
+  flex-shrink: 0;
 }
 
 .profile-more {
@@ -563,7 +579,7 @@
   background: var(--warn);
 }
 
-/* --- 8. Side rail: completion showcase --- */
+/* --- 8. Side rail: completion showcase (trophy shelf) --- */
 .profile-showcase-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -575,27 +591,27 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  padding: 8px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   cursor: pointer;
   text-align: left;
   min-width: 0;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.profile-showcase-card:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
 }
 
 .profile-showcase-thumb {
-  position: relative;
   aspect-ratio: 3 / 4;
   width: 100%;
   border-radius: var(--r-sm);
   overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  transition: border-color var(--ease);
-}
-
-.profile-showcase-card:hover .profile-showcase-thumb {
-  border-color: var(--line-strong);
+  background: var(--surface-3);
 }
 
 .profile-showcase-img {
@@ -613,18 +629,17 @@
   color: var(--text-3);
 }
 
-.profile-showcase-badge {
+.profile-showcase-cup {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid var(--line-strong);
-  display: grid;
-  place-items: center;
-  color: var(--accent);
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The sweep is tuned for the game page's 28px cup; scale it to the shelf size. */
+.profile-showcase-cup .plat-shine {
+  inset: 3px 4px 4px 4px;
 }
 
 .profile-showcase-title {
@@ -634,6 +649,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.profile-showcase-meta {
+  font-size: 10px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--ease);
+}
+
+.profile-showcase-card:hover .profile-showcase-meta {
+  color: var(--text-2);
 }
 
 /* --- 9. Dormant account panel --- */
