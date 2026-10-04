@@ -857,10 +857,11 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
 
 /**
  * 5. Tab 3: "Accounts" (Hesaplar):
- * Spacious, clutter-free account management cards for Epic, GOG, and Steam.
+ * Store accounts (Epic, GOG) on top, client accounts (Steam, EA, Ubisoft, …)
+ * below: everything switchable in one place.
  */
 function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSelection): string {
-  const accountCards = allAccounts.map((a) => {
+  const accountCard = (a: ProfileAccount): string => {
     const avatar = accountAvatar(a);
     const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
     const isCurrent = selection.mode === "account" && selection.account.key === a.key;
@@ -924,7 +925,11 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
           ${action}
         </div>
       </div>`;
-  }).join("");
+  };
+
+  // Store accounts keep Epic and GOG; Steam is a client like EA or Ubisoft.
+  const storeCards = allAccounts.filter((a) => a.kind !== "steam").map(accountCard).join("");
+  const steamCards = allAccounts.filter((a) => a.kind === "steam").map(accountCard).join("");
 
   const companionCards = S.companionStatus
     .filter((s) => s.linked && s.store !== "riot")
@@ -963,13 +968,16 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
     })
     .join("");
 
-  const companionSection = companionCards
+  // Client accounts: Steam profiles and the companion clients in one grid.
+  const clientCards = `${steamCards}${companionCards}`;
+
+  const clientSection = clientCards
     ? `<div class="profile-section-subhead">
          <h4 class="profile-section-subtitle">${t("profile.companionAccounts")}</h4>
          <span class="profile-section-desc">${t("profile.companionAccountsDesc")}</span>
        </div>
        <div class="profile-accounts-grid">
-         ${companionCards}
+         ${clientCards}
        </div>`
     : "";
 
@@ -991,10 +999,10 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
       </div>
 
       <div class="profile-accounts-grid">
-        ${accountCards}
+        ${storeCards}
       </div>
 
-      ${companionSection}
+      ${clientSection}
     </div>`;
 }
 
