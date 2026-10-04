@@ -39,33 +39,36 @@ export function coverOf(appName: string, fallback = ""): string {
 }
 
 /**
- * Showcase card under the pointer. Background data (achievements, covers,
- * playtime) re-renders the grid, and a replaced node drops its native :hover
- * state until the mouse moves again. Remembering the key keeps the border
- * highlight steady across those renders.
+ * Re-applies the hover highlight after a background render. The native :hover
+ * state is lost when the grid's DOM is replaced under a stationary pointer, so
+ * during a render we ask the still-mounted old DOM which showcase card sits
+ * under the pointer and mark the fresh card with `is-hover`. Reading the live
+ * DOM (instead of remembering a key) means a stale highlight can never outlive
+ * the pointer.
  */
-let hoveredShowcase: string | null = null;
+let lastPointerX = -1;
+let lastPointerY = -1;
 let showcaseHoverWired = false;
 
 function wireShowcaseHover(): void {
   if (showcaseHoverWired) return;
   showcaseHoverWired = true;
-  document.addEventListener("pointerover", (e) => {
-    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".profile-showcase-card") ?? null;
-    const key = card?.dataset.id ?? null;
-    if (key === hoveredShowcase) {
-      // A re-render may have swapped the node: re-apply the class.
-      if (card && !card.classList.contains("is-hover")) card.classList.add("is-hover");
-      return;
-    }
-    document.querySelectorAll(".profile-showcase-card.is-hover").forEach((el) => el.classList.remove("is-hover"));
-    hoveredShowcase = key;
-    if (card) card.classList.add("is-hover");
-  });
+  // Only the position is tracked; the render reads the DOM itself.
+  document.addEventListener("pointermove", (e) => {
+    lastPointerX = e.clientX;
+    lastPointerY = e.clientY;
+  }, { passive: true });
   document.addEventListener("mouseleave", () => {
-    hoveredShowcase = null;
-    document.querySelectorAll(".profile-showcase-card.is-hover").forEach((el) => el.classList.remove("is-hover"));
+    lastPointerX = -1;
+    lastPointerY = -1;
   });
+}
+
+/** Showcase card under the pointer right now (the old DOM is still mounted during a render). */
+function hoveredShowcaseKey(): string | null {
+  if (lastPointerX < 0) return null;
+  const el = document.elementFromPoint(lastPointerX, lastPointerY);
+  return el?.closest<HTMLElement>(".profile-showcase-card")?.dataset.id ?? null;
 }
 
 wireShowcaseHover();
@@ -680,11 +683,12 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
   const recents = recentApps();
 
   // 1. Showcase Section HTML
+  const hoverKey = hoveredShowcaseKey();
   const showcaseCards = platGames.slice(0, 6).map((g) => {
     const cover = coverOf(g.app_name, g.cover || "");
     const store = storeCode(gameStore(g.app_name));
     return `
-      <div class="profile-showcase-card${g.app_name === hoveredShowcase ? " is-hover" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
+      <div class="profile-showcase-card${g.app_name === hoverKey ? " is-hover" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="profile-showcase-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-showcase-placeholder">${icon("gamepad-2", 24)}</div>`}
         <span class="profile-showcase-store-chip">${store}</span>
         <span class="profile-showcase-badge" title="100% Complete">
@@ -856,43 +860,6 @@ function renderAchievementsTab(filtered: ProfileGameRecord[], games: ProfileGame
  * Spacious, clutter-free account management cards for Epic, GOG, and Steam.
  */
 function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSelection): string {
-  const isCombined = selection.mode === "combined";
-  const globalPhoto = globalAvatar();
-
-  const overviewCard = allAccounts.length > 1 || overviewStores().length > 1
-    ? `
-      <div class="card profile-overview-hub-card${isCombined ? " is-active-session" : ""}">
-        <div class="profile-overview-hub-left">
-          <span class="profile-overview-hub-avatar">
-            ${globalPhoto ? `<img src="${esc(globalPhoto)}" alt="" />` : icon("gamepad-2", 28)}
-          </span>
-          <div class="profile-overview-hub-info">
-            <div class="profile-overview-hub-title-row">
-              <h4 class="profile-overview-hub-title">${t("profile.overview")}</h4>
-              <span class="profile-store-chip">${t("profile.storeAll")}</span>
-              ${isCombined ? `<span class="profile-active-tag">${icon("check", 13)} <span>${t("profile.currentSession")}</span></span>` : ""}
-            </div>
-            <p class="profile-overview-hub-desc">${t("profile.overviewDesc")}</p>
-            <div class="profile-overview-hub-stores">
-              ${overviewStores().map((s) => `
-                <span class="profile-hero-store-pill">
-                  <span class="profile-acc-dot" aria-hidden="true"></span>
-                  ${storeLogo(s, 13)}
-                  <span>${storeName(s)}</span>
-                </span>
-              `).join("")}
-            </div>
-          </div>
-        </div>
-        <div class="profile-overview-hub-actions">
-          ${isCombined
-            ? `<span class="chip ok">${icon("check", 12)} ${t("profile.currentSession")}</span>`
-            : `<button type="button" class="btn primary small" data-act="profile-account" data-key="overview">${t("profile.showAccount")}</button>`
-          }
-        </div>
-      </div>`
-    : "";
-
   const accountCards = allAccounts.map((a) => {
     const avatar = accountAvatar(a);
     const initial = (a.name.trim().charAt(0) || "?").toUpperCase();
@@ -1018,8 +985,6 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
           <span>${t("settings.accountAdd")}</span>
         </button>
       </div>
-
-      ${overviewCard}
 
       <div class="profile-section-subhead">
         <h4 class="profile-section-subtitle">${t("profile.storeAccounts")}</h4>
@@ -1161,8 +1126,10 @@ export function renderProfile(): string {
     gamesCount,
   );
 
-  // Nav tabs
-  const navTabsHtml = renderProfileNavTabs(games.length, allAccounts.length);
+  // Nav tabs. The Accounts tab lists store accounts plus linked client
+  // accounts, so the badge counts both.
+  const linkedClients = S.companionStatus.filter((s) => s.linked && s.store !== "riot").length;
+  const navTabsHtml = renderProfileNavTabs(games.length, allAccounts.length + linkedClients);
 
   // Current tab content
   const tab = S.profileTab || "overview";
