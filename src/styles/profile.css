@@ -440,21 +440,12 @@
   color: var(--text-2);
 }
 
-/* Completed set: the celebration cup and the 100% share one proud chip. */
+/* Completed set: the celebration cup and the 100% share one proud mark. */
 .profile-game-done {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px 5px 6px;
-  border-radius: var(--r-sm);
-  background: var(--accent-tint);
-  border: 1px solid transparent;
   flex-shrink: 0;
-  transition: border-color var(--ease), background-color var(--ease);
-}
-
-.profile-game-row:hover .profile-game-done {
-  border-color: var(--line-strong);
 }
 
 .profile-game-done .profile-game-pct {
