@@ -107,6 +107,9 @@ export function t(key: string, vars?: Record<string, string | number>): string {
  */
 export function localizeMessage(raw: string): string {
   if (!raw || !raw.startsWith("@t:")) return raw;
+  // Legacy records used `@t:<key>{0}<arg>` before the unit-separator form.
+  const legacy = /^@t:([A-Za-z0-9_.]+)\{0\}([\s\S]*)$/.exec(raw);
+  if (legacy) return t(legacy[1], { a1: legacy[2] });
   const parts = raw.slice(3).split("\u001f");
   const key = parts[0];
   const vars: Record<string, string> = {};

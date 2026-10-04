@@ -13,7 +13,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { t as i18nT } from "../../i18n";
+import { localizeMessage, t as i18nT } from "../../i18n";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -614,7 +614,7 @@ export function heroCloudStatus(
   if (recorded) {
     return {
       label: i18nT("drawer.cloudSynced"),
-      tooltip: i18nT("manage.lastSync", { time: recorded }),
+      tooltip: i18nT("manage.lastSync", { time: localizeMessage(recorded) }),
       synced: true,
     };
   }
@@ -872,7 +872,7 @@ export function renderGameFeatures(
         ? `
     <div class="hub-feature-row" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("tag", 12)}</div>
+        <div class="hub-feature-icon">${icon("hash", 12)}</div>
         <span>${i18nT("feat.build")}</span>
       </div>
       <div class="hub-feature-val hub-build-val">${esc(versionInfo.display)}</div>

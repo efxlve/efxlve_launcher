@@ -159,7 +159,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             toast(i18nT("manage.syncFailed", { msg: String(err) }), "err");
             if (cloudSub && S.activeManageSettings) {
               cloudSub.textContent = S.activeManageSettings.lastCloudSync
-                ? i18nT("manage.lastSync", { time: esc(S.activeManageSettings.lastCloudSync) })
+                ? i18nT("manage.lastSync", { time: esc(localizeMessage(S.activeManageSettings.lastCloudSync)) })
                 : i18nT("manage.cloudDesc");
             }
           })
