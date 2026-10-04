@@ -302,7 +302,8 @@
   transition: border-color var(--ease), outline var(--ease);
 }
 
-.profile-showcase-card:hover {
+.profile-showcase-card:hover,
+.profile-showcase-card.is-hover {
   border-color: var(--line-strong);
   outline: 1px solid var(--line-strong);
 }

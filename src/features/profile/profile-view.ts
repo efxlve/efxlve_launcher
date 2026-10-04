@@ -38,6 +38,38 @@ export function coverOf(appName: string, fallback = ""): string {
   return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
 }
 
+/**
+ * Showcase card under the pointer. Background data (achievements, covers,
+ * playtime) re-renders the grid, and a replaced node drops its native :hover
+ * state until the mouse moves again. Remembering the key keeps the border
+ * highlight steady across those renders.
+ */
+let hoveredShowcase: string | null = null;
+let showcaseHoverWired = false;
+
+function wireShowcaseHover(): void {
+  if (showcaseHoverWired) return;
+  showcaseHoverWired = true;
+  document.addEventListener("pointerover", (e) => {
+    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".profile-showcase-card") ?? null;
+    const key = card?.dataset.id ?? null;
+    if (key === hoveredShowcase) {
+      // A re-render may have swapped the node: re-apply the class.
+      if (card && !card.classList.contains("is-hover")) card.classList.add("is-hover");
+      return;
+    }
+    document.querySelectorAll(".profile-showcase-card.is-hover").forEach((el) => el.classList.remove("is-hover"));
+    hoveredShowcase = key;
+    if (card) card.classList.add("is-hover");
+  });
+  document.addEventListener("mouseleave", () => {
+    hoveredShowcase = null;
+    document.querySelectorAll(".profile-showcase-card.is-hover").forEach((el) => el.classList.remove("is-hover"));
+  });
+}
+
+wireShowcaseHover();
+
 /** Short tab labels: brand names are not translated. */
 const STORE_TAB_LABELS: Record<StoreKind, string> = {
   epic: "Epic",
@@ -652,7 +684,7 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
     const cover = coverOf(g.app_name, g.cover || "");
     const store = storeCode(gameStore(g.app_name));
     return `
-      <div class="profile-showcase-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
+      <div class="profile-showcase-card${g.app_name === hoveredShowcase ? " is-hover" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
         ${cover ? `<img class="profile-showcase-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-showcase-placeholder">${icon("gamepad-2", 24)}</div>`}
         <span class="profile-showcase-store-chip">${store}</span>
         <span class="profile-showcase-badge" title="100% Complete">
