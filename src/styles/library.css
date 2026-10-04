@@ -383,6 +383,10 @@ html.win-compact .lrow-store-name { display: none; }
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-meta,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-col,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-ach { color: var(--text-3); }
+/* A completed achievement set reads fully bright on uninstalled rows too:
+   the count must not look half-finished just because the game is not on disk. */
+.lib-list.highlight-installed .lrow.not-installed .lrow-ach.done,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-ach.done { color: var(--text); }
 .lib-list.highlight-installed .lrow:not(.not-installed) .lrow-name,
 .lib-list.contrast-titles .lrow:not(.not-installed) .lrow-name {
   color: var(--text);
