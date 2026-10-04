@@ -364,8 +364,8 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "profile-store" && t.dataset.val) {
     const store = t.dataset.val;
-    if (store === "all" || store === "epic" || store === "gog" || store === "steam") {
-      S.profileStore = store;
+    if (store === "all" || isHeaderStore(store) || store === "riot") {
+      S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
       resetProfileCards();
       render();

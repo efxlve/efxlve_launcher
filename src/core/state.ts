@@ -277,7 +277,7 @@ export const S = {
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
   /** Overview only: which store's achievements and totals the list is showing. */
-  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea",
+  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
   profileSearchQuery: "",
   offlineMode: false,
   networkProfile: ("balanced") as string,

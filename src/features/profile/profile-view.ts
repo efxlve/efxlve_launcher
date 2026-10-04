@@ -82,6 +82,7 @@ const STORE_TAB_LABELS: Record<StoreKind, string> = {
   battlenet: "Battle.net",
   ubisoft: "Ubisoft",
   ea: "EA",
+  riot: "Riot",
 };
 
 /** Stores whose achievements the launcher tracks in bulk. */
@@ -162,8 +163,10 @@ function totalSteamGames(): number {
   return S.steamStatus?.games ?? 0;
 }
 
-/** Every storefront the profile shows; Riot has no storefront of its own. */
-export type StoreKind = "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea";
+/** Every storefront the profile shows. */
+export type StoreKind = "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot";
+
+export const ALL_PROFILE_STORES: StoreKind[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
 
 /** One selectable account in the profile header. */
 export interface ProfileAccount {
@@ -175,7 +178,8 @@ export interface ProfileAccount {
 }
 
 export function storeName(kind: StoreKind): string {
-  return STORE_LABELS[kind];
+  if (kind === "riot") return "Riot Games";
+  return STORE_LABELS[kind as keyof typeof STORE_LABELS] || "Riot Games";
 }
 
 const STORE_CODES: Record<StoreKind, string> = {
@@ -186,11 +190,12 @@ const STORE_CODES: Record<StoreKind, string> = {
   battlenet: "BNET",
   ubisoft: "UBI",
   ea: "EA",
+  riot: "RIOT",
 };
 
-/** Row chip code. Riot games can sit in the shelf without a storefront. */
-export function storeCode(kind: StoreKind | "riot"): string {
-  return kind === "riot" ? "RIOT" : STORE_CODES[kind];
+/** Row chip code. */
+export function storeCode(kind: StoreKind): string {
+  return STORE_CODES[kind] || "RIOT";
 }
 
 export function switchAct(kind: StoreKind): string {
@@ -202,8 +207,8 @@ export function switchAct(kind: StoreKind): string {
 }
 
 /** Library key → store. Epic ids have no prefix. */
-export function gameStore(appName: string): StoreKind | "riot" {
-  return sourceOfKey(appName);
+export function gameStore(appName: string): StoreKind {
+  return sourceOfKey(appName) as StoreKind;
 }
 
 function steamSignedIn(): boolean {
@@ -213,6 +218,21 @@ function steamSignedIn(): boolean {
 /** Steam library or client session the overview can actually show. */
 function steamConnected(): boolean {
   return steamSignedIn() || S.steamSummaries.length > 0 || (S.steamStatus?.games ?? 0) > 0;
+}
+
+/** Whether a store has a signed-in session or linked companion account. */
+function isStoreConnected(store: StoreKind): boolean {
+  if (store === "epic") return !!S.epicAccount;
+  if (store === "gog") return !!S.gogAccount;
+  if (store === "steam") return steamConnected();
+  return S.companionStatus.some((s) => s.store === store && s.linked);
+}
+
+/** Whether a companion store's client is detected on the system or has local games. */
+function isStoreInstalled(store: StoreKind): boolean {
+  if (store === "epic" || store === "gog") return true;
+  if (store === "steam") return steamConnected() || S.steamSummaries.length > 0;
+  return S.companionStatus.some((s) => s.store === store && (s.clientInstalled || s.gameCount > 0)) || libraryCount(store) > 0;
 }
 
 function steamSessionId(): string {
@@ -379,16 +399,18 @@ function buildSteamProfileGames(): ProfileGameRecord[] {
 
 /** Stores that currently have a signed-in session or a local library. */
 export function overviewStores(): StoreKind[] {
-  const linkedCompanion = new Set(S.companionStatus.filter((s) => s.linked).map((s) => s.store));
+  const linkedCompanion = new Set(
+    S.companionStatus.filter((s) => s.linked || s.clientInstalled || s.gameCount > 0).map((s) => s.store)
+  );
   const out: StoreKind[] = [];
-  for (const id of HEADER_STORES) {
+  for (const id of ALL_PROFILE_STORES) {
     if (id === "epic") {
-      if (S.epicAccount) out.push(id);
+      if (S.epicAccount || totalEpicGames() > 0) out.push(id);
     } else if (id === "gog") {
-      if (S.gogAccount) out.push(id);
+      if (S.gogAccount || S.gogSummaries.length > 0) out.push(id);
     } else if (id === "steam") {
       if (steamConnected()) out.push(id);
-    } else if (linkedCompanion.has(id)) {
+    } else if (linkedCompanion.has(id) || libraryCount(id) > 0) {
       out.push(id);
     }
   }
@@ -475,7 +497,7 @@ export function libraryCount(scope: "all" | StoreKind): number {
     }
     return n;
   }
-  return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea");
+  return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea") + libraryCount("riot");
 }
 
 /** Store filter pills inside the Achievements tab toolbar. */
@@ -575,13 +597,19 @@ function renderProfileHero(
   const showXp = !combined && isEpic;
 
   const stores = overviewStores();
-  const storeLogosHtml = combined && stores.length > 0
+  const storeLogosHtml = combined
     ? `<div class="profile-hero-stores">
-        ${stores.map((s) => `
-          <span class="profile-hero-store-icon" title="${storeName(s)}">
-            ${storeLogo(s, 14)}
-          </span>
-        `).join("")}
+        ${ALL_PROFILE_STORES.map((s) => {
+          const connected = isStoreConnected(s);
+          const installed = isStoreInstalled(s);
+          const statusClass = connected ? "connected" : installed ? "installed" : "unlinked";
+          const count = libraryCount(s);
+          const tooltip = `${storeName(s)}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? " (" + count + ")" : ""}`;
+          return `
+            <span class="profile-hero-store-icon ${statusClass}" title="${esc(tooltip)}">
+              ${storeLogo(s, 14)}
+            </span>`;
+        }).join("")}
       </div>`
     : !combined && account
       ? `<div class="profile-hero-stores">
@@ -676,11 +704,12 @@ interface StoreSummaryStat {
   games: number;
   playtime: number;
   trophies: number | null;
+  status: "connected" | "installed" | "none";
 }
 
 function computeStoreSummaries(): StoreSummaryStat[] {
   const result: StoreSummaryStat[] = [];
-  for (const s of HEADER_STORES) {
+  for (const s of ALL_PROFILE_STORES) {
     const games = libraryCount(s);
     const playtime = playtimeFor(s);
     let trophies: number | null = null;
@@ -704,12 +733,16 @@ function computeStoreSummaries(): StoreSummaryStat[] {
       }
     }
 
+    const connected = isStoreConnected(s);
+    const installed = isStoreInstalled(s);
+
     result.push({
       store: s,
       name: storeName(s),
       games,
       playtime,
       trophies,
+      status: connected ? "connected" : installed ? "installed" : "none",
     });
   }
   return result;
@@ -810,9 +843,10 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
     const playtimeText = st.playtime > 0 ? fmtPlaytime(st.playtime) : "—";
 
     return `
-      <tr class="profile-store-tr">
+      <tr class="profile-store-tr${st.status !== "connected" ? " muted" : ""}">
         <td>
           <div class="profile-store-name-cell">
+            <span class="profile-store-dot ${st.status}" aria-hidden="true"></span>
             ${storeLogo(st.store, 15)}
             <span class="profile-store-name-label">${esc(st.name)}</span>
           </div>
@@ -1035,19 +1069,33 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
   const storeCards = allAccounts.filter((a) => a.kind !== "steam").map(accountCard).join("");
   const steamCards = allAccounts.filter((a) => a.kind === "steam").map(accountCard).join("");
 
-  const companionCards = S.companionStatus
-    .filter((s) => s.linked && s.store !== "riot")
-    .map((s) => {
-      const kind = s.store as StoreKind;
+  const COMPANION_CLIENTS: StoreKind[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
+
+  const companionCards = COMPANION_CLIENTS
+    .map((kind) => {
+      const status = S.companionStatus.find((s) => s.store === kind);
+      const linked = status?.linked ?? false;
+      const client = status?.clientInstalled ?? false;
+      const games = status?.gameCount ?? libraryCount(kind);
+      const accountName = (linked && status?.accountName) ? status.accountName : storeName(kind);
+      const isOnline = linked;
+      const isLocal = !linked && (client || games > 0);
+
+      const badgeHtml = isOnline
+        ? `<span class="profile-acc-status-pill online"><span class="profile-acc-dot" aria-hidden="true"></span>${t("profile.activeSession")}</span>`
+        : isLocal
+          ? `<span class="profile-acc-status-pill local"><span class="profile-acc-dot amber" aria-hidden="true"></span>${t("accounts.localAccount")}</span>`
+          : `<span class="profile-acc-status-pill offline">${t("accounts.notConnected")}</span>`;
+
       return `
-      <div class="card profile-acc-manage-card">
+      <div class="card profile-acc-manage-card${isOnline ? " is-active-session" : ""}">
         <div class="profile-acc-manage-top">
           <div class="profile-acc-manage-user">
             <span class="profile-acc-avatar-lg">${storeLogo(kind, 22)}</span>
             <div class="profile-acc-manage-names">
               <div class="profile-acc-manage-title-row">
-                <span class="profile-acc-manage-name">${esc(s.accountName || STORE_LABELS[kind])}</span>
-                <span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>
+                <span class="profile-acc-manage-name">${esc(accountName)}</span>
+                ${isOnline ? `<span class="profile-acc-dot" title="${esc(t("accounts.connected"))}" aria-hidden="true"></span>` : ""}
               </div>
               <div class="profile-acc-manage-store-tag">
                 ${storeLogo(kind, 14)}
@@ -1056,13 +1104,18 @@ function renderAccountsTab(allAccounts: ProfileAccount[], selection: ProfileSele
             </div>
           </div>
           <div class="profile-acc-manage-badge">
-            <span class="profile-acc-status-pill online"><span class="profile-acc-dot" aria-hidden="true"></span>${t("profile.activeSession")}</span>
+            ${badgeHtml}
           </div>
         </div>
         <div class="profile-acc-manage-meta-row">
           <span class="profile-acc-meta-item">
-            <span class="profile-acc-meta-val tabular-nums">${s.gameCount}</span>
+            <span class="profile-acc-meta-val tabular-nums">${games > 0 || isLocal ? games : "—"}</span>
             <span class="profile-acc-meta-lbl">${t("profile.games")}</span>
+          </span>
+          <span class="profile-acc-meta-sep"></span>
+          <span class="profile-acc-meta-item">
+            <span class="profile-acc-meta-val">${isOnline ? t("accounts.connected") : isLocal ? t("accounts.localAccount") : t("accounts.notConnected")}</span>
+            <span class="profile-acc-meta-lbl">${t("profile.store")}</span>
           </span>
         </div>
         <div class="profile-acc-manage-footer">
@@ -1238,10 +1291,9 @@ export function renderProfile(): string {
     gamesCount,
   );
 
-  // Nav tabs. The Accounts tab lists store accounts plus linked client
-  // accounts, so the badge counts both.
-  const linkedClients = S.companionStatus.filter((s) => s.linked && s.store !== "riot").length;
-  const navTabsHtml = renderProfileNavTabs(games.length, allAccounts.length + linkedClients);
+  // Nav tabs. The Accounts tab lists store accounts, Steam accounts, and companion platforms.
+  const companionTotal = 5; // xbox, battlenet, ubisoft, ea, riot
+  const navTabsHtml = renderProfileNavTabs(games.length, allAccounts.length + companionTotal);
 
   // Current tab content
   const tab = S.profileTab || "overview";
