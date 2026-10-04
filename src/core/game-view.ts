@@ -10,7 +10,7 @@ import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type E
 import { cachedSteamCover, steamCdnPortrait } from "./steam-art-cache";
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
-import { icon } from "./icons";
+import { icon, epicPlatinumIcon } from "./icons";
 import { openEpicModal, render } from "./render";
 import { isCompanionKey, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
@@ -19,6 +19,23 @@ import { esc, fmtPlaytime } from "./utils";
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
 export function achSummaryOf(appName: string) {
   return S.epicAchSummaries[appName] || (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`]);
+}
+
+/** Games whose list-row platinum shine already played this session. */
+const listPlatShineDone = new Set<string>();
+
+/**
+ * Achievement glyph for a list row: the game page's platinum cup celebrates a
+ * completed set, the plain trophy marks the rest. The cup paints its own
+ * gradient, so the not-installed dimming (text tint only) cannot mute it — it
+ * keeps shining on uninstalled rows. The shine sweep plays once per session,
+ * the same way the game page celebrates a fresh open.
+ */
+function achievementGlyph(appName: string, done: boolean): string {
+  if (!done) return icon("trophy", 13);
+  const shine = listPlatShineDone.has(appName) ? "" : " shine";
+  listPlatShineDone.add(appName);
+  return `<span class="plat-cup${shine}">${epicPlatinumIcon(15)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 8)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 6)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
 }
 
 /** Achievement count for a library list row. Dash when the game has no tracked set. */
@@ -33,11 +50,11 @@ export function listAchievementCell(appName: string): string {
     if (S.showAchProgress) {
       const pct = Math.round((unlocked / total) * 100);
       return `<span class="lrow-ach lrow-ach-progress${done ? " done" : ""}">
-        <span class="lrow-ach-line">${icon("trophy", 13)}<span class="tabular-nums">${unlocked} / ${total}</span><span class="lrow-ach-pct tabular-nums">${pct}%</span></span>
+        <span class="lrow-ach-line">${achievementGlyph(appName, done)}<span class="tabular-nums">${unlocked} / ${total}</span><span class="lrow-ach-pct tabular-nums">${pct}%</span></span>
         <span class="lrow-ach-track"><span class="lrow-ach-fill" style="width:${pct}%"></span></span>
       </span>`;
     }
-    return `<span class="lrow-ach${done ? " done" : ""}">${icon("trophy", 13)}<span class="tabular-nums">${unlocked}/${total}</span></span>`;
+    return `<span class="lrow-ach${done ? " done" : ""}">${achievementGlyph(appName, done)}<span class="tabular-nums">${unlocked}/${total}</span></span>`;
   }
   return `<span class="lrow-ach">—</span>`;
 }

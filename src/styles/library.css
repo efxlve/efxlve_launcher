@@ -402,6 +402,15 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow-col { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .lrow-ach.done { color: var(--text); }
+/* Completed trophies reuse the game page's platinum cup. The cup paints its own
+   gradient and glow, so the not-installed text dimming cannot mute it — it
+   keeps shining on uninstalled rows. The list variant tightens the glow and
+   sparkles to the row's 15px cup. */
+.lrow-ach .plat-cup { flex-shrink: 0; }
+.lrow-ach .plat-cup::before { inset: -5px; }
+.lrow-ach .plat-spark.s1 { top: -5px; right: -7px; }
+.lrow-ach .plat-spark.s2 { bottom: -4px; left: -6px; }
+.lrow-ach .plat-shine { inset: 3px 4px 4px; border-radius: 2px; }
 /* Optional storefront column: mark + name, aligned like the other columns. */
 .lrow-store { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
 .lrow-store-logo { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }

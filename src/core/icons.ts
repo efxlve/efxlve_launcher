@@ -291,28 +291,34 @@ export function loadingState(label: string): string {
  * Symmetric platinum cup: attached handles, mastery star, stem and tiered base.
  * The gradient runs vertically on purpose — a diagonal one dimmed the right
  * half and made the cup read as crooked at 18 px.
+ *
+ * Every instance gets its own gradient id: the cup now renders once per
+ * completed library row, and duplicate ids break when the first SVG unmounts.
  */
+let platCupSeq = 0;
+
 export function epicPlatinumIcon(size = 18): string {
+  const gradient = `epPlatCup${++platCupSeq}`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="epic-plat-cup-svg">
     <defs>
-      <linearGradient id="epPlatCup" x1="12" y1="2.5" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+      <linearGradient id="${gradient}" x1="12" y1="2.5" x2="12" y2="22" gradientUnits="userSpaceOnUse">
         <stop offset="0%" stop-color="#ffffff"/>
         <stop offset="55%" stop-color="#e8edf4"/>
         <stop offset="100%" stop-color="#b9c2cf"/>
       </linearGradient>
     </defs>
     <!-- Handles: C curves attached to both sides of the cup -->
-    <path d="M6.8 6.4C4.7 6.4 3.3 7.6 3.3 9.1s1.4 2.7 3.5 2.7" stroke="url(#epPlatCup)" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M17.2 6.4c2.1 0 3.5 1.2 3.5 2.7s-1.4 2.7-3.5 2.7" stroke="url(#epPlatCup)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M6.8 6.4C4.7 6.4 3.3 7.6 3.3 9.1s1.4 2.7 3.5 2.7" stroke="url(#${gradient})" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M17.2 6.4c2.1 0 3.5 1.2 3.5 2.7s-1.4 2.7-3.5 2.7" stroke="url(#${gradient})" stroke-width="1.5" stroke-linecap="round"/>
     <!-- Cup body -->
-    <path d="M6.8 3.4h10.4v6c0 2.9-2.3 5.2-5.2 5.2S6.8 12.3 6.8 9.4v-6z" fill="url(#epPlatCup)"/>
+    <path d="M6.8 3.4h10.4v6c0 2.9-2.3 5.2-5.2 5.2S6.8 12.3 6.8 9.4v-6z" fill="url(#${gradient})"/>
     <!-- Rim highlight -->
     <path d="M6.2 3.4h11.6" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
     <!-- Center mastery star -->
     <path d="M12 6.55L12.47 7.75L13.76 7.83L12.76 8.65L13.09 9.9L12 9.2L10.91 9.9L11.24 8.65L10.24 7.83L11.53 7.75Z" fill="#0f172a"/>
     <!-- Stem and tiered base -->
-    <path d="M12 14.7v3.2" stroke="url(#epPlatCup)" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M8.8 19.1h6.4" stroke="url(#epPlatCup)" stroke-width="1.7" stroke-linecap="round"/>
-    <path d="M6.8 21.1h10.4" stroke="url(#epPlatCup)" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M12 14.7v3.2" stroke="url(#${gradient})" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M8.8 19.1h6.4" stroke="url(#${gradient})" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="M6.8 21.1h10.4" stroke="url(#${gradient})" stroke-width="2.2" stroke-linecap="round"/>
   </svg>`;
 }
