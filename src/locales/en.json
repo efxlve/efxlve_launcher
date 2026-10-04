@@ -1187,6 +1187,8 @@
   "profile.inactiveDesc": "Achievements, playtime and stats load for the active account only. Switch with one click to see this account's data.",
   "profile.storeBreakdown": "Library per Store",
   "profile.player": "Player",
+  "profile.user": "User",
+  "profile.changeNameTitle": "Edit Name",
   "profile.games": "Games",
   "profile.platLabel": "Platinum",
   "profile.refresh": "Refresh Profile",

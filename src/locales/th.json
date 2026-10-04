@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "ความสำเร็จ เวลาเล่น และสถิติจะโหลดเฉพาะบัญชีที่ใช้งานอยู่ สลับด้วยคลิกเดียวเพื่อดูข้อมูลของบัญชีนี้",
   "profile.storeBreakdown": "คลังเกมแยกตามสโตร์",
   "profile.player": "ผู้เล่น",
+  "profile.user": "ผู้ใช้",
+  "profile.changeNameTitle": "แก้ไขชื่อ",
   "profile.games": "เกม",
   "profile.platLabel": "แพลตินัม",
   "profile.refresh": "รีเฟรชโปรไฟล์",

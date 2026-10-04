@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "Erfolge, Spielzeit und Statistiken werden nur für das aktive Konto geladen. Mit einem Klick wechseln, um die Daten dieses Kontos zu sehen.",
   "profile.storeBreakdown": "Bibliothek pro Store",
   "profile.player": "Spieler",
+  "profile.user": "Benutzer",
+  "profile.changeNameTitle": "Name bearbeiten",
   "profile.games": "Spiele",
   "profile.platLabel": "Platin",
   "profile.refresh": "Profil aktualisieren",

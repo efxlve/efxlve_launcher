@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "成就、游戏时长和统计仅加载当前激活的账户。单击切换即可查看此账户的数据。",
   "profile.storeBreakdown": "按商店划分的游戏库",
   "profile.player": "玩家",
+  "profile.user": "用户",
+  "profile.changeNameTitle": "编辑名称",
   "profile.games": "游戏",
   "profile.platLabel": "白金",
   "profile.refresh": "刷新个人资料",

@@ -23,7 +23,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { rawOf, sourceOfKey } from "../../core/selectors";
-import { avatarFor, globalAvatar, S } from "../../core/state";
+import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
@@ -630,7 +630,10 @@ function renderProfileHero(
             <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
           </button>
           <div class="profile-hero-identity">
-            <h1 class="profile-name">${esc(displayName)}</h1>
+            <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+              <h1 class="profile-name">${esc(displayName)}</h1>
+              <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
+            </button>
             ${storeLogosHtml}
           </div>
         </div>
@@ -639,15 +642,6 @@ function renderProfileHero(
           <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
         </div>
       </div>
-      ${showData ? `
-        <div class="profile-hero-progress-row">
-          <div class="profile-hero-progress-label">
-            <span>${t("profile.sortProgress")}</span>
-            <span class="tabular-nums">${avgCompletion}%</span>
-          </div>
-          <div class="progress profile-hero-bar"><span style="width:${avgCompletion}%"></span></div>
-        </div>
-      ` : ""}
     </section>`;
 }
 
@@ -682,7 +676,6 @@ interface StoreSummaryStat {
   games: number;
   playtime: number;
   trophies: number | null;
-  completionPct: number | null;
 }
 
 function computeStoreSummaries(): StoreSummaryStat[] {
@@ -691,33 +684,23 @@ function computeStoreSummaries(): StoreSummaryStat[] {
     const games = libraryCount(s);
     const playtime = playtimeFor(s);
     let trophies: number | null = null;
-    let completionPct: number | null = null;
 
     if (s === "epic" && S.epicAccount) {
-      const epicGames = S.playerProfileData?.games || [];
       trophies = S.playerProfileData?.total_unlocked || 0;
-      const totalAch = epicGames.reduce((acc, g) => acc + g.total_achievements, 0);
-      completionPct = totalAch > 0 ? Math.round((trophies / totalAch) * 100) : 0;
     } else if (s === "steam" && steamConnected()) {
       const steamGames = buildSteamProfileGames();
       if (steamGames.length > 0) {
         trophies = steamGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-        const totalAch = steamGames.reduce((acc, g) => acc + g.total_achievements, 0);
-        completionPct = totalAch > 0 ? Math.round((trophies / totalAch) * 100) : 0;
       }
     } else if (s === "gog" && (S.gogAccount || S.gogSummaries.length > 0)) {
       const gogGames = buildGogProfileGames();
       if (gogGames.length > 0) {
         trophies = gogGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-        const totalAch = gogGames.reduce((acc, g) => acc + g.total_achievements, 0);
-        completionPct = totalAch > 0 ? Math.round((trophies / totalAch) * 100) : 0;
       }
     } else if (s === "ubisoft") {
       const ubiGames = buildUbisoftProfileGames();
       if (ubiGames.length > 0) {
         trophies = ubiGames.reduce((acc, g) => acc + g.total_unlocked, 0);
-        const totalAch = ubiGames.reduce((acc, g) => acc + g.total_achievements, 0);
-        completionPct = totalAch > 0 ? Math.round((trophies / totalAch) * 100) : 0;
       }
     }
 
@@ -727,7 +710,6 @@ function computeStoreSummaries(): StoreSummaryStat[] {
       games,
       playtime,
       trophies,
-      completionPct,
     });
   }
   return result;
@@ -762,9 +744,12 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
     const cover = coverOf(g.app_name, g.cover || "");
     return `
       <div class="profile-plat-card" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
-        ${cover ? `<img class="profile-plat-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-plat-placeholder">${icon("gamepad-2", 18)}</div>`}
+        ${cover ? `<img class="profile-plat-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="profile-plat-placeholder">${icon("gamepad-2", 24)}</div>`}
+        <div class="profile-plat-scrim">
+          <span class="profile-plat-title">${esc(g.app_title)}</span>
+        </div>
         <span class="profile-plat-badge" title="${esc(t("profile.platLabel"))}">
-          ${epicPlatinumIcon(11)}
+          ${epicPlatinumIcon(13)}
         </span>
       </div>`;
   }).join("");
@@ -790,8 +775,8 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
       }
     </section>`;
 
-  // --- 2. Left Column: Closest to Platinum (Top 5) ---
-  const closestGames = inProgGames.slice(0, 5);
+  // --- 2. Left Column: Closest to Platinum (Top 6) ---
+  const closestGames = inProgGames.slice(0, 6);
   const closestRowsHtml = closestGames.length > 0
     ? closestGames.map((g) => {
         const cover = coverOf(g.app_name, g.cover || "");
@@ -822,9 +807,6 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
   const storeTableRowsHtml = storeSummaries.map((st) => {
     const hasTrophies = st.trophies !== null && st.trophies > 0;
     const trophiesText = st.trophies !== null ? (hasTrophies ? st.trophies.toLocaleString() : "0") : "—";
-    const completionHtml = st.completionPct !== null
-      ? `<div class="profile-store-bar-cell"><div class="progress profile-mini-bar"><span style="width:${st.completionPct}%"></span></div><span>${st.completionPct}%</span></div>`
-      : `<span class="row-meta">—</span>`;
     const playtimeText = st.playtime > 0 ? fmtPlaytime(st.playtime) : "—";
 
     return `
@@ -838,7 +820,6 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
         <td class="text-right tabular-nums">${st.games}</td>
         <td class="text-right tabular-nums">${playtimeText}</td>
         <td class="text-right tabular-nums">${trophiesText}</td>
-        <td class="text-right tabular-nums">${completionHtml}</td>
       </tr>`;
   }).join("");
 
@@ -851,7 +832,7 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
             <span class="profile-panel-icon">${icon("timer", 14)}</span>
             <h4 class="profile-panel-title">${t("profile.inProgressTitle")}</h4>
           </div>
-          ${inProgGames.length > 5 ? `<button type="button" class="btn ghost small" data-act="profile-filter" data-val="in_progress" data-tab="achievements">${t("profile.viewAll")} (${inProgGames.length})</button>` : inProgGames.length > 0 ? `<span class="profile-count-badge tabular-nums">${inProgGames.length}</span>` : ""}
+          ${inProgGames.length > 6 ? `<button type="button" class="btn ghost small" data-act="profile-filter" data-val="in_progress" data-tab="achievements">${t("profile.viewAll")} (${inProgGames.length})</button>` : inProgGames.length > 0 ? `<span class="profile-count-badge tabular-nums">${inProgGames.length}</span>` : ""}
         </div>
         <div class="profile-closest-list">
           ${closestRowsHtml}
@@ -875,7 +856,6 @@ function renderOverviewTab(games: ProfileGameRecord[]): string {
                 <th class="text-right">${t("profile.games")}</th>
                 <th class="text-right">${t("profile.played")}</th>
                 <th class="text-right">${t("profile.trophies")}</th>
-                <th class="text-right">${t("profile.sortProgress")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1205,7 +1185,7 @@ export function renderProfile(): string {
   const games = showData ? profileListGames() : [];
 
   const displayName = combined
-    ? t("profile.overview")
+    ? currentProfileName()
     : account!.name || t("profile.player");
   const avatarKey = combined ? "global" : account!.key;
   const customAvatar = combined ? globalAvatar() : accountAvatar(account!);

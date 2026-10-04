@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
-import { globalAvatar, S } from "./state";
+import { currentProfileName, globalAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
 import { icon } from "./icons";
@@ -240,35 +240,24 @@ export function updateChrome(): void {
   syncRefreshSpinners();
   const acc = document.getElementById("account");
   if (acc) {
-    // Signed in: the account chip opens the profile (if Epic) or accounts page; signed out: the store accounts page.
-    const hasAccount = Boolean(S.epicAccount || S.gogAccount);
-    acc.dataset.view = S.epicAccount ? "profile" : "accounts";
-    acc.classList.toggle("active", S.view === "profile" || S.view === "accounts");
-    const name = S.epicAccount || S.gogAccount || t("nav.signIn");
-    // The chip carries the combined profile's own photo, not one account's face.
+    acc.dataset.view = "profile";
+    acc.classList.toggle("active", S.view === "profile");
+    const name = currentProfileName();
+    // The chip carries the profile's photo and name
     const combinedAvatar = globalAvatar();
     const avatarToken = combinedAvatar ? `${combinedAvatar.length}:${combinedAvatar.slice(0, 32)}` : "none";
     const acctState = `${name}:${avatarToken}`;
 
     if (acc.dataset.acctState !== acctState) {
       acc.dataset.acctState = acctState;
-      if (hasAccount) {
-        acc.innerHTML =
-          (combinedAvatar
-            ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(combinedAvatar)}" alt="" /></span>`
-            : `<span class="account-avatar">${icon("gamepad-2", 15)}</span>`) +
-          `<span class="account-name">${esc(name)}</span>`;
-      } else {
-        acc.innerHTML =
-          `<span class="account-avatar"><i data-lucide="circle-user-round"></i></span>` +
-          `<span class="account-name">${t("nav.signIn")}</span>`;
-        createIcons({ icons: { CircleUserRound } });
-      }
+      acc.innerHTML =
+        (combinedAvatar
+          ? `<span class="account-avatar custom"><img class="avatar-img" src="${esc(combinedAvatar)}" alt="" /></span>`
+          : `<span class="account-avatar">${icon("gamepad-2", 15)}</span>`) +
+        `<span class="account-name">${esc(name)}</span>`;
     }
-    acc.classList.toggle("logged", hasAccount);
-    acc.title = hasAccount
-      ? (S.epicAccount ? t("nav.profileTip", { name }) : name)
-      : t("nav.loginTip");
+    acc.classList.add("logged");
+    acc.title = name;
   }
 }
 

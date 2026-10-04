@@ -1187,6 +1187,8 @@
   "profile.inactiveDesc": "Başarımlar, oyun süresi ve istatistikler yalnızca aktif hesap için yüklenir. Bu hesabın verilerini görmek için tek tıkla geçebilirsiniz.",
   "profile.storeBreakdown": "Mağaza Bazında Kütüphane",
   "profile.player": "Oyuncu",
+  "profile.user": "Kullanıcı",
+  "profile.changeNameTitle": "İsmi Düzenle",
   "profile.games": "Oyun",
   "profile.platLabel": "Platin",
   "profile.refresh": "Profili Yenile",

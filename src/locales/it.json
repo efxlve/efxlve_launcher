@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "Obiettivi, tempo di gioco e statistiche vengono caricati solo per l'account attivo. Passa con un clic per vedere i dati di questo account.",
   "profile.storeBreakdown": "Libreria per store",
   "profile.player": "Giocatore",
+  "profile.user": "Utente",
+  "profile.changeNameTitle": "Modifica nome",
   "profile.games": "Giochi",
   "profile.platLabel": "Platino",
   "profile.refresh": "Aggiorna profilo",

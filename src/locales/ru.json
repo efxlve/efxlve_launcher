@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "Достижения, время игры и статистика загружаются только для активного аккаунта. Переключитесь одним щелчком, чтобы увидеть данные этого аккаунта.",
   "profile.storeBreakdown": "Библиотека по магазинам",
   "profile.player": "Игрок",
+  "profile.user": "Пользователь",
+  "profile.changeNameTitle": "Изменить имя",
   "profile.games": "Игры",
   "profile.platLabel": "Платина",
   "profile.refresh": "Обновить профиль",

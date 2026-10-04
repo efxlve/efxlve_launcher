@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "يتم تحميل الإنجازات ووقت اللعب والإحصاءات للحساب النشط فقط. بدّل بنقرة واحدة لعرض بيانات هذا الحساب.",
   "profile.storeBreakdown": "المكتبة حسب المتجر",
   "profile.player": "اللاعب",
+  "profile.user": "المستخدم",
+  "profile.changeNameTitle": "تعديل الاسم",
   "profile.games": "الألعاب",
   "profile.platLabel": "بلاتيني",
   "profile.refresh": "تحديث الملف الشخصي",

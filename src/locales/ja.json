@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "実績、プレイ時間、統計はアクティブなアカウントのみ読み込まれます。ワンクリックで切り替えてこのアカウントのデータを表示できます。",
   "profile.storeBreakdown": "ストア別ライブラリ",
   "profile.player": "プレイヤー",
+  "profile.user": "ユーザー",
+  "profile.changeNameTitle": "名前を編集",
   "profile.games": "ゲーム",
   "profile.platLabel": "プラチナ",
   "profile.refresh": "プロフィールを更新",

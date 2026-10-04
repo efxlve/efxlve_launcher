@@ -103,7 +103,7 @@ import {
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
-import { closeAvatarModal, openAvatarFilePicker, promptAvatarAction, removeCustomAvatar } from "../profile/profile-avatar";
+import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
 
 // Feature action handlers
 import { handleAuthAction } from "./handlers/auth-handlers";
@@ -319,6 +319,13 @@ document.addEventListener("click", (e) => {
   } else if (act === "profile-change-avatar") {
     // The header avatar edits the selected profile's own photo (combined = global).
     promptAvatarAction(t.dataset.key || undefined, t.dataset.name || undefined);
+  } else if (act === "profile-change-name") {
+    openChangeNameModal();
+  } else if (act === "profile-name-modal-close") {
+    closeChangeNameModal();
+  } else if (act === "profile-name-modal-save") {
+    const input = document.getElementById("profile-name-input") as HTMLInputElement | null;
+    saveProfileName(input ? input.value : "");
   } else if (act === "avatar-modal-close") {
     closeAvatarModal();
   } else if (act === "avatar-modal-remove" && id) {

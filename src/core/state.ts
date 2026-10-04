@@ -9,10 +9,11 @@
  * This file is intentionally free of logic; it only declares state.
  */
 import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry } from "../epic";
-import { initialLanguage } from "../i18n";
+import { initialLanguage, t } from "../i18n";
 import {
   APP_AUTO_UPDATE_KEY,
   CUSTOM_AVATARS_KEY,
+  CUSTOM_PROFILE_NAME_KEY,
   CUSTOM_COVERS_KEY,
   CUSTOM_HEROES_KEY,
   DEMO_PLAT_KEY,
@@ -197,6 +198,7 @@ export const S = {
   customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
   customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
   customAvatars: migrateAvatarKeys(loadJsonRecord(CUSTOM_AVATARS_KEY)),
+  customProfileName: (localStorage.getItem(CUSTOM_PROFILE_NAME_KEY) || "") as string,
   steamGridApiKey: (null) as string | null,
   customCoverActiveTab: ("steamgrid") as "steamgrid" | "url" | "file",
   activeCoverTarget: ("cover") as "cover" | "hero",
@@ -516,5 +518,13 @@ export function getCustomAvatar(accountId?: string | null): string | null {
 /** The combined profile's own photo (sidebar chip and Overview header). */
 export function globalAvatar(): string | null {
   return avatarFor(GLOBAL_AVATAR_KEY);
+}
+
+/** The active display name for the launcher user (custom name or localized 'User'). */
+export function currentProfileName(): string {
+  if (S.customProfileName && S.customProfileName.trim()) {
+    return S.customProfileName.trim();
+  }
+  return t("profile.user");
 }
 

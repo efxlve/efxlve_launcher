@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "Osiągnięcia, czas gry i statystyki wczytują się tylko dla aktywnego konta. Przełącz jednym kliknięciem, aby zobaczyć dane tego konta.",
   "profile.storeBreakdown": "Biblioteka wg sklepu",
   "profile.player": "Gracz",
+  "profile.user": "Użytkownik",
+  "profile.changeNameTitle": "Edytuj nazwę",
   "profile.games": "Gry",
   "profile.platLabel": "Platyna",
   "profile.refresh": "Odśwież profil",

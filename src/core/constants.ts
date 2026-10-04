@@ -132,6 +132,8 @@ export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 /** Custom profile avatars keyed by Epic account ID. */
 export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
+/** Custom user profile display name. */
+export const CUSTOM_PROFILE_NAME_KEY = "efxlve-custom-profile-name";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
 /** App names hidden from the library, sidebar and search. */

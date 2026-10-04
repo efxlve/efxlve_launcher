@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "成就、遊玩時間與統計僅載入目前啟用的帳號。按一下切換即可查看此帳號的資料。",
   "profile.storeBreakdown": "依商店劃分的遊戲庫",
   "profile.player": "玩家",
+  "profile.user": "使用者",
+  "profile.changeNameTitle": "編輯名稱",
   "profile.games": "遊戲",
   "profile.platLabel": "白金",
   "profile.refresh": "重新整理個人檔案",

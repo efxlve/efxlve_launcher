@@ -72,12 +72,45 @@
   gap: 5px;
 }
 
+.profile-name-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+  margin: -2px -8px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--ease), border-color var(--ease);
+}
+
+.profile-name-edit-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
 .profile-name {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
+}
+
+.profile-name-edit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  opacity: 0.6;
+  transition: opacity var(--ease), color var(--ease);
+}
+
+.profile-name-edit-btn:hover .profile-name-edit-icon {
+  opacity: 1;
+  color: var(--text);
 }
 
 .profile-hero-stores {
@@ -172,40 +205,6 @@
 .profile-stat-plat-ico {
   display: inline-flex;
   color: var(--accent);
-}
-
-.profile-hero-progress-row {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 100%;
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
-
-.profile-hero-progress-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-3);
-  letter-spacing: 0.03em;
-}
-
-.profile-hero-bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-
-.profile-hero-bar span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
 }
 
 .profile-inactive {
@@ -336,28 +335,29 @@
 .profile-plat-shelf {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
   scrollbar-width: thin;
 }
 
 .profile-plat-card {
   position: relative;
-  width: 94px;
-  height: 126px;
+  width: 140px;
+  height: 188px;
   flex-shrink: 0;
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-1);
   border: 1px solid var(--line);
   cursor: pointer;
-  transition: border-color var(--ease), outline var(--ease);
+  transition: border-color var(--ease), outline var(--ease), transform var(--ease);
 }
 
 .profile-plat-card:hover {
   border-color: var(--line-strong);
   outline: 1px solid var(--line-strong);
+  transform: translateY(-2px);
 }
 
 .profile-plat-img {
@@ -376,12 +376,32 @@
   background: var(--surface-2);
 }
 
+.profile-plat-scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 24px 8px 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.profile-plat-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
 .profile-plat-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.85);
   border: 1px solid var(--line-strong);
@@ -429,7 +449,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .profile-panel {
@@ -441,6 +461,8 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .profile-panel-head {
@@ -642,7 +664,7 @@
 /* 3. Recently Played Section */
 .profile-recent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 14px;
 }
 
@@ -658,18 +680,19 @@
 }
 
 .profile-recent-thumb-wrap {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;
   width: 100%;
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  transition: border-color var(--ease), outline var(--ease);
+  transition: border-color var(--ease), outline var(--ease), transform var(--ease);
 }
 
 .profile-recent-card:hover .profile-recent-thumb-wrap {
   border-color: var(--line-strong);
   outline: 1px solid var(--line-strong);
+  transform: translateY(-2px);
 }
 
 .profile-recent-thumb {

@@ -1103,6 +1103,8 @@
   "profile.inactiveDesc": "Los logros, el tiempo de juego y las estadísticas solo se cargan para la cuenta activa. Cambia con un clic para ver los datos de esta cuenta.",
   "profile.storeBreakdown": "Biblioteca por tienda",
   "profile.player": "Jugador",
+  "profile.user": "Usuario",
+  "profile.changeNameTitle": "Editar nombre",
   "profile.games": "Juegos",
   "profile.platLabel": "Platino",
   "profile.refresh": "Actualizar perfil",
