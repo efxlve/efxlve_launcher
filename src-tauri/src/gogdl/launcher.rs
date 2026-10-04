@@ -133,15 +133,8 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
                 if let Some(pid) = initial_pid {
                     #[cfg(windows)]
                     {
-                        let mut check_cmd = tokio::process::Command::new("tasklist");
-                        check_cmd.args(["/FI", &format!("PID eq {pid}"), "/NH"]);
-                        const CREATE_NO_WINDOW: u32 = 0x08000000;
-                        check_cmd.creation_flags(CREATE_NO_WINDOW);
-                        if let Ok(out) = check_cmd.output().await {
-                            let text = String::from_utf8_lossy(&out.stdout);
-                            if text.contains(&pid.to_string()) {
-                                continue;
-                            }
+                        if is_pid_alive(pid) {
+                            continue;
                         }
                     }
                 }
@@ -196,4 +189,34 @@ pub async fn gog_stop_game(app: AppHandle, game_id: String) -> Result<String, St
     );
 
     Ok("@t:dl.stopped".to_string())
+}
+
+#[cfg(windows)]
+fn is_pid_alive(pid: u32) -> bool {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn OpenProcess(
+            dwDesiredAccess: u32,
+            bInheritHandle: i32,
+            dwProcessId: u32,
+        ) -> *mut std::ffi::c_void;
+        fn GetExitCodeProcess(hProcess: *mut std::ffi::c_void, lpExitCode: *mut u32) -> i32;
+        fn CloseHandle(hObject: *mut std::ffi::c_void) -> i32;
+    }
+    const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+    const STILL_ACTIVE: u32 = 259;
+
+    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if handle.is_null() {
+        return false;
+    }
+    let mut exit_code: u32 = 0;
+    let res = unsafe { GetExitCodeProcess(handle, &mut exit_code) };
+    unsafe { CloseHandle(handle) };
+    res != 0 && exit_code == STILL_ACTIVE
+}
+
+#[cfg(not(windows))]
+fn is_pid_alive(_pid: u32) -> bool {
+    false
 }

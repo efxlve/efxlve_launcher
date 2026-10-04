@@ -1,5 +1,5 @@
-// Prevents an extra console window from opening on Windows in release builds.
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Prevents an extra console window from opening on Windows.
+#![windows_subsystem = "windows"]
 
 mod cloud_backup;
 mod companion;
@@ -587,7 +587,57 @@ fn exit_when_cargo_parent_dies() {
 #[cfg(not(windows))]
 fn exit_when_cargo_parent_dies() {}
 
+/// Ensures only one instance of the launcher runs at a time. If another instance
+/// is already running, it brings that instance's window to foreground and exits.
+#[cfg(windows)]
+fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn CreateMutexW(
+            lpMutexAttributes: *mut core::ffi::c_void,
+            bInitialOwner: i32,
+            lpName: *const u16,
+        ) -> *mut core::ffi::c_void;
+        fn GetLastError() -> u32;
+    }
+    #[link(name = "user32")]
+    extern "system" {
+        fn FindWindowW(lpClassName: *const u16, lpWindowName: *const u16) -> *mut core::ffi::c_void;
+        fn ShowWindow(hWnd: *mut core::ffi::c_void, nCmdShow: i32) -> i32;
+        fn SetForegroundWindow(hWnd: *mut core::ffi::c_void) -> i32;
+    }
+
+    const ERROR_ALREADY_EXISTS: u32 = 183;
+    const SW_RESTORE: i32 = 9;
+
+    let mutex_name: Vec<u16> = "Local\\EfxlveLauncherSingleInstanceMutex\0"
+        .encode_utf16()
+        .collect();
+    let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 1, mutex_name.as_ptr()) };
+    if handle.is_null() {
+        return None;
+    }
+    if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
+        let title: Vec<u16> = "Efxlve Launcher\0".encode_utf16().collect();
+        let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
+        if !hwnd.is_null() {
+            unsafe {
+                ShowWindow(hwnd, SW_RESTORE);
+                SetForegroundWindow(hwnd);
+            }
+        }
+        std::process::exit(0);
+    }
+    Some(handle)
+}
+
+#[cfg(not(windows))]
+fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
+    None
+}
+
 fn main() {
+    let _instance_mutex = acquire_single_instance_mutex();
     exit_when_cargo_parent_dies();
     // Desktop shortcuts start the launcher with `--launch <app>`; the app name is
     // picked up by the UI after boot and routed through the normal play path.
