@@ -450,6 +450,8 @@
   "ach.noSupportTitle": "No Achievement Support",
   "ach.noSupportDesc": "No achievements are defined for this game.",
   "ach.platinumComplete": "Platinum Trophy Complete!",
+  "ach.platinumEarned": "Platinum trophy earned!",
+  "ach.platinumEarnedDesc": "Every achievement in this game is unlocked. Congratulations!",
   "ach.searchPlaceholder": "Search achievements...",
   "ach.clearSearch": "Clear Search",
   "ach.sortTitle": "Sort Order",

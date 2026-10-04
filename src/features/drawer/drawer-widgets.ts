@@ -521,11 +521,25 @@ export function renderNextAchievements(appName: string): string {
   }
   const data = S.loadedAchievements.get(appName);
   if (!data || data.total_achievements === 0) return `<div id="gp-next-ach"></div>`;
+  const complete = Boolean(data.is_platinum) || data.user_unlocked >= data.total_achievements;
   const locked = data.achievements
     .filter((a) => !a.unlocked && !a.hidden)
     .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
     .slice(0, 3);
-  if (locked.length === 0) return `<div id="gp-next-ach"></div>`;
+  if (locked.length === 0) {
+    // Nothing left to chase: celebrate the platinum instead of an empty slot.
+    if (!complete) return `<div id="gp-next-ach"></div>`;
+    return `
+      <section id="gp-next-ach" class="gp-section gp-next">
+        <div class="gp-plat-card">
+          <span class="plat-cup">${epicPlatinumIcon(44)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 13)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 10)}</span></span>
+          <span class="gp-plat-copy">
+            <span class="gp-plat-title">${i18nT("ach.platinumEarned")}</span>
+            <span class="gp-plat-sub">${i18nT("ach.platinumEarnedDesc")}</span>
+          </span>
+        </div>
+      </section>`;
+  }
   const rows = locked.map((a) => {
     const rarity = a.rarity?.percent;
     return `
@@ -588,6 +602,11 @@ export function heroCloudStatus(
   partner: ThirdPartyLauncherInfo | null,
   reqData?: GameRequirementsResponse,
 ): HeroCloudStatus {
+  // Ubisoft titles sync through Ubisoft Connect's own cloud, so the hero chip
+  // names the provider instead of a state the launcher cannot observe.
+  if (partner?.type === "ubisoft") {
+    return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: false, neutral: true };
+  }
   const recorded = lastRecordedCloudSync(s.appName);
   if (recorded) {
     return {

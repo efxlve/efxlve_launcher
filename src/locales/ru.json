@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Достижения не поддерживаются",
   "ach.noSupportDesc": "Для этой игры нет достижений.",
   "ach.platinumComplete": "Платиновый трофей получен!",
+  "ach.platinumEarned": "Платиновый трофей получен!",
+  "ach.platinumEarnedDesc": "Все достижения в этой игре открыты. Поздравляем!",
   "ach.searchPlaceholder": "Поиск достижений...",
   "ach.clearSearch": "Очистить поиск",
   "ach.sortTitle": "Порядок",

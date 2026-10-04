@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Brak obsługi osiągnięć",
   "ach.noSupportDesc": "Nie zdefiniowano osiągnięć dla tej gry.",
   "ach.platinumComplete": "Trofeum platynowe ukończone!",
+  "ach.platinumEarned": "Zdobyto trofeum platynowe!",
+  "ach.platinumEarnedDesc": "Wszystkie osiągnięcia w tej grze są odblokowane. Gratulacje!",
   "ach.searchPlaceholder": "Szukaj osiągnięć...",
   "ach.clearSearch": "Wyczyść wyszukiwanie",
   "ach.sortTitle": "Kolejność",

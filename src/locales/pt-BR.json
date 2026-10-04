@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Sem suporte a conquistas",
   "ach.noSupportDesc": "Não há conquistas definidas para este jogo.",
   "ach.platinumComplete": "Troféu de platina concluído!",
+  "ach.platinumEarned": "Trofeu de platina conquistado!",
+  "ach.platinumEarnedDesc": "Todas as conquistas deste jogo estão desbloqueadas. Parabéns!",
   "ach.searchPlaceholder": "Buscar conquistas...",
   "ach.clearSearch": "Limpar busca",
   "ach.sortTitle": "Ordem",

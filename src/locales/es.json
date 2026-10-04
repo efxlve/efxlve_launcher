@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Sin compatibilidad con logros",
   "ach.noSupportDesc": "No hay logros definidos para este juego.",
   "ach.platinumComplete": "Trofeo de platino completado!",
+  "ach.platinumEarned": "¡Trofeo de platino conseguido!",
+  "ach.platinumEarnedDesc": "Todos los logros de este juego están desbloqueados. ¡Enhorabuena!",
   "ach.searchPlaceholder": "Buscar logros...",
   "ach.clearSearch": "Borrar búsqueda",
   "ach.sortTitle": "Orden",

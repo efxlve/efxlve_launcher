@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "ไม่รองรับความสำเร็จ",
   "ach.noSupportDesc": "ไม่มีความสำเร็จที่กำหนดไว้สำหรับเกมนี้",
   "ach.platinumComplete": "ถ้วยแพลตินัมครบแล้ว!",
+  "ach.platinumEarned": "ได้รับถ้วยแพลตินัม!",
+  "ach.platinumEarnedDesc": "ปลดล็อกความสำเร็จทั้งหมดในเกมนี้แล้ว ยินดีด้วย!",
   "ach.searchPlaceholder": "ค้นหาความสำเร็จ...",
   "ach.clearSearch": "ล้างการค้นหา",
   "ach.sortTitle": "ลำดับการจัดเรียง",

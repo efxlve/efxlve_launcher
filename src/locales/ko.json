@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "업적 지원 없음",
   "ach.noSupportDesc": "이 게임에는 업적이 정의되어 있지 않습니다.",
   "ach.platinumComplete": "플래티넘 트로피 완료.",
+  "ach.platinumEarned": "플래티넘 트로피 획득!",
+  "ach.platinumEarnedDesc": "이 게임의 모든 업적을 달성했습니다. 축하합니다!",
   "ach.searchPlaceholder": "업적 검색...",
   "ach.clearSearch": "검색 지우기",
   "ach.sortTitle": "정렬",

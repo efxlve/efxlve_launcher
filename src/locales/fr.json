@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Aucun succès pris en charge",
   "ach.noSupportDesc": "Aucun succès n'est défini pour ce jeu.",
   "ach.platinumComplete": "Trophée platine terminé !",
+  "ach.platinumEarned": "Trophée platine obtenu !",
+  "ach.platinumEarnedDesc": "Tous les succès de ce jeu sont débloqués. Félicitations !",
   "ach.searchPlaceholder": "Rechercher des succès...",
   "ach.clearSearch": "Effacer la recherche",
   "ach.sortTitle": "Ordre de tri",

@@ -450,6 +450,8 @@
   "ach.noSupportTitle": "Başarım Desteği Bulunmuyor",
   "ach.noSupportDesc": "Bu oyun için tanımlı başarım bulunmuyor.",
   "ach.platinumComplete": "Platin Kupa Tamamlandı!",
+  "ach.platinumEarned": "Platin kupa kazanıldı!",
+  "ach.platinumEarnedDesc": "Bu oyundaki tüm başarımlar açıldı. Tebrikler!",
   "ach.searchPlaceholder": "Başarım ara...",
   "ach.clearSearch": "Aramayı Temizle",
   "ach.sortTitle": "Sıralama Düzeni",

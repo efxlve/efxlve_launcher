@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "実績に対応していません",
   "ach.noSupportDesc": "このゲームには実績が定義されていません。",
   "ach.platinumComplete": "プラチナトロフィー完了！",
+  "ach.platinumEarned": "プラチナトロフィー獲得！",
+  "ach.platinumEarnedDesc": "このゲームの実績はすべて解除済みです。おめでとうございます！",
   "ach.searchPlaceholder": "実績を検索...",
   "ach.clearSearch": "検索をクリア",
   "ach.sortTitle": "並べ替え",

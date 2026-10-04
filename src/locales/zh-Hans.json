@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "不支持成就",
   "ach.noSupportDesc": "没有为此游戏定义成就。",
   "ach.platinumComplete": "白金奖杯完成！",
+  "ach.platinumEarned": "获得白金奖杯！",
+  "ach.platinumEarnedDesc": "此游戏的所有成就均已解锁。恭喜！",
   "ach.searchPlaceholder": "搜索成就...",
   "ach.clearSearch": "清除搜索",
   "ach.sortTitle": "排序",

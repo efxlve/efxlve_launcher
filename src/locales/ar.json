@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "لا دعم للإنجازات",
   "ach.noSupportDesc": "لا توجد إنجازات معرّفة لهذه اللعبة.",
   "ach.platinumComplete": "اكتملت الجائزة البلاتينية!",
+  "ach.platinumEarned": "تم الحصول على كأس البلاتين!",
+  "ach.platinumEarnedDesc": "تم فتح جميع الإنجازات في هذه اللعبة. تهانينا!",
   "ach.searchPlaceholder": "البحث في الإنجازات...",
   "ach.clearSearch": "مسح البحث",
   "ach.sortTitle": "ترتيب الفرز",

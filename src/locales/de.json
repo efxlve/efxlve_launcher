@@ -424,6 +424,8 @@
   "ach.noSupportTitle": "Keine Erfolgsunterstützung",
   "ach.noSupportDesc": "Für dieses Spiel sind keine Erfolge definiert.",
   "ach.platinumComplete": "Platin-Trophäe abgeschlossen!",
+  "ach.platinumEarned": "Platin-Trophäe erhalten!",
+  "ach.platinumEarnedDesc": "Alle Erfolge in diesem Spiel sind freigeschaltet. Glückwunsch!",
   "ach.searchPlaceholder": "Erfolge suchen...",
   "ach.clearSearch": "Suche löschen",
   "ach.sortTitle": "Sortierung",
