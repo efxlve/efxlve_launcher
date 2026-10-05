@@ -95,8 +95,16 @@ pub async fn nile_auth_status(app: AppHandle) -> NileAuthStatus {
 
 /// Starts sign-in: downloads Nile when needed and returns the PKCE material
 /// plus the Amazon URL the user has to open.
+///
+/// Nile keeps exactly one session, so an already signed-in account is archived
+/// first and the live session is cleared to make room for the new one.
 #[tauri::command]
 pub async fn nile_login_begin(app: AppHandle) -> Result<NileLoginData, String> {
+    let root = cli::config_root(&app);
+    if super::accounts::read_current_user(&root).is_some() {
+        super::accounts::ensure_current_saved(&root);
+        super::accounts::clear_live_session(&cli::config_dir(&app));
+    }
     let out = cli::run(&app, &["auth", "--login", "--non-interactive"], 180).await?;
     let text = cli::stdout_text(&out);
     let value: Value =

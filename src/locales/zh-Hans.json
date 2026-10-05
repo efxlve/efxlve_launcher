@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "退出 Amazon",
   "lib.filterResults": "{n} 个结果",
   "lib.filterMetaHint": "只会匹配有元数据的游戏。",
   "lib.filterClear": "清除筛选",

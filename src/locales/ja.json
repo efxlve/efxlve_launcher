@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "Amazon からサインアウト",
   "lib.filterResults": "{n} 件",
   "lib.filterMetaHint": "情報があるゲームだけが一致します。",
   "lib.filterClear": "フィルターをクリア",

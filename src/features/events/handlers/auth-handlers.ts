@@ -35,12 +35,16 @@ import {
 import {
   amazonLogoutAction,
   beginAmazonLogin,
+  cancelAddAmazonAccount,
   finishAmazonLogin,
   importAmazonGame,
   installAmazonGame,
   playAmazonGame,
+  promptAddAmazonAccount,
+  removeSavedAmazonAccount,
   reopenAmazonLogin,
   stopAmazonGame,
+  switchAmazonAccount,
   syncAmazonLibrary,
   uninstallAmazonGame,
 } from "../../auth/amazon-auth-actions";
@@ -192,6 +196,22 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
           await importAmazonGame(id, chosen);
         })();
       }
+      return true;
+
+    case "amazon-account-add":
+      promptAddAmazonAccount();
+      return true;
+
+    case "amazon-cancel-add":
+      cancelAddAmazonAccount();
+      return true;
+
+    case "amazon-account-switch":
+      if (id) void switchAmazonAccount(id);
+      return true;
+
+    case "amazon-account-remove":
+      if (id) void removeSavedAmazonAccount(id);
       return true;
 
     case "amazon-play":

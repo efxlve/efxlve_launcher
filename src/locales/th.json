@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "ออกจากระบบ Amazon",
   "lib.filterResults": "{n} รายการ",
   "lib.filterMetaHint": "จับคู่เฉพาะเกมที่มีข้อมูลเมตาดาต้า",
   "lib.filterClear": "ล้างตัวกรอง",

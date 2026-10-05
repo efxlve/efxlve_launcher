@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "تسجيل الخروج من Amazon",
   "lib.filterResults": "{n} نتيجة",
   "lib.filterMetaHint": "تُطابَق فقط الألعاب التي تتوفر لها بيانات وصفية.",
   "lib.filterClear": "مسح عوامل التصفية",

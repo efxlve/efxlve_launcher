@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "Amazon'dan çıkış yap",
   "lib.filterResults": "{n} sonuç",
   "lib.filterMetaHint": "Bu filtre yalnızca bilgisi olan oyunlarla eşleşir.",
   "lib.filterClear": "Filtreleri temizle",

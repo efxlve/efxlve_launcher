@@ -131,7 +131,21 @@ export async function finishAmazonLogin(raw: string): Promise<void> {
 export async function loadAmazonSession(sync = false): Promise<void> {
   if (!isTauri) return;
   try {
-    const status = await nileAuthStatus();
+    let status = await nileAuthStatus();
+    if (!status.logged_in) {
+      const saved = await amazonSavedAccounts().catch(() => []);
+      S.amazonSavedAccounts = saved;
+      // An interrupted add/switch leaves archives but no live session; the
+      // newest saved session takes over again.
+      if (saved.length > 0 && !S.amazonAccountsAddMode) {
+        try {
+          await amazonSwitchAccount(saved[0].user_id);
+          status = await nileAuthStatus();
+        } catch {
+          // Stay signed out.
+        }
+      }
+    }
     S.amazonStatus = status;
     S.amazonAccountId = status.logged_in ? status.user_id : null;
     if (status.logged_in) {
@@ -172,7 +186,8 @@ export function promptAddAmazonAccount(): void {
 
 export function cancelAddAmazonAccount(): void {
   S.amazonAccountsAddMode = false;
-  scheduleRender();
+  // An interrupted add flow left the previous session archived; restore it.
+  void loadAmazonSession(false);
 }
 
 let amazonSwitching = false;

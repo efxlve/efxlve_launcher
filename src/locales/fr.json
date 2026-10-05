@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "Se déconnecter d'Amazon",
   "lib.filterResults": "{n} résultats",
   "lib.filterMetaHint": "Seuls les jeux dont les métadonnées sont connues correspondent.",
   "lib.filterClear": "Effacer les filtres",

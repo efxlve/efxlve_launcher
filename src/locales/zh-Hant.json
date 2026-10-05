@@ -1,4 +1,5 @@
 {
+  "settings.amazonLogout": "登出 Amazon",
   "lib.filterResults": "{n} 個結果",
   "lib.filterMetaHint": "只會比對有中繼資料的遊戲。",
   "lib.filterClear": "清除篩選",

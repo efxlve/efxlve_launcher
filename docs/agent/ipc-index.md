@@ -7,7 +7,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 |---|---|---|
 | `amazon_default_install_dir` | `amazonDefaultInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
 | `amazon_get_install_dir` | `amazonGetInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
+| `amazon_remove_saved_account` | `amazonRemoveSavedAccount({ ... })` | `src-tauri/src/nile/accounts.rs` |
+| `amazon_saved_accounts` | `amazonSavedAccounts({ ... })` | `src-tauri/src/nile/accounts.rs` |
 | `amazon_set_install_dir` | `amazonSetInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
+| `amazon_switch_account` | `amazonSwitchAccount({ ... })` | `src-tauri/src/nile/accounts.rs` |
 | `app_close` | `appClose({ ... })` | `src-tauri/src/main.rs` |
 | `app_get_autostart` | `appGetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_is_maximized` | `appIsMaximized({ ... })` | `src-tauri/src/main.rs` |
