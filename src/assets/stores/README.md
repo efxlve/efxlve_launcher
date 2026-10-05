@@ -13,7 +13,7 @@ The files are the same official shapes, redrawn as pure white (`#ffffff`) on a
 transparent ground so they match the console: one accent, no brand colors. Epic
 is the official Epic Games mark, GOG the G of the official wordmark, Steam the
 crank, Xbox the sphere, EA the disc, Ubisoft the spiral, Battle.net the knot,
-Riot the fist, Luna the tri-lobe, Discord the mascot and Spotify the circle. Simple Icons
+Riot the fist, Amazon the tri-lobe, Discord the mascot and Spotify the circle. Simple Icons
 (simpleicons.org) publishes the same monochrome shapes for Epic, Steam, Discord
 and Spotify; the GOG G is cropped from the official wordmark; Xbox's sphere is
 the mark already in this folder, filled white. The colored favicons are not
@@ -29,12 +29,14 @@ used.
 | Ubisoft | `store.ubisoft.com/.../images/favicon-96x96.png` (whitened, see below) | `ubisoft.png` |
 | EA | Wikimedia Commons, `File:Electronic-Arts-Logo.svg` (official mark) | `ea.png` |
 | Riot Games | `www.riotgames.com/assets/img/meta/.../apple-touch-icon-precomposed-180x180.png` (whitened, see below) | `riot.png` |
-| Amazon Luna | `luna.amazon.com` apple-touch-icon (official app icon, whitened, see below) | `luna.png` |
+| Amazon Games | `luna.amazon.com` apple-touch-icon (official app icon, whitened, see below) | `luna.png` |
 | Discord | Simple Icons `discord` (mascot) | `discord.png` |
 | Spotify | Simple Icons `spotify` (circle) | `spotify.png` |
 
-The Amazon mark is shared: Amazon uses the same gaming icon for Luna and for
-Amazon Games, so `luna.png` identifies both rows in the launcher.
+The Amazon mark is shared: Amazon uses the same gaming icon for Amazon Games
+(Prime Gaming) and for Luna, so `luna.png` identifies both rows in the
+launcher. The integration is named **Amazon Games**; the file keeps its `luna`
+name because that is the page the icon was taken from.
 
 The shapes come from those official files. Each glyph is now pure white on
 transparency; brand colors are not drawn. Trademark owners are named in

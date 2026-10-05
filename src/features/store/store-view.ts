@@ -205,7 +205,7 @@ export const STORE_LABELS: Record<StoreId, string> = {
   ubisoft: "Ubisoft Connect",
   ea: "EA App",
   xbox: "Xbox",
-  luna: "Amazon Luna",
+  luna: "Amazon Games",
 };
 
 /** Storefronts shown in the Stores header. */
@@ -227,8 +227,8 @@ export const BATTLENET_ACCOUNT_URL = "https://account.battle.net/";
 export const BATTLENET_STORE_URL = "https://shop.battle.net/";
 export const EA_STORE_URL = "https://www.ea.com/games";
 /**
- * Amazon Luna monthly games claim page. Luna is a cloud service: the page is
- * read-only in the store webview, nothing installs from here.
+ * Amazon Games (Luna) monthly games claim page. It is a cloud-service claims
+ * page: read-only in the store webview, nothing installs from here.
  */
 export const LUNA_STORE_URL = "https://luna.amazon.com/claims/home";
 /**
