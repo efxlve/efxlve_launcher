@@ -100,6 +100,9 @@ function render(): void {
     presenceSync();
     return;
   }
+  // A full rebuild replaces the tab strip; keep its horizontal position.
+  const libStripScroll =
+    S.view === "library" ? document.querySelector<HTMLElement>(".lib-filters")?.scrollLeft ?? 0 : 0;
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()
     : S.view === "downloads" ? renderDownloads()
@@ -110,6 +113,10 @@ function render(): void {
   if (S.view === "library") {
     setupLibScrollObserver();
     if (S.isColDropdownOpen) positionColDropdownMenu();
+    if (libStripScroll > 0) {
+      const strip = document.querySelector<HTMLElement>(".lib-filters");
+      if (strip) strip.scrollLeft = libStripScroll;
+    }
   }
   if (S.view === "tv") {
     hydrateTvMode();

@@ -93,6 +93,20 @@ document.addEventListener("wheel", (e) => {
   }
 }, { passive: false });
 
+/** The collections menu is pinned to the viewport while the strip can scroll;
+ *  any scroll or resize would detach it from its button, so close it instead. */
+function closeCollectionsMenu(): void {
+  if (!S.isColDropdownOpen) return;
+  S.isColDropdownOpen = false;
+  document.getElementById("col-dropdown-menu")?.classList.remove("show");
+}
+document.addEventListener("scroll", (e) => {
+  const target = e.target;
+  if (target instanceof Element && target.closest(".col-dropdown-menu")) return;
+  closeCollectionsMenu();
+}, { capture: true, passive: true });
+window.addEventListener("resize", closeCollectionsMenu, { passive: true });
+
 document.addEventListener("keydown", (e) => {
   if (S.isRecordingScreenshotHotkey) {
     e.preventDefault();
