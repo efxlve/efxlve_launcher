@@ -1,8 +1,10 @@
 /**
  * Hide one or more achievement rows from the profile list.
  *
- * The stored ids are Epic sandbox ids, not library app names. Hiding a game
- * still drops that game's rows, but restoring a row does not unhide the game.
+ * The rows come from the current profile page (`profileListGames`), so the
+ * account tab in front decides what is listed: Epic rows carry their sandbox
+ * id, every other store carries its library key. Hiding a game still drops that
+ * game's rows, but restoring a row does not unhide the game.
  */
 
 import { HIDDEN_ACH_KEY, PROFILE_CARD_CHUNK } from "../../core/constants";
@@ -14,6 +16,7 @@ import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { t } from "../../i18n";
+import { profileListGames, trackedGame } from "./profile-view";
 
 const selected = new Set<string>();
 let filterTimer = 0;
@@ -33,11 +36,11 @@ function coverUrl(g: ProfileGameRecord): string {
 
 /** Achievement rows that are still on the profile list. */
 function listable(): ProfileGameRecord[] {
-  const games = S.playerProfileData?.games ?? [];
+  const games = profileListGames();
   const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
   const list: ProfileGameRecord[] = [];
   for (const g of games) {
-    if (!g.sandbox_id || isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name) || S.hiddenAchievements.has(g.sandbox_id)) continue;
+    if (!g.sandbox_id || !trackedGame(g) || isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name) || S.hiddenAchievements.has(g.sandbox_id)) continue;
     list.push(g);
   }
   list.sort((a, b) => collator.compare(a.app_title, b.app_title));

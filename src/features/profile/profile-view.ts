@@ -316,7 +316,7 @@ function userHidAchievement(g: ProfileGameRecord): boolean {
 }
 
 /** A row the launcher can report achievement progress for. */
-function trackedGame(g: ProfileGameRecord): boolean {
+export function trackedGame(g: ProfileGameRecord): boolean {
   return g.total_achievements > 0 || g.total_unlocked > 0;
 }
 
@@ -370,7 +370,7 @@ function buildGogProfileGames(): ProfileGameRecord[] {
     const userUnlocked = ach?.user_unlocked || 0;
     const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
     games.push({
-      sandbox_id: "",
+      sandbox_id: item.key,
       app_name: item.key,
       app_title: item.title,
       cover: item.coverUrl,
@@ -395,7 +395,7 @@ function buildSteamProfileGames(): ProfileGameRecord[] {
     const userUnlocked = ach && ach.supported ? (ach.user_unlocked || 0) : 0;
     const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
     games.push({
-      sandbox_id: "",
+      sandbox_id: item.key,
       app_name: item.key,
       app_title: item.title,
       cover: item.coverUrl,
@@ -464,7 +464,7 @@ function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[
     const userUnlocked = ach?.user_unlocked || 0;
     const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
     games.push({
-      sandbox_id: "",
+      sandbox_id: item.key,
       app_name: item.key,
       app_title: item.title,
       cover: item.coverUrl,
