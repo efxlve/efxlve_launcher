@@ -31,6 +31,23 @@ pub fn query(key: &str, value: Option<&str>) -> Option<String> {
     Some(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+/// Runs `reg query <key> /s /v <value>`: every subkey that carries the value
+/// (and the key's own value) ends up in the output.
+pub fn query_all(key: &str, value: &str) -> Option<String> {
+    let mut command = Command::new("reg");
+    command.args(["query", key, "/s", "/v", value]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let output = command.output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
 /// Extracts the `REG_SZ` data column from `reg query` output.
 ///
 /// The value name differs between registry views (for example `SteamPath`

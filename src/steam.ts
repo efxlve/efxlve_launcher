@@ -105,6 +105,9 @@ export const steamGameAction = (appId: string, action: "launch" | "install" | "u
 /** After a launch: hide Steam's window, then quit Steam when the game closes. */
 export const steamWatchSession = (appId: string) =>
   invoke<void>("steam_watch_session", { appId });
+/** Steam's own Running flag, so games started outside the launcher show up. */
+export const steamWatchRunning = () =>
+  invoke<string[]>("steam_watch_running");
 export const steamSyncPlaytime = () =>
   invoke<Record<string, SteamPlaytime>>("steam_sync_playtime");
 export const steamGetGameDetails = (appId: string, language?: string, force = false) =>

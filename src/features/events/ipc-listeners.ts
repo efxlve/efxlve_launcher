@@ -55,7 +55,7 @@ import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
-import { pushRecentInstall } from "../../core/recent";
+import { pushRecentInstall, pushRecent } from "../../core/recent";
 import {
   registerCloseAllModals,
   registerGamepadHud,
@@ -542,6 +542,9 @@ export async function initApp(hooks: {
       const title = sum?.title || id;
 
       if (running) {
+        // Two watchers can see the same game (Steam's flag and the process
+        // watch); only the first report announces and acts.
+        if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
@@ -568,8 +571,12 @@ export async function initApp(hooks: {
               .catch(() => {});
           }
         }
+        // Recently played covers games started outside the launcher too.
+        pushRecent(id);
+        hooks.scheduleRender();
       } else {
-        S.runningGames.delete(id);
+        // A duplicate stop event must not toast or resume downloads twice.
+        if (!S.runningGames.delete(id)) return;
         if (totalSeconds !== undefined) {
           // The local counter only knows the sessions this launcher started.
           // Replacing the map with it would drop a 300h game to 1h, so the

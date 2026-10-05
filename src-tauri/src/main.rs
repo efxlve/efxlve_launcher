@@ -16,6 +16,7 @@ mod shared_library;
 mod steam;
 mod steam_art;
 mod steam_auth;
+mod steam_running;
 mod steam_session;
 mod steam_watch;
 mod notif_overlay;
@@ -824,6 +825,7 @@ fn main() {
             companion::companion_achievements_summary,
             steam::steam_download_live,
             steam_watch::steam_watch_library,
+            steam_running::steam_watch_running,
             steam::steam_game_action,
             steam_session::steam_watch_session,
             steam::steam_sync_playtime,

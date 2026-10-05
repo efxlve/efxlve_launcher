@@ -12,6 +12,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../../core/constants";
+import { pushRecent } from "../../core/recent";
 import { setSteamSummaries } from "../../core/selectors";
 import { notify, openEpicModal, scheduleRender } from "../../core/render";
 import { updateBadge } from "../../core/nav";
@@ -28,6 +29,7 @@ import {
   steamOwnedGames,
   steamStatus,
   steamSyncPlaytime,
+  steamWatchRunning,
   type SteamAppMetadata,
   type SteamGame,
   type SteamOwnedGame,
@@ -580,4 +582,19 @@ export function refreshSteamInstalled(): Promise<void> {
 export function startSteamLibraryWatch(): void {
   if (!isTauri) return;
   void invoke("steam_watch_library").catch(() => {});
+  // Steam's own Running flag also covers games the launcher did not start:
+  // a game already open at boot lands in the running and recent lists.
+  void steamWatchRunning()
+    .then((ids) => {
+      let changed = false;
+      for (const id of ids) {
+        const key = `steam::${id}`;
+        if (S.runningGames.has(key)) continue;
+        S.runningGames.add(key);
+        pushRecent(key);
+        changed = true;
+      }
+      if (changed) scheduleRender();
+    })
+    .catch(() => {});
 }
