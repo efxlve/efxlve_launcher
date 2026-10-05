@@ -36,6 +36,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Amazon Games (Prime Gaming) launcher'a katıldı: Nile ile oturum açın; kütüphanenizi gezin, oyunlarınızı kurun, güncelleyin, başlatın veya kaldırın.",
       },
       {
+        en: "One Amazon card manages multiple accounts: connect several Amazon accounts and easily switch between them directly in Settings > Accounts.",
+        tr: "Tek Amazon kartında çoklu hesap yönetimi: birden fazla Amazon hesabını bağlayın ve Ayarlar > Hesaplar üzerinden hesaplar arasında kolayca geçiş yapın.",
+      },
+      {
         en: "Amazon downloads stream speed, disk write, peak, ETA and the speed chart into the same card as Epic and GOG.",
         tr: "Amazon indirmeleri hızı, disk yazımını, zirve hızını, kalan süreyi ve hız grafiğini Epic ve GOG ile aynı kartta gösterir.",
       },
@@ -52,6 +56,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Amazon Games profil merkezine, zamanlanmış otomatik güncellemelere ve mağaza sekmesine katıldı; artık Amazon Games adıyla listelenir.",
       },
       {
+        en: "Settings > Launchers cleanly splits managed stores (Epic, GOG, Amazon Games) and delegated client stores (Steam, Xbox, EA, Ubisoft, Battle.net, Riot) with contextual guidance under each header.",
+        tr: "Ayarlar > Başlatıcılar sayfası doğrudan yönetilen mağazaları (Epic, GOG, Amazon Games) ve istemcilerine devredilenleri (Steam, Xbox, EA, Ubisoft, Battle.net, Riot) net biçimde ayırır ve açıklamalarını başlıkların altına yerleştirir.",
+      },
+      {
         en: "The library store filter only lists stores that are connected or detected on this PC.",
         tr: "Kütüphane mağaza filtresi yalnızca bağlı veya bu bilgisayarda algılanan mağazaları listeler.",
       },
@@ -66,16 +74,28 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
     fixed: [
       {
+        en: "The library filter bar keeps all tabs in a single row with mouse-wheel horizontal scrolling, and the collections menu stays pinned to the viewport without clipping.",
+        tr: "Kütüphane filtre çubuğu yatay fare tekerleği kaydırmasıyla sekmeleri tek satırda tutar; koleksiyonlar menüsü taşma yapmadan ekrana sabitlenir.",
+      },
+      {
+        en: "Spacing in Settings: info callouts and section headers (such as New Collection) now have clean breathing room and no longer touch list borders.",
+        tr: "Ayarlar arayüz boşlukları: bilgi kutuları ve başlık butonları (Yeni Koleksiyon vb.) artık altlarındaki liste sınırlarına yapışmaz.",
+      },
+      {
+        en: "TV Mode downloads stay inside the shell and allow installing companion-store games directly.",
+        tr: "TV Modu indirmeleri arayüz içinde tutar ve yerleşik mağaza oyunlarının doğrudan kurulmasını sağlar.",
+      },
+      {
+        en: "Settings > About features a clean, store-agnostic description, and translations across all 15 supported languages are fully synchronized and completed.",
+        tr: "Ayarlar > Hakkında bölümü mağaza adlarından arındırılmış genel bir açıklamayla güncellendi; 15 dilin tamamındaki eksik çeviriler ve yer tutucular eşitlendi.",
+      },
+      {
         en: "The GOG account note no longer claims GOG Galaxy handles installing and removing games.",
         tr: "GOG hesap notu artık kurulum ve kaldırma işlerini GOG Galaxy'nin yaptığını söylemiyor.",
       },
       {
         en: "Amazon games no longer show Epic wording in the playtime editor, source notes or feature rows, and their save row says local instead of Epic cloud.",
         tr: "Amazon oyunları artık oynanış düzenleyicide, kaynak notlarında veya özellik satırlarında Epic ifadesi göstermez; kayıt satırı Epic bulutu yerine yerel kaydı söyler.",
-      },
-      {
-        en: "The library header wraps its tools instead of letting the filter tabs overlap them on narrow windows.",
-        tr: "Kütüphane başlığı dar pencerede araçlarını alt satıra indirir; sekmeler artık araçların üstüne binmez.",
       },
       {
         en: "The empty Favorites tab points back to the library instead of the store.",
