@@ -1246,6 +1246,8 @@
   "settings.eglDesc": "Resmi Epic Games Launcher tarafından yüklenmiş oyunları algılar ve kütüphanenize eşitler.",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "Resmî GOG Galaxy istemcisiyle kurulan oyunlar, tam başlatıcı desteğiyle içe aktarılabilir.",
+  "settings.cometTitle": "Oyun içi başarımlar (Comet)",
+  "settings.cometDesc": "Bir GOG oyunu oynarken açık kaynak Comet iletişim servisini çalıştırır; böylece Galaxy istemcisi kapalıyken de başarımlar açılır.",
   "settings.gogGalaxyFound": "GOG Galaxy'de {count} oyun bulundu",
   "settings.gogGalaxyNone": "GOG Galaxy'de oyun bulunamadı",
   "settings.gogGalaxyImport": "Kütüphaneye Aktar",

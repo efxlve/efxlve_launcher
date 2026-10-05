@@ -1158,6 +1158,8 @@
   "settings.eglDesc": "偵測由官方 Epic Games Launcher 安裝的遊戲，並同步到遊戲庫。",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "可匯入由官方 GOG Galaxy 用戶端安裝的遊戲，並享有完整啟動器支援。",
+  "settings.cometTitle": "In-game achievements (Comet)",
+  "settings.cometDesc": "Runs Comet, the open-source GOG Communication Service, while a GOG game plays so achievements unlock without the Galaxy client.",
   "settings.gogGalaxyFound": "在 GOG Galaxy 中發現 {count} 個遊戲",
   "settings.gogGalaxyNone": "未在 GOG Galaxy 中發現遊戲",
   "settings.gogGalaxyImport": "匯入至遊戲庫",

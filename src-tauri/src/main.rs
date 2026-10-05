@@ -2,6 +2,7 @@
 #![windows_subsystem = "windows"]
 
 mod cloud_backup;
+mod comet;
 mod companion;
 mod controller;
 mod controller_bridge;
@@ -126,6 +127,10 @@ pub struct EpicSettings {
     /// Root folder for in-game screenshots (`None` = Pictures\Efxlve Screenshots).
     #[serde(default)]
     pub screenshot_dir: Option<String>,
+    /// Run Comet (the GOG Communication Service) while a GOG game plays so
+    /// in-game achievements unlock without the Galaxy client. On by default.
+    #[serde(default)]
+    pub gog_comet_enabled: Option<bool>,
     #[serde(default = "default_true")]
     pub auto_desktop_shortcut: bool,
 }
@@ -890,6 +895,8 @@ fn main() {
             gogdl::commands::gog_set_install_dir,
             gogdl::commands::gog_default_install_dir,
             gogdl::commands::gog_import_galaxy_tags,
+            comet::epic_set_gog_comet,
+            comet::comet_prepare,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

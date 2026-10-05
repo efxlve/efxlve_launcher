@@ -70,6 +70,10 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
         entry.title.clone()
     };
 
+    // GOG achievements unlock through Galaxy's Communication Service; Comet
+    // stands in for it while the official client is closed.
+    crate::comet::start_for_session(&app).await;
+
     // Spawn the game detached from launcher window
     let mut cmd = tokio::process::Command::new(&target_exe);
     cmd.current_dir(&install_dir);
@@ -146,6 +150,7 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
         crate::legendary::screenshots::clear_active_running_game(&comp_id_clone);
         let _ = crate::legendary::playtime::record_session(&comp_id_clone, elapsed);
         crate::legendary::playtime_session::finish();
+        crate::comet::stop();
 
         let _ = app_clone.emit(
             "game-status",
@@ -181,6 +186,7 @@ pub async fn gog_stop_game(app: AppHandle, game_id: String) -> Result<String, St
 
     crate::legendary::playtime_session::finish();
     crate::legendary::screenshots::clear_active_running_game(&composite_id);
+    crate::comet::stop();
     crate::legendary::transfers::wake_main_window(&app);
 
     let _ = app.emit(

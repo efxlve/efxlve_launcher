@@ -1158,6 +1158,8 @@
   "settings.eglDesc": "Détecte les jeux installés par l'Epic Games Launcher officiel et les synchronise dans ta bibliothèque.",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "Les jeux installés avec le client officiel GOG Galaxy peuvent être importés avec la prise en charge complète du launcher.",
+  "settings.cometTitle": "In-game achievements (Comet)",
+  "settings.cometDesc": "Runs Comet, the open-source GOG Communication Service, while a GOG game plays so achievements unlock without the Galaxy client.",
   "settings.gogGalaxyFound": "{count} jeux trouvés dans GOG Galaxy",
   "settings.gogGalaxyNone": "Aucun jeu trouvé dans GOG Galaxy",
   "settings.gogGalaxyImport": "Importer dans la bibliothèque",

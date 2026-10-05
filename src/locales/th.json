@@ -1158,6 +1158,8 @@
   "settings.eglDesc": "ตรวจหาเกมที่ติดตั้งโดย Epic Games Launcher อย่างเป็นทางการแล้วซิงค์เข้าคลัง",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "เกมที่ติดตั้งด้วยไคลเอนต์ GOG Galaxy อย่างเป็นทางการสามารถนำเข้าได้พร้อมการสนับสนุนเต็มรูปแบบ",
+  "settings.cometTitle": "In-game achievements (Comet)",
+  "settings.cometDesc": "Runs Comet, the open-source GOG Communication Service, while a GOG game plays so achievements unlock without the Galaxy client.",
   "settings.gogGalaxyFound": "พบ {count} เกมใน GOG Galaxy",
   "settings.gogGalaxyNone": "ไม่พบเกมใน GOG Galaxy",
   "settings.gogGalaxyImport": "นำเข้าสู่คลังเกม",

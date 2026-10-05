@@ -327,7 +327,10 @@ function renderIntegrations(): string {
       galaxy.length > 0 ? t("settings.gogGalaxyFound", { count: galaxy.length }) : t("settings.gogGalaxyNone"),
       t("settings.gogGalaxyDesc"),
       galaxyAction,
-    ) + galaxyRows;
+    ) + galaxyRows +
+    // Comet stands in for Galaxy's Communication Service while a GOG game
+    // plays, so in-game achievements unlock without the official client.
+    row(t("settings.cometTitle"), t("settings.cometDesc"), toggle("toggle-gog-comet", S.gogCometEnabled));
 
   const sgdb = detailsRow(
     t("settings.sgdbTitle"),
@@ -762,6 +765,7 @@ export async function loadSettingsView(): Promise<void> {
       S.gogInstallDir = gogDir || "";
       S.gogDefaultDir = gogDefault || "";
       S.startWithWindows = autostart;
+      S.gogCometEnabled = st.gog_comet_enabled ?? true;
     } catch {
       // Silent: keep the last cached values.
     }

@@ -1158,6 +1158,8 @@
   "settings.eglDesc": "公式 Epic Games Launcher でインストールされたゲームを検出し、ライブラリに同期します。",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "公式 GOG Galaxy クライアントでインストールしたゲームを、ランチャーの全機能付きでインポートできます。",
+  "settings.cometTitle": "In-game achievements (Comet)",
+  "settings.cometDesc": "Runs Comet, the open-source GOG Communication Service, while a GOG game plays so achievements unlock without the Galaxy client.",
   "settings.gogGalaxyFound": "GOG Galaxy で {count} 件のゲームを検出",
   "settings.gogGalaxyNone": "GOG Galaxy にゲームが見つかりません",
   "settings.gogGalaxyImport": "ライブラリにインポート",

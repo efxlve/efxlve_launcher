@@ -1158,6 +1158,8 @@
   "settings.eglDesc": "يكتشف الألعاب التي ثبّتها Epic Games Launcher الرسمي ويزامنها إلى مكتبتك.",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "يمكن استيراد الألعاب المثبتة عبر عميل GOG Galaxy الرسمي مع دعم كامل من المشغّل.",
+  "settings.cometTitle": "In-game achievements (Comet)",
+  "settings.cometDesc": "Runs Comet, the open-source GOG Communication Service, while a GOG game plays so achievements unlock without the Galaxy client.",
   "settings.gogGalaxyFound": "تم العثور على {count} لعبة في GOG Galaxy",
   "settings.gogGalaxyNone": "لم يتم العثور على ألعاب في GOG Galaxy",
   "settings.gogGalaxyImport": "استيراد إلى المكتبة",

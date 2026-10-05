@@ -20,6 +20,7 @@ import {
   epicGetQueue,
   epicListSkipped,
   epicPauseDownload,
+  epicPrepareComet,
   epicResumeDownload,
   epicTakePendingLaunch,
   controllerBridgeStart,
@@ -212,6 +213,9 @@ export async function initApp(hooks: {
     void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
     void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
     void initPresence();
+    // Warm the Comet binary in the background so a GOG launch never waits for
+    // the first download; the call is a no-op when the toggle is off.
+    void epicPrepareComet().catch(() => {});
     void invoke<string>("library_dir")
       .then((p) => { S.libraryPath = p; })
       .catch(() => { S.libraryPath = t("common.unavailable"); });

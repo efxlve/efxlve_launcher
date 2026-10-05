@@ -358,6 +358,8 @@ export const S = {
   libScrollObserver: (null) as IntersectionObserver | null,
   epicSettingsCache: (null) as EpicSettings | null,
   presenceEnabled: false,
+  /** Run Comet during GOG sessions so achievements unlock without Galaxy. */
+  gogCometEnabled: true,
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

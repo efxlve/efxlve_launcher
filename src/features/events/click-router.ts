@@ -62,6 +62,7 @@ import {
   epicGetQueue,
   epicOpenFolderPath,
   epicSetAutoDesktopShortcut,
+  epicSetGogComet,
   epicSetNetworkProfile,
   epicSetOfflineMode,
   epicSyncEglInstalled,
@@ -629,6 +630,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-presence") {
     S.presenceEnabled = !S.presenceEnabled;
     applyPresenceSettings();
+    render();
+  } else if (act === "toggle-gog-comet") {
+    S.gogCometEnabled = !S.gogCometEnabled;
+    void epicSetGogComet(S.gogCometEnabled).catch(() => {});
     render();
   } else if (act === "refresh-eos") {
     void refreshEosStatus();

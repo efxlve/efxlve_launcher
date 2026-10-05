@@ -52,6 +52,8 @@ export interface EpicSettings {
   presence_client_id?: string | null;
   preferred_cdn?: string | null;
   screenshot_dir?: string | null;
+  /** Run Comet (GOG Communication Service) during GOG sessions. */
+  gog_comet_enabled?: boolean | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>
@@ -121,6 +123,13 @@ export const epicGetSettings = () => invoke<EpicSettings>("epic_get_settings");
 /** Discord Rich Presence: enable/disable and set the Discord application id. */
 export const epicPresenceConfigure = (enabled: boolean, clientId: string) =>
   invoke<void>("epic_presence_configure", { enabled, clientId });
+
+/** GOG in-game achievements via Comet: enable/disable the session service. */
+export const epicSetGogComet = (enabled: boolean) =>
+  invoke<void>("epic_set_gog_comet", { enabled });
+
+/** Pre-downloads the Comet binary so the first GOG launch is instant. */
+export const epicPrepareComet = () => invoke<boolean>("comet_prepare");
 /** Discord Rich Presence: push a localized activity (details + state). */
 export const epicPresenceUpdate = (
   details: string,
