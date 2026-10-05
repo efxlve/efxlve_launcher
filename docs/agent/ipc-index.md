@@ -5,6 +5,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 
 | Rust command | JS wrapper shape | File |
 |---|---|---|
+| `amazon_default_install_dir` | `amazonDefaultInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
+| `amazon_get_install_dir` | `amazonGetInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
+| `amazon_set_install_dir` | `amazonSetInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |
 | `app_close` | `appClose({ ... })` | `src-tauri/src/main.rs` |
 | `app_get_autostart` | `appGetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_is_maximized` | `appIsMaximized({ ... })` | `src-tauri/src/main.rs` |
@@ -24,6 +27,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `cloud_backup_start_gdrive_auth` | `cloudBackupStartGdriveAuth({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_test_connection` | `cloudBackupTestConnection({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_upload_game` | `cloudBackupUploadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `comet_prepare` | `cometPrepare({ ... })` | `src-tauri/src/comet/mod.rs` |
 | `companion_achievements` | `companionAchievements({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_achievements_summary` | `companionAchievementsSummary({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `companion_game_action` | `companionGameAction({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -124,6 +128,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_set_auto_desktop_shortcut` | `epicSetAutoDesktopShortcut({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_custom_save_path` | `epicSetCustomSavePath({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_set_game_collections` | `epicSetGameCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
+| `epic_set_gog_comet` | `epicSetGogComet({ ... })` | `src-tauri/src/comet/mod.rs` |
 | `epic_set_install_dir` | `epicSetInstallDir({ ... })` | `src-tauri/src/legendary/transfers/paths.rs` |
 | `epic_set_network_profile` | `epicSetNetworkProfile({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_offline_mode` | `epicSetOfflineMode({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -177,6 +182,21 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `launchers_status` | `launchersStatus({ ... })` | `src-tauri/src/launchers.rs` |
 | `library_dir` | `libraryDir({ ... })` | `src-tauri/src/main.rs` |
 | `move_notif_overlay` | `moveNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
+| `nile_auth_status` | `nileAuthStatus({ ... })` | `src-tauri/src/nile/auth.rs` |
+| `nile_check_updates` | `nileCheckUpdates({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_create_desktop_shortcut` | `nileCreateDesktopShortcut({ ... })` | `src-tauri/src/nile/manage.rs` |
+| `nile_game_settings` | `nileGameSettings({ ... })` | `src-tauri/src/nile/manage.rs` |
+| `nile_install` | `nileInstall({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_install_info` | `nileInstallInfo({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_launch` | `nileLaunch({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_library` | `nileLibrary({ ... })` | `src-tauri/src/nile/library.rs` |
+| `nile_login_begin` | `nileLoginBegin({ ... })` | `src-tauri/src/nile/auth.rs` |
+| `nile_login_finish` | `nileLoginFinish({ ... })` | `src-tauri/src/nile/auth.rs` |
+| `nile_logout` | `nileLogout({ ... })` | `src-tauri/src/nile/auth.rs` |
+| `nile_move_game` | `nileMoveGame({ ... })` | `src-tauri/src/nile/manage.rs` |
+| `nile_stop` | `nileStop({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_uninstall` | `nileUninstall({ ... })` | `src-tauri/src/nile/transfers.rs` |
+| `nile_verify` | `nileVerify({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
 | `resize_store_view` | `resizeStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `set_store_palette_hold` | `setStorePaletteHold({ ... })` | `src-tauri/src/store_host.rs` |
