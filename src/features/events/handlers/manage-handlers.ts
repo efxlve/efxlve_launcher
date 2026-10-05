@@ -10,6 +10,7 @@ import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
 import { rawOf } from "../../../core/selectors";
 import { openEpicModal } from "../../../core/render";
 import { gogVerifyGame } from "../../../gog";
+import { nileCreateDesktopShortcut, nileVerify } from "../../../nile";
 import {
   closeManagePopup,
   openManagePopup,
@@ -115,7 +116,19 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
     case "manage-verify":
       if (id) {
         updateVerifyProgressInPlace(id, 0, 100, 0, i18nT("dl.starting"), i18nT("dl.starting"));
-        if (id.startsWith("gog::")) {
+        if (id.startsWith("amazon::")) {
+          // Hashing files while Nile is still downloading them would fight
+          // over the same manifest and install record.
+          if (S.downloads.has(id)) {
+            resetVerifyInPlace(id);
+            toast(i18nT("move.gameDownloading"), "err");
+            return true;
+          }
+          nileVerify(id.slice(8)).catch((err) => {
+            resetVerifyInPlace(id);
+            toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
+          });
+        } else if (id.startsWith("gog::")) {
           gogVerifyGame(id).catch((err) => {
             resetVerifyInPlace(id);
             toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
@@ -172,7 +185,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
 
     case "manage-create-shortcut":
       if (id) {
-        epicCreateDesktopShortcut(id)
+        const shortcut = id.startsWith("amazon::")
+          ? nileCreateDesktopShortcut(id.slice(8))
+          : epicCreateDesktopShortcut(id);
+        shortcut
           .then((msg) => toast(msg, "ok"))
           .catch((err) => toast(i18nT("manage.shortcutFailed", { msg: String(err) }), "err"));
       }

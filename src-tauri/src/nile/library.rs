@@ -131,6 +131,13 @@ pub struct InstalledGame {
     pub path: String,
 }
 
+/// Installed record fields the manage screen needs.
+pub struct InstalledState {
+    pub path: String,
+    pub version: Option<String>,
+    pub size: u64,
+}
+
 /// Installed state for one product id, straight from Nile's `installed.json`.
 pub fn installed_game(app: &AppHandle, id: &str) -> Option<InstalledGame> {
     let index = installed_index(app);
@@ -140,6 +147,25 @@ pub fn installed_game(app: &AppHandle, id: &str) -> Option<InstalledGame> {
         return None;
     }
     Some(InstalledGame { path })
+}
+
+/// Full installed record for one product id (path, version and size).
+pub fn installed_state(app: &AppHandle, id: &str) -> Option<InstalledState> {
+    let index = installed_index(app);
+    let state = index.get(id)?;
+    let path = state.get("path").and_then(|v| v.as_str())?.to_string();
+    if path.is_empty() {
+        return None;
+    }
+    Some(InstalledState {
+        path,
+        version: state
+            .get("version")
+            .and_then(|v| v.as_str())
+            .filter(|v| !v.is_empty())
+            .map(|v| v.to_string()),
+        size: state.get("size").and_then(|v| v.as_u64()).unwrap_or(0),
+    })
 }
 
 /// Display title for one product id from the cached library.

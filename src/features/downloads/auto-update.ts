@@ -9,6 +9,7 @@
 
 import { epicInstall } from "../../core/epic-actions";
 import { gogInstallGame } from "../../gog";
+import { installAmazonGame } from "../auth/amazon-auth-actions";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { pushNotification } from "../notifications/notifications";
@@ -48,7 +49,8 @@ async function runAutoUpdate(): Promise<void> {
   if (S.activeDlMetrics || S.dlQueueStatus.queue.length > 0) return;
   const epicUpdates = [...S.availableUpdates.values()];
   const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable);
-  const n = epicUpdates.length + gogUpdates.length;
+  const amazonUpdates = S.amazonSummaries.filter((g) => g.installed && g.updateAvailable);
+  const n = epicUpdates.length + gogUpdates.length + amazonUpdates.length;
   if (n === 0) return;
   pushNotification({ kind: "info", title: t("sched.starting", { n }) });
   for (const u of epicUpdates) {
@@ -61,6 +63,13 @@ async function runAutoUpdate(): Promise<void> {
   for (const g of gogUpdates) {
     try {
       await gogInstallGame(`gog::${g.id}`);
+    } catch {
+      /* same: another active download is expected */
+    }
+  }
+  for (const g of amazonUpdates) {
+    try {
+      await installAmazonGame(g.id);
     } catch {
       /* same: another active download is expected */
     }

@@ -223,10 +223,13 @@ pub async fn nile_install_info(app: AppHandle, id: String) -> Result<u64, String
 /// Removes one installed game and its files.
 #[tauri::command]
 pub async fn nile_uninstall(app: AppHandle, id: String) -> Result<(), String> {
+    // The title is needed after the uninstall to drop the desktop shortcut.
+    let title = super::library::game_title(&app, &id).unwrap_or_else(|| id.clone());
     let out = cli::run(&app, &["uninstall", &id], 300).await?;
     if !out.status.success() {
         return Err(cli::failure_message(&out));
     }
+    super::manage::remove_shortcut_for_title(&title);
     Ok(())
 }
 
@@ -240,8 +243,22 @@ pub async fn nile_launch(app: AppHandle, id: String) -> Result<String, String> {
 
     let bin = super::ensure_binary(&app).await?;
     let mut cmd = cli::command(&app, bin);
-    cmd.args(["launch", &id])
-        .stdin(std::process::Stdio::null())
+    // Launch extras saved on the manage screen: extra arguments are appended to
+    // the game command and env vars travel through Nile to the game process.
+    let cfgs = crate::legendary::commands::load_all_game_custom_configs();
+    let cfg = cfgs.get(&composite);
+    let extra_args: Vec<String> = cfg
+        .and_then(|c| c.launch_parameters.as_deref())
+        .map(|lp| lp.split_whitespace().map(|a| a.to_string()).collect())
+        .unwrap_or_default();
+    cmd.args(["launch", &id]);
+    cmd.args(&extra_args);
+    if let Some(env) = cfg.and_then(|c| c.env_vars.as_ref()) {
+        for (name, value) in env {
+            cmd.env(name, value);
+        }
+    }
+    cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
     let mut child = cmd

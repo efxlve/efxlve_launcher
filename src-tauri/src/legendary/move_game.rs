@@ -398,12 +398,62 @@ fn get_drive_prefix(path: &Path) -> Option<String> {
     }
 }
 
-/// Moves a game to a new root folder
+/// Install path of one Amazon product inside Nile's `installed.json` list.
+fn nile_installed_path(list: &[serde_json::Value], app_name: &str) -> Option<String> {
+    let product_id = app_name.strip_prefix("amazon::").unwrap_or(app_name);
+    list.iter()
+        .find(|entry| entry.get("id").and_then(|v| v.as_str()) == Some(product_id))
+        .and_then(|entry| entry.get("path"))
+        .and_then(|v| v.as_str())
+        .filter(|p| !p.is_empty())
+        .map(|p| p.to_string())
+}
+
+/// Rewrites the install path of one Amazon product in Nile's list.
+fn set_nile_installed_path(list: &mut [serde_json::Value], app_name: &str, new_path: &str) -> bool {
+    let product_id = app_name.strip_prefix("amazon::").unwrap_or(app_name);
+    let Some(entry) = list
+        .iter_mut()
+        .find(|entry| entry.get("id").and_then(|v| v.as_str()) == Some(product_id))
+    else {
+        return false;
+    };
+    let Some(obj) = entry.as_object_mut() else {
+        return false;
+    };
+    obj.insert(
+        "path".to_string(),
+        serde_json::Value::String(new_path.to_string()),
+    );
+    true
+}
+
+/// Which installation record the move has to update when the files land.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum MoveRecord {
+    /// Legendary's `installed.json` map (Epic games).
+    Epic,
+    /// Nile's `installed.json` list (Amazon games).
+    Amazon,
+}
+
+/// Moves a game to a new root folder (Epic record format).
 pub async fn move_game_folder(
     app: AppHandle,
     config_dir: &Path,
     app_name: String,
     target_base_dir: String,
+) -> Result<MoveGameResult, String> {
+    move_game_folder_record(app, config_dir, app_name, target_base_dir, MoveRecord::Epic).await
+}
+
+/// Moves a game to a new root folder, updating the record format it belongs to.
+pub(crate) async fn move_game_folder_record(
+    app: AppHandle,
+    config_dir: &Path,
+    app_name: String,
+    target_base_dir: String,
+    record: MoveRecord,
 ) -> Result<MoveGameResult, String> {
     // 1. Register the cancel flag
     let cancel_flag = Arc::new(AtomicBool::new(false));
@@ -418,10 +468,11 @@ pub async fn move_game_folder(
         &app_name,
         &target_base_dir,
         cancel_flag.clone(),
+        record,
     )
     .await;
 
-    // Temizle
+    // Clear the cancel flag
     {
         let mut map = get_active_moves().write().await;
         map.remove(&app_name);
@@ -461,27 +512,43 @@ async fn move_game_folder_internal(
     app_name: &str,
     target_base_dir: &str,
     cancel_flag: Arc<AtomicBool>,
+    record: MoveRecord,
 ) -> Result<MoveGameResult, String> {
-    // 1. Oyunun mevcut kurulu yolunu oku
+    // 1. Read the current install path from the matching install record.
     let installed_file = config_dir.join("installed.json");
-    let mut installed_map = if installed_file.exists() {
-        let text = tokio::fs::read_to_string(&installed_file)
+    let text = if installed_file.exists() {
+        tokio::fs::read_to_string(&installed_file)
             .await
-            .map_err(|e| format!("@t:move.installedReadFailed\u{1f}{}", e))?;
-        serde_json::from_str::<HashMap<String, serde_json::Value>>(&text).unwrap_or_default()
+            .map_err(|e| format!("@t:move.installedReadFailed\u{1f}{}", e))?
     } else {
-        HashMap::new()
+        String::new()
     };
 
-    let game_entry = installed_map
-        .get_mut(app_name)
-        .ok_or_else(|| format!("@t:move.noInstallRecord\u{1f}{app_name}"))?;
-
-    let cur_install_path_str = game_entry
-        .get("install_path")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| "@t:move.noCurrentPath".to_string())?
-        .to_string();
+    let mut installed_map: HashMap<String, serde_json::Value> = HashMap::new();
+    let mut installed_list: Vec<serde_json::Value> = Vec::new();
+    let cur_install_path_str = match record {
+        MoveRecord::Epic => {
+            installed_map =
+                serde_json::from_str::<HashMap<String, serde_json::Value>>(&text).unwrap_or_default();
+            installed_map
+                .get(app_name)
+                .and_then(|entry| entry.get("install_path"))
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| {
+                    if installed_map.contains_key(app_name) {
+                        "@t:move.noCurrentPath".to_string()
+                    } else {
+                        format!("@t:move.noInstallRecord\u{1f}{app_name}")
+                    }
+                })?
+                .to_string()
+        }
+        MoveRecord::Amazon => {
+            installed_list = serde_json::from_str::<Vec<serde_json::Value>>(&text).unwrap_or_default();
+            nile_installed_path(&installed_list, app_name)
+                .ok_or_else(|| format!("@t:move.noInstallRecord\u{1f}{app_name}"))?
+        }
+    };
 
     let cur_path = PathBuf::from(&cur_install_path_str);
     if !cur_path.is_dir() {
@@ -647,36 +714,48 @@ async fn move_game_folder_internal(
     // 4. Update the databases
     let new_path_str = new_game_path.to_string_lossy().to_string();
 
-    // A) installed.json
-    if let Some(entry) = installed_map.get_mut(app_name) {
-        if let Some(obj) = entry.as_object_mut() {
-            obj.insert(
-                "install_path".to_string(),
-                serde_json::Value::String(new_path_str.clone()),
-            );
+    match record {
+        MoveRecord::Epic => {
+            // A) installed.json
+            if let Some(entry) = installed_map.get_mut(app_name) {
+                if let Some(obj) = entry.as_object_mut() {
+                    obj.insert(
+                        "install_path".to_string(),
+                        serde_json::Value::String(new_path_str.clone()),
+                    );
+                }
+            }
+            if let Ok(updated_json) = serde_json::to_string_pretty(&installed_map) {
+                let _ = tokio::fs::write(&installed_file, updated_json).await;
+            }
+
+            // B) legendary move <app> <target_base> --skip-move
+            let bin_path =
+                crate::legendary::paths::resolve_binary(app).unwrap_or_else(|_| PathBuf::from("legendary"));
+
+            let mut move_cmd = tokio::process::Command::new(bin_path);
+            move_cmd.args([
+                "move",
+                app_name,
+                &target_base.to_string_lossy(),
+                "--skip-move",
+            ]);
+            #[cfg(windows)]
+            move_cmd.creation_flags(0x08000000);
+            let _ = move_cmd.output().await;
+
+            // C) Epic Games Launcher manifest (.item) update
+            update_egl_manifest(app_name, &cur_path, &new_game_path).await;
+        }
+        MoveRecord::Amazon => {
+            // Nile keys its records by product id and reads `path` on launch.
+            if set_nile_installed_path(&mut installed_list, app_name, &new_path_str) {
+                if let Ok(updated_json) = serde_json::to_string(&installed_list) {
+                    let _ = tokio::fs::write(&installed_file, updated_json).await;
+                }
+            }
         }
     }
-    if let Ok(updated_json) = serde_json::to_string_pretty(&installed_map) {
-        let _ = tokio::fs::write(&installed_file, updated_json).await;
-    }
-
-    // B) legendary move <app> <target_base> --skip-move
-    let bin_path =
-        crate::legendary::paths::resolve_binary(app).unwrap_or_else(|_| PathBuf::from("legendary"));
-
-    let mut move_cmd = tokio::process::Command::new(bin_path);
-    move_cmd.args([
-        "move",
-        app_name,
-        &target_base.to_string_lossy(),
-        "--skip-move",
-    ]);
-    #[cfg(windows)]
-    move_cmd.creation_flags(0x08000000);
-    let _ = move_cmd.output().await;
-
-    // C) Epic Games Launcher manifest (.item) update
-    update_egl_manifest(app_name, &cur_path, &new_game_path).await;
 
     // 5. Emit the completed progress
     let _ = app.emit(
@@ -951,6 +1030,29 @@ mod tests {
         assert_eq!(fmt_eta(45), "~45 sn");
         assert_eq!(fmt_eta(125), "~2 dk 5 sn");
         assert_eq!(fmt_eta(3665), "~1 sa 1 dk");
+    }
+
+    #[test]
+    fn nile_installed_records_keep_their_shape() {
+        let value = serde_json::json!([
+            { "id": "amzn1.a", "version": "1", "path": "C:\\Games\\A", "size": 10 },
+            { "id": "amzn1.b", "version": "2", "path": "C:\\Games\\B", "size": 20 }
+        ]);
+        let list = value.as_array().unwrap();
+        assert_eq!(
+            nile_installed_path(list, "amazon::amzn1.b").as_deref(),
+            Some("C:\\Games\\B")
+        );
+        assert_eq!(nile_installed_path(list, "amazon::missing"), None);
+
+        let mut list = value.clone();
+        let list = list.as_array_mut().unwrap();
+        assert!(set_nile_installed_path(list, "amazon::amzn1.b", "D:\\Games\\B"));
+        assert_eq!(list[1]["path"], "D:\\Games\\B");
+        // Other fields of the record must survive the rewrite.
+        assert_eq!(list[1]["version"], "2");
+        assert_eq!(list[1]["size"], 20);
+        assert!(!set_nile_installed_path(list, "amazon::missing", "D:\\X"));
     }
 
     #[test]

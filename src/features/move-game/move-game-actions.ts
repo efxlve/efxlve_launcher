@@ -20,6 +20,8 @@ import {
   epicMoveGame,
   epicSelectFolderDialog,
 } from "../../epic";
+import { nileGameSettings, nileMoveGame } from "../../nile";
+import { loadAmazonSession } from "../auth/amazon-auth-actions";
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { renderMoveGameModalFrame } from "./move-game-view";
 import { summaryOf } from "../../core/selectors";
@@ -165,7 +167,8 @@ export async function startMoveGame(appName: string): Promise<void> {
   renderMoveGameModalFrame();
 
   try {
-    const res = await epicMoveGame(appName, target);
+    const isAmazon = appName.startsWith("amazon::");
+    const res = isAmazon ? await nileMoveGame(appName, target) : await epicMoveGame(appName, target);
     if (res.success) {
       const newPath = res.new_path || (res as any).newPath || "";
       if (newPath) {
@@ -176,11 +179,14 @@ export async function startMoveGame(appName: string): Promise<void> {
       closeMoveGameModal();
 
       // Refresh the installed-games list from disk.
-      await refreshEpicInstalled();
+      if (isAmazon) await loadAmazonSession(false);
+      else await refreshEpicInstalled();
 
       // Fetch fresh settings in the background and keep state in sync.
       try {
-        const freshSettings = await epicGetGameSettings(appName);
+        const freshSettings = isAmazon
+          ? await nileGameSettings(appName.slice(8))
+          : await epicGetGameSettings(appName);
         if (S.activeManageSettings && S.activeManageSettings.appName === appName) {
           S.activeManageSettings = freshSettings;
           updateManageModalInputsInPlace(freshSettings);

@@ -12,6 +12,7 @@ pub mod auth;
 pub mod binary;
 pub mod cli;
 pub mod library;
+pub mod manage;
 pub mod transfers;
 
 pub use binary::{ensure_binary, resolve_binary};

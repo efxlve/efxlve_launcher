@@ -39,6 +39,10 @@ pub struct GameCustomConfig {
     pub wrapper: Option<String>,
     pub env_vars: Option<std::collections::HashMap<String, String>>,
     pub custom_save_path: Option<String>,
+    /// Extra launch arguments, for stores whose launch command takes them
+    /// (Epic keeps its own copy in installed.json).
+    #[serde(default)]
+    pub launch_parameters: Option<String>,
 }
 
 pub fn load_all_game_custom_configs() -> std::collections::HashMap<String, GameCustomConfig> {
@@ -181,6 +185,7 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
             wrapper: Some(settings.wrapper.trim().to_string()),
             env_vars: Some(settings.env_vars),
             custom_save_path: settings.custom_save_path,
+            launch_parameters: Some(settings.launch_parameters.trim().to_string()),
         },
     );
     save_all_game_custom_configs(&cfgs);

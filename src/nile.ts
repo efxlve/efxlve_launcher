@@ -75,6 +75,24 @@ export const nileStop = (id: string) => invoke<string>("nile_stop", { id });
 /** Composite library ids with a newer build on Amazon. */
 export const nileCheckUpdates = () => invoke<string[]>("nile_check_updates");
 
+/** Verifies (and repairs) one installed game; progress arrives as events. */
+export const nileVerify = (id: string) => invoke<void>("nile_verify", { id });
+
+/** Moves one installed game to a new root folder. */
+export const nileMoveGame = (appName: string, targetBasePath: string) =>
+  invoke<import("./epic-commands").MoveGameResult>("nile_move_game", {
+    appName,
+    targetBasePath,
+  });
+
+/** Creates a desktop shortcut that launches the game through the launcher. */
+export const nileCreateDesktopShortcut = (id: string) =>
+  invoke<string>("nile_create_desktop_shortcut", { id });
+
+/** Per-game manage settings (save path, backups) in the shared shape. */
+export const nileGameSettings = (id: string) =>
+  invoke<import("./epic-commands").GameLocalSettings>("nile_game_settings", { id });
+
 /** Base folder Amazon Games install into (empty = Nile's default). */
 export const amazonGetInstallDir = () => invoke<string | null>("amazon_get_install_dir");
 
