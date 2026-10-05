@@ -201,6 +201,24 @@ fn finalize_payload_yields_the_community_transfer() {
 }
 
 #[test]
+fn only_a_401_ends_the_steam_session() {
+    assert!(super::session::status_ends_session(
+        reqwest::StatusCode::UNAUTHORIZED
+    ));
+    for status in [
+        reqwest::StatusCode::FORBIDDEN,
+        reqwest::StatusCode::TOO_MANY_REQUESTS,
+        reqwest::StatusCode::BAD_GATEWAY,
+        reqwest::StatusCode::SERVICE_UNAVAILABLE,
+    ] {
+        assert!(
+            !super::session::status_ends_session(status),
+            "{status} must stay a network failure"
+        );
+    }
+}
+
+#[test]
 fn auth_requests_encode_the_expected_wire_fields() {
     // Poll: field 1 varint client_id, field 2 length-delimited request_id.
     let poll = encode_poll_request("42", &[0xde, 0xad, 0xbe, 0xef]);

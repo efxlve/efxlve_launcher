@@ -182,7 +182,9 @@ pub async fn finalize_web_login(
         .await
         .map_err(|_| "@t:steam.err.network".to_string())?;
     if !response.status().is_success() {
-        return Err("@t:steam.err.sessionExpired".to_string());
+        // A DPI box, VPN/WARP gateway or WAF can answer with 4xx/5xx while
+        // the refresh token is still valid; never sign the user out for this.
+        return Err("@t:steam.err.network".to_string());
     }
     let payload: Value = response
         .json()
@@ -212,14 +214,16 @@ pub async fn finalize_web_login(
         .send()
         .await
         .map_err(|_| "@t:steam.err.network".to_string())?;
+    // An intercepted or rewritten transfer response carries no cookie; treat
+    // it as a temporary network failure and retry on the next refresh.
     let cookie = response
         .headers()
         .get_all(reqwest::header::SET_COOKIE)
         .iter()
         .filter_map(|value| value.to_str().ok())
         .find(|cookie| cookie.to_ascii_lowercase().starts_with("steamloginsecure="))
-        .ok_or_else(|| "@t:steam.err.sessionExpired".to_string())?;
-    cookie_access_token(cookie).ok_or_else(|| "@t:steam.err.sessionExpired".to_string())
+        .ok_or_else(|| "@t:steam.err.network".to_string())?;
+    cookie_access_token(cookie).ok_or_else(|| "@t:steam.err.network".to_string())
 }
 
 /// Short-lived access token for Web API calls (works for hours, never written
@@ -239,6 +243,12 @@ pub async fn generate_access_token(
         return Err("@t:steam.err.sessionExpired".to_string());
     }
     Ok(token)
+}
+
+/// Only a 401 proves the access token is dead: WAFs, VPN/WARP gateways and
+/// rate limits answer with 403/429/5xx while the session is still valid.
+pub(super) fn status_ends_session(status: reqwest::StatusCode) -> bool {
+    status == reqwest::StatusCode::UNAUTHORIZED
 }
 
 /// Every owned game (installed or not), with Steam's own playtime. The
@@ -262,11 +272,12 @@ pub async fn fetch_owned_games(
         .await
         .map_err(|_| "@t:steam.err.network".to_string())?;
     let status = response.status();
-    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
-        return Err("@t:steam.err.sessionExpired".to_string());
-    }
     if !status.is_success() {
-        return Err("@t:steam.err.steam".to_string());
+        return Err(if status_ends_session(status) {
+            "@t:steam.err.sessionExpired".to_string()
+        } else {
+            "@t:steam.err.network".to_string()
+        });
     }
     let payload: Value = response
         .json()
