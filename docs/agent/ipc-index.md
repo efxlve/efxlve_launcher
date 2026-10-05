@@ -186,6 +186,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `nile_check_updates` | `nileCheckUpdates({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_create_desktop_shortcut` | `nileCreateDesktopShortcut({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `nile_game_settings` | `nileGameSettings({ ... })` | `src-tauri/src/nile/manage.rs` |
+| `nile_import` | `nileImport({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `nile_install` | `nileInstall({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_install_info` | `nileInstallInfo({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_launch` | `nileLaunch({ ... })` | `src-tauri/src/nile/transfers.rs` |
