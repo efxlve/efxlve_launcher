@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "瀏覽所有遊戲",
+  "lib.favEmptyHint": "開啟遊戲並點擊愛心，或右鍵點擊遊戲，即可加入這裡。",
+  "lib.favEmptyTitle": "還沒有收藏",
   "amazon.alreadyInstalled": "此遊戲已安裝。",
   "amazon.importFailed": "Nile 無法匯入此資料夾。",
   "amazon.imported": "遊戲已匯入。",

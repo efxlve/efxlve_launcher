@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "Browse all games",
+  "lib.favEmptyHint": "Open a game and use the heart, or right-click a game, to add it here.",
+  "lib.favEmptyTitle": "No favorites yet",
   "amazon.alreadyInstalled": "This game is already installed.",
   "amazon.importFailed": "Nile could not import this folder.",
   "amazon.imported": "Game imported.",

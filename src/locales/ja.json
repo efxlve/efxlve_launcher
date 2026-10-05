@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "すべてのゲームを見る",
+  "lib.favEmptyHint": "ゲームを開いてハートを押すか、ゲームを右クリックするとここに追加できます。",
+  "lib.favEmptyTitle": "お気に入りはまだありません",
   "amazon.alreadyInstalled": "このゲームはすでにインストールされています。",
   "amazon.importFailed": "Nile はこのフォルダーをインポートできませんでした。",
   "amazon.imported": "ゲームをインポートしました。",

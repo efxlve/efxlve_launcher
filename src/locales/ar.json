@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "تصفح كل الألعاب",
+  "lib.favEmptyHint": "افتح لعبة واستخدم رمز القلب أو انقر بزر الفأرة الأيمن على لعبة لإضافتها هنا.",
+  "lib.favEmptyTitle": "لا توجد مفضلات بعد",
   "amazon.alreadyInstalled": "هذه اللعبة مثبّتة بالفعل.",
   "amazon.importFailed": "تعذّر على Nile استيراد هذا المجلد.",
   "amazon.imported": "تم استيراد اللعبة.",

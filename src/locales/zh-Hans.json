@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "浏览所有游戏",
+  "lib.favEmptyHint": "打开游戏并点击爱心，或右键点击游戏，即可添加到这里。",
+  "lib.favEmptyTitle": "还没有收藏",
   "amazon.alreadyInstalled": "此游戏已安装。",
   "amazon.importFailed": "Nile 无法导入此文件夹。",
   "amazon.imported": "游戏已导入。",

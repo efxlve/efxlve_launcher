@@ -471,6 +471,15 @@ export function renderEpicItems(): string {
     if (S.query.trim()) {
       return emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>`);
     }
+    // Favorites empty: send the user back to the whole library, not the store.
+    if (S.activeCollectionId === "fav") {
+      return emptyState(
+        "heart",
+        t("lib.favEmptyTitle"),
+        t("lib.favEmptyHint"),
+        `<button class="btn primary" data-act="quick-tab" data-tab="all">${t("lib.favEmptyCta")}</button>`,
+      );
+    }
     return emptyState("gamepad-2", t("lib.noGames"), "", `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>`);
   }
 

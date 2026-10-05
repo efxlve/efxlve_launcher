@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "Tüm oyunlara göz at",
+  "lib.favEmptyHint": "Buraya eklemek için bir oyunu açıp kalp simgesini kullanın veya bir oyuna sağ tıklayın.",
+  "lib.favEmptyTitle": "Henüz favori yok",
   "amazon.alreadyInstalled": "Bu oyun zaten kurulu.",
   "amazon.importFailed": "Nile bu klasörü içe aktaramadı.",
   "amazon.imported": "Oyun içe aktarıldı.",

@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "모든 게임 둘러보기",
+  "lib.favEmptyHint": "게임을 열고 하트를 누르거나 게임을 마우스 오른쪽 버튼으로 클릭해 추가하세요.",
+  "lib.favEmptyTitle": "아직 즐겨찾기가 없습니다",
   "amazon.alreadyInstalled": "이 게임은 이미 설치되어 있습니다.",
   "amazon.importFailed": "Nile이 이 폴더를 가져오지 못했습니다.",
   "amazon.imported": "게임을 가져왔습니다.",

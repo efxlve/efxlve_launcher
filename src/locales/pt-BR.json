@@ -1,4 +1,7 @@
 {
+  "lib.favEmptyCta": "Ver todos os jogos",
+  "lib.favEmptyHint": "Abra um jogo e use o coração, ou clique com o botão direito em um jogo, para adicioná-lo aqui.",
+  "lib.favEmptyTitle": "Ainda sem favoritos",
   "amazon.alreadyInstalled": "Este jogo já está instalado.",
   "amazon.importFailed": "O Nile não conseguiu importar esta pasta.",
   "amazon.imported": "Jogo importado.",
