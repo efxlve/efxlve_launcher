@@ -27,9 +27,41 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.21",
+    version: "0.1.22",
     date: "2026-10-05",
     isCurrent: true,
+    items: [
+      {
+        en: "The stores bar is always logos-only now: every store shows its mark and only the open one keeps its full name. The setting was removed.",
+        tr: "Mağazalar çubuğu artık her zaman yalnızca logolarla çalışır: her mağaza kendi simgesiyle görünür, yalnızca açık olanın adı tam yazılır. Ayar kaldırıldı.",
+      },
+      {
+        en: "The library list spreads its columns out on wider windows, and the achievement bar now runs from the platform name to the percentage.",
+        tr: "Kütüphane listesi geniş pencerelerde kolonlarını ferahlatır; başarım çubuğu artık platform adından yüzdeye kadar uzanır.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Disabling a store in Settings really removes it from the Stores bar now; the tabs stayed visible before.",
+        tr: "Ayarlardan kapatılan mağaza artık Mağazalar çubuğundan gerçekten kalkıyor; önce sekmeler görünür kalıyordu.",
+      },
+      {
+        en: "A VPN or DPI gateway that blocks Steam's token refresh no longer signs the account out; the session is kept and retried.",
+        tr: "Steam'in token yenilemesini engelleyen bir VPN veya DPI ağ geçidi artık hesabı düşürmüyor; oturum korunup yeniden deneniyor.",
+      },
+      {
+        en: "Amazon and Riot are properly capitalized in the library list instead of showing their raw ids.",
+        tr: "Kütüphane listesinde Amazon ve Riot ham kimlikleri yerine doğru adlarıyla yazılıyor.",
+      },
+      {
+        en: "Achievements of uninstalled games, completed sets included, are dimmed like the rest of the row.",
+        tr: "Yüklü olmayan oyunların başarımları, tamamlanmış setler dahil, satırın geri kalanı gibi karartılıyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.21",
+    date: "2026-10-05",
     items: [
       {
         en: "Amazon Games (Prime Gaming) joins the launcher: sign in with Nile, browse your library and install, update, launch or uninstall your games.",
