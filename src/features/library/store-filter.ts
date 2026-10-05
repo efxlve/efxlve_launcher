@@ -15,7 +15,7 @@ import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
-const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
+const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
 const COMPANION_ORDER: readonly GameSource[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
 
 /** Stable signature fragment for the visible-library cache. */
@@ -28,6 +28,7 @@ function storeName(id: GameSource, short: boolean): string {
   switch (id) {
     case "epic": return short ? "Epic" : t("source.epic");
     case "gog": return t("source.gog");
+    case "amazon": return "Amazon Games";
     case "steam": return t("source.steam");
     case "ea": return "EA App";
     case "ubisoft": return "Ubisoft Connect";
@@ -126,6 +127,7 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean
         <div class="store-menu-sep"></div>
         ${row("epic", t("source.epic"), counts.epic, S.enabledStores.has("epic"))}
         ${row("gog", t("source.gog"), counts.gog, S.enabledStores.has("gog"))}
+        ${row("amazon", storeName("amazon", false), counts.amazon, S.enabledStores.has("amazon"))}
         ${hasSteam ? row("steam", t("source.steam"), counts.steam, S.enabledStores.has("steam")) : ""}
         ${companionRows}
       </div>

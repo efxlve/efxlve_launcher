@@ -10,8 +10,10 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { scheduleRender } from "../../core/render";
+import { setAmazonSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import type { LibraryItem } from "../../core/types";
 import { t } from "../../i18n";
 import {
   amazonKey,
@@ -24,7 +26,30 @@ import {
   nileLogout,
   nileStop,
   nileUninstall,
+  type NileGame,
 } from "../../nile";
+
+/** One Amazon game as a library item (`amazon::<product id>`). */
+function amazonToLibraryItem(game: NileGame): LibraryItem {
+  return {
+    key: amazonKey(game.id),
+    source: "amazon",
+    id: game.id,
+    title: game.title,
+    developer: "",
+    version: game.version || "—",
+    installedVersion: null,
+    installed: game.installed,
+    installPath: game.install_path,
+    installSize: 0,
+    coverUrl: game.art,
+    heroUrl: null,
+    description: "",
+    updateAvailable: false,
+    cloudSavesSupported: false,
+    dlcCount: 0,
+  };
+}
 
 function openExternal(url: string): void {
   void openUrl(url).catch(() => {
@@ -104,6 +129,7 @@ export async function loadAmazonSession(sync = false): Promise<void> {
     } else {
       S.amazonGames = [];
     }
+    setAmazonSummaries(S.amazonGames.map(amazonToLibraryItem));
   } catch {
     // Keep the last state.
   }
@@ -141,6 +167,7 @@ export async function amazonLogoutAction(): Promise<void> {
   S.amazonGames = [];
   S.amazonLogin = null;
   S.amazonProgress.clear();
+  setAmazonSummaries([]);
   scheduleRender();
 }
 

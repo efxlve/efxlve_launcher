@@ -26,6 +26,7 @@ import { t } from "../i18n";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
 import { companionLaunch } from "../companion";
+import { nileLaunch, nileStop } from "../nile";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
@@ -38,6 +39,13 @@ import { syncLibraryHeadingCount } from "../features/library/library-view";
 /** Launch a game and record it in the recent list. */
 export async function epicStop(appName: string): Promise<void> {
   try {
+    if (appName.startsWith("amazon::")) {
+      const msg = await nileStop(appName.slice(8));
+      S.runningGames.delete(appName);
+      toast(msg, "ok");
+      refreshGameActionUi(appName);
+      return;
+    }
     const msg = appName.startsWith("gog::")
       ? await gogStopGame(appName)
       : await epicStopGame(appName);
@@ -50,6 +58,18 @@ export async function epicStop(appName: string): Promise<void> {
 }
 
 export async function epicPlay(appName: string): Promise<void> {
+  // Amazon Games is installed and launched by the launcher through Nile.
+  if (appName.startsWith("amazon::")) {
+    pushRecent(appName);
+    toast(t("dl.launching"), "");
+    try {
+      const msg = await nileLaunch(appName.slice(8));
+      toast(msg, "ok");
+    } catch (e) {
+      toast(String(e), "err");
+    }
+    return;
+  }
   // Steam games belong to the Steam client: hand the launch over to it.
   if (isCompanionKey(appName)) {
     pushRecent(appName);

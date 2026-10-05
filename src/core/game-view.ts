@@ -378,6 +378,24 @@ export function epicActionButtons(
     }
     return `<button class="btn play${btn}" data-act="steam-action" data-id="${steamId}" data-mode="launch" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
+  // Amazon Games is installed and launched by the launcher itself through Nile.
+  if (s.appName.startsWith("amazon::")) {
+    const amazonId = s.appName.slice(8);
+    const progress = S.amazonProgress.get(s.appName);
+    if (progress && progress.percent < 100) {
+      return `<button class="btn primary${btn}" data-view="accounts" data-amazon-btn="${s.appName}">${icon("download", 12)} ${t("common.downloading", { p: Math.round(progress.percent) })}</button>`;
+    }
+    if (S.runningGames.has(s.appName)) {
+      return `<button class="btn play${btn}" data-act="amazon-stop" data-id="${esc(amazonId)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+    }
+    if (!s.installed) {
+      return `<button class="btn install${btn}" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 14)} ${t("common.install")}</button>`;
+    }
+    if (s.updateAvailable) {
+      return `<button class="btn update${btn}" data-act="amazon-install" data-id="${esc(amazonId)}" title="${t("common.updateDownload")}">${icon("download", 14)} ${t("common.update")}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
   if (isCompanionKey(s.appName)) {
     const store = s.appName.slice(0, s.appName.indexOf("::"));
     if (!s.installed) {

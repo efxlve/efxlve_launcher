@@ -201,6 +201,21 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
   if (S.runningGames.has(s.appName)) {
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
+  // Amazon Games: installed and launched by the launcher through Nile.
+  if (s.appName.startsWith("amazon::")) {
+    const amazonId = s.appName.slice(8);
+    const progress = S.amazonProgress.get(s.appName);
+    if (progress && progress.percent < 100) {
+      return `<button class="btn primary lg" data-view="accounts" data-amazon-btn="${s.appName}">${icon("download", 16)} ${t("common.downloading", { p: Math.round(progress.percent) })}</button>`;
+    }
+    if (!s.installed) {
+      return `<button class="btn install lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.install")}</button>`;
+    }
+    if (s.updateAvailable) {
+      return `<button class="btn update lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.update")}</button>`;
+    }
+    return `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+  }
   if (isCompanionApp(s.appName)) {
     return s.installed
       ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
@@ -273,6 +288,20 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
+      ${sourceChipHtml(s.appName)}`;
+  }
+
+  // Amazon Games: the launcher owns install, update and launch.
+  if (s.appName.startsWith("amazon::")) {
+    const amazonId = s.appName.slice(8);
+    const primary = !s.installed
+      ? `<button class="btn install lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.install")}</button>`
+      : s.updateAvailable
+        ? `<button class="btn update lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.update")}</button>`
+        : `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+    return `${primary}
+      <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
+      <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       ${sourceChipHtml(s.appName)}`;
   }
 

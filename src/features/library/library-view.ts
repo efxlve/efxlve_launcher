@@ -283,6 +283,9 @@ function libraryBaseItems(): EpicSummary[] {
       if (s.appName.startsWith("gog::")) push(s);
     }
   }
+  if (S.enabledStores.has("amazon")) {
+    for (const g of S.amazonSummaries) push(libraryItemToSummary(g));
+  }
   if (S.enabledStores.has("steam")) {
     for (const g of S.steamSummaries) push(libraryItemToSummary(g));
   }
@@ -716,7 +719,7 @@ export function renderEpic(): string {
   }
   // Every store counts: a Steam-only player (no Epic/GOG account) must still
   // see the grid instead of the "connect an account" empty state.
-  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.steamSummaries.length > 0 || S.companionSummaries.length > 0;
+  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.amazonSummaries.length > 0 || S.steamSummaries.length > 0 || S.companionSummaries.length > 0;
   const isAnyConnected = (S.epicPhase === "library" && Boolean(S.epicAccount)) || (S.gogPhase === "library" && Boolean(S.gogAccount));
 
   if (S.epicPhase === "checking" && S.gogPhase === "checking") {
@@ -759,6 +762,7 @@ export function renderEpic(): string {
       all: allStoresMenuCount(),
       epic: visibleCount(S.epicSummaries.map((s) => s.appName)),
       gog: visibleCount(S.gogSummaries.map((g) => g.key)),
+      amazon: visibleCount(S.amazonSummaries.map((g) => g.key)),
       steam: visibleCount(S.steamSummaries.map((g) => g.key)),
       ea: companionCount("ea"),
       ubisoft: companionCount("ubisoft"),

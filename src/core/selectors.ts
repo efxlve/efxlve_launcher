@@ -146,6 +146,11 @@ export function rebuildAllGamesMap(): void {
     map.set(g.key, g);
     rememberCanon(storeSets, keySets, g.title, "Steam", g.key);
   }
+  // Amazon Games items live under `amazon::<product id>`.
+  for (const g of S.amazonSummaries) {
+    map.set(g.key, g);
+    rememberCanon(storeSets, keySets, g.title, "Amazon Games", g.key);
+  }
   for (const g of S.companionSummaries) {
     map.set(g.key, g);
     rememberCanon(storeSets, keySets, g.title, companionStoreLabel(g.source), g.key);
@@ -203,6 +208,13 @@ export function setGogSummaries(items: LibraryItem[]): void {
   S.libraryDataRev++;
 }
 
+/** Replace the Amazon Games item list and rebuild the unified map. */
+export function setAmazonSummaries(items: LibraryItem[]): void {
+  S.amazonSummaries = items;
+  rebuildAllGamesMap();
+  S.libraryDataRev++;
+}
+
 /** Replace the Steam library item list (installed games on this PC). */
 export function setSteamSummaries(items: LibraryItem[]): void {
   S.steamSummaries = items;
@@ -240,12 +252,13 @@ export function gogToEpicSummary(g: LibraryItem): EpicSummary {
 export function allStoreSummaries(): EpicSummary[] {
   const items = S.epicSummaries;
   const gog = S.gogSummaries.length > 0 ? S.gogSummaries.map(libraryItemToSummary) : [];
+  const amazon = S.amazonSummaries.length > 0 ? S.amazonSummaries.map(libraryItemToSummary) : [];
   const steam = S.steamSummaries.length > 0 ? S.steamSummaries.map(libraryItemToSummary) : [];
   // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) belong to the same
   // union: the palette, collections and hidden-games search all use this list.
   const companion = S.companionSummaries.length > 0 ? S.companionSummaries.map(libraryItemToSummary) : [];
-  if (gog.length === 0 && steam.length === 0 && companion.length === 0) return items;
-  return [...items, ...gog, ...steam, ...companion];
+  if (gog.length === 0 && amazon.length === 0 && steam.length === 0 && companion.length === 0) return items;
+  return [...items, ...gog, ...amazon, ...steam, ...companion];
 }
 
 /** O(1) summary lookup by app name (Epic or GOG or Steam). */
@@ -288,12 +301,15 @@ export function sourceOfKey(key: string): import("./types").GameSource {
   if (key.startsWith("xbox::")) return "xbox";
   if (key.startsWith("battlenet::")) return "battlenet";
   if (key.startsWith("riot::")) return "riot";
+  if (key.startsWith("amazon::")) return "amazon";
   return "epic";
 }
 
 /** True for a store owned and launched by its own client. */
 export function isCompanionSource(source: string): boolean {
-  return source !== "epic" && source !== "gog" && source !== "steam";
+  // Amazon Games is launcher-managed (Nile installs and launches it), so it is
+  // not routed through the companion client commands.
+  return source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon";
 }
 
 /** True for games owned and launched by another client (EA, Ubisoft, Xbox, Battle.net, Riot). */
@@ -494,6 +510,7 @@ export function totalLibraryGamesCount(): number {
   };
   for (const s of S.epicSummaries) add(s.appName, s.title);
   for (const g of S.gogSummaries) add(g.key, g.title);
+  for (const g of S.amazonSummaries) add(g.key, g.title);
   for (const g of S.steamSummaries) add(g.key, g.title);
   for (const g of S.companionSummaries) add(g.key, g.title);
   if (S.showSharedLibrary) {

@@ -142,10 +142,52 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
     </div>`;
 }
 
+/**
+ * Manage panel for an Amazon Games title. The launcher owns the files through
+ * Nile, so the panel offers the folder, uninstall and the playtime we record.
+ */
+function amazonManageBody(s: EpicSummary): string {
+  const id = s.appName.slice(8);
+  const pt = S.playtimeMap.get(s.appName);
+  const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const files = s.installed
+    ? `${row(
+        t("manage.installLocation"),
+        `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
+        `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
+      )}
+      ${row(
+        t("manage.uninstallTitle"),
+        t("amazon.uninstallDesc"),
+        `<button class="btn ghost small danger" data-act="amazon-uninstall" data-id="${esc(id)}">${icon("trash", 13)} ${t("common.uninstall")}</button>`,
+      )}`
+    : row(
+        t("common.install"),
+        t("amazon.managedDesc"),
+        `<button class="btn primary small" data-act="amazon-install" data-id="${esc(id)}">${icon("download", 13)} ${t("common.install")}</button>`,
+      );
+  return `
+    <div class="manage-tab-content">
+      <div class="section-title">${t("manage.groupFiles")}</div>
+      <div class="list">${files}</div>
+      <div class="section-title">${t("manage.groupPlaytime")}</div>
+      <div class="list">${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "")}</div>
+      <div class="section-title">${t("manage.groupCover")}</div>
+      <div class="list">
+        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
+      </div>
+    </div>`;
+}
+
 export function renderDrawerManage(s: EpicSummary): string {
+  // Amazon Games is managed by the launcher through Nile.
+  const source = sourceOfKey(s.appName);
+  if (source === "amazon") {
+    return amazonManageBody(s);
+  }
   // Companion games are managed by their own client: this panel only offers the
   // hand-off actions, the folder and the playtime the service reports.
-  const source = sourceOfKey(s.appName);
   if (source !== "epic" && source !== "gog" && source !== "steam") {
     return companionManageBody(s, source);
   }

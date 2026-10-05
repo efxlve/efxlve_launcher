@@ -46,13 +46,18 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   const shared = sharedOwnerOf(appName);
   // Steam games: every file action belongs to the Steam client.
   const isSteam = appName.startsWith("steam::");
-  // Companion games: install/uninstall go through their own client.
+  // Companion games: install/uninstall go through their own client. Amazon
+  // Games is launcher-managed (Nile), so it gets its own items below.
   const source = sourceOfKey(appName);
-  const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
+  const isAmazon = source === "amazon";
+  const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isAmazon;
 /** Riot games have no web storefront: the client owns its shop. */
 const isRiot = source === "riot";
   const companionItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
     `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}" data-store="${source}">${icon(iconName, 15)}<span>${label}</span></button>`;
+  // Amazon items carry the bare product id the Nile commands take.
+  const amazonItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
+    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName.slice(8))}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const steamItem = (mode: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
     `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="${mode}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const versions = gameVersionsOf(appName);
@@ -71,11 +76,14 @@ const isRiot = source === "riot";
         ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("update", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
     ${s.installed ? steamItem("validate", t("steam.validate"), "shield") : ""}
     ${item("manage-game", t("common.manage"), "settings")}`
-        : `${installed
-            ? item("epic-play", t("common.play"), "play")
-            : isCompanion
-              ? companionItem("companion-install", t("common.install"), "download")
-              : item("epic-install", t("common.install"), "download")}
+        : isAmazon
+          ? `${!installed ? amazonItem("amazon-install", t("common.install"), "download") : s.updateAvailable ? amazonItem("amazon-install", t("common.update"), "download") : amazonItem("amazon-play", t("common.play"), "play")}
+    ${item("manage-game", t("common.manage"), "settings")}`
+          : `${installed
+              ? item("epic-play", t("common.play"), "play")
+              : isCompanion
+                ? companionItem("companion-install", t("common.install"), "download")
+                : item("epic-install", t("common.install"), "download")}
     ${item("manage-game", t("common.manage"), "settings")}`}
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
@@ -86,14 +94,16 @@ const isRiot = source === "riot";
     ${!shared && !isSteam && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
-    ${!isRiot ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
+    ${!isRiot && !isAmazon ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam
           ? steamItem("uninstall", t("steam.uninstall"), "trash", true)
-          : isCompanion
-            ? companionItem("companion-uninstall", t("common.uninstall"), "trash", true)
-            : item("epic-uninstall", t("common.uninstall"), "trash", true)}`
+          : isAmazon
+            ? amazonItem("amazon-uninstall", t("common.uninstall"), "trash", true)
+            : isCompanion
+              ? companionItem("companion-uninstall", t("common.uninstall"), "trash", true)
+              : item("epic-uninstall", t("common.uninstall"), "trash", true)}`
       : ""}
   `;
 

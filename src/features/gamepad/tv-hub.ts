@@ -137,6 +137,17 @@ export function tvHubPrimaryAction(s: EpicSummary, focused = false): string {
   if (S.runningGames.has(s.appName)) {
     return `<button type="button" class="tv-btn-primary is-stop tv-action-btn${fCls}" data-act="epic-stop" data-id="${esc(s.appName)}">${icon("square", 18)} <span>${t("common.stop")}</span></button>`;
   }
+  // Amazon Games is installed and launched by the launcher through Nile.
+  if (s.appName.startsWith("amazon::")) {
+    const amazonId = s.appName.slice(8);
+    if (!s.installed) {
+      return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
+    }
+    if (s.updateAvailable) {
+      return `<button type="button" class="tv-btn-primary is-update tv-action-btn${fCls}" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 18)} <span>${t("common.update")}</span></button>`;
+    }
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 18)} <span>${t("common.playNow")}</span></button>`;
+  }
   if (s.installed) {
     const hasUpdate = Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
     if (hasUpdate) {
