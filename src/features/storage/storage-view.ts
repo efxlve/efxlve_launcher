@@ -14,9 +14,11 @@ import { icon } from "../../core/icons";
 import { rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
+import type { GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher } from "../../epic";
-import { coverOf, steamArtAttrs } from "../profile/profile-view";
+import { coverOf, steamArtAttrs, storeName } from "../profile/profile-view";
+import { storeLogo } from "../store/store-logos";
 
 interface StorageGame {
   key: string;
@@ -25,7 +27,7 @@ interface StorageGame {
   path: string | null;
   /** Size from the store's metadata; replaced by `measured` when available. */
   meta: number;
-  source: string;
+  source: GameSource;
 }
 
 /** Real folder sizes measured this session, keyed by library key. */
@@ -85,6 +87,7 @@ function moveButton(g: StorageGame): string {
 function gameRow(g: StorageGame): string {
   const partner = g.source === "epic" ? getThirdPartyLauncher(rawOf(g.key)) : null;
   const tp = g.source === "epic" && requiresThirdPartyLauncher(partner);
+  const store = `<span class="storage-game-store">${storeLogo(g.source, 14, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
   return `
     <div class="storage-game-row">
       ${g.cover ? `<img class="storage-game-thumb"${steamArtAttrs(g.key)} src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb"></div>`}
@@ -92,6 +95,8 @@ function gameRow(g: StorageGame): string {
         <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
         <div class="storage-game-meta">
           <span data-storage-size="${esc(g.key)}">${fmtBytes(shownSize(g))}</span>
+          <span class="apple-row-dot" aria-hidden="true">•</span>
+          ${store}
           ${tp && partner ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="tp-badge-text" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
         </div>
       </div>
