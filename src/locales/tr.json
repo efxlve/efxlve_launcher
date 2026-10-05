@@ -1,4 +1,9 @@
 {
+  "amazon.alreadyInstalled": "Bu oyun zaten kurulu.",
+  "amazon.importFailed": "Nile bu klasörü içe aktaramadı.",
+  "amazon.imported": "Oyun içe aktarıldı.",
+  "amazon.importDesc": "Amazon Games istemcisi veya başka bir araçla kurulmuş oyun klasörünü launcher'a gösterin.",
+  "amazon.importTitle": "Mevcut kurulumu içe aktar",
   "settings.nileTitle": "Amazon Games (Nile)",
   "settings.nileAccount": "Hesap ve kütüphane",
   "settings.nilePending": "İlk kullanımda indirilir",

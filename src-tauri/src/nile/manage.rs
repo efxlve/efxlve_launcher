@@ -81,6 +81,23 @@ pub async fn nile_verify(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Imports an Amazon game installed outside Nile (an older client's folder).
+#[tauri::command]
+pub async fn nile_import(app: AppHandle, id: String, path: String) -> Result<(), String> {
+    if library::installed_game(&app, &id).is_some() {
+        return Err("@t:amazon.alreadyInstalled".to_string());
+    }
+    let out = cli::run(&app, &["import", &id, "--path", &path], 6 * 3600).await?;
+    if !out.status.success() {
+        return Err(cli::failure_message(&out));
+    }
+    // Nile exits zero when it refuses the import; the record is the postcondition.
+    if library::installed_game(&app, &id).is_none() {
+        return Err("@t:amazon.importFailed".to_string());
+    }
+    Ok(())
+}
+
 /// Moves one installed Amazon game and repoints Nile's install record.
 #[tauri::command]
 pub async fn nile_move_game(

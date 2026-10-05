@@ -4,7 +4,7 @@
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "../../../core/toast";
-import { EPIC_LOGIN_URL } from "../../../epic";
+import { EPIC_LOGIN_URL, epicSelectFolderDialog } from "../../../epic";
 import {
   epicDoImport,
   epicDoLogin,
@@ -36,6 +36,7 @@ import {
   amazonLogoutAction,
   beginAmazonLogin,
   finishAmazonLogin,
+  importAmazonGame,
   installAmazonGame,
   playAmazonGame,
   reopenAmazonLogin,
@@ -181,6 +182,16 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
     case "amazon-install":
       if (id) void installAmazonGame(id);
+      return true;
+
+    case "amazon-import":
+      if (id) {
+        void (async () => {
+          const chosen = await epicSelectFolderDialog(null, i18nT("amazon.importTitle")).catch(() => null);
+          if (!chosen) return;
+          await importAmazonGame(id, chosen);
+        })();
+      }
       return true;
 
     case "amazon-play":

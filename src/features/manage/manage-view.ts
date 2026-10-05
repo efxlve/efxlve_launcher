@@ -215,7 +215,8 @@ function amazonManageBody(s: EpicSummary): string {
     : row(
         t("common.install"),
         t("amazon.managedDesc"),
-        `<button class="btn primary small" data-act="amazon-install" data-id="${esc(id)}">${icon("download", 13)} ${t("common.install")}</button>`,
+        `<button class="btn primary small" data-act="amazon-install" data-id="${esc(id)}">${icon("download", 13)} ${t("common.install")}</button>
+         <button class="btn ghost small" data-act="amazon-import" data-id="${esc(id)}" title="${t("amazon.importDesc")}">${icon("folder", 13)} ${t("amazon.importTitle")}</button>`,
       );
   const saves = s.installed
     ? `<div class="section-title">${t("manage.groupSaves")}</div>

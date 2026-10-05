@@ -1,4 +1,9 @@
 {
+  "amazon.alreadyInstalled": "このゲームはすでにインストールされています。",
+  "amazon.importFailed": "Nile はこのフォルダーをインポートできませんでした。",
+  "amazon.imported": "ゲームをインポートしました。",
+  "amazon.importDesc": "Amazon Games クライアントや他のツールでインストールしたゲームフォルダーを指定します。",
+  "amazon.importTitle": "既存のインストールをインポート",
   "settings.nileTitle": "Amazon Games (Nile)",
   "settings.nileAccount": "アカウントとライブラリ",
   "settings.nilePending": "初回利用時にダウンロード",

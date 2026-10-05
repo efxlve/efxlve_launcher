@@ -1,4 +1,9 @@
 {
+  "amazon.alreadyInstalled": "هذه اللعبة مثبّتة بالفعل.",
+  "amazon.importFailed": "تعذّر على Nile استيراد هذا المجلد.",
+  "amazon.imported": "تم استيراد اللعبة.",
+  "amazon.importDesc": "وجّه المشغّل إلى مجلد لعبة ثبّته عميل Amazon Games أو أداة أخرى.",
+  "amazon.importTitle": "استيراد تثبيت موجود",
   "settings.nileTitle": "Amazon Games (Nile)",
   "settings.nileAccount": "الحساب والمكتبة",
   "settings.nilePending": "يُنزَّل عند أول استخدام",

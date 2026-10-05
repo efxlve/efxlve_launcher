@@ -94,6 +94,10 @@ export const nileMoveGame = (appName: string, targetBasePath: string) =>
 export const nileCreateDesktopShortcut = (id: string) =>
   invoke<string>("nile_create_desktop_shortcut", { id });
 
+/** Imports an Amazon game installed outside Nile (an older client's folder). */
+export const nileImport = (id: string, path: string) =>
+  invoke<void>("nile_import", { id, path });
+
 /** Per-game manage settings (save path, backups) in the shared shape. */
 export const nileGameSettings = (id: string) =>
   invoke<import("./epic-commands").GameLocalSettings>("nile_game_settings", { id });

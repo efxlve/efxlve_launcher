@@ -914,6 +914,7 @@ fn main() {
             nile::transfers::nile_check_updates,
             nile::manage::nile_verify,
             nile::manage::nile_move_game,
+            nile::manage::nile_import,
             nile::manage::nile_create_desktop_shortcut,
             nile::manage::nile_game_settings,
             nile::amazon_get_install_dir,

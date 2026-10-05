@@ -1,4 +1,9 @@
 {
+  "amazon.alreadyInstalled": "Questo gioco è già installato.",
+  "amazon.importFailed": "Nile non è riuscito a importare questa cartella.",
+  "amazon.imported": "Gioco importato.",
+  "amazon.importDesc": "Indica al launcher una cartella installata dal client Amazon Games o da un altro strumento.",
+  "amazon.importTitle": "Importa installazione esistente",
   "settings.nileTitle": "Amazon Games (Nile)",
   "settings.nileAccount": "Account e libreria",
   "settings.nilePending": "Scaricato al primo utilizzo",

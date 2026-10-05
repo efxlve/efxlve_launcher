@@ -31,6 +31,7 @@ import {
   nileLogout,
   nileStop,
   nileUninstall,
+  nileImport,
   type NileGame,
 } from "../../nile";
 
@@ -252,6 +253,17 @@ export async function installAmazonGame(id: string): Promise<void> {
     clearAmazonDownload(key);
     toast(String(err), "err");
     scheduleRender();
+  }
+}
+
+/** Imports an Amazon game installed outside Nile (an older client's folder). */
+export async function importAmazonGame(id: string, installPath: string): Promise<void> {
+  try {
+    await nileImport(id, installPath);
+    toast(t("amazon.imported"), "ok");
+    await loadAmazonSession(false);
+  } catch (err) {
+    toast(String(err), "err");
   }
 }
 

@@ -1,4 +1,9 @@
 {
+  "amazon.alreadyInstalled": "此遊戲已安裝。",
+  "amazon.importFailed": "Nile 無法匯入此資料夾。",
+  "amazon.imported": "遊戲已匯入。",
+  "amazon.importDesc": "將啟動器指向由 Amazon Games 用戶端或其他工具安裝的遊戲資料夾。",
+  "amazon.importTitle": "匯入現有安裝",
   "settings.nileTitle": "Amazon Games (Nile)",
   "settings.nileAccount": "帳戶與遊戲庫",
   "settings.nilePending": "首次使用時下載",
