@@ -77,8 +77,15 @@ export const steamOpenClient = () => invoke<void>("steam_open_client");
 export const steamOpenDownloads = () => invoke<void>("steam_open_downloads");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
 
-/** App id → developer, read from the Steam client's own `appcache/appinfo.vdf`. */
-export const steamAppDevelopers = () => invoke<Record<string, string>>("steam_app_developers");
+/** One app's metadata, read from the Steam client's own `appcache/appinfo.vdf`. */
+export interface SteamAppMetadata {
+  developer?: string;
+  genres: string[];
+  releaseYear?: number;
+}
+
+/** App id → client-cached studio, genres and release year. */
+export const steamAppMetadata = () => invoke<Record<string, SteamAppMetadata>>("steam_app_metadata");
 
 /** One Steam transfer, with the byte counter moved forward since the last exact sample. */
 export interface SteamLiveDownload {

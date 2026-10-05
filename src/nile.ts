@@ -33,6 +33,10 @@ export interface NileGame {
   /** Amazon's own catalog text when it exists. */
   description: string | null;
   developer: string | null;
+  /** Genre labels used by the library filters. */
+  genres: string[];
+  /** Release year used by the library filters. */
+  release_year: number | null;
   installed: boolean;
   install_path: string | null;
   version: string | null;

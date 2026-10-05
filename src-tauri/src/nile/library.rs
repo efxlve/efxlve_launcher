@@ -24,6 +24,10 @@ pub struct NileGame {
     /// Amazon's own catalog text when the entitlement carries it.
     pub description: Option<String>,
     pub developer: Option<String>,
+    /// Genre labels used by the library filters.
+    pub genres: Vec<String>,
+    /// Release year used by the library filters.
+    pub release_year: Option<u32>,
     pub installed: bool,
     pub install_path: Option<String>,
     pub version: Option<String>,
@@ -96,6 +100,33 @@ fn pick_developer(product: &Value) -> Option<String> {
     }
 }
 
+/// Genre labels the library filters can use.
+fn pick_genres(product: &Value) -> Vec<String> {
+    product["productDetail"]["details"]
+        .get("genres")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Release year from `releaseDate` ("2012-10-12T00:00:00Z").
+fn pick_release_year(product: &Value) -> Option<u32> {
+    let text = product["productDetail"]["details"]
+        .get("releaseDate")
+        .and_then(|v| v.as_str())?;
+    if text.len() < 4 {
+        return None;
+    }
+    let year: u32 = text[..4].parse().ok()?;
+    (1970..=2100).contains(&year).then_some(year)
+}
+
 fn installed_index(app: &AppHandle) -> HashMap<String, Value> {
     let path = cli::config_dir(app).join("installed.json");
     let Ok(text) = std::fs::read_to_string(path) else {
@@ -147,6 +178,8 @@ fn parse_library(value: &Value, installed: &HashMap<String, Value>) -> Vec<NileG
                 hero: pick_hero(product),
                 description: pick_description(product),
                 developer: pick_developer(product),
+                genres: pick_genres(product),
+                release_year: pick_release_year(product),
                 installed: state.is_some(),
                 install_path: state
                     .and_then(|s| s.get("path"))
@@ -261,7 +294,9 @@ mod tests {
                         "details": {
                             "backgroundUrl1": "https://img/zeta.jpg",
                             "shortDescription": "A game about Zeta.",
-                            "developer": "Zeta Studio"
+                            "developer": "Zeta Studio",
+                            "genres": ["Action", "Adventure"],
+                            "releaseDate": "2019-05-01T00:00:00Z"
                         }
                     }
                 }
@@ -300,6 +335,8 @@ mod tests {
         assert_eq!(games[0].hero, None);
         assert_eq!(games[0].description, None);
         assert_eq!(games[0].developer, None);
+        assert!(games[0].genres.is_empty());
+        assert_eq!(games[0].release_year, None);
 
         assert_eq!(games[1].title, "Zeta Game");
         // The portrait `iconUrl` wins over the landscape `backgroundUrl1`,
@@ -308,6 +345,8 @@ mod tests {
         assert_eq!(games[1].hero.as_deref(), Some("https://img/zeta.jpg"));
         assert_eq!(games[1].description.as_deref(), Some("A game about Zeta."));
         assert_eq!(games[1].developer.as_deref(), Some("Zeta Studio"));
+        assert_eq!(games[1].genres, vec!["Action", "Adventure"]);
+        assert_eq!(games[1].release_year, Some(2019));
         assert!(!games[1].installed);
     }
 

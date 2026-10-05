@@ -78,8 +78,10 @@ import {
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
+  syncLibFilterUi,
   updateLibraryFilterInPlace,
 } from "../library/library-view";
+import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -387,6 +389,28 @@ document.addEventListener("click", (e) => {
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
     if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
+  } else if (act === "toggle-lib-filters") {
+    S.isFilterPanelOpen = !S.isFilterPanelOpen;
+    S.isStoreDropdownOpen = false;
+    S.isSortDropdownOpen = false;
+    S.isColDropdownOpen = false;
+    render();
+  } else if (act === "lib-filter-close") {
+    if (S.isFilterPanelOpen) {
+      S.isFilterPanelOpen = false;
+      render();
+    }
+  } else if (act === "lib-filter-clear") {
+    clearLibFilters();
+    if (!refreshLibraryForStoreFilter()) render();
+    syncLibFilterUi();
+  } else if (act === "lib-filter-toggle") {
+    const group = t.dataset.group as keyof typeof S.libFilters | undefined;
+    const value = t.dataset.value;
+    if (group && value && toggleLibFilter(group, value)) {
+      if (!refreshLibraryForStoreFilter()) render();
+      syncLibFilterUi();
+    }
   } else if (act === "toggle-col-dropdown") {
     S.isColDropdownOpen = !S.isColDropdownOpen;
     S.isSortDropdownOpen = false;

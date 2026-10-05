@@ -54,6 +54,8 @@ function amazonToLibraryItem(game: NileGame): LibraryItem {
     updateAvailable: false,
     cloudSavesSupported: false,
     dlcCount: 0,
+    genres: game.genres,
+    releaseYear: game.release_year,
   };
 }
 

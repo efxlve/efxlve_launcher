@@ -121,5 +121,28 @@ export interface LibraryItem {
   cloudSavesSupported: boolean;
   /** Total number of DLC expansions or add-ons owned. */
   dlcCount: number;
+  /** Genre labels for the library filters (empty/absent when unknown). */
+  genres?: string[];
+  /** Release year for the library filters (null when unknown). */
+  releaseYear?: number | null;
+}
+
+/* ---------- Advanced library filters ---------- */
+
+export type LibPlaytimeBucket = "never" | "under1" | "1to10" | "10to50" | "over50";
+export type LibSizeBucket = "under1" | "1to10" | "10to50" | "over50";
+export type LibYearBucket = "pre2000" | "2000s" | "2010s" | "2020s";
+
+/**
+ * Advanced library filter state. An empty set means "no constraint"; values
+ * inside one set are OR-ed, different sets are AND-ed.
+ */
+export interface LibFilters {
+  status: Set<"installed" | "notInstalled" | "update">;
+  playtime: Set<LibPlaytimeBucket>;
+  size: Set<LibSizeBucket>;
+  genres: Set<string>;
+  years: Set<LibYearBucket>;
+  developers: Set<string>;
 }
 

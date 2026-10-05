@@ -204,7 +204,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `shared_library_index` | `sharedLibraryIndex({ ... })` | `src-tauri/src/shared_library.rs` |
 | `show_notif_overlay` | `showNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `show_store_view` | `showStoreView({ ... })` | `src-tauri/src/store_host.rs` |
-| `steam_app_developers` | `steamAppDevelopers({ ... })` | `src-tauri/src/steam/catalog.rs` |
+| `steam_app_metadata` | `steamAppMetadata({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_cloud_status` | `steamCloudStatus({ ... })` | `src-tauri/src/steam/cloud.rs` |
 | `steam_download_live` | `steamDownloadLive({ ... })` | `src-tauri/src/steam/download_live.rs` |
 | `steam_find_store_app` | `steamFindStoreApp({ ... })` | `src-tauri/src/steam/catalog.rs` |

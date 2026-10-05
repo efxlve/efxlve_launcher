@@ -10,7 +10,7 @@ import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "..
 import { viewEl } from "../../core/dom";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, rawOf, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S } from "../../core/state";
@@ -22,6 +22,7 @@ import type { EpicSort, GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
+import { libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -32,28 +33,6 @@ export function getSortOptions(): { id: EpicSort; label: string }[] {
     { id: "installed", label: t("lib.sortInstalled") },
     { id: "alphaDesc", label: t("lib.sortAlphaDesc") },
   ];
-}
-
-/** Studio/publisher name for a game (empty when unknown). */
-export function studioOf(s: EpicSummary): string {
-  if (s.appName.startsWith("gog::")) {
-    const rawId = s.appName.slice(5);
-    const item = S.gogSummariesMap.get(rawId) || S.allGamesMap.get(s.appName);
-    return item?.developer || "";
-  }
-  if (s.appName.startsWith("steam::")) {
-    // The client's app cache fills the summary; an opened game page can fill the gap.
-    const item = S.steamSummariesMap.get(s.appName);
-    if (item?.developer) return item.developer;
-    const details = S.steamDetails.get(s.appName);
-    return details?.developers[0] || details?.publishers[0] || "";
-  }
-  const g = rawOf(s.appName);
-  const d = g?.metadata?.developer;
-  if (typeof d === "string" && d.trim()) return d.trim();
-  // Companion stores (EA, Ubisoft, Xbox, Battle.net, Riot) keep the studio on
-  // the unified item, filled by the store-page resolver.
-  return S.allGamesMap.get(s.appName)?.developer || "";
 }
 
 /**
@@ -131,10 +110,8 @@ export function invalidateLibraryVisibleCache(): void {
   S.libraryVisibleCount = -1;
 }
 
-export function epicVisibleSummaries(): EpicSummary[] {
-  const sig = visibleSignature();
-  if (visibleCache && visibleCacheSig === sig) return visibleCache;
-
+/** Base list after query, tab, collection and store filters; facets excluded. */
+export function libraryFilteredList(): EpicSummary[] {
   const q = S.query.trim().toLowerCase();
   const query = parseQuery(q);
   const activeCol =
@@ -190,7 +167,14 @@ export function epicVisibleSummaries(): EpicSummary[] {
     }
     return true;
   });
+  return list;
+}
 
+export function epicVisibleSummaries(): EpicSummary[] {
+  const sig = visibleSignature();
+  if (visibleCache && visibleCacheSig === sig) return visibleCache;
+
+  const list = libraryFilteredList().filter(matchesLibFilters);
   const collator = getCollator();
   const byTitle = (a: EpicSummary, b: EpicSummary) => collator.compare(a.title, b.title);
 
@@ -442,7 +426,7 @@ function renderLibraryPager(total: number): string {
 
 /** Result-set fingerprint. A change restarts pagination and the card chunk. */
 function libraryResultKey(): string {
-  return [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey()].join("\x1f");
+  return [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey(), String(S.libFiltersRev)].join("\x1f");
 }
 
 /**
@@ -645,6 +629,32 @@ function syncStoreFilterMenu(): void {
   });
 }
 
+/** Filter-button badge, panel result count and the clear button, in place. */
+export function syncLibFilterUi(): void {
+  const btn = document.querySelector<HTMLElement>('[data-act="toggle-lib-filters"]');
+  if (btn) {
+    const count = libFiltersActiveCount();
+    btn.classList.toggle("active", count > 0);
+    let badge = btn.querySelector<HTMLElement>(".lib-filter-badge");
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "lib-filter-badge tabular-nums";
+        btn.appendChild(badge);
+      }
+      badge.textContent = String(count);
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+  const resultEl = document.querySelector<HTMLElement>(".lib-filter-result");
+  if (resultEl) {
+    resultEl.textContent = t("lib.filterResults", { n: Math.max(0, S.libraryVisibleCount) });
+  }
+  const clearBtn = document.querySelector<HTMLButtonElement>('[data-act="lib-filter-clear"]');
+  if (clearBtn) clearBtn.disabled = libFiltersActiveCount() === 0;
+}
+
 /**
  * Applies a store-filter change without rebuilding the page. Cards that stay
  * in the slice keep their cover elements, so the WebView does not decode the
@@ -704,6 +714,7 @@ export function refreshLibraryForStoreFilter(): boolean {
   setupLibScrollObserver();
   syncLibraryHeadingCount();
   syncStoreFilterMenu();
+  syncLibFilterUi();
   return true;
 }
 
@@ -780,8 +791,13 @@ export function renderEpic(): string {
     },
   );
 
+  const filterCount = libFiltersActiveCount();
   const tools = `
     ${sourceDropdown}
+    <button class="btn ghost lib-sort-btn lib-filter-btn${filterCount > 0 ? " active" : ""}" data-act="toggle-lib-filters" title="${esc(t("lib.filters"))}">
+      <span class="lib-sort-kicker">${icon("sliders", 13)} ${esc(t("lib.filters"))}</span>
+      ${filterCount > 0 ? `<span class="lib-filter-badge tabular-nums">${filterCount}</span>` : ""}
+    </button>
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
         <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
@@ -852,6 +868,7 @@ export function renderEpic(): string {
       ${libraryHeader(tools, filters)}
       ${S.epicSyncNote ? `<p class="page-sub" id="lib-sync-note">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
+      ${renderLibFilterPanel(S.isFilterPanelOpen ? libraryFilteredList() : [], Math.max(0, S.libraryVisibleCount))}
     </div>`;
 }
 

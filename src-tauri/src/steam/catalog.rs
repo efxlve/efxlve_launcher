@@ -94,6 +94,134 @@ pub(super) fn parse_appinfo_strings(data: &[u8], offset: usize) -> Option<Vec<St
     Some(strings)
 }
 
+/// Walks one appinfo KV blob. Keys are string-table indices in v41 and C
+/// strings in v40. Shared by the single-string and string-list lookups.
+struct AppInfoReader<'a> {
+    data: &'a [u8],
+    pos: usize,
+    table: &'a Option<Vec<String>>,
+}
+
+impl AppInfoReader<'_> {
+    fn read_key(&mut self) -> Option<String> {
+        if let Some(table) = self.table {
+            let index = read_u32_at(self.data, self.pos)? as usize;
+            self.pos += 4;
+            table.get(index).cloned()
+        } else {
+            self.read_cstring()
+        }
+    }
+
+    fn read_cstring(&mut self) -> Option<String> {
+        let start = self.pos;
+        while self.pos < self.data.len() && self.data[self.pos] != 0 {
+            self.pos += 1;
+        }
+        if self.pos >= self.data.len() {
+            return None;
+        }
+        let text = String::from_utf8_lossy(&self.data[start..self.pos]).into_owned();
+        self.pos += 1;
+        Some(text)
+    }
+
+    fn skip_simple(&mut self, tag: u8) -> Option<()> {
+        match tag {
+            2 | 3 | 4 | 6 => self.pos += 4,
+            5 => {
+                while self.pos + 1 < self.data.len()
+                    && u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]]) != 0
+                {
+                    self.pos += 2;
+                }
+                self.pos += 2;
+            }
+            7 => self.pos += 8,
+            _ => return None,
+        }
+        Some(())
+    }
+
+    /// First string value stored under `wanted` anywhere in the tree.
+    fn find(&mut self, wanted: &str) -> Option<String> {
+        loop {
+            let tag = *self.data.get(self.pos)?;
+            self.pos += 1;
+            if tag == 8 {
+                return None;
+            }
+            let key = self.read_key()?;
+            match tag {
+                0 => {
+                    if let Some(found) = self.find(wanted) {
+                        return Some(found);
+                    }
+                }
+                1 => {
+                    let value = self.read_cstring()?;
+                    if key == wanted {
+                        return Some(value);
+                    }
+                }
+                _ => self.skip_simple(tag)?,
+            }
+        }
+    }
+
+    /// Every string value inside the object stored under `wanted`.
+    fn find_list(&mut self, wanted: &str) -> Option<Vec<String>> {
+        loop {
+            let tag = *self.data.get(self.pos)?;
+            self.pos += 1;
+            if tag == 8 {
+                return None;
+            }
+            let key = self.read_key()?;
+            match tag {
+                0 => {
+                    if key == wanted {
+                        let mut out = Vec::new();
+                        self.collect_strings(&mut out)?;
+                        return Some(out);
+                    }
+                    if let Some(found) = self.find_list(wanted) {
+                        return Some(found);
+                    }
+                }
+                1 => {
+                    self.read_cstring()?;
+                }
+                _ => self.skip_simple(tag)?,
+            }
+        }
+    }
+
+    /// All string values in the current object (genres nest numeric keys over
+    /// `description` strings, so every value counts).
+    fn collect_strings(&mut self, out: &mut Vec<String>) -> Option<()> {
+        loop {
+            let tag = *self.data.get(self.pos)?;
+            self.pos += 1;
+            if tag == 8 {
+                return Some(());
+            }
+            let _key = self.read_key()?;
+            match tag {
+                0 => self.collect_strings(out)?,
+                1 => {
+                    let value = self.read_cstring()?;
+                    let value = value.trim();
+                    if !value.is_empty() {
+                        out.push(value.to_string());
+                    }
+                }
+                _ => self.skip_simple(tag)?,
+            }
+        }
+    }
+}
+
 /// Walks one appinfo KV blob and returns the first string value stored under
 /// `wanted`. Keys are string-table indices in v41 and C strings in v40.
 pub(super) fn appinfo_find_string(
@@ -101,78 +229,41 @@ pub(super) fn appinfo_find_string(
     table: &Option<Vec<String>>,
     wanted: &str,
 ) -> Option<String> {
-    struct Reader<'a> {
-        data: &'a [u8],
-        pos: usize,
-        table: &'a Option<Vec<String>>,
-    }
-    impl Reader<'_> {
-        fn read_key(&mut self) -> Option<String> {
-            if let Some(table) = self.table {
-                let index = read_u32_at(self.data, self.pos)? as usize;
-                self.pos += 4;
-                table.get(index).cloned()
-            } else {
-                self.read_cstring()
-            }
-        }
-
-        fn read_cstring(&mut self) -> Option<String> {
-            let start = self.pos;
-            while self.pos < self.data.len() && self.data[self.pos] != 0 {
-                self.pos += 1;
-            }
-            if self.pos >= self.data.len() {
-                return None;
-            }
-            let text = String::from_utf8_lossy(&self.data[start..self.pos]).into_owned();
-            self.pos += 1;
-            Some(text)
-        }
-
-        fn find(&mut self, wanted: &str) -> Option<String> {
-            loop {
-                let tag = *self.data.get(self.pos)?;
-                self.pos += 1;
-                if tag == 8 {
-                    return None;
-                }
-                let key = self.read_key()?;
-                match tag {
-                    0 => {
-                        if let Some(found) = self.find(wanted) {
-                            return Some(found);
-                        }
-                    }
-                    1 => {
-                        let value = self.read_cstring()?;
-                        if key == wanted {
-                            return Some(value);
-                        }
-                    }
-                    2 | 3 | 4 | 6 => self.pos += 4,
-                    5 => {
-                        while self.pos + 1 < self.data.len()
-                            && u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]])
-                                != 0
-                        {
-                            self.pos += 2;
-                        }
-                        self.pos += 2;
-                    }
-                    7 => self.pos += 8,
-                    _ => return None,
-                }
-            }
-        }
-    }
-
-    let mut reader = Reader {
+    let mut reader = AppInfoReader {
         data,
         pos: 0,
         table,
     };
     reader.find(wanted)
+}
+
+/// Every string value stored under `wanted` (a nested table such as `genres`).
+pub(super) fn appinfo_find_string_list(
+    data: &[u8],
+    table: &Option<Vec<String>>,
+    wanted: &str,
+) -> Vec<String> {
+    let mut reader = AppInfoReader {
+        data,
+        pos: 0,
+        table,
+    };
+    reader.find_list(wanted).unwrap_or_default()
+}
+
+/// First four-digit year in a release-date text ("13 Sep, 2020" → 2020).
+fn year_from_text(text: &str) -> Option<u32> {
+    let bytes = text.as_bytes();
+    for i in 0..bytes.len().saturating_sub(3) {
+        if bytes[i..i + 4].iter().all(|b| b.is_ascii_digit()) {
+            if let Ok(year) = text[i..i + 4].parse::<u32>() {
+                if (1970..=2100).contains(&year) {
+                    return Some(year);
+                }
+            }
+        }
+    }
+    None
 }
 
 /// DLC app ids from the client's own `appcache/appinfo.vdf`.
@@ -234,11 +325,23 @@ pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
     Vec::new()
 }
 
-/// Developer names from the client's own `appcache/appinfo.vdf`, keyed by app id.
+/// Client-cached metadata for one Steam app: studio, genres and release year.
 ///
-/// The client keeps this cache for every app it knows, so the library list can
-/// show a studio for Steam games without one store request per game.
-pub fn parse_appinfo_developers(data: &[u8]) -> std::collections::HashMap<String, String> {
+/// The client keeps this cache for every app it knows, so the library can
+/// offer genre/year filters and studio names without one store request per game.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamAppMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub developer: Option<String>,
+    #[serde(default)]
+    pub genres: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release_year: Option<u32>,
+}
+
+/// Metadata for every app in the client's own `appcache/appinfo.vdf`.
+pub fn parse_appinfo_metadata(data: &[u8]) -> std::collections::HashMap<String, SteamAppMetadata> {
     use std::collections::HashMap;
 
     let Some(magic) = read_u32_at(data, 0) else {
@@ -278,15 +381,42 @@ pub fn parse_appinfo_developers(data: &[u8]) -> std::collections::HashMap<String
             break;
         }
         let blob = &data[pos + 68..pos + 8 + size];
-        if let Some(developer) = appinfo_find_string(blob, &table, "developer") {
-            let developer = developer.trim();
-            if !developer.is_empty() {
-                out.insert(entry_id.to_string(), developer.to_string());
-            }
+        let developer = appinfo_find_string(blob, &table, "developer")
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let genres = appinfo_find_string_list(blob, &table, "genres")
+            .into_iter()
+            .flat_map(|value| {
+                value
+                    .split(',')
+                    .map(|part| part.trim().to_string())
+                    .collect::<Vec<_>>()
+            })
+            .filter(|value| !value.is_empty())
+            .collect::<Vec<_>>();
+        let release_year = appinfo_find_string(blob, &table, "release_date")
+            .and_then(|text| year_from_text(&text));
+        if developer.is_some() || !genres.is_empty() || release_year.is_some() {
+            out.insert(
+                entry_id.to_string(),
+                SteamAppMetadata {
+                    developer,
+                    genres,
+                    release_year,
+                },
+            );
         }
         pos += 8 + size;
     }
     out
+}
+
+/// Developer names only, for callers that do not need the full metadata.
+pub fn parse_appinfo_developers(data: &[u8]) -> std::collections::HashMap<String, String> {
+    parse_appinfo_metadata(data)
+        .into_iter()
+        .filter_map(|(id, meta)| meta.developer.map(|developer| (id, developer)))
+        .collect()
 }
 
 /// App ids whose client metadata says `releasestate` is `preloadonly`.
@@ -371,36 +501,36 @@ pub fn read_client_dlc_ids(steam: &Path, app_id: &str) -> Vec<String> {
     parse_appinfo_dlc_ids(&data, app_id)
 }
 
-pub(super) static DEVELOPER_CACHE: std::sync::Mutex<
+pub(super) static METADATA_CACHE: std::sync::Mutex<
     Option<(
         Option<std::time::SystemTime>,
-        std::collections::HashMap<String, String>,
+        std::collections::HashMap<String, SteamAppMetadata>,
     )>,
 > = std::sync::Mutex::new(None);
 
-/// App id → developer from `appinfo.vdf`, reused until that file changes.
-pub(super) fn cached_app_developers(steam: &Path) -> std::collections::HashMap<String, String> {
+/// App id → client metadata from `appinfo.vdf`, reused until that file changes.
+pub(super) fn cached_app_metadata(steam: &Path) -> std::collections::HashMap<String, SteamAppMetadata> {
     let path = steam.join("appcache").join("appinfo.vdf");
     let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
-    let mut guard = DEVELOPER_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = METADATA_CACHE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((cached_mtime, map)) = guard.as_ref() {
         if cached_mtime == &mtime {
             return map.clone();
         }
     }
     let map = std::fs::read(&path)
-        .map(|data| parse_appinfo_developers(&data))
+        .map(|data| parse_appinfo_metadata(&data))
         .unwrap_or_default();
     *guard = Some((mtime, map.clone()));
     map
 }
 
-/// Developer names for the whole Steam library, read once from the client's own
-/// app cache. Empty when Steam or its cache is missing.
+/// Studio, genres and release year for the whole Steam library, read once from
+/// the client's own app cache. Empty when Steam or its cache is missing.
 #[tauri::command]
-pub fn steam_app_developers() -> std::collections::HashMap<String, String> {
+pub fn steam_app_metadata() -> std::collections::HashMap<String, SteamAppMetadata> {
     steam_install_path()
-        .map(|steam| cached_app_developers(&steam))
+        .map(|steam| cached_app_metadata(&steam))
         .unwrap_or_default()
 }
 
@@ -951,6 +1081,62 @@ mod tests {
         assert_eq!(map.get("620").map(String::as_str), Some("Valve"));
         assert!(!map.contains_key("730"));
         assert!(parse_appinfo_developers(b"junk").is_empty());
+    }
+
+    #[test]
+    fn appinfo_metadata_reads_genres_and_release_year() {
+        fn key(index: u32) -> [u8; 4] {
+            index.to_le_bytes()
+        }
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // appinfo
+        vdf.push(0);
+        vdf.extend_from_slice(&key(1)); // extended
+        vdf.push(1);
+        vdf.extend_from_slice(&key(2)); // developer
+        vdf.extend_from_slice(b"Valve\0");
+        vdf.push(0);
+        vdf.extend_from_slice(&key(3)); // genres
+        vdf.push(0);
+        vdf.extend_from_slice(&key(4)); // "0"
+        vdf.push(1);
+        vdf.extend_from_slice(&key(5)); // description
+        vdf.extend_from_slice(b"Action\0");
+        vdf.push(8);
+        vdf.push(0);
+        vdf.extend_from_slice(&key(6)); // "1"
+        vdf.push(1);
+        vdf.extend_from_slice(&key(5)); // description
+        vdf.extend_from_slice(b"Adventure\0");
+        vdf.push(8);
+        vdf.push(8); // genres
+        vdf.push(1);
+        vdf.extend_from_slice(&key(7)); // release_date
+        vdf.extend_from_slice(b"13 Sep, 2020\0");
+        vdf.push(8); // extended
+        vdf.push(8); // appinfo
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&620u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&8u32.to_le_bytes());
+        data.extend_from_slice(b"appinfo\0extended\0developer\0genres\0");
+        data.extend_from_slice(b"0\0description\0");
+        data.extend_from_slice(b"1\0release_date\0");
+
+        let map = parse_appinfo_metadata(&data);
+        let meta = map.get("620").expect("metadata");
+        assert_eq!(meta.developer.as_deref(), Some("Valve"));
+        assert_eq!(meta.genres, vec!["Action", "Adventure"]);
+        assert_eq!(meta.release_year, Some(2020));
     }
     #[test]
     fn label_only_requirement_lines_join_with_their_values() {

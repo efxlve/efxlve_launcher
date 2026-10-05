@@ -455,3 +455,27 @@ html.win-compact .lrow-ach-track { display: none; }
 .lib-pager-gap { color: var(--text-3); padding: 0 4px; }
 .lib-pager-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
 .lib-pager-size .settings-select { min-width: 76px; }
+
+/* --- Advanced filters slide-over --- */
+.lib-filter-btn.active { color: var(--accent); }
+.lib-filter-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--bg); font-size: 10px; font-weight: 700; }
+.lib-filter-backdrop { position: fixed; inset: 0; z-index: 250; background: rgba(0, 0, 0, 0.45); }
+.lib-filter-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 251; width: 340px; max-width: 92vw; display: flex; flex-direction: column; background: var(--surface-1); border-left: 1px solid var(--line); box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35); }
+.lib-filter-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.lib-filter-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lib-filter-title-main { margin: 0; font-size: 15px; font-weight: 600; }
+.lib-filter-result { font-size: 11px; color: var(--text-3); }
+.lib-filter-body { flex: 1; overflow-y: auto; padding: 2px 14px 14px; }
+.lib-filter-section { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.lib-filter-section:last-child { border-bottom: none; }
+.lib-filter-title { margin: 0 0 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); }
+.lib-filter-hint { margin: 0 0 8px; font-size: 11px; color: var(--text-3); }
+.lib-facet-search { width: 100%; margin-bottom: 6px; }
+.lib-facet-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 6px; border: none; background: transparent; color: var(--text-2); border-radius: var(--r-sm); cursor: pointer; text-align: left; font: inherit; appearance: none; }
+.lib-facet-row:hover { background: var(--surface-2); color: var(--text); }
+.lib-facet-row.is-on { color: var(--text); background: var(--surface-2); }
+.lib-facet-mark { display: inline-flex; width: 14px; flex-shrink: 0; color: var(--accent); }
+.lib-facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.lib-facet-count { font-size: 11px; color: var(--text-3); }
+.lib-facet-row[hidden] { display: none; }
+.lib-filter-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }

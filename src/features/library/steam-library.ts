@@ -21,13 +21,14 @@ import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
 import { fmtBytes } from "../../core/utils";
 import {
-  steamAppDevelopers,
+  steamAppMetadata,
   steamDownloadLive,
   steamListInstalled,
   steamLoginStatus,
   steamOwnedGames,
   steamStatus,
   steamSyncPlaytime,
+  type SteamAppMetadata,
   type SteamGame,
   type SteamOwnedGame,
   type SteamPlaytime,
@@ -41,20 +42,29 @@ function steamCloudFlag(appId: string): boolean {
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 
-/** App id → studio name, hydrated from the Steam client's own app cache. */
-const steamDevelopers = new Map<string, string>();
+/** App id → client-cached metadata, hydrated from `appinfo.vdf`. */
+const steamMeta = new Map<string, SteamAppMetadata>();
 
-/** Replaces the cached studio names with a fresh appinfo read. */
-function setSteamDevelopers(map: Record<string, string>): void {
-  steamDevelopers.clear();
-  for (const [appId, developer] of Object.entries(map)) {
-    const dev = developer.trim();
-    if (dev) steamDevelopers.set(appId, dev);
+/** Replaces the cached client metadata with a fresh appinfo read. */
+function setSteamMetadata(map: Record<string, SteamAppMetadata>): void {
+  steamMeta.clear();
+  for (const [appId, meta] of Object.entries(map)) {
+    if (meta && (meta.developer || (meta.genres && meta.genres.length) || meta.releaseYear)) {
+      steamMeta.set(appId, meta);
+    }
   }
 }
 
 function steamDeveloper(appId: string): string {
-  return steamDevelopers.get(appId) ?? "";
+  return steamMeta.get(appId)?.developer?.trim() ?? "";
+}
+
+function steamGenres(appId: string): string[] {
+  return steamMeta.get(appId)?.genres ?? [];
+}
+
+function steamReleaseYear(appId: string): number | null {
+  return steamMeta.get(appId)?.releaseYear ?? null;
 }
 
 /** Steamworks SDK / runtimes that are not playable titles. */
@@ -108,6 +118,8 @@ export function steamGameToItem(g: SteamGame): LibraryItem {
     downloading: g.downloading,
     bytesDownloaded: g.bytesDownloaded,
     bytesToDownload: g.bytesToDownload,
+    genres: steamGenres(g.appId),
+    releaseYear: steamReleaseYear(g.appId),
     cloudSavesSupported: steamCloudFlag(g.appId),
     dlcCount: S.steamDetails.get(`steam::${g.appId}`)?.dlc.length ?? 0,
   };
@@ -130,6 +142,8 @@ export function steamOwnedGameToItem(g: SteamOwnedGame): LibraryItem {
     heroUrl: `${STEAM_CDN}/${g.appId}/library_hero.jpg`,
     description: "",
     updateAvailable: false,
+    genres: steamGenres(g.appId),
+    releaseYear: steamReleaseYear(g.appId),
     cloudSavesSupported: steamCloudFlag(g.appId),
     dlcCount: S.steamDetails.get(`steam::${g.appId}`)?.dlc.length ?? 0,
   };
@@ -196,18 +210,18 @@ export async function loadSteamLibrary(): Promise<string | null> {
   }
   let installed: SteamGame[];
   try {
-    const [games, playtimes, status, developers] = await Promise.all([
+    const [games, playtimes, status, metadata] = await Promise.all([
       steamListInstalled(),
       steamSyncPlaytime(),
       // The client status also feeds the Accounts page.
       steamStatus().catch(() => null),
-      // The client's own app cache carries the studio name offline.
-      steamAppDevelopers().catch((): Record<string, string> => ({})),
+      // The client's own app cache carries the studio name and genres offline.
+      steamAppMetadata().catch((): Record<string, SteamAppMetadata> => ({})),
     ]);
     installed = games.filter((g) => !isSteamLibraryNoise(g.appId, g.name));
     S.steamGames = installed;
     S.steamStatus = status;
-    setSteamDevelopers(developers);
+    setSteamMetadata(metadata);
     mergeSteamPlaytimes(playtimes);
     setSteamSummaries(games.filter((g) => !isSteamLibraryNoise(g.appId, g.name)).map(steamGameToItem));
   } catch {

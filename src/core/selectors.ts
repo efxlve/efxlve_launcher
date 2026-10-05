@@ -240,6 +240,8 @@ export function libraryItemToSummary(g: LibraryItem): EpicSummary {
     downloading: g.downloading ?? false,
     bytesDownloaded: g.bytesDownloaded,
     bytesToDownload: g.bytesToDownload,
+    genres: g.genres,
+    releaseYear: g.releaseYear ?? null,
   };
 }
 

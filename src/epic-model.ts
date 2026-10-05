@@ -510,6 +510,10 @@ export interface EpicSummary {
   downloading?: boolean;
   bytesDownloaded?: number;
   bytesToDownload?: number;
+  /** Genre labels for the library filters (empty/absent when unknown). */
+  genres?: string[];
+  /** Release year for the library filters (null when unknown). */
+  releaseYear?: number | null;
 }
 
 /** Filters out DLCs and skipped broken items, merging in installed info. */

@@ -187,6 +187,19 @@ export const S = {
   gogUpdates: (new Map()) as Map<string, import("../gog").GogUpdateInfo>,
   /** Storefronts included in the library. More than one can be on at once. */
   enabledStores: loadEnabledStores(),
+  /** Advanced library filter facets; empty sets mean no constraint. */
+  libFilters: {
+    status: new Set(),
+    playtime: new Set(),
+    size: new Set(),
+    genres: new Set(),
+    years: new Set(),
+    developers: new Set(),
+  } as import("./types").LibFilters,
+  /** True while the advanced filter slide-over is open. */
+  isFilterPanelOpen: false,
+  /** Bumped on every facet change so pagination and the card chunk restart. */
+  libFiltersRev: 0,
   /** Canonical title → chosen library key, so playtime and trophies stay on that copy. */
   preferredVersions: loadJsonRecord(PREFERRED_VERSION_KEY),
   /** Games in the current library result (filters applied). -1 until the grid is built. */

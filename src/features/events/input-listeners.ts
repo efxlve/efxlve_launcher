@@ -220,6 +220,11 @@ document.addEventListener("keydown", (e) => {
       closeSelectiveModal();
       return;
     }
+    if (S.isFilterPanelOpen) {
+      S.isFilterPanelOpen = false;
+      render();
+      return;
+    }
     closeModal();
   }
   if (e.key === "Enter") {
@@ -346,6 +351,17 @@ document.addEventListener("change", (e) => {
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  // Facet search boxes only hide rows inside their own filter section; they
+  // must not trigger a re-render or the input would lose focus.
+  const facetInput = t?.closest?.("[data-facet-search]") as HTMLInputElement | null;
+  if (facetInput) {
+    const section = facetInput.closest(".lib-filter-section");
+    const q = facetInput.value.trim().toLowerCase();
+    section?.querySelectorAll<HTMLElement>("[data-facet-name]").forEach((row) => {
+      row.hidden = q.length > 0 && !(row.dataset.facetName || "").includes(q);
+    });
+    return;
+  }
   if (t && t.id === "install-dir-input") {
     S.installDialogDir = (t as HTMLInputElement).value;
     updateInstallFinalPath();
