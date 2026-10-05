@@ -10,6 +10,7 @@ mod eos;
 mod gogdl;
 mod launchers;
 mod legendary;
+mod nile;
 mod presence;
 mod shared_library;
 mod steam;
@@ -897,6 +898,11 @@ fn main() {
             gogdl::commands::gog_import_galaxy_tags,
             comet::epic_set_gog_comet,
             comet::comet_prepare,
+            nile::auth::nile_auth_status,
+            nile::auth::nile_login_begin,
+            nile::auth::nile_login_finish,
+            nile::auth::nile_logout,
+            nile::library::nile_library,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,
