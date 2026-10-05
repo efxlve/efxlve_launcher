@@ -136,6 +136,9 @@ export function tvHubPrimaryAction(s: EpicSummary, focused = false): string {
     return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="tv-open-downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("steam.downloading")}</span></button>`;
   }
   if (S.runningGames.has(s.appName)) {
+    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
+      return `<button type="button" class="tv-btn-primary is-stop tv-action-btn${fCls}" disabled>${icon("square", 18)} <span>${t("lib.running")}</span></button>`;
+    }
     return `<button type="button" class="tv-btn-primary is-stop tv-action-btn${fCls}" data-act="epic-stop" data-id="${esc(s.appName)}">${icon("square", 18)} <span>${t("common.stop")}</span></button>`;
   }
   // Amazon Games is installed and launched by the launcher through Nile.

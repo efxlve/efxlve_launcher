@@ -199,6 +199,11 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("steam.downloading")}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
+    // Client-owned stores cannot be stopped here: show the running state.
+    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
+      const label = t("lib.running");
+      return `<button class="btn play lg running" disabled title="${esc(label)}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
+    }
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
   // Amazon Games: installed and launched by the launcher through Nile.

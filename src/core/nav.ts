@@ -10,6 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
+import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
 import type { EpicFilter, View } from "./types";
 import { esc } from "./utils";
@@ -135,14 +136,29 @@ let sidebarGamesSig = "";
 /** Installed ids + recent list + language + open game. Unchanged during download progress. */
 let sidebarInputs = "";
 
-function sidebarInputStamp(): string {
-  let stamp = `${S.appLanguage}\0${S.currentModalAppName ?? ""}\0`;
-  for (let i = 0; i < S.epicRecent.length; i++) stamp += `${S.epicRecent[i]}\n`;
-  stamp += "\0";
+interface SidebarGame {
+  appName: string;
+  title: string;
+  cover: string;
+}
+
+/** Installed games from every store, hidden ones dropped, covers resolved. */
+function sidebarGames(): SidebarGame[] {
+  const out: SidebarGame[] = [];
+  const add = (appName: string, title: string, cover: string | null | undefined): void => {
+    if (S.hiddenGames.has(appName)) return;
+    out.push({ appName, title, cover: S.customCovers[appName] || cover || "" });
+  };
   for (const s of S.epicSummaries) {
-    if (s.installed && !S.hiddenGames.has(s.appName)) stamp += `${s.appName}\n`;
+    if (!s.installed) continue;
+    const raw = rawOf(s.appName);
+    add(s.appName, s.title, (raw ? epicPortrait(raw) : null) || s.cover);
   }
-  return stamp;
+  for (const g of S.gogSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
+  for (const g of S.amazonSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
+  for (const g of S.steamSummaries) if (g.installed) add(g.key, g.title, cachedSteamCover(g.id) || g.coverUrl);
+  for (const g of S.companionSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
+  return out;
 }
 
 const SIDEBAR_RECENT_LIMIT = 5;
@@ -165,27 +181,29 @@ function fillRank(id: string): number {
 export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
   if (!host) return;
-  const stamp = sidebarInputStamp();
+  const entries = sidebarGames();
+  const stamp = `${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${entries.map((e) => e.appName).join("\n")}`;
   if (stamp === sidebarInputs) return;
+  sidebarInputs = stamp;
+
   const recentIdx = new Map<string, number>();
   S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
-  const installed = S.epicSummaries.filter((s) => s.installed && !S.hiddenGames.has(s.appName));
-  const played = installed
-    .filter((s) => recentIdx.has(s.appName))
-    .sort((a, b) => (recentIdx.get(a.appName) ?? 0) - (recentIdx.get(b.appName) ?? 0));
-  const fillers = installed
-    .filter((s) => !recentIdx.has(s.appName))
+  const byId = new Map(entries.map((e) => [e.appName, e]));
+  const played = S.epicRecent
+    .map((id) => byId.get(id))
+    .filter((e): e is SidebarGame => Boolean(e));
+  const fillers = entries
+    .filter((e) => !recentIdx.has(e.appName))
     .sort((a, b) => fillRank(a.appName) - fillRank(b.appName));
-  if (sidebarFillRank.size > installed.length + 32) {
-    const keep = new Set(installed.map((s) => s.appName));
+  if (sidebarFillRank.size > entries.length + 32) {
+    const keep = new Set(entries.map((e) => e.appName));
     for (const id of sidebarFillRank.keys()) {
       if (!keep.has(id)) sidebarFillRank.delete(id);
     }
   }
   const shown = played.concat(fillers).slice(0, SIDEBAR_RECENT_LIMIT);
 
-  const sig = shown.map((s) => s.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
-  sidebarInputs = stamp;
+  const sig = shown.map((e) => e.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 
@@ -194,13 +212,12 @@ export function updateSidebarGames(): void {
     return;
   }
   const rows = shown
-    .map((s) => {
-      const raw = rawOf(s.appName);
-      const cover = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
-      const thumb = cover
-        ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
-        : `<span class="sb-game-ph">${esc((s.title[0] || "?").toUpperCase())}</span>`;
-      return `<button class="sb-game ${s.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(s.appName)}" title="${esc(s.title)}">${thumb}<span class="sb-game-title">${esc(s.title)}</span></button>`;
+    .map((g) => {
+      const steamApp = g.appName.startsWith("steam::") ? ` data-steam-app="${esc(g.appName.slice(7))}"` : "";
+      const thumb = g.cover
+        ? `<img${steamApp} src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />`
+        : `<span class="sb-game-ph">${esc((g.title[0] || "?").toUpperCase())}</span>`;
+      return `<button class="sb-game ${g.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(g.appName)}" title="${esc(g.title)}">${thumb}<span class="sb-game-title">${esc(g.title)}</span></button>`;
     })
     .join("");
   host.innerHTML = `<div class="sb-games-label">${t("sidebar.recent")}</div>${rows}`;

@@ -30,6 +30,9 @@
 .btn:hover { background: var(--surface-3); }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled, .btn.disabled { opacity: 0.45; cursor: not-allowed; }
+/* A running client-owned game has no stop action here: the button is a state
+   chip, so it stays fully visible while disabled. */
+.btn.running:disabled { opacity: 1; cursor: default; }
 .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 .btn.primary, .btn.install, .btn.play { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn.primary:hover, .btn.install:hover, .btn.play:hover { background: var(--accent-hover); }

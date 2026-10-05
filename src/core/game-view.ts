@@ -148,6 +148,11 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
   if (!installed) return "";
 
   if (S.runningGames.has(appName)) {
+    // Client-owned stores cannot be stopped from here: the chip is a state mark.
+    if (appName.startsWith("steam::") || isCompanionKey(appName)) {
+      const label = t("lib.running");
+      return `<span class="pcard-play-btn is-running" aria-label="${esc(label)}" title="${esc(label)}">${icon("square", 8)}</span>`;
+    }
     const stopLabel = t("common.stop");
     return `<button type="button" class="pcard-play-btn is-running" data-act="epic-stop" data-id="${esc(appName)}" aria-label="${esc(stopLabel)}" title="${esc(stopLabel)}">${icon("square", 8)}</button>`;
   }
@@ -362,6 +367,17 @@ export function epicActionButtons(
   if (sharedOwner) {
     return `<button class="btn ghost${btn}" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 14)} ${t("shared.switch")}</button>`;
   }
+  // A running game always announces itself: stop where the launcher can stop it,
+  // a status chip for the client-owned stores it cannot (Steam, Xbox, EA...).
+  if (S.runningGames.has(s.appName)) {
+    if (s.appName.startsWith("amazon::")) {
+      return `<button class="btn play${btn}" data-act="amazon-stop" data-id="${esc(s.appName.slice(8))}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+    }
+    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
+      return `<button class="btn play${btn} running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+  }
   // Steam games belong to the Steam client: play/install/update all go through it.
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
@@ -385,9 +401,6 @@ export function epicActionButtons(
     if (progress && progress.percent < 100) {
       return `<button class="btn primary${btn}" data-view="accounts" data-amazon-btn="${s.appName}">${icon("download", 12)} ${t("common.downloading", { p: Math.round(progress.percent) })}</button>`;
     }
-    if (S.runningGames.has(s.appName)) {
-      return `<button class="btn play${btn}" data-act="amazon-stop" data-id="${esc(amazonId)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
-    }
     if (!s.installed) {
       return `<button class="btn install${btn}" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 14)} ${t("common.install")}</button>`;
     }
@@ -410,10 +423,6 @@ export function epicActionButtons(
     if (opts.primaryOnly) return main;
     return `${main}
       <button class="btn danger small" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancelShort")}</button>`;
-  }
-  const isRunning = S.runningGames.has(s.appName);
-  if (isRunning) {
-    return `<button class="btn play${btn}" data-act="epic-stop" data-id="${s.appName}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
   }
   if (s.installed) {
     const hasUpdate = s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName);
