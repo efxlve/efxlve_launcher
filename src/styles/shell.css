@@ -543,14 +543,16 @@ html.sb-narrow .sb-toggle-label {
   color: var(--text-2);
   cursor: pointer;
   flex-shrink: 0;
+  transition: color 180ms ease, background-color 180ms ease, opacity 180ms ease, transform 120ms ease;
 }
 .store-tabs-bar.has-overflow .store-tabs-arrow { display: inline-flex; }
 .store-tabs-arrow:hover:not(:disabled) { color: var(--text); background: var(--surface-2); }
+.store-tabs-arrow:active:not(:disabled) { transform: scale(0.92); }
 .store-tabs-arrow:disabled { opacity: 0.3; cursor: default; }
 .store-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   height: 40px;
   margin: 0;
   padding: 3px;
@@ -568,48 +570,100 @@ html.sb-narrow .sb-toggle-label {
 }
 .store-tabs::-webkit-scrollbar { display: none; }
 .store-tabs[hidden] { display: none !important; }
-/* Active pill: glides between tabs instead of snapping (syncStoreTabsPill). */
-.store-tabs-pill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 34px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 240ms var(--ease), width 240ms var(--ease), height 200ms var(--ease), opacity 160ms ease;
-}
-.store-tabs-pill.is-ready { opacity: 1; }
+/* Retired sliding pill in favor of smooth self-contained button transitions. */
+.store-tabs-pill { display: none !important; }
 .store-tabs .tab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 0;
   height: 34px;
-  padding: 0 12px;
+  padding: 0 10px;
+  border: 0;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-2);
+  background: transparent;
   white-space: nowrap;
   position: relative;
   z-index: 1;
-  transition: color 140ms ease;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 180ms ease,
+              background-color 220ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 220ms ease,
+              padding 240ms cubic-bezier(0.2, 0, 0, 1),
+              transform 120ms ease;
 }
 /* A hidden store tab must leave the strip: the inline-flex above would
    otherwise beat the browser's own [hidden] display:none. */
 .store-tabs .tab[hidden] { display: none; }
-.store-tabs .tab:hover:not(.active) { color: var(--text); }
-.store-tabs .tab.active { color: #fff; background: transparent; }
+.store-tabs .tab:hover:not(.active) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.store-tabs .tab:active {
+  transform: scale(0.96);
+}
+.store-tabs .tab.active {
+  color: #fff;
+  background: var(--surface-3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  padding: 0 12px 0 10px;
+}
+.store-tabs .tab.active:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
 .store-tabs .tab.active::after { display: none; }
-.store-tabs .store-tab-logo { width: 16px; height: 16px; object-fit: contain; opacity: 0.85; flex-shrink: 0; }
-.store-tabs .tab:hover .store-tab-logo,
-.store-tabs .tab.active .store-tab-logo { opacity: 1; }
-/* Logos-only mode: every tab is its mark; the open store keeps its full name. */
-.store-tabs.logos-only .tab .store-tab-label { display: none; }
-.store-tabs.logos-only .tab.active .store-tab-label { display: inline; }
+.store-tabs .store-tab-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition: opacity 180ms ease, transform 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+.store-tabs .tab:hover .store-tab-logo {
+  opacity: 0.95;
+}
+.store-tabs .tab.active .store-tab-logo {
+  opacity: 1;
+  transform: scale(1.05);
+}
+/* Logos-only mode: every tab is its mark; the open store smoothly reveals its full name. */
+.store-tabs.logos-only .tab .store-tab-label {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
+  margin-left: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  transition: max-width 250ms cubic-bezier(0.2, 0, 0, 1),
+              opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+              margin-left 250ms cubic-bezier(0.2, 0, 0, 1),
+              transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.store-tabs.logos-only .tab.active .store-tab-label {
+  max-width: 140px;
+  opacity: 1;
+  margin-left: 7px;
+  transform: translateX(0);
+  pointer-events: auto;
+}
 .store-tabs-underline { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .store-tabs-arrow,
+  .store-tabs .tab,
+  .store-tabs .store-tab-logo,
+  .store-tabs.logos-only .tab .store-tab-label {
+    transition: none !important;
+  }
+}
 
 #page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-tabs-bar:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }

@@ -637,49 +637,36 @@ export function setStoreHidden(id: string, hidden: boolean): void {
 }
 
 /**
- * Glides the active pill under the open store's tab. The tab's layout offsets
- * are relative to the same padding box as the pill, so a scrolled or resized
- * strip stays aligned without extra bookkeeping.
+ * Keeps the open storefront smoothly scrolled into view inside the tab strip
+ * if it ever expands past the visible edge.
  */
 export function syncStoreTabsPill(): void {
   const switcher = document.getElementById("store-switcher");
   if (!switcher) return;
-  let pill = switcher.querySelector<HTMLElement>(".store-tabs-pill");
-  if (!pill) {
-    pill = document.createElement("span");
-    pill.className = "store-tabs-pill";
-    pill.setAttribute("aria-hidden", "true");
-    switcher.prepend(pill);
-  }
   const active = switcher.querySelector<HTMLElement>(".tab.active:not([hidden])");
-  if (!active || active.offsetWidth === 0) {
-    pill.classList.remove("is-ready");
-    return;
+  if (!active || active.offsetWidth === 0) return;
+  const left = active.offsetLeft;
+  const right = left + active.offsetWidth;
+  if (left < switcher.scrollLeft) {
+    switcher.scrollTo({ left, behavior: "smooth" });
+  } else if (right > switcher.scrollLeft + switcher.clientWidth) {
+    switcher.scrollTo({ left: right - switcher.clientWidth, behavior: "smooth" });
   }
-  // The first aim must not animate in from the strip's corner.
-  const first = !pill.classList.contains("is-ready");
-  if (first) pill.style.transition = "none";
-  pill.style.width = `${active.offsetWidth}px`;
-  pill.style.height = `${active.offsetHeight}px`;
-  pill.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
-  if (first) {
-    void pill.offsetWidth;
-    pill.style.transition = "";
-  }
-  pill.classList.add("is-ready");
 }
 
 // The tab strip is static markup: apply the stored choices once at boot and
-// keep the pill in step with every later class change (open or hidden store).
+// keep the active tab and scroll arrows in step with every later switch.
 applyStoreTabs();
 syncStoreTabsPill();
 if (typeof MutationObserver !== "undefined") {
   const switcher = document.getElementById("store-switcher");
   if (switcher) {
-    // Watch the tab buttons only. Observing the whole strip also sees the
-    // pill's own class writes and reschedules this callback forever, which
-    // pegs the renderer and leaves the window on the library skeleton.
-    const watch = new MutationObserver(syncStoreTabsPill);
+    let arrowTimer: ReturnType<typeof setTimeout> | undefined;
+    const watch = new MutationObserver(() => {
+      syncStoreTabsPill();
+      if (arrowTimer) clearTimeout(arrowTimer);
+      arrowTimer = setTimeout(updateStoreTabsArrows, 260);
+    });
     switcher.querySelectorAll("[data-store]").forEach((btn) => {
       watch.observe(btn, { attributes: true, attributeFilter: ["class", "hidden"] });
     });
