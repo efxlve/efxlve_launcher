@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "Atajo del launcher",
   "accounts.capState.clientTool": "Herramienta del propio cliente",
   "accounts.note.epic": "La biblioteca y el guardado en la nube vienen de tu cuenta de Epic; el launcher instala y actualiza.",
-  "accounts.note.gog": "Instalar y desinstalar pasan a GOG Galaxy; el tiempo de juego sale del registro local de Galaxy.",
+  "accounts.note.gog": "El launcher instala, actualiza, inicia y desinstala los juegos de GOG por sí mismo; GOG Galaxy es opcional y solo se necesita para importar su biblioteca, etiquetas y tiempo de juego.",
   "accounts.note.steam": "La sección de cuenta gestiona la biblioteca; la del cliente, los juegos instalados en este PC. Las capturas se quedan en la galería de Steam.",
   "accounts.note.ea": "El launcher solo inicia; las descargas y desinstalaciones ocurren en la EA app.",
   "accounts.note.ubisoft": "Los logros vienen de la caché local de Ubisoft Connect; hay que abrir el juego una vez en el cliente.",

@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "Skrót launchera",
   "accounts.capState.clientTool": "Narzędzie klienta",
   "accounts.note.epic": "Biblioteka i zapisy w chmurze pochodzą z konta Epic; instalacją i aktualizacjami zajmuje się launcher.",
-  "accounts.note.gog": "Instalacja i odinstalowanie przechodzą do GOG Galaxy; czas gry pochodzi z lokalnego rejestru Galaxy.",
+  "accounts.note.gog": "Instalacja, aktualizacje, uruchamianie i usuwanie gier GOG należą do launchera; GOG Galaxy jest opcjonalny i służy tylko do importu biblioteki, tagów i czasu gry.",
   "accounts.note.steam": "Sekcja konta zarządza biblioteką, a sekcja klienta grami zainstalowanymi na tym PC. Zrzuty ekranu zostają w galerii Steam.",
   "accounts.note.ea": "Launcher tylko uruchamia; pobieranie i usuwanie odbywa się w aplikacji EA.",
   "accounts.note.ubisoft": "Osiągnięcia pochodzą z lokalnej pamięci Ubisoft Connect, więc grę trzeba raz uruchomić w kliencie.",

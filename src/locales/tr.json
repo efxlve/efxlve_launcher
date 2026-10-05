@@ -1519,7 +1519,7 @@
   "accounts.capState.hotkey": "Launcher kısayolu",
   "accounts.capState.clientTool": "İstemcinin kendi aracı",
   "accounts.note.epic": "Kütüphane ve bulut kayıtları Epic hesabından gelir; kurulum ve güncellemeyi launcher yapar.",
-  "accounts.note.gog": "Kurulum ve kaldırma GOG Galaxy'ye devredilir; oyun süresi Galaxy'nin yerel kaydından okunur.",
+  "accounts.note.gog": "Kurulum, güncelleme, başlatma ve kaldırma işlerini launcher kendisi yapar; GOG Galaxy isteğe bağlıdır ve yalnızca kütüphaneyi, etiketleri ve oyun süresini içe aktarmak için gerekir.",
   "accounts.note.steam": "Hesap bölümü kütüphaneyi, istemci bölümü bu PC'de kurulu oyunları yönetir. Ekran görüntüleri Steam'in kendi galerisinde kalır.",
   "accounts.note.ea": "Launcher yalnızca başlatır; indirme ve kaldırma EA App'te yapılır.",
   "accounts.note.ubisoft": "Başarımlar Ubisoft Connect'in yerel önbelleğinden okunur; oyunu istemcide bir kez açmak gerekir.",

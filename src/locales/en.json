@@ -1519,7 +1519,7 @@
   "accounts.capState.hotkey": "Launcher hotkey",
   "accounts.capState.clientTool": "The client's own tool",
   "accounts.note.epic": "The library and cloud saves come from your Epic account; the launcher does the installing and updating.",
-  "accounts.note.gog": "Install and uninstall are handed to GOG Galaxy; playtime comes from Galaxy's local record.",
+  "accounts.note.gog": "The launcher installs, updates, launches and removes GOG games itself; GOG Galaxy is optional and only needed to import its library, tags and playtime.",
   "accounts.note.steam": "The account section manages the library; the client section manages the games installed on this PC. Screenshots stay in Steam's own gallery.",
   "accounts.note.ea": "The launcher only launches; downloads and removals happen in the EA app.",
   "accounts.note.ubisoft": "Achievements come from the local Ubisoft Connect cache, so a game must be opened once in the client.",

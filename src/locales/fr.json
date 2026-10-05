@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "Raccourci du launcher",
   "accounts.capState.clientTool": "Outil propre au client",
   "accounts.note.epic": "La bibliothèque et les sauvegardes cloud viennent de votre compte Epic ; le launcher installe et met à jour.",
-  "accounts.note.gog": "L'installation et la désinstallation passent par GOG Galaxy ; le temps de jeu vient de son journal local.",
+  "accounts.note.gog": "Le launcher installe, met à jour, lance et désinstalle les jeux GOG lui-même ; GOG Galaxy est facultatif et ne sert qu'à importer sa bibliothèque, ses tags et son temps de jeu.",
   "accounts.note.steam": "La section compte gère la bibliothèque ; la section client, les jeux installés sur ce PC. Les captures restent dans la galerie de Steam.",
   "accounts.note.ea": "Le launcher ne fait que lancer ; téléchargements et désinstallations se font dans l'app EA.",
   "accounts.note.ubisoft": "Les succès viennent du cache local d'Ubisoft Connect ; il faut ouvrir le jeu une fois dans le client.",

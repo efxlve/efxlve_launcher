@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "啟動器快速鍵",
   "accounts.capState.clientTool": "用戶端自帶工具",
   "accounts.note.epic": "媒體庫與雲端存檔來自你的 Epic 帳戶；安裝與更新由啟動器完成。",
-  "accounts.note.gog": "安裝與解除安裝交給 GOG Galaxy；遊戲時間來自 Galaxy 的本機記錄。",
+  "accounts.note.gog": "安裝、更新、啟動與卸載由啟動器自行完成；GOG Galaxy 為選用項目，僅用於匯入其遊戲庫、標籤與遊玩時間。",
   "accounts.note.steam": "帳戶部分管理媒體庫；用戶端部分管理此電腦上安裝的遊戲。螢幕擷取留在 Steam 自己的相簿中。",
   "accounts.note.ea": "啟動器只負責啟動；下載與移除在 EA 應用程式中進行。",
   "accounts.note.ubisoft": "成就來自 Ubisoft Connect 的本機快取，因此需要在用戶端中開啟遊戲一次。",

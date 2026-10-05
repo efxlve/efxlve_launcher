@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "启动器热键",
   "accounts.capState.clientTool": "客户端自带工具",
   "accounts.note.epic": "库和云存档来自你的 Epic 账户；安装和更新由启动器完成。",
-  "accounts.note.gog": "安装和卸载交给 GOG Galaxy；游戏时间来自 Galaxy 的本地记录。",
+  "accounts.note.gog": "安装、更新、启动和卸载由启动器自行完成；GOG Galaxy 是可选项，仅用于导入其游戏库、标签和游玩时间。",
   "accounts.note.steam": "账户部分管理库；客户端部分管理此电脑上安装的游戏。截图保留在 Steam 自己的画廊中。",
   "accounts.note.ea": "启动器只负责启动；下载和卸载在 EA 应用中进行。",
   "accounts.note.ubisoft": "成就来自 Ubisoft Connect 的本地缓存，因此需要在客户端中打开一次游戏。",

@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "ランチャーのホットキー",
   "accounts.capState.clientTool": "クライアント独自の機能",
   "accounts.note.epic": "ライブラリとクラウドセーブは Epic アカウントから取得し、インストールと更新はランチャーが行います。",
-  "accounts.note.gog": "インストールとアンインストールは GOG Galaxy が行い、プレイ時間は Galaxy のローカル記録から取得します。",
+  "accounts.note.gog": "インストール、更新、起動、削除はランチャーが自前で行います。GOG Galaxy は任意で、ライブラリ・タグ・プレイ時間のインポートにのみ必要です。",
   "accounts.note.steam": "アカウント欄はライブラリを、クライアント欄はこの PC にインストール済みのゲームを管理します。スクリーンショットは Steam のギャラリーに残ります。",
   "accounts.note.ea": "ランチャーは起動のみを行い、ダウンロードと削除は EA アプリで行います。",
   "accounts.note.ubisoft": "実績は Ubisoft Connect のローカルキャッシュから取得するため、ゲームを一度クライアントで起動する必要があります。",

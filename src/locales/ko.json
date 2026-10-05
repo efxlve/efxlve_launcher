@@ -1431,7 +1431,7 @@
   "accounts.capState.hotkey": "런처 단축키",
   "accounts.capState.clientTool": "클라이언트 자체 도구",
   "accounts.note.epic": "라이브러리와 클라우드 저장은 Epic 계정에서 가져오고, 설치와 업데이트는 런처가 처리합니다.",
-  "accounts.note.gog": "설치와 제거는 GOG Galaxy가 처리하고, 플레이 시간은 Galaxy의 로컬 기록에서 가져옵니다.",
+  "accounts.note.gog": "설치, 업데이트, 실행, 제거는 런처가 직접 처리합니다. GOG Galaxy는 선택 사항이며 라이브러리, 태그, 플레이 시간을 가져올 때만 필요합니다.",
   "accounts.note.steam": "계정 섹션은 라이브러리를, 클라이언트 섹션은 이 PC에 설치된 게임을 관리합니다. 스크린샷은 Steam 갤러리에 남습니다.",
   "accounts.note.ea": "런처는 실행만 하며, 다운로드와 제거는 EA 앱에서 이루어집니다.",
   "accounts.note.ubisoft": "업적은 Ubisoft Connect의 로컬 캐시에서 가져오므로 게임을 클라이언트에서 한 번 실행해야 합니다.",
