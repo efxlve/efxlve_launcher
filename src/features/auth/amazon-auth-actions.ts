@@ -14,11 +14,16 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import {
+  amazonKey,
   nileAuthStatus,
+  nileInstall,
+  nileLaunch,
   nileLibrary,
   nileLoginBegin,
   nileLoginFinish,
   nileLogout,
+  nileStop,
+  nileUninstall,
 } from "../../nile";
 
 function openExternal(url: string): void {
@@ -135,5 +140,53 @@ export async function amazonLogoutAction(): Promise<void> {
   };
   S.amazonGames = [];
   S.amazonLogin = null;
+  S.amazonProgress.clear();
   scheduleRender();
+}
+
+/** Installs or updates one Amazon game; progress streams in as events. */
+export async function installAmazonGame(id: string): Promise<void> {
+  const key = amazonKey(id);
+  S.amazonProgress.set(key, { percent: 0, speed: 0 });
+  scheduleRender();
+  try {
+    await nileInstall(id);
+    S.amazonProgress.delete(key);
+    toast(t("amazon.installed"), "ok");
+    await loadAmazonSession(false);
+  } catch (err) {
+    S.amazonProgress.delete(key);
+    toast(String(err), "err");
+    scheduleRender();
+  }
+}
+
+/** Launches one installed game and starts the playtime session. */
+export async function playAmazonGame(id: string): Promise<void> {
+  try {
+    const msg = await nileLaunch(id);
+    toast(msg, "ok");
+  } catch (err) {
+    toast(String(err), "err");
+  }
+}
+
+export async function stopAmazonGame(id: string): Promise<void> {
+  try {
+    const msg = await nileStop(id);
+    toast(msg, "ok");
+  } catch (err) {
+    toast(String(err), "err");
+  }
+}
+
+/** Removes one installed game and refreshes the installed state. */
+export async function uninstallAmazonGame(id: string): Promise<void> {
+  try {
+    await nileUninstall(id);
+    toast(t("amazon.uninstalled"), "ok");
+    await loadAmazonSession(false);
+  } catch (err) {
+    toast(String(err), "err");
+  }
 }

@@ -73,6 +73,7 @@ import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession } from "../auth/amazon-auth-actions";
+import type { NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
@@ -233,6 +234,19 @@ export async function initApp(hooks: {
     await listen<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);
     });
+    // Amazon installs stream their own progress lines; patch the card bars and
+    // remember the last values so a re-render keeps showing them.
+    await listen<NileProgressEvent>("nile-progress", (event) => {
+      const { id, percent, speed } = event.payload;
+      S.amazonProgress.set(id, { percent, speed });
+      const bar = document.querySelector<HTMLElement>(`[data-amazon-bar="${id}"]`);
+      if (bar) bar.style.width = `${percent}%`;
+      const meta = document.querySelector<HTMLElement>(`[data-amazon-meta="${id}"]`);
+      if (meta) {
+        meta.textContent = `${percent.toFixed(1)}%${speed > 0 ? ` · ${speed.toFixed(1)} MiB/s` : ""}`;
+      }
+    });
+
     await listen<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       if (id.startsWith("gog::") && done) S.gogDlPaused = false;

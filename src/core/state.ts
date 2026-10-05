@@ -366,6 +366,8 @@ export const S = {
   /** PKCE material from `nile_login_begin`, kept until sign-in finishes. */
   amazonLogin: (null) as import("../nile").NileLoginData | null,
   amazonBusy: false,
+  /** Live install progress per composite Amazon id. */
+  amazonProgress: (new Map()) as Map<string, { percent: number; speed: number }>,
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

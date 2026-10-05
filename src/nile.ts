@@ -50,3 +50,40 @@ export const nileLogout = () => invoke<void>("nile_logout");
 
 /** Library list; `sync` refreshes it from Amazon first. */
 export const nileLibrary = (sync = false) => invoke<NileGame[]>("nile_library", { sync });
+
+/** Installs or updates one game; progress arrives as `nile-progress` events. */
+export const nileInstall = (id: string, path?: string | null, maxWorkers?: number) =>
+  invoke<void>("nile_install", {
+    id,
+    path: path ?? null,
+    maxWorkers: maxWorkers ?? null,
+  });
+
+/** Download size for the install dialog, without downloading anything. */
+export const nileInstallInfo = (id: string) =>
+  invoke<number>("nile_install_info", { id });
+
+export const nileUninstall = (id: string) => invoke<void>("nile_uninstall", { id });
+
+/** Launches one installed game; the promise resolves when the game exits. */
+export const nileLaunch = (id: string) => invoke<string>("nile_launch", { id });
+
+export const nileStop = (id: string) => invoke<string>("nile_stop", { id });
+
+/** Composite library ids with a newer build on Amazon. */
+export const nileCheckUpdates = () => invoke<string[]>("nile_check_updates");
+
+export interface NileProgressEvent {
+  /** Composite id (`amazon::<product id>`). */
+  id: string;
+  percent: number;
+  downloaded: number;
+  total: number;
+  /** MiB/s, 0 until the first speed line arrives. */
+  speed: number;
+}
+
+/** Composite library key for one Amazon product id. */
+export function amazonKey(id: string): string {
+  return `amazon::${id}`;
+}

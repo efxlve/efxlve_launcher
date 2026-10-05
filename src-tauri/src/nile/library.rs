@@ -106,6 +106,40 @@ fn parse_library(value: &Value, installed: &HashMap<String, Value>) -> Vec<NileG
     games
 }
 
+/// One installed game as Nile recorded it.
+pub struct InstalledGame {
+    pub path: String,
+}
+
+/// Installed state for one product id, straight from Nile's `installed.json`.
+pub fn installed_game(app: &AppHandle, id: &str) -> Option<InstalledGame> {
+    let index = installed_index(app);
+    let state = index.get(id)?;
+    let path = state.get("path").and_then(|v| v.as_str())?.to_string();
+    if path.is_empty() {
+        return None;
+    }
+    Some(InstalledGame { path })
+}
+
+/// Display title for one product id from the cached library.
+pub fn game_title(app: &AppHandle, id: &str) -> Option<String> {
+    let path = cli::config_dir(app).join("library.json");
+    let text = std::fs::read_to_string(path).ok()?;
+    let list: Vec<Value> = serde_json::from_str(&text).ok()?;
+    list.iter().find_map(|entry| {
+        let product = &entry["product"];
+        if product.get("id").and_then(|v| v.as_str()) != Some(id) {
+            return None;
+        }
+        product
+            .get("title")
+            .and_then(|v| v.as_str())
+            .filter(|t| !t.is_empty())
+            .map(|t| t.to_string())
+    })
+}
+
 /// Library list, optionally refreshed from Amazon first.
 #[tauri::command]
 pub async fn nile_library(app: AppHandle, sync: bool) -> Result<Vec<NileGame>, String> {

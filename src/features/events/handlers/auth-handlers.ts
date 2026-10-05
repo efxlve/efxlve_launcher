@@ -36,8 +36,12 @@ import {
   amazonLogoutAction,
   beginAmazonLogin,
   finishAmazonLogin,
+  installAmazonGame,
+  playAmazonGame,
   reopenAmazonLogin,
+  stopAmazonGame,
   syncAmazonLibrary,
+  uninstallAmazonGame,
 } from "../../auth/amazon-auth-actions";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
@@ -173,6 +177,22 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
     case "amazon-logout":
       void amazonLogoutAction();
+      return true;
+
+    case "amazon-install":
+      if (id) void installAmazonGame(id);
+      return true;
+
+    case "amazon-play":
+      if (id) void playAmazonGame(id);
+      return true;
+
+    case "amazon-stop":
+      if (id) void stopAmazonGame(id);
+      return true;
+
+    case "amazon-uninstall":
+      if (id) void uninstallAmazonGame(id);
       return true;
 
     case "gog-account-switch":

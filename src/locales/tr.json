@@ -1574,6 +1574,8 @@
   "amazon.guideStep3Desc": "Adresi yapıştırıp gönderin; kütüphane otomatik eşitlenir.",
   "amazon.syncLibrary": "Kütüphaneyi eşitle",
   "amazon.synced": "Amazon kütüphanesi eşitlendi",
+  "amazon.installed": "Amazon oyunu kuruldu",
+  "amazon.uninstalled": "Amazon oyunu kaldırıldı",
   "amazon.starting": "Giriş başlatılıyor…",
   "amazon.openFirst": "Önce girişi başlatın",
   "gog.pastePlaceholder": "Yetkilendirme kodunu veya yönlendirme URL'sini buraya yapıştırın...",

@@ -22,25 +22,88 @@ pub fn config_dir(app: &AppHandle) -> PathBuf {
     dir
 }
 
-/// Runs one Nile command and returns its captured output.
-pub async fn run(app: &AppHandle, args: &[&str], timeout_secs: u64) -> Result<Output, String> {
-    let bin = super::ensure_binary(app).await?;
+/// Builds one Nile invocation with the launcher-owned config and no console
+/// window. Callers add args and stdio.
+pub fn command(app: &AppHandle, bin: std::path::PathBuf) -> tokio::process::Command {
     let mut cmd = tokio::process::Command::new(bin);
-    cmd.args(args)
-        .env("NILE_CONFIG_PATH", config_dir(app))
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    cmd.env("NILE_CONFIG_PATH", config_dir(app));
     #[cfg(windows)]
     {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
+    cmd
+}
+
+/// Runs one Nile command and returns its captured output.
+pub async fn run(app: &AppHandle, args: &[&str], timeout_secs: u64) -> Result<Output, String> {
+    let bin = super::ensure_binary(app).await?;
+    let mut cmd = command(app, bin);
+    cmd.args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
 
     tokio::time::timeout(Duration::from_secs(timeout_secs), cmd.output())
         .await
         .map_err(|_| "Nile timed out".to_string())?
         .map_err(|e| format!("Nile could not run: {e}"))
+}
+
+/// Runs one Nile command while streaming its stderr line by line. Nile logs the
+/// download progress there, so the caller can forward it to the UI.
+pub async fn run_streaming(
+    app: &AppHandle,
+    args: &[String],
+    timeout_secs: u64,
+    on_stderr_line: impl FnMut(&str) + Send + 'static,
+) -> Result<Output, String> {
+    use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
+
+    let bin = super::ensure_binary(app).await?;
+    let mut cmd = command(app, bin);
+    cmd.args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = cmd.spawn().map_err(|e| format!("Nile could not run: {e}"))?;
+
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    let mut on_line = on_stderr_line;
+    let stderr_task = tokio::spawn(async move {
+        let mut text = String::new();
+        if let Some(stderr) = stderr {
+            let mut lines = BufReader::new(stderr).lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                on_line(&line);
+                text.push_str(&line);
+                text.push('\n');
+            }
+        }
+        text
+    });
+    let stdout_task = tokio::spawn(async move {
+        let mut bytes = Vec::new();
+        if let Some(mut stdout) = stdout {
+            let _ = stdout.read_to_end(&mut bytes).await;
+        }
+        bytes
+    });
+
+    let status = tokio::time::timeout(Duration::from_secs(timeout_secs), child.wait())
+        .await
+        .map_err(|_| "Nile timed out".to_string())?
+        .map_err(|e| format!("Nile could not finish: {e}"))?;
+    let stderr_text = stderr_task.await.unwrap_or_default();
+    let stdout_bytes = stdout_task.await.unwrap_or_default();
+
+    Ok(Output {
+        status,
+        stdout: stdout_bytes,
+        stderr: stderr_text.into_bytes(),
+    })
 }
 
 /// Trimmed stdout (Nile prints machine-readable payloads there).

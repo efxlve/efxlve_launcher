@@ -1498,6 +1498,8 @@
   "amazon.guideStep3Desc": "Paste the URL and submit; the library syncs automatically.",
   "amazon.syncLibrary": "Sync library",
   "amazon.synced": "Amazon library synced",
+  "amazon.installed": "Amazon game installed",
+  "amazon.uninstalled": "Amazon game uninstalled",
   "amazon.starting": "Starting sign-in…",
   "amazon.openFirst": "Start sign-in first",
   "gog.pastePlaceholder": "在此粘贴授权码或重定向 URL...",
