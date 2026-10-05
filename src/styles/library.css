@@ -361,17 +361,25 @@
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* --- List view --- */
-.lib-list { --lrow-store-w: 110px; --lrow-ach-w: 128px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) var(--lrow-ach-w) 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }
+.lib-list { --lrow-store-w: 110px; --lrow-ach-w: 128px; --lrow-title-min: 0px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(var(--lrow-title-min), 1fr) var(--lrow-ach-w) 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }
 /* Optional storefront column, right after the title: its own grid column so it
    lines up with the others instead of sticking to the game name. */
-.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px minmax(0, 1fr) var(--lrow-store-w) var(--lrow-ach-w) 116px 92px 112px; }
-/* Achievement progress bar: the extra track comes from the flexible title
-   column, so the store column shifts left and the bar runs from the platform
-   name to the percent. It shrinks back to the base width when space runs out. */
-.lib-list.has-ach-progress { --lrow-ach-w: minmax(128px, 240px); }
+.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px minmax(var(--lrow-title-min), 1fr) var(--lrow-store-w) var(--lrow-ach-w) 116px 92px 112px; }
+/* Wide windows: the data columns get more air. At the tight end (1180px with
+   the default sidebar) the base gap stays, so nothing overflows. */
+@media (min-width: 1240px) {
+  html:not(.win-compact) .lrow-head, html:not(.win-compact) .lrow { gap: 28px; }
+}
+@media (min-width: 1340px) {
+  html:not(.win-compact) .lrow-head, html:not(.win-compact) .lrow { gap: 32px; }
+  /* A longer achievement track from the flexible title space. The title keeps
+     a floor, so the bar can never squeeze the game names away. */
+  html:not(.win-compact) .lib-list { --lrow-title-min: 150px; }
+  html:not(.win-compact) .lib-list.has-ach-progress { --lrow-ach-w: minmax(128px, 200px); }
+}
 /* Narrow windows: the store column keeps the mark and drops the name. */
-html.win-compact .lib-list { --lrow-store-w: 44px; --lrow-ach-w: 128px; }
+html.win-compact .lib-list { --lrow-store-w: 44px; --lrow-ach-w: 128px; --lrow-title-min: 0px; }
 html.win-compact .lrow-store-name { display: none; }
 .lrow-head { height: 36px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
 .lrow { height: 84px; border-top: 1px solid var(--line); cursor: pointer; contain: layout paint; }
