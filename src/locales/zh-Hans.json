@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "登录后 Amazon 会进行重定向；请从地址栏复制完整网址。",
   "amazon.guideStep3Title": "在此处粘贴",
   "amazon.guideStep3Desc": "粘贴网址并提交；游戏库将自动同步。",
-  "amazon.syncLibrary": "同步游戏库",
-  "amazon.synced": "Amazon 游戏库已同步",
   "amazon.installed": "Amazon 游戏已安装",
   "amazon.uninstalled": "Amazon 游戏已卸载",
   "amazon.uninstallDesc": "通过 Nile 删除已安装的游戏文件。",

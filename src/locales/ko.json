@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "로그인 후 Amazon이 리디렉션합니다. 주소 표시줄의 전체 주소를 복사하세요.",
   "amazon.guideStep3Title": "여기에 붙여넣기",
   "amazon.guideStep3Desc": "URL을 붙여넣고 제출하면 라이브러리가 자동으로 동기화됩니다.",
-  "amazon.syncLibrary": "라이브러리 동기화",
-  "amazon.synced": "Amazon 라이브러리가 동기화되었습니다",
   "amazon.installed": "Amazon 게임이 설치되었습니다",
   "amazon.uninstalled": "Amazon 게임이 삭제되었습니다",
   "amazon.uninstallDesc": "Nile을 통해 설치된 게임 파일을 삭제합니다.",

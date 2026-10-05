@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "Nach der Anmeldung leitet Amazon dich weiter; kopiere die gesamte Adresse aus der Adressleiste.",
   "amazon.guideStep3Title": "Hier einfügen",
   "amazon.guideStep3Desc": "Füge die URL ein und bestätige; die Bibliothek wird automatisch synchronisiert.",
-  "amazon.syncLibrary": "Bibliothek abgleichen",
-  "amazon.synced": "Amazon-Bibliothek synchronisiert",
   "amazon.installed": "Amazon-Spiel installiert",
   "amazon.uninstalled": "Amazon-Spiel deinstalliert",
   "amazon.uninstallDesc": "Löscht die installierten Spieldateien über Nile.",

@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "После входа Amazon перенаправит вас; скопируйте весь адрес из адресной строки.",
   "amazon.guideStep3Title": "Вставьте сюда",
   "amazon.guideStep3Desc": "Вставьте URL и отправьте; библиотека синхронизируется автоматически.",
-  "amazon.syncLibrary": "Синхронизировать библиотеку",
-  "amazon.synced": "Библиотека Amazon синхронизирована",
   "amazon.installed": "Игра Amazon установлена",
   "amazon.uninstalled": "Игра Amazon удалена",
   "amazon.uninstallDesc": "Удаляет установленные файлы игры через Nile.",

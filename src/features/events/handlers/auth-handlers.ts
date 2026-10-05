@@ -45,7 +45,6 @@ import {
   reopenAmazonLogin,
   stopAmazonGame,
   switchAmazonAccount,
-  syncAmazonLibrary,
   uninstallAmazonGame,
 } from "../../auth/amazon-auth-actions";
 import { t as i18nT } from "../../../i18n";
@@ -174,10 +173,6 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
           toast(i18nT("auth.pasteFailed"), "err");
         }
       })();
-      return true;
-
-    case "amazon-sync":
-      void syncAmazonLibrary();
       return true;
 
     case "amazon-logout":

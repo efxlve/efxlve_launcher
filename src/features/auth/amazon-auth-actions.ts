@@ -317,22 +317,6 @@ async function refreshAmazonUpdates(): Promise<void> {
   }
 }
 
-/** Manual library refresh from the card. */
-export async function syncAmazonLibrary(): Promise<void> {
-  if (S.amazonBusy) return;
-  S.amazonBusy = true;
-  scheduleRender();
-  try {
-    await loadAmazonSession(true);
-    toast(t("amazon.synced"), "ok");
-  } catch (err) {
-    toast(String(err), "err");
-  } finally {
-    S.amazonBusy = false;
-    scheduleRender();
-  }
-}
-
 /** Signs out the active account; a newer saved account takes over if present. */
 export async function amazonLogoutAction(): Promise<void> {
   if (accountChangeBlocked()) return;

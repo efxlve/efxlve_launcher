@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "หลังจากเข้าสู่ระบบแล้ว Amazon จะเปลี่ยนเส้นทางคุณ ให้คัดลอกที่อยู่ทั้งหมดจากแถบที่อยู่",
   "amazon.guideStep3Title": "วางที่นี่",
   "amazon.guideStep3Desc": "วาง URL และส่ง คลังเกมจะซิงค์โดยอัตโนมัติ",
-  "amazon.syncLibrary": "ซิงค์คลังเกม",
-  "amazon.synced": "ซิงค์คลัง Amazon แล้ว",
   "amazon.installed": "ติดตั้งเกม Amazon แล้ว",
   "amazon.uninstalled": "ถอนการติดตั้งเกม Amazon แล้ว",
   "amazon.uninstallDesc": "ลบไฟล์เกมที่ติดตั้งไว้ผ่าน Nile",

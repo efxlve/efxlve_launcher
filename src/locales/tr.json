@@ -1624,8 +1624,6 @@
   "amazon.guideStep2Desc": "Girişten sonra amazon.com'a yönlendirilirsiniz; adres çubuğundaki tüm adresi kopyalayın.",
   "amazon.guideStep3Title": "Buraya yapıştır",
   "amazon.guideStep3Desc": "Adresi yapıştırıp gönderin; kütüphane otomatik eşitlenir.",
-  "amazon.syncLibrary": "Kütüphaneyi eşitle",
-  "amazon.synced": "Amazon kütüphanesi eşitlendi",
   "amazon.installed": "Amazon oyunu kuruldu",
   "amazon.uninstalled": "Amazon oyunu kaldırıldı",
   "amazon.uninstallDesc": "Kurulu oyun dosyalarını Nile üzerinden siler.",

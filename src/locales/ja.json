@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "ログイン後、Amazon からリダイレクトされます。アドレスバーの URL をすべてコピーしてください。",
   "amazon.guideStep3Title": "ここに貼り付け",
   "amazon.guideStep3Desc": "URL を貼り付けて送信すると、ライブラリが自動的に同期されます。",
-  "amazon.syncLibrary": "ライブラリを同期",
-  "amazon.synced": "Amazon ライブラリが同期されました",
   "amazon.installed": "Amazon ゲームがインストールされました",
   "amazon.uninstalled": "Amazon ゲームがアンインストールされました",
   "amazon.uninstallDesc": "Nile を通じてインストール済みゲームファイルを削除します。",

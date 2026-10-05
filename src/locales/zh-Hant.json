@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "登入後 Amazon 會重新導向；請從網址列複製完整網址。",
   "amazon.guideStep3Title": "貼在於此",
   "amazon.guideStep3Desc": "貼上網址並送出；遊戲庫將自動同步。",
-  "amazon.syncLibrary": "同步遊戲庫",
-  "amazon.synced": "Amazon 遊戲庫已同步",
   "amazon.installed": "Amazon 遊戲已安裝",
   "amazon.uninstalled": "Amazon 遊戲已解除安裝",
   "amazon.uninstallDesc": "透過 Nile 刪除已安裝的遊戲檔案。",

@@ -411,14 +411,6 @@ pub fn parse_appinfo_metadata(data: &[u8]) -> std::collections::HashMap<String, 
     out
 }
 
-/// Developer names only, for callers that do not need the full metadata.
-pub fn parse_appinfo_developers(data: &[u8]) -> std::collections::HashMap<String, String> {
-    parse_appinfo_metadata(data)
-        .into_iter()
-        .filter_map(|(id, meta)| meta.developer.map(|developer| (id, developer)))
-        .collect()
-}
-
 /// App ids whose client metadata says `releasestate` is `preloadonly`.
 ///
 /// Those installs sit on disk before release. Steam sets `UpdateRequired` so
@@ -1077,10 +1069,13 @@ mod tests {
         data.extend_from_slice(&5u32.to_le_bytes());
         data.extend_from_slice(b"appinfo\0extended\0developer\0widget\0name\0");
 
-        let map = parse_appinfo_developers(&data);
-        assert_eq!(map.get("620").map(String::as_str), Some("Valve"));
+        let map = parse_appinfo_metadata(&data);
+        assert_eq!(
+            map.get("620").and_then(|meta| meta.developer.as_deref()),
+            Some("Valve")
+        );
         assert!(!map.contains_key("730"));
-        assert!(parse_appinfo_developers(b"junk").is_empty());
+        assert!(parse_appinfo_metadata(b"junk").is_empty());
     }
 
     #[test]

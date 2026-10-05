@@ -1624,8 +1624,6 @@
   "amazon.guideStep2Desc": "After signing in Amazon redirects you; copy the whole address from the address bar.",
   "amazon.guideStep3Title": "Paste it here",
   "amazon.guideStep3Desc": "Paste the URL and submit; the library syncs automatically.",
-  "amazon.syncLibrary": "Sync library",
-  "amazon.synced": "Amazon library synced",
   "amazon.installed": "Amazon game installed",
   "amazon.uninstalled": "Amazon game uninstalled",
   "amazon.uninstallDesc": "Deletes the installed game files through Nile.",

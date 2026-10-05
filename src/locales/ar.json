@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "بعد تسجيل الدخول ستقوم Amazon بإعادة توجيهك؛ انسخ العنوان بالكامل من شريط العناوين.",
   "amazon.guideStep3Title": "الصقه هنا",
   "amazon.guideStep3Desc": "الصق عنوان URL وأرسله؛ ستتم مزامنة المكتبة تلقائيًا.",
-  "amazon.syncLibrary": "مزامنة المكتبة",
-  "amazon.synced": "تمت مزامنة مكتبة Amazon",
   "amazon.installed": "تم تثبيت لعبة Amazon",
   "amazon.uninstalled": "تم إلغاء تثبيت لعبة Amazon",
   "amazon.uninstallDesc": "يحذف ملفات اللعبة المثبتة عبر Nile.",

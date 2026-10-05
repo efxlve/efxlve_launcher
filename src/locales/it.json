@@ -1548,8 +1548,6 @@
   "amazon.guideStep2Desc": "Dopo l'accesso Amazon ti reindirizzerà; copia l'intero indirizzo dalla barra degli indirizzi.",
   "amazon.guideStep3Title": "Incolla qui",
   "amazon.guideStep3Desc": "Incolla l'URL e invia; la libreria si sincronizzerà automaticamente.",
-  "amazon.syncLibrary": "Sincronizza libreria",
-  "amazon.synced": "Libreria Amazon sincronizzata",
   "amazon.installed": "Gioco Amazon installato",
   "amazon.uninstalled": "Gioco Amazon disinstallato",
   "amazon.uninstallDesc": "Elimina i file del gioco installato tramite Nile.",
