@@ -400,10 +400,15 @@ html.win-compact .lrow-store-name { display: none; }
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-meta,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-col,
 .lib-list.dim-uninstalled .lrow.not-installed .lrow-ach { color: var(--text-3); }
-/* A completed achievement set reads fully bright on uninstalled rows too:
-   the count must not look half-finished just because the game is not on disk. */
-.lib-list.highlight-installed .lrow.not-installed .lrow-ach.done,
-.lib-list.dim-uninstalled .lrow.not-installed .lrow-ach.done { color: var(--text); }
+/* The whole achievement cell dims with the rest of an uninstalled row, the
+   completed state and its bar included: a bright bar would make the row look
+   installed. */
+.lib-list.highlight-installed .lrow.not-installed .lrow-ach-pct,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-ach-pct { color: var(--text-3); }
+.lib-list.highlight-installed .lrow.not-installed .lrow-ach-fill,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-ach-fill { background: var(--text-3); }
+.lib-list.highlight-installed .lrow.not-installed .lrow-plat-cup,
+.lib-list.dim-uninstalled .lrow.not-installed .lrow-plat-cup { opacity: 0.55; filter: grayscale(1); }
 .lib-list.highlight-installed .lrow:not(.not-installed) .lrow-name,
 .lib-list.contrast-titles .lrow:not(.not-installed) .lrow-name {
   color: var(--text);
@@ -424,8 +429,8 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow-ach { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .lrow-ach.done { color: var(--text); }
 /* Completed trophies reuse the game page's platinum cup. The row wrapper is a
-   fixed 15px box in normal flow with its own glow, so the not-installed text
-   dimming cannot mute it and the count text can never be overlapped. */
+   fixed 15px box in normal flow with its own glow, so the count text can never
+   be overlapped. */
 .lrow-plat-cup { position: relative; display: inline-flex; width: 15px; height: 15px; flex: none; margin-right: 2px; }
 .lrow-plat-cup svg { display: block; width: 15px; height: 15px; }
 .lrow-plat-cup::before {
