@@ -98,6 +98,38 @@ pub fn clear_live_session(config: &Path) {
     }
 }
 
+/// True when the live config dir still holds an encrypted token file.
+pub fn has_token_file(config: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(config) else {
+        return false;
+    };
+    entries
+        .flatten()
+        .any(|entry| entry.path().extension().and_then(|e| e.to_str()) == Some("enc"))
+}
+
+/// True when the archive already holds a byte-identical copy of every live
+/// session file, so refreshing it would only rewrite disk state.
+fn archive_is_current(config: &Path, dir: &Path) -> bool {
+    let mut any = false;
+    for path in session_files(config) {
+        if !path.is_file() {
+            continue;
+        }
+        any = true;
+        let Some(name) = path.file_name() else {
+            return false;
+        };
+        let (Ok(live), Ok(saved)) = (fs::read(&path), fs::read(dir.join(name))) else {
+            return false;
+        };
+        if live != saved {
+            return false;
+        }
+    }
+    any
+}
+
 fn copy_session_files(from: &Path, to: &Path) -> Result<(), String> {
     fs::create_dir_all(to).map_err(|e| e.to_string())?;
     for path in session_files(from) {
@@ -143,7 +175,12 @@ pub fn ensure_current_saved(root: &Path) -> Option<SavedAmazonAccount> {
     let (name, user_id) = read_current_user(root)?;
     let config = config_dir(root);
     let dir = account_dir(root, &user_id).ok()?;
-    copy_session_files(&config, &dir).ok()?;
+    // Refresh the archive only when the live session changed; listing accounts
+    // should not copy the whole library back on every load.
+    let changed = !archive_is_current(&config, &dir);
+    if changed {
+        copy_session_files(&config, &dir).ok()?;
+    }
 
     let mut list = read_meta(root);
     let game_count = library_count(&config);
@@ -152,7 +189,9 @@ pub fn ensure_current_saved(root: &Path) -> Option<SavedAmazonAccount> {
         if !name.is_empty() {
             acc.username = name;
         }
-        acc.last_used = now;
+        if changed {
+            acc.last_used = now;
+        }
         if game_count.is_some() {
             acc.game_count = game_count;
         }
@@ -331,6 +370,48 @@ mod tests {
         assert!(remove_account(&root, r"..\secret.txt").is_err());
         assert!(switch_account(&root, "../secret.txt").is_err());
         assert_eq!(fs::read_to_string(&secret).unwrap(), "keep");
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn token_file_check_detects_the_live_session() {
+        let root = std::env::temp_dir().join(format!("efxlve-test-amz-token-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let config = config_dir(&root);
+
+        assert!(!has_token_file(&config));
+        write_session(&config, "First", "amzn1.account.ONE", 2);
+        assert!(has_token_file(&config));
+        fs::remove_file(config.join("abcd1234.enc")).unwrap();
+        assert!(!has_token_file(&config));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn listing_accounts_keeps_last_used_when_nothing_changed() {
+        let root = std::env::temp_dir().join(format!("efxlve-test-amz-stale-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let config = config_dir(&root);
+        write_session(&config, "First", "amzn1.account.ONE", 2);
+        ensure_current_saved(&root).unwrap();
+
+        // Pretend the row was last used long ago; an unchanged listing must not
+        // refresh the timestamp.
+        let mut meta = read_meta(&root);
+        meta[0].last_used = 1;
+        write_meta(&root, &meta);
+        let listed = list_saved_accounts(&root);
+        assert_eq!(listed[0].last_used, 1);
+
+        // A real library change marks the archive stale and bumps the timestamp.
+        let library: Vec<serde_json::Value> =
+            (0..3).map(|i| serde_json::json!({ "id": i })).collect();
+        fs::write(config.join(LIBRARY_JSON), serde_json::to_string(&library).unwrap()).unwrap();
+        let listed = list_saved_accounts(&root);
+        assert!(listed[0].last_used > 1);
+        assert_eq!(listed[0].game_count, Some(3));
 
         let _ = fs::remove_dir_all(&root);
     }

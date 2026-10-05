@@ -133,6 +133,7 @@ export async function finishAmazonLogin(raw: string): Promise<void> {
     S.amazonBusy = false;
     S.amazonAccountsAddMode = false;
     toast(t("accounts.connected"), "ok");
+    invalidateAmazonUpdateCheck();
     await loadAmazonSession(true);
   } catch (err) {
     S.amazonBusy = false;
@@ -166,6 +167,7 @@ async function recoverFailedAmazonLogin(pasted: string): Promise<void> {
   }
   S.amazonLogin = null;
   S.amazonAccountsAddMode = false;
+  invalidateAmazonUpdateCheck();
   await loadAmazonSession(false);
   toast(t("amazon.previousRestored"), "ok");
 }
@@ -251,6 +253,7 @@ export async function switchAmazonAccount(userId: string): Promise<void> {
     S.amazonAccountsAddMode = false;
     S.amazonProgress.clear();
     setAmazonSummaries([]);
+    invalidateAmazonUpdateCheck();
     await loadAmazonSession(false);
     toast(t("settings.accountSwitched", { name: result.username }), "ok");
   } catch (err) {
@@ -297,24 +300,43 @@ export async function loadAmazonInstallDir(): Promise<void> {
  * and the card's Update button agree. Offline or rate-limited calls keep the
  * previous state.
  */
+/** Nile's live-version check is a network round trip; keep it to one run per
+ *  interval, and never two at once, so session loads stay cheap. */
+const AMAZON_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
+let lastAmazonUpdateCheck = 0;
+let amazonUpdateCheck: Promise<void> | null = null;
+
+/** Lets the next session load refresh live versions, e.g. after an install. */
+export function invalidateAmazonUpdateCheck(): void {
+  lastAmazonUpdateCheck = 0;
+}
+
 async function refreshAmazonUpdates(): Promise<void> {
-  try {
-    const updates = new Set(await nileCheckUpdates());
-    let changed = false;
-    for (const item of S.amazonSummaries) {
-      const next = updates.has(item.key);
-      if (item.updateAvailable !== next) {
-        item.updateAvailable = next;
-        changed = true;
+  if (amazonUpdateCheck) return amazonUpdateCheck;
+  if (Date.now() - lastAmazonUpdateCheck < AMAZON_UPDATE_INTERVAL_MS) return;
+  lastAmazonUpdateCheck = Date.now();
+  amazonUpdateCheck = (async () => {
+    try {
+      const updates = new Set(await nileCheckUpdates());
+      let changed = false;
+      for (const item of S.amazonSummaries) {
+        const next = updates.has(item.key);
+        if (item.updateAvailable !== next) {
+          item.updateAvailable = next;
+          changed = true;
+        }
       }
+      if (changed) {
+        S.libraryDataRev++;
+        scheduleRender();
+      }
+    } catch {
+      // Keep the previous state.
     }
-    if (changed) {
-      S.libraryDataRev++;
-      scheduleRender();
-    }
-  } catch {
-    // Keep the previous state.
-  }
+  })().finally(() => {
+    amazonUpdateCheck = null;
+  });
+  return amazonUpdateCheck;
 }
 
 /** Signs out the active account; a newer saved account takes over if present. */
@@ -372,6 +394,7 @@ export async function installAmazonGame(id: string): Promise<void> {
     await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null);
     clearAmazonDownload(key);
     toast(t("amazon.installed"), "ok");
+    invalidateAmazonUpdateCheck();
     await loadAmazonSession(false);
   } catch (err) {
     clearAmazonDownload(key);
@@ -385,6 +408,7 @@ export async function importAmazonGame(id: string, installPath: string): Promise
   try {
     await nileImport(id, installPath);
     toast(t("amazon.imported"), "ok");
+    invalidateAmazonUpdateCheck();
     await loadAmazonSession(false);
   } catch (err) {
     toast(String(err), "err");
@@ -415,6 +439,7 @@ export async function uninstallAmazonGame(id: string): Promise<void> {
   try {
     await nileUninstall(id);
     toast(t("amazon.uninstalled"), "ok");
+    invalidateAmazonUpdateCheck();
     await loadAmazonSession(false);
   } catch (err) {
     toast(String(err), "err");

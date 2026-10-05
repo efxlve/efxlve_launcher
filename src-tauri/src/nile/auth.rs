@@ -46,50 +46,27 @@ pub fn authorization_code(input: &str) -> Option<String> {
     }
 }
 
-fn status_from_json(text: &str, binary: bool) -> NileAuthStatus {
-    let value: Value = serde_json::from_str(text).unwrap_or(Value::Null);
-    let logged_in = value
-        .get("LoggedIn")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let username = value
-        .get("Username")
-        .and_then(|v| v.as_str())
-        .filter(|name| !name.is_empty() && *name != "<not logged in>")
-        .map(|name| name.to_string());
+/// Sign-in state, read straight from Nile's config files: spawning the CLI on
+/// every session load costs a Python start for data already on disk. A missing
+/// binary or token file reports "not signed in".
+#[tauri::command]
+pub async fn nile_auth_status(app: AppHandle) -> NileAuthStatus {
+    let root = cli::config_root(&app);
+    let binary = super::resolve_binary(&app).is_some();
+    let user = super::accounts::read_current_user(&root);
+    let logged_in =
+        binary && user.is_some() && super::accounts::has_token_file(&cli::config_dir(&app));
     NileAuthStatus {
         binary,
         logged_in,
-        username,
-        user_id: None,
-    }
-}
-
-/// Sign-in state. Never downloads the binary: a missing Nile simply reports
-/// "not installed, not signed in".
-#[tauri::command]
-pub async fn nile_auth_status(app: AppHandle) -> NileAuthStatus {
-    let user_id = super::accounts::read_current_user(&cli::config_root(&app)).map(|(_, id)| id);
-    if super::resolve_binary(&app).is_none() {
-        return NileAuthStatus {
-            binary: false,
-            logged_in: false,
-            username: None,
-            user_id,
-        };
-    }
-    match cli::run(&app, &["auth", "--status"], 30).await {
-        Ok(out) => {
-            let mut status = status_from_json(&cli::stdout_text(&out), true);
-            status.user_id = user_id;
-            status
-        }
-        Err(_) => NileAuthStatus {
-            binary: true,
-            logged_in: false,
-            username: None,
-            user_id,
+        username: if logged_in {
+            user.as_ref()
+                .map(|(name, _)| name.clone())
+                .filter(|name| !name.is_empty())
+        } else {
+            None
         },
+        user_id: user.map(|(_, id)| id),
     }
 }
 
@@ -199,16 +176,5 @@ mod tests {
         // A URL without the code is rejected instead of becoming the code.
         assert_eq!(authorization_code("https://www.amazon.com/"), None);
         assert_eq!(authorization_code("   "), None);
-    }
-
-    #[test]
-    fn status_json_maps_to_the_public_shape() {
-        let logged = status_from_json(r#"{"Username":"Efxlve","LoggedIn":true}"#, true);
-        assert!(logged.logged_in);
-        assert_eq!(logged.username.as_deref(), Some("Efxlve"));
-
-        let out = status_from_json(r#"{"Username":"<not logged in>","LoggedIn":false}"#, true);
-        assert!(!out.logged_in);
-        assert_eq!(out.username, None);
     }
 }
