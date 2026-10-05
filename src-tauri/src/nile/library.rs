@@ -19,6 +19,11 @@ pub struct NileGame {
     pub title: String,
     /// Portrait cover when the entitlement carries one.
     pub art: Option<String>,
+    /// Wide key art for the game page banner.
+    pub hero: Option<String>,
+    /// Amazon's own catalog text when the entitlement carries it.
+    pub description: Option<String>,
+    pub developer: Option<String>,
     pub installed: bool,
     pub install_path: Option<String>,
     pub version: Option<String>,
@@ -29,6 +34,9 @@ pub struct NileGame {
 /// Landscape art candidates inside `product.productDetail.details`, in
 /// preference order, used when the product has no portrait cover.
 const ART_KEYS: &[&str] = &["backgroundUrl1", "backgroundUrl2", "pgCrownImageUrl", "logoUrl"];
+
+/// Wide key art candidates, in preference order.
+const HERO_KEYS: &[&str] = &["backgroundUrl1", "backgroundUrl2", "pgCrownImageUrl"];
 
 fn non_empty(value: Option<&Value>) -> Option<String> {
     let url = value.and_then(|v| v.as_str())?.trim();
@@ -54,6 +62,38 @@ fn pick_art(product: &Value) -> Option<String> {
         }
     }
     None
+}
+
+/// Wide art for the game page; never the portrait cover.
+fn pick_hero(product: &Value) -> Option<String> {
+    let details = &product["productDetail"]["details"];
+    for key in HERO_KEYS {
+        if let Some(url) = non_empty(details.get(*key)) {
+            return Some(url);
+        }
+    }
+    None
+}
+
+/// Amazon's own catalog text, when the details block carries it.
+fn pick_description(product: &Value) -> Option<String> {
+    let details = &product["productDetail"]["details"];
+    let text = details.get("shortDescription").and_then(|v| v.as_str())?.trim();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text.to_string())
+    }
+}
+
+fn pick_developer(product: &Value) -> Option<String> {
+    let details = &product["productDetail"]["details"];
+    let text = details.get("developer").and_then(|v| v.as_str())?.trim();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text.to_string())
+    }
 }
 
 fn installed_index(app: &AppHandle) -> HashMap<String, Value> {
@@ -104,6 +144,9 @@ fn parse_library(value: &Value, installed: &HashMap<String, Value>) -> Vec<NileG
                     title
                 },
                 art: pick_art(product),
+                hero: pick_hero(product),
+                description: pick_description(product),
+                developer: pick_developer(product),
                 installed: state.is_some(),
                 install_path: state
                     .and_then(|s| s.get("path"))
@@ -215,7 +258,11 @@ mod tests {
                     "title": "Zeta Game",
                     "productDetail": {
                         "iconUrl": "https://img/zeta-portrait.jpg",
-                        "details": { "backgroundUrl1": "https://img/zeta.jpg" }
+                        "details": {
+                            "backgroundUrl1": "https://img/zeta.jpg",
+                            "shortDescription": "A game about Zeta.",
+                            "developer": "Zeta Studio"
+                        }
                     }
                 }
             },
@@ -249,10 +296,18 @@ mod tests {
         assert_eq!(games[0].install_path.as_deref(), Some("D:\\Games\\Alpha"));
         assert_eq!(games[0].version.as_deref(), Some("1.0.5"));
         assert_eq!(games[0].size, 734_003_200);
+        // A record without wide art or catalog text keeps them empty.
+        assert_eq!(games[0].hero, None);
+        assert_eq!(games[0].description, None);
+        assert_eq!(games[0].developer, None);
 
         assert_eq!(games[1].title, "Zeta Game");
-        // The portrait `iconUrl` wins over the landscape `backgroundUrl1`.
+        // The portrait `iconUrl` wins over the landscape `backgroundUrl1`,
+        // which becomes the hero instead.
         assert_eq!(games[1].art.as_deref(), Some("https://img/zeta-portrait.jpg"));
+        assert_eq!(games[1].hero.as_deref(), Some("https://img/zeta.jpg"));
+        assert_eq!(games[1].description.as_deref(), Some("A game about Zeta."));
+        assert_eq!(games[1].developer.as_deref(), Some("Zeta Studio"));
         assert!(!games[1].installed);
     }
 

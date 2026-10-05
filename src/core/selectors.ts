@@ -565,6 +565,15 @@ export function epicWideArt(s: EpicSummary): string | null {
     }
   }
 
+  // Amazon Games: the library keeps the wide key art beside the portrait cover.
+  if (s.appName.startsWith("amazon::")) {
+    const item = S.allGamesMap.get(s.appName);
+    if (item?.heroUrl) {
+      wideArtCache.set(s.appName, item.heroUrl);
+      return item.heroUrl;
+    }
+  }
+
   // Companion games (EA, Ubisoft, Xbox, Battle.net, Riot): the client catalog
   // ships a wide background. The portrait cover must never be stretched into
   // the banner.

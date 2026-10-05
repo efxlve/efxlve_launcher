@@ -28,6 +28,11 @@ export interface NileGame {
   id: string;
   title: string;
   art: string | null;
+  /** Wide key art for the game page banner. */
+  hero: string | null;
+  /** Amazon's own catalog text when it exists. */
+  description: string | null;
+  developer: string | null;
   installed: boolean;
   install_path: string | null;
   version: string | null;
