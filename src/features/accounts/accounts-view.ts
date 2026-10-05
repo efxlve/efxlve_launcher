@@ -118,6 +118,20 @@ const CAPS: Record<string, Cap[]> = {
     { key: "store", state: "yes" },
     { key: "screenshots", state: "hotkey" },
   ],
+  amazon: [
+    { key: "library", state: "yes" },
+    { key: "install", state: "yes" },
+    { key: "uninstall", state: "yes" },
+    { key: "launch", state: "yes" },
+    // Nile ships no achievement feed and Amazon has no cloud saves; the
+    // launcher records playtime locally and backs saves up from the manage
+    // panel instead.
+    { key: "achievements", state: "no" },
+    { key: "playtime", state: "local" },
+    { key: "cloud", state: "no" },
+    { key: "store", state: "yes" },
+    { key: "screenshots", state: "hotkey" },
+  ],
   riot: [
     { key: "library", state: "yes" },
     { key: "install", state: "via" },
@@ -467,7 +481,7 @@ function amazonCard(): string {
         <div class="row-main"><div class="acc-store-name">Amazon Games</div><div class="row-meta">${connected ? esc(name) : t("accounts.amazonShort")}</div></div>
         ${status}
       </div>
-      <div class="acc-card-body">${body}</div>
+      <div class="acc-card-body">${body}${supportDetails("amazon")}</div>
     </section>`;
 }
 

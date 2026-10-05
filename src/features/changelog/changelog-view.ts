@@ -30,6 +30,28 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     version: "0.1.20",
     date: "2026-10-01",
     isCurrent: true,
+    items: [
+      {
+        en: "Amazon Games (Prime Gaming) joins the launcher: sign in with Nile, see your library and install, update, launch or uninstall your games.",
+        tr: "Amazon Games (Prime Gaming) launcher'a katıldı: Nile ile oturum açın; kütüphanenizi görün, oyunlarınızı kurun, güncelleyin, başlatın veya kaldırın.",
+      },
+      {
+        en: "Amazon downloads stream speed, disk write, peak and ETA into the same card and speed chart as Epic and GOG.",
+        tr: "Amazon indirmeleri hızı, disk yazımını, zirve hızını ve kalan süreyi Epic ve GOG ile aynı kartta ve hız grafiğinde gösterir.",
+      },
+      {
+        en: "The Amazon manage panel matches Epic: verify files, move the install, desktop shortcut, save folder, local and cloud backup, launch arguments and environment variables.",
+        tr: "Amazon yönetim paneli Epic ile aynı seviyede: dosyaları doğrula, kurulumu taşı, masaüstü kısayolu, kayıt klasörü, yerel ve bulut yedek, başlatma argümanları ve ortam değişkenleri.",
+      },
+      {
+        en: "Amazon games show their real portrait covers, wide key art and their own catalog text; the storefront tab is named Amazon Games.",
+        tr: "Amazon oyunları gerçek portre kapaklarını, geniş görselini ve kendi katalog metnini gösterir; mağaza sekmesinin adı Amazon Games oldu.",
+      },
+      {
+        en: "Scheduled automatic updates now include Amazon games, and the Amazon support matrix is listed on the Accounts page.",
+        tr: "Zamanlanmış otomatik güncellemeler artık Amazon oyunlarını da kapsar; Amazon destek matrisi Hesaplar sayfasında listelenir.",
+      },
+    ],
     fixed: [
       {
         en: "Opening notifications on the store keeps the store page where it is. The list sits on top of it.",
@@ -46,6 +68,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
       {
         en: "A Steam game that has already finished downloading is no longer shown as downloading.",
         tr: "İndirmesi bitmiş bir Steam oyunu artık indiriliyor olarak görünmez.",
+      },
+      {
+        en: "Amazon games no longer show Epic wording in the playtime editor, source notes or feature rows, and their save row says local instead of Epic cloud.",
+        tr: "Amazon oyunları artık oynanış düzenleyicide, kaynak notlarında veya özellik satırlarında Epic ifadesi göstermez; kayıt satırı Epic bulutu yerine yerel kaydı söyler.",
       },
     ],
   },

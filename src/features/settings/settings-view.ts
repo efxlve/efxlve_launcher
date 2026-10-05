@@ -301,7 +301,17 @@ function renderLaunchers(): string {
         <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;
   }).join("");
-  return infoBox("launchers.info") + group(rows, t("settings.secLaunchers"));
+  // Amazon Games has no client to detect: Nile is managed by the launcher, so
+  // the row explains that instead of offering a download.
+  const amazonRow = `
+      <div class="row settings-row">
+        <span class="acc-store-mark">${storeLogo("amazon", 24)}</span>
+        <div class="row-main">
+          <div class="settings-row-title">Amazon Games</div>
+          <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
+        </div>
+      </div>`;
+  return infoBox("launchers.info") + group(rows + amazonRow, t("settings.secLaunchers"));
 }
 
 function renderIntegrations(): string {
@@ -356,6 +366,16 @@ function renderIntegrations(): string {
 
   const eos = renderEosSettingsRow();
 
+  // Amazon Games runs through the open-source Nile helper; the row reports
+  // whether it is already on disk and links to the account card.
+  const nileReady = Boolean(S.amazonStatus?.binary);
+  const nileGroup = row(
+    t("settings.nileTitle"),
+    t("settings.nileDesc"),
+    `<span class="chip ${nileReady ? "ok" : ""}">${nileReady ? t("settings.nileReady") : t("settings.nilePending")}</span>
+     <button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`,
+  );
+
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
   // Opt-in per client: quit it once the game it launched closes. Steam keeps
@@ -376,6 +396,7 @@ function renderIntegrations(): string {
     group(eglGroup, t("settings.eglTitle")) +
     group(eos, t("settings.eosGroupTitle")) +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
+    group(nileGroup, t("settings.nileTitle")) +
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
