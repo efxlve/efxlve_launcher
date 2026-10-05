@@ -694,7 +694,13 @@ export function cloudSaveInfo(
     return { label: i18nT("feat.gogCloud"), tooltip: i18nT("feat.gogCloudTip"), synced: true };
   }
   const cloudFolder = customAttrs?.CloudSaveFolder?.value || customAttrs?.CloudIncludeList?.value;
-  const hasCloud = Boolean(cloudFolder || (S.activeManageSettings?.appName === s.appName && S.activeManageSettings.cloudSavesEnabled));
+  // The manage toggle only exists for Epic games; Amazon and GOG games never
+  // write to Epic's cloud even while their manage panel is open.
+  const epicCloudEnabled =
+    sourceOfKey(s.appName) === "epic" &&
+    S.activeManageSettings?.appName === s.appName &&
+    S.activeManageSettings.cloudSavesEnabled;
+  const hasCloud = Boolean(cloudFolder || epicCloudEnabled);
   if (isOnlineOnlyGame(s, g, reqData)) {
     return { label: i18nT("feat.onlineServerSave"), tooltip: i18nT("feat.onlineServerSaveTip"), synced: true };
   }

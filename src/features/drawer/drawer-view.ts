@@ -471,10 +471,9 @@ function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): s
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");
-  if (source === "amazon") return t("drawer.sourceStore", { store: storeName });
-  if (isCompanionSource(source)) {
-    // A companion game without a client description falls back to the Steam
-    // store text; say so instead of naming the client that had no data.
+  if (source === "amazon" || isCompanionSource(source)) {
+    // Amazon and companion clients publish no catalog text; when the Steam
+    // store filled the gap, the note names Steam instead of the store.
     const steam = S.steamDetails.get(s.appName);
     if (steam && storeDesc && (steam.description === storeDesc || steam.shortDescription === storeDesc)) {
       return t("drawer.sourceSteam");
@@ -1245,14 +1244,10 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       if (S.activeDrawerTab === "overview") {
         const descEl = document.getElementById("hub-desc-text");
         const text = data.shortDescription || cleanStoreDescription(data.description || "");
-        if (descEl && text) {
-          // The game's own store always outranks the Wikipedia fallback.
-          descEl.innerHTML = aboutMarkup(text);
-          const srcEl = document.getElementById("hub-desc-source");
-          if (srcEl) {
-            srcEl.hidden = false;
-            srcEl.textContent = t("drawer.sourceEpic");
-          }
+        if (text) {
+          // Recomputes the text and its source note; the note must name the
+          // store that actually supplied the description, not always Epic.
+          paintAboutText(cur);
         } else if (descEl?.querySelector(".hub-desc-loading") && S.loadingAboutFor !== aboutKey(appName)) {
           // Store data arrived without a description and no fallback is pending.
           descEl.innerHTML = `<p>${t("drawer.noDescription")}</p>`;
