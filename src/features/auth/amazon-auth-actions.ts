@@ -18,6 +18,7 @@ import { t } from "../../i18n";
 import {
   amazonKey,
   nileAuthStatus,
+  nileCheckUpdates,
   nileInstall,
   nileLaunch,
   nileLibrary,
@@ -130,10 +131,36 @@ export async function loadAmazonSession(sync = false): Promise<void> {
       S.amazonGames = [];
     }
     setAmazonSummaries(S.amazonGames.map(amazonToLibraryItem));
+    if (status.logged_in) void refreshAmazonUpdates();
   } catch {
     // Keep the last state.
   }
   scheduleRender();
+}
+
+/**
+ * Mirrors Nile's live-version check onto the library items so the update badge
+ * and the card's Update button agree. Offline or rate-limited calls keep the
+ * previous state.
+ */
+async function refreshAmazonUpdates(): Promise<void> {
+  try {
+    const updates = new Set(await nileCheckUpdates());
+    let changed = false;
+    for (const item of S.amazonSummaries) {
+      const next = updates.has(item.key);
+      if (item.updateAvailable !== next) {
+        item.updateAvailable = next;
+        changed = true;
+      }
+    }
+    if (changed) {
+      S.libraryDataRev++;
+      scheduleRender();
+    }
+  } catch {
+    // Keep the previous state.
+  }
 }
 
 /** Manual library refresh from the card. */
