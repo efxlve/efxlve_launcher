@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "在列表檢視中顯示含百分比的進度條。",
   "settings.secStoreTabs": "商店分頁",
   "settings.storeTabsNote": "隱藏的商店會離開商店列；最後一個可見的會保留。",
-  "settings.storeLogosOnlyTitle": "僅顯示標誌",
-  "settings.storeLogosOnlyDesc": "各商店僅顯示標誌；只有開啟的商店顯示完整名稱。",
   "settings.gogLogout": "登出 GOG",
   "accounts.manageAccounts": "管理帳戶",
   "settings.installedIconTitle": "在封面上顯示遊玩按鈕",

@@ -95,7 +95,7 @@ import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, scrollStoreTabs, setStoreHidden, setStoreLogosOnly, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, scrollStoreTabs, setStoreHidden, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -721,9 +721,6 @@ document.addEventListener("click", (e) => {
       setStoreHidden(id, !S.hiddenStores.has(id));
       scheduleRender();
     }
-  } else if (act === "toggle-store-logos-only") {
-    setStoreLogosOnly(!S.storeLogosOnly);
-    scheduleRender();
   } else if (act === "toggle-store-badge") {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));

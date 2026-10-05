@@ -1676,8 +1676,6 @@
   "settings.achProgressDesc": "Liste görünümünde yüzdeyle birlikte ilerleme çubuğu göster.",
   "settings.secStoreTabs": "Mağaza sekmeleri",
   "settings.storeTabsNote": "Kapalı mağazalar Mağazalar çubuğundan kalkar; son görünür mağaza kalır.",
-  "settings.storeLogosOnlyTitle": "Sadece logolar",
-  "settings.storeLogosOnlyDesc": "Her mağaza logosuyla görünür; yalnızca açık olan mağazanın adı tam yazılır.",
   "settings.gogLogout": "GOG'dan Çıkış Yap",
   "accounts.manageAccounts": "Hesapları Yönet",
   "settings.installedIconTitle": "Yüklü oyun simgesi",

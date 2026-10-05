@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "Pokazuj pasek postępu z procentem w widoku listy.",
   "settings.secStoreTabs": "Karty sklepów",
   "settings.storeTabsNote": "Ukryte sklepy znikają z paska; ostatni widoczny zostaje.",
-  "settings.storeLogosOnlyTitle": "Tylko loga",
-  "settings.storeLogosOnlyDesc": "Każdy sklep pokazuje logo; tylko otwarty zachowuje pełną nazwę.",
   "settings.gogLogout": "Wyloguj się z GOG",
   "accounts.manageAccounts": "Zarządzaj kontami",
   "settings.installedIconTitle": "Przycisk Graj na okładkach",

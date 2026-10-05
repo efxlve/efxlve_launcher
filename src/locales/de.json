@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "In der Listenansicht einen Fortschrittsbalken mit Prozentwert anzeigen.",
   "settings.secStoreTabs": "Store-Tabs",
   "settings.storeTabsNote": "Ausgeblendete Stores verlassen die Store-Leiste; der letzte sichtbare bleibt.",
-  "settings.storeLogosOnlyTitle": "Nur Logos",
-  "settings.storeLogosOnlyDesc": "Jeder Store erscheint als Logo; nur der geöffnete behält seinen vollen Namen.",
   "settings.gogLogout": "Von GOG abmelden",
   "accounts.manageAccounts": "Konten verwalten",
   "settings.installedIconTitle": "Play-Taste auf Covern",

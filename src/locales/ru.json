@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "Показывать полосу прогресса с процентом в режиме списка.",
   "settings.secStoreTabs": "Вкладки магазинов",
   "settings.storeTabsNote": "Скрытые магазины уходят из панели; последний видимый остаётся.",
-  "settings.storeLogosOnlyTitle": "Только логотипы",
-  "settings.storeLogosOnlyDesc": "Каждый магазин показывается логотипом; полное имя остаётся только у открытого.",
   "settings.gogLogout": "Выйти из GOG",
   "accounts.manageAccounts": "Управление аккаунтами",
   "settings.installedIconTitle": "Кнопка «Играть» на обложках",

@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "แสดงแถบความคืบหน้าพร้อมเปอร์เซ็นต์ในมุมมองรายการ",
   "settings.secStoreTabs": "แท็บร้านค้า",
   "settings.storeTabsNote": "ร้านที่ซ่อนจะออกจากแถบ ร้านสุดท้ายจะคงอยู่",
-  "settings.storeLogosOnlyTitle": "เฉพาะโลโก้",
-  "settings.storeLogosOnlyDesc": "ร้านจะแสดงเป็นโลโก้ ร้านที่เปิดอยู่เท่านั้นที่แสดงชื่อเต็ม",
   "settings.gogLogout": "ออกจากระบบ GOG",
   "accounts.manageAccounts": "จัดการบัญชี",
   "settings.installedIconTitle": "ปุ่มเล่นบนหน้าปก",

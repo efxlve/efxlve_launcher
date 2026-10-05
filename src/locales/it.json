@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "Mostra una barra di progresso con la percentuale nella vista elenco.",
   "settings.secStoreTabs": "Schede dei negozi",
   "settings.storeTabsNote": "I negozi nascosti escono dalla barra; l'ultimo visibile resta.",
-  "settings.storeLogosOnlyTitle": "Solo loghi",
-  "settings.storeLogosOnlyDesc": "Ogni negozio appare con il suo logo; solo quello aperto mantiene il nome completo.",
   "settings.gogLogout": "Disconnettiti da GOG",
   "accounts.manageAccounts": "Gestisci account",
   "settings.installedIconTitle": "Pulsante Gioca sulle copertine",

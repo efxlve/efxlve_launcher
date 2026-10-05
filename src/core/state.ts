@@ -21,7 +21,6 @@ import {
   HIDDEN_ACH_KEY,
   HIDDEN_KEY,
   HIDDEN_STORES_KEY,
-  STORE_LOGOS_ONLY_KEY,
   IGNORED_UPDATES_KEY,
   AUTO_BACKUP_KEY,
   AUTO_SHORTCUT_KEY,
@@ -143,8 +142,6 @@ export const S = {
       return new Set<string>();
     }
   })() as Set<string>,
-  /** Icon-only store tabs; the open store keeps its full name. */
-  storeLogosOnly: (localStorage.getItem(STORE_LOGOS_ONLY_KEY) === "true") as boolean,
   /** True while the active storefront webview is still loading its first page. */
   storeLoading: false,
   epicPhase: "checking" as EpicPhase,

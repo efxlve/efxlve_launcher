@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "リスト表示でパーセント付きの進捗バーを表示します。",
   "settings.secStoreTabs": "ストアタブ",
   "settings.storeTabsNote": "非表示のストアはバーから消えます。最後の1つは残ります。",
-  "settings.storeLogosOnlyTitle": "ロゴのみ",
-  "settings.storeLogosOnlyDesc": "各ストアはロゴで表示され、開いているストアだけ名前が出ます。",
   "settings.gogLogout": "GOG からログアウト",
   "accounts.manageAccounts": "アカウントを管理",
   "settings.installedIconTitle": "カバーにプレイボタンを表示",

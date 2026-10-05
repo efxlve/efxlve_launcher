@@ -1588,8 +1588,6 @@
   "settings.achProgressDesc": "إظهار شريط تقدم مع النسبة المئوية في عرض القائمة.",
   "settings.secStoreTabs": "تبويبات المتاجر",
   "settings.storeTabsNote": "تخرج المتاجر المخفية من الشريط، ويبقى آخر متجر ظاهر.",
-  "settings.storeLogosOnlyTitle": "الشعارات فقط",
-  "settings.storeLogosOnlyDesc": "يظهر كل متجر بشعاره، ويحتفظ المتجر المفتوح باسمه الكامل.",
   "settings.gogLogout": "تسجيل الخروج من GOG",
   "accounts.manageAccounts": "إدارة الحسابات",
   "settings.installedIconTitle": "زر تشغيل على الأغلفة",

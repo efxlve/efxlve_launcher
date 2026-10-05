@@ -552,8 +552,7 @@ function renderAppearance(): string {
           null,
           `<label class="switch"><input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} /><span class="track"></span></label>`,
         );
-      }).join("") +
-      row(t("settings.storeLogosOnlyTitle"), t("settings.storeLogosOnlyDesc"), toggle("toggle-store-logos-only", S.storeLogosOnly)),
+      }).join(""),
       t("settings.secStoreTabs"),
       infoBox("settings.storeTabsNote"),
     ) +

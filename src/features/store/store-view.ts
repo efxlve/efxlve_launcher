@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_LOGOS_ONLY_KEY } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -599,9 +599,9 @@ function decorateStoreTabs(): void {
 decorateStoreTabs();
 
 /**
- * Applies the store-bar settings: hidden stores leave the strip, logos-only
- * keeps a full name on the open store alone, and the scroll arrows follow the
- * new width. The active store falls back to the first visible one.
+ * Applies the store-bar settings: hidden stores leave the strip, tabs stay
+ * logo-only with a full name on the open store, and the scroll arrows follow
+ * the new width. The active store falls back to the first visible one.
  */
 export function applyStoreTabs(): void {
   const switcher = document.getElementById("store-switcher");
@@ -613,7 +613,7 @@ export function applyStoreTabs(): void {
     btn.hidden = hidden;
     if (!hidden && id === S.activeStore) activeVisible = true;
   });
-  switcher.classList.toggle("logos-only", S.storeLogosOnly);
+  switcher.classList.add("logos-only");
   if (!activeVisible) {
     const first = switcher.querySelector<HTMLElement>("[data-store]:not([hidden])");
     const id = first?.dataset.store;
@@ -633,13 +633,6 @@ export function setStoreHidden(id: string, hidden: boolean): void {
     S.hiddenStores.delete(id);
   }
   localStorage.setItem(HIDDEN_STORES_KEY, JSON.stringify([...S.hiddenStores]));
-  applyStoreTabs();
-}
-
-/** Icon-only store tabs; only the open store keeps its full name. */
-export function setStoreLogosOnly(on: boolean): void {
-  S.storeLogosOnly = on;
-  localStorage.setItem(STORE_LOGOS_ONLY_KEY, String(on));
   applyStoreTabs();
 }
 
