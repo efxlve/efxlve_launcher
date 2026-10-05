@@ -17,6 +17,7 @@ import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
 import { t } from "../../i18n";
 import {
+  amazonDefaultInstallDir,
   amazonGetInstallDir,
   amazonKey,
   nileAuthStatus,
@@ -140,13 +141,18 @@ export async function loadAmazonSession(sync = false): Promise<void> {
   scheduleRender();
 }
 
-/** Reads the Amazon install folder once so the install buttons can use it. */
+/** Reads the Amazon install folder and its default so installs and settings agree. */
 export async function loadAmazonInstallDir(): Promise<void> {
   if (!isTauri) return;
   try {
-    S.amazonInstallDir = (await amazonGetInstallDir()) || "";
+    const [dir, fallback] = await Promise.all([
+      amazonGetInstallDir().catch(() => null),
+      amazonDefaultInstallDir().catch(() => ""),
+    ]);
+    S.amazonInstallDir = dir || "";
+    S.amazonDefaultDir = fallback || "";
   } catch {
-    // Keep the last value.
+    // Keep the last values.
   }
 }
 
@@ -220,7 +226,7 @@ export async function installAmazonGame(id: string): Promise<void> {
   updateBadge();
   scheduleRender();
   try {
-    await nileInstall(id, S.amazonInstallDir || null);
+    await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null);
     S.amazonProgress.delete(key);
     S.downloads.delete(key);
     updateBadge();

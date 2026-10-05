@@ -81,6 +81,9 @@ export const amazonGetInstallDir = () => invoke<string | null>("amazon_get_insta
 export const amazonSetInstallDir = (dir: string) =>
   invoke<void>("amazon_set_install_dir", { dir });
 
+/** Default base folder for Amazon installs (`<home>\Games\Amazon`). */
+export const amazonDefaultInstallDir = () => invoke<string>("amazon_default_install_dir");
+
 export interface NileProgressEvent {
   /** Composite id (`amazon::<product id>`). */
   id: string;

@@ -914,6 +914,7 @@ fn main() {
             nile::transfers::nile_check_updates,
             nile::amazon_get_install_dir,
             nile::amazon_set_install_dir,
+            nile::amazon_default_install_dir,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

@@ -375,6 +375,8 @@ export const S = {
   amazonProgress: (new Map()) as Map<string, { percent: number; speed: number }>,
   /** Base folder Amazon Games install into (empty = Nile's default). */
   amazonInstallDir: "",
+  /** Shown default when no folder is set (`<home>\Games\Amazon`). */
+  amazonDefaultDir: "",
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

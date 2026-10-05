@@ -274,11 +274,11 @@ export function summaryOf(appName: string): EpicSummary | undefined {
   }
   const own = S.epicSummariesMap.get(appName);
   if (own) return own;
-  // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) live in the
-  // unified map under `<store>::<id>`.
-  const companion = S.allGamesMap.get(appName);
-  if (companion && isCompanionKey(companion.key)) {
-    return libraryItemToSummary(companion);
+  // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) and Amazon Games
+  // live in the unified map under `<store>::<id>`.
+  const unified = S.allGamesMap.get(appName);
+  if (unified && (isCompanionKey(unified.key) || unified.source === "amazon")) {
+    return libraryItemToSummary(unified);
   }
   // Games that only another saved account owns resolve to a shared entry so the
   // detail page can show the owner and offer the account switch.

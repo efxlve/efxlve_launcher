@@ -259,9 +259,13 @@ function sourceChipHtml(appName: string): string {
     </div>`;
 }
 
-/** Games owned inside another launcher: EA App, Ubisoft Connect, Xbox, Battle.net, Riot. */
+/**
+ * Games whose store data the launcher reads per game: the companion clients
+ * (EA, Ubisoft, Xbox, Battle.net, Riot) and Amazon Games, which resolves its
+ * store text and specs through the same Steam lookup.
+ */
 export function isCompanionApp(appName: string): boolean {
-  return isCompanionKey(appName);
+  return isCompanionKey(appName) || appName.startsWith("amazon::");
 }
 
 /** Epic app names whose achievement list is read from Ubisoft Connect. */
@@ -463,10 +467,11 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
 /** Source note under the description: the game's own store, or the Wikipedia fallback. */
 function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): string {
   const source = sourceOfKey(s.appName);
-  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : source === "riot" ? "Riot Games" : "Epic Games Store";
+  const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : source === "riot" ? "Riot Games" : source === "amazon" ? "Amazon Games" : "Epic Games Store";
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
   if (source === "gog") return t("drawer.sourceGog");
   if (source === "steam") return t("drawer.sourceSteam");
+  if (source === "amazon") return t("drawer.sourceStore", { store: storeName });
   if (isCompanionSource(source)) {
     // A companion game without a client description falls back to the Steam
     // store text; say so instead of naming the client that had no data.
@@ -795,6 +800,9 @@ export function renderDrawerDlcs(s: EpicSummary): string {
     }
     const count = details?.dlc.length ?? 0;
     if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    const dlcStoreBtn = s.appName.startsWith("amazon::")
+      ? ""
+      : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("ctx.storePage")}</button>`;
     return `
       <div class="dlc-tab-content">
         <div class="row">
@@ -803,7 +811,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
             <div class="row-meta">${t("drawer.addonsDesc")}</div>
           </div>
           <div class="row-actions">
-            <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("ctx.storePage")}</button>
+            ${dlcStoreBtn}
           </div>
         </div>
       </div>`;
@@ -1079,18 +1087,22 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     const source = sourceOfKey(appName);
     const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
     const rawId = isGog ? appName.slice(5) : appName;
-    let data = isGog
-      ? await gogGetAchievements(rawId)
-      : isSteam
-        ? await steamGetAchievements(appName.slice(7), forceRefresh)
-        : isCompanion
-          ? await companionAchievements(
-              source as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot",
-              appName.slice(appName.indexOf("::") + 2),
-              summaryOf(appName)?.title || appName,
-              currentLanguage(),
-            )
-          : await epicGetAchievements(appName, forceRefresh);
+    // Amazon Games has no achievement API: the tab shows its empty state
+    // instead of asking a client that cannot answer.
+    let data = source === "amazon"
+      ? { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
+      : isGog
+        ? await gogGetAchievements(rawId)
+        : isSteam
+          ? await steamGetAchievements(appName.slice(7), forceRefresh)
+          : isCompanion
+            ? await companionAchievements(
+                source as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot",
+                appName.slice(appName.indexOf("::") + 2),
+                summaryOf(appName)?.title || appName,
+                currentLanguage(),
+              )
+            : await epicGetAchievements(appName, forceRefresh);
     // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
     // while Ubisoft Connect tracks them for the same account. Read the client's
     // local cache as the fallback and flag the page so it can say so.
@@ -1193,7 +1205,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
       <div class="page-actions">
         <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-        ${s.appName.startsWith("riot::")
+        ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
           ? ""
           : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
       </div>

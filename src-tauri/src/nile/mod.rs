@@ -28,3 +28,16 @@ pub fn amazon_set_install_dir(app: tauri::AppHandle, dir: String) {
     s.amazon_install_dir = Some(dir);
     crate::save_settings(&app, &s);
 }
+
+/// Default base folder for Amazon installs: `<home>\Games\Amazon`.
+#[tauri::command]
+pub fn amazon_default_install_dir() -> String {
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(std::path::PathBuf::from)
+        .unwrap_or_default();
+    home.join("Games")
+        .join("Amazon")
+        .to_string_lossy()
+        .to_string()
+}

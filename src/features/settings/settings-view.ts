@@ -39,6 +39,7 @@ import {
   type ScreenshotMoveInfo,
 } from "../../epic";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
+import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { storeLogo } from "../store/store-logos";
@@ -133,10 +134,11 @@ function renderDownloads(): string {
   );
 
   const amazonSavedDir = S.amazonInstallDir.trim();
+  const amazonShownDir = amazonSavedDir || S.amazonDefaultDir || "—";
   const amazonDir = row(
     t("settings.amazonInstallDirTitle"),
-    `${t("settings.amazonInstallDirHint")} <code>${esc(amazonSavedDir || t("downloads.defaultPlaceholder"))}</code>`,
-    `<input id="amazon-install-dir" class="input settings-path-input" value="${esc(amazonSavedDir)}" placeholder="${esc(t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+    `${t("settings.amazonInstallDirHint")} <code>${esc(amazonShownDir)}</code>`,
+    `<input id="amazon-install-dir" class="input settings-path-input" value="${esc(amazonSavedDir)}" placeholder="${esc(S.amazonDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
      <button type="button" class="btn ghost small" data-act="dl-pick-amazon-install-dir">${t("common.browse")}</button>
      <button type="button" class="btn primary small" data-act="amazon-save-install-dir">${t("common.save")}</button>`,
   );
@@ -755,7 +757,7 @@ export function renderSettings(): string {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -765,6 +767,8 @@ export async function loadSettingsView(): Promise<void> {
         gogGetInstallDir().catch(() => null),
         gogDefaultInstallDir().catch(() => ""),
         appGetAutostart().catch(() => false),
+        amazonGetInstallDir().catch(() => null),
+        amazonDefaultInstallDir().catch(() => ""),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
@@ -775,6 +779,8 @@ export async function loadSettingsView(): Promise<void> {
       S.gogDefaultDir = gogDefault || "";
       S.startWithWindows = autostart;
       S.gogCometEnabled = st.gog_comet_enabled ?? true;
+      S.amazonInstallDir = amazonDir || "";
+      S.amazonDefaultDir = amazonDefault || "";
     } catch {
       // Silent: keep the last cached values.
     }
