@@ -361,13 +361,17 @@
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* --- List view --- */
-.lib-list { --lrow-store-w: 110px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 128px 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }
+.lib-list { --lrow-store-w: 110px; --lrow-ach-w: 128px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) var(--lrow-ach-w) 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }
 /* Optional storefront column, right after the title: its own grid column so it
    lines up with the others instead of sticking to the game name. */
-.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px minmax(0, 1fr) var(--lrow-store-w) 128px 116px 92px 112px; }
+.lib-list.has-store-col .lrow-head, .lib-list.has-store-col .lrow { grid-template-columns: 56px minmax(0, 1fr) var(--lrow-store-w) var(--lrow-ach-w) 116px 92px 112px; }
+/* Achievement progress bar: the extra track comes from the flexible title
+   column, so the store column shifts left and the bar runs from the platform
+   name to the percent. It shrinks back to the base width when space runs out. */
+.lib-list.has-ach-progress { --lrow-ach-w: minmax(128px, 240px); }
 /* Narrow windows: the store column keeps the mark and drops the name. */
-html.win-compact .lib-list { --lrow-store-w: 44px; }
+html.win-compact .lib-list { --lrow-store-w: 44px; --lrow-ach-w: 128px; }
 html.win-compact .lrow-store-name { display: none; }
 .lrow-head { height: 36px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); }
 .lrow { height: 84px; border-top: 1px solid var(--line); cursor: pointer; contain: layout paint; }
@@ -429,11 +433,12 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow-store { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); }
 .lrow-store-logo { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; opacity: 0.9; }
 .lrow-store-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Optional achievements progress bar: count + percent over a thin track. It
-   stays inside the fixed 120px column, so narrow windows cannot break.
+/* Optional achievements progress bar: count + percent over a thin track. The
+   track fills the achievements column, which `has-ach-progress` widens so the
+   bar runs from the platform name to the percent.
    The class must not be `progress`: the shared `.progress > span` rule for the
    drawer bars would override the track and flatten it to zero height. */
-.lrow-ach.lrow-ach-progress { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; max-width: 128px; padding-right: 8px; }
+.lrow-ach.lrow-ach-progress { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; padding-right: 8px; }
 .lrow-ach-progress .lrow-ach-line { display: flex; align-items: center; gap: 6px; }
 .lrow-ach-pct { margin-left: auto; font-size: 12px; color: var(--text-3); }
 .lrow-ach-progress.done .lrow-ach-pct { color: var(--text); }

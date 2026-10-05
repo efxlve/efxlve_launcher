@@ -364,7 +364,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const highlightCls = isHighlight ? " dim-uninstalled contrast-titles highlight-installed" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list${highlightCls}${S.showStoreColumn ? " has-store-col" : ""}">
+      <div class="lib-list${highlightCls}${S.showStoreColumn ? " has-store-col" : ""}${S.showAchProgress ? " has-ach-progress" : ""}">
         <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span>${S.showStoreColumn ? `<span>${t("lib.colStore")}</span>` : ""}<span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
