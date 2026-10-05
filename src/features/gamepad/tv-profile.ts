@@ -29,6 +29,7 @@ import {
   profileListGames,
   profileSelection,
   storeCode,
+  steamArtAttrs,
   storeName,
   sumStats,
   switchAct,
@@ -232,7 +233,7 @@ function renderTvShowcaseShelf(platGames: ProfileGameRecord[]): string {
         data-id="${esc(g.app_name)}"
         tabindex="-1"
         title="${esc(g.app_title)}">
-        ${cover ? `<img class="tv-profile-card-img" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="tv-profile-card-placeholder">${icon("gamepad-2", 24)}</div>`}
+        ${cover ? `<img class="tv-profile-card-img"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<div class="tv-profile-card-placeholder">${icon("gamepad-2", 24)}</div>`}
         <span class="tv-profile-card-store">${store}</span>
         <span class="tv-profile-card-plat-badge">
           ${epicPlatinumIcon(13)}
@@ -280,7 +281,7 @@ function renderTvInProgressShelf(inProgGames: ProfileGameRecord[]): string {
         tabindex="-1"
         title="${esc(g.app_title)}">
         <div class="tv-profile-inprog-thumb-wrap">
-          ${cover ? `<img class="tv-profile-inprog-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="tv-profile-inprog-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
+          ${cover ? `<img class="tv-profile-inprog-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="tv-profile-inprog-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </div>
         <div class="tv-profile-inprog-info">
           <div class="tv-profile-inprog-title-row">

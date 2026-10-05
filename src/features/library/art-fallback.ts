@@ -26,7 +26,9 @@ let installed = false;
 
 function showPlaceholder(img: HTMLImageElement): void {
   const ph = document.createElement("div");
-  ph.className = "pcover";
+  // Keep the image's own classes: the profile thumbs size the placeholder and
+  // the library covers switch to the plain `.pcover` tile.
+  ph.className = img.className ? `${img.className} pcover` : "pcover";
   ph.innerHTML = icon("gamepad-2", 32);
   img.replaceWith(ph);
 }

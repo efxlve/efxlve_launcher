@@ -15,6 +15,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
@@ -24,10 +25,32 @@ import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 
 export function coverOf(appName: string, fallback = ""): string {
+  const custom = S.customCovers[appName];
+  if (custom) return custom;
+  if (appName.startsWith("steam::")) {
+    const appId = appName.slice(7);
+    if (/^\d+$/.test(appId)) {
+      // Steam's flat capsule path is missing for many games. Use the cover the
+      // library fallback already resolved, and let the shared art fallback
+      // repair the first URL when it 404s (`steamArtAttrs` marks the thumb).
+      const cached = cachedSteamCover(appId);
+      return cached || steamCdnPortrait(appId);
+    }
+  }
   const s = S.epicSummariesMap.get(appName);
   const raw = rawOf(appName);
   const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
-  return S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
+  return (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
+}
+
+/** Marks Steam art so the shared fallback can repair a 404 cover. A custom
+ *  cover is the user's explicit pick, so it never falls back to the store. */
+export function steamArtAttrs(appName: string): string {
+  if (S.customCovers[appName]) return "";
+  if (!appName.startsWith("steam::")) return "";
+  const appId = appName.slice(7);
+  if (!/^\d+$/.test(appId)) return "";
+  return ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`;
 }
 
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
@@ -115,7 +138,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       : "";
     return `
       <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
-        ${cover ? `<img class="profile-game-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 16)}</span>`}
+        ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 16)}</span>`}
         <div class="row-main">
           <div class="row-title">${esc(g.app_title)}${storeChip}</div>
           <div class="row-meta">${meta}</div>
@@ -759,7 +782,7 @@ function renderRecentPanel(scope: "all" | StoreKind): string {
     return `
       <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
         <span class="profile-recent-thumb-wrap">
-          ${cover ? `<img class="profile-recent-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
+          ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
         </span>
       </button>`;
   }).join("");
@@ -838,7 +861,7 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
     const miniCover = coverOf(g.app_name, g.cover || "");
     return `
       <button type="button" class="profile-showcase-mini" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
-        ${miniCover ? `<img src="${esc(miniCover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 15)}</span>`}
+        ${miniCover ? `<img${steamArtAttrs(g.app_name)} src="${esc(miniCover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 15)}</span>`}
       </button>`;
   }).join("");
 
@@ -847,7 +870,7 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
       ${head}
       <button type="button" class="profile-showcase-hero" data-act="open-game-from-profile" data-id="${esc(featured.app_name)}" title="${esc(featured.app_title)}">
         <span class="profile-showcase-cover${cover ? "" : " is-empty"}">
-          ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
+          ${cover ? `<img${steamArtAttrs(featured.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
         </span>
         <span class="profile-showcase-info">
           <span class="profile-showcase-name">${esc(featured.app_title)}</span>
