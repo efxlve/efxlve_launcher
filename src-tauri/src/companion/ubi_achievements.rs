@@ -256,6 +256,7 @@ fn locale_candidates(language: &str) -> Vec<String> {
         "ja" => vec!["ja-JP".into()],
         "ko" => vec!["ko-KR".into()],
         "th" => vec!["th-TH".into()],
+        "hi" => vec!["hi-IN".into()],
         "zh-Hans" => vec!["zh-CN".into()],
         "zh-Hant" => vec!["zh-TW".into()],
         _ => Vec::new(),

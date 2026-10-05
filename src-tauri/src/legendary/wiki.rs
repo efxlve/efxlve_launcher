@@ -38,6 +38,7 @@ pub fn wiki_language(lang: &str) -> &'static str {
         "ru" => "ru",
         "th" => "th",
         "ar" => "ar",
+        "hi" => "hi",
         "zh" | "zh-Hans" | "zh-Hant" => "zh",
         _ => "en",
     }
@@ -449,6 +450,7 @@ mod tests {
             ("zh-Hant", "zh"),
             ("ar", "ar"),
             ("th", "th"),
+            ("hi", "hi"),
         ] {
             assert_eq!(wiki_language(lang), wiki, "wiki code for {lang}");
         }

@@ -28,6 +28,7 @@ export const LANGUAGES: LanguageMeta[] = [
   { code: "zh-Hant", label: "繁體中文", dir: "ltr" },
   { code: "ar", label: "العربية", dir: "rtl" },
   { code: "th", label: "ไทย", dir: "ltr" },
+  { code: "hi", label: "हिन्दी", dir: "ltr" },
 ];
 
 const REGISTRY: Record<string, Dict> = { tr, en };
@@ -74,6 +75,7 @@ const LOADERS: Record<string, () => Promise<{ default: Dict }>> = {
   "zh-Hant": () => import("./locales/zh-Hant.json"),
   ar: () => import("./locales/ar.json"),
   th: () => import("./locales/th.json"),
+  hi: () => import("./locales/hi.json"),
 };
 
 let current: Dict = tr;

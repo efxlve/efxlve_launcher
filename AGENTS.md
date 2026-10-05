@@ -40,7 +40,7 @@ docs: commit every completed change without asking
 | Download progress DOM | `src/features/events/ipc-listeners.ts` (`applyDlDomUpdate`) |
 | A screen | `src/features/<name>/` |
 | Shared state | `src/core/state.ts`, lookups in `src/core/selectors.ts` |
-| Strings | `src/locales/*.json` (15 files, same keys). `npm.cmd run locales` |
+| Strings | `src/locales/*.json` (16 files, same keys). `npm.cmd run locales` |
 
 Names exported from a folder are listed in that folder's `mod.rs` (`pub use file::{...}`). Command names: `docs/agent/ipc-index.md`.
 
