@@ -18,9 +18,10 @@
    field: no native clock button, no reserved picker space, the value hugs its
    width. Typing is normalized by the change handler. */
 .settings-time-input { width: 72px; padding: 0 8px; text-align: center; font-variant-numeric: tabular-nums; }
-.settings-panel > .section-title:first-child, .settings-panel > .card:first-child { margin-top: 0; }
-.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; padding-right: 15px; }
-.settings-section-head .section-title { margin: 0 0 10px; }
+.settings-panel > .section-title:first-child, .settings-panel > .card:first-child, .settings-panel > .settings-section-head:first-child { margin-top: 0; }
+.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 12px; padding-right: 15px; }
+.settings-section-head .section-title { margin: 0; }
+.settings-section-head .btn { flex-shrink: 0; }
 .settings-hidden-head {
   margin: 0 0 12px; justify-content: space-between;
   /* List border plus the row's right padding, so this lines up with Show. */
