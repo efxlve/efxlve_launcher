@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "Gestion des comptes de boutiques",
+  "presence.accounts": "Comptes",
+  "presence.tvState": "Sur grand écran",
+  "presence.tv": "Mode TV",
   "launchers.delegatedTitle": "Délégués à leurs clients",
   "launchers.managedTitle": "Gérés par le launcher",
   "settings.amazonLogout": "Se déconnecter d'Amazon",

@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "正在管理商店帳戶",
+  "presence.accounts": "帳戶",
+  "presence.tvState": "在大螢幕上",
+  "presence.tv": "TV 模式",
   "launchers.delegatedTitle": "交給各自的用戶端",
   "launchers.managedTitle": "由啟動器管理",
   "settings.amazonLogout": "登出 Amazon",

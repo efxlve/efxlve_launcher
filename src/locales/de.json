@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "Verwaltet Store-Konten",
+  "presence.accounts": "Konten",
+  "presence.tvState": "Auf dem großen Bildschirm",
+  "presence.tv": "TV-Modus",
   "launchers.delegatedTitle": "An ihre Clients übergeben",
   "launchers.managedTitle": "Vom Launcher verwaltet",
   "settings.amazonLogout": "Von Amazon abmelden",

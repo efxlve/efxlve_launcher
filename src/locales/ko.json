@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "스토어 계정 관리 중",
+  "presence.accounts": "계정",
+  "presence.tvState": "큰 화면에서",
+  "presence.tv": "TV 모드",
   "launchers.delegatedTitle": "각 클라이언트에 위임",
   "launchers.managedTitle": "런처가 관리",
   "settings.amazonLogout": "Amazon에서 로그아웃",

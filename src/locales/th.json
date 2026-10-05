@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "กำลังจัดการบัญชีสโตร์",
+  "presence.accounts": "บัญชี",
+  "presence.tvState": "บนจอใหญ่",
+  "presence.tv": "โหมด TV",
   "launchers.delegatedTitle": "มอบให้ไคลเอนต์ของตน",
   "launchers.managedTitle": "จัดการโดยตัวเปิดเกม",
   "settings.amazonLogout": "ออกจากระบบ Amazon",

@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "Zarządzanie kontami sklepów",
+  "presence.accounts": "Konta",
+  "presence.tvState": "Na dużym ekranie",
+  "presence.tv": "Tryb TV",
   "launchers.delegatedTitle": "Przekazane ich klientom",
   "launchers.managedTitle": "Zarządzane przez launcher",
   "settings.amazonLogout": "Wyloguj się z Amazon",

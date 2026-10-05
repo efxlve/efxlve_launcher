@@ -94,78 +94,103 @@ pub fn clear() {
 
 fn worker(rx: Receiver<Msg>, client_id: String) {
     let mut client: Option<DiscordIpcClient> = None;
-    let mut last: Option<(String, String, String, String, i64)> = None;
+    // What Discord is currently showing, and what it should show next. The
+    // newest update is kept while the connection is down so a late-starting
+    // Discord still receives the right activity.
+    let mut applied: Option<(String, String, String, String, i64)> = None;
+    let mut pending: Option<ActivityUpdate> = None;
     let mut next_connect = Instant::now();
+    // How often a pending update retries a failed connection while idle.
+    let retry_tick = Duration::from_secs(5);
 
-    while let Ok(msg) = rx.recv() {
-        match msg {
-            Msg::Stop => break,
-            Msg::Clear => {
-                if let Some(c) = client.as_mut() {
-                    let _ = c.clear_activity();
-                }
-                last = None;
+    loop {
+        // Block while idle; tick while an update waits for a connection.
+        let msg = if pending.is_some() {
+            match rx.recv_timeout(retry_tick) {
+                Ok(msg) => Some(msg),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => None,
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
             }
-            Msg::Update(upd) => {
-                let signature = (
-                    upd.details.clone(),
-                    upd.state.clone(),
-                    upd.large_image.clone(),
-                    upd.small_image.clone(),
-                    upd.start_ms,
-                );
-                if last.as_ref() == Some(&signature) {
+        } else {
+            match rx.recv() {
+                Ok(msg) => Some(msg),
+                Err(_) => break,
+            }
+        };
+        if let Some(msg) = msg {
+            match msg {
+                Msg::Stop => break,
+                Msg::Clear => {
+                    pending = None;
+                    if let Some(c) = client.as_mut() {
+                        let _ = c.clear_activity();
+                    }
+                    applied = None;
                     continue;
                 }
-                if client.is_none() {
-                    if Instant::now() < next_connect {
-                        continue;
-                    }
-                    let mut c = DiscordIpcClient::new(&client_id);
-                    if c.connect().is_err() {
-                        next_connect = Instant::now() + RECONNECT_COOLDOWN;
-                        continue;
-                    }
-                    client = Some(c);
-                }
-                let mut payload = activity::Activity::new()
-                    .details(&upd.details)
-                    .state(&upd.state);
-                let mut assets = activity::Assets::new();
-                let mut has_assets = false;
-                if !upd.large_image.is_empty() {
-                    let hover = if upd.large_text.is_empty() {
-                        &upd.details
-                    } else {
-                        &upd.large_text
-                    };
-                    assets = assets.large_image(&upd.large_image).large_text(hover);
-                    has_assets = true;
-                }
-                if !upd.small_image.is_empty() {
-                    assets = assets
-                        .small_image(&upd.small_image)
-                        .small_text("Efxlve Launcher");
-                    has_assets = true;
-                }
-                if has_assets {
-                    payload = payload.assets(assets);
-                }
-                if upd.start_ms > 0 {
-                    payload = payload.timestamps(activity::Timestamps::new().start(upd.start_ms));
-                }
-                let ok = client
-                    .as_mut()
-                    .map(|c| c.set_activity(payload).is_ok())
-                    .unwrap_or(false);
-                if ok {
-                    last = Some(signature);
-                } else {
-                    // Connection dropped (e.g. Discord closed): retry later.
-                    client = None;
-                    next_connect = Instant::now() + RECONNECT_COOLDOWN;
-                }
+                Msg::Update(upd) => pending = Some(upd),
             }
+        }
+
+        let Some(upd) = pending.as_ref() else { continue };
+        let signature = (
+            upd.details.clone(),
+            upd.state.clone(),
+            upd.large_image.clone(),
+            upd.small_image.clone(),
+            upd.start_ms,
+        );
+        // Already showing this exact activity.
+        if client.is_some() && applied.as_ref() == Some(&signature) {
+            continue;
+        }
+        if client.is_none() {
+            if Instant::now() < next_connect {
+                continue;
+            }
+            let mut c = DiscordIpcClient::new(&client_id);
+            if c.connect().is_err() {
+                next_connect = Instant::now() + RECONNECT_COOLDOWN;
+                continue;
+            }
+            client = Some(c);
+        }
+        let mut payload = activity::Activity::new()
+            .details(&upd.details)
+            .state(&upd.state);
+        let mut assets = activity::Assets::new();
+        let mut has_assets = false;
+        if !upd.large_image.is_empty() {
+            let hover = if upd.large_text.is_empty() {
+                &upd.details
+            } else {
+                &upd.large_text
+            };
+            assets = assets.large_image(&upd.large_image).large_text(hover);
+            has_assets = true;
+        }
+        if !upd.small_image.is_empty() {
+            assets = assets
+                .small_image(&upd.small_image)
+                .small_text("Efxlve Launcher");
+            has_assets = true;
+        }
+        if has_assets {
+            payload = payload.assets(assets);
+        }
+        if upd.start_ms > 0 {
+            payload = payload.timestamps(activity::Timestamps::new().start(upd.start_ms));
+        }
+        let ok = client
+            .as_mut()
+            .map(|c| c.set_activity(payload).is_ok())
+            .unwrap_or(false);
+        if ok {
+            applied = Some(signature);
+        } else {
+            // Connection dropped (e.g. Discord closed): retry later.
+            client = None;
+            next_connect = Instant::now() + RECONNECT_COOLDOWN;
         }
     }
 

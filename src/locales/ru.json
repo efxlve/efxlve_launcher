@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "Управление аккаунтами магазинов",
+  "presence.accounts": "Аккаунты",
+  "presence.tvState": "На большом экране",
+  "presence.tv": "Режим ТВ",
   "launchers.delegatedTitle": "Передаются их клиентам",
   "launchers.managedTitle": "Управляются лаунчером",
   "settings.amazonLogout": "Выйти из Amazon",

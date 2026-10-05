@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "Mağaza hesaplarını yönetiyor",
+  "presence.accounts": "Hesaplar",
+  "presence.tvState": "Büyük ekranda",
+  "presence.tv": "TV Modu",
   "launchers.delegatedTitle": "İstemcisine devredilenler",
   "launchers.managedTitle": "Launcher'ın yönettikleri",
   "settings.amazonLogout": "Amazon'dan çıkış yap",

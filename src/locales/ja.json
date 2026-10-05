@@ -1,4 +1,8 @@
 {
+  "presence.accountsState": "ストアアカウントを管理中",
+  "presence.accounts": "アカウント",
+  "presence.tvState": "大画面で表示中",
+  "presence.tv": "TVモード",
   "launchers.delegatedTitle": "各クライアントに委任",
   "launchers.managedTitle": "ランチャーが管理",
   "settings.amazonLogout": "Amazon からサインアウト",
