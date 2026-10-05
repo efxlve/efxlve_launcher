@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. „Mit Google verbinden“ klicken und zulassen",
   "cloud.guideStep7Desc": "Klicke im Launcher auf „Mit Google verbinden“. Wähle im Browser dein Testkonto und klicke auf „Weiter / Zulassen“.",
   "cloud.openCloudConsole": "Google Cloud Console öffnen",
-  "cloud.openGithubGuide": "Einrichtungsdokumentation (GitHub)"
+  "cloud.openGithubGuide": "Einrichtungsdokumentation (GitHub)",
+  "common.saved": "Gespeichert"
 }

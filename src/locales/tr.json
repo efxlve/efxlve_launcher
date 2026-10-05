@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. 'Google ile Bağlan'a Basın ve İzin Verin",
   "cloud.guideStep7Desc": "Launcher'da 'Google ile Bağlan' butonuna tıklayın. Açılan tarayıcıda eklediğiniz test hesabını seçip 'Devam Et / İzin Ver' diyerek eşitlemeyi başlatın.",
   "cloud.openCloudConsole": "Google Cloud Console'u Aç",
-  "cloud.openGithubGuide": "Detaylı Dokümantasyon (GitHub)"
+  "cloud.openGithubGuide": "Detaylı Dokümantasyon (GitHub)",
+  "common.saved": "Kaydedildi"
 }

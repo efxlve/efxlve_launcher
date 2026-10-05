@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. اضغط «الاتصال بحساب Google» ثم اسمح",
   "cloud.guideStep7Desc": "اضغط «الاتصال بحساب Google» في المشغّل. في المتصفح اختر حساب الاختبار ثم «متابعة / السماح».",
   "cloud.openCloudConsole": "فتح Google Cloud Console",
-  "cloud.openGithubGuide": "وثائق الإعداد (GitHub)"
+  "cloud.openGithubGuide": "وثائق الإعداد (GitHub)",
+  "common.saved": "تم الحفظ"
 }

@@ -310,7 +310,7 @@ function searchChipHtml(): string {
       ${icon("search", 13)}
       <span class="tv-search-chip-text">${hasQuery ? esc(searchQuery) : esc(t("common.search"))}</span>
       ${hasQuery
-        ? `<span class="tv-search-clear-inline" data-act="tv-clear-search" title="${esc(t("common.clear"))}">${icon("x", 11)}</span>`
+        ? `<span class="tv-search-clear-inline" data-act="tv-clear-search" title="${esc(t("lib.clearSearch"))}">${icon("x", 11)}</span>`
         : `<span class="tv-bumper-glyph tv-key-glyph">Y</span>`}
     </button>`;
 }
@@ -393,7 +393,7 @@ function profileChipHtml(): string {
   const avatar = isCombined ? globalAvatar() : accountAvatar(sel.account);
   const initial = (name.trim().charAt(0) || "E").toUpperCase();
   return `
-    <button type="button" class="tv-status-chip is-profile${isFocused ? " focused" : ""}" data-act="tv-open-profile" title="${esc(t("nav.profile"))}">
+    <button type="button" class="tv-status-chip is-profile${isFocused ? " focused" : ""}" data-act="tv-open-profile" title="${esc(t("tv.openProfile"))}">
       <span class="tv-status-avatar">${avatar ? `<img src="${esc(avatar)}" alt="" />` : `<span class="tv-avatar-initial">${esc(initial)}</span>`}</span>
       <span class="tv-status-username">${esc(name)}</span>
     </button>`;

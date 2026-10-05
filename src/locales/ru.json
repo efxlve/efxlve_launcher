@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. Нажмите «Подключить Google» и разрешите доступ",
   "cloud.guideStep7Desc": "Нажмите «Подключить Google» в программе. В браузере выберите тестовый аккаунт и нажмите «Продолжить / Разрешить».",
   "cloud.openCloudConsole": "Открыть Google Cloud Console",
-  "cloud.openGithubGuide": "Документация по настройке (GitHub)"
+  "cloud.openGithubGuide": "Документация по настройке (GitHub)",
+  "common.saved": "Сохранено"
 }

@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. 点击“使用 Google 连接”并授权",
   "cloud.guideStep7Desc": "在启动器中点击“使用 Google 连接”。在打开的浏览器里选择测试账号，然后点击“继续 / 允许”。",
   "cloud.openCloudConsole": "打开 Google Cloud Console",
-  "cloud.openGithubGuide": "设置文档（GitHub）"
+  "cloud.openGithubGuide": "设置文档（GitHub）",
+  "common.saved": "已保存"
 }

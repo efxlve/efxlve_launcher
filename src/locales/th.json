@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. กด 'เชื่อมต่อด้วย Google' แล้วอนุญาต",
   "cloud.guideStep7Desc": "กด 'เชื่อมต่อด้วย Google' ในตัวเปิดเกม ในเบราว์เซอร์ที่เปิด เลือกบัญชีทดสอบแล้วกด 'ดำเนินการต่อ / อนุญาต'",
   "cloud.openCloudConsole": "เปิด Google Cloud Console",
-  "cloud.openGithubGuide": "เอกสารการตั้งค่า (GitHub)"
+  "cloud.openGithubGuide": "เอกสารการตั้งค่า (GitHub)",
+  "common.saved": "บันทึกแล้ว"
 }

@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. 按「使用 Google 連接」並授權",
   "cloud.guideStep7Desc": "在啟動器中按「使用 Google 連接」。在開啟的瀏覽器裡選擇測試帳號，然後按「繼續 / 允許」。",
   "cloud.openCloudConsole": "開啟 Google Cloud Console",
-  "cloud.openGithubGuide": "設定文件（GitHub）"
+  "cloud.openGithubGuide": "設定文件（GitHub）",
+  "common.saved": "已儲存"
 }

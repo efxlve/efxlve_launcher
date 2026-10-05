@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. Kliknij „Połącz z Google” i zezwól",
   "cloud.guideStep7Desc": "Kliknij „Połącz z Google” w launcherze. W przeglądarce wybierz konto testowe i kliknij „Kontynuuj / Zezwól”.",
   "cloud.openCloudConsole": "Otwórz Google Cloud Console",
-  "cloud.openGithubGuide": "Dokumentacja konfiguracji (GitHub)"
+  "cloud.openGithubGuide": "Dokumentacja konfiguracji (GitHub)",
+  "common.saved": "Zapisano"
 }

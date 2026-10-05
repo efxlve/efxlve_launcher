@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. Cliquez sur « Se connecter avec Google » et autorisez",
   "cloud.guideStep7Desc": "Cliquez sur « Se connecter avec Google » dans le launcher. Dans le navigateur, choisissez votre compte test et cliquez sur « Continuer / Autoriser ».",
   "cloud.openCloudConsole": "Ouvrir Google Cloud Console",
-  "cloud.openGithubGuide": "Documentation d'installation (GitHub)"
+  "cloud.openGithubGuide": "Documentation d'installation (GitHub)",
+  "common.saved": "Enregistré"
 }

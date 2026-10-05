@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. Click 'Connect with Google' and Authorize",
   "cloud.guideStep7Desc": "Click 'Connect with Google' in the Launcher. In the opened browser window, choose your test account and click 'Continue / Allow' to finish.",
   "cloud.openCloudConsole": "Open Google Cloud Console",
-  "cloud.openGithubGuide": "Setup Documentation (GitHub)"
+  "cloud.openGithubGuide": "Setup Documentation (GitHub)",
+  "common.saved": "Saved"
 }

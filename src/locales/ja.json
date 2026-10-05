@@ -1806,5 +1806,6 @@
   "cloud.guideStep7": "7. 「Google で接続」を押して許可",
   "cloud.guideStep7Desc": "ランチャーで「Google で接続」を押します。開いたブラウザーでテストアカウントを選び、「続行 / 許可」をクリックします。",
   "cloud.openCloudConsole": "Google Cloud Console を開く",
-  "cloud.openGithubGuide": "セットアップ文書（GitHub）"
+  "cloud.openGithubGuide": "セットアップ文書（GitHub）",
+  "common.saved": "保存しました"
 }

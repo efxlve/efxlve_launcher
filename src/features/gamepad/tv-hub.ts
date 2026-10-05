@@ -321,7 +321,7 @@ function renderAchievementsTab(s: EpicSummary): string {
       const isUnlocked = a.unlocked;
       const isHidden = a.hidden && !isUnlocked;
       const title = isHidden ? t("ach.secret") : a.display_name || a.name;
-      const desc = isHidden ? t("ach.secretDesc") : a.description || "";
+      const desc = isHidden ? t("ach.hiddenDesc") : a.description || "";
       const rarity = a.rarity?.percent;
 
       return `
@@ -341,7 +341,7 @@ function renderAchievementsTab(s: EpicSummary): string {
             ${desc ? `<p class="tv-trophy-desc">${esc(desc)}</p>` : ""}
             <div class="tv-trophy-meta">
               ${rarity != null ? `<span class="tv-trophy-rarity tabular-nums">${rarity.toFixed(1)}%</span>` : ""}
-              <span class="tv-trophy-state">${isUnlocked ? t("ach.unlocked") : t("ach.locked")}</span>
+              <span class="tv-trophy-state">${isUnlocked ? t("ach.earned") : t("ach.locked")}</span>
             </div>
           </div>
         </div>`;
@@ -372,7 +372,7 @@ function renderDlcsTab(s: EpicSummary): string {
   const dlcs = dlcRes?.dlcs ?? [];
 
   if (dlcs.length === 0) {
-    return `<div class="tv-tab-pane">${emptyState("package", t("drawer.dlcEmptyTitle"), t("drawer.dlcEmptyDesc"))}</div>`;
+    return `<div class="tv-tab-pane">${emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"))}</div>`;
   }
 
   const dlcCards = dlcs
@@ -400,7 +400,7 @@ function renderDlcsTab(s: EpicSummary): string {
 function renderScreenshotsTab(s: EpicSummary): string {
   const list = S.loadedScreenshots.get(s.appName) ?? [];
   if (list.length === 0) {
-    return `<div class="tv-tab-pane">${emptyState("camera", t("drawer.ssEmptyTitle"), t("drawer.ssEmptyDesc"))}</div>`;
+    return `<div class="tv-tab-pane">${emptyState("camera", t("ss.emptyTitle"), t("ss.emptyDesc", { hotkey: S.screenshotHotkeyName || "F12" }))}</div>`;
   }
 
   const thumbs = list
