@@ -22,7 +22,7 @@ import type { EpicSort, GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
-import { libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
+import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
@@ -792,12 +792,15 @@ export function renderEpic(): string {
   );
 
   const filterCount = libFiltersActiveCount();
-  const tools = `
-    ${sourceDropdown}
-    <button class="btn ghost lib-sort-btn lib-filter-btn${filterCount > 0 ? " active" : ""}" data-act="toggle-lib-filters" title="${esc(t("lib.filters"))}">
+  const filterButton = LIB_FILTERS_ENABLED
+    ? `<button class="btn ghost lib-sort-btn lib-filter-btn${filterCount > 0 ? " active" : ""}" data-act="toggle-lib-filters" title="${esc(t("lib.filters"))}">
       <span class="lib-sort-kicker">${icon("sliders", 13)} ${esc(t("lib.filters"))}</span>
       ${filterCount > 0 ? `<span class="lib-filter-badge tabular-nums">${filterCount}</span>` : ""}
-    </button>
+    </button>`
+    : "";
+  const tools = `
+    ${sourceDropdown}
+    ${filterButton}
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
         <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
@@ -868,7 +871,7 @@ export function renderEpic(): string {
       ${libraryHeader(tools, filters)}
       ${S.epicSyncNote ? `<p class="page-sub" id="lib-sync-note">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
-      ${renderLibFilterPanel(S.isFilterPanelOpen ? libraryFilteredList() : [], Math.max(0, S.libraryVisibleCount))}
+      ${LIB_FILTERS_ENABLED ? renderLibFilterPanel(S.isFilterPanelOpen ? libraryFilteredList() : [], Math.max(0, S.libraryVisibleCount)) : ""}
     </div>`;
 }
 

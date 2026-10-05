@@ -15,6 +15,9 @@ import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
+/** The advanced facets ship hidden for now; flip this to re-enable the panel. */
+export const LIB_FILTERS_ENABLED = false;
+
 /** Studio/publisher name for a game (empty when unknown). */
 export function studioOf(s: EpicSummary): string {
   if (s.appName.startsWith("gog::")) {
@@ -106,6 +109,7 @@ export function toggleLibFilter(group: keyof LibFilters, value: string): boolean
 
 /** Whether one game passes every active facet (groups AND-ed, values OR-ed). */
 export function matchesLibFilters(s: EpicSummary): boolean {
+  if (!LIB_FILTERS_ENABLED) return true;
   const f = S.libFilters;
   if (f.status.size > 0) {
     const ok =
@@ -229,7 +233,7 @@ function facetList(entries: FacetEntry[], group: keyof LibFilters, on: (value: s
  * so the counts never collapse while a filter is selected.
  */
 export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): string {
-  if (!S.isFilterPanelOpen) return "";
+  if (!LIB_FILTERS_ENABLED || !S.isFilterPanelOpen) return "";
   const facets = libFacets(base);
   const f = S.libFilters;
   const active = libFiltersActiveCount();
