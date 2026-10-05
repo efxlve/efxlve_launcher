@@ -75,6 +75,7 @@ import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import {
   consumeCollectionDragClick,
+  positionColDropdownMenu,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
@@ -420,8 +421,12 @@ document.addEventListener("click", (e) => {
     const storeMenu = document.getElementById("store-dropdown-menu");
     if (storeMenu) storeMenu.classList.remove("show");
     const menu = document.getElementById("col-dropdown-menu");
-    if (menu) menu.classList.toggle("show", S.isColDropdownOpen);
-    else render();
+    if (menu) {
+      menu.classList.toggle("show", S.isColDropdownOpen);
+      if (S.isColDropdownOpen) positionColDropdownMenu();
+    } else {
+      render();
+    }
   } else if (act === "select-col-filter") {
     if (consumeCollectionDragClick()) return;
     const colId = t.dataset.colId;

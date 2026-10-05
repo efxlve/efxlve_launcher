@@ -82,10 +82,12 @@ document.addEventListener("click", (e) => {
   box.dispatchEvent(new Event("change", { bubbles: true }));
 });
 
-// Vertical wheel scrolls the game page tab strip horizontally when it overflows.
+// Vertical wheel scrolls a horizontal tab strip when it overflows.
 document.addEventListener("wheel", (e) => {
-  const bar = (e.target as HTMLElement)?.closest<HTMLElement>(".gp-tabs");
-  if (bar && e.deltaY !== 0 && bar.scrollWidth > bar.clientWidth) {
+  const target = e.target as HTMLElement;
+  const bar = target?.closest<HTMLElement>(".gp-tabs, .lib-filters");
+  if (!bar || target?.closest(".col-dropdown-menu")) return;
+  if (e.deltaY !== 0 && bar.scrollWidth > bar.clientWidth) {
     e.preventDefault();
     bar.scrollLeft += e.deltaY;
   }

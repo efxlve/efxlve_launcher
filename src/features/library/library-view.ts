@@ -629,6 +629,19 @@ function syncStoreFilterMenu(): void {
   });
 }
 
+/** Pins the open collections menu under its button. The strip scrolls, so the
+ *  menu is fixed and gets its viewport coordinates here. */
+export function positionColDropdownMenu(): void {
+  const menu = document.getElementById("col-dropdown-menu");
+  const btn = document.querySelector<HTMLElement>(".lib-col-dropdown-btn");
+  if (!menu || !btn) return;
+  const rect = btn.getBoundingClientRect();
+  const width = menu.offsetWidth || 248;
+  const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+  menu.style.left = `${Math.round(left)}px`;
+  menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+}
+
 /** Filter-button badge, panel result count and the clear button, in place. */
 export function syncLibFilterUi(): void {
   const btn = document.querySelector<HTMLElement>('[data-act="toggle-lib-filters"]');
