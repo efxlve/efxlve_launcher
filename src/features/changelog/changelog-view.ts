@@ -27,9 +27,33 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.23",
+    date: "2026-10-06",
+    isCurrent: true,
+    items: [
+      {
+        en: "The storage manager now covers every store: installed games from Epic, GOG, Amazon Games, Steam, Xbox, EA, Ubisoft, Battle.net and Riot are grouped by drive, and each folder's real size is measured instead of trusting store metadata. Move is offered for Epic and Amazon, and uninstall routes to the owning store's own flow.",
+        tr: "Depolama yöneticisi artık tüm mağazaları kapsıyor: Epic, GOG, Amazon Games, Steam, Xbox, EA, Ubisoft, Battle.net ve Riot'taki yüklü oyunlar sürücülere göre gruplanıyor; mağaza verisine güvenmek yerine her klasörün gerçek boyutu ölçülüyor. Taşıma Epic ve Amazon için sunuluyor, kaldırma ise oyunun kendi mağazasının akışına yönlendiriliyor.",
+      },
+      {
+        en: "Games started outside the launcher — from the Steam client, GOG Galaxy, Amazon, Xbox, EA, Ubisoft, Battle.net or Riot — now show as Running and land in Recently played.",
+        tr: "Launcher dışından başlatılan oyunlar (Steam istemcisi, GOG Galaxy, Amazon, Xbox, EA, Ubisoft, Battle.net veya Riot) artık Çalışıyor olarak görünüyor ve Son oynananlar listesine ekleniyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The hide-achievements dialog follows the open profile tab instead of always listing Epic games.",
+        tr: "Başarımları gizle penceresi artık açık olan profil sekmesini izliyor; her zaman Epic oyunlarını listelemiyor.",
+      },
+      {
+        en: "Steam covers appear in the profile and TV profile without picking a cover by hand.",
+        tr: "Steam kapakları profilde ve TV profilinde elle kapak seçmeden görünüyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.22",
     date: "2026-10-05",
-    isCurrent: true,
     items: [
       {
         en: "The stores bar is always logos-only now: every store shows its mark and only the open one keeps its full name. The setting was removed.",
