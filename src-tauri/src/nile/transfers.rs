@@ -53,6 +53,51 @@ fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
     f(map)
 }
 
+/// One stderr line handler that forwards download progress as events.
+fn progress_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send + 'static {
+    let mut last_speed = 0.0f64;
+    move |line: &str| {
+        if let Some(speed) = parse_speed_line(line) {
+            last_speed = speed;
+            return;
+        }
+        if let Some(progress) = parse_progress_line(line) {
+            let _ = app.emit(
+                "nile-progress",
+                json!({
+                    "id": event_id,
+                    "percent": progress.percent,
+                    "downloaded": progress.downloaded,
+                    "total": progress.total,
+                    "speed": last_speed,
+                }),
+            );
+        }
+    }
+}
+
+/// Drops the installed record and the stored manifest for one product.
+///
+/// Nile compares stored manifests instead of the files on disk, and its saved
+/// path lookup keys on the entitlement id while the record uses the product
+/// id, so a moved or deleted folder still reads as "up to date" forever.
+fn reset_install_record(app: &AppHandle, id: &str) {
+    let dir = cli::config_dir(app);
+    let path = dir.join("installed.json");
+    if let Ok(text) = std::fs::read_to_string(&path) {
+        if let Ok(list) = serde_json::from_str::<Vec<serde_json::Value>>(&text) {
+            let kept: Vec<serde_json::Value> = list
+                .into_iter()
+                .filter(|game| game.get("id").and_then(|v| v.as_str()) != Some(id))
+                .collect();
+            if let Ok(serialized) = serde_json::to_string(&kept) {
+                let _ = std::fs::write(&path, serialized);
+            }
+        }
+    }
+    let _ = std::fs::remove_file(dir.join("manifests").join(format!("{id}.raw")));
+}
+
 /// Installs (or updates) one Amazon game. Progress arrives as `nile-progress`
 /// events with the composite id the library uses.
 #[tauri::command]
@@ -78,26 +123,12 @@ pub async fn nile_install(
     }
 
     let event_id = format!("amazon::{id}");
-    let app_handle = app.clone();
-    let mut last_speed = 0.0f64;
-    let out = cli::run_streaming(&app, &args, 6 * 3600, move |line| {
-        if let Some(speed) = parse_speed_line(line) {
-            last_speed = speed;
-            return;
-        }
-        if let Some(progress) = parse_progress_line(line) {
-            let _ = app_handle.emit(
-                "nile-progress",
-                json!({
-                    "id": event_id,
-                    "percent": progress.percent,
-                    "downloaded": progress.downloaded,
-                    "total": progress.total,
-                    "speed": last_speed,
-                }),
-            );
-        }
-    })
+    let out = cli::run_streaming(
+        &app,
+        &args,
+        6 * 3600,
+        progress_emitter(app.clone(), event_id.clone()),
+    )
     .await?;
 
     // Keep the full output for diagnostics: Nile reports some failures only on
@@ -116,24 +147,28 @@ pub async fn nile_install(
         return Err(cli::failure_message(&out));
     }
     // Nile exits zero even when it refuses to install ("Not enough space") and
-    // when its manifest says "up to date" although the files are gone. The
-    // installed record plus its folder is the postcondition; `verify`
-    // re-downloads whatever the saved manifest says is missing.
+    // when it only *thinks* the install is current. The installed record plus
+    // its folder is the postcondition.
     if super::library::installed_game(&app, &id).is_none() {
-        let verify = cli::run(&app, &["verify", &id], 6 * 3600).await;
-        let healed = verify
+        reset_install_record(&app, &id);
+        let retry = cli::run_streaming(
+            &app,
+            &args,
+            6 * 3600,
+            progress_emitter(app.clone(), event_id),
+        )
+        .await;
+        let healed = retry
             .as_ref()
             .map(|v| v.status.success())
             .unwrap_or(false)
             && super::library::installed_game(&app, &id).is_some();
         if !healed {
-            let detail = match verify {
+            let detail = match retry {
                 Ok(v) => cli::failure_message(&v),
                 Err(e) => e,
             };
-            return Err(format!(
-                "@t:amazon.installFailed\u{1f}{detail}"
-            ));
+            return Err(format!("@t:amazon.installFailed\u{1f}{detail}"));
         }
     }
     Ok(())
