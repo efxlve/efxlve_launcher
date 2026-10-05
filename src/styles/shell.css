@@ -597,6 +597,9 @@ html.sb-narrow .sb-toggle-label {
   z-index: 1;
   transition: color 140ms ease;
 }
+/* A hidden store tab must leave the strip: the inline-flex above would
+   otherwise beat the browser's own [hidden] display:none. */
+.store-tabs .tab[hidden] { display: none; }
 .store-tabs .tab:hover:not(.active) { color: var(--text); }
 .store-tabs .tab.active { color: #fff; background: transparent; }
 .store-tabs .tab.active::after { display: none; }
