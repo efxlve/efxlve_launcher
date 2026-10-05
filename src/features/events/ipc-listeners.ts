@@ -460,9 +460,12 @@ export async function initApp(hooks: {
     });
     await listen<VerifyProgressEvent>("verify-progress", (event) => {
       const { id, current, total, percent, speed, detail } = event.payload;
-      // Nile reports verified/needed bytes; show them as sizes, not counters.
+      // Nile reports verified/needed bytes. While nothing has been repaired yet
+      // (the normal case) the bar would sit at 0%, so say what is happening.
       const shown = id.startsWith("amazon::") && total > 0
-        ? `${fmtBytes(current)} / ${fmtBytes(total)}`
+        ? current > 0
+          ? `${fmtBytes(current)} / ${fmtBytes(total)}`
+          : t("manage.verifying")
         : detail;
       updateVerifyProgressInPlace(id, current, total, percent, speed, shown);
     });
