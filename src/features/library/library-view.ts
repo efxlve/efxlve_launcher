@@ -334,7 +334,7 @@ function epicListRow(s: EpicSummary): string {
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
   // Optional: its own storefront column, aligned like the achievements column.
   const storeCell = S.showStoreColumn
-    ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc((STORE_LABELS as Record<string, string>)[source] ?? source)}</span></div>`
+    ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`
     : "";
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
@@ -357,6 +357,15 @@ function renderItem(s: EpicSummary): string {
 
 export function resetCardChunk(): void {
   S.renderedCardCount = INITIAL_CARD_CHUNK;
+}
+
+/** Brand label for a library source. Amazon's and Riot's library ids differ
+ *  from the store-tab ids, so they are mapped here instead of falling back to
+ *  the raw lowercase id. */
+function sourceLabel(source: string): string {
+  if (source === "amazon") return "Amazon Games";
+  if (source === "riot") return "Riot Games";
+  return (STORE_LABELS as Record<string, string>)[source] ?? source;
 }
 
 function renderResults(itemsHtml: string, sentinelHtml: string): string {
