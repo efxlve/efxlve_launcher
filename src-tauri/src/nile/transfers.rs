@@ -59,13 +59,15 @@ fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
 pub async fn nile_install(
     app: AppHandle,
     id: String,
-    path: Option<String>,
+    base_path: Option<String>,
     max_workers: Option<u32>,
 ) -> Result<(), String> {
     let mut args: Vec<String> = vec!["install".into(), id.clone()];
-    if let Some(path) = path.filter(|p| !p.trim().is_empty()) {
-        args.push("--path".into());
-        args.push(path);
+    if let Some(base) = base_path.filter(|p| !p.trim().is_empty()) {
+        // `--base-path` appends the sanitized game title, so the setting reads
+        // as "the folder Amazon games go into".
+        args.push("--base-path".into());
+        args.push(base);
     }
     if let Some(workers) = max_workers.filter(|w| *w > 0) {
         args.push("--max-workers".into());

@@ -132,6 +132,9 @@ pub struct EpicSettings {
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
     pub gog_comet_enabled: Option<bool>,
+    /// Base folder for Amazon Games installs (empty = Nile's default).
+    #[serde(default)]
+    pub amazon_install_dir: Option<String>,
     #[serde(default = "default_true")]
     pub auto_desktop_shortcut: bool,
 }
@@ -909,6 +912,8 @@ fn main() {
             nile::transfers::nile_launch,
             nile::transfers::nile_stop,
             nile::transfers::nile_check_updates,
+            nile::amazon_get_install_dir,
+            nile::amazon_set_install_dir,
             cloud_backup::commands::cloud_backup_get_settings,
             cloud_backup::commands::cloud_backup_save_settings,
             cloud_backup::commands::cloud_backup_test_connection,

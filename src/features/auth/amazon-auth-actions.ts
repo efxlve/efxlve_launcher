@@ -9,6 +9,7 @@
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
+import { updateBadge } from "../../core/nav";
 import { scheduleRender } from "../../core/render";
 import { setAmazonSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -16,6 +17,7 @@ import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
 import { t } from "../../i18n";
 import {
+  amazonGetInstallDir,
   amazonKey,
   nileAuthStatus,
   nileCheckUpdates,
@@ -42,7 +44,7 @@ function amazonToLibraryItem(game: NileGame): LibraryItem {
     installedVersion: null,
     installed: game.installed,
     installPath: game.install_path,
-    installSize: 0,
+    installSize: game.size || 0,
     coverUrl: game.art,
     heroUrl: null,
     description: "",
@@ -138,6 +140,16 @@ export async function loadAmazonSession(sync = false): Promise<void> {
   scheduleRender();
 }
 
+/** Reads the Amazon install folder once so the install buttons can use it. */
+export async function loadAmazonInstallDir(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    S.amazonInstallDir = (await amazonGetInstallDir()) || "";
+  } catch {
+    // Keep the last value.
+  }
+}
+
 /**
  * Mirrors Nile's live-version check onto the library items so the update badge
  * and the card's Update button agree. Offline or rate-limited calls keep the
@@ -201,15 +213,23 @@ export async function amazonLogoutAction(): Promise<void> {
 /** Installs or updates one Amazon game; progress streams in as events. */
 export async function installAmazonGame(id: string): Promise<void> {
   const key = amazonKey(id);
+  const title = S.amazonGames.find((g) => g.id === id)?.title || id;
   S.amazonProgress.set(key, { percent: 0, speed: 0 });
+  // The Downloads page picks the first unfinished entry as the active card.
+  S.downloads.set(key, { progress: 0, done: false, title });
+  updateBadge();
   scheduleRender();
   try {
-    await nileInstall(id);
+    await nileInstall(id, S.amazonInstallDir || null);
     S.amazonProgress.delete(key);
+    S.downloads.delete(key);
+    updateBadge();
     toast(t("amazon.installed"), "ok");
     await loadAmazonSession(false);
   } catch (err) {
     S.amazonProgress.delete(key);
+    S.downloads.delete(key);
+    updateBadge();
     toast(String(err), "err");
     scheduleRender();
   }

@@ -373,6 +373,8 @@ export const S = {
   amazonBusy: false,
   /** Live install progress per composite Amazon id. */
   amazonProgress: (new Map()) as Map<string, { percent: number; speed: number }>,
+  /** Base folder Amazon Games install into (empty = Nile's default). */
+  amazonInstallDir: "",
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

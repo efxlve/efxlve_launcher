@@ -33,6 +33,10 @@ export const STORE_LOGOS: Record<StoreId, string> = {
 /** Marks for services that are not storefronts (the Accounts page uses them). */
 const EXTRA_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot, discord, spotify };
 
+// Amazon uses the same gaming mark for Amazon Games and Luna, so one asset
+// identifies both rows.
+EXTRA_LOGOS.amazon = luna;
+
 /** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
   const src = STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id];

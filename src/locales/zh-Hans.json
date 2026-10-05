@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "Epic 游戏默认安装到此。留空则使用：",
   "settings.gogInstallDirTitle": "GOG 安装文件夹",
   "settings.gogInstallDirHint": "GOG 游戏默认安装到此。留空则使用：",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "Epic Games Launcher 集成",
   "settings.eglDesc": "检测由官方 Epic Games Launcher 安装的游戏，并同步到游戏库。",
   "settings.gogGalaxyTitle": "GOG Galaxy",

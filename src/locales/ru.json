@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "Игры Epic устанавливаются сюда по умолчанию. Если пусто:",
   "settings.gogInstallDirTitle": "Папка установки GOG",
   "settings.gogInstallDirHint": "Игры GOG устанавливаются сюда по умолчанию. Если пусто:",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "Интеграция с Epic Games Launcher",
   "settings.eglDesc": "Находит игры, установленные официальным Epic Games Launcher, и добавляет их в библиотеку.",
   "settings.gogGalaxyTitle": "GOG Galaxy",

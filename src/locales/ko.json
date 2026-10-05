@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "Epic 게임은 기본적으로 여기에 설치됩니다. 비워 두면:",
   "settings.gogInstallDirTitle": "GOG 설치 폴더",
   "settings.gogInstallDirHint": "GOG 게임은 기본적으로 여기에 설치됩니다. 비워 두면:",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "Epic Games Launcher 연동",
   "settings.eglDesc": "공식 Epic Games Launcher로 설치한 게임을 찾아 라이브러리에 동기화합니다.",
   "settings.gogGalaxyTitle": "GOG Galaxy",

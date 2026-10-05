@@ -132,6 +132,15 @@ function renderDownloads(): string {
      <button type="button" class="btn primary small" data-act="gog-save-install-dir">${t("common.save")}</button>`,
   );
 
+  const amazonSavedDir = S.amazonInstallDir.trim();
+  const amazonDir = row(
+    t("settings.amazonInstallDirTitle"),
+    `${t("settings.amazonInstallDirHint")} <code>${esc(amazonSavedDir || t("downloads.defaultPlaceholder"))}</code>`,
+    `<input id="amazon-install-dir" class="input settings-path-input" value="${esc(amazonSavedDir)}" placeholder="${esc(t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+     <button type="button" class="btn ghost small" data-act="dl-pick-amazon-install-dir">${t("common.browse")}</button>
+     <button type="button" class="btn primary small" data-act="amazon-save-install-dir">${t("common.save")}</button>`,
+  );
+
   const profileDesc = S.networkProfile === "max" ? t("settings.netMaxDesc") : S.networkProfile === "low" ? t("settings.netLowDesc") : t("settings.netBalancedDesc");
   const profile = row(t("settings.netCardsTitle"), profileDesc, `
     <div class="seg" role="radiogroup">
@@ -160,7 +169,7 @@ function renderDownloads(): string {
 
   return (
     infoBox("downloads.scopeInfo") +
-    group(dir + gogDir + row(
+    group(dir + gogDir + amazonDir + row(
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,

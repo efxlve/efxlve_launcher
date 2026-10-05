@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "تُثبَّت ألعاب Epic هنا افتراضيًا. إذا تُرك فارغًا:",
   "settings.gogInstallDirTitle": "مجلد تثبيت GOG",
   "settings.gogInstallDirHint": "تُثبَّت ألعاب GOG هنا افتراضيًا. إذا تُرك فارغًا:",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "تكامل Epic Games Launcher",
   "settings.eglDesc": "يكتشف الألعاب التي ثبّتها Epic Games Launcher الرسمي ويزامنها إلى مكتبتك.",
   "settings.gogGalaxyTitle": "GOG Galaxy",

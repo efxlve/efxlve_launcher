@@ -72,14 +72,14 @@ import { updateMaxIcon } from "../../core/window";
 import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
-import { loadAmazonSession } from "../auth/amazon-auth-actions";
+import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import type { NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
-import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
+import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer, activeDownloadId } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -205,6 +205,7 @@ export async function initApp(hooks: {
   void bootEpic();
   void initGogSession();
   void loadAmazonSession();
+  void loadAmazonInstallDir();
   void hydrateSteamAuth();
   void loadSavedAccounts();
   void initCloudBackupSettings();
@@ -234,16 +235,26 @@ export async function initApp(hooks: {
     await listen<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);
     });
-    // Amazon installs stream their own progress lines; patch the card bars and
-    // remember the last values so a re-render keeps showing them.
+    // Amazon installs stream their own progress lines; patch the Downloads
+    // hero card in place and remember the last values for re-renders.
     await listen<NileProgressEvent>("nile-progress", (event) => {
-      const { id, percent, speed } = event.payload;
+      const { id, percent, speed, downloaded, total } = event.payload;
       S.amazonProgress.set(id, { percent, speed });
-      const bar = document.querySelector<HTMLElement>(`[data-amazon-bar="${id}"]`);
-      if (bar) bar.style.width = `${percent}%`;
-      const meta = document.querySelector<HTMLElement>(`[data-amazon-meta="${id}"]`);
-      if (meta) {
-        meta.textContent = `${percent.toFixed(1)}%${speed > 0 ? ` · ${speed.toFixed(1)} MiB/s` : ""}`;
+      const dl = S.downloads.get(id);
+      if (dl) dl.progress = percent;
+      // The Downloads page hero card patches in place, like the Epic/GOG path.
+      if (S.view === "downloads" && activeDownloadId() === id) {
+        const fill = document.getElementById("dl-hero-fill");
+        if (fill) fill.style.width = `${percent}%`;
+        const pctEl = document.getElementById("dl-hero-pct");
+        if (pctEl) pctEl.textContent = `%${Math.round(percent)}`;
+        const speedEl = document.getElementById("dl-stat-speed");
+        if (speedEl) speedEl.textContent = fmtSpeed(Math.round(speed * 1024 * 1024), S.speedInBits);
+        const bytesEl = document.getElementById("dl-stat-bytes");
+        if (bytesEl) bytesEl.textContent = `${fmtBytes(downloaded)} / ${fmtBytes(total)}`;
+        startSpeedChartTimer();
+        pushSpeedData(Math.round(speed * 1024 * 1024), 0);
+        scheduleDrawSpeedCanvas();
       }
     });
 

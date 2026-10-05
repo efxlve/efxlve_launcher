@@ -434,34 +434,6 @@ function amazonSignInBlock(): string {
     </div>`;
 }
 
-/** One Amazon game row inside the card: install / play / stop / uninstall. */
-function amazonGameRow(game: import("../../nile").NileGame): string {
-  const key = `amazon::${game.id}`;
-  const progress = S.amazonProgress.get(key);
-  const busy = progress !== undefined && progress.percent < 100;
-  const running = S.runningGames.has(key);
-  const meta = busy
-    ? `${progress.percent.toFixed(1)}%${progress.speed > 0 ? ` · ${progress.speed.toFixed(1)} MiB/s` : ""}`
-    : game.installed
-      ? `${t("common.installed")}${game.version ? ` · v${esc(game.version)}` : ""}`
-      : "";
-  const actions = running
-    ? `<button class="btn small" data-act="amazon-stop" data-id="${esc(game.id)}">${icon("square", 12)} ${t("common.stop")}</button>`
-    : game.installed
-      ? `<button class="btn play small" data-act="amazon-play" data-id="${esc(game.id)}">${icon("play", 12)} ${t("common.play")}</button>
-         <button class="icon-btn danger" data-act="amazon-uninstall" data-id="${esc(game.id)}" title="${t("common.uninstall")}">${icon("trash", 13)}</button>`
-      : `<button class="btn install small" data-act="amazon-install" data-id="${esc(game.id)}" ${busy ? "disabled" : ""}>${icon("download", 12)} ${t("common.install")}</button>`;
-  return `
-    <div class="row">
-      <div class="row-main">
-        <div class="row-title">${esc(game.title)}</div>
-        <div class="row-meta" data-amazon-meta="${esc(key)}">${meta}</div>
-        ${busy ? `<div class="progress amazon-progress"><span data-amazon-bar="${esc(key)}" style="width:${progress.percent}%"></span></div>` : ""}
-      </div>
-      <div class="row-actions">${actions}</div>
-    </div>`;
-}
-
 function amazonCard(): string {
   const connected = Boolean(S.amazonStatus?.logged_in);
   const name = S.amazonStatus?.username || "Amazon Games";
@@ -470,10 +442,7 @@ function amazonCard(): string {
     : connected
       ? `<span class="chip ok">${t("accounts.connected")}</span>`
       : `<span class="chip">${t("accounts.notConnected")}</span>`;
-  // The card lists a slice of the library; the full library integration lands
-  // with the store source. Twelve keeps the Accounts page scannable.
-  const shown = S.amazonGames.slice(0, 12);
-  const hidden = S.amazonGames.length - shown.length;
+  // The library owns the game list; the card stays a short account manager.
   const body = connected
     ? `
       <div class="list acc-accounts">
@@ -481,11 +450,10 @@ function amazonCard(): string {
           <div class="row-main"><div class="row-title">${esc(name)}</div><div class="row-meta">${S.amazonGames.length} ${t("settings.accountTotalGames")}</div></div>
           <div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div>
         </div>
-        ${shown.map(amazonGameRow).join("")}
-        ${hidden > 0 ? `<div class="row"><div class="row-main"><div class="row-meta">+${hidden}</div></div></div>` : ""}
       </div>
       <div class="acc-actions">
         <button class="btn ghost small" data-act="amazon-sync" ${S.amazonBusy ? "disabled" : ""}>${icon("refresh", 13)} ${t("amazon.syncLibrary")}</button>
+        <button class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
         <span class="acc-spacer"></span>
         <button class="btn ghost danger small" data-act="amazon-logout">${t("settings.logout")}</button>
       </div>`
@@ -495,6 +463,7 @@ function amazonCard(): string {
   return `
     <section class="card acc-card">
       <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo("amazon")}</span>
         <div class="row-main"><div class="acc-store-name">Amazon Games</div><div class="row-meta">${connected ? esc(name) : t("accounts.amazonShort")}</div></div>
         ${status}
       </div>

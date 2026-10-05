@@ -192,6 +192,11 @@ function activeDownload(): DlMetrics | null {
   return null;
 }
 
+/** Id of the card the active-download block is showing, if any. */
+export function activeDownloadId(): string | null {
+  return activeDownload()?.id ?? null;
+}
+
 /** Installed games that are not already listed under Updates. Recent first. */
 function installedGames(): EpicSummary[] {
   const recentIdx = new Map<string, number>();
@@ -200,9 +205,13 @@ function installedGames(): EpicSummary[] {
   const gogInstalled = S.gogSummaries
     .filter((g) => g.installed && !g.updateAvailable)
     .map(gogToEpicSummary);
+  const amazonInstalled = S.amazonSummaries
+    .filter((g) => g.installed && !g.updateAvailable)
+    .map(libraryItemToSummary);
   return [
     ...S.epicSummaries.filter((s) => s.installed && !(s.updateAvailable || S.availableUpdates.has(s.appName))),
     ...gogInstalled,
+    ...amazonInstalled,
   ].sort((a, b) => {
     const ra = recentIdx.get(a.appName);
     const rb = recentIdx.get(b.appName);
@@ -212,10 +221,13 @@ function installedGames(): EpicSummary[] {
 }
 
 function renderActiveCard(dl: DlMetrics): string {
-  const s = S.epicSummariesMap.get(dl.id);
+  const s = summaryOf(dl.id);
   const title = esc(s?.title || dl.title || dl.id);
-  const art = s ? epicWideArt(s) || s.cover : null;
-  const paused = dl.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused;
+  const art = s?.cover || null;
+  const isAmazon = dl.id.startsWith("amazon::");
+  // Nile has no pause and the launcher does not cancel an install, so the
+  // Amazon card carries no queue controls.
+  const paused = !isAmazon && (dl.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused);
   const pct = Math.round(dl.progress);
   const metric = (label: string, id: string, value: string): string =>
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
@@ -229,11 +241,13 @@ function renderActiveCard(dl: DlMetrics): string {
             <span class="chip ${paused ? "warn" : "accent"}">${paused ? t("dl.statusPaused") : t("dl.statusActive")}</span>
           </div>
           <div class="row-actions">
-            ${paused
-                ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
-                : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}
+            ${isAmazon
+              ? `<button class="btn ghost" data-view="library">${t("profile.showAll")}</button>`
+              : `${paused
+                  ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
+                  : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}
             <button class="icon-btn" data-act="manage-game" data-id="${dl.id}" title="${t("common.manage")}">${icon("settings", 16)}</button>
-            <button class="icon-btn danger" data-act="epic-cancel" data-id="${dl.id}" title="${t("common.cancel")}">${icon("x", 16)}</button>
+            <button class="icon-btn danger" data-act="epic-cancel" data-id="${dl.id}" title="${t("common.cancel")}">${icon("x", 16)}</button>`}
           </div>
         </div>
         <div class="dl-active-progress">
@@ -289,6 +303,7 @@ export function renderDownloads(): string {
   const updates = [
     ...S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))),
     ...gogUpdates,
+    ...S.amazonSummaries.filter((g) => g.installed && g.updateAvailable).map(libraryItemToSummary),
     ...steamUpdates,
   ];
   const manageBtn = (id: string): string => `<button class="icon-btn" data-act="manage-game" data-id="${id}" title="${t("common.manage")}">${icon("settings", 16)}</button>`;
@@ -317,7 +332,9 @@ export function renderDownloads(): string {
     const ignoreBtn = `<button class="icon-btn${isIgnored ? " active" : ""}" data-act="toggle-ignore-update" data-id="${esc(s.appName)}" title="${esc(ignoreTip)}">${icon(isIgnored ? "bell" : "bell-off", 15)}</button>`;
     const updateAct = s.appName.startsWith("steam::")
       ? `<button class="btn update small" data-act="steam-action" data-id="${s.appName.slice(7)}" data-mode="update">${icon("download", 13)} ${t("common.update")}</button>`
-      : `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`;
+      : s.appName.startsWith("amazon::")
+        ? `<button class="btn update small" data-act="amazon-install" data-id="${s.appName.slice(8)}">${icon("download", 13)} ${t("common.update")}</button>`
+        : `<button class="btn update small" data-act="epic-install" data-id="${s.appName}">${icon("download", 13)} ${t("common.update")}</button>`;
     return gameRow(s, s.appName, meta || t("drawer.updateAvailable"),
       `${updateAct}${ignoreBtn}${manageBtn(s.appName)}`);
   }).join("");

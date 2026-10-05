@@ -33,6 +33,9 @@ used.
 | Discord | Simple Icons `discord` (mascot) | `discord.png` |
 | Spotify | Simple Icons `spotify` (circle) | `spotify.png` |
 
+The Amazon mark is shared: Amazon uses the same gaming icon for Luna and for
+Amazon Games, so `luna.png` identifies both rows in the launcher.
+
 The shapes come from those official files. Each glyph is now pure white on
 transparency; brand colors are not drawn. Trademark owners are named in
 `docs/DESIGN_SYSTEM.md` and in the Legal Notice shown in Settings → About.

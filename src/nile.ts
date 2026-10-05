@@ -31,6 +31,8 @@ export interface NileGame {
   installed: boolean;
   install_path: string | null;
   version: string | null;
+  /** Installed size in bytes (0 when not installed). */
+  size: number;
 }
 
 export const nileAuthStatus = () => invoke<NileAuthStatus>("nile_auth_status");
@@ -52,10 +54,10 @@ export const nileLogout = () => invoke<void>("nile_logout");
 export const nileLibrary = (sync = false) => invoke<NileGame[]>("nile_library", { sync });
 
 /** Installs or updates one game; progress arrives as `nile-progress` events. */
-export const nileInstall = (id: string, path?: string | null, maxWorkers?: number) =>
+export const nileInstall = (id: string, basePath?: string | null, maxWorkers?: number) =>
   invoke<void>("nile_install", {
     id,
-    path: path ?? null,
+    basePath: basePath ?? null,
     maxWorkers: maxWorkers ?? null,
   });
 
@@ -72,6 +74,12 @@ export const nileStop = (id: string) => invoke<string>("nile_stop", { id });
 
 /** Composite library ids with a newer build on Amazon. */
 export const nileCheckUpdates = () => invoke<string[]>("nile_check_updates");
+
+/** Base folder Amazon Games install into (empty = Nile's default). */
+export const amazonGetInstallDir = () => invoke<string | null>("amazon_get_install_dir");
+
+export const amazonSetInstallDir = (dir: string) =>
+  invoke<void>("amazon_set_install_dir", { dir });
 
 export interface NileProgressEvent {
   /** Composite id (`amazon::<product id>`). */

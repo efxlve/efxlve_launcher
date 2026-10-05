@@ -15,3 +15,16 @@ pub mod library;
 pub mod transfers;
 
 pub use binary::{ensure_binary, resolve_binary};
+
+/// Base folder Amazon Games install into (empty = Nile's default).
+#[tauri::command]
+pub fn amazon_get_install_dir(app: tauri::AppHandle) -> Option<String> {
+    crate::load_settings(&app).amazon_install_dir
+}
+
+#[tauri::command]
+pub fn amazon_set_install_dir(app: tauri::AppHandle, dir: String) {
+    let mut s = crate::load_settings(&app);
+    s.amazon_install_dir = Some(dir);
+    crate::save_settings(&app, &s);
+}

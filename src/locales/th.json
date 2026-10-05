@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "เกม Epic จะติดตั้งที่นี่โดยค่าเริ่มต้น หากเว้นว่าง:",
   "settings.gogInstallDirTitle": "โฟลเดอร์ติดตั้ง GOG",
   "settings.gogInstallDirHint": "เกม GOG จะติดตั้งที่นี่โดยค่าเริ่มต้น หากเว้นว่าง:",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "การเชื่อมต่อ Epic Games Launcher",
   "settings.eglDesc": "ตรวจหาเกมที่ติดตั้งโดย Epic Games Launcher อย่างเป็นทางการแล้วซิงค์เข้าคลัง",
   "settings.gogGalaxyTitle": "GOG Galaxy",

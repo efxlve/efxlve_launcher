@@ -22,6 +22,8 @@ pub struct NileGame {
     pub installed: bool,
     pub install_path: Option<String>,
     pub version: Option<String>,
+    /// Installed size in bytes (0 when not installed).
+    pub size: u64,
 }
 
 /// Art candidates inside `product.productDetail.details`, in preference order.
@@ -99,6 +101,10 @@ fn parse_library(value: &Value, installed: &HashMap<String, Value>) -> Vec<NileG
                     .and_then(|v| v.as_str())
                     .filter(|v| !v.is_empty())
                     .map(|v| v.to_string()),
+                size: state
+                    .and_then(|s| s.get("size"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0),
             })
         })
         .collect();
@@ -186,7 +192,7 @@ mod tests {
         let mut installed = HashMap::new();
         installed.insert(
             "amzn1.adg.product.222".to_string(),
-            json!({ "id": "amzn1.adg.product.222", "path": "D:\\Games\\Alpha", "version": "1.0.5" }),
+            json!({ "id": "amzn1.adg.product.222", "path": "D:\\Games\\Alpha", "version": "1.0.5", "size": 734003200u64 }),
         );
 
         let games = parse_library(&sample_library(), &installed);
@@ -197,6 +203,7 @@ mod tests {
         assert!(games[0].installed);
         assert_eq!(games[0].install_path.as_deref(), Some("D:\\Games\\Alpha"));
         assert_eq!(games[0].version.as_deref(), Some("1.0.5"));
+        assert_eq!(games[0].size, 734_003_200);
 
         assert_eq!(games[1].title, "Zeta Game");
         assert_eq!(games[1].art.as_deref(), Some("https://img/zeta.jpg"));

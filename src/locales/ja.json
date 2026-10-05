@@ -1154,6 +1154,8 @@
   "settings.epicInstallDirHint": "Epic のゲームは既定でここにインストールされます。空欄の場合:",
   "settings.gogInstallDirTitle": "GOG のインストール先",
   "settings.gogInstallDirHint": "GOG のゲームは既定でここにインストールされます。空欄の場合:",
+  "settings.amazonInstallDirTitle": "Amazon Games install folder",
+  "settings.amazonInstallDirHint": "Amazon games install into this base folder, one subfolder per game.",
   "settings.eglTitle": "Epic Games Launcher 連携",
   "settings.eglDesc": "公式 Epic Games Launcher でインストールされたゲームを検出し、ライブラリに同期します。",
   "settings.gogGalaxyTitle": "GOG Galaxy",
