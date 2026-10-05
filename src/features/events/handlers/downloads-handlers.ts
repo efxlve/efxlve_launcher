@@ -8,7 +8,7 @@ import { localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { closeAllModals, render } from "../../../core/render";
 import { cdnShortLabel } from "../../../core/utils";
-import { rawOf } from "../../../core/selectors";
+import { isCompanionKey, rawOf, sourceOfKey } from "../../../core/selectors";
 import { patchLibraryCardDom } from "../../../core/game-view";
 import { setView } from "../../store/store-view";
 import { epicDownload } from "../../auth/auth-actions";
@@ -39,6 +39,9 @@ import {
   requiresThirdPartyLauncher,
   type EpicSettings,
 } from "../../../epic";
+import { uninstallAmazonGame } from "../../auth/amazon-auth-actions";
+import { companionGameAction, type CompanionStore } from "../../../companion";
+import { steamGameAction } from "../../../steam";
 
 export function handleDownloadsAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -410,7 +413,16 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
     case "storage-uninstall":
       if (id) {
         closeStorageManager();
-        void epicUninstall(id);
+        if (id.startsWith("amazon::")) {
+          void uninstallAmazonGame(id.slice(8));
+        } else if (id.startsWith("steam::")) {
+          void steamGameAction(id.slice(7), "uninstall").catch((e: unknown) => toast(String(e), "err"));
+        } else if (isCompanionKey(id)) {
+          const store = sourceOfKey(id) as CompanionStore;
+          void companionGameAction(store, id.slice(id.indexOf("::") + 2), "uninstall").catch((e: unknown) => toast(String(e), "err"));
+        } else {
+          void epicUninstall(id);
+        }
       }
       return true;
 

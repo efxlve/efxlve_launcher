@@ -20,6 +20,7 @@ mod steam_auth;
 mod steam_running;
 mod steam_session;
 mod steam_watch;
+mod storage_usage;
 mod notif_overlay;
 mod store_host;
 mod vault_id;
@@ -830,6 +831,7 @@ fn main() {
             game_running::game_watch_installed,
             steam::steam_game_action,
             steam_session::steam_watch_session,
+            storage_usage::storage_path_size,
             steam::steam_sync_playtime,
             steam::steam_cloud_status,
             steam::steam_get_game_details,
