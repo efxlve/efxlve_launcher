@@ -5,28 +5,52 @@
 //! launcher owns the whole state, can read `installed.json` directly, and an
 //! uninstall can clean everything up.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Output, Stdio};
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
-/// `<app_data>/nile` — passed to every Nile invocation.
-pub fn config_dir(app: &AppHandle) -> PathBuf {
-    let dir = app
-        .path()
+/// `<app_data>`: the parent Nile appends its own `nile` folder to.
+pub fn config_root(app: &AppHandle) -> PathBuf {
+    app.path()
         .app_data_dir()
         .unwrap_or_else(|_| std::env::temp_dir())
-        .join("nile");
+}
+
+/// `<app_data>/nile` — passed to every Nile invocation as the config parent and
+/// read directly for `library.json` / `installed.json`.
+pub fn config_dir(app: &AppHandle) -> PathBuf {
+    let dir = config_root(app).join("nile");
+    migrate_nested_config(&dir);
     let _ = std::fs::create_dir_all(&dir);
     dir
 }
 
+/// Earlier builds pointed `NILE_CONFIG_PATH` at `<app_data>/nile`, but Nile
+/// appends its own `nile` folder, so the real config landed one level deeper.
+/// Lift it up once so the login, library and installed list survive.
+fn migrate_nested_config(dir: &Path) {
+    let nested = dir.join("nile");
+    if !nested.join("library.json").is_file() || dir.join("library.json").is_file() {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(&nested) {
+        for entry in entries.flatten() {
+            let _ = std::fs::rename(entry.path(), dir.join(entry.file_name()));
+        }
+    }
+    let _ = std::fs::remove_dir(&nested);
+}
+
 /// Builds one Nile invocation with the launcher-owned config and no console
 /// window. Callers add args and stdio.
-pub fn command(app: &AppHandle, bin: std::path::PathBuf) -> tokio::process::Command {
+pub fn command(app: &AppHandle, bin: PathBuf) -> tokio::process::Command {
+    // Lift a legacy nested config before Nile reads its own folder.
+    let _ = config_dir(app);
     let mut cmd = tokio::process::Command::new(bin);
-    cmd.env("NILE_CONFIG_PATH", config_dir(app));
+    // Nile appends "nile" itself, so the env var names the parent directory.
+    cmd.env("NILE_CONFIG_PATH", config_root(app));
     #[cfg(windows)]
     {
         const CREATE_NO_WINDOW: u32 = 0x08000000;

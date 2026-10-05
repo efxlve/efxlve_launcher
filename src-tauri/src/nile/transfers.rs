@@ -65,7 +65,10 @@ pub async fn nile_install(
     let mut args: Vec<String> = vec!["install".into(), id.clone()];
     if let Some(base) = base_path.filter(|p| !p.trim().is_empty()) {
         // `--base-path` appends the sanitized game title, so the setting reads
-        // as "the folder Amazon games go into".
+        // as "the folder Amazon games go into". Create it first: Nile's space
+        // check runs before the first download and a missing base is a hard
+        // failure on some systems.
+        let _ = std::fs::create_dir_all(&base);
         args.push("--base-path".into());
         args.push(base);
     }
@@ -97,8 +100,41 @@ pub async fn nile_install(
     })
     .await?;
 
+    // Keep the full output for diagnostics: Nile reports some failures only on
+    // stderr and still exits zero.
+    let log_path = cli::config_dir(&app).join(format!("install-{id}.log"));
+    let _ = std::fs::write(
+        &log_path,
+        format!(
+            "stdout:\n{}\n\nstderr:\n{}",
+            String::from_utf8_lossy(&out.stdout),
+            String::from_utf8_lossy(&out.stderr)
+        ),
+    );
+
     if !out.status.success() {
         return Err(cli::failure_message(&out));
+    }
+    // Nile exits zero even when it refuses to install ("Not enough space") and
+    // when its manifest says "up to date" although the files are gone. The
+    // installed record plus its folder is the postcondition; `verify`
+    // re-downloads whatever the saved manifest says is missing.
+    if super::library::installed_game(&app, &id).is_none() {
+        let verify = cli::run(&app, &["verify", &id], 6 * 3600).await;
+        let healed = verify
+            .as_ref()
+            .map(|v| v.status.success())
+            .unwrap_or(false)
+            && super::library::installed_game(&app, &id).is_some();
+        if !healed {
+            let detail = match verify {
+                Ok(v) => cli::failure_message(&v),
+                Err(e) => e,
+            };
+            return Err(format!(
+                "@t:amazon.installFailed\u{1f}{detail}"
+            ));
+        }
     }
     Ok(())
 }

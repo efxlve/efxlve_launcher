@@ -59,6 +59,12 @@ fn installed_index(app: &AppHandle) -> HashMap<String, Value> {
     list.into_iter()
         .filter_map(|game| {
             let id = game.get("id").and_then(|v| v.as_str())?.to_string();
+            // A recorded entry whose folder is gone is not an install: the
+            // library, the launch path and the install postcondition all agree.
+            let path = game.get("path").and_then(|v| v.as_str()).unwrap_or("");
+            if path.is_empty() || !std::path::Path::new(path).is_dir() {
+                return None;
+            }
             Some((id, game))
         })
         .collect()

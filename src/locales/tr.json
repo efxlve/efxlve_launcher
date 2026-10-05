@@ -1580,6 +1580,7 @@
   "amazon.uninstalled": "Amazon oyunu kaldırıldı",
   "amazon.uninstallDesc": "Kurulu oyun dosyalarını Nile üzerinden siler.",
   "amazon.managedDesc": "Amazon Games, açık kaynak Nile istemcisiyle kurulur ve başlatılır.",
+  "amazon.installFailed": "Amazon kurulumu başarısız: {a1}",
   "amazon.starting": "Giriş başlatılıyor…",
   "amazon.openFirst": "Önce girişi başlatın",
   "gog.pastePlaceholder": "Yetkilendirme kodunu veya yönlendirme URL'sini buraya yapıştırın...",

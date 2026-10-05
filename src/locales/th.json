@@ -1504,6 +1504,7 @@
   "amazon.uninstalled": "Amazon game uninstalled",
   "amazon.uninstallDesc": "Deletes the installed game files through Nile.",
   "amazon.managedDesc": "Amazon Games installs and launches through the open-source Nile client.",
+  "amazon.installFailed": "Amazon install failed: {a1}",
   "amazon.starting": "Starting sign-in…",
   "amazon.openFirst": "Start sign-in first",
   "gog.pastePlaceholder": "วางรหัสการอนุญาตหรือ URL การเปลี่ยนเส้นทางที่นี่...",
