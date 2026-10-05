@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Войти через Amazon",
   "amazon.reopen": "Открыть страницу входа заново",
   "amazon.pastePlaceholder": "Вставьте URL amazon.com, на который вы были перенаправлены",
+  "amazon.lockedWhileDownloading": "Смена аккаунта заблокирована во время загрузки из Amazon",
+  "amazon.previousRestored": "Предыдущий аккаунт Amazon восстановлен",
   "amazon.guideStep1Title": "Войти в Amazon",
   "amazon.guideStep1Desc": "Кнопка открывает страницу входа Amazon в вашем браузере.",
   "amazon.guideStep2Title": "Скопировать URL перенаправления",

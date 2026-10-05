@@ -14,6 +14,7 @@ import { render } from "../../core/render";
 import { avatarFor, getCustomAvatar, S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { amazonDownloadActive } from "../auth/amazon-auth-actions";
 import { storeLogo } from "../store/store-logos";
 
 /** Progress thresholds for the four post-login steps. */
@@ -428,16 +429,17 @@ function gogCard(): string {
  * back, then the library syncs itself.
  */
 function amazonSignInBlock(): string {
+  const locked = amazonDownloadActive();
   return `
     <div class="acc-signin">
       <div class="acc-actions">
-        <button class="btn primary" data-act="amazon-open-login" ${S.amazonBusy ? "disabled" : ""}>${icon("external", 14)} ${t("amazon.webLogin")}</button>
+        <button class="btn primary" data-act="amazon-open-login" ${S.amazonBusy || locked ? "disabled" : ""}>${icon("external", 14)} ${t("amazon.webLogin")}</button>
         ${S.amazonLogin ? `<button class="btn ghost" data-act="amazon-reopen-login">${icon("link", 14)} ${t("amazon.reopen")}</button>` : ""}
       </div>
       <div class="auth-code">
         <input id="amazon-code" class="input" placeholder="${t("amazon.pastePlaceholder")}" autocomplete="off" spellcheck="false" />
         <button class="btn ghost" data-act="amazon-paste" title="${t("auth.pasteBtn")}">${icon("copy", 14)} ${t("auth.pasteBtn")}</button>
-        <button class="btn primary icon-only" data-act="amazon-do-login" ${S.amazonBusy ? "disabled" : ""} title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
+        <button class="btn primary icon-only" data-act="amazon-do-login" ${S.amazonBusy || locked ? "disabled" : ""} title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
       </div>
       <ol class="auth-guide">
         <li><strong>${t("amazon.guideStep1Title")}</strong> ${t("amazon.guideStep1Desc")}</li>
@@ -451,13 +453,15 @@ function amazonSignInBlock(): string {
 function amazonConnectedBlock(): string {
   const activeSaved = S.amazonSavedAccounts.find((a) => a.is_active || a.user_id === S.amazonAccountId);
   const currentName = activeSaved?.username || S.amazonStatus?.username || "Amazon Games";
+  // Nile owns one live session; while it is downloading, account edits wait.
+  const locked = amazonDownloadActive();
   const accountRows = (S.amazonSavedAccounts || []).map((acc) => {
     const isCurrent = acc.is_active || acc.user_id === S.amazonAccountId;
     const name = acc.username || currentName;
     const actions = isCurrent
       ? `<span class="chip ok">${t("settings.accountActiveBadge")}</span>`
-      : `<button class="btn small" data-act="amazon-account-switch" data-id="${esc(acc.user_id)}">${t("settings.accountSwitchBtn")}</button>
-         <button class="icon-btn danger" data-act="amazon-account-remove" data-id="${esc(acc.user_id)}" title="${t("settings.accountRemove")}">${icon("trash", 14)}</button>`;
+      : `<button class="btn small" data-act="amazon-account-switch" data-id="${esc(acc.user_id)}" ${locked ? "disabled" : ""}>${t("settings.accountSwitchBtn")}</button>
+         <button class="icon-btn danger" data-act="amazon-account-remove" data-id="${esc(acc.user_id)}" title="${t("settings.accountRemove")}" ${locked ? "disabled" : ""}>${icon("trash", 14)}</button>`;
     return `
       <div class="row">
         ${avatar(avatarFor(`amazon:${acc.user_id}`), name, `amazon:${acc.user_id}`)}
@@ -472,9 +476,9 @@ function amazonConnectedBlock(): string {
     </div>
     ${S.amazonAccountsAddMode ? amazonSignInBlock() + `<div class="acc-actions"><button class="btn ghost small" data-act="amazon-cancel-add">${t("common.cancel")}</button></div>` : `
       <div class="acc-actions">
-        <button class="btn ghost small" data-act="amazon-account-add">${icon("plus", 13)} ${t("settings.accountAdd")}</button>
+        <button class="btn ghost small" data-act="amazon-account-add" ${locked ? "disabled" : ""}>${icon("plus", 13)} ${t("settings.accountAdd")}</button>
         <span class="acc-spacer"></span>
-        <button class="btn ghost danger small" data-act="amazon-logout">${t("settings.amazonLogout")}</button>
+        <button class="btn ghost danger small" data-act="amazon-logout" ${locked ? "disabled" : ""}>${t("settings.amazonLogout")}</button>
       </div>`}`;
 }
 

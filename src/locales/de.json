@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Bei Amazon anmelden",
   "amazon.reopen": "Anmeldeseite erneut öffnen",
   "amazon.pastePlaceholder": "Füge die weitergeleitete amazon.com-URL hier ein",
+  "amazon.lockedWhileDownloading": "Kontowechsel ist während eines laufenden Amazon-Downloads gesperrt",
+  "amazon.previousRestored": "Das vorherige Amazon-Konto wurde wiederhergestellt",
   "amazon.guideStep1Title": "Bei Amazon anmelden",
   "amazon.guideStep1Desc": "Die Schaltfläche öffnet die Amazon-Anmeldeseite in deinem Browser.",
   "amazon.guideStep2Title": "Weiterleitungs-URL kopieren",

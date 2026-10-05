@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Iniciar sesión en Amazon",
   "amazon.reopen": "Volver a abrir página de inicio de sesión",
   "amazon.pastePlaceholder": "Pega la URL de amazon.com a la que fuiste redirigido",
+  "amazon.lockedWhileDownloading": "Los cambios de cuenta están bloqueados mientras se descarga desde Amazon",
+  "amazon.previousRestored": "Se restauró la cuenta de Amazon anterior",
   "amazon.guideStep1Title": "Iniciar sesión en Amazon",
   "amazon.guideStep1Desc": "El botón abre la página de inicio de sesión de Amazon en tu navegador.",
   "amazon.guideStep2Title": "Copiar la URL de redirección",

@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Zaloguj się w Amazon",
   "amazon.reopen": "Otwórz ponownie stronę logowania",
   "amazon.pastePlaceholder": "Wklej adres URL amazon.com, na który nastąpiło przekierowanie",
+  "amazon.lockedWhileDownloading": "Zmiana konta jest zablokowana podczas pobierania z Amazon",
+  "amazon.previousRestored": "Przywrócono poprzednie konto Amazon",
   "amazon.guideStep1Title": "Zaloguj się w Amazon",
   "amazon.guideStep1Desc": "Przycisk otwiera stronę logowania Amazon w przeglądarce.",
   "amazon.guideStep2Title": "Skopiuj adres URL przekierowania",

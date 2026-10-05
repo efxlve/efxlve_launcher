@@ -1616,6 +1616,8 @@
   "amazon.webLogin": "Amazon'da oturum aç",
   "amazon.reopen": "Giriş sayfasını yeniden aç",
   "amazon.pastePlaceholder": "Yönlendirildiğiniz amazon.com adresini yapıştırın",
+  "amazon.lockedWhileDownloading": "Amazon indirmesi sürerken hesap değiştirilemez",
+  "amazon.previousRestored": "Önceki Amazon hesabı geri yüklendi",
   "amazon.guideStep1Title": "Amazon'da oturum aç",
   "amazon.guideStep1Desc": "Butona basınca tarayıcıda Amazon giriş sayfası açılır.",
   "amazon.guideStep2Title": "Yönlendirilen adresi kopyala",

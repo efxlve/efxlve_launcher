@@ -69,9 +69,25 @@ function openExternal(url: string): void {
   });
 }
 
+/** True while an Amazon install or update is still streaming progress. */
+export function amazonDownloadActive(): boolean {
+  for (const key of S.downloads.keys()) {
+    if (key.startsWith("amazon::")) return true;
+  }
+  return false;
+}
+
+/** Account changes rewrite Nile's session files under a running install, so
+ *  they wait until the download finishes. */
+function accountChangeBlocked(): boolean {
+  if (!amazonDownloadActive()) return false;
+  toast(t("amazon.lockedWhileDownloading"), "err");
+  return true;
+}
+
 /** Starts sign-in: asks Nile for the PKCE material and opens Amazon. */
 export async function beginAmazonLogin(): Promise<void> {
-  if (S.amazonBusy) return;
+  if (S.amazonBusy || accountChangeBlocked()) return;
   S.amazonBusy = true;
   scheduleRender();
   try {
@@ -98,6 +114,7 @@ export function reopenAmazonLogin(): void {
 
 /** Finishes sign-in with the redirect URL (or bare code) the user pasted. */
 export async function finishAmazonLogin(raw: string): Promise<void> {
+  if (S.amazonBusy || accountChangeBlocked()) return;
   const data = S.amazonLogin;
   if (!data) {
     toast(t("amazon.openFirst"), "err");
@@ -120,8 +137,37 @@ export async function finishAmazonLogin(raw: string): Promise<void> {
   } catch (err) {
     S.amazonBusy = false;
     toast(String(err), "err");
-    scheduleRender();
+    await recoverFailedAmazonLogin(text);
   }
+}
+
+/**
+ * True when the pasted text is a URL that just lacks the authorization code,
+ * so the same sign-in window is still usable. Any other failure reached Amazon
+ * and consumed the one-shot code.
+ */
+function isRetryableAmazonLogin(text: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(text) && !text.includes("openid.oa2.authorization_code");
+}
+
+/** Restores the archived account after a failed registration so the card is
+ *  never left signed out with the previous session only in the archive. */
+async function recoverFailedAmazonLogin(pasted: string): Promise<void> {
+  if (isRetryableAmazonLogin(pasted)) {
+    scheduleRender();
+    return;
+  }
+  const saved = S.amazonSavedAccounts.length > 0
+    ? S.amazonSavedAccounts
+    : await amazonSavedAccounts().catch(() => []);
+  if (saved.length === 0) {
+    scheduleRender();
+    return;
+  }
+  S.amazonLogin = null;
+  S.amazonAccountsAddMode = false;
+  await loadAmazonSession(false);
+  toast(t("amazon.previousRestored"), "ok");
 }
 
 /**
@@ -195,6 +241,7 @@ let amazonSwitching = false;
 /** Restores one saved Amazon account and reloads its library. */
 export async function switchAmazonAccount(userId: string): Promise<void> {
   if (amazonSwitching || !userId || userId === S.amazonAccountId) return;
+  if (accountChangeBlocked()) return;
   amazonSwitching = true;
   S.amazonBusy = true;
   scheduleRender();
@@ -220,6 +267,7 @@ export async function switchAmazonAccount(userId: string): Promise<void> {
  * restores the most recently used remaining account, if any.
  */
 export async function removeSavedAmazonAccount(userId: string): Promise<void> {
+  if (accountChangeBlocked()) return;
   try {
     await amazonRemoveSavedAccount(userId);
     await loadAmazonSession(false);
@@ -287,6 +335,7 @@ export async function syncAmazonLibrary(): Promise<void> {
 
 /** Signs out the active account; a newer saved account takes over if present. */
 export async function amazonLogoutAction(): Promise<void> {
+  if (accountChangeBlocked()) return;
   const activeId =
     S.amazonSavedAccounts.find((a) => a.is_active)?.user_id ?? S.amazonAccountId;
   try {

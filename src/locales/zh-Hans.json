@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "登录 Amazon",
   "amazon.reopen": "重新打开登录页面",
   "amazon.pastePlaceholder": "粘贴重定向后的 amazon.com 网址",
+  "amazon.lockedWhileDownloading": "Amazon 下载进行中无法切换账户",
+  "amazon.previousRestored": "已恢复之前的 Amazon 账户",
   "amazon.guideStep1Title": "登录 Amazon",
   "amazon.guideStep1Desc": "点击按钮将在浏览器中打开 Amazon 登录页面。",
   "amazon.guideStep2Title": "复制重定向网址",

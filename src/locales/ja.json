@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Amazon にログイン",
   "amazon.reopen": "ログインページを再度開く",
   "amazon.pastePlaceholder": "リダイレクトされた amazon.com の URL を貼り付けてください",
+  "amazon.lockedWhileDownloading": "Amazonのダウンロード中はアカウントを変更できません",
+  "amazon.previousRestored": "以前のAmazonアカウントを復元しました",
   "amazon.guideStep1Title": "Amazon にログイン",
   "amazon.guideStep1Desc": "ボタンをクリックすると、ブラウザで Amazon のログインページが開きます。",
   "amazon.guideStep2Title": "リダイレクト URL をコピー",

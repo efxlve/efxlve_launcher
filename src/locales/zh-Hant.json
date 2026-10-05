@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "登入 Amazon",
   "amazon.reopen": "重新開啟登入頁面",
   "amazon.pastePlaceholder": "貼上重新導向後的 amazon.com 網址",
+  "amazon.lockedWhileDownloading": "Amazon 下載進行中無法切換帳戶",
+  "amazon.previousRestored": "已恢復先前的 Amazon 帳戶",
   "amazon.guideStep1Title": "登入 Amazon",
   "amazon.guideStep1Desc": "點選按鈕會在瀏覽器中開啟 Amazon 登入頁面。",
   "amazon.guideStep2Title": "複製重新導向網址",

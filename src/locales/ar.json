@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "تسجيل الدخول إلى Amazon",
   "amazon.reopen": "إعادة فتح صفحة تسجيل الدخول",
   "amazon.pastePlaceholder": "الصق عنوان URL الخاص بـ amazon.com الذي تم تحويلك إليه",
+  "amazon.lockedWhileDownloading": "تغيير الحسابات مقفل أثناء تنزيل Amazon",
+  "amazon.previousRestored": "تمت استعادة حساب Amazon السابق",
   "amazon.guideStep1Title": "تسجيل الدخول على Amazon",
   "amazon.guideStep1Desc": "يفتح الزر صفحة تسجيل دخول Amazon في متصفحك.",
   "amazon.guideStep2Title": "نسخ رابط إعادة التوجيه",

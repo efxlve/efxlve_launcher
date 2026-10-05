@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Entrar na Amazon",
   "amazon.reopen": "Reabrir página de login",
   "amazon.pastePlaceholder": "Cole a URL da amazon.com para a qual você foi redirecionado",
+  "amazon.lockedWhileDownloading": "A troca de conta fica bloqueada durante um download da Amazon",
+  "amazon.previousRestored": "A conta anterior da Amazon foi restaurada",
   "amazon.guideStep1Title": "Entrar na Amazon",
   "amazon.guideStep1Desc": "O botão abre a página de login da Amazon no seu navegador.",
   "amazon.guideStep2Title": "Copiar URL de redirecionamento",

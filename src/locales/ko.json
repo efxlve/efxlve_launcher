@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "Amazon에 로그인",
   "amazon.reopen": "로그인 페이지 다시 열기",
   "amazon.pastePlaceholder": "리디렉션된 amazon.com URL을 붙여넣으세요",
+  "amazon.lockedWhileDownloading": "Amazon 다운로드 중에는 계정을 변경할 수 없습니다",
+  "amazon.previousRestored": "이전 Amazon 계정을 복원했습니다",
   "amazon.guideStep1Title": "Amazon에 로그인",
   "amazon.guideStep1Desc": "버튼을 누르면 브라우저에서 Amazon 로그인 페이지가 열립니다.",
   "amazon.guideStep2Title": "리디렉션된 URL 복사",

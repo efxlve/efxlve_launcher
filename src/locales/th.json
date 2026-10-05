@@ -1540,6 +1540,8 @@
   "amazon.webLogin": "เข้าสู่ระบบบน Amazon",
   "amazon.reopen": "เปิดหน้าเข้าสู่ระบบอีกครั้ง",
   "amazon.pastePlaceholder": "วาง URL amazon.com ที่คุณถูกเปลี่ยนเส้นทางไป",
+  "amazon.lockedWhileDownloading": "เปลี่ยนบัญชีไม่ได้ระหว่างที่ Amazon กำลังดาวน์โหลด",
+  "amazon.previousRestored": "กู้คืนบัญชี Amazon ก่อนหน้าแล้ว",
   "amazon.guideStep1Title": "เข้าสู่ระบบบน Amazon",
   "amazon.guideStep1Desc": "ปุ่มจะเปิดหน้าเข้าสู่ระบบ Amazon ในเบราว์เซอร์ของคุณ",
   "amazon.guideStep2Title": "คัดลอก URL ที่ถูกเปลี่ยนเส้นทาง",
