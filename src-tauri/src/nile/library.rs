@@ -17,7 +17,7 @@ pub struct NileGame {
     /// Amazon product id (`product.id`), the id every other Nile command takes.
     pub id: String,
     pub title: String,
-    /// Portrait/hero art when the entitlement carries one.
+    /// Portrait cover when the entitlement carries one.
     pub art: Option<String>,
     pub installed: bool,
     pub install_path: Option<String>,
@@ -26,23 +26,31 @@ pub struct NileGame {
     pub size: u64,
 }
 
-/// Art candidates inside `product.productDetail.details`, in preference order.
-const ART_KEYS: &[&str] = &[
-    "backgroundImage",
-    "tallBackgroundImage",
-    "heroImage",
-    "coverImage",
-    "iconUrl",
-    "logoUrl",
-];
+/// Landscape art candidates inside `product.productDetail.details`, in
+/// preference order, used when the product has no portrait cover.
+const ART_KEYS: &[&str] = &["backgroundUrl1", "backgroundUrl2", "pgCrownImageUrl", "logoUrl"];
 
+fn non_empty(value: Option<&Value>) -> Option<String> {
+    let url = value.and_then(|v| v.as_str())?.trim();
+    if url.is_empty() {
+        None
+    } else {
+        Some(url.to_string())
+    }
+}
+
+/// Cover art for one product. `productDetail.iconUrl` is the portrait (3:4)
+/// box art the library cards need; `details.logoUrl` is only the transparent
+/// title logo, so it stays the last fallback.
 fn pick_art(product: &Value) -> Option<String> {
-    let details = &product["productDetail"]["details"];
+    let detail = &product["productDetail"];
+    if let Some(url) = non_empty(detail.get("iconUrl")) {
+        return Some(url);
+    }
+    let details = &detail["details"];
     for key in ART_KEYS {
-        if let Some(url) = details.get(*key).and_then(|v| v.as_str()) {
-            if !url.trim().is_empty() {
-                return Some(url.trim().to_string());
-            }
+        if let Some(url) = non_empty(details.get(*key)) {
+            return Some(url);
         }
     }
     None
@@ -179,7 +187,10 @@ mod tests {
                 "product": {
                     "id": "amzn1.adg.product.111",
                     "title": "Zeta Game",
-                    "productDetail": { "details": { "backgroundImage": "https://img/zeta.jpg" } }
+                    "productDetail": {
+                        "iconUrl": "https://img/zeta-portrait.jpg",
+                        "details": { "backgroundUrl1": "https://img/zeta.jpg" }
+                    }
                 }
             },
             {
@@ -187,7 +198,9 @@ mod tests {
                 "product": {
                     "id": "amzn1.adg.product.222",
                     "title": "Alpha Game",
-                    "productDetail": { "details": { "iconUrl": "https://img/alpha.png" } }
+                    "productDetail": {
+                        "details": { "logoUrl": "https://img/alpha.png" }
+                    }
                 }
             }
         ])
@@ -212,7 +225,8 @@ mod tests {
         assert_eq!(games[0].size, 734_003_200);
 
         assert_eq!(games[1].title, "Zeta Game");
-        assert_eq!(games[1].art.as_deref(), Some("https://img/zeta.jpg"));
+        // The portrait `iconUrl` wins over the landscape `backgroundUrl1`.
+        assert_eq!(games[1].art.as_deref(), Some("https://img/zeta-portrait.jpg"));
         assert!(!games[1].installed);
     }
 
@@ -222,11 +236,16 @@ mod tests {
         let product = json!({
             "id": "x",
             "title": "",
-            "productDetail": { "details": { "heroImage": "https://img/hero.jpg" } }
+            "productDetail": {
+                "details": {
+                    "backgroundUrl2": "https://img/wide.jpg",
+                    "pgCrownImageUrl": "https://img/crown.jpg"
+                }
+            }
         });
         let entry = json!([{ "id": "x", "product": product }]);
         let games = parse_library(&entry, &HashMap::new());
         assert_eq!(games[0].title, "x");
-        assert_eq!(games[0].art.as_deref(), Some("https://img/hero.jpg"));
+        assert_eq!(games[0].art.as_deref(), Some("https://img/wide.jpg"));
     }
 }

@@ -92,6 +92,10 @@ export interface NileProgressEvent {
   total: number;
   /** MiB/s, 0 until the first speed line arrives. */
   speed: number;
+  /** Disk write MiB/s, 0 until the first disk line arrives. */
+  diskSpeed: number;
+  /** Nile's own estimate as `HH:MM:SS`, null until the first progress line. */
+  eta: string | null;
 }
 
 /** Composite library key for one Amazon product id. */

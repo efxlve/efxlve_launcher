@@ -13,12 +13,15 @@ use tauri::{AppHandle, Emitter};
 
 use super::cli;
 
-/// One parsed progress line: `= Progress: 42.13 12345678/29301082, ...`
+/// One parsed progress line:
+/// `= Progress: 42.13 12345678/29301082, Running for: 00:01:23, ETA: 00:01:55`
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProgressUpdate {
     pub percent: f64,
     pub downloaded: u64,
     pub total: u64,
+    /// Nile's own estimate as `HH:MM:SS` (None when the line omits it).
+    pub eta: Option<String>,
 }
 
 pub fn parse_progress_line(line: &str) -> Option<ProgressUpdate> {
@@ -28,20 +31,39 @@ pub fn parse_progress_line(line: &str) -> Option<ProgressUpdate> {
     let percent: f64 = parts.next()?.parse().ok()?;
     let sizes = parts.next()?;
     let (downloaded, total) = sizes.split_once('/')?;
+    let eta = line
+        .find("ETA:")
+        .and_then(|i| line[i + 4..].split_whitespace().next())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     Some(ProgressUpdate {
         percent,
         downloaded: downloaded.trim().parse().ok()?,
         total: total.trim().trim_end_matches(',').parse().ok()?,
+        eta,
     })
 }
 
-/// One speed line: `+ Download\t- 1.23 MiB/s` (MiB/s).
-pub fn parse_speed_line(line: &str) -> Option<f64> {
-    if !line.contains("+ Download") {
+/// One rate line: `+ Download\t- 1.23 MiB/s` or `+ Disk\t- 1.30 MiB/s`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RateUpdate {
+    /// True for the `+ Disk` line, false for `+ Download`.
+    pub disk: bool,
+    /// MiB/s.
+    pub mib_per_sec: f64,
+}
+
+pub fn parse_speed_line(line: &str) -> Option<RateUpdate> {
+    let disk = if line.contains("+ Download") {
+        false
+    } else if line.contains("+ Disk") {
+        true
+    } else {
         return None;
-    }
+    };
     let tail = line.rsplit('-').next()?.trim();
-    tail.split_whitespace().next()?.parse::<f64>().ok()
+    let mib_per_sec = tail.split_whitespace().next()?.parse::<f64>().ok()?;
+    Some(RateUpdate { disk, mib_per_sec })
 }
 
 /// Running game processes started by us, keyed by composite id.
@@ -55,13 +77,22 @@ fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
 
 /// One stderr line handler that forwards download progress as events.
 fn progress_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send + 'static {
-    let mut last_speed = 0.0f64;
+    let mut last_download = 0.0f64;
+    let mut last_disk = 0.0f64;
+    let mut last_eta: Option<String> = None;
     move |line: &str| {
-        if let Some(speed) = parse_speed_line(line) {
-            last_speed = speed;
+        if let Some(rate) = parse_speed_line(line) {
+            if rate.disk {
+                last_disk = rate.mib_per_sec;
+            } else {
+                last_download = rate.mib_per_sec;
+            }
             return;
         }
         if let Some(progress) = parse_progress_line(line) {
+            if let Some(eta) = progress.eta.as_deref() {
+                last_eta = Some(eta.to_string());
+            }
             let _ = app.emit(
                 "nile-progress",
                 json!({
@@ -69,7 +100,9 @@ fn progress_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send
                     "percent": progress.percent,
                     "downloaded": progress.downloaded,
                     "total": progress.total,
-                    "speed": last_speed,
+                    "speed": last_download,
+                    "diskSpeed": last_disk,
+                    "eta": last_eta,
                 }),
             );
         }
@@ -300,11 +333,17 @@ mod tests {
         assert!((parsed.percent - 42.13).abs() < f64::EPSILON);
         assert_eq!(parsed.downloaded, 12_345_678);
         assert_eq!(parsed.total, 29_301_082);
+        assert_eq!(parsed.eta.as_deref(), Some("00:01:55"));
 
-        let speed = parse_speed_line("INFO [PROGRESS]:\t + Download\t- 1.23 MiB/s").unwrap();
-        assert!((speed - 1.23).abs() < f64::EPSILON);
+        let net = parse_speed_line("INFO [PROGRESS]:\t + Download\t- 1.23 MiB/s").unwrap();
+        assert!(!net.disk);
+        assert!((net.mib_per_sec - 1.23).abs() < f64::EPSILON);
+
+        let disk = parse_speed_line("INFO [PROGRESS]:\t + Disk\t- 1.30 MiB/s").unwrap();
+        assert!(disk.disk);
+        assert!((disk.mib_per_sec - 1.30).abs() < f64::EPSILON);
 
         assert!(parse_progress_line("INFO [DOWNLOAD]:\t Download complete").is_none());
-        assert!(parse_speed_line("INFO [PROGRESS]:\t + Disk\t- 1.30 MiB/s").is_none());
+        assert!(parse_speed_line("INFO [PROGRESS]:\t = Progress: 1.0 1/2").is_none());
     }
 }

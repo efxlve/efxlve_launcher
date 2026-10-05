@@ -192,11 +192,6 @@ function activeDownload(): DlMetrics | null {
   return null;
 }
 
-/** Id of the card the active-download block is showing, if any. */
-export function activeDownloadId(): string | null {
-  return activeDownload()?.id ?? null;
-}
-
 /** Installed games that are not already listed under Updates. Recent first. */
 function installedGames(): EpicSummary[] {
   const recentIdx = new Map<string, number>();

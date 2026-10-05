@@ -73,13 +73,13 @@ import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
-import type { NileProgressEvent } from "../../nile";
+import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
-import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer, activeDownloadId } from "../downloads/downloads-view";
+import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -235,27 +235,54 @@ export async function initApp(hooks: {
     await listen<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);
     });
-    // Amazon installs stream their own progress lines; patch the Downloads
-    // hero card in place and remember the last values for re-renders.
+    // Amazon installs stream their own progress lines; feed the same active
+    // download metrics the Epic/GOG path uses, then patch the card in place.
     await listen<NileProgressEvent>("nile-progress", (event) => {
-      const { id, percent, speed, downloaded, total } = event.payload;
-      S.amazonProgress.set(id, { percent, speed });
+      const { id, percent, speed, diskSpeed, eta, downloaded, total } = event.payload;
       const dl = S.downloads.get(id);
-      if (dl) dl.progress = percent;
-      // The Downloads page hero card patches in place, like the Epic/GOG path.
-      if (S.view === "downloads" && activeDownloadId() === id) {
-        const fill = document.getElementById("dl-hero-fill");
-        if (fill) fill.style.width = `${percent}%`;
-        const pctEl = document.getElementById("dl-hero-pct");
-        if (pctEl) pctEl.textContent = `%${Math.round(percent)}`;
-        const speedEl = document.getElementById("dl-stat-speed");
-        if (speedEl) speedEl.textContent = fmtSpeed(Math.round(speed * 1024 * 1024), S.speedInBits);
-        const bytesEl = document.getElementById("dl-stat-bytes");
-        if (bytesEl) bytesEl.textContent = `${fmtBytes(downloaded)} / ${fmtBytes(total)}`;
-        startSpeedChartTimer();
-        pushSpeedData(Math.round(speed * 1024 * 1024), 0);
-        scheduleDrawSpeedCanvas();
+      // A late line after the install finished must not revive the card.
+      if (!dl) return;
+      const speedBytes = Math.round(speed * 1024 * 1024);
+      const diskBytes = Math.round((diskSpeed ?? 0) * 1024 * 1024);
+      const etaText = eta && eta !== "00:00:00" ? eta : t("common.calculating");
+      S.amazonProgress.set(id, { percent, speed });
+      dl.progress = percent;
+      const title = dl.title || S.amazonGames.find((g) => amazonKey(g.id) === id)?.title || id;
+      if (!S.activeDlMetrics || S.activeDlMetrics.id !== id) {
+        S.peakNetSpeedBytes = 0;
+        S.speedHistory.fill(0);
+        S.diskHistory.fill(0);
+        S.activeDlMetrics = {
+          id,
+          title,
+          progress: percent,
+          done: false,
+          speed: `${speed.toFixed(2)} MiB/s`,
+          speedBytes,
+          diskSpeed: `${diskSpeed.toFixed(2)} MiB/s`,
+          diskBytes,
+          eta: etaText,
+          downloadedBytes: downloaded,
+          totalBytes: total,
+        };
+      } else {
+        const m = S.activeDlMetrics;
+        m.progress = percent;
+        if (speedBytes > 0) {
+          m.speed = `${speed.toFixed(2)} MiB/s`;
+          m.speedBytes = speedBytes;
+        }
+        if (diskBytes > 0) {
+          m.diskSpeed = `${diskSpeed.toFixed(2)} MiB/s`;
+          m.diskBytes = diskBytes;
+        }
+        m.eta = etaText;
+        m.downloadedBytes = downloaded;
+        m.totalBytes = total;
       }
+      startSpeedChartTimer();
+      pushSpeedData(speedBytes, diskBytes);
+      scheduleDlDomUpdate(id);
     });
 
     await listen<DlProgressEvent>("download-progress", (event) => {

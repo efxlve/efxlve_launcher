@@ -16,6 +16,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
 import { t } from "../../i18n";
+import { stopSpeedChartTimer } from "../downloads/downloads-view";
 import {
   amazonDefaultInstallDir,
   amazonGetInstallDir,
@@ -216,6 +217,23 @@ export async function amazonLogoutAction(): Promise<void> {
   scheduleRender();
 }
 
+/**
+ * Clears the live download state of one Amazon install. The `nile-progress`
+ * listener also feeds `S.activeDlMetrics`, so finishing must clear that too or
+ * the Downloads hero card stays on a game that is already installed.
+ */
+function clearAmazonDownload(key: string): void {
+  S.amazonProgress.delete(key);
+  S.downloads.delete(key);
+  if (S.activeDlMetrics?.id === key) {
+    S.activeDlMetrics = null;
+    S.speedHistory.fill(0);
+    S.diskHistory.fill(0);
+    stopSpeedChartTimer();
+  }
+  updateBadge();
+}
+
 /** Installs or updates one Amazon game; progress streams in as events. */
 export async function installAmazonGame(id: string): Promise<void> {
   const key = amazonKey(id);
@@ -227,15 +245,11 @@ export async function installAmazonGame(id: string): Promise<void> {
   scheduleRender();
   try {
     await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null);
-    S.amazonProgress.delete(key);
-    S.downloads.delete(key);
-    updateBadge();
+    clearAmazonDownload(key);
     toast(t("amazon.installed"), "ok");
     await loadAmazonSession(false);
   } catch (err) {
-    S.amazonProgress.delete(key);
-    S.downloads.delete(key);
-    updateBadge();
+    clearAmazonDownload(key);
     toast(String(err), "err");
     scheduleRender();
   }
