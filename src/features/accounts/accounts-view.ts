@@ -409,6 +409,65 @@ function gogCard(): string {
     </section>`;
 }
 
+/**
+ * Amazon Games card. The account and library run through the Nile CLI, so the
+ * card owns the same sign-in shape as GOG: open Amazon, paste the redirect URL
+ * back, then the library syncs itself.
+ */
+function amazonSignInBlock(): string {
+  return `
+    <div class="acc-signin">
+      <div class="acc-actions">
+        <button class="btn primary" data-act="amazon-open-login" ${S.amazonBusy ? "disabled" : ""}>${icon("external", 14)} ${t("amazon.webLogin")}</button>
+        ${S.amazonLogin ? `<button class="btn ghost" data-act="amazon-reopen-login">${icon("link", 14)} ${t("amazon.reopen")}</button>` : ""}
+      </div>
+      <div class="auth-code">
+        <input id="amazon-code" class="input" placeholder="${t("amazon.pastePlaceholder")}" autocomplete="off" spellcheck="false" />
+        <button class="btn ghost" data-act="amazon-paste" title="${t("auth.pasteBtn")}">${icon("copy", 14)} ${t("auth.pasteBtn")}</button>
+        <button class="btn primary icon-only" data-act="amazon-do-login" ${S.amazonBusy ? "disabled" : ""} title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
+      </div>
+      <ol class="auth-guide">
+        <li><strong>${t("amazon.guideStep1Title")}</strong> ${t("amazon.guideStep1Desc")}</li>
+        <li><strong>${t("amazon.guideStep2Title")}</strong> ${t("amazon.guideStep2Desc")}</li>
+        <li><strong>${t("amazon.guideStep3Title")}</strong> ${t("amazon.guideStep3Desc")}</li>
+      </ol>
+    </div>`;
+}
+
+function amazonCard(): string {
+  const connected = Boolean(S.amazonStatus?.logged_in);
+  const name = S.amazonStatus?.username || "Amazon Games";
+  const status = S.amazonBusy
+    ? `<span class="chip">${t("auth.syncingTitle")}</span>`
+    : connected
+      ? `<span class="chip ok">${t("accounts.connected")}</span>`
+      : `<span class="chip">${t("accounts.notConnected")}</span>`;
+  const body = connected
+    ? `
+      <div class="list acc-accounts">
+        <div class="row">
+          <div class="row-main"><div class="row-title">${esc(name)}</div><div class="row-meta">${S.amazonGames.length} ${t("settings.accountTotalGames")}</div></div>
+          <div class="row-actions"><span class="chip ok">${t("settings.accountActiveBadge")}</span></div>
+        </div>
+      </div>
+      <div class="acc-actions">
+        <button class="btn ghost small" data-act="amazon-sync" ${S.amazonBusy ? "disabled" : ""}>${icon("refresh", 13)} ${t("amazon.syncLibrary")}</button>
+        <span class="acc-spacer"></span>
+        <button class="btn ghost danger small" data-act="amazon-logout">${t("settings.logout")}</button>
+      </div>`
+    : S.amazonBusy
+      ? `<p class="acc-lead">${t("amazon.starting")}</p><div class="progress auth-progress"><span style="width:55%"></span></div>`
+      : `<p class="acc-lead">${t("accounts.amazonDesc")}</p>${amazonSignInBlock()}`;
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <div class="row-main"><div class="acc-store-name">Amazon Games</div><div class="row-meta">${connected ? esc(name) : t("accounts.amazonShort")}</div></div>
+        ${status}
+      </div>
+      <div class="acc-card-body">${body}</div>
+    </section>`;
+}
+
 /** Small section caption: keeps "account" and "client" visually separate. */
 function steamSectionHead(title: string, chip = ""): string {
   return `<div class="acc-section-head"><h3 class="section-title acc-section-title">${esc(title)}</h3>${chip}</div>`;
@@ -701,6 +760,7 @@ function accountCards(): string {
     ${groupTitle("accounts.groupManaged")}
     ${epicCard()}
     ${gogCard()}
+    ${amazonCard()}
     ${groupTitle("accounts.groupClients")}
     ${infoBox("accounts.clientInfo")}
     ${steamCard()}

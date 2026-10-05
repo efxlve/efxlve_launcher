@@ -32,6 +32,13 @@ import {
   removeSavedGogAccount,
   switchGogAccount,
 } from "../../auth/gog-account-switcher";
+import {
+  amazonLogoutAction,
+  beginAmazonLogin,
+  finishAmazonLogin,
+  reopenAmazonLogin,
+  syncAmazonLibrary,
+} from "../../auth/amazon-auth-actions";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
@@ -126,6 +133,46 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
     case "gog-logout":
       void gogLogoutAction();
+      return true;
+
+    case "amazon-open-login":
+      void beginAmazonLogin();
+      return true;
+
+    case "amazon-reopen-login":
+      reopenAmazonLogin();
+      return true;
+
+    case "amazon-do-login": {
+      const input = document.getElementById("amazon-code") as HTMLInputElement | null;
+      void finishAmazonLogin(input?.value ?? "");
+      return true;
+    }
+
+    case "amazon-paste":
+      void (async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          const input = document.getElementById("amazon-code") as HTMLInputElement | null;
+          if (input && text.trim()) {
+            input.value = text.trim();
+            input.focus();
+            toast(i18nT("auth.codePasted"), "ok");
+          } else {
+            toast(i18nT("auth.pasteFailed"), "err");
+          }
+        } catch {
+          toast(i18nT("auth.pasteFailed"), "err");
+        }
+      })();
+      return true;
+
+    case "amazon-sync":
+      void syncAmazonLibrary();
+      return true;
+
+    case "amazon-logout":
+      void amazonLogoutAction();
       return true;
 
     case "gog-account-switch":

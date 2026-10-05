@@ -360,6 +360,12 @@ export const S = {
   presenceEnabled: false,
   /** Run Comet during GOG sessions so achievements unlock without Galaxy. */
   gogCometEnabled: true,
+  /** Amazon Games (Nile) account state and library. */
+  amazonStatus: (null) as import("../nile").NileAuthStatus | null,
+  amazonGames: ([]) as import("../nile").NileGame[],
+  /** PKCE material from `nile_login_begin`, kept until sign-in finishes. */
+  amazonLogin: (null) as import("../nile").NileLoginData | null,
+  amazonBusy: false,
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

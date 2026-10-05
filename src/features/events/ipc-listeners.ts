@@ -72,6 +72,7 @@ import { updateMaxIcon } from "../../core/window";
 import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
+import { loadAmazonSession } from "../auth/amazon-auth-actions";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
@@ -202,6 +203,7 @@ export async function initApp(hooks: {
   }
   void bootEpic();
   void initGogSession();
+  void loadAmazonSession();
   void hydrateSteamAuth();
   void loadSavedAccounts();
   void initCloudBackupSettings();
