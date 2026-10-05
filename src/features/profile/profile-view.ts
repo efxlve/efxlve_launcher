@@ -157,9 +157,9 @@ function totalSteamGames(): number {
 }
 
 /** Every storefront the profile shows. */
-export type StoreKind = "epic" | "gog" | "steam" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot";
+export type StoreKind = "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot";
 
-export const ALL_PROFILE_STORES: StoreKind[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
+export const ALL_PROFILE_STORES: StoreKind[] = ["epic", "gog", "steam", "amazon", "xbox", "battlenet", "ubisoft", "ea", "riot"];
 
 /** One selectable account in the profile header. */
 export interface ProfileAccount {
@@ -171,6 +171,7 @@ export interface ProfileAccount {
 }
 
 export function storeName(kind: StoreKind): string {
+  if (kind === "amazon") return "Amazon Games";
   if (kind === "riot") return "Riot Games";
   return STORE_LABELS[kind as keyof typeof STORE_LABELS] || "Riot Games";
 }
@@ -179,6 +180,7 @@ const STORE_CODES: Record<StoreKind, string> = {
   epic: "EPIC",
   gog: "GOG",
   steam: "STEAM",
+  amazon: "AMZN",
   xbox: "XBOX",
   battlenet: "BNET",
   ubisoft: "UBI",
@@ -218,12 +220,13 @@ function isStoreConnected(store: StoreKind): boolean {
   if (store === "epic") return !!S.epicAccount;
   if (store === "gog") return !!S.gogAccount;
   if (store === "steam") return steamConnected();
+  if (store === "amazon") return Boolean(S.amazonStatus?.logged_in);
   return S.companionStatus.some((s) => s.store === store && s.linked);
 }
 
 /** Whether a companion store's client is detected on the system or has local games. */
 function isStoreInstalled(store: StoreKind): boolean {
-  if (store === "epic" || store === "gog") return true;
+  if (store === "epic" || store === "gog" || store === "amazon") return true;
   if (store === "steam") return steamConnected() || S.steamSummaries.length > 0;
   return S.companionStatus.some((s) => s.store === store && (s.clientInstalled || s.gameCount > 0)) || libraryCount(store) > 0;
 }
@@ -258,6 +261,9 @@ export function profileAccounts(): ProfileAccount[] {
     push("steam", acc.steamId, acc.accountName, acc.isActive || acc.steamId === sessionId, "Steam");
   }
   if (sessionId) push("steam", sessionId, S.steamAuth?.accountName || S.steamStatus?.userName || "", true, "Steam");
+  if (S.amazonStatus?.logged_in) {
+    push("amazon", "amazon", S.amazonStatus.username || "", true, "Amazon Games");
+  }
   return out;
 }
 
@@ -418,6 +424,8 @@ export function overviewStores(): StoreKind[] {
       if (S.gogAccount || S.gogSummaries.length > 0) out.push(id);
     } else if (id === "steam") {
       if (steamConnected()) out.push(id);
+    } else if (id === "amazon") {
+      if (S.amazonStatus?.logged_in || S.amazonSummaries.length > 0) out.push(id);
     } else if (linkedCompanion.has(id) || libraryCount(id) > 0) {
       out.push(id);
     }
@@ -504,6 +512,11 @@ export function libraryCount(scope: "all" | StoreKind): number {
     for (const g of S.gogSummaries) if (!S.hiddenGames.has(g.key)) n++;
     return n;
   }
+  if (scope === "amazon") {
+    let n = 0;
+    for (const g of S.amazonSummaries) if (!S.hiddenGames.has(g.key)) n++;
+    return n;
+  }
   if (scope !== "all") {
     let n = 0;
     for (const g of S.companionSummaries) {
@@ -511,7 +524,7 @@ export function libraryCount(scope: "all" | StoreKind): number {
     }
     return n;
   }
-  return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea") + libraryCount("riot");
+  return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("amazon") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea") + libraryCount("riot");
 }
 
 /** Sums the stats the launcher actually has for the given game list. */
