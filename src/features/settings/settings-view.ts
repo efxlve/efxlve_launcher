@@ -321,14 +321,12 @@ function renderLaunchers(): string {
     if (l.id === "epic" || l.id === "gog") managed.push(rowHtml);
     else delegated.push(rowHtml);
   }
-  // Amazon Games sits with the other managed stores, right after GOG. The
-  // delegated note is a footnote to its own list.
+  // Amazon Games sits with the other managed stores, right after GOG.
   managed.push(amazonRow);
-  return `
-    ${infoBox("launchers.infoManaged")}
-    ${group(managed.join(""), t("launchers.managedTitle"))}
-    ${group(delegated.join(""), t("launchers.delegatedTitle"))}
-    ${infoBox("launchers.infoDelegated")}`;
+  return (
+    group(managed.join(""), t("launchers.managedTitle"), infoBox("launchers.infoManaged")) +
+    group(delegated.join(""), t("launchers.delegatedTitle"), infoBox("launchers.infoDelegated"))
+  );
 }
 
 function renderIntegrations(): string {
