@@ -150,6 +150,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_test_steamgrid_key` | `epicTestSteamgridKey({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_uninstall_game` | `epicUninstallGame({ ... })` | `src-tauri/src/legendary/transfers/uninstall.rs` |
 | `epic_verify_game` | `epicVerifyGame({ ... })` | `src-tauri/src/legendary/commands/verify.rs` |
+| `game_watch_installed` | `gameWatchInstalled({ ... })` | `src-tauri/src/game_running.rs` |
 | `gog_auth_code` | `gogAuthCode({ ... })` | `src-tauri/src/gogdl/commands.rs` |
 | `gog_auth_status` | `gogAuthStatus({ ... })` | `src-tauri/src/gogdl/commands.rs` |
 | `gog_cached_library` | `gogCachedLibrary({ ... })` | `src-tauri/src/gogdl/commands.rs` |

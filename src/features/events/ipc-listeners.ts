@@ -49,6 +49,7 @@ import { modalRoot } from "../../core/dom";
 import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
+import { syncInstalledWatch } from "../library/installed-watch";
 import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
@@ -217,6 +218,10 @@ export async function initApp(hooks: {
     void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
     void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
     void initPresence();
+    // Non-Steam games started from their own client are caught by folder.
+    syncInstalledWatch();
+    window.setTimeout(syncInstalledWatch, 5_000);
+    window.setInterval(syncInstalledWatch, 20_000);
     // Warm the Comet binary in the background so a GOG launch never waits for
     // the first download; the call is a no-op when the toggle is off.
     void epicPrepareComet().catch(() => {});

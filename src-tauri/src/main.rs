@@ -11,6 +11,7 @@ mod gogdl;
 mod launchers;
 mod legendary;
 mod nile;
+mod game_running;
 mod presence;
 mod shared_library;
 mod steam;
@@ -826,6 +827,7 @@ fn main() {
             steam::steam_download_live,
             steam_watch::steam_watch_library,
             steam_running::steam_watch_running,
+            game_running::game_watch_installed,
             steam::steam_game_action,
             steam_session::steam_watch_session,
             steam::steam_sync_playtime,
