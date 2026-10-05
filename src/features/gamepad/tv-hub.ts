@@ -10,7 +10,7 @@
 
 import { achSummaryOf, epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState } from "../../core/icons";
-import { epicWideArt, isCompanionSource, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { epicWideArt, isCompanionKey, isCompanionSource, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
@@ -129,10 +129,11 @@ export function tvHubPrimaryAction(s: EpicSummary, focused = false): string {
   const p = epicDlProgress(s.appName);
   const fCls = focused ? " focused" : "";
   if (p !== null) {
-    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-view="downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.downloading", { p })}</span></button>`;
+    // Stay inside the TV shell: the downloads panel lives here.
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="tv-open-downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.downloading", { p })}</span></button>`;
   }
   if (s.downloading) {
-    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-view="downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("steam.downloading")}</span></button>`;
+    return `<button type="button" class="tv-btn-primary tv-action-btn${fCls}" data-act="tv-open-downloads" data-dlbtn="${esc(s.appName)}">${icon("download", 18)} <span>${t("steam.downloading")}</span></button>`;
   }
   if (S.runningGames.has(s.appName)) {
     return `<button type="button" class="tv-btn-primary is-stop tv-action-btn${fCls}" data-act="epic-stop" data-id="${esc(s.appName)}">${icon("square", 18)} <span>${t("common.stop")}</span></button>`;
@@ -163,6 +164,10 @@ export function tvHubPrimaryAction(s: EpicSummary, focused = false): string {
   }
   if (s.appName.startsWith("steam::")) {
     return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="install">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
+  }
+  // Companion stores hand the install to their own client.
+  if (isCompanionKey(s.appName)) {
+    return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="companion-install" data-id="${esc(s.appName)}" data-store="${esc(sourceOfKey(s.appName))}">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
   }
   return `<button type="button" class="tv-btn-primary is-install tv-action-btn${fCls}" data-act="epic-install" data-id="${esc(s.appName)}">${icon("download", 18)} <span>${t("common.install")}</span></button>`;
 }
