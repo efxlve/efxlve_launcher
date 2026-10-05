@@ -23,7 +23,14 @@ import {
   openInstallDialog,
 } from "../../install/install-dialog";
 import { openMoveGameModal } from "../../move-game/move-game-actions";
-import { closeStorageManager, openStorageManager } from "../../storage/storage-view";
+import {
+  clearStorageSearch,
+  closeStorageManager,
+  openStorageManager,
+  setStorageDrive,
+  setStorageStoreFilter,
+  toggleStorageSort,
+} from "../../storage/storage-view";
 import { toggleIgnoreUpdate } from "../../downloads/downloads-view";
 import {
   epicCleanupCache,
@@ -389,6 +396,26 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
 
     case "storage-overlay-close":
       if (targetEl === t) closeStorageManager();
+      return true;
+
+    case "storage-select-drive": {
+      const drive = t.dataset.drive;
+      if (drive) setStorageDrive(drive);
+      return true;
+    }
+
+    case "storage-filter-store": {
+      const store = t.dataset.store;
+      if (store) setStorageStoreFilter(store);
+      return true;
+    }
+
+    case "storage-sort-toggle":
+      toggleStorageSort();
+      return true;
+
+    case "storage-clear-search":
+      clearStorageSearch();
       return true;
 
     case "blocked-move-tp": {

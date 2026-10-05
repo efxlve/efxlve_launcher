@@ -10,7 +10,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { storageRoot } from "../../core/dom";
-import { icon } from "../../core/icons";
+import { icon, type IconName } from "../../core/icons";
 import { rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
@@ -20,7 +20,7 @@ import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher 
 import { coverOf, steamArtAttrs, storeName } from "../profile/profile-view";
 import { storeLogo } from "../store/store-logos";
 
-interface StorageGame {
+export interface StorageGame {
   key: string;
   title: string;
   cover: string;
@@ -36,6 +36,20 @@ const measured = new Map<string, { bytes: number; at: number }>();
 const MEASURE_TTL = 10 * 60 * 1000;
 /** Bumped when the modal closes so a running measurement loop stops. */
 let measureToken = 0;
+
+interface StorageState {
+  activeDrive: string;
+  searchQuery: string;
+  storeFilter: string;
+  sortMode: "size-desc" | "size-asc" | "title-asc";
+}
+
+const S_STORAGE: StorageState = {
+  activeDrive: "",
+  searchQuery: "",
+  storeFilter: "all",
+  sortMode: "size-desc",
+};
 
 export function closeStorageManager(): void {
   measureToken++;
@@ -73,38 +87,131 @@ function collectInstalled(): StorageGame[] {
   return out;
 }
 
+export function setStorageDrive(drive: string): void {
+  S_STORAGE.activeDrive = drive.toUpperCase();
+  S_STORAGE.searchQuery = "";
+  S_STORAGE.storeFilter = "all";
+  renderStorageManager();
+}
+
+export function setStorageStoreFilter(store: string): void {
+  S_STORAGE.storeFilter = store;
+  renderStorageGamesList();
+}
+
+export function toggleStorageSort(): void {
+  if (S_STORAGE.sortMode === "size-desc") {
+    S_STORAGE.sortMode = "size-asc";
+  } else if (S_STORAGE.sortMode === "size-asc") {
+    S_STORAGE.sortMode = "title-asc";
+  } else {
+    S_STORAGE.sortMode = "size-desc";
+  }
+  renderStorageManager();
+}
+
+export function clearStorageSearch(): void {
+  S_STORAGE.searchQuery = "";
+  const input = storageRoot?.querySelector<HTMLInputElement>("#storage-search-input");
+  if (input) input.value = "";
+  renderStorageGamesList();
+}
+
+export function setStorageSearch(val: string): void {
+  S_STORAGE.searchQuery = val.trim().toLowerCase();
+  renderStorageGamesList();
+}
+
 function moveButton(g: StorageGame): string {
   if (g.source !== "epic" && g.source !== "amazon") return "";
   if (g.source === "epic") {
     const partner = getThirdPartyLauncher(rawOf(g.key));
     if (requiresThirdPartyLauncher(partner)) {
-      return `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 12)} ${t("manage.move")}</button>`;
+      return `<button type="button" class="storage-action-btn ghost disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
     }
   }
-  return `<button class="btn ghost small" data-act="storage-move-game" data-id="${esc(g.key)}">${icon("hard-drive", 12)} ${t("manage.move")}</button>`;
+  return `<button type="button" class="storage-action-btn ghost" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
 }
 
-function gameRow(g: StorageGame): string {
+function gameRow(g: StorageGame, maxGameSize: number): string {
   const partner = g.source === "epic" ? getThirdPartyLauncher(rawOf(g.key)) : null;
   const tp = g.source === "epic" && requiresThirdPartyLauncher(partner);
-  const store = `<span class="storage-game-store">${storeLogo(g.source, 14, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
+  const size = shownSize(g);
+  const pct = maxGameSize > 0 ? Math.min(100, Math.max(2, Math.round((size / maxGameSize) * 100))) : 0;
+  const store = `<span class="storage-game-store">${storeLogo(g.source, 13, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
   return `
     <div class="storage-game-row">
-      ${g.cover ? `<img class="storage-game-thumb"${steamArtAttrs(g.key)} src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb"></div>`}
+      <div class="storage-game-cover-wrap">
+        ${g.cover ? `<img class="storage-game-thumb"${steamArtAttrs(g.key)} src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb storage-thumb-fallback">${icon("gamepad-2", 18)}</div>`}
+      </div>
       <div class="storage-game-info">
-        <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
+        <div class="storage-game-top">
+          <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
+          <div class="storage-game-size" data-storage-size="${esc(g.key)}">${fmtBytes(size)}</div>
+        </div>
+        <div class="storage-game-bar-track" aria-hidden="true">
+          <div class="storage-game-bar-fill" style="width: ${pct}%"></div>
+        </div>
         <div class="storage-game-meta">
-          <span data-storage-size="${esc(g.key)}">${fmtBytes(shownSize(g))}</span>
-          <span class="apple-row-dot" aria-hidden="true">•</span>
           ${store}
           ${tp && partner ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="tp-badge-text" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
+          ${g.path ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="storage-game-path" title="${esc(g.path)}">${esc(g.path)}</span>` : ""}
         </div>
       </div>
       <div class="storage-game-actions">
         ${moveButton(g)}
-        <button class="btn danger small" data-act="storage-uninstall" data-id="${esc(g.key)}">${icon("trash", 12)} ${t("common.uninstall")}</button>
+        <button type="button" class="storage-action-btn danger" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">
+          ${icon("trash", 13)} <span>${t("common.uninstall")}</span>
+        </button>
       </div>
     </div>`;
+}
+
+function renderStorageGamesList(): void {
+  const container = document.getElementById("storage-games-container");
+  if (!container) return;
+
+  const installed = collectInstalled();
+  const currentDrive = S_STORAGE.activeDrive;
+  const gamesOnDrive = installed.filter((g) => (driveOf(g.path) || "?") === currentDrive);
+  const maxGameSize = gamesOnDrive.reduce((max, g) => Math.max(max, shownSize(g)), 0);
+
+  let filtered = gamesOnDrive;
+  if (S_STORAGE.storeFilter !== "all") {
+    filtered = filtered.filter((g) => g.source === S_STORAGE.storeFilter);
+  }
+  if (S_STORAGE.searchQuery) {
+    const q = S_STORAGE.searchQuery;
+    filtered = filtered.filter((g) => g.title.toLowerCase().includes(q));
+  }
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (S_STORAGE.sortMode === "size-desc") return shownSize(b) - shownSize(a);
+    if (S_STORAGE.sortMode === "size-asc") return shownSize(a) - shownSize(b);
+    return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+  });
+
+  // Update chip active classes
+  const switcher = document.getElementById("storage-store-filters");
+  if (switcher) {
+    switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+      const active = (btn.dataset.store || "all") === S_STORAGE.storeFilter;
+      btn.classList.toggle("active", active);
+    });
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="storage-empty-state">
+        <div class="storage-empty-icon">${icon("search", 28)}</div>
+        <div class="storage-empty-title">${t("lib.noGames")}</div>
+        ${S_STORAGE.searchQuery || S_STORAGE.storeFilter !== "all" ? `<button type="button" class="storage-empty-btn" data-act="storage-clear-search">${t("lib.filterClear")}</button>` : ""}
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map((g) => gameRow(g, maxGameSize)).join("");
 }
 
 export function renderStorageManager(): void {
@@ -120,37 +227,76 @@ export function renderStorageManager(): void {
     gamesByDrive.set(d, arr);
   }
 
-  const driveCards = S.moveSystemDrives
-    .map((d) => {
-      const letter = d.letter.toUpperCase();
-      const games = (gamesByDrive.get(letter) ?? []).sort((a, b) => shownSize(b) - shownSize(a));
-      const gamesSize = games.reduce((acc, g) => acc + shownSize(g), 0);
-      const total = d.total_bytes || 0;
-      const free = d.available_bytes || 0;
-      const otherUsed = Math.max(0, total - free - gamesSize);
-      const pct = (v: number) => (total > 0 ? Math.min(100, (v / total) * 100) : 0);
-      return `
-        <div class="storage-drive-card">
-          <div class="storage-drive-head">
-            <div class="storage-drive-name">${icon("hard-drive", 16)} <span>${letter}:${d.label ? ` ${esc(d.label)}` : ""}</span></div>
-            <div class="storage-drive-free">${t("storage.free")}: <strong>${fmtBytes(free)}</strong> / ${fmtBytes(total)}</div>
-          </div>
-          <div class="storage-bar">
-            <div class="storage-seg games" style="width:${pct(gamesSize)}%"></div>
-            <div class="storage-seg other" style="width:${pct(otherUsed)}%"></div>
-            <div class="storage-seg free" style="width:${pct(free)}%"></div>
-          </div>
-          <div class="storage-legend">
-            <span><i class="dot games"></i>${t("storage.games")} <strong>${gamesSize > 0 ? fmtBytes(gamesSize) : "0 B"}</strong></span>
-            <span><i class="dot other"></i>${t("storage.other")} <strong>${otherUsed > 0 ? fmtBytes(otherUsed) : "0 B"}</strong></span>
-            <span><i class="dot free"></i>${t("storage.free")} <strong>${fmtBytes(free)}</strong></span>
-          </div>
-          <div class="storage-games">
-            ${games.length === 0 ? `<div class="storage-empty">${t("storage.noGames")}</div>` : games.map(gameRow).join("")}
-          </div>
-        </div>`;
-    })
-    .join("");
+  // Determine available drives from S.moveSystemDrives or installed games
+  const systemDrives = [...S.moveSystemDrives];
+  const driveLetters = new Set<string>();
+  for (const d of systemDrives) driveLetters.add(d.letter.toUpperCase());
+  for (const d of gamesByDrive.keys()) if (d !== "?") driveLetters.add(d);
+
+  const sortedLetters = [...driveLetters].sort();
+  if (!S_STORAGE.activeDrive || !driveLetters.has(S_STORAGE.activeDrive)) {
+    S_STORAGE.activeDrive = sortedLetters[0] || "C";
+  }
+
+  const activeLetter = S_STORAGE.activeDrive;
+  const activeSysDrive = systemDrives.find((d) => d.letter.toUpperCase() === activeLetter);
+  const gamesOnDrive = gamesByDrive.get(activeLetter) ?? [];
+  const gamesSize = gamesOnDrive.reduce((acc, g) => acc + shownSize(g), 0);
+
+  const total = activeSysDrive?.total_bytes || Math.max(gamesSize * 1.5, 1);
+  const free = activeSysDrive?.available_bytes || 0;
+  const otherUsed = Math.max(0, total - free - gamesSize);
+  const pct = (v: number) => (total > 0 ? Math.min(100, Math.max(0, (v / total) * 100)) : 0);
+  const pctGames = pct(gamesSize);
+  const pctOther = pct(otherUsed);
+  const pctFree = Math.max(0, 100 - pctGames - pctOther);
+
+  // Store counts for filter chips on this drive
+  const storeCounts = new Map<string, number>();
+  for (const g of gamesOnDrive) {
+    storeCounts.set(g.source, (storeCounts.get(g.source) ?? 0) + 1);
+  }
+
+  // Drive tabs
+  const driveTabs = sortedLetters.map((ltr) => {
+    const sys = systemDrives.find((d) => d.letter.toUpperCase() === ltr);
+    const count = (gamesByDrive.get(ltr) ?? []).length;
+    const freeText = sys?.available_bytes ? fmtBytes(sys.available_bytes) : "";
+    const active = ltr === activeLetter;
+    return `
+      <button type="button" class="storage-drive-tab ${active ? "active" : ""}" data-act="storage-select-drive" data-drive="${ltr}">
+        <span class="storage-drive-tab-icon">${icon("hard-drive", 15)}</span>
+        <span>${ltr}:${sys?.label ? ` ${esc(sys.label)}` : ""}</span>
+        ${freeText ? `<span class="storage-drive-tab-badge">${freeText} ${t("storage.free")}</span>` : `<span class="storage-drive-tab-badge">${count}</span>`}
+      </button>`;
+  }).join("");
+
+  // Store filter chips
+  const storeChips = [
+    `<button type="button" class="storage-chip ${S_STORAGE.storeFilter === "all" ? "active" : ""}" data-act="storage-filter-store" data-store="all">
+      <span>${t("source.all")}</span>
+      <span class="storage-chip-count">${gamesOnDrive.length}</span>
+    </button>`,
+  ];
+  for (const [src, cnt] of storeCounts.entries()) {
+    storeChips.push(`
+      <button type="button" class="storage-chip ${S_STORAGE.storeFilter === src ? "active" : ""}" data-act="storage-filter-store" data-store="${src}">
+        ${storeLogo(src as GameSource, 13, "storage-chip-logo")}
+        <span>${esc(storeName(src as GameSource))}</span>
+        <span class="storage-chip-count">${cnt}</span>
+      </button>`);
+  }
+
+  // Sort info
+  let sortIcon: IconName = "chevron-down";
+  let sortLabel = `${t("lib.filterSize")} ↓`;
+  if (S_STORAGE.sortMode === "size-asc") {
+    sortIcon = "chevron-up";
+    sortLabel = `${t("lib.filterSize")} ↑`;
+  } else if (S_STORAGE.sortMode === "title-asc") {
+    sortIcon = "arrow-down-a-z";
+    sortLabel = t("lib.sortAlpha");
+  }
 
   storageRoot.innerHTML = `
     <div class="storage-overlay" data-act="storage-overlay-close">
@@ -164,10 +310,81 @@ export function renderStorageManager(): void {
           <button class="manage-head-close" data-act="close-storage-manager" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
         <div class="storage-body">
-          ${driveCards || `<div class="storage-empty">${t("storage.noDrives")}</div>`}
+          ${sortedLetters.length > 1 ? `<div class="storage-drives-strip">${driveTabs}</div>` : ""}
+
+          <div class="storage-overview-card">
+            <div class="storage-overview-top">
+              <div class="storage-overview-drive-name">
+                ${icon("hard-drive", 16)}
+                <span>${activeLetter}:${activeSysDrive?.label ? ` ${esc(activeSysDrive.label)}` : ""}</span>
+              </div>
+              <div class="storage-overview-free-text">
+                ${t("storage.free")}: <strong>${fmtBytes(free)}</strong> / ${fmtBytes(total)}
+              </div>
+            </div>
+
+            <div class="storage-meter-track" aria-hidden="true">
+              <div class="storage-meter-seg seg-games" style="width: ${pctGames}%" title="${t("storage.games")}: ${fmtBytes(gamesSize)}"></div>
+              <div class="storage-meter-seg seg-other" style="width: ${pctOther}%" title="${t("storage.other")}: ${fmtBytes(otherUsed)}"></div>
+              <div class="storage-meter-seg seg-free" style="width: ${pctFree}%" title="${t("storage.free")}: ${fmtBytes(free)}"></div>
+            </div>
+
+            <div class="storage-stats-grid">
+              <div class="storage-stat-pill stat-games">
+                <span class="storage-stat-dot dot-games"></span>
+                <div class="storage-stat-info">
+                  <div class="storage-stat-label">${t("storage.games")}</div>
+                  <div class="storage-stat-val">${fmtBytes(gamesSize)} <span class="storage-stat-meta">(${gamesOnDrive.length} • %${pctGames.toFixed(1)})</span></div>
+                </div>
+              </div>
+              <div class="storage-stat-pill stat-other">
+                <span class="storage-stat-dot dot-other"></span>
+                <div class="storage-stat-info">
+                  <div class="storage-stat-label">${t("storage.other")}</div>
+                  <div class="storage-stat-val">${fmtBytes(otherUsed)} <span class="storage-stat-meta">(%${pctOther.toFixed(1)})</span></div>
+                </div>
+              </div>
+              <div class="storage-stat-pill stat-free">
+                <span class="storage-stat-dot dot-free"></span>
+                <div class="storage-stat-info">
+                  <div class="storage-stat-label">${t("storage.free")}</div>
+                  <div class="storage-stat-val">${fmtBytes(free)} <span class="storage-stat-meta">(%${pctFree.toFixed(1)})</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="storage-toolbar">
+            <div class="storage-search-wrap">
+              ${icon("search", 13)}
+              <input type="text" id="storage-search-input" class="storage-search-input" placeholder="${t("common.search")}..." value="${esc(S_STORAGE.searchQuery)}" />
+              ${S_STORAGE.searchQuery ? `<button type="button" class="storage-search-clear" data-act="storage-clear-search">${icon("x", 12)}</button>` : ""}
+            </div>
+
+            <div id="storage-store-filters" class="storage-filter-pills">
+              ${storeChips.join("")}
+            </div>
+
+            <button type="button" class="storage-sort-btn" data-act="storage-sort-toggle">
+              ${icon(sortIcon, 13)}
+              <span>${sortLabel}</span>
+            </button>
+          </div>
+
+          <div id="storage-games-container" class="storage-games-container"></div>
         </div>
       </div>
     </div>`;
+
+  renderStorageGamesList();
+
+  if (storageRoot && !storageRoot.dataset.boundStorage) {
+    storageRoot.dataset.boundStorage = "1";
+    storageRoot.addEventListener("input", (e) => {
+      const input = (e.target as HTMLElement)?.closest<HTMLInputElement>("#storage-search-input");
+      if (input) setStorageSearch(input.value);
+    });
+  }
 }
 
 /**
@@ -203,6 +420,9 @@ function measureSizes(games: StorageGame[]): void {
 /** Opens the modal instantly from cached data, then refreshes the drive list. */
 export async function openStorageManager(): Promise<void> {
   if (!storageRoot) return;
+  S_STORAGE.searchQuery = "";
+  S_STORAGE.storeFilter = "all";
+  S_STORAGE.sortMode = "size-desc";
   renderStorageManager();
   try {
     S.moveSystemDrives = await epicGetSystemDrives();
