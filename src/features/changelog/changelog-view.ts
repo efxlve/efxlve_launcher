@@ -27,31 +27,73 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.20",
-    date: "2026-10-01",
+    version: "0.1.21",
+    date: "2026-10-05",
     isCurrent: true,
     items: [
       {
-        en: "Amazon Games (Prime Gaming) joins the launcher: sign in with Nile, see your library and install, update, launch or uninstall your games.",
-        tr: "Amazon Games (Prime Gaming) launcher'a katıldı: Nile ile oturum açın; kütüphanenizi görün, oyunlarınızı kurun, güncelleyin, başlatın veya kaldırın.",
+        en: "Amazon Games (Prime Gaming) joins the launcher: sign in with Nile, browse your library and install, update, launch or uninstall your games.",
+        tr: "Amazon Games (Prime Gaming) launcher'a katıldı: Nile ile oturum açın; kütüphanenizi gezin, oyunlarınızı kurun, güncelleyin, başlatın veya kaldırın.",
       },
       {
-        en: "Amazon downloads stream speed, disk write, peak and ETA into the same card and speed chart as Epic and GOG.",
-        tr: "Amazon indirmeleri hızı, disk yazımını, zirve hızını ve kalan süreyi Epic ve GOG ile aynı kartta ve hız grafiğinde gösterir.",
+        en: "Amazon downloads stream speed, disk write, peak, ETA and the speed chart into the same card as Epic and GOG.",
+        tr: "Amazon indirmeleri hızı, disk yazımını, zirve hızını, kalan süreyi ve hız grafiğini Epic ve GOG ile aynı kartta gösterir.",
       },
       {
-        en: "The Amazon manage panel matches Epic: verify files, move the install, desktop shortcut, save folder, local and cloud backup, launch arguments and environment variables.",
-        tr: "Amazon yönetim paneli Epic ile aynı seviyede: dosyaları doğrula, kurulumu taşı, masaüstü kısayolu, kayıt klasörü, yerel ve bulut yedek, başlatma argümanları ve ortam değişkenleri.",
+        en: "The Amazon manage panel matches Epic: verify, move, desktop shortcut, save folder, local and cloud backup, launch arguments and environment variables.",
+        tr: "Amazon yönetim paneli Epic ile aynı seviyede: doğrulama, taşıma, masaüstü kısayolu, kayıt klasörü, yerel ve bulut yedek, başlatma argümanları ve ortam değişkenleri.",
       },
       {
-        en: "Amazon games show their real portrait covers, wide key art and their own catalog text; the storefront tab is named Amazon Games.",
-        tr: "Amazon oyunları gerçek portre kapaklarını, geniş görselini ve kendi katalog metnini gösterir; mağaza sekmesinin adı Amazon Games oldu.",
+        en: "Amazon games show their real portrait covers, wide key art and their own catalog text; installs made outside Nile can be imported.",
+        tr: "Amazon oyunları gerçek portre kapaklarını, geniş görselini ve kendi katalog metnini gösterir; Nile dışında yapılmış kurulumlar içe aktarılabilir.",
       },
       {
-        en: "Scheduled automatic updates now include Amazon games, and the Amazon support matrix is listed on the Accounts page.",
-        tr: "Zamanlanmış otomatik güncellemeler artık Amazon oyunlarını da kapsar; Amazon destek matrisi Hesaplar sayfasında listelenir.",
+        en: "Amazon Games joins the profile hub, scheduled automatic updates and the storefront switcher, listed as Amazon Games.",
+        tr: "Amazon Games profil merkezine, zamanlanmış otomatik güncellemelere ve mağaza sekmesine katıldı; artık Amazon Games adıyla listelenir.",
+      },
+      {
+        en: "The library store filter only lists stores that are connected or detected on this PC.",
+        tr: "Kütüphane mağaza filtresi yalnızca bağlı veya bu bilgisayarda algılanan mağazaları listeler.",
+      },
+      {
+        en: "TV Mode catches up: Amazon and companion-store games appear on the shelf, every storefront tab (Amazon Games included) opens in the store panel, and Amazon updates show in the downloads panel.",
+        tr: "TV Modu güncellendi: Amazon ve yerleşik mağaza oyunları rafta görünür, Amazon Games dahil tüm mağaza sekmeleri mağaza panelinde açılır ve Amazon güncellemeleri indirmeler panelinde listelenir.",
+      },
+      {
+        en: "Settings: the About, Launchers and Accounts sections now cover Amazon Games, and every account card lists what its store supports.",
+        tr: "Ayarlar: Hakkında, Başlatıcılar ve Hesaplar bölümleri Amazon Games'i kapsıyor; her hesap kartı mağazasının neleri desteklediğini listeliyor.",
       },
     ],
+    fixed: [
+      {
+        en: "The GOG account note no longer claims GOG Galaxy handles installing and removing games.",
+        tr: "GOG hesap notu artık kurulum ve kaldırma işlerini GOG Galaxy'nin yaptığını söylemiyor.",
+      },
+      {
+        en: "Amazon games no longer show Epic wording in the playtime editor, source notes or feature rows, and their save row says local instead of Epic cloud.",
+        tr: "Amazon oyunları artık oynanış düzenleyicide, kaynak notlarında veya özellik satırlarında Epic ifadesi göstermez; kayıt satırı Epic bulutu yerine yerel kaydı söyler.",
+      },
+      {
+        en: "The library header wraps its tools instead of letting the filter tabs overlap them on narrow windows.",
+        tr: "Kütüphane başlığı dar pencerede araçlarını alt satıra indirir; sekmeler artık araçların üstüne binmez.",
+      },
+      {
+        en: "The empty Favorites tab points back to the library instead of the store.",
+        tr: "Boş Favoriler sekmesi mağaza yerine kütüphaneye yönlendirir.",
+      },
+      {
+        en: "The Turkish controller section no longer says \"köprü\" and calls the pad a controller everywhere.",
+        tr: "Türkçe kontrolcü bölümü artık \"köprü\" demiyor ve her yerde \"kontrolcü\" diyor.",
+      },
+      {
+        en: "The Spanish profile chip no longer shows a TODO placeholder, and small wording fixes landed across locales.",
+        tr: "İspanyolca profil rozeti artık TODO yer tutucusu göstermez; birkaç dilde küçük metin düzeltmeleri yapıldı.",
+      },
+    ],
+  },
+  {
+    version: "0.1.20",
+    date: "2026-10-01",
     fixed: [
       {
         en: "Opening notifications on the store keeps the store page where it is. The list sits on top of it.",
@@ -68,10 +110,6 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
       {
         en: "A Steam game that has already finished downloading is no longer shown as downloading.",
         tr: "İndirmesi bitmiş bir Steam oyunu artık indiriliyor olarak görünmez.",
-      },
-      {
-        en: "Amazon games no longer show Epic wording in the playtime editor, source notes or feature rows, and their save row says local instead of Epic cloud.",
-        tr: "Amazon oyunları artık oynanış düzenleyicide, kaynak notlarında veya özellik satırlarında Epic ifadesi göstermez; kayıt satırı Epic bulutu yerine yerel kaydı söyler.",
       },
     ],
   },
