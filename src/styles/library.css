@@ -5,8 +5,8 @@
    ========================================================================== */
 
 /* --- Header --- */
-.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; min-height: 48px; }
-.lib-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; row-gap: 12px; flex-wrap: wrap; margin-bottom: 18px; min-height: 48px; }
+.lib-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
 .lib-tools .btn { height: 40px; font-size: 14px; }
 .lib-tools .seg { height: 40px; }
 .lib-tools .seg > button { height: 34px; }
@@ -17,7 +17,7 @@
    (measured ~70% of a core plus the GPU). Twelve steps per turn keeps the
    "working" hint for a fraction of that. */
 .lib-refresh-btn.spinning svg { animation: spin 1.6s steps(12) infinite; }
-.lib-filters { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow: visible; }
+.lib-filters { flex: 1 1 auto; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow: visible; }
 .lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { flex-shrink: 0; }
 .col-dropdown-list .lib-col-tab { cursor: grab; touch-action: none; }
