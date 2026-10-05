@@ -109,6 +109,22 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The Spanish profile chip no longer shows a TODO placeholder, and small wording fixes landed across locales.",
         tr: "İspanyolca profil rozeti artık TODO yer tutucusu göstermez; birkaç dilde küçük metin düzeltmeleri yapıldı.",
       },
+      {
+        en: "Discord Rich Presence no longer sticks to stale activity: the library count, TV Mode, accounts and connections that appear after Discord starts are all kept in sync.",
+        tr: "Discord Rich Presence artık eski aktivitede takılı kalmaz; kütüphane sayısını, TV Modu'nu, hesapları ve Discord sonradan açıldığında kurulan bağlantıyı eşitler.",
+      },
+      {
+        en: "The collections menu closes when the library scrolls or the window resizes, and the filter strip keeps its horizontal position across refreshes.",
+        tr: "Koleksiyonlar menüsü kütüphane kaydırılınca veya pencere boyutlanınca kapanır; filtre şeridi yenilemelerde yatay konumunu korur.",
+      },
+      {
+        en: "Amazon account changes (add, switch, remove, sign out) wait until a running download finishes, and a failed sign-in restores the previous account instead of leaving the card signed out.",
+        tr: "Amazon hesap işlemleri (ekleme, değiştirme, kaldırma, çıkış) süren indirme bitene kadar bekler; başarısız oturum açma önceki hesabı geri yükler ve kartı bağlantısız bırakmaz.",
+      },
+      {
+        en: "Amazon session loads no longer start the Nile CLI just to read the sign-in state, and account listings no longer recopy the whole library.",
+        tr: "Amazon oturum yüklemeleri yalnızca oturum durumunu okumak için Nile CLI başlatmaz; hesap listeleme tüm kütüphaneyi yeniden kopyalamaz.",
+      },
     ],
   },
   {
