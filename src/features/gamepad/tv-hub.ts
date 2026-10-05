@@ -10,7 +10,7 @@
 
 import { achSummaryOf, epicDlProgress, isAppPlatinum } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState } from "../../core/icons";
-import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { epicWideArt, isCompanionSource, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
@@ -499,6 +499,20 @@ export function renderTvGameHub(s: EpicSummary, activeTab: TvHubTab = "overview"
   const wideArt = epicWideArt(s) || s.cover || "";
   const faved = S.epicFav.has(s.appName);
   const storePill = storeBadgeHtml(s.appName);
+  // Amazon Games and Riot publish no web storefront; the button would be a lie.
+  const storeSource = sourceOfKey(s.appName);
+  const storeBtnLabel = storeSource === "gog"
+    ? "drawer.storeTitleGog"
+    : storeSource === "steam"
+      ? "drawer.storeTitleSteam"
+      : isCompanionSource(storeSource)
+        ? "ctx.storePage"
+        : "drawer.storeTitle";
+  const storeBtn = storeSource === "amazon" || storeSource === "riot"
+    ? ""
+    : `<button type="button" class="tv-btn-secondary" data-act="epic-store-page" data-id="${esc(s.appName)}" title="${esc(t(storeBtnLabel))}">
+        ${icon("external", 16)} <span>${t(storeBtnLabel)}</span>
+      </button>`;
 
   const tabsHtml = TV_HUB_TABS.map(
     (item) => `
@@ -539,9 +553,7 @@ export function renderTvGameHub(s: EpicSummary, activeTab: TvHubTab = "overview"
           <button type="button" class="tv-btn-secondary${faved ? " faved" : ""}" data-act="epic-fav" data-id="${esc(s.appName)}" title="${esc(t("drawer.favTitle"))}">
             ${icon("heart", 16)} <span>${faved ? t("common.favorited") : t("common.favorite")}</span>
           </button>
-          <button type="button" class="tv-btn-secondary" data-act="epic-store-page" data-id="${esc(s.appName)}" title="${esc(t("drawer.storeTitle"))}">
-            ${icon("external", 16)} <span>${t("drawer.storeTitle")}</span>
-          </button>
+          ${storeBtn}
         </div>
 
         ${renderConsoleStatCards(s)}

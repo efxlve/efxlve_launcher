@@ -594,11 +594,15 @@ export function accountArchiveInfo(account: ProfileAccount): { games: number | n
     const saved = (S.steamSavedAccounts || []).find((a) => a.steamId === account.id);
     return { games: null, lastUsed: lastUsedLabel(saved?.lastUsed || 0) };
   }
-  const saved = (S.gogSavedAccounts || []).find((a) => a.user_id === account.id);
-  return {
-    games: typeof saved?.game_count === "number" ? saved.game_count : null,
-    lastUsed: lastUsedLabel(saved?.last_used || 0),
-  };
+  if (account.kind === "gog") {
+    const saved = (S.gogSavedAccounts || []).find((a) => a.user_id === account.id);
+    return {
+      games: typeof saved?.game_count === "number" ? saved.game_count : null,
+      lastUsed: lastUsedLabel(saved?.last_used || 0),
+    };
+  }
+  // Amazon and the companion stores keep no archive row here.
+  return { games: null, lastUsed: "" };
 }
 
 interface ProfileStat {

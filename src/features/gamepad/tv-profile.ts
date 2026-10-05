@@ -325,11 +325,9 @@ function renderTvAccountsShelf(accounts: ProfileAccount[]): string {
 
     const gameCount = archive.games !== null
       ? archive.games
-      : a.kind === "epic"
-        ? (a.active ? libraryCount("epic") : null)
-        : a.kind === "steam"
-          ? (a.active ? libraryCount("steam") : null)
-          : (a.active ? libraryCount("gog") : null);
+      : a.active
+        ? libraryCount(a.kind)
+        : null;
 
     return `
       <div class="tv-profile-acc-card${isFocused ? " focused" : ""}${a.active ? " is-active" : ""}"

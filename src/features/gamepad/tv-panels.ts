@@ -9,7 +9,7 @@
 import { epicPortrait, epicStorePageUrlForGame } from "../../epic";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
-import { gogToEpicSummary, libraryItemToSummary, rawOf, summaryOf } from "../../core/selectors";
+import { gogToEpicSummary, isCompanionSource, libraryItemToSummary, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
@@ -25,6 +25,7 @@ import {
   storeIdForUrl,
   storeUrlFor,
   syncStoreViewSize,
+  type StoreId,
   type StoreRect,
 } from "../store/store-view";
 import { storeLogo } from "../store/store-logos";
@@ -118,10 +119,12 @@ export function tvClosePanel(): void {
 }
 
 export function tvSelectStore(id: string): void {
-  if (id !== "epic" && id !== "gog" && id !== "steam") return;
-  const next = storeUrlFor(id);
+  // Every storefront tab the header shows is selectable, Amazon Games included.
+  const stores = visibleHeaderStores();
+  if (!(stores as string[]).includes(id)) return;
+  const next = storeUrlFor(id as StoreId);
   if (panel === "stores" && storeUrl === next && S.storeShown) {
-    storeFocus = visibleHeaderStores().indexOf(id);
+    storeFocus = stores.indexOf(id as StoreId);
     paintStoreTabs();
     return;
   }
@@ -130,14 +133,22 @@ export function tvSelectStore(id: string): void {
 
 /** Store page for a library game, without leaving TV Mode. */
 export function tvStoreUrlForApp(id: string): string {
-  if (id.startsWith("gog::")) {
+  const source = sourceOfKey(id);
+  // Amazon Games and Riot have no web storefront of their own.
+  if (source === "amazon" || source === "riot") return "";
+  if (source === "gog") {
     const s = summaryOf(id);
     const title = s ? s.title : id.slice(5);
     return `https://www.gog.com/en/games?query=${encodeURIComponent(title)}`;
   }
-  if (id.startsWith("steam::")) return `https://store.steampowered.com/app/${id.slice(7)}`;
+  if (source === "steam") return `https://store.steampowered.com/app/${id.slice(7)}`;
   const s = summaryOf(id);
   const title = s ? s.title : id;
+  if (isCompanionSource(source)) {
+    return source === "ubisoft"
+      ? `https://store.ubi.com/search?q=${encodeURIComponent(title)}`
+      : storeUrlFor(source as Parameters<typeof storeUrlFor>[0]);
+  }
   return epicStorePageUrlForGame(rawOf(id), title);
 }
 
@@ -307,7 +318,10 @@ function collectDownloadRows(): TvDlRow[] {
   const rows: TvDlRow[] = [];
   const active = activeDownload();
   if (active) {
-    const paused = active.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused;
+    const isAmazon = active.id.startsWith("amazon::");
+    // Nile has no pause and the launcher does not cancel an install, so the
+    // Amazon row carries no queue controls (same rule as the Downloads page).
+    const paused = !isAmazon && (active.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused);
     const pct = Math.round(active.progress);
     const speed = fmtSpeed(active.speedBytes, S.speedInBits);
     const eta = localizeMessage(active.eta) || t("dl.calculating");
@@ -318,9 +332,11 @@ function collectDownloadRows(): TvDlRow[] {
       section: paused ? t("dl.statusPaused") : t("dl.statusActive"),
       meta: `<div class="tv-dl-meta tabular-nums"><span id="dl-hero-pct">%${pct}</span> · <span id="dl-stat-speed">${esc(speed)}</span> · <span id="dl-stat-eta">${esc(eta)}</span> · <span id="dl-stat-bytes">${esc(bytes)}</span></div>`,
       bar: `<div class="tv-dl-track"><div class="tv-dl-bar" id="dl-hero-fill" data-dlbar="${esc(active.id)}" style="width:${pct}%"></div></div>`,
-      actions: paused
-        ? primary("dl-resume", active.id, "play", t("downloads.resume")) + quiet("epic-cancel", active.id, t("common.cancel"))
-        : primary("dl-pause", active.id, "pause", t("downloads.pause")) + quiet("epic-cancel", active.id, t("common.cancel")),
+      actions: isAmazon
+        ? ""
+        : paused
+          ? primary("dl-resume", active.id, "play", t("downloads.resume")) + quiet("epic-cancel", active.id, t("common.cancel"))
+          : primary("dl-pause", active.id, "pause", t("downloads.pause")) + quiet("epic-cancel", active.id, t("common.cancel")),
     });
   }
 
@@ -362,6 +378,7 @@ function collectDownloadRows(): TvDlRow[] {
   const updates = [
     ...S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))),
     ...S.gogSummaries.filter((g) => g.installed && g.updateAvailable).map(gogToEpicSummary),
+    ...S.amazonSummaries.filter((g) => g.installed && g.updateAvailable).map(libraryItemToSummary),
     ...S.steamSummaries.filter((g) => g.installed && g.updateAvailable && !g.downloading).map((g) => libraryItemToSummary(g)),
   ];
   for (const s of updates) {
@@ -372,7 +389,9 @@ function collectDownloadRows(): TvDlRow[] {
     const ver = latest ? `${installed ? `${installed} → ` : ""}${latest}` : t("drawer.updateAvailable");
     const updateAct = s.appName.startsWith("steam::")
       ? primary("steam-action", s.appName.slice(7), "download", t("common.update"), `data-mode="update"`)
-      : primary("epic-install", s.appName, "download", t("common.update"));
+      : s.appName.startsWith("amazon::")
+        ? primary("amazon-install", s.appName.slice(8), "download", t("common.update"))
+        : primary("epic-install", s.appName, "download", t("common.update"));
     rows.push({
       id: s.appName,
       title: s.title,

@@ -198,7 +198,15 @@ function allItems(): EpicSummary[] {
   for (const g of S.gogSummaries) {
     if (!S.hiddenGames.has(g.key)) out.push(gogToEpicSummary(g));
   }
+  for (const g of S.amazonSummaries) {
+    if (!S.hiddenGames.has(g.key)) out.push(libraryItemToSummary(g));
+  }
   for (const g of S.steamSummaries) {
+    if (!S.hiddenGames.has(g.key)) out.push(libraryItemToSummary(g));
+  }
+  // Companion stores (EA, Ubisoft, Xbox, Battle.net, Riot) keep their own
+  // clients; their games still belong on the shelf for a controller session.
+  for (const g of S.companionSummaries) {
     if (!S.hiddenGames.has(g.key)) out.push(libraryItemToSummary(g));
   }
   return out;
@@ -321,12 +329,26 @@ function downloadsChipHtml(): string {
   let speedText = t("nav.downloads");
   if (hasDl) {
     const speed = S.activeDlMetrics?.speedBytes ?? 0;
-    speedText = speed > 0 ? `${fmtBytes(speed)}/s` : t("steam.downloading");
-    if (steamDl && !speed) {
+    if (speed > 0) {
+      speedText = `${fmtBytes(speed)}/s`;
+    } else if (steamDl) {
       const pct = steamDl.bytesToDownload > 0
         ? Math.min(100, Math.round((steamDl.bytesDownloaded / steamDl.bytesToDownload) * 100))
         : null;
       speedText = pct !== null ? `%${pct}` : t("steam.downloading");
+    } else {
+      // Epic/GOG/Amazon progress without a live rate: show the percent instead
+      // of another store's "downloading" label.
+      let progress: number | null = S.activeDlMetrics?.progress ?? null;
+      if (progress === null) {
+        for (const d of S.downloads.values()) {
+          if (!d.done) {
+            progress = d.progress;
+            break;
+          }
+        }
+      }
+      speedText = progress !== null ? `%${Math.round(progress)}` : t("steam.downloading");
     }
   }
   return `
@@ -1153,7 +1175,7 @@ document.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     const store = openStoreAct.dataset.store;
-    enterTvStores(store === "epic" || store === "gog" || store === "steam" ? storeUrlFor(store) : undefined);
+    enterTvStores(store ? storeUrlFor(store as Parameters<typeof storeUrlFor>[0]) : undefined);
     return;
   }
 
@@ -1161,7 +1183,8 @@ document.addEventListener("click", (e) => {
   if (storePage?.dataset.id) {
     e.preventDefault();
     e.stopPropagation();
-    enterTvStores(tvStoreUrlForApp(storePage.dataset.id));
+    const url = tvStoreUrlForApp(storePage.dataset.id);
+    if (url) enterTvStores(url);
     return;
   }
 
