@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "交給各自的用戶端",
+  "launchers.managedTitle": "由啟動器管理",
   "settings.amazonLogout": "登出 Amazon",
   "lib.filterResults": "{n} 個結果",
   "lib.filterMetaHint": "只會比對有中繼資料的遊戲。",

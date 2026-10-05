@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "各クライアントに委任",
+  "launchers.managedTitle": "ランチャーが管理",
   "settings.amazonLogout": "Amazon からサインアウト",
   "lib.filterResults": "{n} 件",
   "lib.filterMetaHint": "情報があるゲームだけが一致します。",

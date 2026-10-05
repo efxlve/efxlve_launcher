@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "Przekazane ich klientom",
+  "launchers.managedTitle": "Zarządzane przez launcher",
   "settings.amazonLogout": "Wyloguj się z Amazon",
   "lib.filterResults": "{n} wyników",
   "lib.filterMetaHint": "Pasują tylko gry ze znanymi metadanymi.",

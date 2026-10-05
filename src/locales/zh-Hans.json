@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "交给各自的客户端",
+  "launchers.managedTitle": "由启动器管理",
   "settings.amazonLogout": "退出 Amazon",
   "lib.filterResults": "{n} 个结果",
   "lib.filterMetaHint": "只会匹配有元数据的游戏。",

@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "Передаются их клиентам",
+  "launchers.managedTitle": "Управляются лаунчером",
   "settings.amazonLogout": "Выйти из Amazon",
   "lib.filterResults": "Результатов: {n}",
   "lib.filterMetaHint": "Совпадают только игры с известными метаданными.",

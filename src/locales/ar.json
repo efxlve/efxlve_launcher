@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "تُسند إلى عملائها",
+  "launchers.managedTitle": "يديرها المشغّل",
   "settings.amazonLogout": "تسجيل الخروج من Amazon",
   "lib.filterResults": "{n} نتيجة",
   "lib.filterMetaHint": "تُطابَق فقط الألعاب التي تتوفر لها بيانات وصفية.",

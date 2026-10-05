@@ -1,4 +1,6 @@
 {
+  "launchers.delegatedTitle": "각 클라이언트에 위임",
+  "launchers.managedTitle": "런처가 관리",
   "settings.amazonLogout": "Amazon에서 로그아웃",
   "lib.filterResults": "결과 {n}개",
   "lib.filterMetaHint": "정보가 있는 게임만 일치합니다.",

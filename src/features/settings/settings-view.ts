@@ -262,15 +262,9 @@ const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
   riot: { act: "companion-open", withId: true },
 };
 
+/** One info box per category: what the launcher manages, what the clients do. */
 function launcherInfoBox(): string {
-  return `
-    <div class="info-box">
-      ${icon("info", 14)}
-      <div class="info-box-lines">
-        <div>${t("launchers.infoManaged")}</div>
-        <div>${t("launchers.infoDelegated")}</div>
-      </div>
-    </div>`;
+  return `${infoBox("launchers.infoManaged")}${infoBox("launchers.infoDelegated")}`;
 }
 
 /**
@@ -293,8 +287,9 @@ function renderLaunchers(): string {
           <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
         </div>
       </div>`;
-  const hasGog = S.launchers.some((l) => l.id === "gog");
-  const rows = S.launchers.map((l) => {
+  const managed: string[] = [];
+  const delegated: string[] = [];
+  for (const l of S.launchers) {
     const open = LAUNCHER_OPEN[l.id];
     const chip = l.installed
       ? `<span class="chip ok">${t("launchers.detected")}</span>`
@@ -322,10 +317,18 @@ function renderLaunchers(): string {
         </div>
         <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;
-    // Place Amazon Games together with the other managed stores (Epic and GOG).
-    return l.id === "gog" ? rowHtml + amazonRow : rowHtml;
-  }).join("");
-  return launcherInfoBox() + group(rows + (hasGog ? "" : amazonRow), t("settings.secLaunchers"));
+    // Epic and GOG are managed here; Steam and the companion clients own the play.
+    if (l.id === "epic" || l.id === "gog") managed.push(rowHtml);
+    else delegated.push(rowHtml);
+  }
+  // Amazon Games sits with the other managed stores, right after GOG. Each
+  // category carries its own info box so the split is obvious.
+  managed.push(amazonRow);
+  return `
+    ${infoBox("launchers.infoManaged")}
+    ${group(managed.join(""), t("launchers.managedTitle"))}
+    ${infoBox("launchers.infoDelegated")}
+    ${group(delegated.join(""), t("launchers.delegatedTitle"))}`;
 }
 
 function renderIntegrations(): string {
