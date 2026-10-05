@@ -21,6 +21,9 @@ import {
   amazonDefaultInstallDir,
   amazonGetInstallDir,
   amazonKey,
+  amazonRemoveSavedAccount,
+  amazonSavedAccounts,
+  amazonSwitchAccount,
   nileAuthStatus,
   nileCheckUpdates,
   nileInstall,
@@ -33,6 +36,7 @@ import {
   nileUninstall,
   nileImport,
   type NileGame,
+  type SavedAmazonAccount,
 } from "../../nile";
 
 /** One Amazon game as a library item (`amazon::<product id>`). */
@@ -110,6 +114,7 @@ export async function finishAmazonLogin(raw: string): Promise<void> {
     await nileLoginFinish(text, data.client_id, data.code_verifier, data.serial);
     S.amazonLogin = null;
     S.amazonBusy = false;
+    S.amazonAccountsAddMode = false;
     toast(t("accounts.connected"), "ok");
     await loadAmazonSession(true);
   } catch (err) {
@@ -128,14 +133,17 @@ export async function loadAmazonSession(sync = false): Promise<void> {
   try {
     const status = await nileAuthStatus();
     S.amazonStatus = status;
+    S.amazonAccountId = status.logged_in ? status.user_id : null;
     if (status.logged_in) {
       try {
         S.amazonGames = await nileLibrary(sync);
       } catch {
         // Keep the previous list when the refresh fails.
       }
+      await loadSavedAmazonAccounts();
     } else {
       S.amazonGames = [];
+      S.amazonAccountId = null;
     }
     setAmazonSummaries(S.amazonGames.map(amazonToLibraryItem));
     if (status.logged_in) void refreshAmazonUpdates();
@@ -143,6 +151,67 @@ export async function loadAmazonSession(sync = false): Promise<void> {
     // Keep the last state.
   }
   scheduleRender();
+}
+
+/** Every saved Amazon account, active first. */
+export async function loadSavedAmazonAccounts(): Promise<SavedAmazonAccount[]> {
+  try {
+    const list = await amazonSavedAccounts();
+    S.amazonSavedAccounts = list;
+    return list;
+  } catch {
+    return S.amazonSavedAccounts;
+  }
+}
+
+/** Shows the sign-in block on the Amazon card to add another account. */
+export function promptAddAmazonAccount(): void {
+  S.amazonAccountsAddMode = true;
+  scheduleRender();
+}
+
+export function cancelAddAmazonAccount(): void {
+  S.amazonAccountsAddMode = false;
+  scheduleRender();
+}
+
+let amazonSwitching = false;
+
+/** Restores one saved Amazon account and reloads its library. */
+export async function switchAmazonAccount(userId: string): Promise<void> {
+  if (amazonSwitching || !userId || userId === S.amazonAccountId) return;
+  amazonSwitching = true;
+  S.amazonBusy = true;
+  scheduleRender();
+  try {
+    const result = await amazonSwitchAccount(userId);
+    S.amazonAccountId = result.user_id;
+    S.amazonAccountsAddMode = false;
+    S.amazonProgress.clear();
+    setAmazonSummaries([]);
+    await loadAmazonSession(false);
+    toast(t("settings.accountSwitched", { name: result.username }), "ok");
+  } catch (err) {
+    toast(String(err), "err");
+  } finally {
+    amazonSwitching = false;
+    S.amazonBusy = false;
+    scheduleRender();
+  }
+}
+
+/**
+ * Removes one saved account. Removing the active one signs it out and Rust
+ * restores the most recently used remaining account, if any.
+ */
+export async function removeSavedAmazonAccount(userId: string): Promise<void> {
+  try {
+    await amazonRemoveSavedAccount(userId);
+    await loadAmazonSession(false);
+    toast(t("settings.accountRemoved"), "ok");
+  } catch (err) {
+    toast(String(err), "err");
+  }
 }
 
 /** Reads the Amazon install folder and its default so installs and settings agree. */
@@ -201,23 +270,28 @@ export async function syncAmazonLibrary(): Promise<void> {
   }
 }
 
-/** Signs out and clears the local Amazon state. */
+/** Signs out the active account; a newer saved account takes over if present. */
 export async function amazonLogoutAction(): Promise<void> {
+  const activeId =
+    S.amazonSavedAccounts.find((a) => a.is_active)?.user_id ?? S.amazonAccountId;
   try {
     await nileLogout();
   } catch {
     // Ignore: the local state is cleared either way.
   }
-  S.amazonStatus = {
-    binary: S.amazonStatus?.binary ?? false,
-    logged_in: false,
-    username: null,
-  };
-  S.amazonGames = [];
+  if (activeId) {
+    // The logout revoked this account's tokens, so its archive goes too. Rust
+    // restores the most recently used remaining account, if any.
+    try {
+      await amazonRemoveSavedAccount(activeId);
+    } catch {
+      // The fallback still happens on the next session load.
+    }
+  }
   S.amazonLogin = null;
+  S.amazonAccountsAddMode = false;
   S.amazonProgress.clear();
-  setAmazonSummaries([]);
-  scheduleRender();
+  await loadAmazonSession(false);
 }
 
 /**

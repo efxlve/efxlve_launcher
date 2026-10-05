@@ -381,6 +381,12 @@ export const S = {
   /** Amazon Games (Nile) account state and library. */
   amazonStatus: (null) as import("../nile").NileAuthStatus | null,
   amazonGames: ([]) as import("../nile").NileGame[],
+  /** Saved Amazon accounts (multi-account switcher). */
+  amazonSavedAccounts: ([]) as import("../nile").SavedAmazonAccount[],
+  /** Active Amazon account id (`amzn1.account.*`), null when signed out. */
+  amazonAccountId: (null) as string | null,
+  /** True while the Amazon card is adding another account. */
+  amazonAccountsAddMode: false,
   /** PKCE material from `nile_login_begin`, kept until sign-in finishes. */
   amazonLogin: (null) as import("../nile").NileLoginData | null,
   amazonBusy: false,

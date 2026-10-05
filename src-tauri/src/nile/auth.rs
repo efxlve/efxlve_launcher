@@ -17,6 +17,8 @@ pub struct NileAuthStatus {
     pub binary: bool,
     pub logged_in: bool,
     pub username: Option<String>,
+    /// Amazon account id of the live session (`amzn1.account.*`).
+    pub user_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -59,6 +61,7 @@ fn status_from_json(text: &str, binary: bool) -> NileAuthStatus {
         binary,
         logged_in,
         username,
+        user_id: None,
     }
 }
 
@@ -66,19 +69,26 @@ fn status_from_json(text: &str, binary: bool) -> NileAuthStatus {
 /// "not installed, not signed in".
 #[tauri::command]
 pub async fn nile_auth_status(app: AppHandle) -> NileAuthStatus {
+    let user_id = super::accounts::read_current_user(&cli::config_root(&app)).map(|(_, id)| id);
     if super::resolve_binary(&app).is_none() {
         return NileAuthStatus {
             binary: false,
             logged_in: false,
             username: None,
+            user_id,
         };
     }
     match cli::run(&app, &["auth", "--status"], 30).await {
-        Ok(out) => status_from_json(&cli::stdout_text(&out), true),
+        Ok(out) => {
+            let mut status = status_from_json(&cli::stdout_text(&out), true);
+            status.user_id = user_id;
+            status
+        }
         Err(_) => NileAuthStatus {
             binary: true,
             logged_in: false,
             username: None,
+            user_id,
         },
     }
 }
@@ -150,6 +160,8 @@ pub async fn nile_login_finish(
     if !out.status.success() {
         return Err(cli::failure_message(&out));
     }
+    // Archive the fresh session so "add another account" can switch back to it.
+    super::accounts::ensure_current_saved(&cli::config_root(&app));
     Ok("ok".to_string())
 }
 
@@ -160,6 +172,9 @@ pub async fn nile_logout(app: AppHandle) -> Result<(), String> {
     if !out.status.success() {
         return Err(cli::failure_message(&out));
     }
+    // The CLI removes its own files; clear anything it left behind so the next
+    // status check cannot read a half session.
+    super::accounts::clear_live_session(&cli::config_dir(&app));
     Ok(())
 }
 

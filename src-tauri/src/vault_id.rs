@@ -4,13 +4,17 @@
 //! out of the vault. Both would let an IPC `account_id` reach `remove_dir_all`
 //! outside the account directory.
 
-/// Epic and GOG account ids are hex or decimal. Anything else is rejected.
+/// Store account ids are hex, decimal or (Amazon) dotted identifiers.
+/// Anything that could walk out of the vault is rejected.
 pub fn is_vault_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 128
+        && !id.contains("..")
+        && !id.starts_with('.')
+        && !id.ends_with(".json")
         && id
             .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.')
 }
 
 #[cfg(test)]
@@ -23,6 +27,8 @@ mod tests {
         assert!(is_vault_id("46899977096215655"));
         assert!(is_vault_id("test_acc_1"));
         assert!(is_vault_id("gog-user"));
+        // Amazon user ids carry dots.
+        assert!(is_vault_id("amzn1.account.AFKX5XATOLRQFJ43UI4FYQXORTNQ"));
     }
 
     #[test]
@@ -36,5 +42,7 @@ mod tests {
         assert!(!is_vault_id("a/b"));
         assert!(!is_vault_id("a b"));
         assert!(!is_vault_id("id.json"));
+        assert!(!is_vault_id(".hidden"));
+        assert!(!is_vault_id("a..b"));
     }
 }

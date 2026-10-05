@@ -93,6 +93,7 @@
   background: var(--surface-1); color: var(--text-2); font-size: 12px; line-height: 1.5;
 }
 .info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--text-3); }
+.info-box-lines { display: flex; flex-direction: column; gap: 6px; }
 /* An info box dropped between two setting groups needs its own breathing room. */
 .list + .info-box, .settings-group + .info-box, .row + .info-box { margin-top: 10px; }
 .search {

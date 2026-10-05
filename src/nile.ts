@@ -13,6 +13,8 @@ export interface NileAuthStatus {
   binary: boolean;
   logged_in: boolean;
   username: string | null;
+  /** Amazon account id of the live session (`amzn1.account.*`). */
+  user_id: string | null;
 }
 
 export interface NileLoginData {
@@ -133,3 +135,23 @@ export interface NileProgressEvent {
 export function amazonKey(id: string): string {
   return `amazon::${id}`;
 }
+
+/** One saved Amazon account from the multi-account registry. */
+export interface SavedAmazonAccount {
+  user_id: string;
+  username: string;
+  last_used: number;
+  is_active: boolean;
+  game_count: number | null;
+}
+
+/** Every saved Amazon account, active first. */
+export const amazonSavedAccounts = () => invoke<SavedAmazonAccount[]>("amazon_saved_accounts");
+
+/** Restores one saved account's session and makes it active. */
+export const amazonSwitchAccount = (userId: string) =>
+  invoke<SavedAmazonAccount>("amazon_switch_account", { id: userId });
+
+/** Removes one saved account; removing the active one falls back to the next. */
+export const amazonRemoveSavedAccount = (userId: string) =>
+  invoke<void>("amazon_remove_saved_account", { id: userId });

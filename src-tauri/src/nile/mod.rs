@@ -8,6 +8,7 @@
 //! This phase covers the account and the library. Install, launch and update
 //! build on the same CLI.
 
+pub mod accounts;
 pub mod auth;
 pub mod binary;
 pub mod cli;

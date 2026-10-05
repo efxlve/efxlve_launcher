@@ -262,6 +262,17 @@ const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
   riot: { act: "companion-open", withId: true },
 };
 
+function launcherInfoBox(): string {
+  return `
+    <div class="info-box">
+      ${icon("info", 14)}
+      <div class="info-box-lines">
+        <div>${t("launchers.infoManaged")}</div>
+        <div>${t("launchers.infoDelegated")}</div>
+      </div>
+    </div>`;
+}
+
 /**
  * Launchers page: which store clients are installed, where they live, and
  * where to get the missing ones. The launcher never installs a client itself.
@@ -270,8 +281,19 @@ function renderLaunchers(): string {
   if (S.launchers.length === 0) {
     return S.launchersLoading
       ? `<div class="empty-state"><span class="spinner"></span></div>`
-      : infoBox("launchers.info");
+      : launcherInfoBox();
   }
+  // Amazon Games has no client to detect: Nile is managed by the launcher, so
+  // the row explains that instead of offering a download.
+  const amazonRow = `
+      <div class="row settings-row">
+        <span class="acc-store-mark">${storeLogo("amazon", 24)}</span>
+        <div class="row-main">
+          <div class="settings-row-title">Amazon Games</div>
+          <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
+        </div>
+      </div>`;
+  const hasGog = S.launchers.some((l) => l.id === "gog");
   const rows = S.launchers.map((l) => {
     const open = LAUNCHER_OPEN[l.id];
     const chip = l.installed
@@ -290,7 +312,7 @@ function renderLaunchers(): string {
       : l.id === "gog"
         ? t("launchers.gogNote", { section: t("settings.secIntegrations") })
         : "";
-    return `
+    const rowHtml = `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo(l.id, 24)}</span>
         <div class="row-main">
@@ -300,18 +322,10 @@ function renderLaunchers(): string {
         </div>
         <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;
+    // Place Amazon Games together with the other managed stores (Epic and GOG).
+    return l.id === "gog" ? rowHtml + amazonRow : rowHtml;
   }).join("");
-  // Amazon Games has no client to detect: Nile is managed by the launcher, so
-  // the row explains that instead of offering a download.
-  const amazonRow = `
-      <div class="row settings-row">
-        <span class="acc-store-mark">${storeLogo("amazon", 24)}</span>
-        <div class="row-main">
-          <div class="settings-row-title">Amazon Games</div>
-          <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
-        </div>
-      </div>`;
-  return infoBox("launchers.info") + group(rows + amazonRow, t("settings.secLaunchers"));
+  return launcherInfoBox() + group(rows + (hasGog ? "" : amazonRow), t("settings.secLaunchers"));
 }
 
 function renderIntegrations(): string {
