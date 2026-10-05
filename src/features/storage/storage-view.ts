@@ -112,8 +112,11 @@ export function toggleStorageSort(): void {
 
 export function clearStorageSearch(): void {
   S_STORAGE.searchQuery = "";
+  S_STORAGE.storeFilter = "all";
   const input = storageRoot?.querySelector<HTMLInputElement>("#storage-search-input");
   if (input) input.value = "";
+  const select = storageRoot?.querySelector<HTMLSelectElement>("#storage-store-select");
+  if (select) select.value = "all";
   renderStorageGamesList();
 }
 
@@ -192,13 +195,10 @@ function renderStorageGamesList(): void {
     return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
   });
 
-  // Update chip active classes
-  const switcher = document.getElementById("storage-store-filters");
-  if (switcher) {
-    switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
-      const active = (btn.dataset.store || "all") === S_STORAGE.storeFilter;
-      btn.classList.toggle("active", active);
-    });
+  // Update select element value if needed
+  const select = document.getElementById("storage-store-select") as HTMLSelectElement | null;
+  if (select && select.value !== S_STORAGE.storeFilter) {
+    select.value = S_STORAGE.storeFilter;
   }
 
   if (filtered.length === 0) {
@@ -271,20 +271,13 @@ export function renderStorageManager(): void {
       </button>`;
   }).join("");
 
-  // Store filter chips
-  const storeChips = [
-    `<button type="button" class="storage-chip ${S_STORAGE.storeFilter === "all" ? "active" : ""}" data-act="storage-filter-store" data-store="all">
-      <span>${t("source.all")}</span>
-      <span class="storage-chip-count">${gamesOnDrive.length}</span>
-    </button>`,
+  // Store filter options for selectbox
+  const storeOptions = [
+    `<option value="all" ${S_STORAGE.storeFilter === "all" ? "selected" : ""}>${t("source.all")} (${gamesOnDrive.length})</option>`,
   ];
   for (const [src, cnt] of storeCounts.entries()) {
-    storeChips.push(`
-      <button type="button" class="storage-chip ${S_STORAGE.storeFilter === src ? "active" : ""}" data-act="storage-filter-store" data-store="${src}">
-        ${storeLogo(src as GameSource, 13, "storage-chip-logo")}
-        <span>${esc(storeName(src as GameSource))}</span>
-        <span class="storage-chip-count">${cnt}</span>
-      </button>`);
+    storeOptions.push(`
+      <option value="${src}" ${S_STORAGE.storeFilter === src ? "selected" : ""}>${esc(storeName(src as GameSource))} (${cnt})</option>`);
   }
 
   // Sort info
@@ -361,8 +354,11 @@ export function renderStorageManager(): void {
               ${S_STORAGE.searchQuery ? `<button type="button" class="storage-search-clear" data-act="storage-clear-search">${icon("x", 12)}</button>` : ""}
             </div>
 
-            <div id="storage-store-filters" class="storage-filter-pills">
-              ${storeChips.join("")}
+            <div class="storage-store-select-wrap">
+              <select id="storage-store-select" class="storage-store-select" aria-label="${t("source.all")}">
+                ${storeOptions.join("")}
+              </select>
+              <span class="storage-store-select-icon" aria-hidden="true">${icon("chevron-down", 13)}</span>
             </div>
 
             <button type="button" class="storage-sort-btn" data-act="storage-sort-toggle">
@@ -383,6 +379,10 @@ export function renderStorageManager(): void {
     storageRoot.addEventListener("input", (e) => {
       const input = (e.target as HTMLElement)?.closest<HTMLInputElement>("#storage-search-input");
       if (input) setStorageSearch(input.value);
+    });
+    storageRoot.addEventListener("change", (e) => {
+      const select = (e.target as HTMLElement)?.closest<HTMLSelectElement>("#storage-store-select");
+      if (select) setStorageStoreFilter(select.value);
     });
   }
 }
