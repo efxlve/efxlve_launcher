@@ -752,11 +752,10 @@ export function renderEpic(): string {
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
-  const hasSteam = S.steamSummaries.length > 0;
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
   const companionCount = (source: GameSource): number =>
     visibleCount(S.companionSummaries.filter((g) => g.source === source).map((g) => g.key));
-  // Every storefront has a row, even with zero games.
+  // Only connected or detected stores get a row in the menu.
   const sourceDropdown = storeFilterMenuHtml(
     {
       all: allStoresMenuCount(),
@@ -770,7 +769,6 @@ export function renderEpic(): string {
       battlenet: companionCount("battlenet"),
       riot: companionCount("riot"),
     },
-    hasSteam,
   );
 
   const tools = `

@@ -1,8 +1,10 @@
 /**
  * Library storefront filter and the saved copy of a game owned on more than one store.
  *
- * The filter is a set (Epic + Steam, without GOG). The preferred copy is remembered
- * per title so cover playtime and trophies keep coming from the store the player chose.
+ * The menu only offers stores that are connected, detected on this PC, or have
+ * games in the library; `enabledStores` remembers which of them are checked.
+ * The preferred copy is remembered per title so cover playtime and trophies
+ * keep coming from the store the player chose.
  */
 
 import { SOURCE_FILTER_KEY, PREFERRED_VERSION_KEY } from "../../core/constants";
@@ -16,11 +18,43 @@ import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
 const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
-const COMPANION_ORDER: readonly GameSource[] = ["xbox", "battlenet", "ubisoft", "ea", "riot"];
 
 /** Stable signature fragment for the visible-library cache. */
 export function enabledStoreKey(): string {
   return STORE_ORDER.filter((id) => S.enabledStores.has(id)).join(",");
+}
+
+/**
+ * Whether the filter menu should offer this store: a signed-in session, a
+ * detected client, or games already present in the library. Stores the user
+ * has never touched stay out of the menu.
+ */
+function storeIsAvailable(id: GameSource): boolean {
+  switch (id) {
+    case "epic":
+      return Boolean(S.epicAccount) || S.epicSummaries.length > 0;
+    case "gog":
+      return Boolean(S.gogAccount) || S.gogSummaries.length > 0;
+    case "amazon":
+      return Boolean(S.amazonStatus?.logged_in) || S.amazonSummaries.length > 0;
+    case "steam":
+      return (
+        S.steamSummaries.length > 0 ||
+        S.steamAuthStep === "signed_in" ||
+        S.steamAuth?.state === "signed_in" ||
+        Boolean(S.steamStatus?.installed)
+      );
+    default:
+      return (
+        S.companionSummaries.some((g) => g.source === id) ||
+        S.companionStatus.some((s) => s.store === id && (s.linked || s.clientInstalled || s.gameCount > 0))
+      );
+  }
+}
+
+/** Stores the library filter offers, in menu order. */
+export function availableStores(): GameSource[] {
+  return STORE_ORDER.filter((id) => storeIsAvailable(id));
 }
 
 /** Brand names are not translated: they read the same in every locale. */
@@ -40,23 +74,30 @@ function storeName(id: GameSource, short: boolean): string {
 
 /** Button label: "All Stores", one store's name, or "Epic, Steam". */
 export function storeFilterLabel(): string {
-  if (STORE_ORDER.every((id) => S.enabledStores.has(id))) return t("source.all");
-  const short = S.enabledStores.size > 1;
-  return STORE_ORDER.filter((id) => S.enabledStores.has(id)).map((id) => storeName(id, short)).join(", ");
+  const available = availableStores();
+  const on = available.filter((id) => S.enabledStores.has(id));
+  if (available.length === 0 || on.length === available.length) return t("source.all");
+  if (on.length === 0) return t("source.all");
+  const short = on.length > 1;
+  return on.map((id) => storeName(id, short)).join(", ");
 }
 
 /**
- * Toggle one store, or turn every store on. The last remaining store stays on.
- * Returns false when nothing changed.
+ * Toggle one store, or turn every store on. The last remaining available store
+ * stays on. Returns false when nothing changed.
  */
 export function applyStoreFilter(value: string): boolean {
+  const pool = availableStores();
+  const selectable = pool.length > 0 ? pool : STORE_ORDER;
   if (value === "all") {
+    // "All Stores" switches every store on, including ones the menu does not
+    // list yet, so a store connected later starts visible.
     if (STORE_ORDER.every((id) => S.enabledStores.has(id))) return false;
     S.enabledStores = new Set(STORE_ORDER);
-  } else if ((STORE_ORDER as readonly string[]).includes(value)) {
+  } else if ((STORE_ORDER as readonly string[]).includes(value) && selectable.includes(value as GameSource)) {
     const id = value as GameSource;
     if (S.enabledStores.has(id)) {
-      if (S.enabledStores.size === 1) return false;
+      if (selectable.filter((item) => S.enabledStores.has(item)).length <= 1) return false;
       S.enabledStores.delete(id);
     } else {
       S.enabledStores.add(id);
@@ -103,16 +144,17 @@ export function pickShownCopy(list: EpicSummary[]): EpicSummary {
 export type StoreFilterCounts = Record<GameSource, number> & { all: number };
 
 /** Store menu. Stays open so several storefronts can be checked. */
-export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean): string {
+export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
   const row = (value: GameSource | "all", label: string, count: number, on: boolean): string => {
     const mark = `<span class="store-option-mark">${on ? icon("check", 14) : ""}</span>`;
     const logo = value === "all" ? `<span class="store-option-logo"></span>` : `<span class="store-option-logo">${storeLogo(value, 16)}</span>`;
     return `<button type="button" class="sort-menu-item-btn store-menu-item${on ? " is-on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-act="source-filter" data-val="${value}">${mark}${logo}<span class="store-option-label">${esc(label)}</span><span class="store-option-count tabular-nums">${count}</span></button>`;
   };
-  const allOn = STORE_ORDER.every((id) => S.enabledStores.has(id));
-  // Every storefront gets a row, even with zero games, so the filter never
-  // hides a store the user owns nothing in yet.
-  const companionRows = COMPANION_ORDER
+  const available = availableStores();
+  const allOn = available.length === 0 || available.every((id) => S.enabledStores.has(id));
+  // Only connected, detected or already-populated stores get a row; a store the
+  // user has never touched would be a dead filter entry.
+  const storeRows = available
     .map((id) => row(id, storeName(id, false), counts[id], S.enabledStores.has(id)))
     .join("");
   return `
@@ -125,18 +167,15 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts, hasSteam: boolean
       <div id="store-dropdown-menu" class="sort-dropdown-menu store-dropdown-menu ${S.isStoreDropdownOpen ? "show" : ""}">
         ${row("all", t("source.all"), counts.all, allOn)}
         <div class="store-menu-sep"></div>
-        ${row("epic", t("source.epic"), counts.epic, S.enabledStores.has("epic"))}
-        ${row("gog", t("source.gog"), counts.gog, S.enabledStores.has("gog"))}
-        ${row("amazon", storeName("amazon", false), counts.amazon, S.enabledStores.has("amazon"))}
-        ${hasSteam ? row("steam", t("source.steam"), counts.steam, S.enabledStores.has("steam")) : ""}
-        ${companionRows}
+        ${storeRows}
       </div>
     </div>`;
 }
 
-/** Whether that menu row should show a check. `all` is on only when every store is. */
+/** Whether that menu row should show a check. `all` is on only when every available store is. */
 export function storeFilterRowOn(value: string): boolean {
-  if (value === "all") return STORE_ORDER.every((id) => S.enabledStores.has(id));
+  const available = availableStores();
+  if (value === "all") return available.length === 0 || available.every((id) => S.enabledStores.has(id));
   return (STORE_ORDER as readonly string[]).includes(value) && S.enabledStores.has(value as GameSource);
 }
 
