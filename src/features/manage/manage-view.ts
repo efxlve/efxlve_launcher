@@ -321,6 +321,11 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
           </div>
+          <div class="section-title">${t("manage.groupCover")}</div>
+          <div class="list">
+            ${row(t("manage.coverTitle"), t("manage.coverDesc"),
+              `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
+          </div>
           <div class="section-title">${t("manage.groupPlaytime")}</div>
           <div class="list">
             ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
