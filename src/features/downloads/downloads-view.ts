@@ -8,6 +8,7 @@
  */
 
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
+import { measureFolders, measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
 import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, summaryOf } from "../../core/selectors";
@@ -215,6 +216,29 @@ function installedGames(): EpicSummary[] {
   });
 }
 
+/** Metadata size, upgraded to the measured folder size once one lands. */
+function shownBytes(s: EpicSummary): number {
+  return measuredSize(s.appName) ?? (s.installSize || 0);
+}
+
+/** One background measurement pass for the installed list; patches rows in place. */
+let measuringInstalled = false;
+export function measureInstalledSizes(): void {
+  if (measuringInstalled) return;
+  measuringInstalled = true;
+  void measureFolders(
+    installedGames().map((s) => ({ key: s.appName, path: s.installPath ?? null })),
+    (key, bytes) => {
+      const el = document.querySelector<HTMLElement>(`[data-dl-size="${CSS.escape(key)}"]`);
+      if (el) el.textContent = fmtBytes(bytes);
+      const total = document.querySelector<HTMLElement>("[data-dl-total]");
+      if (total) total.textContent = fmtBytes(installedGames().reduce((sum, s) => sum + shownBytes(s), 0));
+    },
+  ).finally(() => {
+    measuringInstalled = false;
+  });
+}
+
 function renderActiveCard(dl: DlMetrics): string {
   const s = summaryOf(dl.id);
   const title = esc(s?.title || dl.title || dl.id);
@@ -335,10 +359,10 @@ export function renderDownloads(): string {
   }).join("");
 
   const installed = installedGames();
-  const installedBytes = installed.reduce((sum, s) => sum + (s.installSize || 0), 0);
+  const installedBytes = installed.reduce((sum, s) => sum + shownBytes(s), 0);
   const installedRows = installed.map((s) => {
     const action = `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>`;
-    return gameRow(s, s.appName, fmtBytes(s.installSize || 0), action + manageBtn(s.appName));
+    return gameRow(s, s.appName, `<span data-dl-size="${esc(s.appName)}">${fmtBytes(shownBytes(s))}</span>`, action + manageBtn(s.appName));
   }).join("");
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
@@ -370,7 +394,7 @@ export function renderDownloads(): string {
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length, steamRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
-      ${installedRows ? section(t("downloads.installedTitle"), installed.length, installedRows, `<span class="dl-installed-total">${fmtBytes(installedBytes)}</span>`) : ""}
+      ${installedRows ? section(t("downloads.installedTitle"), installed.length, installedRows, `<span class="dl-installed-total" data-dl-total>${fmtBytes(installedBytes)}</span>`) : ""}
     </div>`;
 }
 

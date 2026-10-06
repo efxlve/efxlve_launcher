@@ -8,6 +8,7 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
@@ -341,7 +342,7 @@ function renderIntegrations(): string {
   const eglRows = egl.map((g: EglDetectedGame) => `
     <div class="row">
       <div class="row-main"><div class="row-title">${esc(g.title)}</div><div class="row-meta" title="${esc(g.installPath)}">${esc(g.installPath)}</div></div>
-      <span class="row-meta">${fmtBytes(g.installSize)}</span>
+      <span class="row-meta">${fmtBytes(measuredSize(g.appName) ?? g.installSize)}</span>
     </div>`).join("");
 
   const eglGroup =

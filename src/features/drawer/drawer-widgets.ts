@@ -9,6 +9,7 @@
 
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
+import { measuredSize } from "../../core/folder-size";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -766,6 +767,10 @@ export function renderGameFeatures(
   // 5. Game mode (row hidden when the mode cannot be determined)
   const mode = detectGameMode(s, reqData);
 
+  // The store's own size can under-report (Epic reports Fortnite at a few
+  // hundred MB while the folder holds tens of GB); prefer the measured size.
+  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
+
   return `
     <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
       <div class="hub-feature-label">
@@ -867,7 +872,7 @@ export function renderGameFeatures(
       <div class="hub-feature-val">
         ${
           s.installed
-            ? `<span class="hub-size-val">${s.installSize ? fmtBytes(s.installSize) : i18nT("common.installed")}</span>`
+            ? `<span class="hub-size-val">${sizeBytes ? fmtBytes(sizeBytes) : i18nT("common.installed")}</span>`
             : i18nT("common.notInstalled")
         }
       </div>

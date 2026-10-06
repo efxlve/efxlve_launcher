@@ -8,8 +8,8 @@
  * Amazon); uninstall routes to the owning store's own flow.
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import { storageRoot } from "../../core/dom";
+import { measureFolders, measuredSize } from "../../core/folder-size";
 import { icon, type IconName } from "../../core/icons";
 import { rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -25,15 +25,11 @@ export interface StorageGame {
   title: string;
   cover: string;
   path: string | null;
-  /** Size from the store's metadata; replaced by `measured` when available. */
+  /** Size from the store's metadata; replaced by the measured size when available. */
   meta: number;
   source: GameSource;
 }
 
-/** Real folder sizes measured this session, keyed by library key. */
-const measured = new Map<string, { bytes: number; at: number }>();
-/** A measurement stays fresh for this long; a later open re-measures it. */
-const MEASURE_TTL = 10 * 60 * 1000;
 /** Bumped when the modal closes so a running measurement loop stops. */
 let measureToken = 0;
 
@@ -65,15 +61,8 @@ function driveOf(path: string | null | undefined): string {
   return path[0].toUpperCase();
 }
 
-/** A game folder worth walking: not empty and not a drive root. */
-function measurable(path: string | null | undefined): path is string {
-  if (!path || path.length < 4) return false;
-  return !/^[a-zA-Z]:[\\/]?$/.test(path);
-}
-
 function shownSize(g: StorageGame): number {
-  const hit = measured.get(g.key);
-  return hit && Date.now() - hit.at < MEASURE_TTL ? hit.bytes : g.meta;
+  return measuredSize(g.key) ?? g.meta;
 }
 
 /** Every installed game the launcher knows about, across all stores. */
@@ -431,28 +420,16 @@ export function renderStorageManager(): void {
  */
 function measureSizes(games: StorageGame[]): void {
   const token = ++measureToken;
-  void (async () => {
-    let changed = false;
-    for (const g of games) {
-      if (token !== measureToken) return;
-      const hit = measured.get(g.key);
-      if (hit && Date.now() - hit.at < MEASURE_TTL) continue;
-      if (!measurable(g.path) || g.key.startsWith("steam::")) continue;
-      let bytes = 0;
-      try {
-        bytes = await invoke<number>("storage_path_size", { path: g.path });
-      } catch {
-        bytes = 0;
-      }
-      if (token !== measureToken) return;
-      if (bytes <= 0) continue;
-      measured.set(g.key, { bytes, at: Date.now() });
-      changed = true;
-      const el = document.querySelector<HTMLElement>(`[data-storage-size="${CSS.escape(g.key)}"]`);
+  void measureFolders(
+    games,
+    (key, bytes) => {
+      const el = document.querySelector<HTMLElement>(`[data-storage-size="${CSS.escape(key)}"]`);
       if (el) el.textContent = fmtBytes(bytes);
-    }
+    },
+    () => token !== measureToken,
+  ).then((changed) => {
     if (changed && token === measureToken) renderStorageManager();
-  })();
+  });
 }
 
 /** Opens the modal instantly from cached data, then refreshes the drive list. */

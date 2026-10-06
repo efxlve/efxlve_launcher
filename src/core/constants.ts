@@ -145,6 +145,9 @@ export const INITIAL_CARD_CHUNK = 48;
 /** Number of extra library cards appended per scroll sentinel hit. */
 export const MORE_CARD_CHUNK = 36;
 
+/** Real folder sizes measured off the filesystem, keyed by library key. */
+export const FOLDER_SIZES_KEY = "efxlve-folder-sizes";
+
 /** Read a string set from localStorage. */
 export function loadStrSet(key: string): Set<string> {
   try {
@@ -152,4 +155,20 @@ export function loadStrSet(key: string): Set<string> {
   } catch {
     return new Set();
   }
+}
+
+/** Read measured folder sizes (library key -> bytes + timestamp). */
+export function loadFolderSizes(): Map<string, { bytes: number; at: number }> {
+  const out = new Map<string, { bytes: number; at: number }>();
+  try {
+    const raw = JSON.parse(localStorage.getItem(FOLDER_SIZES_KEY) ?? "{}") as Record<string, unknown>;
+    for (const [key, pair] of Object.entries(raw)) {
+      if (Array.isArray(pair) && Number.isFinite(pair[0]) && Number.isFinite(pair[1])) {
+        out.set(key, { bytes: pair[0] as number, at: pair[1] as number });
+      }
+    }
+  } catch {
+    // A corrupt entry just re-measures on the next view.
+  }
+  return out;
 }

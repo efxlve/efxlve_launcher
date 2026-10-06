@@ -8,6 +8,7 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
+import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
@@ -327,6 +328,7 @@ export function epicCardPortrait(s: EpicSummary): string {
 function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
   const source = sourceOfKey(s.appName);
   const showStores = S.showStoreBadge && S.enabledStores.size > 1;
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
@@ -344,7 +346,7 @@ function epicListRow(s: EpicSummary): string {
       ${storeCell}
       <div class="lrow-col" data-lib-ach="${s.appName}">${listAchievementCell(s.appName)}</div>
       <div class="lrow-col" data-lib-playtime="${s.appName}">${secs > 0 ? fmtPlaytime(secs) : "—"}</div>
-      <div class="lrow-col">${s.installed && s.installSize > 0 ? fmtBytes(s.installSize) : "—"}</div>
+      <div class="lrow-col">${s.installed && sizeBytes > 0 ? fmtBytes(sizeBytes) : "—"}</div>
       <div class="lrow-action" data-card-action>${epicActionButtons(s, "small", { primaryOnly: true })}</div>
     </div>`;
 }

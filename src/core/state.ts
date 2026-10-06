@@ -58,6 +58,7 @@ import {
   LIB_PAGINATION_KEY,
   normalizeLibraryPageSize,
   loadStrSet,
+  loadFolderSizes,
 } from "./constants";
 import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
@@ -498,6 +499,8 @@ export const S = {
   eglRemovalPlan: (null) as import("../egl-removal").EglRemovalPlan | null,
   /** True when the Epic Games Launcher is installed on this PC. */
   eglLauncherPresent: false,
+  /** Real folder sizes measured off the filesystem, shared by the views. */
+  measuredSizes: loadFolderSizes(),
   /** True while the elevated removal script runs. */
   eglRemoving: false,
   /** Store client rows for Settings > Launchers. */
