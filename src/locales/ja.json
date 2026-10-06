@@ -1231,6 +1231,7 @@
   "settings.eglRemoveTitle": "安全な削除",
   "settings.eglRemoveDesc": "ゲームとそのファイルは保持され、Epic Games Launcher のみが削除されます。",
   "settings.eglRemove": "Epic Games Launcher をアンインストール",
+  "settings.eglRemoveMissing": "この PC に Epic Games Launcher はインストールされていないようです。",
   "egl.removeTitle": "Epic Games Launcher を安全に削除",
   "egl.removeKeep": "保持されるもの",
   "egl.removeDelete": "削除されるもの",

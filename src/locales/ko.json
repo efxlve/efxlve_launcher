@@ -1231,6 +1231,7 @@
   "settings.eglRemoveTitle": "안전한 제거",
   "settings.eglRemoveDesc": "게임과 파일은 유지되고 Epic Games Launcher만 제거됩니다.",
   "settings.eglRemove": "Epic Games Launcher 제거",
+  "settings.eglRemoveMissing": "이 PC에 Epic Games Launcher가 설치되어 있지 않은 것 같습니다.",
   "egl.removeTitle": "Epic Games Launcher 안전하게 제거",
   "egl.removeKeep": "유지됨",
   "egl.removeDelete": "제거됨",

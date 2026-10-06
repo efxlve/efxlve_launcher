@@ -1319,6 +1319,7 @@
   "settings.eglRemoveTitle": "Güvenli kaldırma",
   "settings.eglRemoveDesc": "Oyunların ve dosyaların korunur; yalnızca Epic Games Launcher kaldırılır.",
   "settings.eglRemove": "Epic Games Launcher'ı kaldır",
+  "settings.eglRemoveMissing": "Epic Games Launcher bu bilgisayarda kurulu görünmüyor.",
   "egl.removeTitle": "Epic Games Launcher'ı güvenli kaldır",
   "egl.removeKeep": "Korunacak",
   "egl.removeDelete": "Kaldırılacak",

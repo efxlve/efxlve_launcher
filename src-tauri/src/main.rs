@@ -730,6 +730,7 @@ fn main() {
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
             egl_removal::egl_removal_plan,
+            egl_removal::egl_launcher_present,
             egl_removal::egl_remove,
             legendary::commands::epic_import_installed_folder,
             legendary::commands::epic_verify_game,

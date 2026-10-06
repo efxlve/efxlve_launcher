@@ -38,5 +38,8 @@ export interface EglRemovalResult {
 /** Read-only plan that drives the confirmation dialog. */
 export const eglRemovalPlan = () => invoke<EglRemovalPlan>("egl_removal_plan");
 
+/** True when the launcher's own folders are on disk (fast, read-only). */
+export const eglLauncherPresent = () => invoke<boolean>("egl_launcher_present");
+
 /** Migrates the games, then removes the launcher with one UAC prompt. */
 export const eglRemove = () => invoke<EglRemovalResult>("egl_remove");

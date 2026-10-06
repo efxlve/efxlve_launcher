@@ -1231,6 +1231,7 @@
   "settings.eglRemoveTitle": "ถอนการติดตั้งอย่างปลอดภัย",
   "settings.eglRemoveDesc": "เกมและไฟล์ของคุณจะถูกเก็บไว้ ลบเฉพาะ Epic Games Launcher",
   "settings.eglRemove": "ถอนการติดตั้ง Epic Games Launcher",
+  "settings.eglRemoveMissing": "ดูเหมือนว่า Epic Games Launcher ไม่ได้ติดตั้งบน PC นี้",
   "egl.removeTitle": "ลบ Epic Games Launcher อย่างปลอดภัย",
   "egl.removeKeep": "เก็บไว้",
   "egl.removeDelete": "จะถูกลบ",

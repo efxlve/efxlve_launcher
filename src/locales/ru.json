@@ -1231,6 +1231,7 @@
   "settings.eglRemoveTitle": "Безопасное удаление",
   "settings.eglRemoveDesc": "Ваши игры и их файлы сохраняются; удаляется только Epic Games Launcher.",
   "settings.eglRemove": "Удалить Epic Games Launcher",
+  "settings.eglRemoveMissing": "Похоже, Epic Games Launcher не установлен на этом компьютере.",
   "egl.removeTitle": "Безопасно удалить Epic Games Launcher",
   "egl.removeKeep": "Сохраняется",
   "egl.removeDelete": "Удаляется",

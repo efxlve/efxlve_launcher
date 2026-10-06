@@ -7,7 +7,7 @@ import { render } from "../../../core/render";
 import { S } from "../../../core/state";
 import { toast } from "../../../core/toast";
 import { localizeMessage, t as i18nT } from "../../../i18n";
-import { eglRemove, eglRemovalPlan } from "../../../egl-removal";
+import { eglLauncherPresent, eglRemove, eglRemovalPlan } from "../../../egl-removal";
 import { pushNotification } from "../../notifications/notifications";
 import { loadIntegrationsView } from "../../settings/settings-view";
 import { closeEglRemovalModal, renderEglRemovalModal } from "../../settings/egl-removal-view";
@@ -28,6 +28,15 @@ export function handleEglRemovalAction(act: string | undefined, t: HTMLElement, 
 
     case "egl-remove-close":
       closeEglRemovalModal();
+      return true;
+
+    case "egl-remove-rescan":
+      void eglLauncherPresent()
+        .then((present) => {
+          S.eglLauncherPresent = present;
+          render();
+        })
+        .catch(() => {});
       return true;
 
     case "egl-remove-overlay":

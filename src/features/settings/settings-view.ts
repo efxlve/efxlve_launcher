@@ -38,6 +38,7 @@ import {
   type EglDetectedGame,
   type ScreenshotMoveInfo,
 } from "../../epic";
+import { eglLauncherPresent } from "../../egl-removal";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
@@ -348,8 +349,13 @@ function renderIntegrations(): string {
     eglRows +
     // Epic's own uninstaller deletes the games together with the launcher; this
     // removes only launcher-owned files and migrates the games into Legendary first.
-    row(t("settings.eglRemoveTitle"), t("settings.eglRemoveDesc"),
-      `<button class="btn danger small" data-act="egl-remove-open">${icon("trash", 13)} ${t("settings.eglRemove")}</button>`);
+    // The button is hidden when the launcher is not installed, with a rescan in
+    // case the detection missed it.
+    (S.eglLauncherPresent
+      ? row(t("settings.eglRemoveTitle"), t("settings.eglRemoveDesc"),
+          `<button class="btn danger small" data-act="egl-remove-open">${icon("trash", 13)} ${t("settings.eglRemove")}</button>`)
+      : row(t("settings.eglRemoveTitle"), t("settings.eglRemoveMissing"),
+          `<button class="btn ghost small" data-act="egl-remove-rescan">${t("settings.rescan")}</button>`));
 
   // GOG Galaxy parity: games installed by the official client are detected from
   // its registry entries and can be imported with full launcher support.
@@ -888,14 +894,16 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eos, galaxyList, steamState, clientSettings] = await Promise.all([
+    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
+      eglLauncherPresent().catch(() => false),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
     ]);
     S.eglDetectedList = eglList;
+    S.eglLauncherPresent = eglPresent;
     S.eosOverlay = eos;
     S.gogGalaxyDetected = galaxyList;
     S.steamStatus = steamState;

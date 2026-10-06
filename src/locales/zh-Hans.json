@@ -1231,6 +1231,7 @@
   "settings.eglRemoveTitle": "安全卸载",
   "settings.eglRemoveDesc": "你的游戏及其文件会保留；仅移除 Epic Games Launcher。",
   "settings.eglRemove": "卸载 Epic Games Launcher",
+  "settings.eglRemoveMissing": "此电脑上似乎未安装 Epic Games Launcher。",
   "egl.removeTitle": "安全移除 Epic Games Launcher",
   "egl.removeKeep": "保留",
   "egl.removeDelete": "移除",

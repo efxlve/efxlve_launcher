@@ -496,6 +496,8 @@ export const S = {
   eglSyncing: false,
   /** Safe EGL removal: the plan shown in the confirmation dialog. */
   eglRemovalPlan: (null) as import("../egl-removal").EglRemovalPlan | null,
+  /** True when the Epic Games Launcher is installed on this PC. */
+  eglLauncherPresent: false,
   /** True while the elevated removal script runs. */
   eglRemoving: false,
   /** Store client rows for Settings > Launchers. */

@@ -1319,6 +1319,7 @@
   "settings.eglRemoveTitle": "Safe removal",
   "settings.eglRemoveDesc": "Your games and their files are kept; only the Epic Games Launcher is removed.",
   "settings.eglRemove": "Uninstall Epic Games Launcher",
+  "settings.eglRemoveMissing": "The Epic Games Launcher does not appear to be installed on this PC.",
   "egl.removeTitle": "Safely remove the Epic Games Launcher",
   "egl.removeKeep": "Kept",
   "egl.removeDelete": "Removed",

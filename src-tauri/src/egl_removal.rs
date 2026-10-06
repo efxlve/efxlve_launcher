@@ -67,12 +67,22 @@ fn launcher_paths() -> Vec<PathBuf> {
     out
 }
 
-/// Launcher shortcuts: Start Menu and both desktops.
+/// Launcher shortcuts: Start Menu (user and all users) and both desktops.
 fn launcher_shortcuts() -> Vec<PathBuf> {
     let mut out = Vec::new();
     if let Some(appdata) = env_path("APPDATA") {
         out.push(
             appdata
+                .join("Microsoft")
+                .join("Windows")
+                .join("Start Menu")
+                .join("Programs")
+                .join("Epic Games Launcher.lnk"),
+        );
+    }
+    if let Some(program_data) = env_path("PROGRAMDATA") {
+        out.push(
+            program_data
                 .join("Microsoft")
                 .join("Windows")
                 .join("Start Menu")
@@ -87,6 +97,16 @@ fn launcher_shortcuts() -> Vec<PathBuf> {
         out.push(public.join("Desktop").join("Epic Games Launcher.lnk"));
     }
     out
+}
+
+/// Registry keys the launcher writes for itself (shortcut bookkeeping, app
+/// data path). EOS, Fortnite and Unreal Engine keys are deliberately not here.
+fn launcher_registry_keys() -> Vec<&'static str> {
+    vec![
+        r"HKEY_CURRENT_USER\Software\Epic Games\EpicGamesLauncher",
+        r"HKEY_CURRENT_USER\Software\Epic Games\LauncherAttributes",
+        r"HKEY_LOCAL_MACHINE\SOFTWARE\Epic Games\EpicGamesLauncher",
+    ]
 }
 
 /// Epic Online Services, kept for games that use its multiplayer and overlay.
@@ -136,6 +156,16 @@ async fn uninstall_keys() -> Vec<String> {
     }
 }
 
+/// True when a registry key exists (`reg query` exit code).
+async fn reg_key_exists(key: &str) -> bool {
+    let mut cmd = tokio::process::Command::new("reg");
+    cmd.args(["query", key]);
+    cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+    matches!(cmd.status().await, Ok(status) if status.success())
+}
+
 /// Detected EGL games with their folder health.
 fn kept_games() -> Vec<KeptGame> {
     crate::legendary::cache::read_egl_installed_games()
@@ -152,13 +182,25 @@ fn kept_games() -> Vec<KeptGame> {
         .collect()
 }
 
+/// True when the launcher's own folders are on disk. Fast (no PowerShell) and
+/// read-only; the settings card uses it to hide the removal button.
+#[tauri::command]
+pub fn egl_launcher_present() -> bool {
+    launcher_paths().iter().any(|path| path.exists())
+}
+
 /// What the safe removal would do. Read-only; drives the confirmation dialog.
 #[tauri::command]
 pub async fn egl_removal_plan() -> Result<EglRemovalPlan, String> {
     let games = tauri::async_runtime::spawn_blocking(kept_games)
         .await
         .map_err(|e| e.to_string())?;
-    let remove_registry = uninstall_keys().await;
+    let mut remove_registry = uninstall_keys().await;
+    for key in launcher_registry_keys() {
+        if reg_key_exists(key).await {
+            remove_registry.push(key.to_string());
+        }
+    }
     let eos = eos_path();
     Ok(EglRemovalPlan {
         games,
@@ -239,6 +281,15 @@ pub async fn egl_remove() -> Result<EglRemovalResult, String> {
     for key in &keys {
         script_line(&mut body, &format!("reg delete \"{key}\" /f"));
     }
+    // Launcher-owned registry keys (shortcut bookkeeping, app data path).
+    let launcher_keys = launcher_registry_keys();
+    let mut launcher_key_present = Vec::new();
+    for key in &launcher_keys {
+        launcher_key_present.push(reg_key_exists(key).await);
+    }
+    for key in &launcher_keys {
+        script_line(&mut body, &format!("reg delete \"{key}\" /f"));
+    }
     body.push_str(">> \"%LOG%\" echo done\r\n");
     std::fs::write(&script, body).map_err(|e| e.to_string())?;
 
@@ -261,7 +312,12 @@ pub async fn egl_remove() -> Result<EglRemovalResult, String> {
     //    are still on disk.
     let removed_paths = paths.iter().filter(|p| !p.exists()).count() as u32;
     let removed_shortcuts = shortcuts.iter().filter(|p| !p.exists()).count() as u32;
-    let removed_registry = keys.len() as u32 - uninstall_keys().await.len() as u32;
+    let mut removed_registry = keys.len() as u32 - uninstall_keys().await.len() as u32;
+    for (key, existed) in launcher_keys.iter().zip(&launcher_key_present) {
+        if *existed && !reg_key_exists(key).await {
+            removed_registry += 1;
+        }
+    }
     let games_kept = games.len() as u32;
     let games_healthy = games
         .iter()

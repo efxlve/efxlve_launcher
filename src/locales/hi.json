@@ -1319,6 +1319,7 @@
   "settings.eglRemoveTitle": "सुरक्षित अनइंस्टॉल",
   "settings.eglRemoveDesc": "आपके गेम और उनकी फ़ाइलें सुरक्षित रहती हैं; केवल Epic Games Launcher हटाया जाता है।",
   "settings.eglRemove": "Epic Games Launcher अनइंस्टॉल करें",
+  "settings.eglRemoveMissing": "इस PC पर Epic Games Launcher इंस्टॉल नहीं दिखता।",
   "egl.removeTitle": "Epic Games Launcher सुरक्षित रूप से हटाएँ",
   "egl.removeKeep": "सुरक्षित रहेगा",
   "egl.removeDelete": "हटाया जाएगा",
