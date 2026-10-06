@@ -332,10 +332,8 @@ function epicListRow(s: EpicSummary): string {
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
   const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
-  // Optional: its own storefront column, aligned like the achievements column.
-  const storeCell = S.showStoreColumn
-    ? `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`
-    : "";
+  // The storefront column is always on, aligned like the achievements column.
+  const storeCell = `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`;
   return `
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
@@ -373,8 +371,8 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const highlightCls = isHighlight ? " dim-uninstalled contrast-titles highlight-installed" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list${highlightCls}${S.showStoreColumn ? " has-store-col" : ""}${S.showAchProgress ? " has-ach-progress" : ""}">
-        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span>${S.showStoreColumn ? `<span>${t("lib.colStore")}</span>` : ""}<span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
+      <div class="lib-list${highlightCls} has-store-col has-ach-progress">
+        <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colStore")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
