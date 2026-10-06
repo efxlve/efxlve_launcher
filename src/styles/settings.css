@@ -127,6 +127,7 @@
 
 /* About */
 .settings-about { display: flex; align-items: center; gap: 14px; }
+.about-link-title { display: inline-flex; align-items: center; gap: 8px; }
 .settings-about-logo {
   width: 44px; height: 44px; border-radius: var(--r-md); flex-shrink: 0;
   object-fit: cover; display: block;

@@ -1388,6 +1388,7 @@
   "settings.aboutOpenSource": "This project is transparent and fully open-source under the GNU General Public License v3.0 (GPL-3.0). You can inspect the complete source code, audit network traffic, report issues, or contribute on GitHub.",
   "settings.aboutLinksTitle": "Official Links & Developer",
   "settings.aboutWebsite": "Website",
+  "settings.aboutDiscord": "Discord",
   "settings.aboutGithub": "GitHub Repository",
   "settings.aboutTwitter": "X (Twitter)",
   "settings.aboutEmail": "Email & Contact",

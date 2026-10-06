@@ -1388,6 +1388,7 @@
   "settings.aboutOpenSource": "यह प्रोजेक्ट GNU General Public License v3.0 (GPL-3.0) के तहत पारदर्शी और पूरी तरह से ओपन-सोर्स है। आप संपूर्ण स्रोत कोड का निरीक्षण कर सकते हैं, नेटवर्क ट्रैफ़िक का ऑडिट कर सकते हैं, समस्याओं की रिपोर्ट कर सकते हैं, या GitHub पर योगदान दे सकते हैं।",
   "settings.aboutLinksTitle": "आधिकारिक लिंक और डेवलपर",
   "settings.aboutWebsite": "वेबसाइट",
+  "settings.aboutDiscord": "Discord",
   "settings.aboutGithub": "GitHub रिपॉजिटरी",
   "settings.aboutTwitter": "X (Twitter)",
   "settings.aboutEmail": "ईमेल और संपर्क",

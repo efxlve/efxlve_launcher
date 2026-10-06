@@ -8,7 +8,7 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
-import { emptyState, icon } from "../../core/icons";
+import { emptyState, icon, type IconName } from "../../core/icons";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -649,8 +649,12 @@ function renderSystem(): string {
 }
 
 function renderAbout(): string {
-  const link = (url: string, label: string, text: string): string =>
-    row(label, esc(text), `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${url}">${icon("external", 13)}</button>`);
+  const link = (url: string, iconName: IconName, label: string, text: string): string =>
+    row(
+      `<span class="about-link-title">${icon(iconName, 14)} <span>${esc(label)}</span></span>`,
+      esc(text),
+      `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${url}">${icon("external", 13)}</button>`,
+    );
   return `
     <div class="card settings-about">
       <img class="settings-about-logo" src="${launcherIcon}" alt="" />
@@ -663,10 +667,11 @@ function renderAbout(): string {
       </div>
     </div>
     ${group(
-      link("mailto:hi@efxlve.com", t("settings.aboutEmail"), "hi@efxlve.com") +
-      link("https://x.com/efxlve", t("settings.aboutTwitter"), "x.com/efxlve") +
-      link("https://github.com/efxlve/efxlve_launcher", t("settings.aboutGithub"), "github.com/efxlve/efxlve_launcher") +
-      link("https://efxlve.com/efxlve_launcher", t("settings.aboutWebsite"), "efxlve.com/efxlve_launcher"),
+      link("mailto:hi@efxlve.com", "mail", t("settings.aboutEmail"), "hi@efxlve.com") +
+      link("https://x.com/efxlve", "twitter", t("settings.aboutTwitter"), "x.com/efxlve") +
+      link("https://github.com/efxlve/efxlve_launcher", "github", t("settings.aboutGithub"), "github.com/efxlve/efxlve_launcher") +
+      link("https://efxlve.com/", "globe", t("settings.aboutWebsite"), "efxlve.com") +
+      link("https://discord.gg/3TY8hNTx5M", "message-circle", t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
       t("settings.aboutLinksTitle"),
     )}
     <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
