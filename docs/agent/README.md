@@ -87,3 +87,13 @@ A file past ~1,500 lines should be split on a one-way dependency. Do not cut a s
 ## Verify
 
 `cargo test` is the backend check (account-vault path tests, Steam language path tests, store bounds tests). `npm.cmd run build` is the TypeScript check. The window itself is a Tauri app; the Vite bundle is not the product UI.
+
+## Release tweets
+
+After every release, draft the announcement tweet and hand it to the user; they post it themselves. Rules:
+
+- No emoji except 👇. A link never goes in the main tweet.
+- Main tweet: the version line, one short paragraph with the top two or three highlights, then `Notes in the reply👇`.
+- First reply: `Release notes and download: https://github.com/efxlve/efxlve_launcher/releases/latest`
+- Highlights come from the newest entry in `src/features/changelog/changelog-view.ts` (the English `items`).
+- Keep the main tweet under 280 characters and put the reply up right after posting.

@@ -21,6 +21,10 @@ fix: keep the notification list above the store
 docs: commit every completed change without asking
 ```
 
+## After a release
+
+Draft the announcement tweet and hand it to the user; they post it themselves. No emoji except 👇, and links only in the first reply, never the main tweet. Version line, one short highlight paragraph, `Notes in the reply👇`; the reply is `Release notes and download: <latest release URL>`. Detail: `docs/agent/README.md`.
+
 ## Open only these files
 
 | Task | Open |
