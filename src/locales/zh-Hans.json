@@ -838,6 +838,8 @@
   "manage.priorityTitle": "优先下载",
   "manage.priorityDesc": "将此游戏的更新和下载移到队列前面",
   "manage.syncing": "正在与云同步…",
+  "manage.syncUploading": "正在上传 {done}/{total}",
+  "manage.syncDownloading": "正在下载 {done}/{total}",
   "manage.syncNow": "立即同步",
   "manage.syncFailed": "云同步错误：{msg}",
   "manage.syncNoSavePath": "未找到存档文件夹；请先在“存档文件”中设置。",

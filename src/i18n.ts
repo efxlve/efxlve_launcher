@@ -120,16 +120,30 @@ export function localizeMessage(raw: string): string {
 }
 
 /**
- * Formats a stored cloud-sync time. New records are Unix milliseconds; older
- * ones held a `@t:` translation token and still resolve through localizeMessage.
+ * Formats a stored cloud-sync time. New records are Unix milliseconds. The
+ * legacy `@t:manage.todayAt` token kept only a time of day, so it is anchored
+ * to today — or to yesterday when that time has not happened yet, because a
+ * sync recorded at 23:15 cannot lie in the future.
  */
 export function formatSyncStamp(raw: string): string {
   if (!raw) return "";
-  if (!raw.startsWith("@t:")) {
-    const ms = /^\d+$/.test(raw) ? Number(raw) : Date.parse(raw);
-    if (!Number.isNaN(ms)) return new Date(ms).toLocaleString(currentLanguage());
+  if (raw.startsWith("@t:")) {
+    const legacy = /^@t:manage\.todayAt\u001f(\d{1,2}):(\d{2})$/.exec(raw);
+    if (!legacy) return localizeMessage(raw);
+    const now = new Date();
+    const at = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      Number(legacy[1]),
+      Number(legacy[2]),
+    );
+    if (at.getTime() > now.getTime()) at.setDate(at.getDate() - 1);
+    return at.toLocaleString(currentLanguage(), { dateStyle: "short", timeStyle: "short" });
   }
-  return localizeMessage(raw);
+  const ms = /^\d+$/.test(raw) ? Number(raw) : Date.parse(raw);
+  if (Number.isNaN(ms)) return localizeMessage(raw);
+  return new Date(ms).toLocaleString(currentLanguage(), { dateStyle: "short", timeStyle: "short" });
 }
 
 function applyDir(lang: string): void {

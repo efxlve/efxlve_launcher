@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Priorisierte Downloads",
   "manage.priorityDesc": "Updates und Downloads dieses Spiels an den Anfang der Warteschlange setzen",
   "manage.syncing": "Wird mit der Cloud synchronisiert…",
+  "manage.syncUploading": "Wird hochgeladen {done}/{total}",
+  "manage.syncDownloading": "Wird heruntergeladen {done}/{total}",
   "manage.syncNow": "Jetzt synchronisieren",
   "manage.syncFailed": "Cloud-Sync-Fehler: {msg}",
   "manage.syncNoSavePath": "Speicherordner nicht gefunden; lege ihn zuerst unter Speicherdateien fest.",

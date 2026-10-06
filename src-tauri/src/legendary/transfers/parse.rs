@@ -184,7 +184,7 @@ pub(super) fn parse_progress_percent(line: &str) -> Option<i32> {
     Some((v.round() as i32).clamp(0, 100))
 }
 
-pub(super) fn short_error(err_text: &str) -> String {
+pub(crate) fn short_error(err_text: &str) -> String {
     let low = err_text.to_lowercase();
     if low.contains("429") || low.contains("too many requests") {
         return "@t:dl.rateLimited".to_string();

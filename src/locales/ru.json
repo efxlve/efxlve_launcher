@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Приоритетные загрузки",
   "manage.priorityDesc": "Ставит обновления и загрузки этой игры в начало очереди",
   "manage.syncing": "Синхронизация с облаком…",
+  "manage.syncUploading": "Отправка {done}/{total}",
+  "manage.syncDownloading": "Загрузка {done}/{total}",
   "manage.syncNow": "Синхронизировать",
   "manage.syncFailed": "Ошибка облачной синхронизации: {msg}",
   "manage.syncNoSavePath": "Папка сохранений не найдена; укажите её сначала в разделе «Файлы сохранений».",

@@ -810,44 +810,22 @@ pub(super) async fn spawn_launched(
             .unwrap_or(true);
 
         if should_sync {
-            let mut sync_cmd = tokio::process::Command::new(&bin_bg);
-            // -y first: sync-saves asks upload/download and would exit on a closed stdin.
-            sync_cmd.args(["-y", "sync-saves", &app_name_bg]);
-            // Legendary skips a title without a save path when -y is set; the
-            // Manage panel knows the folder, so hand it over.
-            if let Some(path) = crate::legendary::commands::resolve_save_path(&app_name_bg) {
-                sync_cmd.args(["--save-path", &path]);
-            }
-            sync_cmd
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-            #[cfg(windows)]
-            sync_cmd.creation_flags(CREATE_NO_WINDOW);
-            let finished = sync_cmd.output().await;
-            let (success, message) = match finished {
-                Ok(out) if out.status.success() => {
-                    let text = format!(
-                        "{}\n{}",
-                        String::from_utf8_lossy(&out.stdout),
-                        String::from_utf8_lossy(&out.stderr)
-                    );
-                    // Exit code 0 with a skip means nothing was uploaded.
-                    if crate::legendary::commands::sync_skipped(&text) {
-                        (false, "@t:manage.syncNoSavePath".to_string())
-                    } else {
-                        (true, String::new())
-                    }
+            let save_path = crate::legendary::commands::resolve_save_path(&app_name_bg);
+            let (success, message) = match crate::legendary::commands::run_cloud_sync(
+                &bin_bg,
+                &app_bg,
+                &app_name_bg,
+                save_path.as_deref(),
+            )
+            .await
+            {
+                // The helper already folds the silent `-y` skip into `false`.
+                Ok((true, _)) => (true, String::new()),
+                Ok((false, text)) if crate::legendary::commands::sync_skipped(&text) => {
+                    (false, "@t:manage.syncNoSavePath".to_string())
                 }
-                Ok(out) => {
-                    let text = format!(
-                        "{}\n{}",
-                        String::from_utf8_lossy(&out.stdout),
-                        String::from_utf8_lossy(&out.stderr)
-                    );
-                    (false, short_error(&text))
-                }
-                Err(e) => (false, e.to_string()),
+                Ok((false, text)) => (false, short_error(&text)),
+                Err(e) => (false, e),
             };
             let _ = app_bg.emit(
                 "cloud-sync-complete",

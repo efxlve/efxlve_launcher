@@ -838,6 +838,8 @@
   "manage.priorityTitle": "تنزيلات ذات أولوية",
   "manage.priorityDesc": "نقل تحديثات هذه اللعبة وتنزيلاتها إلى مقدمة قائمة الانتظار",
   "manage.syncing": "جارٍ المزامنة مع السحابة…",
+  "manage.syncUploading": "جارٍ الرفع {done}/{total}",
+  "manage.syncDownloading": "جارٍ التنزيل {done}/{total}",
   "manage.syncNow": "مزامنة الآن",
   "manage.syncFailed": "خطأ في مزامنة السحابة: {msg}",
   "manage.syncNoSavePath": "لم يتم العثور على مجلد الحفظ؛ حدّده أولاً في ملفات الحفظ.",

@@ -30,6 +30,8 @@ pub use parse::{
     parse_eta,
     parse_speed,
 };
+#[allow(unused_imports)]
+pub(crate) use parse::short_error;
 
 // paths.rs: default_install_dir, epic_default_install_dir, epic_set_install_dir
 #[allow(unused_imports)]

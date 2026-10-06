@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Priorytetowe pobieranie",
   "manage.priorityDesc": "Przesuń aktualizacje i pobieranie tej gry na początek kolejki",
   "manage.syncing": "Synchronizacja z chmurą…",
+  "manage.syncUploading": "Wysyłanie {done}/{total}",
+  "manage.syncDownloading": "Pobieranie {done}/{total}",
   "manage.syncNow": "Synchronizuj teraz",
   "manage.syncFailed": "Błąd synchronizacji z chmurą: {msg}",
   "manage.syncNoSavePath": "Nie znaleziono folderu zapisu; ustaw go najpierw w Plikach zapisu.",

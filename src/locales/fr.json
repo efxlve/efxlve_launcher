@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Téléchargements prioritaires",
   "manage.priorityDesc": "Place les mises à jour et téléchargements de ce jeu en tête de file",
   "manage.syncing": "Synchronisation avec le cloud…",
+  "manage.syncUploading": "Envoi {done}/{total}",
+  "manage.syncDownloading": "Téléchargement {done}/{total}",
   "manage.syncNow": "Synchroniser maintenant",
   "manage.syncFailed": "Erreur de synchro cloud : {msg}",
   "manage.syncNoSavePath": "Dossier de sauvegarde introuvable ; définissez-le d'abord dans Fichiers de sauvegarde.",

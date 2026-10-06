@@ -207,25 +207,134 @@ pub fn epic_set_custom_save_path(
     Ok(())
 }
 
+/// Progress pushed to the UI while a cloud sync runs.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CloudSyncProgress {
+    app_name: String,
+    phase: &'static str,
+    uploaded: u32,
+    total: u32,
+}
+
+/// Tracks packing and transfer counts from Legendary's log lines.
+#[derive(Default)]
+struct SyncScan {
+    packed: u32,
+    uploaded: u32,
+    total: u32,
+    phase: &'static str,
+}
+
+impl SyncScan {
+    /// Consumes one log line and returns a progress payload when it changed.
+    fn consume(&mut self, line: &str, app_name: &str) -> Option<CloudSyncProgress> {
+        if line.contains("Packing savegame") {
+            self.phase = "packing";
+        } else if line.contains("Chunk #") && line.contains(" created") {
+            self.packed += 1;
+            self.phase = "packing";
+        } else if line.contains("Starting upload") {
+            // The packer writes the chunks first and the manifest last.
+            self.total = self.packed + 1;
+            self.uploaded = 0;
+            self.phase = "uploading";
+        } else if line.contains("Uploading \"") {
+            self.uploaded += 1;
+            self.phase = "uploading";
+        } else if line.contains("Downloading chunk") {
+            self.uploaded += 1;
+            self.phase = "downloading";
+        } else if line.contains("Finished uploading") {
+            self.uploaded = self.total.max(self.uploaded);
+            self.phase = "done";
+        } else {
+            return None;
+        }
+        Some(CloudSyncProgress {
+            app_name: app_name.to_string(),
+            phase: self.phase,
+            uploaded: self.uploaded,
+            total: self.total,
+        })
+    }
+}
+
+/// Reads one pipe line by line; with `parse` it turns Legendary's log into
+/// progress events while the text is kept for error reporting.
+async fn read_sync_stream<R>(reader: R, app: &AppHandle, app_name: &str, parse: bool) -> String
+where
+    R: tokio::io::AsyncRead + Unpin,
+{
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    let mut lines = BufReader::new(reader).lines();
+    let mut text = String::new();
+    let mut scan = SyncScan::default();
+    while let Ok(Some(line)) = lines.next_line().await {
+        text.push_str(&line);
+        text.push('\n');
+        if parse {
+            if let Some(progress) = scan.consume(&line, app_name) {
+                let _ = app.emit("cloud-sync-progress", progress);
+            }
+        }
+    }
+    text
+}
+
+/// Runs `legendary sync-saves` for one app: streams progress events and returns
+/// whether the run really synced plus the combined output for error reporting.
+pub async fn run_cloud_sync(
+    bin: &Path,
+    app: &AppHandle,
+    app_name: &str,
+    save_path: Option<&str>,
+) -> Result<(bool, String), String> {
+    let mut cmd = tokio::process::Command::new(bin);
+    // --debug makes Legendary log one line per transferred file; the upload stage
+    // is otherwise silent and no progress could be shown.
+    cmd.args(["--debug", "-y", "sync-saves", app_name]);
+    // Without a save path Legendary skips the title when -y is set, exits 0 and
+    // nothing reaches the cloud; the Manage panel knows the folder, so hand it over.
+    if let Some(path) = save_path {
+        cmd.args(["--save-path", path]);
+    }
+    cmd.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+    let mut child = cmd.spawn().map_err(|e| e.to_string())?;
+
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+    let (out_text, err_text) = tokio::join!(
+        async {
+            match stdout {
+                Some(stream) => read_sync_stream(stream, app, app_name, false).await,
+                None => String::new(),
+            }
+        },
+        async {
+            match stderr {
+                Some(stream) => read_sync_stream(stream, app, app_name, true).await,
+                None => String::new(),
+            }
+        },
+    );
+    let status = child.wait().await.map_err(|e| e.to_string())?;
+    let combined = format!("{out_text}\n{err_text}");
+    Ok((status.success() && !sync_skipped(&combined), combined))
+}
+
 #[tauri::command]
 pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;
-    let mut cmd = tokio::process::Command::new(&bin);
-    cmd.args(["-y", "sync-saves", &app_name]);
-    // Without a save path Legendary skips the title when -y is set, exits 0 and
-    // nothing reaches the cloud; the Manage panel knows the folder, so hand it over.
-    if let Some(path) = resolve_save_path(&app_name) {
-        cmd.args(["--save-path", &path]);
-    }
-    #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
-    let out = cmd.output().await.map_err(|e| e.to_string())?;
+    let save_path = resolve_save_path(&app_name);
+    let (synced, combined) =
+        run_cloud_sync(&bin, &app, &app_name, save_path.as_deref()).await?;
 
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    let stderr = String::from_utf8_lossy(&out.stderr);
-    let combined = format!("{stdout}\n{stderr}");
-
-    if out.status.success() && !sync_skipped(&combined) {
+    if synced {
         // Unix milliseconds: the UI formats it for the active locale.
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -234,10 +343,10 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
         update_game_last_cloud_sync(&app_name, &now);
 
         Ok("@t:manage.cloudSyncedOk".to_string())
-    } else if out.status.success() {
+    } else if sync_skipped(&combined) {
         Err("@t:manage.syncNoSavePath".to_string())
     } else {
-        Err(transient_reason(&combined).unwrap_or(&combined).to_string())
+        Err(crate::legendary::transfers::short_error(&combined))
     }
 }
 
@@ -960,6 +1069,27 @@ mod tests {
             desktop_shortcut_file_name("  Alan Wake 2  "),
             "Alan Wake 2.lnk"
         );
+    }
+
+    #[test]
+    fn test_sync_scan_tracks_upload_progress() {
+        let mut scan = SyncScan::default();
+        assert!(scan
+            .consume("[SGH] INFO: Chunk #1 \"ChunksV4/aa/x.chunk\" created", "Ginger")
+            .is_some());
+        assert!(scan
+            .consume("[SGH] INFO: Chunk #2 \"ChunksV4/bb/y.chunk\" created", "Ginger")
+            .is_some());
+        let start = scan
+            .consume("[Core] INFO: Starting upload...", "Ginger")
+            .expect("upload start must report progress");
+        assert_eq!(start.phase, "uploading");
+        assert_eq!(start.total, 3, "two chunks plus the manifest");
+        let first = scan
+            .consume("[Core] DEBUG: Uploading \"ChunksV4/aa/x.chunk\"", "Ginger")
+            .expect("per-file uploads must report progress");
+        assert_eq!(first.uploaded, 1);
+        assert!(scan.consume("[cli] DEBUG: unrelated line", "Ginger").is_none());
     }
 
     #[test]

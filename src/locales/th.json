@@ -838,6 +838,8 @@
   "manage.priorityTitle": "ดาวน์โหลดลำดับแรก",
   "manage.priorityDesc": "ย้ายอัปเดตและการดาวน์โหลดของเกมนี้ไปด้านหน้าของคิว",
   "manage.syncing": "กำลังซิงค์กับคลาวด์…",
+  "manage.syncUploading": "กำลังอัปโหลด {done}/{total}",
+  "manage.syncDownloading": "กำลังดาวน์โหลด {done}/{total}",
   "manage.syncNow": "ซิงค์เลย",
   "manage.syncFailed": "ข้อผิดพลาดการซิงค์คลาวด์: {msg}",
   "manage.syncNoSavePath": "ไม่พบโฟลเดอร์เซฟ กรุณาตั้งค่าในไฟล์เซฟก่อน",

@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Download prioritari",
   "manage.priorityDesc": "Porta aggiornamenti e download di questo gioco in cima alla coda",
   "manage.syncing": "Sincronizzazione con il cloud…",
+  "manage.syncUploading": "Caricamento {done}/{total}",
+  "manage.syncDownloading": "Download {done}/{total}",
   "manage.syncNow": "Sincronizza ora",
   "manage.syncFailed": "Errore di sincronizzazione cloud: {msg}",
   "manage.syncNoSavePath": "Cartella di salvataggio non trovata; impostala prima in File di salvataggio.",

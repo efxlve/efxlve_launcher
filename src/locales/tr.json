@@ -896,6 +896,8 @@
   "manage.priorityTitle": "Öncelikli İndirmeler",
   "manage.priorityDesc": "Bu oyunun güncellemelerini ve indirmelerini kuyrukta en öne al",
   "manage.syncing": "Bulut ile eşitleniyor…",
+  "manage.syncUploading": "Yükleniyor {done}/{total}",
+  "manage.syncDownloading": "İndiriliyor {done}/{total}",
   "manage.syncNow": "Şimdi Eşitle",
   "manage.syncFailed": "Bulut eşitleme hatası: {msg}",
   "manage.syncNoSavePath": "Kayıt klasörü bulunamadı; önce Kayıt Dosyaları bölümünden ayarla.",

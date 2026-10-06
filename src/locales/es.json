@@ -838,6 +838,8 @@
   "manage.priorityTitle": "Descargas prioritarias",
   "manage.priorityDesc": "Pasa las actualizaciones y descargas de este juego al principio de la cola",
   "manage.syncing": "Sincronizando con la nube…",
+  "manage.syncUploading": "Subiendo {done}/{total}",
+  "manage.syncDownloading": "Descargando {done}/{total}",
   "manage.syncNow": "Sincronizar ahora",
   "manage.syncFailed": "Error de sincronización en la nube: {msg}",
   "manage.syncNoSavePath": "No se encontró la carpeta de guardado; defínela primero en Archivos de guardado.",

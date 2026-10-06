@@ -896,6 +896,8 @@
   "manage.priorityTitle": "प्राथमिकता डाउनलोड",
   "manage.priorityDesc": "इस गेम के अपडेट और डाउनलोड को कतार में सबसे आगे ले जाएं",
   "manage.syncing": "क्लाउड के साथ सिंक हो रहा है…",
+  "manage.syncUploading": "अपलोड हो रहा है {done}/{total}",
+  "manage.syncDownloading": "डाउनलोड हो रहा है {done}/{total}",
   "manage.syncNow": "अभी सिंक करें",
   "manage.syncFailed": "क्लाउड सिंक त्रुटि: {msg}",
   "manage.syncNoSavePath": "सेव फ़ोल्डर नहीं मिला; पहले सेव फ़ाइलें में इसे सेट करें।",

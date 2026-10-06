@@ -838,6 +838,8 @@
   "manage.priorityTitle": "優先ダウンロード",
   "manage.priorityDesc": "このゲームのアップデートとダウンロードをキューの先頭に移動します",
   "manage.syncing": "クラウドと同期中…",
+  "manage.syncUploading": "アップロード中 {done}/{total}",
+  "manage.syncDownloading": "ダウンロード中 {done}/{total}",
   "manage.syncNow": "今すぐ同期",
   "manage.syncFailed": "クラウド同期エラー: {msg}",
   "manage.syncNoSavePath": "セーブフォルダが見つかりません。先に「セーブファイル」で設定してください。",

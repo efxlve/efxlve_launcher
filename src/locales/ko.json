@@ -838,6 +838,8 @@
   "manage.priorityTitle": "우선 다운로드",
   "manage.priorityDesc": "이 게임의 업데이트와 다운로드를 대기열 앞으로 옮깁니다",
   "manage.syncing": "클라우드와 동기화 중…",
+  "manage.syncUploading": "업로드 중 {done}/{total}",
+  "manage.syncDownloading": "다운로드 중 {done}/{total}",
   "manage.syncNow": "지금 동기화",
   "manage.syncFailed": "클라우드 동기화 오류: {msg}",
   "manage.syncNoSavePath": "저장 폴더를 찾을 수 없습니다. 먼저 저장 파일에서 설정하세요.",

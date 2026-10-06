@@ -83,7 +83,7 @@ import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
-import { resetVerifyInPlace, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { applyMovedGamePath } from "../move-game/move-game-actions";
 import { initEosInstall } from "../eos/eos-install";
 import { initPresence, syncPresence } from "../presence/presence";
@@ -718,9 +718,18 @@ export async function initApp(hooks: {
       }
     );
 
+    await listen<{ appName: string; phase: string; uploaded: number; total: number }>("cloud-sync-progress", (event) => {
+      const p = event.payload;
+      S.cloudSyncProgress.set(p.appName, { phase: p.phase, uploaded: p.uploaded, total: p.total });
+      updateManageSyncBar(p.appName);
+    });
+
     await listen<{ id: string; success: boolean; message?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
       const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
+      // The transfer is over; the bar folds away and the row shows the result.
+      S.cloudSyncProgress.delete(event.payload.id);
+      updateManageSyncBar(event.payload.id);
       if (event.payload.success) {
         if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
         // A successful upload is an event worth keeping; the toast alone vanishes.

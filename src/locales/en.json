@@ -896,6 +896,8 @@
   "manage.priorityTitle": "Priority Downloads",
   "manage.priorityDesc": "Move this game's updates and downloads to the front of the queue",
   "manage.syncing": "Syncing with cloud…",
+  "manage.syncUploading": "Uploading {done}/{total}",
+  "manage.syncDownloading": "Downloading {done}/{total}",
   "manage.syncNow": "Sync Now",
   "manage.syncFailed": "Cloud sync error: {msg}",
   "manage.syncNoSavePath": "Save folder not found; set it under Save Files first.",

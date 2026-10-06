@@ -380,6 +380,16 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .mg-danger .mg-title { color: var(--err); }
 .verify-box { margin-top: 8px; max-width: 420px; }
 .verify-meta { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+/* Cloud sync: indeterminate while Legendary packs, a real fill while it transfers. */
+.manage-sync-progress { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-width: 420px; }
+.manage-sync-track { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.manage-sync-fill { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--text); transition: width 200ms ease; }
+.manage-sync-progress.indeterminate .manage-sync-fill { width: 30%; animation: manage-sync-sweep 1.2s ease-in-out infinite; }
+.manage-sync-label { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+@keyframes manage-sync-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(340%); }
+}
 .backup-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
 .backup-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: var(--r-sm); background: var(--surface-2); }
 .backup-item-meta { display: flex; flex-direction: column; }

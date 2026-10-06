@@ -48,6 +48,45 @@ function verifyBox(percent: number, detail: string, speed: string): string {
     </div>`;
 }
 
+/** Live sync bar: indeterminate while packing, a real fill once Legendary
+ *  reports per-file transfers. */
+function syncPercent(p: { uploaded: number; total: number } | undefined): number {
+  if (!p || !p.total) return 0;
+  return Math.min(100, Math.round((p.uploaded / p.total) * 100));
+}
+
+function syncProgressLabel(p: { phase: string; uploaded: number; total: number }): string {
+  if (p.total > 0 && p.phase === "uploading") {
+    return t("manage.syncUploading", { done: p.uploaded, total: p.total });
+  }
+  if (p.total > 0 && p.phase === "downloading") {
+    return t("manage.syncDownloading", { done: p.uploaded, total: p.total });
+  }
+  return t("manage.syncing");
+}
+
+function syncProgressHtml(appName: string): string {
+  const p = S.cloudSyncProgress.get(appName);
+  const indeterminate = !p || !p.total;
+  return `<div id="manage-sync-progress" class="manage-sync-progress${p ? "" : " hidden"}${indeterminate ? " indeterminate" : ""}" data-sync-app="${esc(appName)}">
+      <div class="manage-sync-track"><span id="manage-sync-fill" class="manage-sync-fill" style="width:${syncPercent(p)}%"></span></div>
+      <div id="manage-sync-label" class="manage-sync-label">${p ? esc(syncProgressLabel(p)) : ""}</div>
+    </div>`;
+}
+
+/** Patches the open Manage panel's sync bar for one app (progress events). */
+export function updateManageSyncBar(appName: string): void {
+  const bar = document.getElementById("manage-sync-progress");
+  if (!bar || bar.dataset.syncApp !== appName) return;
+  const p = S.cloudSyncProgress.get(appName);
+  bar.classList.toggle("hidden", !p);
+  bar.classList.toggle("indeterminate", !p || !p.total);
+  const fill = document.getElementById("manage-sync-fill");
+  if (fill) fill.style.width = `${syncPercent(p)}%`;
+  const label = document.getElementById("manage-sync-label");
+  if (label) label.textContent = p ? syncProgressLabel(p) : "";
+}
+
 /** App name of the currently open manage popup; null when it is closed. */
 let openManageAppName: string | null = null;
 
@@ -461,7 +500,7 @@ export function renderDrawerManage(s: EpicSummary): string {
   const v = S.verifyingMap.get(id);
   const pt = S.playtimeMap.get(id);
   const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
-  const cloudDesc = S.manageSyncingSaves
+  const cloudDesc = S.manageSyncingSaves || S.cloudSyncProgress.has(id)
     ? t("manage.syncing")
     : st.lastCloudSync ? t("manage.lastSync", { time: esc(formatSyncStamp(st.lastCloudSync)) }) : t("manage.cloudDesc");
 
@@ -495,7 +534,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>`, "manage-cloud-subtitle")}
+              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}`, "manage-cloud-subtitle")}
             <div class="row mg-row">
               <div class="row-main">
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>

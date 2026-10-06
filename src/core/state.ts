@@ -350,6 +350,8 @@ export const S = {
   isStoreDropdownOpen: false,
   isColDropdownOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
+  /** Live cloud-sync progress per app while Legendary packs and transfers saves. */
+  cloudSyncProgress: new Map<string, { phase: string; uploaded: number; total: number }>(),
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,
   activeDlMetrics: (null) as DlMetrics | null,
