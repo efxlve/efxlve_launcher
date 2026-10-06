@@ -840,6 +840,7 @@
   "manage.syncing": "Wird mit der Cloud synchronisiert…",
   "manage.syncNow": "Jetzt synchronisieren",
   "manage.syncFailed": "Cloud-Sync-Fehler: {msg}",
+  "manage.syncNoSavePath": "Speicherordner nicht gefunden; lege ihn zuerst unter Speicherdateien fest.",
   "manage.sync": "Sync",
   "manage.backupDesc": "Spielstände lokal archivieren und wiederherstellen",
   "manage.openBackupFolder": "Sicherungsordner öffnen",

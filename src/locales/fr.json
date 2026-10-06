@@ -840,6 +840,7 @@
   "manage.syncing": "Synchronisation avec le cloud…",
   "manage.syncNow": "Synchroniser maintenant",
   "manage.syncFailed": "Erreur de synchro cloud : {msg}",
+  "manage.syncNoSavePath": "Dossier de sauvegarde introuvable ; définissez-le d'abord dans Fichiers de sauvegarde.",
   "manage.sync": "Synchro",
   "manage.backupDesc": "Archive et restaure tes parties en local pour protéger ta progression",
   "manage.openBackupFolder": "Ouvrir le dossier des sauvegardes",

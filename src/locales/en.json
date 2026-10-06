@@ -898,6 +898,7 @@
   "manage.syncing": "Syncing with cloud…",
   "manage.syncNow": "Sync Now",
   "manage.syncFailed": "Cloud sync error: {msg}",
+  "manage.syncNoSavePath": "Save folder not found; set it under Save Files first.",
   "manage.sync": "Sync",
   "manage.backupDesc": "Archive and restore your game saves locally to protect your progress",
   "manage.openBackupFolder": "Open Backup Folder",

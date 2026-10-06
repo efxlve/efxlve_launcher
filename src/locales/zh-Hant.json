@@ -840,6 +840,7 @@
   "manage.syncing": "正在與雲端同步…",
   "manage.syncNow": "立即同步",
   "manage.syncFailed": "雲端同步錯誤：{msg}",
+  "manage.syncNoSavePath": "未找到存檔資料夾；請先在「存檔檔案」中設定。",
   "manage.sync": "同步",
   "manage.backupDesc": "在本機封存並還原遊戲存檔，以保護進度",
   "manage.openBackupFolder": "開啟備份資料夾",

@@ -840,6 +840,7 @@
   "manage.syncing": "Sincronizando com a nuvem…",
   "manage.syncNow": "Sincronizar agora",
   "manage.syncFailed": "Erro de sincronização na nuvem: {msg}",
+  "manage.syncNoSavePath": "Pasta de save não encontrada; defina-a primeiro em Arquivos de Save.",
   "manage.sync": "Sincronizar",
   "manage.backupDesc": "Arquive e restaure os saves localmente para proteger o progresso",
   "manage.openBackupFolder": "Abrir pasta de backup",

@@ -840,6 +840,7 @@
   "manage.syncing": "クラウドと同期中…",
   "manage.syncNow": "今すぐ同期",
   "manage.syncFailed": "クラウド同期エラー: {msg}",
+  "manage.syncNoSavePath": "セーブフォルダが見つかりません。先に「セーブファイル」で設定してください。",
   "manage.sync": "同期",
   "manage.backupDesc": "進行状況を守るため、セーブをローカルに保管し、復元できます",
   "manage.openBackupFolder": "バックアップフォルダーを開く",

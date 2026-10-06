@@ -840,6 +840,7 @@
   "manage.syncing": "Sincronizando con la nube…",
   "manage.syncNow": "Sincronizar ahora",
   "manage.syncFailed": "Error de sincronización en la nube: {msg}",
+  "manage.syncNoSavePath": "No se encontró la carpeta de guardado; defínela primero en Archivos de guardado.",
   "manage.sync": "Sincronizar",
   "manage.backupDesc": "Archiva y restaura tus partidas en local para proteger el progreso",
   "manage.openBackupFolder": "Abrir carpeta de copias",

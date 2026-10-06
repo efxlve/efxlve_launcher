@@ -840,6 +840,7 @@
   "manage.syncing": "正在与云同步…",
   "manage.syncNow": "立即同步",
   "manage.syncFailed": "云同步错误：{msg}",
+  "manage.syncNoSavePath": "未找到存档文件夹；请先在“存档文件”中设置。",
   "manage.sync": "同步",
   "manage.backupDesc": "在本地归档并还原游戏存档，以保护进度",
   "manage.openBackupFolder": "打开备份文件夹",

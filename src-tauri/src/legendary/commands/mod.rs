@@ -20,7 +20,7 @@ pub use achievements::*;
 #[allow(unused_imports)]
 pub use cdn::*;
 
-// game_local.rs: GameLocalSettings, GameCustomConfig, load_all_game_custom_configs, update_game_last_cloud_sync, epic_get_game_settings, epic_save_game_settings, epic_set_custom_save_path, epic_sync_saves, remove_desktop_shortcut, epic_create_desktop_shortcut, GameDlcItem, GameDlcResponse, epic_get_game_dlcs, InstallOptionTag, GameInstallOptions, epic_get_install_options
+// game_local.rs: GameLocalSettings, GameCustomConfig, load_all_game_custom_configs, update_game_last_cloud_sync, resolve_save_path, sync_skipped, epic_get_game_settings, epic_save_game_settings, epic_set_custom_save_path, epic_sync_saves, remove_desktop_shortcut, epic_create_desktop_shortcut, GameDlcItem, GameDlcResponse, epic_get_game_dlcs, InstallOptionTag, GameInstallOptions, epic_get_install_options
 #[allow(unused_imports)]
 pub use game_local::*;
 

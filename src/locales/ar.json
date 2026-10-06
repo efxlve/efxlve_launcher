@@ -840,6 +840,7 @@
   "manage.syncing": "جارٍ المزامنة مع السحابة…",
   "manage.syncNow": "مزامنة الآن",
   "manage.syncFailed": "خطأ في مزامنة السحابة: {msg}",
+  "manage.syncNoSavePath": "لم يتم العثور على مجلد الحفظ؛ حدّده أولاً في ملفات الحفظ.",
   "manage.sync": "مزامنة",
   "manage.backupDesc": "أرشف حفظ اللعبة محليًا واستعده لحماية تقدّمك",
   "manage.openBackupFolder": "فتح مجلد النسخ الاحتياطي",

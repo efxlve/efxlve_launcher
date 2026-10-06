@@ -840,6 +840,7 @@
   "manage.syncing": "Sincronizzazione con il cloud…",
   "manage.syncNow": "Sincronizza ora",
   "manage.syncFailed": "Errore di sincronizzazione cloud: {msg}",
+  "manage.syncNoSavePath": "Cartella di salvataggio non trovata; impostala prima in File di salvataggio.",
   "manage.sync": "Sincronizza",
   "manage.backupDesc": "Archivia e ripristina i salvataggi in locale per proteggere i progressi",
   "manage.openBackupFolder": "Apri cartella dei backup",

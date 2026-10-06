@@ -813,6 +813,11 @@ pub(super) async fn spawn_launched(
             let mut sync_cmd = tokio::process::Command::new(&bin_bg);
             // -y first: sync-saves asks upload/download and would exit on a closed stdin.
             sync_cmd.args(["-y", "sync-saves", &app_name_bg]);
+            // Legendary skips a title without a save path when -y is set; the
+            // Manage panel knows the folder, so hand it over.
+            if let Some(path) = crate::legendary::commands::resolve_save_path(&app_name_bg) {
+                sync_cmd.args(["--save-path", &path]);
+            }
             sync_cmd
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
@@ -821,7 +826,19 @@ pub(super) async fn spawn_launched(
             sync_cmd.creation_flags(CREATE_NO_WINDOW);
             let finished = sync_cmd.output().await;
             let (success, message) = match finished {
-                Ok(out) if out.status.success() => (true, String::new()),
+                Ok(out) if out.status.success() => {
+                    let text = format!(
+                        "{}\n{}",
+                        String::from_utf8_lossy(&out.stdout),
+                        String::from_utf8_lossy(&out.stderr)
+                    );
+                    // Exit code 0 with a skip means nothing was uploaded.
+                    if crate::legendary::commands::sync_skipped(&text) {
+                        (false, "@t:manage.syncNoSavePath".to_string())
+                    } else {
+                        (true, String::new())
+                    }
+                }
                 Ok(out) => {
                     let text = format!(
                         "{}\n{}",

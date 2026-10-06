@@ -840,6 +840,7 @@
   "manage.syncing": "Synchronizacja z chmurą…",
   "manage.syncNow": "Synchronizuj teraz",
   "manage.syncFailed": "Błąd synchronizacji z chmurą: {msg}",
+  "manage.syncNoSavePath": "Nie znaleziono folderu zapisu; ustaw go najpierw w Plikach zapisu.",
   "manage.sync": "Synchronizuj",
   "manage.backupDesc": "Archiwizuj i przywracaj zapisy lokalnie, aby chronić postęp",
   "manage.openBackupFolder": "Otwórz folder kopii",

@@ -8,7 +8,7 @@ import { icon } from "../../core/icons";
 import { lastPlayedLabel, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
-import { localizeMessage, t } from "../../i18n";
+import { formatSyncStamp, t } from "../../i18n";
 
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
 import { nileGameSettings } from "../../nile";
@@ -463,7 +463,7 @@ export function renderDrawerManage(s: EpicSummary): string {
   const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
   const cloudDesc = S.manageSyncingSaves
     ? t("manage.syncing")
-    : st.lastCloudSync ? t("manage.lastSync", { time: esc(localizeMessage(st.lastCloudSync)) }) : t("manage.cloudDesc");
+    : st.lastCloudSync ? t("manage.lastSync", { time: esc(formatSyncStamp(st.lastCloudSync)) }) : t("manage.cloudDesc");
 
   const moveBtn = blockedMove
     ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${id}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`
@@ -572,7 +572,7 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
   const cloudSub = document.getElementById("manage-cloud-subtitle");
   if (cloudSub) {
     cloudSub.textContent = st.lastCloudSync
-      ? t("manage.lastSync", { time: localizeMessage(st.lastCloudSync) })
+      ? t("manage.lastSync", { time: formatSyncStamp(st.lastCloudSync) })
       : t("manage.cloudDesc");
   }
 

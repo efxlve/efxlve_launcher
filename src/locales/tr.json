@@ -898,6 +898,7 @@
   "manage.syncing": "Bulut ile eşitleniyor…",
   "manage.syncNow": "Şimdi Eşitle",
   "manage.syncFailed": "Bulut eşitleme hatası: {msg}",
+  "manage.syncNoSavePath": "Kayıt klasörü bulunamadı; önce Kayıt Dosyaları bölümünden ayarla.",
   "manage.sync": "Eşitle",
   "manage.backupDesc": "İlerlemenizi korumak için oyun kayıtlarını (save) yerel olarak arşivleyin ve geri yükleyin",
   "manage.openBackupFolder": "Yedek Klasörünü Aç",

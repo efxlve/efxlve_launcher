@@ -840,6 +840,7 @@
   "manage.syncing": "กำลังซิงค์กับคลาวด์…",
   "manage.syncNow": "ซิงค์เลย",
   "manage.syncFailed": "ข้อผิดพลาดการซิงค์คลาวด์: {msg}",
+  "manage.syncNoSavePath": "ไม่พบโฟลเดอร์เซฟ กรุณาตั้งค่าในไฟล์เซฟก่อน",
   "manage.sync": "ซิงค์",
   "manage.backupDesc": "จัดเก็บและกู้คืนเซฟเกมในเครื่องเพื่อปกป้องความคืบหน้า",
   "manage.openBackupFolder": "เปิดโฟลเดอร์สำรอง",

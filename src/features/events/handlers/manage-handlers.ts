@@ -4,7 +4,7 @@
  */
 
 import { toast } from "../../../core/toast";
-import { currentLanguage, localizeMessage, t as i18nT } from "../../../i18n";
+import { formatSyncStamp, localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
 import { rawOf } from "../../../core/selectors";
@@ -153,12 +153,12 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
         epicSyncSaves(id)
           .then((msg) => {
             toast(msg, "ok");
-            const now = new Date().toLocaleString(currentLanguage());
+            const now = String(Date.now());
             rememberCloudSync(id, now);
             if (S.activeManageSettings && S.activeManageSettings.appName === id) {
               S.activeManageSettings.lastCloudSync = now;
             }
-            if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: now });
+            if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: formatSyncStamp(now) });
             const cloudVal = document.getElementById("gp-stat-cloud-val");
             if (cloudVal && S.currentModalAppName === id) {
               cloudVal.textContent = i18nT("drawer.cloudSynced");
@@ -169,10 +169,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             }
           })
           .catch((err) => {
-            toast(i18nT("manage.syncFailed", { msg: String(err) }), "err");
+            toast(i18nT("manage.syncFailed", { msg: localizeMessage(String(err)) }), "err");
             if (cloudSub && S.activeManageSettings) {
               cloudSub.textContent = S.activeManageSettings.lastCloudSync
-                ? i18nT("manage.lastSync", { time: esc(localizeMessage(S.activeManageSettings.lastCloudSync)) })
+                ? i18nT("manage.lastSync", { time: formatSyncStamp(S.activeManageSettings.lastCloudSync) })
                 : i18nT("manage.cloudDesc");
             }
           })

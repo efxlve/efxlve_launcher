@@ -212,6 +212,11 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
     let bin = resolve_or_err(&app)?;
     let mut cmd = tokio::process::Command::new(&bin);
     cmd.args(["-y", "sync-saves", &app_name]);
+    // Without a save path Legendary skips the title when -y is set, exits 0 and
+    // nothing reaches the cloud; the Manage panel knows the folder, so hand it over.
+    if let Some(path) = resolve_save_path(&app_name) {
+        cmd.args(["--save-path", &path]);
+    }
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
     let out = cmd.output().await.map_err(|e| e.to_string())?;
@@ -220,22 +225,17 @@ pub async fn epic_sync_saves(app: AppHandle, app_name: String) -> Result<String,
     let stderr = String::from_utf8_lossy(&out.stderr);
     let combined = format!("{stdout}\n{stderr}");
 
-    if out.status.success() {
-        // Record the last sync time
-        let now = {
-            let local_now = std::time::SystemTime::now();
-            let since_epoch = local_now
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
-            let rem_secs = since_epoch % 86400;
-            let hours = (rem_secs / 3600) + 3; // TR UTC+3
-            let minutes = (rem_secs % 3600) / 60;
-            format!("@t:manage.todayAt\u{1f}{:02}:{:02}", hours % 24, minutes)
-        };
+    if out.status.success() && !sync_skipped(&combined) {
+        // Unix milliseconds: the UI formats it for the active locale.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis().to_string())
+            .unwrap_or_default();
         update_game_last_cloud_sync(&app_name, &now);
 
         Ok("@t:manage.cloudSyncedOk".to_string())
+    } else if out.status.success() {
+        Err("@t:manage.syncNoSavePath".to_string())
     } else {
         Err(transient_reason(&combined).unwrap_or(&combined).to_string())
     }
@@ -247,25 +247,55 @@ pub(crate) fn desktop_shortcut_file_name(title: &str) -> String {
     format!("{}.lnk", clean.trim())
 }
 
-fn installed_title(app_name: &str) -> Option<String> {
+/// One entry from Legendary's installed.json.
+fn installed_entry(app_name: &str) -> Option<InstalledGame> {
     let config = skip::default_config_dir();
-    let installed_file = config.join("installed.json");
-    if let Ok(text) = std::fs::read_to_string(&installed_file) {
-        if let Ok(map) =
-            serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text)
-        {
-            if let Some(entry) = map.get(app_name) {
-                if !entry.title.trim().is_empty() {
-                    return Some(entry.title.clone());
-                }
-            }
+    let text = std::fs::read_to_string(config.join("installed.json")).ok()?;
+    let map =
+        serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text).ok()?;
+    map.get(app_name).cloned()
+}
+
+fn installed_title(app_name: &str) -> Option<String> {
+    if let Some(entry) = installed_entry(app_name) {
+        if !entry.title.trim().is_empty() {
+            return Some(entry.title);
         }
     }
+    let config = skip::default_config_dir();
     cache::read_installed(&config)
         .into_iter()
         .find(|g| g.app_name == app_name)
         .map(|g| g.title)
         .filter(|t| !t.trim().is_empty())
+}
+
+/// Save folder handed to `legendary sync-saves`. Legendary skips a title when
+/// it has no save path configured and `-y` is set, so without one the sync
+/// silently does nothing. Order: app override, Legendary's own path, detection.
+pub fn resolve_save_path(app_name: &str) -> Option<String> {
+    let cfgs = load_all_game_custom_configs();
+    if let Some(path) = cfgs.get(app_name).and_then(|c| c.custom_save_path.as_deref()) {
+        let path = path.trim();
+        if !path.is_empty() {
+            return Some(path.to_string());
+        }
+    }
+    let entry = installed_entry(app_name);
+    if let Some(path) = entry.as_ref().and_then(|e| e.save_path.as_deref()) {
+        let path = path.trim();
+        if !path.is_empty() && std::path::Path::new(path).is_dir() {
+            return Some(path.to_string());
+        }
+    }
+    let title = entry.as_ref().map(|e| e.title.as_str());
+    let install_path = entry.as_ref().map(|e| e.install_path.as_str());
+    crate::legendary::backup::detect_save_path(app_name, title, install_path)
+}
+
+/// True when Legendary exited without syncing because the title was skipped.
+pub fn sync_skipped(output: &str) -> bool {
+    output.contains("has not been set") || output.contains("skipping due to --yes")
 }
 
 /// Removes the desktop shortcut this launcher created. Missing files are ignored.
@@ -930,6 +960,15 @@ mod tests {
             desktop_shortcut_file_name("  Alan Wake 2  "),
             "Alan Wake 2.lnk"
         );
+    }
+
+    #[test]
+    fn test_sync_skipped_detects_legendary_skip_notice() {
+        // -y makes Legendary skip a title with no save path; exit code stays 0.
+        assert!(sync_skipped(
+            "[cli] INFO: Save path for this title has not been set, skipping due to --yes"
+        ));
+        assert!(!sync_skipped("[cli] INFO: Uploading local savegame..."));
     }
 
     #[test]

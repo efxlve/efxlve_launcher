@@ -13,7 +13,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { localizeMessage, t as i18nT } from "../../i18n";
+import { formatSyncStamp, t as i18nT } from "../../i18n";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -614,7 +614,7 @@ export function heroCloudStatus(
   if (recorded) {
     return {
       label: i18nT("drawer.cloudSynced"),
-      tooltip: i18nT("manage.lastSync", { time: localizeMessage(recorded) }),
+      tooltip: i18nT("manage.lastSync", { time: formatSyncStamp(recorded) }),
       synced: true,
     };
   }

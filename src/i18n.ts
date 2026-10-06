@@ -119,6 +119,19 @@ export function localizeMessage(raw: string): string {
   return t(key, vars);
 }
 
+/**
+ * Formats a stored cloud-sync time. New records are Unix milliseconds; older
+ * ones held a `@t:` translation token and still resolve through localizeMessage.
+ */
+export function formatSyncStamp(raw: string): string {
+  if (!raw) return "";
+  if (!raw.startsWith("@t:")) {
+    const ms = /^\d+$/.test(raw) ? Number(raw) : Date.parse(raw);
+    if (!Number.isNaN(ms)) return new Date(ms).toLocaleString(currentLanguage());
+  }
+  return localizeMessage(raw);
+}
+
 function applyDir(lang: string): void {
   const meta = LANGUAGES.find((l) => l.code === lang);
   document.documentElement.lang = lang;
