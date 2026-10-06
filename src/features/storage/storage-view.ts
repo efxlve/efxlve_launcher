@@ -130,10 +130,21 @@ function moveButton(g: StorageGame): string {
   if (g.source === "epic") {
     const partner = getThirdPartyLauncher(rawOf(g.key));
     if (requiresThirdPartyLauncher(partner)) {
-      return `<button type="button" class="storage-action-btn ghost disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
+      return `<button type="button" class="storage-action-btn ghost btn-move disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
     }
   }
-  return `<button type="button" class="storage-action-btn ghost" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
+  return `<button type="button" class="storage-action-btn ghost btn-move" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
+}
+
+function folderButton(g: StorageGame): string {
+  if (!g.path) {
+    return `<button type="button" class="storage-action-btn ghost btn-folder disabled-hint" disabled title="${esc(t("common.installPathUnknown"))}">${icon("folder", 13)} <span>${t("manage.openFolder")}</span></button>`;
+  }
+  return `<button type="button" class="storage-action-btn ghost btn-folder" data-act="storage-open-folder" data-path="${esc(g.path)}" data-id="${esc(g.key)}" title="${esc(t("ctx.openFolder"))}">${icon("folder", 13)} <span>${t("manage.openFolder")}</span></button>`;
+}
+
+function uninstallButton(g: StorageGame): string {
+  return `<button type="button" class="storage-action-btn danger btn-uninstall" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">${icon("trash", 13)} <span>${t("common.uninstall")}</span></button>`;
 }
 
 function gameRow(g: StorageGame, maxGameSize: number): string {
@@ -142,6 +153,7 @@ function gameRow(g: StorageGame, maxGameSize: number): string {
   const size = shownSize(g);
   const pct = maxGameSize > 0 ? Math.min(100, Math.max(2, Math.round((size / maxGameSize) * 100))) : 0;
   const store = `<span class="storage-game-store">${storeLogo(g.source, 13, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
+  const cleanPath = g.path ? g.path.replace(/\//g, "\\") : "";
   return `
     <div class="storage-game-row">
       <div class="storage-game-cover-wrap">
@@ -157,15 +169,14 @@ function gameRow(g: StorageGame, maxGameSize: number): string {
         </div>
         <div class="storage-game-meta">
           ${store}
-          ${tp && partner ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="tp-badge-text" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
-          ${g.path ? `<span class="apple-row-dot" aria-hidden="true">•</span><span class="storage-game-path" title="${esc(g.path)}">${esc(g.path)}</span>` : ""}
+          ${tp && partner ? `<span class="storage-meta-dot" aria-hidden="true">•</span><span class="storage-tp-badge" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
+          ${cleanPath ? `<span class="storage-meta-dot" aria-hidden="true">•</span><span class="storage-game-path" title="${esc(cleanPath)}">${esc(cleanPath)}</span>` : ""}
         </div>
       </div>
       <div class="storage-game-actions">
         ${moveButton(g)}
-        <button type="button" class="storage-action-btn danger" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">
-          ${icon("trash", 13)} <span>${t("common.uninstall")}</span>
-        </button>
+        ${folderButton(g)}
+        ${uninstallButton(g)}
       </div>
     </div>`;
 }

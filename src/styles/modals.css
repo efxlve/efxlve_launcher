@@ -399,6 +399,7 @@
   padding: 0 10px;
   color: var(--text-3);
   transition: border-color 160ms ease;
+  box-sizing: border-box;
 }
 .storage-search-wrap:focus-within {
   border-color: var(--line-strong);
@@ -414,6 +415,8 @@
   font-size: 12.5px;
   color: var(--text);
   margin-left: 6px;
+  padding: 0;
+  height: 100%;
 }
 .storage-search-input::placeholder {
   color: var(--text-3);
@@ -436,6 +439,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  height: 32px;
+  box-sizing: border-box;
 }
 .storage-store-select {
   height: 32px;
@@ -454,6 +459,7 @@
   -webkit-appearance: none;
   transition: all 160ms ease;
   user-select: none;
+  box-sizing: border-box;
 }
 .storage-store-select:hover {
   background: var(--surface-2);
@@ -495,6 +501,7 @@
   transition: all 160ms ease;
   flex-shrink: 0;
   margin-left: auto;
+  box-sizing: border-box;
 }
 .storage-sort-btn:hover {
   background: var(--surface-2);
@@ -516,6 +523,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   transition: background-color 150ms ease, border-color 150ms ease;
+  box-sizing: border-box;
 }
 .storage-game-row:hover {
   background: var(--surface-2);
@@ -523,6 +531,7 @@
 }
 .storage-game-cover-wrap {
   flex-shrink: 0;
+  width: 38px;
 }
 .storage-game-thumb {
   width: 38px;
@@ -550,7 +559,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 .storage-game-title {
   font-size: 14px;
@@ -559,6 +568,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 .storage-game-size {
   font-size: 13px;
@@ -566,6 +576,8 @@
   color: var(--text);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  text-align: right;
+  min-width: 75px;
 }
 /* Micro Proportional Bar */
 .storage-game-bar-track {
@@ -588,12 +600,14 @@
   font-size: 12px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
+  min-width: 0;
 }
 .storage-game-store {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   color: var(--text-2);
+  flex-shrink: 0;
 }
 .storage-store-logo {
   width: 13px;
@@ -601,24 +615,42 @@
   object-fit: contain;
   opacity: 0.9;
 }
-.storage-game-path {
-  font-family: Consolas, monospace;
+.storage-meta-dot {
+  color: var(--text-3);
+  opacity: 0.45;
+  user-select: none;
+  flex-shrink: 0;
+}
+.storage-tp-badge {
   font-size: 11px;
+  color: var(--accent);
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.storage-game-path {
+  font-size: 11.5px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 280px;
+  max-width: 440px;
+  letter-spacing: -0.01em;
 }
 .storage-game-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   flex-shrink: 0;
+  width: 268px;
 }
 .storage-action-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   height: 30px;
   padding: 0 10px;
@@ -632,11 +664,22 @@
   color: var(--text-2);
   transition: all 160ms ease;
   user-select: none;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 .storage-action-btn:hover {
   background: var(--surface-3);
   border-color: var(--line-strong);
   color: var(--text);
+}
+.storage-action-btn.btn-move {
+  min-width: 70px;
+}
+.storage-action-btn.btn-folder {
+  min-width: 106px;
+}
+.storage-action-btn.btn-uninstall {
+  min-width: 76px;
 }
 .storage-action-btn.danger {
   background: rgba(229, 72, 77, 0.08);
@@ -654,7 +697,8 @@
   transform: scale(0.96);
 }
 .storage-action-btn.disabled-hint {
-  opacity: 0.6;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Empty State */

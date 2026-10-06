@@ -8,7 +8,9 @@ import { localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { closeAllModals, render } from "../../../core/render";
 import { cdnShortLabel } from "../../../core/utils";
-import { isCompanionKey, rawOf, sourceOfKey } from "../../../core/selectors";
+import { isCompanionKey, rawOf, sourceOfKey, summaryOf } from "../../../core/selectors";
+import { isTauri } from "../../../core/constants";
+import { epicOpenFolderPath } from "../../../epic-commands";
 import { patchLibraryCardDom } from "../../../core/game-view";
 import { setView } from "../../store/store-view";
 import { epicDownload } from "../../auth/auth-actions";
@@ -436,6 +438,22 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         void openMoveGameModal(id);
       }
       return true;
+
+    case "storage-open-folder": {
+      const p = t.getAttribute("data-path") || targetEl?.getAttribute("data-path") || (id ? summaryOf(id)?.installPath : null);
+      if (!p) {
+        toast(i18nT("common.installPathUnknown"), "err");
+        return true;
+      }
+      if (isTauri) {
+        epicOpenFolderPath(p)
+          .then((msg) => toast(msg, "ok"))
+          .catch((e: unknown) => toast(String(e), "err"));
+      } else {
+        toast(`(demo) ${p}`, "");
+      }
+      return true;
+    }
 
     case "storage-uninstall":
       if (id) {
