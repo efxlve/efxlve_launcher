@@ -27,9 +27,69 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.24",
+    date: "2026-10-07",
+    isCurrent: true,
+    items: [
+      {
+        en: "Epic cloud saves work end to end now: the sync passes the real save folder to Legendary, shows live progress file by file, and retries on a flaky connection instead of giving up.",
+        tr: "Epic bulut kayıtları artık baştan sona çalışıyor: eşitleme gerçek kayıt klasörünü Legendary'ye iletiyor, dosya dosya canlı ilerleme gösteriyor ve bağlantı aksarsa pes etmek yerine yeniden deniyor.",
+      },
+      {
+        en: "The Epic Games Launcher can be removed safely from Settings: your games, their .egstore manifests and Epic Online Services all stay, and the button hides itself when the launcher is not installed.",
+        tr: "Epic Games Launcher Ayarlar'dan güvenle kaldırılabiliyor: oyunlarınız, .egstore manifestleri ve Epic Online Services yerinde kalıyor; launcher kurulu değilse buton kendini gizliyor.",
+      },
+      {
+        en: "A path-MTU black hole is detected and fixed: the Manage panel warns when the network drops large packets and offers a one-click fix.",
+        tr: "Path-MTU kara deliği algılanıp düzeltiliyor: ağ büyük paketleri düşürdüğünde Yönet paneli uyarıyor ve tek tıkla düzeltme sunuyor.",
+      },
+      {
+        en: "The storage manager is redesigned with drive tabs, usage stats, search and store labels; its toolbar uses proper dropdowns and every column lines up.",
+        tr: "Depolama yöneticisi sürücü sekmeleri, kullanım istatistikleri, arama ve mağaza etiketleriyle yenilendi; araç çubuğu düzgün açılır menüler kullanıyor ve tüm kolonlar hizalı.",
+      },
+      {
+        en: "Riot's library lists only installed or played titles, records playtime from any launch path, and VALORANT gets its proper cover.",
+        tr: "Riot kütüphanesi yalnızca kurulu ya da oynanmış oyunları listeliyor, oynanış süresini her başlatma yolundan kaydediyor ve VALORANT gerçek kapağına kavuşuyor.",
+      },
+      {
+        en: "Sizes in the library, downloads and the game panel prefer the measured folder size, so installs the store under-reports — Fortnite showing a few hundred MB — now show their real size.",
+        tr: "Kütüphanede, indirmelerde ve oyun panelinde gösterilen boyutlar artık ölçülen klasör boyutunu tercih ediyor; mağazanın eksik bildirdiği kurulumlar — birkaç yüz MB görünen Fortnite gibi — gerçek boyutunu gösteriyor.",
+      },
+      {
+        en: "Hindi joins the 16 languages, and About links the website and Discord with their real marks.",
+        tr: "Hintçe 16 dile katıldı; Hakkında sayfası siteyi ve Discord'u gerçek simgeleriyle bağlıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A game started outside the launcher from a client-owned store (Steam, Xbox, EA, Ubisoft, Battle.net, Riot) shows as Running in every action and in the sidebar.",
+        tr: "Steam, Xbox, EA, Ubisoft, Battle.net veya Riot istemcisinden launcher dışında başlatılan oyun artık tüm eylemlerde ve kenar çubuğunda Çalışıyor olarak görünüyor.",
+      },
+      {
+        en: "Store components such as anti-cheat packages no longer appear as games in the Riot library.",
+        tr: "Anti-cheat paketleri gibi mağaza bileşenleri artık Riot kütüphanesinde oyun olarak görünmüyor.",
+      },
+      {
+        en: "Every Epic Games Launcher shortcut is removed — all-users Start Menu and the taskbar pin included — along with its own registry keys.",
+        tr: "Epic Games Launcher'ın tüm kısayolları — tüm kullanıcılar Başlat Menüsü ve görev çubuğu sabitlemesi dâhil — kendi kayıt defteri anahtarlarıyla birlikte siliniyor.",
+      },
+      {
+        en: "Steam cover art can be changed for uninstalled games too.",
+        tr: "Steam kapak görseli kurulu olmayan oyunlar için de değiştirilebiliyor.",
+      },
+      {
+        en: "Collection counts refresh right after adding or removing a game, and opening Settings from Downloads keeps the back navigation.",
+        tr: "Koleksiyon sayıları oyun eklendikten veya çıkarıldıktan hemen sonra güncelleniyor; İndirmeler'den Ayarlar açıldığında geri gitme geçmişi korunuyor.",
+      },
+      {
+        en: "Soft black is the default background for new installations, and the stores bar switches with a soft animation.",
+        tr: "Yeni kurulumlarda varsayılan arka plan yumuşak siyah; mağazalar çubuğu yumuşak bir animasyonla geçiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.23",
     date: "2026-10-06",
-    isCurrent: true,
     items: [
       {
         en: "The storage manager now covers every store: installed games from Epic, GOG, Amazon Games, Steam, Xbox, EA, Ubisoft, Battle.net and Riot are grouped by drive, and each folder's real size is measured instead of trusting store metadata. Move is offered for Epic and Amazon, and uninstall routes to the owning store's own flow.",
