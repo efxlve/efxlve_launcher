@@ -284,7 +284,46 @@ where
 
 /// Runs `legendary sync-saves` for one app: streams progress events and returns
 /// whether the run really synced plus the combined output for error reporting.
+///
+/// Long uploads over DPI/VPN links reset mid-transfer and Legendary has no
+/// retry of its own; the cloud only commits when every file arrives, so a
+/// bounded retry is safe and usually enough.
 pub async fn run_cloud_sync(
+    bin: &Path,
+    app: &AppHandle,
+    app_name: &str,
+    save_path: Option<&str>,
+) -> Result<(bool, String), String> {
+    const ATTEMPTS: u32 = 3;
+    let mut result = (false, String::new());
+    for attempt in 1..=ATTEMPTS {
+        result = run_cloud_sync_once(bin, app, app_name, save_path).await?;
+        if result.0 || attempt == ATTEMPTS {
+            break;
+        }
+        // A missing save path is a setup problem and non-network errors would
+        // just fail again; only transient failures are worth another run.
+        if sync_skipped(&result.1) || transient_reason(&result.1).is_none() {
+            break;
+        }
+        // Reset the bar for the fresh attempt.
+        let _ = app.emit(
+            "cloud-sync-progress",
+            CloudSyncProgress {
+                app_name: app_name.to_string(),
+                phase: "packing",
+                uploaded: 0,
+                total: 0,
+            },
+        );
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+    Ok(result)
+}
+
+/// One `sync-saves` run: spawns Legendary, streams its log into progress
+/// events and returns whether it completed plus the output text.
+async fn run_cloud_sync_once(
     bin: &Path,
     app: &AppHandle,
     app_name: &str,
