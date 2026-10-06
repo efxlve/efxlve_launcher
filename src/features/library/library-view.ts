@@ -439,6 +439,17 @@ function libraryResultKey(): string {
 }
 
 /**
+ * Collections fingerprint (names and row counts). The dropdown counts live in
+ * the header, which the in-place patch skips, so a change forces a full repaint
+ * instead of leaving stale numbers behind.
+ */
+let lastCollectionsSig = "";
+
+function collectionsSignature(): string {
+  return S.epicCollections.map((c) => `${c.id}\x1f${c.name}\x1f${c.app_names.length}`).join("\x1e");
+}
+
+/**
  * Renders the library content area. Default All is a cover grid (or list).
  * Collections are a separate filter mode.
  */
@@ -505,6 +516,9 @@ export function patchLibraryGridInPlace(): boolean {
   if (S.view !== "library") return false;
   const resultsEl = document.getElementById("lib-results");
   if (!resultsEl) return false;
+  // Collection counts and labels live in the header; a change needs the full
+  // page rebuild, not the card-only patch.
+  if (collectionsSignature() !== lastCollectionsSig) return false;
   // The sync note sits outside the grid; a changed note needs a full rebuild.
   const noteEl = document.getElementById("lib-sync-note");
   if ((noteEl?.textContent ?? "") !== (S.epicSyncNote || "")) return false;
@@ -756,6 +770,7 @@ function filterTab(tab: string, label: string): string {
 }
 
 export function renderEpic(): string {
+  lastCollectionsSig = collectionsSignature();
   if (!isTauri) {
     return emptyState("zap", t("lib.epicIntegration"), t("lib.desktopOnly"));
   }
