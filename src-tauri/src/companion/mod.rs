@@ -103,14 +103,15 @@ fn discover(store: &str) -> Vec<FoundGame> {
 
 fn library_games() -> Vec<FoundGame> {
     let linked: HashSet<String> = load_accounts(&accounts::accounts_file()).into_iter().map(|a| a.store).collect();
+    let played = load_local_playtimes();
     let mut games = Vec::new();
     let mut seen = HashSet::new();
     for store in STORES {
-        // Riot's PC titles are free to play: with the client installed the
-        // whole catalog belongs in the library, linked or not.
-        let free_with_client = *store == "riot" && launch::client_installed("riot");
-        for game in discover(store) {
-            if !linked.contains(*store) && !game.installed && !free_with_client {
+        let riot = *store == "riot";
+        for game in visible_games(store, discover(store), &played) {
+            // Riot's free catalog is already down to the installed or played
+            // titles; the other stores need a link or an install.
+            if !riot && !linked.contains(*store) && !game.installed {
                 continue;
             }
             let key = format!("{}::{}", game.store, game.id);
@@ -122,6 +123,25 @@ fn library_games() -> Vec<FoundGame> {
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     games
+}
+
+/// Games a store should report as present. Riot's catalog is free to play, so
+/// `discover` always returns its four titles; only the ones the player
+/// installed or has already played count as their games.
+fn visible_games(
+    store: &str,
+    discovered: Vec<FoundGame>,
+    played: &std::collections::HashMap<String, u64>,
+) -> Vec<FoundGame> {
+    if store != "riot" {
+        return discovered;
+    }
+    discovered
+        .into_iter()
+        .filter(|game| {
+            game.installed || played.contains_key(&format!("{}::{}", game.store, game.id))
+        })
+        .collect()
 }
 
 fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> CompanionGame {
@@ -188,15 +208,7 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
 
 /// Games a store should report as present. Riot's catalog is free to play, so
 /// `discover` always returns its four titles; they are only the player's games
-/// once a usable client or a linked account exists.
-fn visible_game_count(store: &str, linked: bool, client_installed: bool, discovered: usize) -> u32 {
-    if store == "riot" && !linked && !client_installed {
-        0
-    } else {
-        discovered as u32
-    }
-}
-
+/// once installed or actually played.
 fn status_rows() -> Vec<CompanionStoreStatus> {
     let accounts = load_accounts(&accounts::accounts_file());
     STORES
@@ -213,7 +225,7 @@ fn status_rows() -> Vec<CompanionStoreStatus> {
                 account_name: name,
                 linked,
                 needs_login: saved.map(|a| a.needs_login).unwrap_or(false),
-                game_count: visible_game_count(store, linked, client_installed, discover(store).len()),
+                game_count: visible_games(store, discover(store), &load_local_playtimes()).len() as u32,
             }
         })
         .collect()
@@ -867,13 +879,46 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
 
 #[cfg(test)]
 mod tests {
-    use super::visible_game_count;
+    use super::*;
+
+    fn game(id: &str, installed: bool) -> FoundGame {
+        FoundGame {
+            store: "riot".into(),
+            id: id.into(),
+            name: id.into(),
+            install_path: if installed { format!("C:\\Riot Games\\{id}") } else { String::new() },
+            installed,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
+            install_uri: String::new(),
+            uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
+            description: String::new(),
+        }
+    }
 
     #[test]
-    fn riot_without_a_client_or_link_reports_no_games() {
-        assert_eq!(visible_game_count("riot", false, false, 4), 0);
-        assert_eq!(visible_game_count("riot", true, false, 4), 4);
-        assert_eq!(visible_game_count("riot", false, true, 4), 4);
-        assert_eq!(visible_game_count("ea", false, false, 3), 3);
+    fn riot_catalog_shrinks_to_installed_and_played_titles() {
+        let games = vec![
+            game("league_of_legends", true),
+            game("valorant", false),
+            game("bacon", false),
+        ];
+        let mut played = std::collections::HashMap::new();
+        played.insert("riot::valorant".to_string(), 120u64);
+        let visible = visible_games("riot", games, &played);
+        assert_eq!(visible.len(), 2);
+        assert!(visible.iter().any(|g| g.id == "league_of_legends"));
+        assert!(visible.iter().any(|g| g.id == "valorant"));
+        assert!(!visible.iter().any(|g| g.id == "bacon"));
+    }
+
+    #[test]
+    fn other_stores_keep_every_discovered_game() {
+        let games = vec![game("x", false)];
+        let visible = visible_games("ea", games, &std::collections::HashMap::new());
+        assert_eq!(visible.len(), 1);
     }
 }
