@@ -3,7 +3,9 @@
  * Settings shortcuts and the account sign-in flow (ROADMAP §13).
  */
 
-import { render } from "../../../core/render";
+import { closeAllModals, render } from "../../../core/render";
+import { pushNavHistory } from "../../../core/nav";
+import { setView } from "../../store/store-view";
 import { S } from "../../../core/state";
 import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
@@ -77,8 +79,11 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
       return true;
 
     case "steam-open-settings":
-      S.view = "settings";
+      closeAllModals();
       S.settingsSection = "integrations";
+      setView("settings");
+      pushNavHistory({ view: "settings", settingsSection: "integrations" });
+      render();
       void loadSettingsView();
       return true;
 

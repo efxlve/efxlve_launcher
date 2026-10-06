@@ -212,8 +212,12 @@ document.addEventListener("click", (e) => {
     // Re-clicking Library while the grid is already on screen must not rebuild
     // it: a full render re-requests every cover and drops the scroll position.
     if (targetView === "library" && S.view === "library") return;
+    const settingsSection = targetView === "settings"
+      ? ((t.dataset.settingsSection as import("../../core/types").SettingsSection | undefined) || "account")
+      : undefined;
+    if (settingsSection) S.settingsSection = settingsSection;
     setView(targetView);
-    pushNavHistory({ view: targetView });
+    pushNavHistory({ view: targetView, settingsSection });
     if (S.view === "library") void bootEpic();
     if (S.view === "profile") {
       if (!S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
@@ -229,8 +233,6 @@ document.addEventListener("click", (e) => {
       return;
     }
     if (S.view === "settings") {
-      const section = t.dataset.settingsSection as import("../../core/types").SettingsSection | undefined;
-      S.settingsSection = section || "account";
       render();
       void loadSettingsView();
       return;
@@ -676,6 +678,7 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "settings-section" && t.dataset.section) {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
+    pushNavHistory({ view: "settings", settingsSection: S.settingsSection });
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();
     if (S.settingsSection === "controller") void loadControllerView(true);
@@ -699,8 +702,11 @@ document.addEventListener("click", (e) => {
         void loadControllerView(true);
       });
   } else if (act === "controller-open-settings") {
-    S.view = "settings";
+    closeAllModals();
     S.settingsSection = "controller";
+    setView("settings");
+    pushNavHistory({ view: "settings", settingsSection: "controller" });
+    render();
     void loadSettingsView();
   } else if (act === "set-surface") {
     const surface = t.dataset.surface === "soft" ? "soft" : "black";

@@ -12,12 +12,13 @@ import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from ".
 import { rawOf, totalLibraryGamesCount } from "./selectors";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
-import type { EpicFilter, View } from "./types";
+import type { EpicFilter, SettingsSection, View } from "./types";
 import { esc } from "./utils";
 import { icon } from "./icons";
 import { t } from "../i18n";
-import { epicPortrait } from "../epic";
+import { epicGetQueue, epicPortrait } from "../epic";
 import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
+import { loadSettingsView } from "../features/settings/settings-view";
 
 /** Highlight the sidebar entry that matches the current view (or open game). */
 export function updateSidebarActive(): void {
@@ -287,6 +288,7 @@ export interface NavHistoryItem {
   appName?: string | null;
   collectionId?: string | null;
   filter?: EpicFilter;
+  settingsSection?: SettingsSection | null;
 }
 
 let navHistory: NavHistoryItem[] = [{ view: "library" }];
@@ -312,7 +314,8 @@ export function pushNavHistory(item: NavHistoryItem): void {
     current.view === item.view &&
     (current.appName || null) === (item.appName || null) &&
     (current.collectionId ?? null) === (item.collectionId ?? null) &&
-    (current.filter ?? null) === (item.filter ?? null)
+    (current.filter ?? null) === (item.filter ?? null) &&
+    (current.settingsSection ?? null) === (item.settingsSection ?? null)
   ) {
     return;
   }
@@ -323,6 +326,7 @@ export function pushNavHistory(item: NavHistoryItem): void {
     appName: item.appName || null,
     collectionId: item.collectionId ?? null,
     filter: item.filter,
+    settingsSection: item.settingsSection ?? null,
   });
   navHistoryIdx = navHistory.length - 1;
   updateNavHistoryUi();
@@ -363,8 +367,21 @@ function applyNavHistory(item: NavHistoryItem): void {
         if (item.filter !== undefined) {
           S.epicFilter = item.filter;
         }
+        if (item.view === "settings") {
+          S.settingsSection = item.settingsSection || "account";
+        } else if (item.settingsSection !== undefined && item.settingsSection !== null) {
+          S.settingsSection = item.settingsSection;
+        }
         setView(item.view);
         render();
+        if (item.view === "settings") {
+          void loadSettingsView();
+        } else if (item.view === "downloads") {
+          void epicGetQueue().then((q) => {
+            S.dlQueueStatus = q;
+            render();
+          }).catch(() => {});
+        }
       }
     }
   } finally {

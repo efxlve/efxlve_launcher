@@ -12,7 +12,9 @@ import { isCompanionKey, rawOf, sourceOfKey, summaryOf } from "../../../core/sel
 import { isTauri } from "../../../core/constants";
 import { epicOpenFolderPath } from "../../../epic-commands";
 import { patchLibraryCardDom } from "../../../core/game-view";
+import { pushNavHistory } from "../../../core/nav";
 import { setView } from "../../store/store-view";
+import { loadSettingsView } from "../../settings/settings-view";
 import { epicDownload } from "../../auth/auth-actions";
 import { epicCancel, epicUninstall, refreshEpicInstalled } from "../../../core/epic-actions";
 import { closeManagePopup } from "../../manage/manage-view";
@@ -484,7 +486,9 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       closeAllModals();
       S.settingsSection = "downloads";
       setView("settings");
+      pushNavHistory({ view: "settings", settingsSection: "downloads" });
       render();
+      void loadSettingsView();
       return true;
 
     default:
