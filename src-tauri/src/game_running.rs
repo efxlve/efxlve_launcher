@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::Deserialize;
 use tauri::{AppHandle, Emitter};
@@ -31,6 +31,13 @@ pub struct WatchGame {
 static WATCHED: Mutex<Vec<(String, PathBuf)>> = Mutex::new(Vec::new());
 static STARTED: AtomicBool = AtomicBool::new(false);
 
+/// Stores with no playtime API: the local companion cache is their only source,
+/// so the watcher sums sessions however the game was started (their own client,
+/// a desktop shortcut, anything).
+fn tracked_locally(id: &str) -> bool {
+    id.starts_with("riot::") || id.starts_with("battlenet::")
+}
+
 fn emit_status(app: &AppHandle, id: &str, running: bool) {
     let _ = app.emit(
         "game-status",
@@ -49,6 +56,8 @@ fn exes_for<'a>(cache: &'a mut HashMap<PathBuf, Vec<String>>, path: &Path) -> &'
 fn watch_loop(app: AppHandle) {
     let mut last: HashSet<String> = HashSet::new();
     let mut exes: HashMap<PathBuf, Vec<String>> = HashMap::new();
+    // Start instant per running game, for the stores tracked locally.
+    let mut started: HashMap<String, Instant> = HashMap::new();
     loop {
         thread::sleep(POLL);
         let games = WATCHED.lock().map(|g| g.clone()).unwrap_or_default();
@@ -66,9 +75,21 @@ fn watch_loop(app: AppHandle) {
         }
         for id in now.difference(&last) {
             emit_status(&app, id, true);
+            if tracked_locally(id) {
+                started.insert(id.clone(), Instant::now());
+            }
         }
         for id in last.difference(&now) {
             emit_status(&app, id, false);
+            if let Some(at) = started.remove(id) {
+                let seconds = at.elapsed().as_secs();
+                if seconds >= 5 {
+                    crate::companion::add_local_playtime(id, seconds);
+                    // The cards and the open page re-read the cache.
+                    let store = id.split("::").next().unwrap_or_default();
+                    let _ = app.emit("companion-store-changed", store);
+                }
+            }
         }
         last = now;
     }

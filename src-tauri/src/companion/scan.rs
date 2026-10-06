@@ -83,7 +83,7 @@ fn reg_sz(line: &str, key: &str) -> Option<String> {
 pub(crate) fn companion_store(name: &str, publisher: &str) -> Option<&'static str> {
     let name_l = name.to_lowercase();
     let pub_l = publisher.to_lowercase();
-    if is_launcher_row(&name_l) {
+    if is_component_row(&name_l) {
         return None;
     }
     if pub_l.contains("electronic arts") || pub_l.contains("ea swiss") || name_l.contains("ea sports") {
@@ -97,15 +97,22 @@ pub(crate) fn companion_store(name: &str, publisher: &str) -> Option<&'static st
     }
 }
 
-fn is_launcher_row(name: &str) -> bool {
+/// Launcher rows, overlays and anti-cheat components are not games.
+pub(crate) fn is_component_row(name: &str) -> bool {
     name == "ea app"
         || name == "ea desktop"
         || name == "origin"
         || name.contains("ubisoft connect")
+        || name.contains("ubisoft game launcher")
         || name == "uplay"
         || name.contains("battle.net")
         || name.contains("xbox game bar")
         || name.contains("xbox identity provider")
+        || name.contains("anticheat")
+        || name.contains("anti-cheat")
+        || name.contains("overlay")
+        || name.contains("redistributable")
+        || name.contains("vcredist")
 }
 
 pub(crate) fn slug(name: &str) -> String {
@@ -332,6 +339,11 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OW
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Ubi
     DisplayName    REG_SZ    Ubisoft Connect
     Publisher    REG_SZ    Ubisoft
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\UbiAC
+    DisplayName    REG_SZ    Ubisoft AntiCheat
+    Publisher    REG_SZ    Ubisoft
+    InstallLocation    REG_SZ    C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher
 "#;
         let games = games_from_uninstall(text);
         assert_eq!(games.len(), 3);
@@ -339,5 +351,6 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Ubi
         assert!(games.iter().any(|g| g.store == "ubisoft" && g.id == "assassin-s-creed-mirage"));
         assert!(games.iter().any(|g| g.store == "battlenet" && g.name == "Overwatch"));
         assert!(games.iter().all(|g| g.name != "EA App" && g.name != "Ubisoft Connect"));
+        assert!(games.iter().all(|g| !g.name.contains("AntiCheat")));
     }
 }

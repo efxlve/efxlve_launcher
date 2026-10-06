@@ -165,7 +165,12 @@ fn game_name(yaml: &str) -> Option<String> {
 
 fn usable(name: &str) -> bool {
     let low = name.to_lowercase();
-    !name.is_empty() && low != "gamename" && low != "l1" && low != "name" && low != "game_identifier"
+    !name.is_empty()
+        && low != "gamename"
+        && low != "l1"
+        && low != "name"
+        && low != "game_identifier"
+        && !super::scan::is_component_row(&low)
 }
 
 /// Direct child `key:` under the first `block:` line.
@@ -359,9 +364,11 @@ mod tests {
         let owned = "root:\n  name: Watch Dogs\n  start_game:\n    online: {}\n";
         let steam = "root:\n  name: Far Cry\n  third_party_platform:\n    name: Steam\n  start_game:\n    steam: {}\n";
         let dlc = "root:\n  name: Season Pass\n";
+        let component = "root:\n  name: Ubisoft AntiCheat\n  start_game:\n    online: {}\n";
         let mut bytes = record(12, 34, owned);
         bytes.extend(record(1, 2, steam));
         bytes.extend(record(3, 4, dlc));
+        bytes.extend(record(5, 6, component));
         let games = games_from_configurations(&bytes, &[]);
         assert_eq!(games.len(), 1);
         assert_eq!(games[0].name, "Watch Dogs");

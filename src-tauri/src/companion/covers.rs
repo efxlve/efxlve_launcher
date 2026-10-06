@@ -91,6 +91,19 @@ pub(crate) fn cached_art(cache: &HashMap<String, CachedArt>, store: &str, id: &s
     cache.get(&cache_key(store, id)).cloned().unwrap_or_default()
 }
 
+/// Official art for Riot titles whose site share image reads wrong on a card.
+/// VALORANT's `og:image` is a 128px icon on a white background, which looks
+/// like an empty tile in the dark library; the Ascent map splash is official
+/// key art with the right aspect for both the portrait card and the wide hero.
+const RIOT_ART: &[(&str, &str)] = &[(
+    "valorant",
+    "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/splash.png",
+)];
+
+fn riot_art(id: &str) -> Option<&'static str> {
+    RIOT_ART.iter().find(|(code, _)| *code == id).map(|(_, url)| *url)
+}
+
 pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     let mut cache = load_cache();
     let client = match reqwest::Client::builder().user_agent("efxlve-launcher").timeout(Duration::from_secs(8)).build() {
@@ -101,6 +114,23 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     let mut pending = Vec::new();
     for query in queries {
         if query.id.is_empty() || query.name.is_empty() {
+            continue;
+        }
+        // Hardcoded official art wins over anything cached: an older cache may
+        // still hold the share image it replaces.
+        if let Some(url) = riot_art(&query.id).filter(|_| query.store == "riot") {
+            let developer = "Riot Games".to_string();
+            cache.insert(
+                cache_key(&query.store, &query.id),
+                CachedArt { cover: url.to_string(), hero: url.to_string(), developer: developer.clone(), dev_checked: true },
+            );
+            hits.push(CoverHit {
+                store: query.store,
+                id: query.id,
+                cover_url: url.to_string(),
+                hero_url: url.to_string(),
+                developer,
+            });
             continue;
         }
         let art = cached_art(&cache, &query.store, &query.id);

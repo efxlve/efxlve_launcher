@@ -482,8 +482,9 @@ fn load_local_playtimes() -> std::collections::HashMap<String, u64> {
         .unwrap_or_default()
 }
 
-/// Adds one finished session to the local companion playtime cache.
-fn add_local_playtime(app_name: &str, seconds: u64) {
+/// Adds one finished session to the local companion playtime cache. The generic
+/// process watcher also calls this, so games started outside the launcher count.
+pub(crate) fn add_local_playtime(app_name: &str, seconds: u64) {
     if seconds == 0 {
         return;
     }
