@@ -124,7 +124,7 @@
   "settings.secController": "Kontrolcü",
   "settings.secAppearance": "Görünüm ve Dil",
   "settings.surfaceTitle": "Arka plan",
-  "settings.surfaceDesc": "Gerçek siyah varsayılandır. Yumuşak Siyah arka planı ve panelleri bir tık açar — aydınlık ortamlarda gözü daha az yorar.",
+  "settings.surfaceDesc": "Yumuşak Siyah varsayılandır; panelleri ve arka planı bir tık açar. Siyah ise tam karanlık paneller sunar.",
   "settings.surfaceBlack": "Siyah",
   "settings.surfaceSoft": "Yumuşak Siyah",
   "settings.coverStatsTitle": "Kapak bilgisi",

@@ -113,7 +113,7 @@
   "settings.secController": "Геймпад",
   "settings.secAppearance": "Оформление и язык",
   "settings.surfaceTitle": "Фон",
-  "settings.surfaceDesc": "По умолчанию — чистый чёрный. «Мягкий чёрный» слегка осветляет фон и панели — комфортнее для глаз в светлых комнатах.",
+  "settings.surfaceDesc": "По умолчанию используется «Мягкий чёрный», слегка осветляющий фон и панели. «Чёрный» делает панели полностью тёмными.",
   "settings.surfaceBlack": "Чёрный",
   "settings.surfaceSoft": "Мягкий чёрный",
   "settings.coverStatsTitle": "Данные на обложке",

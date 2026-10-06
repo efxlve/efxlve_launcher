@@ -113,7 +113,7 @@
   "settings.secController": "控制器",
   "settings.secAppearance": "外觀與語言",
   "settings.surfaceTitle": "背景",
-  "settings.surfaceDesc": "預設為純黑。柔和黑會稍微提亮背景與面板，在明亮房間裡更護眼。",
+  "settings.surfaceDesc": "預設為柔和黑，會稍微提亮背景與面板。黑色則提供完全深色的面板。",
   "settings.surfaceBlack": "黑色",
   "settings.surfaceSoft": "柔和黑",
   "settings.coverStatsTitle": "封面資訊",

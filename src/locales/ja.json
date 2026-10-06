@@ -113,7 +113,7 @@
   "settings.secController": "コントローラー",
   "settings.secAppearance": "外観と言語",
   "settings.surfaceTitle": "背景",
-  "settings.surfaceDesc": "既定は純黒です。ソフトブラックは背景とパネルを少しだけ明るくし、明るい部屋でも目に優しい表示にします。",
+  "settings.surfaceDesc": "ソフトブラックが既定で、背景とパネルを少しだけ明るくします。ブラックは完全な暗色パネルを提供します。",
   "settings.surfaceBlack": "ブラック",
   "settings.surfaceSoft": "ソフトブラック",
   "settings.coverStatsTitle": "カバーの情報",

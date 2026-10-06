@@ -113,7 +113,7 @@
   "settings.secController": "ذراع التحكم",
   "settings.secAppearance": "المظهر واللغة",
   "settings.surfaceTitle": "الخلفية",
-  "settings.surfaceDesc": "الأسود الصافي هو الافتراضي. الأسود الناعم يرفع الخلفية واللوحات قليلًا — أريح للعين في الغرف المضيئة.",
+  "settings.surfaceDesc": "الأسود الناعم هو الافتراضي ويرفع الخلفية واللوحات قليلًا. الأسود يمنحك لوحات داكنة تمامًا.",
   "settings.surfaceBlack": "أسود",
   "settings.surfaceSoft": "أسود ناعم",
   "settings.coverStatsTitle": "إحصاءات الغلاف",

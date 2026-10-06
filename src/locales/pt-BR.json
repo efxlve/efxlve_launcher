@@ -113,7 +113,7 @@
   "settings.secController": "Controle",
   "settings.secAppearance": "Aparência e idioma",
   "settings.surfaceTitle": "Fundo",
-  "settings.surfaceDesc": "O preto puro é o padrão. O Preto suave clareia um pouco o fundo e os painéis — mais confortável em ambientes claros.",
+  "settings.surfaceDesc": "O Preto suave é o padrão e clareia um pouco o fundo e os painéis. Preto oferece painéis totalmente escuros.",
   "settings.surfaceBlack": "Preto",
   "settings.surfaceSoft": "Preto suave",
   "settings.coverStatsTitle": "Dados na capa",

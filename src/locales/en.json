@@ -124,7 +124,7 @@
   "settings.secController": "Controller",
   "settings.secAppearance": "Appearance & Language",
   "settings.surfaceTitle": "Background",
-  "settings.surfaceDesc": "True black is the default. Soft Black lifts the background and panels a touch — easier on the eyes in bright rooms.",
+  "settings.surfaceDesc": "Soft Black is the default and lifts the background and panels a touch. Black provides true deep dark panels.",
   "settings.surfaceBlack": "Black",
   "settings.surfaceSoft": "Soft Black",
   "settings.coverStatsTitle": "Cover stats",

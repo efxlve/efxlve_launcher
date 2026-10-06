@@ -124,7 +124,7 @@
   "settings.secController": "कंट्रोलर",
   "settings.secAppearance": "दिखावट और भाषा",
   "settings.surfaceTitle": "पृष्ठभूमि",
-  "settings.surfaceDesc": "गहरा काला (True black) डिफ़ॉल्ट है। सॉफ्ट ब्लैक पृष्ठभूमि और पैनलों को थोड़ा हल्का करता है — रोशनी वाले कमरों में आँखों के लिए बेहतर।",
+  "settings.surfaceDesc": "सॉफ्ट ब्लैक डिफ़ॉल्ट है और पृष्ठभूमि व पैनलों को थोड़ा हल्का करता है। काला पूरी तरह से गहरे पैनल प्रदान करता है।",
   "settings.surfaceBlack": "काला",
   "settings.surfaceSoft": "सॉफ्ट ब्लैक",
   "settings.coverStatsTitle": "कवर आँकड़े",

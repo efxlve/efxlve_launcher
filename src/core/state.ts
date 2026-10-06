@@ -452,9 +452,35 @@ export const S = {
   libPage: 1,
   screenshotDir: "",
   surface: (() => {
-    // "epic" is the old stored value for the soft surface; keep it working.
-    const v = localStorage.getItem(SURFACE_KEY);
-    return (v === "soft" || v === "epic" ? "soft" : "black") as "black" | "soft";
+    let v: string | null = null;
+    try {
+      v = localStorage.getItem(SURFACE_KEY);
+      // Explicit user choice always wins. "epic" was the legacy key for "soft".
+      if (v === "soft" || v === "epic") return "soft";
+      if (v === "black") return "black";
+
+      // For existing installations without an explicit SURFACE_KEY, preserve
+      // their previous experience (black) so this change does not affect current users.
+      let isExistingUser = false;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k !== SURFACE_KEY && k.startsWith("efxlve-")) {
+          isExistingUser = true;
+          break;
+        }
+      }
+
+      if (isExistingUser) {
+        localStorage.setItem(SURFACE_KEY, "black");
+        return "black";
+      }
+
+      // Default for fresh installations is now soft black ("soft").
+      localStorage.setItem(SURFACE_KEY, "soft");
+      return "soft";
+    } catch {
+      return (v === "black" ? "black" : "soft") as "black" | "soft";
+    }
   })(),
   autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,

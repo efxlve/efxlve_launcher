@@ -113,7 +113,7 @@
   "settings.secController": "Manette",
   "settings.secAppearance": "Apparence et langue",
   "settings.surfaceTitle": "Arrière-plan",
-  "settings.surfaceDesc": "Le noir pur est la valeur par défaut. Noir doux éclaircit légèrement le fond et les panneaux — plus confortable dans une pièce lumineuse.",
+  "settings.surfaceDesc": "Noir doux est la valeur par défaut et éclaircit légèrement le fond et les panneaux. Noir offre des panneaux entièrement sombres.",
   "settings.surfaceBlack": "Noir",
   "settings.surfaceSoft": "Noir doux",
   "settings.coverStatsTitle": "Infos de jaquette",

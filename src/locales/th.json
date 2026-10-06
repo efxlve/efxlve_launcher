@@ -113,7 +113,7 @@
   "settings.secController": "คอนโทรลเลอร์",
   "settings.secAppearance": "ลักษณะที่ปรากฏและภาษา",
   "settings.surfaceTitle": "พื้นหลัง",
-  "settings.surfaceDesc": "ค่าเริ่มต้นคือดำสนิท ดำนุ่มจะยกพื้นหลังและแผงขึ้นเล็กน้อย — ถนอมสายตาในห้องสว่าง",
+  "settings.surfaceDesc": "ดำนุ่มเป็นค่าเริ่มต้น ช่วยยกพื้นหลังและแผงขึ้นเล็กน้อย ดำจะให้แผงมืดสนิท",
   "settings.surfaceBlack": "ดำ",
   "settings.surfaceSoft": "ดำนุ่ม",
   "settings.coverStatsTitle": "ข้อมูลบนปก",

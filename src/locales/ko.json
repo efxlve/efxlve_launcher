@@ -113,7 +113,7 @@
   "settings.secController": "컨트롤러",
   "settings.secAppearance": "모양 및 언어",
   "settings.surfaceTitle": "배경",
-  "settings.surfaceDesc": "기본값은 완전한 검정입니다. 소프트 블랙은 배경과 패널을 살짝 밝혀 밝은 방에서 눈이 편합니다.",
+  "settings.surfaceDesc": "소프트 블랙이 기본값이며 배경과 패널을 살짝 밝힙니다. 검정은 완전한 암색 패널을 제공합니다.",
   "settings.surfaceBlack": "검정",
   "settings.surfaceSoft": "소프트 블랙",
   "settings.coverStatsTitle": "커버 정보",

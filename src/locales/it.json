@@ -113,7 +113,7 @@
   "settings.secController": "Controller",
   "settings.secAppearance": "Aspetto e lingua",
   "settings.surfaceTitle": "Sfondo",
-  "settings.surfaceDesc": "Il nero puro è il predefinito. Nero morbido alza leggermente sfondo e pannelli: più riposante nelle stanze luminose.",
+  "settings.surfaceDesc": "Nero morbido è il predefinito e alza leggermente sfondo e pannelli. Nero offre pannelli completamente scuri.",
   "settings.surfaceBlack": "Nero",
   "settings.surfaceSoft": "Nero morbido",
   "settings.coverStatsTitle": "Dati sulla copertina",

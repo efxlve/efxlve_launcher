@@ -113,7 +113,7 @@
   "settings.secController": "Kontroler",
   "settings.secAppearance": "Wygląd i język",
   "settings.surfaceTitle": "Tło",
-  "settings.surfaceDesc": "Domyślnie czysta czerń. Miękka czerń lekko rozjaśnia tło i panele — wygodniejsza dla oczu w jasnych pomieszczeniach.",
+  "settings.surfaceDesc": "Miękka czerń jest domyślna i lekko rozjaśnia tło oraz panele. Czerń zapewnia głęboko ciemne panele.",
   "settings.surfaceBlack": "Czerń",
   "settings.surfaceSoft": "Miękka czerń",
   "settings.coverStatsTitle": "Dane na okładce",

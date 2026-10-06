@@ -113,7 +113,7 @@
   "settings.secController": "Controller",
   "settings.secAppearance": "Darstellung und Sprache",
   "settings.surfaceTitle": "Hintergrund",
-  "settings.surfaceDesc": "Echtes Schwarz ist die Standardeinstellung. Weiches Schwarz hebt Hintergrund und Panels leicht an – angenehmer für die Augen in hellen Räumen.",
+  "settings.surfaceDesc": "Weiches Schwarz ist die Standardeinstellung und hebt Hintergrund und Panels leicht an. Schwarz bietet rein dunkle Panels.",
   "settings.surfaceBlack": "Schwarz",
   "settings.surfaceSoft": "Weiches Schwarz",
   "settings.coverStatsTitle": "Cover-Statistik",

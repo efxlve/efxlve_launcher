@@ -113,7 +113,7 @@
   "settings.secController": "Mando",
   "settings.secAppearance": "Apariencia e idioma",
   "settings.surfaceTitle": "Fondo",
-  "settings.surfaceDesc": "El negro puro es el predeterminado. Negro suave eleva un poco el fondo y los paneles: más cómodo a la vista en salas iluminadas.",
+  "settings.surfaceDesc": "Negro suave es el predeterminado y eleva un poco el fondo y los paneles. Negro ofrece paneles completamente oscuros.",
   "settings.surfaceBlack": "Negro",
   "settings.surfaceSoft": "Negro suave",
   "settings.coverStatsTitle": "Datos de la portada",
