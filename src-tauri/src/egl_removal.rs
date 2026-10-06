@@ -79,6 +79,15 @@ fn launcher_shortcuts() -> Vec<PathBuf> {
                 .join("Programs")
                 .join("Epic Games Launcher.lnk"),
         );
+        out.push(
+            appdata
+                .join("Microsoft")
+                .join("Internet Explorer")
+                .join("Quick Launch")
+                .join("User Pinned")
+                .join("TaskBar")
+                .join("Epic Games Launcher.lnk"),
+        );
     }
     if let Some(program_data) = env_path("PROGRAMDATA") {
         out.push(
