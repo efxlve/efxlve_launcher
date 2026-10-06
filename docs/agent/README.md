@@ -94,6 +94,7 @@ After every release, draft the announcement tweet and hand it to the user; they 
 
 - No emoji except 👇. A link never goes in the main tweet.
 - Main tweet: the version line, one short paragraph with the top two or three highlights, then `Notes in the reply👇`.
-- First reply: `Release notes and download: https://github.com/efxlve/efxlve_launcher/releases/latest`
+- First reply: `Release notes and download: https://github.com/efxlve/efxlve_launcher/releases/tag/v<version>`
+- Use the tag URL, never `/releases/latest`: X caches the link card for an unchanged URL and keeps showing the previous version.
 - Highlights come from the newest entry in `src/features/changelog/changelog-view.ts` (the English `items`).
 - Keep the main tweet under 280 characters and put the reply up right after posting.
