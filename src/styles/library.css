@@ -36,8 +36,8 @@
 .lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 .sort-dropdown-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 196px; padding: 6px;
-  background: #141414; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); display: none;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px;
+  box-shadow: var(--shadow-pop); display: none;
 }
 .sort-dropdown-menu.show { display: block; }
 .sort-menu-item-btn {

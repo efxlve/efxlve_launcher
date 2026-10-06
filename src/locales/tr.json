@@ -401,6 +401,8 @@
   "storage.games": "Oyunlar",
   "storage.other": "Diğer",
   "storage.free": "Boş",
+  "storage.sortSizeDesc": "En büyük önce",
+  "storage.sortSizeAsc": "En küçük önce",
   "storage.noGames": "Bu sürücüde kurulu oyun yok.",
   "storage.noDrives": "Sürücü bilgisi alınamadı.",
   "downloads.defaultPlaceholder": "varsayılan",

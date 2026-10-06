@@ -387,6 +387,8 @@
   "storage.games": "ゲーム",
   "storage.other": "その他",
   "storage.free": "空き",
+  "storage.sortSizeDesc": "大きい順",
+  "storage.sortSizeAsc": "小さい順",
   "storage.noGames": "このドライブにインストールされたゲームはありません。",
   "storage.noDrives": "ドライブ情報を読み込めませんでした。",
   "downloads.defaultPlaceholder": "デフォルト",

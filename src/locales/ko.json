@@ -387,6 +387,8 @@
   "storage.games": "게임",
   "storage.other": "기타",
   "storage.free": "여유",
+  "storage.sortSizeDesc": "큰 용량 순",
+  "storage.sortSizeAsc": "작은 용량 순",
   "storage.noGames": "이 드라이브에 설치된 게임이 없습니다.",
   "storage.noDrives": "드라이브 정보를 불러올 수 없습니다.",
   "downloads.defaultPlaceholder": "기본값",

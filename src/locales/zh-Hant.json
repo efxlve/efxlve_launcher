@@ -387,6 +387,8 @@
   "storage.games": "遊戲",
   "storage.other": "其他",
   "storage.free": "可用",
+  "storage.sortSizeDesc": "從大到小",
+  "storage.sortSizeAsc": "從小到大",
   "storage.noGames": "此磁碟機上沒有已安裝的遊戲。",
   "storage.noDrives": "無法載入磁碟機資訊。",
   "downloads.defaultPlaceholder": "預設",

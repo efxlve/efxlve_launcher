@@ -387,6 +387,8 @@
   "storage.games": "Jeux",
   "storage.other": "Autre",
   "storage.free": "Libre",
+  "storage.sortSizeDesc": "Plus volumineux d'abord",
+  "storage.sortSizeAsc": "Plus légers d'abord",
   "storage.noGames": "Aucun jeu installé sur ce lecteur.",
   "storage.noDrives": "Impossible de charger les informations des lecteurs.",
   "downloads.defaultPlaceholder": "par défaut",

@@ -387,6 +387,8 @@
   "storage.games": "游戏",
   "storage.other": "其他",
   "storage.free": "可用",
+  "storage.sortSizeDesc": "从大到小",
+  "storage.sortSizeAsc": "从小到大",
   "storage.noGames": "此驱动器上没有已安装的游戏。",
   "storage.noDrives": "无法加载驱动器信息。",
   "downloads.defaultPlaceholder": "默认",

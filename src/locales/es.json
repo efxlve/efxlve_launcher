@@ -387,6 +387,8 @@
   "storage.games": "Juegos",
   "storage.other": "Otros",
   "storage.free": "Libre",
+  "storage.sortSizeDesc": "Más grande primero",
+  "storage.sortSizeAsc": "Más pequeño primero",
   "storage.noGames": "No hay juegos instalados en esta unidad.",
   "storage.noDrives": "No se pudo cargar la información de las unidades.",
   "downloads.defaultPlaceholder": "predeterminado",

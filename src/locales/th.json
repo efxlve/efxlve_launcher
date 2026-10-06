@@ -387,6 +387,8 @@
   "storage.games": "เกม",
   "storage.other": "อื่นๆ",
   "storage.free": "ว่าง",
+  "storage.sortSizeDesc": "ใหญ่สุดก่อน",
+  "storage.sortSizeAsc": "เล็กสุดก่อน",
   "storage.noGames": "ไม่มีเกมที่ติดตั้งบนไดรฟ์นี้",
   "storage.noDrives": "โหลดข้อมูลไดรฟ์ไม่ได้",
   "downloads.defaultPlaceholder": "ค่าเริ่มต้น",

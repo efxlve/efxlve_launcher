@@ -401,6 +401,8 @@
   "storage.games": "Games",
   "storage.other": "Other",
   "storage.free": "Free",
+  "storage.sortSizeDesc": "Largest first",
+  "storage.sortSizeAsc": "Smallest first",
   "storage.noGames": "No games installed on this drive.",
   "storage.noDrives": "Drive information could not be loaded.",
   "downloads.defaultPlaceholder": "default",

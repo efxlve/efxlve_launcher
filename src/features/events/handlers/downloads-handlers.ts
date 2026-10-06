@@ -32,8 +32,9 @@ import {
   closeStorageManager,
   openStorageManager,
   setStorageDrive,
+  setStorageSortMode,
   setStorageStoreFilter,
-  toggleStorageSort,
+  toggleStorageMenu,
 } from "../../storage/storage-view";
 import { toggleIgnoreUpdate } from "../../downloads/downloads-view";
 import {
@@ -414,9 +415,19 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
     }
 
-    case "storage-sort-toggle":
-      toggleStorageSort();
+    case "storage-store-menu-toggle":
+      toggleStorageMenu("store");
       return true;
+
+    case "storage-sort-menu-toggle":
+      toggleStorageMenu("sort");
+      return true;
+
+    case "storage-sort-option": {
+      const mode = t.dataset.mode as "size-desc" | "size-asc" | "title-asc" | undefined;
+      if (mode) setStorageSortMode(mode);
+      return true;
+    }
 
     case "storage-clear-search":
       clearStorageSearch();

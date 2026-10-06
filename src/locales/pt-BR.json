@@ -387,6 +387,8 @@
   "storage.games": "Jogos",
   "storage.other": "Outros",
   "storage.free": "Livre",
+  "storage.sortSizeDesc": "Maiores primeiro",
+  "storage.sortSizeAsc": "Menores primeiro",
   "storage.noGames": "Nenhum jogo instalado neste disco.",
   "storage.noDrives": "Não foi possível carregar as informações dos discos.",
   "downloads.defaultPlaceholder": "padrão",

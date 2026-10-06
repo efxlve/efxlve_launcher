@@ -387,6 +387,8 @@
   "storage.games": "Gry",
   "storage.other": "Inne",
   "storage.free": "Wolne",
+  "storage.sortSizeDesc": "Największe najpierw",
+  "storage.sortSizeAsc": "Najmniejsze najpierw",
   "storage.noGames": "Na tym dysku nie ma zainstalowanych gier.",
   "storage.noDrives": "Nie udało się wczytać informacji o dyskach.",
   "downloads.defaultPlaceholder": "domyślny",

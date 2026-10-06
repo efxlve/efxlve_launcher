@@ -452,18 +452,17 @@
 .storage-search-clear:hover {
   color: var(--text);
 }
-.storage-store-select-wrap {
+/* Toolbar comboboxes: store filter and sort share one trigger + menu */
+.storage-combo {
   position: relative;
   display: inline-flex;
-  align-items: center;
-  height: 32px;
-  box-sizing: border-box;
 }
-.storage-store-select {
+.storage-combo-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   height: 32px;
-  min-width: 160px;
-  max-width: 220px;
-  padding: 0 30px 0 10px;
+  padding: 0 10px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -472,57 +471,70 @@
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: all 160ms ease;
   user-select: none;
   box-sizing: border-box;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
-.storage-store-select:hover {
+.storage-combo-trigger:hover,
+.storage-combo-trigger[aria-expanded="true"] {
   background: var(--surface-3);
   border-color: var(--line-strong);
 }
-.storage-store-select:focus {
-  outline: none;
-  border-color: var(--line-strong);
-  background: var(--surface-3);
-}
-.storage-store-select-icon {
-  position: absolute;
-  right: 10px;
-  pointer-events: none;
+.storage-combo-trigger > svg:last-child {
   color: var(--text-3);
-  display: flex;
-  align-items: center;
+  transition: transform 0.15s ease;
 }
-.storage-store-select option {
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 13px;
-  padding: 6px;
+.storage-combo-trigger[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
 }
-.storage-sort-btn {
+.storage-combo-label {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.storage-combo-logo {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  object-fit: contain;
+  display: block;
+}
+.storage-combo-all {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 160ms ease;
-  flex-shrink: 0;
-  margin-left: auto;
-  box-sizing: border-box;
+  justify-content: center;
+  color: var(--text-3);
 }
-.storage-sort-btn:hover {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
+.storage-sort-combo {
+  margin-left: auto;
+}
+.storage-combo .storage-store-menu {
+  left: 0;
+  right: auto;
+  min-width: 240px;
+}
+.storage-combo .storage-sort-menu {
+  left: auto;
+  right: 0;
+  min-width: 200px;
+}
+.storage-combo .storage-sort-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.storage-sort-option > svg:first-child {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.storage-sort-option.selected > svg:first-child {
+  color: var(--text-2);
+}
+.storage-sort-check {
+  margin-left: auto;
+  display: inline-flex;
+  width: 14px;
   color: var(--text);
 }
 
@@ -764,7 +776,7 @@
   .storage-search-wrap {
     width: 100%;
   }
-  .storage-sort-btn {
+  .storage-sort-combo {
     margin-left: 0;
   }
 }

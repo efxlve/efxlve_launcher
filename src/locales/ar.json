@@ -387,6 +387,8 @@
   "storage.games": "الألعاب",
   "storage.other": "أخرى",
   "storage.free": "متاح",
+  "storage.sortSizeDesc": "الأكبر أولاً",
+  "storage.sortSizeAsc": "الأصغر أولاً",
   "storage.noGames": "لا توجد ألعاب مثبتة على محرك الأقراص هذا.",
   "storage.noDrives": "تعذر تحميل معلومات محركات الأقراص.",
   "downloads.defaultPlaceholder": "افتراضي",

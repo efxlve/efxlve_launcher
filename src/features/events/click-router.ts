@@ -93,6 +93,7 @@ import { openPalette } from "../palette/palette";
 import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
+import { closeStorageMenus } from "../storage/storage-view";
 import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, scrollStoreTabs, setStoreHidden, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
 import {
   clearNotifications,
@@ -148,6 +149,9 @@ document.addEventListener("click", (e) => {
     document.getElementById("version-dropdown-menu")?.classList.remove("show");
     document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
   }
+
+  // Close the storage manager comboboxes when clicking outside them.
+  closeStorageMenus(targetEl);
 
   // Marker palette closes when clicking outside it.
   if (S.isMarkerPaletteOpen && !targetEl.closest(".col-marker-picker-container")) {

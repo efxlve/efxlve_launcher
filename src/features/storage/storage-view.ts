@@ -42,6 +42,8 @@ interface StorageState {
   searchQuery: string;
   storeFilter: string;
   sortMode: "size-desc" | "size-asc" | "title-asc";
+  /** Which toolbar combobox is open; any outside click closes both. */
+  openMenu: "" | "store" | "sort";
 }
 
 const S_STORAGE: StorageState = {
@@ -49,6 +51,7 @@ const S_STORAGE: StorageState = {
   searchQuery: "",
   storeFilter: "all",
   sortMode: "size-desc",
+  openMenu: "",
 };
 
 export function closeStorageManager(): void {
@@ -96,28 +99,44 @@ export function setStorageDrive(drive: string): void {
 
 export function setStorageStoreFilter(store: string): void {
   S_STORAGE.storeFilter = store;
-  renderStorageGamesList();
+  S_STORAGE.openMenu = "";
+  renderStorageManager();
 }
 
-export function toggleStorageSort(): void {
-  if (S_STORAGE.sortMode === "size-desc") {
-    S_STORAGE.sortMode = "size-asc";
-  } else if (S_STORAGE.sortMode === "size-asc") {
-    S_STORAGE.sortMode = "title-asc";
-  } else {
-    S_STORAGE.sortMode = "size-desc";
-  }
+export function setStorageSortMode(mode: StorageState["sortMode"]): void {
+  S_STORAGE.sortMode = mode;
+  S_STORAGE.openMenu = "";
   renderStorageManager();
+}
+
+/** Opens one toolbar combobox, or closes it when it is already open. */
+export function toggleStorageMenu(menu: "store" | "sort"): void {
+  S_STORAGE.openMenu = S_STORAGE.openMenu === menu ? "" : menu;
+  paintStorageMenus();
+}
+
+/** Closes the open combobox when a click lands outside both of them. */
+export function closeStorageMenus(target: HTMLElement | null): void {
+  if (!S_STORAGE.openMenu || target?.closest(".storage-combo")) return;
+  S_STORAGE.openMenu = "";
+  paintStorageMenus();
+}
+
+function paintStorageMenus(): void {
+  if (!storageRoot) return;
+  for (const name of ["store", "sort"] as const) {
+    const open = S_STORAGE.openMenu === name;
+    storageRoot.querySelector<HTMLElement>(`#storage-${name}-menu`)?.classList.toggle("show", open);
+    storageRoot
+      .querySelector<HTMLElement>(`[data-act="storage-${name}-menu-toggle"]`)
+      ?.setAttribute("aria-expanded", String(open));
+  }
 }
 
 export function clearStorageSearch(): void {
   S_STORAGE.searchQuery = "";
   S_STORAGE.storeFilter = "all";
-  const input = storageRoot?.querySelector<HTMLInputElement>("#storage-search-input");
-  if (input) input.value = "";
-  const select = storageRoot?.querySelector<HTMLSelectElement>("#storage-store-select");
-  if (select) select.value = "all";
-  renderStorageGamesList();
+  renderStorageManager();
 }
 
 export function setStorageSearch(val: string): void {
@@ -206,12 +225,6 @@ function renderStorageGamesList(): void {
     return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
   });
 
-  // Update select element value if needed
-  const select = document.getElementById("storage-store-select") as HTMLSelectElement | null;
-  if (select && select.value !== S_STORAGE.storeFilter) {
-    select.value = S_STORAGE.storeFilter;
-  }
-
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="storage-empty-state">
@@ -282,25 +295,22 @@ export function renderStorageManager(): void {
       </button>`;
   }).join("");
 
-  // Store filter options for selectbox
-  const storeOptions = [
-    `<option value="all" ${S_STORAGE.storeFilter === "all" ? "selected" : ""}>${t("source.all")} (${gamesOnDrive.length})</option>`,
+  // Store filter combobox: "all" plus one row per store present on this drive.
+  const storeOptions: { value: string; label: string; count: number; source: GameSource | null }[] = [
+    { value: "all", label: t("source.all"), count: gamesOnDrive.length, source: null },
   ];
   for (const [src, cnt] of storeCounts.entries()) {
-    storeOptions.push(`
-      <option value="${src}" ${S_STORAGE.storeFilter === src ? "selected" : ""}>${esc(storeName(src as GameSource))} (${cnt})</option>`);
+    storeOptions.push({ value: src, label: storeName(src as GameSource), count: cnt, source: src as GameSource });
   }
+  const activeStore = storeOptions.find((o) => o.value === S_STORAGE.storeFilter) ?? storeOptions[0];
 
-  // Sort info
-  let sortIcon: IconName = "chevron-down";
-  let sortLabel = `${t("lib.filterSize")} ↓`;
-  if (S_STORAGE.sortMode === "size-asc") {
-    sortIcon = "chevron-up";
-    sortLabel = `${t("lib.filterSize")} ↑`;
-  } else if (S_STORAGE.sortMode === "title-asc") {
-    sortIcon = "arrow-down-a-z";
-    sortLabel = t("lib.sortAlpha");
-  }
+  // Sort combobox: the current mode drives the trigger icon and label.
+  const sortOptions: { mode: StorageState["sortMode"]; label: string; iconName: IconName }[] = [
+    { mode: "size-desc", label: t("storage.sortSizeDesc"), iconName: "hard-drive" },
+    { mode: "size-asc", label: t("storage.sortSizeAsc"), iconName: "hard-drive" },
+    { mode: "title-asc", label: t("lib.sortAlpha"), iconName: "arrow-down-a-z" },
+  ];
+  const activeSort = sortOptions.find((o) => o.mode === S_STORAGE.sortMode) ?? sortOptions[0];
 
   storageRoot.innerHTML = `
     <div class="storage-overlay" data-act="storage-overlay-close">
@@ -365,17 +375,38 @@ export function renderStorageManager(): void {
               ${S_STORAGE.searchQuery ? `<button type="button" class="storage-search-clear" data-act="storage-clear-search">${icon("x", 12)}</button>` : ""}
             </div>
 
-            <div class="storage-store-select-wrap">
-              <select id="storage-store-select" class="storage-store-select" aria-label="${t("source.all")}">
-                ${storeOptions.join("")}
-              </select>
-              <span class="storage-store-select-icon" aria-hidden="true">${icon("chevron-down", 13)}</span>
+            <div class="storage-combo">
+              <button type="button" class="storage-combo-trigger" data-act="storage-store-menu-toggle" aria-haspopup="listbox" aria-expanded="${S_STORAGE.openMenu === "store"}" title="${t("filter.source")}">
+                ${activeStore.source ? storeLogo(activeStore.source, 14, "storage-combo-logo") : `<span class="storage-combo-logo storage-combo-all">${icon("layout-grid", 13)}</span>`}
+                <span class="storage-combo-label">${esc(activeStore.label)} (${activeStore.count})</span>
+                ${icon("chevron-down", 13)}
+              </button>
+              <div id="storage-store-menu" class="sort-dropdown-menu store-dropdown-menu storage-store-menu ${S_STORAGE.openMenu === "store" ? "show" : ""}" role="listbox">
+                ${storeOptions.map((o) => `
+                  <button type="button" class="sort-menu-item-btn store-menu-item ${o.value === S_STORAGE.storeFilter ? "selected" : ""}" role="option" aria-selected="${o.value === S_STORAGE.storeFilter}" data-act="storage-filter-store" data-store="${o.value}">
+                    <span class="store-option-mark">${o.value === S_STORAGE.storeFilter ? icon("check", 14) : ""}</span>
+                    <span class="store-option-logo">${o.source ? storeLogo(o.source, 16) : ""}</span>
+                    <span class="store-option-label">${esc(o.label)}</span>
+                    <span class="store-option-count tabular-nums">${o.count}</span>
+                  </button>`).join("")}
+              </div>
             </div>
 
-            <button type="button" class="storage-sort-btn" data-act="storage-sort-toggle">
-              ${icon(sortIcon, 13)}
-              <span>${sortLabel}</span>
-            </button>
+            <div class="storage-combo storage-sort-combo">
+              <button type="button" class="storage-combo-trigger" data-act="storage-sort-menu-toggle" aria-haspopup="listbox" aria-expanded="${S_STORAGE.openMenu === "sort"}" title="${t("lib.sortBy")}">
+                ${icon(activeSort.iconName, 13)}
+                <span class="storage-combo-label">${esc(activeSort.label)}</span>
+                ${icon("chevron-down", 13)}
+              </button>
+              <div id="storage-sort-menu" class="sort-dropdown-menu storage-sort-menu ${S_STORAGE.openMenu === "sort" ? "show" : ""}" role="listbox">
+                ${sortOptions.map((o) => `
+                  <button type="button" class="sort-menu-item-btn storage-sort-option ${o.mode === S_STORAGE.sortMode ? "selected" : ""}" role="option" aria-selected="${o.mode === S_STORAGE.sortMode}" data-act="storage-sort-option" data-mode="${o.mode}">
+                    ${icon(o.iconName, 14)}
+                    <span class="store-option-label">${esc(o.label)}</span>
+                    <span class="storage-sort-check">${o.mode === S_STORAGE.sortMode ? icon("check", 14) : ""}</span>
+                  </button>`).join("")}
+              </div>
+            </div>
           </div>
 
           <div id="storage-games-container" class="storage-games-container"></div>
@@ -390,10 +421,6 @@ export function renderStorageManager(): void {
     storageRoot.addEventListener("input", (e) => {
       const input = (e.target as HTMLElement)?.closest<HTMLInputElement>("#storage-search-input");
       if (input) setStorageSearch(input.value);
-    });
-    storageRoot.addEventListener("change", (e) => {
-      const select = (e.target as HTMLElement)?.closest<HTMLSelectElement>("#storage-store-select");
-      if (select) setStorageStoreFilter(select.value);
     });
   }
 }

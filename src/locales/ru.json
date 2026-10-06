@@ -387,6 +387,8 @@
   "storage.games": "Игры",
   "storage.other": "Прочее",
   "storage.free": "Свободно",
+  "storage.sortSizeDesc": "Сначала больше",
+  "storage.sortSizeAsc": "Сначала меньше",
   "storage.noGames": "На этом диске нет установленных игр.",
   "storage.noDrives": "Не удалось загрузить сведения о дисках.",
   "downloads.defaultPlaceholder": "по умолчанию",
