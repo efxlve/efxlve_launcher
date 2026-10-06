@@ -84,6 +84,7 @@ import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChar
 import { openEpicModal } from "../drawer/drawer-view";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
+import { checkMtuAfterSyncFailure } from "../manage/mtu-guard";
 import { applyMovedGamePath } from "../move-game/move-game-actions";
 import { initEosInstall } from "../eos/eos-install";
 import { initPresence, syncPresence } from "../presence/presence";
@@ -741,6 +742,8 @@ export async function initApp(hooks: {
       // A failed automatic cloud upload must not vanish while the game closes.
       const detail = localizeMessage(event.payload.message || "");
       toast(detail || t("backup.failed", { msg: "" }), "err");
+      // A failed upload can be the path-MTU black hole; surface it once.
+      void checkMtuAfterSyncFailure();
       if (title) pushNotification({ kind: "error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
     });
 

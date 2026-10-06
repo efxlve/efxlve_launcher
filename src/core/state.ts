@@ -10,6 +10,7 @@
  */
 import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry } from "../epic";
 import { initialLanguage, t } from "../i18n";
+import type { MtuProbe } from "../net-diag";
 import {
   APP_AUTO_UPDATE_KEY,
   CUSTOM_AVATARS_KEY,
@@ -352,6 +353,8 @@ export const S = {
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   /** Live cloud-sync progress per app while Legendary packs and transfers saves. */
   cloudSyncProgress: new Map<string, { phase: string; uploaded: number; total: number }>(),
+  /** Path-MTU problem found after a failed sync; cleared once fixed. */
+  mtuIssue: (null) as MtuProbe | null,
   activeManageSettings: (null) as GameLocalSettings | null,
   manageSyncingSaves: false,
   activeDlMetrics: (null) as DlMetrics | null,

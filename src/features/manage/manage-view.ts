@@ -87,6 +87,16 @@ export function updateManageSyncBar(appName: string): void {
   if (label) label.textContent = p ? syncProgressLabel(p) : "";
 }
 
+/** Warning shown when a failed sync exposed a path-MTU black hole. */
+function mtuIssueHtml(): string {
+  const issue = S.mtuIssue;
+  if (!issue) return "";
+  return `<div class="manage-mtu-issue">
+      <div class="manage-mtu-text">${icon("alert-triangle", 13)} ${esc(t("manage.mtuBody", { path: issue.pathMtu, iface: issue.interfaceMtu }))}</div>
+      <button class="btn ghost small" data-act="fix-mtu">${icon("wifi", 13)} ${t("manage.mtuFix")}</button>
+    </div>`;
+}
+
 /** App name of the currently open manage popup; null when it is closed. */
 let openManageAppName: string | null = null;
 
@@ -534,7 +544,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}`, "manage-cloud-subtitle")}
+              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}${mtuIssueHtml()}`, "manage-cloud-subtitle")}
             <div class="row mg-row">
               <div class="row-main">
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>

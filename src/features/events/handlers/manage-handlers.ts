@@ -8,7 +8,9 @@ import { formatSyncStamp, localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
 import { rawOf } from "../../../core/selectors";
-import { openEpicModal } from "../../../core/render";
+import { openEpicModal, scheduleRender } from "../../../core/render";
+import { netMtuFix } from "../../../net-diag";
+import { checkMtuAfterSyncFailure } from "../../manage/mtu-guard";
 import { gogVerifyGame } from "../../../gog";
 import { nileCreateDesktopShortcut, nileVerify } from "../../../nile";
 import {
@@ -170,6 +172,8 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           })
           .catch((err) => {
             toast(i18nT("manage.syncFailed", { msg: localizeMessage(String(err)) }), "err");
+            // A failed upload can be the path-MTU black hole; surface it once.
+            void checkMtuAfterSyncFailure();
             if (cloudSub && S.activeManageSettings) {
               cloudSub.textContent = S.activeManageSettings.lastCloudSync
                 ? i18nT("manage.lastSync", { time: formatSyncStamp(S.activeManageSettings.lastCloudSync) })
@@ -182,6 +186,19 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           });
       }
       return true;
+
+    case "fix-mtu": {
+      const issue = S.mtuIssue;
+      if (!issue) return true;
+      netMtuFix(issue.interface, issue.suggestedMtu)
+        .then(() => {
+          S.mtuIssue = null;
+          scheduleRender();
+          toast(i18nT("manage.mtuFixed", { mtu: issue.suggestedMtu }), "ok");
+        })
+        .catch((err) => toast(i18nT("manage.mtuFixFailed", { msg: localizeMessage(String(err)) }), "err"));
+      return true;
+    }
 
     case "manage-create-shortcut":
       if (id) {

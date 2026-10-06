@@ -11,6 +11,7 @@ mod gogdl;
 mod launchers;
 mod legendary;
 mod nile;
+mod net_diag;
 mod game_running;
 mod presence;
 mod shared_library;
@@ -832,6 +833,8 @@ fn main() {
             steam::steam_game_action,
             steam_session::steam_watch_session,
             storage_usage::storage_path_size,
+            net_diag::net_mtu_probe,
+            net_diag::net_mtu_fix,
             steam::steam_sync_playtime,
             steam::steam_cloud_status,
             steam::steam_get_game_details,
