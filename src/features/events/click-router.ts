@@ -113,6 +113,7 @@ import { handleAuthAction } from "./handlers/auth-handlers";
 import { handleCloudBackupAction } from "./handlers/cloud-backup-handlers";
 import { handleCollectionAction } from "./handlers/collection-handlers";
 import { handleCoverAction } from "./handlers/cover-handlers";
+import { handleEglRemovalAction } from "./handlers/egl-removal-handlers";
 import { handleDownloadsAction } from "./handlers/downloads-handlers";
 import { handleDrawerAction } from "./handlers/drawer-handlers";
 import { handleManageAction } from "./handlers/manage-handlers";
@@ -258,6 +259,7 @@ document.addEventListener("click", (e) => {
   if (handleAuthAction(act, t, id)) return;
   if (handleCloudBackupAction(act, t, id, targetEl)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;
+  if (handleEglRemovalAction(act, t, id, targetEl)) return;
   if (handleCollectionAction(act, t, id, targetEl)) return;
   if (handleDownloadsAction(act, t, id, targetEl)) return;
   if (handleManageAction(act, t, id, targetEl)) return;

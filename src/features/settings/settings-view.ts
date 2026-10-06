@@ -345,7 +345,11 @@ function renderIntegrations(): string {
 
   const eglGroup =
     row(egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone"), t("settings.eglDesc"), eglAction) +
-    eglRows;
+    eglRows +
+    // Epic's own uninstaller deletes the games together with the launcher; this
+    // removes only launcher-owned files and migrates the games into Legendary first.
+    row(t("settings.eglRemoveTitle"), t("settings.eglRemoveDesc"),
+      `<button class="btn danger small" data-act="egl-remove-open">${icon("trash", 13)} ${t("settings.eglRemove")}</button>`);
 
   // GOG Galaxy parity: games installed by the official client are detected from
   // its registry entries and can be imported with full launcher support.

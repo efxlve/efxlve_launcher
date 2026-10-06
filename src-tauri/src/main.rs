@@ -7,6 +7,7 @@ mod companion;
 mod controller;
 mod controller_bridge;
 mod eos;
+mod egl_removal;
 mod gogdl;
 mod launchers;
 mod legendary;
@@ -728,6 +729,8 @@ fn main() {
             legendary::wiki::epic_get_wiki_about,
             legendary::commands::epic_detect_egl_games,
             legendary::commands::epic_sync_egl_installed,
+            egl_removal::egl_removal_plan,
+            egl_removal::egl_remove,
             legendary::commands::epic_import_installed_folder,
             legendary::commands::epic_verify_game,
             legendary::commands::epic_get_game_settings,

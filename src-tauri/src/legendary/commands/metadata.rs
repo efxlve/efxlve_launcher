@@ -415,8 +415,7 @@ pub async fn epic_detect_egl_games(_app: AppHandle) -> Result<Vec<cache::EglDete
 }
 
 /// Persistently syncs games detected in the Epic Games Launcher into installed.json.
-#[tauri::command]
-pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
+pub fn sync_egl_installed() -> Result<u32, String> {
     let config = skip::default_config_dir();
     let installed_path = config.join("installed.json");
     let mut map: std::collections::HashMap<String, InstalledGame> =
@@ -465,6 +464,12 @@ pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
     }
 
     Ok(imported_count)
+}
+
+/// Tauri command wrapper around [`sync_egl_installed`].
+#[tauri::command]
+pub async fn epic_sync_egl_installed(_app: AppHandle) -> Result<u32, String> {
+    sync_egl_installed()
 }
 
 /* ---------- Game management & verification ---------- */

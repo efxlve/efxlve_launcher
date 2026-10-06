@@ -494,6 +494,10 @@ export const S = {
   gogInstallDir: "",
   eglDetectedList: ([]) as EglDetectedGame[],
   eglSyncing: false,
+  /** Safe EGL removal: the plan shown in the confirmation dialog. */
+  eglRemovalPlan: (null) as import("../egl-removal").EglRemovalPlan | null,
+  /** True while the elevated removal script runs. */
+  eglRemoving: false,
   /** Store client rows for Settings > Launchers. */
   launchers: ([]) as import("../epic").LauncherStatus[],
   launchersLoading: false,
