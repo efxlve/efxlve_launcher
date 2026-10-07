@@ -406,7 +406,12 @@
 }
 .storage-stat-dot.dot-games { background: #ffffff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.4); }
 .storage-stat-dot.dot-other { background: var(--text-3); }
-.storage-stat-dot.dot-free { background: var(--ok); box-shadow: 0 0 8px var(--ok-tint); }
+/* Free space is the absence of data, not a status: a hollow ring, matching the
+   empty part of the capacity bar, instead of the green "online" colour. */
+.storage-stat-dot.dot-free {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--text-3);
+}
 .storage-stat-info {
   min-width: 0;
   flex: 1;
@@ -585,7 +590,7 @@
   align-items: center;
   gap: 14px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
   transition: background-color 150ms ease;
 }
 .storage-game-row:last-child {

@@ -266,14 +266,13 @@ export function renderStorageManager(): void {
   // Drive tabs
   const driveTabs = sortedLetters.map((ltr) => {
     const sys = systemDrives.find((d) => d.letter.toUpperCase() === ltr);
-    const count = (gamesByDrive.get(ltr) ?? []).length;
     const freeText = sys?.available_bytes ? fmtBytes(sys.available_bytes) : "";
     const active = ltr === activeLetter;
     return `
       <button type="button" class="storage-drive-tab ${active ? "active" : ""}" data-act="storage-select-drive" data-drive="${ltr}">
         <span class="storage-drive-tab-icon">${icon("hard-drive", 15)}</span>
         <span>${ltr}:${sys?.label ? ` ${esc(sys.label)}` : ""}</span>
-        <span class="storage-drive-tab-badge">${freeText ? `${freeText} ${t("storage.free")}` : `${count}`}</span>
+        <span class="storage-drive-tab-badge">${freeText ? `${freeText} ${t("storage.free")}` : "—"}</span>
       </button>`;
   }).join("");
 
