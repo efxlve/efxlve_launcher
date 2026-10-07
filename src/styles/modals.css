@@ -644,20 +644,6 @@
   text-align: right;
   min-width: 75px;
 }
-/* Micro Proportional Bar */
-.storage-game-bar-track {
-  width: 100%;
-  height: 3px;
-  border-radius: 1.5px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-.storage-game-bar-fill {
-  height: 100%;
-  border-radius: 1.5px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.75));
-  transition: width 200ms ease;
-}
 .storage-game-meta {
   display: flex;
   align-items: center;
@@ -704,13 +690,19 @@
   max-width: 440px;
   letter-spacing: -0.01em;
 }
+/* Three equal columns so the buttons line up across every row. A store
+   without Move keeps the empty slot instead of shifting the others. */
 .storage-game-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  justify-content: flex-end;
   gap: 6px;
   flex-shrink: 0;
-  width: 268px;
+  width: 348px;
+}
+.storage-action-slot {
+  display: flex;
+  min-width: 0;
 }
 .storage-action-btn {
   display: inline-flex;
@@ -719,6 +711,8 @@
   gap: 5px;
   height: 30px;
   padding: 0 10px;
+  width: 100%;
+  min-width: 0;
   border-radius: var(--r-sm);
   font-family: inherit;
   font-size: 12px;
@@ -732,19 +726,17 @@
   white-space: nowrap;
   box-sizing: border-box;
 }
+.storage-action-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.storage-action-btn svg {
+  flex-shrink: 0;
+}
 .storage-action-btn:hover {
   background: var(--surface-3);
   border-color: rgba(255, 255, 255, 0.24);
   color: var(--text);
-}
-.storage-action-btn.btn-move {
-  min-width: 70px;
-}
-.storage-action-btn.btn-folder {
-  min-width: 106px;
-}
-.storage-action-btn.btn-uninstall {
-  min-width: 76px;
 }
 .storage-action-btn.danger {
   background: var(--err-tint);

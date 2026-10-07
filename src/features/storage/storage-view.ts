@@ -155,11 +155,10 @@ function uninstallButton(g: StorageGame): string {
   return `<button type="button" class="storage-action-btn danger btn-uninstall" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">${icon("trash", 13)} <span>${t("common.uninstall")}</span></button>`;
 }
 
-function gameRow(g: StorageGame, maxGameSize: number): string {
+function gameRow(g: StorageGame): string {
   const partner = g.source === "epic" ? getThirdPartyLauncher(rawOf(g.key)) : null;
   const tp = g.source === "epic" && requiresThirdPartyLauncher(partner);
   const size = shownSize(g);
-  const pct = maxGameSize > 0 ? Math.min(100, Math.max(2, Math.round((size / maxGameSize) * 100))) : 0;
   const store = `<span class="storage-game-store">${storeLogo(g.source, 13, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
   const cleanPath = g.path ? g.path.replace(/\//g, "\\") : "";
   return `
@@ -172,9 +171,6 @@ function gameRow(g: StorageGame, maxGameSize: number): string {
           <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
           <div class="storage-game-size" data-storage-size="${esc(g.key)}">${fmtBytes(size)}</div>
         </div>
-        <div class="storage-game-bar-track" aria-hidden="true">
-          <div class="storage-game-bar-fill" style="width: ${pct}%"></div>
-        </div>
         <div class="storage-game-meta">
           ${store}
           ${tp && partner ? `<span class="storage-meta-dot" aria-hidden="true">•</span><span class="storage-tp-badge" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
@@ -182,9 +178,9 @@ function gameRow(g: StorageGame, maxGameSize: number): string {
         </div>
       </div>
       <div class="storage-game-actions">
-        ${moveButton(g)}
-        ${folderButton(g)}
-        ${uninstallButton(g)}
+        <div class="storage-action-slot">${moveButton(g)}</div>
+        <div class="storage-action-slot">${folderButton(g)}</div>
+        <div class="storage-action-slot">${uninstallButton(g)}</div>
       </div>
     </div>`;
 }
@@ -196,7 +192,6 @@ function renderStorageGamesList(): void {
   const installed = collectInstalled();
   const currentDrive = S_STORAGE.activeDrive;
   const gamesOnDrive = installed.filter((g) => (driveOf(g.path) || "?") === currentDrive);
-  const maxGameSize = gamesOnDrive.reduce((max, g) => Math.max(max, shownSize(g)), 0);
 
   let filtered = gamesOnDrive;
   if (S_STORAGE.storeFilter !== "all") {
@@ -224,7 +219,7 @@ function renderStorageGamesList(): void {
     return;
   }
 
-  container.innerHTML = filtered.map((g) => gameRow(g, maxGameSize)).join("");
+  container.innerHTML = filtered.map((g) => gameRow(g)).join("");
 }
 
 export function renderStorageManager(): void {
