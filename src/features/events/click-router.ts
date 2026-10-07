@@ -49,7 +49,7 @@ import {
 } from "../../core/nav";
 import { refreshSidebarToggle, toggleSidebarDrawer } from "../../core/sidebar-layout";
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
-import { S } from "../../core/state";
+import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
@@ -441,6 +441,7 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.remove("show");
     S.activeCollectionId = (!colId || colId === "none") ? null : colId;
     S.epicFilter = "all";
+    applyTabSort();
     if (!updateLibraryFilterInPlace()) {
       resetCardChunk();
       render();
@@ -470,6 +471,8 @@ document.addEventListener("click", (e) => {
     S.isSortDropdownOpen = false;
     S.isStoreDropdownOpen = false;
     S.isColDropdownOpen = false;
+    // Each tab keeps its own order: the one it remembers applies on arrival.
+    applyTabSort();
     const sortMenu = document.getElementById("sort-dropdown-menu");
     if (sortMenu) sortMenu.classList.remove("show");
     const storeMenu = document.getElementById("store-dropdown-menu");
@@ -498,8 +501,7 @@ document.addEventListener("click", (e) => {
     const menu = document.getElementById("sort-dropdown-menu");
     if (menu) menu.classList.remove("show");
     if (sortVal && sortVal !== S.epicSort) {
-      S.epicSort = sortVal;
-      localStorage.setItem("efxlve-sort", S.epicSort);
+      setTabSort(sortVal);
       resetCardChunk();
       render();
     }

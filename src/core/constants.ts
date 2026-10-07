@@ -5,6 +5,8 @@
  * browser (where most features are disabled).
  */
 
+import type { EpicSort } from "./types";
+
 /** True when running inside the Tauri shell. */
 export const isTauri =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -147,6 +149,44 @@ export const MORE_CARD_CHUNK = 36;
 
 /** Real folder sizes measured off the filesystem, keyed by library key. */
 export const FOLDER_SIZES_KEY = "efxlve-folder-sizes";
+
+/** Per-tab library sort order; each tab remembers its own. */
+export const SORT_TABS_KEY = "efxlve-sort-tabs";
+
+/** Library tabs that keep a sort order of their own. */
+export type SortTab = "all" | "installed" | "fav" | "platinum" | "updates" | "collections";
+
+export const SORT_TAB_KEYS: readonly SortTab[] = ["all", "installed", "fav", "platinum", "updates", "collections"];
+
+/**
+ * Read the per-tab sort map. `fallback` is the retired single sort value: it
+ * seeds every tab so an upgrade keeps the order the user already had.
+ */
+export function loadTabSorts(fallback: EpicSort): Record<SortTab, EpicSort> {
+  const out = {} as Record<SortTab, EpicSort>;
+  let raw: Record<string, unknown> = {};
+  try {
+    raw = JSON.parse(localStorage.getItem(SORT_TABS_KEY) ?? "{}") as Record<string, unknown>;
+  } catch {
+    // A corrupt map falls back to the defaults below.
+  }
+  for (const tab of SORT_TAB_KEYS) {
+    const value = raw[tab];
+    out[tab] = typeof value === "string" && value ? (value as EpicSort) : fallback;
+  }
+  return out;
+}
+
+/** Persist one tab's sort order. */
+export function saveTabSort(tab: SortTab, sort: EpicSort): void {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SORT_TABS_KEY) ?? "{}") as Record<string, unknown>;
+    raw[tab] = sort;
+    localStorage.setItem(SORT_TABS_KEY, JSON.stringify(raw));
+  } catch {
+    // Storage is best-effort; the session value still applies.
+  }
+}
 
 /** Read a string set from localStorage. */
 export function loadStrSet(key: string): Set<string> {

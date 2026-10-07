@@ -10,7 +10,7 @@ import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "..
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
-import { S } from "../../core/state";
+import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
@@ -511,7 +511,7 @@ document.addEventListener("change", (e) => {
     return;
   }
   if (t.id === "epic-sort") {
-    S.epicSort = (t as HTMLSelectElement).value as typeof S.epicSort;
+    setTabSort((t as HTMLSelectElement).value as typeof S.epicSort);
     render();
     return;
   }

@@ -59,6 +59,9 @@ import {
   normalizeLibraryPageSize,
   loadStrSet,
   loadFolderSizes,
+  loadTabSorts,
+  saveTabSort,
+  type SortTab,
 } from "./constants";
 import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
@@ -124,6 +127,35 @@ function normalizeEpicSort(saved: string | null): EpicSort {
   if (saved === "alpha" || saved === "alphaDesc" || saved === "recent" || saved === "played" || saved === "achievements" || saved === "installed") return saved;
   if (saved === "platinum") return "achievements";
   return saved ? "alpha" : "recent";
+}
+
+/** Sort orders restored from storage, one per library tab. */
+const savedTabSorts = loadTabSorts(normalizeEpicSort(localStorage.getItem("efxlve-sort")));
+
+/** Library tab whose sort order is in effect right now. */
+export function currentSortTab(): SortTab {
+  if (S.epicFilter === "installed") return "installed";
+  if (S.epicFilter === "platinum") return "platinum";
+  if (S.epicFilter === "updates") return "updates";
+  if (S.activeCollectionId === "fav") return "fav";
+  if (S.activeCollectionId && S.activeCollectionId !== "all") return "collections";
+  return "all";
+}
+
+/** Apply the sort order the tab that is now open remembers. */
+export function applyTabSort(): void {
+  S.epicSort = S.tabSorts[currentSortTab()];
+}
+
+/** Remember a sort order for the open tab and make it active. */
+export function setTabSort(sort: EpicSort): void {
+  const tab = currentSortTab();
+  S.tabSorts[tab] = sort;
+  saveTabSort(tab, sort);
+  // Keep the retired single value in step, so a brand new tab starts from the
+  // most recent choice instead of the built-in default.
+  localStorage.setItem("efxlve-sort", sort);
+  S.epicSort = sort;
 }
 
 export const S = {
@@ -239,7 +271,9 @@ export const S = {
   epicCollections: ([]) as GameCollection[],
   activeCollectionId: (null) as string | null,
   epicFilter: "all" as EpicFilter,
-  epicSort: normalizeEpicSort(localStorage.getItem("efxlve-sort")),
+  /** Sort order remembered per library tab (All, Installed, Favorites, ...). */
+  tabSorts: savedTabSorts,
+  epicSort: savedTabSorts.all,
   epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   demoPlatinumApps: (loadStrSet(DEMO_PLAT_KEY)) as Set<string>,

@@ -14,7 +14,7 @@ import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
-import { S } from "../../core/state";
+import { S, applyTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
@@ -805,7 +805,11 @@ export function renderEpic(): string {
 
   // Installed is a live tab and must survive a rebuild. Updates and the retired
   // collections mode have no tab, so a redraw must not leave the grid stuck there.
-  if (S.epicFilter === "updates" || S.epicFilter === "collections") S.epicFilter = "all";
+  if (S.epicFilter === "updates" || S.epicFilter === "collections") {
+    S.epicFilter = "all";
+    // The render moved the library to the All tab; follow it with its own sort.
+    applyTabSort();
+  }
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
