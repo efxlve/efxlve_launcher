@@ -715,11 +715,6 @@
   text-align: right;
 }
 
-.profile-table-header .col-playtime {
-  width: 95px;
-  text-align: right;
-}
-
 .profile-table-header .col-last {
   width: 110px;
   text-align: right;
@@ -809,14 +804,6 @@
   letter-spacing: -0.01em;
 }
 
-.profile-game-sub {
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* Col 2: Progress */
 .profile-col-progress {
   flex: 1.6;
@@ -834,17 +821,21 @@
   font-size: 11px;
 }
 
-.profile-progress-label {
-  color: var(--text-3);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.profile-progress-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-2);
+  font-weight: 600;
 }
 
-.profile-progress-val {
-  font-weight: 700;
-  color: var(--text);
+.profile-progress-count svg {
+  color: var(--text-3);
+}
+
+.profile-progress-time {
+  color: var(--text-3);
+  font-weight: 600;
 }
 
 .profile-game-progress {
@@ -878,10 +869,6 @@
 
 .profile-col-xp {
   width: 90px;
-}
-
-.profile-col-playtime {
-  width: 95px;
 }
 
 .profile-col-last {

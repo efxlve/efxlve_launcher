@@ -140,7 +140,6 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
       <div class="col-hdr col-game">${t("profile.games")}</div>
       <div class="col-hdr col-progress">${t("profile.progressTitle")}</div>
       <div class="col-hdr col-xp">XP / G</div>
-      <div class="col-hdr col-playtime">${t("profile.sortPlaytime")}</div>
       <div class="col-hdr col-last">${t("profile.lastUsed")}</div>
       <div class="col-hdr col-badge">${t("profile.statCompleted")}</div>
     </div>`;
@@ -156,11 +155,13 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "—";
     const lastPlayedText = pt && pt.last_played_timestamp ? (lastUsedLabel(pt.last_played_timestamp) || "—") : "—";
 
-    const trophiesText = g.total_achievements > 0
-      ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
+    // The trophy pair sits above its progress bar now; the last column owns
+    // the percentage, so this column never repeats it.
+    const trophyCount = g.total_achievements > 0
+      ? `${g.total_unlocked} / ${g.total_achievements}`
       : g.total_unlocked > 0
-        ? `${g.total_unlocked} ${t("profile.trophies")}`
-        : t("profile.games");
+        ? String(g.total_unlocked)
+        : "";
 
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
@@ -184,14 +185,13 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
               <span class="profile-game-title">${esc(g.app_title)}</span>
               ${storeChip}
             </div>
-            <div class="profile-game-sub tabular-nums">${esc(trophiesText)}</div>
           </div>
         </div>
 
         <div class="profile-col-progress">
           <div class="profile-progress-header tabular-nums">
-            <span class="profile-progress-label">${t("profile.progressTitle")}</span>
-            <span class="profile-progress-val">${g.total_achievements > 0 ? `${pct}%` : "—"}</span>
+            <span class="profile-progress-count">${icon("trophy", 11)} <span>${trophyCount || "—"}</span></span>
+            ${pt && pt.total_seconds > 0 ? `<span class="profile-progress-time">${esc(playtimeText)}</span>` : ""}
           </div>
           ${g.total_achievements > 0
             ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
@@ -202,11 +202,6 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         <div class="profile-col-stat profile-col-xp tabular-nums">
           <span class="profile-stat-sub">XP / G</span>
           <span class="profile-stat-main">${esc(xpText)}</span>
-        </div>
-
-        <div class="profile-col-stat profile-col-playtime tabular-nums">
-          <span class="profile-stat-sub">${t("profile.sortPlaytime")}</span>
-          <span class="profile-stat-main">${esc(playtimeText)}</span>
         </div>
 
         <div class="profile-col-stat profile-col-last tabular-nums">
