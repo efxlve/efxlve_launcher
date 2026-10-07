@@ -295,8 +295,12 @@ const STEAM_AWAIT_MS = 8000;
 const STEAM_KEEP_MS = 12000;
 
 function beginSteamAwait(appId: string, bytes: number): void {
-  if (!steamAwaitSince.has(appId)) steamAwaitSince.set(appId, Date.now());
-  if (!steamAwaitFloor.has(appId)) steamAwaitFloor.set(appId, bytes);
+  // Only the first call opens the window. The keep branch runs on every
+  // snapshot while Steam is between samples, and extending the deadline there
+  // kept the row (and its spinner) alive forever after a transfer finished.
+  if (steamAwaitSince.has(appId)) return;
+  steamAwaitSince.set(appId, Date.now());
+  steamAwaitFloor.set(appId, bytes);
   steamKeepUntil.set(appId, Date.now() + STEAM_KEEP_MS);
 }
 
