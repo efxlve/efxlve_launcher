@@ -372,11 +372,12 @@ export function renderDownloads(): string {
       metaParts.push(`<span data-dl-size="${esc(id)}">${fmtBytes(shownBytes(summary))}</span>`);
     }
     if (at > 0) metaParts.push(esc(formatSyncStamp(String(at))));
+    const removeBtn = `<button class="icon-btn" data-act="dl-completed-remove" data-id="${esc(id)}" title="${esc(t("downloads.completedRemove"))}">${icon("x", 15)}</button>`;
     return gameRow(
       summary,
       id,
       metaParts.join(" · "),
-      `${epicActionButtons(summary, "small", { primaryOnly: true })}${manageBtn(id)}`,
+      `${epicActionButtons(summary, "small", { primaryOnly: true })}${manageBtn(id)}${removeBtn}`,
     );
   }).join("");
 
@@ -409,7 +410,7 @@ export function renderDownloads(): string {
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length, steamRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
-      ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows) : ""}
+      ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}
     </div>`;
 }
 

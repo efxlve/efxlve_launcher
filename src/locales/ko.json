@@ -361,6 +361,8 @@
   "common.delete": "삭제",
   "downloads.installedTitle": "설치된 게임",
   "downloads.completedTitle": "완료됨",
+  "downloads.completedClear": "모두 지우기",
+  "downloads.completedRemove": "목록에서 제거",
   "downloads.pause": "일시 중지",
   "downloads.resume": "다시 시작",
   "downloads.settingsTitle": "다운로드 설정",

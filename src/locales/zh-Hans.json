@@ -361,6 +361,8 @@
   "common.delete": "删除",
   "downloads.installedTitle": "已安装的游戏",
   "downloads.completedTitle": "已完成",
+  "downloads.completedClear": "全部清除",
+  "downloads.completedRemove": "从列表移除",
   "downloads.pause": "暂停",
   "downloads.resume": "继续",
   "downloads.settingsTitle": "下载设置",

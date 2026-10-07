@@ -361,6 +361,8 @@
   "common.delete": "حذف",
   "downloads.installedTitle": "الألعاب المثبتة",
   "downloads.completedTitle": "المكتملة",
+  "downloads.completedClear": "مسح الكل",
+  "downloads.completedRemove": "إزالة من القائمة",
   "downloads.pause": "إيقاف مؤقت",
   "downloads.resume": "استئناف",
   "downloads.settingsTitle": "إعدادات التنزيل",

@@ -361,6 +361,8 @@
   "common.delete": "削除",
   "downloads.installedTitle": "インストール済みゲーム",
   "downloads.completedTitle": "完了",
+  "downloads.completedClear": "すべて消去",
+  "downloads.completedRemove": "リストから削除",
   "downloads.pause": "一時停止",
   "downloads.resume": "再開",
   "downloads.settingsTitle": "ダウンロード設定",

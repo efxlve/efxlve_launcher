@@ -361,6 +361,8 @@
   "common.delete": "Eliminar",
   "downloads.installedTitle": "Juegos instalados",
   "downloads.completedTitle": "Completados",
+  "downloads.completedClear": "Borrar todo",
+  "downloads.completedRemove": "Quitar de la lista",
   "downloads.pause": "Pausar",
   "downloads.resume": "Reanudar",
   "downloads.settingsTitle": "Ajustes de descarga",

@@ -42,6 +42,25 @@ export function pushRecentInstall(appName: string): void {
   }
 }
 
+/** Drops one finished download from the list. The game itself stays installed. */
+export function removeRecentDownload(id: string): void {
+  try {
+    const next = getRecentDownloads().filter((entry) => entry.id !== id);
+    localStorage.setItem(RECENT_INSTALLS_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage quota or parsing errors
+  }
+}
+
+/** Clears the finished-downloads list, like Steam's "Clear all". */
+export function clearRecentDownloads(): void {
+  try {
+    localStorage.setItem(RECENT_INSTALLS_KEY, JSON.stringify([]));
+  } catch {
+    // Ignore storage quota or parsing errors
+  }
+}
+
 /**
  * Read the recently finished downloads, newest first. The older id-only format
  * is still accepted, so an upgrade does not lose the list.

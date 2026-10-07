@@ -10,6 +10,7 @@ import { closeAllModals, render } from "../../../core/render";
 import { cdnShortLabel } from "../../../core/utils";
 import { isCompanionKey, rawOf, sourceOfKey, summaryOf } from "../../../core/selectors";
 import { isTauri } from "../../../core/constants";
+import { clearRecentDownloads, removeRecentDownload } from "../../../core/recent";
 import { epicOpenFolderPath } from "../../../epic-commands";
 import { patchLibraryCardDom } from "../../../core/game-view";
 import { pushNavHistory } from "../../../core/nav";
@@ -490,6 +491,22 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         if (S.view === "downloads") {
           render();
         }
+      }
+      return true;
+
+    case "dl-completed-remove":
+      if (id) {
+        removeRecentDownload(id);
+        if (S.view === "downloads") {
+          render();
+        }
+      }
+      return true;
+
+    case "dl-completed-clear":
+      clearRecentDownloads();
+      if (S.view === "downloads") {
+        render();
       }
       return true;
 

@@ -375,6 +375,8 @@
   "common.delete": "हटाएं",
   "downloads.installedTitle": "इंस्टॉल किए गए गेम",
   "downloads.completedTitle": "पूर्ण",
+  "downloads.completedClear": "सभी साफ़ करें",
+  "downloads.completedRemove": "सूची से हटाएँ",
   "downloads.pause": "रोकें",
   "downloads.resume": "फिर से शुरू करें",
   "downloads.settingsTitle": "डाउनलोड सेटिंग्स",

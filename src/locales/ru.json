@@ -361,6 +361,8 @@
   "common.delete": "Удалить",
   "downloads.installedTitle": "Установленные игры",
   "downloads.completedTitle": "Завершено",
+  "downloads.completedClear": "Очистить всё",
+  "downloads.completedRemove": "Убрать из списка",
   "downloads.pause": "Пауза",
   "downloads.resume": "Продолжить",
   "downloads.settingsTitle": "Параметры загрузки",
