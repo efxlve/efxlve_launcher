@@ -139,14 +139,12 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
         <span class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 22)}</span>`}
           ${g.total_achievements > 0 ? `<span class="profile-ach-bar"><span style="width:${pct}%"></span></span>` : ""}
-          ${isPlat ? `<span class="profile-ach-plat">${platCelebration(22, `card:${g.app_name}`)}</span>` : ""}
+          ${isPlat ? `<span class="profile-ach-plat">${epicPlatinumIcon(22)}</span>` : ""}
           ${show}
         </span>
         <span class="profile-ach-title">${esc(g.app_title)}</span>
-        <span class="profile-ach-foot">
-          <span class="profile-ach-meta tabular-nums">${cardMeta ? `${icon("trophy", 11)} ${esc(cardMeta)}` : ""}</span>
-          ${storeChip}
-        </span>
+        ${cardMeta ? `<span class="profile-ach-meta tabular-nums">${icon("trophy", 11)} ${esc(cardMeta)}</span>` : ""}
+        ${storeChip ? `<span class="profile-ach-platform">${storeChip}</span>` : ""}
       </div>`;
   }).join("");
 }
