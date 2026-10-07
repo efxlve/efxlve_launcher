@@ -16,7 +16,12 @@
 /* Stepped on purpose: a smooth 60 fps rotation repaints the header every frame
    (measured ~70% of a core plus the GPU). Twelve steps per turn keeps the
    "working" hint for a fraction of that. */
-.lib-refresh-btn.spinning svg { animation: spin 1.6s steps(12) infinite; }
+/* Smooth, composited spin. The old steps(12) ran at 8 fps and read as lag. */
+.lib-refresh-btn.spinning svg {
+  animation: spin 900ms linear infinite;
+  will-change: transform;
+  transform-origin: center;
+}
 /* One row always: the tab strip scrolls inside its own box instead of wrapping
    or sliding under the tools. */
 .lib-filters { flex: 1 1 0; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-bottom: 1px; }
