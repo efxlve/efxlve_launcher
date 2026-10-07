@@ -27,9 +27,49 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.26",
+    date: "2026-10-08",
+    isCurrent: true,
+    items: [
+      {
+        en: "The profile page is rebuilt as an Xbox-style hub: a cinematic banner hero with your avatar, presence and a stat bar, store scope chips, a horizontal Recently Played row and achievements as a cover grid.",
+        tr: "Profil sayfası Xbox tarzı bir merkez olarak yeniden inşa edildi: avatarınız, çevrimiçi durumunuz ve istatistik çubuğuyla sinematik bir banner, mağaza kapsamı çipleri, yatay Son Oynananlar satırı ve kapak ızgarası biçiminde başarımlar.",
+      },
+      {
+        en: "Achievements switch between the cover grid and a rich list table: every row carries playtime under the title, the trophy count above its progress bar, plus XP, last-used and the completion badge in its own column.",
+        tr: "Başarımlar kapak ızgarası ile zengin liste tablosu arasında geçiş yapıyor: her satırda oyun adının altında oynama süresi, ilerleme çubuğunun üstünde kupa sayısı; ayrıca XP, son kullanım ve tamamlanma rozeti kendi kolonunda.",
+      },
+      {
+        en: "The profile banner can be picked from any game in your library, per store or account, and Amazon Games gets its own scope chip and account rows in the profile.",
+        tr: "Profil banner'ı kütüphanenizdeki herhangi bir oyundan mağaza veya hesap bazında seçilebiliyor; Amazon Games de profilde kendi kapsam çipi ve hesap satırlarıyla yer alıyor.",
+      },
+      {
+        en: "The game overview shows a HowLongToBeat card with main story, main + extra and completionist times in a clean vertical list.",
+        tr: "Oyun genel bakışında ana hikâye, ana + ekstralar ve tamamlayıcı bitirme sürelerini sade bir dikey listede gösteren bir HowLongToBeat kartı var.",
+      },
+      {
+        en: "The Xbox storefront is painted with the launcher's dark theme — cards, filters and dropdowns included — behind a short anti-flash veil while it loads.",
+        tr: "Xbox mağazası kartlar, filtreler ve açılır menüler dahil launcher'ın koyu temasıyla boyanıyor; yüklenirken kısa bir beyaz-flaş perdesiyle örtülüyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The profile and the Xbox store stop reloading what did not change: typing in the profile or banner search no longer rebuilds the whole grid on every keystroke, and the store theme no longer stacks observers or re-covers an already painted page.",
+        tr: "Profil ve Xbox mağazası değişmeyen şeyi yeniden yüklemiyor: profil veya banner aramasında yazmak artık her tuşta tüm ızgarayı yeniden kurmuyor; mağaza teması da gözlemci biriktirmiyor ve boyanmış sayfanın üstüne perdeyi tekrar indirmiyor.",
+      },
+      {
+        en: "Opening the profile without a signed-in Epic session no longer sends a profile fetch and four store-summary calls that could only fail.",
+        tr: "Epic oturumu yokken profil açmak artık yalnızca başarısız olabilecek bir profil isteği ve dört mağaza özeti çağrısı göndermiyor.",
+      },
+      {
+        en: "The achievement list reads cleaner: playtime sits under the game title, the trophy count above its progress bar, and the completion percentage only in the last column.",
+        tr: "Başarım listesi sadeleşti: oynama süresi oyun adının altında, kupa sayısı ilerleme çubuğunun üstünde ve tamamlanma yüzdesi yalnızca son kolonda.",
+      },
+    ],
+  },
+  {
     version: "0.1.25",
     date: "2026-10-07",
-    isCurrent: true,
     items: [
       {
         en: "The Ubisoft store's LOG IN works inside the store tab now: the page opened a popup the embedded view cannot show, so the click did nothing. The login continues on the overlay page and the store reloads signed in.",
