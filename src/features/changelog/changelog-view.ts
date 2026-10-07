@@ -27,9 +27,57 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.24",
+    version: "0.1.25",
     date: "2026-10-07",
     isCurrent: true,
+    items: [
+      {
+        en: "The Ubisoft store's LOG IN works inside the store tab now: the page opened a popup the embedded view cannot show, so the click did nothing. The login continues on the overlay page and the store reloads signed in.",
+        tr: "Ubisoft mağazasının LOG IN düğmesi artık mağaza sekmesinde çalışıyor: sayfa, gömülü görünümün gösteremediği bir açılır pencere açıyordu ve tıklama boşa gidiyordu. Giriş, overlay sayfasında devam ediyor ve mağaza giriş yapmış hâlde yenileniyor.",
+      },
+      {
+        en: "The automatic cloud sync on game exit records and shows its time, so Last synced moves without pressing Sync; the manual run also clears its progress bar when it finishes.",
+        tr: "Oyun çıkışındaki otomatik bulut eşitleme artık saatini kaydedip gösteriyor; Son eşitleme, Sync'e basmadan güncelleniyor. Elle eşitleme de bitince ilerleme çubuğunu temizliyor.",
+      },
+      {
+        en: "A finished Steam transfer clears its row within seconds instead of sticking on Updating until the library is refreshed.",
+        tr: "Biten Steam indirmesi satırını saniyeler içinde kaldırıyor; kütüphane yenilenene kadar Updating yazısında takılı kalmıyor.",
+      },
+      {
+        en: "The Downloads tab follows Steam's layout: the installed-games list is gone, and a Completed section lists the last finished installs and updates from every store with a Play button — removable one by one or all at once.",
+        tr: "İndirmeler sekmesi Steam düzenini izliyor: kurulu oyunlar listesi kaldırıldı; Tamamlananlar bölümü tüm mağazalardan son biten kurulum ve güncellemeleri Oyna düğmesiyle listeliyor — tek tek ya da tümü temizlenebiliyor.",
+      },
+      {
+        en: "A lost Epic session no longer locks you out: saved accounts stay listed and can be switched back, the EGL session import is hidden when the launcher is not installed, and a failed import restores the previous session.",
+        tr: "Kaybolan Epic oturumu artık kapıyı kilitlemiyor: kayıtlı hesaplar listelenip geri dönülebiliyor; Epic Games Launcher kurulu değilken oturum içe aktarma gizleniyor ve başarısız içe aktarma önceki oturumu geri yüklüyor.",
+      },
+      {
+        en: "The storage manager reads as one ledger: hairline separators, a size column that lines up on every row, quiet icon actions and a smoother drive meter. Free space lost its misleading green.",
+        tr: "Depolama Yöneticisi tek bir defter gibi okunuyor: ince ayırıcı çizgiler, her satırda hizalanan boyut kolonu, sakin ikon eylemleri ve daha akıcı sürücü ölçeği. Boş alan, yanıltıcı yeşilini kaybetti.",
+      },
+      {
+        en: "Every library tab remembers its own sort order: All can stay on Title (A-Z) while Installed stays on Recently played.",
+        tr: "Her kütüphane sekmesi kendi sıralamasını hatırlıyor: All, Başlık (A-Z)'de kalırken Installed, Son oynanan'da kalabiliyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Switching to a saved account whose session can no longer refresh says so instead of silently disconnecting again.",
+        tr: "Yenilenemeyen bir kayıtlı oturuma geçerken sessizce tekrar düşmek yerine durum açıkça bildiriliyor.",
+      },
+      {
+        en: "Completed entries the library cannot resolve are skipped instead of printing raw app ids.",
+        tr: "Kütüphanenin çözemediği tamamlanan kayıtlar ham uygulama kimliği yazmak yerine atlanıyor.",
+      },
+      {
+        en: "The library refresh button spins smoothly instead of ticking at eight frames a second.",
+        tr: "Kütüphane yenileme düğmesi saniyede sekiz karelik tıkırtı yerine akıcı dönüyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.24",
+    date: "2026-10-07",
     items: [
       {
         en: "Epic cloud saves work end to end now: the sync passes the real save folder to Legendary, shows live progress file by file, and retries on a flaky connection instead of giving up.",
