@@ -59,6 +59,7 @@ function collectBannerCandidates(): BannerGameCandidate[] {
   for (const s of S.epicSummaries) add(s.appName, s.title);
   for (const g of S.steamSummaries) add(g.key, g.title);
   for (const g of S.gogSummaries) add(g.key, g.title);
+  for (const a of S.amazonSummaries) add(a.key, a.title);
   for (const c of S.companionSummaries) add(c.key, c.title);
 
   const collator = new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });

@@ -104,7 +104,7 @@ import {
   renderNotificationPanel,
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
-import { resetProfileCards } from "../profile/profile-view";
+import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
@@ -365,7 +365,7 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "profile-store" && t.dataset.val) {
     const store = t.dataset.val;
-    if (store === "all" || isHeaderStore(store) || store === "riot") {
+    if (store === "all" || ALL_PROFILE_STORES.includes(store as StoreKind)) {
       S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
       S.profileFilter = "all";

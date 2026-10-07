@@ -227,6 +227,7 @@ export function switchAct(kind: StoreKind): string {
   if (kind === "epic") return "account-switch";
   if (kind === "gog") return "gog-account-switch";
   if (kind === "steam") return "steam-account-switch";
+  if (kind === "amazon") return "amazon-account-switch";
   // Companion stores keep a single account; the Accounts page manages it.
   return "";
 }
@@ -291,8 +292,13 @@ export function profileAccounts(): ProfileAccount[] {
     push("steam", acc.steamId, acc.accountName, acc.isActive || acc.steamId === sessionId, "Steam");
   }
   if (sessionId) push("steam", sessionId, S.steamAuth?.accountName || S.steamStatus?.userName || "", true, "Steam");
-  if (S.amazonStatus?.logged_in) {
-    push("amazon", "amazon", S.amazonStatus.username || "", true, "Amazon Games");
+  for (const acc of S.amazonSavedAccounts || []) {
+    push("amazon", acc.user_id, acc.username, acc.is_active || acc.user_id === S.amazonAccountId, "Amazon Games");
+  }
+  if (S.amazonAccountId) {
+    push("amazon", S.amazonAccountId, S.amazonStatus?.username || "", true, "Amazon Games");
+  } else if (S.amazonStatus?.logged_in) {
+    push("amazon", S.amazonStatus.user_id || "amazon", S.amazonStatus.username || "", true, "Amazon Games");
   }
   return out;
 }
@@ -337,6 +343,7 @@ export function recentApps(scope: "all" | StoreKind): string[] {
   for (const s of S.epicSummaries) if (s.installed && push(s.appName)) return out;
   for (const g of S.gogSummaries) if (g.installed && push(g.key)) return out;
   for (const g of S.steamSummaries) if (g.installed && push(g.key)) return out;
+  for (const a of S.amazonSummaries) if (a.installed && push(a.key)) return out;
   for (const c of S.companionSummaries) if (c.installed && push(c.key)) return out;
   return out;
 }
@@ -441,6 +448,31 @@ function buildSteamProfileGames(): ProfileGameRecord[] {
   return games;
 }
 
+/** Amazon achievement rows from the on-disk summary cache. */
+function buildAmazonProfileGames(): ProfileGameRecord[] {
+  const games: ProfileGameRecord[] = [];
+  for (const item of S.amazonSummaries) {
+    const ach = achSummaryOf(item.key);
+    const totalAch = ach && ach.supported ? (ach.total_achievements || 0) : 0;
+    const userUnlocked = ach && ach.supported ? (ach.user_unlocked || 0) : 0;
+    const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
+    games.push({
+      sandbox_id: item.key,
+      app_name: item.key,
+      app_title: item.title,
+      cover: item.coverUrl,
+      total_unlocked: userUnlocked,
+      total_achievements: totalAch,
+      total_xp: ach?.user_xp || 0,
+      total_product_xp: ach?.total_xp || 0,
+      is_platinum: (ach?.is_platinum || false) || (totalAch > 0 && pct >= 100),
+      unlocked_percent: pct,
+      last_unlocked_date: null,
+    });
+  }
+  return games;
+}
+
 /** Stores that currently have a signed-in session or a local library. */
 export function overviewStores(): StoreKind[] {
   const linkedCompanion = new Set(
@@ -521,6 +553,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
     if (selection.account.kind === "epic") return S.epicAccount ? (S.playerProfileData?.games || []) : [];
     if (selection.account.kind === "gog") return buildGogProfileGames();
     if (selection.account.kind === "steam") return buildSteamProfileGames();
+    if (selection.account.kind === "amazon") return buildAmazonProfileGames();
     return buildCompanionProfileGames(selection.account.kind);
   }
   const scope = targetScope || storeScope();
@@ -528,7 +561,8 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
   if ((scope === "all" || scope === "steam") && S.steamSummaries.length > 0) games.push(...buildSteamProfileGames());
-  if (scope === "all" || (scope !== "epic" && scope !== "gog" && scope !== "steam")) {
+  if ((scope === "all" || scope === "amazon") && S.amazonSummaries.length > 0) games.push(...buildAmazonProfileGames());
+  if (scope === "all" || (scope !== "epic" && scope !== "gog" && scope !== "steam" && scope !== "amazon")) {
     games.push(...buildCompanionProfileGames(scope === "all" ? undefined : scope));
   }
   return games;
@@ -631,7 +665,14 @@ export function accountArchiveInfo(account: ProfileAccount): { games: number | n
       lastUsed: lastUsedLabel(saved?.last_used || 0),
     };
   }
-  // Amazon and the companion stores keep no archive row here.
+  if (account.kind === "amazon") {
+    const saved = (S.amazonSavedAccounts || []).find((a) => a.user_id === account.id);
+    return {
+      games: typeof saved?.game_count === "number" ? saved.game_count : null,
+      lastUsed: lastUsedLabel(saved?.last_used || 0),
+    };
+  }
+  // The companion stores keep no archive row here.
   return { games: null, lastUsed: "" };
 }
 
@@ -903,7 +944,7 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
 
 /** Main Profile Page Entry Point */
 export function renderProfile(): string {
-  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected() || S.companionSummaries.length > 0;
+  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected() || S.amazonSummaries.length > 0 || S.companionSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
     return `<div class="page">${`<div class="empty-state"><span class="spinner"></span><h3>${t("profile.loadingTitle")}</h3><p>${t("profile.loadingDesc")}</p></div>`}</div>`;
   }
