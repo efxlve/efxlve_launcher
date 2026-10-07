@@ -12,7 +12,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../../core/constants";
-import { pushRecent } from "../../core/recent";
+import { pushRecent, pushRecentInstall } from "../../core/recent";
 import { setSteamSummaries } from "../../core/selectors";
 import { notify, openEpicModal, scheduleRender } from "../../core/render";
 import { updateBadge } from "../../core/nav";
@@ -390,6 +390,13 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
     if (until <= now) {
       clearSteamAwait(prev.appId);
       steamKeepUntil.delete(prev.appId);
+      // The transfer stopped and the keep window passed. A finished update has
+      // every byte on disk; a pause or a cancel does not, so only the finished
+      // one joins the Downloads tab's completed list.
+      const fresh = games.find((g) => g.appId === prev.appId);
+      if (fresh && fresh.bytesToDownload > 0 && fresh.bytesDownloaded >= fresh.bytesToDownload) {
+        pushRecentInstall(`steam::${prev.appId}`);
+      }
       continue;
     }
     // Steam drops the row for a moment when an update starts. Keep it, and

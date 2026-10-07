@@ -360,6 +360,7 @@
   "common.search": "Szukaj",
   "common.delete": "Usuń",
   "downloads.installedTitle": "Zainstalowane gry",
+  "downloads.completedTitle": "Ukończone",
   "downloads.pause": "Wstrzymaj",
   "downloads.resume": "Wznów",
   "downloads.settingsTitle": "Ustawienia pobierania",

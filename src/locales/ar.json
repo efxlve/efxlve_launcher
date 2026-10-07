@@ -360,6 +360,7 @@
   "common.search": "بحث",
   "common.delete": "حذف",
   "downloads.installedTitle": "الألعاب المثبتة",
+  "downloads.completedTitle": "المكتملة",
   "downloads.pause": "إيقاف مؤقت",
   "downloads.resume": "استئناف",
   "downloads.settingsTitle": "إعدادات التنزيل",

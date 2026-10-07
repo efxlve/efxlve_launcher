@@ -374,6 +374,7 @@
   "common.search": "Search",
   "common.delete": "Delete",
   "downloads.installedTitle": "Installed Games",
+  "downloads.completedTitle": "Completed",
   "downloads.pause": "Pause",
   "downloads.resume": "Resume",
   "downloads.settingsTitle": "Download Settings",

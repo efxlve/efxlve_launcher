@@ -360,6 +360,7 @@
   "common.search": "ค้นหา",
   "common.delete": "ลบ",
   "downloads.installedTitle": "เกมที่ติดตั้งแล้ว",
+  "downloads.completedTitle": "เสร็จสิ้น",
   "downloads.pause": "หยุดชั่วคราว",
   "downloads.resume": "ทำต่อ",
   "downloads.settingsTitle": "การตั้งค่าการดาวน์โหลด",

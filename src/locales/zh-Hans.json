@@ -360,6 +360,7 @@
   "common.search": "搜索",
   "common.delete": "删除",
   "downloads.installedTitle": "已安装的游戏",
+  "downloads.completedTitle": "已完成",
   "downloads.pause": "暂停",
   "downloads.resume": "继续",
   "downloads.settingsTitle": "下载设置",

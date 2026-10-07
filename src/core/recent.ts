@@ -25,22 +25,42 @@ export function pushRecent(appName: string): void {
   updateChrome();
 }
 
-/** Record a newly installed or updated game id to the front of the recent installs list. */
+/** A finished download, newest first (max 12, persisted in localStorage). */
+export interface RecentDownload {
+  id: string;
+  at: number;
+}
+
+/** Record a newly installed or updated game id to the front of the recent downloads list. */
 export function pushRecentInstall(appName: string): void {
   try {
-    const list = getRecentInstalls();
-    const next = [appName, ...list.filter((x) => x !== appName)].slice(0, 12);
+    const list = getRecentDownloads();
+    const next = [{ id: appName, at: Date.now() }, ...list.filter((x) => x.id !== appName)].slice(0, 12);
     localStorage.setItem(RECENT_INSTALLS_KEY, JSON.stringify(next));
   } catch {
     // Ignore storage quota or parsing errors
   }
 }
 
-/** Read recent install and update game ids from storage. */
-export function getRecentInstalls(): string[] {
+/**
+ * Read the recently finished downloads, newest first. The older id-only format
+ * is still accepted, so an upgrade does not lose the list.
+ */
+export function getRecentDownloads(): RecentDownload[] {
   try {
     const raw = localStorage.getItem(RECENT_INSTALLS_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((entry): RecentDownload[] => {
+      if (typeof entry === "string") return entry ? [{ id: entry, at: 0 }] : [];
+      if (entry && typeof entry === "object") {
+        const id = (entry as { id?: unknown }).id;
+        const at = (entry as { at?: unknown }).at;
+        if (typeof id === "string" && id) return [{ id, at: typeof at === "number" ? at : 0 }];
+      }
+      return [];
+    });
   } catch {
     return [];
   }

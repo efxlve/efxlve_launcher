@@ -360,6 +360,7 @@
   "common.search": "検索",
   "common.delete": "削除",
   "downloads.installedTitle": "インストール済みゲーム",
+  "downloads.completedTitle": "完了",
   "downloads.pause": "一時停止",
   "downloads.resume": "再開",
   "downloads.settingsTitle": "ダウンロード設定",

@@ -9,14 +9,17 @@
 
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
 import { measureFolders, measuredSize } from "../../core/folder-size";
+import { epicActionButtons } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
-import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, summaryOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
-import { localizeMessage, t } from "../../i18n";
+import { localizeMessage, formatSyncStamp, t } from "../../i18n";
+import { storeName } from "../profile/profile-view";
+import { getRecentDownloads } from "../../core/recent";
 import { epicPortrait, type EpicSummary } from "../../epic";
 import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
@@ -231,8 +234,6 @@ export function measureInstalledSizes(): void {
     (key, bytes) => {
       const el = document.querySelector<HTMLElement>(`[data-dl-size="${CSS.escape(key)}"]`);
       if (el) el.textContent = fmtBytes(bytes);
-      const total = document.querySelector<HTMLElement>("[data-dl-total]");
-      if (total) total.textContent = fmtBytes(installedGames().reduce((sum, s) => sum + shownBytes(s), 0));
     },
   ).finally(() => {
     measuringInstalled = false;
@@ -358,11 +359,17 @@ export function renderDownloads(): string {
       `${updateAct}${ignoreBtn}${manageBtn(s.appName)}`);
   }).join("");
 
-  const installed = installedGames();
-  const installedBytes = installed.reduce((sum, s) => sum + shownBytes(s), 0);
-  const installedRows = installed.map((s) => {
-    const action = `<button class="btn play small" data-act="epic-play" data-id="${s.appName}">${icon("play", 12)} ${t("common.play")}</button>`;
-    return gameRow(s, s.appName, `<span data-dl-size="${esc(s.appName)}">${fmtBytes(shownBytes(s))}</span>`, action + manageBtn(s.appName));
+  // Steam-like completed list: the most recent finished transfers, any store.
+  const completed = getRecentDownloads().slice(0, 6);
+  const completedRows = completed.map(({ id, at }) => {
+    const s = summaryOf(id);
+    const metaParts = [esc(storeName(sourceOfKey(id)))];
+    if (s && shownBytes(s) > 0) {
+      metaParts.push(`<span data-dl-size="${esc(id)}">${fmtBytes(shownBytes(s))}</span>`);
+    }
+    if (at > 0) metaParts.push(esc(formatSyncStamp(String(at))));
+    const play = s ? epicActionButtons(s, "small", { primaryOnly: true }) : "";
+    return gameRow(s, id, metaParts.join(" · "), `${play}${manageBtn(id)}`);
   }).join("");
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
@@ -378,7 +385,7 @@ export function renderDownloads(): string {
     );
   }).join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && installed.length === 0 && steamDownloading.length === 0
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -394,7 +401,7 @@ export function renderDownloads(): string {
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length, steamRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
-      ${installedRows ? section(t("downloads.installedTitle"), installed.length, installedRows, `<span class="dl-installed-total" data-dl-total>${fmtBytes(installedBytes)}</span>`) : ""}
+      ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows) : ""}
     </div>`;
 }
 

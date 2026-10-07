@@ -374,6 +374,7 @@
   "common.search": "Ara",
   "common.delete": "Sil",
   "downloads.installedTitle": "Yüklü Oyunlar",
+  "downloads.completedTitle": "Tamamlananlar",
   "downloads.pause": "Duraklat",
   "downloads.resume": "Devam Et",
   "downloads.settingsTitle": "İndirme Ayarları",

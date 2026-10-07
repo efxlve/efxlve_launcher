@@ -360,6 +360,7 @@
   "common.search": "搜尋",
   "common.delete": "刪除",
   "downloads.installedTitle": "已安裝的遊戲",
+  "downloads.completedTitle": "已完成",
   "downloads.pause": "暫停",
   "downloads.resume": "繼續",
   "downloads.settingsTitle": "下載設定",

@@ -360,6 +360,7 @@
   "common.search": "Поиск",
   "common.delete": "Удалить",
   "downloads.installedTitle": "Установленные игры",
+  "downloads.completedTitle": "Завершено",
   "downloads.pause": "Пауза",
   "downloads.resume": "Продолжить",
   "downloads.settingsTitle": "Параметры загрузки",

@@ -360,6 +360,7 @@
   "common.search": "검색",
   "common.delete": "삭제",
   "downloads.installedTitle": "설치된 게임",
+  "downloads.completedTitle": "완료됨",
   "downloads.pause": "일시 중지",
   "downloads.resume": "다시 시작",
   "downloads.settingsTitle": "다운로드 설정",
