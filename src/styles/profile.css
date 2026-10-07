@@ -821,3 +821,104 @@
     min-width: 84px;
   }
 }
+
+/* --- Xbox-style layout: banner hero, then full-width rows --- */
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-hero {
+  position: relative;
+  padding: 0 24px 22px;
+  overflow: hidden;
+}
+
+.profile-hero-banner {
+  position: relative;
+  height: 150px;
+  margin: 0 -24px;
+  background-color: var(--surface-3);
+  background-size: cover;
+  background-position: center 30%;
+}
+
+.profile-hero-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.1) 0%, rgba(10, 10, 10, 0.55) 62%, var(--surface-1) 100%);
+}
+
+.profile-hero-banner.is-plain {
+  background-image: radial-gradient(130% 170% at 16% 0%, var(--surface-3) 0%, var(--surface-1) 72%);
+}
+
+.profile-hero-top {
+  position: relative;
+  z-index: 1;
+  margin-top: -38px;
+  align-items: flex-end;
+}
+
+.profile-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.profile-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-row-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.profile-recent-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.profile-recent-row .profile-recent-card {
+  width: 104px;
+  flex: none;
+}
+
+.profile-recent-name {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-showcase-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.profile-showcase-row .profile-showcase-hero {
+  flex: 0 0 380px;
+  max-width: 380px;
+}
+
+.profile-showcase-row .profile-showcase-strip {
+  flex: 1;
+  margin-top: 0;
+  min-width: 0;
+}

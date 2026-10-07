@@ -14,7 +14,7 @@
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
-import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
 import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
@@ -661,7 +661,19 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
   </div>`;
 }
 
-/** Xbox-style identity hero: avatar, name, presence, scope chips and stats. */
+/** Wide art for the profile banner: the most recent game's hero, else nothing. */
+function profileBannerArt(scope: "all" | StoreKind): string {
+  for (const appName of recentApps(scope)) {
+    const custom = S.customHeroes[appName];
+    if (custom) return custom;
+    const s = summaryOf(appName);
+    const art = s ? epicWideArt(s) : null;
+    if (art) return art;
+  }
+  return "";
+}
+
+/** Xbox-style identity hero: banner, avatar, name, presence, scope chips and stats. */
 function renderProfileHero(
   displayName: string,
   avatarKey: string,
@@ -690,8 +702,11 @@ function renderProfileHero(
         </button>
       </div>`;
 
+  const banner = showData ? profileBannerArt(scope) : "";
+
   return `
     <section class="card profile-hero">
+      <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""} aria-hidden="true"></div>
       <div class="profile-hero-top">
         <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
           <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 30) : esc(initial)}</span>
@@ -773,29 +788,28 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     </section>`;
 }
 
-/** Side rail: recently played covers. */
-function renderRecentPanel(scope: "all" | StoreKind): string {
-  const recents = recentApps(scope);
+/** Xbox-style horizontal strip of recently played covers. */
+function renderRecentRow(scope: "all" | StoreKind): string {
+  const recents = recentApps(scope).slice(0, 10);
+  if (recents.length === 0) return "";
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
     const cover = coverOf(appName);
     return `
       <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
         <span class="profile-recent-thumb-wrap">
-          ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
+          ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
+        <span class="profile-recent-name">${esc(title)}</span>
       </button>`;
   }).join("");
   return `
-    <section class="card profile-panel profile-rail-panel">
-      <div class="profile-panel-head">
-        <div class="profile-panel-title-wrap">
-          <span class="profile-panel-icon">${icon("clock", 15)}</span>
-          <h3 class="profile-panel-title">${t("profile.recentGamesTitle")}</h3>
-        </div>
+    <section class="profile-row">
+      <div class="profile-row-head">
+        <h3 class="profile-row-title">${t("profile.recentGamesTitle")}</h3>
         <button type="button" class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
       </div>
-      ${recents.length > 0 ? `<div class="profile-recent-grid">${cards}</div>` : `<div class="profile-rail-empty">${t("profile.noRecentGames")}</div>`}
+      <div class="profile-recent-row">${cards}</div>
     </section>`;
 }
 
@@ -825,39 +839,20 @@ function featuredMeta(g: ProfileGameRecord): string {
 }
 
 /**
- * Side rail: 100% completions as a podium. The newest (or biggest) completion
- * takes a large card with the big cup; the rest wait on a small cover strip.
+ * Horizontal showcase row: the featured 100% completion takes a wide card and
+ * the rest wait as a cover strip beside it.
  */
-function renderShowcasePanel(games: ProfileGameRecord[]): string {
+function renderShowcaseRow(games: ProfileGameRecord[]): string {
   const completed = games.filter((g) => g.unlocked_percent >= 100);
-  const head = `
-    <div class="profile-panel-head">
-      <div class="profile-panel-title-wrap">
-        <span class="profile-panel-icon plat">${epicPlatinumIcon(15)}</span>
-        <div>
-          <h3 class="profile-panel-title">${t("profile.showcaseTitle")}</h3>
-          <div class="profile-panel-sub">${t("profile.showcaseSubtitle")}</div>
-        </div>
-      </div>
-      ${completed.length > 0 ? `<span class="chip accent tabular-nums">${completed.length}</span>` : ""}
-    </div>`;
-
-  if (completed.length === 0) {
-    return `
-      <section class="card profile-panel profile-rail-panel">
-        ${head}
-        <div class="profile-rail-empty">${t("profile.showcaseEmpty")}</div>
-      </section>`;
-  }
+  if (completed.length === 0) return "";
 
   const featured = pickFeaturedCompletion(completed);
   const cover = coverOf(featured.app_name, featured.cover || "");
   const meta = featuredMeta(featured);
-  const rest = completed.filter((g) => g.app_name !== featured.app_name);
-  // Five 56px tiles plus gaps fill the rail exactly; never overflow into a scrollbar.
-  const shown = rest.slice(0, rest.length > 5 ? 4 : 5);
-  const moreCount = rest.length - shown.length;
-  const minis = shown.map((g) => {
+  const restAll = completed.filter((g) => g.app_name !== featured.app_name);
+  const rest = restAll.slice(0, 9);
+  const moreCount = restAll.length - rest.length;
+  const minis = rest.map((g) => {
     const miniCover = coverOf(g.app_name, g.cover || "");
     return `
       <button type="button" class="profile-showcase-mini" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
@@ -866,24 +861,29 @@ function renderShowcasePanel(games: ProfileGameRecord[]): string {
   }).join("");
 
   return `
-    <section class="card profile-panel profile-rail-panel">
-      ${head}
-      <button type="button" class="profile-showcase-hero" data-act="open-game-from-profile" data-id="${esc(featured.app_name)}" title="${esc(featured.app_title)}">
-        <span class="profile-showcase-cover${cover ? "" : " is-empty"}">
-          ${cover ? `<img${steamArtAttrs(featured.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
-        </span>
-        <span class="profile-showcase-info">
-          <span class="profile-showcase-name">${esc(featured.app_title)}</span>
-          ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
-          <span class="profile-showcase-pct tabular-nums">${platCelebration(40, `vitrin:${featured.app_name}`)}<span>100%</span><small>${esc(t("profile.statCompleted"))}</small></span>
-        </span>
-      </button>
-      ${rest.length > 0
-        ? `<div class="profile-showcase-strip">
-            ${minis}
-            ${moreCount > 0 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${moreCount}</button>` : ""}
-          </div>`
-        : ""}
+    <section class="profile-row">
+      <div class="profile-row-head">
+        <h3 class="profile-row-title">${t("profile.showcaseTitle")}</h3>
+        <span class="chip accent tabular-nums">${completed.length}</span>
+      </div>
+      <div class="profile-showcase-row">
+        <button type="button" class="profile-showcase-hero" data-act="open-game-from-profile" data-id="${esc(featured.app_name)}" title="${esc(featured.app_title)}">
+          <span class="profile-showcase-cover${cover ? "" : " is-empty"}">
+            ${cover ? `<img${steamArtAttrs(featured.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
+          </span>
+          <span class="profile-showcase-info">
+            <span class="profile-showcase-name">${esc(featured.app_title)}</span>
+            ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
+            <span class="profile-showcase-pct tabular-nums">${platCelebration(40, `vitrin:${featured.app_name}`)}<span>100%</span><small>${esc(t("profile.statCompleted"))}</small></span>
+          </span>
+        </button>
+        ${minis
+          ? `<div class="profile-showcase-strip">
+              ${minis}
+              ${moreCount > 0 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${moreCount}</button>` : ""}
+            </div>`
+          : ""}
+      </div>
     </section>`;
 }
 
@@ -1009,14 +1009,8 @@ export function renderProfile(): string {
   return `
     <div class="page profile-page">
       ${heroHtml}
-      <div class="profile-columns">
-        <div class="profile-col-main">
-          ${renderAchievementsPanel(games, filtered)}
-        </div>
-        <aside class="profile-col-side">
-          ${renderShowcasePanel(games)}
-          ${renderRecentPanel(scope)}
-        </aside>
-      </div>
+      ${showData ? renderRecentRow(scope) : ""}
+      ${showData ? renderShowcaseRow(games) : ""}
+      ${renderAchievementsPanel(games, filtered)}
     </div>`;
 }
