@@ -37,6 +37,7 @@ import {
   type VerifyProgressEvent,
 } from "../../epic";
 import { localizeMessage, formatSyncStamp, setLanguage, t } from "../../i18n";
+import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
@@ -209,6 +210,15 @@ export async function initApp(hooks: {
   void initGogSession();
   void loadAmazonSession();
   void loadAmazonInstallDir();
+  // The Accounts card hides the EGL session import when the launcher is gone:
+  // importing from a missing launcher is how a session got lost before.
+  void eglLauncherPresent()
+    .then((present) => {
+      if (S.eglLauncherPresent === present) return;
+      S.eglLauncherPresent = present;
+      if (S.view === "accounts") hooks.scheduleRender();
+    })
+    .catch(() => {});
   void hydrateSteamAuth();
   void loadSavedAccounts();
   void initCloudBackupSettings();

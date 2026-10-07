@@ -191,15 +191,62 @@ pub async fn epic_import_egl(app: AppHandle) -> Result<String, String> {
     }
     let config_dir = skip::default_config_dir();
     crate::legendary::accounts::ensure_current_account_saved(&config_dir);
-    client::run_unit(&bin, &["-y", "auth", "--import"])
-        .await
-        .map_err(|e| fail(&app, e))?;
+    // Remember the session that was open: `auth --import` can drop it before it
+    // fails, and a failed import must not leave the user signed out.
+    let previous = crate::legendary::accounts::read_active_user(&config_dir).map(|(id, _)| id);
+    if let Err(e) = client::run_unit(&bin, &["-y", "auth", "--import"]).await {
+        restore_previous_session(&config_dir, previous.as_deref());
+        return Err(fail(&app, e));
+    }
     let st: LegendaryStatus = client::run_json(&bin, &["status", "--offline", "--json"])
         .await
         .map_err(|e| fail(&app, e))?;
     crate::legendary::accounts::discard_shared_session_cache(&config_dir);
     crate::legendary::accounts::ensure_current_account_saved(&config_dir);
     Ok(st.account)
+}
+
+/// Puts the archived session back when a failed EGL import left no active
+/// `user.json`. The account itself was archived before the import started.
+fn restore_previous_session(config_dir: &std::path::Path, account_id: Option<&str>) {
+    let Some(id) = account_id else {
+        return;
+    };
+    if config_dir.join("user.json").is_file() {
+        return;
+    }
+    let _ = crate::legendary::accounts::switch_account(config_dir, id);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::restore_previous_session;
+
+    #[test]
+    fn a_failed_import_restores_the_archived_session() {
+        let dir = std::env::temp_dir().join(format!("efxlve-import-restore-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        // An open session that is also archived, as the import flow leaves it.
+        let user = r#"{"account_id":"4cff91c2292944e9a8548f46a1c95ef0","displayName":"Efe"}"#;
+        std::fs::write(dir.join("user.json"), user).unwrap();
+        crate::legendary::accounts::ensure_current_account_saved(&dir);
+        std::fs::remove_file(dir.join("user.json")).unwrap();
+        assert!(crate::legendary::accounts::read_active_user(&dir).is_none());
+
+        restore_previous_session(&dir, Some("4cff91c2292944e9a8548f46a1c95ef0"));
+        let back = crate::legendary::accounts::read_active_user(&dir);
+        assert_eq!(
+            back.as_ref().map(|(id, _)| id.as_str()),
+            Some("4cff91c2292944e9a8548f46a1c95ef0")
+        );
+
+        // No remembered id, or a session already in place: both are no-ops.
+        restore_previous_session(&dir, None);
+        restore_previous_session(&dir, Some("4cff91c2292944e9a8548f46a1c95ef0"));
+        assert!(crate::legendary::accounts::read_active_user(&dir).is_some());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
 
 #[tauri::command]

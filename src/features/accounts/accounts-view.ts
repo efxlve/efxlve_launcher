@@ -250,7 +250,7 @@ function signInBlock(allowCancel: boolean): string {
     <div class="acc-signin">
       <div class="acc-actions">
         <button class="btn primary" data-act="epic-open-login">${icon("external", 14)} ${t("auth.epicWebLogin")}</button>
-        <button class="btn ghost" data-act="epic-import" title="${esc(t("auth.importSubtitle"))}">${icon("download", 14)} ${t("auth.importTitle")}</button>
+        ${S.eglLauncherPresent ? `<button class="btn ghost" data-act="epic-import" title="${esc(t("auth.importSubtitle"))}">${icon("download", 14)} ${t("auth.importTitle")}</button>` : ""}
         ${allowCancel ? `<button class="btn ghost" data-act="auth-cancel">${t("common.cancel")}</button>` : ""}
       </div>
       <div class="auth-code">
