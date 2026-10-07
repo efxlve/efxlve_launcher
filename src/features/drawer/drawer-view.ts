@@ -26,7 +26,7 @@ import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
@@ -36,7 +36,7 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
-import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderNextAchievements, renderProgressStrip } from "./drawer-widgets";
+import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -513,11 +513,11 @@ function ensureOverviewData(s: EpicSummary): void {
     epicGetHltb(s.title, appName)
       .then((data) => {
         S.loadedHltb.set(appName, data);
-        if (S.currentModalAppName !== appName) return;
-        const el = document.getElementById("gp-progress");
-        if (el) el.outerHTML = renderProgressStrip(s);
+        if (S.currentModalAppName === appName) updateHltbUI(appName, data);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (S.currentModalAppName === appName) updateHltbUI(appName, undefined);
+      })
       .finally(() => { S.loadingHltbFor = null; });
   }
   if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
@@ -717,6 +717,12 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   updateNavHistoryUi();
 }
 
+export function updateHltbUI(appName: string, data?: HltbData): void {
+  if (S.currentModalAppName !== appName) return;
+  const container = document.getElementById("drawer-hltb-container");
+  if (container) container.innerHTML = renderHltbCard(data, false);
+}
+
 export function updateCriticUI(appName: string, data: CriticData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-critic-container");
@@ -772,7 +778,7 @@ export function renderDrawerOverview(
         ${renderNextAchievements(s.appName)}
       </div>
       <aside class="hub-overview-sidebar">
-        ${renderProgressStrip(s)}
+        <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
         <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName)}</div>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>

@@ -34,11 +34,11 @@ export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silve
 export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
   if (isLoading) {
     return `
-      <div class="drawer-hltb-card loading">
-        <div class="hltb-head">
-          <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
-          <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
+      <div class="hub-card drawer-hltb-card loading">
+        <div class="hub-card-header hltb-head">
+          <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
         </div>
+        <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
       </div>
     `;
   }
@@ -46,10 +46,10 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     return "";
   }
   return `
-    <div class="drawer-hltb-card">
-      <div class="hltb-head">
-        <div class="hltb-title">${icon("timer", 13)} <span>HowLongToBeat</span></div>
-        <div class="hltb-source">${i18nT("hltb.times")}</div>
+    <div class="hub-card drawer-hltb-card">
+      <div class="hub-card-header hltb-head">
+        <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
+        <span class="hltb-source">${i18nT("hltb.times")}</span>
       </div>
       <div class="hltb-grid">
         <div class="hltb-item">
@@ -472,43 +472,9 @@ export function isMultiplayerOnlyMode(mode: GameMode | null): boolean {
   return mode === "multiplayer" || mode === "battleRoyale" || mode === "mmo" || mode === "multi4v1" || mode === "multiAsym";
 }
 
+/** @deprecated Replaced by renderHltbCard */
 export function renderProgressStrip(s: EpicSummary): string {
-  const reqData = S.loadedRequirements.get(s.appName);
-  if (isMultiplayerOnlyMode(detectGameMode(s, reqData))) return `<div id="gp-progress"></div>`;
-  const hltb = S.loadedHltb.get(s.appName);
-  if (S.loadingHltbFor === s.appName && !hltb) {
-    return `
-      <section id="gp-progress" class="gp-side-card gp-progress">
-        <h3 class="gp-section-title">${icon("timer", 13)} ${i18nT("drawer.progressStory")}</h3>
-        <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
-      </section>`;
-  }
-  const target = hltb?.supported ? (hltb.main_story || hltb.main_extra || hltb.completionist || 0) : 0;
-  if (!target) return `<div id="gp-progress"></div>`;
-  const playedSec = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
-  const playedH = playedSec / 3600;
-  const pct = Math.min(100, Math.round((playedH / target) * 100));
-  const over = playedH >= target;
-  const extras = [
-    over ? i18nT("drawer.progressOver") : "",
-    hltb?.main_extra && hltb.main_extra !== target ? `${i18nT("hltb.mainExtra")} ${i18nT("hltb.hours", { n: hltb.main_extra })}` : "",
-    hltb?.completionist && hltb.completionist !== target ? `${i18nT("hltb.completionist")} ${i18nT("hltb.hours", { n: hltb.completionist })}` : "",
-  ].filter(Boolean).join(" · ");
-  return `
-    <section id="gp-progress" class="gp-side-card gp-progress">
-      <div class="gp-progress-head">
-        <h3 class="gp-section-title">${icon("timer", 13)} ${i18nT("drawer.progressStory")}</h3>
-        <span class="gp-progress-pct num">${pct}%</span>
-      </div>
-      <div class="gp-progress-track" title="${esc(i18nT("drawer.progressTypical"))}">
-        <span class="gp-progress-fill" style="width:${pct}%"></span>
-      </div>
-      <div class="gp-progress-meta">
-        <span class="num">${esc(fmtPlaytime(playedSec))}</span>
-        <span class="num">${i18nT("hltb.hours", { n: target })}</span>
-      </div>
-      ${extras ? `<p class="gp-progress-extra">${esc(extras)}</p>` : ""}
-    </section>`;
+  return renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName);
 }
 
 export function renderNextAchievements(appName: string): string {
