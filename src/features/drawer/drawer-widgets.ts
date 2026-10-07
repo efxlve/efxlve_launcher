@@ -49,20 +49,19 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     <div class="hub-card drawer-hltb-card">
       <div class="hub-card-header hltb-head">
         <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
-        <span class="hltb-source">${i18nT("hltb.times")}</span>
       </div>
-      <div class="hltb-grid">
-        <div class="hltb-item">
-          <div class="hltb-val">${hltb.main_story ? i18nT("hltb.hours", { n: hltb.main_story }) : "—"}</div>
-          <div class="hltb-label">${i18nT("hltb.mainStory")}</div>
+      <div class="hltb-list">
+        <div class="hltb-row">
+          <span class="hltb-row-label">${i18nT("hltb.mainStory")}</span>
+          <span class="hltb-row-val${!hltb.main_story ? " empty" : ""}">${hltb.main_story ? i18nT("hltb.hours", { n: hltb.main_story }) : "—"}</span>
         </div>
-        <div class="hltb-item">
-          <div class="hltb-val">${hltb.main_extra ? i18nT("hltb.hours", { n: hltb.main_extra }) : "—"}</div>
-          <div class="hltb-label">${i18nT("hltb.mainExtra")}</div>
+        <div class="hltb-row">
+          <span class="hltb-row-label">${i18nT("hltb.mainExtra")}</span>
+          <span class="hltb-row-val${!hltb.main_extra ? " empty" : ""}">${hltb.main_extra ? i18nT("hltb.hours", { n: hltb.main_extra }) : "—"}</span>
         </div>
-        <div class="hltb-item">
-          <div class="hltb-val">${hltb.completionist ? i18nT("hltb.hours", { n: hltb.completionist }) : "—"}</div>
-          <div class="hltb-label">${i18nT("hltb.completionist")}</div>
+        <div class="hltb-row">
+          <span class="hltb-row-label">${i18nT("hltb.completionist")}</span>
+          <span class="hltb-row-val${!hltb.completionist ? " empty" : ""}">${hltb.completionist ? i18nT("hltb.hours", { n: hltb.completionist }) : "—"}</span>
         </div>
       </div>
     </div>
