@@ -148,28 +148,33 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
 }
 
 function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): string {
-  return cardGames.map((g) => {
+  const tableHeader = `
+    <div class="profile-table-header" aria-hidden="true">
+      <div class="col-hdr col-game">${t("profile.games")}</div>
+      <div class="col-hdr col-progress">${t("profile.progressTitle")}</div>
+      <div class="col-hdr col-xp">XP / G</div>
+      <div class="col-hdr col-playtime">${t("profile.sortPlaytime")}</div>
+      <div class="col-hdr col-last">${t("profile.lastUsed")}</div>
+      <div class="col-hdr col-badge">${t("profile.statCompleted")}</div>
+    </div>`;
+
+  const rows = cardGames.map((g) => {
     const store = gameStore(g.app_name);
     const isPlat = isCompletedGame(g);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
     const pct = g.total_achievements > 0 ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
     const xpUnit = xpUnitFor(g.app_name);
-    const xpText = g.total_xp > 0
-      ? g.total_product_xp > g.total_xp
-        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
-        : `${g.total_xp.toLocaleString()} ${xpUnit}`
-      : "";
+    const xpText = g.total_xp > 0 ? `${g.total_xp.toLocaleString()} ${xpUnit}` : "—";
+    const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "—";
+    const lastPlayedText = pt && pt.last_played_timestamp ? (lastUsedLabel(pt.last_played_timestamp) || "—") : "—";
+
     const trophiesText = g.total_achievements > 0
       ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
       : g.total_unlocked > 0
         ? `${g.total_unlocked} ${t("profile.trophies")}`
-        : "";
-    const meta = [
-      trophiesText,
-      xpText,
-      pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
-    ].filter(Boolean).join(" · ");
+        : t("profile.games");
+
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
@@ -178,30 +183,58 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
       : "";
 
     const pctRight = isPlat
-      ? `<div class="profile-game-done"><span class="profile-row-plat-ico">${epicPlatinumIcon(18)}</span><span class="profile-game-pct plat tabular-nums">100%</span></div>`
+      ? `<div class="profile-badge-pill is-plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(15)}<span>100%</span></div>`
       : pct > 0
-        ? `<div class="profile-game-pct tabular-nums">${pct}%</div>`
-        : "";
-
-    const progressBar = g.total_achievements > 0
-      ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
-      : "";
+        ? `<div class="profile-badge-pill in-prog tabular-nums">${pct}%</div>`
+        : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
-        ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
-        <div class="row-main profile-game-main">
-          <div class="row-title profile-game-title-row">
-            <span class="profile-game-title">${esc(g.app_title)}</span>
-            ${storeChip}
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
+        <div class="profile-col-game">
+          ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
+          <div class="profile-game-info">
+            <div class="profile-game-title-row">
+              <span class="profile-game-title">${esc(g.app_title)}</span>
+              ${storeChip}
+            </div>
+            <div class="profile-game-sub tabular-nums">${esc(trophiesText)}</div>
           </div>
-          <div class="row-meta profile-game-meta tabular-nums">${meta}</div>
-          ${progressBar}
         </div>
-        ${show}
-        ${pctRight}
+
+        <div class="profile-col-progress">
+          <div class="profile-progress-header tabular-nums">
+            <span class="profile-progress-label">${t("profile.progressTitle")}</span>
+            <span class="profile-progress-val">${g.total_achievements > 0 ? `${pct}%` : "—"}</span>
+          </div>
+          ${g.total_achievements > 0
+            ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
+            : `<div class="progress profile-game-progress is-empty"><span></span></div>`
+          }
+        </div>
+
+        <div class="profile-col-stat profile-col-xp tabular-nums">
+          <span class="profile-stat-sub">XP / G</span>
+          <span class="profile-stat-main">${esc(xpText)}</span>
+        </div>
+
+        <div class="profile-col-stat profile-col-playtime tabular-nums">
+          <span class="profile-stat-sub">${t("profile.sortPlaytime")}</span>
+          <span class="profile-stat-main">${esc(playtimeText)}</span>
+        </div>
+
+        <div class="profile-col-stat profile-col-last tabular-nums">
+          <span class="profile-stat-sub">${t("profile.lastUsed")}</span>
+          <span class="profile-stat-main">${esc(lastPlayedText)}</span>
+        </div>
+
+        <div class="profile-col-badge">
+          ${show}
+          ${pctRight}
+        </div>
       </div>`;
   }).join("");
+
+  return tableHeader + rows;
 }
 
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
