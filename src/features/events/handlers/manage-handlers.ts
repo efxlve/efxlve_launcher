@@ -18,6 +18,7 @@ import {
   openManagePopup,
   resetVerifyInPlace,
   updateManageModalInputsInPlace,
+  updateManageSyncBar,
   updateVerifyProgressInPlace,
 } from "../../manage/manage-view";
 import { rememberCloudSync, renderBackupListHtml } from "../../drawer/drawer-widgets";
@@ -183,6 +184,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           .finally(() => {
             S.manageSyncingSaves = false;
             if (syncBtn) syncBtn.disabled = false;
+            // A manual run emits progress but no completion event, so its entry
+            // would keep the bar on "Syncing with cloud..." forever.
+            S.cloudSyncProgress.delete(id);
+            updateManageSyncBar(id);
           });
       }
       return true;

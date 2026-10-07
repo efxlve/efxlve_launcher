@@ -36,7 +36,7 @@ import {
   type VerifyCompleteEvent,
   type VerifyProgressEvent,
 } from "../../epic";
-import { localizeMessage, setLanguage, t } from "../../i18n";
+import { localizeMessage, formatSyncStamp, setLanguage, t } from "../../i18n";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
@@ -82,6 +82,7 @@ import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal } from "../drawer/drawer-view";
+import { rememberCloudSync } from "../drawer/drawer-widgets";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
 import { checkMtuAfterSyncFailure } from "../manage/mtu-guard";
@@ -725,14 +726,21 @@ export async function initApp(hooks: {
       updateManageSyncBar(p.appName);
     });
 
-    await listen<{ id: string; success: boolean; message?: string }>("cloud-sync-complete", (event) => {
+    await listen<{ id: string; success: boolean; message?: string; syncedAt?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
       const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
       // The transfer is over; the bar folds away and the row shows the result.
       S.cloudSyncProgress.delete(event.payload.id);
       updateManageSyncBar(event.payload.id);
       if (event.payload.success) {
-        if (cloudSub) cloudSub.textContent = t("manage.cloudUpToDate");
+        // The automatic run reports its own time so "Last synced" moves without
+        // the manual button; an older payload falls back to now.
+        const syncedAt = event.payload.syncedAt || String(Date.now());
+        rememberCloudSync(event.payload.id, syncedAt);
+        if (S.activeManageSettings && S.activeManageSettings.appName === event.payload.id) {
+          S.activeManageSettings.lastCloudSync = syncedAt;
+        }
+        if (cloudSub) cloudSub.textContent = t("manage.lastSync", { time: formatSyncStamp(syncedAt) });
         // A successful upload is an event worth keeping; the toast alone vanishes.
         if (title && event.payload.success && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
           pushNotification({ kind: "info", title: t("notif.backupCloudDone", { title }), appName: event.payload.id });

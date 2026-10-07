@@ -827,12 +827,26 @@ pub(super) async fn spawn_launched(
                 Ok((false, text)) => (false, short_error(&text)),
                 Err(e) => (false, e),
             };
+            // The manual button records the time; without the same record here the
+            // Manage panel keeps an old "Last synced" and the automatic upload
+            // looks like it never ran.
+            let synced_at = if success {
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis().to_string())
+                    .unwrap_or_default();
+                crate::legendary::commands::update_game_last_cloud_sync(&app_name_bg, &now);
+                now
+            } else {
+                String::new()
+            };
             let _ = app_bg.emit(
                 "cloud-sync-complete",
                 serde_json::json!({
                     "id": app_name_bg,
                     "success": success,
-                    "message": message
+                    "message": message,
+                    "syncedAt": synced_at
                 }),
             );
         }
