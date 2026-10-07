@@ -629,6 +629,9 @@ pub async fn show_store_view(
             if store_id == "epic" {
                 let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             }
+            if store_id == "xbox" {
+                let _ = v.eval(crate::store_theme::XBOX_DARK_SCRIPT);
+            }
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
                     // A store home URL is not reloaded on every tab click.

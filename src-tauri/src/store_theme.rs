@@ -5,13 +5,22 @@
 //! dark theme, so flipping that class beats repainting every control by hand;
 //! the page surfaces and card components are painted with the launcher's own
 //! dark obsidian palette (`#0e0f12` and `#14151a`).
+//!
+//! An anti-FOUC veil covers the view from frame 0 and lifts smoothly once the
+//! page and styles have painted, preventing white flashes ("flashbang").
 
 /// Injected into the Xbox storefront webview.
 pub const XBOX_DARK_SCRIPT: &str = r#"
 (function () {
   var CSS = [
-    // Base surface & text
-    'html, body, .appBackground, #root, main, div[class*="pageContainer"], div[class*="PageContainer"], div[class*="browsePage"], div[class*="BrowsePage"] { background: #0e0f12 !important; color: #e8e8e8 !important; }',
+    // Ensure root and body are immediately painted in obsidian and declare dark color-scheme
+    'html { background-color: #0e0f12 !important; color-scheme: dark !important; }',
+    'html, body { background-color: #0e0f12 !important; color-scheme: dark !important; }',
+    '.appBackground, #root, main, div[class*="pageContainer"], div[class*="PageContainer"], div[class*="browsePage"], div[class*="BrowsePage"] { background: #0e0f12 !important; color: #e8e8e8 !important; }',
+
+    // Anti-FOUC overlay: shields the view in dark obsidian until the page styles are ready
+    '#efxlve-store-veil { position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; background: #0e0f12 !important; pointer-events: none !important; opacity: 1 !important; transition: opacity 0.22s ease !important; }',
+    '#efxlve-store-veil.gone { opacity: 0 !important; }',
 
     // Microsoft UHF Header
     'header.uhf-header { background: #14151a !important; }',
@@ -68,41 +77,119 @@ pub const XBOX_DARK_SCRIPT: &str = r#"
     '::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }'
   ].join('\n');
 
+  function installVeil() {
+    try {
+      if (document.getElementById('efxlve-store-veil')) return;
+      var target = document.body || document.documentElement;
+      if (!target) return;
+      var veil = document.createElement('div');
+      veil.id = 'efxlve-store-veil';
+      target.appendChild(veil);
+    } catch (e) {}
+  }
+
+  function liftVeil() {
+    try {
+      var veil = document.getElementById('efxlve-store-veil');
+      if (!veil) return;
+      veil.classList.add('gone');
+      setTimeout(function () {
+        if (veil && veil.parentNode) veil.parentNode.removeChild(veil);
+      }, 260);
+    } catch (e) {}
+  }
+
   function apply() {
-    if (!document.documentElement.classList.contains('theme-dark')) {
-      document.documentElement.classList.add('theme-dark');
-    }
-    if (!document.body.classList.contains('theme-dark')) {
-      document.body.classList.add('theme-dark');
-    }
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.body.setAttribute('data-theme', 'dark');
+    try {
+      var root = document.documentElement;
+      if (root) {
+        if (!root.classList.contains('theme-dark')) {
+          root.classList.add('theme-dark');
+        }
+        if (root.getAttribute('data-theme') !== 'dark') {
+          root.setAttribute('data-theme', 'dark');
+        }
+        root.style.backgroundColor = '#0e0f12';
+      }
 
-    // Microsoft's own dark theme for the header, instead of overriding each
-    // control's colours from here.
-    var header = document.querySelector('header.uhf-header');
-    if (header && header.classList.contains('uhf-theme--light')) {
-      header.classList.remove('uhf-theme--light');
-      header.classList.add('uhf-theme--dark');
-    }
+      var body = document.body;
+      if (body) {
+        if (!body.classList.contains('theme-dark')) {
+          body.classList.add('theme-dark');
+        }
+        if (body.getAttribute('data-theme') !== 'dark') {
+          body.setAttribute('data-theme', 'dark');
+        }
+        body.style.backgroundColor = '#0e0f12';
+      }
 
-    var el = document.getElementById('efxlve-store-theme');
-    if (!el) {
-      el = document.createElement('style');
-      el.id = 'efxlve-store-theme';
-      (document.head || document.documentElement).appendChild(el);
-    }
-    if (el.textContent !== CSS) {
-      el.textContent = CSS;
-    }
+      // Microsoft UHF header dark mode
+      var header = document.querySelector('header.uhf-header');
+      if (header && header.classList.contains('uhf-theme--light')) {
+        header.classList.remove('uhf-theme--light');
+        header.classList.add('uhf-theme--dark');
+      }
+
+      var parent = document.head || root;
+      if (parent) {
+        var el = document.getElementById('efxlve-store-theme');
+        if (!el) {
+          el = document.createElement('style');
+          el.id = 'efxlve-store-theme';
+          parent.appendChild(el);
+        }
+        if (el.textContent !== CSS) {
+          el.textContent = CSS;
+        }
+      }
+    } catch (e) {}
   }
 
+  // 1. Immediate application as early as document creation
   apply();
+  installVeil();
+
+  // 2. Continuous enforcement through MutationObserver (catches dynamic DOM updates instantly)
+  try {
+    var scheduled = false;
+    var observer = new MutationObserver(function () {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(function () {
+        scheduled = false;
+        apply();
+      });
+    });
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'data-theme']
+      });
+    }
+  } catch (e) {}
+
+  // 3. Lifecycle hooks
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', apply);
+    document.addEventListener('DOMContentLoaded', function () {
+      apply();
+      installVeil();
+      setTimeout(liftVeil, 120);
+    });
+  } else {
+    setTimeout(liftVeil, 120);
   }
-  // The store is a single-page app: the header and the page root are rebuilt
-  // on navigation, so keep the theme applied. Idempotent and cheap.
+
+  window.addEventListener('load', function () {
+    apply();
+    setTimeout(liftVeil, 60);
+  });
+
+  // Safety fallback in case page is slow: always lift veil after 1.5s
+  setTimeout(liftVeil, 1500);
+
+  // Periodic safeguard for long-lived single-page app navigations
   setInterval(apply, 1500);
 })();
 "#;
@@ -118,5 +205,6 @@ mod tests {
         assert!(script.contains("ProductCard-module"));
         assert!(script.contains("SelectionDropdown-module"));
         assert!(script.contains("theme-dark"));
+        assert!(script.contains("efxlve-store-veil"));
     }
 }
