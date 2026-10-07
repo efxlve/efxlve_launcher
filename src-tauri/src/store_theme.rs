@@ -15,7 +15,11 @@ pub const XBOX_DARK_SCRIPT: &str = r#"
     'header.uhf-header { background: #14151a !important; }',
     'header.uhf-header, header.uhf-header * { color: #e8e8e8 !important; }',
     '.uhf-search-input { background: #1c1d23 !important; color: #e8e8e8 !important; border-color: rgba(255,255,255,0.16) !important; }',
-    '.uhf-autosuggest { background: #1c1d23 !important; }'
+    '.uhf-autosuggest { background: #1c1d23 !important; }',
+    // Product cards paint a white panel under the artwork; give it the
+    // launcher surface. The little "GAME PASS" labels keep their own pill.
+    '[class*="ProductCard-module__cardWrapper"] { background: #14151a !important; color: #e8e8e8 !important; border-color: rgba(255,255,255,0.08) !important; }',
+    '[class*="badges"], [class*="badges"] * { color: #101010 !important; }'
   ].join('\n');
 
   function apply() {
