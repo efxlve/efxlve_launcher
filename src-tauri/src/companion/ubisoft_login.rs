@@ -48,6 +48,19 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
   // re-trigger an import on every visit.
   var loginHost = location.hostname === "connect.cdn.ubisoft.com";
   var session = null;
+  // The storefront's LOG IN calls `window.open` on the webauth page. A child
+  // webview has no popup, so the click did nothing. Continue on the overlay
+  // login page instead: it is the flow this script watches, and the store tab
+  // reloads logged in when the session lands. Other popups keep their URL.
+  var overlayUrl = "__EFXLVE_UBI_OVERLAY__";
+  var realOpen = window.open;
+  window.open = function (url) {
+    if (typeof url === "string" && /ubisoft\.com|ubi\.com/i.test(url)) {
+      location.href = /webauth|\/login|signin/i.test(url) ? overlayUrl : url;
+      return null;
+    }
+    return realOpen ? realOpen.apply(this, arguments) : null;
+  };
   function b64(text) {
     var bytes = new TextEncoder().encode(text);
     var bin = "";

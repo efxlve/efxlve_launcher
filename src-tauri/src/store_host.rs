@@ -194,6 +194,29 @@ fn is_login_page(url: &url::Url) -> bool {
     )
 }
 
+/// Ubisoft's overlay login page: the same start URL the sign-in action and the
+/// Galaxy Uplay plugin use. The storefront's own LOG IN button opens a popup to
+/// `connect.ubisoft.com`, which a child webview cannot show, so that click is
+/// routed here instead.
+const UBISOFT_OVERLAY_LOGIN: &str = "https://connect.cdn.ubisoft.com/overlay/default/?env=prod&isStandalone=true&platform=pc&deviceType=desktop&locale=en-US&spaceId=0a706b37-4b88-4437-b8f4-4ed2458c9518&applicationId=20adeb9c-6dad-404e-af1e-b12b4594e86e&country=US&region=WW&ownershipGroup=empty";
+
+/// A Ubisoft sign-in URL: the store's LOG IN hands a webauth/connect page to
+/// `window.open`. Every other popup keeps the default (denied) behaviour.
+fn is_ubisoft_auth_url(url: &url::Url) -> bool {
+    let host = url.host_str().unwrap_or("").to_ascii_lowercase();
+    let ubi_host = host == "ubisoft.com"
+        || host.ends_with(".ubisoft.com")
+        || host == "ubi.com"
+        || host.ends_with(".ubi.com");
+    if !ubi_host {
+        return false;
+    }
+    let path = url.path().to_ascii_lowercase();
+    ["login", "webauth", "signin", "auth", "connect", "overlay"]
+        .iter()
+        .any(|needle| path.contains(needle))
+}
+
 /// Shows a storefront that was waiting for its page load. The epoch guards
 /// against a tab switch or a hide that happened in the meantime, and the saved
 /// rect puts the parked webview back inside the content area.
@@ -704,12 +727,33 @@ pub async fn show_store_view(
                 return false;
             }
             true
+        })
+        .on_new_window({
+            // Fallback for popups that bypass the injected script (`target=_blank`
+            // links). A child webview cannot show them, so the Ubisoft tab goes to
+            // the overlay login page; every other popup stays denied.
+            let app_popup = app.clone();
+            let popup_label = target_label.clone();
+            move |url, _features| {
+                if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
+                    if let Some(view) = app_popup.get_webview(&popup_label) {
+                        if let Ok(target) = UBISOFT_OVERLAY_LOGIN.parse::<url::Url>() {
+                            let _ = view.navigate(target);
+                        }
+                    }
+                }
+                tauri::webview::NewWindowResponse::Deny
+            }
         });
     if store_id == "battlenet" {
         builder = builder.initialization_script(crate::companion::bnet_watch_script());
     }
     if store_id == "ubisoft" {
-        builder = builder.initialization_script(crate::companion::ubi_watch_script());
+        // The overlay URL is filled into the script so the storefront's LOG IN
+        // popup can continue on the page the session capture understands.
+        let ubi_script = crate::companion::ubi_watch_script()
+            .replace("__EFXLVE_UBI_OVERLAY__", UBISOFT_OVERLAY_LOGIN);
+        builder = builder.initialization_script(ubi_script);
     }
     // The 44 KB storefront decoration only exists for the Epic store: injecting it
     // into the other storefronts meant parsing and running a script that finds
@@ -1053,6 +1097,23 @@ mod tests {
         assert!(super::is_login_page(&overlay));
         assert!(super::is_login_page(&account));
         assert!(!super::is_login_page(&store));
+    }
+
+    #[test]
+    fn ubisoft_sign_in_popups_are_recognised() {
+        // The storefront's LOG IN popup, and the overlay page the launcher uses.
+        let webauth = url::Url::parse("https://connect.ubisoft.com/v2/webauth?spaceId=x").unwrap();
+        let overlay = url::Url::parse("https://connect.cdn.ubisoft.com/overlay/default/?env=prod").unwrap();
+        assert!(super::is_ubisoft_auth_url(&webauth));
+        assert!(super::is_ubisoft_auth_url(&overlay));
+        // Store and help pages are not sign-in URLs.
+        let store = url::Url::parse("https://store.ubisoft.com/us/home").unwrap();
+        let help = url::Url::parse("https://www.ubisoft.com/help").unwrap();
+        assert!(!super::is_ubisoft_auth_url(&store));
+        assert!(!super::is_ubisoft_auth_url(&help));
+        // Another store's account page is not this flow.
+        let bnet = url::Url::parse("https://account.battle.net/login").unwrap();
+        assert!(!super::is_ubisoft_auth_url(&bnet));
     }
 
     #[test]
