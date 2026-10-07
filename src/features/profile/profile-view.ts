@@ -142,7 +142,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
           ${isPlat ? `<span class="profile-ach-plat">${platCelebration(22, `card:${g.app_name}`)}</span>` : ""}
           ${show}
         </span>
-        <span class="profile-ach-name">${esc(g.app_title)}${storeChip}</span>
+        <span class="profile-ach-name"><span class="profile-ach-title">${esc(g.app_title)}</span>${storeChip}</span>
         <span class="profile-ach-meta tabular-nums">${cardMeta ? `${icon("trophy", 11)} ${esc(cardMeta)}` : ""}</span>
       </div>`;
   }).join("");
