@@ -365,6 +365,9 @@ document.addEventListener("change", (e) => {
   }
 });
 
+/** Pending profile-search grid patch. Typing batches into one rebuild. */
+let profileSearchTimer = 0;
+
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
   // Facet search boxes only hide rows inside their own filter section; they
@@ -471,11 +474,17 @@ document.addEventListener("input", (e) => {
   }
   if (t.id === "profile-search") {
     S.profileSearchQuery = (t as HTMLInputElement).value;
-    const grid = document.getElementById("profile-games-grid");
-    if (grid) {
+    // Rebuilding the card grid on every keystroke re-creates every cover and
+    // reads as the list reloading while typing; batch the patch like the
+    // hide-achievements search does.
+    if (profileSearchTimer) window.clearTimeout(profileSearchTimer);
+    profileSearchTimer = window.setTimeout(() => {
+      profileSearchTimer = 0;
+      const grid = document.getElementById("profile-games-grid");
+      if (!grid) return;
       resetProfileCards();
       grid.innerHTML = renderProfileGrid(filteredProfileGames(profileListGames()));
-    }
+    }, 140);
     return;
   }
   if (t.id === "move-target-input") {

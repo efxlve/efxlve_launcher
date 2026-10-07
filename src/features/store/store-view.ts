@@ -491,7 +491,10 @@ export async function openProfile(): Promise<void> {
   S.profileFilter = "all";
   S.profileShowHidden = false;
   S.profileCardCount = PROFILE_CARD_CHUNK;
-  if (!S.playerProfileData && !S.profileLoading) {
+  // Without an Epic session the profile fetch can only fail; skipping it also
+  // keeps the hero refresh from spinning and refetching every store summary.
+  const epicMaybeSignedIn = Boolean(S.epicAccount) || S.epicPhase === "checking";
+  if (epicMaybeSignedIn && !S.playerProfileData && !S.profileLoading) {
     void loadPlayerProfile();
   }
   render();

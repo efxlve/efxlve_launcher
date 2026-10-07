@@ -12,6 +12,12 @@
 /// Injected into the Xbox storefront webview.
 pub const XBOX_DARK_SCRIPT: &str = r#"
 (function () {
+  // The initialization script and the PageLoadEvent::Finished eval both run on
+  // one load. Without this guard the second run stacked another observer and
+  // interval, and dropped the anti-FOUC veil over an already painted page.
+  if (window.__EFXLVE_XBOX_THEME__) return;
+  window.__EFXLVE_XBOX_THEME__ = true;
+
   var CSS = [
     // Ensure root and body are immediately painted in obsidian and declare dark color-scheme
     'html { background-color: #0e0f12 !important; color-scheme: dark !important; }',
@@ -206,5 +212,6 @@ mod tests {
         assert!(script.contains("SelectionDropdown-module"));
         assert!(script.contains("theme-dark"));
         assert!(script.contains("efxlve-store-veil"));
+        assert!(script.contains("__EFXLVE_XBOX_THEME__"));
     }
 }

@@ -58,22 +58,9 @@ export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
 }
 
-/** Celebrations already played this session (per surface and game). */
-const platShineDone = new Set<string>();
-
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
 function xpUnitFor(appName: string): string {
   return gameStore(appName) === "xbox" ? "G" : "XP";
-}
-
-/**
- * The game page's platinum celebration (glow, sparks, one-shot shine sweep)
- * for a completed set. Each surface celebrates a game once per session.
- */
-function platCelebration(size: number, shineKey: string): string {
-  const shine = platShineDone.has(shineKey) ? "" : " shine";
-  platShineDone.add(shineKey);
-  return `<span class="plat-cup${shine}" aria-hidden="true">${epicPlatinumIcon(size)}<span class="plat-spark s1">${icon("sparkles", Math.max(9, Math.round(size * 0.4)))}</span><span class="plat-spark s2">${icon("sparkles", Math.max(8, Math.round(size * 0.34)))}</span><span class="plat-shine"></span></span>`;
 }
 
 /** Stores whose achievements the launcher tracks in bulk. */

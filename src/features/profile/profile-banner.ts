@@ -24,6 +24,8 @@ export interface BannerGameCandidate {
 
 let cachedCandidates: BannerGameCandidate[] = [];
 let currentModalScopeKey = "";
+/** Pending banner-search grid patch; a full-library rebuild waits for a pause. */
+let bannerSearchTimer = 0;
 
 /** Resolves the best landscape or cover art for a game to use as a banner preview. */
 export function getGameBannerArt(appName: string): string {
@@ -88,6 +90,10 @@ function renderBannerGridHtml(games: BannerGameCandidate[], currentApp: string, 
 }
 
 export function closeProfileBannerModal(): void {
+  if (bannerSearchTimer) {
+    window.clearTimeout(bannerSearchTimer);
+    bannerSearchTimer = 0;
+  }
   const modal = document.getElementById("profile-banner-modal");
   if (modal) modal.remove();
   cachedCandidates = [];
@@ -179,7 +185,13 @@ export function openProfileBannerModal(scopeKey: string, scopeLabel = ""): void 
   if (input) {
     input.focus();
     input.addEventListener("input", () => {
-      filterProfileBannerModal(input.value);
+      // The picker can hold the whole library; rebuilding every card on each
+      // keystroke (and re-requesting its art) reads as the grid reloading.
+      if (bannerSearchTimer) window.clearTimeout(bannerSearchTimer);
+      bannerSearchTimer = window.setTimeout(() => {
+        bannerSearchTimer = 0;
+        filterProfileBannerModal(input.value);
+      }, 140);
     });
   }
 

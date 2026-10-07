@@ -227,7 +227,11 @@ document.addEventListener("click", (e) => {
     pushNavHistory({ view: targetView, settingsSection });
     if (S.view === "library") void bootEpic();
     if (S.view === "profile") {
-      if (!S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
+      // Without an Epic session the profile fetch can only fail; skipping it
+      // also keeps the hero refresh from spinning and refetching every store
+      // summary on each entry.
+      const epicMaybeSignedIn = Boolean(S.epicAccount) || S.epicPhase === "checking";
+      if (epicMaybeSignedIn && !S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
       render();
       return;
     }
