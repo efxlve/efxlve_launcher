@@ -813,80 +813,6 @@ function renderRecentRow(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-/** The completion that represents the most investment: playtime, then set size. */
-function pickFeaturedCompletion(games: ProfileGameRecord[]): ProfileGameRecord {
-  return games.reduce((a, b) => {
-    const pa = S.playtimeMap.get(a.app_name)?.total_seconds || 0;
-    const pb = S.playtimeMap.get(b.app_name)?.total_seconds || 0;
-    if (pa !== pb) return pb > pa ? b : a;
-    return b.total_achievements > a.total_achievements ? b : a;
-  }, games[0]);
-}
-
-/** Hero meta line for the featured completion: trophies, score and playtime. */
-function featuredMeta(g: ProfileGameRecord): string {
-  const pt = S.playtimeMap.get(g.app_name);
-  const score = g.total_xp > 0
-    ? g.total_product_xp > g.total_xp
-      ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnitFor(g.app_name)}`
-      : `${g.total_xp.toLocaleString()} ${xpUnitFor(g.app_name)}`
-    : "";
-  return [
-    g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}` : "",
-    score,
-    pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
-  ].filter(Boolean).join(" · ");
-}
-
-/**
- * Horizontal showcase row: the featured 100% completion takes a wide card and
- * the rest wait as a cover strip beside it.
- */
-function renderShowcaseRow(games: ProfileGameRecord[]): string {
-  const completed = games.filter((g) => g.unlocked_percent >= 100);
-  if (completed.length === 0) return "";
-
-  const featured = pickFeaturedCompletion(completed);
-  const cover = coverOf(featured.app_name, featured.cover || "");
-  const meta = featuredMeta(featured);
-  const restAll = completed.filter((g) => g.app_name !== featured.app_name);
-  const rest = restAll.slice(0, 9);
-  const moreCount = restAll.length - rest.length;
-  const minis = rest.map((g) => {
-    const miniCover = coverOf(g.app_name, g.cover || "");
-    return `
-      <button type="button" class="profile-showcase-mini" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
-        ${miniCover ? `<img${steamArtAttrs(g.app_name)} src="${esc(miniCover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-showcase-placeholder">${icon("gamepad-2", 15)}</span>`}
-      </button>`;
-  }).join("");
-
-  return `
-    <section class="profile-row">
-      <div class="profile-row-head">
-        <h3 class="profile-row-title">${t("profile.showcaseTitle")}</h3>
-        <span class="chip accent tabular-nums">${completed.length}</span>
-      </div>
-      <div class="profile-showcase-row">
-        <button type="button" class="profile-showcase-hero" data-act="open-game-from-profile" data-id="${esc(featured.app_name)}" title="${esc(featured.app_title)}">
-          <span class="profile-showcase-cover${cover ? "" : " is-empty"}">
-            ${cover ? `<img${steamArtAttrs(featured.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("gamepad-2", 22)}
-          </span>
-          <span class="profile-showcase-info">
-            <span class="profile-showcase-name">${esc(featured.app_title)}</span>
-            ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
-            <span class="profile-showcase-pct tabular-nums">${platCelebration(40, `vitrin:${featured.app_name}`)}<span>100%</span><small>${esc(t("profile.statCompleted"))}</small></span>
-          </span>
-        </button>
-        ${minis
-          ? `<div class="profile-showcase-strip">
-              ${minis}
-              ${moreCount > 0 ? `<button type="button" class="profile-showcase-more" data-act="profile-filter" data-val="platinum" title="${esc(t("profile.filterPlatinum"))}">+${moreCount}</button>` : ""}
-            </div>`
-          : ""}
-      </div>
-    </section>`;
-}
-
 /** Dormant account panel: calm grouped list when an inactive account is selected. */
 function renderDormantView(account: ProfileAccount, displayName: string, avatarKey: string, customAvatar: string | null, initial: string): string {
   const archive = accountArchiveInfo(account);
@@ -1010,7 +936,6 @@ export function renderProfile(): string {
     <div class="page profile-page">
       ${heroHtml}
       ${showData ? renderRecentRow(scope) : ""}
-      ${showData ? renderShowcaseRow(games) : ""}
       ${renderAchievementsPanel(games, filtered)}
     </div>`;
 }
