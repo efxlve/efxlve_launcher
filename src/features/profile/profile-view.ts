@@ -634,7 +634,7 @@ interface ProfileStat {
 }
 
 function renderStat(stat: ProfileStat): string {
-  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(14)}</span>` : "";
+  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(18)}</span>` : "";
   return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}</span><span class="profile-stat-label">${esc(stat.label)}</span></div>`;
 }
 
@@ -685,6 +685,7 @@ function renderProfileHero(
   account: ProfileAccount | null,
 ): string {
   const avatarTitle = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
+  const isOnline = combined ? overviewStores().length > 0 : Boolean(account?.active);
 
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
@@ -693,7 +694,7 @@ function renderProfileHero(
       : "";
 
   const statsHtml = showData
-    ? `<div class="profile-stats">${stats.map(renderStat).join("")}</div>`
+    ? `<div class="profile-stats-bar"><div class="profile-stats">${stats.map(renderStat).join("")}</div></div>`
     : `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
         <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
@@ -708,7 +709,7 @@ function renderProfileHero(
       <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""} aria-hidden="true"></div>
       <div class="profile-hero-top">
         <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-          <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 30) : esc(initial)}</span>
+          <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
           <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
         </button>
         <div class="profile-hero-identity">
