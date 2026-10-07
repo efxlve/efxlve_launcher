@@ -138,21 +138,21 @@ function moveButton(g: StorageGame): string {
   if (g.source === "epic") {
     const partner = getThirdPartyLauncher(rawOf(g.key));
     if (requiresThirdPartyLauncher(partner)) {
-      return `<button type="button" class="storage-action-btn ghost btn-move disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
+      return `<button type="button" class="icon-btn disabled-hint" data-act="blocked-move-tp" data-id="${esc(g.key)}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 15)}</button>`;
     }
   }
-  return `<button type="button" class="storage-action-btn ghost btn-move" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 13)} <span>${t("manage.move")}</span></button>`;
+  return `<button type="button" class="icon-btn" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 15)}</button>`;
 }
 
 function folderButton(g: StorageGame): string {
   if (!g.path) {
-    return `<button type="button" class="storage-action-btn ghost btn-folder disabled-hint" disabled title="${esc(t("common.installPathUnknown"))}">${icon("folder", 13)} <span>${t("manage.openFolder")}</span></button>`;
+    return `<button type="button" class="icon-btn disabled-hint" disabled title="${esc(t("common.installPathUnknown"))}">${icon("folder", 15)}</button>`;
   }
-  return `<button type="button" class="storage-action-btn ghost btn-folder" data-act="storage-open-folder" data-path="${esc(g.path)}" data-id="${esc(g.key)}" title="${esc(t("ctx.openFolder"))}">${icon("folder", 13)} <span>${t("manage.openFolder")}</span></button>`;
+  return `<button type="button" class="icon-btn" data-act="storage-open-folder" data-path="${esc(g.path)}" data-id="${esc(g.key)}" title="${esc(t("ctx.openFolder"))}">${icon("folder", 15)}</button>`;
 }
 
 function uninstallButton(g: StorageGame): string {
-  return `<button type="button" class="storage-action-btn danger btn-uninstall" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">${icon("trash", 13)} <span>${t("common.uninstall")}</span></button>`;
+  return `<button type="button" class="icon-btn danger" data-act="storage-uninstall" data-id="${esc(g.key)}" title="${t("common.uninstall")}">${icon("trash", 15)}</button>`;
 }
 
 function gameRow(g: StorageGame): string {
@@ -167,16 +167,14 @@ function gameRow(g: StorageGame): string {
         ${g.cover ? `<img class="storage-game-thumb"${steamArtAttrs(g.key)} src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb storage-thumb-fallback">${icon("gamepad-2", 18)}</div>`}
       </div>
       <div class="storage-game-info">
-        <div class="storage-game-top">
-          <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
-          <div class="storage-game-size" data-storage-size="${esc(g.key)}">${fmtBytes(size)}</div>
-        </div>
+        <div class="storage-game-title" title="${esc(g.title)}">${esc(g.title)}</div>
         <div class="storage-game-meta">
           ${store}
           ${tp && partner ? `<span class="storage-meta-dot" aria-hidden="true">•</span><span class="storage-tp-badge" title="${esc(t("manage.moveThirdPartyWarning", { name: partner.name }))}">${esc(partner.name)}</span>` : ""}
           ${cleanPath ? `<span class="storage-meta-dot" aria-hidden="true">•</span><span class="storage-game-path" title="${esc(cleanPath)}">${esc(cleanPath)}</span>` : ""}
         </div>
       </div>
+      <div class="storage-game-size" data-storage-size="${esc(g.key)}">${fmtBytes(size)}</div>
       <div class="storage-game-actions">
         <div class="storage-action-slot">${moveButton(g)}</div>
         <div class="storage-action-slot">${folderButton(g)}</div>
@@ -275,7 +273,7 @@ export function renderStorageManager(): void {
       <button type="button" class="storage-drive-tab ${active ? "active" : ""}" data-act="storage-select-drive" data-drive="${ltr}">
         <span class="storage-drive-tab-icon">${icon("hard-drive", 15)}</span>
         <span>${ltr}:${sys?.label ? ` ${esc(sys.label)}` : ""}</span>
-        ${freeText ? `<span class="storage-drive-tab-badge">${freeText} ${t("storage.free")}</span>` : `<span class="storage-drive-tab-badge">${count}</span>`}
+        <span class="storage-drive-tab-badge">${freeText ? `${freeText} ${t("storage.free")}` : `${count}`}</span>
       </button>`;
   }).join("");
 

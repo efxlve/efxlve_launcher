@@ -574,26 +574,25 @@
   color: var(--text);
 }
 
-/* Games List Container */
+/* Games List Container: one ledger. Rows carry hairlines and a hover fill
+   instead of a stack of boxes, so the cover and the size column lead the eye. */
 .storage-games-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 .storage-game-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  transition: background-color 150ms ease, border-color 150ms ease;
-  box-sizing: border-box;
+  gap: 14px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 150ms ease;
+}
+.storage-game-row:last-child {
+  border-bottom: 0;
 }
 .storage-game-row:hover {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
+  background: var(--surface-2);
 }
 .storage-game-cover-wrap {
   flex-shrink: 0;
@@ -619,13 +618,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.storage-game-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 3px;
 }
 .storage-game-title {
   font-size: 14px;
@@ -637,13 +630,13 @@
   min-width: 0;
 }
 .storage-game-size {
-  font-size: 13px;
+  flex-shrink: 0;
+  min-width: 96px;
+  text-align: right;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-  text-align: right;
-  min-width: 75px;
 }
 .storage-game-meta {
   display: flex;
@@ -691,69 +684,24 @@
   max-width: 440px;
   letter-spacing: -0.01em;
 }
-/* Right-aligned action row in a fixed-width column: the size column and the
-   buttons keep the same x position on every row. A store without Move leaves
-   that slot empty instead of shifting the other buttons. */
+/* Quiet action cluster: icon buttons line up from the right edge. Every slot
+   keeps the button's width, so a store without Move never shifts the size
+   column or the other buttons. */
 .storage-game-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
-  width: 348px;
 }
 .storage-action-slot {
   display: flex;
   flex-shrink: 0;
+  width: 32px;
 }
-.storage-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 10px;
-  width: 112px;
-  min-width: 0;
-  border-radius: var(--r-sm);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--line-strong);
-  background: var(--surface-2);
-  color: var(--text-2);
-  transition: all 160ms ease;
-  user-select: none;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-.storage-action-btn span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.storage-action-btn svg {
-  flex-shrink: 0;
-}
-.storage-action-btn:hover {
+.storage-game-actions .icon-btn:hover {
   background: var(--surface-3);
-  border-color: rgba(255, 255, 255, 0.24);
-  color: var(--text);
 }
-.storage-action-btn.danger {
-  background: var(--err-tint);
-  border-color: rgba(229, 72, 77, 0.35);
-  color: var(--err);
-}
-.storage-action-btn.danger:hover {
-  background: rgba(229, 72, 77, 0.24);
-  border-color: rgba(229, 72, 77, 0.5);
-  color: var(--err);
-}
-.storage-action-btn:active {
-  transform: scale(0.96);
-}
-.storage-action-btn.disabled-hint {
+.storage-game-actions .disabled-hint {
   opacity: 0.55;
   cursor: not-allowed;
 }
