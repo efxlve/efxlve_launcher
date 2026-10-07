@@ -155,8 +155,9 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "—";
     const lastPlayedText = pt && pt.last_played_timestamp ? (lastUsedLabel(pt.last_played_timestamp) || "—") : "—";
 
-    // The trophy pair sits above its progress bar now; the last column owns
-    // the percentage, so this column never repeats it.
+    // The final layout: playtime sits under the game title, the trophy count
+    // above its progress bar, and only the last column shows the completion
+    // percentage.
     const trophyCount = g.total_achievements > 0
       ? `${g.total_unlocked} / ${g.total_achievements}`
       : g.total_unlocked > 0
@@ -185,13 +186,13 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
               <span class="profile-game-title">${esc(g.app_title)}</span>
               ${storeChip}
             </div>
+            ${playtimeText !== "—" ? `<div class="profile-game-sub tabular-nums">${esc(playtimeText)}</div>` : ""}
           </div>
         </div>
 
         <div class="profile-col-progress">
           <div class="profile-progress-header tabular-nums">
             <span class="profile-progress-count">${icon("trophy", 11)} <span>${trophyCount || "—"}</span></span>
-            ${pt && pt.total_seconds > 0 ? `<span class="profile-progress-time">${esc(playtimeText)}</span>` : ""}
           </div>
           ${g.total_achievements > 0
             ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`

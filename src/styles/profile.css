@@ -804,6 +804,14 @@
   letter-spacing: -0.01em;
 }
 
+.profile-game-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Col 2: Progress */
 .profile-col-progress {
   flex: 1.6;
@@ -831,11 +839,6 @@
 
 .profile-progress-count svg {
   color: var(--text-3);
-}
-
-.profile-progress-time {
-  color: var(--text-3);
-  font-weight: 600;
 }
 
 .profile-game-progress {
