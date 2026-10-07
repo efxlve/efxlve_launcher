@@ -1562,6 +1562,7 @@
   "accounts.note.battlenet": "Başarım ve resmî oyun süresi verisi yok; süre yalnızca launcher'dan başlatılan oturumlardan sayılır.",
   "accounts.note.riot": "Dört oyun da ücretsizdir; Riot istemcisi kurulu olduğunda kütüphane otomatik görünür.",
   "accounts.epicDesc": "Kütüphanenizi, başarımlarınızı ve bulut kayıtlarınızı getirmek için Epic Games hesabınızı bağlayın.",
+  "accounts.savedHint": "Kayıtlı hesaplarınız burada duruyor — kütüphane ve koleksiyonlarınız için hesabınıza geri dönün.",
   "accounts.epicShort": "Kütüphane, başarımlar, bulut kayıtları",
   "accounts.steamDesc": "Steam kütüphanesi desteği (hesap girişi)",
   "accounts.connected": "Bağlı",

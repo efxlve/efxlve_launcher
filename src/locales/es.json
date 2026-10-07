@@ -1474,6 +1474,7 @@
   "accounts.note.battlenet": "No hay logros ni tiempo de juego oficial; el tiempo solo cuenta las sesiones iniciadas desde el launcher.",
   "accounts.note.riot": "Los cuatro títulos son gratuitos; la biblioteca aparece en cuanto se instala el cliente de Riot.",
   "accounts.epicDesc": "Conecta tu cuenta de Epic Games para traer tu biblioteca, logros y partidas en la nube.",
+  "accounts.savedHint": "Tus cuentas guardadas siguen aquí: vuelve a una para recuperar la biblioteca y las colecciones.",
   "accounts.epicShort": "Biblioteca, logros, partidas en la nube",
   "accounts.steamDesc": "Compatibilidad con la biblioteca de Steam (inicio de sesión)",
   "accounts.connected": "Conectada",

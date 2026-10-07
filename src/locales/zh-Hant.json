@@ -1474,6 +1474,7 @@
   "accounts.note.battlenet": "沒有成就或官方遊戲時間資料；遊戲時間只計算從啟動器啟動的工作階段。",
   "accounts.note.riot": "四款遊戲皆免費；安裝 Riot 用戶端後媒體庫即會顯示。",
   "accounts.epicDesc": "連線 Epic Games 帳號，以匯入遊戲庫、成就和雲端存檔。",
+  "accounts.savedHint": "已儲存的帳號仍在。切換回來即可恢復媒體庫與收藏。",
   "accounts.epicShort": "遊戲庫、成就、雲端存檔",
   "accounts.steamDesc": "Steam 媒體庫支援（帳號登入）",
   "accounts.connected": "已連線",

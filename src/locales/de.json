@@ -1474,6 +1474,7 @@
   "accounts.note.battlenet": "Es gibt keine Erfolge- oder offizielle Spielzeit-Daten; die Spielzeit zählt nur Launcher-Sitzungen.",
   "accounts.note.riot": "Alle vier Titel sind kostenlos; die Bibliothek erscheint, sobald der Riot-Client installiert ist.",
   "accounts.epicDesc": "Verbinde dein Epic Games-Konto, um Bibliothek, Erfolge und Cloud-Spielstände zu laden.",
+  "accounts.savedHint": "Deine gespeicherten Konten sind noch da — wechsle zurück, um Bibliothek und Sammlungen wiederherzustellen.",
   "accounts.epicShort": "Bibliothek, Erfolge, Cloud-Spielstände",
   "accounts.steamDesc": "Steam-Bibliotheksunterstützung (Kontoanmeldung)",
   "accounts.connected": "Verbunden",

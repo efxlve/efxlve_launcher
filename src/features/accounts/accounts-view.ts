@@ -281,10 +281,10 @@ function avatar(url: string | null, name: string, key?: string): string {
   </button>`;
 }
 
-function connectedBlock(): string {
+/** Saved Epic accounts with a switch action. Empty when nothing is archived. */
+function savedAccountRows(): string {
   const accountId = S.playerProfileData?.account_id || S.epicAccountId || "";
-  const current = getCustomAvatar();
-  const rows = (S.savedAccounts || []).map((acc) => {
+  return (S.savedAccounts || []).map((acc) => {
     const isCurrent = acc.is_active || acc.account_id === accountId || acc.display_name === S.epicAccount;
     const url = avatarFor(`epic:${acc.account_id}`);
     const actions = isCurrent
@@ -298,6 +298,12 @@ function connectedBlock(): string {
         <div class="row-actions">${actions}</div>
       </div>`;
   }).join("");
+}
+
+function connectedBlock(): string {
+  const accountId = S.playerProfileData?.account_id || S.epicAccountId || "";
+  const current = getCustomAvatar();
+  const rows = savedAccountRows();
 
   return `
     <div class="list acc-accounts">
@@ -309,6 +315,18 @@ function connectedBlock(): string {
         <span class="acc-spacer"></span>
         <button class="btn ghost danger small" data-act="epic-logout">${t("settings.logout")}</button>
       </div>`}`;
+}
+
+/**
+ * A lost or expired session must not hide the accounts the vault still holds:
+ * without this the only way back was signing in again from scratch.
+ */
+function savedAccountsBlock(): string {
+  const rows = savedAccountRows();
+  if (!rows) return `<p class="acc-lead">${t("accounts.epicDesc")}</p>`;
+  return `
+    <div class="list acc-accounts">${rows}</div>
+    <p class="acc-lead">${t("accounts.savedHint")}</p>`;
 }
 
 function epicCard(): string {
@@ -326,7 +344,7 @@ function epicCard(): string {
       ? setupBlock()
       : connected
         ? connectedBlock()
-        : `<p class="acc-lead">${t("accounts.epicDesc")}</p>${signInBlock(false)}`;
+        : `${savedAccountsBlock()}${signInBlock(false)}`;
   return `
     <section class="card acc-card">
       <div class="acc-card-head">

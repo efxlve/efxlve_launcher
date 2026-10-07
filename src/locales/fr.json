@@ -1474,6 +1474,7 @@
   "accounts.note.battlenet": "Pas de succès ni de temps de jeu officiel ; le temps ne compte que les sessions lancées depuis le launcher.",
   "accounts.note.riot": "Les quatre titres sont gratuits ; la bibliothèque apparaît dès que le client Riot est installé.",
   "accounts.epicDesc": "Connecte ton compte Epic Games pour importer ta bibliothèque, tes succès et tes sauvegardes cloud.",
+  "accounts.savedHint": "Vos comptes enregistrés sont toujours là — revenez à l'un d'eux pour retrouver bibliothèque et collections.",
   "accounts.epicShort": "Bibliothèque, succès, sauvegardes cloud",
   "accounts.steamDesc": "Prise en charge de la bibliothèque Steam (connexion au compte)",
   "accounts.connected": "Connecté",

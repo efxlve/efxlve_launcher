@@ -1562,6 +1562,7 @@
   "accounts.note.battlenet": "There is no achievement or official playtime feed; playtime counts only sessions started from the launcher.",
   "accounts.note.riot": "All four titles are free to play; the library appears as soon as the Riot client is installed.",
   "accounts.epicDesc": "Connect your Epic Games account to bring in your library, achievements and cloud saves.",
+  "accounts.savedHint": "Your saved accounts are still here — switch back to restore your library and collections.",
   "accounts.epicShort": "Library, achievements, cloud saves",
   "accounts.steamDesc": "Steam library support (account sign-in)",
   "accounts.connected": "Connected",
