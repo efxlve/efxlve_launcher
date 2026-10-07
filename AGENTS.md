@@ -23,7 +23,7 @@ docs: commit every completed change without asking
 
 ## After a release
 
-Draft the announcement tweet and hand it to the user; they post it themselves. No emoji except 👇, and links only in the first reply, never the main tweet. Version line, one short highlight paragraph, `Notes in the reply👇`; the reply is `Release notes and download: <release tag URL>`. Detail: `docs/agent/README.md`.
+Draft the announcement tweet and hand it to the user; they post it themselves. No emoji except 👇, and links only in the first reply, never the main tweet. Write it as a plain dev update — what was fixed, what was added — not marketing copy. Version line, one short paragraph, `Notes in the reply👇`; the reply is `Release notes and download: <release tag URL>`. Detail: `docs/agent/README.md`.
 
 ## Open only these files
 
