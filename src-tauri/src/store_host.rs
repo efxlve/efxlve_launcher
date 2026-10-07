@@ -755,6 +755,11 @@ pub async fn show_store_view(
             .replace("__EFXLVE_UBI_OVERLAY__", UBISOFT_OVERLAY_LOGIN);
         builder = builder.initialization_script(ubi_script);
     }
+    // The Xbox storefront only ships a light theme; this paints it with the
+    // launcher's dark surface and flips its header to Microsoft's dark theme.
+    if store_id == "xbox" {
+        builder = builder.initialization_script(crate::store_theme::XBOX_DARK_SCRIPT);
+    }
     // The 44 KB storefront decoration only exists for the Epic store: injecting it
     // into the other storefronts meant parsing and running a script that finds
     // nothing, on every document load.

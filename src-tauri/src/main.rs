@@ -25,6 +25,7 @@ mod steam_watch;
 mod storage_usage;
 mod notif_overlay;
 mod store_host;
+mod store_theme;
 mod vault_id;
 mod winreg;
 
