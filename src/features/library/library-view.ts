@@ -941,14 +941,15 @@ export function updateLibraryFilterInPlace(): boolean {
   setupLibScrollObserver();
 
   // The sort order is per tab, so arriving on a tab can change it without a
-  // full render: keep the toolbar label and the menu's check in step.
+  // full render: keep the toolbar label and the menu's check in step. The sort
+  // dropdown lives in `.lib-tools`, not in the tab strip.
   const sortOpts = getSortOptions();
   const current = sortOpts.find((o) => o.id === S.epicSort) ?? sortOpts[0];
-  const labelEl = filters.querySelector<HTMLElement>(".sort-dropdown-container .sort-btn-label");
+  const labelEl = document.querySelector<HTMLElement>(".lib-tools .sort-dropdown-container .sort-btn-label");
   if (labelEl) labelEl.textContent = current.label;
-  const sortBtn = filters.querySelector<HTMLElement>(".sort-dropdown-container .lib-sort-btn");
+  const sortBtn = document.querySelector<HTMLElement>(".lib-tools .sort-dropdown-container .lib-sort-btn");
   if (sortBtn) sortBtn.title = t("lib.sortTip", { label: current.label });
-  filters.querySelectorAll<HTMLElement>("[data-act='select-sort']").forEach((optEl) => {
+  document.querySelectorAll<HTMLElement>('#sort-dropdown-menu [data-act="select-sort"]').forEach((optEl) => {
     optEl.classList.toggle("selected", optEl.dataset.sort === S.epicSort);
   });
   return true;
