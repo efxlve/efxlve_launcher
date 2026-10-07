@@ -126,8 +126,12 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     const storeChip = chips
       ? ` <span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
       : "";
-    const metaText = [
-      trophiesText,
+    const cardMeta = [
+      g.total_achievements > 0
+        ? `${g.total_unlocked} / ${g.total_achievements}`
+        : g.total_unlocked > 0
+          ? `${g.total_unlocked}`
+          : "",
       g.total_achievements > 0 ? `${pct}%` : "",
     ].filter(Boolean).join(" · ");
     return `
@@ -139,7 +143,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
           ${show}
         </span>
         <span class="profile-ach-name">${esc(g.app_title)}${storeChip}</span>
-        <span class="profile-ach-meta tabular-nums">${esc(metaText)}</span>
+        <span class="profile-ach-meta tabular-nums">${cardMeta ? `${icon("trophy", 11)} ${esc(cardMeta)}` : ""}</span>
       </div>`;
   }).join("");
 }
@@ -644,7 +648,7 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
     return `
       <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" title="${esc(tooltip)}">
         ${val === "all" ? icon("layers", 13) : storeLogo(val, 14)}
-        <span class="profile-hero-chip-name">${esc(label)}</span>
+        ${selected ? `<span class="profile-hero-chip-name">${esc(label)}</span>` : ""}
         ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
       </button>`;
   };

@@ -1030,3 +1030,20 @@
 .profile-ach-list > .profile-ach-empty {
   grid-column: 1 / -1;
 }
+/* --- Polish: compact scope chips and a quieter card meta line --- */
+
+.profile-hero-store-chip {
+  padding: 0 8px;
+  gap: 6px;
+}
+
+.profile-ach-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-ach-meta svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
