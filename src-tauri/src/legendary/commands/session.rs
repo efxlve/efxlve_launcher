@@ -267,12 +267,25 @@ pub fn epic_get_saved_accounts(
 }
 
 #[tauri::command]
-pub fn epic_switch_account(
-    _app: AppHandle,
+pub async fn epic_switch_account(
+    app: AppHandle,
     account_id: String,
 ) -> Result<crate::legendary::accounts::SavedAccount, String> {
     let config_dir = skip::default_config_dir();
-    crate::legendary::accounts::switch_account(&config_dir, &account_id)
+    let acc = crate::legendary::accounts::switch_account(&config_dir, &account_id)?;
+    // A restored session can already be dead: Epic rejects the token refresh when
+    // the stored token predates its DPoP requirement, and legendary then drops
+    // user.json. Report that instead of letting the account silently disconnect.
+    if let Ok(bin) = resolve_or_err(&app) {
+        if client::run_json::<LegendaryStatus>(&bin, &["status", "--json"])
+            .await
+            .is_err()
+        {
+            eprintln!("[switch-account] stored session for {account_id} can no longer refresh");
+            return Err("@t:accounts.sessionExpired".into());
+        }
+    }
+    Ok(acc)
 }
 
 #[tauri::command]

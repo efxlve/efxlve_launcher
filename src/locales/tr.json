@@ -1565,6 +1565,7 @@
   "accounts.note.riot": "Dört oyun da ücretsizdir; Riot istemcisi kurulu olduğunda kütüphane otomatik görünür.",
   "accounts.epicDesc": "Kütüphanenizi, başarımlarınızı ve bulut kayıtlarınızı getirmek için Epic Games hesabınızı bağlayın.",
   "accounts.savedHint": "Kayıtlı hesaplarınız burada duruyor — kütüphane ve koleksiyonlarınız için hesabınıza geri dönün.",
+  "accounts.sessionExpired": "Bu kayıtlı oturum artık yenilenemiyor. Yeniden bağlanmak için Epic Games ile tekrar giriş yapın.",
   "accounts.epicShort": "Kütüphane, başarımlar, bulut kayıtları",
   "accounts.steamDesc": "Steam kütüphanesi desteği (hesap girişi)",
   "accounts.connected": "Bağlı",

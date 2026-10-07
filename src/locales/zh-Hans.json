@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "四款游戏均免费；安装 Riot 客户端后库中即会显示。",
   "accounts.epicDesc": "连接 Epic Games 账户，以导入游戏库、成就和云存档。",
   "accounts.savedHint": "已保存的账号仍在。切换回来即可恢复库与合集。",
+  "accounts.sessionExpired": "已保存的会话无法再刷新。请重新使用 Epic Games 登录。",
   "accounts.epicShort": "游戏库、成就、云存档",
   "accounts.steamDesc": "Steam 库支持（账号登录）",
   "accounts.connected": "已连接",

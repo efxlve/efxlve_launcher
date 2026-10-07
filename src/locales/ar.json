@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "جميع الألعاب الأربع مجانية، وتظهر المكتبة بمجرد تثبيت عميل Riot.",
   "accounts.epicDesc": "اربط حساب Epic Games لجلب مكتبتك وإنجازاتك وحفظك السحابي.",
   "accounts.savedHint": "حساباتك المحفوظة ما زالت هنا — بدّل إليها لاستعادة مكتبتك ومجموعاتك.",
+  "accounts.sessionExpired": "لم تعد هذه الجلسة المحفوظة قابلة للتجديد. سجّل الدخول عبر Epic Games مرة أخرى.",
   "accounts.epicShort": "المكتبة والإنجازات والحفظ السحابي",
   "accounts.steamDesc": "دعم مكتبة Steam (تسجيل الدخول)",
   "accounts.connected": "متصل",

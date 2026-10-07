@@ -8,7 +8,7 @@
 import { toast } from "../../core/toast";
 import { S } from "../../core/state";
 import { render } from "../../core/render";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import {
   epicGetSavedAccounts,
   epicSwitchAccount,
@@ -98,7 +98,7 @@ export async function switchAccount(accountId: string): Promise<void> {
     void loadSharedLibrary();
   } catch (err) {
     console.error("Account switch failed:", err);
-    toast(String(err), "err");
+    toast(localizeMessage(String(err)), "err");
   } finally {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const hold = reduce ? 0 : 420 - (performance.now() - shownAt);

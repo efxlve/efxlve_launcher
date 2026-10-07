@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "Tutti e quattro i titoli sono gratuiti; la libreria appare appena il client Riot è installato.",
   "accounts.epicDesc": "Collega l'account Epic Games per importare libreria, obiettivi e salvataggi cloud.",
   "accounts.savedHint": "I tuoi account salvati sono ancora qui — torna su uno per ripristinare libreria e collezioni.",
+  "accounts.sessionExpired": "Questa sessione salvata non può più essere rinnovata. Accedi di nuovo con Epic Games.",
   "accounts.epicShort": "Libreria, obiettivi, salvataggi cloud",
   "accounts.steamDesc": "Supporto libreria Steam (accesso all'account)",
   "accounts.connected": "Connesso",

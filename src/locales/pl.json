@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "Wszystkie cztery tytuły są darmowe; biblioteka pojawia się po instalacji klienta Riot.",
   "accounts.epicDesc": "Połącz konto Epic Games, aby wczytać bibliotekę, osiągnięcia i zapisy w chmurze.",
   "accounts.savedHint": "Zapisane konta wciąż tu są — przełącz się z powrotem, aby odzyskać bibliotekę i kolekcje.",
+  "accounts.sessionExpired": "Ta zapisana sesja nie może już zostać odświeżona. Zaloguj się ponownie przez Epic Games.",
   "accounts.epicShort": "Biblioteka, osiągnięcia, zapisy w chmurze",
   "accounts.steamDesc": "Obsługa biblioteki Steam (logowanie konta)",
   "accounts.connected": "Połączono",

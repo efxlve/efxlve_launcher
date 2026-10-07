@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "네 타이틀 모두 무료이며, Riot 클라이언트가 설치되면 라이브러리에 나타납니다.",
   "accounts.epicDesc": "Epic Games 계정을 연결하면 라이브러리, 업적, 클라우드 저장을 가져옵니다.",
   "accounts.savedHint": "저장된 계정은 그대로 남아 있습니다. 다시 전환하면 라이브러리와 컬렉션이 복구됩니다.",
+  "accounts.sessionExpired": "저장된 세션을 더 이상 갱신할 수 없습니다. Epic Games로 다시 로그인하세요.",
   "accounts.epicShort": "라이브러리, 업적, 클라우드 저장",
   "accounts.steamDesc": "Steam 라이브러리 지원(계정 로그인)",
   "accounts.connected": "연결됨",

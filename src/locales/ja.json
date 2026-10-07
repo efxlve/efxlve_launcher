@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "4 タイトルはすべて無料です。Riot クライアントをインストールするとライブラリに表示されます。",
   "accounts.epicDesc": "Epic Games アカウントを接続すると、ライブラリ、実績、クラウドセーブを取り込めます。",
   "accounts.savedHint": "保存済みのアカウントはそのまま残っています。切り替えるとライブラリとコレクションが戻ります。",
+  "accounts.sessionExpired": "保存されたセッションは更新できなくなりました。Epic Games で再度サインインしてください。",
   "accounts.epicShort": "ライブラリ、実績、クラウドセーブ",
   "accounts.steamDesc": "Steamライブラリ対応（アカウント連携）",
   "accounts.connected": "接続済み",

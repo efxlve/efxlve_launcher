@@ -1477,6 +1477,7 @@
   "accounts.note.riot": "Todos os quatro títulos são gratuitos; a biblioteca aparece assim que o cliente da Riot é instalado.",
   "accounts.epicDesc": "Conecte sua conta Epic Games para trazer a biblioteca, as conquistas e os saves na nuvem.",
   "accounts.savedHint": "Suas contas salvas ainda estão aqui — volte para uma delas para restaurar a biblioteca e as coleções.",
+  "accounts.sessionExpired": "Esta sessão salva não pode mais ser renovada. Entre novamente com a Epic Games.",
   "accounts.epicShort": "Biblioteca, conquistas, saves na nuvem",
   "accounts.steamDesc": "Suporte à biblioteca Steam (login da conta)",
   "accounts.connected": "Conectada",

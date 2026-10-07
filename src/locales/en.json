@@ -1565,6 +1565,7 @@
   "accounts.note.riot": "All four titles are free to play; the library appears as soon as the Riot client is installed.",
   "accounts.epicDesc": "Connect your Epic Games account to bring in your library, achievements and cloud saves.",
   "accounts.savedHint": "Your saved accounts are still here — switch back to restore your library and collections.",
+  "accounts.sessionExpired": "This saved session can no longer refresh. Sign in with Epic Games again to reconnect.",
   "accounts.epicShort": "Library, achievements, cloud saves",
   "accounts.steamDesc": "Steam library support (account sign-in)",
   "accounts.connected": "Connected",
