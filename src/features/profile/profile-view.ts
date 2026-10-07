@@ -126,26 +126,20 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     const storeChip = chips
       ? ` <span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
       : "";
-    // A completed set gets the celebration cup left of its 100% instead of a
-    // tiny mark after the title, so finishing a game actually shows.
-    const pctHtml = g.total_achievements > 0
-      ? isPlat
-        ? `<div class="profile-game-done">${platCelebration(24, `row:${g.app_name}`)}<span class="profile-game-pct plat tabular-nums">${pct}%</span></div>`
-        : `<div class="profile-game-pct tabular-nums">${pct}%</div>`
-      : "";
-    const progressBar = g.total_achievements > 0
-      ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
-      : "";
+    const metaText = [
+      trophiesText,
+      g.total_achievements > 0 ? `${pct}%` : "",
+    ].filter(Boolean).join(" · ");
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button">
-        ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 16)}</span>`}
-        <div class="row-main">
-          <div class="row-title">${esc(g.app_title)}${storeChip}</div>
-          <div class="row-meta">${meta}</div>
-          ${progressBar}
-        </div>
-        ${show}
-        ${pctHtml}
+      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+        <span class="profile-ach-art">
+          ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 22)}</span>`}
+          ${g.total_achievements > 0 ? `<span class="profile-ach-bar"><span style="width:${pct}%"></span></span>` : ""}
+          ${isPlat ? `<span class="profile-ach-plat">${platCelebration(22, `card:${g.app_name}`)}</span>` : ""}
+          ${show}
+        </span>
+        <span class="profile-ach-name">${esc(g.app_title)}${storeChip}</span>
+        <span class="profile-ach-meta tabular-nums">${esc(metaText)}</span>
       </div>`;
   }).join("");
 }
