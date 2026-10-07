@@ -1115,3 +1115,51 @@
   letter-spacing: 0.04em;
   color: var(--text-2);
 }
+/* Title on its own full-width line; the store chip sits on the bottom line. */
+.profile-ach-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-ach-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-ach-foot .profile-ach-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-ach-foot .profile-store-chip {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+/* The cup is a detailed glyph: it needs room and a solid backdrop to read. */
+.profile-ach-plat {
+  width: 34px;
+  height: 34px;
+  top: 7px;
+  right: 7px;
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.7);
+}
+
+.profile-ach-plat svg {
+  width: 22px;
+  height: 22px;
+}
