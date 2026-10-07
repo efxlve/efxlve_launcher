@@ -673,6 +673,13 @@ pub async fn show_store_view(
             if payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
             }
+            // The Xbox storefront only ships a light theme. The initialization
+            // script alone does not stick for child webviews (the Epic store
+            // needs the same belt-and-braces eval), so re-apply it on every
+            // finished load; the store is a single-page app.
+            if store_id == "xbox" {
+                let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
+            }
             // A storefront that navigated away from a sign-in page becomes
             // visible now, once the store has actually painted.
             let pending = SHOW_AFTER_LOAD_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
