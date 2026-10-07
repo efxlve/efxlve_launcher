@@ -36,6 +36,7 @@ import {
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
+  PROFILE_VIEW_MODE_KEY,
   RECENT_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
@@ -334,6 +335,7 @@ export const S = {
   /** Hero chips: which store's achievements and totals the page is showing. */
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
   profileSearchQuery: "",
+  profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
   offlineMode: false,
   networkProfile: ("balanced") as string,
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,

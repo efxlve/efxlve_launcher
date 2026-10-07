@@ -84,17 +84,7 @@ const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
  * Only rows the launcher can actually track reach this list; a total that is
  * unknown hides the bar and the percentage instead of inventing one.
  */
-function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
-  if (cardGames.length === 0) {
-    const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
-      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter(trackedGame).length === 0;
-    const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
-      && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
-    const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
-    const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : companionGap ? t("profile.companionEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
-    return `<div class="profile-ach-empty">${emptyState("trophy", title, desc)}</div>`;
-  }
-  const chips = showStoreChips();
+function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boolean): string {
   return cardGames.map((g) => {
     const store = gameStore(g.app_name);
     const isPlat = isCompletedGame(g);
@@ -155,6 +145,79 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
         </div>
       </div>`;
   }).join("");
+}
+
+function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): string {
+  return cardGames.map((g) => {
+    const store = gameStore(g.app_name);
+    const isPlat = isCompletedGame(g);
+    const pt = S.playtimeMap.get(g.app_name);
+    const cover = coverOf(g.app_name, g.cover || "");
+    const pct = g.total_achievements > 0 ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
+    const xpUnit = xpUnitFor(g.app_name);
+    const xpText = g.total_xp > 0
+      ? g.total_product_xp > g.total_xp
+        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
+        : `${g.total_xp.toLocaleString()} ${xpUnit}`
+      : "";
+    const trophiesText = g.total_achievements > 0
+      ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
+      : g.total_unlocked > 0
+        ? `${g.total_unlocked} ${t("profile.trophies")}`
+        : "";
+    const meta = [
+      trophiesText,
+      xpText,
+      pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
+    ].filter(Boolean).join(" · ");
+    const show = S.profileShowHidden && g.sandbox_id
+      ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
+      : "";
+    const storeChip = chips
+      ? `<span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
+      : "";
+
+    const pctRight = isPlat
+      ? `<div class="profile-game-done"><span class="profile-row-plat-ico">${epicPlatinumIcon(18)}</span><span class="profile-game-pct plat tabular-nums">100%</span></div>`
+      : pct > 0
+        ? `<div class="profile-game-pct tabular-nums">${pct}%</div>`
+        : "";
+
+    const progressBar = g.total_achievements > 0
+      ? `<div class="progress profile-game-progress"><span style="width:${pct}%"></span></div>`
+      : "";
+
+    return `
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+        ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
+        <div class="row-main profile-game-main">
+          <div class="row-title profile-game-title-row">
+            <span class="profile-game-title">${esc(g.app_title)}</span>
+            ${storeChip}
+          </div>
+          <div class="row-meta profile-game-meta tabular-nums">${meta}</div>
+          ${progressBar}
+        </div>
+        ${show}
+        ${pctRight}
+      </div>`;
+  }).join("");
+}
+
+function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
+  if (cardGames.length === 0) {
+    const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
+      && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter(trackedGame).length === 0;
+    const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
+      && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
+    const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
+    const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : companionGap ? t("profile.companionEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
+    return `<div class="profile-ach-empty">${emptyState("trophy", title, desc)}</div>`;
+  }
+  const chips = showStoreChips();
+  return S.profileViewMode === "list"
+    ? renderProfileGameRows(cardGames, chips)
+    : renderProfileGameGridCards(cardGames, chips);
 }
 
 /**
@@ -856,9 +919,13 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
             <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
             <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
           </select>
+          <div class="seg profile-view-mode-seg" role="group" aria-label="${t("lib.viewMode")}">
+            <button class="${S.profileViewMode === "grid" ? "active" : ""}" data-act="profile-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
+            <button class="${S.profileViewMode === "list" ? "active" : ""}" data-act="profile-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
+          </div>
         </div>
       </div>
-      <div id="profile-games-grid" class="profile-ach-list">${renderProfileGrid(filtered)}</div>
+      <div id="profile-games-grid" class="profile-ach-list ${S.profileViewMode === "list" ? "is-list" : "is-grid"}">${renderProfileGrid(filtered)}</div>
     </section>`;
 }
 

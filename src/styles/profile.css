@@ -644,17 +644,172 @@
 
 /* --- 6. The Xbox Achievement Grid & Cards --- */
 .profile-ach-list {
+  animation: profile-grid-enter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.profile-ach-list:not(.is-list) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
   gap: 16px;
   align-items: start;
-  animation: profile-grid-enter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* The footer button and the empty state span the whole grid */
-.profile-ach-list > .profile-more,
-.profile-ach-list > .profile-ach-empty {
+.profile-ach-list:not(.is-list) > .profile-more,
+.profile-ach-list:not(.is-list) > .profile-ach-empty {
   grid-column: 1 / -1;
+}
+
+/* --- List View Mode for Achievements --- */
+.profile-ach-list.is-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.profile-ach-list.is-list > .profile-more {
+  margin: 14px auto;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-game-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  background: transparent;
+  transition: background-color var(--ease), border-color var(--ease);
+  position: relative;
+  text-align: left;
+}
+
+.profile-game-row:first-child {
+  border-top: none;
+}
+
+.profile-game-row:hover,
+.profile-game-row:focus-visible {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.profile-game-row:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-game-thumb {
+  width: 44px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.profile-game-thumb.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.profile-game-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-game-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-game-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.profile-game-meta {
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-game-progress {
+  margin-top: 3px;
+  max-width: 460px;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.profile-game-progress span {
+  display: block;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.profile-game-row.is-plat .profile-game-progress span {
+  background: #ffffff;
+}
+
+.profile-game-pct {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+  color: var(--text-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.profile-game-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.profile-game-done .profile-game-pct {
+  color: #ffffff;
+  min-width: 0;
+}
+
+.profile-row-plat-ico {
+  display: inline-flex;
+  align-items: center;
+  color: #ffffff;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
+}
+
+.profile-view-mode-seg {
+  margin-left: 2px;
 }
 
 /* Elevated Xbox Tile Card */
@@ -1033,9 +1188,23 @@
 
 /* --- 9. Responsive Breakpoints --- */
 @media (max-width: 1100px) {
-  .profile-ach-list {
+  .profile-ach-list:not(.is-list) {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-game-row {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+  .profile-game-thumb {
+    width: 38px;
+    height: 50px;
+  }
+  .profile-game-progress {
+    max-width: 100%;
   }
 }
 

@@ -23,6 +23,7 @@ import {
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
+  PROFILE_VIEW_MODE_KEY,
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
@@ -379,6 +380,13 @@ document.addEventListener("click", (e) => {
     S.profileSearchQuery = "";
     resetProfileCards();
     render();
+  } else if (act === "profile-view-mode" && t.dataset.val) {
+    const mode = t.dataset.val as "grid" | "list";
+    if ((mode === "grid" || mode === "list") && mode !== S.profileViewMode) {
+      S.profileViewMode = mode;
+      localStorage.setItem(PROFILE_VIEW_MODE_KEY, mode);
+      render();
+    }
   } else if (act === "open-game-from-profile") {
     const appId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;
     if (appId) {

@@ -132,6 +132,8 @@ export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 export const CUSTOM_PROFILE_NAME_KEY = "efxlve-custom-profile-name";
 /** Custom profile background banner games keyed by scope or account ID. */
 export const CUSTOM_PROFILE_BANNERS_KEY = "efxlve-custom-profile-banners";
+/** Profile achievements view mode (grid or list). */
+export const PROFILE_VIEW_MODE_KEY = "efxlve-profile-view-mode";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
 /** App names hidden from the library, sidebar and search. */
