@@ -101,9 +101,6 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
     const pct = g.total_achievements > 0 ? Math.min(100, Math.max(0, g.unlocked_percent)) : 0;
-    // XP is only shown when the number is real; a missing product total never
-    // becomes a made-up "/ 1000" denominator. Xbox counts gamerscore, so the
-    // unit follows the store.
     const xpUnit = xpUnitFor(g.app_name);
     const xpText = g.total_xp > 0
       ? g.total_product_xp > g.total_xp
@@ -121,30 +118,41 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
       pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
     ].filter(Boolean).join(" · ");
     const show = S.profileShowHidden && g.sandbox_id
-      ? `<button type="button" class="btn ghost small" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
+      ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips
-      ? ` <span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
+      ? `<span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
       : "";
-    const cardMeta = [
-      g.total_achievements > 0
-        ? `${g.total_unlocked} / ${g.total_achievements}`
-        : g.total_unlocked > 0
-          ? `${g.total_unlocked}`
-          : "",
-      g.total_achievements > 0 ? `${pct}%` : "",
-    ].filter(Boolean).join(" · ");
+
     return `
       <div class="profile-ach-card${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
-        <span class="profile-ach-art">
-          ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 22)}</span>`}
-          ${g.total_achievements > 0 ? `<span class="profile-ach-bar"><span style="width:${pct}%"></span></span>` : ""}
-          ${isPlat ? `<span class="profile-ach-plat">${epicPlatinumIcon(22)}</span>` : ""}
+        <div class="profile-ach-art">
+          ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
+          ${isPlat
+            ? `<span class="profile-ach-badge plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(14)}<span>100%</span></span>`
+            : pct > 0
+              ? `<span class="profile-ach-badge pct">${pct}%</span>`
+              : ""
+          }
+          ${storeChip ? `<span class="profile-ach-badge store">${storeChip}</span>` : ""}
           ${show}
-        </span>
-        <span class="profile-ach-title">${esc(g.app_title)}</span>
-        ${cardMeta ? `<span class="profile-ach-meta tabular-nums">${icon("trophy", 11)} ${esc(cardMeta)}</span>` : ""}
-        ${storeChip ? `<span class="profile-ach-platform">${storeChip}</span>` : ""}
+        </div>
+        <div class="profile-ach-info">
+          <span class="profile-ach-title">${esc(g.app_title)}</span>
+          <div class="profile-ach-progress-block">
+            <div class="profile-ach-meta-row tabular-nums">
+              <span class="profile-ach-count">${icon("trophy", 11)} <span>${g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements}` : g.total_unlocked > 0 ? `${g.total_unlocked}` : "0"}</span></span>
+              ${g.total_achievements > 0 ? `<span class="profile-ach-pct">${pct}%</span>` : ""}
+            </div>
+            ${g.total_achievements > 0 ? `<div class="profile-ach-bar"><span style="width:${pct}%"></span></div>` : ""}
+          </div>
+          ${xpText || (pt && pt.total_seconds > 0) ? `
+            <div class="profile-ach-sub-meta tabular-nums">
+              ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
+              ${pt && pt.total_seconds > 0 ? `<span class="profile-ach-playtime">${fmtPlaytime(pt.total_seconds)}</span>` : ""}
+            </div>
+          ` : ""}
+        </div>
       </div>`;
   }).join("");
 }
@@ -713,10 +721,16 @@ function renderProfileHero(
           <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
         </button>
         <div class="profile-hero-identity">
-          <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-            <h1 class="profile-name">${esc(displayName)}</h1>
-            <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-          </button>
+          <div class="profile-name-row">
+            <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+              <h1 class="profile-name">${esc(displayName)}</h1>
+              <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
+            </button>
+            <div class="profile-presence">
+              <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
+              <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
+            </div>
+          </div>
           ${storesHtml}
         </div>
         <div class="profile-hero-actions">

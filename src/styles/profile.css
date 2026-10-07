@@ -1,26 +1,60 @@
 /* ==========================================================================
-   Profile: Xbox-style single page.
-   Identity hero on top; the achievement catalog is the main column; Recently
-   Played, Connected Accounts and the completion showcase sit in the side rail.
-   Adheres to docs/DESIGN_SYSTEM.md (true black, surface-1/2/3, one accent).
+   Profile: Xbox-Style Redesign.
+   Cinematic hero on top; segmented stat bar; horizontal recently played row;
+   Xbox-style elevated achievement cards with progress tracks and completion badges.
+   Adheres to docs/DESIGN_SYSTEM.md (true black, surface-1/2/3, system tokens).
    ========================================================================== */
 
-/* --- 1. Identity Hero --- */
-.profile-hero {
+/* --- 1. Page Shell --- */
+.profile-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 24px;
-  margin-bottom: 20px;
+  gap: 24px;
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* --- 2. Identity Hero --- */
+.profile-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 22px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.profile-hero-banner {
+  position: relative;
+  height: 220px;
+  margin: 0 -24px;
+  background-color: var(--surface-3);
+  background-size: cover;
+  background-position: center 30%;
+}
+
+.profile-hero-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.6) 60%, var(--surface-1) 100%);
+}
+
+.profile-hero-banner.is-plain {
+  background-image: radial-gradient(130% 170% at 16% 0%, var(--surface-3) 0%, var(--surface-1) 75%);
 }
 
 .profile-hero-top {
+  position: relative;
+  z-index: 2;
+  margin-top: -48px;
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .profile-avatar-btn {
@@ -50,8 +84,21 @@
 .profile-avatar-lg {
   width: 96px;
   height: 96px;
-  font-size: 30px;
-  box-shadow: 0 0 0 3px var(--accent), 0 0 12px rgba(0, 0, 0, 0.5);
+  font-size: 32px;
+  font-weight: 700;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid var(--surface-3);
+  box-shadow: 0 0 0 3px var(--surface-3), 0 0 16px rgba(0, 0, 0, 0.6);
+  transition: all var(--ease);
+}
+
+.profile-avatar-lg.is-online {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent), 0 0 16px rgba(255, 255, 255, 0.18);
 }
 
 .profile-avatar img {
@@ -65,13 +112,40 @@
   color: var(--text-2);
 }
 
+.avatar-edit-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 2px solid var(--surface-1);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform var(--ease);
+}
+
+.profile-avatar-btn:hover .avatar-edit-badge {
+  transform: scale(1.1);
+}
+
 .profile-hero-identity {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
-  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .profile-name-edit-btn {
@@ -98,8 +172,8 @@
   margin: 0;
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.01em;
   color: var(--text);
+  letter-spacing: -0.01em;
   line-height: 1.15;
 }
 
@@ -118,12 +192,15 @@
 }
 
 .profile-presence {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 500;
   color: var(--text-2);
-  min-width: 0;
 }
 
 .profile-presence-dot {
@@ -136,6 +213,7 @@
 
 .profile-presence-dot.online {
   background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
 }
 
 .profile-presence-dot.offline {
@@ -160,16 +238,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
-  padding: 0 9px;
+  height: 28px;
+  padding: 0 10px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: 14px;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+  transition: all var(--ease);
 }
 
 .profile-hero-store-chip:hover {
@@ -179,10 +257,11 @@
 }
 
 .profile-hero-store-chip.selected {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px var(--accent);
+  font-weight: 600;
 }
 
 .profile-hero-store-chip.unlinked {
@@ -205,11 +284,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 24px;
-  padding: 0 9px;
+  height: 26px;
+  padding: 0 10px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: 13px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-2);
@@ -223,45 +302,34 @@
   flex-shrink: 0;
 }
 
-/* --- 2. Hero stats --- */
+/* --- 3. Hero Stats Bar --- */
 .profile-stats-bar {
-  margin: 0 -24px;
-  padding: 0 24px;
+  margin-top: 20px;
 }
 
 .profile-stats {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px 0;
-  background: rgba(255, 255, 255, 0.04);
+  gap: 12px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: 16px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-/* Online ring: accent-colored border around the avatar when the user is active. */
-.profile-avatar-lg.is-online {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent), 0 0 12px rgba(0, 0, 0, 0.5);
-}
-
-.profile-avatar-lg:not(.is-online) {
-  box-shadow: 0 0 0 3px var(--surface-3), 0 0 12px rgba(0, 0, 0, 0.5);
+  padding: 14px 0;
 }
 
 .profile-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 26px;
+  gap: 3px;
+  padding: 0 28px;
   border-left: 1px solid var(--line);
-  min-width: 96px;
+  min-width: 100px;
 }
 
 .profile-stat:first-child {
   border-left: none;
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
 .profile-stat-val {
@@ -280,7 +348,7 @@
   font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
@@ -296,6 +364,7 @@
   gap: 10px;
   border-top: 1px solid var(--line);
   padding-top: 16px;
+  margin-top: 16px;
 }
 
 .profile-inactive .row-meta {
@@ -303,230 +372,56 @@
   max-width: 520px;
 }
 
-/* --- 3. Two-column layout --- */
-.profile-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 356px;
-  gap: 20px;
-  align-items: start;
-}
-
-.profile-col-main,
-.profile-col-side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
-
-/* --- 4. Panels --- */
-.profile-panel {
+/* --- 4. Recently Played Row --- */
+.profile-row {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.profile-panel-head {
+.profile-row-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.profile-panel-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.profile-panel-icon {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--text-2);
-  flex-shrink: 0;
-}
-
-.profile-panel-icon.plat {
-  color: var(--accent);
-  background: var(--accent-tint);
-}
-
-.profile-panel-title {
+.profile-row-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.2;
-}
-
-.profile-panel-sub {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.profile-rail-empty {
-  font-size: 12px;
-  color: var(--text-3);
-  padding: 6px 2px 2px;
-}
-
-/* --- 5. Achievements panel --- */
-.profile-ach-panel {
-  gap: 12px;
-}
-
-.profile-ach-toolbar {
-  margin: 0;
-}
-
-.profile-filter-tabs {
-  gap: 16px;
-  flex-wrap: wrap;
-  row-gap: 4px;
-}
-
-.profile-ach-list {
-  display: flex;
-  flex-direction: column;
-  min-height: 80px;
-  /* Full-bleed rows: the panel padding stops at the toolbar, not the list. */
-  margin: 0 -16px -16px;
-  border-radius: 0 0 var(--r-md) var(--r-md);
-  overflow: hidden;
-}
-
-/* Empty achievement list: centered in the full panel width. */
-.profile-ach-empty {
-  display: grid;
-  place-items: center;
-  min-height: 320px;
-  padding: 0 16px;
-}
-
-.profile-ach-empty .empty-state {
-  width: 100%;
-}
-
-.profile-game-row {
-  cursor: pointer;
-  min-height: 64px;
-  padding: 8px 16px;
-}
-
-.profile-game-thumb {
-  width: 44px;
-  height: 58px;
-  object-fit: cover;
-  border-radius: var(--r-sm);
-  flex-shrink: 0;
-  background: var(--surface-2);
-}
-
-.profile-game-thumb.placeholder {
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-}
-
-.profile-game-progress {
-  margin-top: 6px;
-  max-width: 420px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-
-.profile-game-progress span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-}
-
-.profile-game-pct {
-  font-size: 14px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  min-width: 48px;
-  text-align: right;
-  color: var(--text-2);
-}
-
-/* Completed set: the celebration cup and the 100% share one proud mark. */
-.profile-game-done {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.profile-game-done .profile-game-pct {
-  color: var(--accent);
-  min-width: 0;
-}
-
-.profile-game-done .plat-cup {
-  flex-shrink: 0;
-}
-
-.profile-more {
-  justify-content: center;
-}
-
-.profile-more:hover {
-  background: transparent;
-}
-
-.profile-store-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 18px;
-  padding: 0 6px;
-  margin-left: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.65);
-  border-radius: 3px;
-  font-size: 9px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  vertical-align: middle;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
-.profile-store-chip img {
-  display: block;
-  object-fit: contain;
-}
-
-/* --- 6. Side rail: recently played --- */
-.profile-recent-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+.profile-recent-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
 }
 
 .profile-recent-card {
   display: flex;
   flex-direction: column;
-  padding: 0;
-  border: none;
-  background: transparent;
+  gap: 8px;
+  width: 118px;
+  flex: none;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
-  min-width: 0;
-  transition: transform var(--ease);
+  transition: all var(--ease);
 }
 
 .profile-recent-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
 }
 
 .profile-recent-thumb-wrap {
@@ -536,12 +431,6 @@
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  transition: border-color var(--ease);
-}
-
-.profile-recent-card:hover .profile-recent-thumb-wrap {
-  border-color: var(--accent);
 }
 
 .profile-recent-thumb {
@@ -556,35 +445,6 @@
   filter: brightness(1.12);
 }
 
-/* One-shot shine sweep across a cover on hover. No zoom, no lift. */
-.profile-recent-thumb-wrap::after,
-.profile-showcase-cover::after,
-.profile-showcase-mini::after {
-  content: "";
-  position: absolute;
-  top: -30%;
-  bottom: -30%;
-  left: 0;
-  width: 45%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-  transform: translateX(-160%) skewX(-18deg);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.profile-recent-card:hover .profile-recent-thumb-wrap::after,
-.profile-showcase-hero:hover .profile-showcase-cover::after,
-.profile-showcase-mini:hover::after {
-  opacity: 1;
-  animation: profile-cover-sweep 0.55s ease-out 1 both;
-}
-
-@keyframes profile-cover-sweep {
-  to {
-    transform: translateX(300%) skewX(-18deg);
-  }
-}
-
 .profile-recent-thumb.placeholder {
   width: 100%;
   height: 100%;
@@ -593,66 +453,190 @@
   color: var(--text-3);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .profile-recent-card:hover .profile-recent-thumb-wrap::after,
-  .profile-showcase-hero:hover .profile-showcase-cover::after,
-  .profile-showcase-mini:hover::after {
-    animation: none;
-    opacity: 0;
-  }
+.profile-recent-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
 }
 
-/* --- 7. Store status dot (hero pill, dormant badge) --- */
-.profile-acc-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
-  flex-shrink: 0;
-}
-
-.profile-acc-dot.offline {
-  background: var(--text-3);
-}
-
-.profile-acc-dot.local,
-.profile-acc-dot.amber {
-  background: var(--warn);
-}
-
-/* --- 8. Side rail: completion podium --- */
-.profile-showcase-hero {
+/* --- 5. Achievements Panel --- */
+.profile-ach-panel {
   display: flex;
-  gap: 14px;
-  padding: 12px;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
+  padding: 22px 24px;
+}
+
+.profile-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profile-panel-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  cursor: pointer;
-  text-align: left;
-  min-width: 0;
-  transition: background-color var(--ease), border-color var(--ease);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
-.profile-showcase-hero:hover {
+.profile-panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.profile-panel-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-ach-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+/* Xbox Pill Filter Tabs */
+.profile-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-filter-tabs .tab {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-filter-tabs .tab:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.profile-filter-tabs .tab.active {
   background: var(--surface-3);
   border-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
-.profile-showcase-cover {
+.profile-filter-tabs .tab .count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- 6. The Xbox Achievement Grid & Cards --- */
+.profile-ach-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* The footer button and the empty state span the whole grid */
+.profile-ach-list > .profile-more,
+.profile-ach-list > .profile-ach-empty {
+  grid-column: 1 / -1;
+}
+
+/* Elevated Xbox Tile Card */
+.profile-ach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-align: left;
   position: relative;
-  width: 104px;
-  height: 139px;
-  flex-shrink: 0;
+  transition: all var(--ease);
+  overflow: hidden;
+}
+
+.profile-ach-card:hover,
+.profile-ach-card:focus-visible {
+  transform: translateY(-4px);
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* Completed 100% card highlight */
+.profile-ach-card.is-plat {
+  border-color: rgba(47, 179, 109, 0.35);
+  background: linear-gradient(180deg, rgba(47, 179, 109, 0.06) 0%, var(--surface-2) 100%);
+}
+
+.profile-ach-card.is-plat:hover {
+  border-color: var(--ok);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 18px rgba(47, 179, 109, 0.25);
+}
+
+/* Art container */
+.profile-ach-art {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  width: 100%;
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-3);
+  border: 1px solid var(--line);
   display: grid;
   place-items: center;
   color: var(--text-3);
 }
 
-.profile-showcase-cover img {
+.profile-ach-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -660,140 +644,216 @@
   transition: filter var(--ease);
 }
 
-.profile-showcase-hero:hover .profile-showcase-cover img {
-  filter: brightness(1.12);
+.profile-ach-card:hover .profile-ach-art img {
+  filter: brightness(1.1);
 }
 
-.profile-showcase-info {
+.profile-ach-ph {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+/* Badges floating on art */
+.profile-ach-badge {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.profile-ach-badge.plat {
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(10, 10, 10, 0.88);
+  border: 1px solid rgba(47, 179, 109, 0.5);
+  color: var(--ok);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.profile-ach-badge.plat svg {
+  width: 14px;
+  height: 14px;
+}
+
+.profile-ach-badge.pct {
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(10, 10, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.profile-ach-badge.store {
+  bottom: 6px;
+  left: 6px;
+}
+
+.profile-unhide-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  z-index: 3;
+}
+
+.profile-store-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.profile-store-chip img {
+  display: block;
+  object-fit: contain;
+}
+
+/* Card Information Body */
+.profile-ach-info {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 6px;
   min-width: 0;
 }
 
-.profile-showcase-name {
-  margin-top: 2px;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
+.profile-ach-title {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.profile-showcase-meta {
-  margin-top: 3px;
-  font-size: 11px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.profile-showcase-pct {
-  margin-top: auto;
-  padding-top: 8px;
+.profile-ach-progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-ach-meta-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.profile-showcase-pct .plat-cup {
-  flex-shrink: 0;
-}
-
-/* The sweep is tuned for the game page's 28px cup; scale it to the podium cup. */
-.profile-showcase-pct .plat-shine {
-  inset: 9px 12px 12px 12px;
-}
-
-.profile-showcase-pct small {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.profile-showcase-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.profile-showcase-mini {
-  position: relative;
-  width: 56px;
-  height: 75px;
-  flex: none;
-  padding: 0;
-  border-radius: 4px;
-  border: 1px solid var(--line);
-  overflow: hidden;
-  background: var(--surface-2);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-  transition: border-color var(--ease);
-}
-
-.profile-showcase-mini:hover {
-  border-color: var(--accent);
-}
-
-.profile-showcase-mini img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: filter var(--ease);
-}
-
-.profile-showcase-mini:hover img {
-  filter: brightness(1.12);
-}
-
-.profile-showcase-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-}
-
-.profile-showcase-more {
-  width: 56px;
-  height: 75px;
-  flex: none;
-  border-radius: 4px;
-  border: 1px dashed var(--line-strong);
-  background: none;
-  display: grid;
-  place-items: center;
-  font-family: inherit;
-  font-size: 12px;
+  justify-content: space-between;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-2);
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-  transition: color var(--ease), border-color var(--ease);
 }
 
-.profile-showcase-more:hover {
+.profile-ach-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+.profile-ach-count svg {
+  opacity: 0.8;
+}
+
+.profile-ach-pct {
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text);
-  border-color: var(--text-3);
 }
 
-/* --- 9. Dormant account panel --- */
+.profile-ach-card.is-plat .profile-ach-pct {
+  color: var(--ok);
+}
+
+/* Progress Bar Track */
+.profile-ach-bar {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.profile-ach-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width var(--ease);
+}
+
+.profile-ach-card.is-plat .profile-ach-bar > span {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(47, 179, 109, 0.5);
+}
+
+/* Sub Meta (XP / Playtime) */
+.profile-ach-sub-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.profile-ach-xp {
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.profile-ach-playtime {
+  color: var(--text-3);
+  margin-left: auto;
+}
+
+/* Empty State */
+.profile-ach-empty {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  padding: 0 16px;
+}
+
+.profile-ach-empty .empty-state {
+  width: 100%;
+}
+
+.profile-more {
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.profile-more:hover {
+  background: transparent;
+}
+
+/* --- 7. Dormant Account Panel --- */
+.profile-dormant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .profile-dormant-desc {
   white-space: normal;
   max-width: 640px;
@@ -826,10 +886,86 @@
   justify-content: flex-end;
 }
 
-/* --- 10. Responsive --- */
-@media (max-width: 1180px) {
-  .profile-columns {
-    grid-template-columns: minmax(0, 1fr);
+/* --- 8. Hide Achievements Modal --- */
+.hide-list-dialog {
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hide-list-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  padding: 16px 20px;
+}
+
+.hide-list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hide-list-rows {
+  overflow-y: auto;
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hide-game-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.hide-game-row:hover {
+  background: var(--surface-2);
+}
+
+.hide-game-thumb {
+  width: 32px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--surface-3);
+  flex-shrink: 0;
+}
+
+.hide-game-thumb.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.hide-game-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hide-list-empty {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* --- 9. Responsive Breakpoints --- */
+@media (max-width: 1100px) {
+  .profile-ach-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
   }
 }
 
@@ -842,375 +978,10 @@
     width: 100%;
   }
   .profile-stat {
-    padding: 0 18px;
-    min-width: 84px;
+    padding: 0 16px;
+    min-width: 80px;
   }
-}
-
-/* --- Xbox-style layout: banner hero, then full-width rows --- */
-
-.profile-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.profile-hero {
-  position: relative;
-  padding: 0 24px 22px;
-  overflow: hidden;
-}
-
-.profile-hero-banner {
-  position: relative;
-  height: 200px;
-  margin: 0 -24px;
-  background-color: var(--surface-3);
-  background-size: cover;
-  background-position: center 30%;
-}
-
-.profile-hero-banner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(10, 10, 10, 0.4) 0%, rgba(10, 10, 10, 0.8) 60%, var(--surface-1) 100%);
-}
-
-.profile-hero-banner.is-plain {
-  background-image: radial-gradient(130% 170% at 16% 0%, var(--surface-3) 0%, var(--surface-1) 72%);
-}
-
-.profile-hero-top {
-  position: relative;
-  z-index: 1;
-  margin-top: -48px;
-  align-items: flex-end;
-}
-
-.profile-row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.profile-row-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.profile-row-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--text);
-}
-
-.profile-recent-row {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: thin;
-}
-
-.profile-recent-row .profile-recent-card {
-  width: 110px;
-  flex: none;
-}
-
-.profile-recent-name {
-  margin-top: 7px;
-  font-size: 12px;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-showcase-row {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.profile-showcase-row .profile-showcase-hero {
-  flex: 0 0 380px;
-  max-width: 380px;
-}
-
-.profile-showcase-row .profile-showcase-strip {
-  flex: 1;
-  margin-top: 0;
-  min-width: 0;
-}
-/* --- Achievements as a cover grid (Xbox-like) --- */
-
-.profile-ach-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: 18px 16px;
-  align-items: start;
-}
-
-.profile-ach-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  cursor: pointer;
-  transition: transform var(--ease);
-}
-
-.profile-ach-card:hover {
-  transform: translateY(-3px);
-}
-
-.profile-ach-art {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  transition: border-color var(--ease);
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-}
-
-.profile-ach-card:hover .profile-ach-art,
-.profile-ach-card:focus-visible .profile-ach-art {
-  border-color: var(--accent);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-.profile-ach-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: filter var(--ease);
-}
-
-.profile-ach-card:hover .profile-ach-art img {
-  filter: brightness(1.1);
-}
-
-.profile-ach-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.profile-ach-bar > span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-}
-
-.profile-ach-card.is-plat .profile-ach-bar > span {
-  background: var(--ok);
-}
-
-.profile-ach-plat {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: inline-flex;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-}
-
-.profile-ach-card .profile-ach-art > .btn {
-  position: absolute;
-  left: 6px;
-  bottom: 10px;
-}
-
-.profile-ach-name {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-ach-name .profile-store-chip {
-  flex-shrink: 0;
-}
-
-.profile-ach-meta {
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* The footer button and the empty state span the whole grid, not one cell. */
-.profile-ach-list > .profile-more,
-.profile-ach-list > .profile-ach-empty {
-  grid-column: 1 / -1;
-}
-/* --- Polish: compact scope chips and a quieter card meta line --- */
-
-.profile-hero-store-chip {
-  padding: 0 8px;
-  gap: 6px;
-}
-
-.profile-ach-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.profile-ach-meta svg {
-  flex-shrink: 0;
-  opacity: 0.75;
-}
-/* --- Readable platinum and progress marks on any cover --- */
-
-/* The cup sits on a dark round badge so light artwork cannot swallow it. */
-.profile-ach-plat {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(12, 12, 14, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-  filter: none;
-}
-
-.profile-ach-plat svg {
-  width: 16px;
-  height: 16px;
-}
-
-.profile-ach-bar {
-  height: 5px;
-  background: rgba(0, 0, 0, 0.68);
-}
-
-.profile-ach-card.is-plat .profile-ach-bar > span {
-  background: linear-gradient(90deg, rgba(47, 179, 109, 0.85), var(--ok));
-}
-
-.profile-ach-meta {
-  color: var(--text-2);
-}
-
-.profile-ach-meta svg {
-  opacity: 1;
-  color: var(--text-2);
-}
-/* The title yields space; the store chip never gets clipped by a long name. */
-.profile-ach-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.profile-ach-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-ach-name .profile-store-chip {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-2);
-}
-/* Title on its own full-width line; the store chip sits on the bottom line. */
-.profile-ach-title {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-ach-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
-}
-
-.profile-ach-foot .profile-ach-meta {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-ach-foot .profile-store-chip {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-2);
-}
-
-/* The cup is a detailed glyph: it needs room and a solid backdrop to read. */
-.profile-ach-plat {
-  width: 34px;
-  height: 34px;
-  top: 7px;
-  right: 7px;
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.7);
-}
-
-.profile-ach-plat svg {
-  width: 22px;
-  height: 22px;
-}
-/* Platform gets its own line under the meta. */
-.profile-ach-platform {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.profile-ach-platform .profile-store-chip,
-.profile-ach-foot .profile-store-chip {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-2);
+  .profile-stat-val {
+    font-size: 20px;
+  }
 }
