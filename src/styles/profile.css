@@ -531,6 +531,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  border-bottom: none;
 }
 
 .profile-filter-tabs .tab {
@@ -561,6 +562,13 @@
   color: var(--text);
   font-weight: 600;
   box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Remove bottom underline from active tab in filter tabs */
+.profile-filter-tabs .tab::after,
+.profile-filter-tabs .tab.active::after {
+  display: none !important;
+  content: none !important;
 }
 
 .profile-filter-tabs .tab .count {
@@ -611,15 +619,15 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
 }
 
-/* Completed 100% card highlight */
+/* Completed 100% card highlight - White test */
 .profile-ach-card.is-plat {
-  border-color: rgba(47, 179, 109, 0.35);
-  background: linear-gradient(180deg, rgba(47, 179, 109, 0.06) 0%, var(--surface-2) 100%);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, var(--surface-2) 100%);
 }
 
 .profile-ach-card.is-plat:hover {
-  border-color: var(--ok);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 18px rgba(47, 179, 109, 0.25);
+  border-color: var(--text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(255, 255, 255, 0.15);
 }
 
 /* Art container */
@@ -670,8 +678,8 @@
   padding: 3px 8px;
   border-radius: 12px;
   background: rgba(10, 10, 10, 0.88);
-  border: 1px solid rgba(47, 179, 109, 0.5);
-  color: var(--ok);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
@@ -779,7 +787,7 @@
 }
 
 .profile-ach-card.is-plat .profile-ach-pct {
-  color: var(--ok);
+  color: #ffffff;
 }
 
 /* Progress Bar Track */
@@ -801,8 +809,8 @@
 }
 
 .profile-ach-card.is-plat .profile-ach-bar > span {
-  background: var(--ok);
-  box-shadow: 0 0 6px rgba(47, 179, 109, 0.5);
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
 /* Sub Meta (XP / Playtime) */
