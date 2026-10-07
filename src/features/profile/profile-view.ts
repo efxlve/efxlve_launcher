@@ -318,7 +318,7 @@ export function accountAvatar(account: ProfileAccount): string | null {
 }
 
 /** Up to nine recently played games for the rail, scoped to one store. */
-function recentApps(scope: "all" | StoreKind): string[] {
+export function recentApps(scope: "all" | StoreKind): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const push = (name: string): boolean => {
@@ -668,8 +668,19 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
   </div>`;
 }
 
-/** Wide art for the profile banner: the most recent game's hero, else nothing. */
-function profileBannerArt(scope: "all" | StoreKind): string {
+/** Wide art for the profile banner: custom pick for this scope, else recent game's hero. */
+export function profileBannerArt(scope: "all" | StoreKind, account?: ProfileAccount | null): string {
+  const scopeKey = account ? account.key : scope;
+  const customPick = S.customProfileBanners?.[scopeKey];
+  if (customPick) {
+    const custom = S.customHeroes[customPick];
+    if (custom) return custom;
+    const s = summaryOf(customPick);
+    const art = s ? epicWideArt(s) : null;
+    if (art) return art;
+    const cov = coverOf(customPick);
+    if (cov) return cov;
+  }
   for (const appName of recentApps(scope)) {
     const custom = S.customHeroes[appName];
     if (custom) return custom;
@@ -694,6 +705,8 @@ function renderProfileHero(
 ): string {
   const avatarTitle = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
   const isOnline = combined ? overviewStores().length > 0 : Boolean(account?.active);
+  const scopeKey = account ? account.key : scope;
+  const scopeLabel = combined ? (scope === "all" ? t("profile.storeAll") : storeName(scope)) : storeName(account!.kind);
 
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
@@ -710,11 +723,17 @@ function renderProfileHero(
         </button>
       </div>`;
 
-  const banner = showData ? profileBannerArt(scope) : "";
+  const banner = showData ? profileBannerArt(scope, account) : "";
 
   return `
     <section class="card profile-hero">
-      <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""} aria-hidden="true"></div>
+      <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""}>
+        ${showData ? `
+          <button type="button" class="profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">
+            ${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span>
+          </button>
+        ` : ""}
+      </div>
       <div class="profile-hero-top">
         <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
           <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>

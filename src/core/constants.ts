@@ -130,6 +130,8 @@ export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 /** Custom user profile display name. */
 export const CUSTOM_PROFILE_NAME_KEY = "efxlve-custom-profile-name";
+/** Custom profile background banner games keyed by scope or account ID. */
+export const CUSTOM_PROFILE_BANNERS_KEY = "efxlve-custom-profile-banners";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
 /** App names hidden from the library, sidebar and search. */

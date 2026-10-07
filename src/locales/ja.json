@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "ランチャーで「Google で接続」を押します。開いたブラウザーでテストアカウントを選び、「続行 / 許可」をクリックします。",
   "cloud.openCloudConsole": "Google Cloud Console を開く",
   "cloud.openGithubGuide": "セットアップ文書（GitHub）",
-  "common.saved": "保存しました"
+  "common.saved": "保存しました",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }

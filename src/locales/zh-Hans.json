@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "在启动器中点击“使用 Google 连接”。在打开的浏览器里选择测试账号，然后点击“继续 / 允许”。",
   "cloud.openCloudConsole": "打开 Google Cloud Console",
   "cloud.openGithubGuide": "设置文档（GitHub）",
-  "common.saved": "已保存"
+  "common.saved": "已保存",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }

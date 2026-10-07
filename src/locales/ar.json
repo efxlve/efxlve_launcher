@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "اضغط «الاتصال بحساب Google» في المشغّل. في المتصفح اختر حساب الاختبار ثم «متابعة / السماح».",
   "cloud.openCloudConsole": "فتح Google Cloud Console",
   "cloud.openGithubGuide": "وثائق الإعداد (GitHub)",
-  "common.saved": "تم الحفظ"
+  "common.saved": "تم الحفظ",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }

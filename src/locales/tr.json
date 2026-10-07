@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "Launcher'da 'Google ile Bağlan' butonuna tıklayın. Açılan tarayıcıda eklediğiniz test hesabını seçip 'Devam Et / İzin Ver' diyerek eşitlemeyi başlatın.",
   "cloud.openCloudConsole": "Google Cloud Console'u Aç",
   "cloud.openGithubGuide": "Detaylı Dokümantasyon (GitHub)",
-  "common.saved": "Kaydedildi"
+  "common.saved": "Kaydedildi",
+  "profile.changeBanner": "Afişi Değiştir",
+  "profile.changeBannerTitle": "Profil Afişini Değiştir",
+  "profile.bannerModalDesc": "Kütüphanenizden bir oyunu arka plan afişi olarak seçin.",
+  "profile.bannerSearchPlaceholder": "Oyun ara…",
+  "profile.bannerReset": "Varsayılana Sıfırla",
+  "profile.bannerUpdated": "Profil afişi güncellendi",
+  "profile.bannerResetToast": "Varsayılan afişe dönüldü",
+  "profile.bannerNoGames": "Oyun bulunamadı",
+  "profile.bannerCurrent": "Aktif"
 }

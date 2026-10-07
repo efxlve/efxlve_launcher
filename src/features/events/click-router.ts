@@ -105,6 +105,7 @@ import {
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
 import { resetProfileCards } from "../profile/profile-view";
+import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
 
@@ -383,6 +384,19 @@ document.addEventListener("click", (e) => {
     if (appId) {
       openEpicModal(appId, true);
     }
+  } else if (act === "profile-change-banner") {
+    const scope = t.dataset.scope || (t.closest("[data-scope]") as HTMLElement)?.dataset.scope || "all";
+    const label = t.dataset.label || (t.closest("[data-label]") as HTMLElement)?.dataset.label || "";
+    openProfileBannerModal(scope, label);
+  } else if (act === "profile-banner-close") {
+    closeProfileBannerModal();
+  } else if (act === "profile-banner-select") {
+    const scope = t.dataset.scope || (t.closest("[data-scope]") as HTMLElement)?.dataset.scope || "all";
+    const app = t.dataset.app || (t.closest("[data-app]") as HTMLElement)?.dataset.app || "";
+    if (app) saveProfileBanner(scope, app);
+  } else if (act === "profile-banner-reset") {
+    const scope = t.dataset.scope || (t.closest("[data-scope]") as HTMLElement)?.dataset.scope || "all";
+    resetProfileBanner(scope);
   } else if (act === "toggle-store-dropdown") {
     S.isStoreDropdownOpen = !S.isStoreDropdownOpen;
     S.isSortDropdownOpen = false;

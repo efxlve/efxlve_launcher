@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "Нажмите «Подключить Google» в программе. В браузере выберите тестовый аккаунт и нажмите «Продолжить / Разрешить».",
   "cloud.openCloudConsole": "Открыть Google Cloud Console",
   "cloud.openGithubGuide": "Документация по настройке (GitHub)",
-  "common.saved": "Сохранено"
+  "common.saved": "Сохранено",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }

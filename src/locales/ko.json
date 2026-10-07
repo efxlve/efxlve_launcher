@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "런처에서 'Google로 연결'을 누릅니다. 열린 브라우저에서 테스트 계정을 고르고 '계속 / 허용'을 누르세요.",
   "cloud.openCloudConsole": "Google Cloud Console 열기",
   "cloud.openGithubGuide": "설정 문서 (GitHub)",
-  "common.saved": "저장되었습니다"
+  "common.saved": "저장되었습니다",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }

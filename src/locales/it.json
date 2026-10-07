@@ -1832,5 +1832,14 @@
   "cloud.guideStep7Desc": "Fai clic su « Connetti con Google » nel launcher. Nel browser scegli l'account di test e fai clic su « Continua / Consenti ».",
   "cloud.openCloudConsole": "Apri Google Cloud Console",
   "cloud.openGithubGuide": "Documentazione di installazione (GitHub)",
-  "common.saved": "Salvato"
+  "common.saved": "Salvato",
+  "profile.changeBanner": "Change Banner",
+  "profile.changeBannerTitle": "Change Profile Banner",
+  "profile.bannerModalDesc": "Choose a game from your library as the background banner.",
+  "profile.bannerSearchPlaceholder": "Search games…",
+  "profile.bannerReset": "Reset to Default",
+  "profile.bannerUpdated": "Profile banner updated",
+  "profile.bannerResetToast": "Reverted to default banner",
+  "profile.bannerNoGames": "No games found",
+  "profile.bannerCurrent": "Active"
 }
