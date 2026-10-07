@@ -360,16 +360,24 @@ export function renderDownloads(): string {
   }).join("");
 
   // Steam-like completed list: the most recent finished transfers, any store.
-  const completed = getRecentDownloads().slice(0, 6);
-  const completedRows = completed.map(({ id, at }) => {
-    const s = summaryOf(id);
+  // An id the library cannot resolve yet (its store list is still loading or
+  // stale) is skipped instead of printing the raw app name.
+  const completed = getRecentDownloads()
+    .map((entry) => ({ ...entry, summary: summaryOf(entry.id) }))
+    .filter((entry): entry is { id: string; at: number; summary: EpicSummary } => Boolean(entry.summary))
+    .slice(0, 6);
+  const completedRows = completed.map(({ id, at, summary }) => {
     const metaParts = [esc(storeName(sourceOfKey(id)))];
-    if (s && shownBytes(s) > 0) {
-      metaParts.push(`<span data-dl-size="${esc(id)}">${fmtBytes(shownBytes(s))}</span>`);
+    if (shownBytes(summary) > 0) {
+      metaParts.push(`<span data-dl-size="${esc(id)}">${fmtBytes(shownBytes(summary))}</span>`);
     }
     if (at > 0) metaParts.push(esc(formatSyncStamp(String(at))));
-    const play = s ? epicActionButtons(s, "small", { primaryOnly: true }) : "";
-    return gameRow(s, id, metaParts.join(" · "), `${play}${manageBtn(id)}`);
+    return gameRow(
+      summary,
+      id,
+      metaParts.join(" · "),
+      `${epicActionButtons(summary, "small", { primaryOnly: true })}${manageBtn(id)}`,
+    );
   }).join("");
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
