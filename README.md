@@ -18,6 +18,8 @@
 
 Efxlve Launcher eliminates the need to keep multiple heavy launchers running in the background. It opens instantly from local disk cache, so your library is immediately accessible even offline. Installs, updates, and launches for managed stores are powered by native Rust wrappers around the `legendary`, `gogdl` and Nile CLIs, while client-owned stores keep using their own apps.
 
+> **Platform note:** The launcher currently ships for Windows 10/11 (x64). Linux and macOS support is in the works and coming soon.
+
 ---
 
 ## Key Features
