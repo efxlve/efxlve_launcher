@@ -16,7 +16,7 @@ import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { t } from "../../i18n";
-import { profileListGames, trackedGame } from "./profile-view";
+import { profileListGames, storeChipHtml, trackedGame } from "./profile-view";
 
 const selected = new Set<string>();
 let filterTimer = 0;
@@ -57,6 +57,7 @@ function rowHtml(g: ProfileGameRecord): string {
       <input type="checkbox" class="selective-checkbox" />
       ${thumb}
       <span class="hide-game-title">${esc(g.app_title)}</span>
+      ${storeChipHtml(g.app_name)}
     </label>`;
 }
 

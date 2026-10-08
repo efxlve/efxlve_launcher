@@ -1075,6 +1075,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
   height: 20px;
   padding: 0 6px;
   background: rgba(10, 10, 10, 0.85);

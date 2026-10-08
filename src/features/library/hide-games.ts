@@ -18,6 +18,7 @@ import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { epicPortrait, type EpicSummary } from "../../epic";
 import { t } from "../../i18n";
+import { storeChipHtml } from "../profile/profile-view";
 import { refreshLibraryResultsInPlace } from "./library-view";
 
 const selected = new Set<string>();
@@ -57,6 +58,7 @@ function rowHtml(s: EpicSummary): string {
       <input type="checkbox" class="selective-checkbox" />
       ${thumb}
       <span class="hide-game-title">${esc(s.title)}</span>
+      ${storeChipHtml(s.appName)}
     </label>`;
 }
 

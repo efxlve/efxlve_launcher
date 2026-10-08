@@ -73,7 +73,6 @@ const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
  */
 function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boolean): string {
   return cardGames.map((g) => {
-    const store = gameStore(g.app_name);
     const isPlat = isCompletedGame(g);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
@@ -97,9 +96,7 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
-    const storeChip = chips
-      ? `<span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
-      : "";
+    const storeChip = chips ? storeChipHtml(g.app_name) : "";
 
     return `
       <div class="profile-ach-card${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
@@ -145,7 +142,6 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     </div>`;
 
   const rows = cardGames.map((g) => {
-    const store = gameStore(g.app_name);
     const isPlat = isCompletedGame(g);
     const pt = S.playtimeMap.get(g.app_name);
     const cover = coverOf(g.app_name, g.cover || "");
@@ -167,9 +163,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
-    const storeChip = chips
-      ? `<span class="profile-store-chip">${storeLogo(store, 12)}<span>${storeCode(store)}</span></span>`
-      : "";
+    const storeChip = chips ? storeChipHtml(g.app_name) : "";
 
     const pctRight = isPlat
       ? `<div class="profile-badge-pill is-plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(15)}<span>100%</span></div>`
@@ -314,6 +308,13 @@ export function switchAct(kind: StoreKind): string {
 /** Library key → store. Epic ids have no prefix. */
 export function gameStore(appName: string): StoreKind {
   return sourceOfKey(appName) as StoreKind;
+}
+
+/** Store mark for a library key: logo plus the short code, e.g. for rows
+ * that mix several stores or for pick-one dialogs listing copies. */
+export function storeChipHtml(appName: string, size = 12): string {
+  const store = gameStore(appName);
+  return `<span class="profile-store-chip">${storeLogo(store, size)}<span>${storeCode(store)}</span></span>`;
 }
 
 function steamSignedIn(): boolean {
