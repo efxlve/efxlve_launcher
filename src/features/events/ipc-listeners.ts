@@ -43,7 +43,7 @@ import { loadNotifications, pushNotification } from "../notifications/notificati
 import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
-import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, isTauri } from "../../core/constants";
+import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -103,6 +103,17 @@ import { setView } from "../store/store-view";
 let dlDomRaf = 0;
 let dlDomId = "";
 let lastDlSample: { id: string; bytes: number; at: number } | null = null;
+
+/** Overlay per-game opt-out list (written by the overlay settings tab). */
+function overlayDisabledFor(appName: string): boolean {
+  try {
+    const raw = localStorage.getItem(OVERLAY_DISABLED_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(list) && (list as string[]).includes(appName);
+  } catch {
+    return false;
+  }
+}
 
 /** Batches bursty download DOM updates into a single animation frame. */
 function scheduleDlDomUpdate(id: string): void {
@@ -564,6 +575,11 @@ export async function initApp(hooks: {
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
+        // Point at the Shift+Tab overlay on the first start of the title, unless
+        // the overlay is off globally or the user opted this game out.
+        if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
+          toast(t("overlay.startHint"), "");
+        }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
         // is a fullscreen couch UI and stays where it is.
         if (S.minimizeOnGame && S.view !== "tv") {

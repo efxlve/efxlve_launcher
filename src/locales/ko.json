@@ -1885,5 +1885,6 @@
   "overlay.opacityDesc": "Dim the overlay so the game stays visible behind it.",
   "overlay.disableTitle": "Disable for this game",
   "overlay.disableDesc": "The overlay never opens for this title.",
-  "overlay.overlayLabel": "Overlay"
+  "overlay.overlayLabel": "Overlay",
+  "overlay.startHint": "Press Shift+Tab for the in-game overlay."
 }

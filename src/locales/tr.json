@@ -1885,5 +1885,6 @@
   "overlay.opacityDesc": "Oyun arkada görünsün diye overlay'i şeffaflaştır.",
   "overlay.disableTitle": "Bu oyun için kapat",
   "overlay.disableDesc": "Bu oyunda overlay hiç açılmaz.",
-  "overlay.overlayLabel": "Overlay"
+  "overlay.overlayLabel": "Overlay",
+  "overlay.startHint": "Oyun içi arayüz için Shift+Tab'a bas."
 }

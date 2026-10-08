@@ -10,18 +10,22 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
+// The overlay is its own webview: it needs the design system itself.
+import "../../styles/tokens.css";
+import "../../styles/components.css";
 import "./overlay.css";
 
 /* ---------- Local preferences (the main app re-applies them at boot) ---------- */
 
-const ENABLED_KEY = "efxlve-overlay-enabled";
-const HUD_KEY = "efxlve-overlay-hud";
-const OPACITY_KEY = "efxlve-overlay-opacity";
-const DISABLED_KEY = "efxlve-overlay-disabled-games";
+const ENABLED_KEY = OVERLAY_ENABLED_KEY;
+const HUD_KEY = OVERLAY_HUD_KEY;
+const OPACITY_KEY = OVERLAY_OPACITY_KEY;
+const DISABLED_KEY = OVERLAY_DISABLED_KEY;
 
 /* ---------- Data shapes ---------- */
 
@@ -632,12 +636,10 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   const { store } = splitKey(context.appName);
   const titleEl = document.getElementById("ov-game-title");
   const subEl = document.getElementById("ov-game-sub");
-  const footEl = document.getElementById("ov-foot-store");
   if (titleEl) titleEl.textContent = context.title || context.appName;
   if (subEl) {
     subEl.innerHTML = `${storeLogo(store, 12)}<span>${esc(storeLabel(store))}</span><span>·</span><span>${esc(t("overlay.overlayLabel"))}</span>`;
   }
-  if (footEl) footEl.textContent = context.appName;
 
   renderHome();
   renderPerf();
