@@ -77,6 +77,7 @@ cargo test                 # Rust unit tests
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Subsystem boundaries, cache-first hydration, and data pipelines.
 - [docs/GOOGLE_DRIVE_SETUP_GUIDE.md](./docs/GOOGLE_DRIVE_SETUP_GUIDE.md) — Step-by-step Google Drive Cloud Save Backup setup guide.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) — Hydra console dark tokens, layout contracts, and UI invariants.
+- [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md) — In-game overlay research, architecture and milestones.
 - [docs/TAURI_IPC_REFERENCE.md](./docs/TAURI_IPC_REFERENCE.md) — 236 Tauri IPC commands and event schemas.
 - [AGENTS.md](./AGENTS.md) — Operational guidelines for AI agents and core developers.
 
