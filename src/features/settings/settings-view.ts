@@ -549,6 +549,7 @@ function renderAppearance(): string {
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
       row(t("tv.open"), t("controller.tvModeDesc"), `<button class="btn ghost small" data-act="open-tv-mode">${icon("gamepad-2", 14)} ${t("tv.open")}</button>`) +
+      row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
     ) +

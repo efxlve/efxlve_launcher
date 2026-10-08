@@ -536,6 +536,8 @@ document.addEventListener("click", (e) => {
     openPalette();
   } else if (act === "open-tv-mode") {
     openTvMode();
+  } else if (act === "open-overlay") {
+    void invoke("overlay_show");
   } else if (act === "close-tv-mode") {
     closeTvMode();
   } else if (act === "lib-clear-search") {

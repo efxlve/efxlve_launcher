@@ -105,6 +105,26 @@ pub fn overlay_show_launcher(app: AppHandle) {
     }
 }
 
+/// Sets the currently active game context for the overlay.
+#[tauri::command]
+pub fn overlay_set_active_game(app_name: String, title: String) {
+    if let Ok(mut s) = STATE.lock() {
+        s.game_app = app_name;
+        s.game_title = title;
+    }
+}
+
+/// Clears the active game context when a title stops.
+#[tauri::command]
+pub fn overlay_clear_active_game(app_name: String) {
+    if let Ok(mut s) = STATE.lock() {
+        if s.game_app == app_name {
+            s.game_app.clear();
+            s.game_title.clear();
+        }
+    }
+}
+
 /// Manual open. The Shift+Tab hotkey is the normal path; this one lets the
 /// overlay (or tests) open the panel without a game when needed.
 #[tauri::command]
@@ -147,6 +167,7 @@ pub(crate) fn show(app: &AppHandle) {
             title: String::new(),
         },
     };
+    let _ = app.emit("overlay-open", payload.clone());
     let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
     metrics::ensure_running(app.clone());
 }
@@ -165,6 +186,7 @@ pub(crate) fn hide(app: &AppHandle) {
         Err(_) => 0,
     };
     hud::focus_window(hwnd);
+    let _ = app.emit("overlay-close", ());
     let _ = app.emit_to(OVERLAY_LABEL, "overlay-close", ());
 }
 
@@ -172,6 +194,20 @@ pub(crate) fn hide(app: &AppHandle) {
 /// no game window is known.
 fn place_over_game(win: &tauri::WebviewWindow, hwnd: isize) {
     if let Some((x, y, w, h)) = hud::monitor_rect_for(hwnd) {
+        #[cfg(windows)]
+        if let Ok(raw_hwnd) = win.hwnd() {
+            unsafe {
+                hud::SetWindowPos(
+                    raw_hwnd.0 as *mut core::ffi::c_void,
+                    -1isize as *mut core::ffi::c_void, // HWND_TOPMOST
+                    x,
+                    y,
+                    w as i32,
+                    h as i32,
+                    0x0040, // SWP_SHOWWINDOW
+                );
+            }
+        }
         let _ = win.set_position(tauri::PhysicalPosition::new(x, y));
         let _ = win.set_size(tauri::PhysicalSize::new(w, h));
     }

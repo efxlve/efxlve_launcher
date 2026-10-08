@@ -1123,7 +1123,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   cachedScreenshots = [];
   sessionStartEpoch = Date.now();
 
-  if (isDisabledGame(context.appName)) {
+  if (context.appName && isDisabledGame(context.appName)) {
     void invoke("overlay_hide");
     return;
   }

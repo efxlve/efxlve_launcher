@@ -4,7 +4,7 @@
 //! game runs, and only while the game (or the panel itself) is in front.
 
 use std::time::Duration;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use super::{hide, show, STATE};
 
@@ -16,73 +16,35 @@ extern "system" {
 
 pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || {
-        // Ticks where the game watch says stopped AND the game window is gone.
-        // Window recreation (fullscreen switches) must not close the panel.
         let mut gone_ticks: u32 = 0;
         loop {
-            let game = crate::legendary::screenshots::get_active_running_game();
-            let (mut visible, mut game_hwnd) = STATE
+            std::thread::sleep(Duration::from_millis(20));
+
+            let (visible, enabled, game_hwnd, cur_app, cur_title) = STATE
                 .lock()
-                .map(|s| (s.visible, s.game_hwnd))
-                .unwrap_or((false, 0));
+                .map(|s| (s.visible, s.enabled, s.game_hwnd, s.game_app.clone(), s.game_title.clone()))
+                .unwrap_or((false, true, 0, String::new(), String::new()));
 
             if visible {
-                // A window handle can go stale while the watch still knows the
-                // game (fullscreen switches recreate windows). Re-find it by pid.
-                if !super::hud::window_alive(game_hwnd) && game.is_some() {
-                    let pids = crate::legendary::screenshots::active_game_pids();
-                    let found = super::hud::find_game_window(&pids);
-                    if found != 0 && found != game_hwnd {
-                        game_hwnd = found;
-                        if let Ok(mut s) = STATE.lock() {
-                            s.game_hwnd = found;
-                        }
+                if game_hwnd != 0 && !super::hud::window_alive(game_hwnd) {
+                    gone_ticks = gone_ticks.saturating_add(1);
+                    if gone_ticks >= 75 {
+                        gone_ticks = 0;
+                        hide(&app);
                     }
-                }
-                // Only a known, dead game window closes the panel automatically.
-                // Without a handle the user closes it; guessing would shut it
-                // under games whose process detection is unreliable.
-                let gone = game.is_none()
-                    && game_hwnd != 0
-                    && !super::hud::window_alive(game_hwnd);
-                gone_ticks = if gone { gone_ticks.saturating_add(1) } else { 0 };
-                if gone_ticks >= 75 {
+                } else {
                     gone_ticks = 0;
-                    hide(&app);
-                    visible = false;
-                    if let Ok(mut s) = STATE.lock() {
-                        s.game_app.clear();
-                        s.game_title.clear();
-                        s.game_hwnd = 0;
-                    }
                 }
             } else {
                 gone_ticks = 0;
-                if game.is_none() {
-                    if let Ok(mut s) = STATE.lock() {
-                        s.game_app.clear();
-                        s.game_title.clear();
-                        s.game_hwnd = 0;
-                    }
-                    std::thread::sleep(Duration::from_millis(200));
-                    continue;
-                }
-                // Panel closed: the hotkey only works in front of the game.
-                #[cfg(windows)]
-                if !crate::legendary::screenshots::game_window_is_foreground() {
-                    std::thread::sleep(Duration::from_millis(120));
-                    continue;
-                }
             }
 
             #[cfg(windows)]
             {
-                std::thread::sleep(Duration::from_millis(20));
-
-                let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(false);
-                let shift = (unsafe { GetAsyncKeyState(0x10) } as u16 & 0x8000) != 0; // VK_SHIFT
-                let tab = (unsafe { GetAsyncKeyState(0x09) } as u16 & 0x8000) != 0; // VK_TAB
-                let down = (shift && tab) || is_controller_hotkey_down();
+                let shift = (unsafe { GetAsyncKeyState(0x10) } as i16) < 0; // VK_SHIFT
+                let tab = (unsafe { GetAsyncKeyState(0x09) } as i16) < 0; // VK_TAB
+                let pad_down = is_controller_hotkey_down();
+                let down = (shift && tab) || pad_down;
 
                 if down != hotkey_down() {
                     set_hotkey_down(down);
@@ -90,9 +52,20 @@ pub(crate) fn start(app: AppHandle) {
                         if visible {
                             hide(&app);
                         } else {
-                            // Capture the game window: the foreground window is
-                            // normally it; the pid search covers wrappers.
-                            let mut hwnd = super::hud::foreground_window();
+                            let fg = super::hud::foreground_window();
+                            let main_hwnd = app
+                                .get_webview_window("main")
+                                .and_then(|w| w.hwnd().ok())
+                                .map(|h| h.0 as isize)
+                                .unwrap_or(0);
+
+                            // In launcher: allow Controller Guide to open, but let Shift+Tab do normal web tab navigation
+                            if fg != 0 && fg == main_hwnd && !pad_down {
+                                continue;
+                            }
+
+                            // Capture game window
+                            let mut hwnd = fg;
                             if !super::hud::window_alive(hwnd) {
                                 let pids = crate::legendary::screenshots::active_game_pids();
                                 let found = super::hud::find_game_window(&pids);
@@ -100,13 +73,32 @@ pub(crate) fn start(app: AppHandle) {
                                     hwnd = found;
                                 }
                             }
-                            if let Ok(mut s) = STATE.lock() {
-                                s.game_hwnd = hwnd;
-                                if let Some((app_name, title)) = &game {
-                                    s.game_app = app_name.clone();
-                                    s.game_title = title.clone();
+
+                            // Determine game identity
+                            let mut app_name = cur_app.clone();
+                            let mut title = cur_title.clone();
+
+                            if app_name.is_empty() {
+                                if let Some((active_app, active_title)) = crate::legendary::screenshots::get_active_running_game() {
+                                    app_name = active_app;
+                                    title = active_title;
+                                } else {
+                                    let w_title = super::hud::window_title(hwnd);
+                                    if !w_title.is_empty() {
+                                        app_name = format!("game::{}", w_title);
+                                        title = w_title;
+                                    }
                                 }
                             }
+
+                            if let Ok(mut s) = STATE.lock() {
+                                s.game_hwnd = hwnd;
+                                if !app_name.is_empty() {
+                                    s.game_app = app_name;
+                                    s.game_title = title;
+                                }
+                            }
+
                             show(&app);
                         }
                     }

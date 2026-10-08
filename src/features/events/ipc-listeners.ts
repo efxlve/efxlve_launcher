@@ -582,6 +582,7 @@ export async function initApp(hooks: {
         // the overlay is off globally or the user opted this game out.
         if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
           toast(t("overlay.startHint"), "");
+          void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});
           void invoke("overlay_flash_hint", { text: t("overlay.startHint") }).catch(() => {});
         }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
@@ -614,6 +615,7 @@ export async function initApp(hooks: {
       } else {
         // A duplicate stop event must not toast or resume downloads twice.
         if (!S.runningGames.delete(id)) return;
+        void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});
         if (totalSeconds !== undefined) {
           // The local counter only knows the sessions this launcher started.
           // Replacing the map with it would drop a 300h game to 1h, so the

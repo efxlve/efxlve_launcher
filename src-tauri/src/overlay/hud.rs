@@ -143,6 +143,21 @@ pub fn window_alive(hwnd: isize) -> bool {
     }
 }
 
+/// Retrieves the visible window title text (for detecting games run outside the launcher).
+pub fn window_title(hwnd: isize) -> String {
+    #[cfg(windows)]
+    if hwnd != 0 {
+        let mut buf = [0u16; 512];
+        let len = unsafe { GetWindowTextW(hwnd, buf.as_mut_ptr(), 512) };
+        if len > 0 {
+            return String::from_utf16_lossy(&buf[..len as usize]);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = hwnd;
+    String::new()
+}
+
 /// Largest visible top-level window that belongs to one of `pids` (0 = none).
 /// Used to (re)find the game window when a fullscreen switch recreates it.
 pub fn find_game_window(pids: &[u32]) -> isize {
@@ -289,6 +304,16 @@ extern "system" {
     fn GetForegroundWindow() -> isize;
     // Same signature as the declaration in main.rs so the two agree.
     fn SetForegroundWindow(hwnd: *mut core::ffi::c_void) -> i32;
+    pub fn SetWindowPos(
+        hwnd: *mut core::ffi::c_void,
+        hwnd_insert_after: *mut core::ffi::c_void,
+        x: i32,
+        y: i32,
+        cx: i32,
+        cy: i32,
+        flags: u32,
+    ) -> i32;
+    pub fn GetWindowTextW(hwnd: isize, lp_string: *mut u16, n_max_count: i32) -> i32;
     fn IsWindow(hwnd: isize) -> i32;
     fn IsWindowVisible(hwnd: isize) -> i32;
     fn EnumWindows(
