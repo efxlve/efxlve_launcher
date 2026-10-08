@@ -80,7 +80,62 @@ cargo test                 # Rust unit tests
 
 ---
 
+## Special Thanks
+
+Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), [Hydra Launcher](https://github.com/hydralauncher/hydra), [Playnite](https://github.com/JosefNemec/Playnite) and [SteamGridDB](https://www.steamgriddb.com/) — and to every project below. The in-app legal notice (Settings → About) carries the trademark and data-source details; this section credits everything the app is inspired by and built on.
+
+### Design & UX inspiration
+
+- [Hydra Launcher](https://github.com/hydralauncher/hydra) — the console-dark direction this UI follows: true-black surfaces, hairline borders, a single white accent, the quiet cover grid and the game-page layout.
+- [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher) — the cache-first principle (paint the library from local disk before any network call) and the legendary/gogdl wrapper approach.
+- [Playnite](https://github.com/JosefNemec/Playnite) — the 10-ft TV Mode model, and the reference for reading Xbox title history and achievement progress.
+- Steam Big Picture and the PS5 system UI — controller navigation patterns in TV Mode.
+
+### Store backends
+
+These open-source tools ship with the launcher or are downloaded once at first use, and do the actual store work:
+
+- [legendary](https://github.com/legendary-gl/legendary) — Epic Games installs, updates, cloud saves and launch.
+- [gogdl](https://github.com/Heroic-Games-Launcher/heroic-gogdl) — GOG installs, updates and cloud saves.
+- [Nile](https://github.com/imLinguin/nile) — Amazon Games library, installs and updates.
+- [Comet](https://github.com/imLinguin/comet) — open-source GOG Galaxy Communication Service, run while a GOG game plays so achievements unlock without the Galaxy client.
+- [SteamGridDB](https://www.steamgriddb.com/) — high-resolution cover art for the library grid.
+
+### Frontend libraries & tooling
+
+- [Tauri 2](https://github.com/tauri-apps/tauri) JS API and its [plugins](https://github.com/tauri-apps/plugins-workspace) — opener, process, updater, notification.
+- [Lucide](https://lucide.dev/) — the icon set.
+- [TypeScript](https://www.typescriptlang.org/), [Vite](https://vite.dev/) and the [Tauri CLI](https://github.com/tauri-apps/tauri) — types, bundling and build tooling.
+
+### Rust crates
+
+Direct dependencies of the backend; each crate keeps its own license:
+
+- [tauri](https://github.com/tauri-apps/tauri) and tauri-build — window, IPC, tray and the plugin host.
+- [serde](https://github.com/serde-rs/serde) / [serde_json](https://github.com/serde-rs/json) — (de)serialization.
+- [tokio](https://github.com/tokio-rs/tokio) — async runtime.
+- [reqwest](https://github.com/seanmonstar/reqwest) — HTTP client with rustls.
+- [rusqlite](https://github.com/rusqlite/rusqlite) — bundled SQLite for local caches.
+- [notify](https://github.com/notify-rs/notify) — file watching (Steam manifests).
+- [discord-rich-presence](https://github.com/vionya/discord-rich-presence) — Discord activity while a game runs.
+- [flate2](https://github.com/rust-lang/flate2) / [tar](https://github.com/alexcrichton/tar-rs) — archive extraction for store tools.
+- [sha2](https://github.com/RustCrypto/hashes) — checksums for downloaded binaries.
+- [rsa](https://github.com/RustCrypto/RSA) — Steam sign-in encryption.
+- [zeroize](https://github.com/RustCrypto/utils) — wiping secrets from memory.
+- [rand](https://github.com/rust-random/rand), [base64](https://github.com/marshallpierce/rust-base64), [url](https://github.com/servo/rust-url) — protocol helpers.
+- [qrcode](https://github.com/kennytm/qrcode-rust) — Steam QR sign-in.
+- [thiserror](https://github.com/dtolnay/thiserror) — error types.
+- [hidapi](https://github.com/ruabmbua/hidapi-rs) and [vigem-client](https://github.com/sudden-break/vigem-client) — gamepad and virtual-pad support on Windows.
+- [crc32fast](https://github.com/srijs/rust-crc32fast) — Steam manifest checksums on Windows.
+
+### Icons, marks and artwork
+
+- Store and service marks belong to their owners and are shown only to identify those stores and services (nominative use). Some monochrome shapes are redrawn from [Simple Icons](https://simpleicons.org/) (CC0-1.0) — see [src/assets/stores/README.md](./src/assets/stores/README.md).
+- Game covers and artwork come from the stores themselves and from SteamGridDB.
+
+---
+
 ## License
 
 GNU General Public License v3.0 (GPL-3.0). See [LICENSE](./LICENSE) for details.
-Special thanks to the [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), and [SteamGridDB](https://www.steamgriddb.com/) projects.
+Third-party components keep their own licenses; the list above and the in-app legal notice name their owners.
