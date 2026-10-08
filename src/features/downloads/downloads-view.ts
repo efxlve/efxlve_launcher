@@ -345,7 +345,11 @@ export function renderDownloads(): string {
     const latestVersion = info?.latestVersion || gInfo?.latestVersion || "";
     const installedVersion = info?.installedVersion || gInfo?.installedBuildId || "";
     const ver = latestVersion ? `${installedVersion ? `${esc(installedVersion)} → ` : ""}${esc(latestVersion)}` : "";
-    const metaParts = [ver, s.installSize ? fmtBytes(s.installSize) : ""].filter(Boolean);
+    // Stores do not publish a pending update's download size. Steam's manifest
+    // keeps the counters of a started job, so a paused transfer can show its
+    // real total; the installed size must never stand in as the update size.
+    const pendingDownload = (s.bytesToDownload ?? 0) > (s.bytesDownloaded ?? 0) ? (s.bytesToDownload ?? 0) : 0;
+    const metaParts = [ver, pendingDownload > 0 ? fmtBytes(pendingDownload) : ""].filter(Boolean);
     if (isIgnored) metaParts.push(`<span class="dl-ignored-badge">${esc(t("dl.indicatorIgnored"))}</span>`);
     const meta = metaParts.join(" · ");
     const ignoreTip = isIgnored ? t("dl.restoreIndicatorTip") : t("dl.ignoreIndicatorTip");
