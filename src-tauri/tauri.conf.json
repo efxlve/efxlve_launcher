@@ -21,6 +21,22 @@
         "center": true,
         "decorations": false,
         "backgroundColor": "#07080d"
+      },
+      {
+        "label": "overlay",
+        "url": "overlay.html",
+        "title": "Efxlve Overlay",
+        "width": 1280,
+        "height": 800,
+        "center": true,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "visible": false,
+        "shadow": false,
+        "focus": false
       }
     ],
     "security": {

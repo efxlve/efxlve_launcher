@@ -70,6 +70,10 @@ export const STORE_BADGE_KEY = "efxlve-store-badge";
 export const STORE_ICONS_KEY = "efxlve-store-icons";
 /** Show every store copy of a multi-store game as its own card. Off = one combined card. */
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
+/** In-game overlay: Shift+Tab hotkey enabled, managed by the overlay settings tab. */
+export const OVERLAY_ENABLED_KEY = "efxlve-overlay-enabled";
+/** In-game overlay: always-on mini HUD, managed by the overlay settings tab. */
+export const OVERLAY_HUD_KEY = "efxlve-overlay-hud";
 /** Library storefronts that stay visible. Missing means every store. */
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */

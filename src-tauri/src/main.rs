@@ -24,6 +24,7 @@ mod steam_session;
 mod steam_watch;
 mod storage_usage;
 mod notif_overlay;
+mod overlay;
 mod store_host;
 mod store_theme;
 mod vault_id;
@@ -679,6 +680,8 @@ fn main() {
             // The hotkey listener must already know the configured folder.
             legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
             legendary::screenshots::start_f12_listener(app.handle().clone());
+            // Shift+Tab overlay panel over the running game.
+            overlay::start(app.handle().clone());
             // Keeps the GOG account visible as online while the launcher runs.
             gogdl::presence::spawn(app.handle().clone());
             // Refreshes linked companion accounts (today: Ubisoft) on a timer.
@@ -879,6 +882,14 @@ fn main() {
             legendary::screenshots::epic_get_screenshot_move_info,
             legendary::screenshots::epic_open_screenshot_dir,
             legendary::screenshots::epic_replace_screenshot_with_compressed,
+            overlay::overlay_get_state,
+            overlay::overlay_set_enabled,
+            overlay::overlay_set_hud,
+            overlay::overlay_hide,
+            overlay::overlay_show,
+            overlay::overlay_show_launcher,
+            overlay::media::overlay_media_state,
+            overlay::media::overlay_media_control,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,

@@ -63,7 +63,7 @@ fn game_pids_cached(game: &RunningGame) -> Vec<u32> {
 }
 
 /// True only when the foreground window belongs to the running game, not the launcher.
-fn game_window_is_foreground() -> bool {
+pub fn game_window_is_foreground() -> bool {
     let game = match RUNNING_GAME.read() {
         Ok(g) => (*g).clone(),
         Err(_) => return false,
@@ -113,6 +113,14 @@ pub fn get_active_running_game() -> Option<(String, String)> {
         .read()
         .ok()
         .and_then(|g| g.as_ref().map(|g| (g.app_name.clone(), g.title.clone())))
+}
+
+/// PIDs of the game currently on screen. The overlay metrics and HUD use it.
+pub fn active_game_pids() -> Vec<u32> {
+    match RUNNING_GAME.read() {
+        Ok(g) => g.as_ref().map(game_pids_cached).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -43,7 +43,7 @@ import { loadNotifications, pushNotification } from "../notifications/notificati
 import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
-import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, isTauri } from "../../core/constants";
+import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, isTauri } from "../../core/constants";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -806,6 +806,14 @@ export async function initApp(hooks: {
     void loadCompanionLibrary();
     // Linked companion accounts refresh in the background (Ubisoft session).
     void syncCompanionAccounts();
+
+    // The overlay settings tab persists these; Rust starts with defaults each run.
+    if (localStorage.getItem(OVERLAY_ENABLED_KEY) === "false") {
+      void invoke("overlay_set_enabled", { enabled: false }).catch(() => {});
+    }
+    if (localStorage.getItem(OVERLAY_HUD_KEY) === "true") {
+      void invoke("overlay_set_hud", { enabled: true }).catch(() => {});
+    }
 
     // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
     // same play path as the Play button once the shell is up.

@@ -31,6 +31,7 @@ zeroize = "1"
 rand = "0.8"
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 notify = "6"
+sysinfo = "0.33"
 
 [features]
 default = ["custom-protocol"]
@@ -40,3 +41,5 @@ custom-protocol = ["tauri/custom-protocol"]
 hidapi = "2"
 vigem-client = { version = "0.1.4", features = ["unstable_xtarget_notification"] }
 crc32fast = "1"
+ferrisetw = "1.2"
+windows = { version = "0.61", features = ["Foundation", "Media_Control", "Win32_Foundation", "Win32_System_Performance"] }

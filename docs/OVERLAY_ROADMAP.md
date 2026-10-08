@@ -1,6 +1,9 @@
 # In-Game Overlay — Product & Technical Roadmap
 
-Status: proposed · Target platform: Windows first (Linux/macOS later) · Owner: core team
+Status: v1 shipped (Shift+Tab panel, native performance HUD, screenshots, notes,
+achievements, SMTC music, Discord status). ETW FPS needs one validation pass on a
+real game; Discord voice read/write still waits on the Discord app review noted below.
+Target platform: Windows first (Linux/macOS later) · Owner: core team
 
 A Steam-like overlay hosted by Efxlve Launcher: one hotkey opens a panel over any
 running game with screenshots, notes, achievements, performance stats, music and

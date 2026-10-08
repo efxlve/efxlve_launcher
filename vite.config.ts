@@ -20,6 +20,12 @@ export default defineConfig({
     // level — tracked in ROADMAP 6.3. Keep the limit honest instead of silencing it.
     chunkSizeWarningLimit: 650,
     rollupOptions: {
+      input: {
+        main: "index.html",
+        // The in-game overlay is its own webview entry so the launcher bundle
+        // does not carry it (see docs/OVERLAY_ROADMAP.md).
+        overlay: "overlay.html",
+      },
       output: {
         // Split third-party code out of the app chunk: it stays cacheable between
         // updates and keeps the entry smaller on the low-end reference hardware.
