@@ -403,17 +403,17 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
       steamKeepUntil.set(prev.appId, now + STEAM_KEEP_MS);
       continue;
     }
+    const fresh = games.find((g) => g.appId === prev.appId);
+    // Every byte already on disk means the transfer finished: finalize at once
+    // instead of holding the row with a spinner. A pause or a cancel never
+    // reaches the total, so those still ride the keep window.
+    const finished = fresh != null && fresh.bytesToDownload > 0 && fresh.bytesDownloaded >= fresh.bytesToDownload;
     const until = steamKeepUntil.get(prev.appId) ?? 0;
-    if (until <= now) {
+    if (finished || until <= now) {
       clearSteamAwait(prev.appId);
       steamKeepUntil.delete(prev.appId);
-      // The transfer stopped and the keep window passed. A finished update has
-      // every byte on disk; a pause or a cancel does not, so only the finished
-      // one joins the Downloads tab's completed list.
-      const fresh = games.find((g) => g.appId === prev.appId);
-      if (fresh && fresh.bytesToDownload > 0 && fresh.bytesDownloaded >= fresh.bytesToDownload) {
-        pushRecentInstall(`steam::${prev.appId}`);
-      }
+      // Only a finished transfer joins the Downloads tab's completed list.
+      if (finished) pushRecentInstall(`steam::${prev.appId}`);
       continue;
     }
     // Steam drops the row for a moment when an update starts. Keep it, and
