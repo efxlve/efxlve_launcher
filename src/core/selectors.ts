@@ -123,6 +123,40 @@ export function storeKeysForTitle(title: string): readonly string[] {
   return canonKeysMap.get(canon) ?? EMPTY_CANON_KEYS;
 }
 
+/**
+ * Playtime a library card shows and sorts by. Combined mode sums every store
+ * copy of the title, so switching the store filter cannot move the card in
+ * the list; separate mode stays with the card's own copy.
+ */
+export function libraryPlaytime(s: { appName: string; title: string }): { seconds: number; lastPlayed: number } {
+  const own = S.playtimeMap.get(s.appName);
+  if (S.separateCopies) {
+    return { seconds: own?.total_seconds ?? 0, lastPlayed: own?.last_played_timestamp ?? 0 };
+  }
+  let seconds = own?.total_seconds ?? 0;
+  let lastPlayed = own?.last_played_timestamp ?? 0;
+  for (const key of storeKeysForTitle(s.title)) {
+    if (key === s.appName) continue;
+    const pt = S.playtimeMap.get(key);
+    if (!pt) continue;
+    seconds += pt.total_seconds ?? 0;
+    const ts = pt.last_played_timestamp ?? 0;
+    if (ts > lastPlayed) lastPlayed = ts;
+  }
+  return { seconds, lastPlayed };
+}
+
+/** Best recent-list position across the copies of a title; -1 when none. */
+export function libraryRecentIndex(s: { appName: string; title: string }): number {
+  let best = S.epicRecent.indexOf(s.appName);
+  if (S.separateCopies) return best;
+  for (const key of storeKeysForTitle(s.title)) {
+    const idx = S.epicRecent.indexOf(key);
+    if (idx >= 0 && (best < 0 || idx < best)) best = idx;
+  }
+  return best;
+}
+
 /** Rebuilds the unified allGamesMap and store mapping from both epicSummaries and gogSummaries in O(N). */
 export function rebuildAllGamesMap(): void {
   const map = new Map<string, LibraryItem>();

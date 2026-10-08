@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "Affiche les boutiques auxquelles appartient un jeu sous son titre dans la vue globale.",
   "settings.storeIconsTitle": "Icônes des boutiques",
   "settings.storeIconsDesc": "Afficher la marque de la boutique sur la jaquette dans la vue grille.",
+  "settings.separateCopiesTitle": "Séparer les copies",
+  "settings.separateCopiesDesc": "Afficher chaque copie de boutique d'un jeu comme une carte distincte au lieu d'une carte combinée.",
   "settings.secStoreTabs": "Onglets des boutiques",
   "settings.storeTabsNote": "Les boutiques masquées quittent la barre ; la dernière visible reste.",
   "settings.gogLogout": "Se déconnecter de GOG",

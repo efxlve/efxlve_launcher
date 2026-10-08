@@ -30,6 +30,7 @@ import {
   SHOW_SHARED_LIBRARY_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
+  SEPARATE_COPIES_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
@@ -767,6 +768,12 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-icons") {
     S.showStoreIcons = !S.showStoreIcons;
     localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-separate-copies") {
+    S.separateCopies = !S.separateCopies;
+    localStorage.setItem(SEPARATE_COPIES_KEY, String(S.separateCopies));
+    // The result set itself changes (one card per title vs one per copy).
+    S.libraryDataRev++;
     if (!refreshLibraryResultsInPlace()) scheduleRender();
   } else if (act === "toggle-tv-auto") {
     S.tvAutoEnter = !S.tvAutoEnter;

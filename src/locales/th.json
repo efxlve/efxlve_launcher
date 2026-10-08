@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "แสดงว่าเกมเป็นของร้านค้าใดใต้ชื่อเกมเมื่อดูร้านค้าทั้งหมด",
   "settings.storeIconsTitle": "ไอคอนร้านค้า",
   "settings.storeIconsDesc": "แสดงตราร้านค้าบนปกในมุมมองตาราง",
+  "settings.separateCopiesTitle": "แยกสำเนาตามร้านค้า",
+  "settings.separateCopiesDesc": "แสดงสำเนาของเกมแต่ละร้านค้าเป็นบัตรแยกกันแทนที่จะรวมเป็นบัตรเดียว",
   "settings.secStoreTabs": "แท็บร้านค้า",
   "settings.storeTabsNote": "ร้านที่ซ่อนจะออกจากแถบ ร้านสุดท้ายจะคงอยู่",
   "settings.gogLogout": "ออกจากระบบ GOG",

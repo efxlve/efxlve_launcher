@@ -68,6 +68,8 @@ export const COVER_TITLES_KEY = "efxlve-cover-titles";
 export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Show the storefront mark on every grid cover. Off by default. */
 export const STORE_ICONS_KEY = "efxlve-store-icons";
+/** Show every store copy of a multi-store game as its own card. Off = one combined card. */
+export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
 /** Library storefronts that stay visible. Missing means every store. */
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */

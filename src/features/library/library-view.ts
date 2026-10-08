@@ -11,7 +11,7 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S, applyTabSort } from "../../core/state";
@@ -102,6 +102,7 @@ function visibleSignature(): string {
     String(S.libraryDataRev),
     S.appLanguage,
     S.epicRecent.join(","),
+    S.separateCopies ? "split" : "merged",
   ].join("\x1f");
 }
 
@@ -192,40 +193,28 @@ export function epicVisibleSummaries(): EpicSummary[] {
       break;
     case "played":
       result = [...list].sort(
-        (a, b) =>
-          (S.playtimeMap.get(b.appName)?.total_seconds ?? 0) - (S.playtimeMap.get(a.appName)?.total_seconds ?? 0) ||
-          byTitle(a, b),
+        (a, b) => libraryPlaytime(b).seconds - libraryPlaytime(a).seconds || byTitle(a, b),
       );
       break;
     case "achievements":
       result = [...list].sort((a, b) => achievementRank(b.appName) - achievementRank(a.appName) || byTitle(a, b));
       break;
     default: {
-      const recentIdxMap = new Map<string, number>();
-      for (let i = 0; i < S.epicRecent.length; i++) {
-        recentIdxMap.set(S.epicRecent[i], i);
-      }
       result = [...list].sort((a, b) => {
-        const inRecentA = recentIdxMap.has(a.appName);
-        const inRecentB = recentIdxMap.has(b.appName);
-        if (inRecentA && inRecentB) {
-          return recentIdxMap.get(a.appName)! - recentIdxMap.get(b.appName)!;
-        }
-        if (inRecentA) return -1;
-        if (inRecentB) return 1;
+        const idxA = libraryRecentIndex(a);
+        const idxB = libraryRecentIndex(b);
+        if (idxA >= 0 && idxB >= 0) return idxA - idxB;
+        if (idxA >= 0) return -1;
+        if (idxB >= 0) return 1;
 
-        const ptA = S.playtimeMap.get(a.appName);
-        const ptB = S.playtimeMap.get(b.appName);
-        const tsA = ptA?.last_played_timestamp ?? 0;
-        const tsB = ptB?.last_played_timestamp ?? 0;
-        if (tsA > 0 || tsB > 0) {
-          if (tsA !== tsB) return tsB - tsA;
+        const ptA = libraryPlaytime(a);
+        const ptB = libraryPlaytime(b);
+        if (ptA.lastPlayed > 0 || ptB.lastPlayed > 0) {
+          if (ptA.lastPlayed !== ptB.lastPlayed) return ptB.lastPlayed - ptA.lastPlayed;
         }
 
-        const secA = ptA?.total_seconds ?? 0;
-        const secB = ptB?.total_seconds ?? 0;
-        if (secA > 0 || secB > 0) {
-          if (secA !== secB) return secB - secA;
+        if (ptA.seconds > 0 || ptB.seconds > 0) {
+          if (ptA.seconds !== ptB.seconds) return ptB.seconds - ptA.seconds;
         }
 
         if (a.installed !== b.installed) {
@@ -249,8 +238,15 @@ export function epicVisibleSummaries(): EpicSummary[] {
  */
 function libraryBaseItems(): EpicSummary[] {
   const groups = new Map<string, EpicSummary[]>();
+  const copies: EpicSummary[] = [];
   const push = (s: EpicSummary): void => {
     if (S.hiddenGames.has(s.appName)) return;
+    // Separate mode lists every store copy as its own card; combined mode keeps
+    // one card per canonical title.
+    if (S.separateCopies) {
+      copies.push(s);
+      return;
+    }
     const canon = canonicalGroup(s);
     const list = groups.get(canon);
     if (list) list.push(s);
@@ -277,6 +273,7 @@ function libraryBaseItems(): EpicSummary[] {
   for (const g of S.companionSummaries) {
     if (S.enabledStores.has(g.source)) push(libraryItemToSummary(g));
   }
+  if (S.separateCopies) return copies;
   const out: EpicSummary[] = [];
   for (const list of groups.values()) out.push(pickShownCopy(list));
   return out;
@@ -327,7 +324,7 @@ export function epicCardPortrait(s: EpicSummary): string {
 /** Dense list row: thumbnail, title + studio, playtime, size and the primary action. */
 function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
-  const secs = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const secs = libraryPlaytime(s).seconds;
   const sizeBytes = measuredSize(s.appName) ?? s.installSize;
   const source = sourceOfKey(s.appName);
   const showStores = S.showStoreBadge && S.enabledStores.size > 1;

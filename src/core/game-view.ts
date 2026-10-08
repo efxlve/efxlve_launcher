@@ -12,7 +12,7 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon, epicPlatinumIcon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { isCompanionKey, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
+import { isCompanionKey, libraryPlaytime, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
 import { esc, fmtPlaytime } from "./utils";
 
@@ -65,7 +65,7 @@ export function listAchievementCell(appName: string): string {
 export function libraryCoverStats(appName: string): string {
   if (!S.showCoverStats) return "";
   const chips: string[] = [];
-  const secs = S.playtimeMap.get(appName)?.total_seconds ?? 0;
+  const secs = libraryPlaytime({ appName, title: summaryOf(appName)?.title ?? appName }).seconds;
   if (secs > 0) {
     chips.push(`<span class="cover-stat">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
   }
@@ -226,7 +226,7 @@ export function patchLibraryCardDom(appName: string): boolean {
     // List view shows playtime as its own column; the grid shows the cover badge.
     const playHost = item.querySelector<HTMLElement>("[data-lib-playtime]");
     if (playHost) {
-      const secs = S.playtimeMap.get(appName)?.total_seconds ?? 0;
+      const secs = libraryPlaytime({ appName, title: s.title }).seconds;
       playHost.textContent = secs > 0 ? fmtPlaytime(secs) : "-";
     }
     const actionHost = item.querySelector<HTMLElement>("[data-card-action]");

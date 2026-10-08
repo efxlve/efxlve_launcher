@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "在查看所有商店时，于游戏标题下方显示其所属的商店。",
   "settings.storeIconsTitle": "商店图标",
   "settings.storeIconsDesc": "在网格视图中于封面上显示商店标志。",
+  "settings.separateCopiesTitle": "分开显示商店副本",
+  "settings.separateCopiesDesc": "将多商店游戏的不同副本分别显示为独立卡片，而不是合并成一张卡片。",
   "settings.secStoreTabs": "商店标签",
   "settings.storeTabsNote": "隐藏的商店会离开商店栏；最后一个可见的会保留。",
   "settings.gogLogout": "退出 GOG",

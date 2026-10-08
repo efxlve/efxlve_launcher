@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "Mostra a quais lojas um jogo pertence sob o título ao visualizar todas as lojas.",
   "settings.storeIconsTitle": "Ícones das lojas",
   "settings.storeIconsDesc": "Mostra a marca da loja na capa na visualização em grade.",
+  "settings.separateCopiesTitle": "Separar cópias de loja",
+  "settings.separateCopiesDesc": "Mostra cada cópia de loja de um jogo como cartão próprio em vez de um cartão combinado.",
   "settings.secStoreTabs": "Abas das lojas",
   "settings.storeTabsNote": "Lojas ocultas saem da barra; a última visível permanece.",
   "settings.gogLogout": "Sair do GOG",

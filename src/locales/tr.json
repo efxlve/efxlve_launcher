@@ -1701,6 +1701,8 @@
   "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde oyun başlıklarının altında hangi mağazalara ait olduğunu gösterir.",
   "settings.storeIconsTitle": "Mağaza ikonları",
   "settings.storeIconsDesc": "Izgara görünümünde kapakların üzerinde mağaza simgesini göster.",
+  "settings.separateCopiesTitle": "Mağaza kopyalarını ayır",
+  "settings.separateCopiesDesc": "Birden fazla mağazadaki bir oyunun her kopyasını tek kart yerine ayrı kart olarak göster.",
   "settings.secStoreTabs": "Mağaza sekmeleri",
   "settings.storeTabsNote": "Kapalı mağazalar Mağazalar çubuğundan kalkar; son görünür mağaza kalır.",
   "settings.gogLogout": "GOG'dan Çıkış Yap",

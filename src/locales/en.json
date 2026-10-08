@@ -1701,6 +1701,8 @@
   "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
   "settings.storeIconsTitle": "Store icons",
   "settings.storeIconsDesc": "Show each game's storefront mark on its cover in the grid view.",
+  "settings.separateCopiesTitle": "Separate store copies",
+  "settings.separateCopiesDesc": "Show each store copy of a multi-store game as its own card instead of one combined card.",
   "settings.secStoreTabs": "Store tabs",
   "settings.storeTabsNote": "Hidden stores leave the Stores bar; the last visible one stays.",
   "settings.gogLogout": "Sign out of GOG",

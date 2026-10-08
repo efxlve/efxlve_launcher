@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "Показывает, к каким магазинам принадлежит игра, под ее названием при просмотре всех магазинов.",
   "settings.storeIconsTitle": "Значки магазинов",
   "settings.storeIconsDesc": "Показывать значок магазина на обложке в режиме сетки.",
+  "settings.separateCopiesTitle": "Разделять копии магазинов",
+  "settings.separateCopiesDesc": "Показывать каждую копию игры отдельной карточкой вместо объединённой.",
   "settings.secStoreTabs": "Вкладки магазинов",
   "settings.storeTabsNote": "Скрытые магазины уходят из панели; последний видимый остаётся.",
   "settings.gogLogout": "Выйти из GOG",

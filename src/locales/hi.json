@@ -1701,6 +1701,8 @@
   "settings.storeBadgeDesc": "सभी स्टोर देखते समय शीर्षक के नीचे दिखाएं कि गेम किस स्टोर का है।",
   "settings.storeIconsTitle": "स्टोर आइकन",
   "settings.storeIconsDesc": "ग्रिड दृश्य में कवर पर प्रत्येक गेम का स्टोरफ़्रंट चिह्न दिखाएं।",
+  "settings.separateCopiesTitle": "स्टोर प्रतियाँ अलग करें",
+  "settings.separateCopiesDesc": "किसी गेम की हर स्टोर प्रति को एक संयुक्त कार्ड के बजाय अलग कार्ड के रूप में दिखाएँ।",
   "settings.secStoreTabs": "स्टोर टैब",
   "settings.storeTabsNote": "छिपे हुए स्टोर, स्टोर बार छोड़ देते हैं; अंतिम दृश्यमान स्टोर रहता है।",
   "settings.gogLogout": "GOG से साइन आउट करें",

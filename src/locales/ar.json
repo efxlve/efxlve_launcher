@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "إظهار المتاجر التي تنتمي إليها اللعبة أسفل عنوانها عند عرض جميع المتاجر.",
   "settings.storeIconsTitle": "أيقونات المتاجر",
   "settings.storeIconsDesc": "إظهار شعار المتجر على الغلاف في عرض الشبكة.",
+  "settings.separateCopiesTitle": "فصل نسخ المتاجر",
+  "settings.separateCopiesDesc": "عرض كل نسخة من نسخ اللعبة كبطاقة منفصلة بدلاً من بطاقة واحدة مدمجة.",
   "settings.secStoreTabs": "تبويبات المتاجر",
   "settings.storeTabsNote": "تخرج المتاجر المخفية من الشريط، ويبقى آخر متجر ظاهر.",
   "settings.gogLogout": "تسجيل الخروج من GOG",

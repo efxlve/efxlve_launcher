@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "すべてのストアを表示している際、タイトルの下にゲームが属するストアを表示します。",
   "settings.storeIconsTitle": "ストアアイコン",
   "settings.storeIconsDesc": "グリッド表示でカバー上にストアのマークを表示します。",
+  "settings.separateCopiesTitle": "ストアごとに表示",
+  "settings.separateCopiesDesc": "複数ストアのゲームを1枚にまとめず、ストアごとに別カードで表示します。",
   "settings.secStoreTabs": "ストアタブ",
   "settings.storeTabsNote": "非表示のストアはバーから消えます。最後の1つは残ります。",
   "settings.gogLogout": "GOG からログアウト",

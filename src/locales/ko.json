@@ -1613,6 +1613,8 @@
   "settings.storeBadgeDesc": "모든 스토어를 볼 때 게임 제목 아래에 해당 게임이 속한 스토어를 표시합니다.",
   "settings.storeIconsTitle": "스토어 아이콘",
   "settings.storeIconsDesc": "그리드 보기에서 커버에 스토어 마크를 표시합니다.",
+  "settings.separateCopiesTitle": "스토어별로 표시",
+  "settings.separateCopiesDesc": "여러 스토어의 게임을 하나로 합치지 않고 스토어마다 별도 카드로 표시합니다.",
   "settings.secStoreTabs": "스토어 탭",
   "settings.storeTabsNote": "숨긴 스토어는 바에서 사라지고, 마지막 하나는 남습니다.",
   "settings.gogLogout": "GOG에서 로그아웃",
