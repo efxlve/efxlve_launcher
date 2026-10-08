@@ -83,6 +83,24 @@ pub fn focus_window(hwnd: isize) {
     }
 }
 
+/// True while `hwnd` still names a live, visible window. The overlay panel
+/// follows its game window with this: the running-game watch can flap for
+/// titles the launcher did not start, and that must not close the panel.
+pub fn window_alive(hwnd: isize) -> bool {
+    #[cfg(windows)]
+    unsafe {
+        if hwnd == 0 {
+            return false;
+        }
+        IsWindow(hwnd) != 0 && IsWindowVisible(hwnd) != 0
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = hwnd;
+        false
+    }
+}
+
 /// Full monitor rectangle (x, y, width, height) that hosts `hwnd`, or the
 /// monitor under the cursor when no window is known.
 pub fn monitor_rect_for(hwnd: isize) -> Option<(i32, i32, u32, u32)> {
@@ -179,6 +197,8 @@ extern "system" {
     fn GetForegroundWindow() -> isize;
     // Same signature as the declaration in main.rs so the two agree.
     fn SetForegroundWindow(hwnd: *mut core::ffi::c_void) -> i32;
+    fn IsWindow(hwnd: isize) -> i32;
+    fn IsWindowVisible(hwnd: isize) -> i32;
     fn MonitorFromWindow(hwnd: isize, flags: u32) -> isize;
     fn MonitorFromPoint(pt: POINT, flags: u32) -> isize;
     fn GetMonitorInfoW(monitor: isize, info: *mut MONITORINFO) -> i32;

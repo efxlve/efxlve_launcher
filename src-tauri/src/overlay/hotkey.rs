@@ -17,29 +17,36 @@ extern "system" {
 pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || loop {
         let game = crate::legendary::screenshots::get_active_running_game();
-        let visible = STATE.lock().map(|s| s.visible).unwrap_or(false);
+        let mut visible = STATE.lock().map(|s| s.visible).unwrap_or(false);
+        let game_hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
 
-        // A game that exited takes the panel with it.
-        if game.is_none() {
-            if visible {
-                hide(&app);
+        // The panel follows its game window, not the running-game watch: that
+        // watch flaps for titles the launcher did not start (and briefly during
+        // launches), and it must never close the panel the user just opened.
+        if visible && !super::hud::window_alive(game_hwnd) {
+            hide(&app);
+            visible = false;
+        }
+
+        if !visible {
+            if game.is_none() {
+                if let Ok(mut s) = STATE.lock() {
+                    s.game_app.clear();
+                    s.game_title.clear();
+                    s.game_hwnd = 0;
+                }
+                std::thread::sleep(Duration::from_millis(200));
+                continue;
             }
-            if let Ok(mut s) = STATE.lock() {
-                s.game_app.clear();
-                s.game_title.clear();
-                s.game_hwnd = 0;
+            // Panel closed: the hotkey only works in front of the game.
+            if !crate::legendary::screenshots::game_window_is_foreground() {
+                std::thread::sleep(Duration::from_millis(120));
+                continue;
             }
-            std::thread::sleep(Duration::from_millis(200));
-            continue;
         }
 
         #[cfg(windows)]
         {
-            // Not in front of the game and the panel is closed: nothing to do.
-            if !visible && !crate::legendary::screenshots::game_window_is_foreground() {
-                std::thread::sleep(Duration::from_millis(120));
-                continue;
-            }
             std::thread::sleep(Duration::from_millis(20));
 
             let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(false);

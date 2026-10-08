@@ -8,6 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
@@ -112,6 +113,24 @@ function overlayDisabledFor(appName: string): boolean {
     return Array.isArray(list) && (list as string[]).includes(appName);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Windows toast for the overlay hint. The launcher usually minimizes when a
+ * game starts, so an in-app toast alone would never be seen.
+ */
+async function announceOverlayHint(title: string): Promise<void> {
+  if (!isTauri) return;
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const permission = await requestPermission();
+      granted = permission === "granted";
+    }
+    if (granted) sendNotification({ title, body: t("overlay.startHint") });
+  } catch {
+    // Notifications unavailable: the in-app toast below still carries the hint.
   }
 }
 
@@ -576,9 +595,11 @@ export async function initApp(hooks: {
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
         // Point at the Shift+Tab overlay on the first start of the title, unless
-        // the overlay is off globally or the user opted this game out.
+        // the overlay is off globally or the user opted this game out. The
+        // Windows toast covers the usual "launcher minimized on game start".
         if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
           toast(t("overlay.startHint"), "");
+          void announceOverlayHint(title);
         }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
         // is a fullscreen couch UI and stays where it is.
