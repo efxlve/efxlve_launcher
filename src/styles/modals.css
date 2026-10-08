@@ -230,7 +230,9 @@
 }
 .storage-dialog {
   width: min(960px, 100%);
-  max-height: 86vh;
+  /* A fixed frame: the dialog must not resize with the list, a drive switch or
+     the empty state. ~10 rows fit above the fold; the body scrolls after. */
+  height: min(86vh, 1080px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
