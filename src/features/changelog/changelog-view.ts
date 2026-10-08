@@ -27,9 +27,49 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.26",
+    version: "0.1.27",
     date: "2026-10-08",
     isCurrent: true,
+    items: [
+      {
+        en: "Hide-games and hide-achievements dialogs label every copy with its storefront, so a title owned on several stores is easy to tell apart.",
+        tr: "Oyun ve başarım gizleme pencereleri her kopyayı mağazasıyla etiketliyor; birden fazla mağazada olan oyunlar artık rahatça ayırt ediliyor.",
+      },
+      {
+        en: "Multi-store games combine their playtime and last-played time: the storefront filter no longer shuffles the library, and Settings → Appearance can show each store copy as its own card instead.",
+        tr: "Birden fazla mağazadaki oyunların oynama süresi ve son oynanma zamanı birleştirildi: mağaza filtresi artık kütüphaneyi yerinden oynatmıyor; Ayarlar → Görünüm'den her kopya ayrı kart olarak da gösterilebiliyor.",
+      },
+      {
+        en: "The Steam download row shows a progress bar under its live text.",
+        tr: "Steam indirme satırı, canlı metnin altında bir ilerleme çubuğu gösteriyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Xbox achievements and gamerscore load for the whole library in the background: library badges and the profile update without opening each game page first.",
+        tr: "Xbox başarımları ve gamerscore tüm kütüphane için arka planda yükleniyor: kütüphane rozetleri ve profil, her oyun sayfasını açmadan güncelleniyor.",
+      },
+      {
+        en: "The Steam download row no longer flashes its percentage and size, and a finished transfer leaves the list immediately instead of sitting on Calculating.",
+        tr: "Steam indirme satırı artık yüzde ve boyutu yanıp sönmüyor; biten transfer \"Hesaplanıyor\"da takılmak yerine listeden hemen ayrılıyor.",
+      },
+      {
+        en: "Update rows no longer show the installed game size as if it were the update size; a paused Steam update shows its real download total.",
+        tr: "Güncelleme satırları artık kurulu oyun boyutunu güncelleme boyutu gibi göstermiyor; duraklatılmış Steam güncellemesi gerçek indirme toplamını gösteriyor.",
+      },
+      {
+        en: "The Storage Manager modal keeps one stable size instead of resizing with its list.",
+        tr: "Depolama Yöneticisi penceresi artık listesine göre boyut değiştirmiyor; sabit kalıyor.",
+      },
+      {
+        en: "The Show button in the hidden-achievements list lines up with the row's badge column.",
+        tr: "Gizli başarımlar listesindeki Göster düğmesi satırın rozet kolonuyla hizalanıyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.26",
+    date: "2026-10-08",
     items: [
       {
         en: "The profile page is rebuilt as an Xbox-style hub: a cinematic banner hero with your avatar, presence and a stat bar, store scope chips, a horizontal Recently Played row and achievements as a cover grid.",
