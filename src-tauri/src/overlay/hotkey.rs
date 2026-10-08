@@ -15,69 +15,104 @@ extern "system" {
 }
 
 pub(crate) fn start(app: AppHandle) {
-    std::thread::spawn(move || loop {
-        let game = crate::legendary::screenshots::get_active_running_game();
-        let mut visible = STATE.lock().map(|s| s.visible).unwrap_or(false);
-        let game_hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
+    std::thread::spawn(move || {
+        // Ticks where the game watch says stopped AND the game window is gone.
+        // Window recreation (fullscreen switches) must not close the panel.
+        let mut gone_ticks: u32 = 0;
+        loop {
+            let game = crate::legendary::screenshots::get_active_running_game();
+            let (mut visible, mut game_hwnd) = STATE
+                .lock()
+                .map(|s| (s.visible, s.game_hwnd))
+                .unwrap_or((false, 0));
 
-        // The panel follows its game window, not the running-game watch: that
-        // watch flaps for titles the launcher did not start (and briefly during
-        // launches), and it must never close the panel the user just opened.
-        if visible && !super::hud::window_alive(game_hwnd) {
-            hide(&app);
-            visible = false;
-        }
-
-        if !visible {
-            if game.is_none() {
-                if let Ok(mut s) = STATE.lock() {
-                    s.game_app.clear();
-                    s.game_title.clear();
-                    s.game_hwnd = 0;
-                }
-                std::thread::sleep(Duration::from_millis(200));
-                continue;
-            }
-            // Panel closed: the hotkey only works in front of the game.
-            if !crate::legendary::screenshots::game_window_is_foreground() {
-                std::thread::sleep(Duration::from_millis(120));
-                continue;
-            }
-        }
-
-        #[cfg(windows)]
-        {
-            std::thread::sleep(Duration::from_millis(20));
-
-            let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(false);
-            let shift = (unsafe { GetAsyncKeyState(0x10) } as u16 & 0x8000) != 0; // VK_SHIFT
-            let tab = (unsafe { GetAsyncKeyState(0x09) } as u16 & 0x8000) != 0; // VK_TAB
-            let down = shift && tab;
-
-            if down != hotkey_down() {
-                set_hotkey_down(down);
-                if down && enabled {
-                    if visible {
-                        hide(&app);
-                    } else {
-                        let hwnd = super::hud::foreground_window();
+            if visible {
+                // A window handle can go stale while the watch still knows the
+                // game (fullscreen switches recreate windows). Re-find it by pid.
+                if !super::hud::window_alive(game_hwnd) && game.is_some() {
+                    let pids = crate::legendary::screenshots::active_game_pids();
+                    let found = super::hud::find_game_window(&pids);
+                    if found != 0 && found != game_hwnd {
+                        game_hwnd = found;
                         if let Ok(mut s) = STATE.lock() {
-                            s.game_hwnd = hwnd;
-                            if let Some((app_name, title)) = &game {
-                                s.game_app = app_name.clone();
-                                s.game_title = title.clone();
-                            }
+                            s.game_hwnd = found;
                         }
-                        show(&app);
+                    }
+                }
+                let gone = game.is_none() && !super::hud::window_alive(game_hwnd);
+                gone_ticks = if gone { gone_ticks.saturating_add(1) } else { 0 };
+                if gone_ticks >= 75 {
+                    gone_ticks = 0;
+                    hide(&app);
+                    visible = false;
+                    if let Ok(mut s) = STATE.lock() {
+                        s.game_app.clear();
+                        s.game_title.clear();
+                        s.game_hwnd = 0;
+                    }
+                }
+            } else {
+                gone_ticks = 0;
+                if game.is_none() {
+                    if let Ok(mut s) = STATE.lock() {
+                        s.game_app.clear();
+                        s.game_title.clear();
+                        s.game_hwnd = 0;
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                    continue;
+                }
+                // Panel closed: the hotkey only works in front of the game.
+                #[cfg(windows)]
+                if !crate::legendary::screenshots::game_window_is_foreground() {
+                    std::thread::sleep(Duration::from_millis(120));
+                    continue;
+                }
+            }
+
+            #[cfg(windows)]
+            {
+                std::thread::sleep(Duration::from_millis(20));
+
+                let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(false);
+                let shift = (unsafe { GetAsyncKeyState(0x10) } as u16 & 0x8000) != 0; // VK_SHIFT
+                let tab = (unsafe { GetAsyncKeyState(0x09) } as u16 & 0x8000) != 0; // VK_TAB
+                let down = shift && tab;
+
+                if down != hotkey_down() {
+                    set_hotkey_down(down);
+                    if down && enabled {
+                        if visible {
+                            hide(&app);
+                        } else {
+                            // Capture the game window: the foreground window is
+                            // normally it; the pid search covers wrappers.
+                            let mut hwnd = super::hud::foreground_window();
+                            if !super::hud::window_alive(hwnd) {
+                                let pids = crate::legendary::screenshots::active_game_pids();
+                                let found = super::hud::find_game_window(&pids);
+                                if found != 0 {
+                                    hwnd = found;
+                                }
+                            }
+                            if let Ok(mut s) = STATE.lock() {
+                                s.game_hwnd = hwnd;
+                                if let Some((app_name, title)) = &game {
+                                    s.game_app = app_name.clone();
+                                    s.game_title = title.clone();
+                                }
+                            }
+                            show(&app);
+                        }
                     }
                 }
             }
-        }
 
-        #[cfg(not(windows))]
-        {
-            let _ = &app;
-            std::thread::sleep(Duration::from_millis(250));
+            #[cfg(not(windows))]
+            {
+                let _ = &app;
+                std::thread::sleep(Duration::from_millis(250));
+            }
         }
     });
 }

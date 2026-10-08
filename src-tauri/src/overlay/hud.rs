@@ -8,13 +8,44 @@
 //! modules of this crate; the ABI is identical, so the clash warning is noise.
 #![allow(clashing_extern_declarations)]
 
-use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 static STARTED: AtomicBool = AtomicBool::new(false);
 static HWND: AtomicIsize = AtomicIsize::new(0);
 static FONT: AtomicIsize = AtomicIsize::new(0);
 static TEXT: Mutex<Vec<u16>> = Mutex::new(Vec::new());
+/// Hint banner active until this epoch-ms timestamp (0 = inactive).
+static HINT_UNTIL: AtomicU64 = AtomicU64::new(0);
+static HINT_GEN: AtomicU64 = AtomicU64::new(0);
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// True while a start hint is on screen; the metrics HUD must not overwrite it.
+pub fn hint_active() -> bool {
+    now_ms() < HINT_UNTIL.load(Ordering::Relaxed)
+}
+
+/// Shows a temporary hint over the game (game start: "Shift+Tab opens the
+/// overlay"). Reuses the HUD plate: a Windows toast is invisible for many
+/// setups, this banner is not.
+pub fn flash_hint(text: &str) {
+    HINT_UNTIL.store(now_ms() + 6000, Ordering::Relaxed);
+    let generation = HINT_GEN.fetch_add(1, Ordering::Relaxed) + 1;
+    update(text);
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(6100));
+        // A newer hint, or the metrics HUD taking over, cancels the auto-hide.
+        if HINT_GEN.load(Ordering::Relaxed) == generation && !hint_active() {
+            hide();
+        }
+    });
+}
 
 /// Cuts the current HUD line into a UTF-16 buffer for GDI.
 #[cfg(windows)]
@@ -98,6 +129,56 @@ pub fn window_alive(hwnd: isize) -> bool {
     {
         let _ = hwnd;
         false
+    }
+}
+
+/// Largest visible top-level window that belongs to one of `pids` (0 = none).
+/// Used to (re)find the game window when a fullscreen switch recreates it.
+pub fn find_game_window(pids: &[u32]) -> isize {
+    #[cfg(windows)]
+    unsafe {
+        struct Find<'a> {
+            pids: &'a [u32],
+            best: isize,
+            best_area: i64,
+        }
+        unsafe extern "system" fn callback(hwnd: isize, lparam: isize) -> i32 {
+            let state = &mut *(lparam as *mut Find);
+            if IsWindowVisible(hwnd) == 0 {
+                return 1;
+            }
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(hwnd, &mut pid);
+            if !state.pids.contains(&pid) {
+                return 1;
+            }
+            let mut rect = RECT::default();
+            if GetWindowRect(hwnd, &mut rect) == 0 {
+                return 1;
+            }
+            let area =
+                (rect.right - rect.left).max(0) as i64 * (rect.bottom - rect.top).max(0) as i64;
+            if area > state.best_area {
+                state.best_area = area;
+                state.best = hwnd;
+            }
+            1
+        }
+        if pids.is_empty() {
+            return 0;
+        }
+        let mut state = Find {
+            pids,
+            best: 0,
+            best_area: 0,
+        };
+        let _ = EnumWindows(Some(callback), &mut state as *mut Find as isize);
+        state.best
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = pids;
+        0
     }
 }
 
@@ -199,6 +280,12 @@ extern "system" {
     fn SetForegroundWindow(hwnd: *mut core::ffi::c_void) -> i32;
     fn IsWindow(hwnd: isize) -> i32;
     fn IsWindowVisible(hwnd: isize) -> i32;
+    fn EnumWindows(
+        callback: Option<unsafe extern "system" fn(isize, isize) -> i32>,
+        lparam: isize,
+    ) -> i32;
+    fn GetWindowThreadProcessId(hwnd: isize, pid: *mut u32) -> u32;
+    fn GetWindowRect(hwnd: isize, rect: *mut RECT) -> i32;
     fn MonitorFromWindow(hwnd: isize, flags: u32) -> isize;
     fn MonitorFromPoint(pt: POINT, flags: u32) -> isize;
     fn GetMonitorInfoW(monitor: isize, info: *mut MONITORINFO) -> i32;
@@ -392,6 +479,14 @@ fn ensure_window() {
             DispatchMessageW(msg.as_ptr());
         }
     });
+    // First caller waits briefly for the window: a one-shot hint must not be
+    // lost to the creation race (the metrics HUD retries every second).
+    for _ in 0..50 {
+        if HWND.load(Ordering::SeqCst) != 0 {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
 }
 
 #[cfg(windows)]

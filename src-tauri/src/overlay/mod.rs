@@ -80,6 +80,16 @@ pub fn overlay_set_hud(app: AppHandle, enabled: bool) {
     }
 }
 
+/// Shows a temporary hint over the game (game start: "Shift+Tab opens the
+/// overlay"). The Windows toast is invisible for many setups, this is not.
+#[tauri::command]
+pub fn overlay_flash_hint(text: String) {
+    if text.trim().is_empty() {
+        return;
+    }
+    hud::flash_hint(&text);
+}
+
 #[tauri::command]
 pub fn overlay_hide(app: AppHandle) {
     hide(&app);

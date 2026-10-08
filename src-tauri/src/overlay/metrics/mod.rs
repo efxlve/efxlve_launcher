@@ -103,7 +103,9 @@ fn run(app: AppHandle) {
         let _ = app.emit("overlay-metrics", sample.clone());
 
         let hud_on = STATE.lock().map(|s| s.hud).unwrap_or(false);
-        if hud_on && sample.running {
+        if hud::hint_active() {
+            // A game-start hint owns the plate for a few seconds.
+        } else if hud_on && sample.running {
             hud::update(&hud_text(&sample));
         } else if !hud_on {
             hud::hide();

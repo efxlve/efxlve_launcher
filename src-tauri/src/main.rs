@@ -885,6 +885,7 @@ fn main() {
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
             overlay::overlay_set_hud,
+            overlay::overlay_flash_hint,
             overlay::overlay_hide,
             overlay::overlay_show,
             overlay::overlay_show_launcher,

@@ -603,6 +603,9 @@ export async function initApp(hooks: {
         if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
           toast(t("overlay.startHint"), "");
           void announceOverlayHint(title);
+          // The in-game banner is independent of Windows notification settings
+          // and of a minimized launcher window.
+          void invoke("overlay_flash_hint", { text: t("overlay.startHint") }).catch(() => {});
         }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
         // is a fullscreen couch UI and stays where it is.
