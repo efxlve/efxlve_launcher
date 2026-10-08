@@ -406,6 +406,10 @@ export const S = {
   autoPausedDl: (null) as string | null,
   speedHistory: (new Array(60).fill(0)) as number[],
   diskHistory: (new Array(60).fill(0)) as number[],
+  /** Steam's live transfer: sampled once a second while its card is up. */
+  steamSpeedBytes: 0,
+  steamPeakSpeedBytes: 0,
+  steamSpeedHistory: (new Array(60).fill(0)) as number[],
   dlQueueStatus: ({ isPaused: false, queue: [] }) as DlQueueStatus,
   /** True while the active GOG gogdl process is suspended. */
   gogDlPaused: false,

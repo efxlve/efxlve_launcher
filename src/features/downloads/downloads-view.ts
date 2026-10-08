@@ -16,11 +16,12 @@ import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, sourceOfKey
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics } from "../../core/types";
-import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
+import { esc, fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { localizeMessage, formatSyncStamp, t } from "../../i18n";
 import { storeName } from "../profile/profile-view";
 import { getRecentDownloads } from "../../core/recent";
 import { epicPortrait, type EpicSummary } from "../../epic";
+import type { SteamGame } from "../../steam";
 import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
@@ -43,7 +44,10 @@ export function scheduleDrawSpeedCanvas(): void {
 }
 
 export function drawSpeedCanvas(): void {
-  const canvas = document.getElementById("dl-speed-canvas") as HTMLCanvasElement | null;
+  // One chart element is on screen at a time: the Epic-style card for the
+  // launcher's own transfers, or the Steam card that mirrors it.
+  const steamCanvas = document.getElementById("dl-steam-canvas") as HTMLCanvasElement | null;
+  const canvas = steamCanvas ?? (document.getElementById("dl-speed-canvas") as HTMLCanvasElement | null);
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -62,8 +66,11 @@ export function drawSpeedCanvas(): void {
 
   ctx.clearRect(0, 0, width, height);
 
+  const netSeries = steamCanvas ? S.steamSpeedHistory : S.speedHistory;
+  const diskSeries = steamCanvas ? null : S.diskHistory;
+
   // Determine scale (max speed in bytes)
-  const maxData = Math.max(...S.speedHistory, ...S.diskHistory, 1024 * 1024);
+  const maxData = Math.max(...netSeries, ...(diskSeries ?? []), 1024 * 1024);
   const scaleMax = Math.max(maxData * 1.15, 1024 * 1024);
 
   // Draw horizontal grid lines (4 lines: 25%, 50%, 75%, 100%)
@@ -86,7 +93,7 @@ export function drawSpeedCanvas(): void {
   }
   ctx.setLineDash([]);
 
-  const len = S.speedHistory.length;
+  const len = netSeries.length;
   const step = width / (len - 1);
 
   const drawSeries = (data: number[], strokeColor: string, fillColor: string) => {
@@ -122,9 +129,10 @@ export function drawSpeedCanvas(): void {
     ctx.fill();
   };
 
-  // Colors mirror --ok (disk) and --accent (network) in tokens.css.
-  drawSeries(S.diskHistory, "#2fb36d", "rgba(47, 179, 109, 0.08)");
-  drawSeries(S.speedHistory, "#f2f2f2", "rgba(255, 255, 255, 0.08)");
+  // Colors mirror --ok (disk) and --accent (network) in tokens.css. Steam has
+  // no disk counter, so its card draws the network line alone.
+  if (diskSeries) drawSeries(diskSeries, "#2fb36d", "rgba(47, 179, 109, 0.08)");
+  drawSeries(netSeries, "#f2f2f2", "rgba(255, 255, 255, 0.08)");
 }
 
 /** Stops the speed chart sampler (called when it is no longer needed). */
@@ -145,9 +153,20 @@ export function startSpeedChartTimer(): void {
   S.speedChartTimer = window.setInterval(() => {
     const active = !!S.activeDlMetrics && !S.activeDlMetrics.done && !S.dlQueueStatus.isPaused;
     const onDownloads = S.view === "downloads";
+    // Steam's card rides the same clock: the pulse keeps S.steamSpeedBytes
+    // fresh and this sampler pushes it into the chart.
+    const steamCard = onDownloads && document.getElementById("dl-steam-card") !== null;
     const hasData = S.speedHistory.some((v) => v > 0) || S.diskHistory.some((v) => v > 0);
-    if (!active && !(onDownloads && hasData)) {
+    if (!active && !steamCard && !(onDownloads && hasData)) {
       stopSpeedChartTimer();
+      return;
+    }
+    if (steamCard) {
+      S.steamSpeedHistory.shift();
+      S.steamSpeedHistory.push(S.steamSpeedBytes);
+      if (S.steamSpeedBytes > S.steamPeakSpeedBytes) S.steamPeakSpeedBytes = S.steamSpeedBytes;
+      paintSteamActiveCard();
+      drawSpeedCanvas();
       return;
     }
     pushSpeedData(active ? S.activeDlMetrics!.speedBytes || 0 : 0, active ? S.activeDlMetrics!.diskBytes || 0 : 0);
@@ -292,6 +311,96 @@ function renderActiveCard(dl: DlMetrics): string {
     </section>`;
 }
 
+/** Seconds until a Steam transfer completes; null when speed or totals are unknown. */
+function steamEtaSeconds(g: SteamGame): number | null {
+  const total = g.bytesToDownload;
+  const got = g.bytesDownloaded;
+  if (S.steamSpeedBytes <= 0 || total <= 0 || got >= total) return null;
+  return (total - got) / S.steamSpeedBytes;
+}
+
+function steamEtaText(g: SteamGame, waiting: boolean): string {
+  if (waiting) return t("common.calculating");
+  const secs = steamEtaSeconds(g);
+  return secs === null ? "—" : fmtPlaytime(secs);
+}
+
+/**
+ * The Steam transfer in the Epic-style active card: same frame, progress bar,
+ * metrics and speed chart, fed by the one-second Steam pulse.
+ */
+function renderSteamActiveCard(g: SteamGame): string {
+  const s = summaryOf(`steam::${g.appId}`);
+  const title = esc(s?.title || g.name || g.appId);
+  const art = s?.cover || null;
+  const waiting = steamDownloadWaiting(g.appId);
+  const total = g.bytesToDownload;
+  const got = total > 0 ? Math.min(g.bytesDownloaded, total) : 0;
+  const pct = total > 0 ? Math.round((got / total) * 100) : 0;
+  const speedText = waiting || S.steamSpeedBytes <= 0 ? "—" : fmtSpeed(S.steamSpeedBytes, S.speedInBits);
+  const metric = (label: string, id: string, value: string): string =>
+    `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
+  return `
+    <section class="card dl-active" id="dl-steam-card" data-app-id="${esc(g.appId)}">
+      <div class="dl-active-art">${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-body">
+        <div class="dl-active-head">
+          <div class="dl-active-text">
+            <div class="dl-active-title" title="${title}">${title}</div>
+            <span class="chip accent">${t("steam.downloading")}</span>
+          </div>
+          <div class="row-actions">
+            <button class="btn ghost" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
+            <button class="btn ghost" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>
+            <button class="icon-btn" data-act="manage-game" data-id="steam::${esc(g.appId)}" title="${t("common.manage")}">${icon("settings", 16)}</button>
+          </div>
+        </div>
+        <div class="dl-active-progress">
+          <div class="progress"><span id="dl-steam-hero-fill" style="width:${pct}%"></span></div>
+          <span class="dl-progress-pct" id="dl-steam-hero-pct">%${pct}</span>
+        </div>
+        <div class="dl-metrics-row">
+          ${metric(t("dl.speed"), "dl-steam-stat-speed", speedText)}
+          ${metric(t("dl.peak"), "dl-steam-stat-peak", fmtSpeed(S.steamPeakSpeedBytes, S.speedInBits))}
+          ${metric(t("dl.disk"), "dl-steam-stat-disk", "—")}
+          ${metric(t("dl.eta"), "dl-steam-stat-eta", steamEtaText(g, waiting))}
+          ${metric(t("dl.totalSize"), "dl-steam-stat-bytes", total > 0 ? `${fmtBytes(got)} / ${fmtBytes(total)}` : t("common.calculating"))}
+        </div>
+        <div class="dl-chart">
+          <div class="dl-chart-legend">
+            <span class="dl-legend-item"><span class="dl-legend-dot net"></span>${t("dl.legendNet")} <strong id="dl-steam-legend-net-val">${esc(speedText)}</strong></span>
+          </div>
+          <canvas id="dl-steam-canvas"></canvas>
+        </div>
+      </div>
+    </section>`;
+}
+
+/** Patches the visible Steam active card in place; called once a second. */
+function paintSteamActiveCard(): void {
+  const appId = document.getElementById("dl-steam-card")?.dataset.appId;
+  if (!appId) return;
+  const g = S.steamGames.find((x) => x.appId === appId);
+  if (!g) return;
+  const waiting = steamDownloadWaiting(appId);
+  const total = g.bytesToDownload;
+  const got = total > 0 ? Math.min(g.bytesDownloaded, total) : 0;
+  const pct = total > 0 ? Math.round((got / total) * 100) : 0;
+  const set = (id: string, text: string): void => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  const fill = document.getElementById("dl-steam-hero-fill");
+  if (fill) fill.style.width = `${pct}%`;
+  set("dl-steam-hero-pct", `%${pct}`);
+  const speedText = waiting || S.steamSpeedBytes <= 0 ? "—" : fmtSpeed(S.steamSpeedBytes, S.speedInBits);
+  set("dl-steam-stat-speed", speedText);
+  set("dl-steam-stat-peak", fmtSpeed(S.steamPeakSpeedBytes, S.speedInBits));
+  set("dl-steam-stat-eta", steamEtaText(g, waiting));
+  set("dl-steam-stat-bytes", total > 0 ? `${fmtBytes(got)} / ${fmtBytes(total)}` : t("common.calculating"));
+  set("dl-steam-legend-net-val", speedText);
+}
+
 /** Toggle whether a game's pending update indicator is cleared/ignored. */
 export function toggleIgnoreUpdate(appName: string): boolean {
   const isIgnored = S.ignoredUpdates.has(appName);
@@ -386,22 +495,27 @@ export function renderDownloads(): string {
   }).join("");
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
-  const steamRows = steamDownloading.map((g) => {
-    const waiting = steamDownloadWaiting(g.appId);
-    const { pct, text } = steamDownloadLabel(g);
-    const meta = waiting ? t("common.calculating") : text;
-    // The pulse grows this bar every second under the live text.
-    const bar = !waiting && pct !== null
-      ? `<div class="progress dl-steam-progress"><span data-steam-dlbar="${esc(g.appId)}" style="width:${pct}%"></span></div>`
-      : "";
-    return gameRow(
-      summaryOf(`steam::${g.appId}`),
-      `steam::${g.appId}`,
-      `<span class="tabular-nums${waiting ? " is-wait" : ""}" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>${bar}`,
-      `<button class="btn ghost small" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
-       <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
-    );
-  }).join("");
+  // The first Steam transfer moves into the Epic-style active card; any extra
+  // simultaneous transfers stay as rows under the section.
+  const steamCardGame = !active ? steamDownloading[0] : undefined;
+  const steamRows = steamDownloading
+    .filter((g) => g !== steamCardGame)
+    .map((g) => {
+      const waiting = steamDownloadWaiting(g.appId);
+      const { pct, text } = steamDownloadLabel(g);
+      const meta = waiting ? t("common.calculating") : text;
+      // The pulse grows this bar every second under the live text.
+      const bar = !waiting && pct !== null
+        ? `<div class="progress dl-steam-progress"><span data-steam-dlbar="${esc(g.appId)}" style="width:${pct}%"></span></div>`
+        : "";
+      return gameRow(
+        summaryOf(`steam::${g.appId}`),
+        `steam::${g.appId}`,
+        `<span class="tabular-nums${waiting ? " is-wait" : ""}" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>${bar}`,
+        `<button class="btn ghost small" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
+         <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
+      );
+    }).join("");
 
   const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
@@ -415,9 +529,9 @@ export function renderDownloads(): string {
           <button class="btn ghost" data-act="open-storage-manager">${icon("hard-drive", 14)} ${t("storage.open")}</button>
         </div>
       </div>
-      ${active ? renderActiveCard(active) : idle}
+      ${active ? renderActiveCard(active) : steamCardGame ? renderSteamActiveCard(steamCardGame) : idle}
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
-      ${steamRows ? section(t("steam.downloading"), steamDownloading.length, steamRows) : ""}
+      ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}
     </div>`;

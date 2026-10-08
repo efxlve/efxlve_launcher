@@ -286,6 +286,8 @@ export function scheduleSteamLibraryResync(delayMs = 6000): void {
 
 /** Latest bytes/s for a live Steam transfer. The manifest itself does not move every second. */
 const steamLiveSpeed = new Map<string, number>();
+/** App whose Steam chart is being sampled; a change resets the history. */
+let steamChartAppId = "";
 /** Byte total at the moment a transfer started, so a stale number is not shown as live. */
 const steamAwaitFloor = new Map<string, number>();
 const steamAwaitSince = new Map<string, number>();
@@ -566,6 +568,8 @@ async function pulseSteamDownloads(): Promise<void> {
   }
   if (rows.length === 0) {
     steamLiveSpeed.clear();
+    S.steamSpeedBytes = 0;
+    steamChartAppId = "";
     await refreshSteamInstalled();
     return;
   }
@@ -590,6 +594,15 @@ async function pulseSteamDownloads(): Promise<void> {
   }
   for (const id of [...steamLiveSpeed.keys()]) {
     if (!seen.has(id)) steamLiveSpeed.delete(id);
+  }
+  // The Downloads page's Steam card samples S.steamSpeedBytes once a second
+  // through the shared chart timer; a new job starts its chart from zero.
+  const lead = S.steamGames.find((g) => g.downloading);
+  S.steamSpeedBytes = lead ? (steamLiveSpeed.get(lead.appId) ?? 0) : 0;
+  if (lead && lead.appId !== steamChartAppId) {
+    steamChartAppId = lead.appId;
+    S.steamPeakSpeedBytes = 0;
+    S.steamSpeedHistory.fill(0);
   }
   paintSteamDownloadRows(S.steamGames);
 }
