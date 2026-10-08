@@ -6,13 +6,14 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, type CompanionStore } from "../../companion";
+import { companionAchievementsSummary, companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, type CompanionStore } from "../../companion";
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
 import { loadEpicAchSummaries } from "../auth/auth-actions";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import { currentLanguage } from "../../i18n";
 import type { EpicAchievementSummary } from "../../epic";
 
 const storeIds = new Map<string, string>();
@@ -99,6 +100,12 @@ export async function loadCompanionLibrary(): Promise<void> {
         };
       }
     }
+    // The title history zeroes its Xbox totals once a title has progress;
+    // keep the last service-backed numbers until the fresh pass lands so the
+    // cards never flash back to zero during a reload.
+    for (const [key, summary] of Object.entries(S.companionAchSummaries)) {
+      if (key.startsWith("xbox::") && !summaries[key]) summaries[key] = summary;
+    }
     S.companionAchSummaries = summaries;
     S.companionSummaries = games.map(companionToItem);
     S.companionStatus = status;
@@ -115,6 +122,44 @@ export async function loadCompanionLibrary(): Promise<void> {
   scheduleRender();
   void fillCompanionCovers();
   void fillCompanionPlaytime();
+  void fillXboxAchievements();
+}
+
+/**
+ * Xbox answers achievements per title, so the whole-account summary is a
+ * separate paged pass; merge it when it lands and repaint the open lists.
+ */
+let xboxAchBusy = false;
+async function fillXboxAchievements(): Promise<void> {
+  if (xboxAchBusy) return;
+  xboxAchBusy = true;
+  try {
+    const summary = await companionAchievementsSummary("xbox", currentLanguage());
+    let changed = false;
+    for (const [key, row] of Object.entries(summary)) {
+      if (!row.supported || row.total_achievements <= 0) continue;
+      const current = S.companionAchSummaries[key];
+      if (
+        current &&
+        current.user_unlocked === row.user_unlocked &&
+        current.total_achievements === row.total_achievements &&
+        current.user_xp === row.user_xp &&
+        current.total_xp === row.total_xp
+      ) {
+        continue;
+      }
+      S.companionAchSummaries[key] = row;
+      changed = true;
+    }
+    if (changed) {
+      S.libraryDataRev++;
+      if (S.view === "library" || S.view === "profile") scheduleRender();
+    }
+  } catch {
+    // Signed out or offline: the title-history numbers stay.
+  } finally {
+    xboxAchBusy = false;
+  }
 }
 
 /** Playtime from the store service (Ubisoft) or the local session cache,

@@ -45,6 +45,10 @@ static XSTS: Mutex<Option<Xsts>> = Mutex::new(None);
 /// Playtime is asked for on every library paint; cache the batch answer.
 static PLAYTIME: Mutex<Option<(std::time::Instant, Vec<(String, u64)>)>> = Mutex::new(None);
 const PLAYTIME_TTL: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+/// The account's whole achievement set takes a few paged requests; aggregate
+/// it per title and keep the answer around for the library badges.
+static ACHIEVEMENT_TOTALS: Mutex<Option<(std::time::Instant, HashMap<String, XboxAchievementTotals>)>> = Mutex::new(None);
+const ACHIEVEMENT_TOTALS_TTL: std::time::Duration = std::time::Duration::from_secs(10 * 60);
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Xsts {
@@ -70,6 +74,15 @@ pub(crate) struct OwnedGame {
     /// AUMID of the installed package, empty when the game is not installed.
     #[serde(default)]
     pub aumid: String,
+}
+
+/// Per-title progress aggregated from the account-wide achievements service.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct XboxAchievementTotals {
+    pub unlocked: u32,
+    pub total: u32,
+    pub xp: u32,
+    pub total_xp: u32,
 }
 
 fn owned_cache_path() -> PathBuf {
@@ -102,6 +115,7 @@ pub(crate) fn clear_session() {
     *SESSION.lock().unwrap() = None;
     *XSTS.lock().unwrap() = None;
     *PLAYTIME.lock().unwrap() = None;
+    *ACHIEVEMENT_TOTALS.lock().unwrap() = None;
 }
 
 /// The cached account row behind a title id (playtime works in title ids).
@@ -981,6 +995,105 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
     }
 }
 
+/// Per-title totals for every achievement set the account has started. The
+/// title history answers a usable count only for titles with no progress
+/// (`totalAchievements` comes back 0 once anything is unlocked), so the
+/// account-wide achievements feed is paged instead: every entry carries its
+/// title association and unlock state, and the counts fall out.
+pub(crate) async fn achievement_totals() -> Result<HashMap<String, XboxAchievementTotals>, String> {
+    if let Some((at, rows)) = ACHIEVEMENT_TOTALS.lock().unwrap().as_ref() {
+        if at.elapsed() < ACHIEVEMENT_TOTALS_TTL {
+            return Ok(rows.clone());
+        }
+    }
+    let xsts = ensure_xsts().await?;
+    let client = http_client()?;
+    let mut rows: HashMap<String, XboxAchievementTotals> = HashMap::new();
+    let mut continuation: Option<String> = None;
+    // The page cap guards against a service that keeps echoing a token.
+    for _ in 0..25 {
+        let mut url = format!(
+            "{ACHIEVEMENTS_URL}/users/xuid({})/achievements?maxItems=1000",
+            xsts.xuid
+        );
+        if let Some(token) = continuation.as_deref() {
+            url.push_str("&continuationToken=");
+            url.push_str(&url::form_urlencoded::byte_serialize(token.as_bytes()).collect::<String>());
+        }
+        let response = client
+            .get(url)
+            .header("Authorization", xbl_header(&xsts))
+            .header("x-xbl-contract-version", "2")
+            .header("Accept-Language", "en-US")
+            .send()
+            .await
+            .map_err(|_| "@t:accounts.xboxSessionExpired".to_string())?;
+        if !response.status().is_success() {
+            return Err("@t:accounts.xboxSessionExpired".into());
+        }
+        let value: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+        add_achievement_totals(&mut rows, &value);
+        continuation = value
+            .pointer("/pagingInfo/continuationToken")
+            .and_then(|v| v.as_str())
+            .filter(|token| !token.is_empty())
+            .map(str::to_string);
+        if continuation.is_none() {
+            break;
+        }
+    }
+    *ACHIEVEMENT_TOTALS.lock().unwrap() = Some((std::time::Instant::now(), rows.clone()));
+    Ok(rows)
+}
+
+/// Folds one achievements page into the per-title totals. The title id is a
+/// number in the live answers but a string in older ones.
+fn add_achievement_totals(rows: &mut HashMap<String, XboxAchievementTotals>, value: &serde_json::Value) {
+    let Some(items) = value.get("achievements").and_then(|v| v.as_array()) else {
+        return;
+    };
+    for item in items {
+        let achieved = item.get("progressState").and_then(|v| v.as_str()) == Some("Achieved");
+        let score = item
+            .get("rewards")
+            .and_then(|v| v.as_array())
+            .map(|rewards| {
+                rewards
+                    .iter()
+                    .filter(|reward| reward.get("type").and_then(|v| v.as_str()) == Some("Gamerscore"))
+                    .map(|reward| {
+                        reward
+                            .get("value")
+                            .and_then(|v| {
+                                v.as_u64()
+                                    .map(|n| n as u32)
+                                    .or_else(|| v.as_str().and_then(|text| text.parse::<u32>().ok()))
+                            })
+                            .unwrap_or(0)
+                    })
+                    .sum::<u32>()
+            })
+            .unwrap_or(0);
+        let Some(associations) = item.get("titleAssociations").and_then(|v| v.as_array()) else {
+            continue;
+        };
+        for association in associations {
+            let id = match association.get("id") {
+                Some(serde_json::Value::Number(number)) => number.to_string(),
+                Some(serde_json::Value::String(text)) if !text.is_empty() => text.clone(),
+                _ => continue,
+            };
+            let row = rows.entry(id).or_default();
+            row.total = row.total.saturating_add(1);
+            row.total_xp = row.total_xp.saturating_add(score);
+            if achieved {
+                row.unlocked = row.unlocked.saturating_add(1);
+                row.xp = row.xp.saturating_add(score);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1116,5 +1229,36 @@ mod tests {
         );
         assert!(response.achievements[1].hidden);
         assert_eq!(response.achievements[1].unlock_date, None);
+    }
+
+    #[test]
+    fn achievement_pages_aggregate_per_title() {
+        let page = json!({
+            "achievements": [
+                {
+                    "progressState": "Achieved",
+                    "titleAssociations": [{"name": "Fortnite", "id": 267695549}],
+                    "rewards": [{"type": "Gamerscore", "value": "50"}]
+                },
+                {
+                    "progressState": "NotStarted",
+                    "titleAssociations": [{"name": "Fortnite", "id": 267695549}],
+                    "rewards": [{"type": "Gamerscore", "value": "25"}]
+                },
+                {
+                    "progressState": "Achieved",
+                    "titleAssociations": [{"name": "String Key", "id": "42"}],
+                    "rewards": [{"type": "Gamerscore", "value": 10}]
+                }
+            ],
+            "pagingInfo": {"continuationToken": "next"}
+        });
+        let mut rows = HashMap::new();
+        add_achievement_totals(&mut rows, &page);
+        assert_eq!(
+            rows["267695549"],
+            XboxAchievementTotals { unlocked: 1, total: 2, xp: 50, total_xp: 75 }
+        );
+        assert_eq!(rows["42"], XboxAchievementTotals { unlocked: 1, total: 1, xp: 10, total_xp: 10 });
     }
 }

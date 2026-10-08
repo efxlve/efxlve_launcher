@@ -792,15 +792,54 @@ pub async fn companion_achievements(
     )
 }
 
-/// Bulk achievement summaries for a store that keeps them on disk. Ubisoft
-/// writes every game's set into the client's own cache, so one pass over the
-/// library is cheap and offline. Xbox and EA answer per game over the network,
-/// so those stay on their game pages.
+/// Library-keyed Xbox summaries. The store answers achievements per title,
+/// but the account-wide feed pages in bulk; the per-title totals are mapped
+/// onto the same library rows the title history maps onto.
+async fn xbox_achievements_summary() -> std::collections::HashMap<String, GameAchievementSummary> {
+    let Ok(totals) = xbox_login::achievement_totals().await else {
+        return std::collections::HashMap::new();
+    };
+    let owned = xbox_login::cached_owned();
+    let games = tokio::task::spawn_blocking(library_games).await.unwrap_or_default();
+    let mut rows = std::collections::HashMap::new();
+    for game in games.iter().filter(|game| game.store == "xbox") {
+        let Some(achievement) = xbox_progress(game, &owned).and_then(|row| totals.get(&row.title_id)) else {
+            continue;
+        };
+        if achievement.total == 0 {
+            continue;
+        }
+        let key = format!("xbox::{}", game.id);
+        rows.insert(
+            key.clone(),
+            GameAchievementSummary {
+                app_name: key,
+                user_unlocked: achievement.unlocked,
+                total_achievements: achievement.total,
+                user_xp: achievement.xp,
+                total_xp: achievement.total_xp,
+                is_platinum: achievement.unlocked >= achievement.total,
+                supported: true,
+                ..Default::default()
+            },
+        );
+    }
+    rows
+}
+
+/// Bulk achievement summaries for a store. Ubisoft writes every game's set
+/// into the client's own cache, so one pass over the library is cheap and
+/// offline. Xbox pages the account's own achievement service — the title
+/// history zeroes its totals once a title has progress. EA answers per game
+/// only and stays on its game pages.
 #[tauri::command]
 pub async fn companion_achievements_summary(
     store: String,
     language: Option<String>,
 ) -> std::collections::HashMap<String, GameAchievementSummary> {
+    if store == "xbox" {
+        return xbox_achievements_summary().await;
+    }
     if store != "ubisoft" {
         return std::collections::HashMap::new();
     }
