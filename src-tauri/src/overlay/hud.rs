@@ -62,10 +62,21 @@ pub fn update(text: &str) {
     if hwnd == 0 {
         return;
     }
-    let width = (text.chars().count() as i32) * 8 + 28;
-    let (x, y) = monitor_top_left();
+    let (x, y, width, height) = if hint_active() {
+        let (mon_x, mon_y, mon_w, mon_h) = monitor_rect_for(foreground_window())
+            .unwrap_or((0, 0, 1920, 1080));
+        let banner_w = ((text.chars().count() as i32) * 8 + 36).max(280);
+        let banner_h = 34;
+        let pos_x = mon_x + (mon_w as i32) - banner_w - 24;
+        let pos_y = mon_y + (mon_h as i32) - banner_h - 24;
+        (pos_x, pos_y, banner_w, banner_h)
+    } else {
+        let (top_x, top_y) = monitor_top_left();
+        let w = ((text.chars().count() as i32) * 8 + 28).max(240);
+        (top_x + 16, top_y + 16, w, 30)
+    };
     unsafe {
-        MoveWindow(hwnd, x + 16, y + 16, width.max(240), 30, 1);
+        MoveWindow(hwnd, x, y, width, height, 1);
         ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
         InvalidateRect(hwnd, std::ptr::null(), 0);
     }

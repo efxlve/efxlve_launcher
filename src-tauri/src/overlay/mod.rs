@@ -126,8 +126,14 @@ pub(crate) fn show(app: &AppHandle) {
     };
     let hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
     place_over_game(&win, hwnd);
+    let _ = win.unminimize();
     let _ = win.show();
+    let _ = win.set_always_on_top(true);
     let _ = win.set_focus();
+    #[cfg(windows)]
+    if let Ok(raw_hwnd) = win.hwnd() {
+        hud::focus_window(raw_hwnd.0 as isize);
+    }
     let payload = match STATE.lock() {
         Ok(mut s) => {
             s.visible = true;

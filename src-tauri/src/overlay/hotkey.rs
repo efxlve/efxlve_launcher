@@ -82,7 +82,7 @@ pub(crate) fn start(app: AppHandle) {
                 let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(false);
                 let shift = (unsafe { GetAsyncKeyState(0x10) } as u16 & 0x8000) != 0; // VK_SHIFT
                 let tab = (unsafe { GetAsyncKeyState(0x09) } as u16 & 0x8000) != 0; // VK_TAB
-                let down = shift && tab;
+                let down = (shift && tab) || is_controller_hotkey_down();
 
                 if down != hotkey_down() {
                     set_hotkey_down(down);
@@ -134,3 +134,85 @@ fn set_hotkey_down(down: bool) {
 
 #[cfg(windows)]
 static HOTKEY_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(windows)]
+#[repr(C)]
+struct XInputGamepad {
+    w_buttons: u16,
+    b_left_trigger: u8,
+    b_right_trigger: u8,
+    s_thumb_lx: i16,
+    s_thumb_ly: i16,
+    s_thumb_rx: i16,
+    s_thumb_ry: i16,
+}
+
+#[cfg(windows)]
+#[repr(C)]
+struct XInputState {
+    dw_packet_number: u32,
+    gamepad: XInputGamepad,
+}
+
+#[cfg(windows)]
+type XInputGetStateFn = unsafe extern "system" fn(u32, *mut XInputState) -> u32;
+
+#[cfg(windows)]
+fn get_xinput_fn() -> Option<XInputGetStateFn> {
+    use std::sync::OnceLock;
+    static FN_PTR: OnceLock<Option<XInputGetStateFn>> = OnceLock::new();
+    *FN_PTR.get_or_init(|| unsafe {
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn LoadLibraryA(name: *const u8) -> isize;
+            fn GetProcAddress(module: isize, proc_name: *const u8) -> usize;
+        }
+
+        let dlls = [
+            b"xinput1_4.dll\0".as_ptr(),
+            b"xinput1_3.dll\0".as_ptr(),
+            b"xinput9_1_0.dll\0".as_ptr(),
+        ];
+        for dll in dlls {
+            let mod_handle = LoadLibraryA(dll);
+            if mod_handle != 0 {
+                // Ordinal 100 is XInputGetStateEx which exposes the Guide button (0x0400).
+                let p100 = GetProcAddress(mod_handle, 100 as *const u8);
+                if p100 != 0 {
+                    return Some(std::mem::transmute::<usize, XInputGetStateFn>(p100));
+                }
+                let p_named = GetProcAddress(mod_handle, b"XInputGetState\0".as_ptr());
+                if p_named != 0 {
+                    return Some(std::mem::transmute::<usize, XInputGetStateFn>(p_named));
+                }
+            }
+        }
+        None
+    })
+}
+
+#[cfg(windows)]
+fn is_controller_hotkey_down() -> bool {
+    let Some(get_state) = get_xinput_fn() else {
+        return false;
+    };
+    for user_index in 0..4 {
+        let mut state = std::mem::MaybeUninit::<XInputState>::uninit();
+        if unsafe { get_state(user_index, state.as_mut_ptr()) } == 0 {
+            let state = unsafe { state.assume_init() };
+            let btns = state.gamepad.w_buttons;
+            // 0x0400 = Guide (Xbox) button via XInputGetStateEx
+            // 0x0030 = Start (0x0010) + Back (0x0020) universal combo
+            if (btns & 0x0400) != 0 || (btns & 0x0030) == 0x0030 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+#[cfg(not(windows))]
+fn is_controller_hotkey_down() -> bool {
+    false
+}
+
