@@ -365,6 +365,9 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
       meta.classList.toggle("is-wait", waiting);
       meta.textContent = shown;
     });
+    document.querySelectorAll<HTMLElement>(`[data-steam-dlbar="${g.appId}"]`).forEach((bar) => {
+      if (pct !== null) bar.style.width = `${pct}%`;
+    });
     if (!paintedSpeed) {
       const chip = document.querySelector(".tv-status-chip.is-dl .tv-dl-speed");
       if (chip && !(S.activeDlMetrics && !S.activeDlMetrics.done && S.activeDlMetrics.speedBytes > 0)) {
@@ -378,7 +381,21 @@ function paintSteamDownloadRows(games: SteamGame[]): void {
 /** Applies a fresh installed/downloading snapshot without hitting the owned-games API. */
 export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
   const previous = S.steamGames.filter((g) => g.downloading).map((g) => ({ ...g }));
-  S.steamGames = games.filter((g) => !isSteamLibraryNoise(g.appId, g.name));
+  // The manifest is only rewritten at phase changes, so a watcher flush in the
+  // middle of a transfer often carries a lower or zero counter. The pulse's
+  // log projection is ahead of it; never blink a moving row back to zero.
+  const previousById = new Map(previous.map((g) => [g.appId, g]));
+  S.steamGames = games
+    .filter((g) => !isSteamLibraryNoise(g.appId, g.name))
+    .map((g) => {
+      const prev = previousById.get(g.appId);
+      if (!prev) return g;
+      const bytesDownloaded = Math.max(g.bytesDownloaded, prev.bytesDownloaded);
+      const bytesToDownload = Math.max(g.bytesToDownload, prev.bytesToDownload);
+      return bytesDownloaded === g.bytesDownloaded && bytesToDownload === g.bytesToDownload
+        ? g
+        : { ...g, bytesDownloaded, bytesToDownload };
+    });
   const now = Date.now();
   const liveIds = new Set(S.steamGames.filter((g) => g.downloading).map((g) => g.appId));
   for (const prev of previous) {
@@ -442,13 +459,17 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
     // Size and byte counters move on every Steam write during an update.
     // They must not rebuild the 800+ game library or wipe the grid.
     const sizeChanged = g.sizeBytes > 0 && item.installSize !== g.sizeBytes;
+    // A transferring row's counter comes from the pulse, not this flush: the
+    // manifest lags behind the log and dips whenever a phase ends.
+    const bytesDownloaded = downloading ? Math.max(item.bytesDownloaded ?? 0, g.bytesDownloaded) : g.bytesDownloaded;
+    const bytesToDownload = downloading ? Math.max(item.bytesToDownload ?? 0, g.bytesToDownload) : g.bytesToDownload;
     const stateChanged = item.installed !== installed
       || item.downloading !== downloading
       || item.updateAvailable !== updateAvailable
       || titleChanged;
     const progressChanged = sizeChanged
-      || item.bytesDownloaded !== g.bytesDownloaded
-      || item.bytesToDownload !== g.bytesToDownload;
+      || item.bytesDownloaded !== bytesDownloaded
+      || item.bytesToDownload !== bytesToDownload;
     if (stateChanged || progressChanged) {
       if (!item.updateAvailable && updateAvailable) {
         notify({ kind: "update", title: t("notif.updateAvailable", { title: item.title }), appName: item.key });
@@ -457,8 +478,8 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
       if (stateChanged) structural = true;
       item.installed = installed;
       item.downloading = downloading;
-      item.bytesDownloaded = g.bytesDownloaded;
-      item.bytesToDownload = g.bytesToDownload;
+      item.bytesDownloaded = bytesDownloaded;
+      item.bytesToDownload = bytesToDownload;
       item.updateAvailable = updateAvailable;
       if (g.sizeBytes > 0) item.installSize = g.sizeBytes;
       if (!/^\d+$/.test(g.name)) item.title = g.name;
@@ -477,8 +498,9 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
   }
 
   // The downloads row can still say 0% after a later render used a stale
-  // snapshot. Paint from this read even when the library item did not change.
-  paintSteamDownloadRows(games);
+  // snapshot. Paint from the merged list so a manifest flush cannot blink a
+  // moving row back to zero.
+  paintSteamDownloadRows(S.steamGames);
   if (!changed) {
     checkAndPollSteamDownloads();
     return false;
@@ -494,7 +516,7 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
       openEpicModal(S.currentModalAppName, false, false);
     }
   } else {
-    for (const g of games) {
+    for (const g of S.steamGames) {
       if (!g.downloading) continue;
       patchLibraryCardDom(`steam::${g.appId}`);
     }

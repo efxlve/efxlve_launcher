@@ -388,11 +388,16 @@ export function renderDownloads(): string {
   const steamDownloading = S.steamGames.filter((g) => g.downloading);
   const steamRows = steamDownloading.map((g) => {
     const waiting = steamDownloadWaiting(g.appId);
-    const meta = waiting ? t("common.calculating") : steamDownloadLabel(g).text;
+    const { pct, text } = steamDownloadLabel(g);
+    const meta = waiting ? t("common.calculating") : text;
+    // The pulse grows this bar every second under the live text.
+    const bar = !waiting && pct !== null
+      ? `<div class="progress dl-steam-progress"><span data-steam-dlbar="${esc(g.appId)}" style="width:${pct}%"></span></div>`
+      : "";
     return gameRow(
       summaryOf(`steam::${g.appId}`),
       `steam::${g.appId}`,
-      `<span class="tabular-nums${waiting ? " is-wait" : ""}" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>`,
+      `<span class="tabular-nums${waiting ? " is-wait" : ""}" data-steam-dl="${esc(g.appId)}">${esc(meta)}</span>${bar}`,
       `<button class="btn ghost small" data-act="steam-open-downloads">${icon("download", 13)} ${t("steam.openDownloads")}</button>
        <button class="btn ghost small" data-act="steam-open-client">${icon("external", 13)} ${t("steam.openClient")}</button>`,
     );
