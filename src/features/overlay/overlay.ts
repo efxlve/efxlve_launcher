@@ -125,18 +125,37 @@ function storeLabel(store: string): string {
   return store;
 }
 
-function disabledGames(): string[] {
+interface DisabledGame {
+  key: string;
+  title: string;
+}
+
+function disabledGames(): DisabledGame[] {
   try {
     const raw = localStorage.getItem(DISABLED_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? (parsed as string[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => {
+        if (typeof item === "string") return { key: item, title: item };
+        const record = item as { key?: unknown; title?: unknown };
+        return {
+          key: typeof record.key === "string" ? record.key : "",
+          title: typeof record.title === "string" && record.title ? record.title : String(record.key ?? ""),
+        };
+      })
+      .filter((item) => item.key.length > 0);
   } catch {
     return [];
   }
 }
 
-function saveDisabled(list: string[]): void {
+function saveDisabled(list: DisabledGame[]): void {
   localStorage.setItem(DISABLED_KEY, JSON.stringify(list));
+}
+
+function isDisabledGame(appName: string): boolean {
+  return disabledGames().some((item) => item.key === appName);
 }
 
 function fmtMb(mb: number): string {
@@ -496,7 +515,8 @@ function renderSettings(): void {
   const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
   const hud = localStorage.getItem(HUD_KEY) === "true";
   const opacity = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
-  const disabled = disabledGames().includes(context.appName);
+  const disabled = isDisabledGame(context.appName);
+  const disabledList = disabledGames();
   const toggle = (act: string, on: boolean): string =>
     `<label class="switch"><input type="checkbox" data-ov-toggle="${act}" ${on ? "checked" : ""} /><span class="track"></span></label>`;
   el.innerHTML = `
@@ -517,6 +537,20 @@ function renderSettings(): void {
         <div class="ov-setting-text"><div class="ov-setting-title">${esc(t("overlay.disableTitle"))}</div><div class="ov-setting-desc">${esc(t("overlay.disableDesc"))}</div></div>
         ${toggle("disable-game", disabled)}
       </div>
+      ${disabledList.length > 0 ? `
+      <div class="ov-setting" style="align-items:flex-start">
+        <div class="ov-setting-text" style="flex:1">
+          <div class="ov-setting-title">${esc(t("overlay.disabledListTitle"))}</div>
+          <div class="ov-setting-desc">${esc(t("overlay.disabledListDesc"))}</div>
+          <div class="ov-disabled-list">
+            ${disabledList.map((item) => `
+              <div class="ov-disabled-row">
+                <span class="ov-disabled-name" title="${esc(item.key)}">${esc(item.title)}</span>
+                <button class="btn ghost small" data-ov="restore-game" data-key="${esc(item.key)}">${esc(t("overlay.restore"))}</button>
+              </div>`).join("")}
+          </div>
+        </div>
+      </div>` : ""}
     </div>`;
 }
 
@@ -557,6 +591,13 @@ function wireEvents(): void {
     else if (action === "launcher") void invoke("overlay_show_launcher");
     else if (action === "shots-folder") void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
     else if (action === "open-discord") void openUrl("discord://");
+    else if (action === "restore-game") {
+      const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
+      if (key) {
+        saveDisabled(disabledGames().filter((item) => item.key !== key));
+        renderSettings();
+      }
+    }
     else if (action === "media-toggle") void mediaControl(mediaPlaying ? "pause" : "play");
     else if (action === "media-prev") void mediaControl("previous");
     else if (action === "media-next") void mediaControl("next");
@@ -573,10 +614,9 @@ function wireEvents(): void {
       localStorage.setItem(HUD_KEY, String(input.checked));
       void invoke("overlay_set_hud", { enabled: input.checked });
     } else if (toggle === "disable-game") {
-      const list = disabledGames();
       const next = input.checked
-        ? [...new Set([...list, context.appName])]
-        : list.filter((key) => key !== context.appName);
+        ? [...disabledGames().filter((item) => item.key !== context.appName), { key: context.appName, title: context.title || context.appName }]
+        : disabledGames().filter((item) => item.key !== context.appName);
       saveDisabled(next);
       if (input.checked) void invoke("overlay_hide");
     }
@@ -620,7 +660,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   mediaPlaying = false;
 
   // Per-game opt-out: close immediately, the game keeps the key.
-  if (disabledGames().includes(context.appName)) {
+  if (isDisabledGame(context.appName)) {
     void invoke("overlay_hide");
     return;
   }

@@ -110,7 +110,10 @@ function overlayDisabledFor(appName: string): boolean {
   try {
     const raw = localStorage.getItem(OVERLAY_DISABLED_KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(list) && (list as string[]).includes(appName);
+    if (!Array.isArray(list)) return false;
+    return list.some((item) =>
+      typeof item === "string" ? item === appName : (item as { key?: string })?.key === appName,
+    );
   } catch {
     return false;
   }

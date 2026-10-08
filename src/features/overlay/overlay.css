@@ -264,6 +264,10 @@
 .ov-setting-title { font-size: 13px; font-weight: 500; }
 .ov-setting-desc { margin-top: 2px; font-size: 12px; color: var(--text-3); }
 
+.ov-disabled-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ov-disabled-row { display: flex; align-items: center; gap: 8px; }
+.ov-disabled-name { flex: 1; min-width: 0; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* --- Foot --- */
 .ov-foot {
   display: flex;

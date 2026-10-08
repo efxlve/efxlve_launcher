@@ -1886,5 +1886,8 @@
   "overlay.disableTitle": "Disable for this game",
   "overlay.disableDesc": "The overlay never opens for this title.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Press Shift+Tab for the in-game overlay."
+  "overlay.startHint": "Press Shift+Tab for the in-game overlay.",
+  "overlay.disabledListTitle": "Disabled games",
+  "overlay.disabledListDesc": "The overlay never opens for these titles. Restore one to bring it back.",
+  "overlay.restore": "Restore"
 }
