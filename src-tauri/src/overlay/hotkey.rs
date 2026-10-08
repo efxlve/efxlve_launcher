@@ -39,7 +39,12 @@ pub(crate) fn start(app: AppHandle) {
                         }
                     }
                 }
-                let gone = game.is_none() && !super::hud::window_alive(game_hwnd);
+                // Only a known, dead game window closes the panel automatically.
+                // Without a handle the user closes it; guessing would shut it
+                // under games whose process detection is unreliable.
+                let gone = game.is_none()
+                    && game_hwnd != 0
+                    && !super::hud::window_alive(game_hwnd);
                 gone_ticks = if gone { gone_ticks.saturating_add(1) } else { 0 };
                 if gone_ticks >= 75 {
                     gone_ticks = 0;
