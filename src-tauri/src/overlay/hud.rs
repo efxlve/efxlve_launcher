@@ -14,10 +14,27 @@ use std::sync::Mutex;
 static STARTED: AtomicBool = AtomicBool::new(false);
 static HWND: AtomicIsize = AtomicIsize::new(0);
 static FONT: AtomicIsize = AtomicIsize::new(0);
+static HINT_FONT: AtomicIsize = AtomicIsize::new(0);
 static TEXT: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 /// Hint banner active until this epoch-ms timestamp (0 = inactive).
 static HINT_UNTIL: AtomicU64 = AtomicU64::new(0);
 static HINT_GEN: AtomicU64 = AtomicU64::new(0);
+
+/// Start-hint banner: bigger type than the HUD, top-right, screen margin.
+const HINT_FONT_PX: i32 = 24;
+const HINT_CHAR_W: i32 = 13;
+const HINT_MIN_WIDTH: i32 = 430;
+const HINT_HEIGHT: i32 = 56;
+const HINT_MARGIN: i32 = 24;
+
+/// Top-right banner rect on the given monitor. Pure math, unit-tested.
+fn hint_rect(mon_x: i32, mon_y: i32, mon_w: u32, _mon_h: u32, text_chars: i32) -> (i32, i32, i32, i32) {
+    let max_width = (mon_w as i32 - 2 * HINT_MARGIN).max(HINT_MIN_WIDTH);
+    let width = (text_chars.max(1) * HINT_CHAR_W + 48).clamp(HINT_MIN_WIDTH, max_width);
+    let x = mon_x + mon_w as i32 - width - HINT_MARGIN;
+    let y = mon_y + HINT_MARGIN;
+    (x, y, width, HINT_HEIGHT)
+}
 
 fn now_ms() -> u64 {
     std::time::SystemTime::now()
@@ -65,11 +82,7 @@ pub fn update(text: &str) {
     let (x, y, width, height) = if hint_active() {
         let (mon_x, mon_y, mon_w, mon_h) = monitor_rect_for(foreground_window())
             .unwrap_or((0, 0, 1920, 1080));
-        let banner_w = ((text.chars().count() as i32) * 8 + 36).max(280);
-        let banner_h = 34;
-        let pos_x = mon_x + (mon_w as i32) - banner_w - 24;
-        let pos_y = mon_y + (mon_h as i32) - banner_h - 24;
-        (pos_x, pos_y, banner_w, banner_h)
+        hint_rect(mon_x, mon_y, mon_w, mon_h, text.chars().count() as i32)
     } else {
         let (top_x, top_y) = monitor_top_left();
         let w = ((text.chars().count() as i32) * 8 + 28).max(240);
@@ -77,6 +90,8 @@ pub fn update(text: &str) {
     };
     unsafe {
         MoveWindow(hwnd, x, y, width, height, 1);
+        // The hint is a little more opaque than the HUD so it stands out.
+        SetLayeredWindowAttributes(hwnd, 0, if hint_active() { 240 } else { 215 }, 0x0000_0002);
         ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
         InvalidateRect(hwnd, std::ptr::null(), 0);
     }
@@ -362,6 +377,7 @@ extern "system" {
 #[link(name = "gdi32")]
 extern "system" {
     fn CreateSolidBrush(color: u32) -> isize;
+    fn DeleteObject(object: isize) -> i32;
     fn CreateFontW(
         height: i32,
         width: i32,
@@ -427,18 +443,36 @@ unsafe extern "system" fn hud_wnd_proc(hwnd: isize, msg: u32, wparam: usize, lpa
             GetClientRect(hwnd, &mut rect);
             let brush = CreateSolidBrush(0x000E0E12); // COLORREF 0x00BBGGRR
             FillRect(hdc, &rect, brush);
-            let font = FONT.load(Ordering::Relaxed);
+            let is_hint = hint_active();
+            let font = if is_hint {
+                HINT_FONT.load(Ordering::Relaxed)
+            } else {
+                FONT.load(Ordering::Relaxed)
+            };
             if font != 0 {
                 SelectObject(hdc, font);
+            }
+            // The hint carries the accent bar so it reads as a notification.
+            if is_hint {
+                let accent = CreateSolidBrush(0x00F8BD38); // #38bdf8 as COLORREF
+                let bar = RECT {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.left + 6,
+                    bottom: rect.bottom,
+                };
+                FillRect(hdc, &bar, accent);
+                let _ = DeleteObject(accent);
             }
             SetBkMode(hdc, TRANSPARENT_BK);
             SetTextColor(hdc, 0x00F2F2F2);
             if let Ok(text) = TEXT.lock() {
                 if text.len() > 1 {
+                    let pad = if is_hint { 22 } else { 12 };
                     let mut text_rect = RECT {
-                        left: 12,
+                        left: pad,
                         top: 0,
-                        right: rect.right - 12,
+                        right: rect.right - pad,
                         bottom: rect.bottom,
                     };
                     DrawTextW(
@@ -487,6 +521,23 @@ fn ensure_window() {
         let face: Vec<u16> = "Segoe UI\0".encode_utf16().collect();
         let font = CreateFontW(-14, 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
         FONT.store(font, Ordering::Relaxed);
+        let hint_font = CreateFontW(
+            -HINT_FONT_PX,
+            0,
+            0,
+            0,
+            700,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            face.as_ptr(),
+        );
+        HINT_FONT.store(hint_font, Ordering::Relaxed);
 
         let hwnd = CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
@@ -529,4 +580,33 @@ fn ensure_window() {
 #[link(name = "user32")]
 extern "system" {
     fn SetLayeredWindowAttributes(hwnd: isize, key: u32, alpha: u8, flags: u32) -> i32;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{hint_rect, HINT_HEIGHT, HINT_MARGIN};
+
+    #[test]
+    fn hint_banner_sits_at_the_top_right() {
+        let (x, y, width, height) = hint_rect(0, 0, 1920, 1080, 40);
+        assert_eq!(height, HINT_HEIGHT);
+        assert_eq!(y, HINT_MARGIN);
+        // The banner hugs the right edge and never leaves a bigger gap.
+        assert!(width >= 430);
+        assert_eq!(x + width + HINT_MARGIN, 1920);
+    }
+
+    #[test]
+    fn hint_banner_fits_an_offset_monitor() {
+        let (x, y, width, _) = hint_rect(1920, 100, 1280, 720, 120);
+        assert!(x >= 1920);
+        assert!(x + width <= 1920 + 1280 - HINT_MARGIN);
+        assert_eq!(y, 100 + HINT_MARGIN);
+    }
+
+    #[test]
+    fn hint_banner_clamps_to_a_narrow_monitor() {
+        let (_, _, width, _) = hint_rect(0, 0, 800, 600, 200);
+        assert_eq!(width, 800 - 2 * HINT_MARGIN);
+    }
 }
