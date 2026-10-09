@@ -70,7 +70,7 @@ mod imp {
                 if !name.starts_with(&prefix) {
                     continue;
                 }
-                if name.contains("engtype_3D") {
+                if name.contains("engtype_3D") && value.is_finite() {
                     total += value;
                     found = true;
                 }
@@ -82,23 +82,32 @@ mod imp {
             }
         }
 
-        /// The game's local VRAM usage in bytes.
+        /// The game's local VRAM usage in bytes. On hybrid systems the same
+        /// pid has one instance per adapter; the largest one is the render
+        /// adapter, which is the number users expect.
         pub fn vram_bytes(&mut self, pid: u32) -> Option<u64> {
             if !self.collect() {
                 return None;
             }
             let items = read_array(self.vram)?;
             let prefix = format!("pid_{pid}_");
+            let mut best: Option<u64> = None;
             for (name, value) in &items {
-                if name.starts_with(&prefix) {
-                    return Some(*value as u64);
+                if name.starts_with(&prefix) && value.is_finite() && *value > 0.0 {
+                    let bytes = *value as u64;
+                    best = Some(best.map_or(bytes, |current| current.max(bytes)));
                 }
             }
-            None
+            best
         }
     }
 
     /// Reads every instance of a counter as `(name, double value)`.
+    ///
+    /// The array API returns one buffer that holds both the item array and the
+    /// instance name strings the items point into, so the buffer must be
+    /// allocated with the size PDH reports — not with `count * item_size` —
+    /// or PDH writes past the allocation.
     fn read_array(counter: PDH_HCOUNTER) -> Option<Vec<(String, f64)>> {
         unsafe {
             let mut size = 0u32;
@@ -114,23 +123,21 @@ mod imp {
             if status != PDH_MORE_DATA {
                 return None;
             }
-            let item_size = std::mem::size_of::<PDH_FMT_COUNTERVALUE_ITEM_W>() as u32;
-            size = size.max(item_size);
-            let mut buffer: Vec<PDH_FMT_COUNTERVALUE_ITEM_W> = (0..count.max(1))
-                .map(|_| std::mem::zeroed())
-                .collect();
+            let mut buffer: Vec<u8> = vec![0u8; size as usize];
             status = PdhGetFormattedCounterArrayW(
                 counter,
                 PDH_FMT_DOUBLE,
                 &mut size,
                 &mut count,
-                Some(buffer.as_mut_ptr()),
+                Some(buffer.as_mut_ptr() as *mut PDH_FMT_COUNTERVALUE_ITEM_W),
             );
             if status != 0 {
                 return None;
             }
             let mut rows = Vec::with_capacity(count as usize);
-            for item in buffer.iter().take(count as usize) {
+            let items = buffer.as_ptr() as *const PDH_FMT_COUNTERVALUE_ITEM_W;
+            for index in 0..count as usize {
+                let item = &*items.add(index);
                 let name = item.szName.to_string().unwrap_or_default();
                 let value = item.FmtValue.Anonymous.doubleValue;
                 rows.push((name, value));
