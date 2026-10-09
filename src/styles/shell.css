@@ -322,7 +322,7 @@ body.sb-resizing iframe {
   width: 3px;
   height: 30%;
   border-radius: 2px;
-  background: #1ed760;
+  background: var(--ok);
   animation: sb-eq 900ms ease-in-out infinite;
 }
 
@@ -374,11 +374,9 @@ html.sb-narrow .sb-eq {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 10px 12px 8px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(18, 22, 34, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 12px;
+  padding: 12px 16px 6px;
+  border-top: 1px solid var(--line);
 }
 
 .sb-mini-top {
@@ -389,14 +387,14 @@ html.sb-narrow .sb-eq {
 }
 
 .sb-mini-art {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
   flex-shrink: 0;
   display: grid;
   place-items: center;
   color: var(--text-3);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--surface-2);
   overflow: hidden;
 }
 
@@ -410,12 +408,13 @@ html.sb-narrow .sb-eq {
 .sb-mini-text {
   display: flex;
   flex-direction: column;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
 
 .sb-mini-title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -432,9 +431,9 @@ html.sb-narrow .sb-eq {
 }
 
 .sb-mini-progress {
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
   overflow: hidden;
 }
 
@@ -442,7 +441,7 @@ html.sb-narrow .sb-eq {
   display: block;
   height: 100%;
   width: 0;
-  background: #1ed760;
+  background: var(--ok);
   transition: width 400ms linear;
 }
 
@@ -450,38 +449,37 @@ html.sb-narrow .sb-eq {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .sb-mini-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text-2);
   cursor: pointer;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition: background-color var(--ease), color var(--ease);
 }
 
 .sb-mini-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-2);
   color: var(--text);
 }
 
 .sb-mini-play {
-  width: 40px;
-  height: 32px;
-  background: #1ed760;
-  color: #0b0e14;
+  width: 36px;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .sb-mini-play:hover {
-  background: #24e56a;
-  color: #0b0e14;
+  background: var(--accent-hover);
+  color: var(--on-accent);
 }
 
 .sb-mini-volume {
@@ -491,17 +489,20 @@ html.sb-narrow .sb-eq {
   color: var(--text-3);
 }
 
+.sb-mini-volume[hidden] {
+  display: none;
+}
+
 .sb-mini-volume input[type="range"] {
   flex: 1;
   min-width: 0;
-  height: 4px;
-  accent-color: #1ed760;
+  height: 3px;
+  accent-color: var(--text);
 }
 
 /* Collapsed rail: transport only, stacked */
 html.sb-narrow .sb-mini {
-  margin: 10px 10px 8px;
-  padding: 8px 6px;
+  padding: 12px 0 6px;
 }
 
 html.sb-narrow .sb-mini-top,
