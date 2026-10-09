@@ -22,10 +22,12 @@ import {
   spotifyPlaybackControl,
   spotifyPlaybackNow,
   spotifyPlaybackPlay,
+  spotifyPlaybackPlaylistTracks,
   spotifyPlaybackPlaylists,
   spotifyPlaybackStatus,
   type NowPlaying,
   type PlaylistSummary,
+  type TrackSummary,
 } from "../music/spotify-client";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
@@ -127,9 +129,13 @@ let spotifyBaseAt = 0;
 let mediaBaseMs = 0;
 let mediaBaseAt = 0;
 let lastMediaActive = false;
-/** Playlist picker state (loaded once per overlay session). */
+/** Library browser state (playlists + the open playlist's tracks). */
 let playlists: PlaylistSummary[] | null = null;
 let playlistsState: "idle" | "loading" | "ready" | "error" = "idle";
+let selectedPlaylist: string | null = null;
+let playlistTracks: TrackSummary[] | null = null;
+let tracksState: "idle" | "loading" | "ready" | "error" = "idle";
+let tracksFor: string | null = null;
 let cachedAchievements: AchievementsData | null = null;
 let cachedScreenshots: ScreenshotItem[] = [];
 let sessionStartEpoch = Date.now();
@@ -951,7 +957,7 @@ function getOverlayMedia(): OverlayMediaModel {
     isSpotify: true,
     source: "Spotify",
     title: t("overlay.noMedia"),
-    artist: "",
+    artist: t("overlay.idleHint"),
     album: "",
     artUrl: "",
     isPlaying: false,
@@ -1054,7 +1060,13 @@ function renderMusicTab(): void {
       ${connected && spotifyDeviceName ? `<span class="ov-badge-pill ov-badge-spotify" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
     </div>
     ${unifiedPlayerHtml(m, connected)}
+    ${connected ? libraryHtml() : ""}
     <p class="ov-note" style="text-align:center;margin-top:16px">${esc(connected ? t("overlay.musicNoteSpotify") : t("overlay.musicNote"))}</p>`;
+  if (connected) {
+    renderPlaylistList();
+    renderTrackList();
+    void ensurePlaylists();
+  }
 }
 
 function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
@@ -1066,23 +1078,18 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
         </div>
         <div class="ov-sp-info">
           <div class="ov-sp-title" id="ov-sp-title">${esc(t("overlay.noMedia"))}</div>
-          <div class="ov-sp-artist" id="ov-sp-artist">${esc(t("overlay.musicNote"))}</div>
+          <div class="ov-sp-artist" id="ov-sp-artist">${esc(t("overlay.idleHint"))}</div>
           <div class="ov-sp-controls" style="justify-content:flex-start;margin-top:16px;gap:10px">
             <button class="btn primary" data-ov="sp-open" style="height:38px;padding:0 16px;gap:8px">
               ${icon("external", 15)} <span>${esc(t("overlay.openSpotify"))}</span>
             </button>
-            <button class="btn ghost" data-ov="media-toggle" style="height:38px;padding:0 14px;gap:8px" title="${esc(t("music.playPause"))}">
-              ${icon("play", 15)} <span>${esc(t("music.playPause"))}</span>
-            </button>
-            ${connected ? `<button class="btn ghost" data-ov="sp-playlists" style="height:38px;padding:0 14px;gap:8px">${icon("list", 15)} <span>${esc(t("overlay.playlists"))}</span></button>` : ""}
           </div>
         </div>
-      </div>
-      <div class="ov-sp-playlists" id="ov-sp-playlists" hidden></div>`;
+      </div>`;
   }
 
   return `
-    <div class="ov-card ov-sp-player">
+    <div class="ov-card ov-sp-player"${m.artUrl ? ` style="--ov-hero-art:url('${esc(m.artUrl)}')"` : ""}>
       ${m.artUrl
         ? `<img class="ov-sp-art" id="ov-sp-art" src="${esc(m.artUrl)}" alt="" />`
         : m.isSpotify
@@ -1098,7 +1105,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
         </div>
         <div class="ov-sp-artist" id="ov-sp-artist">${esc(m.artist)}</div>
         <div class="ov-sp-album" id="ov-sp-album"${m.album ? "" : ' style="display:none"'}>${esc(m.album)}</div>
-        
+
         <div class="ov-sp-progress" id="ov-sp-progress" data-ov="sp-seek" title="${m.canSeek ? "Seek" : ""}">
           <div class="ov-sp-progress-fill" id="ov-sp-progress-fill"></div>
         </div>
@@ -1123,81 +1130,162 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
               ${icon("volume-2", 14)}
               <input type="range" id="ov-sp-volume" min="0" max="100" value="${m.volumePercent}" />
             </span>` : ""}
-          ${connected ? `<button class="btn ghost small" data-ov="sp-playlists">${icon("list", 14)} ${esc(t("overlay.playlists"))}</button>` : ""}
           <button class="btn ghost small" data-ov="sp-open">${icon("external", 14)} ${esc(t("overlay.openSpotify"))}</button>
         </div>
       </div>
-    </div>
-    <div class="ov-sp-playlists" id="ov-sp-playlists" hidden></div>`;
+    </div>`;
 }
 
-/** Renders the playlist picker body from the current picker state. */
-function renderPlaylistPanel(): void {
-  const panel = document.getElementById("ov-sp-playlists");
-  if (!panel) return;
+/* ---------- Library browser (playlists -> tracks) ---------- */
+
+function libraryHtml(): string {
+  return `
+    <div class="ov-sp-library">
+      <div class="ov-sp-library-head">
+        <span class="ov-sp-library-title">${icon("list", 14)} ${esc(t("overlay.library"))}</span>
+        <button class="btn ghost small" data-ov="sp-refresh-library">${icon("refresh", 13)} ${esc(t("overlay.refresh"))}</button>
+      </div>
+      <div class="ov-sp-library-cols">
+        <div class="ov-sp-pane" id="ov-sp-playlist-list"></div>
+        <div class="ov-sp-pane" id="ov-sp-track-list"></div>
+      </div>
+    </div>`;
+}
+
+function renderPlaylistList(): void {
+  const host = document.getElementById("ov-sp-playlist-list");
+  if (!host) return;
   if (playlistsState === "idle" || playlistsState === "loading") {
-    panel.innerHTML = `<div class="ov-empty" style="padding:18px 0">${esc(t("overlay.playlistsLoading"))}</div>`;
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsLoading"))}</div>`;
     return;
   }
   if (playlistsState === "error") {
-    panel.innerHTML = `<div class="ov-empty" style="padding:18px 0">${esc(t("overlay.playlistsError"))}</div>`;
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}</div>`;
     return;
   }
   const lists = playlists ?? [];
   if (lists.length === 0) {
-    panel.innerHTML = `<div class="ov-empty" style="padding:18px 0">${esc(t("overlay.noPlaylists"))}</div>`;
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.noPlaylists"))}</div>`;
     return;
   }
-  panel.innerHTML = lists
+  host.innerHTML = lists
     .map(
       (list) => `
-      <button class="ov-sp-playlist" data-ov="sp-play" data-uri="${esc(list.uri)}">
+      <button class="ov-sp-row ov-sp-pl-row${list.uri === selectedPlaylist ? " selected" : ""}" data-ov="sp-select-playlist" data-uri="${esc(list.uri)}">
         ${list.artUrl
-          ? `<img class="ov-sp-playlist-art" src="${esc(list.artUrl)}" alt="" loading="lazy" />`
-          : `<span class="ov-sp-playlist-art ov-sp-playlist-art-empty">${icon("music", 16)}</span>`}
-        <span class="ov-sp-playlist-meta">
-          <span class="ov-sp-playlist-name">${esc(list.name)}</span>
-          <span class="ov-sp-playlist-sub">${list.trackCount} ${esc(t("overlay.tracks"))}</span>
+          ? `<img class="ov-sp-row-art" src="${esc(list.artUrl)}" alt="" loading="lazy" />`
+          : `<span class="ov-sp-row-art ov-sp-row-art-empty">${icon("music", 15)}</span>`}
+        <span class="ov-sp-row-meta">
+          <span class="ov-sp-row-name">${esc(list.name)}</span>
+          <span class="ov-sp-row-sub">${list.trackCount} ${esc(t("overlay.tracks"))}</span>
         </span>
       </button>`,
     )
     .join("");
 }
 
-/** Opens/closes the picker; the list loads once per overlay session. */
-async function togglePlaylists(): Promise<void> {
-  const panel = document.getElementById("ov-sp-playlists");
-  if (!panel) return;
-  if (!panel.hidden) {
-    panel.hidden = true;
+function renderTrackList(): void {
+  const host = document.getElementById("ov-sp-track-list");
+  if (!host) return;
+  if (!selectedPlaylist) {
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.selectPlaylist"))}</div>`;
     return;
   }
-  panel.hidden = false;
-  if (playlistsState === "ready" || playlistsState === "error" || playlistsState === "loading") {
-    renderPlaylistPanel();
+  if (tracksState === "idle" || tracksState === "loading") {
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.loadingTracks"))}</div>`;
     return;
   }
+  if (tracksState === "error") {
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}</div>`;
+    return;
+  }
+  const tracks = playlistTracks ?? [];
+  if (tracks.length === 0) {
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.noTracks"))}</div>`;
+    return;
+  }
+  host.innerHTML = tracks
+    .map(
+      (track, index) => `
+      <button class="ov-sp-row ov-sp-track" data-ov="sp-play-track" data-uri="${esc(track.uri)}" data-index="${index + 1}">
+        <span class="ov-sp-track-index">${index + 1}</span>
+        ${track.artUrl ? `<img class="ov-sp-row-art" src="${esc(track.artUrl)}" alt="" loading="lazy" />` : ""}
+        <span class="ov-sp-row-meta">
+          <span class="ov-sp-row-name">${esc(track.name)}</span>
+          <span class="ov-sp-row-sub">${esc(track.artist)}</span>
+        </span>
+        <span class="ov-sp-track-time">${formatSpotifyTime(track.durationMs)}</span>
+      </button>`,
+    )
+    .join("");
+  paintTrackHighlight();
+}
+
+/** Marks the row of the track the engine is playing right now. */
+function paintTrackHighlight(): void {
+  const current = spotifyNow?.uri ?? "";
+  document.querySelectorAll<HTMLElement>(".ov-sp-track").forEach((row) => {
+    const playing = Boolean(current) && row.dataset.uri === current;
+    row.classList.toggle("playing", playing);
+    const index = row.querySelector<HTMLElement>(".ov-sp-track-index");
+    if (index) index.innerHTML = playing ? icon("volume-2", 12) : row.dataset.index ?? "";
+  });
+}
+
+/** Loads the rootlist once per overlay session (the Rust side caches it too). */
+async function ensurePlaylists(force = false): Promise<void> {
+  if (!force && (playlistsState === "loading" || playlistsState === "ready")) return;
   playlistsState = "loading";
-  renderPlaylistPanel();
+  renderPlaylistList();
   try {
-    playlists = await spotifyPlaybackPlaylists();
+    playlists = await spotifyPlaybackPlaylists(force);
     playlistsState = "ready";
   } catch {
     playlistsState = "error";
   }
-  renderPlaylistPanel();
+  renderPlaylistList();
 }
 
-/** Starts a playlist on the launcher's receiver and closes the picker. */
-async function playPlaylist(uri: string): Promise<void> {
-  const panel = document.getElementById("ov-sp-playlists");
-  if (panel) panel.hidden = true;
+/** Opens a playlist: highlight it and load its tracks. */
+async function selectPlaylist(uri: string): Promise<void> {
+  selectedPlaylist = uri;
+  renderPlaylistList();
+  if (playlistTracks && tracksState === "ready" && tracksFor === uri) {
+    renderTrackList();
+    return;
+  }
+  tracksFor = uri;
+  playlistTracks = null;
+  tracksState = "loading";
+  renderTrackList();
   try {
-    await spotifyPlaybackPlay(uri);
+    playlistTracks = await spotifyPlaybackPlaylistTracks(uri);
+    tracksState = "ready";
+  } catch {
+    tracksState = "error";
+  }
+  renderTrackList();
+}
+
+/** Starts the open playlist at the clicked track. */
+async function playTrack(trackUri: string): Promise<void> {
+  if (!selectedPlaylist) return;
+  try {
+    await spotifyPlaybackPlay(selectedPlaylist, trackUri);
   } catch {
     // The next poll shows whatever the engine did.
   }
   window.setTimeout(() => void refreshMedia(), 600);
+}
+
+/** Forces a library refresh (the Rust caches are bypassed). */
+async function refreshLibrary(): Promise<void> {
+  selectedPlaylist = null;
+  playlistTracks = null;
+  tracksState = "idle";
+  tracksFor = null;
+  await ensurePlaylists(true);
+  renderTrackList();
 }
 
 /** Swaps an artwork slot between the image and its placeholder. */
@@ -1272,6 +1360,7 @@ function patchMediaSurfaces(): void {
     );
 
     paintSpotifyProgress();
+    paintTrackHighlight();
   }
 }
 
@@ -1511,11 +1600,14 @@ function wireEvents(): void {
         const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
         void overlaySpotifyControl("seek", Math.round(ratio * m.durationMs));
       }
-    } else if (action === "sp-playlists") {
-      void togglePlaylists();
-    } else if (action === "sp-play") {
+    } else if (action === "sp-select-playlist") {
       const uri = target.closest<HTMLElement>("[data-ov]")?.dataset.uri;
-      if (uri) void playPlaylist(uri);
+      if (uri) void selectPlaylist(uri);
+    } else if (action === "sp-play-track") {
+      const uri = target.closest<HTMLElement>("[data-ov]")?.dataset.uri;
+      if (uri) void playTrack(uri);
+    } else if (action === "sp-refresh-library") {
+      void refreshLibrary();
     } else if (action === "sp-open") {
       if (spotifyNow?.url) {
         void openUrl(spotifyNow.url);
@@ -1945,6 +2037,10 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   lastMediaActive = false;
   playlists = null;
   playlistsState = "idle";
+  selectedPlaylist = null;
+  playlistTracks = null;
+  tracksState = "idle";
+  tracksFor = null;
   sessionStartEpoch = Date.now();
   gamepadSuppressUntil = performance.now() + 450;
 

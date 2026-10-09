@@ -70,6 +70,18 @@ pub struct PlaylistSummary {
     pub art_url: String,
 }
 
+/// One track row of a playlist, for the overlay browser.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TrackSummary {
+    pub uri: String,
+    pub name: String,
+    pub artist: String,
+    pub album: String,
+    pub duration_ms: i64,
+    pub art_url: String,
+}
+
 /// Tokens from the playback approval.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PlaybackToken {
@@ -177,27 +189,43 @@ pub fn spotify_playback_control(action: String, value: Option<i64>) -> Result<()
 
 /// The user's playlists, for the overlay picker (cached for a few minutes).
 #[tauri::command]
-pub async fn spotify_playback_playlists() -> Result<Vec<PlaylistSummary>, String> {
+pub async fn spotify_playback_playlists(force: Option<bool>) -> Result<Vec<PlaylistSummary>, String> {
     #[cfg(windows)]
     {
-        imp::playlists().await
+        imp::playlists(force.unwrap_or(false)).await
     }
     #[cfg(not(windows))]
     {
+        let _ = force;
         Err("unsupported".to_string())
     }
 }
 
-/// Loads and starts a playlist/album context on the local receiver.
+/// The tracks of one playlist, for the overlay browser.
 #[tauri::command]
-pub fn spotify_playback_play(uri: String) -> Result<(), String> {
+pub async fn spotify_playback_playlist_tracks(uri: String) -> Result<Vec<TrackSummary>, String> {
     #[cfg(windows)]
     {
-        imp::play(&uri)
+        imp::playlist_tracks(&uri).await
     }
     #[cfg(not(windows))]
     {
         let _ = uri;
+        Err("unsupported".to_string())
+    }
+}
+
+/// Loads and starts a playlist context on the local receiver, optionally
+/// starting at one specific track.
+#[tauri::command]
+pub fn spotify_playback_play(uri: String, track_uri: Option<String>) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        imp::play(&uri, track_uri.as_deref())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (uri, track_uri);
         Err("unsupported".to_string())
     }
 }
@@ -234,7 +262,7 @@ fn web_url(uri: &str) -> String {
 #[cfg(windows)]
 mod imp {
     use super::*;
-    use librespot::connect::{ConnectConfig, LoadRequest, LoadRequestOptions, Spirc};
+    use librespot::connect::{ConnectConfig, LoadRequest, LoadRequestOptions, PlayingTrack, Spirc};
     use librespot::core::{
         authentication::Credentials, cache::Cache, config::DeviceType, config::SessionConfig,
         session::Session, FileId, SpotifyUri,
@@ -305,6 +333,10 @@ mod imp {
     /// Rootlist cache: the picker refetches at most every few minutes.
     static PLAYLISTS: Mutex<Option<(Instant, Vec<PlaylistSummary>)>> = Mutex::new(None);
     const PLAYLISTS_TTL: Duration = Duration::from_secs(300);
+    /// Track list of the playlist currently open in the browser.
+    static TRACKS: Mutex<Option<(Instant, String, Vec<TrackSummary>)>> = Mutex::new(None);
+    const TRACKS_TTL: Duration = Duration::from_secs(600);
+    const TRACK_LIMIT: usize = 60;
 
     fn update(change: impl FnOnce(&mut NowState)) {
         if let Ok(mut guard) = NOW.lock() {
@@ -441,11 +473,13 @@ mod imp {
     /// The user's playlists: rootlist first, then one metadata fetch per entry
     /// (in parallel). Cached, so the picker opens instantly after the first
     /// load.
-    pub async fn playlists() -> Result<Vec<PlaylistSummary>, String> {
-        if let Ok(guard) = PLAYLISTS.lock() {
-            if let Some((at, cached)) = guard.as_ref() {
-                if at.elapsed() < PLAYLISTS_TTL {
-                    return Ok(cached.clone());
+    pub async fn playlists(force: bool) -> Result<Vec<PlaylistSummary>, String> {
+        if !force {
+            if let Ok(guard) = PLAYLISTS.lock() {
+                if let Some((at, cached)) = guard.as_ref() {
+                    if at.elapsed() < PLAYLISTS_TTL {
+                        return Ok(cached.clone());
+                    }
                 }
             }
         }
@@ -513,8 +547,67 @@ mod imp {
         template.replace("{file_id}", &file_id)
     }
 
-    /// Makes the receiver the active device and starts a context on it.
-    pub fn play(uri: &str) -> Result<(), String> {
+    /// The tracks of one playlist (up to `TRACK_LIMIT`), fetched in parallel
+    /// and cached per playlist.
+    pub async fn playlist_tracks(uri: &str) -> Result<Vec<TrackSummary>, String> {
+        if let Ok(guard) = TRACKS.lock() {
+            if let Some((at, cached_uri, cached)) = guard.as_ref() {
+                if cached_uri == uri && at.elapsed() < TRACKS_TTL {
+                    return Ok(cached.clone());
+                }
+            }
+        }
+
+        let session = SESSION
+            .lock()
+            .map_err(|_| "state_poisoned".to_string())?
+            .clone()
+            .ok_or_else(|| "not_running".to_string())?;
+        let parsed = SpotifyUri::from_uri(uri).map_err(|error| error.to_string())?;
+        let playlist = Playlist::get(&session, &parsed)
+            .await
+            .map_err(|error| error.to_string())?;
+
+        let mut tasks = tokio::task::JoinSet::new();
+        for (index, item) in playlist.contents.items.iter().take(TRACK_LIMIT).enumerate() {
+            let track_uri = item.id.clone();
+            let session = session.clone();
+            tasks.spawn(async move { (index, track_summary(&session, track_uri).await) });
+        }
+
+        let mut collected: Vec<(usize, TrackSummary)> = Vec::new();
+        while let Some(joined) = tasks.join_next().await {
+            if let Ok((index, Some(summary))) = joined {
+                collected.push((index, summary));
+            }
+        }
+        collected.sort_by_key(|(index, _)| *index);
+        let out: Vec<TrackSummary> = collected.into_iter().map(|(_, summary)| summary).collect();
+        if let Ok(mut slot) = TRACKS.lock() {
+            *slot = Some((Instant::now(), uri.to_string(), out.clone()));
+        }
+        Ok(out)
+    }
+
+    async fn track_summary(session: &Session, uri: SpotifyUri) -> Option<TrackSummary> {
+        let item = AudioItem::get_file(session, uri).await.ok()?;
+        Some(TrackSummary {
+            uri: item.uri.clone(),
+            name: item.name.clone(),
+            artist: artists_of(&item),
+            album: album_of(&item),
+            duration_ms: item.duration_ms as i64,
+            art_url: item
+                .covers
+                .first()
+                .map(|cover| cover.url.clone())
+                .unwrap_or_default(),
+        })
+    }
+
+    /// Makes the receiver the active device and starts a context on it,
+    /// optionally starting at one specific track of the context.
+    pub fn play(uri: &str, track_uri: Option<&str>) -> Result<(), String> {
         let spirc = SPIRC
             .lock()
             .map_err(|_| "state_poisoned".to_string())?
@@ -527,6 +620,7 @@ mod imp {
             uri.to_string(),
             LoadRequestOptions {
                 start_playing: true,
+                playing_track: track_uri.map(|track| PlayingTrack::Uri(track.to_string())),
                 ..Default::default()
             },
         );
@@ -625,6 +719,9 @@ mod imp {
                 *slot = None;
             }
             if let Ok(mut slot) = PLAYLISTS.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = TRACKS.lock() {
                 *slot = None;
             }
         });

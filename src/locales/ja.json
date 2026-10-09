@@ -1911,15 +1911,20 @@
   "music.playPause": "Play/Pause",
   "music.next": "Next",
   "music.repeat": "Repeat",
-  "overlay.musicNoteSpotify": "Controls the launcher's own Spotify receiver: start a playlist from the Playlists button, or play on the Music page and choose \"Efxlve Launcher\".",
+  "overlay.musicNoteSpotify": "Controls the launcher's own Spotify receiver. Pick a playlist below to start, or play on the Music page and choose \"Efxlve Launcher\".",
   "overlay.tabSpotify": "Spotify",
   "music.reload": "Reload",
   "music.back": "Back",
   "music.playbackPairingToast": "One-time playback approval opened in your browser: approve it to hear Spotify on this computer.",
   "overlay.openSpotify": "Open in Spotify",
-  "overlay.playlists": "Playlists",
   "overlay.playlistsLoading": "Loading playlists…",
   "overlay.playlistsError": "Couldn't load playlists",
   "overlay.noPlaylists": "No playlists found",
-  "overlay.tracks": "tracks"
+  "overlay.tracks": "tracks",
+  "overlay.library": "Library",
+  "overlay.refresh": "Refresh",
+  "overlay.selectPlaylist": "Pick a playlist to see its tracks",
+  "overlay.loadingTracks": "Loading tracks…",
+  "overlay.noTracks": "No tracks in this playlist",
+  "overlay.idleHint": "Start playback on the Music page or in any player on this PC."
 }

@@ -41,6 +41,15 @@ export interface PlaylistSummary {
   artUrl: string;
 }
 
+export interface TrackSummary {
+  uri: string;
+  name: string;
+  artist: string;
+  album: string;
+  durationMs: number;
+  artUrl: string;
+}
+
 export const spotifyPlaybackStatus = () =>
   invoke<SpotifyPlaybackStatus>("spotify_playback_status");
 
@@ -57,12 +66,16 @@ export const spotifyPlaybackControl = (
 ) => invoke<void>("spotify_playback_control", { action, value: value ?? null });
 
 /** The user's playlists for the overlay picker. */
-export const spotifyPlaybackPlaylists = () =>
-  invoke<PlaylistSummary[]>("spotify_playback_playlists");
+export const spotifyPlaybackPlaylists = (force = false) =>
+  invoke<PlaylistSummary[]>("spotify_playback_playlists", { force });
+
+/** The tracks of one playlist for the overlay browser. */
+export const spotifyPlaybackPlaylistTracks = (uri: string) =>
+  invoke<TrackSummary[]>("spotify_playback_playlist_tracks", { uri });
 
 /** Loads and starts a playlist context on the launcher's receiver. */
-export const spotifyPlaybackPlay = (uri: string) =>
-  invoke<void>("spotify_playback_play", { uri });
+export const spotifyPlaybackPlay = (uri: string, trackUri?: string | null) =>
+  invoke<void>("spotify_playback_play", { uri, trackUri: trackUri ?? null });
 
 /** mm:ss for a millisecond timeline position. */
 export function formatTime(ms: number): string {

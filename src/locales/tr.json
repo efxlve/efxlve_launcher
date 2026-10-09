@@ -1911,15 +1911,20 @@
   "music.playPause": "Çal/Duraklat",
   "music.next": "Sonraki",
   "music.repeat": "Tekrarla",
-  "overlay.musicNoteSpotify": "Launcher'ın kendi Spotify alıcısını kontrol eder: Çalma listeleri düğmesiyle buradan başlat ya da Müzik sayfasında çalıp cihaz olarak \"Efxlve Launcher\"ı seç.",
+  "overlay.musicNoteSpotify": "Launcher'ın kendi Spotify alıcısını kontrol eder. Aşağıdaki kitaplıktan bir çalma listesi seç ya da Müzik sayfasında çalıp cihaz olarak \"Efxlve Launcher\"ı seç.",
   "overlay.tabSpotify": "Spotify",
   "music.reload": "Yenile",
   "music.back": "Geri",
   "music.playbackPairingToast": "Tek seferlik çalma onayı tarayıcıda açıldı: bu bilgisayarda müzik çalması için onayla.",
   "overlay.openSpotify": "Spotify'da aç",
-  "overlay.playlists": "Çalma listeleri",
   "overlay.playlistsLoading": "Çalma listeleri yükleniyor…",
   "overlay.playlistsError": "Çalma listeleri alınamadı",
   "overlay.noPlaylists": "Çalma listesi bulunamadı",
-  "overlay.tracks": "şarkı"
+  "overlay.tracks": "şarkı",
+  "overlay.library": "Kitaplık",
+  "overlay.refresh": "Yenile",
+  "overlay.selectPlaylist": "Şarkılarını görmek için bir çalma listesi seç",
+  "overlay.loadingTracks": "Şarkılar yükleniyor…",
+  "overlay.noTracks": "Bu çalma listesinde şarkı yok",
+  "overlay.idleHint": "Müzik sayfasından ya da bu bilgisayardaki herhangi bir oynatıcıdan başlat."
 }

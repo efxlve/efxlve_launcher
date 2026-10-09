@@ -123,9 +123,9 @@ so the embedded page cannot decrypt Spotify audio itself; the user picks
 **Overlay:** the in-game Spotify tab reads the receiver's live state (title,
 artists, cover, position, volume, shuffle, repeat) from librespot's player event
 stream and sends transport commands straight to the in-process handle — no
-Spotify Web API session anywhere in the app. Its playlist picker loads the
-user's rootlist through the same session (cached for a few minutes), so a
-playlist can be started without leaving the game.
+Spotify Web API session anywhere in the app. A library browser below the player
+loads the user's rootlist and each playlist's tracks (both cached), so any
+playlist or single track can be started without leaving the game.
 
 **Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`)
 covers every other player (desktop Spotify, browsers, local files) whenever the

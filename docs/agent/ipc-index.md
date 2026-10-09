@@ -228,6 +228,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_playback_control` | `spotifyPlaybackControl({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_now` | `spotifyPlaybackNow({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_play` | `spotifyPlaybackPlay({ ... })` | `src-tauri/src/spotify/playback.rs` |
+| `spotify_playback_playlist_tracks` | `spotifyPlaybackPlaylistTracks({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_playlists` | `spotifyPlaybackPlaylists({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_start` | `spotifyPlaybackStart({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_status` | `spotifyPlaybackStatus({ ... })` | `src-tauri/src/spotify/playback.rs` |
