@@ -1917,14 +1917,19 @@
   "music.back": "Geri",
   "music.playbackPairingToast": "Tek seferlik çalma onayı tarayıcıda açıldı: bu bilgisayarda müzik çalması için onayla.",
   "overlay.openSpotify": "Spotify'da aç",
-  "overlay.playlistsLoading": "Çalma listeleri yükleniyor…",
   "overlay.playlistsError": "Çalma listeleri alınamadı",
   "overlay.noPlaylists": "Çalma listesi bulunamadı",
   "overlay.tracks": "şarkı",
   "overlay.library": "Kitaplık",
   "overlay.refresh": "Yenile",
-  "overlay.selectPlaylist": "Şarkılarını görmek için bir çalma listesi seç",
-  "overlay.loadingTracks": "Şarkılar yükleniyor…",
   "overlay.noTracks": "Bu çalma listesinde şarkı yok",
-  "overlay.idleHint": "Müzik sayfasından ya da bu bilgisayardaki herhangi bir oynatıcıdan başlat."
+  "overlay.idleHint": "Müzik sayfasından ya da bu bilgisayardaki herhangi bir oynatıcıdan başlat.",
+  "overlay.launcherLabel": "Launcher",
+  "overlay.launcherModeTitle": "Oyun çalışmıyor",
+  "overlay.launcherModeDesc": "Arayüz launcher modunda. Oturum, başarımlar ve ekran görüntüleri için bir oyun başlat.",
+  "overlay.noGameTab": "Bu sekme çalışan bir oyun ister",
+  "overlay.noGameTabDesc": "Bir oyun başlatıp arayüzü yeniden aç.",
+  "overlay.libraryEmptyTitle": "Bir çalma listesi seç",
+  "overlay.libraryEmptyDesc": "Şarkıları burada görünür — birine basıp çal.",
+  "overlay.retry": "Yeniden dene"
 }

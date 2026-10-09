@@ -1917,14 +1917,19 @@
   "music.back": "Back",
   "music.playbackPairingToast": "One-time playback approval opened in your browser: approve it to hear Spotify on this computer.",
   "overlay.openSpotify": "Open in Spotify",
-  "overlay.playlistsLoading": "Loading playlists…",
   "overlay.playlistsError": "Couldn't load playlists",
   "overlay.noPlaylists": "No playlists found",
   "overlay.tracks": "tracks",
   "overlay.library": "Library",
   "overlay.refresh": "Refresh",
-  "overlay.selectPlaylist": "Pick a playlist to see its tracks",
-  "overlay.loadingTracks": "Loading tracks…",
   "overlay.noTracks": "No tracks in this playlist",
-  "overlay.idleHint": "Start playback on the Music page or in any player on this PC."
+  "overlay.idleHint": "Start playback on the Music page or in any player on this PC.",
+  "overlay.launcherLabel": "Launcher",
+  "overlay.launcherModeTitle": "No game running",
+  "overlay.launcherModeDesc": "The overlay is in launcher mode. Start a game to see its session, achievements and screenshots.",
+  "overlay.noGameTab": "This tab needs a running game",
+  "overlay.noGameTabDesc": "Start a game and reopen the overlay to use it.",
+  "overlay.libraryEmptyTitle": "Pick a playlist",
+  "overlay.libraryEmptyDesc": "Its tracks show up here — pick one to play.",
+  "overlay.retry": "Retry"
 }

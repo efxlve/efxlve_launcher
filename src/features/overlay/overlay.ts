@@ -101,14 +101,16 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
-  { id: "music", icon: "volume-2", key: "overlay.tabSpotify" },
-  { id: "discord", icon: "users", key: "overlay.tabDiscord" },
+  { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
+  { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
 ];
 
 /* ---------- State ---------- */
 
 let context: OpenPayload = { appName: "", title: "" };
+/** Opened without a tracked game (over the launcher or any other window). */
+let launcherMode = false;
 let metrics: MetricsSample | null = null;
 let fpsHistory: number[] = [];
 let mediaState: MediaState = {
@@ -170,6 +172,11 @@ function storeLabel(store: string): string {
     case "game": return t("overlay.gameLabel");
     default: return store;
   }
+}
+
+/** `game::` contexts come from openings without a tracked game. */
+function isLauncherContext(payload: OpenPayload): boolean {
+  return !payload.appName || payload.appName.startsWith("game::");
 }
 
 interface DisabledGame {
@@ -415,6 +422,14 @@ function setTab(tab: TabId): void {
     el.classList.toggle("active", el.dataset.ovView === tab);
   });
 
+  // Without a running game these tabs have nothing to show: a single friendly
+  // empty state replaces the game-only surfaces.
+  if (launcherMode && GAME_ONLY_TABS.includes(tab)) {
+    const el = viewEl(tab);
+    if (el) el.innerHTML = noGameStateHtml(tab);
+    return;
+  }
+
   if (tab === "home") renderHome();
   else if (tab === "perf") renderPerf();
   else if (tab === "ach") void loadAchievements();
@@ -427,6 +442,22 @@ function setTab(tab: TabId): void {
   else if (tab === "settings") renderSettings();
 
   if (tab === "perf" || tab === "home") drawPerfCanvas();
+}
+
+/** Tabs that only make sense with a running game. */
+const GAME_ONLY_TABS: TabId[] = ["perf", "ach", "shots", "notes"];
+
+/** Friendly stand-in for a game-only tab while the overlay runs over the launcher. */
+function noGameStateHtml(tab: TabId): string {
+  const meta = TABS.find((entry) => entry.id === tab);
+  return `
+    <div class="ov-page-title">${icon(meta?.icon ?? "layers", 20)} <span>${esc(t(meta?.key ?? "overlay.tabHome"))}</span></div>
+    <div class="ov-empty-block">
+      <div class="ov-empty-icon">${icon("gamepad-2", 26)}</div>
+      <div class="ov-empty-title">${esc(t("overlay.noGameTab"))}</div>
+      <div class="ov-empty-desc">${esc(t("overlay.noGameTabDesc"))}</div>
+      <button class="btn ghost small" data-ov="launcher">${icon("external", 13)} ${esc(t("overlay.openLauncher"))}</button>
+    </div>`;
 }
 
 /* ---------- Live Clock & Session ---------- */
@@ -453,6 +484,10 @@ function updateClock(): void {
 function renderHome(): void {
   const el = viewEl("home");
   if (!el) return;
+  if (launcherMode) {
+    renderHomeLauncher(el);
+    return;
+  }
   const { store } = splitKey(context.appName);
   const m = metrics;
   const currentFps = m?.fps != null ? Math.round(m.fps) : "—";
@@ -599,6 +634,32 @@ function renderHomeSafe(): void {
   const el = document.activeElement as HTMLElement | null;
   if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) return;
   renderHome();
+}
+
+/** Home while the overlay runs without a game: launcher actions + media. */
+function renderHomeLauncher(el: HTMLElement): void {
+  el.innerHTML = `
+    <div class="ov-dashboard">
+      <div class="ov-card ov-span-12 ov-launcher-hero">
+        <div class="ov-launcher-mark">${icon("layers", 28)}</div>
+        <div class="ov-launcher-meta">
+          <div class="ov-launcher-title">${esc(t("overlay.launcherModeTitle"))}</div>
+          <div class="ov-launcher-desc">${esc(t("overlay.launcherModeDesc"))}</div>
+        </div>
+        <div class="ov-launcher-actions">
+          <button class="btn" data-ov="launcher">${icon("external", 14)} ${esc(t("overlay.openLauncher"))}</button>
+          <button class="btn ghost" data-ov-tab="music">${icon("spotify", 14)} ${esc(t("overlay.tabSpotify"))}</button>
+        </div>
+      </div>
+
+      <div class="ov-card ov-span-12 ov-media-card">
+        <div class="ov-card-head">
+          <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span></div>
+          <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
+        </div>
+        ${mediaCardInnerHtml()}
+      </div>
+    </div>`;
 }
 
 /* 2. Full Performance View */
@@ -1058,7 +1119,7 @@ function renderMusicTab(): void {
   const m = getOverlayMedia();
   el.innerHTML = `
     <div class="ov-page-title">
-      ${icon("music", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
+      ${icon("spotify", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
       ${connected && spotifyDeviceName ? `<span class="ov-badge-pill ov-badge-spotify" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
     </div>
     ${unifiedPlayerHtml(m, connected)}
@@ -1154,21 +1215,50 @@ function libraryHtml(): string {
     </div>`;
 }
 
+/** Shimmering rows while a library pane loads. */
+function skeletonHtml(): string {
+  return `<div class="ov-sp-skeleton">${Array.from(
+    { length: 5 },
+    (_, index) => `
+    <div class="ov-sp-skel-row">
+      <span class="ov-sp-skel-art"></span>
+      <span class="ov-sp-skel-lines">
+        <span class="ov-sp-skel-line" style="width:${72 - index * 9}%"></span>
+        <span class="ov-sp-skel-line short" style="width:${38 - index * 4}%"></span>
+      </span>
+    </div>`,
+  ).join("")}</div>`;
+}
+
+/** Shared centered empty/error block for the library panes. */
+function emptyBlockHtml(iconName: IconName, title: string, desc = "", action = ""): string {
+  return `
+    <div class="ov-empty-block">
+      <div class="ov-empty-icon">${icon(iconName, 24)}</div>
+      <div class="ov-empty-title">${esc(title)}</div>
+      ${desc ? `<div class="ov-empty-desc">${esc(desc)}</div>` : ""}
+      ${action}
+    </div>`;
+}
+
+function retryButtonHtml(): string {
+  return `<button class="btn ghost small" data-ov="sp-refresh-library">${icon("refresh", 13)} ${esc(t("overlay.retry"))}</button>`;
+}
+
 function renderPlaylistList(): void {
   const host = document.getElementById("ov-sp-playlist-list");
   if (!host) return;
   if (playlistsState === "idle" || playlistsState === "loading") {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsLoading"))}</div>`;
+    host.innerHTML = skeletonHtml();
     return;
   }
   if (playlistsState === "error") {
-    const detail = playlistsError ? ` — ${playlistsError.slice(0, 140)}` : "";
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}${esc(detail)}</div>`;
+    host.innerHTML = emptyBlockHtml("alert-triangle", t("overlay.playlistsError"), playlistsError.slice(0, 140), retryButtonHtml());
     return;
   }
   const lists = playlists ?? [];
   if (lists.length === 0) {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.noPlaylists"))}</div>`;
+    host.innerHTML = emptyBlockHtml("list", t("overlay.noPlaylists"), "", retryButtonHtml());
     return;
   }
   host.innerHTML = lists
@@ -1191,21 +1281,20 @@ function renderTrackList(): void {
   const host = document.getElementById("ov-sp-track-list");
   if (!host) return;
   if (!selectedPlaylist) {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.selectPlaylist"))}</div>`;
+    host.innerHTML = emptyBlockHtml("list", t("overlay.libraryEmptyTitle"), t("overlay.libraryEmptyDesc"));
     return;
   }
   if (tracksState === "idle" || tracksState === "loading") {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.loadingTracks"))}</div>`;
+    host.innerHTML = skeletonHtml();
     return;
   }
   if (tracksState === "error") {
-    const detail = tracksError ? ` — ${tracksError.slice(0, 140)}` : "";
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}${esc(detail)}</div>`;
+    host.innerHTML = emptyBlockHtml("alert-triangle", t("overlay.playlistsError"), tracksError.slice(0, 140), retryButtonHtml());
     return;
   }
   const tracks = playlistTracks ?? [];
   if (tracks.length === 0) {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.noTracks"))}</div>`;
+    host.innerHTML = emptyBlockHtml("list", t("overlay.noTracks"), "", retryButtonHtml());
     return;
   }
   host.innerHTML = tracks
@@ -1430,7 +1519,7 @@ function renderDiscord(): void {
   const el = viewEl("discord");
   if (!el) return;
   el.innerHTML = `
-    <div class="ov-page-title">${icon("users", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
+    <div class="ov-page-title">${icon("discord", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
     <div class="ov-dashboard">
       <div class="ov-card ov-span-12">
         <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">${esc(t("overlay.discordPresenceTitle"))}</div>
@@ -2081,14 +2170,23 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   const titleEl = document.getElementById("ov-game-title");
   const subEl = document.getElementById("ov-game-sub");
   const storeEl = document.getElementById("ov-foot-store");
+  const sessionPill = document.querySelector<HTMLElement>(".ov-session-pill");
+  const launcher = isLauncherContext(context);
+  launcherMode = launcher;
 
-  if (titleEl) titleEl.textContent = context.title || context.appName;
+  if (titleEl) titleEl.textContent = launcher ? "Efxlve Launcher" : context.title || context.appName;
   if (subEl) {
-    subEl.innerHTML = `<span class="ov-badge-pill">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
+    subEl.innerHTML = launcher
+      ? `<span class="ov-badge-pill ov-badge-launcher">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
+      : `<span class="ov-badge-pill">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
   }
   if (storeEl) {
-    storeEl.innerHTML = `<span style="display:flex;align-items:center;gap:6px">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
+    storeEl.innerHTML = launcher
+      ? `<span style="display:flex;align-items:center;gap:6px">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
+      : `<span style="display:flex;align-items:center;gap:6px">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
   }
+  // No game session to time when the overlay runs over the launcher.
+  if (sessionPill) sessionPill.style.display = launcher ? "none" : "";
 
   updateClock();
   setTab(activeTab || "home");
