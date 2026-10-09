@@ -1006,10 +1006,6 @@ async function refreshMedia(): Promise<void> {
   patchMediaSurfaces();
 }
 
-function spotifyActive(): boolean {
-  return spotifyEngineOn || mediaState.available;
-}
-
 /** Home dashboard media card content. */
 function mediaCardInnerHtml(): string {
   const m = getOverlayMedia();
