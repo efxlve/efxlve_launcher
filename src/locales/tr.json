@@ -1903,10 +1903,8 @@
   "overlay.fpsEnabled": "Etkinleştirildi. FPS sayacının başlaması için Windows oturumunu kapatıp yeniden aç.",
   "overlay.fpsDenied": "İzin verilmedi.",
   "overlay.noFpsData": "FPS verisi bekleniyor…",
-  "nav.music": "Müzik",
-  "nav.musicTitle": "Müzik",
-  "accounts.openMusic": "Müziği Aç",
-  "music.title": "Müzik",
+  "accounts.openMusic": "Spotify'ı Aç",
+  "music.title": "Spotify",
   "music.desktopOnly": "Spotify entegrasyonu masaüstü uygulamasında çalışır.",
   "music.connectTitle": "Spotify'ı bağla",
   "music.connectDesc": "Spotify'ın geliştirici kuralları her kullanıcının kendi uygulama kimliğini getirmesini gerektiriyor. Bir kez ücretsiz bir Spotify uygulaması oluştur, Client ID'sini buraya yapıştır; launcher oynatmayı tüm cihazlarında kontrol eder.",
@@ -1944,5 +1942,6 @@
   "music.errorRefresh": "Spotify oturumu doldu; yeniden bağlan.",
   "music.errorPremium": "Oynatma kontrolü için Spotify Premium gerekiyor.",
   "music.errorNoDevice": "Önce bir cihazda Spotify'ı aç.",
-  "overlay.musicNoteSpotify": "Spotify Web API: taşıma, ses ve karıştırma, launcher'daki Müzik sayfasında seçtiğin cihazı kontrol eder."
+  "overlay.musicNoteSpotify": "Spotify Web API: taşıma, ses ve karıştırma, launcher'daki Müzik sayfasında seçtiğin cihazı kontrol eder.",
+  "overlay.tabSpotify": "Spotify"
 }

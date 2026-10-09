@@ -1903,10 +1903,8 @@
   "overlay.fpsEnabled": "Enabled. Sign out of Windows (or restart) so the FPS counter can start.",
   "overlay.fpsDenied": "Permission was not granted.",
   "overlay.noFpsData": "Waiting for FPS data…",
-  "nav.music": "Music",
-  "nav.musicTitle": "Music",
-  "accounts.openMusic": "Open Music",
-  "music.title": "Music",
+  "accounts.openMusic": "Open Spotify",
+  "music.title": "Spotify",
   "music.desktopOnly": "The Spotify integration runs in the desktop app.",
   "music.connectTitle": "Connect Spotify",
   "music.connectDesc": "Spotify's developer rules require every user to bring their own app ID. Create a free Spotify app once, paste its Client ID here, and the launcher controls playback on any of your devices.",
@@ -1944,5 +1942,6 @@
   "music.errorRefresh": "The Spotify session expired; connect again.",
   "music.errorPremium": "Spotify Premium is required for playback control.",
   "music.errorNoDevice": "Open Spotify on a device first.",
-  "overlay.musicNoteSpotify": "Spotify Web API: transport, volume and shuffle control the device you pick on the launcher's Music page."
+  "overlay.musicNoteSpotify": "Spotify Web API: transport, volume and shuffle control the device you pick on the launcher's Music page.",
+  "overlay.tabSpotify": "Spotify"
 }

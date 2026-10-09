@@ -97,7 +97,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
-  { id: "music", icon: "volume-2", key: "overlay.tabMusic" },
+  { id: "music", icon: "volume-2", key: "overlay.tabSpotify" },
   { id: "discord", icon: "users", key: "overlay.tabDiscord" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
 ];
@@ -955,7 +955,7 @@ function renderMusicTab(): void {
   const connected = spotifyActive();
   el.innerHTML = `
     <div class="ov-page-title">
-      ${icon("music", 20)} <span>${esc(t("overlay.tabMusic"))}</span>
+      ${icon("music", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
       ${connected ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("volume-2", 12)} <span>${esc(spotifyState?.user || "Spotify")}</span></span>` : ""}
     </div>
     ${connected ? spotifyPlayerHtml() : smtcPlayerHtml()}
