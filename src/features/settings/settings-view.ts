@@ -10,6 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
+import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -552,6 +553,12 @@ function renderAppearance(): string {
       row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
+    ) +
+    group(
+      row(t("settings.showSpotifyTitle"), t("settings.showSpotifyDesc"), toggle("toggle-spotify-page", spotifyPageVisible())) +
+      row(t("settings.showDiscordTitle"), t("settings.showDiscordDesc"), toggle("toggle-discord-page", discordPageVisible())),
+      t("settings.secPages"),
+      infoBox("settings.pagesNote"),
     ) +
     group(
       HEADER_STORES.map((id) => {

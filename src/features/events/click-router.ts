@@ -28,6 +28,8 @@ import {
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
   SHOW_SHARED_LIBRARY_KEY,
+  SHOW_SPOTIFY_KEY,
+  SHOW_DISCORD_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
   SEPARATE_COPIES_KEY,
@@ -40,6 +42,7 @@ import {
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
+import { applySidebarPageVisibility, discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import {
@@ -755,6 +758,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
+    render();
+  } else if (act === "toggle-spotify-page") {
+    localStorage.setItem(SHOW_SPOTIFY_KEY, String(!spotifyPageVisible()));
+    applySidebarPageVisibility();
+    // A hidden page must not stay on screen.
+    if (!spotifyPageVisible() && S.view === "music") setView("library");
+    render();
+  } else if (act === "toggle-discord-page") {
+    localStorage.setItem(SHOW_DISCORD_KEY, String(!discordPageVisible()));
+    applySidebarPageVisibility();
     render();
   } else if (act === "toggle-store-visible") {
     const id = t.dataset.store;

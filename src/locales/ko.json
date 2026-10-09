@@ -1933,5 +1933,11 @@
   "overlay.libraryEmptyDesc": "Its tracks show up here — pick one to play.",
   "overlay.retry": "Retry",
   "mini.nothing": "Nothing playing",
-  "mini.volume": "Volume"
+  "mini.volume": "Volume",
+  "settings.secPages": "Pages",
+  "settings.showSpotifyTitle": "Spotify page",
+  "settings.showSpotifyDesc": "Show the Spotify page and its sidebar entry. The in-game overlay follows this.",
+  "settings.showDiscordTitle": "Discord page",
+  "settings.showDiscordDesc": "Show the Discord page and its sidebar entry. Rich Presence is not affected.",
+  "settings.pagesNote": "Turning a page off hides it here and in the in-game overlay. Discord Rich Presence keeps working."
 }

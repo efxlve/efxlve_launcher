@@ -85,6 +85,10 @@ export const PREFERRED_VERSION_KEY = "efxlve-preferred-version";
 /** Enter TV Mode automatically when a controller connects. Missing = Steam Deck only. */
 export const TV_AUTO_KEY = "efxlve-tv-auto";
 
+/** Spotify / Discord pages: missing = visible. The overlay follows these. */
+export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
+export const SHOW_DISCORD_KEY = "efxlve-show-discord";
+
 /** Native Steam Deck LCD/OLED panel, or a WebView2 UA that names the device. */
 export function isSteamDeckDevice(): boolean {
   if (typeof window === "undefined") return false;

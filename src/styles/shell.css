@@ -306,6 +306,12 @@ body.sb-resizing iframe {
   display: none !important;
 }
 
+/* Pages turned off in Settings (Spotify / Discord). */
+.sb-item.is-hidden,
+.sb-divider.is-hidden {
+  display: none;
+}
+
 /* Playing-music equalizer next to the Spotify row */
 .sb-eq {
   display: inline-flex;

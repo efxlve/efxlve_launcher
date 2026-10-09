@@ -9,6 +9,7 @@
 
 import "./styles/index.css";
 import { initSidebarLayout } from "./core/sidebar-layout";
+import { applySidebarPageVisibility } from "./core/page-visibility";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi } from "./core/nav";
@@ -43,6 +44,7 @@ if (S.surface === "soft") document.documentElement.dataset.surface = "soft";
 document.documentElement.classList.add("ready");
 initSidebarLayout();
 initMiniPlayer();
+applySidebarPageVisibility();
 
 let lastRenderedView: View | null = null;
 viewEl.addEventListener("animationend", (e) => {

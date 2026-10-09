@@ -13,6 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
+import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
@@ -95,6 +96,23 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
 ];
+
+/** Pages turned off in the launcher's settings disappear here too. */
+function visibleTabs(): typeof TABS {
+  return TABS.filter(
+    (tab) =>
+      (tab.id !== "music" || spotifyPageVisible()) &&
+      (tab.id !== "discord" || discordPageVisible()),
+  );
+}
+
+function dockButtonHtml(tab: (typeof TABS)[number]): string {
+  return `
+    <button class="ov-dock-btn" data-ov-tab="${tab.id}" title="${esc(t(tab.key))}">
+      ${icon(tab.icon, 16)}
+      <span>${esc(t(tab.key))}</span>
+    </button>`;
+}
 
 /* ---------- State ---------- */
 
@@ -329,12 +347,8 @@ function shellHtml(): string {
       <!-- Floating Quick-Access Dock -->
       <nav class="ov-dock">
         <span class="ov-bumper-hint ov-bumper-lb">LB</span>
-        <div class="ov-dock-items">
-          ${TABS.map((tab) => `
-            <button class="ov-dock-btn" data-ov-tab="${tab.id}" title="${esc(t(tab.key))}">
-              ${icon(tab.icon, 16)}
-              <span>${esc(t(tab.key))}</span>
-            </button>`).join("")}
+        <div class="ov-dock-items" id="ov-dock-items">
+          ${visibleTabs().map(dockButtonHtml).join("")}
         </div>
         <span class="ov-bumper-hint ov-bumper-rb">RB</span>
       </nav>
@@ -1926,10 +1940,23 @@ function activateFocused(): void {
 }
 
 function cycleTab(delta: number): void {
-  const currentIdx = TABS.findIndex((tab) => tab.id === activeTab);
-  const nextIdx = (currentIdx + delta + TABS.length) % TABS.length;
-  setTab(TABS[nextIdx].id);
-  focusElement(dockTabButton(TABS[nextIdx].id));
+  const tabs = visibleTabs();
+  const currentIdx = tabs.findIndex((tab) => tab.id === activeTab);
+  const nextIdx = (currentIdx + delta + tabs.length) % tabs.length;
+  setTab(tabs[nextIdx].id);
+  focusElement(dockTabButton(tabs[nextIdx].id));
+}
+
+/** Rebuilds the dock when the launcher's page visibility changed. */
+function refreshDock(): void {
+  const host = document.getElementById("ov-dock-items");
+  if (!host) return;
+  const tabs = visibleTabs();
+  const rendered = [...host.querySelectorAll<HTMLElement>("[data-ov-tab]")]
+    .map((el) => el.dataset.ovTab)
+    .join(",");
+  if (rendered === tabs.map((tab) => tab.id).join(",")) return;
+  host.innerHTML = tabs.map(dockButtonHtml).join("");
 }
 
 /** B / Esc: close the lightbox, leave the text box, go home, then close. */
@@ -2131,7 +2158,11 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   if (sessionPill) sessionPill.style.display = launcher ? "none" : "";
 
   updateClock();
-  setTab(activeTab || "home");
+  // A page turned off in Settings since the last open: drop it from the dock
+  // and land on Home instead.
+  refreshDock();
+  const tabs = visibleTabs();
+  setTab(tabs.some((tab) => tab.id === activeTab) ? activeTab : "home");
 
   // Fill the dashboard cards in the background; the loads re-render home when
   // they land (they do not block the open).

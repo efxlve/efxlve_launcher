@@ -1933,5 +1933,11 @@
   "overlay.libraryEmptyDesc": "Şarkıları burada görünür — birine basıp çal.",
   "overlay.retry": "Yeniden dene",
   "mini.nothing": "Bir şey çalmıyor",
-  "mini.volume": "Ses"
+  "mini.volume": "Ses",
+  "settings.secPages": "Sayfalar",
+  "settings.showSpotifyTitle": "Spotify sayfası",
+  "settings.showSpotifyDesc": "Spotify sayfasını ve kenar çubuğu girişini göster. Oyun içi arayüz de buna uyar.",
+  "settings.showDiscordTitle": "Discord sayfası",
+  "settings.showDiscordDesc": "Discord sayfasını ve kenar çubuğu girişini göster. Rich Presence etkilenmez.",
+  "settings.pagesNote": "Bir sayfayı kapatınca hem burada hem oyun içi arayüzde gizlenir. Discord Rich Presence çalışmaya devam eder."
 }
