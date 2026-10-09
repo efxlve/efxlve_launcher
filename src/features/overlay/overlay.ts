@@ -19,11 +19,10 @@ import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
 import {
   formatTime as formatSpotifyTime,
-  spotifyControl,
-  spotifyNowPlaying,
-  spotifyStatus,
+  spotifyPlaybackControl,
+  spotifyPlaybackNow,
+  spotifyPlaybackStatus,
   type NowPlaying,
-  type SpotifyStatus,
 } from "../music/spotify-client";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
@@ -116,8 +115,9 @@ let mediaState: MediaState = {
   positionS: 0,
   durationS: 0,
 };
-/** Spotify Web API state (takes priority over the SMTC fallback). */
-let spotifyState: SpotifyStatus | null = null;
+/** The launcher's Connect receiver (takes priority over the SMTC fallback). */
+let spotifyEngineOn = false;
+let spotifyDeviceName = "";
 let spotifyNow: NowPlaying | null = null;
 let spotifyBaseMs = 0;
 let spotifyBaseAt = 0;
@@ -872,21 +872,22 @@ function wireNotesInput(inputId: string, statusId: string): void {
 }
 
 /* 6. Full Music View */
-/** Spotify when connected, the Windows media session otherwise. */
+/** The launcher receiver when it has a track, the Windows media session otherwise. */
 async function refreshMedia(): Promise<void> {
-  const status = await spotifyStatus().catch(() => null);
+  const status = await spotifyPlaybackStatus().catch(() => null);
   const wasActive = spotifyActive();
-  spotifyState = status;
+  spotifyEngineOn = status?.running === true;
+  spotifyDeviceName = status?.deviceName ?? "";
 
-  if (status?.connected) {
-    const now = await spotifyNowPlaying().catch(() => spotifyNow);
-    if (now) {
-      spotifyBaseMs = now.progressMs;
-      spotifyBaseAt = Date.now();
-    }
-    spotifyNow = now;
-  } else {
-    spotifyNow = null;
+  const now = spotifyEngineOn ? await spotifyPlaybackNow().catch(() => null) : null;
+  if (now) {
+    spotifyBaseMs = now.progressMs;
+    spotifyBaseAt = Date.now();
+  }
+  spotifyNow = now;
+
+  if (!now) {
+    // No engine track: the card falls back to the Windows media session.
     try {
       mediaState = await invoke<MediaState>("overlay_media_state");
     } catch {
@@ -904,7 +905,7 @@ async function refreshMedia(): Promise<void> {
 }
 
 function spotifyActive(): boolean {
-  return spotifyState?.connected === true;
+  return spotifyNow !== null;
 }
 
 /** Home dashboard media card content. */
@@ -956,7 +957,7 @@ function renderMusicTab(): void {
   el.innerHTML = `
     <div class="ov-page-title">
       ${icon("music", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
-      ${connected ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("volume-2", 12)} <span>${esc(spotifyState?.user || "Spotify")}</span></span>` : ""}
+      ${connected && spotifyDeviceName ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
     </div>
     ${connected ? spotifyPlayerHtml() : smtcPlayerHtml()}
     <p class="ov-note" style="text-align:center;margin-top:16px">${esc(connected ? t("overlay.musicNoteSpotify") : t("overlay.musicNote"))}</p>`;
@@ -1075,9 +1076,9 @@ async function overlaySpotifyControl(
     patchMediaSurfaces();
   }
   try {
-    await spotifyControl(action, value ?? null);
+    await spotifyPlaybackControl(action, value ?? null);
   } catch {
-    // Poll below re-syncs from the API.
+    // Poll below re-syncs from the engine.
   }
   window.setTimeout(() => void refreshMedia(), 400);
 }
@@ -1699,7 +1700,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   fpsHistory = [];
   cachedAchievements = null;
   cachedScreenshots = [];
-  spotifyState = null;
+  spotifyEngineOn = false;
+  spotifyDeviceName = "";
   spotifyNow = null;
   spotifyBaseMs = 0;
   spotifyBaseAt = 0;

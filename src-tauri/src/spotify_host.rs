@@ -10,19 +10,12 @@
 //! The child webview is positioned by the frontend (slot rectangle) and hidden
 //! whenever the user leaves the page or a modal covers it.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 use tauri::{
     AppHandle, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder, WebviewUrl,
 };
 
 const LABEL: &str = "spotify-player";
 const HOME_URL: &str = "https://open.spotify.com/";
-
-/// True while the frontend wants the player on screen.
-static VISIBLE: AtomicBool = AtomicBool::new(false);
-/// Last reported slot rectangle (logical px), re-applied after a resize.
-static RECT: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 
 fn player(app: &AppHandle) -> Option<tauri::Webview> {
     app.get_window("main")?
@@ -47,11 +40,6 @@ pub async fn spotify_player_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    if let Ok(mut slot) = RECT.lock() {
-        *slot = Some((x, y, width, height));
-    }
-    VISIBLE.store(true, Ordering::SeqCst);
-
     if let Some(view) = player(&app) {
         view.set_bounds(rect_of(x, y, width, height))
             .map_err(|error| error.to_string())?;
@@ -84,23 +72,8 @@ pub async fn spotify_player_show(
 /// Hides the player; the page stays loaded for the next visit.
 #[tauri::command]
 pub fn spotify_player_hide(app: AppHandle) {
-    VISIBLE.store(false, Ordering::SeqCst);
     if let Some(view) = player(&app) {
         let _ = view.hide();
-    }
-}
-
-/// Re-applies the last rectangle (window resize while visible).
-#[tauri::command]
-pub fn spotify_player_resize(app: AppHandle, x: f64, y: f64, width: f64, height: f64) {
-    if let Ok(mut slot) = RECT.lock() {
-        *slot = Some((x, y, width, height));
-    }
-    if !VISIBLE.load(Ordering::SeqCst) {
-        return;
-    }
-    if let Some(view) = player(&app) {
-        let _ = view.set_bounds(rect_of(x, y, width, height));
     }
 }
 
@@ -119,14 +92,5 @@ pub fn spotify_player_reload(app: AppHandle) {
 pub fn spotify_player_back(app: AppHandle) {
     if let Some(view) = player(&app) {
         let _ = view.eval("history.back()");
-    }
-}
-
-/// Closes the player entirely (used by tests and future logout flows).
-#[tauri::command]
-pub fn spotify_player_close(app: AppHandle) {
-    VISIBLE.store(false, Ordering::SeqCst);
-    if let Some(view) = player(&app) {
-        let _ = view.close();
     }
 }

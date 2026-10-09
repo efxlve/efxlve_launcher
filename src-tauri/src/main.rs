@@ -896,29 +896,14 @@ fn main() {
             overlay::overlay_show_launcher,
             overlay::media::overlay_media_state,
             overlay::media::overlay_media_control,
-            spotify::spotify_status,
-            spotify::spotify_set_client_id,
-            spotify::spotify_login,
-            spotify::spotify_cancel_login,
-            spotify::spotify_logout,
-            spotify::spotify_now_playing,
-            spotify::spotify_devices,
-            spotify::spotify_playlists,
-            spotify::spotify_search,
-            spotify::spotify_library,
-            spotify::spotify_control,
-            spotify::spotify_play,
-            spotify::spotify_transfer,
             spotify::playback::spotify_playback_status,
             spotify::playback::spotify_playback_start,
-            spotify::playback::spotify_playback_stop,
-            spotify::playback::spotify_playback_forget,
+            spotify::playback::spotify_playback_now,
+            spotify::playback::spotify_playback_control,
             spotify_host::spotify_player_show,
             spotify_host::spotify_player_hide,
-            spotify_host::spotify_player_resize,
             spotify_host::spotify_player_reload,
             spotify_host::spotify_player_back,
-            spotify_host::spotify_player_close,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,
@@ -994,6 +979,8 @@ fn main() {
         if let tauri::RunEvent::Exit = event {
             // Best effort: drop the GOG presence before the process ends.
             tauri::async_runtime::block_on(gogdl::presence::go_offline(app_handle));
+            // Best effort: close the Spotify Connect receiver cleanly.
+            spotify::playback::stop();
         }
     });
 }

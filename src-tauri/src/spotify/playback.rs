@@ -4,13 +4,15 @@
 //!
 //! Pairing is one browser approval against Spotify's own desktop client
 //! (`streaming` scope only, no developer app needed). After that the launcher
-//! shows up as "Efxlve Launcher" in every Spotify client and the Web API
-//! controls it like any other device. Spotify Premium is required by Spotify
-//! for this kind of playback.
+//! shows up as "Efxlve Launcher" in every Spotify client, and the overlay
+//! controls it straight through the in-process handle — no Spotify Web API
+//! session, no developer app anywhere in the app.
 //!
-//! The playback token is separate from the Web API session: a user can control
-//! their phone/desktop without pairing, and can play here without connecting
-//! the Web API.
+//! The player event stream feeds the overlay's now-playing card (title,
+//! artists, cover, position, volume, shuffle, repeat), so the card works
+//! without any network round-trip of its own.
+//!
+//! Spotify requires Premium for librespot playback.
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -19,7 +21,8 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::AppHandle;
 
-pub const DEVICE_NAME: &str = "Efxlve Launcher";
+/// Name shown in every Spotify client's device picker.
+const DEVICE_NAME: &str = "Efxlve Launcher";
 
 /// Loopback redirect registered for Spotify's own desktop client; librespot's
 /// OAuth helper binds it and shows the approval page in the browser.
@@ -36,7 +39,28 @@ pub struct PlaybackStatus {
     pub device_name: String,
 }
 
-/// Tokens from the playback approval (separate from the Web API session).
+/// The current track, in the shape the overlay player expects.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackNow {
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub art_url: String,
+    pub url: String,
+    pub uri: String,
+    pub progress_ms: i64,
+    pub duration_ms: i64,
+    pub is_playing: bool,
+    pub device_name: String,
+    pub device_id: String,
+    pub volume_percent: i64,
+    pub shuffle: bool,
+    /// "off" | "context" | "track"
+    pub repeat: String,
+}
+
+/// Tokens from the playback approval.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PlaybackToken {
     pub access_token: String,
@@ -50,21 +74,21 @@ static RUNNING: AtomicBool = AtomicBool::new(false);
 static STOP: Mutex<Option<std::sync::mpsc::Sender<()>>> = Mutex::new(None);
 
 fn token_path(app: &AppHandle) -> PathBuf {
-    crate::spotify::session::data_dir(app).join("playback.json")
+    crate::spotify::data_dir(app).join("playback.json")
 }
 
-pub fn load_token(app: &AppHandle) -> Option<PlaybackToken> {
+fn load_token(app: &AppHandle) -> Option<PlaybackToken> {
     let text = std::fs::read_to_string(token_path(app)).ok()?;
     serde_json::from_str(&text).ok()
 }
 
-pub fn save_token(app: &AppHandle, token: &PlaybackToken) {
+fn save_token(app: &AppHandle, token: &PlaybackToken) {
     if let Ok(text) = serde_json::to_string(token) {
         let _ = std::fs::write(token_path(app), text);
     }
 }
 
-pub fn clear_token(app: &AppHandle) {
+fn clear_token(app: &AppHandle) {
     let _ = std::fs::remove_file(token_path(app));
 }
 
@@ -73,6 +97,15 @@ pub fn status(app: &AppHandle) -> PlaybackStatus {
         paired: load_token(app).is_some(),
         running: RUNNING.load(Ordering::Relaxed),
         device_name: DEVICE_NAME.to_string(),
+    }
+}
+
+/// Stops the receiver; called when the app exits.
+pub fn stop() {
+    if let Ok(mut slot) = STOP.lock() {
+        if let Some(stop) = slot.take() {
+            let _ = stop.send(());
+        }
     }
 }
 
@@ -104,21 +137,61 @@ pub async fn spotify_playback_start(app: AppHandle) -> Result<PlaybackStatus, St
     }
 }
 
-/// Stops the receiver; the pairing stays stored for the next start.
+/// The track the receiver is on right now; `None` before the first track.
 #[tauri::command]
-pub fn spotify_playback_stop() {
-    if let Ok(mut slot) = STOP.lock() {
-        if let Some(stop) = slot.take() {
-            let _ = stop.send(());
-        }
+pub fn spotify_playback_now() -> Option<PlaybackNow> {
+    #[cfg(windows)]
+    {
+        imp::now()
+    }
+    #[cfg(not(windows))]
+    {
+        None
     }
 }
 
-/// Stops the receiver and forgets the playback approval.
+/// Transport and mode control straight on the local receiver. `action` is one
+/// of: play, pause, next, previous, seek, volume, shuffle, repeat.
 #[tauri::command]
-pub fn spotify_playback_forget(app: AppHandle) {
-    spotify_playback_stop();
-    clear_token(&app);
+pub fn spotify_playback_control(action: String, value: Option<i64>) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        imp::control(&action, value)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (action, value);
+        Err("unsupported".to_string())
+    }
+}
+
+/// "off" / "context" / "track" from the two Connect repeat flags.
+fn repeat_label(context: bool, track: bool) -> &'static str {
+    if track {
+        "track"
+    } else if context {
+        "context"
+    } else {
+        "off"
+    }
+}
+
+/// Volume percent (0..100) from the u16 mixer scale, rounded to nearest.
+fn raw_to_percent(raw: u16) -> i64 {
+    ((raw as u32 * 100 + u16::MAX as u32 / 2) / u16::MAX as u32) as i64
+}
+
+/// u16 mixer volume from a 0..100 percent, rounded to nearest.
+fn percent_to_raw(percent: i64) -> u16 {
+    ((percent.clamp(0, 100) as u32 * u16::MAX as u32 + 50) / 100) as u16
+}
+
+/// `spotify:track:<id>` -> `https://open.spotify.com/track/<id>`.
+fn web_url(uri: &str) -> String {
+    match uri.strip_prefix("spotify:") {
+        Some(rest) => format!("https://open.spotify.com/{}", rest.replace(':', "/")),
+        None => String::new(),
+    }
 }
 
 #[cfg(windows)]
@@ -129,17 +202,238 @@ mod imp {
         authentication::Credentials, cache::Cache, config::DeviceType, config::SessionConfig,
         session::Session,
     };
+    use librespot::metadata::audio::{AudioItem, UniqueFields};
     use librespot::oauth::{OAuthClientBuilder, OAuthToken};
     use librespot::playback::{
         audio_backend,
         config::{AudioFormat, PlayerConfig},
         mixer::{self, MixerConfig},
-        player::Player,
+        player::{Player, PlayerEvent, PlayerEventChannel},
     };
     use std::sync::mpsc::{Receiver, Sender};
+    use std::sync::Arc;
 
     /// Small bilingual landing page shown in the browser after approval.
     const CALLBACK_HTML: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Efxlve Launcher</title><style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e8e8ea;display:grid;place-items:center;height:100vh;margin:0}div{text-align:center;max-width:420px}h1{font-size:18px}p{color:#9aa0ab;font-size:14px}</style></head><body><div><h1>Çalma etkinleştirildi / Playback enabled</h1><p>Bu sekmeyi kapatıp Efxlve Launcher'a dönebilirsin.<br>You can close this tab and return to Efxlve Launcher.</p></div></body></html>";
+
+    /// Live transport state, fed by the player event stream.
+    struct NowState {
+        item: Option<AudioItem>,
+        position_ms: u32,
+        /// When `position_ms` was last known; playing time since is added.
+        updated_at: Option<Instant>,
+        playing: bool,
+        volume: u16,
+        shuffle: bool,
+        repeat_context: bool,
+        repeat_track: bool,
+    }
+
+    impl Default for NowState {
+        fn default() -> Self {
+            Self {
+                item: None,
+                position_ms: 0,
+                updated_at: None,
+                playing: false,
+                volume: u16::MAX / 2,
+                shuffle: false,
+                repeat_context: false,
+                repeat_track: false,
+            }
+        }
+    }
+
+    impl NowState {
+        fn position_now(&self) -> u32 {
+            let elapsed = if self.playing {
+                self.updated_at
+                    .map(|at| at.elapsed().as_millis() as u32)
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+            self.position_ms.saturating_add(elapsed)
+        }
+    }
+
+    static SPIRC: Mutex<Option<Arc<Spirc>>> = Mutex::new(None);
+    static NOW: Mutex<Option<NowState>> = Mutex::new(None);
+
+    fn update(change: impl FnOnce(&mut NowState)) {
+        if let Ok(mut guard) = NOW.lock() {
+            if let Some(state) = guard.as_mut() {
+                change(state);
+            }
+        }
+    }
+
+    fn artists_of(item: &AudioItem) -> String {
+        match &item.unique_fields {
+            UniqueFields::Track { artists, .. } => artists
+                .0
+                .iter()
+                .map(|artist| artist.name.clone())
+                .collect::<Vec<_>>()
+                .join(", "),
+            UniqueFields::Episode { show_name, .. } => show_name.clone(),
+            UniqueFields::Local { artists, .. } => artists.clone().unwrap_or_default(),
+        }
+    }
+
+    fn album_of(item: &AudioItem) -> String {
+        match &item.unique_fields {
+            UniqueFields::Track { album, .. } => album.clone(),
+            UniqueFields::Episode { .. } => String::new(),
+            UniqueFields::Local { album, .. } => album.clone().unwrap_or_default(),
+        }
+    }
+
+    pub fn now() -> Option<PlaybackNow> {
+        let guard = NOW.lock().ok()?;
+        let state = guard.as_ref()?;
+        let item = state.item.as_ref()?;
+        Some(PlaybackNow {
+            title: item.name.clone(),
+            artist: artists_of(item),
+            album: album_of(item),
+            art_url: item
+                .covers
+                .first()
+                .map(|cover| cover.url.clone())
+                .unwrap_or_default(),
+            url: web_url(&item.uri),
+            uri: item.uri.clone(),
+            progress_ms: state.position_now().min(item.duration_ms) as i64,
+            duration_ms: item.duration_ms as i64,
+            is_playing: state.playing,
+            device_name: DEVICE_NAME.to_string(),
+            device_id: String::new(),
+            volume_percent: raw_to_percent(state.volume),
+            shuffle: state.shuffle,
+            repeat: repeat_label(state.repeat_context, state.repeat_track).to_string(),
+        })
+    }
+
+    pub fn control(action: &str, value: Option<i64>) -> Result<(), String> {
+        let spirc = SPIRC
+            .lock()
+            .map_err(|_| "state_poisoned".to_string())?
+            .clone()
+            .ok_or_else(|| "not_running".to_string())?;
+
+        let result = match action {
+            "play" => {
+                let result = spirc.play();
+                if result.is_ok() {
+                    update(|state| {
+                        state.playing = true;
+                        state.updated_at = Some(Instant::now());
+                    });
+                }
+                result
+            }
+            "pause" => {
+                let result = spirc.pause();
+                if result.is_ok() {
+                    update(|state| {
+                        state.playing = false;
+                        state.updated_at = Some(Instant::now());
+                    });
+                }
+                result
+            }
+            "next" => spirc.next(),
+            "previous" => spirc.prev(),
+            "seek" => {
+                let position = value.unwrap_or(0).clamp(0, u32::MAX as i64) as u32;
+                let result = spirc.set_position_ms(position);
+                if result.is_ok() {
+                    update(|state| {
+                        state.position_ms = position;
+                        state.updated_at = Some(Instant::now());
+                    });
+                }
+                result
+            }
+            "volume" => {
+                let raw = percent_to_raw(value.unwrap_or(50));
+                let result = spirc.set_volume(raw);
+                if result.is_ok() {
+                    update(|state| state.volume = raw);
+                }
+                result
+            }
+            "shuffle" => {
+                let shuffle = value.unwrap_or(0) != 0;
+                let result = spirc.shuffle(shuffle);
+                if result.is_ok() {
+                    update(|state| state.shuffle = shuffle);
+                }
+                result
+            }
+            "repeat" => {
+                let (context, track) = match value.unwrap_or(0) {
+                    2 => (true, true),
+                    1 => (true, false),
+                    _ => (false, false),
+                };
+                let result = spirc.repeat(context).and_then(|_| spirc.repeat_track(track));
+                if result.is_ok() {
+                    update(|state| {
+                        state.repeat_context = context;
+                        state.repeat_track = track;
+                    });
+                }
+                result
+            }
+            _ => return Err(format!("unknown_action:{action}")),
+        };
+        result.map_err(|error| error.to_string())
+    }
+
+    /// Keeps `NOW` in sync with the player: metadata, position, volume, modes.
+    async fn pump_events(mut events: PlayerEventChannel) {
+        while let Some(event) = events.recv().await {
+            let Ok(mut guard) = NOW.lock() else { continue };
+            let Some(state) = guard.as_mut() else { continue };
+            let at = Instant::now();
+            match event {
+                PlayerEvent::TrackChanged { audio_item } => {
+                    state.item = Some(*audio_item);
+                    state.position_ms = 0;
+                    state.updated_at = Some(at);
+                }
+                PlayerEvent::Playing { position_ms, .. } => {
+                    state.playing = true;
+                    state.position_ms = position_ms;
+                    state.updated_at = Some(at);
+                }
+                PlayerEvent::Paused { position_ms, .. } => {
+                    state.playing = false;
+                    state.position_ms = position_ms;
+                    state.updated_at = Some(at);
+                }
+                PlayerEvent::Stopped { .. } => {
+                    state.playing = false;
+                    state.updated_at = Some(at);
+                }
+                PlayerEvent::Seeked { position_ms, .. }
+                | PlayerEvent::PositionCorrection { position_ms, .. }
+                | PlayerEvent::PositionChanged { position_ms, .. } => {
+                    state.position_ms = position_ms;
+                    state.updated_at = Some(at);
+                }
+                PlayerEvent::VolumeChanged { volume } => state.volume = volume,
+                PlayerEvent::ShuffleChanged { shuffle } => state.shuffle = shuffle,
+                PlayerEvent::RepeatChanged { context, track } => {
+                    state.repeat_context = context;
+                    state.repeat_track = track;
+                }
+                _ => {}
+            }
+        }
+    }
 
     pub fn start(app: AppHandle) -> Result<PlaybackStatus, String> {
         if RUNNING.load(Ordering::Relaxed) {
@@ -154,6 +448,13 @@ mod imp {
             }
             *slot = Some(stop_tx);
         }
+        // Drop state from an earlier run before a new engine starts.
+        if let Ok(mut slot) = SPIRC.lock() {
+            *slot = None;
+        }
+        if let Ok(mut slot) = NOW.lock() {
+            *slot = None;
+        }
 
         let thread_app = app.clone();
         std::thread::spawn(move || {
@@ -165,6 +466,12 @@ mod imp {
             }
             RUNNING.store(false, Ordering::Relaxed);
             if let Ok(mut slot) = STOP.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = SPIRC.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = NOW.lock() {
                 *slot = None;
             }
         });
@@ -189,10 +496,16 @@ mod imp {
         runtime.block_on(async move {
             match setup(&app).await {
                 Ok(spirc) => {
+                    if let Ok(mut slot) = SPIRC.lock() {
+                        *slot = Some(spirc.clone());
+                    }
+                    if let Ok(mut slot) = NOW.lock() {
+                        *slot = Some(NowState::default());
+                    }
                     RUNNING.store(true, Ordering::Relaxed);
                     let _ = ready.send(Ok(()));
-                    // Park until the UI asks to stop; Spirc's task keeps
-                    // serving Connect commands in the background.
+                    // Park until the UI (or app exit) asks to stop; Spirc's
+                    // task keeps serving Connect commands in the background.
                     loop {
                         if stop_rx.try_recv().is_ok() {
                             break;
@@ -210,12 +523,12 @@ mod imp {
         })
     }
 
-    async fn setup(app: &AppHandle) -> Result<Spirc, String> {
+    async fn setup(app: &AppHandle) -> Result<Arc<Spirc>, String> {
         let session_config = SessionConfig::default();
         let token = ensure_token(app, &session_config).await?;
         let credentials = Credentials::with_access_token(token.access_token);
 
-        let cache_dir = crate::spotify::session::data_dir(app).join("librespot");
+        let cache_dir = crate::spotify::data_dir(app).join("librespot");
         let files_dir = cache_dir.join("files");
         std::fs::create_dir_all(&files_dir).map_err(|error| error.to_string())?;
         let cache = Cache::new(
@@ -231,16 +544,24 @@ mod imp {
         let mixer_builder = mixer::find(None).ok_or_else(|| "no_mixer".to_string())?;
         let mixer = mixer_builder(MixerConfig::default()).map_err(|error| error.to_string())?;
         let player = Player::new(
-            PlayerConfig::default(),
+            PlayerConfig {
+                // Periodic position events keep the overlay timeline honest.
+                position_update_interval: Some(Duration::from_secs(1)),
+                ..Default::default()
+            },
             session.clone(),
             mixer.get_soft_volume(),
             move || sink_builder(None, AudioFormat::default()),
         );
 
+        let events = player.get_player_event_channel();
+        tokio::spawn(pump_events(events));
+
         let connect_config = ConnectConfig {
             name: DEVICE_NAME.to_string(),
             device_type: DeviceType::Computer,
-            initial_volume: 100,
+            // Volume is on the full u16 scale; u16::MAX / 2 is 50%.
+            initial_volume: u16::MAX / 2,
             ..Default::default()
         };
         let (spirc, task) = Spirc::new(connect_config, session.clone(), credentials, player, mixer)
@@ -248,7 +569,7 @@ mod imp {
             .map_err(|error| error.to_string())?;
         tokio::spawn(task);
         spirc.activate().map_err(|error| error.to_string())?;
-        Ok(spirc)
+        Ok(Arc::new(spirc))
     }
 
     /// Stored token, refreshed when it is about to expire; otherwise the
@@ -302,5 +623,39 @@ mod imp {
         };
         save_token(app, &stored);
         stored
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{percent_to_raw, raw_to_percent, repeat_label, web_url};
+
+    #[test]
+    fn track_uris_become_open_spotify_urls() {
+        assert_eq!(
+            web_url("spotify:track:abc123"),
+            "https://open.spotify.com/track/abc123"
+        );
+        assert_eq!(
+            web_url("spotify:episode:xyz"),
+            "https://open.spotify.com/episode/xyz"
+        );
+        assert_eq!(web_url("not-a-uri"), "");
+    }
+
+    #[test]
+    fn repeat_flags_map_to_the_three_states() {
+        assert_eq!(repeat_label(false, false), "off");
+        assert_eq!(repeat_label(true, false), "context");
+        assert_eq!(repeat_label(true, true), "track");
+    }
+
+    #[test]
+    fn volume_round_trips_on_the_u16_scale() {
+        assert_eq!(raw_to_percent(0), 0);
+        assert_eq!(raw_to_percent(u16::MAX), 100);
+        assert_eq!(percent_to_raw(0), 0);
+        assert_eq!(percent_to_raw(100), u16::MAX);
+        assert_eq!(raw_to_percent(percent_to_raw(50)), 50);
     }
 }

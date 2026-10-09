@@ -103,50 +103,32 @@ anti-cheat simply see another window.
 - **Temps / power (optional):** NVML for NVIDIA (`nvml-wrapper`); AMD/Intel via PDH
   and vendor SDKs later. Never required for the HUD to work.
 
-### 2.4 Music — Spotify Web API with per-user apps, SMTC as fallback
+### 2.4 Music — librespot Connect receiver, SMTC as fallback
 
-Spotify caps development-mode apps at **5 authenticated users** and reserves extended
-quota for organizations with 250k+ MAU (May 2025 policy), so a launcher cannot ship
-one Client ID for everyone. The integration therefore asks each user to create their
-own free Spotify app once (Developer Dashboard) and paste its Client ID: the launcher
-runs Authorization Code + **PKCE** over the loopback redirect
-`http://127.0.0.1:8899/callback` (Spotify allows dynamic ports for loopback literals)
-and stores the refresh token under the app data dir. Control goes through the Web API
-(`/v1/me/player*`) on whatever Spotify Connect device the user already has — no audio
-stack, no librespot dependency, no shared client secret.
-
-Playback control needs **Premium**; free accounts can still see what is playing.
-`spotifast` (librespot-based) was reviewed as a reference; its separate playback
-approval is only needed when a client plays audio itself, which a launcher does not.
-
-An easier path exists for releases: register one app, build with
-`EFXLVE_SPOTIFY_CLIENT_ID` and users skip the setup entirely (development mode
-allows 5 authenticated users, so this suits the author and a few testers; Spotify
-grants more only to organizations). spotifast ships a community-shared client ID
-(shared with spotify-player/ncspot) for the same reason — this project does not use
-someone else's app. Without any setup, the SMTC fallback still controls the desktop
-Spotify client through Windows media keys.
-
-**Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`) keeps
-working when Spotify is not connected and covers every other player (browsers, local
-files). The launcher's Spotify page and the overlay Spotify tab show Spotify when
-connected and SMTC otherwise.
-
-**Playback inside the launcher (librespot):** the launcher can also run a Spotify
-Connect receiver through librespot, so it plays audio itself instead of only
-controlling other devices — the same model spotifast uses. Pairing is one browser
-approval against Spotify's own desktop client (`streaming` scope, no developer app),
-the device appears as "Efxlve Launcher" in every Spotify client, and the Web API
-controls it like any other device. Spotify requires Premium for librespot playback.
+The launcher runs its own Spotify Connect receiver through **librespot** (the
+same model spotifast, spotifyd and spotify-player use). Pairing is a single
+browser approval against Spotify's own desktop client (`streaming` scope only,
+no developer app, no Client ID), and the device then shows up as "Efxlve
+Launcher" in every Spotify client. Spotify requires **Premium** for this kind of
+playback. The receiver starts by itself the first time the Spotify page opens;
+the approval page opens automatically, so the header only carries Back and
+Reload.
 
 **Browsing:** the launcher's Spotify page embeds the normal `open.spotify.com`
-interface as a native child WebView2 (search, library, playlists, queue — the real
-Spotify UI) filling the whole content area; the header only carries Back and Reload.
-WebView2 ships no Widevine CDM, so the embedded player cannot decrypt Spotify audio
-itself; instead the launcher runs the librespot Connect receiver in the background
-(asking for its one-time browser approval by itself) and the user picks "Efxlve
-Launcher" as the playback device inside Spotify. The Web API search/library commands
-stay available for the overlay and future surfaces.
+interface as a native child WebView2 (search, library, playlists, queue — the
+real Spotify UI) filling the whole content area. WebView2 ships no Widevine CDM,
+so the embedded page cannot decrypt Spotify audio itself; the user picks
+"Efxlve Launcher" as the playback device inside the page.
+
+**Overlay:** the in-game Spotify tab reads the receiver's live state (title,
+artists, cover, position, volume, shuffle, repeat) from librespot's player event
+stream and sends transport commands straight to the in-process handle — no
+Spotify Web API session anywhere in the app.
+
+**Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`)
+covers every other player (desktop Spotify, browsers, local files) whenever the
+receiver is not running; the overlay music tab shows Spotify when the receiver
+runs and SMTC otherwise.
 
 ### 2.5 Discord — presence + voice read
 
@@ -215,7 +197,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - **Screenshots** — latest captures, capture button, open folder, share.
 - **Notes** — per-game notes, autosave, markdown-lite.
 - **Achievements** — tracked set, unlock progress, recent unlocks.
-- **Music** — SMTC session: artwork, title/artist, transport controls, source picker.
+- **Music** — Spotify: the launcher's Connect receiver (artwork, title/artist,
+  transport, volume, shuffle/repeat) with the SMTC session as fallback.
 - **Discord** — presence status/toggle; voice channel + participants + speaking
   indicator; "open in Discord".
 - **Settings** — hotkeys, HUD widgets, opacity/scale, per-game opt-out.
@@ -264,7 +247,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 
 ### M5 — Music & Discord
 
-- Music tab via SMTC (artwork, transport, source picker).
+- Music tab: the launcher's librespot receiver when it runs, SMTC (artwork,
+  transport, source picker) for every other player.
 - Discord tab: presence toggle + RPC voice read (`rpc` scope); mute/deafen only if
   Discord grants `rpc.voice.write`.
 - Acceptance: Spotify playing on the desktop shows the correct track and responds to
@@ -289,7 +273,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 | ETW session control needs admin/Performance Log Users | High (Windows rule) | One-time in-overlay "Enable" action (UAC) that adds the user to the group; clear sign-out hint; other metrics unaffected |
 | GPU counters missing on some systems (old drivers, hybrid GPUs) | Medium | PDH per-PID with LUID matching; hide fields that have no data |
 | Discord partner scopes for voice write | Medium | Read-only voice widget first; mute/deafen marked "if approved" |
-| Spotify API restrictions | Solved | Use SMTC, not the Web API |
+| Spotify API restrictions | Solved | In-launcher librespot receiver; SMTC for every other player; no Web API session |
 | HDR overlay looks washed out | Low/Medium | Document; SDR overlay over HDR is a later refinement |
 | Overlay overhead on low-end PCs | Low | 1 Hz sampling, stop when idle, HUD off by default |
 
@@ -335,8 +319,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   <https://learn.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-enabletraceex2>
 - Private logger sessions (in-process/file-based; not for kernel providers) —
   <https://learn.microsoft.com/en-us/windows/win32/etw/configuring-and-starting-a-private-logger-session>
-- Spotify Web API 2026 restrictions —
-  <https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security>
+- librespot (Spotify Connect receiver + OAuth approval helper) —
+  <https://github.com/librespot-org/librespot>
 - Windows media controls for Rust (`windows::Media::Control`, SMTC) —
   <https://microsoft.github.io/windows-docs-rs/doc/windows/Media/Control/index.html>
 - Discord RPC commands/scopes (`GET_SELECTED_VOICE_CHANNEL`, `rpc`, `rpc.voice.*`) —
