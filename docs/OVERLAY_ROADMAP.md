@@ -1,7 +1,7 @@
 # In-Game Overlay — Product & Technical Roadmap
 
 Status: v1 shipped (Shift+Tab panel, native performance HUD, screenshots, notes,
-achievements, SMTC music, Discord status). Controller-first navigation is in.
+achievements, Spotify + SMTC music, Discord status). Controller-first navigation is in.
 ETW FPS is API-agnostic but needs the Windows "Performance Log Users" permission:
 the overlay offers a one-time enable action and explains the sign-out. Discord
 voice read/write still waits on the Discord app review noted below.
@@ -103,17 +103,26 @@ anti-cheat simply see another window.
 - **Temps / power (optional):** NVML for NVIDIA (`nvml-wrapper`); AMD/Intel via PDH
   and vendor SDKs later. Never required for the HUD to work.
 
-### 2.4 Music control — the Spotify Web API is gone
+### 2.4 Music — Spotify Web API with per-user apps, SMTC as fallback
 
-As of 2025–2026 Spotify restricts its Web API hard: development-mode apps require a
-Premium owner and are capped at ~5 users; extended quota is only for companies with
-250k+ MAU. A launcher cannot ship a Web-API music widget.
+Spotify caps development-mode apps at **5 authenticated users** and reserves extended
+quota for organizations with 250k+ MAU (May 2025 policy), so a launcher cannot ship
+one Client ID for everyone. The integration therefore asks each user to create their
+own free Spotify app once (Developer Dashboard) and paste its Client ID: the launcher
+runs Authorization Code + **PKCE** over the loopback redirect
+`http://127.0.0.1:8899/callback` (Spotify allows dynamic ports for loopback literals)
+and stores the refresh token under the app data dir. Control goes through the Web API
+(`/v1/me/player*`) on whatever Spotify Connect device the user already has — no audio
+stack, no librespot dependency, no shared client secret.
 
-**Use Windows SMTC instead:** `GlobalSystemMediaTransportControlsSessionManager`
-(available in Rust through the `windows` crate). It exposes the active media session
-(Spotify, browsers, any player): title, artist, artwork thumbnail, timeline, and
-`TryPlay/TryPause/TrySkipNext/TrySkipPrevious`. Free, no OAuth, works with whatever
-the user already runs.
+Playback control needs **Premium**; free accounts can still see what is playing.
+`spotifast` (librespot-based) was reviewed as a reference; its separate playback
+approval is only needed when a client plays audio itself, which a launcher does not.
+
+**Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`) keeps
+working when Spotify is not connected and covers every other player (browsers, local
+files). The launcher's Music page and the overlay music tab show Spotify when
+connected and SMTC otherwise.
 
 ### 2.5 Discord — presence + voice read
 

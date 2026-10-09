@@ -92,6 +92,11 @@ export type IconName =
   | "battery"
   | "battery-charging"
   | "sliders"
+  | "skip-back"
+  | "skip-forward"
+  | "shuffle"
+  | "repeat"
+  | "music"
   | "unlock";
 
 /** SVG path bodies keyed by icon name. */
@@ -99,6 +104,16 @@ const ICON_PATHS: Record<string, string> = {
   "arrow-right":
     '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   square: '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none" stroke-width="0"/>',
+  "skip-back":
+    '<polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/>',
+  "skip-forward":
+    '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+  shuffle:
+    '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.8-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
+  repeat:
+    '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  music:
+    '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
   clipboard:
     '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   mail:

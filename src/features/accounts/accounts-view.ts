@@ -197,6 +197,21 @@ function soonCard(id: string, title: string, descKey: string): string {
     </section>`;
 }
 
+/** Spotify is managed on the Music page, not as a store account. */
+function spotifyCard(): string {
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo("spotify")}</span>
+        <div class="row-main">
+          <div class="acc-store-name">Spotify</div>
+          <div class="row-meta">${t("accounts.spotifyDesc")}</div>
+        </div>
+        <button class="btn ghost small" data-view="music">${icon("music", 14)} ${t("accounts.openMusic")}</button>
+      </div>
+    </section>`;
+}
+
 /** In-place DOM update for the connecting sequence inside the Epic card. */
 export function updateAuthProgressUi(): void {
   const bar = document.getElementById("auth-progress-bar");
@@ -826,9 +841,9 @@ function accountCards(): string {
     ${companionCard("ubisoft", "Ubisoft Connect")}
     ${companionCard("ea", "EA App")}
     ${companionCard("riot", "Riot Games")}
+    ${spotifyCard()}
     ${groupTitle("accounts.groupSoon")}
-    ${soonCard("discord", "Discord", "accounts.discordDesc")}
-    ${soonCard("spotify", "Spotify", "accounts.spotifyDesc")}`;
+    ${soonCard("discord", "Discord", "accounts.discordDesc")}`;
 }
 
 /** Account list, switch, add and sign-out, embedded in Settings. */

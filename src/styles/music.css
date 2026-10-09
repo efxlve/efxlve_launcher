@@ -1,0 +1,296 @@
+/* ==========================================================================
+   Music page: Spotify Web API player (launcher side).
+   ========================================================================== */
+
+.music {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 8px 48px;
+}
+
+.music-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.music-brand img {
+  border-radius: 6px;
+}
+
+.music-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.music-note.error {
+  color: #ff6b6b;
+}
+
+.music-note.ok {
+  color: var(--ok);
+}
+
+/* --- Connect / setup --- */
+.music-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+
+.music-connect h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.music-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.music-steps code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  user-select: text;
+}
+
+.music-connect-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.music-input {
+  flex: 1;
+  min-width: 240px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.music-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* --- Connected header --- */
+.music-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+}
+
+.music-top .btn {
+  margin-left: auto;
+}
+
+/* --- Player --- */
+.music-player {
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  align-items: flex-start;
+}
+
+.music-art {
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.music-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-artist {
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.music-album {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.music-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.music-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  width: 0;
+}
+
+.music-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.music-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.music-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  justify-content: center;
+}
+
+.music-controls .icon-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.music-extras {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.music-extras-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.music-select {
+  height: 32px;
+  max-width: 220px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  font-family: inherit;
+  padding: 0 8px;
+}
+
+.music-volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-volume input[type="range"] {
+  width: 120px;
+}
+
+.music-volume-value {
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+}
+
+/* --- Playlists --- */
+.music-playlists-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.music-playlists-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.music-playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.music-playlist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.music-playlist:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--line-strong);
+}
+
+.music-playlist img,
+.music-playlist-fallback {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.3);
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.music-playlist-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-playlist-meta {
+  font-size: 11px;
+  color: var(--text-3);
+}

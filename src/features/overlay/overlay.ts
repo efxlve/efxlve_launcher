@@ -17,6 +17,14 @@ import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
+import {
+  formatTime as formatSpotifyTime,
+  spotifyControl,
+  spotifyNowPlaying,
+  spotifyStatus,
+  type NowPlaying,
+  type SpotifyStatus,
+} from "../music/spotify-client";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
 import "./overlay.css";
@@ -108,6 +116,11 @@ let mediaState: MediaState = {
   positionS: 0,
   durationS: 0,
 };
+/** Spotify Web API state (takes priority over the SMTC fallback). */
+let spotifyState: SpotifyStatus | null = null;
+let spotifyNow: NowPlaying | null = null;
+let spotifyBaseMs = 0;
+let spotifyBaseAt = 0;
 let cachedAchievements: AchievementsData | null = null;
 let cachedScreenshots: ScreenshotItem[] = [];
 let sessionStartEpoch = Date.now();
@@ -390,8 +403,10 @@ function setTab(tab: TabId): void {
   else if (tab === "ach") void loadAchievements();
   else if (tab === "shots") void loadScreenshots();
   else if (tab === "notes") renderNotes();
-  else if (tab === "music") void refreshMedia();
-  else if (tab === "discord") renderDiscord();
+  else if (tab === "music") {
+    renderMusicTab();
+    void refreshMedia();
+  } else if (tab === "discord") renderDiscord();
   else if (tab === "settings") renderSettings();
 
   if (tab === "perf" || tab === "home") drawPerfCanvas();
@@ -412,6 +427,7 @@ function updateClock(): void {
   if (timeEl) timeEl.textContent = `${hours}:${mins}`;
   if (secEl) secEl.textContent = `:${secs}`;
   if (sessionEl) sessionEl.textContent = formatSessionTime(Date.now() - sessionStartEpoch);
+  if (activeTab === "music") paintSpotifyProgress();
 }
 
 /* ---------- Views Rendering ---------- */
@@ -523,21 +539,7 @@ function renderHome(): void {
           <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span></div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
-        ${mediaState.available ? `
-          <div class="ov-media-top">
-            <div class="ov-media-icon">${icon("volume-2", 22)}</div>
-            <div class="ov-media-details">
-              <div class="ov-media-title">${esc(mediaState.title)}</div>
-              <div class="ov-media-artist">${esc(mediaState.artist)}</div>
-              <div class="ov-media-source">${esc(mediaState.source)}</div>
-            </div>
-          </div>
-          <div class="ov-media-btns">
-            <button class="icon-btn" data-ov="media-prev">${icon("chevron-left", 18)}</button>
-            <button class="btn" data-ov="media-toggle" style="width:48px;justify-content:center">${icon(mediaState.playing ? "pause" : "play", 18)}</button>
-            <button class="icon-btn" data-ov="media-next">${icon("chevron-right", 18)}</button>
-          </div>` : `
-          <div class="ov-empty" style="padding:24px 0">${esc(t("overlay.noMedia"))}</div>`}
+        ${mediaCardInnerHtml()}
       </div>
 
       <!-- Recent Screenshots Card -->
@@ -870,17 +872,129 @@ function wireNotesInput(inputId: string, statusId: string): void {
 }
 
 /* 6. Full Music View */
+/** Spotify when connected, the Windows media session otherwise. */
 async function refreshMedia(): Promise<void> {
-  try {
-    mediaState = await invoke<MediaState>("overlay_media_state");
-  } catch {
-    mediaState = { available: false, title: "", artist: "", playing: false, source: "", positionS: 0, durationS: 0 };
+  const status = await spotifyStatus().catch(() => null);
+  const wasActive = spotifyActive();
+  spotifyState = status;
+
+  if (status?.connected) {
+    const now = await spotifyNowPlaying().catch(() => spotifyNow);
+    if (now) {
+      spotifyBaseMs = now.progressMs;
+      spotifyBaseAt = Date.now();
+    }
+    spotifyNow = now;
+  } else {
+    spotifyNow = null;
+    try {
+      mediaState = await invoke<MediaState>("overlay_media_state");
+    } catch {
+      mediaState = { available: false, title: "", artist: "", playing: false, source: "", positionS: 0, durationS: 0 };
+    }
   }
 
+  if (spotifyActive() !== wasActive) {
+    // The card layout changes with the source: rebuild the visible surface.
+    if (activeTab === "music") renderMusicTab();
+    else renderHomeSafe();
+    return;
+  }
+  patchMediaSurfaces();
+}
+
+function spotifyActive(): boolean {
+  return spotifyState?.connected === true;
+}
+
+/** Home dashboard media card content. */
+function mediaCardInnerHtml(): string {
+  if (spotifyActive()) {
+    const now = spotifyNow;
+    if (!now) return `<div class="ov-empty" style="padding:24px 0">${esc(t("overlay.noMedia"))}</div>`;
+    return `
+      <div class="ov-media-top">
+        ${now.artUrl
+          ? `<img class="ov-media-art" id="ov-media-art" src="${esc(now.artUrl)}" alt="" />`
+          : `<div class="ov-media-icon">${icon("music", 22)}</div>`}
+        <div class="ov-media-details">
+          <div class="ov-media-title" id="ov-media-title">${esc(now.title)}</div>
+          <div class="ov-media-artist" id="ov-media-artist">${esc(now.artist)}</div>
+          <div class="ov-media-source" id="ov-media-source">Spotify${now.deviceName ? ` · ${esc(now.deviceName)}` : ""}</div>
+        </div>
+      </div>
+      <div class="ov-media-btns">
+        <button class="icon-btn" data-ov="media-prev">${icon("skip-back", 18)}</button>
+        <button class="btn" data-ov="media-toggle" style="width:48px;justify-content:center" id="ov-media-toggle">${icon(now.isPlaying ? "pause" : "play", 18)}</button>
+        <button class="icon-btn" data-ov="media-next">${icon("skip-forward", 18)}</button>
+      </div>`;
+  }
+  if (mediaState.available) {
+    return `
+      <div class="ov-media-top">
+        <div class="ov-media-icon">${icon("volume-2", 22)}</div>
+        <div class="ov-media-details">
+          <div class="ov-media-title" id="ov-media-title">${esc(mediaState.title)}</div>
+          <div class="ov-media-artist" id="ov-media-artist">${esc(mediaState.artist)}</div>
+          <div class="ov-media-source" id="ov-media-source">${esc(mediaState.source)}</div>
+        </div>
+      </div>
+      <div class="ov-media-btns">
+        <button class="icon-btn" data-ov="media-prev">${icon("chevron-left", 18)}</button>
+        <button class="btn" data-ov="media-toggle" style="width:48px;justify-content:center" id="ov-media-toggle">${icon(mediaState.playing ? "pause" : "play", 18)}</button>
+        <button class="icon-btn" data-ov="media-next">${icon("chevron-right", 18)}</button>
+      </div>`;
+  }
+  return `<div class="ov-empty" style="padding:24px 0">${esc(t("overlay.noMedia"))}</div>`;
+}
+
+/* 6. Full Music View */
+function renderMusicTab(): void {
   const el = viewEl("music");
   if (!el) return;
+  const connected = spotifyActive();
   el.innerHTML = `
-    <div class="ov-page-title">${icon("volume-2", 20)} <span>${esc(t("overlay.tabMusic"))}</span></div>
+    <div class="ov-page-title">
+      ${icon("music", 20)} <span>${esc(t("overlay.tabMusic"))}</span>
+      ${connected ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("volume-2", 12)} <span>${esc(spotifyState?.user || "Spotify")}</span></span>` : ""}
+    </div>
+    ${connected ? spotifyPlayerHtml() : smtcPlayerHtml()}
+    <p class="ov-note" style="text-align:center;margin-top:16px">${esc(connected ? t("overlay.musicNoteSpotify") : t("overlay.musicNote"))}</p>`;
+}
+
+function spotifyPlayerHtml(): string {
+  const now = spotifyNow;
+  return `
+    <div class="ov-card ov-sp-player">
+      ${now?.artUrl
+        ? `<img class="ov-sp-art" id="ov-sp-art" src="${esc(now.artUrl)}" alt="" />`
+        : `<div class="ov-media-icon ov-sp-art">${icon("music", 40)}</div>`}
+      <div class="ov-sp-info">
+        <div class="ov-sp-title" id="ov-sp-title">${esc(now?.title || t("overlay.noMedia"))}</div>
+        <div class="ov-sp-artist" id="ov-sp-artist">${esc(now?.artist || "")}</div>
+        <div class="ov-sp-album" id="ov-sp-album">${esc(now?.album || "")}</div>
+        <div class="ov-sp-progress" id="ov-sp-progress" data-ov="sp-seek">
+          <div class="ov-sp-progress-fill" id="ov-sp-progress-fill"></div>
+        </div>
+        <div class="ov-sp-times"><span id="ov-sp-elapsed">0:00</span><span id="ov-sp-duration">${now ? formatSpotifyTime(now.durationMs) : "0:00"}</span></div>
+        <div class="ov-sp-controls">
+          <button class="icon-btn${now?.shuffle ? " active" : ""}" id="ov-sp-shuffle" data-ov="sp-shuffle" title="${esc(t("music.shuffle"))}">${icon("shuffle", 16)}</button>
+          <button class="icon-btn" data-ov="sp-prev" title="${esc(t("music.previous"))}">${icon("skip-back", 20)}</button>
+          <button class="btn" data-ov="sp-toggle" style="width:56px;height:44px;justify-content:center" id="ov-sp-toggle" title="${esc(t("music.playPause"))}">${icon(now?.isPlaying ? "pause" : "play", 20)}</button>
+          <button class="icon-btn" data-ov="sp-next" title="${esc(t("music.next"))}">${icon("skip-forward", 20)}</button>
+          <button class="icon-btn${now && now.repeat !== "off" ? " active" : ""}" id="ov-sp-repeat" data-ov="sp-repeat" title="${esc(t("music.repeat"))}">${icon("repeat", 16)}</button>
+        </div>
+        <div class="ov-sp-extras">
+          <span class="ov-sp-device" id="ov-sp-device">${icon("monitor", 13)} ${esc(now?.deviceName || "")}</span>
+          <span class="ov-sp-volume">${icon("volume-2", 14)}<input type="range" id="ov-sp-volume" min="0" max="100" value="${now?.volumePercent ?? 100}" /></span>
+          ${now?.url ? `<button class="btn ghost small" data-ov="sp-open">${icon("external", 14)} ${esc(t("overlay.openSpotify"))}</button>` : ""}
+        </div>
+      </div>
+    </div>`;
+}
+
+function smtcPlayerHtml(): string {
+  return `
     <div class="ov-card" style="align-items:center;padding:48px 24px;text-align:center">
       <div class="ov-media-icon" style="width:72px;height:72px;border-radius:16px;margin-bottom:18px">
         ${icon("volume-2", 36)}
@@ -895,8 +1009,77 @@ async function refreshMedia(): Promise<void> {
           <button class="icon-btn" data-ov="media-next" style="width:42px;height:42px">${icon("chevron-right", 22)}</button>
         </div>` : `
         <div style="font-size:16px;font-weight:600;color:var(--text-2)">${esc(t("overlay.noMedia"))}</div>`}
-    </div>
-    <p class="ov-note" style="text-align:center;margin-top:16px">${esc(t("overlay.musicNote"))}</p>`;
+    </div>`;
+}
+
+/** In-place updates for whichever media surfaces exist right now. */
+function patchMediaSurfaces(): void {
+  const connected = spotifyActive();
+  const homeTitle = document.getElementById("ov-media-title");
+  if (homeTitle) {
+    homeTitle.textContent = connected ? spotifyNow?.title || t("overlay.noMedia") : mediaState.title;
+    setText("ov-media-artist", connected ? spotifyNow?.artist || "" : mediaState.artist);
+    setText(
+      "ov-media-source",
+      connected
+        ? `Spotify${spotifyNow?.deviceName ? ` · ${spotifyNow.deviceName}` : ""}`
+        : mediaState.source,
+    );
+    const toggle = document.getElementById("ov-media-toggle");
+    if (toggle) toggle.innerHTML = icon((connected ? spotifyNow?.isPlaying : mediaState.playing) ? "pause" : "play", 18);
+  }
+
+  if (document.getElementById("ov-sp-title")) {
+    setText("ov-sp-title", spotifyNow?.title || t("overlay.noMedia"));
+    setText("ov-sp-artist", spotifyNow?.artist || "");
+    setText("ov-sp-album", spotifyNow?.album || "");
+    setText("ov-sp-duration", spotifyNow ? formatSpotifyTime(spotifyNow.durationMs) : "0:00");
+    const device = document.getElementById("ov-sp-device");
+    if (device) device.innerHTML = `${icon("monitor", 13)} ${esc(spotifyNow?.deviceName || "")}`;
+    const toggle = document.getElementById("ov-sp-toggle");
+    if (toggle) toggle.innerHTML = icon(spotifyNow?.isPlaying ? "pause" : "play", 20);
+    document.getElementById("ov-sp-shuffle")?.classList.toggle("active", Boolean(spotifyNow?.shuffle));
+    const repeat = document.getElementById("ov-sp-repeat");
+    if (repeat) {
+      repeat.classList.toggle("active", Boolean(spotifyNow && spotifyNow.repeat !== "off"));
+      repeat.classList.toggle("repeat-track", spotifyNow?.repeat === "track");
+    }
+    const volume = document.getElementById("ov-sp-volume") as HTMLInputElement | null;
+    if (volume && document.activeElement !== volume && spotifyNow?.volumePercent != null) {
+      volume.value = String(spotifyNow.volumePercent);
+    }
+    paintSpotifyProgress();
+  }
+}
+
+/** Moves the music-tab progress bar between API polls. */
+function paintSpotifyProgress(): void {
+  const fill = document.getElementById("ov-sp-progress-fill");
+  if (!fill) return;
+  const now = spotifyNow;
+  const duration = now?.durationMs || 0;
+  let elapsed = spotifyBaseMs;
+  if (now?.isPlaying) elapsed += Date.now() - spotifyBaseAt;
+  elapsed = Math.max(0, Math.min(elapsed, duration || elapsed));
+  fill.style.width = duration > 0 ? `${Math.min(100, (elapsed / duration) * 100)}%` : "0%";
+  setText("ov-sp-elapsed", formatSpotifyTime(elapsed));
+}
+
+/** Optimistic transport call from the overlay. */
+async function overlaySpotifyControl(
+  action: "play" | "pause" | "next" | "previous" | "seek" | "volume" | "shuffle" | "repeat",
+  value?: number | null,
+): Promise<void> {
+  if (action === "play" || action === "pause") {
+    if (spotifyNow) spotifyNow = { ...spotifyNow, isPlaying: action === "play" };
+    patchMediaSurfaces();
+  }
+  try {
+    await spotifyControl(action, value ?? null);
+  } catch {
+    // Poll below re-syncs from the API.
+  }
+  window.setTimeout(() => void refreshMedia(), 400);
 }
 
 /* 7. Discord View */
@@ -1076,11 +1259,35 @@ function wireEvents(): void {
         renderSettings();
       }
     } else if (action === "media-toggle") {
-      void mediaControl(mediaState.playing ? "pause" : "play");
+      if (spotifyActive()) void overlaySpotifyControl(spotifyNow?.isPlaying ? "pause" : "play");
+      else void mediaControl(mediaState.playing ? "pause" : "play");
     } else if (action === "media-prev") {
-      void mediaControl("previous");
+      if (spotifyActive()) void overlaySpotifyControl("previous");
+      else void mediaControl("previous");
     } else if (action === "media-next") {
-      void mediaControl("next");
+      if (spotifyActive()) void overlaySpotifyControl("next");
+      else void mediaControl("next");
+    } else if (action === "sp-toggle") {
+      void overlaySpotifyControl(spotifyNow?.isPlaying ? "pause" : "play");
+    } else if (action === "sp-prev") {
+      void overlaySpotifyControl("previous");
+    } else if (action === "sp-next") {
+      void overlaySpotifyControl("next");
+    } else if (action === "sp-shuffle") {
+      void overlaySpotifyControl("shuffle", spotifyNow?.shuffle ? 0 : 1);
+    } else if (action === "sp-repeat") {
+      const next = spotifyNow?.repeat === "off" ? 1 : spotifyNow?.repeat === "context" ? 2 : 0;
+      void overlaySpotifyControl("repeat", next);
+    } else if (action === "sp-seek") {
+      const bar = document.getElementById("ov-sp-progress");
+      const now = spotifyNow;
+      if (bar && now?.durationMs) {
+        const rect = bar.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+        void overlaySpotifyControl("seek", Math.round(ratio * now.durationMs));
+      }
+    } else if (action === "sp-open") {
+      if (spotifyNow?.url) void openUrl(spotifyNow.url);
     }
   });
 
@@ -1113,6 +1320,13 @@ function wireEvents(): void {
     const val = Number(input.value);
     localStorage.setItem(OPACITY_KEY, String(val));
     applyOpacity(val);
+  });
+
+  document.addEventListener("change", (event) => {
+    const input = event.target as HTMLInputElement | null;
+    if (input?.id === "ov-sp-volume") {
+      void overlaySpotifyControl("volume", Number(input.value));
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1485,6 +1699,10 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   fpsHistory = [];
   cachedAchievements = null;
   cachedScreenshots = [];
+  spotifyState = null;
+  spotifyNow = null;
+  spotifyBaseMs = 0;
+  spotifyBaseAt = 0;
   sessionStartEpoch = Date.now();
   gamepadSuppressUntil = performance.now() + 450;
 
