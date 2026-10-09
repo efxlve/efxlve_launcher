@@ -13,9 +13,9 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
-import { storeLogo } from "../store/store-logos";
 import {
   spotifyPlaybackForget,
   spotifyPlaybackStart,
@@ -24,17 +24,10 @@ import {
   type SpotifyPlaybackStatus,
 } from "./spotify-client";
 
-interface Message {
-  text: string;
-  kind: "info" | "error" | "ok";
-}
-
 let playback: SpotifyPlaybackStatus = { paired: false, running: false, deviceName: "Efxlve Launcher" };
 let busy = false;
-let message: Message | null = null;
 let pollTimer: number | null = null;
 let playerVisible = false;
-let lastPaintKey = "";
 let autoStarted = false;
 
 /** Roots that paint above the content area: the child webview must hide then. */
@@ -67,18 +60,7 @@ export function renderMusic(): string {
   }
   return `
     <div class="music music-embedded">
-      <div class="card music-top">
-        <div class="music-brand">${storeLogo("spotify", 22)}<span>Spotify</span></div>
-        <span id="music-engine-chip" class="${engineChipClass()}">${esc(engineChipText())}</span>
-        <div class="music-playback-actions">
-          <span id="music-engine-actions">${engineActionsHtml()}</span>
-          <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>
-          <button class="btn ghost small" data-music="open-external">${icon("external", 14)} ${esc(t("music.openInBrowser"))}</button>
-        </div>
-      </div>
-      <p class="music-note">${esc(t("music.playerHint", { name: playback.deviceName }))}</p>
       <div class="music-webview-slot" id="music-webview-slot"></div>
-      <p class="music-note${message ? ` ${message.kind}` : ""}" id="music-message">${message ? esc(message.text) : ""}</p>
     </div>`;
 }
 
@@ -112,8 +94,34 @@ function engineActionsHtml(): string {
     ${playback.paired ? `<button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>` : ""}`;
 }
 
+/** Header row: engine chip and controls, only while the Spotify page is open. */
+function paintHeaderActions(): void {
+  const host = document.getElementById("page-header-actions");
+  if (!host) return;
+  if (!onMusicView()) {
+    if (host.childElementCount > 0) host.innerHTML = "";
+    host.classList.remove("has-actions");
+    host.dataset.key = "";
+    return;
+  }
+  const key = `${playback.paired}:${playback.running}:${busy}`;
+  if (host.dataset.key === key) return;
+  host.dataset.key = key;
+  // The chip only adds information once an approval exists; before that the
+  // button already says "Enable playback".
+  const chip = playback.paired
+    ? `<span class="${engineChipClass()}" title="${esc(t("music.playerHint", { name: playback.deviceName }))}">${esc(engineChipText())}</span>`
+    : "";
+  host.innerHTML = `
+    ${chip}
+    ${engineActionsHtml()}
+    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>
+    <button class="btn ghost small" data-music="open-external">${icon("external", 14)} ${esc(t("music.openInBrowser"))}</button>`;
+  host.classList.add("has-actions");
+}
+
 function fail(error: unknown): void {
-  message = { text: String(error).replace(/^Error: /, ""), kind: "error" };
+  toast(String(error).replace(/^Error: /, ""), "err");
 }
 
 /* ---------- Embedded player placement ---------- */
@@ -121,11 +129,13 @@ function fail(error: unknown): void {
 export function hydrateMusic(): void {
   ensurePolling();
   void refreshStatus();
+  paintHeaderActions();
   syncPlayer();
 }
 
 /** Hides the child webview when another page takes over. */
 export function hideSpotifyPlayer(): void {
+  paintHeaderActions();
   if (!playerVisible) return;
   playerVisible = false;
   void invoke("spotify_player_hide").catch(() => undefined);
@@ -172,7 +182,7 @@ async function refreshStatus(): Promise<void> {
   const status = await spotifyPlaybackStatus().catch(() => null);
   if (!status) return;
   playback = status;
-  paintToolbar();
+  paintHeaderActions();
   // A stored approval needs no browser: bring the receiver up automatically so
   // the page can play on this computer right away.
   if (playback.paired && !playback.running && !busy && !autoStarted) {
@@ -181,31 +191,12 @@ async function refreshStatus(): Promise<void> {
   }
 }
 
-function paintToolbar(): void {
-  const key = `${playback.paired}:${playback.running}:${busy}:${message?.text ?? ""}`;
-  if (key === lastPaintKey) return;
-  lastPaintKey = key;
-  const chip = document.getElementById("music-engine-chip");
-  if (chip) {
-    chip.className = engineChipClass();
-    chip.textContent = engineChipText();
-  }
-  const actions = document.getElementById("music-engine-actions");
-  if (actions) actions.innerHTML = engineActionsHtml();
-  const note = document.getElementById("music-message");
-  if (note) {
-    note.className = `music-note${message ? ` ${message.kind}` : ""}`;
-    note.textContent = message?.text ?? "";
-  }
-}
-
 async function startEngine(userInitiated: boolean): Promise<void> {
   busy = true;
-  if (userInitiated) message = null;
-  paintToolbar();
+  paintHeaderActions();
   try {
     playback = await spotifyPlaybackStart();
-    message = { text: t("music.playbackReady"), kind: "ok" };
+    toast(t("music.playbackReady"), "ok");
   } catch (error) {
     if (userInitiated) fail(error);
     autoStarted = false;

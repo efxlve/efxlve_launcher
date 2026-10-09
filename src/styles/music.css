@@ -15,18 +15,35 @@
 .music-embedded {
   max-width: none;
   height: 100%;
-  gap: 10px;
-  padding: 14px 16px 12px;
+  gap: 0;
+  padding: 0;
 }
 
 .music-webview-slot {
   position: relative;
   flex: 1;
-  min-height: 380px;
-  height: calc(100vh - 215px);
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.25);
+  min-height: 300px;
+  height: calc(100vh - var(--winbar-h) - var(--header-h) - 60px);
+  background: transparent;
+}
+
+/* Page-header actions (Spotify engine controls). */
+.page-header-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.page-header-actions.has-actions {
+  display: flex;
+}
+
+.page-header-actions .chip {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .music-brand {
