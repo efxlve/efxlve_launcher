@@ -188,10 +188,10 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .avatar-edit-btn:active { transform: scale(0.98); }
 .avatar-edit-badge {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 22px;
-  height: 22px;
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line-strong);
@@ -200,13 +200,34 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   color: var(--text-2);
   transition: background-color var(--ease), color var(--ease), border-color var(--ease);
 }
-.avatar-edit-badge svg { width: 12px; height: 12px; }
+.avatar-edit-badge svg { width: 10px; height: 10px; }
 .avatar-edit-btn:hover .avatar-edit-badge,
 .avatar-edit-btn:focus-visible .avatar-edit-badge {
   background: var(--accent);
   border-color: transparent;
   color: var(--on-accent);
 }
+
+/* Shared dialog close button (banner, avatar and name modals). */
+.modal-close-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+.modal-close-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+.modal-close-btn svg { width: 16px; height: 16px; }
 
 /* --- Cards & rows --- */
 .card {

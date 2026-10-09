@@ -22,6 +22,7 @@ import {
 } from "./spotify-client";
 
 let current: NowPlaying | null = null;
+let signedIn = false;
 let baseMs = 0;
 let baseAt = 0;
 
@@ -31,7 +32,7 @@ export function initMiniPlayer(): void {
   const mini = document.getElementById("sb-mini");
   if (!mini || mini.dataset.ready === "1") return;
   mini.dataset.ready = "1";
-  mini.hidden = false;
+  // Stays hidden until a track plays (paint decides).
 
   const prev = mini.querySelector<HTMLElement>('[data-mini="prev"]');
   const toggle = mini.querySelector<HTMLElement>('[data-mini="toggle"]');
@@ -129,10 +130,9 @@ async function startAndPlay(): Promise<void> {
 }
 
 async function refresh(): Promise<void> {
-  // The player only exists for a signed-in Spotify account.
-  const signedIn = await spotifySignedIn().catch(() => false);
-  const mini = document.getElementById("sb-mini");
-  if (mini) mini.hidden = !signedIn;
+  // The player only exists for a signed-in Spotify account, and it stays out
+  // of the way (recently played keeps the room) until something plays.
+  signedIn = await spotifySignedIn().catch(() => false);
   if (!signedIn) {
     current = null;
     paint();
@@ -164,6 +164,11 @@ async function control(action: "play" | "pause" | "next" | "previous"): Promise<
 }
 
 function paint(): void {
+  const mini = document.getElementById("sb-mini");
+  // Hidden until something actually plays: the recently played list is the
+  // sidebar's priority, Spotify is secondary.
+  if (mini) mini.hidden = !signedIn || !current;
+
   const eq = document.getElementById("sb-eq");
   if (eq) {
     eq.classList.toggle("playing", Boolean(current?.isPlaying));

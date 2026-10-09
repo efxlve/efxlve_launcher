@@ -152,7 +152,8 @@
   color: var(--text-2);
 }
 
-.avatar-edit-badge {
+/* Profile hero only: the account rows use the smaller badge from components.css. */
+.profile-avatar-btn .avatar-edit-badge {
   position: absolute;
   right: 0;
   bottom: 0;
