@@ -141,11 +141,12 @@ controls it like any other device. Spotify requires Premium for librespot playba
 
 **Browsing:** the launcher's Spotify page embeds the normal `open.spotify.com`
 interface as a native child WebView2 (search, library, playlists, queue — the real
-Spotify UI) filling the whole content area; the engine controls live in the page
-header. WebView2 ships no Widevine CDM, so the embedded player cannot decrypt
-Spotify audio itself; instead the header runs the librespot Connect receiver and
-the user picks "Efxlve Launcher" as the playback device inside Spotify. The Web API
-search/library commands stay available for the overlay and future surfaces.
+Spotify UI) filling the whole content area; the header only carries Back and Reload.
+WebView2 ships no Widevine CDM, so the embedded player cannot decrypt Spotify audio
+itself; instead the launcher runs the librespot Connect receiver in the background
+(asking for its one-time browser approval by itself) and the user picks "Efxlve
+Launcher" as the playback device inside Spotify. The Web API search/library commands
+stay available for the overlay and future surfaces.
 
 ### 2.5 Discord — presence + voice read
 

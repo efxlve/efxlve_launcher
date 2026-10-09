@@ -1974,5 +1974,7 @@
   "music.play": "Play",
   "music.reload": "Reload",
   "music.openInBrowser": "Open in browser",
-  "music.playerHint": "Playback: in Spotify, pick “{name}” as the device (bottom-right). WebView2 cannot decrypt Spotify audio itself."
+  "music.playerHint": "Playback: in Spotify, pick “{name}” as the device (bottom-right). WebView2 cannot decrypt Spotify audio itself.",
+  "music.back": "Back",
+  "music.playbackPairingToast": "One-time playback approval opened in your browser: approve it to hear Spotify on this computer."
 }

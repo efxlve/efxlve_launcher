@@ -1,11 +1,15 @@
 /**
  * Launcher Spotify page: the normal `open.spotify.com` interface in an embedded
- * child webview, plus the librespot playback engine controls.
+ * child webview, plus the librespot playback engine.
  *
  * WebView2 has no Widevine CDM, so the web player cannot decrypt audio itself;
- * the toolbar starts the launcher's Spotify Connect receiver ("Efxlve
- * Launcher") and the user picks it as the playback device inside the page.
+ * the launcher runs a Spotify Connect receiver ("Efxlve Launcher") in the
+ * background and the user picks it as the playback device inside the page.
  * Search, library, playlists and the queue are the real Spotify UI.
+ *
+ * The only header controls are Back and Reload: signing into Spotify is all a
+ * user has to do. The first visit opens the one-time playback approval in the
+ * browser by itself.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -16,18 +20,16 @@ import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
 import {
-  spotifyPlaybackForget,
   spotifyPlaybackStart,
   spotifyPlaybackStatus,
-  spotifyPlaybackStop,
   type SpotifyPlaybackStatus,
 } from "./spotify-client";
 
 let playback: SpotifyPlaybackStatus = { paired: false, running: false, deviceName: "Efxlve Launcher" };
-let busy = false;
+let engineBusy = false;
+let engineAttempted = false;
 let pollTimer: number | null = null;
 let playerVisible = false;
-let autoStarted = false;
 
 /** Roots that paint above the content area: the child webview must hide then. */
 const COVER_ROOTS = [
@@ -63,42 +65,22 @@ export function renderMusic(): string {
     </div>`;
 }
 
-function engineActionsHtml(): string {
-  const hint = esc(t("music.playerHint", { name: playback.deviceName }));
-  if (playback.running) {
-    return `<button class="btn primary" data-music="playback-stop" title="${hint}">${esc(t("music.playbackStop"))}</button>
-      <button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>`;
-  }
-  const label = busy
-    ? t("music.playbackWaiting")
-    : playback.paired
-    ? t("music.playbackStart")
-    : t("music.playbackEnable");
-  return `<button class="btn primary" data-music="playback-start" title="${hint}" ${busy ? "disabled" : ""}>${icon("monitor", 14)} ${esc(label)}</button>
-    ${playback.paired ? `<button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>` : ""}`;
-}
-
-/** Header row: engine controls, only while the Spotify page is open. */
+/** Header row: Back and Reload, only while the Spotify page is open. */
 function paintHeaderActions(): void {
   const host = document.getElementById("page-header-actions");
   if (!host) return;
   if (!onMusicView()) {
     if (host.childElementCount > 0) host.innerHTML = "";
     host.classList.remove("has-actions");
-    host.dataset.key = "";
+    host.dataset.ready = "";
     return;
   }
-  const key = `${playback.paired}:${playback.running}:${busy}`;
-  if (host.dataset.key === key) return;
-  host.dataset.key = key;
+  if (host.dataset.ready === "1") return;
+  host.dataset.ready = "1";
   host.innerHTML = `
-    ${engineActionsHtml()}
+    <button class="btn ghost small" data-music="player-back">${icon("arrow-left", 14)} ${esc(t("music.back"))}</button>
     <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>`;
   host.classList.add("has-actions");
-}
-
-function fail(error: unknown): void {
-  toast(String(error).replace(/^Error: /, ""), "err");
 }
 
 /* ---------- Embedded player placement ---------- */
@@ -108,6 +90,11 @@ export function hydrateMusic(): void {
   void refreshStatus();
   paintHeaderActions();
   syncPlayer();
+  // The page-enter animation slides the view for a moment; re-apply the
+  // rectangle afterwards so the webview sits flush under the header.
+  window.setTimeout(() => {
+    if (playerVisible) syncPlayer();
+  }, 450);
 }
 
 /** Hides the child webview when another page takes over. */
@@ -153,59 +140,41 @@ function ensurePolling(): void {
   }
 }
 
-/* ---------- Engine state ---------- */
+/* ---------- Playback engine (automatic) ---------- */
 
 async function refreshStatus(): Promise<void> {
   const status = await spotifyPlaybackStatus().catch(() => null);
   if (!status) return;
   playback = status;
-  paintHeaderActions();
-  // A stored approval needs no browser: bring the receiver up automatically so
-  // the page can play on this computer right away.
-  if (playback.paired && !playback.running && !busy && !autoStarted) {
-    autoStarted = true;
-    void startEngine(false);
+  // Signing into Spotify is all the user does: the receiver starts by itself
+  // (and asks for its one-time browser approval when none is stored yet).
+  if (!playback.running && !engineBusy && !engineAttempted) {
+    engineAttempted = true;
+    if (!playback.paired) toast(t("music.playbackPairingToast"), "");
+    void startEngine();
   }
 }
 
-async function startEngine(userInitiated: boolean): Promise<void> {
-  busy = true;
-  paintHeaderActions();
+async function startEngine(): Promise<void> {
+  engineBusy = true;
   try {
     playback = await spotifyPlaybackStart();
-    toast(t("music.playbackReady"), "ok");
   } catch (error) {
-    if (userInitiated) fail(error);
-    autoStarted = false;
+    engineAttempted = false;
+    toast(String(error).replace(/^Error: /, ""), "err");
   }
-  busy = false;
-  await refreshStatus();
+  engineBusy = false;
 }
 
 /* ---------- Actions ---------- */
 
 document.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
-  const el = target.closest<HTMLElement>("[data-music]");
-  const action = el?.dataset.music;
+  const action = target.closest<HTMLElement>("[data-music]")?.dataset.music;
   if (!action) return;
 
-  if (action === "playback-start") {
-    void startEngine(true);
-    return;
-  }
-  if (action === "playback-stop") {
-    void (async () => {
-      await spotifyPlaybackStop().catch(() => undefined);
-      await refreshStatus();
-    })();
-    return;
-  }
-  if (action === "playback-forget") {
-    void (async () => {
-      await spotifyPlaybackForget().catch(() => undefined);
-      await refreshStatus();
-    })();
+  if (action === "player-back") {
+    void invoke("spotify_player_back").catch(() => undefined);
     return;
   }
   if (action === "player-reload") {

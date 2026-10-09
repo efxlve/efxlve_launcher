@@ -1974,5 +1974,7 @@
   "music.play": "Çal",
   "music.reload": "Yenile",
   "music.openInBrowser": "Tarayıcıda aç",
-  "music.playerHint": "Çalma: Spotify'da cihaz olarak “{name}” seç (sağ altta). WebView2, Spotify sesini kendisi çözemez."
+  "music.playerHint": "Çalma: Spotify'da cihaz olarak “{name}” seç (sağ altta). WebView2, Spotify sesini kendisi çözemez.",
+  "music.back": "Geri",
+  "music.playbackPairingToast": "Tek seferlik çalma onayı tarayıcıda açıldı: bu bilgisayarda müzik çalması için onayla."
 }

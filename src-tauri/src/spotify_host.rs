@@ -114,6 +114,14 @@ pub fn spotify_player_reload(app: AppHandle) {
     }
 }
 
+/// Goes back one step in the player's own history (album -> artist -> search).
+#[tauri::command]
+pub fn spotify_player_back(app: AppHandle) {
+    if let Some(view) = player(&app) {
+        let _ = view.eval("history.back()");
+    }
+}
+
 /// Closes the player entirely (used by tests and future logout flows).
 #[tauri::command]
 pub fn spotify_player_close(app: AppHandle) {
