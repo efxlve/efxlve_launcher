@@ -164,6 +164,14 @@ function sidebarGames(): SidebarGame[] {
 }
 
 const SIDEBAR_RECENT_LIMIT = 5;
+/** A small or short window keeps fewer rows: the sidebar is tighter. */
+const SIDEBAR_RECENT_LIMIT_SMALL = 3;
+
+function sidebarRecentLimit(): number {
+  return window.innerWidth <= 1180 || window.innerHeight <= 700
+    ? SIDEBAR_RECENT_LIMIT_SMALL
+    : SIDEBAR_RECENT_LIMIT;
+}
 const sidebarFillRank = new Map<string, number>();
 
 function fillRank(id: string): number {
@@ -184,7 +192,8 @@ export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
   if (!host) return;
   const entries = sidebarGames();
-  const stamp = `${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${entries.map((e) => e.appName).join("\n")}`;
+  const limit = sidebarRecentLimit();
+  const stamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${entries.map((e) => e.appName).join("\n")}`;
   if (stamp === sidebarInputs) return;
   sidebarInputs = stamp;
 
@@ -203,7 +212,7 @@ export function updateSidebarGames(): void {
       if (!keep.has(id)) sidebarFillRank.delete(id);
     }
   }
-  const shown = played.concat(fillers).slice(0, SIDEBAR_RECENT_LIMIT);
+  const shown = played.concat(fillers).slice(0, limit);
 
   const sig = shown.map((e) => e.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
   if (sig === sidebarGamesSig) return;

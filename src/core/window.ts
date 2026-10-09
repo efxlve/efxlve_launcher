@@ -11,7 +11,7 @@ import { S } from "./state";
 import { drawSpeedCanvas } from "../features/downloads/downloads-view";
 import { positionNotifPanel } from "../features/notifications/notifications";
 import { embeddedStoreHeld, syncStoreViewSize } from "../features/store/store-view";
-import { syncStoreTabsUnderline } from "./nav";
+import { syncStoreTabsUnderline, updateSidebarGames } from "./nav";
 
 /** Start with Windows: the HKCU Run entry the installer never touches. */
 export const appGetAutostart = () => invoke<boolean>("app_get_autostart");
@@ -40,6 +40,8 @@ export function handleWindowResize(): void {
   // makes the restored window pop from a dot to the full frame.
   if (window.innerWidth < 160 || window.innerHeight < 160) return;
   updateMaxIcon();
+  // The recently played list shows fewer rows on a small window.
+  updateSidebarGames();
   if (S.view === "downloads" && typeof drawSpeedCanvas === "function") {
     drawSpeedCanvas();
   }
