@@ -225,26 +225,29 @@ function refreshFpsNotices(): void {
 
 /** Hides the notice when the counter runs; creates it on the first sample. */
 function updateFpsNotice(): void {
-  const available = metrics?.fpsAvailable === true;
-  const notices = document.querySelectorAll<HTMLElement>(".ov-fps-notice");
-  if (available) {
-    notices.forEach((el) => {
+  const activeView = document.querySelector<HTMLElement>(".ov-view.active");
+  const notices = activeView
+    ? [...activeView.querySelectorAll<HTMLElement>(".ov-fps-notice")]
+    : [];
+  if (metrics?.fpsAvailable === true) {
+    // Hide every notice, including ones parked in inactive views.
+    document.querySelectorAll<HTMLElement>(".ov-fps-notice").forEach((el) => {
       el.hidden = true;
     });
     return;
   }
-  if (notices.length > 0) {
-    notices.forEach((el) => {
-      el.hidden = false;
-    });
-    refreshFpsNotices();
+  if (!metrics) return;
+  if (notices.length === 0) {
+    // The view rendered before the first sample; re-render it so the notice
+    // exists. Notices in other (hidden) views never block the active one.
+    if (activeTab === "home") renderHomeSafe();
+    else if (activeTab === "perf") renderPerf();
     return;
   }
-  if (!metrics) return;
-  // The views rendered before the first sample; re-render the active one so
-  // the notice exists.
-  if (activeTab === "home") renderHomeSafe();
-  else if (activeTab === "perf") renderPerf();
+  notices.forEach((el) => {
+    el.hidden = false;
+  });
+  refreshFpsNotices();
 }
 
 async function enableFps(): Promise<void> {
@@ -444,23 +447,23 @@ function renderHome(): void {
           <button class="ov-card-action" data-ov-tab="perf">${icon("chevron-right", 16)}</button>
         </div>
         <div class="ov-perf-hero">
-          <span class="ov-perf-val" id="ov-home-fps">${currentFps}</span>
+          <span class="ov-perf-val${m?.fps != null ? "" : " is-empty"}" id="ov-home-fps">${currentFps}</span>
           <span class="ov-perf-unit">FPS</span>
-          <span class="ov-perf-frame" id="ov-home-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
+          <span class="ov-perf-frame${m?.frameMs != null ? "" : " is-empty"}" id="ov-home-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
         </div>
         <canvas class="ov-perf-canvas" id="ov-home-perf-canvas"></canvas>
         <div class="ov-metrics-mini">
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.cpu"))}</span>
-            <span class="ov-metric-num" id="ov-home-cpu">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</span>
+            <span class="ov-metric-num${m ? "" : " is-empty"}" id="ov-home-cpu">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.gpu"))}</span>
-            <span class="ov-metric-num" id="ov-home-gpu">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</span>
+            <span class="ov-metric-num${m?.gpu != null ? "" : " is-empty"}" id="ov-home-gpu">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.ram"))}</span>
-            <span class="ov-metric-num" id="ov-home-ram">${m ? fmtMb(m.ramUsedMb) : "—"}</span>
+            <span class="ov-metric-num${m ? "" : " is-empty"}" id="ov-home-ram">${m ? fmtMb(m.ramUsedMb) : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">HUD</span>
@@ -572,9 +575,9 @@ function renderPerf(): void {
     <div class="ov-page-title">${icon("cpu", 20)} <span>${esc(t("overlay.tabPerformance"))}</span></div>
     <div class="ov-card" style="margin-bottom:16px">
       <div class="ov-perf-hero">
-        <span class="ov-perf-val" id="ov-perf-fps">${m?.fps != null ? Math.round(m.fps) : "—"}</span>
+        <span class="ov-perf-val${m?.fps != null ? "" : " is-empty"}" id="ov-perf-fps">${m?.fps != null ? Math.round(m.fps) : "—"}</span>
         <span class="ov-perf-unit">FPS</span>
-        <span class="ov-perf-frame" id="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : ""}</span>
+        <span class="ov-perf-frame${m?.frameMs != null ? "" : " is-empty"}" id="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : ""}</span>
       </div>
       <canvas class="ov-perf-canvas" id="ov-perf-canvas" style="height:140px"></canvas>
     </div>
@@ -582,22 +585,22 @@ function renderPerf(): void {
     <div class="ov-dashboard" style="margin-bottom:16px">
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.cpu"))}</div>
-        <div class="ov-perf-val" id="ov-perf-cpu" style="font-size:32px">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
+        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-cpu" style="font-size:32px">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
         <span id="ov-perf-cpu-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? `${Math.round(m.cpu)}%` : "—"}</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.gpu"))}</div>
-        <div class="ov-perf-val" id="ov-perf-gpu" style="font-size:32px">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
+        <div class="ov-perf-val${m?.gpu != null ? "" : " is-empty"}" id="ov-perf-gpu" style="font-size:32px">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">GPU Utilization</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.vram"))}</div>
-        <div class="ov-perf-val" id="ov-perf-vram" style="font-size:32px">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
+        <div class="ov-perf-val${m?.vramUsedMb != null ? "" : " is-empty"}" id="ov-perf-vram" style="font-size:32px">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">Video Memory</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.ram"))}</div>
-        <div class="ov-perf-val" id="ov-perf-ram" style="font-size:32px">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
+        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-ram" style="font-size:32px">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
         <span id="ov-perf-ram-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? fmtMb(m.ramTotalMb) : "—"}</span>
       </div>
     </div>
@@ -678,29 +681,31 @@ function drawPerfCanvas(): void {
 
 /* Patches the live numbers in place. A full re-render here would drop the
    notes textarea focus and the scroll position every second. */
-function setText(id: string, text: string): void {
+function setText(id: string, text: string, empty = false): void {
   const el = document.getElementById(id);
-  if (el && el.textContent !== text) el.textContent = text;
+  if (!el) return;
+  if (el.textContent !== text) el.textContent = text;
+  el.classList.toggle("is-empty", empty);
 }
 
 function updateMetricsUi(): void {
   const m = metrics;
   updateFpsNotice();
   if (activeTab === "home" && viewEl("home")?.querySelector(".ov-card")) {
-    setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—");
-    setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "");
-    setText("ov-home-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—");
-    setText("ov-home-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—");
-    setText("ov-home-ram", m ? fmtMb(m.ramUsedMb) : "—");
+    setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—", m?.fps == null);
+    setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "", m?.frameMs == null);
+    setText("ov-home-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—", !m);
+    setText("ov-home-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—", m?.gpu == null);
+    setText("ov-home-ram", m ? fmtMb(m.ramUsedMb) : "—", !m);
     drawPerfCanvas();
   } else if (activeTab === "perf" && document.getElementById("ov-perf-fps")) {
-    setText("ov-perf-fps", m?.fps != null ? String(Math.round(m.fps)) : "—");
-    setText("ov-perf-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : "");
-    setText("ov-perf-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—");
+    setText("ov-perf-fps", m?.fps != null ? String(Math.round(m.fps)) : "—", m?.fps == null);
+    setText("ov-perf-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : "", m?.frameMs == null);
+    setText("ov-perf-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—", !m);
     setText("ov-perf-cpu-total", `Total: ${m ? `${Math.round(m.cpu)}%` : "—"}`);
-    setText("ov-perf-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—");
-    setText("ov-perf-vram", m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—");
-    setText("ov-perf-ram", m ? fmtMb(m.ramUsedMb) : "—");
+    setText("ov-perf-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—", m?.gpu == null);
+    setText("ov-perf-vram", m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—", m?.vramUsedMb == null);
+    setText("ov-perf-ram", m ? fmtMb(m.ramUsedMb) : "—", !m);
     setText("ov-perf-ram-total", `Total: ${m ? fmtMb(m.ramTotalMb) : "—"}`);
     drawPerfCanvas();
   }

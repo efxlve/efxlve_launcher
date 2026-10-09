@@ -367,6 +367,18 @@
   color: #fff;
 }
 
+/* Missing readings read as a quiet placeholder, not a giant white dash. */
+.ov-perf-val.is-empty {
+  font-size: 26px !important;
+  color: var(--text-3) !important;
+}
+
+.ov-perf-frame.is-empty,
+.ov-metric-num.is-empty {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
 .ov-perf-unit {
   font-size: 14px;
   font-weight: 600;
