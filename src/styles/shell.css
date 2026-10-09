@@ -390,6 +390,14 @@ html.sb-narrow .sb-eq {
   display: none !important;
 }
 
+/* Not enough room (small or short window): the recently played list wins and
+   the player stays out entirely. */
+@media (max-width: 1180px), (max-height: 700px) {
+  .sb-mini {
+    display: none !important;
+  }
+}
+
 .sb-mini-top {
   display: flex;
   align-items: center;
