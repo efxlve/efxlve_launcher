@@ -65,7 +65,7 @@ export function renderMusic(): string {
     </div>`;
 }
 
-/** Header row: Back and Reload, only while the Spotify page is open. */
+/** Header row: Back, Reload, and Pair Connect Receiver only when unpaired. */
 function paintHeaderActions(): void {
   const host = document.getElementById("page-header-actions");
   if (!host) return;
@@ -75,11 +75,13 @@ function paintHeaderActions(): void {
     host.dataset.ready = "";
     return;
   }
-  if (host.dataset.ready === "1") return;
-  host.dataset.ready = "1";
+  const pairBtn = !playback.paired
+    ? `<button class="btn ghost small" data-music="player-pair" title="${esc(t("music.playbackPairingToast"))}">${icon("music", 14)} ${esc(t("accounts.openMusic"))}</button>`
+    : "";
   host.innerHTML = `
     <button class="btn ghost small" data-music="player-back">${icon("arrow-left", 14)} ${esc(t("music.back"))}</button>
-    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>`;
+    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>
+    ${pairBtn}`;
   host.classList.add("has-actions");
 }
 
@@ -145,12 +147,12 @@ function ensurePolling(): void {
 async function refreshStatus(): Promise<void> {
   const status = await spotifyPlaybackStatus().catch(() => null);
   if (!status) return;
+  const wasPaired = playback.paired;
   playback = status;
-  // Signing into Spotify is all the user does: the receiver starts by itself
-  // (and asks for its one-time browser approval when none is stored yet).
-  if (!playback.running && !engineBusy && !engineAttempted) {
+  if (wasPaired !== status.paired) paintHeaderActions();
+  // Only start automatically if already paired; avoids unprompted browser popups.
+  if (playback.paired && !playback.running && !engineBusy && !engineAttempted) {
     engineAttempted = true;
-    if (!playback.paired) toast(t("music.playbackPairingToast"), "");
     void startEngine();
   }
 }
@@ -159,6 +161,7 @@ async function startEngine(): Promise<void> {
   engineBusy = true;
   try {
     playback = await spotifyPlaybackStart();
+    paintHeaderActions();
   } catch (error) {
     engineAttempted = false;
     toast(String(error).replace(/^Error: /, ""), "err");
@@ -179,5 +182,10 @@ document.addEventListener("click", (event) => {
   }
   if (action === "player-reload") {
     void invoke("spotify_player_reload").catch(() => undefined);
+    return;
+  }
+  if (action === "player-pair") {
+    toast(t("music.playbackPairingToast"), "");
+    void startEngine();
   }
 });
