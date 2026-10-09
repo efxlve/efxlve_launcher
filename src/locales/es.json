@@ -1931,5 +1931,7 @@
   "overlay.noGameTabDesc": "Start a game and reopen the overlay to use it.",
   "overlay.libraryEmptyTitle": "Pick a playlist",
   "overlay.libraryEmptyDesc": "Its tracks show up here — pick one to play.",
-  "overlay.retry": "Retry"
+  "overlay.retry": "Retry",
+  "mini.nothing": "Nothing playing",
+  "mini.volume": "Volume"
 }

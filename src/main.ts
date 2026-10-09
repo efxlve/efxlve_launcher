@@ -27,6 +27,7 @@ import { closeHideAchievementsModal } from "./features/profile/hide-achievements
 import { patchLibraryGridInPlace, positionColDropdownMenu, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
 import { hideSpotifyPlayer, hydrateMusic, renderMusic } from "./features/music/music-view";
+import { initMiniPlayer } from "./features/music/mini-player";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
@@ -41,6 +42,7 @@ import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 if (S.surface === "soft") document.documentElement.dataset.surface = "soft";
 document.documentElement.classList.add("ready");
 initSidebarLayout();
+initMiniPlayer();
 
 let lastRenderedView: View | null = null;
 viewEl.addEventListener("animationend", (e) => {

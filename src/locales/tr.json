@@ -1931,5 +1931,7 @@
   "overlay.noGameTabDesc": "Bir oyun başlatıp arayüzü yeniden aç.",
   "overlay.libraryEmptyTitle": "Bir çalma listesi seç",
   "overlay.libraryEmptyDesc": "Şarkıları burada görünür — birine basıp çal.",
-  "overlay.retry": "Yeniden dene"
+  "overlay.retry": "Yeniden dene",
+  "mini.nothing": "Bir şey çalmıyor",
+  "mini.volume": "Ses"
 }
