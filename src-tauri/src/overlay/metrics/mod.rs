@@ -76,11 +76,16 @@ fn run(app: AppHandle) {
 
         sys.refresh_cpu_usage();
         sys.refresh_memory();
-        let cpu = sys.global_cpu_usage();
+        // `global_cpu_usage` is documented as 0-100 but can overshoot on hybrid
+        // CPUs; the per-process value counts every logical core (max =
+        // cores * 100), so it is divided down to a machine-wide percentage.
+        let logical_cpus = sys.cpus().len();
+        let cpu = sys.global_cpu_usage().clamp(0.0, 100.0);
         let game_cpu = pid.and_then(|id| {
             let wanted = Pid::from_u32(id);
             sys.refresh_processes(ProcessesToUpdate::Some(&[wanted]), true);
-            sys.process(wanted).map(|process| process.cpu_usage())
+            sys.process(wanted)
+                .map(|process| normalize_process_cpu(process.cpu_usage(), logical_cpus))
         });
 
         // Presents per second, summed over the game's processes. Some titles
@@ -153,10 +158,35 @@ fn hud_text(s: &MetricsSample) -> String {
     parts.join("  |  ")
 }
 
+/// `sysinfo` reports a process value that can reach `logical_cpus * 100`
+/// (one full core is 100). The overlay shows machine-wide percentages like
+/// Task Manager, so the raw value is divided by the core count and clamped.
+fn normalize_process_cpu(raw: f32, logical_cpus: usize) -> f32 {
+    let cores = logical_cpus.max(1) as f32;
+    (raw / cores).clamp(0.0, 100.0)
+}
+
 fn mb_label(mb: u64) -> String {
     if mb >= 1024 {
         format!("{:.1} GB", mb as f64 / 1024.0)
     } else {
         format!("{mb} MB")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_process_cpu;
+
+    #[test]
+    fn process_cpu_is_normalized_to_machine_wide() {
+        // A fully busy 16-thread process is 100%, not 1600%.
+        assert_eq!(normalize_process_cpu(1600.0, 16), 100.0);
+        assert_eq!(normalize_process_cpu(800.0, 16), 50.0);
+        // A single-core machine needs no division.
+        assert_eq!(normalize_process_cpu(50.0, 1), 50.0);
+        // Nonsense readings never leak through as negative or above 100.
+        assert_eq!(normalize_process_cpu(-4.0, 8), 0.0);
+        assert_eq!(normalize_process_cpu(1e6, 4), 100.0);
     }
 }
