@@ -25,6 +25,7 @@ mod steam_watch;
 mod storage_usage;
 mod notif_overlay;
 mod overlay;
+mod spotify;
 mod store_host;
 mod store_theme;
 mod vault_id;
@@ -894,6 +895,17 @@ fn main() {
             overlay::overlay_show_launcher,
             overlay::media::overlay_media_state,
             overlay::media::overlay_media_control,
+            spotify::spotify_status,
+            spotify::spotify_set_client_id,
+            spotify::spotify_login,
+            spotify::spotify_cancel_login,
+            spotify::spotify_logout,
+            spotify::spotify_now_playing,
+            spotify::spotify_devices,
+            spotify::spotify_playlists,
+            spotify::spotify_control,
+            spotify::spotify_play,
+            spotify::spotify_transfer,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,
