@@ -7,7 +7,7 @@
 import { CUSTOM_PROFILE_BANNERS_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
-import { epicWideArt, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, epicWideArt, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
@@ -48,7 +48,12 @@ function collectBannerCandidates(): BannerGameCandidate[] {
 
   const add = (appName: string, title: string) => {
     if (!appName || seen.has(appName) || S.hiddenGames.has(appName) || isOpaqueId(title)) return;
+    // One tile per title: a game can hold several store/edition keys and would
+    // otherwise show up twice.
+    const canon = canonicalGameTitle(title) || title.trim().toLowerCase();
+    if (seen.has(canon)) return;
     seen.add(appName);
+    seen.add(canon);
     const art = getGameBannerArt(appName);
     games.push({
       appName,
