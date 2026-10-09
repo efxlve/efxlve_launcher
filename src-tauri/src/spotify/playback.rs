@@ -268,8 +268,6 @@ mod imp {
         session::Session, FileId, SpotifyUri,
     };
     use librespot::metadata::audio::{AudioItem, UniqueFields};
-    use librespot::metadata::playlist::list::SelectedListContent as RootlistContent;
-    use librespot::metadata::{Metadata, Playlist};
     use librespot::oauth::{OAuthClientBuilder, OAuthToken};
     use librespot::playback::{
         audio_backend,
@@ -496,17 +494,28 @@ mod imp {
             .await
             .map_err(|error| error.to_string())?;
         let message = RootlistMessage::parse_from_bytes(&bytes).map_err(|error| error.to_string())?;
-        let content = RootlistContent::try_from(&message).map_err(|error| error.to_string())?;
 
+        // Walk the raw items: the rootlist can hold entries librespot's strict
+        // conversion rejects (Liked Songs, folders, odd ids), and one bad entry
+        // must not take the whole list down.
+        let items = message
+            .contents
+            .as_ref()
+            .map(|contents| contents.items.as_slice())
+            .unwrap_or_default();
         let mut tasks = tokio::task::JoinSet::new();
-        for item in content.contents.items.iter() {
-            if !matches!(item.id, SpotifyUri::Playlist { .. }) {
+        let mut spawned = 0usize;
+        for item in items {
+            let Ok(uri) = SpotifyUri::from_uri(item.uri()) else {
+                continue;
+            };
+            if !matches!(uri, SpotifyUri::Playlist { .. }) {
                 continue;
             }
-            let uri = item.id.clone();
             let session = session.clone();
             tasks.spawn(async move { summary_of(&session, uri).await });
-            if tasks.len() >= 40 {
+            spawned += 1;
+            if spawned >= 40 {
                 break;
             }
         }
@@ -525,12 +534,59 @@ mod imp {
     }
 
     async fn summary_of(session: &Session, uri: SpotifyUri) -> Option<PlaylistSummary> {
-        let playlist = Playlist::get(session, &uri).await.ok()?;
+        let raw = fetch_playlist(session, &uri).await?;
         Some(PlaylistSummary {
             uri: uri.to_uri().ok()?,
-            name: playlist.name().to_string(),
-            track_count: playlist.length as i64,
-            art_url: cover_url(session, &playlist.attributes.picture),
+            name: raw.name,
+            track_count: raw.length,
+            art_url: cover_url(session, &raw.picture),
+        })
+    }
+
+    /// Raw playlist metadata, parsed leniently: the strict metadata conversion
+    /// rejects single odd entries (and then the whole playlist with them).
+    struct PlaylistRaw {
+        name: String,
+        picture: Vec<u8>,
+        length: i64,
+        track_uris: Vec<SpotifyUri>,
+    }
+
+    async fn fetch_playlist(session: &Session, uri: &SpotifyUri) -> Option<PlaylistRaw> {
+        let SpotifyUri::Playlist { id, .. } = uri else {
+            return None;
+        };
+        let bytes = session.spclient().get_playlist(id).await.ok()?;
+        let message = RootlistMessage::parse_from_bytes(&bytes).ok()?;
+        let name = message
+            .attributes
+            .as_ref()
+            .map(|attributes| attributes.name().to_string())
+            .unwrap_or_default();
+        if name.is_empty() {
+            return None;
+        }
+        let picture = message
+            .attributes
+            .as_ref()
+            .map(|attributes| attributes.picture().to_vec())
+            .unwrap_or_default();
+        let track_uris = message
+            .contents
+            .as_ref()
+            .map(|contents| {
+                contents
+                    .items
+                    .iter()
+                    .filter_map(|item| SpotifyUri::from_uri(item.uri()).ok())
+                    .collect()
+            })
+            .unwrap_or_default();
+        Some(PlaylistRaw {
+            name,
+            picture,
+            length: message.length() as i64,
+            track_uris,
         })
     }
 
@@ -564,13 +620,13 @@ mod imp {
             .clone()
             .ok_or_else(|| "not_running".to_string())?;
         let parsed = SpotifyUri::from_uri(uri).map_err(|error| error.to_string())?;
-        let playlist = Playlist::get(&session, &parsed)
+        let raw = fetch_playlist(&session, &parsed)
             .await
-            .map_err(|error| error.to_string())?;
+            .ok_or_else(|| "playlist_not_found".to_string())?;
 
         let mut tasks = tokio::task::JoinSet::new();
-        for (index, item) in playlist.contents.items.iter().take(TRACK_LIMIT).enumerate() {
-            let track_uri = item.id.clone();
+        for (index, track_uri) in raw.track_uris.iter().take(TRACK_LIMIT).enumerate() {
+            let track_uri = track_uri.clone();
             let session = session.clone();
             tasks.spawn(async move { (index, track_summary(&session, track_uri).await) });
         }

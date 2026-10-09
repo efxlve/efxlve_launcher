@@ -136,6 +136,7 @@ let playlistsError = "";
 let selectedPlaylist: string | null = null;
 let playlistTracks: TrackSummary[] | null = null;
 let tracksState: "idle" | "loading" | "ready" | "error" = "idle";
+let tracksError = "";
 let tracksFor: string | null = null;
 let cachedAchievements: AchievementsData | null = null;
 let cachedScreenshots: ScreenshotItem[] = [];
@@ -1198,7 +1199,8 @@ function renderTrackList(): void {
     return;
   }
   if (tracksState === "error") {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}</div>`;
+    const detail = tracksError ? ` — ${tracksError.slice(0, 140)}` : "";
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}${esc(detail)}</div>`;
     return;
   }
   const tracks = playlistTracks ?? [];
@@ -1261,11 +1263,13 @@ async function selectPlaylist(uri: string): Promise<void> {
   tracksFor = uri;
   playlistTracks = null;
   tracksState = "loading";
+  tracksError = "";
   renderTrackList();
   try {
     playlistTracks = await spotifyPlaybackPlaylistTracks(uri);
     tracksState = "ready";
-  } catch {
+  } catch (error) {
+    tracksError = String(error).replace(/^Error: /, "");
     tracksState = "error";
   }
   renderTrackList();
