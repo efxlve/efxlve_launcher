@@ -100,6 +100,7 @@ function paintHeaderActions(): void {
 
 export function hydrateMusic(): void {
   ensurePolling();
+  observeSlot();
   void refreshStatus();
   paintHeaderActions();
   syncPlayer();
@@ -134,6 +135,39 @@ function syncPlayer(): void {
     height: rect.height,
   }).catch(() => undefined);
 }
+
+/** rAF-throttled reposition: the sidebar drag/drawer moves the slot each frame. */
+function scheduleSync(): void {
+  if (syncRaf !== null) return;
+  syncRaf = window.requestAnimationFrame(() => {
+    syncRaf = null;
+    syncPlayer();
+  });
+  // A trailing pass lands on the final rectangle once the transition ends.
+  if (settleTimer !== null) window.clearTimeout(settleTimer);
+  settleTimer = window.setTimeout(() => {
+    settleTimer = null;
+    if (playerVisible) syncPlayer();
+  }, 340);
+}
+
+/**
+ * The slot's rectangle changes when the sidebar resizes or drawers open/close
+ * (no window resize event fires for those), so follow its size directly.
+ */
+function observeSlot(): void {
+  const slot = document.getElementById("music-webview-slot");
+  if (!slot || typeof ResizeObserver === "undefined") return;
+  slotObserver?.disconnect();
+  slotObserver = new ResizeObserver(() => {
+    if (onMusicView()) scheduleSync();
+  });
+  slotObserver.observe(slot);
+}
+
+let slotObserver: ResizeObserver | null = null;
+let syncRaf: number | null = null;
+let settleTimer: number | null = null;
 
 function ensurePolling(): void {
   if (pollTimer !== null) return;
