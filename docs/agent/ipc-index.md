@@ -225,6 +225,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `shared_library_index` | `sharedLibraryIndex({ ... })` | `src-tauri/src/shared_library.rs` |
 | `show_notif_overlay` | `showNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `show_store_view` | `showStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `spotify_open_in_launcher` | `spotifyOpenInLauncher({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_playback_control` | `spotifyPlaybackControl({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_now` | `spotifyPlaybackNow({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_play` | `spotifyPlaybackPlay({ ... })` | `src-tauri/src/spotify/playback.rs` |

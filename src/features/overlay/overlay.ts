@@ -1278,6 +1278,22 @@ async function playTrack(trackUri: string): Promise<void> {
   window.setTimeout(() => void refreshMedia(), 600);
 }
 
+/**
+ * "Open in Spotify": prefers the launcher's embedded page (the launcher comes
+ * forward with the track); falls back to the browser when the embedded page
+ * has no Spotify session.
+ */
+async function openSpotifyLink(): Promise<void> {
+  const url = spotifyNow?.url && spotifyNow.url !== "spotify:" ? spotifyNow.url : "https://open.spotify.com/";
+  try {
+    const opened = await invoke<boolean>("spotify_open_in_launcher", { url });
+    if (opened) return;
+  } catch {
+    // Fall through to the browser.
+  }
+  void openUrl(url).catch(() => undefined);
+}
+
 /** Forces a library refresh (the Rust caches are bypassed). */
 async function refreshLibrary(): Promise<void> {
   selectedPlaylist = null;
@@ -1609,13 +1625,7 @@ function wireEvents(): void {
     } else if (action === "sp-refresh-library") {
       void refreshLibrary();
     } else if (action === "sp-open") {
-      if (spotifyNow?.url) {
-        void openUrl(spotifyNow.url);
-      } else {
-        void openUrl("spotify:").catch(() => {
-          void openUrl("https://open.spotify.com");
-        });
-      }
+      void openSpotifyLink();
     }
   });
 

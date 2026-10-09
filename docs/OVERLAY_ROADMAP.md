@@ -125,7 +125,10 @@ artists, cover, position, volume, shuffle, repeat) from librespot's player event
 stream and sends transport commands straight to the in-process handle — no
 Spotify Web API session anywhere in the app. A library browser below the player
 loads the user's rootlist and each playlist's tracks (both cached), so any
-playlist or single track can be started without leaving the game.
+playlist or single track can be started without leaving the game. "Open in
+Spotify" brings the launcher forward with the link in the embedded page whenever
+that page has a session (`sp_dc` cookie) and falls back to the browser
+otherwise.
 
 **Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`)
 covers every other player (desktop Spotify, browsers, local files) whenever the

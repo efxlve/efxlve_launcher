@@ -13,12 +13,15 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { render } from "../../core/render";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
+import { setView } from "../store/store-view";
 import {
   spotifyPlaybackStart,
   spotifyPlaybackStatus,
@@ -30,6 +33,14 @@ let engineBusy = false;
 let engineAttempted = false;
 let pollTimer: number | null = null;
 let playerVisible = false;
+
+/** The overlay asked to open a Spotify link here: show the page. */
+if (isTauri) {
+  void listen("spotify-open", () => {
+    setView("music");
+    render();
+  });
+}
 
 /** Roots that paint above the content area: the child webview must hide then. */
 const COVER_ROOTS = [
