@@ -26,7 +26,7 @@ import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
 import { patchLibraryGridInPlace, positionColDropdownMenu, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
-import { hydrateMusic, renderMusic } from "./features/music/music-view";
+import { hideSpotifyPlayer, hydrateMusic, renderMusic } from "./features/music/music-view";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
@@ -125,6 +125,8 @@ function render(): void {
   }
   if (S.view === "music") {
     hydrateMusic();
+  } else {
+    hideSpotifyPlayer();
   }
   if (S.view === "downloads") {
     startSpeedChartTimer();
