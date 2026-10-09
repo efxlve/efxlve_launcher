@@ -26,6 +26,8 @@ pub struct MetricsSample {
     pub pid: Option<u32>,
     pub fps: Option<f64>,
     pub frame_ms: Option<f64>,
+    /// The ETW FPS session is running (Windows permission granted).
+    pub fps_available: bool,
     /// System-wide CPU load, percent.
     pub cpu: f32,
     /// The game's own CPU load when its process was found.
@@ -47,6 +49,11 @@ pub fn ensure_running(app: AppHandle) {
     std::thread::spawn(move || run(app));
 }
 
+/// True while the ETW FPS session is running (Windows permission granted).
+pub fn fps_available() -> bool {
+    etw::available()
+}
+
 fn run(app: AppHandle) {
     let mut sys = System::new();
     let mut gpu = gpu::GpuQuery::open();
@@ -64,9 +71,8 @@ fn run(app: AppHandle) {
             }
         }
 
-        let pid = crate::legendary::screenshots::active_game_pids()
-            .first()
-            .copied();
+        let pids = crate::legendary::screenshots::active_game_pids();
+        let pid = pids.first().copied();
 
         sys.refresh_cpu_usage();
         sys.refresh_memory();
@@ -77,9 +83,14 @@ fn run(app: AppHandle) {
             sys.process(wanted).map(|process| process.cpu_usage())
         });
 
-        let (fps_value, frame_ms) = match pid.and_then(|id| fps.as_mut().map(|f| (id, f))) {
-            Some((id, counter)) => match counter.sample(id) {
-                Some(value) => (Some(value), Some(1000.0 / value.max(0.1))),
+        // Presents per second, summed over the game's processes. Some titles
+        // present from a child process rather than the main one.
+        let (fps_value, frame_ms) = match fps.as_mut() {
+            Some(counter) => match counter.sample_many(&pids) {
+                Some(value) if value > 0.01 => {
+                    (Some(value), Some(1000.0 / value.max(0.1)))
+                }
+                Some(value) => (Some(value), None),
                 None => (None, None),
             },
             None => (None, None),
@@ -93,6 +104,7 @@ fn run(app: AppHandle) {
             pid,
             fps: fps_value,
             frame_ms,
+            fps_available: etw::available(),
             cpu,
             game_cpu,
             ram_used_mb: sys.used_memory() / 1_048_576,

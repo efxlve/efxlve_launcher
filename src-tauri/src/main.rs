@@ -886,6 +886,7 @@ fn main() {
             overlay::overlay_set_enabled,
             overlay::overlay_set_hud,
             overlay::overlay_flash_hint,
+            overlay::overlay_enable_fps,
             overlay::overlay_set_active_game,
             overlay::overlay_clear_active_game,
             overlay::overlay_hide,

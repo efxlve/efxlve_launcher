@@ -19,6 +19,11 @@ use tauri::{AppHandle, Emitter, Manager};
 
 pub const OVERLAY_LABEL: &str = "overlay";
 
+/// Elevated one-liner that grants the current user the FPS trace permission.
+#[cfg(windows)]
+const FPS_ENABLE_SCRIPT: &str =
+    "$g = Get-LocalGroup -SID S-1-5-32-559; Add-LocalGroupMember -Group $g -Member ($env:USERDOMAIN + '\\' + $env:USERNAME)";
+
 pub(crate) struct OverlayState {
     /// Shift+Tab hotkey enabled.
     pub enabled: bool,
@@ -88,6 +93,74 @@ pub fn overlay_flash_hint(text: String) {
         return;
     }
     hud::flash_hint(&text);
+}
+
+/// One-time elevation: adds the current user to the "Performance Log Users"
+/// group (locale-independent well-known SID) so the ETW FPS session can start.
+/// Windows applies group changes on the next sign-in.
+///
+/// Returns "started" when the elevation prompt was accepted, "denied" when it
+/// was declined or could not be shown, "already" when FPS is already running.
+#[tauri::command]
+pub fn overlay_enable_fps() -> String {
+    if metrics::fps_available() {
+        return "already".to_string();
+    }
+    #[cfg(windows)]
+    {
+        use windows::core::w;
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+        // -EncodedCommand (UTF-16LE base64) avoids every command-line quoting
+        // pitfall; the script itself is plain and has no nested quotes.
+        let encoded = base64_utf16le(FPS_ENABLE_SCRIPT);
+        let params = format!(
+            "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand {encoded}"
+        );
+        let params_wide: Vec<u16> = params.encode_utf16().chain(std::iter::once(0)).collect();
+
+        let result = unsafe {
+            ShellExecuteW(
+                None,
+                w!("runas"),
+                w!("powershell.exe"),
+                windows::core::PCWSTR(params_wide.as_ptr()),
+                None,
+                SW_SHOWNORMAL,
+            )
+        };
+        // The shell returns a value <= 32 when it could not start the process
+        // (declined UAC prompt included).
+        if result.0 as isize > 32 {
+            "started".to_string()
+        } else {
+            "denied".to_string()
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        "unsupported".to_string()
+    }
+}
+
+/// Base64 of a string's UTF-16LE bytes, for PowerShell `-EncodedCommand`.
+#[cfg(windows)]
+fn base64_utf16le(text: &str) -> String {
+    let bytes: Vec<u8> = text.encode_utf16().flat_map(|unit| unit.to_le_bytes()).collect();
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((bytes.len() + 2) / 3 * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = *chunk.get(1).unwrap_or(&0) as u32;
+        let b2 = *chunk.get(2).unwrap_or(&0) as u32;
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(TABLE[(n >> 18) as usize & 63] as char);
+        out.push(TABLE[(n >> 12) as usize & 63] as char);
+        out.push(if chunk.len() > 1 { TABLE[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if chunk.len() > 2 { TABLE[n as usize & 63] as char } else { '=' });
+    }
+    out
 }
 
 #[tauri::command]
@@ -240,4 +313,19 @@ fn place_over_game(win: &tauri::WebviewWindow, hwnd: isize) {
 /// Boot: starts the Shift+Tab listener. Called once from `main.rs` setup.
 pub fn start(app: AppHandle) {
     hotkey::start(app);
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::{base64_utf16le, FPS_ENABLE_SCRIPT};
+
+    /// Must match PowerShell's Unicode.GetBytes + ToBase64String, otherwise
+    /// -EncodedCommand would execute garbage after the UAC prompt.
+    #[test]
+    fn fps_enable_script_encodes_like_powershell() {
+        assert_eq!(
+            base64_utf16le(FPS_ENABLE_SCRIPT),
+            "JABnACAAPQAgAEcAZQB0AC0ATABvAGMAYQBsAEcAcgBvAHUAcAAgAC0AUwBJAEQAIABTAC0AMQAtADUALQAzADIALQA1ADUAOQA7ACAAQQBkAGQALQBMAG8AYwBhAGwARwByAG8AdQBwAE0AZQBtAGIAZQByACAALQBHAHIAbwB1AHAAIAAkAGcAIAAtAE0AZQBtAGIAZQByACAAKAAkAGUAbgB2ADoAVQBTAEUAUgBEAE8ATQBBAEkATgAgACsAIAAnAFwAJwAgACsAIAAkAGUAbgB2ADoAVQBTAEUAUgBOAEEATQBFACkA"
+        );
+    }
 }

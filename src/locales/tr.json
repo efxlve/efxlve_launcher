@@ -1897,5 +1897,9 @@
   "overlay.padTabs": "Sekmeler",
   "overlay.padClose": "Kapat",
   "overlay.hintArrows": "Yön tuşları gezinir",
-  "overlay.hintEnter": "Enter seçer"
+  "overlay.hintEnter": "Enter seçer",
+  "overlay.fpsPermission": "FPS ölçümü için bir kerelik Windows izni gerekiyor.",
+  "overlay.fpsEnable": "Etkinleştir",
+  "overlay.fpsEnabled": "Etkinleştirildi. Açılması için oturumu kapatıp yeniden aç.",
+  "overlay.fpsDenied": "İzin verilmedi."
 }

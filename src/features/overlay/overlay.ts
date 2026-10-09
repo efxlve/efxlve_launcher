@@ -40,6 +40,7 @@ interface MetricsSample {
   pid: number | null;
   fps: number | null;
   frameMs: number | null;
+  fpsAvailable: boolean;
   cpu: number;
   gameCpu: number | null;
   ramUsedMb: number;
@@ -184,6 +185,76 @@ function formatSessionTime(ms: number): string {
   const mins = totalMins % 60;
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
+}
+
+/** One-time Windows permission notice for the ETW FPS counter. */
+let fpsEnableState: "idle" | "enabled" | "denied" = "idle";
+
+function fpsNoticeHtml(m: MetricsSample | null): string {
+  if (!m || m.fpsAvailable) return "";
+  const text =
+    fpsEnableState === "enabled"
+      ? t("overlay.fpsEnabled")
+      : fpsEnableState === "denied"
+      ? t("overlay.fpsDenied")
+      : t("overlay.fpsPermission");
+  return `
+    <div class="ov-fps-notice">
+      ${icon("info", 14)}
+      <span class="ov-fps-notice-text">${esc(text)}</span>
+      <button class="btn ghost small" data-ov="enable-fps" ${fpsEnableState === "idle" ? "" : "disabled"}>${esc(t("overlay.fpsEnable"))}</button>
+    </div>`;
+}
+
+/** Applies the current enable state to notices already on screen. */
+function refreshFpsNotices(): void {
+  const text =
+    fpsEnableState === "enabled"
+      ? t("overlay.fpsEnabled")
+      : fpsEnableState === "denied"
+      ? t("overlay.fpsDenied")
+      : t("overlay.fpsPermission");
+  document.querySelectorAll<HTMLElement>(".ov-fps-notice").forEach((notice) => {
+    const label = notice.querySelector<HTMLElement>(".ov-fps-notice-text");
+    if (label && label.textContent !== text) label.textContent = text;
+    notice.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+      button.disabled = fpsEnableState !== "idle";
+    });
+  });
+}
+
+/** Hides the notice when the counter runs; creates it on the first sample. */
+function updateFpsNotice(): void {
+  const available = metrics?.fpsAvailable === true;
+  const notices = document.querySelectorAll<HTMLElement>(".ov-fps-notice");
+  if (available) {
+    notices.forEach((el) => {
+      el.hidden = true;
+    });
+    return;
+  }
+  if (notices.length > 0) {
+    notices.forEach((el) => {
+      el.hidden = false;
+    });
+    refreshFpsNotices();
+    return;
+  }
+  if (!metrics) return;
+  // The views rendered before the first sample; re-render the active one so
+  // the notice exists.
+  if (activeTab === "home") renderHomeSafe();
+  else if (activeTab === "perf") renderPerf();
+}
+
+async function enableFps(): Promise<void> {
+  try {
+    const status = await invoke<string>("overlay_enable_fps");
+    fpsEnableState = status === "denied" ? "denied" : "enabled";
+  } catch {
+    fpsEnableState = "denied";
+  }
+  refreshFpsNotices();
 }
 
 /* ---------- Shell HTML Template ---------- */
@@ -398,6 +469,7 @@ function renderHome(): void {
             </span>
           </div>
         </div>
+        ${fpsNoticeHtml(m)}
       </div>
 
       <!-- Achievements Card -->
@@ -537,6 +609,7 @@ function renderPerf(): void {
       </div>
       <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hudActive ? "checked" : ""} /><span class="track"></span></label>
     </div>
+    ${fpsNoticeHtml(m)}
     <p class="ov-note">${esc(t("overlay.perfNote"))}</p>`;
 
   drawPerfCanvas();
@@ -612,6 +685,7 @@ function setText(id: string, text: string): void {
 
 function updateMetricsUi(): void {
   const m = metrics;
+  updateFpsNotice();
   if (activeTab === "home" && viewEl("home")?.querySelector(".ov-card")) {
     setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—");
     setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "");
@@ -969,6 +1043,7 @@ function wireEvents(): void {
     else if (action === "close-lightbox") hideLightbox();
     else if (action === "lightbox-prev") stepLightbox(-1);
     else if (action === "lightbox-next") stepLightbox(1);
+    else if (action === "enable-fps") void enableFps();
     else if (action === "open-discord") void openUrl("discord://");
     else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;

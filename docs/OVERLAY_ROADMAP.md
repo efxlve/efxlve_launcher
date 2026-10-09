@@ -1,8 +1,10 @@
 # In-Game Overlay — Product & Technical Roadmap
 
 Status: v1 shipped (Shift+Tab panel, native performance HUD, screenshots, notes,
-achievements, SMTC music, Discord status). ETW FPS needs one validation pass on a
-real game; Discord voice read/write still waits on the Discord app review noted below.
+achievements, SMTC music, Discord status). Controller-first navigation is in.
+ETW FPS is API-agnostic but needs the Windows "Performance Log Users" permission:
+the overlay offers a one-time enable action and explains the sign-out. Discord
+voice read/write still waits on the Discord app review noted below.
 Target platform: Windows first (Linux/macOS later) · Owner: core team
 
 A Steam-like overlay hosted by Efxlve Launcher: one hotkey opens a panel over any
@@ -72,10 +74,32 @@ anti-cheat simply see another window.
   method and adds GPU Busy. In Rust, `ferrisetw` gives a safe ETW consumer API.
   Fallback: bundle/consume the PresentMon service if our minimal consumer proves
   fragile.
+  - **Which event:** `Microsoft-Windows-DxgKrnl` task 107 "Present", event **184**
+    (version 1, Performance channel). It is the *kernel* present that ends every
+    present path, so one counter covers **Direct3D 9/11/12, Vulkan and OpenGL**
+    titles; PresentMon itself needs extra providers (DXGI, D3D9) only for richer
+    per-frame analysis. Present counts are summed over all of the game's processes
+    because some titles present from a child process.
+  - **Windows permission:** only administrators, LocalSystem services and members of
+    the "Performance Log Users" group (SID `S-1-5-32-559`) may control ETW sessions
+    (`StartTraceW` → ERROR_ACCESS_DENIED otherwise); `EnableTraceEx2` documents the
+    same rule. A *private logger* session does **not** work for kernel providers (it
+    is file-based and meant for in-process providers), so there is no unprivileged
+    ETW path. The overlay therefore shows a one-time **Enable** action that adds the
+    current user to the group through a UAC prompt; Windows applies it on the next
+    sign-in, and until then FPS reads "—" while every other metric works.
+  - **Multi-API notes:** the panel and HUD are ordinary topmost windows, so they
+    composite over borderless/windowed games on any API; exclusive fullscreen
+    (DXGI `SetFullscreenState`, Vulkan `VK_EXT_full_screen_exclusive`) is the only
+    mode they cannot paint over. Present counting is unaffected by the swap effect
+    (flip model/blit) because event 184 fires at the kernel present.
 - **CPU / RAM:** `sysinfo` (system + per-process).
 - **GPU utilization / VRAM:** Windows GPU performance counters via PDH —
   `\GPU Engine(*)\Utilization Percentage` and `\GPU Process Memory(*)\Local Usage`,
-  filtered by the game's PID (vendor-agnostic, no driver dependency).
+  filtered by the game's PID (vendor-agnostic, no driver dependency). API-agnostic
+  too: the counters live in the kernel mode driver, so Vulkan/OpenGL titles report
+  like DirectX titles. On hybrid systems the same pid has one VRAM instance per
+  adapter; the largest is the render adapter.
 - **Temps / power (optional):** NVML for NVIDIA (`nvml-wrapper`); AMD/Intel via PDH
   and vendor SDKs later. Never required for the HUD to work.
 
@@ -229,6 +253,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 | Exclusive fullscreen renders no overlay | Medium | Detect and inform; recommend borderless; not a v1 blocker |
 | Focus stealing pauses some games | Medium | v1 takes focus (Game Bar model); per-game note; later explore `WS_EX_NOACTIVATE` + keyboard hook |
 | ETW consumer complexity (FPS) | Medium | M0 spike; PresentMon service fallback |
+| ETW session control needs admin/Performance Log Users | High (Windows rule) | One-time in-overlay "Enable" action (UAC) that adds the user to the group; clear sign-out hint; other metrics unaffected |
 | GPU counters missing on some systems (old drivers, hybrid GPUs) | Medium | PDH per-PID with LUID matching; hide fields that have no data |
 | Discord partner scopes for voice write | Medium | Read-only voice widget first; mute/deafen marked "if approved" |
 | Spotify API restrictions | Solved | Use SMTC, not the Web API |
@@ -271,6 +296,12 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - FerrisETW (Rust ETW consumer) — <https://github.com/n4r1b/ferrisetw>
 - Windows GPU performance counters (PDH GPU Engine / GPU Process Memory) —
   <https://learn.microsoft.com/en-us/windows/win32/perfctrs/using-the-gpu-performance-counters>
+- ETW session control permissions (StartTraceW → ERROR_ACCESS_DENIED) —
+  <https://learn.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-starttracew>
+- EnableTraceEx2 (keyword semantics, provider-enable permissions) —
+  <https://learn.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-enabletraceex2>
+- Private logger sessions (in-process/file-based; not for kernel providers) —
+  <https://learn.microsoft.com/en-us/windows/win32/etw/configuring-and-starting-a-private-logger-session>
 - Spotify Web API 2026 restrictions —
   <https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security>
 - Windows media controls for Rust (`windows::Media::Control`, SMTC) —

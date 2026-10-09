@@ -1897,5 +1897,9 @@
   "overlay.padTabs": "Tabs",
   "overlay.padClose": "Close",
   "overlay.hintArrows": "Arrows navigate",
-  "overlay.hintEnter": "Enter select"
+  "overlay.hintEnter": "Enter select",
+  "overlay.fpsPermission": "FPS measurement needs a one-time Windows permission.",
+  "overlay.fpsEnable": "Enable",
+  "overlay.fpsEnabled": "Enabled. Sign out of Windows and back in to activate.",
+  "overlay.fpsDenied": "Permission was not granted."
 }
