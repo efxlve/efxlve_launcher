@@ -809,6 +809,7 @@ mod imp {
 
         let events = player.get_player_event_channel();
         tokio::spawn(pump_events(events));
+        tokio::spawn(token_refresh_loop(app.clone(), session.clone()));
 
         let connect_config = ConnectConfig {
             name: DEVICE_NAME.to_string(),
@@ -862,6 +863,51 @@ mod imp {
             .await
             .map_err(|error| error.to_string())?;
         Ok(store_token(app, token))
+    }
+
+    /// The spclient renews its HTTP token through login5, which exchanges the
+    /// session's auth data — so that data has to stay fresh. Without this, all
+    /// metadata (track changes, playlists) dies about an hour after start.
+    async fn token_refresh_loop(app: AppHandle, session: Session) {
+        loop {
+            tokio::time::sleep(Duration::from_secs(600)).await;
+            let Some(saved) = load_token(&app) else { continue };
+            // Refresh once it is within 25 minutes of expiry.
+            if saved.expires_at - 1500 > now_unix() {
+                continue;
+            }
+            let client = match OAuthClientBuilder::new(
+                &session.client_id(),
+                REDIRECT_URI,
+                vec!["streaming"],
+            )
+            .build()
+            {
+                Ok(client) => client,
+                Err(_) => continue,
+            };
+            let Ok(token) = client.refresh_token_async(&saved.refresh_token).await else {
+                eprintln!("spotify token refresh failed; keeping the current one");
+                continue;
+            };
+            session.set_auth_data(token.access_token.as_bytes());
+            let remaining = token
+                .expires_at
+                .saturating_duration_since(Instant::now())
+                .as_secs() as i64;
+            let stored = PlaybackToken {
+                access_token: token.access_token,
+                // The response may rotate the refresh token; keep the old one
+                // when it does not include a new one.
+                refresh_token: if token.refresh_token.is_empty() {
+                    saved.refresh_token
+                } else {
+                    token.refresh_token
+                },
+                expires_at: now_unix() + remaining.max(60),
+            };
+            save_token(&app, &stored);
+        }
     }
 
     fn store_token(app: &AppHandle, token: OAuthToken) -> PlaybackToken {

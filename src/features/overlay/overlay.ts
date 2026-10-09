@@ -132,6 +132,7 @@ let lastMediaActive = false;
 /** Library browser state (playlists + the open playlist's tracks). */
 let playlists: PlaylistSummary[] | null = null;
 let playlistsState: "idle" | "loading" | "ready" | "error" = "idle";
+let playlistsError = "";
 let selectedPlaylist: string | null = null;
 let playlistTracks: TrackSummary[] | null = null;
 let tracksState: "idle" | "loading" | "ready" | "error" = "idle";
@@ -1160,7 +1161,8 @@ function renderPlaylistList(): void {
     return;
   }
   if (playlistsState === "error") {
-    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}</div>`;
+    const detail = playlistsError ? ` — ${playlistsError.slice(0, 140)}` : "";
+    host.innerHTML = `<div class="ov-empty" style="padding:20px 0">${esc(t("overlay.playlistsError"))}${esc(detail)}</div>`;
     return;
   }
   const lists = playlists ?? [];
@@ -1236,11 +1238,13 @@ function paintTrackHighlight(): void {
 async function ensurePlaylists(force = false): Promise<void> {
   if (!force && (playlistsState === "loading" || playlistsState === "ready")) return;
   playlistsState = "loading";
+  playlistsError = "";
   renderPlaylistList();
   try {
     playlists = await spotifyPlaybackPlaylists(force);
     playlistsState = "ready";
-  } catch {
+  } catch (error) {
+    playlistsError = String(error).replace(/^Error: /, "");
     playlistsState = "error";
   }
   renderPlaylistList();

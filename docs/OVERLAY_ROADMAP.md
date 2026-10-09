@@ -112,7 +112,9 @@ no developer app, no Client ID), and the device then shows up as "Efxlve
 Launcher" in every Spotify client. Spotify requires **Premium** for this kind of
 playback. The receiver starts by itself the first time the Spotify page opens;
 the approval page opens automatically, so the header only carries Back and
-Reload.
+Reload. A background task keeps the OAuth token fresh and feeds the session's
+auth data, because librespot renews its HTTP token through login5 — without it,
+metadata (track changes, playlists) dies about an hour after start.
 
 **Browsing:** the launcher's Spotify page embeds the normal `open.spotify.com`
 interface as a native child WebView2 (search, library, playlists, queue — the
