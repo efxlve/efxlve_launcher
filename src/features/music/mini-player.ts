@@ -6,6 +6,8 @@
  * transport buttons (CSS handles the layout via `html.sb-narrow`).
  */
 
+import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
@@ -50,6 +52,7 @@ export function initMiniPlayer(): void {
   }
   if (volumeIcon) volumeIcon.innerHTML = icon("volume-2", 13);
   if (volume) volume.setAttribute("aria-label", t("mini.volume"));
+  mini.querySelector(".sb-mini-top")?.setAttribute("title", t("overlay.openSpotify"));
 
   document.addEventListener("click", (event) => {
     const action = (event.target as HTMLElement).closest<HTMLElement>("[data-mini]")?.dataset.mini;
@@ -61,6 +64,8 @@ export function initMiniPlayer(): void {
       if (current) void control("previous");
     } else if (action === "next") {
       if (current) void control("next");
+    } else if (action === "open") {
+      void openCurrent();
     }
   });
 
@@ -68,9 +73,49 @@ export function initMiniPlayer(): void {
     void spotifyPlaybackControl("volume", Number(volume.value)).catch(() => undefined);
   });
 
+  // Scrub the timeline: click or drag, then one seek on release.
+  const progress = mini.querySelector<HTMLElement>(".sb-mini-progress");
+  progress?.addEventListener("pointerdown", (event) => {
+    if (!current?.durationMs) return;
+    const rect = progress.getBoundingClientRect();
+    // The collapsed rail hides the bar; nothing to scrub then.
+    if (rect.width < 8) return;
+    event.preventDefault();
+    const seek = (clientX: number): number => {
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      baseMs = ratio * (current?.durationMs ?? 0);
+      baseAt = Date.now();
+      paintProgress();
+      return Math.round(baseMs);
+    };
+    seek(event.clientX);
+    const move = (ev: PointerEvent) => seek(ev.clientX);
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      void spotifyPlaybackControl("seek", seek(ev.clientX)).catch(() => undefined);
+      window.setTimeout(() => void refresh(), 600);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+
   window.setInterval(() => void refresh(), 2500);
   window.setInterval(paintProgress, 1000);
   void refresh();
+}
+
+/** Opens the current track inside the launcher's embedded Spotify page. */
+async function openCurrent(): Promise<void> {
+  if (!current) return;
+  const url = current.url && current.url !== "spotify:" ? current.url : "https://open.spotify.com/";
+  try {
+    const opened = await invoke<boolean>("spotify_open_in_launcher", { url });
+    if (opened) return;
+  } catch {
+    // Fall through to the browser.
+  }
+  void openUrl(url).catch(() => undefined);
 }
 
 /** Nothing loaded: make sure the receiver runs, then start its last context. */

@@ -384,6 +384,15 @@ html.sb-narrow .sb-eq {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background-color var(--ease);
+}
+
+.sb-mini-top:hover {
+  background: var(--surface-2);
 }
 
 .sb-mini-art {
@@ -431,18 +440,42 @@ html.sb-narrow .sb-eq {
 }
 
 .sb-mini-progress {
+  position: relative;
+  height: 10px;
+  cursor: pointer;
+}
+
+.sb-mini-progress::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
   height: 2px;
   border-radius: 1px;
   background: var(--line);
-  overflow: hidden;
+  transition: height var(--ease), top var(--ease);
+}
+
+.sb-mini-progress:hover::before {
+  top: 3px;
+  height: 4px;
 }
 
 .sb-mini-progress span {
-  display: block;
-  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 4px;
+  height: 2px;
+  border-radius: 1px;
   width: 0;
   background: var(--text);
-  transition: width 400ms linear;
+  transition: width 400ms linear, height var(--ease), top var(--ease);
+}
+
+.sb-mini-progress:hover span {
+  top: 3px;
+  height: 4px;
 }
 
 .sb-mini-controls {
