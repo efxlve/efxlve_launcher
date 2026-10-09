@@ -210,6 +210,7 @@
 }
 
 .ov-pad-b {
+  display: none;
   font-size: 12px;
   font-weight: 700;
   color: #ff5c5c;
@@ -708,16 +709,21 @@
 }
 
 /* --- Controller Navigation & Focus Glow --- */
+/* !important because the hint rows carry an inline display:none default. */
 .ov-using-gamepad .ov-bumper-hint {
-  display: inline-flex;
+  display: inline-flex !important;
 }
 
 .ov-using-gamepad .keyboard-hints {
-  display: none;
+  display: none !important;
 }
 
 .ov-using-gamepad .gamepad-hints {
-  display: inline-flex;
+  display: inline-flex !important;
+}
+
+.ov-using-gamepad .ov-pad-b {
+  display: inline;
 }
 
 .ov-using-gamepad .ov-pad-b {
@@ -730,9 +736,19 @@
 
 .ov-controller-focus {
   outline: 2px solid #38bdf8 !important;
-  outline-offset: 2px !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
-  transform: translateY(-2px);
+  outline-offset: 3px !important;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.45) !important;
+}
+
+/* The switch input is invisible; the ring belongs on its track. */
+.switch.ov-controller-focus .track {
+  outline: 2px solid #38bdf8;
+  outline-offset: 3px;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+}
+
+.ov-card[data-nav-target] {
+  cursor: pointer;
 }
 
 /* --- Lightbox Modal --- */
@@ -774,6 +790,40 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.ov-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: background 120ms ease;
+}
+
+.ov-lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.ov-lightbox-prev { left: 28px; }
+.ov-lightbox-next { right: 28px; }
+
+.ov-lightbox-counter {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
 }
 
 /* --- Dedicated Views Layouts --- */

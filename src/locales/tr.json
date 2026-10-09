@@ -1886,8 +1886,16 @@
   "overlay.disableTitle": "Bu oyun için kapat",
   "overlay.disableDesc": "Bu oyunda overlay hiç açılmaz.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Oyun içi arayüz için Shift+Tab'a bas.",
+  "overlay.startHint": "Oyun içi arayüz: Shift+Tab veya kumandanın Guide düğmesi.",
   "overlay.disabledListTitle": "Kapatılan oyunlar",
   "overlay.disabledListDesc": "Overlay bu oyunlarda hiç açılmaz. Geri açmak için listeden çıkar.",
-  "overlay.restore": "Geri aç"
+  "overlay.restore": "Geri aç",
+  "overlay.running": "Çalışıyor",
+  "overlay.gameLabel": "Oyun",
+  "overlay.padSelect": "Seç",
+  "overlay.padBack": "Geri",
+  "overlay.padTabs": "Sekmeler",
+  "overlay.padClose": "Kapat",
+  "overlay.hintArrows": "Yön tuşları gezinir",
+  "overlay.hintEnter": "Enter seçer"
 }

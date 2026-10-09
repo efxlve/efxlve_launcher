@@ -136,6 +136,7 @@ function storeLabel(store: string): string {
     case "ubisoft": return "Ubisoft Connect";
     case "ea": return "EA App";
     case "riot": return "Riot Games";
+    case "game": return t("overlay.gameLabel");
     default: return store;
   }
 }
@@ -253,12 +254,13 @@ function shellHtml(): string {
         <div class="ov-footer-left">
           <span class="keyboard-hints">
             <kbd class="ov-kbd">Shift</kbd>+<kbd class="ov-kbd">Tab</kbd> ${esc(t("overlay.hotkeyHint"))}
+            · ${esc(t("overlay.hintArrows"))} · ${esc(t("overlay.hintEnter"))}
           </span>
           <span class="gamepad-hints" style="display:none">
-            <span class="ov-glyph-pill">Ⓐ ${esc(t("overlay.restore") ? "Select" : "Select")}</span>
-            <span class="ov-glyph-pill">Ⓑ ${esc(t("common.close"))}</span>
-            <span class="ov-glyph-pill">LB / RB Tab</span>
-            <span class="ov-glyph-pill">D-Pad / Stick</span>
+            <span class="ov-glyph-pill">Ⓐ ${esc(t("overlay.padSelect"))}</span>
+            <span class="ov-glyph-pill">Ⓑ ${esc(t("overlay.padBack"))}</span>
+            <span class="ov-glyph-pill">LB/RB ${esc(t("overlay.padTabs"))}</span>
+            <span class="ov-glyph-pill">☰ ${esc(t("overlay.padClose"))}</span>
           </span>
         </div>
         <div class="ov-footer-right" id="ov-foot-store"></div>
@@ -266,10 +268,13 @@ function shellHtml(): string {
 
       <!-- Screenshot Lightbox Modal -->
       <div class="ov-lightbox" id="ov-lightbox" style="display:none">
+        <button class="ov-lightbox-nav ov-lightbox-prev" data-ov="lightbox-prev" title="${esc(t("overlay.previous"))}">${icon("chevron-left", 26)}</button>
         <div class="ov-lightbox-content">
           <img id="ov-lightbox-img" src="" alt="" />
+          <div class="ov-lightbox-counter" id="ov-lightbox-counter"></div>
           <button class="ov-lightbox-close" data-ov="close-lightbox">${icon("x", 18)}</button>
         </div>
+        <button class="ov-lightbox-nav ov-lightbox-next" data-ov="lightbox-next" title="${esc(t("overlay.next"))}">${icon("chevron-right", 26)}</button>
       </div>
     </div>`;
 }
@@ -352,7 +357,7 @@ function renderHome(): void {
             <div class="ov-hero-status">
               <span class="ov-badge-pill">${storeLogo(store, 14)} <span>${esc(storeLabel(store))}</span></span>
               <span>·</span>
-              <span style="color:var(--ok)">● ${esc(t("status.running", { title: "" }).trim() || "Running")}</span>
+              <span style="color:var(--ok)">● ${esc(t("overlay.running"))}</span>
             </div>
           </div>
           <div class="ov-hero-actions">
@@ -368,23 +373,23 @@ function renderHome(): void {
           <button class="ov-card-action" data-ov-tab="perf">${icon("chevron-right", 16)}</button>
         </div>
         <div class="ov-perf-hero">
-          <span class="ov-perf-val">${currentFps}</span>
+          <span class="ov-perf-val" id="ov-home-fps">${currentFps}</span>
           <span class="ov-perf-unit">FPS</span>
-          <span class="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
+          <span class="ov-perf-frame" id="ov-home-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
         </div>
         <canvas class="ov-perf-canvas" id="ov-home-perf-canvas"></canvas>
         <div class="ov-metrics-mini">
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.cpu"))}</span>
-            <span class="ov-metric-num">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</span>
+            <span class="ov-metric-num" id="ov-home-cpu">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.gpu"))}</span>
-            <span class="ov-metric-num">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</span>
+            <span class="ov-metric-num" id="ov-home-gpu">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.ram"))}</span>
-            <span class="ov-metric-num">${m ? fmtMb(m.ramUsedMb) : "—"}</span>
+            <span class="ov-metric-num" id="ov-home-ram">${m ? fmtMb(m.ramUsedMb) : "—"}</span>
           </div>
           <div class="ov-metric-pill">
             <span class="ov-metric-label">HUD</span>
@@ -476,6 +481,14 @@ function renderHome(): void {
   drawPerfCanvas();
 }
 
+/** Re-renders home only when it is the visible tab and nothing is being typed. */
+function renderHomeSafe(): void {
+  if (activeTab !== "home") return;
+  const el = document.activeElement as HTMLElement | null;
+  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) return;
+  renderHome();
+}
+
 /* 2. Full Performance View */
 function renderPerf(): void {
   const el = viewEl("perf");
@@ -487,9 +500,9 @@ function renderPerf(): void {
     <div class="ov-page-title">${icon("cpu", 20)} <span>${esc(t("overlay.tabPerformance"))}</span></div>
     <div class="ov-card" style="margin-bottom:16px">
       <div class="ov-perf-hero">
-        <span class="ov-perf-val">${m?.fps != null ? Math.round(m.fps) : "—"}</span>
+        <span class="ov-perf-val" id="ov-perf-fps">${m?.fps != null ? Math.round(m.fps) : "—"}</span>
         <span class="ov-perf-unit">FPS</span>
-        <span class="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : ""}</span>
+        <span class="ov-perf-frame" id="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : ""}</span>
       </div>
       <canvas class="ov-perf-canvas" id="ov-perf-canvas" style="height:140px"></canvas>
     </div>
@@ -497,23 +510,23 @@ function renderPerf(): void {
     <div class="ov-dashboard" style="margin-bottom:16px">
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.cpu"))}</div>
-        <div class="ov-perf-val" style="font-size:32px">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
-        <span style="font-size:11px;color:var(--text-3)">Total: ${m ? `${Math.round(m.cpu)}%` : "—"}</span>
+        <div class="ov-perf-val" id="ov-perf-cpu" style="font-size:32px">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
+        <span id="ov-perf-cpu-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? `${Math.round(m.cpu)}%` : "—"}</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.gpu"))}</div>
-        <div class="ov-perf-val" style="font-size:32px">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
+        <div class="ov-perf-val" id="ov-perf-gpu" style="font-size:32px">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">GPU Utilization</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.vram"))}</div>
-        <div class="ov-perf-val" style="font-size:32px">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
+        <div class="ov-perf-val" id="ov-perf-vram" style="font-size:32px">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">Video Memory</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.ram"))}</div>
-        <div class="ov-perf-val" style="font-size:32px">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
-        <span style="font-size:11px;color:var(--text-3)">Total: ${m ? fmtMb(m.ramTotalMb) : "—"}</span>
+        <div class="ov-perf-val" id="ov-perf-ram" style="font-size:32px">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
+        <span id="ov-perf-ram-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? fmtMb(m.ramTotalMb) : "—"}</span>
       </div>
     </div>
 
@@ -590,6 +603,35 @@ function drawPerfCanvas(): void {
   }
 }
 
+/* Patches the live numbers in place. A full re-render here would drop the
+   notes textarea focus and the scroll position every second. */
+function setText(id: string, text: string): void {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== text) el.textContent = text;
+}
+
+function updateMetricsUi(): void {
+  const m = metrics;
+  if (activeTab === "home" && viewEl("home")?.querySelector(".ov-card")) {
+    setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—");
+    setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "");
+    setText("ov-home-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—");
+    setText("ov-home-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—");
+    setText("ov-home-ram", m ? fmtMb(m.ramUsedMb) : "—");
+    drawPerfCanvas();
+  } else if (activeTab === "perf" && document.getElementById("ov-perf-fps")) {
+    setText("ov-perf-fps", m?.fps != null ? String(Math.round(m.fps)) : "—");
+    setText("ov-perf-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : "");
+    setText("ov-perf-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—");
+    setText("ov-perf-cpu-total", `Total: ${m ? `${Math.round(m.cpu)}%` : "—"}`);
+    setText("ov-perf-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—");
+    setText("ov-perf-vram", m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—");
+    setText("ov-perf-ram", m ? fmtMb(m.ramUsedMb) : "—");
+    setText("ov-perf-ram-total", `Total: ${m ? fmtMb(m.ramTotalMb) : "—"}`);
+    drawPerfCanvas();
+  }
+}
+
 /* 3. Full Achievements View */
 async function loadAchievements(force = false): Promise<void> {
   const el = viewEl("ach");
@@ -598,7 +640,10 @@ async function loadAchievements(force = false): Promise<void> {
     el.innerHTML = `<div class="ov-empty">${esc(t("ach.checking"))}</div>`;
     const { store, id } = splitKey(context.appName);
     try {
-      if (store === "steam") {
+      if (store === "game") {
+        // A title the launcher did not install: no store to ask.
+        cachedAchievements = null;
+      } else if (store === "steam") {
         cachedAchievements = await invoke<AchievementsData>("steam_get_achievements", { appId: id, force: false });
       } else if (store === "gog") {
         cachedAchievements = await invoke<AchievementsData>("gog_get_achievements", { gameId: id });
@@ -622,6 +667,7 @@ async function loadAchievements(force = false): Promise<void> {
     el.innerHTML = `
       <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span></div>
       <div class="ov-empty">${esc(t("overlay.noAchievements"))}</div>`;
+    renderHomeSafe();
     return;
   }
 
@@ -635,7 +681,7 @@ async function loadAchievements(force = false): Promise<void> {
       const name = item.unlocked || !item.hidden ? item.display_name || item.name : t("ach.hiddenName");
       const desc = item.unlocked || !item.hidden ? item.description || "" : t("ach.hiddenDesc");
       return `
-        <div class="ov-ach-row${item.unlocked ? " unlocked" : ""}">
+        <div class="ov-ach-row${item.unlocked ? " unlocked" : ""}" data-nav-row>
           ${item.icon_link ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:#fff">${esc(name)}</div>
@@ -652,6 +698,7 @@ async function loadAchievements(force = false): Promise<void> {
       <span class="ov-ach-pct">%${pct}</span>
     </div>
     <div class="ov-ach-full-list">${rows}</div>`;
+  renderHomeSafe();
 }
 
 /* 4. Full Screenshots View */
@@ -660,13 +707,19 @@ async function loadScreenshots(force = false): Promise<void> {
   if (!el) return;
   if (cachedScreenshots.length === 0 || force) {
     el.innerHTML = `<div class="ov-empty">${esc(t("common.calculating"))}</div>`;
-    try {
-      cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
-        appName: context.appName,
-        title: context.title,
-      });
-    } catch {
+    const { store } = splitKey(context.appName);
+    if (store === "game") {
+      // A title the launcher did not install: no store library to scan.
       cachedScreenshots = [];
+    } else {
+      try {
+        cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
+          appName: context.appName,
+          title: context.title,
+        });
+      } catch {
+        cachedScreenshots = [];
+      }
     }
   }
 
@@ -686,6 +739,7 @@ async function loadScreenshots(force = false): Promise<void> {
             <img src="${esc(item.data_url)}" alt="" loading="lazy" />
           </div>`).join("")}
       </div>`}`;
+  renderHomeSafe();
 }
 
 /* 5. Full Notes View */
@@ -835,17 +889,39 @@ function applyOpacity(val: number): void {
 
 /* ---------- Screenshot Lightbox ---------- */
 
+let lightboxIndex = -1;
+
+function lightboxIsOpen(): boolean {
+  const box = document.getElementById("ov-lightbox");
+  return !!box && box.style.display !== "none";
+}
+
 function showLightbox(src: string): void {
   const box = document.getElementById("ov-lightbox");
   const img = document.getElementById("ov-lightbox-img") as HTMLImageElement | null;
+  const counter = document.getElementById("ov-lightbox-counter");
   if (!box || !img) return;
+  lightboxIndex = cachedScreenshots.findIndex((item) => item.data_url === src);
   img.src = src;
+  if (counter) counter.textContent = lightboxIndex >= 0 && cachedScreenshots.length > 1 ? `${lightboxIndex + 1} / ${cachedScreenshots.length}` : "";
   box.style.display = "grid";
+}
+
+/** Steps through the screenshots while the lightbox is open (LB/RB, arrows). */
+function stepLightbox(delta: number): void {
+  const items = cachedScreenshots;
+  if (lightboxIndex < 0 || items.length === 0) return;
+  lightboxIndex = (lightboxIndex + delta + items.length) % items.length;
+  const img = document.getElementById("ov-lightbox-img") as HTMLImageElement | null;
+  const counter = document.getElementById("ov-lightbox-counter");
+  if (img) img.src = items[lightboxIndex].data_url;
+  if (counter) counter.textContent = `${lightboxIndex + 1} / ${items.length}`;
 }
 
 function hideLightbox(): void {
   const box = document.getElementById("ov-lightbox");
   if (box) box.style.display = "none";
+  lightboxIndex = -1;
 }
 
 /* ---------- Global Click & Change Wiring ---------- */
@@ -855,10 +931,24 @@ function wireEvents(): void {
     const target = event.target as HTMLElement | null;
     if (!target) return;
 
+    // Lightbox backdrop closes the preview.
+    const lightbox = document.getElementById("ov-lightbox");
+    if (lightbox && target === lightbox) {
+      hideLightbox();
+      return;
+    }
+
     // Tab button
     const tabBtn = target.closest<HTMLElement>("[data-ov-tab]");
     if (tabBtn?.dataset.ovTab) {
       setTab(tabBtn.dataset.ovTab as TabId);
+      return;
+    }
+
+    // Dashboard card: the whole card opens its section.
+    const navCard = target.closest<HTMLElement>("[data-nav-target]");
+    if (navCard?.dataset.navTarget) {
+      setTab(navCard.dataset.navTarget as TabId);
       return;
     }
 
@@ -877,6 +967,8 @@ function wireEvents(): void {
     else if (action === "launcher") void invoke("overlay_show_launcher");
     else if (action === "shots-folder") void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
     else if (action === "close-lightbox") hideLightbox();
+    else if (action === "lightbox-prev") stepLightbox(-1);
+    else if (action === "lightbox-next") stepLightbox(1);
     else if (action === "open-discord") void openUrl("discord://");
     else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
@@ -925,21 +1017,54 @@ function wireEvents(): void {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
+    // Shift+Tab is the global close hotkey; plain Tab would jump focus to
+    // hidden nodes, so it is swallowed here.
+    if (event.key === "Tab") {
       event.preventDefault();
-      const lb = document.getElementById("ov-lightbox");
-      if (lb && lb.style.display !== "none") {
-        hideLightbox();
-      } else {
-        void invoke("overlay_hide");
+      return;
+    }
+    if (isTextEntryFocused()) {
+      if (event.key === "Escape") (document.activeElement as HTMLElement | null)?.blur();
+      return;
+    }
+    const dirs: Record<string, Dir> = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" };
+    const dir = dirs[event.key];
+    if (dir) {
+      event.preventDefault();
+      if (focusedEl instanceof HTMLInputElement && focusedEl.type === "range" && (dir === "left" || dir === "right")) {
+        adjustRange(focusedEl, dir === "right" ? 4 : -4);
+        return;
       }
+      moveFocus(dir);
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      activateFocused();
+      return;
+    }
+    if (event.key === "Escape" || event.key === "Backspace") {
+      event.preventDefault();
+      goBack();
     }
   });
 
-  window.addEventListener("mousemove", () => {
-    document.body.classList.remove("ov-using-gamepad");
-    removeGamepadFocus();
+  // Mouse or trackpad use takes the focus ring away; the next controller or
+  // keyboard input brings it back.
+  window.addEventListener("mousemove", onMouseActivity);
+  document.addEventListener("mousedown", onMouseActivity);
+
+  // The window is hidden while the panel is closed: rAF pauses and the pad
+  // state (prevButtons) goes stale. Suppress input briefly on every re-show so
+  // the button that opened the panel cannot close it on the first frame.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) gamepadSuppressUntil = performance.now() + 450;
   });
+}
+
+function onMouseActivity(): void {
+  document.body.classList.remove("ov-using-gamepad");
+  removeGamepadFocus();
 }
 
 async function mediaControl(action: string): Promise<void> {
@@ -951,166 +1076,306 @@ async function mediaControl(action: string): Promise<void> {
   void refreshMedia();
 }
 
-/* ---------- Controller & Gamepad Support ---------- */
+/* ---------- Controller & Keyboard Navigation ---------- */
 
-let focusedIndex = -1;
+type Dir = "up" | "down" | "left" | "right";
+
+let focusedEl: HTMLElement | null = null;
 let prevButtons: boolean[] = [];
-let axisRepeatTimer = 0;
-let lastAxisDir: "up" | "down" | "left" | "right" | null = null;
+let navRepeatAt = 0;
+let lastDir: Dir | null = null;
+/** Input is ignored briefly after open so the button that opened the panel
+ *  (Guide / Start+Back, still held) cannot close it on the first frame. */
+let gamepadSuppressUntil = 0;
 
 function removeGamepadFocus(): void {
   document.querySelectorAll(".ov-controller-focus").forEach((el) => {
     el.classList.remove("ov-controller-focus");
   });
+  focusedEl = null;
+}
+
+/** True while a text box owns the keyboard (arrow keys must move the caret). */
+function isTextEntryFocused(): boolean {
+  const el = document.activeElement as HTMLElement | null;
+  if (!el) return false;
+  if (el.tagName === "TEXTAREA") return true;
+  if (el instanceof HTMLInputElement) {
+    return !["checkbox", "radio", "range", "button", "submit"].includes(el.type);
+  }
+  return el.isContentEditable;
+}
+
+function isRenderable(el: HTMLElement): boolean {
+  if (!el.isConnected) return false;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 2 && rect.height < 2) return false;
+  const style = window.getComputedStyle(el);
+  return style.visibility !== "hidden" && style.display !== "none";
 }
 
 function getFocusableElements(): HTMLElement[] {
-  // Select active view interactive items and dock buttons
+  const items: HTMLElement[] = [];
+  const push = (el: Element | null) => {
+    const node = el as HTMLElement | null;
+    if (!node || items.includes(node) || !isRenderable(node)) return;
+    items.push(node);
+  };
+
+  document.querySelectorAll(".ov-dock-btn").forEach(push);
+  push(document.querySelector(".ov-btn-resume"));
+
   const activeView = document.querySelector<HTMLElement>(".ov-view.active");
-  const candidates: HTMLElement[] = [];
+  activeView?.querySelectorAll<HTMLElement>(
+    "button, [data-ov-preview], [data-nav-row], .ov-card[data-nav-target], textarea, input",
+  ).forEach((el) => {
+    // Toggle switches hide their checkbox: the ring belongs on the label.
+    if (el instanceof HTMLInputElement && el.type === "checkbox") {
+      push(el.closest(".switch") ?? el);
+    } else {
+      push(el);
+    }
+  });
 
-  // Dock items
-  document.querySelectorAll<HTMLElement>(".ov-dock-btn").forEach((b) => candidates.push(b));
-  // Resume button
-  const resumeBtn = document.querySelector<HTMLElement>(".ov-btn-resume");
-  if (resumeBtn) candidates.push(resumeBtn);
-
-  if (activeView) {
-    activeView.querySelectorAll<HTMLElement>("button, [data-ov-preview], .ov-card[data-nav-target], input, textarea").forEach((el) => {
-      if (el.offsetParent !== null) candidates.push(el);
-    });
-  }
-
-  return candidates;
+  return items;
 }
 
-function updateGamepadFocus(delta: number): void {
+function focusElement(el: HTMLElement | null): void {
+  removeGamepadFocus();
+  if (!el || !isRenderable(el)) return;
+  focusedEl = el;
+  el.classList.add("ov-controller-focus");
+  el.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function dockTabButton(tab: TabId): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`.ov-dock-btn[data-ov-tab="${tab}"]`);
+}
+
+function focusDefault(): void {
+  focusElement(dockTabButton(activeTab) ?? getFocusableElements()[0] ?? null);
+}
+
+function ensureFocus(): void {
+  if (focusedEl && focusedEl.isConnected) return;
+  focusDefault();
+}
+
+/** Moves the ring to the nearest element in the pressed direction (2D map). */
+function moveFocus(dir: Dir): void {
+  ensureFocus();
   const items = getFocusableElements();
   if (items.length === 0) return;
-
-  focusedIndex = (focusedIndex + delta + items.length) % items.length;
-  removeGamepadFocus();
-  const target = items[focusedIndex];
-  if (target) {
-    target.classList.add("ov-controller-focus");
-    target.scrollIntoView({ block: "nearest", inline: "nearest" });
+  if (!focusedEl || !items.includes(focusedEl)) {
+    focusDefault();
+    return;
   }
+
+  const cur = focusedEl.getBoundingClientRect();
+  const cx = cur.left + cur.width / 2;
+  const cy = cur.top + cur.height / 2;
+  let best: HTMLElement | null = null;
+  let bestScore = Infinity;
+
+  for (const el of items) {
+    if (el === focusedEl) continue;
+    const rect = el.getBoundingClientRect();
+    const dx = rect.left + rect.width / 2 - cx;
+    const dy = rect.top + rect.height / 2 - cy;
+    const inDir =
+      dir === "left" ? dx < -6 :
+      dir === "right" ? dx > 6 :
+      dir === "up" ? dy < -6 :
+      dy > 6;
+    if (!inDir) continue;
+    const horizontal = dir === "left" || dir === "right";
+    const primary = horizontal ? Math.abs(dx) : Math.abs(dy);
+    const cross = horizontal ? Math.abs(dy) : Math.abs(dx);
+    const score = primary + cross * 2.2;
+    if (score < bestScore) {
+      bestScore = score;
+      best = el;
+    }
+  }
+
+  if (best) focusElement(best);
+}
+
+function adjustRange(input: HTMLInputElement, step: number): void {
+  const min = Number(input.min || 0);
+  const max = Number(input.max || 100);
+  const next = Math.min(max, Math.max(min, Number(input.value) + step));
+  if (next === Number(input.value)) return;
+  input.value = String(next);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function activateFocused(): void {
+  ensureFocus();
+  const el = focusedEl;
+  if (!el || !el.isConnected) return;
+  if (el instanceof HTMLInputElement && el.type === "range") return;
+  if (el.classList.contains("switch")) {
+    el.querySelector<HTMLInputElement>("input")?.click();
+    return;
+  }
+  if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && el.type === "text")) {
+    el.focus();
+    return;
+  }
+  const switchesTab = el.matches("[data-nav-target], [data-ov-tab]");
+  el.click();
+  // A card or chevron that switched tabs hides the old view: the ring moves
+  // to the new active dock button right away.
+  window.setTimeout(() => {
+    if (switchesTab || !focusedEl || !focusedEl.isConnected) focusElement(dockTabButton(activeTab));
+  }, 0);
 }
 
 function cycleTab(delta: number): void {
-  const currentIdx = TABS.findIndex((t) => t.id === activeTab);
+  const currentIdx = TABS.findIndex((tab) => tab.id === activeTab);
   const nextIdx = (currentIdx + delta + TABS.length) % TABS.length;
   setTab(TABS[nextIdx].id);
+  focusElement(dockTabButton(TABS[nextIdx].id));
+}
+
+/** B / Esc: close the lightbox, leave the text box, go home, then close. */
+function goBack(): void {
+  if (lightboxIsOpen()) {
+    hideLightbox();
+    return;
+  }
+  if (isTextEntryFocused()) {
+    (document.activeElement as HTMLElement | null)?.blur();
+    return;
+  }
+  if (activeTab !== "home") {
+    setTab("home");
+    focusElement(dockTabButton("home"));
+    return;
+  }
+  void invoke("overlay_hide");
 }
 
 function pollGamepadLoop(): void {
+  requestAnimationFrame(pollGamepadLoop);
+  if (document.hidden) return;
+
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   const pad = gamepads.find((p) => p && p.connected);
 
   const badgeEl = document.getElementById("ov-controller-badge");
   const badgeNameEl = document.getElementById("ov-controller-name");
 
-  if (pad) {
-    if (badgeEl && badgeEl.style.display === "none") {
-      badgeEl.style.display = "inline-flex";
-      const name = pad.id.toLowerCase().includes("playstation")
-        ? "DualSense"
-        : pad.id.toLowerCase().includes("nintendo")
-        ? "Switch Pro"
-        : "Controller";
-      if (badgeNameEl) badgeNameEl.textContent = name;
-    }
-
-    // Detect button transitions
-    const buttons = pad.buttons.map((b) => b.pressed);
-
-    const isEdge = (idx: number): boolean => Boolean(buttons[idx] && !prevButtons[idx]);
-
-    let anyInput = false;
-
-    // A Button (0): Select / Activate
-    if (isEdge(0)) {
-      anyInput = true;
-      const items = getFocusableElements();
-      const current = items[focusedIndex];
-      if (current) current.click();
-    }
-
-    // B Button (1): Back / Close
-    if (isEdge(1)) {
-      anyInput = true;
-      const lb = document.getElementById("ov-lightbox");
-      if (lb && lb.style.display !== "none") {
-        hideLightbox();
-      } else if (activeTab !== "home") {
-        setTab("home");
-      } else {
-        void invoke("overlay_hide");
-      }
-    }
-
-    // LB (4): Previous Tab
-    if (isEdge(4)) {
-      anyInput = true;
-      cycleTab(-1);
-    }
-
-    // RB (5): Next Tab
-    if (isEdge(5)) {
-      anyInput = true;
-      cycleTab(1);
-    }
-
-    // Start (9) or Guide (16): Close Overlay
-    if (isEdge(9) || isEdge(16)) {
-      anyInput = true;
-      void invoke("overlay_hide");
-    }
-
-    // Directional (D-pad or Left Stick)
-    const dpadUp = buttons[12];
-    const dpadDown = buttons[13];
-    const dpadLeft = buttons[14];
-    const dpadRight = buttons[15];
-    const axisY = pad.axes[1] || 0;
-    const axisX = pad.axes[0] || 0;
-
-    const stickUp = axisY < -0.45;
-    const stickDown = axisY > 0.45;
-    const stickLeft = axisX < -0.45;
-    const stickRight = axisX > 0.45;
-
-    let dir: "up" | "down" | "left" | "right" | null = null;
-    if (dpadUp || stickUp) dir = "up";
-    else if (dpadDown || stickDown) dir = "down";
-    else if (dpadLeft || stickLeft) dir = "left";
-    else if (dpadRight || stickRight) dir = "right";
-
-    const now = Date.now();
-    if (dir) {
-      anyInput = true;
-      if (dir !== lastAxisDir || now - axisRepeatTimer > 250) {
-        lastAxisDir = dir;
-        axisRepeatTimer = now;
-        if (dir === "down" || dir === "right") updateGamepadFocus(1);
-        else if (dir === "up" || dir === "left") updateGamepadFocus(-1);
-      }
-    } else {
-      lastAxisDir = null;
-    }
-
-    if (anyInput) {
-      document.body.classList.add("ov-using-gamepad");
-    }
-
-    prevButtons = buttons;
-  } else {
+  if (!pad) {
     if (badgeEl && badgeEl.style.display !== "none") {
       badgeEl.style.display = "none";
     }
+    prevButtons = [];
+    return;
   }
 
-  requestAnimationFrame(pollGamepadLoop);
+  if (badgeEl && badgeEl.style.display === "none") {
+    badgeEl.style.display = "inline-flex";
+    const id = pad.id.toLowerCase();
+    const name = id.includes("playstation") || id.includes("dualsense") || id.includes("dualshock")
+      ? "DualSense"
+      : id.includes("nintendo") || id.includes("switch")
+      ? "Switch Pro"
+      : id.includes("xbox")
+      ? "Xbox"
+      : "Controller";
+    if (badgeNameEl) badgeNameEl.textContent = name;
+  }
+
+  const buttons = pad.buttons.map((b) => b.pressed);
+
+  // Swallow input right after the panel opened: the shortcut that opened it
+  // (Guide, Start+Back) is usually still held on the first frames.
+  if (performance.now() < gamepadSuppressUntil) {
+    prevButtons = buttons;
+    return;
+  }
+
+  const isEdge = (idx: number): boolean => Boolean(buttons[idx] && !prevButtons[idx]);
+  let anyInput = false;
+
+  // A (0): Select / Activate
+  if (isEdge(0)) {
+    anyInput = true;
+    activateFocused();
+  }
+
+  // B (1): Back / Close
+  if (isEdge(1)) {
+    anyInput = true;
+    goBack();
+  }
+
+  // LB (4) / RB (5): tabs, or previous/next screenshot in the lightbox.
+  if (isEdge(4)) {
+    anyInput = true;
+    if (lightboxIsOpen()) stepLightbox(-1);
+    else cycleTab(-1);
+  }
+
+  if (isEdge(5)) {
+    anyInput = true;
+    if (lightboxIsOpen()) stepLightbox(1);
+    else cycleTab(1);
+  }
+
+  // Start (9) or Guide (16): close the overlay.
+  if (isEdge(9) || isEdge(16)) {
+    anyInput = true;
+    void invoke("overlay_hide");
+  }
+
+  // Directional: D-pad or left stick.
+  const dpadUp = buttons[12];
+  const dpadDown = buttons[13];
+  const dpadLeft = buttons[14];
+  const dpadRight = buttons[15];
+  const axisY = pad.axes[1] || 0;
+  const axisX = pad.axes[0] || 0;
+
+  let dir: Dir | null = null;
+  if (dpadUp || axisY < -0.45) dir = "up";
+  else if (dpadDown || axisY > 0.45) dir = "down";
+  else if (dpadLeft || axisX < -0.45) dir = "left";
+  else if (dpadRight || axisX > 0.45) dir = "right";
+
+  const now = performance.now();
+  if (dir) {
+    anyInput = true;
+    if (dir !== lastDir || now - navRepeatAt > 170) {
+      lastDir = dir;
+      navRepeatAt = now;
+      if (focusedEl instanceof HTMLInputElement && focusedEl.type === "range" && (dir === "left" || dir === "right")) {
+        adjustRange(focusedEl, dir === "right" ? 4 : -4);
+      } else {
+        moveFocus(dir);
+      }
+    }
+  } else {
+    lastDir = null;
+  }
+
+  // Right stick scrolls the open page without moving the ring.
+  const scrollAxis = pad.axes[3] || 0;
+  if (!lightboxIsOpen() && Math.abs(scrollAxis) > 0.28) {
+    const main = document.getElementById("ov-main");
+    if (main) main.scrollTop += scrollAxis * 22;
+    anyInput = true;
+  }
+
+  if (anyInput) {
+    document.body.classList.add("ov-using-gamepad");
+    ensureFocus();
+  }
+
+  prevButtons = buttons;
 }
 
 /* ---------- Lifecycle ---------- */
@@ -1122,6 +1387,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   cachedAchievements = null;
   cachedScreenshots = [];
   sessionStartEpoch = Date.now();
+  gamepadSuppressUntil = performance.now() + 450;
 
   if (context.appName && isDisabledGame(context.appName)) {
     void invoke("overlay_hide");
@@ -1135,6 +1401,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     wireEvents();
     applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
   }
+
+  hideLightbox();
 
   const { store } = splitKey(context.appName);
   const titleEl = document.getElementById("ov-game-title");
@@ -1151,7 +1419,22 @@ async function onOpen(payload: OpenPayload): Promise<void> {
 
   updateClock();
   setTab(activeTab || "home");
+
+  // Fill the dashboard cards in the background; the loads re-render home when
+  // they land (they do not block the open).
+  if (context.appName && store !== "game") {
+    void loadAchievements();
+    void loadScreenshots();
+  }
+
   void refreshMedia();
+
+  // A connected pad means the user wants controller affordances right away.
+  const pad = navigator.getGamepads ? navigator.getGamepads().find((p) => p && p.connected) : undefined;
+  if (pad) {
+    document.body.classList.add("ov-using-gamepad");
+    focusDefault();
+  }
 }
 
 async function boot(): Promise<void> {
@@ -1176,6 +1459,8 @@ async function boot(): Promise<void> {
 
   await listen("overlay-close", () => {
     hideLightbox();
+    removeGamepadFocus();
+    document.body.classList.remove("ov-using-gamepad");
   });
 
   await listen<MetricsSample>("overlay-metrics", (event) => {
@@ -1184,8 +1469,7 @@ async function boot(): Promise<void> {
       fpsHistory.push(metrics.fps);
       if (fpsHistory.length > 60) fpsHistory.shift();
     }
-    if (activeTab === "perf") renderPerf();
-    else if (activeTab === "home") renderHome();
+    updateMetricsUi();
   });
 
   try {

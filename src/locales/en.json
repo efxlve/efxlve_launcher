@@ -1886,8 +1886,16 @@
   "overlay.disableTitle": "Disable for this game",
   "overlay.disableDesc": "The overlay never opens for this title.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Press Shift+Tab for the in-game overlay.",
+  "overlay.startHint": "In-game overlay: Shift+Tab or the controller Guide button.",
   "overlay.disabledListTitle": "Disabled games",
   "overlay.disabledListDesc": "The overlay never opens for these titles. Restore one to bring it back.",
-  "overlay.restore": "Restore"
+  "overlay.restore": "Restore",
+  "overlay.running": "Running",
+  "overlay.gameLabel": "Game",
+  "overlay.padSelect": "Select",
+  "overlay.padBack": "Back",
+  "overlay.padTabs": "Tabs",
+  "overlay.padClose": "Close",
+  "overlay.hintArrows": "Arrows navigate",
+  "overlay.hintEnter": "Enter select"
 }
