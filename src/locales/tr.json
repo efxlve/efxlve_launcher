@@ -1886,7 +1886,7 @@
   "overlay.disableTitle": "Bu oyun için kapat",
   "overlay.disableDesc": "Bu oyunda overlay hiç açılmaz.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Oyun içi arayüz: Shift+Tab veya kumandanın Guide düğmesi.",
+  "overlay.startHint": "Müzik sayfasından bir şey çal ya da Çalma listeleri düğmesini kullan.",
   "overlay.disabledListTitle": "Kapatılan oyunlar",
   "overlay.disabledListDesc": "Overlay bu oyunlarda hiç açılmaz. Geri açmak için listeden çıkar.",
   "overlay.restore": "Geri aç",
@@ -1911,10 +1911,15 @@
   "music.playPause": "Çal/Duraklat",
   "music.next": "Sonraki",
   "music.repeat": "Tekrarla",
-  "overlay.musicNoteSpotify": "Launcher'ın kendi Spotify alıcısını kontrol eder: Müzik sayfasında bir şey çal ve cihaz olarak \"Efxlve Launcher\"ı seç.",
+  "overlay.musicNoteSpotify": "Launcher'ın kendi Spotify alıcısını kontrol eder: Çalma listeleri düğmesiyle buradan başlat ya da Müzik sayfasında çalıp cihaz olarak \"Efxlve Launcher\"ı seç.",
   "overlay.tabSpotify": "Spotify",
   "music.reload": "Yenile",
   "music.back": "Geri",
   "music.playbackPairingToast": "Tek seferlik çalma onayı tarayıcıda açıldı: bu bilgisayarda müzik çalması için onayla.",
-  "overlay.openSpotify": "Spotify'da aç"
+  "overlay.openSpotify": "Spotify'da aç",
+  "overlay.playlists": "Çalma listeleri",
+  "overlay.playlistsLoading": "Çalma listeleri yükleniyor…",
+  "overlay.playlistsError": "Çalma listeleri alınamadı",
+  "overlay.noPlaylists": "Çalma listesi bulunamadı",
+  "overlay.tracks": "şarkı"
 }

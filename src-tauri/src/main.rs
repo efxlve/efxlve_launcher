@@ -900,6 +900,8 @@ fn main() {
             spotify::playback::spotify_playback_start,
             spotify::playback::spotify_playback_now,
             spotify::playback::spotify_playback_control,
+            spotify::playback::spotify_playback_playlists,
+            spotify::playback::spotify_playback_play,
             spotify_host::spotify_player_show,
             spotify_host::spotify_player_hide,
             spotify_host::spotify_player_reload,

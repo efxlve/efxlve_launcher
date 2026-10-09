@@ -60,6 +60,16 @@ pub struct PlaybackNow {
     pub repeat: String,
 }
 
+/// One entry of the user's playlist rootlist, for the overlay picker.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaylistSummary {
+    pub uri: String,
+    pub name: String,
+    pub track_count: i64,
+    pub art_url: String,
+}
+
 /// Tokens from the playback approval.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PlaybackToken {
@@ -165,6 +175,33 @@ pub fn spotify_playback_control(action: String, value: Option<i64>) -> Result<()
     }
 }
 
+/// The user's playlists, for the overlay picker (cached for a few minutes).
+#[tauri::command]
+pub async fn spotify_playback_playlists() -> Result<Vec<PlaylistSummary>, String> {
+    #[cfg(windows)]
+    {
+        imp::playlists().await
+    }
+    #[cfg(not(windows))]
+    {
+        Err("unsupported".to_string())
+    }
+}
+
+/// Loads and starts a playlist/album context on the local receiver.
+#[tauri::command]
+pub fn spotify_playback_play(uri: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        imp::play(&uri)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = uri;
+        Err("unsupported".to_string())
+    }
+}
+
 /// "off" / "context" / "track" from the two Connect repeat flags.
 fn repeat_label(context: bool, track: bool) -> &'static str {
     if track {
@@ -197,12 +234,14 @@ fn web_url(uri: &str) -> String {
 #[cfg(windows)]
 mod imp {
     use super::*;
-    use librespot::connect::{ConnectConfig, Spirc};
+    use librespot::connect::{ConnectConfig, LoadRequest, LoadRequestOptions, Spirc};
     use librespot::core::{
         authentication::Credentials, cache::Cache, config::DeviceType, config::SessionConfig,
-        session::Session,
+        session::Session, FileId, SpotifyUri,
     };
     use librespot::metadata::audio::{AudioItem, UniqueFields};
+    use librespot::metadata::playlist::list::SelectedListContent as RootlistContent;
+    use librespot::metadata::{Metadata, Playlist};
     use librespot::oauth::{OAuthClientBuilder, OAuthToken};
     use librespot::playback::{
         audio_backend,
@@ -210,6 +249,8 @@ mod imp {
         mixer::{self, MixerConfig},
         player::{Player, PlayerEvent, PlayerEventChannel},
     };
+    use librespot::protocol::playlist4_external::SelectedListContent as RootlistMessage;
+    use protobuf::Message as _;
     use std::sync::mpsc::{Receiver, Sender};
     use std::sync::Arc;
 
@@ -259,6 +300,11 @@ mod imp {
 
     static SPIRC: Mutex<Option<Arc<Spirc>>> = Mutex::new(None);
     static NOW: Mutex<Option<NowState>> = Mutex::new(None);
+    /// The engine's session, kept for playlist browsing.
+    static SESSION: Mutex<Option<Session>> = Mutex::new(None);
+    /// Rootlist cache: the picker refetches at most every few minutes.
+    static PLAYLISTS: Mutex<Option<(Instant, Vec<PlaylistSummary>)>> = Mutex::new(None);
+    const PLAYLISTS_TTL: Duration = Duration::from_secs(300);
 
     fn update(change: impl FnOnce(&mut NowState)) {
         if let Ok(mut guard) = NOW.lock() {
@@ -392,6 +438,101 @@ mod imp {
         result.map_err(|error| error.to_string())
     }
 
+    /// The user's playlists: rootlist first, then one metadata fetch per entry
+    /// (in parallel). Cached, so the picker opens instantly after the first
+    /// load.
+    pub async fn playlists() -> Result<Vec<PlaylistSummary>, String> {
+        if let Ok(guard) = PLAYLISTS.lock() {
+            if let Some((at, cached)) = guard.as_ref() {
+                if at.elapsed() < PLAYLISTS_TTL {
+                    return Ok(cached.clone());
+                }
+            }
+        }
+
+        let session = SESSION
+            .lock()
+            .map_err(|_| "state_poisoned".to_string())?
+            .clone()
+            .ok_or_else(|| "not_running".to_string())?;
+
+        let bytes = session
+            .spclient()
+            .get_rootlist(0, Some(60))
+            .await
+            .map_err(|error| error.to_string())?;
+        let message = RootlistMessage::parse_from_bytes(&bytes).map_err(|error| error.to_string())?;
+        let content = RootlistContent::try_from(&message).map_err(|error| error.to_string())?;
+
+        let mut tasks = tokio::task::JoinSet::new();
+        for item in content.contents.items.iter() {
+            if !matches!(item.id, SpotifyUri::Playlist { .. }) {
+                continue;
+            }
+            let uri = item.id.clone();
+            let session = session.clone();
+            tasks.spawn(async move { summary_of(&session, uri).await });
+            if tasks.len() >= 40 {
+                break;
+            }
+        }
+
+        let mut out = Vec::new();
+        while let Some(joined) = tasks.join_next().await {
+            if let Ok(Some(summary)) = joined {
+                out.push(summary);
+            }
+        }
+        out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        if let Ok(mut slot) = PLAYLISTS.lock() {
+            *slot = Some((Instant::now(), out.clone()));
+        }
+        Ok(out)
+    }
+
+    async fn summary_of(session: &Session, uri: SpotifyUri) -> Option<PlaylistSummary> {
+        let playlist = Playlist::get(session, &uri).await.ok()?;
+        Some(PlaylistSummary {
+            uri: uri.to_uri().ok()?,
+            name: playlist.name().to_string(),
+            track_count: playlist.length as i64,
+            art_url: cover_url(session, &playlist.attributes.picture),
+        })
+    }
+
+    fn cover_url(session: &Session, picture: &[u8]) -> String {
+        if picture.is_empty() {
+            return String::new();
+        }
+        let Ok(file_id) = FileId::from_raw(picture).to_base16() else {
+            return String::new();
+        };
+        let template = session
+            .get_user_attribute("image-url")
+            .unwrap_or_else(|| "https://i.scdn.co/image/{file_id}".to_string());
+        template.replace("{file_id}", &file_id)
+    }
+
+    /// Makes the receiver the active device and starts a context on it.
+    pub fn play(uri: &str) -> Result<(), String> {
+        let spirc = SPIRC
+            .lock()
+            .map_err(|_| "state_poisoned".to_string())?
+            .clone()
+            .ok_or_else(|| "not_running".to_string())?;
+        // Loading does nothing while another device is active; both commands
+        // queue on the same channel, so activate lands first.
+        let _ = spirc.activate();
+        let request = LoadRequest::from_context_uri(
+            uri.to_string(),
+            LoadRequestOptions {
+                start_playing: true,
+                ..Default::default()
+            },
+        );
+        spirc.load(request).map_err(|error| error.to_string())
+    }
+
     /// Keeps `NOW` in sync with the player: metadata, position, volume, modes.
     async fn pump_events(mut events: PlayerEventChannel) {
         while let Some(event) = events.recv().await {
@@ -455,6 +596,12 @@ mod imp {
         if let Ok(mut slot) = NOW.lock() {
             *slot = None;
         }
+        if let Ok(mut slot) = SESSION.lock() {
+            *slot = None;
+        }
+        if let Ok(mut slot) = PLAYLISTS.lock() {
+            *slot = None;
+        }
 
         let thread_app = app.clone();
         std::thread::spawn(move || {
@@ -472,6 +619,12 @@ mod imp {
                 *slot = None;
             }
             if let Ok(mut slot) = NOW.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = SESSION.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = PLAYLISTS.lock() {
                 *slot = None;
             }
         });
@@ -495,7 +648,10 @@ mod imp {
             .map_err(|error| error.to_string())?;
         runtime.block_on(async move {
             match setup(&app).await {
-                Ok(spirc) => {
+                Ok((spirc, session)) => {
+                    if let Ok(mut slot) = SESSION.lock() {
+                        *slot = Some(session);
+                    }
                     if let Ok(mut slot) = SPIRC.lock() {
                         *slot = Some(spirc.clone());
                     }
@@ -523,7 +679,7 @@ mod imp {
         })
     }
 
-    async fn setup(app: &AppHandle) -> Result<Arc<Spirc>, String> {
+    async fn setup(app: &AppHandle) -> Result<(Arc<Spirc>, Session), String> {
         let session_config = SessionConfig::default();
         let token = ensure_token(app, &session_config).await?;
         let credentials = Credentials::with_access_token(token.access_token);
@@ -569,7 +725,7 @@ mod imp {
             .map_err(|error| error.to_string())?;
         tokio::spawn(task);
         spirc.activate().map_err(|error| error.to_string())?;
-        Ok(Arc::new(spirc))
+        Ok((Arc::new(spirc), session))
     }
 
     /// Stored token, refreshed when it is about to expire; otherwise the

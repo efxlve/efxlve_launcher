@@ -34,6 +34,13 @@ export interface SpotifyPlaybackStatus {
   deviceName: string;
 }
 
+export interface PlaylistSummary {
+  uri: string;
+  name: string;
+  trackCount: number;
+  artUrl: string;
+}
+
 export const spotifyPlaybackStatus = () =>
   invoke<SpotifyPlaybackStatus>("spotify_playback_status");
 
@@ -48,6 +55,14 @@ export const spotifyPlaybackControl = (
   action: "play" | "pause" | "next" | "previous" | "seek" | "volume" | "shuffle" | "repeat",
   value?: number | null,
 ) => invoke<void>("spotify_playback_control", { action, value: value ?? null });
+
+/** The user's playlists for the overlay picker. */
+export const spotifyPlaybackPlaylists = () =>
+  invoke<PlaylistSummary[]>("spotify_playback_playlists");
+
+/** Loads and starts a playlist context on the launcher's receiver. */
+export const spotifyPlaybackPlay = (uri: string) =>
+  invoke<void>("spotify_playback_play", { uri });
 
 /** mm:ss for a millisecond timeline position. */
 export function formatTime(ms: number): string {
