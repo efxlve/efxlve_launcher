@@ -379,6 +379,11 @@ html.sb-narrow .sb-eq {
   border-top: 1px solid var(--line);
 }
 
+/* `display: flex` above would otherwise beat the `hidden` attribute. */
+.sb-mini[hidden] {
+  display: none !important;
+}
+
 .sb-mini-top {
   display: flex;
   align-items: center;

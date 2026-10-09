@@ -208,24 +208,25 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   color: var(--on-accent);
 }
 
-/* Shared dialog close button (banner, avatar and name modals). */
+/* Shared dialog close button (banner, avatar and name modals) — matches the
+   storage manager's borderless ghost button. */
 .modal-close-btn {
   display: inline-grid;
   place-items: center;
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   padding: 0;
-  border: 1px solid var(--line);
+  border: none;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--text-2);
   cursor: pointer;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: background-color var(--ease), color var(--ease);
 }
 .modal-close-btn:hover {
   background: var(--surface-2);
   color: var(--text);
-  border-color: var(--line-strong);
 }
 .modal-close-btn svg { width: 16px; height: 16px; }
 
