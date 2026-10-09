@@ -445,7 +445,7 @@ function setTab(tab: TabId): void {
 }
 
 /** Tabs that only make sense with a running game. */
-const GAME_ONLY_TABS: TabId[] = ["perf", "ach", "shots", "notes"];
+const GAME_ONLY_TABS: TabId[] = ["perf", "ach", "shots"];
 
 /** Friendly stand-in for a game-only tab while the overlay runs over the launcher. */
 function noGameStateHtml(tab: TabId): string {
@@ -588,7 +588,7 @@ function renderHome(): void {
       <!-- Media Player Card -->
       <div class="ov-card ov-span-6 ov-media-card">
         <div class="ov-card-head">
-          <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span></div>
+          <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
         ${mediaCardInnerHtml()}
@@ -654,7 +654,7 @@ function renderHomeLauncher(el: HTMLElement): void {
 
       <div class="ov-card ov-span-12 ov-media-card">
         <div class="ov-card-head">
-          <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span></div>
+          <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
         ${mediaCardInnerHtml()}
@@ -921,10 +921,15 @@ async function loadScreenshots(force = false): Promise<void> {
 }
 
 /* 5. Full Notes View */
+/** Launcher mode keeps one shared note; games keep theirs per title. */
+function notesKey(): string {
+  return launcherMode ? "launcher" : context.appName;
+}
+
 function renderNotes(): void {
   const el = viewEl("notes");
   if (!el) return;
-  const saved = localStorage.getItem(`efxlve-overlay-notes::${context.appName}`) ?? "";
+  const saved = localStorage.getItem(`efxlve-overlay-notes::${notesKey()}`) ?? "";
   el.innerHTML = `
     <div class="ov-page-title" style="justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px">${icon("edit", 20)} <span>${esc(t("overlay.tabNotes"))}</span></div>
@@ -942,7 +947,7 @@ function wireNotesInput(inputId: string, statusId: string): void {
     if (notesSaveTimer) window.clearTimeout(notesSaveTimer);
     notesSaveTimer = window.setTimeout(() => {
       notesSaveTimer = null;
-      localStorage.setItem(`efxlve-overlay-notes::${context.appName}`, area.value);
+      localStorage.setItem(`efxlve-overlay-notes::${notesKey()}`, area.value);
       const tag = document.getElementById(statusId);
       if (tag) tag.textContent = t("overlay.saved");
     }, 350);
@@ -994,7 +999,9 @@ function getOverlayMedia(): OverlayMediaModel {
     };
   }
   if (mediaState.available) {
-    const isSp = mediaState.source.toLowerCase().includes("spotify");
+    const source = mediaState.source.toLowerCase();
+    // The launcher's own embedded Spotify page reports as a WebView2 session.
+    const isSp = source.includes("spotify") || source.includes("webview");
     return {
       active: true,
       isSpotify: isSp,
@@ -1073,6 +1080,14 @@ async function refreshMedia(): Promise<void> {
     return;
   }
   patchMediaSurfaces();
+}
+
+/** Home media card header: Spotify branding when the source is Spotify itself. */
+function mediaCardTitleHtml(): string {
+  const m = getOverlayMedia();
+  return m.isSpotify
+    ? `${icon("spotify", 14)} <span class="title-text">${esc(t("overlay.tabSpotify"))}</span>`
+    : `${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span>`;
 }
 
 /** Home dashboard media card content. */
@@ -1162,7 +1177,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
         <div class="ov-sp-meta-row">
           <div class="ov-sp-title" id="ov-sp-title">${esc(m.title)}</div>
           <span class="ov-badge-pill ${m.isSpotify ? "ov-badge-spotify" : ""}" id="ov-sp-source-badge">
-            ${m.isSpotify ? icon("music", 12) : icon("volume-2", 12)}
+            ${m.isSpotify ? icon("spotify", 12) : icon("volume-2", 12)}
             <span>${esc(m.source)}</span>
           </span>
         </div>
@@ -1424,6 +1439,14 @@ function patchMediaSurfaces(): void {
     homeTitle.textContent = m.active ? m.title : t("overlay.noMedia");
     setText("ov-media-artist", m.active ? m.artist : t("overlay.openSpotify"));
     setText("ov-media-source", m.active ? m.source : "");
+    const cardTitle = document.getElementById("ov-media-card-title");
+    if (cardTitle) {
+      const kind = m.isSpotify ? "spotify" : "media";
+      if (cardTitle.dataset.kind !== kind) {
+        cardTitle.dataset.kind = kind;
+        cardTitle.innerHTML = mediaCardTitleHtml();
+      }
+    }
     const toggle = document.getElementById("ov-media-toggle");
     if (toggle) toggle.innerHTML = icon(m.isPlaying ? "pause" : "play", 18);
     patchArt(
@@ -1445,7 +1468,7 @@ function patchMediaSurfaces(): void {
     }
     const badge = document.getElementById("ov-sp-source-badge");
     if (badge) {
-      badge.innerHTML = `${m.isSpotify ? icon("music", 12) : icon("volume-2", 12)} <span>${esc(m.source)}</span>`;
+      badge.innerHTML = `${m.isSpotify ? icon("spotify", 12) : icon("volume-2", 12)} <span>${esc(m.source)}</span>`;
       badge.className = `ov-badge-pill ${m.isSpotify ? "ov-badge-spotify" : ""}`;
     }
     const toggle = document.getElementById("ov-sp-toggle");
