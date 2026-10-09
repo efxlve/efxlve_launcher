@@ -1971,5 +1971,8 @@
   "music.libraryPlaylists": "Playlists",
   "music.libraryAlbums": "Albums",
   "music.libraryArtists": "Artists",
-  "music.play": "Play"
+  "music.play": "Play",
+  "music.reload": "Reload",
+  "music.openInBrowser": "Open in browser",
+  "music.playerHint": "Playback: in Spotify, pick “{name}” as the device (bottom-right). WebView2 cannot decrypt Spotify audio itself."
 }

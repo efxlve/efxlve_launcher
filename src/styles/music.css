@@ -11,6 +11,24 @@
   padding: 24px 8px 48px;
 }
 
+/* Embedded open.spotify.com page: full width, no page scroll. */
+.music-embedded {
+  max-width: none;
+  height: 100%;
+  gap: 10px;
+  padding: 14px 16px 12px;
+}
+
+.music-webview-slot {
+  position: relative;
+  flex: 1;
+  min-height: 380px;
+  height: calc(100vh - 215px);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .music-brand {
   display: flex;
   align-items: center;

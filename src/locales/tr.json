@@ -1971,5 +1971,8 @@
   "music.libraryPlaylists": "Çalma listeleri",
   "music.libraryAlbums": "Albümler",
   "music.libraryArtists": "Sanatçılar",
-  "music.play": "Çal"
+  "music.play": "Çal",
+  "music.reload": "Yenile",
+  "music.openInBrowser": "Tarayıcıda aç",
+  "music.playerHint": "Çalma: Spotify'da cihaz olarak “{name}” seç (sağ altta). WebView2, Spotify sesini kendisi çözemez."
 }

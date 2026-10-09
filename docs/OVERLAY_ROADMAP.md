@@ -139,12 +139,12 @@ approval against Spotify's own desktop client (`streaming` scope, no developer a
 the device appears as "Efxlve Launcher" in every Spotify client, and the Web API
 controls it like any other device. Spotify requires Premium for librespot playback.
 
-**Browsing:** the launcher's Spotify page searches the catalogue (tracks, albums,
-artists, playlists) and browses the user's library (liked songs, playlists, saved
-albums, followed artists) through the Web API; clicking a row plays it on the active
-device. Spotify restricts apps created since Nov 2024 from Spotify-owned playlists,
-related artists, recommendations and audio features, so the page sticks to search,
-library and playback control.
+**Browsing:** the launcher's Spotify page embeds the normal `open.spotify.com`
+interface as a native child WebView2 (search, library, playlists, queue — the real
+Spotify UI). WebView2 ships no Widevine CDM, so the embedded player cannot decrypt
+Spotify audio itself; instead the page's toolbar runs the librespot Connect receiver
+and the user picks "Efxlve Launcher" as the playback device inside Spotify. The Web
+API search/library commands stay available for the overlay and future surfaces.
 
 ### 2.5 Discord — presence + voice read
 

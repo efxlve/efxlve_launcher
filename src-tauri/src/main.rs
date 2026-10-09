@@ -26,6 +26,7 @@ mod storage_usage;
 mod notif_overlay;
 mod overlay;
 mod spotify;
+mod spotify_host;
 mod store_host;
 mod store_theme;
 mod vault_id;
@@ -912,6 +913,11 @@ fn main() {
             spotify::playback::spotify_playback_start,
             spotify::playback::spotify_playback_stop,
             spotify::playback::spotify_playback_forget,
+            spotify_host::spotify_player_show,
+            spotify_host::spotify_player_hide,
+            spotify_host::spotify_player_resize,
+            spotify_host::spotify_player_reload,
+            spotify_host::spotify_player_close,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,

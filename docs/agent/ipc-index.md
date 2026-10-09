@@ -237,6 +237,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_playback_start` | `spotifyPlaybackStart({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_status` | `spotifyPlaybackStatus({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_stop` | `spotifyPlaybackStop({ ... })` | `src-tauri/src/spotify/playback.rs` |
+| `spotify_player_close` | `spotifyPlayerClose({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `spotify_player_hide` | `spotifyPlayerHide({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `spotify_player_reload` | `spotifyPlayerReload({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `spotify_player_resize` | `spotifyPlayerResize({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `spotify_player_show` | `spotifyPlayerShow({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_playlists` | `spotifyPlaylists({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_search` | `spotifySearch({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_set_client_id` | `spotifySetClientId({ ... })` | `src-tauri/src/spotify/mod.rs` |
