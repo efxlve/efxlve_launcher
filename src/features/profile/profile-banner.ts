@@ -26,6 +26,10 @@ let cachedCandidates: BannerGameCandidate[] = [];
 let currentModalScopeKey = "";
 /** Pending banner-search grid patch; a full-library rebuild waits for a pause. */
 let bannerSearchTimer = 0;
+/** The picker renders a page at a time; the library can hold ~1000 games. */
+const BANNER_PAGE = 48;
+let bannerFiltered: BannerGameCandidate[] = [];
+let bannerRendered = 0;
 
 /** Resolves the best landscape or cover art for a game to use as a banner preview. */
 export function getGameBannerArt(appName: string): string {
@@ -82,11 +86,31 @@ function renderBannerCard(g: BannerGameCandidate, currentApp: string, scopeKey: 
     </button>`;
 }
 
-function renderBannerGridHtml(games: BannerGameCandidate[], currentApp: string, scopeKey: string): string {
-  if (games.length === 0) {
-    return `<div class="profile-banner-empty"><p>${esc(t("profile.bannerNoGames"))}</p></div>`;
+function bannerCardsHtml(games: BannerGameCandidate[]): string {
+  const currentApp = S.customProfileBanners[currentModalScopeKey] || "";
+  return games.map((g) => renderBannerCard(g, currentApp, currentModalScopeKey)).join("");
+}
+
+/** Appends the next page of candidates (called on scroll). */
+function appendBannerPage(): void {
+  const grid = document.getElementById("profile-banner-grid");
+  if (!grid || bannerRendered >= bannerFiltered.length) return;
+  const slice = bannerFiltered.slice(bannerRendered, bannerRendered + BANNER_PAGE);
+  bannerRendered += slice.length;
+  grid.insertAdjacentHTML("beforeend", bannerCardsHtml(slice));
+}
+
+/** Rebuilds the grid from its first page (open / search). */
+function renderBannerGrid(): void {
+  const grid = document.getElementById("profile-banner-grid");
+  if (!grid) return;
+  bannerRendered = 0;
+  if (bannerFiltered.length === 0) {
+    grid.innerHTML = `<div class="profile-banner-empty"><p>${esc(t("profile.bannerNoGames"))}</p></div>`;
+    return;
   }
-  return games.map((g) => renderBannerCard(g, currentApp, scopeKey)).join("");
+  grid.innerHTML = "";
+  appendBannerPage();
 }
 
 export function closeProfileBannerModal(): void {
@@ -97,6 +121,8 @@ export function closeProfileBannerModal(): void {
   const modal = document.getElementById("profile-banner-modal");
   if (modal) modal.remove();
   cachedCandidates = [];
+  bannerFiltered = [];
+  bannerRendered = 0;
   currentModalScopeKey = "";
 }
 
@@ -126,20 +152,17 @@ export function resetProfileBanner(scopeKey: string): void {
 
 export function filterProfileBannerModal(query: string): void {
   const q = query.trim().toLowerCase();
-  const filtered = q
+  bannerFiltered = q
     ? cachedCandidates.filter((g) => g.title.toLowerCase().includes(q) || g.appName.toLowerCase().includes(q))
     : cachedCandidates;
-  const currentApp = S.customProfileBanners[currentModalScopeKey] || "";
-  const grid = document.getElementById("profile-banner-grid");
-  if (grid) {
-    grid.innerHTML = renderBannerGridHtml(filtered, currentApp, currentModalScopeKey);
-  }
+  renderBannerGrid();
 }
 
 export function openProfileBannerModal(scopeKey: string, scopeLabel = ""): void {
   closeProfileBannerModal();
   currentModalScopeKey = scopeKey;
   cachedCandidates = collectBannerCandidates();
+  bannerFiltered = cachedCandidates;
 
   const currentApp = S.customProfileBanners[scopeKey] || "";
   const hasCustom = Boolean(currentApp);
@@ -172,14 +195,21 @@ export function openProfileBannerModal(scopeKey: string, scopeLabel = ""): void 
           ` : ""}
         </div>
 
-        <div id="profile-banner-grid" class="profile-banner-grid">
-          ${renderBannerGridHtml(cachedCandidates, currentApp, scopeKey)}
-        </div>
+        <div id="profile-banner-grid" class="profile-banner-grid"></div>
       </div>
     </div>
   `;
 
   document.body.insertAdjacentHTML("beforeend", modalHtml);
+  renderBannerGrid();
+
+  const grid = document.getElementById("profile-banner-grid");
+  if (grid) {
+    // The library can hold ~1000 games: render a page at a time as it scrolls.
+    grid.addEventListener("scroll", () => {
+      if (grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 240) appendBannerPage();
+    });
+  }
 
   const input = document.getElementById("profile-banner-search") as HTMLInputElement | null;
   if (input) {

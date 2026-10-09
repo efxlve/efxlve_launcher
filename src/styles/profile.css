@@ -1430,9 +1430,10 @@
 }
 
 /* --- 11. Profile Banner Picker Modal --- */
-.profile-banner-dialog {
-  width: 100%;
-  max-width: 820px;
+/* Beats the shared `.modal-box` width (modals.css loads after this file). */
+.modal-box.profile-banner-dialog {
+  width: min(920px, 100%);
+  max-width: 920px;
   max-height: 84vh;
   display: flex;
   flex-direction: column;
@@ -1502,8 +1503,8 @@
 
 .profile-banner-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: 10px;
   padding: 18px 22px;
   overflow-y: auto;
   max-height: 480px;
