@@ -130,10 +130,30 @@ pub fn overlay_clear_active_game(app_name: String) {
 #[tauri::command]
 pub fn overlay_show(app: AppHandle) {
     if let Some((app_name, title)) = crate::legendary::screenshots::get_active_running_game() {
+        // Prefer the game's own window so the panel lands on its monitor.
+        let pids = crate::legendary::screenshots::active_game_pids();
+        let mut hwnd = hud::find_game_window(&pids);
+        if hwnd == 0 {
+            hwnd = hud::foreground_window();
+        }
         if let Ok(mut s) = STATE.lock() {
-            s.game_hwnd = hud::foreground_window();
+            s.game_hwnd = hwnd;
             s.game_app = app_name;
             s.game_title = title;
+        }
+    } else {
+        // Opened over the launcher (or any app): follow that window so the
+        // panel is not closed by the game-window watch right away.
+        let hwnd = hud::foreground_window();
+        let title = hud::window_title(hwnd);
+        if let Ok(mut s) = STATE.lock() {
+            if s.game_hwnd == 0 {
+                s.game_hwnd = hwnd;
+            }
+            if s.game_app.is_empty() && !title.is_empty() {
+                s.game_app = format!("game::{title}");
+                s.game_title = title;
+            }
         }
     }
     show(&app);
@@ -181,7 +201,11 @@ pub(crate) fn hide(app: &AppHandle) {
     let hwnd = match STATE.lock() {
         Ok(mut s) => {
             s.visible = false;
-            s.game_hwnd
+            // Forget the window handle: the next open captures (or re-finds)
+            // the game window, so a stale dead handle cannot close it later.
+            let hwnd = s.game_hwnd;
+            s.game_hwnd = 0;
+            hwnd
         }
         Err(_) => 0,
     };

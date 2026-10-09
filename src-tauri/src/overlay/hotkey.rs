@@ -27,10 +27,25 @@ pub(crate) fn start(app: AppHandle) {
 
             if visible {
                 if game_hwnd != 0 && !super::hud::window_alive(game_hwnd) {
-                    gone_ticks = gone_ticks.saturating_add(1);
-                    if gone_ticks >= 75 {
+                    // A dead handle can just mean the game recreated its window
+                    // (fullscreen switch): re-find it by pid before counting it
+                    // gone, so the panel does not close itself mid-session.
+                    let mut found = 0isize;
+                    if !cur_app.is_empty() {
+                        let pids = crate::legendary::screenshots::active_game_pids();
+                        found = super::hud::find_game_window(&pids);
+                    }
+                    if found != 0 {
+                        if let Ok(mut s) = STATE.lock() {
+                            s.game_hwnd = found;
+                        }
                         gone_ticks = 0;
-                        hide(&app);
+                    } else {
+                        gone_ticks = gone_ticks.saturating_add(1);
+                        if gone_ticks >= 75 {
+                            gone_ticks = 0;
+                            hide(&app);
+                        }
                     }
                 } else {
                     gone_ticks = 0;
